@@ -1968,96 +1968,44 @@ let-go, which the service would hear if it were running.
 
 ### 38. An agent asking a paired machine, and the grant that has to exist there
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-13**, by `7f52606e`, which is three weeks before
+this task was written. The task as first written said the second clause had
+*no road at all*. It had a road, and tests named after the clause.
+**Corrected 2026-10-04, after reading the crates this task itself names.**
 
-The promise is `docs/features.md`'s *Cross-machine agent work — an agent may
-**ask** a paired machine, and acts only under a grant made **on that machine,
-by its person**.* **Measured before this was written, because a task that
-misstates what exists sends somebody to build it twice.**
+**What already satisfies it.** `7f52606e` is ADR 0003's receiving side and its
+own message says so: *an agent on machine A that reaches machine B is bound by
+the grants made on B, by B's person. A's grants confer nothing on B. Pairing
+lets A ask; it never lets A act.*
 
-**The asking half is nearly built, and built well.** A pairing is ADR 0003's
-grant: `pairing.rs` enforces *enumerated, visible, revocable in one action,
-expiring* as properties rather than as habits; `deliberating.rs` gives
-`Pairing` no public constructor, so the only thing that returns one refuses
-until both people have said yes on their own machine; `confirming.rs` makes a
-confirmation provable rather than merely said. None of that is owed.
+| the clause | what holds it |
+|---|---|
+| the far machine does nothing until its own person granted it there | `alo_turn::Arriving`, whose grants are this machine's for `alo_nearby::Origin::principal` |
+| the refusal before that is the default rather than an error path | *there is no parameter anywhere on this type for the asking machine's grants*, so their conferring nothing is an absence |
+| revoking stops the next ask rather than only the next pairing | `a_pairing_undone_during_a_turn_stops_it_at_the_next_door`, and the grants are read *the way the grants are, never borrowed once at the turn's beginning* |
+| a person can tell whose machine a grant was made for | `origin.rs` spells it `machine:` and the identity, *never the name a person gave it* |
+| the indicator fires on the asking machine | `a_question_to_the_machine_down_the_corridor_is_still_an_egress` |
+| all of it holds across a restart of both | `what_the_service_writes_is_what_a_restart_reads_back`, and `the_grants_a_machine_keeps` on a real machine |
 
-**What a pairing permits is a list of two things.** `permitting.rs`'s
-`MayAskIts` has exactly two variants: `Models`, *put a question to the models
-this machine has*, and `Workspace`, *reach a workspace this machine serves*.
-**Both are asks for something the far machine already offers.** Neither is an
-agent doing work there, and the promise's own wording separates the two —
-*may ask* against *acts only under a grant*.
+The suite whose name is this task's first acceptance clause is
+`crates/alo-turn/tests/what_a_remote_agent_may_do_is_what_the_local_person_granted.rs`.
 
-**The second clause has no road at all, and this is the measurement that
-matters.** Grants are `alo-remembering`'s, which holds `THE_GRANTS`.
-`alo-agentd` depends on `alo-remembering` already. **`alo-nearby` depends on
-exactly one crate in this workspace — `alo-strings` — and nothing else.** So
-nothing in the repository joins *a pairing exists* to *a grant was made on the
-answering machine by its person*: the crate that knows about pairings cannot
-reach a grant, and the crate that can reach grants reads the ones belonging to
-its own machine.
+**And the correction this task owes is to itself.** An earlier revision of
+this file argued that **a third `MayAskIts` variant is necessary**. That is
+wrong, and `permitting.rs` says so under a heading called *Two arms, and what
+is deliberately not a third*:
 
-- **That first question is answered, and the either-or in it was wrong.**
-  This task asked whether the road is a third `MayAskIts` variant *or* a
-  separate mechanism, and said the measurement did not settle which. Reading
-  the crates settles it and shows the question was a false choice:
-  **they are different gates and both are needed.**
-  `questioned.rs` is the door for a question arriving from a paired machine,
-  and it judges **the proof first**, then **the pairing's own list**, then the
-  body — answering with what *the person here* chose for their own questions.
-  That list is `MayAskIts`. So a pairing already says **who may ask**, and
-  nothing yet says **what may be done**.
-- **A third variant is necessary.** `permitting.rs`'s doctrine is that a
-  pairing permitting everything *would be a grant nobody could read*;
-  enumerated, visible and revocable are three of ADR 0003's four words.
-  Without a variant there is no way for a person to see, or revoke, that
-  another machine may ask theirs to do work at all.
-- **And a variant is not sufficient.** It is pairing-level and given once, up
-  front. The promise requires a grant made **on that machine, by its person**,
-  which is per-action and local. `keeping_pairings.rs` already describes that
-  split as the existing architecture: *the grants are written by the person's
-  side and only ever read by this service, and the pairings are written by
-  this service.*
-- **So the shape is three gates, two of which exist**: a proof, then a pairing
-  that permits asking for work, then a grant made here by the person saying
-  what that work may touch. **The third is the only new one.**
-- **Where it goes, measured:** `alo-agentd` already holds both halves — it
-  reads `alo_remembering::THE_GRANTS` (`main.rs` and `starting.rs`) and keeps
-  the pairings file. **The join belongs there**, and that is not a preference:
-  `alo-nearby` depends on `alo-strings` and nothing else in this workspace,
-  which is **how** ADR 0003's *discovery reveals presence and nothing else* is
-  true rather than merely stated. A dependency on `alo-remembering` or
-  `alo-granted` would make the sentence a claim instead of a fact.
-- **Constraint, and it is the one most likely to be broken by the obvious
-  implementation:** `alo-nearby` must not gain a dependency on
-  `alo-remembering` or `alo-granted`. Its header is ADR 0003's first half —
-  *being on the same network is not authority; discovery reveals presence and
-  nothing else: no files, no records, no models, no agent surface, and no
-  person.* A single dependency is how that is currently true rather than
-  merely stated. **The join belongs where both halves already are, which is
-  the agent daemon.**
-- **Constraint:** the departure stays visible on the asking machine.
-  `permitting.rs` says of `Models` that *it is still egress on the asking
-  machine and the indicator still fires — permission here is what makes the
-  departure wanted, not what makes it silent.* Agent work carries the same
-  rule, and a grant on the far machine is not permission to go quiet on this
-  one.
-- **Acceptance:** two paired machines. An agent on the first asks the second to
-  do something. **The second does nothing until its own person has granted it
-  there**, and the refusal before that is the default rather than an error
-  path. The grant is enumerated, visible and revocable in one action like any
-  other grant on that machine, and revoking it stops the next ask rather than
-  only the next pairing. The indicator fires on the asking machine. All of it
-  holds across a restart of both.
-- **Acceptance:** a person reading the far machine's grants can tell that one
-  was made for a *paired machine's agent* rather than for something local,
-  **and whose machine it was made for.** A grant that cannot say who it is for
-  is one grant for every paired machine.
+> There is no arm for *run a verb on that machine*, and there never will be
+> one here. ADR 0003 is exact about it: **pairing lets A ask; it never lets A act.**
 
-**What this task does not claim.** Whether `alo-agentd`'s existing pairing
-files — `a_paired_machine_over_link_local.rs`, `keeping_pairings.rs`,
-`corridor.rs`, `listing_workspaces.rs` — already carry part of the asking road
-is **not measured here**. They exist and they name pairings; whether any of
-them reaches work rather than discovery is its own reading, and the honest
-first step is to take it rather than to assume either way.
+**The absence of a third arm is the design and not a gap.**
+**A gap and a deliberate omission look identical to a count.**
+Reading `MayAskIts` found two arms and no arm for doing work, which is true;
+the paragraph underneath says the omission is deliberate and permanent, which
+is the part a count cannot reach. That is the reading error worth leaving
+written here rather than quietly removing.
+
+**What stays true from the original measurement.** `alo-nearby` depends on
+`alo-strings` and nothing else in this workspace, which is **how** ADR 0003's
+*discovery reveals presence and nothing else* is a fact rather than a claim.
+Nothing in this correction touches that, and nothing should.
