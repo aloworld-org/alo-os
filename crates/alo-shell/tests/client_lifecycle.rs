@@ -26,6 +26,7 @@ mod popups;
 mod putting_a_window_aside;
 mod resizing_from_the_edges;
 mod shortcut_dispatch;
+mod super_i_opens_settings;
 mod support;
 mod text_a_person_did_not_type_on_a_keyboard;
 mod the_canvas_is_where_they_left_it;
