@@ -1456,32 +1456,20 @@ than changed.*
 
 **Still owed:** **task 38 of `docs/autonomy/the-local-network-plan.md`**, written 2026-10-03 after `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md` moved this promise into the release and after the crates were read. **Its two clauses are in two different states, and the second has no road at all.** The asking half is built and built well: `crates/alo-nearby/src/pairing.rs` enforces ADR 0003's *enumerated, visible, revocable in one action, expiring* as properties rather than habits, `deliberating.rs` gives `Pairing` no public constructor so the only thing returning one refuses until both people have confirmed on their own machine, and `confirming.rs` makes a confirmation provable rather than merely said. **But what a pairing permits is a list of two things** — `permitting.rs`'s `MayAskIts` has exactly the variants `Models` and `Workspace`, both asks for something the far machine already offers, and **neither is an agent doing work there.** **Nothing joins a pairing to a grant:** grants are `alo-remembering`'s, `alo-agentd` depends on that crate already, and `alo-nearby` depends on `alo-strings` and nothing else in this workspace — which is how ADR 0003's *discovery reveals presence and nothing else* is true rather than merely stated, and why the join belongs in the daemon that already holds both halves. The task names, rather than assumes, the question it has to settle first: whether this is a third `MayAskIts` variant or a separate mechanism.
 
-### ★ **A Place remembers time** — drag the
+**Five canvas promises left this release on 2026-10-04.**
 
-**Shown by:** nothing.
+They were here for one day. [ADR
+0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md) put every
+agreed canvas capability into **one current milestone**, so *A Place remembers
+time*, *Every screen is a view onto the canvas*, *A panel out of view costs
+nothing*, *Every canvas also answers as a list* and *Give it to alo* moved from
+`[v0.5]` into `[v0.01]`. Their entries are now in
+`docs/autonomy/evidence-it-boots-and-the-agent-acts.md`.
 
-**Still owed:** **It waits on `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`**, which moved it into this release on 2026-10-03 and says what the next step is: this promise has no task of its own in any plan, and one has to be written before anybody can start it. Its evidence has not been assessed. **It was `[v1.1]`, the only canvas promise above this release**, and the lane that found it would not move it alone: it is not among the five things the owner named as completion, and it rests on the snapshots undo takes rather than on Places at all.
-
-### **Every screen is a view onto the canvas** — two displa
-
-**Shown by:** nothing.
-
-**Still owed:** **It waits on `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`**, which moved it into this release on 2026-10-03 and says what the next step is: this promise has no task of its own in any plan, and one has to be written before anybody can start it. Its evidence has not been assessed. Two displays are two viewports at their own zoom, which is a different thing from this release's *multi-monitor, scaling, hotplug* and will want reading beside it.
-
-### **A panel out of view costs nothing** — it is a st
-
-**Shown by:** nothing.
-
-**Still owed:** **It waits on `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`**, which moved it into this release on 2026-10-03 and says what the next step is: this promise has no task of its own in any plan, and one has to be written before anybody can start it. Its evidence has not been assessed. It is a cost property rather than a feature — a Place holding forty frames stays usable — so what shows it is a measurement, and nobody has taken one.
-
-### **Every canvas also answers as a list** — its panels
-
-**Shown by:** `crates/alo-shell/tests/every_frame_answers_as_a_list/mod.rs`
-
-**Still owed:** **the machine half, as every promise in this release is.** The code half is done and was done before this promise reached this tier: task 7 of `docs/autonomy/the-smallest-canvas-worth-showing.md` is **Done, 2026-09-29, all three thirds**, with six tests reached through `client_lifecycle.rs` — frames enumerable in a stable order with their names, reachable and focusable by keyboard alone, and what a reader is told not depending on where a frame sits. **This one moved as a correction rather than a widening**: it was `[v1]` and built at v0.5, which is a promise built below its own tier.
-
-### ★ **Give it to alo** — anything sele
-
-**Shown by:** nothing.
-
-**Still owed:** **It waits on `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`**, which moved it into this release on 2026-10-03 and says what the next step is: this promise has no task of its own in any plan, and one has to be written before anybody can start it. Its evidence has not been assessed. **This move overrides a standing decision**: its tier was kept deliberately when the Stop carve-out put *alo working in a window you put aside* at `[v0.01]` and left its neighbours alone. The owner chose on 2026-10-03 to move it anyway, and it is recorded here so the earlier reasoning is not read as still current.
+**Recorded rather than deleted**, because they arrived here by [ADR
+0084](../decisions/0084-seven-promises-move-from-v1-into-v0-5.md) on 2026-10-03,
+and a reader following that decision to this ledger would otherwise find nothing
+and conclude the record had been tidied. One of the five — *Every canvas also
+answers as a list* — was **already built** when it arrived, so its move is a
+correction of a promise built below its own tier rather than a widening of the
+release it moved into.
