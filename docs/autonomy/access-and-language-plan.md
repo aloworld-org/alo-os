@@ -225,8 +225,21 @@ at close, nothing added after it was written. **Depends on:** 1, 2, 3, 4, 5, 6.
 
 ### 8. A reader is told what is set, and by the words that are on it
 
-**Status:** the first half is **Done, 2026-09-30**; the second is blocked on an
-ADR about what controls are called. **Depends on:** 2, 4.
+**Status:** the first half is **Done, 2026-09-30**; the second is **ready** —
+the ADR it waited on is
+[ADR 0089](../decisions/0089-what-a-control-is-called.md), accepted 2026-10-04.
+**Depends on:** 2, 4.
+
+**What the ADR found, which this task did not know it was asking.** The
+question here was a wording one: clause 11.2.5.3 wants the programmatic name to
+contain the visible label, and `access.close-this-window` does not contain
+`shortcuts.action.close-window`. Measuring it turned up something larger — the
+two vocabularies **disagree about which controls exist**. The strip draws
+minimise, maximise and close; the tree reads *close this window* and *move this
+window*. Two drawn controls are unannounced and one announced control is not
+drawn. So the second half is no longer only *make the words agree*: it is
+`Control::for_action`, three retired keys, and the window-controls surface
+built from the list the strip is drawn from, which is decision 3 of that ADR.
 
 **Correcting what this file said between 08:59 and 13:00 on 2026-09-30.** It
 said both halves were blocked on one decision. *That was wrong about the first

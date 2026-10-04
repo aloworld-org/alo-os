@@ -391,28 +391,25 @@ was `cargo doc` over 104 crates.
 what it touched and lets CI validate. Its hardware stopped being a fleet problem
 on 2026-10-02.
 
-### Active — a frame moves between Places
+### Done — the three canvas tasks this section still called ready
 
-- **Outcome:** a person drags a frame out to the World and drops it into another
-  Place, and the work goes with it.
-- **Acceptance:** task 3 of
-  [the-canvas-and-its-places.md](the-canvas-and-its-places.md).
-- **Depends on:** tasks 1 and 2, both done — **task 2 landed the World on
-  2026-10-02 and task 1 on 2026-09-30.**
-- **Scope:** `alo-canvas`.
-- **State:** ready. *This read `blocked on 1, 2` while both were finished.*
+**Corrected 2026-10-04.** Tasks 3, 4 and 5 of
+[the-canvas-and-its-places.md](the-canvas-and-its-places.md) all read **Done,
+2026-10-02** in the plan, and `main` carries each of them — *Move to Place*
+(#376), *a restore travels* (#368) and `alo-arranging`'s map of Places at
+`FORMAT` 2. This file still listed the first as **Active** and the other two as
+**Ready** two days later.
 
-### Ready — a restore travels, it does not relocate
+*Worth keeping rather than deleting, because of what this file is for.* It was
+written after a day with two idle gaps and the sentence **nothing told a
+machine what to start next**; a queue that names finished work tells a machine
+to start something that is already done, which is the same fault wearing the
+opposite sign. The row above it had already recorded one instance — *this read
+`blocked on 1, 2` while both were finished* — so this is the second, and the
+check is the cheap one nobody runs: read the plan's own status line before
+trusting the queue's.
 
-Task 4. Returns a put-aside window to **the Place it was already on**, the view
-travelling there. Separate from task 3 on purpose.
-
-### Ready — every Place is where it was left
-
-Task 5. Position, size, camera and the panel's own state, **per Place rather
-than per session**, over `alo-arranging`.
-
-### Ready — the ADR about what controls are called
+### Active — the ADR about what controls are called
 
 The second half of task 8 of the access-and-language plan is blocked on it, and
 **this machine is the one that understands why it matters.** It reaches 24
