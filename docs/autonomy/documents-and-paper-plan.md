@@ -449,7 +449,7 @@ collapsing them is how a promise gets made that a machine cannot keep:
   not that `libetonyek`'s IWA path works in general.
 - **Not wired when this was written**, because the converter in the shipped
   image could not start: twelve runtime libraries were missing from 0.0.3 as
-  published, eleven from 0.0.2. No document of any format converted on a real
+  published, eleven from image 0.0.2. No document of any format converted on a real
   machine, `.docx` included, and ADR 0039's promise was unmet in the product
   from the day the converter landed. Registering a conversion into that would
   have made the machine say *this converts* and then fail everywhere, which
@@ -503,7 +503,7 @@ made that a machine cannot keep:
   not that `libetonyek`'s IWA path works in general.
 - **Conversion: not wired when this was written**, because the converter in the
   shipped image could not start. Twelve runtime libraries were missing from
-  0.0.3 as published, eleven from 0.0.2, so no document of any format converted
+  0.0.3 as published, eleven from image 0.0.2, so no document of any format converted
   on a real machine, `.docx` included — ADR 0039's promise was unmet in the
   product from the day the converter landed. Registering a conversion into that
   would have made the machine say *this converts* and then fail everywhere,
@@ -765,7 +765,7 @@ order](updates/what-closes-v0-0-5-and-in-what-order.md): Keynote and Numbers
 on iCloud, in a browser on any machine, are the real applications writing the
 real container. If that route is taken the provenance line says it was the web
 version — which writer wrote a fixture is the whole value of recording
-provenance. This stays inside v0.0.5.
+provenance. This stays inside image 0.0.5.
 
 Written 2026-09-21, by the lane that finished task 6, because it is the one
 thing that task measured and could not close. A finished task's body is not
