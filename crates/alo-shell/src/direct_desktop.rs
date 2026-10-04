@@ -429,9 +429,32 @@ impl LoopInput for Desk<'_> {
         // would cost every frame to avoid once.
         //
         // The result is dropped **because the telling is not built**, not because
-        // it does not matter: the move has already happened and is visible, and
-        // the sentence that explains it needs alo OS's first production
-        // notification and its words in every shipped language. See
+        // it does not matter: the move has already happened and is visible.
+        //
+        // **This comment named the wrong road until 2026-10-04.** It said the
+        // sentence needs *alo OS's first production notification and its words in
+        // every shipped language*, and following that leads into a wall that has
+        // nothing to do with the canvas: `alo_notifying::deciding::arrives` wants a
+        // `Seat<Notification>`, a seat wants an `alo_accounts::Session`, and
+        // `SignedIn`'s only constructor is `pub(crate)` — deliberately, so nothing
+        // outside the authentication path can mint an identity. `alo-greeting` is a
+        // library, no binary carries its session here, and `alo-desktop` depends on
+        // none of those crates.
+        //
+        // The promise does not ask for any of it. `docs/features.md`'s **When the
+        // machine moves a window, the person is told** says the notice is *not the
+        // notifications portal and not calm notifications*, because *the canvas
+        // needs one sentence about one frame*. One sentence about one frame is this
+        // crate's own kind of surface, like the egress indicator, and
+        // `crate::egress_status_place::Place::of_the_other_end` already records
+        // where such a thing goes: the end of the edge a person's eyes learn for
+        // **what just happened**.
+        //
+        // What is genuinely undecided is one clause — how *where it was* reaches a
+        // person. `alo_canvas::At` is `{ x, y }`, no crate on the canvas side
+        // carries any vocabulary, and a coordinate read aloud is not something
+        // anybody can act on. `docs/autonomy/the-canvas-and-its-places.md` holds
+        // the three readings. See
         // `crate::canvas_fixed_controls::Server::bring_back_frames_the_moved_controls_hide`,
         // which holds the argument and the `was` that road will need.
         let _ = server.bring_back_frames_the_moved_controls_hide();
