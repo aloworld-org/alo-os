@@ -105,6 +105,26 @@ pub trait TheDesktop {
     /// reveal.
     fn the_panel_is_revealed(&mut self, _by: alo_dock::revealing::ThePointer) {}
 
+    /// What this person's chords mean, asked for once as the session starts.
+    ///
+    /// **The shell asks and does not read**, for the reason
+    /// [`Self::the_layout_they_left`] gives at length: a settings file in a
+    /// person's folder is a call into the machine, and shell task 15's
+    /// constraint is that none is added from `crates/alo-shell`.
+    ///
+    /// **The default is what this release ships**, which is the honest default
+    /// here and not an empty one: a desktop that was never told about a
+    /// person's changes still has every shipped chord, and a desktop that
+    /// answered `Shortcuts::over(Defaults::none())` would be a machine where
+    /// `⊞`+0 does nothing until somebody edits a file.
+    ///
+    /// Asked **once**, as the layout is: a binding a person changes in Settings
+    /// is told to the session through `Server::the_shortcuts_are`, which is the
+    /// road that exists for it, rather than by re-reading a file every frame.
+    fn the_shortcuts(&mut self) -> alo_shortcuts::Shortcuts {
+        alo_shortcuts::Shortcuts::shipped()
+    }
+
     /// The canvas layout this person left, asked for once as the session
     /// starts.
     ///
@@ -218,6 +238,15 @@ impl crate::DirectSession {
                         // and once rather than per frame: a layout is what a
                         // person left, not a reading that goes stale.
                         let left = crate::WhereTheyLeftIt::from(desktop.the_layout_they_left());
+                        // **And what this person's chords mean**, asked in the
+                        // same breath and for the same reason. Until this line
+                        // existed no chord reached a running desktop at all:
+                        // every link of the shortcut chain was production code
+                        // and nothing entered it, so fifteen actions were
+                        // finished, tested and unreachable —
+                        // `the-shell-plan.md` task 19. See
+                        // `crate::a_chord_reaches_its_action`.
+                        server.the_shortcuts_are(desktop.the_shortcuts());
                         Desk {
                             input,
                             desktop,

@@ -1,6 +1,7 @@
 //! Trusted backend keyboard routing, separate from surface protocol lifetimes.
 
 use crate::{Server, surfaces::Surfaces};
+use alo_shortcuts::Chord;
 use smithay::{
     backend::input::KeyState,
     delegate_seat,
@@ -191,13 +192,48 @@ impl Server {
         // Intercepting still advances XKB — `input_intercept` records the key and
         // updates the modifiers before the filter is consulted — so a key sent to
         // nobody is still a key this compositor knows is down.
-        keyboard.input::<(), _>(&mut self.surfaces, code, state, serial, time, |_, _, _| {
-            if deliver {
-                FilterResult::Forward
-            } else {
-                FilterResult::Intercept(())
+        // **The person's own chords, taken out of the way before anything is
+        // delivered.** Inside this call rather than before it, because this call
+        // is what advances XKB and a chord's modifiers are this press's own —
+        // the same reason the arrow pan below is asked afterwards.
+        //
+        // Taken out of `self` for the length of the filter because the filter
+        // borrows `self.surfaces`, and put back the moment it returns. See
+        // `crate::a_chord_reaches_its_action`, which holds the argument for why
+        // a chord beats the window in front while an arrow does not.
+        let shortcuts = self.shortcuts.take();
+        let took = keyboard.input::<Option<Chord>, _>(
+            &mut self.surfaces,
+            code,
+            state,
+            serial,
+            time,
+            |_, held, symbol| {
+                if state == KeyState::Pressed
+                    && let Some(chord) =
+                        Server::the_chord_a_key_makes(shortcuts.as_ref(), &symbol, held)
+                {
+                    return FilterResult::Intercept(Some(chord));
+                }
+                if deliver {
+                    FilterResult::Forward
+                } else {
+                    FilterResult::Intercept(None)
+                }
+            },
+        );
+        self.shortcuts = shortcuts;
+        // **A chord the shell took goes no further.** The client was never told
+        // about the press, so the matching release is already held back by the
+        // `forwarded` set this function keeps — no second rule is needed for it.
+        if let Some(chord) = took.flatten() {
+            if let Some(keyboard) = self.surfaces.keyboard.as_mut() {
+                keyboard.time = time;
+                keyboard.popup_key = None;
             }
-        });
+            self.the_chord_does_what_it_names(chord);
+            return Ok(false);
+        }
         // **Arrows pan the canvas with nothing focused** — ADR 0065's keyboard
         // road, `crate::canvas_arrow_pan`. Asked after the call above rather than
         // before it, because that call is what advances XKB, and *pan faster* is

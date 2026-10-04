@@ -71,6 +71,7 @@
 
 #![cfg(target_os = "linux")]
 
+mod a_chord_reaches_its_action;
 mod a_click_brings_a_window_back;
 mod access_bus;
 mod access_contrast;

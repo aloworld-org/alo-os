@@ -147,6 +147,11 @@ mod running {
         /// Worked out once, because where a person's folder is does not change
         /// under a running session.
         layout_at: Option<std::path::PathBuf>,
+        /// Where this person's changed shortcuts live, if they have a folder.
+        ///
+        /// Beside the layout and read the same way: one folder, one question
+        /// per file, and `None` on a session with nowhere to keep anything.
+        shortcuts_at: Option<std::path::PathBuf>,
         /// Where the dock is, and so where the status area is.
         dock: alo_dock::Dock,
         /// The windows this person has put aside, which the panel at the edge
@@ -243,8 +248,17 @@ mod running {
                     "alo-desktop: this session has no folder, so the canvas layout is not kept"
                 );
             }
+            // And the person's own chords, from the same folder. A session
+            // without one still has every shipped shortcut — see
+            // `the_shortcuts` below.
+            let shortcuts_at = alo_choosing::where_the_folder_is(
+                std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+                std::env::var_os("HOME").as_deref(),
+            )
+            .map(|folder| folder.join(alo_shortcuts::keeping::THE_FILE));
             Ok(Self {
                 layout_at,
+                shortcuts_at,
                 dock: alo_dock::Dock::shipped(),
                 put_aside: alo_put_aside::Panel::new(),
                 // Nobody is looking at anything yet, which is what a session starts as.
@@ -279,6 +293,31 @@ mod running {
     const HOW_OFTEN: std::time::Duration = std::time::Duration::from_secs(1);
 
     impl TheDesktop for ThisPersonsDesktop {
+        /// What this person's chords mean, read from their own folder.
+        ///
+        /// **What this release ships, with the person's changes over it.** A
+        /// session with no folder, or whose shortcuts file does not read, gets
+        /// the shipped chords rather than none: a machine where `⊞`+0 stopped
+        /// working because a file was hand-edited wrong would have taken the
+        /// keyboard away over a typo.
+        ///
+        /// **A damaged file is said out loud and does not stop the session**,
+        /// which is the same choice `the_layout_they_left` makes below and for
+        /// the same reason.
+        fn the_shortcuts(&mut self) -> alo_shortcuts::Shortcuts {
+            let shipped = alo_shortcuts::Shortcuts::shipped();
+            let Some(at) = self.shortcuts_at.as_deref() else {
+                return shipped;
+            };
+            match alo_shortcuts::keeping::read(at) {
+                Ok(changes) => shipped.with(changes),
+                Err(why) => {
+                    eprintln!("alo-desktop: this person's shortcuts did not read — {why}");
+                    shipped
+                }
+            }
+        }
+
         /// The canvas layout this person left, read from their own folder.
         ///
         /// **A damaged file is said out loud and does not stop the session.**

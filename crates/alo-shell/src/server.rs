@@ -102,6 +102,18 @@ pub struct Server {
     /// focused client receives an unpaired release and believes a button it never saw held has
     /// gone up.
     pub(crate) clicks_the_panel_took: std::collections::HashSet<u32>,
+    /// **What this person's chords mean**, told once as the session stands up.
+    ///
+    /// Held here for the reason `asked_to_put_aside` gives in the other
+    /// direction: a key arrives at the seat, where no desktop is in scope, and
+    /// what a chord means is the person's own settings, which belong to
+    /// whoever implements `crate::TheDesktop`. `crate::a_chord_reaches_its_action`
+    /// carries the argument.
+    ///
+    /// `None` until a desktop says otherwise, which is what keeps the sign-in
+    /// screen, the nested lane and every test on the road they already had: a
+    /// seat that has been told no shortcuts looks none up.
+    pub(crate) shortcuts: Option<alo_shortcuts::Shortcuts>,
     /// **What a touchpad gesture means, as `alo-desktops` recognises it.**
     ///
     /// One recogniser for the seat: at most one gesture is in flight at a
@@ -144,6 +156,8 @@ impl Server {
             asked_to_bring_back: Vec::new(),
             clicks_the_panel_took: std::collections::HashSet::new(),
             gestures: Default::default(),
+            // Nobody has told this seat what a chord means, so it takes none.
+            shortcuts: None,
             desk: crate::server_desk::Desk::new(),
         })
     }

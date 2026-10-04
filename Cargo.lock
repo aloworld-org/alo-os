@@ -607,6 +607,7 @@ dependencies = [
  "alo-put-aside",
  "alo-saying",
  "alo-shell",
+ "alo-shortcuts",
  "alo-sound",
  "alo-strings",
  "jiff",
