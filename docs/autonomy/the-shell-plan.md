@@ -928,3 +928,81 @@ are worth a stage each for that reason.
   tick** is a physical display: the parent is `weston --backend=headless` or
   WSLg, both of which composite to nothing, so this is what was drawn and never
   what a panel showed.
+
+### 18. A person opens Settings
+
+**Status:** ready. **Depends on:** nothing.
+
+This plan already says the thing this task is for: *nothing opens Settings yet,
+because `alo-shortcuts` declares no action for it*.
+**Two other plans wait on that and hand it here.**
+Tasks 7-14 — the ones they hand it to — are finished, and are about drawing
+surfaces rather than reaching them.
+
+**What exists, measured rather than assumed.** `SettingsWindow` is built:
+`settings_raster` lays it out, it routes keys, and it refuses correctly in
+every tested case.
+**Every construction of it sits in a test file or a `#[cfg(test)]` block.**
+Every production `opened_by_hand` belongs to `RecordWindow`'s method of the
+same name, and `crates/alo-desktop` **mentions Settings only in a comment.**
+So each sentence this surface can say is reachable by a test and by nobody
+else.
+
+**It is the third of three, and the desktop says so about the other two.**
+`crates/alo-desktop/src/main.rs` holds `RunningWindow` and `FillingWindow`
+under the comment *Shut, because nothing on a machine opens it yet*, and
+`crates/alo-shell/src/bin/alo-compositor.rs` is 198 lines that name no window
+at all.
+**The shell drew its surfaces and never built the roads to them.**
+Settings is the one with two plans waiting behind it.
+
+**The question to settle in writing before anything is built.** A sixteenth
+`Action` is not free, and the crate prices it in its own header: *every action
+here costs a chord that no application on the machine can ever see again, and a
+system that took thirty of them would be a system whose applications behave
+strangely for reasons nobody can find.*
+
+**Reaching Settings through the launcher does not avoid that cost.**
+It moves the hole. Measured: the window and canvas actions are handled in
+`crates/alo-shell/src/window_command.rs` and `canvas_command.rs`, while
+`Action::TheAgent` and `Action::Launcher` fall through to `None` in
+`crates/alo-dividing/src/keyboard.rs` and reach no handler anywhere.
+**The launcher has no surface either.**
+So *open Settings from the launcher* would be one unreachable surface offering
+another.
+
+- **Acceptance:** on a real machine a person opens Settings
+  **with no test in the loop** — the road is driven from a key or a pointer and
+  the window appears. The walk is recorded the way this plan's task 14 records
+  one.
+- **Acceptance:** the sentence `where-a-persons-settings-are-kept-plan.md`
+  task 7 declared for a session with no folder **is read by a person**, not
+  only by a refusal test. That task's status says the sentence holds and *no
+  person can read it*; this is what makes the second half false.
+- **Acceptance:** a gesture preference is **turned off by a person**, and the
+  running session learns of it. That is the clause
+  `hands-on-the-desktop-plan.md` task 5 fails, where
+  `alo_desktops::gesture_files::keep` and `::read` have one caller and it is a
+  test. Opening the surface is not enough by itself: the applying end is a read
+  at session start handed to `gestures_are_configured`.
+- **Constraint:** if a new `Action` is added, the change's own body
+  **pays the cost the crate's header names** — which chord, why no existing
+  action serves, and what an application on this machine can no longer see. A
+  sixteenth action added without that paragraph is the thirtieth action's first
+  step.
+- **Constraint:** `Action::ALL` is iterated in `window_command.rs`, so a new
+  variant is held by whatever asserts over that list.
+  **Run those assertions before gating**, rather than meeting them in a
+  nine-gate run.
+- **Constraint:** any new user-facing word is a **two-file change** — the
+  crate's `words.rs` and `crates/alo-saying/the-vocabulary.txt`, regenerated
+  with `UPDATE_VOCABULARY_SNAPSHOT=1 cargo test -p alo-saying --test
+  a_published_sentence_keeps_its_key`. A `Word` constant that joins no list
+  compiles and passes every test in its crate, so
+  **assert on the rendered sentence rather than on a difference**.
+
+**What this task does not claim.** Whether `RunningWindow` and `FillingWindow`
+should be opened by the same road is **not measured here**. They carry the same
+fault, and naming them is not owning them: this task closes the one surface two
+other plans are waiting on, and a second task for the other two is honest work
+for whoever measures them.
