@@ -45,6 +45,13 @@ pub enum Action {
     TheAgent,
     /// Open the launcher.
     Launcher,
+    /// Open Settings.
+    ///
+    /// **The road that needs no pointer**, which is why it is a shortcut as well
+    /// as a place on the Dock: ADR 0085 takes both, because *a person who works
+    /// by keyboard and a person who has never been told a chord exists are
+    /// different people*.
+    Settings,
     /// Close the window in front.
     CloseWindow,
     /// Put the window in front out of the way.
@@ -81,11 +88,12 @@ pub enum Action {
 
 impl Action {
     /// Everything a shortcut can do, in the order a settings panel lists them:
-    /// the two that summon something, then the window in front, then moving
+    /// the three that summon something, then the window in front, then moving
     /// between windows.
     pub const ALL: &'static [Self] = &[
         Self::TheAgent,
         Self::Launcher,
+        Self::Settings,
         Self::CloseWindow,
         Self::MinimiseWindow,
         Self::MaximiseWindow,
@@ -108,6 +116,7 @@ impl Action {
         match self {
             Self::TheAgent => words::THE_AGENT,
             Self::Launcher => words::LAUNCHER,
+            Self::Settings => words::SETTINGS,
             Self::CloseWindow => words::CLOSE_WINDOW,
             Self::MinimiseWindow => words::MINIMISE_WINDOW,
             Self::MaximiseWindow => words::MAXIMISE_WINDOW,

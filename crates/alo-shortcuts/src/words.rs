@@ -68,6 +68,13 @@ pub const THE_AGENT: Word = Word::saying("shortcuts.action.the-agent", "Ask the 
 pub const LAUNCHER: Word = Word::saying("shortcuts.action.launcher", "Open the launcher")
     .noting("The launcher is where a person finds and starts an application.");
 
+/// What [`crate::Action::Settings`] does.
+pub const SETTINGS: Word = Word::saying("shortcuts.action.settings", "Open Settings").noting(
+    "Settings is where a person changes what their own machine does — the one place, not a \
+     panel inside each application. Capitalised as a name here because it is the name of that \
+     place, the way an application has a name.",
+);
+
 /// What [`crate::Action::CloseWindow`] does.
 pub const CLOSE_WINDOW: Word = Word::saying("shortcuts.action.close-window", "Close the window")
     .noting(
@@ -456,9 +463,10 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// the shortcuts do, what is held down, the keys that print a word, why a
 /// combination was refused, what one chord wanted twice says, and then what is
 /// said about the person's own file.
-pub const EVERY_WORD: [Word; 50] = [
+pub const EVERY_WORD: [Word; 51] = [
     THE_AGENT,
     LAUNCHER,
+    SETTINGS,
     CLOSE_WINDOW,
     MINIMISE_WINDOW,
     MAXIMISE_WINDOW,
