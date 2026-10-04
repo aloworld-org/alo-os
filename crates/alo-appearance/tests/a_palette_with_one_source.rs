@@ -57,6 +57,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 use alo_appearance::{Colour, Role, Token};
+use sha2::{Digest, Sha256};
 
 /// The shape of palette this test reads.
 ///
@@ -338,6 +339,13 @@ fn no_two_colours_in_the_source_are_the_same() {
 /// Figma edits into `70-28.xml`; and the manifest went on describing the file as
 /// it had been. **A description a file cannot contradict is this repository's
 /// recurring fault**, and the cure is to let the file contradict it.
+///
+/// **The SHA-256 is the inspected revision**, which the owner asked the snapshot
+/// to record on 2026-10-04. Figma exposes no file version, history id or
+/// last-modified time through the interface this repository can reach, so the
+/// export's own hash is what identifies the state that was inspected — and it is
+/// checked here for the same reason the counts are, because a recorded hash
+/// nothing compares is exactly the kind of claim that goes quietly stale.
 #[test]
 fn the_snapshot_manifest_describes_the_file_beside_it() {
     let folder = the_repository().join("docs/design/figma-snapshot");
@@ -355,6 +363,27 @@ fn the_snapshot_manifest_describes_the_file_beside_it() {
         assert!(
             manifest.contains(&claim),
             "70-28.xml is {claim} and the manifest does not say so"
+        );
+    }
+
+    // The inspected revision. Read from the bytes on disk rather than from the
+    // string above, because `read_to_string` would hide a stray carriage return
+    // that a reader checking with `sha256sum` would see.
+    for (name, bytes) in [
+        ("70-28.xml", std::fs::read(folder.join("70-28.xml"))),
+        ("0-1.xml", std::fs::read(folder.join("0-1.xml"))),
+    ] {
+        let bytes = bytes.unwrap_or_else(|why| panic!("{name} could not be read: {why}"));
+        let digest = <Sha256 as Digest>::digest(&bytes);
+        let written = digest.iter().fold(String::new(), |mut into, byte| {
+            use std::fmt::Write as _;
+            let _ = write!(into, "{byte:02x}");
+            into
+        });
+        assert!(
+            manifest.contains(&written),
+            "{name} hashes to {written} and the manifest records a different \
+             inspected revision"
         );
     }
 }

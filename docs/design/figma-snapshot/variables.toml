@@ -105,6 +105,8 @@ format = 1
 
 [provenance]
 file_key = "nDxyF5Ho9oC4RObjVzwBNJ"
+canonical = "named by the owner, 2026-10-04; 8q0JVtnLroZYNdDkIQeJni is historical reference"
+inspected_as = "sha256 of 70-28.xml, recorded in MANIFEST.md — Figma exposes no revision here"
 page = "70:28"
 page_name = "03 — alo OS · Living canvas"
 measured_on = "2026-10-04"

@@ -5,7 +5,10 @@ brief rather than a specification: it says what each screen has to do and what
 the system must never do, and leaves how it looks to the designer.
 
 **The screens are in Figma:**
-<https://www.figma.com/design/8q0JVtnLroZYNdDkIQeJni>
+<https://www.figma.com/design/nDxyF5Ho9oC4RObjVzwBNJ>
+
+The living canvas, which is the page every measurement is taken from:
+<https://www.figma.com/design/nDxyF5Ho9oC4RObjVzwBNJ?node-id=70-28>
 
 Four pages, the same screens on each: **Light** and **Dark** at 1440×900, then
 **Laptop 1920×1080** and **External 2560×1440**.
@@ -19,15 +22,24 @@ and their measured values are in
 [`palette.toml`](palette.toml), with the measurement itself in
 [`figma-snapshot/variables.toml`](figma-snapshot/variables.toml).
 
-**Two Figma files exist and this brief names the older one.** The link above is
-the file this brief produced: one page, *Light*, 43 top-level frames — 41 numbered
-01 to 41, plus *A · Desktop* and *B · Window options* — and 1,598 nodes. The
-work since then is in `nDxyF5Ho9oC4RObjVzwBNJ`, page *03 — alo OS · Living
-canvas*: 196 screens and 20,100 nodes, and the file every measurement in
-`docs/design/` is taken from. **Which of the two is canonical is the owner's to
-say**, so nothing here or in `README.md` has been repointed; it is flagged rather
-than decided, because a brief silently aimed at a different file is how a
-designer draws against the wrong one.
+**Two Figma files exist, and the owner named the canonical one on 2026-10-04.**
+The link above is it. The other, `8q0JVtnLroZYNdDkIQeJni`, is **historical
+reference and not implementation authority** — it is this brief's own first
+output, one page *Light*, 43 top-level frames (41 numbered 01 to 41, plus *A ·
+Desktop* and *B · Window options*) and 1,598 nodes.
+
+```text
+nDxyF5Ho9oC4RObjVzwBNJ   canonical   page 70:28   196 screens   20,100 nodes
+8q0JVtnLroZYNdDkIQeJni   historical  1 page       43 frames      1,598 nodes
+```
+
+**Inside the canonical file, use the approved visible states and components.**
+Hidden legacy layers are not implementation references, and that is not a
+hypothetical: frame `337:23323` draws the minimized panel's empty handle while
+*also* containing a hidden `200×600` shelf and a hidden `125.48`-tall first
+preview, both superseded. Measuring that frame without tracking `hidden` down the
+tree is how an earlier reading of this file reported the wrong numbers. See
+[the interface in the file](the-interface-in-the-file.md).
 
 Where a screen and an ADR disagree, the ADR is the one that has been argued —
 and where a screen and this brief disagree, say so rather than picking one: it

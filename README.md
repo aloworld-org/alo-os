@@ -66,7 +66,12 @@ list of what gets built, and `ROADMAP.md` the only order it is built in.
 
 ## Design
 
-The screens are in Figma: <https://www.figma.com/design/8q0JVtnLroZYNdDkIQeJni>.
+The screens are in Figma: <https://www.figma.com/design/nDxyF5Ho9oC4RObjVzwBNJ>, and the living
+canvas is
+<https://www.figma.com/design/nDxyF5Ho9oC4RObjVzwBNJ?node-id=70-28>.
+The owner named this the canonical file on 2026-10-04; the older
+`8q0JVtnLroZYNdDkIQeJni` is historical reference and not implementation
+authority.
 `docs/design/figma-brief.md` is the brief they were drawn from.
 
 ## Licence

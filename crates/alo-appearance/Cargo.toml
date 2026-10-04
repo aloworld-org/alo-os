@@ -18,6 +18,13 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
+# Checks the snapshot's recorded revision in `a_palette_with_one_source.rs`.
+# Figma exposes no file version through the interface this repository can
+# reach, so the committed export's SHA-256 is what identifies the inspected
+# state — and a hash written in a document that nothing compares is a
+# description the file cannot contradict, which is the fault that let the
+# manifest's byte count sit stale through a refresh.
+sha2 = { workspace = true }
 # Reads `docs/design/palette.toml` in `a_palette_with_one_source.rs`. A
 # dev-dependency deliberately: the shell carries the six as constants and must
 # never parse a file to draw a frame — what reads the source is the test holding
