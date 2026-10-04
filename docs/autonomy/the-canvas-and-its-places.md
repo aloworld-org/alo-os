@@ -671,10 +671,17 @@ is corrected in the crate and recorded in
 
 ### 9. Every screen is a view onto the canvas
 
-**Status:** ready. **Owner:** **the Mac.** **Depends on:** the camera having one
-home, which is the same thing `the-smallest-canvas-worth-showing.md` task 9's
-remaining half turns on — so these two are done together or the second is done
-twice.
+**Status:** **blocked, 2026-10-04**, on work no plan lists: **this compositor
+advertises one output.** The dependency this task was written against — the
+camera having one home — **is met**, and the blocker is somewhere else. See
+*What this is actually blocked on* below.
+
+**Owner:** **the Mac.** **Depends on:** a second output existing in
+`alo-shell`. Previously: the camera having one home, which is the same thing
+`the-smallest-canvas-worth-showing.md` task 9's remaining half turns on — so
+these two are done together or the second is done twice. That one was settled
+on 2026-10-04: the duplicate collapsed, `surfaces.rs`'s note now reads *one
+home, and this is it*, and it names this task as the reason it had to.
 
 **Added 2026-10-04 by [ADR
 0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md).** It was
@@ -697,6 +704,58 @@ this task depends on the camera question rather than on the displays.
 - **Constraint:** no second camera copy. The one that exists is already named in
   `surfaces.rs` as a hazard; adding a third would make a restored window's size
   depend on how many mutators happened to be in step.
+
+### What this is actually blocked on
+
+**Measured 2026-10-04, after the camera's home was settled and this task was
+picked up.** The paragraph above says *the display half is built* because
+`alo-displays` models more than one display. That is true of the **decision
+crate** and says nothing about the compositor, which is where a viewport and a
+camera live — and the compositor is built for exactly one output, by design and
+in writing:
+
+```
+presentation.rs:1          "Single-output membership and frame completion
+                            after successful submission."
+presentation.rs:264        struct Presentation { output: Option<Output>, … }
+direct_output.rs:47        "Discover one output on a caller-owned DRM session
+                            descriptor."
+direct_output.rs:87        select() returns the first usable port and stops
+display_lifecycle.rs:9     "This compositor advertises one output, so a session
+                            has one display"
+display_lifecycle.rs:45    const THE_DISPLAY: DisplayId
+                               = DisplayId::from_compositor(1)
+```
+
+**Eighteen files under `crates/alo-shell/src/` state the assumption in prose.**
+Nothing is wrong with any of them; a single-output compositor was the right
+thing to build first, and `display_lifecycle.rs`'s own note says the constant
+goes the moment a second output is advertised.
+
+**So the remaining work is not a clause of this task.** It is output discovery
+that returns every usable port rather than the first, a second output global, a
+`Presentation` per output, a scanout and a frame per output, the desktop raster
+laid out per output size, and popups constrained to the screen they are on —
+*then* a camera per viewport, which is the only part this task's own text
+foresaw. That is a plan, and it is reported here rather than started, because a
+half-built second output is the one shape that would make every surface in this
+crate wrong in a way nothing currently tests for.
+
+**And the note that should have caught this could not.**
+`display_lifecycle.rs`'s sentence is correct, carefully argued, and attached to
+a `const` with one reader — so nothing re-reads it and nothing makes a second
+output appear to trigger it. `alo-dividing/src/keyboard.rs` carries almost the
+same sentence attached to an exhaustive match, and it **fired** on 2026-10-04
+when task 8 added an action. The difference, and the question to ask of any note
+naming a future change, is in
+[`docs/misreadings/a-guard-that-cannot-fire-is-a-comment.md`](../misreadings/a-guard-that-cannot-fire-is-a-comment.md).
+
+**In scope, for the avoidance of a second scope question when this is
+scheduled.** `docs/features.md:491` — *every screen is a view onto the canvas* —
+is `[v0.01]`, and `:99` — *splitting works on an external display independently
+of the laptop's own* — is `[v0.5]`. Multi-output makes two existing promises
+true rather than adding one, and `alo-shell` has one owner. What it needs is a
+decision about **when**, not about whether.
 
 ## The gaps, stated because the instruction says to state them
 
