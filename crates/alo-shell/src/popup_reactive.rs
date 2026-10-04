@@ -4,7 +4,7 @@ use super::{Popups, WlSurface, XdgPopupSurfaceData, with_states};
 
 impl Popups {
     /// Recompute against committed ancestors, never speculative parent configures.
-    pub(crate) fn refresh(&mut self, roots: &[WlSurface]) {
+    pub(crate) fn refresh(&mut self, camera: alo_canvas::Camera, roots: &[WlSurface]) {
         for index in 0..self.entries.len() {
             let Some(entry) = self.entries.get(index) else {
                 break;
@@ -37,7 +37,8 @@ impl Popups {
             if !pending.positioner.reactive {
                 continue;
             }
-            let Some(geometry) = self.placement(pending.positioner, &entry.popup.parent, roots)
+            let Some(geometry) =
+                self.placement(camera, pending.positioner, &entry.popup.parent, roots)
             else {
                 let surface = entry.popup.surface.clone();
                 self.dismiss_tree(&surface);

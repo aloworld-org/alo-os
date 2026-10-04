@@ -102,13 +102,6 @@ pub struct Server {
     /// focused client receives an unpaired release and believes a button it never saw held has
     /// gone up.
     pub(crate) clicks_the_panel_took: std::collections::HashSet<u32>,
-    /// **What a person is looking at on the canvas.**
-    ///
-    /// The plane moves under the viewport, so this is the whole of what a pan
-    /// changes. Nothing that draws the dock, the status area or a window's
-    /// controls reads it — see `crate::scene::trees`, which is the one seam it is
-    /// applied at.
-    pub(crate) camera: alo_canvas::Camera,
     /// **What a touchpad gesture means, as `alo-desktops` recognises it.**
     ///
     /// One recogniser for the seat: at most one gesture is in flight at a
@@ -150,7 +143,6 @@ impl Server {
             asked_to_put_aside: Vec::new(),
             asked_to_bring_back: Vec::new(),
             clicks_the_panel_took: std::collections::HashSet::new(),
-            camera: alo_canvas::Camera::new(),
             gestures: Default::default(),
             desk: crate::server_desk::Desk::new(),
         })
@@ -255,16 +247,18 @@ impl Server {
             // Reactive popup negotiation follows the backend's desired extent,
             // even on submission refusal. wl_output describes only submitted modes.
             self.surfaces.popups.output_size = Some(size);
-            // Beside the extent, and for the same reason: a popup is constrained
-            // to the screen, so placing one has to know where the plane is.
-            self.surfaces.popups.camera = self.camera;
+            // **The camera used to be assigned beside the extent and no longer is.**
+            // `Popups` held a copy of it, and this line is where the copy was made
+            // fresh once a frame — which is what kept it from ever being stale.
+            // `crate::Surfaces::camera` is the one home now, and the three places
+            // that place a popup take it as an argument, so there is nothing left
+            // here to keep in step.
         }
-        // The third and last reader of the camera, and the one that draws with
-        // it. Every one of the three is set here, in this order, once a frame:
-        // a copy kept anywhere else is a copy that can be stale, and the first
-        // version of this seam shipped exactly that — a backend holding a camera
-        // nobody assigned, drawing a zoom it had never been told about.
-        target.look_at(self.camera)?;
+        // The one reader of the camera that draws with it, and the reason the
+        // backend is told rather than asked: the first version of this seam
+        // shipped a backend holding a camera nobody assigned, drawing a zoom it had
+        // never been told about.
+        target.look_at(self.surfaces.camera)?;
         self.surfaces.prune();
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
         let cursor = self.cursor();

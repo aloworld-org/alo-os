@@ -57,7 +57,7 @@ impl crate::Server {
     /// What this session is looking at.
     #[must_use]
     pub fn the_camera(&self) -> Camera {
-        self.camera
+        self.surfaces.camera
     }
 
     /// Look at the plane from here instead.
@@ -67,9 +67,8 @@ impl crate::Server {
     /// rather than clamping: a person who panned and was silently not moved has a
     /// canvas that ignores them.
     pub fn look_at_the_canvas(&mut self, at: At) -> Option<Camera> {
-        let moved = self.camera.looking_at(at)?;
-        self.camera = moved;
-        self.surfaces.popups.camera = moved;
+        let moved = self.surfaces.camera.looking_at(at)?;
+        self.surfaces.camera = moved;
         Some(moved)
     }
 
@@ -78,9 +77,8 @@ impl crate::Server {
     /// # Errors
     /// [`None`] where that leaves the plane.
     pub fn pan_the_canvas(&mut self, x: i32, y: i32) -> Option<Camera> {
-        let moved = self.camera.panned_by(x, y)?;
-        self.camera = moved;
-        self.surfaces.popups.camera = moved;
+        let moved = self.surfaces.camera.panned_by(x, y)?;
+        self.surfaces.camera = moved;
         Some(moved)
     }
 
@@ -91,9 +89,8 @@ impl crate::Server {
     /// # Errors
     /// [`None`] where the resulting camera would leave the plane.
     pub fn zoom_the_canvas(&mut self, zoom: Zoom, held: (i32, i32)) -> Option<Camera> {
-        let moved = self.camera.zoomed_to(zoom, held)?;
-        self.camera = moved;
-        self.surfaces.popups.camera = moved;
+        let moved = self.surfaces.camera.zoomed_to(zoom, held)?;
+        self.surfaces.camera = moved;
         Some(moved)
     }
 }

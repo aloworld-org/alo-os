@@ -48,16 +48,6 @@ pub(crate) struct Popups {
     entries: Vec<Entry>,
     /// Last positive framebuffer extent, at compositor scale one.
     pub(crate) output_size: Option<Size<i32, Physical>>,
-    /// Where the canvas's plane sits, copied from the `Server` beside
-    /// `output_size` and for the same reason.
-    ///
-    /// **The `Server`'s camera is the truth; this is a copy kept in step at the
-    /// one moment the output's extent is.** A popup is constrained to the
-    /// *screen*, so placing one needs to know where the plane is — a popup
-    /// constrained against an unpanned parent lands off the display once somebody
-    /// has panned. Holding it here follows `output_size`'s own precedent: this
-    /// struct already keeps the piece of the viewport it cannot ask for.
-    pub(crate) camera: alo_canvas::Camera,
 }
 
 impl crate::Server {
@@ -112,6 +102,7 @@ impl Popups {
     /// Accept only mapped parents and arithmetic-safe initial placement.
     pub(crate) fn insert(
         &mut self,
+        camera: alo_canvas::Camera,
         role: PopupSurface,
         positioner: PositionerState,
         parents: &[WlSurface],
@@ -123,7 +114,7 @@ impl Popups {
             role.send_popup_done();
             return;
         };
-        let Some(geometry) = self.placement(positioner, &parent, parents) else {
+        let Some(geometry) = self.placement(camera, positioner, &parent, parents) else {
             role.send_popup_done();
             return;
         };
@@ -146,6 +137,7 @@ impl Popups {
     /// Confirm a validated explicit request without changing committed placement.
     pub(crate) fn reposition(
         &mut self,
+        camera: alo_canvas::Camera,
         role: &PopupSurface,
         positioner: PositionerState,
         token: u32,
@@ -155,7 +147,7 @@ impl Popups {
             .entries
             .iter()
             .find(|entry| &entry.role == role && !entry.dismissed && entry.role.alive())
-            .and_then(|entry| self.placement(positioner, &entry.popup.parent, parents));
+            .and_then(|entry| self.placement(camera, positioner, &entry.popup.parent, parents));
         let Some(geometry) = geometry else {
             self.dismiss(role);
             return;
@@ -168,8 +160,16 @@ impl Popups {
     }
 
     /// Translate output bounds through the same committed scene used for input.
+    ///
+    /// `camera` is where the plane sits, handed down rather than held: a popup is
+    /// constrained to the **screen**, so placing one has to know where the plane
+    /// is — a popup constrained against an unpanned parent lands off the display
+    /// once somebody has panned. It used to be a field here, copied from the
+    /// `Server` beside `output_size`; `crate::Surfaces::camera` says why it is a
+    /// parameter now.
     fn placement(
         &self,
+        camera: alo_canvas::Camera,
         positioner: PositionerState,
         parent: &WlSurface,
         roots: &[WlSurface],
@@ -181,7 +181,7 @@ impl Popups {
             roots,
             &popups,
             self.output_size,
-            self.camera,
+            camera,
         )
     }
 

@@ -73,8 +73,7 @@ impl crate::Server {
         let frames = self.the_frames_on_the_plane();
         let span = alo_canvas::plane::reached_by(&frames, self.the_place_now())?;
         let showing = Camera::showing(span, viewport)?;
-        self.camera = showing;
-        self.surfaces.popups.camera = showing;
+        self.surfaces.camera = showing;
         Some(showing)
     }
 }

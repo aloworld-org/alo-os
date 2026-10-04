@@ -282,7 +282,7 @@ impl crate::Server {
         let Some(panel) = panel else {
             return 0;
         };
-        let zoom = self.camera.zoom();
+        let zoom = self.the_camera().zoom();
         let mut put = 0;
         for frame in asked {
             let Some(at) = self.the_patch_of_the_window(&frame) else {
