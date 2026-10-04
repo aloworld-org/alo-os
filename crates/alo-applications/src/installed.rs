@@ -120,6 +120,7 @@ impl Installed {
 )]
 mod tests {
     use super::*;
+    use crate::application::Called;
 
     fn blender() -> Application {
         Application::called("org.blender.Blender", "Blender").unwrap()
@@ -147,7 +148,7 @@ mod tests {
             installed
                 .knows("org.blender.Blender")
                 .and_then(Application::name),
-            Some("Blender")
+            Some(&Called::ByWhoeverPackagedIt("Blender".to_owned()))
         );
     }
 
@@ -164,7 +165,7 @@ mod tests {
             installed
                 .knows("org.blender.Blender")
                 .and_then(Application::name),
-            Some("Blender"),
+            Some(&Called::ByWhoeverPackagedIt("Blender".to_owned())),
             "the second entry took the identifier the first one holds"
         );
 
@@ -177,7 +178,7 @@ mod tests {
         assert_eq!(
             both.knows("org.blender.Blender")
                 .and_then(Application::name),
-            Some("Blender")
+            Some(&Called::ByWhoeverPackagedIt("Blender".to_owned()))
         );
     }
 

@@ -165,6 +165,7 @@ impl Reaching {
 )]
 mod tests {
     use super::*;
+    use crate::application::Called;
     use crate::testing::{
         agent, approving, blender, granting, hour, in_english, installing, noon, opening, refusal,
     };
@@ -192,7 +193,7 @@ mod tests {
         assert_eq!(reaching.verb(), "open_application");
         assert_eq!(
             reaching.application("application").map(Application::name),
-            Some(Some("Blender"))
+            Some(Some(&Called::ByWhoeverPackagedIt("Blender".to_owned())))
         );
         assert_eq!(reaching.all().count(), 1);
         assert!(reaching.application("folder").is_none());

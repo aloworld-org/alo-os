@@ -106,7 +106,7 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
-pub use application::Application;
+pub use application::{Application, Called};
 pub use chosen::Chosen;
 pub use declared::Declared;
 pub use installed::Installed;
