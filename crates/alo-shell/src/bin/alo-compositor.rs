@@ -116,12 +116,20 @@ mod running {
                 }
             }
         }) {
-            Ok(Stood::SomebodySignedIn { person }) => {
+            Ok(Stood::SomebodySignedIn { seat }) => {
                 // The session is open and it is `alo-sessiond` that holds it,
                 // not this process. What goes on that person's display is the
                 // next thing to be built; until it is, this says plainly that
                 // it signed somebody in and stopped, rather than leaving a
                 // black screen to be read as a crash.
+                //
+                // **The seat arrives here now rather than a uid**, by
+                // ADR 0087 — it is the session owner, and this is the process
+                // that will hold it when there is a desktop to hold it for. It is
+                // read for the number to say and then dropped with the process,
+                // which is the honest state: nothing is kept open that nothing is
+                // drawing into.
+                let person = seat.session().uid();
                 eprintln!(
                     "alo-compositor: a session is open for uid {person}, and this process has \
                      nothing yet to draw in it"

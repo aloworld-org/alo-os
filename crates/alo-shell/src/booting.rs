@@ -36,6 +36,8 @@
 use std::path::Path;
 
 use alo_greeting::{Greeting, TheOpenersDoor};
+use alo_locking::seat::Seat;
+use alo_notifying::Notification;
 use alo_strings::Strings;
 use smithay::input::keyboard::XkbConfig;
 
@@ -73,10 +75,32 @@ pub struct AMachineToStandOn<'a> {
 #[derive(Debug)]
 #[must_use = "a machine that signed somebody in and did not say so has lost the session"]
 pub enum Stood {
-    /// A session opened for this uid, and it is open now.
+    /// A session opened, and it is open now.
     SomebodySignedIn {
-        /// Whose session it is.
-        person: u32,
+        /// **The session's owner, not a number.**
+        ///
+        /// This carried `person: u32` until 2026-10-04, and
+        /// [ADR 0087](../../../docs/decisions/0087-the-signed-in-session-is-kept-by-one-owner-and-notifications-ask-it-twice.md)
+        /// is why it does not. The sign-in screen builds a real
+        /// `alo_accounts::Session` and this line used to keep only `session.uid()`
+        /// — so everything downstream had an account number and **nothing in this
+        /// system could show a notification**, because `alo_notifying::deciding::arrives`
+        /// wants a `Seat`, a seat wants a `Session`, and the only one ever built
+        /// was dropped here.
+        ///
+        /// **A uid was not a smaller version of the session; it was a different
+        /// fact.** The owner's sentence is the general form: *a UID identifies an
+        /// account; it does not establish that its session is currently unlocked.*
+        /// A screen holding the number could say whose machine it was and could
+        /// not say whether to draw.
+        ///
+        /// A [`Seat`] rather than the bare `Session`, because the seat **is** the
+        /// session owner that record describes: it holds the session, it is what
+        /// locks and unlocks, and it is what a notification is routed and
+        /// authorised through. Handing on the `Session` alone would make every
+        /// later holder build its own seat, which is two answers to *is this
+        /// session unlocked*.
+        seat: Seat<Notification>,
     },
     /// The screen ended with nobody signed in: the scheduler said stop, or the
     /// seat took the display away.
@@ -145,8 +169,12 @@ pub fn stand_the_sign_in_screen_up(
     // The seat's own close is separate from everything the display reported,
     // and both are separate from whether somebody signed in.
     let signed_in = match stood.outcome.signing {
+        // **The session is kept, not reduced.** `Seat::opened` is the one
+        // constructor for the owner that holds it, and it is built here because
+        // this is the moment the session exists and the last moment it is this
+        // file's — see [`Stood::SomebodySignedIn`].
         Signing::HandedOver(session) => Stood::SomebodySignedIn {
-            person: session.uid(),
+            seat: Seat::opened(session),
         },
         Signing::Still(_) => Stood::NobodyDid,
     };
