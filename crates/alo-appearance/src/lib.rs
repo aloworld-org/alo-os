@@ -125,7 +125,8 @@
 //! with a mark and a word — is true of screens rather than of colours, and
 //! belongs where the drawing happens. Nothing in this crate can enforce it, and
 //! [`contrast`] says why it is not optional: deep teal on the reading ground
-//! measures 2.87:1, under what either a word or a shape needs.
+//! measures 2.87:1, under what either a word or a shape needs — 2.89:1 against
+//! the canvas's value since ADR 0092, and under both of them still.
 //!
 //! # Nothing here says anything in English by itself
 //!
@@ -160,6 +161,7 @@ pub mod contrast;
 pub mod display;
 pub mod keeping;
 pub mod lock;
+pub mod role;
 pub mod scheme;
 pub mod shipped;
 pub mod targets;
@@ -182,6 +184,7 @@ pub use colour::{Colour, ColourError};
 pub use contrast::{ENOUGH_FOR_A_SHAPE, ENOUGH_FOR_TEXT};
 pub use display::{DisplayError, DisplayId};
 pub use lock::Lock;
+pub use role::Role;
 pub use scheme::{Following, Schedule, ScheduleError, Scheme};
 pub use shipped::{Shipped, THE_SURFACE};
 pub use text::{TextError, TextScale};

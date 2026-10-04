@@ -23,12 +23,27 @@
 #
 # **1. The set cannot be enumerated.** `get_variable_defs` returns the variables
 # a node's *subtree uses*, never the collection. Every node queried added names:
-# twelve from the Foundations frame, ten more from one dark screen, two more from
-# one notification. **Twenty-four observed and no way to ask for the list.**
+#
+# ```text
+# 8:2        Foundations            20   12 colours and 8 typography
+# 253:17045  one dark screen        10   bg/subtle, navy/950, white, space/*, radius/*
+# 260:62     one notification        2   bg/elevated, border/strong
+#                                   --
+#                                   32   17 colour, 8 typography, 5 space, 2 radius
+# ```
+#
+# **Thirty-two observed, and no way to ask for the list.**
 # `search_design_system` returns nothing for these names because the file's
 # variables are local rather than published to a library, and
 # `list_file_components_for_code_connect` refuses on plan tier — *you need a Dev
 # or Full seat on an Organization or Enterprise plan*; this account is Pro.
+#
+# **This header said "twenty-four" until it was re-measured on 2026-10-04.** The
+# number was right about a different quantity than its label: it counted the
+# colours, the spacing and the radii, and did not look at the **eight typography
+# variables** the same node returns. A count whose label names a larger set than
+# the count covers is this repository's recurring fault, and the cure here is the
+# table above — which says what each node gave rather than only the total.
 #
 # **2. The name-to-value map is not mode-coherent, at any level.** The design has
 # a dark mode binding the same names to different values, and a single response
@@ -226,6 +241,95 @@ seen_in = "253:17045"
 "radius/sm" = 8
 "radius/md" = 12
 seen_in = "253:17045"
+
+# ---------------------------------------------------------------------------
+# Typography, measured and unadopted — and it disagrees with the brief
+# ---------------------------------------------------------------------------
+#
+# **Eight type variables, and the family is Manrope.**
+# `docs/design/figma-brief.md` says *Type: Inter throughout, EB Garamond for the
+# few editorial moments*. The design file binds none of those two and binds these
+# instead. Neither Inter nor EB Garamond appears as a variable in any node
+# queried.
+#
+# **Recorded and not acted on.** The owner approved twelve **colour** roles on
+# 2026-10-04 and said nothing about type; a font is a licensing decision and a
+# rendering decision as well as a design one, and `palette.toml` is a palette.
+# **So this is a flagged discrepancy for the owner, not a change** — and it is
+# here rather than only in a report because the next lane to need a font will
+# otherwise read the brief and use Inter.
+#
+# Measured from `8:2`; `Label/Medium` also appears in `8:8`.
+
+[unadopted.typography]
+seen_in = "8:2"
+family = "Manrope, except System/Mono"
+brief_says = "Inter throughout, EB Garamond for editorial moments"
+note = "a discrepancy for the owner to settle; nothing here adopts a font"
+
+[unadopted.typography."Display/Large"]
+family = "Manrope"
+style = "SemiBold"
+size = 48
+weight = 600
+line_height = 56
+letter_spacing = -1.2
+
+[unadopted.typography."Display/Medium"]
+family = "Manrope"
+style = "SemiBold"
+size = 36
+weight = 600
+line_height = 44
+letter_spacing = -0.8
+
+[unadopted.typography."Heading/Large"]
+family = "Manrope"
+style = "SemiBold"
+size = 28
+weight = 600
+line_height = 36
+letter_spacing = -0.4
+
+[unadopted.typography."Heading/Medium"]
+family = "Manrope"
+style = "SemiBold"
+size = 22
+weight = 600
+line_height = 30
+letter_spacing = -0.2
+
+[unadopted.typography."Body/Large"]
+family = "Manrope"
+style = "Regular"
+size = 16
+weight = 400
+line_height = 25
+letter_spacing = 0.0
+
+[unadopted.typography."Body/Medium"]
+family = "Manrope"
+style = "Regular"
+size = 14
+weight = 400
+line_height = 22
+letter_spacing = 0.0
+
+[unadopted.typography."Label/Medium"]
+family = "Manrope"
+style = "SemiBold"
+size = 13
+weight = 600
+line_height = 18
+letter_spacing = 0.1
+
+[unadopted.typography."System/Mono"]
+family = "Geist Mono"
+style = "Medium"
+size = 12
+weight = 500
+line_height = 18
+letter_spacing = 0.0
 
 [unadopted.colour]
 "bg/elevated" = "#FFFCF8"

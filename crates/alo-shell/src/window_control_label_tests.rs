@@ -202,7 +202,13 @@ fn control_labels_keep_translation_fallback_and_disabled_access() {
         assert!(!label.clipped());
         assert_eq!(label.bounds().size.w, 300);
         assert_eq!(label.pixels().len(), 300 * 160);
-        assert!(label.pixels().iter().any(|p| *p != [248, 246, 242, 255]));
+        // The ground this label is drawn on, taken from the palette rather
+        // than typed: a literal here went stale when the palette followed the
+        // design file, and the assertion below still passed — every pixel
+        // differs from a colour nothing is drawn in.
+        let ground = Token::Cream.colour();
+        let ground = [ground.red(), ground.green(), ground.blue(), 255];
+        assert!(label.pixels().iter().any(|p| *p != ground));
         assert!(!control.enabled());
     }
 }

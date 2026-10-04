@@ -134,7 +134,8 @@ impl Accent {
     /// **Four rather than five, and there is no empty slot waiting for a
     /// fifth.** ADR 0067 released terracotta from being reserved and was read
     /// as making it an accent; it cannot be one, because an accent has to reach
-    /// 4.5:1 on both grounds and terracotta on cream measures 2.87:1. Four hues
+    /// 4.5:1 on both grounds and terracotta on cream measured 2.87:1 — 2.89:1
+    /// against the canvas's value since ADR 0092, still under both. Four hues
     /// that all read is a better set than five with one that does not.
     pub const ALL: [Self; 4] = [Self::Indigo, Self::Violet, Self::Moss, Self::Rose];
 
@@ -235,6 +236,7 @@ impl Default for Accent {
 mod tests {
     use super::*;
     use crate::contrast::ENOUGH_FOR_TEXT;
+    use crate::role::Role;
     use crate::testing::{in_english, translated};
 
     /// How far a hue has to sit from the agent's before this crate will say
@@ -465,18 +467,26 @@ mod tests {
     }
 
     /// **Every accent reads on the ground it is drawn on**, measured rather
-    /// than asserted: the light-ground value against both cream and the
-    /// porcelain canvas, the dark-ground value against the charcoal rail, at
-    /// the ratio EN 301 549 requires of ordinary text. This is ADR 0010's
-    /// "wants contrast verified before they ship", and it is why a sixth hue
-    /// cannot be added without measuring it.
+    /// than asserted: the light-ground value against both the canvas and a
+    /// surface, the dark-ground value against the charcoal rail, at the ratio
+    /// EN 301 549 requires of ordinary text. This is ADR 0010's "wants contrast
+    /// verified before they ship", and it is why a sixth hue cannot be added
+    /// without measuring it.
+    ///
+    /// **The two light grounds are named by role since 2026-10-04**, where they
+    /// were `Token::Cream` and `Token::Porcelain`. They are the same two
+    /// surfaces an accent is drawn on and the question has not changed; what
+    /// changed is that `porcelain` could not say which of four things it meant
+    /// (ADR 0092). Both values moved with the design file, and the floor rose
+    /// rather than fell — the worst pair measured 4.75:1 before and 5.01:1
+    /// after, against a threshold of 4.5.
     ///
     /// Text is the harder of the two thresholds — [`crate::contrast`]'s 4.5 is
     /// above its 3.0 for a shape — so an accent that clears it clears a fill and
     /// a focus ring drawn in the same colour as well.
     #[test]
     fn every_accent_reads_on_both_grounds() {
-        let light_grounds = [Token::Cream, Token::Porcelain];
+        let light_grounds = [Role::BgCanvas, Role::BgSurface];
         for accent in Accent::ALL {
             for ground in light_grounds {
                 let measured = accent.on(Scheme::Light).contrast_with(ground.colour());
@@ -484,7 +494,7 @@ mod tests {
                     measured >= ENOUGH_FOR_TEXT,
                     "{} on {} measured {measured}",
                     accent.word().says(),
-                    ground.word().says()
+                    ground.key()
                 );
             }
             let measured = accent
