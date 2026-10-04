@@ -238,7 +238,8 @@ begins at line 78 — and the `SettingsPlaces` it answers into is taken in produ
 keeper's path without having met the no-folder case, which is what this task asked for.
 
 **What does not hold is that the sentence can ever be read**, and the reason is one road
-further on than this plan goes:
+further on than this plan goes — **now `the-shell-plan.md` task 19**, which
+records that no chord reaches a running desktop at all:
 
 ```text
 SettingsWindow::closed()          constructed in tests only
