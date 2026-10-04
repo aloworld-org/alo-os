@@ -4333,6 +4333,73 @@ was earned **in the envelope**, and wiring a shipped machine's turn to ask that
 way is lane A's work.
 **Date:** 2026-09-22.
 
+### The recipe with qwen3-8b fetches and verifies, and then the guest runs out of host disk
+**Version:** `image/Containerfile` at `d06e6834`, built with
+`podman build -f image/Containerfile -t alo-os:dev .` — the command
+`docs/booting.md` gives — on 2026-10-04. Podman 5.7.0, overlay driver, Ubuntu
+26.04 under WSL2, 4 cores, 7.8 GiB of memory with 6.9 GiB available. Podman
+held **0 images and 0 dangling layers** beforehand, which is checkable only
+beforehand, so the weights stage ran rather than came from a cache.
+**Behaviour:** the build reached **stage 4 of 6, step 10 of 13** and stopped
+there because the guest died, not because the recipe did. What it proved before
+that is the part worth keeping:
+
+    [4/6] STEP 10/13: RUN curl … --output /weights.gguf "${THE_MODELS_WEIGHTS}" …
+    /weights.gguf: OK
+    /template.gotmpl: OK
+
+**The first of the three risks this was built to find is retired.** The blob at
+`registry.ollama.ai/v2/library/qwen3/blobs/sha256:a3de86cd…` is fetchable and
+matches its pin, and so is the template blob `ae370d88…`. Whether
+`ollama create` will import it from a `FROM` line is still unmeasured: that is
+step 11, which never ran.
+
+**What stopped it was host disk, and the reading that missed it is the lesson.**
+The guest's `df -h /` reported **826 GiB available** — logical room inside a
+vhdx whose maximum is 1007 GiB and whose physical backing is `C:`, which had
+**21 GiB** free. The build needed about 29 GiB. The vhdx grew into the last of
+the host disk, `C:` reached 1.9 MB free, and the guest then would not start:
+*Wsl/Service/CreateInstance/E_FAIL*, error code 6, failure step 2.
+**The governing number was the smaller one**, and it was printed by the same
+script that printed 826 GiB, as the lesser of the two facts.
+
+**The predicted 8.79 GiB stands as prediction.** Nothing here measures the
+image's size, because no image was produced. The entry above is unchanged and
+is still owed a build.
+
+**Still unmeasured, and both lie after step 10:** the `TEMPLATE """…"""`
+assembly, which no shell has yet run and which is where a quoting fault in a Go
+template would hide; and the store's *carried once* assertions — one manifest,
+and every blob held to a name the manifest carries — which have never been run
+against this model. **The build is owed to a machine with room**, which is an
+owner's decision under `docs/autonomy/SHARED_MAIN.md` rather than something to
+guess around.
+
+### `podman system df` undercounts its own store by more than half, and `prune --all` frees none of it
+**Version:** podman 5.7.0, overlay driver, Ubuntu 26.04 under WSL2, 2026-10-04,
+after an aborted multi-stage build left 35 intermediate images.
+**Behaviour:** the two numbers disagreed, and the filesystem was the one that
+had filled the host disk:
+
+| | |
+|---|---|
+| `podman system df` | Images 35, size **10.08 GB**, reclaimable 3.167 GB (31 %) |
+| `du -xsh /var/lib/containers` | **24 GB** |
+| `podman system prune --all --force` | `Total reclaimed space: 0B` |
+| `podman system reset --force` | 24 GB returned, and the directory fell to 28 KB |
+
+Every one of the 35 images counted as **active**, so `prune` had nothing it was
+willing to remove even with `--all`, and the size it reported was less than half
+what the store occupied. **Only `reset` freed it.** The space then reached the
+host without any compaction, because WSL2 passes discards through: `C:` went
+from 1.9 MB to 33.5 GB free with no `--manage --set-sparse` at all.
+
+**And sparse mode is no longer a remedy to reach for.**
+`wsl --manage <distribution> --set-sparse true` now refuses outright: *Sparse
+VHD support is currently disabled due to potential data corruption*, and it
+offers `--allow-unsafe` instead. Advice written before that warning should not
+be followed on a checkout that holds work.
+
 ### Phi-3 Mini gets the envelope right and loses the argument list
 **Version:** `phi3:3.8b-mini-4k-instruct-q4_K_M` — Microsoft's Phi-3-mini-4k-
 instruct at the quantisation `data/catalogue.toml` states — served by Ollama
