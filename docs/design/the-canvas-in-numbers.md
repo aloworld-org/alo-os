@@ -1,6 +1,6 @@
 # The canvas in numbers
 
-**Read from the design file on 2026-09-27**, page *07 — alo OS · Living canvas*,
+**Read from the design file on 2026-09-27**, page *03 — alo OS · Living canvas*,
 frame `70:29` of `nDxyF5Ho9oC4RObjVzwBNJ`. Values, not a description of a
 picture, so that whoever builds the canvas builds what was drawn and whoever
 rebuilds it later gets the same answer.
