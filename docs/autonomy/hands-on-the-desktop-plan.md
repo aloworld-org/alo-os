@@ -185,6 +185,15 @@ handed to `gestures_are_configured`, which is this plan's crates — but a setti
 applied and never changed is the half that looks finished while doing nothing, so it is worth
 landing as one change rather than two.
 
+**And the writing end waits on more than a surface, which is newer than this
+status.** `docs/autonomy/the-shell-plan.md` task 19 records that **no chord
+reaches a running desktop** — the dispatch chain is production and finished
+end to end, and nothing enters it. So the Settings surface this task waits for
+is drawn and unreachable rather than unbuilt, and a person cannot turn a gesture
+off because they cannot open the place where it would be turned off. **That is a
+citable number rather than a description**, which is the difference between a
+task that names what it waits on and one that describes it.
+
 Under this plan's sibling rule in `putting-a-window-aside.md`: it has no caller, and this
 status names what it waits on, citably.
 
