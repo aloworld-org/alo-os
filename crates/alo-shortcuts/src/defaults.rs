@@ -37,9 +37,10 @@ const ALT_SHIFT: Modifiers = ALT.and(Modifier::Shift);
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 15] = [
+const SHIPPED: [(Action, Chord); 16] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
+    (Action::Settings, Chord::shipped(SUPER, Key::I)),
     (Action::CloseWindow, Chord::shipped(ALT, Key::F4)),
     (Action::MinimiseWindow, Chord::shipped(SUPER, Key::Down)),
     (Action::MaximiseWindow, Chord::shipped(SUPER, Key::Up)),
@@ -228,6 +229,7 @@ mod tests {
         assert_eq!(said(Action::PreviousApplication), "Super+Shift+Tab");
         assert_eq!(said(Action::TheAgent), "Super+A");
         assert_eq!(said(Action::Launcher), "Super+Space");
+        assert_eq!(said(Action::Settings), "Super+I");
     }
 
     /// A set of defaults that binds one action twice is refused: neither entry

@@ -100,7 +100,13 @@ pub const fn the_tab_stop_for(action: Action) -> Surface {
         // The agent, and the windows a person moves between, are the desktop's.
         Action::TheAgent | Action::NextWindow | Action::PreviousWindow => Surface::Desktop,
         // Opening something, and moving between what is open, are the dock's.
-        Action::Launcher | Action::NextApplication | Action::PreviousApplication => Surface::Dock,
+        // Settings is here because ADR 0085 makes it an application on the Dock
+        // rather than a control beside the applications, so the surface a person
+        // reaches it from without a chord is the same one.
+        Action::Launcher
+        | Action::Settings
+        | Action::NextApplication
+        | Action::PreviousApplication => Surface::Dock,
         // Everything done to the window in front is where that window's own
         // controls are.
         Action::CloseWindow

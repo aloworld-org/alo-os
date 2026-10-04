@@ -1411,6 +1411,7 @@ shortcuts.action.next-application	Next application
 shortcuts.action.next-window	Next window
 shortcuts.action.previous-application	Previous application
 shortcuts.action.previous-window	Previous window
+shortcuts.action.settings	Open Settings
 shortcuts.action.show-all-on-the-canvas	Show all windows on the canvas
 shortcuts.action.snap-left	Put the window on the left half
 shortcuts.action.snap-right	Put the window on the right half

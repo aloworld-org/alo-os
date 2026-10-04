@@ -49,6 +49,7 @@ pub const fn side_for(action: Action) -> Option<Side> {
         Action::SnapRight => Some(Side::Right),
         Action::TheAgent
         | Action::Launcher
+        | Action::Settings
         | Action::CloseWindow
         | Action::MinimiseWindow
         | Action::MaximiseWindow
