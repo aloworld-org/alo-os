@@ -37,6 +37,7 @@
 //! Nothing here draws, reserves room, or tells anybody that a window is missing.
 
 use std::collections::BTreeMap;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use alo_canvas::{At, Camera, Place, Size, Zoom};
 
@@ -189,7 +190,29 @@ struct Written {
 /// so strictly it need not have moved the version. It moved anyway, because the
 /// first release to write one of these files should write the shape it means,
 /// and nothing is on a disk to be migrated.
-pub const FORMAT: u32 = 3;
+pub const FORMAT: u32 = 4;
+
+/// How many earlier states one Place remembers.
+///
+/// **A ribbon a person drags has to be scannable, and a file a session writes
+/// on every rearrangement has to stay small.** Twenty is where those two meet:
+/// a fortnight of ordinary rearranging on one Place, and a file that grows by
+/// a camera and a window list per entry rather than without bound.
+///
+/// It is a cap rather than an age. *The canvas as it was on Tuesday* is what a
+/// person asks for, but pruning by date would forget a Place nobody touched
+/// for a month — and a Place nobody touched is exactly the one whose earlier
+/// states are still worth having.
+pub const HOW_MANY_A_PLACE_REMEMBERS: usize = 20;
+
+/// Every version [`Arrangement::read`] takes, newest first.
+///
+/// **Three is here because files of it are on disks.** A version this does not
+/// list is refused by name, which is what versions 1 and 2 got and deserved:
+/// nothing had ever written one. The day a version on this list stops being
+/// readable is the day somebody loses a canvas, so a number leaves it only
+/// with a reason written beside its leaving.
+const READS: [u32; 2] = [FORMAT, 3];
 
 /// One Place's own arrangement, as it is written down.
 ///
@@ -210,6 +233,34 @@ struct APlacesOwn {
     /// written. One application may now appear once on each of several Places,
     /// which is what `one_application_has_one_place` asserted was impossible when
     /// there was only one.
+    windows: BTreeMap<String, Written>,
+    /// What this Place was before, oldest first.
+    ///
+    /// **Absent in a version-3 file and absent in a Place nobody has changed
+    /// twice**, which is the same shape: a Place with no earlier states is a
+    /// Place whose ribbon has one stop on it.
+    earlier: Vec<HeldInFile>,
+}
+
+/// One earlier state of one Place, as it is written down.
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(default, deny_unknown_fields, rename_all = "kebab-case")]
+struct HeldInFile {
+    /// When this state stopped being the current one, in seconds since the
+    /// epoch.
+    ///
+    /// **Seconds rather than a formatted time**, for the boundary rule this
+    /// crate already states about positions: across a disk hold the raw number
+    /// and validate on read. A clock that went backwards writes a smaller
+    /// number and nothing here pretends otherwise — the series is in the order
+    /// it was held, which is the order a person made it in, and sorting it by
+    /// its own timestamps would reorder a person's history to flatter a clock.
+    when: u64,
+    /// Where the camera was looking, in plane units.
+    looking_at: (i32, i32),
+    /// How far in, in thousandths.
+    zoom: u32,
+    /// Each application's window on this Place then.
     windows: BTreeMap<String, Written>,
 }
 
@@ -243,6 +294,42 @@ struct TheFile {
     /// nothing will invent one for you.* So a key that is not a number, or is
     /// zero, is a file this does not read rather than a Place nobody has.
     places: BTreeMap<String, APlacesOwn>,
+}
+
+/// **One stop on a Place's ribbon**: when it was, and enough to draw it.
+///
+/// What a ribbon needs and no more. The windows themselves are not handed out
+/// here: a caller that wants them asks for the state by its moment through
+/// [`Arrangement::as_it_was`], which is the one road back and the one that
+/// holds what is being left.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AsItWas {
+    /// When this state stopped being the current one.
+    when: SystemTime,
+    /// Where the camera was looking then.
+    camera: Camera,
+    /// How many windows were on the Place then.
+    how_many: usize,
+}
+
+impl AsItWas {
+    /// When this state stopped being the current one.
+    #[must_use]
+    pub const fn when(&self) -> SystemTime {
+        self.when
+    }
+
+    /// Where the camera was looking then.
+    #[must_use]
+    pub const fn camera(&self) -> Camera {
+        self.camera
+    }
+
+    /// How many windows were on the Place then.
+    #[must_use]
+    pub const fn how_many(&self) -> usize {
+        self.how_many
+    }
 }
 
 /// **Where a person left their canvas.**
@@ -341,14 +428,44 @@ struct OnePlace {
     /// Where each application's window was on it, how big, and how it was
     /// showing.
     windows: BTreeMap<String, AWindowWas>,
+    /// What this Place was before, oldest first, capped at
+    /// [`HOW_MANY_A_PLACE_REMEMBERS`].
+    earlier: Vec<Held>,
+}
+
+/// One earlier state of one Place, inside a process.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Held {
+    /// When it stopped being the current one.
+    when: SystemTime,
+    /// Where the camera was looking then.
+    camera: Camera,
+    /// What was on it then.
+    windows: BTreeMap<String, AWindowWas>,
 }
 
 impl OnePlace {
-    /// A Place nobody has arranged yet: the origin, at life size, nothing placed.
+    /// Forget the oldest states beyond the cap.
+    ///
+    /// **The oldest go**, because a ribbon a person drags is reached from the
+    /// end they are standing at: the canvas ten minutes ago is asked for far
+    /// more often than the canvas a fortnight ago, and a cap that dropped the
+    /// recent ones would empty the part of the ribbon that is used.
+    fn remember_no_more_than_the_cap(&mut self) {
+        let too_many = self
+            .earlier
+            .len()
+            .saturating_sub(HOW_MANY_A_PLACE_REMEMBERS);
+        self.earlier.drain(..too_many);
+    }
+
+    /// A Place nobody has arranged yet: the origin, at life size, nothing
+    /// placed, and nothing remembered.
     fn fresh() -> Self {
         Self {
             camera: Camera::new(),
             windows: BTreeMap::new(),
+            earlier: Vec::new(),
         }
     }
 }
@@ -422,6 +539,84 @@ impl Arrangement {
         self.places.keys().copied()
     }
 
+    /// **What this Place was before, oldest first** — what a ribbon is drawn
+    /// from.
+    ///
+    /// Empty for a Place nobody has rearranged twice, and for every Place in a
+    /// file written before this crate remembered anything. A Place with one
+    /// stop on its ribbon is not a fault.
+    #[must_use]
+    pub fn earlier_on(&self, place: Place) -> Vec<AsItWas> {
+        self.places.get(&place).map_or_else(Vec::new, |one| {
+            one.earlier
+                .iter()
+                .map(|held| AsItWas {
+                    when: held.when,
+                    camera: held.camera,
+                    how_many: held.windows.len(),
+                })
+                .collect()
+        })
+    }
+
+    /// **Put this Place back as it was at `when`, and keep where it is now.**
+    ///
+    /// Answers `false` and changes nothing when this Place has no state held
+    /// at that moment — a ribbon drawn from [`Self::earlier_on`] cannot ask for
+    /// one that is not there, and a caller that asks anyway is told rather than
+    /// silently given the nearest.
+    ///
+    /// **The state being left is held first**, which is the acceptance's own
+    /// words: *the person is never shown a state they cannot get back from.*
+    /// Going back is itself a rearrangement, so the canvas a person is leaving
+    /// joins the ribbon rather than being dropped — and going back twice walks
+    /// backwards rather than losing the middle.
+    pub fn as_it_was(&mut self, place: Place, when: SystemTime, now: SystemTime) -> bool {
+        let Some(one) = self.places.get_mut(&place) else {
+            return false;
+        };
+        let Some(at) = one.earlier.iter().position(|held| held.when == when) else {
+            return false;
+        };
+        let held = one.earlier.remove(at);
+        one.earlier.push(Held {
+            when: now,
+            camera: one.camera,
+            windows: std::mem::take(&mut one.windows),
+        });
+        one.camera = held.camera;
+        one.windows = held.windows;
+        one.remember_no_more_than_the_cap();
+        true
+    }
+
+    /// **This arrangement, carrying forward what `previous` remembered** — and
+    /// holding `previous`'s current state for every Place that moved.
+    ///
+    /// The shell builds an arrangement from the live canvas each time
+    /// (`the_arrangement_now`), so it has no memory of what came before: the
+    /// series can only be assembled where both are in hand, which is at the
+    /// moment one is kept over the other. A Place whose camera and windows are
+    /// unchanged holds nothing — a file rewritten by a save that changed
+    /// another Place does not fill this one's ribbon with repeats.
+    #[must_use]
+    pub fn following(&self, previous: &Self, when: SystemTime) -> Self {
+        let mut carried = self.clone();
+        for (place, was) in &previous.places {
+            let entry = carried.places.entry(*place).or_insert_with(OnePlace::fresh);
+            entry.earlier.clone_from(&was.earlier);
+            if entry.camera != was.camera || entry.windows != was.windows {
+                entry.earlier.push(Held {
+                    when,
+                    camera: was.camera,
+                    windows: was.windows.clone(),
+                });
+            }
+            entry.remember_no_more_than_the_cap();
+        }
+        carried
+    }
+
     /// This arrangement, as the file says it.
     #[must_use]
     pub fn written(&self) -> String {
@@ -438,6 +633,42 @@ impl Arrangement {
                         APlacesOwn {
                             looking_at: (one.camera.at().x, one.camera.at().y),
                             zoom: one.camera.zoom().thousandths(),
+                            earlier: one
+                                .earlier
+                                .iter()
+                                .map(|held| HeldInFile {
+                                    // A moment before the epoch is not one this
+                                    // crate held, so it writes as the epoch
+                                    // rather than refusing a whole layout over
+                                    // a clock. `read` takes it back as the
+                                    // epoch and the ribbon has a stop with an
+                                    // odd date on it, which is visible and
+                                    // recoverable; a refused file is neither.
+                                    when: held
+                                        .when
+                                        .duration_since(UNIX_EPOCH)
+                                        .map_or(0, |since| since.as_secs()),
+                                    looking_at: (held.camera.at().x, held.camera.at().y),
+                                    zoom: held.camera.zoom().thousandths(),
+                                    windows: held
+                                        .windows
+                                        .iter()
+                                        .map(|(app_id, was)| {
+                                            let (at, size) = was.normal();
+                                            (
+                                                app_id.clone(),
+                                                Written {
+                                                    x: at.x,
+                                                    y: at.y,
+                                                    width: size.width(),
+                                                    height: size.height(),
+                                                    showing: was.showing(),
+                                                },
+                                            )
+                                        })
+                                        .collect(),
+                                })
+                                .collect(),
                             windows: one
                                 .windows
                                 .iter()
@@ -483,7 +714,19 @@ impl Arrangement {
         // parse cleanly and mean something else entirely — version 1 had these
         // same keys one level higher — so the version is checked before the
         // cameras rather than after the windows.
-        if file.version != FORMAT {
+        //
+        // **Three is read as well as four, and this is the first migration this
+        // crate has had.** Versions 1 and 2 were spent without one because
+        // nothing had ever written them; 3 is on real disks, written by
+        // `alo-desktop` since before 0.0.1 went public, so refusing it would
+        // cost a person the canvas they left on the day they upgraded
+        // (`docs/misreadings/nothing-is-on-a-disk-is-a-fact-with-a-date-on-it.md`).
+        //
+        // It needs no conversion code: a Place's series is `#[serde(default)]`,
+        // so a version-3 Place arrives with an empty ribbon, which is exactly
+        // what it is — a Place whose earlier states were never kept. The first
+        // rearrangement after an upgrade puts the first stop on it.
+        if !READS.contains(&file.version) {
             return Err(NotArranged::AnotherVersion {
                 said: file.version,
                 reads: FORMAT,
@@ -518,7 +761,48 @@ impl Arrangement {
                     })?;
                 windows.insert(app_id, AWindowWas::at((at, size), where_it_was.showing));
             }
-            places.insert(place, OnePlace { camera, windows });
+            let mut earlier = Vec::new();
+            for held in was.earlier {
+                let at = At::checked(held.looking_at.0, held.looking_at.1).ok_or_else(|| {
+                    NotArranged::NotOnThePlane(format!("{key}: an earlier looking-at"))
+                })?;
+                let zoom = Zoom::of(held.zoom).map_err(|why| {
+                    NotArranged::NotOnThePlane(format!("{key}: an earlier zoom: {why}"))
+                })?;
+                let camera = Camera::new()
+                    .looking_at(at)
+                    .and_then(|camera| camera.zoomed_to(zoom, (0, 0)))
+                    .ok_or_else(|| {
+                        NotArranged::NotOnThePlane(format!("{key}: an earlier camera"))
+                    })?;
+                let mut windows = BTreeMap::new();
+                for (app_id, where_it_was) in held.windows {
+                    let at = At::checked(where_it_was.x, where_it_was.y).ok_or_else(|| {
+                        NotArranged::NotOnThePlane(format!("{key}/{app_id}: an earlier place"))
+                    })?;
+                    let size = Size::checked(where_it_was.width, where_it_was.height).ok_or_else(
+                        || NotArranged::NotOnThePlane(format!("{key}/{app_id}: an earlier size")),
+                    )?;
+                    windows.insert(app_id, AWindowWas::at((at, size), where_it_was.showing));
+                }
+                earlier.push(Held {
+                    when: UNIX_EPOCH + std::time::Duration::from_secs(held.when),
+                    camera,
+                    windows,
+                });
+            }
+            // **A file may arrive holding more than the cap** — written by a
+            // later release whose cap is larger, or by a hand. It is read and
+            // then trimmed rather than refused: the states beyond the cap are
+            // this machine's to forget, not a reason to tell a person their
+            // layout is unreadable.
+            let mut one = OnePlace {
+                camera,
+                windows,
+                earlier,
+            };
+            one.remember_no_more_than_the_cap();
+            places.insert(place, one);
         }
         Ok(Self { places })
     }

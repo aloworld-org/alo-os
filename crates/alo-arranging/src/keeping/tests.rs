@@ -1,9 +1,16 @@
 //! Whether a layout reaches a person's folder, and what happens when it does not.
 #![expect(
     clippy::unwrap_used,
+    clippy::indexing_slicing,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 use super::*;
+
+/// A fixed moment, so a series' order is the order the test made it in rather
+/// than the order a clock happened to tick.
+fn noon() -> std::time::SystemTime {
+    std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_760_000_000)
+}
 use crate::{AWindowWas, HowItWasShowing};
 use alo_canvas::{At, Camera, Place, Size, Zoom};
 
@@ -72,7 +79,7 @@ fn what_was_kept_is_what_a_sign_in_reads() {
     let at_file = a_folder("kept-and-read").join(THE_FILE);
     let left = two_places();
 
-    keep(&at_file, &left).unwrap();
+    keep(&at_file, &left, noon()).unwrap();
     let (back, why) = at_sign_in(&at_file);
 
     assert_eq!(why, None, "a layout this release wrote did not read back");
@@ -103,7 +110,7 @@ fn no_file_is_a_fresh_canvas_and_nothing_said() {
 fn a_write_the_disk_did_not_keep_leaves_the_last_layout_readable() {
     let at_file = a_folder("interrupted").join(THE_FILE);
     let before = two_places();
-    keep(&at_file, &before).unwrap();
+    keep(&at_file, &before, noon()).unwrap();
 
     // The same road, with the disk handing back something that is not the
     // layout: write a sibling by hand so the real file is untouched, then
@@ -169,7 +176,7 @@ fn the_next_save_replaces_a_damaged_file() {
     let at_file = a_folder("mended").join(THE_FILE);
     std::fs::write(&at_file, "not a layout at all [").unwrap();
 
-    keep(&at_file, &two_places()).unwrap();
+    keep(&at_file, &two_places(), noon()).unwrap();
     let (back, why) = at_sign_in(&at_file);
 
     assert_eq!(why, None);
@@ -270,7 +277,7 @@ fn a_layout_from_another_version_is_kept_beside_itself() {
 
     // And the next save writes cleanly rather than being refused forever,
     // which is the half `alo_kept::keep`'s own rule would have got wrong here.
-    keep(&at, &two_places()).unwrap();
+    keep(&at, &two_places(), noon()).unwrap();
     let (now, why) = at_sign_in(&at);
     assert_eq!(why, None);
     assert_eq!(now, two_places());
@@ -295,7 +302,7 @@ fn the_slot_holds_the_most_recent_one_that_did_not_read() {
 
     std::fs::write(&at, "version = 1\n").unwrap();
     let _first = at_sign_in(&at);
-    keep(&at, &two_places()).unwrap();
+    keep(&at, &two_places(), noon()).unwrap();
     std::fs::write(&at, "version = 2\n").unwrap();
     let _second = at_sign_in(&at);
 
@@ -304,4 +311,111 @@ fn the_slot_holds_the_most_recent_one_that_did_not_read() {
         "version = 2\n",
         "the slot kept the older failure rather than the most recent one"
     );
+}
+
+/// A moment after [`noon`], so two saves are two stops on a ribbon.
+fn later() -> std::time::SystemTime {
+    noon() + std::time::Duration::from_secs(3_600)
+}
+
+/// **A Place remembers what it was, through the file.**
+///
+/// Task 8 of `docs/autonomy/the-canvas-and-its-places.md`, and the half of it
+/// a disk can show: two saves, and the first layout is on the second's ribbon
+/// with the moment it stopped being current.
+#[test]
+fn a_place_keeps_what_it_was_when_the_next_layout_is_kept() {
+    let folder = a_folder("remembers");
+    let at_file = folder.join("canvas.toml");
+
+    keep(&at_file, &two_places(), noon()).unwrap();
+
+    let mut moved = two_places();
+    moved.looking(first(), a_camera(0, 0, 1_000));
+    keep(&at_file, &moved, later()).unwrap();
+
+    let (read_back, why) = at_sign_in(&at_file);
+    assert!(why.is_none(), "{why:?}");
+    assert_eq!(read_back.camera_on(first()), moved.camera_on(first()));
+
+    let ribbon = read_back.earlier_on(first());
+    assert_eq!(ribbon.len(), 1, "one save ago is one stop");
+    assert_eq!(
+        ribbon[0].when(),
+        later(),
+        "held when it stopped being current"
+    );
+    assert_eq!(
+        ribbon[0].camera(),
+        two_places().camera_on(first()).unwrap(),
+        "and it is the camera that was there"
+    );
+    assert_eq!(ribbon[0].how_many(), 1);
+
+    // **The Place that did not move has an empty ribbon.** A save is about the
+    // canvas, and a Place nobody rearranged has nothing new to remember —
+    // otherwise every save would put a repeat on every Place.
+    assert!(read_back.earlier_on(second()).is_empty());
+}
+
+/// **A ribbon is capped, and the oldest stop is the one that goes.**
+#[test]
+fn a_place_remembers_no_more_than_the_cap_and_forgets_the_oldest() {
+    let folder = a_folder("capped");
+    let at_file = folder.join("canvas.toml");
+    let saves = crate::HOW_MANY_A_PLACE_REMEMBERS + 5;
+
+    for n in 0..saves {
+        let mut moved = two_places();
+        // A different camera each time, so every save is a real change and the
+        // stop it leaves can be told from the others.
+        moved.looking(first(), a_camera(i32::try_from(n).unwrap(), 0, 1_000));
+        keep(
+            &at_file,
+            &moved,
+            noon() + std::time::Duration::from_secs(n as u64),
+        )
+        .unwrap();
+    }
+
+    let (read_back, _) = at_sign_in(&at_file);
+    let ribbon = read_back.earlier_on(first());
+    assert_eq!(ribbon.len(), crate::HOW_MANY_A_PLACE_REMEMBERS);
+    assert_eq!(
+        ribbon.first().unwrap().when(),
+        noon() + std::time::Duration::from_secs((saves - crate::HOW_MANY_A_PLACE_REMEMBERS) as u64),
+        "the oldest stops went and the newest stayed"
+    );
+}
+
+/// **A version-3 file reads, and its Places have empty ribbons.**
+///
+/// The first migration this crate has had, and the reason it is one:
+/// `alo-desktop` has been writing version 3 to real disks since before 0.0.1
+/// went public, so refusing it would cost a person the canvas they left
+/// (`docs/misreadings/nothing-is-on-a-disk-is-a-fact-with-a-date-on-it.md`).
+#[test]
+fn a_file_from_before_a_place_remembered_anything_still_reads() {
+    let folder = a_folder("version-three");
+    let at_file = folder.join("canvas.toml");
+    let three = "version = 3\n\n[places.\"1\"]\nlooking-at = [0, 0]\nzoom = 1000\n";
+    std::fs::write(&at_file, three).unwrap();
+
+    let (read_back, why) = at_sign_in(&at_file);
+    assert!(
+        why.is_none(),
+        "a version-3 file is read rather than refused: {why:?}"
+    );
+    assert!(read_back.camera_on(first()).is_some());
+    assert!(
+        read_back.earlier_on(first()).is_empty(),
+        "a Place whose earlier states were never kept has an empty ribbon"
+    );
+
+    // And the next save starts its ribbon rather than refusing the file.
+    let mut moved = Arrangement::fresh();
+    moved.looking(first(), a_camera(10, 10, 2_000));
+    keep(&at_file, &moved, later()).unwrap();
+    let (after, _) = at_sign_in(&at_file);
+    assert_eq!(after.earlier_on(first()).len(), 1);
 }

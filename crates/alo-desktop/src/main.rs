@@ -315,7 +315,12 @@ mod running {
             let Some(at) = self.layout_at.as_deref() else {
                 return;
             };
-            if let Err(why) = alo_arranging::keeping::keep(at, &arrangement) {
+            // **The moment the layout moved**, which is what a Place's
+            // ribbon is indexed by. Read here rather than inside `keep`, so
+            // that what a test holds is a moment it chose and not a clock
+            // (`alo_arranging::Arrangement::following`).
+            let when = std::time::SystemTime::now();
+            if let Err(why) = alo_arranging::keeping::keep(at, &arrangement, when) {
                 eprintln!("alo-desktop: the canvas layout was not kept — {why}");
             }
         }

@@ -42,9 +42,20 @@ fn keep_asks_whether_the_disk_is_holding_the_layout() {
     let code = the_code();
 
     assert!(
-        code.contains("these_bytes_are(arrangement, back)"),
+        code.contains("these_bytes_are(&keeping, back)"),
         "keep no longer hands the proof to kept_text, so a write the disk \
          mangled would be reported as kept"
+    );
+    // **Against what is written, not against what was passed in.** Since a
+    // Place remembers time, `keep` composes the layout it writes — the
+    // caller's, carrying the series forward from the file — so the two are no
+    // longer the same value. Proving the disk holds `arrangement` would prove
+    // it holds something nobody wrote, and would pass while the series went
+    // missing on every save.
+    assert!(
+        !code.contains("these_bytes_are(arrangement, back)"),
+        "the proof is taken against the layout that was handed in rather than \
+         the one that was written, so a lost series would read as kept"
     );
     assert!(
         code.contains("alo_kept::kept_text("),
