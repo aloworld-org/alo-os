@@ -42,9 +42,56 @@
 
 use alo_appearance::TextScale;
 
+use crate::edge::Edge;
 use crate::labels::Labels;
 use crate::room::Room;
 use crate::screen::Screen;
+
+/// Why a dock cannot be laid out along an edge yet.
+///
+/// **One variant, and it names a measurement rather than a mood.** The owner
+/// restored the four-edge choice on 2026-09-30 and asked for each orientation to
+/// be designed *including labels*; the side orientations' label placement is the
+/// one number this crate cannot derive. A dock down a side is as tall as the
+/// screen, so there is no shortage of room for a name — the constraint is the
+/// dock's **thickness**, which down a side is its width, and *how wide a name
+/// needs to be* is a text measurement this crate has no font to take and a design
+/// figure it has not been given.
+///
+/// `crate::measures` held exactly that figure once, as `LABEL_EMS`, and its own
+/// note records it leaving: *how much width a name needed beside an icon on a dock
+/// down the side of the screen. ADR 0076 fixed the dock along the bottom, so there
+/// is no name beside an icon and no floor to hold.*
+///
+/// **A type rather than a comment**, so that a caller which handles the two edges
+/// that work cannot quietly do nothing for the two that do not — which is how the
+/// bottom-only decision came to be enforced by code that never mentioned it.
+///
+/// # It carries no sentence, and that is two decisions rather than an omission
+///
+/// **This crate may not write English.** `alo-choosing`'s
+/// `the_five_crates_write_no_english_outside_the_vocabulary` holds `alo-dock` to
+/// putting every word a person could read in `crate::words`, and it caught the
+/// first version of this type, which had a `thiserror` message. The check is
+/// right: a sentence in an `#[error]` here is a sentence no translator is handed.
+///
+/// **And there is no sentence to declare.** Nothing shows this on a screen and
+/// nothing could, because no person can ask for a side dock yet — the owner's
+/// order of work of 2026-10-04 is that nonfunctional edge choices are not exposed
+/// as finished settings. A caller **matches** on this; it does not render it.
+/// Declaring a `Word` would put a sentence in front of twenty-four translators for
+/// a state no person can reach, which is the cost that order of work avoids.
+///
+/// When a person *can* choose an edge, what they read on a refusal is a word in
+/// `crate::words` worded for them, never this type's `Debug`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NotLaidOut {
+    /// A side dock, whose names have no measured placement.
+    TheNamesHaveNoPlacement {
+        /// Which edge was asked for.
+        edge: Edge,
+    },
+}
 
 /// A dock, laid out.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,8 +109,42 @@ impl Layout {
     ///
     /// Answers rather than refuses: a [`Screen`] that exists is a screen a dock
     /// fits on, because that is what [`Screen::of`] checks.
+    ///
+    /// **Kept as the bottom edge's own constructor** rather than becoming a call
+    /// to [`Self::along`] that unwraps. Every caller in the tree asks for the dock
+    /// a fresh machine has, the bottom edge cannot fail to lay out, and a
+    /// constructor that returned a `Result` nobody could get an error from would
+    /// put a `match` at thirty call sites to describe a case that does not exist.
     #[must_use]
     pub fn of(screen: Screen, text: TextScale) -> Self {
+        Self::running_across(screen, text)
+    }
+
+    /// A dock along this edge of this screen, with the text at this size.
+    ///
+    /// # Errors
+    /// [`NotLaidOut::TheNamesHaveNoPlacement`] for [`Edge::Left`] and
+    /// [`Edge::Right`]. The geometry of a side dock is settled — thickness out of
+    /// the width, running the height — and its **names** are not: see that type.
+    /// Refused whole rather than answered with the names given way, because *there
+    /// was no room at this text size* is what giving way means and it would be
+    /// false. A person on a side dock would read that their text size had cost
+    /// them the names, and it had not.
+    pub fn along(edge: Edge, screen: Screen, text: TextScale) -> Result<Self, NotLaidOut> {
+        if !edge.a_name_fits_under_an_icon() {
+            return Err(NotLaidOut::TheNamesHaveNoPlacement { edge });
+        }
+        // **The top edge is the bottom edge's arithmetic, and that is a
+        // measurement rather than an assumption.** Both take their thickness out
+        // of the screen's height and run the whole of its width; which end of the
+        // height they sit at is an origin, and this crate does not place the dock
+        // on a screen — `alo_shell` does. So there is one body for both, and
+        // `the_top_edge_lays_out_exactly_as_the_bottom_does` holds it to that.
+        Ok(Self::running_across(screen, text))
+    }
+
+    /// A dock across the screen: thickness out of the height, running the width.
+    fn running_across(screen: Screen, text: TextScale) -> Self {
         let ceiling = Room::the_most_a_dock_may_take(screen.height());
         let with_names = Room::a_dock_with_names_under(text);
         let (thickness, labels) = if with_names.fits_in(ceiling) {
