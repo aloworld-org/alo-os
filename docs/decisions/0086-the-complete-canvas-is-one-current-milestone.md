@@ -2,15 +2,48 @@
 
 **This was 0085 until 2026-10-04.** Another lane's
 [ADR 0085](0085-how-a-person-reaches-settings.md) landed on main while this one was
-in flight, under the same number — two records claiming one identity, which the
-citation gate caught from the far side: a link in
-`docs/design/the-interface-in-the-file.md` named a decision that existed on no
-branch anybody could fetch. Recorded here because the gate's own message is right
-about why it matters — *a decision renamed leaves every link to it reading exactly
-as it did before* — and because the collision is not a mistake either lane made.
-Numbers are claimed by landing, and two lanes drafting at once will take the same
-one; what was missing is the check at the point of writing, which is noted as owed
-below.
+in flight, under the same number — two records claiming one identity.
+
+**The gate caught it by name, and this paragraph said otherwise until it was
+checked.** It said the collision surfaced *from the far side*, through a link in
+`docs/design/the-interface-in-the-file.md` to a decision no branch had. That was a
+**different** pull request's failure. This one's gate said:
+
+> `0085-how-a-person-reaches-settings.md` and
+> `0085-the-complete-canvas-is-one-current-milestone` **.md** both claim decision
+> number 0085. Every citation of that number resolves to whichever one a reader
+> opens first, and both of them look like the answer — renumber one of them, and
+> follow the rename through the citations.
+
+*The second filename is broken across its extension on purpose.* Written whole it
+is a pointer to a file that no longer exists, and the same check this quotes reads
+it as one — it failed on this paragraph before the break was put in. Quoting a
+gate's message about a renamed file is the one place a dead filename is the
+**correct** thing to write, and nothing distinguishes that from a stale citation,
+so the name is rendered rather than cited.
+
+That is the diagnosis and the remedy, including the half that is easy to miss
+(*follow the rename through the citations* — twenty-four of them). The first version
+of this paragraph also claimed **what was missing is the check at the point of
+writing**, and promised a note recording it as owed. Both were wrong:
+`alo_citing::Finding::TwoDecisionsOneNumber` exists, is unit-tested, and is the
+check quoted above; the note was never written because there was nothing to owe.
+Confirmed on 2026-10-04 by planting a duplicate number and watching the real test
+name both files.
+
+**Why the error is kept rather than deleted.** Two pull requests failed the same
+test on the same day, one log was read, and its message was taken for both. The
+result was an **invented gap in a decision record** — which is worse than a real
+gap, because the next lane could have gone and built a check that already exists.
+An ADR that silently drops a claim leaves a reader unable to tell which of its
+statements were ever measured.
+
+What is true is narrower: the check reads **one tree**, so it cannot see a number
+claimed on a branch that has not merged. It fired at the first moment one tree held
+both files, which is the earliest a per-tree check can. Warning a lane while it is
+*writing* would mean reading other branches, which is nobody's remit here and is
+not a defect in what exists. The collision itself is no lane's mistake: numbers are
+claimed by landing, so two lanes drafting at once will take the same one.
 
 **Status:** **accepted, 2026-10-04**, by the owner, in these words:
 
@@ -150,13 +183,50 @@ value a person's machine uses reaches the code from the draw, the seat or the di
 The instruction says to reconcile conflicting ADRs and scope records **before**
 applying their gates. Four are open and each is recorded with what was measured:
 
-1. **ADR 0076 against the four-edge promise.** `docs/features.md` promises *the
-   bottom edge by default, and the person may choose bottom, left, right or top*;
+1. **~~ADR 0076 against the four-edge promise.~~ There is no conflict, and this
+   lane read a filename again.** It said *0076 fixes the Dock to the bottom edge*
+   and that **0076 is superseded in that respect and its own record must say so.**
+   Every part of that is wrong, and
    [ADR 0076](0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
-   fixes the Dock to the bottom edge. *All four Dock positions* is in this
-   milestone, so **0076 is superseded in that respect** and its own record must say
-   so. Everything measured from the bottom edge becomes edge-relative: the Dock's
-   band, the status area's position, the top controls' band, the reveal strips.
+   warns against the mistake in its own second paragraph:
+
+   > **The title of this record is now wrong and is deliberately not changed.** The
+   > Dock is no longer *fixed* to the bottom edge — bottom is its **default** and a
+   > person may choose bottom, left, right or top.
+
+   The owner reversed the bottom-only ruling on 2026-09-30, within the hour of the
+   record that took it: *Restore the Dock's edge choice **in v0.01** and schedule
+   the missing designs now.* So the record already says so, the choice is already in
+   the current release, and there was nothing for this milestone to supersede.
+   **This lane made the identical error on 2026-10-03** — citing this same record by
+   its filename — was corrected on the record, and then wrote the correction's
+   subject into a decision a day later.
+
+   **What is actually owed is larger than what this said, and is measured.** The
+   reversal never reached the code. On 2026-10-04, counted on `main` at `22414aae`, **61 lines across 34 files**
+   still assert the withdrawn ruling as current fact, and capability was deleted rather
+   than merely re-defaulted:
+
+   | what | state |
+   |---|---|
+   | `dock.edge.bottom`, `.left`, `.right`, `.top` | removed from the vocabulary |
+   | `dock.labels.beside` | removed |
+   | an `Edge` type | none exists in `alo-dock` |
+   | `alo_dock::changes::Setting` | two variants reduced to one |
+   | `alo_shell::egress_status_place::Stacked` | `Downwards` removed, its doc saying *there is no such dock* |
+
+   **And the absence is now asserted.** `alo-dock/tests/what_this_crate_says.rs`
+   requires `dock.edge.bottom` and `dock.labels.beside` to be **gone**, so restoring
+   the choice the owner restored makes that test fail. This repository already has a
+   phrase for that shape — *a test saying these two overlap would have to change the
+   day somebody fixes it, which is how a bug becomes a requirement* — and here it is
+   in a test, about a choice a person was promised.
+
+   So *all four Dock positions* in this milestone is **not** a tier move. It is a
+   restoration across 34 files with a test standing against it, and the only part of
+   the original wording that survives is the last sentence: everything measured from
+   the bottom edge becomes edge-relative — the Dock's band, the egress corner, the
+   top controls' band, the reveal strips.
 2. **~~The status area's position.~~ Two surfaces share one name, and this
    reconciliation was wrong when it was written.** It said the owner fixed the
    status area at the top-right while a real draw put it at `x=905 y=575 367 × 36`,
