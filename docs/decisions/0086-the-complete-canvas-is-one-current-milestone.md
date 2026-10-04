@@ -1,4 +1,16 @@
-# ADR 0085 — The complete canvas is one current milestone
+# ADR 0086 — The complete canvas is one current milestone
+
+**This was 0085 until 2026-10-04.** Another lane's
+[ADR 0085](0085-how-a-person-reaches-settings.md) landed on main while this one was
+in flight, under the same number — two records claiming one identity, which the
+citation gate caught from the far side: a link in
+`docs/design/the-interface-in-the-file.md` named a decision that existed on no
+branch anybody could fetch. Recorded here because the gate's own message is right
+about why it matters — *a decision renamed leaves every link to it reading exactly
+as it did before* — and because the collision is not a mistake either lane made.
+Numbers are claimed by landing, and two lanes drafting at once will take the same
+one; what was missing is the check at the point of writing, which is noted as owed
+below.
 
 **Status:** **accepted, 2026-10-04**, by the owner, in these words:
 
@@ -145,16 +157,53 @@ applying their gates. Four are open and each is recorded with what was measured:
    milestone, so **0076 is superseded in that respect** and its own record must say
    so. Everything measured from the bottom edge becomes edge-relative: the Dock's
    band, the status area's position, the top controls' band, the reveal strips.
-2. **The status area's position.** `canvas_fixed_controls` records twice that the
-   owner fixed it at the top-right; a real draw puts it at `x=905 y=575 367 × 36`
-   on a 720-tall screen, immediately above the Dock's band at `y=619`. The draw and
-   the record disagree and the two readings have opposite fixes.
-3. **The corner ruling names three surfaces and the set has four.** The owner's
-   ruling of 2026-09-30 settles the corner for the top controls, the right panel
-   and the bottom Dock. The status area joined the fixed-control set on 2026-10-02,
-   after it, and on a real draw its band and the panel's reserved column **share
-   104 pixels** — so that ruling's own clause, *one pointer position cannot reveal
-   two surfaces*, is false of a real screen for the surface it does not name.
+2. **~~The status area's position.~~ Two surfaces share one name, and this
+   reconciliation was wrong when it was written.** It said the owner fixed the
+   status area at the top-right while a real draw put it at `x=905 y=575 367 × 36`,
+   immediately above the Dock — and called that a disagreement with opposite fixes.
+   **It is not a disagreement.** Measured 2026-10-04:
+   - The owner's **status area** — clock, battery, network, volume — is at the
+     top-right, and **nothing draws it.** `crate::desktop_raster`'s own note says
+     those four have no location in the picture.
+   - `FixedControlsDrawn::status_area` carries `pictures.status.band`, which is the
+     **egress indicator's** painted band. That indicator has been at the far end of
+     the Dock since before ADR 0076, which moved where the answer comes from and
+     explicitly *not the position*. `crate::egress_status_place` says so in its own
+     words: *the rest of the status area is owed a location and does not have one …
+     the egress indicator is not waiting on it, because it has a corner of its own
+     and always did.*
+
+   So the draw and the record describe **different surfaces**, one drawn and one
+   not, and there was never a position to settle. What is owed is a **name**: a
+   field called `status_area` that holds the egress band will be read as the status
+   area by the next person, which is how this lane came to write a conflict into a
+   decision record. **Recorded as this lane's own error rather than quietly
+   rewritten**, because an ADR that silently drops a reconciliation leaves a reader
+   wondering which of them was real — and because the mistake has a shape worth
+   keeping: it was made by reading a field's *name* and taking it for a measurement,
+   eleven days after the same lane did that with a filename and was corrected.
+3. **The corner ruling names three surfaces and the set has four.** ✅ **Closed
+   2026-10-04.** The owner's ruling of 2026-09-30 settles the corner for the top
+   controls, the right panel and the bottom Dock. The egress indicator's band joined
+   the fixed-control set on 2026-10-02, after it, and on a real draw its band and the
+   panel's reserved column **shared 104 pixels** — so that ruling's own clause, *one
+   pointer position cannot reveal two surfaces*, was false of a real screen for the
+   surface it does not name.
+
+   **And it was three surfaces, not one.** `egress_status_place::Place` is the one
+   constructor that answers *where does a surface at this corner sit*, and it
+   measured from the output's own width. Three things go through it: the egress
+   indicator, *your camera is on* (`crate::in_use_raster`), and notifications at the
+   other end (`Place::of_the_other_end`). **Only the first is in
+   `FixedControlsDrawn`'s set**, so the other two were under the panel with nothing
+   in the repository able to measure them.
+
+   Fixed by construction rather than by agreement: the column is a **required
+   parameter** of `Place::of`, so the corner's far edge *is* the column's near edge,
+   and all three call sites had to answer for it to keep compiling. A
+   `clear_of(panel)` to call afterwards was the obvious shape and the wrong one — a
+   combinator is a thing a caller forgets, and this record's own consequences section
+   is about correct, tested, unreachable code.
 4. **`ROADMAP.md` and `docs/features.md` name the canvas differently.** Five of six
    roadmap canvas entries have no counterpart title in the definition, because the
    roadmap's titles were promoted from the plan's task headings. Ticking a code box

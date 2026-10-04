@@ -1459,7 +1459,7 @@ than changed.*
 **Five canvas promises left this release on 2026-10-04.**
 
 They were here for one day. [ADR
-0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md) put every
+0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md) put every
 agreed canvas capability into **one current milestone**, so *A Place remembers
 time*, *Every screen is a view onto the canvas*, *A panel out of view costs
 nothing*, *Every canvas also answers as a list* and *Give it to alo* moved from

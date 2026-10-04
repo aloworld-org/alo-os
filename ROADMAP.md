@@ -1340,7 +1340,7 @@ this lane's to settle alone.
 ### Complete canvas
 
 *Every agreed canvas capability, in one milestone, by the owner's ruling of
-2026-10-04 — [ADR 0085](docs/decisions/0085-the-complete-canvas-is-one-current-milestone.md).*
+2026-10-04 — [ADR 0086](docs/decisions/0086-the-complete-canvas-is-one-current-milestone.md).*
 
 **Why these are here rather than carrying a milestone marker of their own.**
 `crates/alo-reconciling/src/tier.rs` hard-codes four markers and three headings,
@@ -2987,7 +2987,7 @@ at this tier and this page did not.
 
 **And five canvas promises joined them on 2026-10-03**, by the same decision —
 and **left again on 2026-10-04**, when the owner ruled that the complete canvas is
-one current milestone ([ADR 0085](docs/decisions/0085-the-complete-canvas-is-one-current-milestone.md)).
+one current milestone ([ADR 0086](docs/decisions/0086-the-complete-canvas-is-one-current-milestone.md)).
 They are now in v0.01's **Complete canvas** section. The twenty-four hours they
 spent here are kept in this paragraph rather than erased, because a reader
 following #439 to this page should find where they went.

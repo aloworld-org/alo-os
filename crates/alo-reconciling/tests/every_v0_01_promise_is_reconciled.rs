@@ -299,7 +299,7 @@ const THE_REAL_DECISION: &str =
 ///
 /// **Eleven became fifteen on 2026-10-04**, and the four are named so the next
 /// reader does not have to re-derive them. [ADR
-/// 0085](../../../docs/decisions/0085-the-complete-canvas-is-one-current-milestone.md)
+/// 0086](../../../docs/decisions/0086-the-complete-canvas-is-one-current-milestone.md)
 /// put every agreed canvas capability into one current milestone, moving five
 /// promises out of `[v0.5]` and adding one. Four of the six arrive with **no
 /// evidence at all**:

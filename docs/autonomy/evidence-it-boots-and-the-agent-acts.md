@@ -97,7 +97,7 @@ nearest thing is not undo's snapshots either**: `alo-keeping-up` snapshots the
 filesystem, which is a different subject with the same word, and reaching for it
 would be the two-vocabularies fault this ledger has recorded three times. Reached
 this release on 2026-10-04 by [ADR
-0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md); it was
+0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md); it was
 `[v1.1]`, the furthest-out canvas promise there was. Where the work is: **task 8 of `docs/autonomy/the-canvas-and-its-places.md`**, written the same day for this promise, which had no task in any plan before it.
 
 ### Every screen is a view onto the canvas
@@ -111,7 +111,7 @@ means a camera per viewport, which is a change to where that state lives rather
 than an addition beside it. `alo-displays` already models more than one display
 and `ScreenPlace` already gives each its own room, so the display half is there
 and the canvas half is not. Reached this release on 2026-10-04 by [ADR
-0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md). Where the work is: **task 9 of `docs/autonomy/the-canvas-and-its-places.md`**, which depends on the camera having one home — the same thing **task 9 of `docs/autonomy/the-smallest-canvas-worth-showing.md`** turns on, so the two are done together or the second is done twice.
+0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md). Where the work is: **task 9 of `docs/autonomy/the-canvas-and-its-places.md`**, which depends on the camera having one home — the same thing **task 9 of `docs/autonomy/the-smallest-canvas-worth-showing.md`** turns on, so the two are done together or the second is done twice.
 
 ### A panel out of view costs nothing
 
@@ -122,7 +122,7 @@ panel out of view *draws* nothing; what is promised is that a Place holding fort
 frames is not forty programs running, and nothing measures or bounds that. A still
 picture instead of a live surface is the mechanism, and no part of the tree yet
 answers *what does an unreached frame cost*. Reached this release on 2026-10-04 by
-[ADR 0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md).
+[ADR 0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md).
 Where the work is: **task 1 of `docs/autonomy/putting-a-window-aside.md`**, the development PC's lane, which holds the panel's three presentations — the still picture is one of them. The *measurement* of what an unreached frame costs is named by nothing, and that is the blocker to report rather than work around.
 
 ### Every canvas also answers as a list
@@ -136,7 +136,7 @@ ones a reader would say, and the keyboard reaches each in turn.
 milestone that is built: task 7 of
 `docs/autonomy/the-smallest-canvas-worth-showing.md`, *Done, 2026-09-29*. It was
 `[v1]` and built at v0.5, so its arrival in this release on 2026-10-04 by [ADR
-0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md) is a
+0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md) is a
 **correction of a promise built below its own tier** rather than new scope. What a
 suite cannot show is a screen reader reading it on a machine, which is phase 8's
 ground for every accessibility promise.
@@ -153,7 +153,7 @@ selection a person can act on across frames, and `alo-admitting` and
 `alo-reported` — the validated agent-status road — are an **island**, a tested
 pair that nothing in the repository depends on, so a report crossing from the
 agent reaches no production caller. Reached this release on 2026-10-04 by [ADR
-0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md). Where
+0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md). Where
 the work is: task 3 of `docs/autonomy/the-canvas-and-its-places.md` gives the
 selection to act on; the island needs a dependent before the handover can report
 anything.
@@ -167,7 +167,7 @@ production caller anywhere in this tree**, so this is alo OS's first notificatio
 of its own, and its words are externalised in every shipped language from the
 first commit — which is the real cost rather than the call site. Added to this
 release on 2026-10-04 by [ADR
-0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md), which
+0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md), which
 names recovery notices as part of the complete canvas; **no promise carried them
 before**, so three tasks had arbitrated against a telling that was not in the
 definition. Where the work is: **task 8 of `docs/autonomy/the-smallest-canvas-worth-showing.md`**, whose third acceptance clause is this telling and whose other half — the record — is paid.

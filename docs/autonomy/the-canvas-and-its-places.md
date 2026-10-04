@@ -1,7 +1,7 @@
 # The canvas and its Places
 
 **This plan is part of the Complete canvas milestone**, by the owner's ruling of
-2026-10-04 — [ADR 0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md).
+2026-10-04 — [ADR 0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md).
 Every agreed canvas capability is in one current milestone, so **no task here is out
 of scope for carrying a `[v0.5]` or `[v1]` label in an older document**. Order and
 dependencies are unchanged: work may be sequenced, and nothing is excluded by a tier.
@@ -559,7 +559,7 @@ it depends on 1 and 3, not because it is optional.
 arrangement has to exist before a series of them can.
 
 **Added 2026-10-04 by [ADR
-0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md)**, which
+0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md)**, which
 put every agreed canvas capability into one current milestone. The promise was
 `[v1.1]` — the furthest-out canvas promise there was — and had no task in any
 plan, so no lane could have built it and nothing said so.
@@ -594,7 +594,7 @@ remaining half turns on — so these two are done together or the second is done
 twice.
 
 **Added 2026-10-04 by [ADR
-0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md).** It was
+0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md).** It was
 `[v0.5]` and had no task.
 
 Two displays are two viewports at their own zoom, not two desktops.
@@ -619,7 +619,7 @@ this task depends on the camera question rather than on the displays.
 
 **Three promises were not moved and this lane did not move them — and the owner moved them on 2026-10-04.** *A Place remembers time*, *Every screen is a view onto the canvas* and *A panel out of view costs nothing* were at `[v1]` and `[v1.1]`, and this lane left them there because *the owner named five things completion requires and none of them is these* — moving them would have been a lane widening its own scope under cover of an instruction.
 
-[ADR 0085](../decisions/0085-the-complete-canvas-is-one-current-milestone.md) settles it from the other direction: **every agreed canvas capability is one current milestone**, and all three are named in the ruling's own list. So they are `[v0.01]` now, with tasks 8 and 9 of this plan written for the first two and task 1 of `docs/autonomy/putting-a-window-aside.md` holding the third. **The restraint is kept on the record rather than deleted**, because it was right on the day: a lane may not move a tier, and the owner may.
+[ADR 0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md) settles it from the other direction: **every agreed canvas capability is one current milestone**, and all three are named in the ruling's own list. So they are `[v0.01]` now, with tasks 8 and 9 of this plan written for the first two and task 1 of `docs/autonomy/putting-a-window-aside.md` holding the third. **The restraint is kept on the record rather than deleted**, because it was right on the day: a lane may not move a tier, and the owner may.
 
 **This paragraph said four, and *Tidy this canvas* was the fourth.** It moved to
 `[v0.01]` later the same day, and the reason it had to is a fault of this lane's
@@ -634,9 +634,9 @@ and unsound the moment it had moved the other half. The laptop lane found it whi
 reconciling a collision in `features.md`; the argument that settles it is this
 one, not theirs.
 
-**One promise was built below its own tier, and the tier has come down to meet it.** *Every canvas also answers as a list* was `[v1]` and built at v0.5, with six tests — recorded here rather than quietly re-tiered, which was the right half of the choice. ADR 0085 moves it to `[v0.01]`, so the record now reads as a **correction** rather than a widening: the work was done, and only the label was wrong.
+**One promise was built below its own tier, and the tier has come down to meet it.** *Every canvas also answers as a list* was `[v1]` and built at v0.5, with six tests — recorded here rather than quietly re-tiered, which was the right half of the choice. ADR 0086 moves it to `[v0.01]`, so the record now reads as a **correction** rather than a widening: the work was done, and only the label was wrong.
 
-**One acceptance condition needed scope the owner had not granted, and now has it.** Task 6's fourth check asks for a keyboard road to move a frame. *Keyboard access* is named in ADR 0085's milestone, so the clause is in scope — but **the promise it would rest on still does not exist**, and that is the blocker to report rather than work around: `docs/features.md`'s *each with a keyboard form* attaches to fit, fill and work-inside and **not to dragging**, at any tier, measured 2026-10-03. A capability in a milestone whose definition promises no road is a task that cannot state its own acceptance. Previously: there is none, and
+**One acceptance condition needed scope the owner had not granted, and now has it.** Task 6's fourth check asks for a keyboard road to move a frame. *Keyboard access* is named in ADR 0086's milestone, so the clause is in scope — but **the promise it would rest on still does not exist**, and that is the blocker to report rather than work around: `docs/features.md`'s *each with a keyboard form* attaches to fit, fill and work-inside and **not to dragging**, at any tier, measured 2026-10-03. A capability in a milestone whose definition promises no road is a task that cannot state its own acceptance. Previously: there is none, and
 `features.md:422`'s keyboard forms are *fit*, *fill* and *work inside* — not drag.
 
 **And the honest shape of task 1.** *The canvas owns Place identity* is written
