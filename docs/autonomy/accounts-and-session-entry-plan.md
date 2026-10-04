@@ -1148,6 +1148,104 @@ never been run against this one.
 
 **Status:** ready. **Depends on:** nothing.
 
+**Scoped 2026-10-04, and three things were found that this task did not say.**
+Each changes what somebody would build, so they are here rather than in a
+session.
+
+**Two daemons read `THE_GRANTS`, not one.**
+
+```
+crates/alo-agentd/src/main.rs:132,243    ThePersonsFile::at(THE_GRANTS)
+crates/alo-portald/src/main.rs:139       ThisMachine::reading(THE_GRANTS, &theirs)
+```
+
+**And the second is already per-person.** `alo-portald`'s own header: *it asks
+the kernel which uid it is, it finds the person's own bus under
+`/run/user/<uid>`*. So it holds the one fact the grants file lacks and reads a
+machine-wide file anyway. A migration wired into the agent alone leaves it
+reading a path that no longer holds anybody's grants, **and every test in
+`alo-remembering` would still pass**, because that crate knows neither daemon.
+`ThisMachine::reading` takes a path, so a per-person one fits it without a
+redesign.
+
+**[ADR 0088](../decisions/0088-a-machines-grants-belong-to-a-person.md) names
+that reader zero times, and so does `whose.rs`.** The decision that settled the
+design was made without it. That is not a reason to reopen the decision —
+keying by uid is right for both readers — but it is a reason not to treat the
+ADR as a complete list of what the move touches.
+
+**A third place carries the path as a literal.**
+`crates/alo-changing/src/refusing.rs:134,149,153` builds a refusal a person
+reads around `/var/lib/alo/grants.toml`. A sentence naming a file by hand goes
+stale with the file.
+
+**What `whose.rs` already offers, built in `#478` and called by nothing:**
+`the_persons_grants(folder, uid)`, `could_not_tell_whose(folder)`,
+`moved_to_whoever_had_them(folder, accounts)` and `Moved`'s four arms, including
+`NothingToMove` — which is the case the image's own `tmpfiles.d` comment names:
+*a machine on which nothing has been granted has no grants file, and that is not
+the same thing as an empty one*.
+
+**Ownership, checked against the 2026-10-03 crate table rather than assumed.**
+`alo-accounts` is this plan's and this plan is lane B's. `alo-agentd` is named
+by the kernel-enforcement and local-network plans, both this machine's.
+`alo-remembering`'s `keeping.rs`, `believing.rs` and `whose.rs` are this lane's
+by agreement. `alo-changing` is this lane's. **`alo-portald` is in no crate row
+and no lane row** — it is named once, in
+`applications-people-already-use.md`, whose row is this machine, where its task
+is `blocked` on *a machine to start it on*. So it is reachable through this
+lane's own plan rather than unowned, and the lane table's crate section does not
+list it at all.
+
+**Scoped 2026-10-04, and three things were found that this task did not say.**
+Each changes what somebody would build, so they are here rather than in a
+session.
+
+**Two daemons read `THE_GRANTS`, not one.**
+
+```
+crates/alo-agentd/src/main.rs:132,243    ThePersonsFile::at(THE_GRANTS)
+crates/alo-portald/src/main.rs:139       ThisMachine::reading(THE_GRANTS, &theirs)
+```
+
+**And the second is already per-person.** `alo-portald`'s own header: *it asks
+the kernel which uid it is, it finds the person's own bus under
+`/run/user/<uid>`*. So it holds the one fact the grants file lacks and reads a
+machine-wide file anyway. A migration wired into the agent alone leaves it
+reading a path that no longer holds anybody's grants, **and every test in
+`alo-remembering` would still pass**, because that crate knows neither daemon.
+`ThisMachine::reading` takes a path, so a per-person one fits it without a
+redesign.
+
+**[ADR 0088](../decisions/0088-a-machines-grants-belong-to-a-person.md) names
+that reader zero times, and so does `whose.rs`.** The decision that settled the
+design was made without it. That is not a reason to reopen the decision —
+keying by uid is right for both readers — but it is a reason not to treat the
+ADR as a complete list of what the move touches.
+
+**A third place carries the path as a literal.**
+`crates/alo-changing/src/refusing.rs:134,149,153` builds a refusal a person
+reads around `/var/lib/alo/grants.toml`. A sentence naming a file by hand goes
+stale with the file.
+
+**What `whose.rs` already offers, built in `#478` and called by nothing:**
+`the_persons_grants(folder, uid)`, `could_not_tell_whose(folder)`,
+`moved_to_whoever_had_them(folder, accounts)` and `Moved`'s four arms, including
+`NothingToMove` — which is the case the image's own `tmpfiles.d` comment names:
+*a machine on which nothing has been granted has no grants file, and that is not
+the same thing as an empty one*.
+
+**Ownership, checked against the 2026-10-03 crate table rather than assumed.**
+`alo-accounts` is this plan's and this plan is lane B's. `alo-agentd` is named
+by the kernel-enforcement and local-network plans, both this machine's.
+`alo-remembering`'s `keeping.rs`, `believing.rs` and `whose.rs` are this lane's
+by agreement. `alo-changing` is this lane's. **`alo-portald` is in no crate row
+and no lane row** — it is named once, in
+`applications-people-already-use.md`, whose row is this machine, where its task
+is `blocked` on *a machine to start it on*. So it is reachable through this
+lane's own plan rather than unowned, and the lane table's crate section does not
+list it at all.
+
 **Moved into this release on 2026-10-03** by
 `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md`. The promise is
 `docs/features.md`'s *Multi-user on one machine, with per-person grants and no
