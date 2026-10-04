@@ -94,15 +94,15 @@ fn structs_with_a_camera_field(text: &str) -> Vec<String> {
             }
             continue;
         }
-        if let Some((before, _)) = line.split_once(" {") {
-            if let Some(name) = before.rsplit_once("struct ").map(|(_, name)| name) {
-                // `Target<R, D: ScanoutDevice>` and `OnThePlane<'a>` are `Target` and
-                // `OnThePlane`. Generics are part of how a type is written, never part
-                // of which type it is, and a list keyed on the spelling would need
-                // editing the day somebody added a parameter.
-                let bare = name.split_once('<').map_or(name, |(bare, _)| bare);
-                inside = Some(bare.trim().to_owned());
-            }
+        if let Some((before, _)) = line.split_once(" {")
+            && let Some(name) = before.rsplit_once("struct ").map(|(_, name)| name)
+        {
+            // `Target<R, D: ScanoutDevice>` and `OnThePlane<'a>` are `Target` and
+            // `OnThePlane`. Generics are part of how a type is written, never part
+            // of which type it is, and a list keyed on the spelling would need
+            // editing the day somebody added a parameter.
+            let bare = name.split_once('<').map_or(name, |(bare, _)| bare);
+            inside = Some(bare.trim().to_owned());
         }
     }
     found
