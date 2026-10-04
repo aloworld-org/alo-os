@@ -57,7 +57,7 @@ const HOLDS_THE_SET: &str = "canvas_fixed_controls.rs";
 
 /// The value every control must be read from.
 ///
-/// Narrower than *not a literal* on purpose. `status_area: self.the_status_area()`
+/// Narrower than *not a literal* on purpose. `what_is_leaving: self.the_band()`
 /// is not a literal and is still wrong: it would hand over a rectangle the draw is
 /// storing rather than the one this frame laid out, which is the staleness the
 /// whole module exists to prevent. If a control ever stops coming straight off the
@@ -239,6 +239,11 @@ fn the_draw_brings_back_frames_the_moved_controls_hide() {
 /// B  a fourth field added, never set         error[E0063]: missing field …
 /// C  a fourth field added AND set to None    test FAILED, naming a_fourth_control
 /// ```
+///
+/// *The field in mutation A is called `what_is_leaving` since 2026-10-04. The table
+/// keeps the name it was measured under, because a measurement with a value swapped
+/// inside it is silently re-dated — and the mutations were run on 2026-10-02, when
+/// the field was `status_area`. The rename is in that field's own note.*
 ///
 /// **B is the compiler's, not this guard's.** A struct literal missing a field does
 /// not build, which is exactly what `FixedControlsDrawn`'s header promises. This

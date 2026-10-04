@@ -204,7 +204,7 @@ mod tests {
     /// **Told, it draws**: a lit indicator is a picture with a row in it, and
     /// a quiet one is a frame with nothing added.
     #[test]
-    fn a_told_status_area_draws_what_it_was_told() {
+    fn a_told_egress_indicator_draws_what_it_was_told() {
         let strings = words();
         let dock = Dock::shipped();
         let mut labels = WindowControlLabels::new().unwrap();

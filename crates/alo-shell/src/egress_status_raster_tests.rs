@@ -186,7 +186,7 @@ fn the_band_holds_every_piece_drawn_and_starts_where_they_do() {
 /// no behaviour today — and that is exactly why it would survive as a lie a
 /// later reader inherits.
 #[test]
-fn a_status_area_that_drew_nothing_claims_no_place() {
+fn an_indicator_that_drew_nothing_claims_no_place() {
     let indicator = Indicator::default();
     let quiet = drawn_as(&indicator, light());
     assert!(quiet.is_empty(), "nothing is leaving, so nothing is drawn");

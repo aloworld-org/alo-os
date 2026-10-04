@@ -576,7 +576,7 @@ impl crate::Server {
         let bounds = [
             drawn.dock_band,
             Some(drawn.panel_reserved),
-            drawn.status_area,
+            drawn.what_is_leaving,
             drawn.top_controls,
         ]
         .into_iter()
@@ -639,7 +639,7 @@ pub struct FixedControlsDrawn {
     /// put a window into covers nothing* is the true answer and not a
     /// placeholder.
     pub panel_reserved: Rectangle<i32, Physical>,
-    /// **Where the status area was drawn**, or [`None`] when nothing was.
+    /// **Where the egress indicator was drawn**, or [`None`] when nothing was.
     ///
     /// The third of the set, and the last to be able to say where it is: it
     /// carried rows and words and no rectangle until 2026-10-02, so there was
@@ -650,7 +650,35 @@ pub struct FixedControlsDrawn {
     /// indicator may grow into. A band taken from the room available would
     /// reserve space no pixel occupies, and push frames out of reach of
     /// nothing.
-    pub status_area: Option<Rectangle<i32, Physical>>,
+    ///
+    /// # This was called `status_area` until 2026-10-04, and the name cost a day
+    ///
+    /// **Three different things in this repository are called the status area.**
+    /// The owner's is the top-right region holding the clock, the battery, the
+    /// network and the volume, fixed there on 2026-09-30 — and **nothing draws
+    /// it**; `crate::desktop_raster`'s own note says those four have no location
+    /// in the picture. `alo_keyboards::in_the_status_area` is the layout
+    /// indicator's slot in that same region. And this field, which carries
+    /// neither: it is handed `pictures.status.band`, the **egress indicator's**
+    /// painted band at the far end of the Dock, which has been there since before
+    /// [ADR 0076](../../../docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+    /// and which that record moved the *source* of rather than the position.
+    ///
+    /// What the old name cost is on the record. A lane compared this field's
+    /// bottom-right band against the owner's top-right ruling, read the two as a
+    /// **conflict**, and wrote it into
+    /// [ADR 0086](../../../docs/decisions/0086-the-complete-canvas-is-one-current-milestone.md)
+    /// as a reconciliation needing the owner's decision — *the draw and the record
+    /// disagree and the two readings have opposite fixes*. They never disagreed.
+    /// There was no position to settle, only a name doing the work of two, and the
+    /// decision record had to be corrected.
+    ///
+    /// So the field says what it carries. The *status area* is still owed a
+    /// location and still does not have one, which is
+    /// `docs/autonomy/evidence-a-person-can-work-on-it-all-day.md`'s entry to
+    /// carry — and when it is drawn it joins this set as a **fifth** member under
+    /// its own name, rather than finding this one already taken.
+    pub what_is_leaving: Option<Rectangle<i32, Physical>>,
     /// The room the top controls reserve, or [`None`] when a window fills the
     /// screen and they give way.
     ///

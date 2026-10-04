@@ -189,12 +189,14 @@ fn the_four_fixed_controls_a_draw_lays_out_do_not_overlap() {
         ),
         ("the top controls' band", pictures.desktop.top_controls),
         // **The fourth member, which this test was named for and did not hold.**
+        // Called *the status area* until 2026-10-04; it is the egress indicator's band
+        // and always was — see `FixedControlsDrawn::what_is_leaving`.
         // Until 2026-10-04 it was left out, because on a real draw its band and the
         // panel's column shared 104 pixels and the loop below would have failed —
         // the disagreement ADR 0086 records as reconciliation 3. It is in now
         // because `crate::egress_status_place` stops the corner before the column by
         // construction, so there is nothing left to exclude it for.
-        ("the status area's band", pictures.status.band),
+        ("the egress indicator's band", pictures.status.band),
     ]
     .into_iter()
     .filter_map(|(what, area)| area.map(|area| (what, area)))
@@ -208,7 +210,7 @@ fn the_four_fixed_controls_a_draw_lays_out_do_not_overlap() {
     // them — and the first form of this test did exactly that with the status area,
     // passing while comparing three others. So each member a change brought in is
     // required to be there before anything is concluded from the pairs.
-    for owed in ["the top controls' band", "the status area's band"] {
+    for owed in ["the top controls' band", "the egress indicator's band"] {
         assert!(
             named.iter().any(|(what, _)| *what == owed),
             "{owed} had no extent in a real draw, so this test compared other \

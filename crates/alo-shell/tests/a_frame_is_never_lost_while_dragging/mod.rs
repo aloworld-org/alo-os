@@ -89,7 +89,7 @@ fn drawn_with_a_dock(f: &Fixture) {
                 // rectangle of no extent is the true answer for one rather than
                 // a placeholder.
                 panel_reserved: Rectangle::default(),
-                status_area: None,
+                what_is_leaving: None,
                 top_controls: None,
             },
             alo_appearance::TextScale::ordinary(),
@@ -104,7 +104,7 @@ fn drawn_with_a_dock_and_a_panel(f: &Fixture) {
             alo_shell::FixedControlsDrawn {
                 dock_band: Some(a_dock_along_the_bottom()),
                 panel_reserved: a_panel_down_the_right(),
-                status_area: None,
+                what_is_leaving: None,
                 top_controls: None,
             },
             alo_appearance::TextScale::ordinary(),
@@ -118,13 +118,13 @@ fn drawn_with_a_dock_and_a_panel(f: &Fixture) {
 /// so a frame held back here is held back by the status area and nothing else —
 /// a bound that is one of three cannot be tested while the other two can hide
 /// its absence.
-fn drawn_with_a_status_area(f: &Fixture) {
+fn drawn_with_a_band_over_the_canvas(f: &Fixture) {
     f.backend(|s| {
         s.the_fixed_controls_were_drawn(
             alo_shell::FixedControlsDrawn {
                 dock_band: None,
                 panel_reserved: Rectangle::default(),
-                status_area: Some(a_status_area_at_the_top_right()),
+                what_is_leaving: Some(a_band_a_frame_can_be_hidden_under()),
                 top_controls: None,
             },
             alo_appearance::TextScale::ordinary(),
@@ -132,8 +132,25 @@ fn drawn_with_a_status_area(f: &Fixture) {
     });
 }
 
-/// Where the indicator is drawn: the far end of the Dock's edge, at the top.
-fn a_status_area_at_the_top_right() -> Rectangle<i32, Physical> {
+/// A fixed control's band, at a position chosen to hide a frame and nothing else.
+///
+/// **This was `a_status_area_at_the_top_right` and the name was a claim nothing
+/// holds.** A rectangle at `y=0` is where the owner put the *status area* — the
+/// clock, battery, network and volume — and nothing draws that. The field it is
+/// handed to carries the **egress indicator's** band, which a real draw puts
+/// immediately above the Dock. So the fixture asserted one surface's position
+/// through another surface's field, and a reader checking either against it would
+/// have been misled.
+///
+/// The rectangle is **left where it was** rather than moved to the band's real
+/// place, because the rule under test does not care: `crate::canvas_never_lost`
+/// asks whether a frame is clear of *every* fixed control, and the position is an
+/// input to that question rather than a fact being checked. Moving it would change
+/// which frames the fixture hides without testing anything new. What changes is
+/// that the name no longer says where a surface is — see
+/// `alo_shell::canvas_fixed_controls::FixedControlsDrawn::what_is_leaving` for
+/// what the old name cost.
+fn a_band_a_frame_can_be_hidden_under() -> Rectangle<i32, Physical> {
     Rectangle::new((VIEWPORT.0 - 400, 0).into(), (400, 240).into())
 }
 
@@ -400,7 +417,7 @@ fn a_motion_leaving_twenty_six_pixels_of_the_name_clear_is_allowed() {
 /// frame under it is named. Nothing else is drawn, so a frame named here is
 /// named by the status area alone.
 #[test]
-fn a_frame_under_the_status_area_is_named_by_the_recheck() {
+fn a_frame_under_a_fixed_controls_band_is_named_by_the_recheck() {
     let f = fixture();
     let (_app, surface) = a_frame(&f);
 
@@ -414,7 +431,7 @@ fn a_frame_under_the_status_area_is_named_by_the_recheck() {
         .is_ok()
     );
 
-    drawn_with_a_status_area(&f);
+    drawn_with_a_band_over_the_canvas(&f);
     let hidden = f.backend(|s| s.frames_the_controls_now_hide());
 
     assert!(
@@ -682,7 +699,7 @@ fn a_display_that_changed_owes_a_recheck() {
                     (VIEWPORT.0, DOCK).into(),
                 )),
                 panel_reserved: Rectangle::default(),
-                status_area: None,
+                what_is_leaving: None,
                 top_controls: None,
             },
             alo_appearance::TextScale::ordinary(),
@@ -764,7 +781,7 @@ fn no_point_is_claimed_by_two_fixed_surfaces() {
                     (bar, DOCK).into(),
                 )),
                 panel_reserved: a_panel_down_the_right(),
-                status_area: None,
+                what_is_leaving: None,
                 top_controls: None,
             },
             alo_appearance::TextScale::ordinary(),
@@ -812,7 +829,7 @@ fn no_point_is_claimed_by_two_fixed_surfaces() {
             alo_shell::FixedControlsDrawn {
                 dock_band: None,
                 panel_reserved: a_panel_down_the_right(),
-                status_area: None,
+                what_is_leaving: None,
                 top_controls: Some(band),
             },
             alo_appearance::TextScale::ordinary(),
