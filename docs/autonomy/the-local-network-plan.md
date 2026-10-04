@@ -1998,13 +1998,37 @@ answering machine by its person*: the crate that knows about pairings cannot
 reach a grant, and the crate that can reach grants reads the ones belonging to
 its own machine.
 
-- **The first question this task answers, rather than assumes:** whether this
-  is a third `MayAskIts` variant or a separate mechanism. A variant would make
-  *an agent may act here* a thing a pairing permits once, up front, for
-  everything; the promise says a grant is made **on that machine, by its
-  person**, which reads as per-action and local rather than as a pairing
-  clause. **Those are different designs and the measurement does not settle
-  which.** Settle it in writing before building either.
+- **That first question is answered, and the either-or in it was wrong.**
+  This task asked whether the road is a third `MayAskIts` variant *or* a
+  separate mechanism, and said the measurement did not settle which. Reading
+  the crates settles it and shows the question was a false choice:
+  **they are different gates and both are needed.**
+  `questioned.rs` is the door for a question arriving from a paired machine,
+  and it judges **the proof first**, then **the pairing's own list**, then the
+  body — answering with what *the person here* chose for their own questions.
+  That list is `MayAskIts`. So a pairing already says **who may ask**, and
+  nothing yet says **what may be done**.
+- **A third variant is necessary.** `permitting.rs`'s doctrine is that a
+  pairing permitting everything *would be a grant nobody could read*;
+  enumerated, visible and revocable are three of ADR 0003's four words.
+  Without a variant there is no way for a person to see, or revoke, that
+  another machine may ask theirs to do work at all.
+- **And a variant is not sufficient.** It is pairing-level and given once, up
+  front. The promise requires a grant made **on that machine, by its person**,
+  which is per-action and local. `keeping_pairings.rs` already describes that
+  split as the existing architecture: *the grants are written by the person's
+  side and only ever read by this service, and the pairings are written by
+  this service.*
+- **So the shape is three gates, two of which exist**: a proof, then a pairing
+  that permits asking for work, then a grant made here by the person saying
+  what that work may touch. **The third is the only new one.**
+- **Where it goes, measured:** `alo-agentd` already holds both halves — it
+  reads `alo_remembering::THE_GRANTS` (`main.rs` and `starting.rs`) and keeps
+  the pairings file. **The join belongs there**, and that is not a preference:
+  `alo-nearby` depends on `alo-strings` and nothing else in this workspace,
+  which is **how** ADR 0003's *discovery reveals presence and nothing else* is
+  true rather than merely stated. A dependency on `alo-remembering` or
+  `alo-granted` would make the sentence a claim instead of a fact.
 - **Constraint, and it is the one most likely to be broken by the obvious
   implementation:** `alo-nearby` must not gain a dependency on
   `alo-remembering` or `alo-granted`. Its header is ADR 0003's first half —
