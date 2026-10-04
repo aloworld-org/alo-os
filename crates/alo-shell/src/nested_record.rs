@@ -137,7 +137,12 @@ fn frame_pictures(
     labels: &mut WindowControlLabels,
     size: (i32, i32),
 ) -> Result<(EgressStatusPicture, RecordPicture, Option<ApprovalPicture>), RenderError> {
-    let status = status_picture(egress, labels, size, 0, None)?;
+    let status = status_picture(
+        egress,
+        labels,
+        crate::egress_status_place::TheRoom::with_nothing_put_aside(size),
+        0,
+    )?;
     let account = picture(
         record.window.shows(),
         record.strings,

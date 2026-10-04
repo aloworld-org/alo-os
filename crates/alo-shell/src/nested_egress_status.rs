@@ -7,10 +7,10 @@
 //! out for an output it does not fit — is refused whole, so there is no frame
 //! in which a client's pixels reach the screen and the indicator does not.
 
+use crate::egress_status_place::TheRoom;
 use alo_dock::Dock;
 use alo_strings::Strings;
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
-use smithay::utils::{Physical, Rectangle};
 
 use crate::egress_status_raster::{EgressStatusLook, EgressStatusPicture, picture};
 use crate::{EgressStatus, FrameTarget, Nested, RenderError, WindowControlLabels};
@@ -50,7 +50,12 @@ impl Nested {
         egress: EgressStatusFrame<'_>,
     ) -> Result<Vec<WlSurface>, RenderError> {
         let size = self.size();
-        let status = status_picture(egress, labels, (size.w, size.h), 0, None)?;
+        let status = status_picture(
+            egress,
+            labels,
+            TheRoom::with_nothing_put_aside((size.w, size.h)),
+            0,
+        )?;
         self.submit_native_scene(
             roots,
             popups,
@@ -79,9 +84,8 @@ impl Nested {
 pub(crate) fn status_picture(
     egress: EgressStatusFrame<'_>,
     labels: &mut WindowControlLabels,
-    size: (i32, i32),
+    room: TheRoom,
     beyond: i32,
-    panel: Option<Rectangle<i32, Physical>>,
 ) -> Result<EgressStatusPicture, RenderError> {
     let drawn = egress
         .status
@@ -92,10 +96,9 @@ pub(crate) fn status_picture(
         egress.strings,
         egress.dock,
         labels,
-        size,
+        room,
         egress.look,
         beyond,
-        panel,
     )
 }
 
@@ -141,7 +144,12 @@ mod tests {
             look: look(),
         };
         assert!(matches!(
-            status_picture(frame, &mut labels, (1920, 1080), 0, None),
+            status_picture(
+                frame,
+                &mut labels,
+                TheRoom::with_nothing_put_aside((1920, 1080)),
+                0,
+            ),
             Err(RenderError::EgressStatusUnknown)
         ));
 
@@ -161,7 +169,12 @@ mod tests {
             look: look(),
         };
         assert!(matches!(
-            status_picture(frame, &mut labels, (1920, 1080), 0, None),
+            status_picture(
+                frame,
+                &mut labels,
+                TheRoom::with_nothing_put_aside((1920, 1080)),
+                0,
+            ),
             Err(RenderError::EgressStatusUnknown)
         ));
 
@@ -177,7 +190,12 @@ mod tests {
             look: look(),
         };
         assert!(matches!(
-            status_picture(frame, &mut labels, (200, 150), 0, None),
+            status_picture(
+                frame,
+                &mut labels,
+                TheRoom::with_nothing_put_aside((200, 150)),
+                0,
+            ),
             Err(RenderError::EgressStatusScene)
         ));
         assert!(indicator.ended(departing));
@@ -202,9 +220,14 @@ mod tests {
             look: look(),
         };
         assert!(
-            status_picture(frame, &mut labels, (1920, 1080), 0, None)
-                .unwrap()
-                .is_empty()
+            status_picture(
+                frame,
+                &mut labels,
+                TheRoom::with_nothing_put_aside((1920, 1080)),
+                0,
+            )
+            .unwrap()
+            .is_empty()
         );
 
         let departing = indicator
@@ -218,10 +241,15 @@ mod tests {
             look: look(),
         };
         assert_eq!(
-            status_picture(frame, &mut labels, (1920, 1080), 0, None)
-                .unwrap()
-                .rows
-                .len(),
+            status_picture(
+                frame,
+                &mut labels,
+                TheRoom::with_nothing_put_aside((1920, 1080)),
+                0,
+            )
+            .unwrap()
+            .rows
+            .len(),
             1
         );
         assert!(indicator.ended(departing));

@@ -44,7 +44,7 @@ use alo_in_use::Line;
 use alo_strings::{Direction, Strings};
 use smithay::utils::{Physical, Rectangle};
 
-use crate::egress_status_place::{Across, Place, Stacked};
+use crate::egress_status_place::{Across, Place, Stacked, TheRoom};
 use crate::in_use_mark::{MarkColours, mark};
 use crate::painted::{Inked, Solid};
 use crate::status_row::{Laid, Measure, Palette, Row};
@@ -118,10 +118,10 @@ pub(crate) fn picture(
     strings: &Strings,
     dock: &Dock,
     labels: &mut WindowControlLabels,
-    size: (i32, i32),
+    room: TheRoom,
     look: InUseLook,
-    panel: Option<Rectangle<i32, Physical>>,
 ) -> Result<InUsePicture, RenderError> {
+    let size = room.size;
     let mut picture = InUsePicture {
         size,
         rows: Vec::new(),
@@ -144,10 +144,9 @@ pub(crate) fn picture(
     let measure = Measure::of(look.scale);
     let place = Place::of(
         dock.layout_on(screen, look.scale),
-        size,
+        room,
         measure.px(8),
         look.reading,
-        panel,
     );
     let palette = palette(look.scheme, look.contrast);
 

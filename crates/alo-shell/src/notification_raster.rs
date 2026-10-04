@@ -38,7 +38,7 @@ use alo_notifying::Shown;
 use alo_strings::{Direction, Strings};
 use smithay::utils::{Physical, Rectangle};
 
-use crate::egress_status_place::{Across, Place, Stacked};
+use crate::egress_status_place::{Across, Place, Stacked, TheRoom};
 use crate::painted::{Inked, Solid};
 use crate::painted_text::sentence;
 use crate::status_row::Measure;
@@ -108,10 +108,10 @@ pub(crate) fn picture(
     strings: &Strings,
     dock: &Dock,
     labels: &mut WindowControlLabels,
-    size: (i32, i32),
+    room: TheRoom,
     look: NotificationLook,
-    panel: Option<Rectangle<i32, Physical>>,
 ) -> Result<NotificationPicture, RenderError> {
+    let size = room.size;
     let mut picture = NotificationPicture {
         size,
         cards: Vec::new(),
@@ -133,10 +133,9 @@ pub(crate) fn picture(
     let measure = Measure::of(look.scale);
     let place = Place::of_the_other_end(
         dock.layout_on(screen, look.scale),
-        size,
+        room,
         measure.px(8),
         look.reading,
-        panel,
     );
     let ground = look.contrast.ground(look.scheme);
     let ink = look.contrast.ink(look.scheme);

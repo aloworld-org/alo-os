@@ -36,7 +36,7 @@ use alo_strings::{Direction, Strings};
 use smithay::utils::{Physical, Rectangle};
 
 use crate::egress_status_mark::mark;
-use crate::egress_status_place::{Across, Place, Stacked};
+use crate::egress_status_place::{Across, Place, Stacked, TheRoom};
 use crate::painted::{Inked, Solid};
 use crate::status_row::{Laid, Measure, Palette, Row};
 use crate::{Contrast, RenderError, WindowControlLabels};
@@ -118,11 +118,11 @@ pub(crate) fn picture(
     strings: &Strings,
     dock: &Dock,
     labels: &mut WindowControlLabels,
-    size: (i32, i32),
+    room: TheRoom,
     look: EgressStatusLook,
     beyond: i32,
-    panel: Option<Rectangle<i32, Physical>>,
 ) -> Result<EgressStatusPicture, RenderError> {
+    let size = room.size;
     let mut picture = EgressStatusPicture {
         size,
         rows: Vec::new(),
@@ -146,10 +146,9 @@ pub(crate) fn picture(
     let measure = Measure::of(look.scale);
     let place = Place::of(
         dock.layout_on(screen, look.scale),
-        size,
+        room,
         measure.px(8),
         look.reading,
-        panel,
     )
     .beyond(beyond);
     let fonts = &mut labels.fonts;

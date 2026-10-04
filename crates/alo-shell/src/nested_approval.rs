@@ -148,7 +148,12 @@ fn frame_pictures(
     ),
     RenderError,
 > {
-    let status = status_picture(egress, labels, size, 0, None)?;
+    let status = status_picture(
+        egress,
+        labels,
+        crate::egress_status_place::TheRoom::with_nothing_put_aside(size),
+        0,
+    )?;
     let question = picture(
         approval.screen.shows(),
         approval.strings,

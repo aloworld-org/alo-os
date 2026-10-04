@@ -65,9 +65,8 @@ fn drawn(showing: &[Shown]) -> NotificationPicture {
         &words(),
         &Dock::shipped(),
         &mut labels,
-        (1920, 1080),
+        TheRoom::with_nothing_put_aside((1920, 1080)),
         light(),
-        None,
     )
     .unwrap()
 }
@@ -181,14 +180,9 @@ fn a_card_is_drawn_at_the_other_end_from_what_is_leaving() {
     // comparing only the no-panel case would not see it.
     let column = Rectangle::new(Point::from((1808, 0)), Size::from((112, 1080)));
     for panel in [None, Some(column)] {
-        let status = Place::of(layout, size, measure.px(8), Direction::LeftToRight, panel);
-        let cards = Place::of_the_other_end(
-            layout,
-            size,
-            measure.px(8),
-            Direction::LeftToRight,
-            panel,
-        );
+        let room = TheRoom { size, panel };
+        let status = Place::of(layout, room, measure.px(8), Direction::LeftToRight);
+        let cards = Place::of_the_other_end(layout, room, measure.px(8), Direction::LeftToRight);
 
         assert_ne!(
             format!("{:?}", status.across),
@@ -209,9 +203,8 @@ fn an_output_that_cannot_hold_a_card_is_refused() {
         &words(),
         &Dock::shipped(),
         &mut labels,
-        (LARGEST_SIDE + 1, 1080),
+        TheRoom::with_nothing_put_aside((LARGEST_SIDE + 1, 1080)),
         light(),
-        None,
     );
 
     assert!(

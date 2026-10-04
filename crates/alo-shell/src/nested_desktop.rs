@@ -303,18 +303,22 @@ pub(crate) fn frame_pictures(
         &mut labels.fonts,
         size,
     )?;
-    // The one column the three corner surfaces below must stop before. Taken from
-    // the picture rather than recomputed, so there is no second answer to keep in
-    // step — the same reason `crate::top_controls_region` takes it as an argument.
-    let panel = Some(drawn.panel.reserved);
+    // The output and the one column the three corner surfaces below must stop
+    // before, carried together because neither is useful to them alone. The column is
+    // taken from the picture rather than recomputed, so there is no second answer to
+    // keep in step — the same reason `crate::top_controls_region` takes it as an
+    // argument.
+    let room = crate::egress_status_place::TheRoom {
+        size,
+        panel: Some(drawn.panel.reserved),
+    };
     let in_use = crate::in_use_raster::picture(
         desktop.in_use,
         desktop.strings,
         desktop.dock,
         labels,
-        size,
+        room,
         desktop.look.in_use(),
-        panel,
     )?;
     let capturing = desktop
         .capturing
@@ -325,9 +329,8 @@ pub(crate) fn frame_pictures(
         desktop.strings,
         desktop.dock,
         labels,
-        size,
+        room,
         desktop.look.notifications(),
-        panel,
     )?;
     let status = status_picture(
         EgressStatusFrame {
@@ -337,9 +340,8 @@ pub(crate) fn frame_pictures(
             look: desktop.look.egress(),
         },
         labels,
-        size,
+        room,
         in_use.height,
-        panel,
     )?;
     let record = match record {
         Some(record) => Some(crate::record_raster::picture(
