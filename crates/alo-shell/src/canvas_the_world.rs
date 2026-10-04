@@ -93,8 +93,7 @@ impl crate::Server {
             return false;
         };
         self.surfaces.showing = Showing::TheWorld;
-        self.camera = camera;
-        self.surfaces.popups.camera = camera;
+        self.surfaces.camera = camera;
         true
     }
 
@@ -116,8 +115,7 @@ impl crate::Server {
         // restore and task 5's, and guessing it here would be a second answer to
         // *where was everything*.
         let camera = alo_canvas::Camera::new();
-        self.camera = camera;
-        self.surfaces.popups.camera = camera;
+        self.surfaces.camera = camera;
         Some(place)
     }
 

@@ -188,12 +188,42 @@ pub(crate) struct Surfaces {
     windows: Vec<Window>,
     /// **Which Place the person is looking at.**
     ///
-    /// One home, not two. `Server::camera` has a second copy in
-    /// `self.popups.camera` that three mutators keep in step by hand, and this
-    /// deliberately does not repeat that: a new toplevel is created here, on
-    /// `Surfaces`, so the Place it is put on has to be reachable from here, and
-    /// the shell reads it back through `Server::the_place_now`.
+    /// One home, not two. A new toplevel is created here, on `Surfaces`, so the
+    /// Place it is put on has to be reachable from here, and the shell reads it
+    /// back through `Server::the_place_now`.
+    ///
+    /// **This note used to name the camera as the counter-example** — *`Server::camera`
+    /// has a second copy in `self.popups.camera` that three mutators keep in step
+    /// by hand, and this deliberately does not repeat that.* It was right to, and
+    /// it is why [`Self::camera`] below now sits beside this field instead. It was
+    /// also an undercount: there were **seven** places keeping the two in step, not
+    /// three.
     pub(crate) place: alo_canvas::Place,
+    /// **Where on the plane the person is looking, and how far in.**
+    ///
+    /// One home, and this is it. It had two until 2026-10-04: a field on `Server`
+    /// and a copy on `self.popups`, which **five** places kept in step by hand —
+    /// the four mutators in `crate::canvas_camera` and `crate::canvas_show_all`,
+    /// and `Server::render_frame`, which re-assigned the copy once a frame before
+    /// drawing. That last one is why nothing was ever stale: the per-frame
+    /// assignment made a forgotten mutator harmless, so the pattern was a real
+    /// design rather than an oversight, and the note on [`Self::place`] right above
+    /// records that it deliberately did not copy it.
+    ///
+    /// **It is collapsed now because the next task cannot be done over it.** Canvas
+    /// task 9 — *every screen is a view onto the canvas* — makes a camera **per
+    /// viewport**, and *the* camera syncing into *the* popups has no meaning with
+    /// two displays at their own zoom: which display's plane constrains a popup is
+    /// a question the old shape could not be asked. `alo-displays` already models
+    /// more than one display, so the state's home was the only thing in the way.
+    ///
+    /// Here rather than on `Server` for [`Self::place`]'s own reason: a popup is
+    /// created in this file and constrained to the **screen**, so where the plane
+    /// sits has to be reachable from here. `Popups` is handed it as an argument
+    /// instead of keeping a copy — an argument cannot be left un-synced, and the
+    /// three entry points that place a popup all had to answer for it to compile.
+    /// The shell reads it back through `Server::the_camera`.
+    pub(crate) camera: alo_canvas::Camera,
     /// **Which level the person is looking at**: one Place, or every Place.
     ///
     /// Stored rather than derived because the World and a Place are different
@@ -286,6 +316,7 @@ impl Surfaces {
             handed_over: Vec::new(),
             windows: Vec::new(),
             // A machine that has never been used is looking at its first Place.
+            camera: alo_canvas::Camera::new(),
             place: alo_canvas::Place::FIRST,
             showing: alo_canvas::Showing::OnePlace(alo_canvas::Place::FIRST),
             seats: SeatState::new(),
@@ -341,7 +372,8 @@ impl Surfaces {
         self.prune_window_modes();
         let parents: Vec<_> = self.mapped().cloned().collect();
         self.popups.prune(&parents);
-        self.popups.refresh(&parents);
+        let camera = self.camera;
+        self.popups.refresh(camera, &parents);
         self.prune_popup_grab();
         self.prune_keyboard_focus();
         self.prune_pointer_focus();
@@ -556,7 +588,8 @@ impl XdgShellHandler for Surfaces {
     fn new_popup(&mut self, surface: PopupSurface, positioner: PositionerState) {
         self.prune();
         let parents: Vec<_> = self.mapped().cloned().collect();
-        self.popups.insert(surface, positioner, &parents);
+        let camera = self.camera;
+        self.popups.insert(camera, surface, positioner, &parents);
     }
     fn grab(&mut self, surface: PopupSurface, seat: WlSeat, serial: Serial) {
         self.grab_popup(surface, seat, serial);
@@ -654,8 +687,9 @@ impl XdgShellHandler for Surfaces {
     ) {
         self.prune();
         let parents: Vec<_> = self.mapped().cloned().collect();
+        let camera = self.camera;
         self.popups
-            .reposition(&surface, positioner, token, &parents);
+            .reposition(camera, &surface, positioner, token, &parents);
     }
 }
 

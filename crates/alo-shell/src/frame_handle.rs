@@ -59,9 +59,9 @@ impl crate::Server {
     /// shadows are outside it and the band sits against the picture rather than
     /// against the buffer.
     pub(crate) fn the_band_of(&self, frame: &WlSurface) -> Option<Rectangle<f64, Logical>> {
-        let zoom = crate::scene::drawn_at(self.camera);
+        let zoom = crate::scene::drawn_at(self.the_camera());
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
-        let (_, buffer) = crate::scene::trees(&roots, &self.popup_surfaces(), self.camera)
+        let (_, buffer) = crate::scene::trees(&roots, &self.popup_surfaces(), self.the_camera())
             .into_iter()
             .find(|(surface, _)| surface == frame)?;
         let geometry = crate::scene::geometry(frame);
@@ -84,7 +84,7 @@ impl crate::Server {
     /// hoped for.
     pub(crate) fn the_name_under(&self, at: Point<f64, Logical>) -> Option<WlSurface> {
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
-        crate::scene::trees(&roots, &self.popup_surfaces(), self.camera)
+        crate::scene::trees(&roots, &self.popup_surfaces(), self.the_camera())
             .into_iter()
             .filter(|(surface, _)| roots.contains(surface))
             .find(|(surface, _)| {

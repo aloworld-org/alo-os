@@ -513,7 +513,7 @@ impl Server {
     ) -> Option<(WlSurface, Point<f64, Logical>)> {
         let on_the_plane = self.surfaces.on_the_plane(location);
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
-        crate::scene::trees(&roots, &self.popup_surfaces(), self.camera)
+        crate::scene::trees(&roots, &self.popup_surfaces(), self.the_camera())
             .into_iter()
             .find_map(|(root, origin)| {
                 let origin = self.surfaces.on_the_plane(origin);
@@ -542,7 +542,7 @@ impl Surfaces {
     /// them, and a control that converted a pointer would be compensating for a
     /// transform it is not under.
     pub(crate) fn on_the_plane(&self, screen: Point<f64, Logical>) -> Point<f64, Logical> {
-        screen.downscale(crate::scene::drawn_at(self.popups.camera))
+        screen.downscale(crate::scene::drawn_at(self.camera))
     }
 }
 
