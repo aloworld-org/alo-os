@@ -38,7 +38,7 @@ use alo_notifying::Shown;
 use alo_strings::{Direction, Strings};
 use smithay::utils::{Physical, Rectangle};
 
-use crate::egress_status_place::{Across, Place, Stacked};
+use crate::egress_status_place::{Across, Place, Stacked, TheRoom};
 use crate::painted::{Inked, Solid};
 use crate::painted_text::sentence;
 use crate::status_row::Measure;
@@ -99,14 +99,19 @@ impl NotificationPicture {
 /// [`RenderError::NotificationScene`] when there is one to show and the output
 /// is too small for `alo-dock` to lay a dock out on, or larger than any output
 /// a card is laid out for.
+/// `panel` is the column the put-aside panel reserved, or [`None`] when nothing is
+/// put aside. A notification takes the end of the edge away from the status corner,
+/// which in a mirrored session is the end the column is at — see
+/// `crate::egress_status_place`.
 pub(crate) fn picture(
     showing: &[Shown],
     strings: &Strings,
     dock: &Dock,
     labels: &mut WindowControlLabels,
-    size: (i32, i32),
+    room: TheRoom,
     look: NotificationLook,
 ) -> Result<NotificationPicture, RenderError> {
+    let size = room.size;
     let mut picture = NotificationPicture {
         size,
         cards: Vec::new(),
@@ -128,7 +133,7 @@ pub(crate) fn picture(
     let measure = Measure::of(look.scale);
     let place = Place::of_the_other_end(
         dock.layout_on(screen, look.scale),
-        size,
+        room,
         measure.px(8),
         look.reading,
     );

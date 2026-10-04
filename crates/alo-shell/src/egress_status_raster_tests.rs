@@ -49,7 +49,7 @@ fn drawn_as(indicator: &Indicator, look: EgressStatusLook) -> EgressStatusPictur
         &words(),
         &Dock::shipped(),
         &mut labels,
-        (1920, 1080),
+        TheRoom::with_nothing_put_aside((1920, 1080)),
         look,
         0,
     )
@@ -292,7 +292,7 @@ fn every_line_is_drawn_exactly_as_alo_egress_words_it_and_is_collected() {
         &strings,
         &Dock::shipped(),
         &mut labels,
-        (3840, 2160),
+        TheRoom::with_nothing_put_aside((3840, 2160)),
         light(),
         0,
     )
@@ -335,7 +335,7 @@ fn a_vocabulary_without_the_lines_still_draws_them() {
         &Strings::of(Vocabulary::empty()),
         &Dock::shipped(),
         &mut labels,
-        (1920, 1080),
+        TheRoom::with_nothing_put_aside((1920, 1080)),
         light(),
         0,
     )
@@ -430,7 +430,7 @@ fn it_is_drawn_at_the_far_end_of_the_dock_wherever_the_dock_is() {
                 &words(),
                 &dock,
                 &mut labels,
-                (width, height),
+                TheRoom::with_nothing_put_aside((width, height)),
                 look,
                 0,
             )
@@ -503,7 +503,7 @@ fn no_look_and_no_dock_draws_a_lit_indicator_as_nothing() {
                         &words(),
                         &dock,
                         &mut labels,
-                        (1366, 768),
+                        TheRoom::with_nothing_put_aside((1366, 768)),
                         look,
                         0,
                     )
@@ -554,7 +554,7 @@ fn lines_that_do_not_fit_end_with_the_indicators_own_count() {
         &strings,
         &Dock::shipped(),
         &mut labels,
-        (1366, 768),
+        TheRoom::with_nothing_put_aside((1366, 768)),
         look,
         0,
     )
@@ -594,9 +594,9 @@ fn an_output_that_cannot_hold_a_dock_refuses_a_lit_frame_and_not_a_quiet_one() {
                     &words(),
                     &Dock::shipped(),
                     &mut labels,
-                    size,
+                    TheRoom::with_nothing_put_aside(size),
                     light(),
-                    0
+                    0,
                 ),
                 Err(RenderError::EgressStatusScene)
             ),
@@ -608,7 +608,7 @@ fn an_output_that_cannot_hold_a_dock_refuses_a_lit_frame_and_not_a_quiet_one() {
                 &words(),
                 &Dock::shipped(),
                 &mut labels,
-                size,
+                TheRoom::with_nothing_put_aside(size),
                 light(),
                 0,
             )

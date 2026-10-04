@@ -7,6 +7,7 @@
 //! out for an output it does not fit — is refused whole, so there is no frame
 //! in which a client's pixels reach the screen and the indicator does not.
 
+use crate::egress_status_place::TheRoom;
 use alo_dock::Dock;
 use alo_strings::Strings;
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
@@ -49,7 +50,12 @@ impl Nested {
         egress: EgressStatusFrame<'_>,
     ) -> Result<Vec<WlSurface>, RenderError> {
         let size = self.size();
-        let status = status_picture(egress, labels, (size.w, size.h), 0)?;
+        let status = status_picture(
+            egress,
+            labels,
+            TheRoom::with_nothing_put_aside((size.w, size.h)),
+            0,
+        )?;
         self.submit_native_scene(
             roots,
             popups,
@@ -65,10 +71,20 @@ impl Nested {
 /// `beyond` is how much of the status area's corner is already taken by the
 /// in-use indicator, which has the corner (`crate::in_use_raster`). Frames that
 /// do not carry that indicator pass zero.
+///
+/// `panel` is the column the put-aside panel reserved, or [`None`] on a frame that
+/// has no panel to reserve one. **Every scene that draws a desktop passes the
+/// column; the overlay scenes pass [`None`] because they draw no panel**, and that
+/// is a measurement rather than a convenience — `crate::nested_record`,
+/// `crate::nested_settings` and `crate::nested_approval` lay out one window and the
+/// indicator, with no put-aside panel in the frame at all, so there is no column to
+/// stop before. If one of them ever grows a panel, `None` becomes the wrong answer
+/// there and the compiler will not say so; `crate::egress_status_place` is where the
+/// rule lives.
 pub(crate) fn status_picture(
     egress: EgressStatusFrame<'_>,
     labels: &mut WindowControlLabels,
-    size: (i32, i32),
+    room: TheRoom,
     beyond: i32,
 ) -> Result<EgressStatusPicture, RenderError> {
     let drawn = egress
@@ -80,7 +96,7 @@ pub(crate) fn status_picture(
         egress.strings,
         egress.dock,
         labels,
-        size,
+        room,
         egress.look,
         beyond,
     )
@@ -128,7 +144,12 @@ mod tests {
             look: look(),
         };
         assert!(matches!(
-            status_picture(frame, &mut labels, (1920, 1080), 0),
+            status_picture(
+                frame,
+                &mut labels,
+                TheRoom::with_nothing_put_aside((1920, 1080)),
+                0,
+            ),
             Err(RenderError::EgressStatusUnknown)
         ));
 
@@ -148,7 +169,12 @@ mod tests {
             look: look(),
         };
         assert!(matches!(
-            status_picture(frame, &mut labels, (1920, 1080), 0),
+            status_picture(
+                frame,
+                &mut labels,
+                TheRoom::with_nothing_put_aside((1920, 1080)),
+                0,
+            ),
             Err(RenderError::EgressStatusUnknown)
         ));
 
@@ -164,7 +190,12 @@ mod tests {
             look: look(),
         };
         assert!(matches!(
-            status_picture(frame, &mut labels, (200, 150), 0),
+            status_picture(
+                frame,
+                &mut labels,
+                TheRoom::with_nothing_put_aside((200, 150)),
+                0,
+            ),
             Err(RenderError::EgressStatusScene)
         ));
         assert!(indicator.ended(departing));
@@ -189,9 +220,14 @@ mod tests {
             look: look(),
         };
         assert!(
-            status_picture(frame, &mut labels, (1920, 1080), 0)
-                .unwrap()
-                .is_empty()
+            status_picture(
+                frame,
+                &mut labels,
+                TheRoom::with_nothing_put_aside((1920, 1080)),
+                0,
+            )
+            .unwrap()
+            .is_empty()
         );
 
         let departing = indicator
@@ -205,10 +241,15 @@ mod tests {
             look: look(),
         };
         assert_eq!(
-            status_picture(frame, &mut labels, (1920, 1080), 0)
-                .unwrap()
-                .rows
-                .len(),
+            status_picture(
+                frame,
+                &mut labels,
+                TheRoom::with_nothing_put_aside((1920, 1080)),
+                0,
+            )
+            .unwrap()
+            .rows
+            .len(),
             1
         );
         assert!(indicator.ended(departing));

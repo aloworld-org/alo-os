@@ -36,7 +36,7 @@ use alo_strings::{Direction, Strings};
 use smithay::utils::{Physical, Rectangle};
 
 use crate::egress_status_mark::mark;
-use crate::egress_status_place::{Across, Place, Stacked};
+use crate::egress_status_place::{Across, Place, Stacked, TheRoom};
 use crate::painted::{Inked, Solid};
 use crate::status_row::{Laid, Measure, Palette, Row};
 use crate::{Contrast, RenderError, WindowControlLabels};
@@ -108,15 +108,21 @@ pub(crate) fn palette(scheme: Scheme, contrast: Contrast) -> Palette {
 /// is too small for `alo-dock` to lay a dock out on, or larger than any output
 /// this surface is laid out for. A frame that cannot carry the indicator is
 /// refused rather than drawn without it.
+///
+/// `panel` is the column the put-aside panel reserved on this output, or [`None`]
+/// when nothing is put aside. The corner stops before it — see
+/// `crate::egress_status_place` for the owner's ruling it applies and for why it is
+/// a parameter rather than something a caller remembers to do.
 pub(crate) fn picture(
     drawn: &Drawn,
     strings: &Strings,
     dock: &Dock,
     labels: &mut WindowControlLabels,
-    size: (i32, i32),
+    room: TheRoom,
     look: EgressStatusLook,
     beyond: i32,
 ) -> Result<EgressStatusPicture, RenderError> {
+    let size = room.size;
     let mut picture = EgressStatusPicture {
         size,
         rows: Vec::new(),
@@ -140,7 +146,7 @@ pub(crate) fn picture(
     let measure = Measure::of(look.scale);
     let place = Place::of(
         dock.layout_on(screen, look.scale),
-        size,
+        room,
         measure.px(8),
         look.reading,
     )

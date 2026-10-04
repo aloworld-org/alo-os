@@ -93,7 +93,7 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                         "{reading:?}: a line covers the dock"
                     );
                 }
-                // The first line ends at **the screen's far corner** — the
+                // The first line ends at **the far corner of the room** — the
                 // side a person reads last — rather than at the Dock's end.
                 //
                 // Those were the same place while the Dock was a band spanning
@@ -102,20 +102,46 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                 // is where a person already glances, and one that moved into
                 // the middle of the screen because the Dock got narrower would
                 // be harder to find rather than easier.
+                //
+                // **The room, not the output, since 2026-10-04 — and that is not a
+                // weakening of the sentence above.** The reasoning there is about
+                // refusing to follow the *Dock's* width, and it still holds: the bar
+                // is centred and narrow and the indicator ignores it. What the
+                // indicator now stops before is the put-aside panel's reserved
+                // column, which is a different surface and the one the owner's ruling
+                // of 2026-09-30 names — *so one pointer position cannot reveal two
+                // surfaces*. Before this, the first line ran 104 pixels **under** the
+                // column on a real draw, and this test read `width - margin` and
+                // passed, because the output's far corner and the room's far corner
+                // were the same number only while nothing reserved anything.
+                //
+                // Taken from the picture's own column rather than written as 112, so a
+                // panel that changes width does not need this test edited — and so a
+                // panel that reserves nothing still asserts the output's own corner.
                 let first = rows.first().unwrap().area;
                 let band = dock_drawn.as_ref().unwrap().band;
                 let (width, _) = size;
                 let margin = i32::try_from(alo_dock::measures::MARGIN).unwrap();
+                let column = pictures.desktop.panel.reserved;
+                let reserved = (column.size.w > 0 && column.size.h > 0).then_some(column);
+                assert!(
+                    reserved.is_some(),
+                    "this fixture reveals the panel, so a reserved column is what makes                      the two corners different numbers — without one this asserts the                      case it was rewritten to stop asserting"
+                );
                 match reading {
                     Direction::LeftToRight => {
+                        let far = reserved.map_or(width, |column| column.loc.x);
                         assert_eq!(
                             first.loc.x + first.size.w,
-                            width - margin,
+                            far - margin,
                             "{reading:?} {size:?}"
                         );
                     }
                     Direction::RightToLeft => {
-                        assert_eq!(first.loc.x, margin, "{reading:?} {size:?}");
+                        let near = reserved
+                            .filter(|column| column.loc.x <= 0)
+                            .map_or(0, |column| column.loc.x + column.size.w);
+                        assert_eq!(first.loc.x, near + margin, "{reading:?} {size:?}");
                     }
                 }
                 assert!(

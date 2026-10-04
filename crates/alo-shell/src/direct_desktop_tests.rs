@@ -93,9 +93,11 @@ impl crate::TheDesktop for ADesktop {
 /// The set has four members: the status area joined in #414 and the top controls in #442,
 /// and **the ruling does not mention the status area.**
 ///
-/// Nothing compared them until this test, and the two are computed in different places:
-/// `status_picture` runs before `desktop_raster::picture`, so the band the top controls
-/// reserve is laid out without knowing where the status area is. Both sit along the top.
+/// Nothing compared them until this test. The two used to be computed in an order that
+/// made the comparison impossible to get right: `status_picture` ran **before**
+/// `desktop_raster::picture`, so every surface at the far corner was laid out without
+/// knowing how wide the panel's column was. `frame_pictures` draws the desktop first as
+/// of 2026-10-04, for exactly that reason.
 ///
 /// **Asked of a real picture rather than of invented rectangles**, which is the whole
 /// point: every integration test of the rule hands over bounds it made up — correctly,
@@ -103,10 +105,10 @@ impl crate::TheDesktop for ADesktop {
 /// surfaces claiming one point. This builds the pictures a draw builds and compares what
 /// they produced.
 ///
-/// # The status area is left out, and the measurement is why
+/// # The status area was left out, and is in since 2026-10-04
 ///
-/// Including it **fails today**, on a real draw, with something leaving so that it paints
-/// at all:
+/// Including it **failed**, on a real draw, with something leaving so that it painted at
+/// all:
 ///
 /// ```text
 /// the status area's band        x=905  y=575  367 x 36
@@ -114,19 +116,23 @@ impl crate::TheDesktop for ADesktop {
 ///                               they share 104 pixels
 /// ```
 ///
-/// Two members of the fixed-control set claim 104 pixels in common, and the owner's ruling
-/// of 2026-09-30 does not reach it: that ruling names **the top controls, the right panel
-/// and the bottom Dock**, and the status area joined the set on 2026-10-02, after it.
+/// It was left out rather than asserted as expected, because a test saying *these two
+/// overlap* would have to change the day somebody fixed it, which is how a bug becomes a
+/// requirement. What closed it is in `crate::egress_status_place`: the panel's column is
+/// now a **required parameter** of the constructor that answers where a surface at that
+/// corner sits, so the band's far edge *is* the column's near edge. Three surfaces went
+/// through that constructor measuring from the output's own width, and only one of them is
+/// in this set — `crate::in_use_raster`'s *your camera is on* and the notifications at the
+/// other end were under the column too, with nothing in the repository able to see it.
 ///
-/// **And a second thing the same numbers say.** The status area is drawn at `y=575` of a
-/// 720-high screen, immediately above the Dock's band at `y=619` — while
+/// **The second thing those numbers looked like saying was not true.** The band is drawn
+/// at `y=575` of a 720-high screen, immediately above the Dock — while
 /// `crate::canvas_fixed_controls` records twice that *the owner fixed its position at the
-/// top-right of the screen*. Whether the draw or the record is wrong is not a test's
-/// question, and the two readings have opposite fixes.
-///
-/// Both are with the owner. The pair is added here when either is settled, and is **not**
-/// asserted as expected meanwhile: a test saying *these two overlap* would have to change
-/// the day somebody fixes it, which is how a bug becomes a requirement.
+/// top-right*. That read as a conflict and was written into a decision record as one. It
+/// is not: **two surfaces share one name.** The owner's status area — clock, battery,
+/// network, volume — is at the top-right and nothing draws it; what this field carries is
+/// the **egress indicator's** band, which has been at the far end of the Dock since before
+/// ADR 0076. So there was never a position to settle, and what is owed is a name.
 ///
 /// *This test also passed vacuously in its first form.* With nothing leaving, the status
 /// area paints nothing and has no band, so it dropped out of the comparison and the check
@@ -182,6 +188,13 @@ fn the_four_fixed_controls_a_draw_lays_out_do_not_overlap() {
             Some(pictures.desktop.panel.reserved),
         ),
         ("the top controls' band", pictures.desktop.top_controls),
+        // **The fourth member, which this test was named for and did not hold.**
+        // Until 2026-10-04 it was left out, because on a real draw its band and the
+        // panel's column shared 104 pixels and the loop below would have failed —
+        // the disagreement ADR 0086 records as reconciliation 3. It is in now
+        // because `crate::egress_status_place` stops the corner before the column by
+        // construction, so there is nothing left to exclude it for.
+        ("the status area's band", pictures.status.band),
     ]
     .into_iter()
     .filter_map(|(what, area)| area.map(|area| (what, area)))
@@ -190,25 +203,29 @@ fn the_four_fixed_controls_a_draw_lays_out_do_not_overlap() {
     .filter(|(_, area)| area.size.w > 0 && area.size.h > 0)
     .collect();
 
-    // The set has never had fewer than two members with extent on an ordinary desktop,
-    // so one or none means this read the pictures wrongly and every check below would
-    // pass vacuously.
-    assert!(
-        named.len() >= 2,
-        "read {} fixed control(s) with extent from a real draw: {named:?}",
+    // **Presence is asserted, not merely the disjointness.** Rectangles that do not
+    // overlap is a true and useless answer if the one a change added was not among
+    // them — and the first form of this test did exactly that with the status area,
+    // passing while comparing three others. So each member a change brought in is
+    // required to be there before anything is concluded from the pairs.
+    for owed in ["the top controls' band", "the status area's band"] {
+        assert!(
+            named.iter().any(|(what, _)| *what == owed),
+            "{owed} had no extent in a real draw, so this test compared other \
+             rectangles and said nothing about the member it was written for: {named:?}"
+        );
+    }
+    // **And all four, so the name stops being a claim about a count nothing holds.**
+    // The set has four members as of #442 and the loop below compares whatever it was
+    // handed; a member silently dropping out is how the first version of this test
+    // passed while saying nothing. Asserted as an equality rather than a floor,
+    // because the interesting failure is one fewer, not one more.
+    assert_eq!(
+        named.len(),
+        4,
+        "a real draw laid out {} fixed controls with extent, not the four the set has: \
+         {named:?}",
         named.len()
-    );
-    // **The newest member's presence is asserted, not merely the disjointness.** Two
-    // rectangles that do not overlap is a true and useless answer if the one this change
-    // added was not among them — and the first form of this test did exactly that with
-    // the status area, passing while comparing three others. So the band is required to
-    // be there before anything is concluded from the pairs.
-    assert!(
-        named
-            .iter()
-            .any(|(what, _)| *what == "the top controls' band"),
-        "the top controls' band had no extent in a real draw, so this test compared \
-         other rectangles and said nothing about the member it was written for: {named:?}"
     );
 
     for (i, (one_what, one)) in named.iter().enumerate() {

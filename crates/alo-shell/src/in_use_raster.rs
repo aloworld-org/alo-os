@@ -44,7 +44,7 @@ use alo_in_use::Line;
 use alo_strings::{Direction, Strings};
 use smithay::utils::{Physical, Rectangle};
 
-use crate::egress_status_place::{Across, Place, Stacked};
+use crate::egress_status_place::{Across, Place, Stacked, TheRoom};
 use crate::in_use_mark::{MarkColours, mark};
 use crate::painted::{Inked, Solid};
 use crate::status_row::{Laid, Measure, Palette, Row};
@@ -108,14 +108,20 @@ fn palette(scheme: Scheme, contrast: Contrast) -> Palette {
 /// surface is laid out for. **A frame that cannot carry this indicator is
 /// refused rather than drawn without it** — a machine that could not say its
 /// camera was on may not put a desktop up instead.
+///
+/// `panel` is the column the put-aside panel reserved on this output, or [`None`]
+/// when nothing is put aside. The corner stops before it — see
+/// `crate::egress_status_place` for the owner's ruling it applies and for why it is
+/// a parameter rather than something a caller remembers to do.
 pub(crate) fn picture(
     lines: &[Line],
     strings: &Strings,
     dock: &Dock,
     labels: &mut WindowControlLabels,
-    size: (i32, i32),
+    room: TheRoom,
     look: InUseLook,
 ) -> Result<InUsePicture, RenderError> {
+    let size = room.size;
     let mut picture = InUsePicture {
         size,
         rows: Vec::new(),
@@ -138,7 +144,7 @@ pub(crate) fn picture(
     let measure = Measure::of(look.scale);
     let place = Place::of(
         dock.layout_on(screen, look.scale),
-        size,
+        room,
         measure.px(8),
         look.reading,
     );

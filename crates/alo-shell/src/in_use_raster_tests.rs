@@ -53,7 +53,7 @@ fn drawn(uses: &[Use]) -> InUsePicture {
         &words(),
         &Dock::shipped(),
         &mut labels,
-        (1920, 1080),
+        TheRoom::with_nothing_put_aside((1920, 1080)),
         light(),
     )
     .unwrap()
@@ -196,7 +196,7 @@ fn an_output_that_cannot_hold_the_indicator_is_refused() {
         &words(),
         &Dock::shipped(),
         &mut labels,
-        (LARGEST_SIDE + 1, 1080),
+        TheRoom::with_nothing_put_aside((LARGEST_SIDE + 1, 1080)),
         light(),
     );
 
