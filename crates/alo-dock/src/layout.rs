@@ -66,12 +66,27 @@ use crate::screen::Screen;
 /// **A type rather than a comment**, so that a caller which handles the two edges
 /// that work cannot quietly do nothing for the two that do not — which is how the
 /// bottom-only decision came to be enforced by code that never mentioned it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+///
+/// # It carries no sentence, and that is two decisions rather than an omission
+///
+/// **This crate may not write English.** `alo-choosing`'s
+/// `the_five_crates_write_no_english_outside_the_vocabulary` holds `alo-dock` to
+/// putting every word a person could read in `crate::words`, and it caught the
+/// first version of this type, which had a `thiserror` message. The check is
+/// right: a sentence in an `#[error]` here is a sentence no translator is handed.
+///
+/// **And there is no sentence to declare.** Nothing shows this on a screen and
+/// nothing could, because no person can ask for a side dock yet — the owner's
+/// order of work of 2026-10-04 is that nonfunctional edge choices are not exposed
+/// as finished settings. A caller **matches** on this; it does not render it.
+/// Declaring a `Word` would put a sentence in front of twenty-four translators for
+/// a state no person can reach, which is the cost that order of work avoids.
+///
+/// When a person *can* choose an edge, what they read on a refusal is a word in
+/// `crate::words` worded for them, never this type's `Debug`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NotLaidOut {
     /// A side dock, whose names have no measured placement.
-    #[error(
-        "a dock on the {edge:?} edge has no laid-out name placement: a name beside an icon needs          a width this crate has no measurement for"
-    )]
     TheNamesHaveNoPlacement {
         /// Which edge was asked for.
         edge: Edge,
