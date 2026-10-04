@@ -472,7 +472,7 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// the shortcuts do, what is held down, the keys that print a word, why a
 /// combination was refused, what one chord wanted twice says, and then what is
 /// said about the person's own file.
-pub const EVERY_WORD: [Word; 51] = [
+pub const EVERY_WORD: [Word; 52] = [
     THE_AGENT,
     LAUNCHER,
     SETTINGS,
@@ -489,6 +489,7 @@ pub const EVERY_WORD: [Word; 51] = [
     ZOOM_THE_CANVAS_OUT,
     SHOW_ALL_ON_THE_CANVAS,
     MOVE_THE_WINDOW_TO_THE_NEXT_PLACE,
+    GO_BACK_ON_THIS_PLACE,
     SUPER,
     CTRL,
     ALT,
@@ -580,6 +581,18 @@ pub const MOVE_THE_WINDOW_TO_THE_NEXT_PLACE: Word = Word::saying(
      work with it. It is a move and never a copy: the window is on the new Place and is not \
      on the old one. This is the keyboard road for somebody who cannot drag a window out \
      through the World, so it must not require a pointer or an aim.",
+);
+
+/// What [`crate::Action::GoBackOnThisPlace`] does.
+pub const GO_BACK_ON_THIS_PLACE: Word = Word::saying(
+    "shortcuts.action.go-back-on-this-place",
+    "Put this Place back as it was",
+)
+.noting(
+    "Puts the windows on the surface the person is looking at back where they were a moment \
+     ago, and leaves every other surface alone. One step back each time it is pressed, so \
+     pressing it twice goes back twice. *Place* is the person's own named surface on the \
+     canvas, the same word the other Place shortcuts use, and not a location in the world.",
 );
 
 #[cfg(test)]

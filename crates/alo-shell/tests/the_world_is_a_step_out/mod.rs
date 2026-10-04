@@ -61,7 +61,7 @@ fn press(f: &Fixture, action: Action) {
         .chord_for(action)
         .expect("the action has a shipped chord");
     f.backend(move |s| {
-        let _ = s.dispatch_canvas_command(&Shortcuts::shipped(), chord);
+        let _ = s.dispatch_canvas_command(&Shortcuts::shipped(), chord, a_moment());
     });
 }
 
@@ -219,4 +219,13 @@ fn a_point_between_tiles_enters_nothing() {
         Showing::TheWorld,
         "aiming at nothing took the person out of the World anyway"
     );
+}
+
+/// A moment a test chooses, so nothing here depends on a clock.
+///
+/// Only one canvas action reads it — putting a Place back holds the state
+/// being left under a moment — and no test in this file presses that chord.
+/// A fixed value says so more plainly than `SystemTime::now()` would.
+fn a_moment() -> std::time::SystemTime {
+    std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_760_000_000)
 }

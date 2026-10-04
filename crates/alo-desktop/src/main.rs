@@ -362,17 +362,36 @@ mod running {
         /// **A refusal is said and does not stop the desktop.** A full disk
         /// costs a person their remembered layout; a compositor that stopped
         /// compositing over it would cost them the machine.
-        fn the_layout_is_now(&mut self, arrangement: alo_arranging::Arrangement) {
+        fn the_layout_is_now(
+            &mut self,
+            arrangement: alo_arranging::Arrangement,
+        ) -> alo_arranging::Arrangement {
             let Some(at) = self.layout_at.as_deref() else {
-                return;
+                // **Nowhere to keep it means nothing to remember.** A session
+                // with no folder gets the layout it handed over, which is the
+                // truth: its Places remember nothing earlier than now, and a
+                // ribbon drawn from it would have no stops.
+                return arrangement;
             };
             // **The moment the layout moved**, which is what a Place's
             // ribbon is indexed by. Read here rather than inside `keep`, so
             // that what a test holds is a moment it chose and not a clock
             // (`alo_arranging::Arrangement::following`).
             let when = std::time::SystemTime::now();
-            if let Err(why) = alo_arranging::keeping::keep(at, &arrangement, when) {
-                eprintln!("alo-desktop: the canvas layout was not kept — {why}");
+            match alo_arranging::keeping::keep(at, &arrangement, when) {
+                // **What was kept, which is more than what was handed over**:
+                // each Place's earlier states carried forward and the one just
+                // replaced added to them. The shell holds this so a person can
+                // step back without the file being read again.
+                Ok(kept) => kept,
+                Err(why) => {
+                    eprintln!("alo-desktop: the canvas layout was not kept — {why}");
+                    // **The layout, not the series.** Nothing was written, so
+                    // nothing was added to any ribbon, and answering with a
+                    // series this file did not keep would tell the session it
+                    // can step back to a state that is on no disk.
+                    arrangement
+                }
             }
         }
 

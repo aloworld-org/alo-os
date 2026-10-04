@@ -84,12 +84,36 @@ pub enum Action {
     /// the only road*. The pointer road drags a frame out through the World; this
     /// one needs no pointer, no World and no aim.
     MoveTheWindowToTheNextPlace,
+    /// Put this Place back as it was a moment ago.
+    ///
+    /// **One step back, not a named moment**, and the distinction is what keeps
+    /// this inside the current release. `docs/features.md` holds two promises
+    /// here at two tiers: *A Place remembers time* is `[v0.01]` and **the time
+    /// ribbon** — the strip at the bottom edge that fades the desktop into the
+    /// past with what changed glowing — is `[v1.1]`. Naming a moment needs that
+    /// strip to name it in. Stepping back needs no surface at all, and walks the
+    /// same series the ribbon will one day draw.
+    ///
+    /// So this is the road the capability has until the ribbon exists, exactly
+    /// as [`Self::MoveTheWindowToTheNextPlace`] is the road for somebody who
+    /// cannot drag: `docs/autonomy/the-canvas-and-its-places.md` says *neither
+    /// road is the only road*.
+    GoBackOnThisPlace,
 }
 
 impl Action {
     /// Everything a shortcut can do, in the order a settings panel lists them:
-    /// the three that summon something, then the window in front, then moving
-    /// between windows.
+    /// the three that summon something, then the five done to the window in
+    /// front, then the four for moving between windows and applications, then
+    /// the canvas's five.
+    ///
+    /// **The sentence above counts, and it had stopped.** It read *the three
+    /// that summon something, then the window in front, then moving between
+    /// windows* while four canvas actions sat under it unnamed — true of the
+    /// list it was written for and quietly incomplete for every one added
+    /// since. Corrected in the change that added the fifth canvas action rather
+    /// than left for the sixth, because a counting sentence nobody recounts is
+    /// worse than no sentence: it reads as checked.
     pub const ALL: &'static [Self] = &[
         Self::TheAgent,
         Self::Launcher,
@@ -107,6 +131,7 @@ impl Action {
         Self::ZoomTheCanvasOut,
         Self::ShowAllOnTheCanvas,
         Self::MoveTheWindowToTheNextPlace,
+        Self::GoBackOnThisPlace,
     ];
 
     /// The string this crate declares for it: the key a translator's file is
@@ -130,6 +155,7 @@ impl Action {
             Self::ZoomTheCanvasOut => words::ZOOM_THE_CANVAS_OUT,
             Self::ShowAllOnTheCanvas => words::SHOW_ALL_ON_THE_CANVAS,
             Self::MoveTheWindowToTheNextPlace => words::MOVE_THE_WINDOW_TO_THE_NEXT_PLACE,
+            Self::GoBackOnThisPlace => words::GO_BACK_ON_THIS_PLACE,
         }
     }
 

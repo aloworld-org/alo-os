@@ -156,7 +156,31 @@ pub trait TheDesktop {
     ///
     /// **The default does nothing**, and that is the honest default: a desktop
     /// that was not asked to remember anything should not be made to.
-    fn the_layout_is_now(&mut self, _arrangement: alo_arranging::Arrangement) {}
+    ///
+    /// # What comes back is not what went in
+    ///
+    /// The answer is **what is now kept**, which is this layout with each
+    /// Place's earlier states carried forward and the one being replaced added
+    /// to them. The shell builds an arrangement from the live canvas each time,
+    /// so what it hands over has no memory; what comes back does, and that is
+    /// what a person's ribbon is drawn from.
+    ///
+    /// **Returned rather than assembled on both sides.** The shell holds the
+    /// arrangement it last kept and could carry the series forward itself, and
+    /// then two places would be computing what a Place remembers — agreeing by
+    /// construction today and by luck after the first edit to either.
+    /// `alo_arranging::keeping::keep` is the one assembler and this is how its
+    /// work reaches the session.
+    ///
+    /// The default answers the argument unchanged, which is the truth for a
+    /// desktop that keeps nothing: a layout nobody wrote down remembers
+    /// nothing earlier than itself.
+    fn the_layout_is_now(
+        &mut self,
+        arrangement: alo_arranging::Arrangement,
+    ) -> alo_arranging::Arrangement {
+        arrangement
+    }
 }
 
 impl crate::DirectSession {
@@ -250,7 +274,13 @@ impl crate::DirectSession {
                         // **Asked before the desktop is moved into the loop**,
                         // and once rather than per frame: a layout is what a
                         // person left, not a reading that goes stale.
-                        let left = crate::WhereTheyLeftIt::from(desktop.the_layout_they_left());
+                        // **Read once and used twice**: the places waiting to
+                        // be claimed, and the ribbon those Places arrived with.
+                        // Two reads would be two answers to *what did this
+                        // person leave*, and the second would be taken after
+                        // the first had already begun being claimed.
+                        let layout = desktop.the_layout_they_left();
+                        let left = crate::WhereTheyLeftIt::from(layout.clone());
                         Desk {
                             input,
                             desktop,
@@ -258,6 +288,7 @@ impl crate::DirectSession {
                             strings,
                             left,
                             told: alo_arranging::Arrangement::fresh(),
+                            series: layout,
                             reader,
                         }
                     },
@@ -292,6 +323,13 @@ struct Desk<'a> {
     /// one remembered place, because `app_id` is what survives a session and a
     /// `wl_surface` is not.
     left: crate::WhereTheyLeftIt,
+    /// **What this person's Places remember**, as the last keep left it.
+    ///
+    /// Starts as the layout read at sign-in, which already carries whatever
+    /// ribbon the file held, and is replaced by what `the_layout_is_now` hands
+    /// back. This is the one copy in the session, and
+    /// `crate::canvas_a_place_remembers_time` is what reads it.
+    series: alo_arranging::Arrangement,
     /// The layout last told to the desktop, so a save happens on a change.
     ///
     /// **Not every frame.** The owner's ruling asks for a save after meaningful
@@ -552,7 +590,17 @@ impl LoopInput for Desk<'_> {
         let now = server.the_arrangement_now();
         if now != self.told {
             self.told = now.clone();
-            self.desktop.the_layout_is_now(now);
+            // **The comparison above is against the memoryless arrangement,
+            // and the series is kept beside it rather than in it.** `told` is
+            // what the live canvas says; the series is that plus what every
+            // Place remembers. Comparing `now` against the series would differ
+            // on every frame the moment a ribbon had one stop on it, and the
+            // save would go from one per rearrangement to one per frame.
+            self.series = self.desktop.the_layout_is_now(now);
+            // And the seat is told, because a chord is answered where no
+            // desktop is in scope — the same road the shortcuts travel. See
+            // `crate::canvas_a_place_remembers_time`.
+            server.these_places_remember(&self.series);
         }
         Ok(())
     }

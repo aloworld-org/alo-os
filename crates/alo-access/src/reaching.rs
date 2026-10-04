@@ -130,9 +130,18 @@ pub const fn the_tab_stop_for(action: Action) -> Surface {
         // `read_aloud` order and a row in the walk, and ADR 0065 has the canvas
         // *replacing* window management rather than sitting beside it. Named
         // here rather than decided.
-        Action::ZoomTheCanvasIn | Action::ZoomTheCanvasOut | Action::ShowAllOnTheCanvas => {
-            Surface::Desktop
-        }
+        //
+        // Putting a Place back as it was joins them for the same reason: what
+        // it acts on is the surface the windows sit on, not any one window. It
+        // moves several windows at once and belongs to none of them, so a
+        // reader finds it where the canvas is rather than beside a window's own
+        // controls — which is the opposite answer from
+        // `MoveTheWindowToTheNextPlace` above, and the thing being acted on is
+        // what separates them.
+        Action::ZoomTheCanvasIn
+        | Action::ZoomTheCanvasOut
+        | Action::ShowAllOnTheCanvas
+        | Action::GoBackOnThisPlace => Surface::Desktop,
     }
 }
 

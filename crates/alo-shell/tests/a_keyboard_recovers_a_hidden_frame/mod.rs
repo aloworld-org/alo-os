@@ -88,7 +88,7 @@ fn press(f: &Fixture, action: Action) {
         .chord_for(action)
         .expect("the action has a shipped chord");
     f.backend(move |s| {
-        let _ = s.dispatch_canvas_command(&Shortcuts::shipped(), chord);
+        let _ = s.dispatch_canvas_command(&Shortcuts::shipped(), chord, a_moment());
     });
 }
 
@@ -201,3 +201,12 @@ fn recovering_by_keyboard_does_not_move_the_frame_on_its_own_place() {
 // formality:** the case the check is mostly about is a frame whose name is under
 // a control and which wants to be moved *a little*, and the answer today is *send
 // it to another Place*, which is a larger act than the person asked for.
+
+/// A moment a test chooses, so nothing here depends on a clock.
+///
+/// Only one canvas action reads it — putting a Place back holds the state
+/// being left under a moment — and no test in this file presses that chord.
+/// A fixed value says so more plainly than `SystemTime::now()` would.
+fn a_moment() -> std::time::SystemTime {
+    std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_760_000_000)
+}

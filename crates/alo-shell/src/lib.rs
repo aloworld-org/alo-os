@@ -95,6 +95,7 @@ mod atomic_output;
 mod atomic_test;
 mod booting;
 mod buffers_clients_hand_over;
+mod canvas_a_place_remembers_time;
 mod canvas_a_restore_travels;
 mod canvas_arrow_pan;
 mod canvas_camera;

@@ -57,7 +57,7 @@ fn command(f: &Fixture, action: Action) -> Option<Action> {
     let chord = settings
         .chord_for(action)
         .expect("every canvas action ships with a chord");
-    f.backend(move |s| s.dispatch_canvas_command(&settings, chord))
+    f.backend(move |s| s.dispatch_canvas_command(&settings, chord, a_moment()))
         .expect("a shipped canvas chord is one this shell can carry out")
 }
 
@@ -454,4 +454,13 @@ fn a_person_who_turns_pinch_zoom_off_is_not_pinch_zoomed() {
         2000,
         "turning pinch zoom back on did not restore it"
     );
+}
+
+/// A moment a test chooses, so nothing here depends on a clock.
+///
+/// Only one canvas action reads it — putting a Place back holds the state
+/// being left under a moment — and no test in this file presses that chord.
+/// A fixed value says so more plainly than `SystemTime::now()` would.
+fn a_moment() -> std::time::SystemTime {
+    std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_760_000_000)
 }

@@ -70,7 +70,17 @@ pub const fn side_for(action: Action) -> Option<Side> {
         // changes which surface the window is on, not which part of a screen it
         // occupies. `alo-dividing`'s four Places are halves and quarters of one
         // display, and the canvas's Place is the fifth meaning of that word.
-        | Action::MoveTheWindowToTheNextPlace => None,
+        | Action::MoveTheWindowToTheNextPlace
+        // And putting a Place back as it was is not a division either, for the
+        // reason the canvas's own three give: it changes where the windows on
+        // one surface are, not how a display's room is shared between them. It
+        // can move several windows at once, which is the closest any of these
+        // comes to a split and is still not one — a division decides shares,
+        // this restores positions.
+        //
+        // This arm is what the comment above asked for: the file refused to
+        // compile when the action was added, and somebody decided.
+        | Action::GoBackOnThisPlace => None,
     }
 }
 
