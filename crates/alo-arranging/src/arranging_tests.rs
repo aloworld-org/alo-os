@@ -1,6 +1,7 @@
 //! What this crate keeps, and what it refuses to keep.
 #![expect(
     clippy::unwrap_used,
+    clippy::indexing_slicing,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
@@ -478,4 +479,121 @@ fn a_window_with_no_state_written_reads_as_an_ordinary_one() {
         back.where_it_was(first(), "org.alo.Notes"),
         Some(ordinary(at(10, 20), size(300, 400)))
     );
+}
+
+/// A camera looking at a point, at a zoom in thousandths.
+fn a_camera(x: i32, y: i32, thousandths: u32) -> Camera {
+    Camera::new()
+        .looking_at(at(x, y))
+        .unwrap()
+        .zoomed_to(Zoom::of(thousandths).unwrap(), (0, 0))
+        .unwrap()
+}
+
+/// A fixed moment, and one an hour later.
+fn noon() -> SystemTime {
+    UNIX_EPOCH + std::time::Duration::from_secs(1_760_000_000)
+}
+
+/// An hour after [`noon`].
+fn later() -> SystemTime {
+    noon() + std::time::Duration::from_secs(3_600)
+}
+
+/// **Going back holds what it is leaving**, which is the acceptance's own
+/// clause: *the person is never shown a state they cannot get back from.*
+///
+/// Reaching an earlier state is itself a rearrangement. The canvas a person
+/// is standing on joins the ribbon as they step off it, so stepping back twice
+/// walks backwards rather than losing the middle.
+#[test]
+fn reaching_an_earlier_state_keeps_the_one_being_left() {
+    let mut was = Arrangement::fresh();
+    was.looking(first(), a_camera(100, 100, 1_000));
+    was.window_was(
+        first(),
+        "org.alo.Notes",
+        ordinary(at(10, 10), size(400, 300)),
+    );
+
+    let mut now = Arrangement::fresh();
+    now.looking(first(), a_camera(-50, -50, 2_000));
+    let held = now.following(&was, noon());
+    assert_eq!(held.earlier_on(first()).len(), 1);
+
+    let mut going_back = held.clone();
+    assert!(going_back.as_it_was(first(), noon(), later()));
+
+    // The canvas is as it was.
+    assert_eq!(going_back.camera_on(first()), was.camera_on(first()));
+    assert_eq!(
+        going_back.where_it_was(first(), "org.alo.Notes"),
+        was.where_it_was(first(), "org.alo.Notes")
+    );
+
+    // And the one being left is on the ribbon, so there is a way back from
+    // the way back.
+    let ribbon = going_back.earlier_on(first());
+    assert_eq!(
+        ribbon.len(),
+        1,
+        "the stop reached is spent and the one left is held"
+    );
+    assert_eq!(ribbon[0].when(), later());
+    assert_eq!(ribbon[0].camera(), held.camera_on(first()).unwrap());
+
+    let mut forwards = going_back.clone();
+    assert!(forwards.as_it_was(first(), later(), later()));
+    assert_eq!(
+        forwards.camera_on(first()),
+        held.camera_on(first()),
+        "and walking back the other way returns where it started"
+    );
+}
+
+/// **A moment nothing was held at changes nothing, and says so.**
+///
+/// A ribbon is drawn from `earlier_on`, so it cannot offer a stop that is not
+/// there — and a caller that asks anyway is told rather than quietly given
+/// the nearest, which would move a person's canvas somewhere they did not
+/// point at.
+#[test]
+fn a_moment_nothing_was_held_at_is_refused_and_moves_nothing() {
+    let mut was = Arrangement::fresh();
+    was.looking(first(), a_camera(1, 2, 1_000));
+    let mut now = Arrangement::fresh();
+    now.looking(first(), a_camera(3, 4, 1_000));
+    let mut held = now.following(&was, noon());
+    let before = held.clone();
+
+    assert!(
+        !held.as_it_was(first(), later(), later()),
+        "no stop at that moment"
+    );
+    assert_eq!(held, before, "and nothing moved");
+
+    assert!(
+        !held.as_it_was(place(9), noon(), later()),
+        "nor on a Place with no ribbon at all"
+    );
+    assert_eq!(held, before);
+}
+
+/// **A ribbon survives the file**, which is what makes it a memory rather than
+/// a session's own idea of the past.
+#[test]
+fn a_series_is_written_down_and_read_back() {
+    let mut was = Arrangement::fresh();
+    was.looking(first(), a_camera(7, 8, 1_500));
+    was.window_was(first(), "org.alo.Notes", ordinary(at(1, 2), size(300, 200)));
+    let mut now = Arrangement::fresh();
+    now.looking(first(), a_camera(9, 10, 1_000));
+    let held = now.following(&was, noon());
+
+    let read_back = Arrangement::read(&held.written()).unwrap();
+    assert_eq!(read_back, held, "the whole arrangement, series and all");
+    let ribbon = read_back.earlier_on(first());
+    assert_eq!(ribbon.len(), 1);
+    assert_eq!(ribbon[0].when(), noon());
+    assert_eq!(ribbon[0].how_many(), 1);
 }

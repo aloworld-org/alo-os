@@ -58,6 +58,7 @@
 //! halves: nothing destroyed, and nothing stuck.
 
 use std::path::Path;
+use std::time::SystemTime;
 
 use crate::{Arrangement, NotArranged};
 
@@ -110,9 +111,27 @@ pub enum NotReadBack {
 /// [`NotKept::NotWritten`] when the file was not replaced — because the disk
 /// refused a step, or because the bytes it handed back did not read as this
 /// layout. **The file at `at` is as it was**, in both.
-pub fn keep(at: &Path, arrangement: &Arrangement) -> Result<(), NotKept> {
-    let text = arrangement.written();
-    alo_kept::kept_text(at, &text, |back| these_bytes_are(arrangement, back))
+pub fn keep(at: &Path, arrangement: &Arrangement, when: SystemTime) -> Result<(), NotKept> {
+    // **The series can only be assembled here.** The shell builds an
+    // arrangement from the live canvas each time it keeps one
+    // (`the_arrangement_now` starts from `Arrangement::fresh`), so it has no
+    // memory of what came before. What is on the disk does, and this is the
+    // one moment both are in hand — so a Place's ribbon is carried forward
+    // here, and the state being replaced joins it (`Arrangement::following`).
+    //
+    // **A file that does not read carries nothing forward, and is not an
+    // error.** A person whose layout was damaged keeps their new one; what
+    // they lose is a ribbon they could not have drawn from a file nothing can
+    // parse. That is the same answer `at_sign_in` gives, for the same reason.
+    let previous = std::fs::read_to_string(at)
+        .ok()
+        .and_then(|text| Arrangement::read(&text).ok());
+    let keeping = previous.map_or_else(
+        || arrangement.clone(),
+        |was| arrangement.following(&was, when),
+    );
+    let text = keeping.written();
+    alo_kept::kept_text(at, &text, |back| these_bytes_are(&keeping, back))
         .map_err(NotKept::NotWritten)
 }
 

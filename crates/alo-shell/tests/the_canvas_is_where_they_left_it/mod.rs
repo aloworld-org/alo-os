@@ -527,7 +527,8 @@ fn a_canvas_survives_one_session_ending_and_another_beginning() {
         assert!(f.backend(|s| s.pan_the_canvas(-120, 80)).is_some());
 
         let arrangement = f.backend(|s| s.the_arrangement_now());
-        alo_arranging::keeping::keep(&at, &arrangement).expect("the layout is kept");
+        alo_arranging::keeping::keep(&at, &arrangement, std::time::SystemTime::UNIX_EPOCH)
+            .expect("the layout is kept");
         arrangement
             .where_it_was(alo_canvas::Place::FIRST, "org.alo.Notes")
             .expect("the window named itself")
