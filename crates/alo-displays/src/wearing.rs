@@ -102,7 +102,7 @@ impl Wearing {
 mod tests {
     use std::time::{Duration, UNIX_EPOCH};
 
-    use alo_appearance::{DisplayId, Token};
+    use alo_appearance::{DisplayId, THE_SURFACE, Token};
 
     use super::*;
     use crate::between::Between;
@@ -213,9 +213,21 @@ mod tests {
         let laptop = a_reported_laptop();
         let office = a_reported_office_screen();
         let mut appearance = Appearance::shipped();
+
+        // **Not the shipped surface**, and said rather than assumed. This was
+        // `Token::Cream` and worked only while the shipped surface was
+        // `Token::Porcelain`; ADR 0092 moved the surface to the canvas, which
+        // *is* cream, and the assertion below then compared a colour with
+        // itself. The premise is asserted so it cannot quietly go false again.
+        let only_there = Token::Navy;
+        assert_ne!(
+            only_there.colour(),
+            THE_SURFACE.colour(),
+            "this test needs a background the other screen does not already have"
+        );
         appearance.set_background_on(
             DisplayId::named(office.named_for_the_shell().name()).unwrap(),
-            Background::from(Token::Cream.colour()),
+            Background::from(only_there.colour()),
         );
 
         let warm = a_warm_evening();
@@ -252,7 +264,18 @@ mod tests {
         assert_ne!(one.named_for_the_shell(), two.named_for_the_shell());
 
         let mut appearance = Appearance::shipped();
-        let only_here = Background::from(Token::Cream.colour());
+
+        // Not the shipped surface, for the reason given in
+        // `every_screen_wears_the_warmth_beside_its_own_background`: the second
+        // screen falls back to it, so a background equal to it would make the
+        // last assertion compare a colour with itself and pass for the wrong
+        // reason — or, as here, fail for the right one.
+        let only_here = Background::from(Token::Navy.colour());
+        assert_ne!(
+            only_here,
+            Background::from(THE_SURFACE.colour()),
+            "this test needs a background the other screen does not already have"
+        );
         appearance.set_background_on(
             DisplayId::named(one.named_for_the_shell().name()).unwrap(),
             only_here,
