@@ -1197,3 +1197,126 @@ network state. **Which of it outlives a session, and which of it is a person's
 rather than a machine's, is its own reading** — and the honest first step is to
 take it, not to assume the answer here. It is named so that finishing the grants
 half is not mistaken for finishing the promise.
+
+- **The reading is taken, and it is smaller than the crate's size suggests.**
+  `alo-agentd` has 82 source files, of which `lib.rs` gates **19 modules to
+  test**, and **29 name a persistent path**. Every path any of them names is
+  under `/var/lib/alo` or `/run/alo`, so what outlives a session is a set of
+  files rather than a set of structures, and *whose is it* is answerable from
+  the paths.
+- **The paths answer it, and three shapes already exist rather than one:**
+
+| path | uses | keyed by |
+|---|---|---|
+| `/var/lib/alo/record.jsonl` | 40 | nothing — the machine's |
+| `/var/lib/alo/grants.toml` | 9 | **nothing**, which is this clause |
+| `/run/alo/1000` | 6 | **a uid** |
+| `/var/lib/alo/undo/ada/4f1c8a/kept.json` | 2 | **a person's name** |
+
+- **So the migration follows a precedent rather than inventing a shape**, and
+  the uid has the better claim than the name: `alo-remembering/believing.rs`
+  and `alo-accounts/keeping.rs` both call
+  `believed(at, seen.uid(), seen.mode(), us())?` with `us()` being
+  `rustix::process::geteuid().as_raw()`. **Keyed by uid, the path and the owner
+  check compare the same number**; keyed by a name they would disagree.
+- **The path is a published contract, and that was nearly missed.**
+  `docs/contracts/grants-file.md` names `/var/lib/alo/grants.toml`,
+  `pairings-file.md` and `person-settings.md` both refer to it, and
+  `docs/contracts/` holds **33** such documents. `CLAUDE.md` is absolute:
+  *they change additively, and a break requires versioning and deprecation.*
+  **One file per person is not an additive change to one file.** This objection
+  came from the Mac's lane rather than from here.
+- **And a read-through fallback is forbidden, not merely unbounded.** The first
+  shape proposed here was *a person with no per-person file inherits the
+  machine's*. That reproduces the bug this task exists to fix:
+  `believing.rs:136` is `if owner != 0 && owner != us`, so a **root-owned file
+  is the believed case rather than the refused one**, and
+  `alo-changing/changing.rs` names `THE_GRANTS` as *the file the daemon
+  re-reads* — the daemon being root. Every account would inherit the same
+  grants.
+- **ADR 0001 §3 is the reason it cannot be bounded into correctness.**
+  *A grant comes from a deliberate act: a folder chosen in a picker, or the
+  document offered at invocation. … There is no grant to `/`, and there is no
+  grant that outlives the reason it was made.*
+  **An inherited grant is nobody's deliberate act**, and it outlives the reason
+  it was made the moment it answers for a second person.
+- **So the shape is a one-time migration, and the task's own tense says so:**
+  *a machine that **had** one person*. Move `grants.toml` to
+  `grants/<uid>.toml` for the one uid the machine had; the old path then stops
+  being read rather than standing as a permanent fallback. **A person with no
+  per-person file has no grants**, which is the only answer ADR 0001 permits.
+  **More than one account at migration time refuses rather than guessing**
+  whose the file was — a machine saying it cannot tell is better than a machine
+  picking a person.
+- **The moved file is written back byte for byte.** `written.rs` writes *the
+  lowest format that holds what is written*, so a file that was `format = 1`
+  stays `format = 1` and a rolled-back update still reads it. A migration that
+  normalised upward would break the property that rule exists for. No format
+  bump and no new key, so `written.rs` stays the applications lane's.
+- **The refusal itself needs no translation, and that is documented rather than
+  assumed.** `alo-remembering`'s own `Cargo.toml` says of its refusals that
+  they *are read out of a service log by whoever is looking at a grants file
+  somebody has edited, so they keep their English*. The crate has no
+  `words.rs` and no `alo-strings` dependency, and its header makes that absence
+  doctrine. A `Word` here would add a dependency whose lack is load-bearing.
+- **But the person-facing failure is real and lands elsewhere.** A log line is
+  gone by the time anybody signs in, so a person meets an **empty grants list
+  and is told nothing** — indistinguishable from *you have never granted
+  anything*, which on a machine that refused to migrate is false. Two
+  consequences:
+  - **The refusal has to outlive the moment it fired**, as a fact on disk
+    rather than a log line. Marker files are already the house shape:
+    `/var/lib/alo/an-update-was-found`, `/var/lib/alo/going-back-to`,
+    `/var/lib/alo/last-known-build`.
+  - **And the sentence is not a new one to add — it is a shipped one that
+    becomes false.** `alo-granted` declares 4 words, and one of them is
+    `granted.nothing-granted`: *Nothing is granted right now. **No agent and no
+    application has been granted anything on this machine**, and there is
+    nothing here to revoke.* Its second clause is a positive claim about the
+    machine's history, and its own note enumerates the states it covers — *the
+    state every machine starts in, and the state after the last grant is
+    revoked or expires*. **A refused migration is a fourth state, which that
+    sentence denies.**
+  - **So what is owed is a correction to a published key, not an addition
+    beside it**, which `docs/decisions/0068-a-published-sentence-changes-by-getting-a-new-key.md`
+    governs: the same key with a line in `crates/alo-saying/reworded.txt`, or a
+    new key. **A reader told "a word is owed" would add a sentence and leave a
+    false one standing**, which is why it is written this way round.
+  - **It is release-coupled rather than merely owed.** While no machine can
+    refuse a migration the sentence cannot be false, so nothing is wrong on
+    main until this lane's half lands. From that release on it is false, so the
+    correction has to land **with or before** the first release in which a
+    refusal can fire. The crate is `alo-granted`, which the charter gives to
+    the applications lane, and **that lane has taken it** — so this clause
+    cannot be wholly finished here, and the part that is not ours is named
+    rather than assumed.
+  - The clearest statement of why the machine-wide file was wrong is in that
+    crate's own header rather than in `alo-remembering`'s:
+    **`alo-remembering` keeps the list between one sign-in and the next.**
+- **A third touchpoint, and it holds the second reason for keying by uid.**
+  `alo-shell/src/settings_places.rs`'s header says why grants are machine-scoped
+  in the first place:
+
+> A login with no folder — no home directory, or a relative one — has no places
+> for the person's own sections at all … **The grants and pairings are the
+> machine's rather than the person's folder's, so they are still read.**
+
+- **So a no-home login having grants at all is a promise, and uid-keying is what
+  keeps it.** `/var/lib/alo/grants/<uid>.toml` is not inside the person's
+  folder, so that paragraph stays true. **Had this followed the
+  `/var/lib/alo/undo/ada/…` name-and-folder precedent it would have broken that
+  promise silently, in another lane's crate.** Two independent reasons now point
+  at the uid: the owner check compares one, and a login without a folder still
+  needs grants.
+- **That header becomes half true when this lands** — pairings stay the
+  machine's, grants become a person's by uid though not by folder — and the
+  correction belongs with `alo-granted`'s, under the same release coupling.
+- **Nothing production-side can break, because nothing production-side builds
+  one.** `SettingsPlaces::of` has **5 call sites and every one is test-side**
+  (two in that file's own `cfg(test)` block, one in `settings_window_tests.rs`,
+  two in `tests/unit_fixtures/settings_testing.rs`).
+  `settings_window.rs:192` takes one — `opened_by_hand(&mut self, places:
+  &SettingsPlaces, now: SystemTime)` — and nothing builds one to pass it.
+  **It is the same hole ADR 0085 records from the other side**: whoever gives a
+  person a road to Settings is who must supply the uid, and that is when this
+  header's correction stops being cosmetic.
