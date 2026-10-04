@@ -160,11 +160,26 @@ struct Written {
 /// a file with one — so this is a whole-file reshape rather than a key addition,
 /// which is exactly what the version existed to make affordable.
 ///
-/// **No file of version 1 or 2 has ever been written to disk.** `written` had no
-/// production caller when 1 was defined, none when 2 was, and none when 3 was —
-/// so there is no migration path here and no need of one: an older file is
-/// refused by name like any other shape this does not read. Each number did its
-/// job by existing and then being spent.
+/// **No file of version 1 or 2 was ever written to disk**, and that sentence
+/// has a date on it. `written` had no production caller when 1 was defined,
+/// none when 2 was, and none when 3 was — so versions 1 and 2 were spent
+/// without a migration, and an older file is refused by name like any other
+/// shape this does not read.
+///
+/// **Version 3 is not in that position and has not been since `alo-desktop`
+/// gained its two calls.** Measured 2026-10-04:
+/// `grep -rn 'arranging::keep\|at_sign_in' crates --exclude-dir=target` finds
+/// `crates/alo-desktop/src/main.rs:294` reading one at sign-in and `:318`
+/// keeping one when the layout moves, neither under `cfg(test)`. **Files of
+/// this shape are on real disks**, and alo OS 0.0.1 is public.
+///
+/// So the reasoning above is spent too. **A bump to 4 costs a person the
+/// canvas they left** unless it reads 3 as well — `at_sign_in` answers with a
+/// fresh arrangement and a printed reason, which is the right behaviour for a
+/// damaged file and the wrong one for an upgrade. Whoever moves this number
+/// owes the first migration this crate has needed, and
+/// `docs/misreadings/nothing-is-on-a-disk-is-a-fact-with-a-date-on-it.md` is
+/// why the sentence above did not say so for two days.
 ///
 /// **3 is how a window was showing**, which the owner's ruling of 2026-10-03
 /// requires alongside its place: a window that was minimised, compacted or full

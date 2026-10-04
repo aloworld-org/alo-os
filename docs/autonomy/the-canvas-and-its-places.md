@@ -586,6 +586,26 @@ both say *arrangement*, one the canvas a person left and one the monitors.
   arrangement today, and whether a series is kept per Place or per session is a
   shape question this task answers rather than inherits.
 
+**Two things measured 2026-10-04, before the build, because each changes what
+this task owes.**
+
+**The shape question is answered by this task's own title: per Place.** A Place
+remembers time, so reaching an earlier state on one Place leaves the others
+where they are. A session-wide series would make *go back to Tuesday* move
+every Place at once, which is the opposite of what Places are for.
+
+**And the format bump is no longer free.** `alo-arranging`'s `FORMAT` doc
+comment reasoned that a version may be spent without a migration *because no
+file of this shape has ever been written to disk* — true of 1 and 2, and **false
+of 3 since `alo-desktop` gained its calls**: `src/main.rs:294` reads one at
+sign-in and `:318` keeps one when the layout moves, neither under `cfg(test)`,
+and alo OS 0.0.1 is public. A series needs format 4; a bump that does not also
+read 3 costs a person the canvas they left, which `at_sign_in` would report as
+a file that did not read. **So this task owes the first migration this crate has
+needed**, and that is scope it inherits rather than invents. The stale reasoning
+is corrected in the crate and recorded in
+`docs/misreadings/nothing-is-on-a-disk-is-a-fact-with-a-date-on-it.md`.
+
 ### 9. Every screen is a view onto the canvas
 
 **Status:** ready. **Owner:** **the Mac.** **Depends on:** the camera having one
