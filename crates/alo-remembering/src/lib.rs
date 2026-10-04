@@ -88,6 +88,7 @@
 //! | `names` | The names, as a list and as they are written down |
 //! | `machine_names` | The names file, where it is |
 //! | `refusing` | Every refusal, in the English whoever stands a machine up reads |
+//! | `whose` | A file for each person, and the one move that gets a machine there |
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
@@ -104,6 +105,8 @@ mod pairings;
 mod refusing;
 #[cfg(test)]
 mod testing;
+#[cfg(unix)]
+mod whose;
 mod written;
 
 #[cfg(unix)]
@@ -115,4 +118,6 @@ pub use names::{MachineNames, NotNames, THE_NAMES_FORMAT};
 #[cfg(unix)]
 pub use pairings::{THE_PAIRINGS, pairings_kept, pairings_remembered};
 pub use refusing::NotRemembered;
+#[cfg(unix)]
+pub use whose::{Moved, could_not_tell_whose, moved_to_whoever_had_them, the_persons_grants};
 pub use written::{THE_FIRST_FORMAT, THE_FORMAT, read, written};
