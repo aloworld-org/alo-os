@@ -80,8 +80,23 @@ changes without this table changing fails there. Every one is said through
 | 15 | The status area, where what is leaving is shown | what this machine is doing |
 | 16 | The status area, where what is leaving is shown | something is leaving this machine |
 | 17 | The status area, where what is leaving is shown | the agent is working |
-| 18 | The controls on a window | close this window |
-| 19 | The controls on a window | move this window |
+| 18 | The controls on a window | Minimise the window |
+| 19 | The controls on a window | Maximise the window, or put it back |
+| 20 | The controls on a window | Close the window |
+
+**Rows 18 to 20 changed on 2026-10-04, and the change is the finding rather
+than the table.** This walk used to read *close this window* and *move this
+window* — two rows, in this crate's own words, for a strip that draws three
+buttons. Minimise and maximise were drawn and never announced; *move this
+window* was announced and never drawn, because arranging is a chord with no
+button. [ADR 0089](../../decisions/0089-what-a-control-is-called.md) made a
+control take its name from the action it performs, so these rows are now the
+three buttons in the order they are drawn, said in the words drawn on them.
+
+*A walk is the thing a lane points at when asked whether something really
+works, so it is worth saying what this one was reporting faithfully: the tree
+as it was. It read two rows because there were two, and nothing in a walk can
+notice a control that was never put in front of it.*
 
 ## Named rather than ticked
 
