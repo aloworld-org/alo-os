@@ -78,6 +78,25 @@ pub const NAMES_UNDER: Word = Word::saying("dock.labels.under", "each icon has i
          to. Shown in the dock's settings, so somebody can see what the text size did.",
     );
 
+/// A dock down a side, whose names sit beside the icons.
+///
+/// **Restored 2026-10-04 with the measurement that makes it possible.** This key
+/// existed before ADR 0076's bottom-only ruling and left with it; the owner
+/// reversed that ruling on 2026-09-30 and gave the side placement its figure on
+/// 2026-10-04 — 200 logical pixels of usable text width, in a tooltip.
+pub const NAMES_BESIDE: Word = Word::saying(
+    "dock.labels.beside",
+    "each icon shows its name beside it when you point at it or reach it by keyboard",
+)
+.noting(
+    "The dock is down the side of the screen, so a name cannot sit under a picture — it opens \
+     beside the icon, toward the middle of the screen, and goes away again. Shown in the dock's \
+     settings so somebody can see where the names went after moving the dock to a side. \
+     **Say both ways of reaching it**: resting a pointer on the icon and arriving at it with the \
+     keyboard show the same name, and a sentence that mentioned only the pointer would read, to \
+     somebody who does not use one, as though the names were gone.",
+);
+
 /// A dock with no room for names at the size the text has been set to.
 pub const NAMES_GAVE_WAY: Word = Word::saying(
     "dock.labels.gave-way",
@@ -277,10 +296,11 @@ pub const ANNOUNCED_WHERE: Word = Word::saying(
 /// Every string this crate can say, in the order a translator meets them: the
 /// two answers about whether it gives way, what the dock did with its names, the
 /// two refusals, and then what is said about the person's own file.
-pub const EVERY_WORD: [Word; 19] = [
+pub const EVERY_WORD: [Word; 20] = [
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
     NAMES_UNDER,
+    NAMES_BESIDE,
     NAMES_GAVE_WAY,
     NOT_A_SCREEN,
     SCREEN_TOO_SMALL,
