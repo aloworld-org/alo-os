@@ -29,6 +29,8 @@
 //! plan says the same of panning, and the reason is the same: an acceleration
 //! curve is a thing nobody can predict and everybody has to fight.
 
+use std::time::SystemTime;
+
 use alo_shortcuts::{Action, Chord, Shortcuts};
 
 use crate::Server;
@@ -61,6 +63,16 @@ impl Server {
     /// ordinary thing to do and the screen already shows that there is nowhere
     /// further. A refusal there would make key repeat produce a stream of faults.
     ///
+    /// # The moment is handed in rather than read here
+    ///
+    /// One action needs one — putting a Place back holds the state being left,
+    /// and a held state is indexed by when it was held. Reading a clock here
+    /// would make that action the one thing in this chain no test could choose
+    /// the conditions of, and `crate::settings_command`'s dispatcher already
+    /// takes a `now` for the same kind of reason. Production reads it once, in
+    /// `crate::a_chord_reaches_its_action`, which is where *a chord happened*
+    /// is the fact being recorded.
+    ///
     /// # Errors
     /// [`CanvasCommandError`] where a canvas action cannot be carried out, and
     /// whatever the layer below refuses for every other chord.
@@ -68,6 +80,7 @@ impl Server {
         &mut self,
         shortcuts: &Shortcuts,
         chord: Chord,
+        now: SystemTime,
     ) -> Result<Option<Action>, CanvasCommandError> {
         let Some(action) = shortcuts.action_for(chord) else {
             return Ok(None);
@@ -115,6 +128,19 @@ impl Server {
                 // at the end of the ladder is — the screen already shows there is
                 // nothing there.
                 self.move_the_window_in_front_to_the_next_place();
+            }
+            Action::GoBackOnThisPlace => {
+                // **The keyboard road of `the-canvas-and-its-places.md` task
+                // 8**, and the only road it has until the `[v1.1]` time ribbon
+                // exists to be dragged. See
+                // `crate::canvas_a_place_remembers_time` for why a chord is
+                // inside the scope gate and a strip is not.
+                //
+                // A Place with nothing held is not a fault, for the same reason
+                // zooming in at the end of the ladder is not: pressing it on a
+                // canvas nobody has rearranged twice is an ordinary thing to do
+                // and the screen already shows that nothing moved.
+                self.go_back_on_this_place(now);
             }
             _ => {
                 return self

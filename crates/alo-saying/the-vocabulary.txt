@@ -1410,6 +1410,7 @@ setup.not-answered.nothing-selected	nothing is selected, so nothing has been cho
 setup.not-answered.nothing-to-ask-for	that service has not been given a model to answer with, so nothing has been chosen and setup is still waiting for an answer
 setup.the-question	where should your questions be answered?
 shortcuts.action.close-window	Close the window
+shortcuts.action.go-back-on-this-place	Put this Place back as it was
 shortcuts.action.launcher	Open the launcher
 shortcuts.action.maximise-window	Maximise the window, or put it back
 shortcuts.action.minimise-window	Minimise the window

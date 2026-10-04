@@ -112,7 +112,7 @@ impl Server {
             )));
         }
         Ok(self
-            .dispatch_canvas_command(shortcuts, chord)?
+            .dispatch_canvas_command(shortcuts, chord, now)?
             .map(WhatTheChordDid::AnotherAction))
     }
 }

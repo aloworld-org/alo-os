@@ -37,7 +37,7 @@ const ALT_SHIFT: Modifiers = ALT.and(Modifier::Shift);
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 16] = [
+const SHIPPED: [(Action, Chord); 17] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::Settings, Chord::shipped(SUPER, Key::I)),
@@ -73,6 +73,17 @@ const SHIPPED: [(Action, Chord); 16] = [
     (
         Action::MoveTheWindowToTheNextPlace,
         Chord::shipped(SUPER_SHIFT, Key::Period),
+    ),
+    // **Beside undo's family without joining it.** Going back on a Place walks
+    // the states that Place has been in, which is the same shape as undo and
+    // not the same thing: undo takes back an edit inside a document, this puts
+    // the windows back where they were. `Super` is what marks a chord as the
+    // shell's rather than an application's, and `Shift` is what marks it as
+    // the larger of two acts throughout this list — the window goes with you,
+    // the application goes backwards, the Place goes back.
+    (
+        Action::GoBackOnThisPlace,
+        Chord::shipped(SUPER_SHIFT, Key::Z),
     ),
 ];
 

@@ -101,6 +101,14 @@ fn auf_deutsch() -> Strings {
                 words::MOVE_THE_WINDOW_TO_THE_NEXT_PLACE,
                 "Fenster auf die nächste Fläche verschieben",
             ),
+            // *Fläche* again, for the same reason and deliberately the same
+            // noun: a person who has learnt which word on this panel means
+            // their own surface must not meet a second one for it two rows
+            // later.
+            (
+                words::GO_BACK_ON_THIS_PLACE,
+                "Diese Fläche wiederherstellen, wie sie war",
+            ),
             // Super and Alt are written the same way in German, and they are
             // here for that reason rather than in spite of it. Item 15 made a
             // sentence only as translated as the pieces put into it, and the
@@ -163,7 +171,7 @@ fn everything_this_crate_says_joins_one_vocabulary_beside_another_crate() {
     }
 }
 
-/// **The whole shipped panel, read on a German machine.** Eleven rows, each
+/// **The whole shipped panel, read on a German machine.** Every row, each
 /// naming what it does and the keys that do it — and every key named the way it
 /// is printed on the keyboard in front of the person, which is the thing this
 /// crate said from the start and could not do until now.
@@ -235,6 +243,10 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
             (
                 "Fenster auf die nächste Fläche verschieben".to_owned(),
                 "Super+Umschalt+.".to_owned(),
+            ),
+            (
+                "Diese Fläche wiederherstellen, wie sie war".to_owned(),
+                "Super+Umschalt+Z".to_owned(),
             ),
         ]
     );

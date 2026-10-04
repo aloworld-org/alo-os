@@ -104,14 +104,30 @@ pub enum NotReadBack {
     NotALayout(NotArranged),
 }
 
-/// This layout, kept as the whole of the file at `at`.
+/// This layout, kept as the whole of the file at `at` — and **what was kept**.
+///
+/// The answer is not the argument. What reaches the disk is this layout with
+/// each Place's earlier states carried forward and the state being replaced
+/// added to them, which is more than the caller handed over, and the caller
+/// needs it: a ribbon is drawn from a series, and the series is assembled here.
+///
+/// **Returned rather than assembled twice.** The session holds the arrangement
+/// it last kept, so it could run [`Arrangement::following`] itself and reach
+/// the same answer — and then two places would be computing what a Place
+/// remembers, agreeing by construction today and by luck after the first edit
+/// to either. One assembler, and it hands back its work.
 ///
 /// # Errors
 ///
 /// [`NotKept::NotWritten`] when the file was not replaced — because the disk
 /// refused a step, or because the bytes it handed back did not read as this
-/// layout. **The file at `at` is as it was**, in both.
-pub fn keep(at: &Path, arrangement: &Arrangement, when: SystemTime) -> Result<(), NotKept> {
+/// layout. **The file at `at` is as it was**, in both, and so is the series:
+/// a caller that keeps the answer keeps nothing on a refusal.
+pub fn keep(
+    at: &Path,
+    arrangement: &Arrangement,
+    when: SystemTime,
+) -> Result<Arrangement, NotKept> {
     // **The series can only be assembled here.** The shell builds an
     // arrangement from the live canvas each time it keeps one
     // (`the_arrangement_now` starts from `Arrangement::fresh`), so it has no
@@ -132,7 +148,8 @@ pub fn keep(at: &Path, arrangement: &Arrangement, when: SystemTime) -> Result<()
     );
     let text = keeping.written();
     alo_kept::kept_text(at, &text, |back| these_bytes_are(&keeping, back))
-        .map_err(NotKept::NotWritten)
+        .map_err(NotKept::NotWritten)?;
+    Ok(keeping)
 }
 
 /// Whether the bytes a disk handed back are this layout.

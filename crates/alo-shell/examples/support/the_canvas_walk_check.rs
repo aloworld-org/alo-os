@@ -470,6 +470,7 @@ fn walk_it(
         .dispatch_canvas_command(
             &shortcuts,
             chord(alo_shortcuts::Action::ShowAllOnTheCanvas, &shortcuts)?,
+            std::time::SystemTime::now(),
         )
         .map_err(|why| format!("show all by keyboard: {why}"))?;
     nested.pump()?;
@@ -504,6 +505,7 @@ fn walk_it(
         .dispatch_canvas_command(
             &shortcuts,
             chord(alo_shortcuts::Action::ZoomTheCanvasIn, &shortcuts)?,
+            std::time::SystemTime::now(),
         )
         .map_err(|why| format!("zoom in by keyboard: {why}"))?;
     nested.pump()?;

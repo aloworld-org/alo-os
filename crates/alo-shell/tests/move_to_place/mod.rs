@@ -59,7 +59,7 @@ fn press(f: &Fixture, action: Action) {
         .expect("the action has a shipped chord");
     f.backend(move |s| {
         let shortcuts = Shortcuts::shipped();
-        let _ = s.dispatch_canvas_command(&shortcuts, chord);
+        let _ = s.dispatch_canvas_command(&shortcuts, chord, a_moment());
     });
 }
 
@@ -189,7 +189,17 @@ fn pressing_it_with_no_window_in_front_is_not_a_fault() {
 
     let answered = f.backend(move |s| {
         let shortcuts = Shortcuts::shipped();
-        s.dispatch_canvas_command(&shortcuts, chord).is_ok()
+        s.dispatch_canvas_command(&shortcuts, chord, a_moment())
+            .is_ok()
     });
     assert!(answered, "pressing it with nothing in front was a fault");
+}
+
+/// A moment a test chooses, so nothing here depends on a clock.
+///
+/// Only one canvas action reads it — putting a Place back holds the state
+/// being left under a moment — and no test in this file presses that chord.
+/// A fixed value says so more plainly than `SystemTime::now()` would.
+fn a_moment() -> std::time::SystemTime {
+    std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_760_000_000)
 }

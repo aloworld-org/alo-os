@@ -114,6 +114,27 @@ pub struct Server {
     /// screen, the nested lane and every test on the road they already had: a
     /// seat that has been told no shortcuts looks none up.
     pub(crate) shortcuts: Option<alo_shortcuts::Shortcuts>,
+    /// **What this person's Places remember**, as the last keep left it.
+    ///
+    /// Held here for the same reason the shortcuts above are: a chord is
+    /// answered at the seat, where no desktop is in scope, and the file this
+    /// came out of is the desktop's to read. `crate::canvas_a_place_remembers_time`
+    /// carries the argument.
+    ///
+    /// **A fresh arrangement rather than an `Option`**, because *nothing is
+    /// remembered yet* and *this Place has no earlier state* are the same
+    /// answer to the only question asked of it, and a second spelling of it
+    /// would be a branch no caller can act on differently.
+    pub(crate) remembered: alo_arranging::Arrangement,
+    /// **The moment the Place in front is showing**, while somebody is walking
+    /// backwards through what it remembers.
+    ///
+    /// `None` when nobody is walking, which is every moment until the first
+    /// press and again after the next rearrangement.
+    /// `crate::canvas_a_place_remembers_time` holds the argument for why a
+    /// cursor is needed at all — without one the chord is a toggle between two
+    /// canvases rather than a walk.
+    pub(crate) walking_back_from: Option<std::time::SystemTime>,
     /// **What a touchpad gesture means, as `alo-desktops` recognises it.**
     ///
     /// One recogniser for the seat: at most one gesture is in flight at a
@@ -158,6 +179,10 @@ impl Server {
             gestures: Default::default(),
             // Nobody has told this seat what a chord means, so it takes none.
             shortcuts: None,
+            // Nothing has been kept yet, so no Place remembers anything.
+            remembered: alo_arranging::Arrangement::fresh(),
+            // Nobody is walking backwards through anything yet.
+            walking_back_from: None,
             desk: crate::server_desk::Desk::new(),
         })
     }

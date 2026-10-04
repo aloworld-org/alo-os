@@ -555,7 +555,70 @@ it depends on 1 and 3, not because it is optional.
 
 ### 8. A Place remembers time
 
-**Status:** ready. **Owner:** **the Mac.** **Depends on:** 5, which is done — an
+**Status:** **Done, 2026-10-04: the code.** `alo-arranging` holds what each
+Place was and assembles the series as it keeps one (`FORMAT` 4, with the first
+migration this crate has needed, reading 3 as well);
+`crates/alo-shell/src/canvas_a_place_remembers_time.rs` carries that series into
+the session and puts a Place back through the live canvas; and
+`Action::GoBackOnThisPlace` on `⊞`+`Shift`+`Z` is the road a person presses.
+`crates/alo-shell/tests/a_place_remembers_time/` is four tests that move real
+frames on a real plane and read their positions back off it — none round-trips
+an `Arrangement`, which this task's own ruling calls progress rather than
+completion.
+
+**The road is a chord and not the ribbon the promise names, and that is a scope
+judgement rather than a shortcut.** `docs/features.md` carries two promises here
+at two tiers: `:490` *A Place remembers time* is `[v0.01]`, and `:516` **the
+time ribbon** — *a ribbon at the bottom edge; dragging it back fades the whole
+desktop into the past, with what changed glowing, and letting go restores what
+the person picks* — is `[v1.1]`. **Building the strip here would cross the scope
+gate, not finish a task.** What is in this release is the capability, and a
+capability with no road is exactly what `the-shell-plan.md` task 19 was written
+about. *Neither road is the only road* is this plan's own sentence for tasks 3
+and 6.
+
+So: **one step back, never a named moment.** Naming *Tuesday* needs a surface to
+name it in and that surface is the later one; stepping back needs none and walks
+the same series the ribbon will one day draw.
+
+**`alo-shortcuts` is the laptop lane's crate and the action was added here with
+that lane's agreement**, on their reasoning rather than only their permission:
+adding it on their branch first would put an action on `main` with nothing
+reaching it, which is the thing task 19 exists to stop. The `Action`, the
+shipped default and the road that uses it land together.
+
+**Three things the build found that the plan did not foresee.**
+
+**The obvious implementation is a toggle, not a walk, and a test caught it
+rather than a reading did.** Going back is itself a rearrangement — the canvas
+being left is held so nothing is destroyed, which is this task's second
+acceptance clause — so the state just abandoned becomes the newest thing in the
+series, and a second press reaching for *the newest held state* reaches straight
+back for it. The frame flipped between two positions however many times it was
+pressed. It needs a cursor: the moment the Place is currently showing, each
+press asking for the newest state strictly older than it, cleared when the
+person rearranges something themselves. **The first version passed its own first
+test and failed only the one that pressed twice.**
+
+**The series had two assemblers and now has one.** `keeping::keep` carries each
+Place's ribbon forward as it writes, because it is the one place holding both
+the new layout and what the disk says. The session needs the same series in
+memory — a chord cannot read a file per frame — and the shell holds the previous
+arrangement too, so it *could* assemble it. Two assemblers computing what a
+Place remembers would agree by construction today and by luck after the first
+edit to either, which is the second-answer fault this plan's constraint names.
+So `keep` **returns what it kept** and `TheDesktop::the_layout_is_now` hands it
+back to the session. One assembler, and its work travels.
+
+**Forward has no road, and that is a gap with a reason.** The state a walk
+leaves behind is held, so the acceptance's second clause is met and nothing is
+destroyed — but no chord reaches it. Stepping forward is the ribbon's own
+gesture, in the `[v1.1]` line's own words: *letting go restores what the person
+picks*.
+
+**`On the machine.` is not ticked.** Nothing here has been shown on a display.
+
+**Owner:** **the Mac.** **Depends on:** 5, which is done — an
 arrangement has to exist before a series of them can.
 
 **Added 2026-10-04 by [ADR

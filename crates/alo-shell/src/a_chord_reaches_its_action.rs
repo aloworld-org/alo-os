@@ -104,7 +104,12 @@ impl Server {
         let Some(shortcuts) = self.shortcuts.take() else {
             return;
         };
-        let did = self.dispatch_canvas_command(&shortcuts, chord);
+        // **The one clock read on this road, and it is read here.** A chord is
+        // a thing that happened at a moment, and one action — putting a Place
+        // back as it was — holds the state being left under that moment. Every
+        // layer below takes it as an argument so a test can choose it; this is
+        // the layer where *now* is not a choice.
+        let did = self.dispatch_canvas_command(&shortcuts, chord, std::time::SystemTime::now());
         self.shortcuts = Some(shortcuts);
         if let Err(why) = did {
             eprintln!("alo-shell: a chord was pressed and could not be carried out — {why}");
