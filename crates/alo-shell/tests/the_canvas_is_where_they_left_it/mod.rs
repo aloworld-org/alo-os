@@ -117,6 +117,99 @@ fn the_arrangement_written_down_is_the_one_on_the_screen() {
     );
 }
 
+/// **A maximised window is written down at its ordinary size, not the screen's.**
+///
+/// `alo_arranging::AWindowWas`'s field has promised *always the ordinary geometry,
+/// never the geometry it was last drawn at* since it was written — and until
+/// 2026-10-04 its only producer handed it the live rectangle for every window,
+/// including a maximised one. A session that ended with a window maximised was
+/// remembered as a window the size of a screen, and **nothing could make it
+/// smaller again, because the size it used to be was gone.**
+///
+/// Task 9 of `docs/autonomy/the-smallest-canvas-worth-showing.md` named this as one
+/// of two halves not built, and named the fix: the shell captures a frame's plane
+/// rectangle as it leaves `Normal`.
+///
+/// # The first version of this test passed with the fix reverted
+///
+/// `set_maximized` over the protocol does not move a frame's **plane** rectangle on
+/// its own: the fixture's `attach` commits a fixed 16×16 buffer, so the compositor's
+/// idea of where the frame is did not change and the remembered and live rectangles
+/// were the same number. The test could not tell the fix from its absence, and it
+/// said `ok` either way.
+///
+/// So the live rectangle is **made** to differ, with a viewport destination, and
+/// **that difference is asserted before anything is concluded from it.** Without
+/// that assertion this test goes quietly vacuous again the day the fixture's buffer
+/// handling changes — which is how it was written the first time.
+#[test]
+fn a_maximised_window_is_written_down_at_the_size_it_would_go_back_to() {
+    let f = fixture();
+    let mut app = mapped_as(&f, "org.alo.Notes");
+
+    let frame = f
+        .backend(|s| s.mapped_surfaces().next().cloned())
+        .expect("a frame is mapped");
+    {
+        let frame = frame.clone();
+        assert!(f.backend(move |s| s.place_window(&frame, (300, 200)).is_ok()));
+    }
+    let ordinary = f
+        .backend(|s| s.the_arrangement_now())
+        .where_it_was(alo_canvas::Place::FIRST, "org.alo.Notes")
+        .expect("the window names itself")
+        .normal();
+    let live_before = the_live_rectangle(&f);
+
+    app.toplevel.set_maximized();
+    app.sync();
+    f.backend(|_| ());
+    app.sync();
+    // The client taking the room it was given, so the frame really is a different
+    // size on the plane than the one a person would get back.
+    assert!(
+        app.set_a_viewport_destination(900, 600),
+        "the fixture offers no viewporter, so this test cannot make the live \
+         rectangle differ and would pass without testing anything"
+    );
+    app.sync();
+    f.backend(|_| ());
+    app.sync();
+
+    let live_after = the_live_rectangle(&f);
+    assert_ne!(
+        live_before, live_after,
+        "the frame's rectangle on the plane did not change, so this test cannot \
+         distinguish the remembered ordinary geometry from the live one — it is \
+         vacuous rather than passing"
+    );
+
+    let after = f
+        .backend(|s| s.the_arrangement_now())
+        .where_it_was(alo_canvas::Place::FIRST, "org.alo.Notes")
+        .expect("the window still names itself")
+        .normal();
+    assert_eq!(
+        ((after.0.x, after.0.y), (after.1.width(), after.1.height())),
+        (
+            (ordinary.0.x, ordinary.0.y),
+            (ordinary.1.width(), ordinary.1.height())
+        ),
+        "maximising rewrote the ordinary geometry, so the size a person would get \
+         back is gone — it now reads as the rectangle the window was last drawn at"
+    );
+}
+
+/// The one mapped frame's rectangle on the plane, as the canvas sees it.
+fn the_live_rectangle(f: &Fixture) -> ((i32, i32), (u32, u32)) {
+    let frames = f.backend(|s| s.the_frames_on_the_plane());
+    let frame = frames.first().expect("one frame is on the plane");
+    (
+        (frame.at().x, frame.at().y),
+        (frame.size().width(), frame.size().height()),
+    )
+}
+
 /// **A window comes back where it was**, and only the first of its application does.
 ///
 /// One place per `app_id` is what the file can hold, so a second window of the same

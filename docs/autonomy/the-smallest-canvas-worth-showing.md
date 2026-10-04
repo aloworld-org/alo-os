@@ -662,16 +662,39 @@ alo-desktop        reads and writes the file, because the shell shows and never
                    measures and a file is a reading like the battery
 ```
 
-**Two halves are not built, and neither is hidden behind a passing test.**
+**Two halves were not built, and neither was hidden behind a passing test. One is built now; the other needs a machine.**
 
-**One: the ordinary geometry of a window that was not ordinary.** The ruling asks that a
-window which was maximised, filling the screen or in a share comes back *at its ordinary
-size*. **The state survives** — it is recorded per window and read back. **The size it would
-return to does not.** The shell keeps an ordinary geometry, and `window_mode`'s own record
-says later maximise requests never replace it — but it is in **output** coordinates while an
-arrangement is in **plane** coordinates, and converting needs the camera as it was when the
-mode was entered, which nothing keeps. The fix is for the shell to capture a frame's plane
-geometry as it leaves `Normal`, which is a change to `window_mode` and not to the file.
+**One: the ordinary geometry of a window that was not ordinary. Built 2026-10-04.** The
+ruling asks that a window which was maximised, filling the screen or in a share comes back
+*at its ordinary size*. The state survived and **the size it would return to did not**: the
+shell's ordinary geometry is in **output** coordinates while an arrangement is in **plane**
+coordinates, and converting needs the camera as it was when the mode was entered, which
+nothing keeps.
+
+**Built where this note said it would be, and without needing that camera.**
+`window_mode_plan` captures the frame's plane rectangle directly, from the buffer origin
+that is already in plane units — `scene::trees` applies the camera when it *draws*, so a
+rectangle taken this way is comparable at any zoom. `canvas_remembered` reads it back through
+`where_it_was_as_its_ordinary_self`, and the arithmetic is `canvas_show_all::a_rectangle`'s,
+shared rather than repeated.
+
+**Captured each time the frame leaves `Normal`, not once ever** — which this note did not
+say and which matters: un-maximise a window, drag it across the canvas, maximise it again,
+and the rectangle it should come back to is where the person just put it. A capture-once rule
+would have restored it to where it sat before the drag.
+
+**What it was doing instead, measured by reverting the fix:** a maximised window was written
+down as `((300, 200), (900, 600))` — the maximised rectangle — where its ordinary self was
+`((300, 200), (16, 16))`. The origin is identical in both, so a check on position alone would
+have passed throughout. `AWindowWas`'s field has promised *always the ordinary geometry,
+never the geometry it was last drawn at* since it was written, and its only producer was
+handing it the geometry it was last drawn at.
+
+*The first version of that test passed with the fix reverted.* `set_maximized` over the
+protocol does not move a frame's plane rectangle on its own — the fixture commits a fixed
+16×16 buffer — so the remembered and live rectangles were the same number and the test could
+not tell the fix from its absence. It now forces the difference with a viewport destination
+and **asserts that difference exists** before concluding anything from it.
 
 **Two: the process boundary.** The acceptance says *start a fresh process*. The restart
 evidence runs two sessions that share **nothing but the file on the disk** — the layout
@@ -681,12 +704,27 @@ genuinely fresh process needs a machine that boots to the compositor, which is t
 plan's ground. The test is named for a *session* rather than a *process* so that its name
 does not claim the half it does not do.
 
-**A third thing is the owner's to decide, and it is cheap today and not cheap after the
-first release.** `Arrangement::read` refuses a file whose version is not this one — strict
-equality, not a floor. Raised by the panel lane reading this change, and the distinction is
-theirs: **a file written by an older version of our own format is not wrong, it is old**, and
-this one check treats them identically. ADR 0038's *a file that is there and wrong is refused
-whole* is about wrongness.
+**A third thing was the owner's to decide and is now decided.** `Arrangement::read`
+refuses a file whose version is not this one — strict equality, not a floor. Raised by the
+panel lane reading this change, and the distinction was theirs: **a file written by an older
+version of our own format is not wrong, it is old**, and this one check treats them
+identically. ADR 0038's *a file that is there and wrong is refused whole* is about wrongness.
+
+**Settled by the owner on 2026-10-04, in these words: _old rules that were modified are
+wrong._** So an older version is not merely old — it was written under a rule that has since
+been modified, and reading it means interpreting bytes under rules they were not written to.
+`FORMAT`'s own note already forbade exactly that (*a later version may refuse this one
+outright; what it may not do is read it and be wrong about what it means*), so the ruling
+confirms a stance that was written down and that the panel lane was arguing against rather
+than into a gap. **The check stays strict**, and the argument and the ruling are both kept
+beside the constant so the next reader does not re-open it.
+
+**And one measurement in that constant's note had gone stale, which is what makes the ruling
+bite.** It said *nothing in this repository writes this file to disk … so there are no files
+in the world to break*. True on 2026-09-30, false since 2026-10-03: `keeping::keep` writes
+`canvas-layout.toml` and `alo-desktop` calls it. **Version 3 files exist on real machines**,
+so a bump to 4 discards a person's remembered arrangement — once, visibly, with the reason
+said and the next change replacing the file. Bounded, and no longer free.
 
 Today the cost is nothing, because no such file exists anywhere — `written` has had no
 production caller until this change. **The first release that ships one makes every later

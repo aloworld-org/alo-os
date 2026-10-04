@@ -114,6 +114,12 @@ struct Written {
 /// tree. So there are no files in the world to break, and there will be from the
 /// first machine that saves one.
 ///
+/// **That stopped being true on 2026-10-03, and this is the sentence to read
+/// before bumping this number again.** `keeping::keep` writes
+/// `canvas-layout.toml` and `alo-desktop` calls it on every meaningful layout
+/// change, so **version 3 files exist on real machines**. The paragraph above is
+/// kept because it is why 1 and 2 cost nothing; it is no longer why 4 would.
+///
 /// `docs/autonomy/the-canvas-and-its-places.md` task 5 is what needs it: an
 /// arrangement per Place is a **whole-file reshape** rather than a key, because
 /// two cameras cannot live in a file with one. That change is affordable only
@@ -121,6 +127,30 @@ struct Written {
 ///
 /// **It is not a compatibility promise.** A later version may refuse this one
 /// outright; what it may not do is read it and be wrong about what it means.
+///
+/// # Strict equality is the owner's decision, not an unexamined one
+///
+/// The panel lane put the contrary case while reading the change that made this
+/// file real: `read` refuses a version that is not exactly this one — a floor
+/// would accept older ones — and **a file written by an older version of our own
+/// format is not wrong, it is old**, while this check treats the two
+/// identically. It is a good argument and it is the one somebody will make again.
+///
+/// The owner settled it on 2026-10-04, in these words:
+///
+/// > **old rules that were modified are wrong**
+///
+/// So an older version is not merely old: it was written under a rule that has
+/// since been modified, and reading it means interpreting bytes under rules they
+/// were not written to. That is the one thing the paragraph above forbids. **The
+/// check stays strict.**
+///
+/// What it costs, stated so nobody discovers it: at a bump, every existing file
+/// is refused rather than migrated, and a person loses their remembered
+/// arrangement **once**, at that upgrade. The cost is bounded and visible —
+/// `keeping::at_sign_in` answers with a fresh arrangement and the reason,
+/// `alo-desktop` prints it, and the next layout change replaces the file. A
+/// person gets the canvas their applications put up, not a refusal to start.
 ///
 /// # Two, and why there is nothing to migrate
 ///

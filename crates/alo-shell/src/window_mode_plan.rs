@@ -15,6 +15,23 @@ pub(crate) struct ModePlan {
     pub(crate) role: ToplevelSurface,
     /// Original geometry retained across layout requests.
     pub(crate) normal: ResizeGeometry,
+    /// Where the frame sat on the **plane** as its ordinary self, or [`None`]
+    /// where it has no rectangle the plane can hold.
+    ///
+    /// **Beside [`Self::normal`] rather than derived from it, because they are in
+    /// different spaces.** `ResizeGeometry`'s own field says *in output
+    /// coordinates*, and an arrangement is in plane units — converting one to the
+    /// other needs the camera as it was at the moment the mode was entered, and
+    /// nothing keeps that. So this is captured directly, where the frame still is
+    /// ordinary, from the buffer origin that is already in plane units.
+    ///
+    /// Task 9 of `docs/autonomy/the-smallest-canvas-worth-showing.md` names this
+    /// as the half that was missing: *the state survives and the size it would go
+    /// back to does not*. `alo_arranging::AWindowWas`'s `normal` field has
+    /// promised to be *always the ordinary geometry, never the geometry it was
+    /// last drawn at* since it was written, and its only producer was handing it
+    /// the rectangle the window was last drawn at.
+    pub(crate) ordinary_on_the_plane: Option<(alo_canvas::At, alo_canvas::Size)>,
     /// Requested logical dimensions.
     pub(crate) size: (i32, i32),
     /// Placement after the matching acknowledgment and commit.
@@ -81,6 +98,29 @@ impl Surfaces {
             Some(window) => window.normal,
             None => self.resize_geometry(surface, ResizeEdge::BottomRight)?,
         };
+        // **Captured every time the frame leaves `Normal`, not once ever.**
+        //
+        // `normal` above is kept from the first departure and never replaced,
+        // which its own comment says and which is right for a *size*. It is wrong
+        // for a *position*: un-maximise a window, drag it across the canvas,
+        // maximise it again, and the rectangle it should come back to is where the
+        // person just put it. A capture-once rule would restore it to where it sat
+        // before the drag, and the arrangement would be confidently wrong about a
+        // move the person made deliberately.
+        //
+        // So the test is *was it ordinary a moment ago* — no mode record at all,
+        // or a record saying `Normal` — and not *has it ever been given a mode*.
+        // Asking for `Normal` itself captures nothing: the frame is about to
+        // become its ordinary self, and from then on its current rectangle **is**
+        // the ordinary one, which is what `crate::canvas_remembered` reads.
+        let ordinary_on_the_plane = match previous {
+            _ if mode == Mode::Normal => None,
+            Some(window) if window.mode != Mode::Normal => window.ordinary_on_the_plane,
+            _ => crate::canvas_show_all::a_rectangle(
+                crate::window_buffer_origin(surface),
+                crate::scene::geometry(surface),
+            ),
+        };
         let (size, anchor) = match (output, share) {
             (_, Some(share)) => (share.size, Anchor::Fixed(share.at)),
             (Some(size), _) => (size, Anchor::Fixed((0, 0))),
@@ -94,6 +134,7 @@ impl Surfaces {
         Ok(Some(ModePlan {
             role,
             normal,
+            ordinary_on_the_plane,
             size,
             anchor,
         }))

@@ -91,6 +91,28 @@ fn a_frame(
     origin: Point<f64, Logical>,
     geometry: Rectangle<f64, Logical>,
 ) -> Option<Frame> {
+    let (at, size) = a_rectangle(origin, geometry)?;
+    Some(Frame::of(id, place, at, size))
+}
+
+/// Where one surface's frame sits on the plane, from its origin and geometry.
+///
+/// **The one place this sum is done.** `the_frames_on_the_plane`'s own note says
+/// the canvas and `crate::frame_handle` agree about a frame's rectangle *by
+/// reading the same two functions rather than by each doing the sum* — and this
+/// is that sentence made true of a third caller.
+/// `crate::window_mode_plan` captures a frame's ordinary rectangle as it leaves
+/// `Normal`, and a second copy of this arithmetic there would be a second answer
+/// to where a window was.
+///
+/// **No camera, and that is the point of taking a buffer origin.** An origin is
+/// already in plane units; `crate::scene::trees` applies the camera when it draws.
+/// So a rectangle captured here is comparable with one captured at any other zoom,
+/// which is what lets an ordinary geometry outlive the camera it was taken under.
+pub(crate) fn a_rectangle(
+    origin: Point<f64, Logical>,
+    geometry: Rectangle<f64, Logical>,
+) -> Option<(At, Size)> {
     let left = origin.x + geometry.loc.x;
     let top = origin.y + geometry.loc.y;
     let (width, height) = (geometry.size.w, geometry.size.h);
@@ -103,5 +125,5 @@ fn a_frame(
     // rather than moving the extent every other frame is fitted by.
     let at = At::checked(left.floor() as i32, top.floor() as i32)?;
     let size = Size::checked(width.ceil().max(0.0) as u32, height.ceil().max(0.0) as u32)?;
-    Some(Frame::of(id, place, at, size))
+    Some((at, size))
 }
