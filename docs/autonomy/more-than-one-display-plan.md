@@ -255,7 +255,39 @@ drift.
 
 ### 8. The display number comes from whatever advertises it
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** 3.
+**Status:** **Done, 2026-10-05: the code.** `Server::the_number_for` assigns a
+`DisplayId` per display name on first sight and keeps it in
+`Server::display_numbers`; `THE_DISPLAY` is gone. Four tests.
+
+**Taken out of order, and the order is the plan's own.** This depends on 3 and
+not on 4, so it was done while task 4 — the largest in the plan — was still
+ahead. Task 6 is in the same position.
+
+**The note fired, and it could not have fired by itself.** `THE_DISPLAY`'s own
+sentence said *the moment a second output is advertised, the number comes from
+whatever advertises it and this constant goes* — correct, carefully argued, and
+attached to a `const` with one reader that nothing could trigger. Task 3 was
+that moment and a person had to notice.
+
+**So the replacement is deliberately not another constant with a sentence
+beside it.** A number that comes from a map keyed by the display's own name
+cannot quietly go back to meaning *the one display*: the next assumption is
+wrong where the compiler can see it.
+
+**Two things the implementation decided that the task did not say.**
+
+**A number is never reissued.** The next one is *one past the highest given
+out*, not the count — with two displays and one removed, a count hands the next
+arrival the number the survivor is still using, and two screens would share a
+division.
+
+**And `the_display_retired` now means every display**, because that is what its
+callers mean: the session's backend is going away. One display leaving is
+`the_display_left(which)`, which is also what a display arriving at an
+impossible size now retires — itself, rather than whichever display happened to
+be numbered 1.
+
+**Owner:** the Mac. **Depends on:** 3.
 
 `display_lifecycle.rs:45` hard-codes `DisplayId::from_compositor(1)` and its own
 note says the constant goes the moment a second output is advertised. Task 3 is

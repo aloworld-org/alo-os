@@ -41,8 +41,27 @@ use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 use smithay::wayland::compositor::with_states;
 use smithay::wayland::shell::xdg::XdgToplevelSurfaceData;
 
-/// The display a single-output compositor draws to.
-const THE_DISPLAY: DisplayId = DisplayId::from_compositor(1);
+/// ~~The display a single-output compositor draws to.~~
+///
+/// **Retired 2026-10-05**, which is what its own note said would happen: *the
+/// display is numbered 1 because there is only ever one; the moment a second
+/// output is advertised, the number comes from whatever advertises it and this
+/// constant goes.* `docs/autonomy/more-than-one-display-plan.md` task 3 was
+/// that moment.
+///
+/// **The note could not have fired by itself** — it sat beside a `const` with
+/// one reader, and nothing in the repository made a second output appear. That
+/// is written up in
+/// [`a-guard-that-cannot-fire-is-a-comment.md`](../../../docs/misreadings/a-guard-that-cannot-fire-is-a-comment.md),
+/// and the replacement below is deliberately **not** another constant with a
+/// sentence beside it: a number that comes from a map keyed by the display's
+/// own name is wrong *at compile time* if a second display is ever assumed
+/// away again.
+///
+/// Kept as a doc comment on [`Server::the_number_for`] rather than deleted
+/// because the reasoning is the useful part and this is where somebody looks
+/// for it.
+const _: () = ();
 
 /// The extent a display is described in, both ends agreeing.
 ///
@@ -69,13 +88,18 @@ impl crate::Server {
         size: (i32, i32),
     ) {
         let named = &the_screen(metadata);
+        // **This display's own number**, from the name it advertises rather
+        // than from a constant. Assigned before the describable check so that
+        // a display arriving at an impossible size retires *itself* and not
+        // whichever display happened to be numbered 1.
+        let which = self.the_number_for(&metadata.name);
         let Some(area) = describable(size) else {
-            self.the_display_retired();
+            self.the_display_left(which);
             return;
         };
-        match self.desk.area_of(THE_DISPLAY) {
+        match self.desk.area_of(which) {
             Some(already) if already == area => return,
-            Some(_) => self.the_display_retired(),
+            Some(_) => self.the_display_left(which),
             None => {}
         }
         // Three numbers for the three surfaces this compositor draws itself,
@@ -97,7 +121,7 @@ impl crate::Server {
         // here, which the match above has just ruled out.
         let _ = self
             .desk
-            .display_arrived(THE_DISPLAY, named, area, promises, &|by| {
+            .display_arrived(which, named, area, promises, &|by| {
                 held.iter().find(|(who, _)| who == by).map(|(_, it)| *it)
             });
     }
@@ -107,16 +131,60 @@ impl crate::Server {
     /// Its division is remembered under the name it arrived with, so the same
     /// screen coming back finds it. Nothing is closed and no window is moved.
     pub(crate) fn the_display_retired(&mut self) {
-        let Some(named) = self.desk.name_of(THE_DISPLAY).map(str::to_owned) else {
+        // **Every display, because this is the session's output going away.**
+        // It was one display's until 2026-10-05 and could only ever have been:
+        // the number was a constant. A caller retiring the backend is retiring
+        // all of them, and one that means a single screen says which through
+        // [`Self::the_display_left`].
+        for which in self.display_numbers.values().copied().collect::<Vec<_>>() {
+            self.the_display_left(which);
+        }
+    }
+
+    /// One display has gone.
+    ///
+    /// Its division is remembered under the name it arrived with, so the same
+    /// screen coming back finds it. Nothing is closed and no window is moved.
+    pub(crate) fn the_display_left(&mut self, which: DisplayId) {
+        let Some(named) = self.desk.name_of(which).map(str::to_owned) else {
             return;
         };
         let held = self.what_each_window_is_held_by();
         // Unknown is the only refusal, and the name above proves it is known.
-        let _ = self.desk.display_left(THE_DISPLAY, &named, &|window| {
+        let _ = self.desk.display_left(which, &named, &|window| {
             held.iter()
                 .find(|(number, _)| *number == window)
                 .map(|(_, by)| by.clone())
         });
+    }
+
+    /// The number this display is known by, assigned the first time it is seen.
+    ///
+    /// **From the display rather than from a constant**, which is task 8's
+    /// whole sentence. The name is `OutputMetadata::name`, session-unique, so
+    /// a screen that leaves and returns under the same name gets the number it
+    /// had and finds the division remembered against it — which is the road
+    /// `display_lifecycle`'s header already describes for a screen unplugged at
+    /// one desk and plugged in at another.
+    ///
+    /// Numbers start at 1 and never repeat within a session, so a display that
+    /// has gone does not hand its number to a different screen.
+    fn the_number_for(&mut self, named: &str) -> DisplayId {
+        if let Some(already) = self.display_numbers.get(named) {
+            return *already;
+        }
+        // One past the highest given out, rather than the count: a display
+        // removed from the map would otherwise reissue a number.
+        let next = self
+            .display_numbers
+            .values()
+            .map(|which| which.to_compositor())
+            .max()
+            .unwrap_or(0)
+            + 1;
+        let which = DisplayId::from_compositor(next);
+        self.display_numbers.insert(named.to_owned(), which);
+        which
     }
 
     /// Which window each application that is running has open.
@@ -207,4 +275,86 @@ fn held_by(surface: &WlSurface) -> Option<HeldBy> {
             })
     });
     HeldBy::named(&named?).ok()
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+mod tests {
+    use crate::Server;
+
+    /// A server on a private socket.
+    fn server(named: &str) -> (tempfile::TempDir, Server) {
+        use std::os::unix::fs::PermissionsExt as _;
+        let directory = tempfile::tempdir().expect("a private directory");
+        std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700))
+            .expect("a private runtime directory");
+        let server = Server::bind(directory.path(), named).expect("a bound socket");
+        (directory, server)
+    }
+
+    /// **Two displays are two numbers**, which is the whole of task 8.
+    ///
+    /// The number used to be `DisplayId::from_compositor(1)`, a constant with
+    /// one reader, so every display this compositor ever saw was display 1 —
+    /// and `alo-dividing`'s per-display divisions would all have been the same
+    /// display's.
+    #[test]
+    fn two_displays_are_given_two_numbers() {
+        let (_directory, mut server) = server("two-numbers");
+        let first = server.the_number_for("DP-1");
+        let second = server.the_number_for("HDMI-A-1");
+        assert_ne!(
+            first, second,
+            "two displays were given the same number, which is what a constant did"
+        );
+    }
+
+    /// **The same display asked twice is the same number.**
+    ///
+    /// A number assigned per frame would make every frame a new display to
+    /// `alo-desktops`, which is the failure a counter without a map would
+    /// have.
+    #[test]
+    fn one_display_keeps_its_number() {
+        let (_directory, mut server) = server("same-number");
+        let first = server.the_number_for("DP-1");
+        let again = server.the_number_for("DP-1");
+        assert_eq!(first, again);
+        assert_eq!(server.display_numbers.len(), 1);
+    }
+
+    /// **A screen that comes back finds the number it had**, which is what
+    /// makes its remembered division its own.
+    ///
+    /// `display_lifecycle`'s header describes a screen unplugged at one desk
+    /// and plugged in at another, and a changed extent as *leaving and
+    /// returning*. Both roads go through the name, so both find the number.
+    #[test]
+    fn a_screen_that_returns_under_its_own_name_keeps_its_number() {
+        let (_directory, mut server) = server("returning");
+        let first = server.the_number_for("DP-1");
+        let other = server.the_number_for("HDMI-A-1");
+        server.the_display_retired();
+        assert_eq!(server.the_number_for("DP-1"), first);
+        assert_eq!(server.the_number_for("HDMI-A-1"), other);
+    }
+
+    /// **Numbers are not reissued**, so a display that has gone does not hand
+    /// its number to a different screen.
+    ///
+    /// The count would: with two displays and one removed, a counter taking
+    /// `len() + 1` gives the next arrival the number the survivor already has.
+    #[test]
+    fn a_number_is_never_given_to_a_second_screen() {
+        let (_directory, mut server) = server("never-reissued");
+        let first = server.the_number_for("DP-1");
+        let second = server.the_number_for("HDMI-A-1");
+        server.display_numbers.remove("DP-1");
+        let third = server.the_number_for("VGA-1");
+        assert_ne!(third, first, "a departed display's number was reissued");
+        assert_ne!(third, second, "a live display's number was reissued");
+    }
 }

@@ -46,6 +46,14 @@ pub struct Server {
     ///
     /// `docs/autonomy/more-than-one-display-plan.md` task 3.
     pub(crate) presentations: std::collections::BTreeMap<String, crate::presentation::Presentation>,
+    /// **What number each display is known by**, keyed by the name it
+    /// advertises.
+    ///
+    /// `display_lifecycle`'s `THE_DISPLAY` was a constant 1 until 2026-10-05,
+    /// with a note saying it would go the moment a second output was
+    /// advertised. `crate::display_lifecycle::Server::the_number_for` is what
+    /// replaced it, and task 8 is why.
+    pub(crate) display_numbers: std::collections::BTreeMap<String, alo_desktops::DisplayId>,
     /// Stable mapped-root order for trusted window cycling.
     pub(crate) switch_order: crate::window_switch::SwitchOrder,
     /// **How each display is divided and what desktops are on it.**
@@ -179,6 +187,7 @@ impl Server {
             display,
             surfaces,
             socket,
+            display_numbers: std::collections::BTreeMap::new(),
             presentations: std::collections::BTreeMap::new(),
             switch_order: Default::default(),
             fixed_controls: crate::canvas_fixed_controls::FixedControls::default(),
