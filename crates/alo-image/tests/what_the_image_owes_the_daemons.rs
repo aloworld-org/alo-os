@@ -456,7 +456,7 @@ fn the_store_the_image_carries_is_the_weights_once() {
         "dropping the source blob is only cheaper if the digest check before it stayed"
     );
     assert!(
-        weights.drops_the_source(),
+        weights.prunes_to_the_manifest(),
         "the weights stage leaves the runtime's copy of the checked file in the store"
     );
     assert!(

@@ -34,7 +34,7 @@
 //! every machine we ship, where nothing can ever prune it. So the weights stage
 //! removes the source blob **after** the import — the digest check has done its
 //! work by then and is untouched — and holds every blob left in the store to the
-//! manifest before the store leaves the stage. [`TheWeights::drops_the_source`]
+//! manifest before the store leaves the stage. [`TheWeights::prunes_to_the_manifest`]
 //! and [`TheWeights::holds_the_store_to_its_manifest`] read those two lines, so
 //! a recipe that quietly went back to carrying the weights twice is a red test
 //! rather than an image twice the model's size larger than its own comment.
@@ -127,10 +127,17 @@ const FETCHED_TO: &str = "--output";
 /// store exists after and the line the source blob may only be removed after.
 const IMPORTED: &str = "ollama create";
 
-/// The blob the runtime leaves the checked file under: the file's own digest,
-/// in the store, named by no manifest once the import has written the blob it
-/// names instead.
-const THE_SOURCE_BLOB: &str = "blobs/sha256-${THE_MODELS_SHA256}";
+/// What a walk of the store calls the blob it is looking at.
+///
+/// **This was `blobs/sha256-${THE_MODELS_SHA256}` until 2026-10-05**, and that
+/// was a question about the recipe's text rather than about what the text does.
+/// The recipe removed that one named digest, which was the duplicate while the
+/// weights came from a publisher's GGUF and became the **only** copy when
+/// `#113` moved them to the runtime library's own content-addressed blob — so
+/// the line deleted the model and this reader went on passing. Asking instead
+/// that the removal is conditioned on the manifest cannot tell the two
+/// sourcings apart, which is the point.
+const THE_WALKED_BLOB: &str = "${blob}";
 
 /// How a line removes something.
 const REMOVED: &str = "rm ";
@@ -182,9 +189,9 @@ pub struct TheWeights {
     template_reaches_the_import: bool,
     /// Whether the weights are copied onto the machine.
     lands: bool,
-    /// Whether the blob the runtime left the checked file under is removed
-    /// after the import.
-    source_dropped: bool,
+    /// Whether the store is pruned, after the import, to what its manifest
+    /// names.
+    pruned_to_the_manifest: bool,
     /// Whether every blob left in the store is held to the manifest.
     held_to_manifest: bool,
 }
@@ -209,7 +216,7 @@ impl TheWeights {
             template_checked_first: false,
             template_reaches_the_import: false,
             lands: false,
-            source_dropped: false,
+            pruned_to_the_manifest: false,
             held_to_manifest: false,
         };
 
@@ -241,22 +248,22 @@ impl TheWeights {
         weights.template_checked_first =
             checked_before_it_was_read(containerfile, THE_TEMPLATE_NAME, THE_TEMPLATE_DIGEST_NAME);
         weights.template_reaches_the_import = the_template_reaches_the_import(containerfile);
-        let (source_dropped, held_to_manifest) = carried_once(containerfile);
-        weights.source_dropped = source_dropped;
+        let (pruned_to_the_manifest, held_to_manifest) = carried_once(containerfile);
+        weights.pruned_to_the_manifest = pruned_to_the_manifest;
         weights.held_to_manifest = held_to_manifest;
         weights
     }
 
-    /// Whether the stage removes the blob the runtime left the checked file
-    /// under, **after** the import.
+    /// Whether the stage prunes the store to what its manifest names,
+    /// **after** the import.
     ///
-    /// After, because before it there is nothing to import from; and the digest
-    /// check is not this line's business — it ran on the file before the import
-    /// read it, and removing the runtime's copy of that file afterwards changes
-    /// nothing about what was checked.
+    /// After, because before it there is nothing to prune; and the digest check
+    /// is not this walk's business — it ran on the file before the import read
+    /// it, and what the store keeps afterwards changes nothing about what was
+    /// checked.
     #[must_use]
-    pub const fn drops_the_source(&self) -> bool {
-        self.source_dropped
+    pub const fn prunes_to_the_manifest(&self) -> bool {
+        self.pruned_to_the_manifest
     }
 
     /// Whether every blob left in the store is held to the manifest that names
@@ -264,7 +271,7 @@ impl TheWeights {
     ///
     /// This is the line that makes *carried once* a build that goes red rather
     /// than a comment: a runtime update that left a second copy behind under
-    /// some other name would be caught here, where [`Self::drops_the_source`]
+    /// some other name would be caught here, where [`Self::prunes_to_the_manifest`]
     /// would not see it.
     #[must_use]
     pub const fn holds_the_store_to_its_manifest(&self) -> bool {
@@ -449,17 +456,21 @@ fn the_template_reaches_the_import(containerfile: &str) -> bool {
     read && imported
 }
 
-/// Whether the weights stage, after the import, removes the source blob and
-/// holds every blob left in the store to the manifest — as two answers, because
-/// they are two lines that go wrong separately.
+/// Whether the weights stage, after the import, prunes the store to what its
+/// manifest names and then holds what is left to that manifest — as two
+/// answers, because they are two walks that go wrong separately.
 ///
-/// Read off the text the way the rest of this crate reads a recipe: a line that
-/// removes the source blob is one naming `rm` and the blob by the pinned
-/// digest's own argument; the store is held when the stage walks every blob,
-/// looks each up in the manifest, and refuses the build for one it does not
-/// find. Order is part of the question — a removal before the import would
-/// remove nothing and then import nothing — so it is asked inside the stage,
-/// after the line that imports.
+/// Read off the text the way the rest of this crate reads a recipe. **Both
+/// answers are a manifest-conditioned walk and they differ only in the
+/// else-branch**: the prune removes a blob the manifest does not name, and the
+/// hold refuses the build for one. A recipe with the second and not the first
+/// ships the weights twice; with the first and not the second, a future runtime
+/// leaving a copy under some other name is pruned silently instead of stopping
+/// the build.
+///
+/// Order is part of the question — a removal before the import would remove
+/// nothing and then import nothing — so both are asked inside the stage, after
+/// the line that imports.
 fn carried_once(containerfile: &str) -> (bool, bool) {
     let lines = in_stage(containerfile, THE_STAGE);
     let Some(imported) = lines.iter().position(|line| line.contains(IMPORTED)) else {
@@ -467,9 +478,15 @@ fn carried_once(containerfile: &str) -> (bool, bool) {
     };
     let after: Vec<&str> = lines.into_iter().skip(imported + 1).collect();
 
-    let dropped = after
-        .iter()
-        .any(|line| line.contains(REMOVED) && line.contains(THE_SOURCE_BLOB));
+    let walked_then = |what: &str| {
+        let walked = after.iter().position(|line| line.contains(EVERY_BLOB));
+        walked.is_some_and(|walked| {
+            after.iter().skip(walked).any(|line| {
+                line.contains(LOOKED_UP) && line.contains(THE_MANIFEST) && line.contains(what)
+            })
+        })
+    };
+    let pruned = walked_then(REMOVED) && after.iter().any(|line| line.contains(THE_WALKED_BLOB));
 
     // Three lines in order: the walk, the lookup, the refusal. Each is looked
     // for after the one before it, by skipping rather than slicing.
@@ -484,7 +501,7 @@ fn carried_once(containerfile: &str) -> (bool, bool) {
     let held =
         looked.is_some_and(|looked| after.iter().skip(looked).any(|line| line.contains(REFUSED)));
 
-    (dropped, held)
+    (pruned, held)
 }
 
 /// Where this line puts what it fetched, where it is a fetch.
@@ -526,7 +543,10 @@ mod tests {
                 .to_owned(),
             "RUN cat /template.gotmpl > /Modelfile; \\".to_owned(),
             "    ollama create it -f /Modelfile; \\".to_owned(),
-            " && rm -f /models/blobs/sha256-${THE_MODELS_SHA256} \\".to_owned(),
+            " && for blob in /models/blobs/*; do \\".to_owned(),
+            "      grep -q \"sha256:${blob##*/sha256-}\" \"${manifest}\" || rm -f \"${blob}\"; \\"
+                .to_owned(),
+            "    done; \\".to_owned(),
             " && for blob in /models/blobs/*; do \\".to_owned(),
             "      grep -q \"sha256:${blob##*/sha256-}\" \"${manifest}\" || exit 1; \\".to_owned(),
             "    done".to_owned(),
@@ -558,7 +578,7 @@ mod tests {
         assert!(read.land());
         assert!(read.is_pinned());
         assert!(read.is_verified());
-        assert!(read.drops_the_source());
+        assert!(read.prunes_to_the_manifest());
         assert!(read.holds_the_store_to_its_manifest());
         assert_eq!(
             read.template(),
@@ -630,33 +650,51 @@ mod tests {
         assert!(!read.carries_its_template_pinned());
     }
 
-    /// **A stage that leaves the runtime's copy of the checked file in the
-    /// store reads as carrying the weights twice**, which is exactly what the
-    /// first build of the real recipe did — and the store is still held to its
-    /// manifest, because the two lines are two answers.
+    /// **A stage that never prunes reads as carrying the weights twice**,
+    /// which is what the real recipe did before 2026-10-05 — and the store is
+    /// still held to its manifest, because the two walks are two answers.
+    ///
+    /// The prune walk is removed and the refusal walk left standing, so this
+    /// also shows the two are read separately rather than one standing in for
+    /// the other.
     #[test]
-    fn a_stage_that_leaves_the_source_blob_reads_as_carrying_the_weights_twice() {
+    fn a_stage_that_never_prunes_reads_as_carrying_the_weights_twice() {
         let left = with(
-            " && rm -f /models/blobs/sha256-${THE_MODELS_SHA256} \\",
+            "      grep -q \"sha256:${blob##*/sha256-}\" \"${manifest}\" || rm -f \"${blob}\"; \\",
             " && true \\",
         );
 
-        assert!(!left.drops_the_source());
+        assert!(!left.prunes_to_the_manifest());
         assert!(left.holds_the_store_to_its_manifest());
     }
 
     /// **A store nothing holds to its manifest reads as held to nothing**, and
-    /// dropping the source blob does not stand in for it: a runtime update
-    /// leaving a second copy under some other name is caught by the walk, never
-    /// by the removal.
+    /// the prune does not stand in for it: a runtime update leaving a second
+    /// copy under some other name would be *pruned* by the first walk and must
+    /// still **stop the build**, which only the second walk does.
+    ///
+    /// **What separates the two answers is the else-branch, not the walk.**
+    /// Both are manifest-conditioned walks since 2026-10-05, so deleting the
+    /// walk breaks both — asserted here, because it is the one place a reader
+    /// can see that they share a prerequisite and are still two findings.
     #[test]
     fn a_store_nothing_holds_to_its_manifest_reads_as_held_to_nothing() {
-        let unwalked = with("for blob in /models/blobs/*", "for blob in /nowhere/*");
-        assert!(unwalked.drops_the_source());
-        assert!(!unwalked.holds_the_store_to_its_manifest());
-
+        // Only the refusal is gone: the store is pruned and nothing stops a
+        // blob the manifest does not name.
         let unrefused = with("|| exit 1", "|| true");
+        assert!(unrefused.prunes_to_the_manifest());
         assert!(!unrefused.holds_the_store_to_its_manifest());
+
+        // Only the prune is gone: the build still stops, and ships twice until
+        // it does.
+        let unpruned = with("|| rm -f \"${blob}\"", "|| true");
+        assert!(!unpruned.prunes_to_the_manifest());
+        assert!(unpruned.holds_the_store_to_its_manifest());
+
+        // No walk at all: neither answer can be read, because both are walks.
+        let unwalked = with("for blob in /models/blobs/*", "for blob in /nowhere/*");
+        assert!(!unwalked.prunes_to_the_manifest());
+        assert!(!unwalked.holds_the_store_to_its_manifest());
 
         let unlooked = with("grep -q", "test -f");
         assert!(!unlooked.holds_the_store_to_its_manifest());
@@ -671,16 +709,18 @@ mod tests {
             &format!("ARG THE_MODELS_SHA256={}", "ab".repeat(32)),
             "FROM builder AS weights",
             "RUN curl --output /weights.gguf \"${THE_MODELS_WEIGHTS}\"",
-            "RUN rm -f /models/blobs/sha256-${THE_MODELS_SHA256}",
+            "RUN for blob in /models/blobs/*; do grep -q x \"${manifest}\" \
+                 || rm -f \"${blob}\"; done",
             "RUN ollama create it -f /weights.gguf",
         ]);
-        assert!(!early.drops_the_source());
+        assert!(!early.prunes_to_the_manifest());
 
         let never_imported = saying(&[
             "FROM builder AS weights",
-            "RUN rm -f /models/blobs/sha256-${THE_MODELS_SHA256}",
+            "RUN for blob in /models/blobs/*; do grep -q x \"${manifest}\" \
+                 || rm -f \"${blob}\"; done",
         ]);
-        assert!(!never_imported.drops_the_source());
+        assert!(!never_imported.prunes_to_the_manifest());
         assert!(!never_imported.holds_the_store_to_its_manifest());
     }
 

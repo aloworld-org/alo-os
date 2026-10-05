@@ -464,11 +464,12 @@ pub enum Wrong {
     /// The recipe leaves the runtime's copy of the checked file in the store
     /// beside the blob the manifest names.
     #[error(
-        "the weights stage leaves the runtime's copy of the checked file in the store after the \
-         import — measured on 2026-09-11 (docs/quirks.md), the runtime writes a second blob of \
-         the same length and names only that one, so a store left as the runtime left it is \
-         4.5 GiB for 2.23 GiB of model on the read-only half of every machine we ship, where \
-         nothing can ever prune it; the cost ADR 0025 accepted was the weights carried once"
+        "the weights stage does not prune the store to what its manifest names after the \
+         import — measured on 2026-09-11 (docs/quirks.md), the runtime can write a second blob \
+         of the same length and name only one of them, so a store left as the runtime left it \
+         is 4.5 GiB for 2.23 GiB of model on the read-only half of every machine we ship, \
+         where nothing can ever prune it; the cost ADR 0025 accepted was the weights carried \
+         once"
     )]
     TheWeightsAreCarriedTwice,
     /// Nothing holds the store to its manifest before it leaves the stage.

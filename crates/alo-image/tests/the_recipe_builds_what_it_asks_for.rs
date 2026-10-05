@@ -141,13 +141,27 @@ fn what_the_recipe_builds(recipe: &str) -> Vec<(BTreeSet<String>, BTreeSet<Strin
     built
 }
 
-/// **A `--bin` the recipe asks for is held by a package it also names.**
+/// **Every binary the image copies out of a build stage is one that stage
+/// builds.**
 ///
-/// `cargo build --bin X` searches only the packages `--package` named. Asking
-/// for a binary whose package is absent fails the image build and no gate,
-/// because no gate builds the image.
+/// **This asked a weaker question until 2026-10-05 and passed while the image
+/// could not be built.** It checked that a `--bin` the recipe names is held by
+/// a package it also names — true of the recipe as written, because
+/// `alo-shipping` is in `alo-software` and both were named. What it never asked
+/// is what that flag does to the *others*.
+///
+/// `--bin` is a target filter over every selected package, not a modifier of
+/// the `--package` beside it. So `--package alo-software --bin alo-shipping`
+/// built one binary and excluded the four daemons; the stage finished green in
+/// 1m 41s with one of six, and `COPY --from=built` failed two hundred lines
+/// later with *no such file or directory*.
+///
+/// So the question is the invariant instead: **every binary a `COPY
+/// --from=built` names must be produced** — held by a package the build selects
+/// and not filtered out by a `--bin`. That cannot be satisfied by a recipe
+/// which builds one binary of six.
 #[test]
-fn every_binary_the_recipe_builds_is_in_a_package_it_names() {
+fn every_binary_the_recipe_copies_is_one_it_builds() {
     let recipe = the_recipe();
     let held = the_binaries_by_package();
     let asked = what_the_recipe_builds(&recipe);
@@ -156,19 +170,31 @@ fn every_binary_the_recipe_builds_is_in_a_package_it_names() {
         "{THE_RECIPE} runs no cargo build, which cannot be right"
     );
 
-    let mut checked = 0_usize;
-    for (packages, binaries) in &asked {
-        for binary in binaries {
-            checked += 1;
-            let holder = packages
-                .iter()
-                .find(|package| held.get(*package).is_some_and(|b| b.contains(binary)));
+    // What every build in the recipe actually produces: each selected package's
+    // binaries, narrowed by a `--bin` filter where one is given, because that
+    // is what cargo does rather than what the flag looks like.
+    let mut produced: BTreeSet<String> = BTreeSet::new();
+    for (packages, filtered) in &asked {
+        for package in packages {
+            let Some(binaries) = held.get(package) else {
+                continue;
+            };
+            for binary in binaries {
+                if filtered.is_empty() || filtered.contains(binary) {
+                    produced.insert(binary.clone());
+                }
+            }
+        }
+        // A `--bin` naming something no selected package holds fails the build
+        // outright, which is the question this test used to ask on its own.
+        for binary in filtered {
             assert!(
-                holder.is_some(),
-                "{THE_RECIPE} builds --bin {binary} while naming only {packages:?}, \
-                 and none of those holds it. cargo searches --bin among the packages \
-                 --package named, so the image build fails with `no bin target named \
-                 {binary}`. The package that holds it is {:?}.",
+                packages
+                    .iter()
+                    .any(|package| held.get(package).is_some_and(|b| b.contains(binary))),
+                "{THE_RECIPE} builds --bin {binary} while naming only {packages:?}, and none \
+                 of those holds it, so the build fails with `no bin target named {binary}`. \
+                 The package that holds it is {:?}.",
                 held.iter()
                     .filter(|(_, b)| b.contains(binary))
                     .map(|(p, _)| p.as_str())
@@ -176,9 +202,36 @@ fn every_binary_the_recipe_builds_is_in_a_package_it_names() {
             );
         }
     }
+
+    // And every binary the image copies out of a stage has to be in there.
+    let mut copied = 0_usize;
+    for line in recipe.lines() {
+        let line = line.trim();
+        let Some(rest) = line.strip_prefix("COPY --from=built ") else {
+            continue;
+        };
+        let Some(from) = rest.split_whitespace().next() else {
+            continue;
+        };
+        let Some(binary) = from.rsplit('/').next() else {
+            continue;
+        };
+        copied += 1;
+        assert!(
+            produced.contains(binary),
+            "{THE_RECIPE} copies {binary} out of the build stage and does not build it. What \
+             that stage produces is {produced:?} — a `--bin` filter narrows every selected \
+             package, so naming one binary excludes the rest and the stage still finishes \
+             green. The package that holds {binary} is {:?}.",
+            held.iter()
+                .filter(|(_, b)| b.contains(binary))
+                .map(|(p, _)| p.as_str())
+                .collect::<Vec<_>>()
+        );
+    }
     assert!(
-        checked >= 1,
-        "no --bin was checked, so this test proved nothing"
+        copied >= 1,
+        "no COPY --from=built was read, so this test proved nothing"
     );
 }
 
