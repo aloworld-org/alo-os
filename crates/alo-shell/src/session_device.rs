@@ -82,6 +82,15 @@ pub(crate) fn connect_error(error: impl AsErrno) -> SessionError {
     }
 }
 
+/// Preserve the backend's errno where available, naming the stage it failed at.
+///
+/// **Its doc comment was lost when `connect_error` was inserted above it** and
+/// CI caught it as *missing documentation for a function*. That is the third
+/// time in one day a new item has been written directly above an existing one
+/// and taken its doc with it — the others were in `alo-arranging` and
+/// `alo-access`. The fault is not the insertion, it is inserting *between* a
+/// doc comment and the thing it documents, which reads as correct in a diff
+/// because both halves look untouched.
 pub(crate) fn backend_error(stage: &'static str, error: impl AsErrno) -> SessionError {
     SessionError::Backend {
         stage,
