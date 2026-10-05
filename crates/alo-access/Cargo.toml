@@ -15,6 +15,7 @@ repository.workspace = true
 alo-appearance = { path = "../alo-appearance" }
 # The chords the shell ships, so that a keyboard road can be held against them:
 # every action that has a chord must also have a Tab stop.
+alo-approving = { path = "../alo-approving" }
 alo-shortcuts = { path = "../alo-shortcuts" }
 # The sentences a person reads about each setting. Hardcoded English is a bug
 # (CLAUDE.md), and a setting nobody can find in their own language is the bug

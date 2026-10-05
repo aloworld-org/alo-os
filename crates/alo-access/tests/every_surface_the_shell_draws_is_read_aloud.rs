@@ -115,8 +115,14 @@ fn every_control_is_named_and_the_approval_reads_as_the_sentence_it_asks() {
         vec![
             "the machine is asking you something",
             "what will happen if you approve",
-            "no",
-            "approve",
+            // **The words the screen draws, capital letters and all.** These
+            // read "no" and "approve" until 2026-10-05, which is the bug this
+            // change fixed made visible: clause 11.2.5.3 asks the
+            // programmatic name to *contain* the visible label, and "no" does
+            // not contain "No". The two came from different crates and were
+            // translated separately into 24 languages.
+            "No",
+            "Approve",
         ],
         "the approval surface is not read as the sentence and its two answers"
     );
