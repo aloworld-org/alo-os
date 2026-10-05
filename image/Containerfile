@@ -171,10 +171,24 @@ WORKDIR /alo-os
 # workspace is libraries they reach, and a `--workspace` build here would
 # compile every test target into an image that runs none of them. The fourth is
 # the converting service, which is the binary `alo-converting` builds.
+# **No `--bin`, and that is the whole point of this comment.** This line read
+# `--package alo-software --bin alo-shipping`, which looks like *that package's
+# binary* and is not: **`--bin` is a target filter over every selected package**,
+# so naming one binary built that binary and nothing else. The stage finished
+# green with one of the six binaries in it:
+#
+#     /alo-os/target/x86_64-unknown-linux-musl/release/alo-shipping
+#
+# and the four daemons were simply absent. It was the `COPY --from=built` below
+# that failed, two hundred lines later, with *no such file or directory*.
+#
+# Each of the six packages declares exactly one binary, so selecting the packages
+# selects the binaries — `alo-software`'s is auto-discovered from
+# `src/bin/alo-shipping.rs`, which is why it needed no naming in the first place.
 RUN cargo build --release --target ${THE_TARGET} \
       --package alo-agentd --package alo-boundaryd --package alo-sessiond \
       --package alo-portald \
-      --package alo-software --bin alo-shipping \
+      --package alo-software \
       --package alo-converting
 
 # ---------------------------------------------------------------------------
@@ -265,14 +279,37 @@ RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location \
 # second blob of the same length under another, and its manifest names only the
 # second — so a store left as the runtime left it is twice the model in it, on
 # the read-only half of every machine we ship, where nothing can ever prune it.
-# The runtime itself agrees the first blob is unused: at every start it
-# tries to delete it and, on a machine, fails against /usr. So the source blob is
-# removed **here**, after the import and after its digest did its work, and three
-# things are asserted before the store leaves this stage: the runtime can still
-# show the model off what is left, which is what would fail if a future runtime
-# referenced the source directly; there is exactly one manifest; and every blob
-# in the store is named by it. The digest check above is untouched — a cheaper
-# import that dropped it would not be cheaper.
+# The runtime itself agrees the first blob is unused: at every start it tries to
+# delete it and, on a machine, fails against /usr.
+#
+# **So the store is pruned to what its manifest names**, and three things are
+# asserted before it leaves this stage: the runtime can still show the model off
+# what is left, which is what would fail if a future runtime referenced a blob
+# this pruned; there is exactly one manifest; and every blob in the store is
+# named by it. The digest check above is untouched — a cheaper import that
+# dropped it would not be cheaper.
+#
+# **It removed one named digest until 2026-10-05, and that stopped working the
+# day the weights moved.** The line was `rm -f
+# "/models/blobs/sha256-${THE_MODELS_SHA256}"`, and it was right while the
+# weights came from a publisher's own GGUF: that digest was the *downloaded
+# file's*, which the runtime stores as the duplicate and never names in a
+# manifest. `#113` moved the weights to the runtime library's own
+# content-addressed blob, so `THE_MODELS_SHA256` **became the digest the
+# manifest names** — the runtime reports `using existing layer` rather than
+# importing a second copy — and the line deleted the only weights in the store.
+# The build failed at the assertion written to catch exactly that:
+#
+#     ollama create  success, 1m42s
+#     rm             /models/blobs/sha256-a3de86cd…
+#     ollama show    404, couldn't open model file
+#     Error: model 'qwen3:8b-q4_K_M' not found
+#
+# **Nobody saw it for fifteen days because nothing built the image**, and the
+# test that reads this recipe asserted the *text* of that line rather than what
+# it does — `crates/alo-image/src/weights.rs`, which is corrected with it. A
+# pruned-by-manifest rule cannot tell the two sourcings apart, which is why it is
+# the rule rather than a second digest.
 FROM ${THE_BUILDER} AS weights
 
 ARG THE_MODELS_ARTEFACT
@@ -320,12 +357,14 @@ RUN set -eu; \
     done; \
     /runtime/bin/ollama list >/dev/null; \
     /runtime/bin/ollama create "${THE_MODELS_ARTEFACT}" -f /Modelfile; \
-    rm -f "/models/blobs/sha256-${THE_MODELS_SHA256}"; \
-    /runtime/bin/ollama show "${THE_MODELS_ARTEFACT}" >/dev/null; \
-    kill "${served}"; \
     test -d /models; \
     manifest="$(find /models/manifests -type f)"; \
     test "$(printf '%s\n' "${manifest}" | wc -l)" = 1; \
+    for blob in /models/blobs/*; do \
+      grep -q "sha256:${blob##*/sha256-}" "${manifest}" || rm -f "${blob}"; \
+    done; \
+    /runtime/bin/ollama show "${THE_MODELS_ARTEFACT}" >/dev/null; \
+    kill "${served}"; \
     for blob in /models/blobs/*; do \
       grep -q "sha256:${blob##*/sha256-}" "${manifest}" \
         || { echo "${blob} is referenced by nothing"; exit 1; }; \
@@ -359,12 +398,41 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
       pixman-devel mesa-libEGL-devel mesa-libgbm-devel systemd-devel \
  && dnf clean all
 
-ENV RUSTUP_HOME=/root/.rustup
-ENV CARGO_HOME=/root/.cargo
-ENV PATH=/root/.cargo/bin:${PATH}
+# **Not `/root`, because in this base `/root` is not a directory.** A bootc
+# image relocates the superuser's home — `/root` is a symlink to
+# `var/roothome` — and `/var` is machine-local state that a bootc image does
+# not ship, so the target does not exist at build time:
+#
+#     lrwxrwxrwx /root -> var/roothome
+#     ls: cannot access '/var/roothome': No such file or directory
+#
+# A `mkdir -p` through a dangling symlink fails with `EEXIST`, because the
+# symlink exists and its target does not, which rustup reports as
+# *could not create bin directory: '/root/.cargo/bin': File exists*. The
+# `built` stage above sets the same three variables and is fine: it is Ubuntu,
+# where `/root` is a real directory.
+#
+# So the toolchain lives in a plain build directory that is nobody's home. It
+# ships nowhere — only the two binaries below are copied out of this stage, and
+# the stage itself is discarded — so the path is chosen to be unambiguous rather
+# than conventional. Creating `/var/roothome` instead would be writing machine
+# state into an image, which is the thing a bootc base is shaped to prevent.
+ENV RUSTUP_HOME=/build/rustup
+ENV CARGO_HOME=/build/cargo
+ENV PATH=/build/cargo/bin:${PATH}
+# **And `$HOME`, because the installer writes there too.** Moving the two cargo
+# variables was necessary and not sufficient: rustup also puts shell rcfiles in
+# the home directory, so it failed a second time on the same dangling symlink
+# with a different message — *could not create rcfile dir directory: '/root'*.
+# Setting this closes the class rather than that one path.
+ENV HOME=/build
 
+# `--no-modify-path` because `ENV PATH` above already names the toolchain, so
+# editing a shell profile would be writing a second copy of that decision into a
+# file no step here reads — and it is the write that failed above.
 RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail https://sh.rustup.rs \
-      | sh -s -- -y --profile minimal --default-toolchain ${THE_STABLE}
+      | sh -s -- -y --profile minimal --no-modify-path \
+          --default-toolchain ${THE_STABLE}
 
 COPY . /alo-os
 WORKDIR /alo-os
@@ -664,7 +732,7 @@ LABEL alo.disk.file="alo-os.raw"
 # it is one that cannot say which release it is, and a digest pinned against it
 # is a digest held to nothing. Three numbers, never `latest` — a tag that moves
 # is the one thing a pin exists to refuse. `crates/alo-image` holds it to that.
-LABEL org.opencontainers.image.version="0.0.5"
+LABEL org.opencontainers.image.version="0.0.6"
 
 COPY image/usr/lib/systemd/system/ /usr/lib/systemd/system/
 COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
