@@ -1369,6 +1369,7 @@ ruling says work may be sequenced — only excluded-by-tier is gone.
 | [`the-canvas-and-its-places.md`](docs/autonomy/the-canvas-and-its-places.md) | the Mac, with the development PC on the panel | Places, the World, movement between Places, the fixed controls, the top controls |
 | [`the-smallest-canvas-worth-showing.md`](docs/autonomy/the-smallest-canvas-worth-showing.md) | the Mac | one Place complete, the list form, persistence, the Dock's edges |
 | [`putting-a-window-aside.md`](docs/autonomy/putting-a-window-aside.md) | the development PC | the minimised panel, and a panel out of view costing nothing |
+| [`more-than-one-display-plan.md`](docs/autonomy/more-than-one-display-plan.md) | the Mac, after access-and-language and models | the compositor substrate *every screen is a view onto the canvas* turned out to need — discovery, globals, presentation, frames, layout, popups, then a camera per viewport |
 
 - [ ] ★ **A Place remembers time** — drag the ribbon and the canvas is as it was
       on Tuesday, from the snapshots undo already takes. **Was `[v1.1]`**, the

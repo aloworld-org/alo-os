@@ -671,17 +671,27 @@ is corrected in the crate and recorded in
 
 ### 9. Every screen is a view onto the canvas
 
-**Status:** **blocked, 2026-10-04**, on work no plan lists: **this compositor
-advertises one output.** The dependency this task was written against — the
-camera having one home — **is met**, and the blocker is somewhere else. See
-*What this is actually blocked on* below.
+**Status:** **blocked, 2026-10-04**, on work that now has a plan:
+[`more-than-one-display-plan.md`](more-than-one-display-plan.md), given to this
+lane by the owner on 2026-10-05 and queued behind access-and-language and
+models. **This compositor advertises one output**, and the dependency this task
+was written against — the camera having one home — **is met**. See *What this is
+actually blocked on* below for the measurement; the plan carries the work.
 
-**Owner:** **the Mac.** **Depends on:** a second output existing in
-`alo-shell`. Previously: the camera having one home, which is the same thing
-`the-smallest-canvas-worth-showing.md` task 9's remaining half turns on — so
-these two are done together or the second is done twice. That one was settled
-on 2026-10-04: the duplicate collapsed, `surfaces.rs`'s note now reads *one
-home, and this is it*, and it names this task as the reason it had to.
+**This task is that plan's task 7**, whose acceptance is this one's inherited
+word for word so the two cannot drift. When the plan closes, this closes with
+it.
+
+**Owner:** **the Mac.** **Depends on:**
+[`more-than-one-display-plan.md`](more-than-one-display-plan.md) tasks 1 to 6.
+**What this said before, kept because each was true when written.** Until
+2026-10-05: *a second output existing in `alo-shell`* — correct, and with
+nowhere to live until the owner gave it a plan. Until 2026-10-04: *the camera
+having one home, which is the same thing `the-smallest-canvas-worth-showing.md`
+task 9's remaining half turns on — so these two are done together or the second
+is done twice.* That one was settled on 2026-10-04: the duplicate collapsed,
+`surfaces.rs`'s note now reads *one home, and this is it*, and it names this
+task as the reason it had to.
 
 **Added 2026-10-04 by [ADR
 0086](../decisions/0086-the-complete-canvas-is-one-current-milestone.md).** It was
