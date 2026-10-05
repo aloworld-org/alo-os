@@ -557,12 +557,57 @@ where it cannot be seen.
   - **Display, scale, Dock-position and panel-state changes preserve recovery**, and
     a recovery that moves a frame shows the move and records where it was.
   - **Keyboard users can find and move a frame without reaching its name band.**
-- **What is held today:** the first, and the Dock's share of the second. The status
-  area now has a position to be tested against, and the minimized-window panel is
-  the third PC's and in progress.
-- **The third is unbuilt. The fourth is unstarted *and* unscoped, and those are
-  different things.** No reachability is rechecked when bounds change, which is
-  work this plan can take. But *keyboard users can find and move a frame without
+- **What is held today, corrected 2026-10-05:** the first, **the second entire**,
+  and **the first half of the third**.
+
+  *This read "the first, and the Dock's share of the second" until today, and it
+  was behind the code by two clauses.* **The second is complete:** every fixed
+  control is held and compared, not just the Dock's band —
+  `FixedControlsDrawn` carries the band, the panel's reserved column, the status
+  area and the top controls, and `direct_desktop.rs` fills all four from the
+  frame that laid them out, so a fifth control cannot join the set without being
+  wired from the draw. **And the first half of the third is built:** that same
+  draw records the controls and, when they differ from the frame before, brings
+  back the frames they now hide — `bring_back_frames_the_moved_controls_hide`
+  has a production caller. *No reachability is rechecked when bounds change*,
+  which this line used to say, stopped being true when that landed.
+
+- **What is left of the third is one sentence reaching a person, and it is not
+  blocked on what this plan said it was.** The record exists —
+  `Recovery::BroughtBack` carries where the frame was — and the telling does
+  not.
+
+  *Until 2026-10-05 this plan argued the telling needed
+  `alo_notifying::arriving::from_alo_os`, that alo OS has no production
+  notification anywhere in the tree, and that the notifications portal's
+  `[v0.5]` tier therefore **forbade** building it. That argument was wrong, and
+  it was corrected a day earlier in the code rather than here* —
+  `canvas_fixed_controls.rs`'s own note says it named the wrong road, and
+  `docs/features.md:497` settles it in the promise's own words: **when the
+  machine moves a window, the person is told** is `[v0.01]`, and it says
+  outright that it is *not the notifications portal and not calm
+  notifications — both stay where they are, because they are the ordinary
+  notification system and the canvas needs one sentence about one frame.*
+
+  So the tier does not forbid it; the tier **asks for it**. One sentence about
+  one frame is this crate's own kind of surface, like the egress indicator, and
+  `egress_status_place::Place::of_the_other_end` already records where such a
+  thing goes.
+
+  **What is genuinely undecided is narrower, and is the only part worth
+  carrying forward:** how *where it was* reaches a person. `alo_canvas::At` is
+  `{ x, y }`, no crate on the canvas side carries any vocabulary, and a
+  coordinate read aloud is not something anybody can act on. That is a question
+  about words, not about tiers or portals.
+
+  *Kept as a correction rather than deleted, because the mechanism is the
+  reusable part: a blocker was argued from a tier, the argument was repaired in
+  a code comment a day later, and the plan went on carrying the original for a
+  further day. A reason that moves needs to move in both places, and the one
+  nobody re-reads is the plan.*
+
+- **The fourth is unstarted *and* unscoped, and those are
+  different things.** *Keyboard users can find and move a frame without
   reaching its name band* **cannot be held by any test, because there is no
   keyboard road to move a frame at all** — ADR 0065's *every one of them has a
   keyboard form* covers zoom, pan, fit, fill and work-inside, and
@@ -585,8 +630,9 @@ where it cannot be seen.
   already produced that fault twice, in task 5's *all three roads* and in task 8's
   own dropped half. An unticked box invites somebody to think it is nearly paid.
 
-  **Unbuilt and unscoped differ in who can close them.** The third is this plan's
-  to build. The fourth is the owner's to grant, and the reason is worth keeping in
+  **Half-built and unscoped differ in who can close them.** The third is this
+  plan's to build, and since 2026-10-05 the question is only how *where it was*
+  is worded — not whether the tier allows it. The fourth is the owner's to grant, and the reason is worth keeping in
   general form — the laptop lane's, 2026-09-30: **an acceptance condition cannot
   quietly promote a promise from v1 to v0.5. If it could, the roadmap would be
   editable by anybody writing a test they cannot pass yet.**
