@@ -406,9 +406,19 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
 ENV RUSTUP_HOME=/build/rustup
 ENV CARGO_HOME=/build/cargo
 ENV PATH=/build/cargo/bin:${PATH}
+# **And `$HOME`, because the installer writes there too.** Moving the two cargo
+# variables was necessary and not sufficient: rustup also puts shell rcfiles in
+# the home directory, so it failed a second time on the same dangling symlink
+# with a different message — *could not create rcfile dir directory: '/root'*.
+# Setting this closes the class rather than that one path.
+ENV HOME=/build
 
+# `--no-modify-path` because `ENV PATH` above already names the toolchain, so
+# editing a shell profile would be writing a second copy of that decision into a
+# file no step here reads — and it is the write that failed above.
 RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail https://sh.rustup.rs \
-      | sh -s -- -y --profile minimal --default-toolchain ${THE_STABLE}
+      | sh -s -- -y --profile minimal --no-modify-path \
+          --default-toolchain ${THE_STABLE}
 
 COPY . /alo-os
 WORKDIR /alo-os
