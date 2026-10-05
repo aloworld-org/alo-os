@@ -17,11 +17,27 @@
 //! # Where a machine says what it is
 //!
 //! In its unit file, and this process refuses to start without it. Three things
-//! differ from machine to machine — which graphics card, whose machine it is,
-//! and which keyboard is in front of it — and a compositor that guessed any of
-//! them would be guessing about the display a person looks at, the account they
-//! sign in to, or the letters their password is made of. `RUNTIME_DIRECTORY` is
-//! systemd's own variable and not one of ours.
+//! differ from machine to machine — whose machine it is, which keyboard is in
+//! front of it, and which graphics card — and a compositor that guessed the
+//! first two would be guessing about the account a person signs in to or the
+//! letters their password is made of. `RUNTIME_DIRECTORY` is systemd's own
+//! variable and not one of ours.
+//!
+//! # The card is the one the seat holds, and `ALO_DISPLAY` was a guess
+//!
+//! The third of those used to be a unit line too, and the reasoning above was
+//! applied to it: `ALO_DISPLAY=/dev/dri/card0`, named rather than guessed.
+//! **A card number is not a fact about a machine.** Firmware that hands over a
+//! framebuffer gives `simpledrm` minor 0 and the real GPU lands on minor 1 —
+//! measured on a written disk on 2026-10-05, where `logind` put `card1` on
+//! `seat0`, the compositor asked for `card0`, and the seat answered *No such
+//! file or directory*. Most UEFI machines hand over a framebuffer.
+//!
+//! So the card is asked of the seat: the device udev marks as the boot VGA,
+//! which is a PCI attribute `simpledrm` cannot have because it is a platform
+//! device. `ALO_DISPLAY` is still honoured where somebody sets it, because it
+//! is a public configuration key, but **nothing sets it any more and a machine
+//! that does not is the ordinary case**.
 //!
 //! # It says one kind of thing, and it says it to a service log
 //!
@@ -167,13 +183,35 @@ mod running {
     /// Read the three things a machine differs by, and systemd's own directory.
     fn what_this_machine_is() -> Result<Said, String> {
         Ok(Said {
-            display: PathBuf::from(named("ALO_DISPLAY")?),
+            display: match std::env::var("ALO_DISPLAY") {
+                Ok(set) => PathBuf::from(set),
+                Err(_) => the_card_the_seat_holds()?,
+            },
             runtime: PathBuf::from(named("RUNTIME_DIRECTORY")?),
             person: named("ALO_PERSON")?
                 .parse()
                 .map_err(|_| "ALO_PERSON is not a uid".to_owned())?,
             layout: named("ALO_KEYBOARD")?,
         })
+    }
+
+    /// The card this machine's login seat holds.
+    ///
+    /// `primary_gpu` prefers the device whose PCI parent is marked
+    /// `boot_vga`, which is the firmware's own answer to *which screen is this
+    /// machine's*. **That is what excludes `simpledrm`**: a handed-over
+    /// framebuffer is a platform device with no PCI parent and no such mark, so
+    /// it cannot win even though it holds the lower minor number.
+    ///
+    /// The seat is `seat0` because that is the seat a machine boots with and the
+    /// one `logind` puts a card on. A second seat is somebody plugging in a
+    /// second keyboard and screen, which is ADR 0088's question and not this one.
+    fn the_card_the_seat_holds() -> Result<PathBuf, String> {
+        match smithay::backend::udev::primary_gpu("seat0") {
+            Ok(Some(card)) => Ok(card),
+            Ok(None) => Err("this machine's login seat holds no graphics card, so there is no screen to put a sign-in on".to_owned()),
+            Err(why) => Err(format!("this machine's login seat could not be asked what card it holds: {why}")),
+        }
     }
 
     /// One variable the unit file has to set, or the sentence saying it did not.

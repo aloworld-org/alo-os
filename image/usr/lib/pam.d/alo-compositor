@@ -1,0 +1,46 @@
+# The sign-in screen's own PAM stack, and the only reason it has one.
+#
+# **The greeter authenticates nobody.** A person's password is `alo-accounts`'
+# work and the session they get is `alo-sessiond`'s, both decided by ADR 0024.
+# What this stack is for is the other session entirely: the one the *compositor*
+# needs before anybody has signed in, because `libseat` asks `logind` which
+# session a process belongs to and a system service belongs to none.
+#
+# `After=systemd-logind.service` is ordering, not membership. That is why the
+# unit beside this file waited for logind, got it, and still could not be given
+# a seat: `display session connect failed: Function not implemented`, four times
+# out of four on a machine that was otherwise up. ENOSYS from libseat means *no
+# backend at all* — no logind session to ask about, and this image ships no
+# `seatd`.
+#
+# `PAMName=` in the unit runs the service through this stack, and
+# `pam_systemd.so` registers it with logind. The seat follows from that.
+#
+# Modelled on the base's own `/usr/lib/pam.d/systemd-run0`, which is how systemd
+# gives a session to something that is not a login. It is deliberately shorter:
+# no `pam_unix.so` account check, because there is no account being checked, and
+# no `pam_namespace.so`, because the greeter's directory is the unit's
+# `RuntimeDirectory=` and not a per-person namespace.
+
+# Nobody is authenticated here. Saying so with `pam_permit` is the honest
+# spelling: a stack that called `pam_unix` would be checking root's password
+# entry for a process that is not signing root in.
+auth       required    pam_permit.so
+account    required    pam_permit.so
+
+# SELinux first and last, as every stack in this base does: `close` before the
+# session is set up and `open` after, so the process is relabelled into the
+# context its unit was given rather than inheriting PID 1's.
+session    required    pam_selinux.so close
+session    required    pam_selinux.so open
+
+# The audit login uid, so that what the greeter does is attributable before
+# anybody owns it.
+session    required    pam_loginuid.so
+
+# **The line this file exists for.** `required` and not `optional`: the base
+# marks it optional in `run0` because a run0 shell is still useful without a
+# session, and a sign-in screen without a seat is not useful at all — it is the
+# failure this stack was written to end, and it should be named here rather than
+# re-emerging two layers down as an errno.
+session    required    pam_systemd.so
