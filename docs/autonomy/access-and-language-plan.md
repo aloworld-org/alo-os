@@ -225,10 +225,39 @@ at close, nothing added after it was written. **Depends on:** 1, 2, 3, 4, 5, 6.
 
 ### 8. A reader is told what is set, and by the words that are on it
 
-**Status:** the first half is **Done, 2026-09-30**; the second is **ready** —
-the ADR it waited on is
+**Status:** the first half is **Done, 2026-09-30**. The second is **partly
+done, 2026-10-04 — one surface of several**, and the remainder is named below
+rather than left as *ready*. The ADR it waited on is
 [ADR 0089](../decisions/0089-what-a-control-is-called.md), accepted 2026-10-04.
 **Depends on:** 2, 4.
+
+**What landed, and why it is not the whole clause.** ADR 0089's decision 3 is
+built: `Control::for_action` takes a control's name from `Action::word`, so for
+a button that performs an action there is **one string rather than two that
+must agree**, and `Surface::WindowControls` is built from the list the strip is
+drawn from. Two tests hold it, both in
+`crates/alo-shell/src/access_nodes_tests.rs`:
+`every_button_drawn_on_a_window_is_a_button_a_reader_is_told_about` compares
+the drawn set against the announced set **both ways round** — a containment
+check would have passed while the strip was short by two — and
+`a_buttons_spoken_name_is_the_label_drawn_on_it` asserts the spoken name *is*
+the drawn label in whatever language is loaded.
+
+**That is three controls on one surface.** The acceptance below says *every
+control that has one*, and `crates/alo-conforming`'s own note on clause
+11.2.5.3 says the rest plainly: *no other surface has been read against the
+thing that draws it.* So 11.2.4.6 and 11.2.5.3 are still `not_yet(8)`,
+deliberately and for a measured reason rather than a general one — and this
+status line says *partly done* rather than *ready* so that the two documents
+agree. **A clause pointing at a task as unmet, beside a task calling itself
+done, is the disagreement this correction exists to prevent.**
+
+**What remains, so it is scoped rather than rediscovered:** every other surface
+`alo-access` names that draws a control with a visible label has to be read
+against the thing that draws it, the way the window strip now is. The window
+strip was the hard one — it had two lists that disagreed in both directions —
+and the others are expected to be plumbing, which is a prediction and not a
+measurement.
 
 **What the ADR found, which this task did not know it was asking.** The
 question here was a wording one: clause 11.2.5.3 wants the programmatic name to
