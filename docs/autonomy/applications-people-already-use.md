@@ -70,6 +70,12 @@ with a date, and this plan now carries dates for that reason.*
 
 **Status:** blocked — on a machine, and on nothing else. **Depends on:** nothing.
 
+**Re-read 2026-10-05 and the status line is right, while three paragraphs below
+it were not.** The machine, the binary and the unit are all built, installed and
+enabled; each correction below quotes what it replaced. Nothing here needs
+writing. What it needs is a machine that boots, and the first image carrying a
+compositor was built the same day.
+
 **The binary and the unit both exist, verified on `main` 2026-10-03.** This line
 read *in progress — taken 2026-09-28, the machine and the binary; the unit and
 the image line are the owner's* until then, and all three had landed:
@@ -89,35 +95,66 @@ revocation is felt at the next one rather than at a restart, and
 `the_portal_backend_answers_on_a_real_bus.rs` proves it on a real bus. **The
 backend is written.**
 
-**What is missing is narrower.** No binary calls `serve_on`, so nothing runs it,
-and there is no unit to start it — every other daemon here has both
-(`alo-convertd`, `alo-agentd`, `alo-boundaryd`). And the portals that need a
-dialog are **deliberately** unregistered: `serving.rs` answers only those
-decided without one, so the bus itself tells an application nothing answers the
-rest. **FileChooser is among them**, which is what an application needs to open
-or save anything — so this task ends with a running backend that still cannot
-let Chrome open a file, and that second half is task 6's real content.
+**What is missing is narrower, and two thirds of it has since been built.** The
+portals that need a dialog are **deliberately** unregistered: `serving.rs`
+answers only those decided without one, so the bus itself tells an application
+nothing answers the rest. **FileChooser is among them**, which is what an
+application needs to open or save anything — so this task ends with a running
+backend that still cannot let Chrome open a file, and that second half is task
+6's real content. **That part stands and is a design decision, not a gap:** when
+a machine answers Settings, Secret, OpenURI and NetworkMonitor and a file dialog
+does nothing, that is this task working.
 
-**And one of the four things the backend is built from has no real
-implementation.** `Backend::answering_from` takes a machine, a keyring, the
-sandboxes and a record. Three of them exist for a real machine — the keyring is
-`alo-secrets`' `TheKeyring`, the record is `AnswersFile`, and `Sandboxes::under`
-reads `/proc`. **`TheMachine` is implemented five times and every one is a test
-double.** Nothing reads a real person's grants, their *what opens what*, and how
-they set the machine to look, which is what `the_machine.rs` says is read at
-every request so that a revocation is felt at the next one.
+**What this paragraph used to say, and why it is corrected, 2026-10-05.** It
+said *No binary calls `serve_on`, so nothing runs it, and there is no unit to
+start it — every other daemon here has both.* Both halves were already false
+when the paragraph above this one was written: that paragraph records the binary
+and the unit as verified on main on 2026-10-03, and this one denied them one
+screen below. **A task that contradicts itself within a page is read in
+whichever direction the reader opened it**, and a reader who opened it here
+would have written a second `main.rs` and a second unit.
 
-So the order inside this task is: the machine, then the binary, then the unit.
-Writing the binary first would mean assembling a backend out of a thing that
-does not exist.
+**All four things the backend is built from now have a real implementation.**
+`Backend::answering_from` takes a machine, a keyring, the sandboxes and a record.
+The keyring is `alo-secrets`' `TheKeyring`, the record is `AnswersFile`,
+`Sandboxes::under` reads `/proc` — and the fourth is
+`crates/alo-portald/src/this_machine.rs:101`, `impl TheMachine for ThisMachine`,
+which answers `grants()` out of `alo_remembering::remembered` on the real file
+and carries `applications()`, `appearance()`, `time_of_day()` and `reaching()`
+beside it.
+
+**What this paragraph used to say, 2026-10-05.** It said *`TheMachine` is
+implemented five times and every one is a test double. Nothing reads a real
+person's grants.* That stopped being true on **2026-09-28**, in the same `#212`
+this task's own correction note above cites — the commit is literally titled *A
+real machine for the portal backend, and the process that serves it*. The
+sentence outlived its own correction by a week, two paragraphs below it.
+
+*(A detail for whoever greps: `TheMachine` names **two different traits**.
+`alo-portals`' is this one; `alo-installer` and `alo-installing` each declare an
+unrelated trait of the same name, which is why a count of implementations across
+the workspace answers a question nobody asked.)*
+
+So the order inside this task was: the machine, then the binary, then the unit.
+**All three exist**, and what is left is a machine to run them on.
 
 Without all of it, a sandboxed application installs and can then do nothing at
 all: not open a file, not save one, not be notified.
 
-- **Also owed:** this would be **the first user unit in the image**. Every unit
-  there today is a system one, and a portal backend serves one person's session
-  bus rather than the machine — so where a per-person service is started from is
-  a small structural decision to make rather than assume.
+- **Settled, 2026-10-05, by reading what shipped.** This line said *this would
+  be **the first user unit in the image** … where a per-person service is started
+  from is a small structural decision to make rather than assume.* It is **not** a
+  user unit, and there is no `user/` directory in the image at all.
+  `alo-portald.service` is installed to `/usr/lib/systemd/system/` and bound into
+  the person's session the way `alo-agentd` already was —
+  `BindsTo=user@1000.service`, `WantedBy=user@1000.service`, `User=alo`, and
+  `XDG_RUNTIME_DIR` and `DBUS_SESSION_BUS_ADDRESS` naming `/run/user/1000`. The
+  decision was made by copying the pattern that was there, which is a fine answer
+  and an unrecorded one. **It inherits that pattern's defect too:** the person is
+  a number written into the unit, so a second person's session manager pulls up no
+  portal — the same clause task 18 and
+  `docs/decisions/0088-a-machines-grants-belong-to-a-person.md` name for the
+  agent.
 
 - **Acceptance:** a real sandboxed application asks through a real portal for a
   file and for a notification; the request is judged by `alo-portals` against
@@ -127,6 +164,54 @@ all: not open a file, not save one, not be notified.
 - **Constraint:** this crate carries no policy. Every decision stays in
   `alo-portals`; if the service needs to decide something, that is a finding
   about the split rather than a reason to decide it here.
+
+### Proposed to the integration owner: the *Software* refusal names the wrong interface
+
+**Not an edit.** `docs/autonomy/SHARED_MAIN.md` reserves `ROADMAP.md` to the
+designated integration owner and asks everybody else to put proposed changes in
+their own task report. This is that.
+
+`ROADMAP.md`'s refusal of *Software* rests on one clause:
+
+> there is **no backend service at all**: no binary, and nothing in `crates/` or
+> `image/` implementing `org.freedesktop.impl.portal.*`. An application on a real
+> machine would have nothing to talk to.
+
+**The clause is literally true and its conclusion is false**, which is why it has
+survived a week of people reading it. Measured on main at `0ed1fa6f`:
+
+```
+org.freedesktop.impl.portal.*          0 occurrences anywhere in the repository
+org.freedesktop.portal.Settings        6
+org.freedesktop.portal.Secret          5
+org.freedesktop.portal.OpenURI         5
+org.freedesktop.portal.NetworkMonitor  5
+```
+
+**Those are different interfaces.** `org.freedesktop.impl.portal.*` is the
+backend that `xdg-desktop-portal` calls into; `org.freedesktop.portal.*` is the
+front door an application talks to. alo OS has no `xdg-desktop-portal` and does
+not want one — `alo_portals::Backend::serve_on` **owns
+`org.freedesktop.portal.Desktop` itself**. So there is no `impl.portal` backend
+and there never will be, and an application on a real machine has exactly the
+thing the refusal says it lacks.
+
+Dates, since the sentence outlived its subject:
+
+```
+refusal written       2026-09-26   #172
+alo-portald added     2026-09-28   #212
+in the image          built line 176, installed line 410,
+                      unit line 711, enabled line 719
+```
+
+**What is proposed, and it is not a tick.** *Software* should still be refused —
+task 1's own body says FileChooser and every dialog-needing portal are
+deliberately unregistered, so an application still cannot open a file, and that
+is the honest reason. The proposal is to **replace the reason with the true
+one**: not *nothing to talk to*, but *the portals a dialog is needed for are not
+answered yet*. A refusal resting on a false premise is one somebody disproves
+and then ticks.
 
 ### 2. A runtime in the image, and where applications may come from
 
