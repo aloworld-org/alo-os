@@ -78,7 +78,13 @@ impl Machine {
     /// home directory: the machine's own grants and pairings, and no folder.
     pub(crate) fn with_no_folder(&self) -> SettingsPlaces {
         assert!(self.home.is_dir());
-        SettingsPlaces::of(None, None, self.places.grants(), self.places.pairings())
+        SettingsPlaces::of(
+            None,
+            None,
+            self.places.grants(),
+            self.places.pairings(),
+            self.places.daemon(),
+        )
     }
 
     /// The person's folder.
@@ -123,6 +129,10 @@ pub(crate) fn a_persons_machine(what: &str) -> Machine {
         Some(home.as_os_str()),
         &machine_files.join("grants"),
         &machine_files.join("pairings"),
+        // A socket nothing binds, which is the honest ordinary case: `door.rs`
+        // flattens a daemon that is not there into the next sign-in, because
+        // the change is already on the disk by the time it knocks.
+        &machine_files.join("agentd.sock"),
     );
 
     let mut grants = Grants::default();

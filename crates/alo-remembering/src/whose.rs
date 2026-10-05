@@ -82,6 +82,43 @@ pub fn the_persons_grants(folder: &Path, uid: u32) -> PathBuf {
     folder.join(format!("grants-{uid}.toml"))
 }
 
+/// Where **this** process's person keeps their grants, on a real machine.
+///
+/// [`the_persons_grants`] with the folder the image makes and the uid **asked
+/// of the kernel**, which is the whole reason it exists beside that one rather
+/// than being assembled by each caller.
+///
+/// `crates/alo-desktop`'s own header states the rule this obeys: the three
+/// facts a machine differs by arrive in its unit file, and **not the uid** —
+/// *whose session this is, is whose session this is, and a desktop that took a
+/// person's number from a variable could be started for the wrong one*. A
+/// caller that built this path out of an `Environment=` line would be exactly
+/// that mistake; a caller that reached for `geteuid` itself would be a second
+/// place answering *whose machine is this*.
+///
+/// So the question is asked once, here, by the crate that owns the file.
+#[must_use]
+pub fn this_persons_grants() -> PathBuf {
+    the_persons_grants(Path::new(crate::THE_FOLDER), this_person())
+}
+
+/// Whose process this is, asked of the kernel.
+///
+/// **The one place on a machine that answers it.** The paragraph above says
+/// why — *a caller that reached for `geteuid` itself would be a second place
+/// answering whose machine is this* — and that argument does not stop at this
+/// crate's own files. Every per-person path on a machine is keyed by this
+/// number, and two readings of it are two different people as far as a `0700`
+/// directory is concerned.
+///
+/// So it is named and exported here, beside the first path that needed it,
+/// rather than copied into each crate that wants a path with a person in it.
+/// `alo_changing::this_persons_door` is the second caller and asks this.
+#[must_use]
+pub fn this_person() -> u32 {
+    crate::believing::us()
+}
+
 /// Where a machine says it could not tell whose the old grants were.
 ///
 /// Written only by [`moved_to_whoever_had_them`], and **absent on every machine

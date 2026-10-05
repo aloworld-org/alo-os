@@ -125,6 +125,24 @@ pub trait TheDesktop {
         alo_shortcuts::Shortcuts::shipped()
     }
 
+    /// Where this person's settings are kept, asked for once as the session
+    /// starts.
+    ///
+    /// **`None` by default, and that is the whole of what keeps every other
+    /// desktop on the road it had.** The sign-in screen, the nested lane and
+    /// every test implement this trait and none of them has a person's folder;
+    /// a desktop that answers `None` opens no Settings and its chords fall
+    /// through to the canvas exactly as before.
+    ///
+    /// Asked once, as the shortcuts and the layout are, and told to the seat
+    /// through [`Server::the_settings_places_are`](crate::Server::the_settings_places_are).
+    /// **The shell asks and does not read**: where a person's grants, pairings
+    /// and folder are is the desktop's to know, because a compositor that
+    /// opened a person's settings file would be a compositor measuring.
+    fn the_settings_places(&mut self) -> Option<crate::SettingsPlaces> {
+        None
+    }
+
     /// The canvas layout this person left, asked for once as the session
     /// starts.
     ///
@@ -260,6 +278,12 @@ impl crate::DirectSession {
             // reason the layout is asked once there: what a person bound is not
             // a reading that goes stale.
             server.the_shortcuts_are(desktop.the_shortcuts());
+            // And where this person's settings are kept, asked in the same
+            // breath and for the same reason. A desktop that answers `None`
+            // leaves the seat exactly as it was.
+            if let Some(places) = desktop.the_settings_places() {
+                server.the_settings_places_are(places);
+            }
             match setup {
                 Ok((output, painter, input)) => crate::direct_loop::run_with_input(
                     server,
@@ -356,6 +380,17 @@ impl LoopInput for Desk<'_> {
     /// client belongs to the reveal machine, which does not exist yet, and answering it here
     /// would be the compositor deciding something no crate has decided.
     ///
+    /// **The one exception is the window this shell opened itself.** While Settings is open its
+    /// keys are Settings', because `crate::settings_seat` says so: *every key is intercepted at
+    /// the seat and never forwarded*. The pointer is not, and a batch with no key in it is the
+    /// same batch it was. Asked per batch rather than per lifetime, because the press that
+    /// closes the window is the last one Settings takes — see
+    /// `crate::a_key_reaches_settings`.
+    ///
+    /// **This lane rather than the seat** for the reason that file gives: the press needs the
+    /// person's vocabulary to word a refusal, the server does not hold it, and `Desk` is the one
+    /// place a running desktop's strings and its seat are both in scope.
+    ///
     /// **After the dispatch, not during it.** One classification per input batch, from the
     /// position the seat settled on, rather than one per motion event — a person crossing the
     /// panel produces many events and one answer, and the extra answers would all say the same
@@ -366,7 +401,21 @@ impl LoopInput for Desk<'_> {
         server: &mut Server,
         poll: &mut dyn FnMut() -> Result<(), SessionError>,
     ) -> Result<(), DirectLoopError> {
-        self.input.dispatch(server, poll)?;
+        let extent = self.input.extent;
+        let strings = self.strings;
+        self.input.owner.dispatch(
+            || poll().map_err(std::io::Error::other),
+            |update| {
+                if server.settings_is_taking_the_keys() {
+                    return crate::a_key_reaches_settings::routed_or_io(
+                        server, update, extent, strings,
+                    );
+                }
+                server
+                    .libinput_update(update, extent)
+                    .map_err(std::io::Error::other)
+            },
+        )?;
         // **Nothing before the first draw**, because the panel has no geometry until then —
         // see `Server::panel_as_drawn`. A pointer moving on a machine that has not painted is
         // an ordinary moment and not something to invent an answer for.
@@ -539,12 +588,42 @@ impl LoopInput for Desk<'_> {
             frame.put_aside,
             pictures.desktop.panel.clone(),
         ));
+        // **Settings, when a chord has opened it.** `NativeLayers` has carried
+        // this slot since it was written and nothing ever filled it, which is
+        // the other half of `the-shell-plan.md` task 18: the window had no
+        // owner, and even once it had one there was nothing drawing it.
+        //
+        // **Built from the desktop's own look rather than a second one.** The
+        // four figures Settings needs — the scheme, the text scale, which way
+        // the person reads and the contrast — are the same four this frame is
+        // already drawing everything else with, read back through
+        // `DesktopLook`'s accessors. A `SettingsLook` assembled from
+        // `alo-appearance` a second time here would be a second answer to *how
+        // does this person's machine look*, and the two could differ for one
+        // frame after a change.
+        //
+        // `settings_raster::picture` answers an empty picture for a shut
+        // window, so this costs a shut desktop one call and draws nothing.
+        let settings = crate::settings_raster::picture(
+            server.the_settings_window(),
+            frame.strings,
+            self.labels,
+            (size.w, size.h),
+            crate::SettingsLook {
+                scheme: frame.look.scheme(),
+                scale: frame.look.scale(),
+                reading: frame.look.reading(),
+                contrast: frame.look.contrast(),
+            },
+            std::time::SystemTime::now(),
+        )?;
         server.render_frame(
             &mut Layered {
                 target,
                 layers: NativeLayers {
                     desktop: Some(&pictures.desktop),
                     status: Some(&pictures.status),
+                    settings: Some(&settings),
                     ..NativeLayers::nothing()
                 },
             },

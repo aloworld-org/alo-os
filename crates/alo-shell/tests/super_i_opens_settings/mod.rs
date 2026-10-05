@@ -34,7 +34,13 @@ fn noon() -> SystemTime {
 /// module tests is the road to the window, and a road that only works on a
 /// machine somebody has already used is not a road a person arrives by.
 fn nothing_kept_yet(dir: &Path) -> SettingsPlaces {
-    SettingsPlaces::of(None, None, &dir.join("grants"), &dir.join("pairings"))
+    SettingsPlaces::of(
+        None,
+        None,
+        &dir.join("grants"),
+        &dir.join("pairings"),
+        &dir.join("agentd.sock"),
+    )
 }
 
 /// The chord `Shortcuts::shipped()` gives Settings.

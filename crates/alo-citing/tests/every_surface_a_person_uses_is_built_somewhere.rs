@@ -63,15 +63,13 @@ enum Reach {
 /// themselves — noise that would make this check unreadable and therefore
 /// unread. These are things `docs/features.md` promises a person can *do*.
 const EVERY_SURFACE_A_PERSON_USES: [(&str, Reach); 6] = [
-    (
-        "SettingsWindow",
-        Reach::OnlyATestDoes {
-            why: "the-shell-plan.md task 18. Super+I is shipped, declared, routed \
-                  and dispatched, and settings_command.rs takes the window as a \
-                  parameter — nothing on a running machine holds one to pass it. \
-                  alo-shell's, taken 2026-10-05",
-        },
-    ),
+    // **Paid, 2026-10-05.** It read `OnlyATestDoes` with the reason *Super+I is
+    // shipped, declared, routed and dispatched, and settings_command.rs takes
+    // the window as a parameter — nothing on a running machine holds one to
+    // pass it*. `Server` holds one now, and this check is what said so: the
+    // entry failed the moment production built one, which is the list working
+    // in the direction that matters.
+    ("SettingsWindow", Reach::AMachineCan),
     (
         "Screenshot",
         Reach::OnlyATestDoes {
