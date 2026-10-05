@@ -38,7 +38,9 @@ fn output_retirement_orders_disable_withdrawal_and_fresh_lifetime()
                 let root = server_client.object_from_protocol_id::<WlSurface>(&handle, id)?;
                 match stage {
                     0 => {
-                        server.presentation.render(
+                        // Keyed by the target's own name, which is where `Server` looks for it.
+                        let named = FrameTarget::metadata(&target)?.name;
+                        server.presentations.entry(named).or_default().render(
                             &handle,
                             &mut target,
                             (&[root], &[]),
@@ -104,7 +106,9 @@ fn output_retirement_orders_disable_withdrawal_and_fresh_lifetime()
                         output.output.connector =
                             std::num::NonZeroU32::MIN.saturating_add(3).into();
                         target = Target::new(Painter::default(), device, output);
-                        server.presentation.render(
+                        // Keyed by the target's own name, which is where `Server` looks for it.
+                        let named = FrameTarget::metadata(&target)?.name;
+                        server.presentations.entry(named).or_default().render(
                             &handle,
                             &mut target,
                             (&[root], &[]),

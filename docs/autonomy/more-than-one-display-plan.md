@@ -145,7 +145,36 @@ Two displays need two, and the per-display failure has to be per display.
 
 ### 3. A session holds one presentation per display
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** 2.
+**Status:** **Done, 2026-10-05: the code.** `Server::presentations` is a map
+keyed by `OutputMetadata::name`, which is session-unique and so is what tells
+two displays apart. Six tests.
+
+**A second display was refused, not merely undrawn, and that is the finding.**
+One `Presentation` holds the identity of the display it has seen, and
+`validate_target` answers `OutputIdentityChanged` for any other — so handing
+the server a second display's frame was **turned away by a check written for a
+different purpose**. That check keeps its real job: a connector reporting a
+different monitor under the same name is still a fault, and there is a test for
+it.
+
+**And retirement split in two.** `target.retire()` is the **backend** going
+away; a `wl_output` global is a **display's**. They were one call, which is
+correct for one display and wrong for two — retiring per presentation would ask
+the same backend twice and be refused the second time. The backend is now asked
+once and every display withdraws its own global.
+
+A target naming no display this session presented is refused. With one display
+that was *the identity changed*; with several it is *that is not one of mine*,
+and both are the same mistake.
+
+**What this task does not do, so task 4 is not read as smaller than it is.**
+Nothing here draws a second frame. `popups.output_size`, the camera handed to
+`look_at`, and `update_window_mode_output` are still one display's and are
+overwritten by whichever frame ran last — tasks 4, 5 and 7. What is per display
+now is the protocol state: the global, the mode, the metadata and the entered
+set.
+
+**Owner:** the Mac. **Depends on:** 2.
 
 - **Acceptance:** two `wl_output` globals, each with its own mode, scale and
   metadata. A client is told which of its surfaces entered which output.

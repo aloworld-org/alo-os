@@ -390,3 +390,11 @@ pub(crate) trait NativeTarget: FrameTarget {
         Err(RenderError::ControlsUnsupported)
     }
 }
+
+#[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+#[path = "a_presentation_per_display_tests.rs"]
+mod a_presentation_per_display_tests;
