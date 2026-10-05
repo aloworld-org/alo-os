@@ -125,9 +125,44 @@ outside the rule rather than reading it generously.
   coordinator for its candidate; the other PC keeps developing and pushing task
   branches. This is a manual queue, not a deployed GitHub merge-queue bot.
   Do not enable auto-merge or let direct-to-main supervisors race this queue.
-- Existing `kernel-loop` and `dev-loop` publication commands still target `main`.
-  Keep those publishers paused until separately adapted and verified for this
-  workflow. Documentation does not change their executable behavior.
+- ~~Existing `kernel-loop` and `dev-loop` publication commands still target
+  `main`. Keep those publishers paused until separately adapted and verified for
+  this workflow.~~ **`kernel-loop` was adapted the same day this was written and
+  this line was never updated. Corrected 2026-10-05.**
+
+  ```
+  0274cf31  2026-09-18 11:27:57  docs(workflow): use task branches and
+                                 serialize gated merges (#1)   ← this line
+  14f18940  2026-09-18 20:15:40  feat(loop): the supervisor lands a task
+                                 through a branch and a pull request (#9)
+  ```
+
+  Eight hours and forty-eight minutes apart. `tools/kernel-loop/src/landing.rs`
+  has opened with *"nothing is pushed to `main` directly"* ever since, and
+  `landed()` pushes `HEAD` to a branch of its own, opens a pull request, waits
+  for the checks `main` requires, and puts it in the merge queue. **No `push
+  origin main` exists anywhere in that tool.** So the condition this line set —
+  *until separately adapted* — was met before the day was out, and the sentence
+  stood for seventeen days saying otherwise.
+
+  **What it cost, which is why it is corrected here rather than quietly
+  deleted.** On 2026-10-05 the Mac lane read this line, took it as current, and
+  told the owner twice that no lane could run the supervisor — once in a status
+  report and once in a written brief. The desktop lane was about to carry the
+  same conclusion to the owner as *the thing standing between three machines and
+  an actual loop*. **Three machines were held off a working tool by a sentence
+  about code, and nobody had read the code.**
+
+  The mechanism is in
+  [`docs/misreadings/a-pause-outlived-the-thing-it-paused.md`](../misreadings/a-pause-outlived-the-thing-it-paused.md).
+  The short form: *a rule about code is a claim about code, and it expires when
+  the code changes.* This one named its own expiry condition, which made it
+  read as careful.
+
+  `dev-loop` is **not** covered by this correction and nobody has measured it.
+  It is named in the same sentence and that is the whole of the evidence about
+  it; whoever next wants to run it should read its publishing path rather than
+  this paragraph.
 
 ## Taking the integration turn
 
