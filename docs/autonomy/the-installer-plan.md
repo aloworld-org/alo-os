@@ -592,9 +592,17 @@ before running it.
 
 ### 6. The certified laptop, firmware to the daemon
 
-**Status:** scheduled — **the owner walks it on the testing PC on Friday
-2 October 2026**, decided 2026-09-26. Still on task 4 alone, and on the owner;
-nothing in this repository can tick it. **Narrowed 2026-09-25:** this line named
+**Status:** scheduled — on the owner, and on a machine. Nothing in this
+repository can tick it.
+
+**The date this line used to name has passed.** It read *the owner walks it on
+the testing PC on Friday 2 October 2026*, decided 2026-09-26, and that Friday
+went by without the walk. **A status whose content is a future event says
+nothing once the event is in the past**, and it said nothing for three days —
+so the date is out and what is actually owed is in: a machine, and the owner at
+it. The owner has a mini PC as of 2026-10-05 and the first image carrying a
+compositor exists, which is what the walk needs and did not have on the second.
+A new date is the owner's to give, not this file's to invent. **Narrowed 2026-09-25:** this line named
 tasks 1–5, 8, 9, 10 and 11, and eight of those nine are finished — 1, 2, 3, 5,
 8 and 9 on 2026-09-15 and 2026-09-16, 11 on 2026-09-21 and 10 on 2026-09-22.
 Only task 4 is unfinished, and it is in progress on the development PC. A
@@ -678,8 +686,21 @@ the card's road waits for hardware the way the chip's half of encryption does.
 
 ### 7. Replace Windows — the road with no way back
 
-**Status:** **the code is whole and no machine has walked it**, 2026-09-29, on the
-development PC. **Depends on:** 4.
+**Status:** blocked — on a machine, 2026-09-29, on the development PC. The
+code is whole and no machine has walked it. **Depends on:** 4.
+
+**This line said only the sentence until 2026-10-05**, and the sentence is true:
+*the code is whole and no machine has walked it*. What it did not say was any of
+the three words a reader looks for, so **every count read it as something else**
+— two inventories taken on 2026-10-05, from different machines, both put it in
+an *other* bucket rather than among the blocked, and neither noticed. It is
+blocked, it is blocked on the same machine task 4 is, and saying so costs one
+word.
+
+`tools/kernel-loop/src/plan.rs` is **not** the reason: `THE_PLAN` there is
+`kernel-enforcement-plan.md` and the supervisor reads no other, so it could
+never have offered this task to anybody. The harm was to people and to sweeps,
+which is enough.
 
 Seven changes, each gated on the full nine and landed on its own:
 
@@ -1934,6 +1955,44 @@ minutes of behaviour.
 **Status:** in progress — the decision is made and written; **the walk still
 passes when the machine never came up.** **Depends on:** nothing; it blocks the
 snapshot loop paying off, and every later walk that watches the installed system.
+
+**Looked at on 2026-10-05 and deliberately left as `in progress`**, during a
+sweep of this plan's status lines. `in progress` is not one of the three words a
+count reads, and the note below explains why it is the right word anyway — a
+`ready` here invites the next lane to redecide what #392 decided. **A sweep that
+had only looked at the vocabulary would have changed it**, which is the fault
+this task's own note warns about, arrived at from the tidying side.
+
+**And what the remaining third costs was measured on 2026-10-04**, which it had
+not been:
+
+```text
+watched_on_a_serial_line() adds, and only adds:
+  writing.rs:48  THE_PERSONS_SCREEN  console=tty0
+  writing.rs:54  A_WATCHED_LINE      console=ttyS0,115200n8
+
+alo-compositor.service   StandardOutput / StandardError / TTYPath   0 directives
+every other alo unit in image/usr/lib/systemd/system/               0 set it
+```
+
+**Those are kernel console arguments.** With no `StandardOutput`, a systemd
+service's output goes to the journal, so **wiring this task as written would
+carry the kernel to the serial line and leave every alo daemon mute** — and a
+walk reading that line would still see a machine that said nothing about itself.
+That is the same *quiet line* this task exists to end, one layer further in.
+
+So the third bullet needs `systemd.journald.forward_to_console=1` on the kernel
+line beside the two `console=` arguments, or `StandardOutput=journal+console` on
+the units, before the walk can tell a booted machine from a hung one. Measured
+by reading the units and the two constants, not by a run.
+
+**The counter-evidence that makes this worth having:** on 2026-10-05 the laptop
+lane read an installed system off the kept base and found **no compositor on it
+at all** — the kept deployment is from 2026-09-26 and the compositor entered
+`image/` on 2026-09-28. So the serial silence observed in those runs was never
+this task's fault, and wiring the console against that base would have
+faithfully reported a machine with nothing to say. **A current image comes
+first**, and one now exists.
 **Found by** the first run of `the_kept_computer_is_the_same_computer_twice` on
 2026-09-27. Kept on the development PC: `/root/t10/logs/`, and the two screens
 `kept-once.ppm` and `kept-again.ppm`.
