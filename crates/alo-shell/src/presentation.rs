@@ -274,6 +274,26 @@ pub(crate) struct Presentation {
 
 impl Presentation {
     /// Check before accepting a proposed popup-layout extent or doing backend I/O.
+    /// # The name can no longer differ here, and that is worth saying
+    ///
+    /// `OutputMetadata::same_identity` compares the name, the make, the model
+    /// and the physical size. Since 2026-10-05 a presentation is looked up by
+    /// **name** before this is called — `Server::render_frame` keys
+    /// `presentations` by it — so by the time this runs, the stored name and
+    /// the target's are the same string and that clause of the comparison
+    /// cannot fail.
+    ///
+    /// **It is left in rather than removed**, because `same_identity` is a
+    /// predicate about two descriptions and is correct as it stands; what
+    /// changed is not the predicate but which of its clauses this caller can
+    /// still reach. A reader who finds the name check here and thinks it
+    /// guards against a second display is reading the code that **used** to be
+    /// true: it refused one, and the refusal was standing in for *this
+    /// compositor has one output*.
+    ///
+    /// Said here because a comparison that can no longer fail is the thing
+    /// this repository keeps finding, and the honest version of it is a note
+    /// at the site rather than a deletion somewhere else.
     pub(crate) fn validate_target(
         &self,
         target: &impl FrameTarget,
@@ -390,3 +410,11 @@ pub(crate) trait NativeTarget: FrameTarget {
         Err(RenderError::ControlsUnsupported)
     }
 }
+
+#[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+#[path = "a_presentation_per_display_tests.rs"]
+mod a_presentation_per_display_tests;

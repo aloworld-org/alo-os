@@ -100,7 +100,12 @@ fn direct_loop_real_pause_retires_and_drops_before_descriptor_close() {
         result.cleanup.unwrap();
         assert_eq!(frames.get(), usize::from(!idle));
         assert_eq!(state.borrow().closes, 1);
-        assert!(server.presentation.output.is_none());
+        assert!(
+            server
+                .presentations
+                .values()
+                .all(|one| one.output.is_none())
+        );
         let mut bytes = [0; 14];
         state
             .borrow_mut()

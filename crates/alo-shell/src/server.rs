@@ -32,7 +32,28 @@ pub struct Server {
     /// Listener and private directory lifetime.
     socket: Socket,
     /// One output and its successfully submitted surface membership.
-    pub(crate) presentation: crate::presentation::Presentation,
+    /// **One per display, keyed by the output's own name.**
+    ///
+    /// `OutputMetadata::name` is session-unique, so it is what tells two
+    /// displays apart — and until 2026-10-05 holding one of these was what
+    /// made a second display impossible rather than merely undrawn:
+    /// `Presentation::validate_target` refuses a target whose identity differs
+    /// from the one it has seen, so handing the server a second display's
+    /// frame was answered `OutputIdentityChanged`. That refusal is right
+    /// **within** one display — a connector whose make and model changed under
+    /// the same name is a fault — and it was standing in for *this compositor
+    /// has one output*.
+    ///
+    /// `docs/autonomy/more-than-one-display-plan.md` task 3.
+    pub(crate) presentations: std::collections::BTreeMap<String, crate::presentation::Presentation>,
+    /// **What number each display is known by**, keyed by the name it
+    /// advertises.
+    ///
+    /// `display_lifecycle`'s `THE_DISPLAY` was a constant 1 until 2026-10-05,
+    /// with a note saying it would go the moment a second output was
+    /// advertised. `crate::display_lifecycle::Server::the_number_for` is what
+    /// replaced it, and task 8 is why.
+    pub(crate) display_numbers: std::collections::BTreeMap<String, alo_desktops::DisplayId>,
     /// Stable mapped-root order for trusted window cycling.
     pub(crate) switch_order: crate::window_switch::SwitchOrder,
     /// **How each display is divided and what desktops are on it.**
@@ -166,7 +187,8 @@ impl Server {
             display,
             surfaces,
             socket,
-            presentation: Default::default(),
+            display_numbers: std::collections::BTreeMap::new(),
+            presentations: std::collections::BTreeMap::new(),
             switch_order: Default::default(),
             fixed_controls: crate::canvas_fixed_controls::FixedControls::default(),
             // Nothing has been drawn yet, which is why this is `None` rather than an
@@ -281,7 +303,17 @@ impl Server {
         time: u32,
     ) -> Result<usize, crate::RenderError> {
         let size = target.size();
-        let metadata = self.presentation.validate_target(target)?;
+        // **The display this frame is for, before anything is validated
+        // against it.** A name is how two displays are told apart, so the
+        // presentation has to be chosen before its identity check can mean
+        // *this display changed* rather than *this is a different display*.
+        let named = target.metadata()?;
+        named.validate()?;
+        let metadata = self
+            .presentations
+            .entry(named.name.clone())
+            .or_default()
+            .validate_target(target)?;
         if size.w > 0 && size.h > 0 {
             // Reactive popup negotiation follows the backend's desired extent,
             // even on submission refusal. wl_output describes only submitted modes.
@@ -302,13 +334,12 @@ impl Server {
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
         let cursor = self.cursor();
         let popups = self.popup_surfaces();
-        let submitted = self.presentation.render(
-            &self.display.handle(),
-            target,
-            (&roots, &popups),
-            &cursor,
-            time,
-        )?;
+        let handle = self.display.handle();
+        let submitted = self
+            .presentations
+            .entry(metadata.name.clone())
+            .or_default()
+            .render(&handle, target, (&roots, &popups), &cursor, time)?;
         self.surfaces.update_window_mode_output(Some(size));
         // The output this frame went to is the display a session holds its
         // divisions and desktops on; see `crate::display_lifecycle`.

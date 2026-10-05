@@ -36,8 +36,18 @@ fn direct_loop_stops_retires_and_withdraws_after_frames_and_idle()
     result.flush.ok_or("missing flush")??;
     assert_eq!(polls, 8);
     assert_eq!(paints.get(), 2);
-    assert!(server.presentation.output.is_none());
-    assert!(server.presentation.global.is_none());
+    assert!(
+        server
+            .presentations
+            .values()
+            .all(|one| one.output.is_none())
+    );
+    assert!(
+        server
+            .presentations
+            .values()
+            .all(|one| one.global.is_none())
+    );
     assert_eq!(
         log.borrow()
             .calls
@@ -88,7 +98,12 @@ fn direct_loop_pause_after_scheduler_prevents_the_planned_frame()
         assert_eq!(schedules, pause_at / 2);
         assert_eq!(paints.get(), usize::from(pause_at > 2));
         assert_eq!(log.borrow().calls.contains(&"disable"), pause_at > 2);
-        assert!(server.presentation.output.is_none());
+        assert!(
+            server
+                .presentations
+                .values()
+                .all(|one| one.output.is_none())
+        );
     }
     Ok(())
 }
@@ -121,7 +136,12 @@ fn direct_loop_keeps_render_and_disable_errors_without_retry()
         assert_eq!(schedules, 2);
         result.flush.ok_or("missing flush")??;
         assert_eq!(paints.get(), 2);
-        assert!(server.presentation.output.is_some());
+        assert!(
+            server
+                .presentations
+                .values()
+                .any(|one| one.output.is_some())
+        );
         assert_eq!(log.borrow().calls.last(), Some(&"disable"));
         assert_eq!(
             log.borrow()

@@ -111,11 +111,20 @@ fn output_wire_metadata_and_modes_are_published_only_after_success() -> Result<(
         .0
         .is_err()
     );
+    // **An identity that changed under the same name is still refused**, and
+    // the name is no longer one of them.
+    //
+    // This loop included `name` until 2026-10-05, and that entry was the
+    // single-output assumption being enforced by an identity guard: a target
+    // calling itself something else is a **second display**, not the same one
+    // claiming a new identity. `more-than-one-display-plan.md` task 3 gives it
+    // a presentation of its own, so it is accepted below rather than refused
+    // here.
+    //
+    // The other three are the fault this guard was written for and keep
+    // refusing: one connector reporting a different monitor is something to
+    // stop, whatever else is plugged in.
     for changed in [
-        OutputMetadata {
-            name: "replacement".into(),
-            ..metadata()
-        },
         OutputMetadata {
             physical_size: (400, 300),
             ..metadata()
@@ -181,6 +190,37 @@ fn output_wire_metadata_and_modes_are_published_only_after_success() -> Result<(
                     ..
                 }
             ))
+    );
+    // **A second display draws rather than being turned away, and is
+    // advertised.** The same call refused as `OutputIdentityChanged` above
+    // until 2026-10-05 — that entry was the single-output assumption being
+    // enforced by an identity guard. `more-than-one-display-plan.md` task 3
+    // gives a target with a name of its own a presentation of its own.
+    //
+    // **Last in this test on purpose.** It adds a `wl_output`, so every count
+    // above it is a count of one display's events; asserting them after a
+    // second display exists would be asserting about two.
+    let outputs_before = app.events.outputs;
+    let (result, calls) = render(
+        &fixture,
+        OutputMetadata {
+            name: "HDMI-A-1".into(),
+            ..metadata()
+        },
+        (640, 480),
+        false,
+        6,
+    );
+    assert!(
+        result.is_ok(),
+        "a display with a name of its own was refused: {result:?}"
+    );
+    assert_eq!(calls, 1, "a second display was accepted and never drawn");
+    app.sync();
+    assert_eq!(
+        app.events.outputs,
+        outputs_before + 1,
+        "a second display did not reach the client as a second wl_output"
     );
     Ok(())
 }

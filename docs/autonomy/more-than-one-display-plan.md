@@ -145,7 +145,36 @@ Two displays need two, and the per-display failure has to be per display.
 
 ### 3. A session holds one presentation per display
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** 2.
+**Status:** **Done, 2026-10-05: the code.** `Server::presentations` is a map
+keyed by `OutputMetadata::name`, which is session-unique and so is what tells
+two displays apart. Six tests.
+
+**A second display was refused, not merely undrawn, and that is the finding.**
+One `Presentation` holds the identity of the display it has seen, and
+`validate_target` answers `OutputIdentityChanged` for any other — so handing
+the server a second display's frame was **turned away by a check written for a
+different purpose**. That check keeps its real job: a connector reporting a
+different monitor under the same name is still a fault, and there is a test for
+it.
+
+**And retirement split in two.** `target.retire()` is the **backend** going
+away; a `wl_output` global is a **display's**. They were one call, which is
+correct for one display and wrong for two — retiring per presentation would ask
+the same backend twice and be refused the second time. The backend is now asked
+once and every display withdraws its own global.
+
+A target naming no display this session presented is refused. With one display
+that was *the identity changed*; with several it is *that is not one of mine*,
+and both are the same mistake.
+
+**What this task does not do, so task 4 is not read as smaller than it is.**
+Nothing here draws a second frame. `popups.output_size`, the camera handed to
+`look_at`, and `update_window_mode_output` are still one display's and are
+overwritten by whichever frame ran last — tasks 4, 5 and 7. What is per display
+now is the protocol state: the global, the mode, the metadata and the entered
+set.
+
+**Owner:** the Mac. **Depends on:** 2.
 
 - **Acceptance:** two `wl_output` globals, each with its own mode, scale and
   metadata. A client is told which of its surfaces entered which output.
@@ -226,7 +255,39 @@ drift.
 
 ### 8. The display number comes from whatever advertises it
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** 3.
+**Status:** **Done, 2026-10-05: the code.** `Server::the_number_for` assigns a
+`DisplayId` per display name on first sight and keeps it in
+`Server::display_numbers`; `THE_DISPLAY` is gone. Four tests.
+
+**Taken out of order, and the order is the plan's own.** This depends on 3 and
+not on 4, so it was done while task 4 — the largest in the plan — was still
+ahead. Task 6 is in the same position.
+
+**The note fired, and it could not have fired by itself.** `THE_DISPLAY`'s own
+sentence said *the moment a second output is advertised, the number comes from
+whatever advertises it and this constant goes* — correct, carefully argued, and
+attached to a `const` with one reader that nothing could trigger. Task 3 was
+that moment and a person had to notice.
+
+**So the replacement is deliberately not another constant with a sentence
+beside it.** A number that comes from a map keyed by the display's own name
+cannot quietly go back to meaning *the one display*: the next assumption is
+wrong where the compiler can see it.
+
+**Two things the implementation decided that the task did not say.**
+
+**A number is never reissued.** The next one is *one past the highest given
+out*, not the count — with two displays and one removed, a count hands the next
+arrival the number the survivor is still using, and two screens would share a
+division.
+
+**And `the_display_retired` now means every display**, because that is what its
+callers mean: the session's backend is going away. One display leaving is
+`the_display_left(which)`, which is also what a display arriving at an
+impossible size now retires — itself, rather than whichever display happened to
+be numbered 1.
+
+**Owner:** the Mac. **Depends on:** 3.
 
 `display_lifecycle.rs:45` hard-codes `DisplayId::from_compositor(1)` and its own
 note says the constant goes the moment a second output is advertised. Task 3 is
