@@ -737,6 +737,11 @@ LABEL org.opencontainers.image.version="0.0.6"
 COPY image/usr/lib/systemd/system/ /usr/lib/systemd/system/
 COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
 COPY image/usr/lib/tmpfiles.d/ /usr/lib/tmpfiles.d/
+# The greeter's PAM stack, which is what gives it a logind session and so a
+# seat. `/usr/lib/pam.d` and not `/etc/pam.d`: the base keeps its own
+# `systemd-run0` and `systemd-user` stacks there, `/usr` is what a bootc image
+# ships, and `/etc` is machine state a person may edit.
+COPY image/usr/lib/pam.d/ /usr/lib/pam.d/
 COPY image/etc/alo/ /etc/alo/
 
 # **What this machine will accept as an update, and how it finds out.** ADR 0036
@@ -778,6 +783,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/systemd/system/alo-compositor.service \
                /usr/lib/systemd/system/alo-portald.service \
                /usr/lib/systemd/system/alo-shipping.service \
+               /usr/lib/pam.d/alo-compositor \
                /usr/lib/sysusers.d/alo.conf \
                /usr/lib/tmpfiles.d/alo.conf \
                /etc/alo/agentd.toml \
