@@ -57,6 +57,15 @@ fn metadata_accepts_unknown_and_known_dimensions_but_refuses_malformed_data() {
         ..base.clone()
     };
     assert!(known.validate().is_ok());
+    // **Varying `physical_size` rather than `name`, and that is now load
+    // bearing.** `name` is the obvious thing to vary in a test about identity,
+    // and had this reached for it the case would have become a third place
+    // encoding *one display per compositor* — see
+    // `presentation::Presentation::validate_target`, where the name can no
+    // longer differ because the presentation is looked up by it.
+    //
+    // `same_identity` is still right to compare all four: it is a predicate
+    // about two descriptions, and this test is about the predicate.
     assert!(!base.same_identity(&known));
     assert!(base.same_identity(&OutputMetadata {
         refresh: 60_000,
