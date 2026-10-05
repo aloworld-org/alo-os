@@ -1,4 +1,8 @@
-//! Single-output selection from DRM resource snapshots, without modesetting.
+//! Display selection from DRM resource snapshots, without modesetting.
+//!
+//! [`select_every`] answers with every usable display and [`discover_output`]
+//! keeps the single-display road its callers already take. The ordering, the
+//! refusals and the rule that nothing here modesets are the same for both.
 
 use drm::control::{Mode, ModeFlags, ModeTypeFlags, connector, crtc};
 use std::{io, os::fd::BorrowedFd};
@@ -85,31 +89,89 @@ pub(crate) trait Inventory {
 
 /// Deterministic policy independent of driver enumeration order.
 fn select(inventory: &impl Inventory) -> Result<DirectOutput, DirectOutputError> {
+    // **No panic path, including an unreachable one.** `select_every` refuses
+    // an empty answer rather than returning one, so the `ok_or` below cannot
+    // fire — and it is written as a refusal anyway, because an `unreachable!`
+    // is a panic that depends on another function keeping a promise, and law 3
+    // does not make an exception for panics somebody has reasoned about.
+    select_every(inventory)?
+        .into_iter()
+        .next()
+        .ok_or(DirectOutputError::NoOutput)
+}
+
+/// Every usable display on this device, in the order a compositor should
+/// prefer them.
+///
+/// The order is the one a single-output shell already used — a usable internal
+/// panel first, then by ascending connector ID — so the display that was the
+/// only one is still the first.
+///
+/// # Two displays cannot be given the same CRTC
+///
+/// **The fault this function exists to not have.** A `Port` carries the *union*
+/// of CRTCs its encoders allow, and those unions overlap: asking each port
+/// independently for its lowest compatible CRTC hands the same one to two
+/// displays, which is not a configuration any kernel will accept. So a CRTC is
+/// taken as it is assigned and the next display chooses from what is left.
+///
+/// It is invisible with one display, which is why it is written down here
+/// rather than discovered by a modeset refusing on a desk with a monitor
+/// plugged in.
+///
+/// # A display with no mode does not reserve a CRTC
+///
+/// The mode is chosen **before** the CRTC, which is the other way round from
+/// the single-output version. With one display the order could not matter — a
+/// port missing either is skipped either way. With several it does: reserving
+/// a CRTC for a port that is then skipped for having no supported mode would
+/// take that CRTC away from a display that could have used it.
+///
+/// # Errors
+/// [`DirectOutputError::Query`] if the snapshot could not be read, and
+/// [`DirectOutputError::NoOutput`] when no connected port has both a supported
+/// mode and a CRTC still free. **An empty list is never an answer**: a caller
+/// handed `Ok(vec![])` would have to invent the refusal this already names.
+pub fn select_every(inventory: &impl Inventory) -> Result<Vec<DirectOutput>, DirectOutputError> {
     let mut ports = inventory.ports()?;
     ports.sort_by_key(|port| (!port.internal, u32::from(port.handle)));
+    let mut taken: Vec<crtc::Handle> = Vec::new();
+    let mut found: Vec<DirectOutput> = Vec::new();
     for port in ports {
         if !port.connected || !port.display {
             continue;
         }
-        let Some(crtc) = port.crtcs.into_iter().min_by_key(|crtc| u32::from(*crtc)) else {
-            continue;
-        };
-        let mode = port
+        let Some(mode) = port
             .modes
             .iter()
             .filter(|mode| supported(mode))
             .find(|mode| mode.mode_type().contains(ModeTypeFlags::PREFERRED))
-            .or_else(|| port.modes.iter().find(|mode| supported(mode)));
-        if let Some(mode) = mode {
-            return Ok(DirectOutput {
-                connector: port.handle,
-                crtc,
-                mode: *mode,
-                physical_size: port.physical_size,
-            });
-        }
+            .or_else(|| port.modes.iter().find(|mode| supported(mode)))
+            .copied()
+        else {
+            continue;
+        };
+        let Some(crtc) = port
+            .crtcs
+            .iter()
+            .copied()
+            .filter(|crtc| !taken.contains(crtc))
+            .min_by_key(|crtc| u32::from(*crtc))
+        else {
+            continue;
+        };
+        taken.push(crtc);
+        found.push(DirectOutput {
+            connector: port.handle,
+            crtc,
+            mode,
+            physical_size: port.physical_size,
+        });
     }
-    Err(DirectOutputError::NoOutput)
+    if found.is_empty() {
+        return Err(DirectOutputError::NoOutput);
+    }
+    Ok(found)
 }
 
 /// Initial direct backend uses ordinary progressive two-dimensional timings.
