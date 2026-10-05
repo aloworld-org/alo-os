@@ -154,8 +154,9 @@ ldd /opt/libreoffice26.2/program/soffice.bin
 oosplash: error while loading shared libraries: libXinerama.so.1
 ```
 
-Twelve runtime libraries are missing; 0.0.2 has the same defect with eleven. The
-conversion above only ran because those libraries were installed by hand first.
+Twelve runtime libraries are missing; image 0.0.2 has the same defect with
+eleven. The conversion above only ran because those libraries were installed by
+hand first.
 
 **So no document of any format converts on a real alo OS machine today — `.docx`
 included.** ADR 0039's promise has been unmet in the shipped product since the

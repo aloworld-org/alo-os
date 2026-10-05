@@ -209,6 +209,15 @@ work. Five images have shipped inside one unfinished milestone.
 - **`Roadmap:` trailers name milestones**, so they are `v0.5` and `v1`.
 - Nothing published is renamed. The registry tags, the digests and the
   signatures stand; `image/pinned.toml` keeps its record of all five.
+- **A check reads these rules now.**
+  `crates/alo-citing/tests/every_version_this_repository_writes.rs` holds every
+  markdown file in the repository to them, so a sentence that breaks one fails
+  the gate instead of waiting for somebody to notice. It reads paragraphs
+  rather than lines, because a sentence wraps; it leaves fenced blocks alone,
+  because a registry listing its own tags is a transcript and not our prose;
+  and it says nothing about a crate's `v0.0.1` or about another program's
+  version, neither of which is an image. The three documents it cannot govern
+  are exempted by name, each with its reason, in the test itself.
 
 ## v0.01 — it boots and the agent acts
 
