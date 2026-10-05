@@ -174,3 +174,71 @@ owner and the per-person daemon together rather than two records written from
 opposite ends, it reaches `image/` and `alo-shell`, and the seat-owner half is
 with the owner. **Naming it here is what stops this record being read as
 though grants were an isolated case.**
+
+## Measured while building the caller, 2026-10-05
+
+**The decision above stands unchanged.** One file per person, keyed by uid, one
+move, no fallback, bytes unparsed. What follows corrects three sentences that
+supported it and names a blocker this record missed. Each was measured on main
+while writing the caller it deliberately left open, and none of them reopens the
+choice.
+
+**1. The agent does not run as root.** This record says *the daemon being root*
+while arguing that a root-owned file is the believed case. The unit says
+`User=alo`, and `image/usr/lib/sysusers.d/alo.conf` says `u alo 1000`, so **the
+agent runs as the person** — `image/usr/lib/tmpfiles.d/alo.conf`'s own comment
+says so too: *alo-agentd — which runs as the person, holding nothing*. The
+conclusion survives on the half that is true: `believing.rs` believes a
+**root-owned** file for any reader, whoever the daemon is, so a fallback would
+still have handed one person's grants to the next. The reasoning was right about
+the file and wrong about the process.
+
+**2. The refusing case cannot arise on this image, and the folder is why.** This
+record says a machine with more than one account has no safe answer because
+*nothing on disk says which* person the single file belonged to. The folder says
+it: `/var/lib/alo` is **`0700 alo alo`**, so no login but that person — or root
+— could ever have written the file being moved. Measured with real uids and real
+modes rather than reasoned about. `Moved::CouldNotTellWhose` stays reachable and
+stays right for a machine whose folder is not that, which is why the caller
+passes a list rather than a number.
+
+**3. The logins cannot come from `alo-accounts`.** This record guesses the
+caller *needs the machine's logins* from that crate. **Nothing in this
+repository writes `/etc/alo/accounts.toml`** — every call of
+`alo_accounts::kept` and of `Accounts::created` is inside a test, and
+`crates/alo-image` checks the image ships no store. So that store is empty on
+every real machine, and a move told *no accounts* would refuse and leave the one
+person who has grants unable to read them. The caller uses the machine
+description's `[logins].person` instead: the file this process has already read,
+already checked itself against, and the number `crates/alo-image` holds the
+unit's six mentions to.
+
+**4. A blocker this record missed, and it is in the same file as the one it
+named.** This record chose a flat `grants-<uid>.toml` over a `grants/`
+subdirectory because *a new directory would need a line in `image/`, which is
+another lane's file, for a name that buys nothing.* The flat name needs a line
+in that same file anyway:
+
+```
+/var/lib/alo at 0700 alo alo   uid 1001 reading grants-1001.toml: REFUSED
+/var/lib/alo at 0711           uid 1001 reading grants-1001.toml: READ IT
+                               uid 1001 reading grants-1000.toml: REFUSED
+```
+
+**At the mode the image ships, a second person cannot read a grants file of
+their own** — the refusal is on traversing the folder, before the file's own
+mode is consulted. At `0711` they read theirs and are still refused the other
+person's, which is this decision's intent exactly. So the directory mode is a
+third thing owed by `image/`, beside the agent unit's six uids, and it is **one
+character**. `image/` is the installer plan's by charter line 150; this is a
+measurement sent rather than a change made.
+
+### What this means for the promise
+
+`docs/features.md`'s *Multi-user on one machine, with per-person grants and no
+shared agent memory* is **not finished by the caller landing**, and the caller
+does not claim it. What works now is the machine that exists: one person, whose
+grants move to their own file and are read from it by both daemons. A second
+person on one machine needs three things in `image/` — the unit's uids, the
+folder mode, and something that creates an account at all — and none of the
+three is this lane's.

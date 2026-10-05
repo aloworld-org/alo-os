@@ -21,12 +21,39 @@ file.
 ## Where it is
 
 ```
+/var/lib/alo/grants-<uid>.toml
+```
+
+One file for each person, named by the number of their login. In the folder the
+image makes for what an agent did on this machine (`0700 alo alo`), beside the
+record. The path is a constant and the only thing in it that varies is whose it
+is: where a machine keeps a person's grants is nobody's policy.
+
+Keyed by **uid** rather than by name because `crates/alo-remembering`'s
+`believing.rs` asks the open file who owns it and is answered a uid, so the path
+and that check compare the same number — and because a person with no home
+directory still has grants, which a path under their folder would take away.
+`docs/decisions/0088-a-machines-grants-belong-to-a-person.md` is the record.
+
+### The file this replaced, and what happens to it
+
+```
 /var/lib/alo/grants.toml
 ```
 
-In the folder the image makes for what an agent did on this machine
-(`0700 alo alo`), beside the record. The path is a constant: where a machine
-keeps its grants is nobody's policy.
+Machines installed before that decision keep one file with no person in it.
+**`alo-agentd` moves it once, at start, to the one person the machine had**, and
+then the old path stops being read. It is not a fallback: a person with no file
+of their own has **no grants**, because an inherited grant is nobody's
+deliberate act (`docs/decisions/0001-the-capability-model.md` §3).
+
+The bytes are passed through unparsed — read believed, written whole — so a file
+that said `format = 1` still says `format = 1` afterwards, byte for byte.
+
+A machine that cannot tell whose the single file was moves nothing and writes
+`/var/lib/alo/grants-not-moved` holding the number of logins it found. **The
+absence of that marker is the safe reading**: a machine that had nothing to move
+has none, and so does one whose grants moved correctly.
 
 ## What it looks like
 

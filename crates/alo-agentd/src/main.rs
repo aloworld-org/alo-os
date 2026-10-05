@@ -26,21 +26,19 @@
 /// What this process does on the machine alo OS is for.
 #[cfg(target_os = "linux")]
 mod running {
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
     use std::process::ExitCode;
     use std::time::SystemTime;
 
     use alo_agentd::{
         ByTheKernel, Described, Listening, NotStarted, Place, Served, THE_DESCRIPTION,
         THE_HOSTED_WORKSPACE, THE_IDENTITY, TheNames, TheNamesFile, ThePairingsFile,
-        ThePersonsFile, Waking, WhatIsGranted, Wire, session, signalling, starting, unix,
+        ThePersonsFile, Uid, Waking, WhatIsGranted, Wire, session, signalling, starting, unix,
     };
     use alo_capability::Grants;
     use alo_keeping::Writing;
     use alo_nearby::{MachineId, Pairings};
-    use alo_remembering::{
-        MachineNames, NotRemembered, THE_GRANTS, THE_MACHINE_NAMES, THE_PAIRINGS,
-    };
+    use alo_remembering::{MachineNames, Moved, NotRemembered, THE_MACHINE_NAMES, THE_PAIRINGS};
 
     /// Serve until somebody asks the service to stop, and say what it did.
     ///
@@ -124,12 +122,22 @@ mod running {
                 said: why.said(&strings).text().to_owned(),
             })?;
 
-        let mut grants = whatever_was_granted()?;
+        // Whose grants these are, before any of them is read.
+        //
+        // A machine installed before ADR 0088 keeps one file with no person in
+        // it; this is the one move to the person's own, and it is safe to run at
+        // every start. Its answer is logged and never fatal: a machine that
+        // cannot tell whose the old grants were moves nothing and the person
+        // reads an empty list, which is what ADR 0001 permits and what the
+        // marker beside the file explains.
+        let theirs = whose_grants_these_are(described.sides().person())?;
+
+        let mut grants = whatever_was_granted(&theirs)?;
         // The same file, and the only way back to it once the service is
         // running: a way to **read** it, handed in beside the list it was read
         // into. `alo_agentd::rereading` has the argument, and the short of it is
         // that nothing below this line can write a byte of it.
-        let remembering = ThePersonsFile::at(Path::new(THE_GRANTS));
+        let remembering = ThePersonsFile::at(&theirs);
         // And the other file in that folder, the other way round: read once
         // here, and **written** by the service at the moment a pairing is
         // kept or revoked, through a value that holds this path and can read
@@ -239,14 +247,88 @@ mod running {
     /// The clock is read here, once, because expiry is measured from now: what
     /// has already run out is dropped as the list is read rather than carried
     /// into the service and filtered later.
-    fn whatever_was_granted() -> Result<Grants, NotStarted> {
-        match alo_remembering::remembered(Path::new(THE_GRANTS), SystemTime::now()) {
+    fn whatever_was_granted(theirs: &Path) -> Result<Grants, NotStarted> {
+        match alo_remembering::remembered(theirs, SystemTime::now()) {
             Ok(grants) => Ok(grants),
             Err(NotRemembered::NotThere { .. }) => Ok(Grants::default()),
             Err(why) => Err(NotStarted::NoGrants {
                 why: why.to_string(),
             }),
         }
+    }
+
+    /// Where this person's grants are, after the one move that gets a machine
+    /// from the single file it used to keep to a file of their own.
+    ///
+    /// # Which person, and why this is the number
+    ///
+    /// `described.sides().person()` — the machine description's `[logins]
+    /// .person`, the same number `session::in_the_persons_session` has already
+    /// refused an environment for, and the one `alo-image` holds the unit's six
+    /// mentions and `/etc/alo/agentd.toml` to. This service **is** that person's
+    /// (`BindsTo=user@1000.service`, `User=alo`, and `alo` is uid 1000 in
+    /// `image/usr/lib/sysusers.d/alo.conf`), so the path and `believing.rs`'s
+    /// owner check compare the same number, which is
+    /// `docs/decisions/0088-a-machines-grants-belong-to-a-person.md`'s first
+    /// ground for keying by uid.
+    ///
+    /// # Why the description rather than the machine's accounts
+    ///
+    /// ADR 0088 left this open and guessed the logins would be read from
+    /// `alo-accounts`. They cannot be: **nothing in this repository writes
+    /// `/etc/alo/accounts.toml`** — every call of `alo_accounts::kept` and of
+    /// `Accounts::created` is inside a test — so that store is empty on every
+    /// real machine, and a move told *no accounts* would refuse and leave the
+    /// one person who has grants unable to read them. The description is where
+    /// this machine states who its person is, and it is the file this process
+    /// has already read and already checked itself against.
+    ///
+    /// # Why one person is not a guess here
+    ///
+    /// ADR 0088's refusing case says *nothing on disk says which* person the
+    /// single file belonged to. On this image that is not so, and the folder
+    /// says it: `image/usr/lib/tmpfiles.d/alo.conf` makes `/var/lib/alo`
+    /// **`0700 alo alo`**, so no login but that person — or root — could ever
+    /// have written the file being moved. The refusal stays reachable for a
+    /// machine whose folder is not that, which is why the list is passed rather
+    /// than the number.
+    ///
+    /// # Errors
+    ///
+    /// [`NotStarted::GrantsNotMoved`] for everything the move refuses: a folder
+    /// that is not there, an old file this machine would not believe, a new one
+    /// it cannot write, or a marker it cannot leave. Each is a machine whose
+    /// grants are in an unknown state, and serving under an unknown list is the
+    /// thing [`NotStarted::NoGrants`] already refuses to do.
+    fn whose_grants_these_are(person: Uid) -> Result<PathBuf, NotStarted> {
+        let folder = Path::new(alo_remembering::THE_FOLDER);
+        let person = person.raw();
+
+        match alo_remembering::moved_to_whoever_had_them(folder, &[person]) {
+            Ok(Moved::NothingToMove | Moved::AlreadyTheirs { .. }) => {}
+            Ok(Moved::ToThePerson { uid }) => {
+                eprintln!(
+                    "alo-agentd: the grants this machine kept in one file are now the \
+                     grants of the login numbered {uid}, and the old file is gone"
+                );
+            }
+            Ok(Moved::CouldNotTellWhose { how_many }) => {
+                eprintln!(
+                    "alo-agentd: this machine kept one grants file and has {how_many} \
+                     logins, so nothing was moved and nobody was given somebody else's \
+                     grants. Until a person grants something themselves they have none, \
+                     and {} says so where a surface can still read it",
+                    alo_remembering::could_not_tell_whose(folder).display()
+                );
+            }
+            Err(why) => {
+                return Err(NotStarted::GrantsNotMoved {
+                    why: why.to_string(),
+                });
+            }
+        }
+
+        Ok(alo_remembering::the_persons_grants(folder, person))
     }
 
     /// What this machine was paired with before this process existed.
