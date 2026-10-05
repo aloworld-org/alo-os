@@ -384,9 +384,28 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
       pixman-devel mesa-libEGL-devel mesa-libgbm-devel systemd-devel \
  && dnf clean all
 
-ENV RUSTUP_HOME=/root/.rustup
-ENV CARGO_HOME=/root/.cargo
-ENV PATH=/root/.cargo/bin:${PATH}
+# **Not `/root`, because in this base `/root` is not a directory.** A bootc
+# image relocates the superuser's home — `/root` is a symlink to
+# `var/roothome` — and `/var` is machine-local state that a bootc image does
+# not ship, so the target does not exist at build time:
+#
+#     lrwxrwxrwx /root -> var/roothome
+#     ls: cannot access '/var/roothome': No such file or directory
+#
+# A `mkdir -p` through a dangling symlink fails with `EEXIST`, because the
+# symlink exists and its target does not, which rustup reports as
+# *could not create bin directory: '/root/.cargo/bin': File exists*. The
+# `built` stage above sets the same three variables and is fine: it is Ubuntu,
+# where `/root` is a real directory.
+#
+# So the toolchain lives in a plain build directory that is nobody's home. It
+# ships nowhere — only the two binaries below are copied out of this stage, and
+# the stage itself is discarded — so the path is chosen to be unambiguous rather
+# than conventional. Creating `/var/roothome` instead would be writing machine
+# state into an image, which is the thing a bootc base is shaped to prevent.
+ENV RUSTUP_HOME=/build/rustup
+ENV CARGO_HOME=/build/cargo
+ENV PATH=/build/cargo/bin:${PATH}
 
 RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail https://sh.rustup.rs \
       | sh -s -- -y --profile minimal --default-toolchain ${THE_STABLE}
