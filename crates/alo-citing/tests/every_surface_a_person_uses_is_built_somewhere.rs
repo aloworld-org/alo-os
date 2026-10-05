@@ -1,0 +1,316 @@
+//! **Every surface a person is promised is built somewhere a machine can reach
+//! it** — or is listed here as one that is not, with its reason.
+//!
+//! # The fault this exists for, and why no other test can see it
+//!
+//! Twice on 2026-10-05 a promise turned out to be blocked by code that was
+//! finished, correct and thoroughly tested, and that nothing on a machine ever
+//! brought into being:
+//!
+//! - `alo_remembering::whose` — `docs/decisions/0088-a-machines-grants-belong-
+//!   to-a-person.md` calls it *correct code with no production caller*.
+//! - `alo-shell`'s `SettingsWindow` — `the-shell-plan.md` task 18: *every
+//!   construction of it sits in a test file or a `#[cfg(test)]` block*.
+//!
+//! Both passed every test their crates had. **A test suite cannot see this,
+//! because the tests are the callers.** 8867 tests passing says nothing about
+//! whether a machine can take a screenshot.
+//!
+//! # The question it asks
+//!
+//! Outside a type's own file, and outside every test, does anything write
+//! `Type::` at all? That is how a type is built or reached in Rust, so a type
+//! whose `Type::` appears only in tests is a type only tests make.
+//!
+//! An earlier instrument asked whether a reachable file *named* the type, and
+//! got `SettingsWindow` wrong: a reachable file names it in a signature while
+//! nothing constructs one. **Naming is not using**, and the difference is the
+//! whole bug.
+//!
+//! # Why the debt is listed rather than merely forbidden
+//!
+//! Four surfaces are unreachable today. Forbidding that outright would mean
+//! this check could not land until somebody fixed four crates across three
+//! lanes. So each is named with its reason, and the list is held in **both**
+//! directions: a surface that is still unreachable keeps its entry, and one
+//! that somebody wires in **fails this test** until its entry is removed. Debt
+//! cannot be paid silently and cannot grow silently.
+
+#![expect(
+    clippy::expect_used,
+    reason = "in a test, a panic naming what is wrong is the failure being reported"
+)]
+
+use std::fs;
+use std::path::{Path, PathBuf};
+
+/// Whether a machine can reach a surface today.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Reach {
+    /// Something outside a test builds one. This is the ordinary state.
+    AMachineCan,
+    /// Only a test ever builds one, with the reason and whose it is.
+    OnlyATestDoes {
+        /// Why, in the words of whatever measured it.
+        why: &'static str,
+    },
+}
+
+/// The surfaces a person is promised, and whether a machine can reach each.
+///
+/// Deliberately a short, named list rather than a sweep of all 1,547 public
+/// types. A sweep reports error types reached through `?`, which never name
+/// themselves — noise that would make this check unreadable and therefore
+/// unread. These are things `docs/features.md` promises a person can *do*.
+const EVERY_SURFACE_A_PERSON_USES: [(&str, Reach); 6] = [
+    (
+        "SettingsWindow",
+        Reach::OnlyATestDoes {
+            why: "the-shell-plan.md task 18. Super+I is shipped, declared, routed \
+                  and dispatched, and settings_command.rs takes the window as a \
+                  parameter — nothing on a running machine holds one to pass it. \
+                  alo-shell's, taken 2026-10-05",
+        },
+    ),
+    (
+        "Screenshot",
+        Reach::OnlyATestDoes {
+            why: "capture-and-the-room-plan.md is 7 of 7 and ROADMAP.md ticks \
+                  Capture, and every Screenshot::of is inside taking.rs's own \
+                  test module. Outside it, only doc comments. Measured 2026-10-05",
+        },
+    ),
+    (
+        "Recording",
+        Reach::OnlyATestDoes {
+            why: "the other half of the same tick: Recording::of appears in \
+                  recording.rs's test module and two test files, and nowhere a \
+                  machine runs. Measured 2026-10-05",
+        },
+    ),
+    (
+        "NightLight",
+        Reach::OnlyATestDoes {
+            why: "every NightLight::of and ::as_shipped is in screens_testing.rs, \
+                  a test block in keeping.rs, changes.rs or wearing.rs, or lib.rs's \
+                  doc example. Measured 2026-10-05",
+        },
+    ),
+    // The two below are the check's own control. If this instrument ever stops
+    // seeing a production caller that is plainly there, it has broken, and
+    // these fail rather than the list above quietly growing.
+    ("Moved", Reach::AMachineCan),
+    ("ThisMachine", Reach::AMachineCan),
+];
+
+/// This repository's crates.
+fn the_crates() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .canonicalize()
+        .expect("the crates directory is beside this one")
+}
+
+/// Whether a path is a test rather than something a machine runs.
+fn is_a_test(path: &Path) -> bool {
+    let said = path.to_string_lossy().replace('\\', "/");
+    [
+        "/tests/",
+        "_tests.rs",
+        "/testing.rs",
+        "_testing.rs",
+        "/unit_fixtures/",
+        "/examples/",
+    ]
+    .iter()
+    .any(|mark| said.contains(mark))
+}
+
+/// A file's production text: cut at its first `#[cfg(test)]`, comments removed.
+///
+/// Cutting at the test module is right whenever that module is last in the
+/// file, which is this repository's consistent habit. It can only **hide**
+/// production text, never invent it, so the error runs toward calling a surface
+/// unreachable — which is the safe direction for a list somebody acts on.
+///
+/// Comments go because a doc comment naming `SettingsWindow::opened_by_hand` is
+/// prose about the road, not the road.
+fn what_a_machine_runs(text: &str) -> String {
+    let before_tests = text.split("#[cfg(test)]").next().unwrap_or("");
+    before_tests
+        .lines()
+        .map(|line| line.split("//").next().unwrap_or(""))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// Every `.rs` file under the crates, as (path, whole text).
+fn every_source(at: &Path, into: &mut Vec<(PathBuf, String)>) {
+    let Ok(entries) = fs::read_dir(at) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            every_source(&path, into);
+        } else if path.extension().is_some_and(|it| it == "rs")
+            && let Ok(text) = fs::read_to_string(&path)
+        {
+            into.push((path, text));
+        }
+    }
+}
+
+/// Where a type is defined, and whether anything outside it and outside every
+/// test writes `Type::`.
+fn reached(name: &str, sources: &[(PathBuf, String)]) -> (Option<PathBuf>, Vec<String>) {
+    let defined = format!("pub struct {name}");
+    let other = format!("pub enum {name}");
+    let home = sources
+        .iter()
+        .find(|(path, text)| {
+            !is_a_test(path)
+                && what_a_machine_runs(text).lines().any(|l| {
+                    l.trim_start().starts_with(&defined) || l.trim_start().starts_with(&other)
+                })
+        })
+        .map(|(path, _)| path.clone());
+
+    let mut callers = Vec::new();
+    for (path, text) in sources {
+        if is_a_test(path) {
+            continue;
+        }
+        if builds_one(name, &what_a_machine_runs(text)) {
+            callers.push(path.to_string_lossy().replace('\\', "/"));
+        }
+    }
+    (home, callers)
+}
+
+/// Whether some text builds one of these, either way Rust offers it.
+///
+/// **Both forms, because the first version of this knew only one.** `Type::`
+/// catches a constructor that is an associated function; `Type {` catches a
+/// struct literal, which names no `::` at all. The Mac found that gap in their
+/// own crate — `popups.rs` builds a `Popup { … }` three screens from its
+/// definition — and their framing is the one worth keeping: **a hit is a
+/// question and a miss is not an answer.** A type built through a trait, a
+/// factory or `Default` is still invisible here.
+///
+/// **The type's own file counts**, which the first version also had wrong by
+/// excluding it. A type built by a production function in its own module is
+/// built; that function needing a caller of its own is a different question,
+/// and conflating the two reported the very line somebody was pointing at as
+/// proof the type was dead.
+///
+/// Lines that define or implement are skipped, or `impl Popup {` in another
+/// module would read as construction.
+fn builds_one(name: &str, text: &str) -> bool {
+    let associated = format!("{name}::");
+    let spaced = format!("{name} {{");
+    let tight = format!("{name}{{");
+    text.lines()
+        .filter(|line| !declares_rather_than_builds(line))
+        .any(|line| line.contains(&associated) || line.contains(&spaced) || line.contains(&tight))
+}
+
+/// Whether a line declares something rather than building one.
+///
+/// **A function signature is the trap, and it cost a wrong answer.** Adding the
+/// struct-literal form made `pub const fn taking(&self) -> &Screenshot {` match:
+/// that `{` opens the function body, not a literal. Two surfaces flipped from
+/// test-only to built on the strength of a getter that returns a reference to
+/// one, which is the opposite of building one.
+///
+/// So a line that declares a function, an impl, a type, a trait or a `use` is
+/// not a construction whatever it contains. A one-line `fn f() -> X { X { .. } }`
+/// would be missed; rustfmt splits those here, and missing one is the safe
+/// direction.
+fn declares_rather_than_builds(line: &str) -> bool {
+    let line = line.trim_start();
+    let after_visibility = line
+        .strip_prefix("pub(crate) ")
+        .or_else(|| line.strip_prefix("pub "))
+        .unwrap_or(line);
+    let after_qualifiers = after_visibility
+        .strip_prefix("const ")
+        .or_else(|| after_visibility.strip_prefix("async "))
+        .or_else(|| after_visibility.strip_prefix("unsafe "))
+        .unwrap_or(after_visibility);
+    after_qualifiers.starts_with("fn ")
+        || line.starts_with("impl")
+        || line.starts_with("use ")
+        || ["struct ", "enum ", "trait ", "type ", "union "]
+            .iter()
+            .any(|kind| after_visibility.starts_with(kind))
+}
+
+/// **Every surface listed is in the state this file says it is in.**
+#[test]
+fn every_surface_a_person_uses_is_built_somewhere_a_machine_can_reach() {
+    let crates = the_crates();
+    let mut sources = Vec::new();
+    every_source(&crates, &mut sources);
+    assert!(
+        sources.len() > 2_000,
+        "this walk read {} source files, which is a walk that stopped rather \
+         than a repository that shrank",
+        sources.len()
+    );
+
+    let mut wrong = Vec::new();
+    for (name, expected) in EVERY_SURFACE_A_PERSON_USES {
+        let (home, callers) = reached(name, &sources);
+        assert!(
+            home.is_some(),
+            "{name} is named here as a surface a person uses and no crate \
+             defines it. Either it was renamed — in which case rename it here — \
+             or this list is describing a repository that no longer exists"
+        );
+        match (expected, callers.is_empty()) {
+            (Reach::AMachineCan, true) => wrong.push(format!(
+                "{name} is listed as reachable and nothing outside a test builds one. \
+                 Either a caller was removed — which is a person losing a feature \
+                 while every test still passes — or this check has broken and is \
+                 no longer seeing callers that are there."
+            )),
+            (Reach::OnlyATestDoes { .. }, false) => wrong.push(format!(
+                "{name} is listed as unreachable and {} now builds one: {}. \
+                 That is somebody paying the debt, so REMOVE ITS ENTRY from \
+                 EVERY_SURFACE_A_PERSON_USES and set it to Reach::AMachineCan.",
+                callers.len(),
+                callers.join(", ")
+            )),
+            _ => {}
+        }
+    }
+
+    assert!(
+        wrong.is_empty(),
+        "{} surface(s) are not in the state this file says:\n\n- {}",
+        wrong.len(),
+        wrong.join("\n\n- ")
+    );
+}
+
+/// **Every unreachable surface carries a reason somebody can act on.**
+///
+/// A list of names with no reasons rots into a list nobody reviews, which is
+/// how the thing it records becomes permanent.
+#[test]
+fn every_surface_a_machine_cannot_reach_says_why() {
+    for (name, reach) in EVERY_SURFACE_A_PERSON_USES {
+        if let Reach::OnlyATestDoes { why } = reach {
+            assert!(
+                why.len() > 60,
+                "{name} is listed as unreachable with too little reason to act on: {why:?}"
+            );
+            assert!(
+                why.contains("2026-"),
+                "{name}'s reason carries no date, so nobody can tell whether it \
+                 was measured today or last month: {why:?}"
+            );
+        }
+    }
+}

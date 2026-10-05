@@ -33,6 +33,15 @@ count enum arms does not want a page about EDK II.
 
 ## Entries so far
 
-All from 2026-10-04, one lane, one day — which is itself the finding that
-started this directory. They were caught by other lanes measuring the same thing
-more carefully, not by any test here.
+The first of them were all from 2026-10-04, one lane, one day — which is itself
+the finding that started this directory. They were caught by other lanes
+measuring the same thing more carefully, not by any test here.
+
+**Both halves of that have since stopped being true, and the second one is the
+better news.** The entries now come from more than one lane and more than one
+day. And *the fix that made the number grow* was caught by a check in this
+repository: a detector reported two surfaces as built, contradicting something
+already told to the owner, and the retraction was avoided by printing the line
+it had matched — a function signature, not a construction. **A test here found
+one**, which is what this directory is for rather than a record of what it used
+to be.
