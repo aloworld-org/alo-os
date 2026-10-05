@@ -1341,8 +1341,8 @@ spend it — the way this plan already asks a worker to stop for want of disk. I
 costs sixteen minutes to build the environment from nothing before the machine can
 start, so a worker that finds one already built in `CARGO_TARGET_TMPDIR` has most of
 an hour more for the run than one that does not.
-The measurement, the environment's own sentences under Secure Boot against `0.0.2`,
-and where the serial line is kept are in
+The measurement, the environment's own sentences under Secure Boot against image
+0.0.2, and where the serial line is kept are in
 `updates/the-install-under-secure-boot-does-not-fit-a-workers-window.md`.
 
 Split from task 14 on 2026-09-16. Task 14 found why `alo-agentd` failed on the disk

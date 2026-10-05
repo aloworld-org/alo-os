@@ -662,8 +662,8 @@ comment reasoned that a version may be spent without a migration *because no
 file of this shape has ever been written to disk* — true of 1 and 2, and **false
 of 3 since `alo-desktop` gained its calls**: `src/main.rs:294` reads one at
 sign-in and `:318` keeps one when the layout moves, neither under `cfg(test)`,
-and alo OS 0.0.1 is public. A series needs format 4; a bump that does not also
-read 3 costs a person the canvas they left, which `at_sign_in` would report as
+and alo OS image 0.0.1 is public. A series needs format 4; a bump that does not
+also read 3 costs a person the canvas they left, which `at_sign_in` would report as
 a file that did not read. **So this task owes the first migration this crate has
 needed**, and that is scope it inherits rather than invents. The stale reasoning
 is corrected in the crate and recorded in
