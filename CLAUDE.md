@@ -340,6 +340,34 @@ cannot demonstrate.
   machine — they share its memory, CPU and disk, so **one Cargo
   operation per machine** stands, and they do not multiply the agent,
   so one task is actively implemented at a time.
+- **State your own errors, and record the ones that could be repeated.**
+  Say it in the moment, to whoever is relying on the claim — plainly, once,
+  without ceremony — and then put the ones somebody else could walk into in
+  `docs/misreadings/`, one file per entry, in that directory's four-part
+  shape: what was concluded, what was true, **the mechanism**, the cure.
+  The mechanism is the part worth writing; the rest is an example of it.
+
+  **This is not a confession log and it is not a backlog.** An entry earns its
+  place by saving somebody else the same hour, so an entry that cannot say
+  what to do differently is a slogan and does not belong — and a slip that
+  changes nothing for anybody is corrected and forgotten rather than
+  memorialised. Nothing here is about blame: the lane that writes an entry is
+  almost always the one that found it, which is the behaviour this rule
+  exists to make ordinary rather than brave.
+
+  **It binds hardest where the error was invisible.** A failure somebody else
+  can see is already reported by the thing that failed. What this rule is for
+  is the fault that *passed* — a check that measured a narrower thing than its
+  sentence claimed, a number that had gone stale, a note attached to something
+  that cannot fail — because those are the ones that cost a week later and
+  cost a paragraph now. **Say which of the two it was**, so a reader knows
+  whether anything caught it.
+
+  *Written 2026-10-05 by the owner. Twenty-two entries existed before this
+  rule did, and `docs/misreadings/` was named nowhere in this file — the
+  practice was real, undocumented, and depended on whoever happened to have
+  the habit.*
+
 - **The author of every commit is the repository's owner**, from the
   checkout's own `user.name` and `user.email`. **No agent sets an
   author of its own** — not with `--author`, not with `-c user.name`,
@@ -479,7 +507,12 @@ next lane relitigates.*
 - `docs/booting.md` — how the image becomes a disk a machine boots from,
   and what a virtual machine can never show about one.
 - `docs/quirks.md` — where reality and the specification disagree:
-  driver behaviour, application automation, firmware.
+  driver behaviour, application automation, firmware. **New quirks go in
+  `docs/quirks/`**, one file per entry; the old file keeps the 203 already
+  written because 187 files cite its path.
+- `docs/misreadings/` — where **we** fooled ourselves, as `docs/quirks/` is
+  where somebody else's software did. One file per entry, and its `README.md`
+  holds the shape: what was concluded, what was true, the mechanism, the cure.
 - `SECURITY.md` — how to report something, and what is in scope.
 - `CHANGELOG.md` — what changed, in words a person outside this
   repository can read.
