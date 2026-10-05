@@ -110,7 +110,27 @@ right and the `return` is what has to go.
 
 ### 2. The atomic route is discovered per display
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** 1.
+**Status:** **Done, 2026-10-05: the code.** `discover_every` builds a route per
+display and `discover_atomic_output` is the first of them, so no caller moved.
+Four tests.
+
+**Task 1's fault again, one level down, and it was not foreseen here either.** A
+plane's `possible_crtcs` is a bitmask, so the **same plane is compatible with
+several CRTCs** — and asking each display independently for its lowest
+compatible primary plane hands one plane to two displays. A plane scans out for
+one CRTC at a time. Planes are now taken as they are assigned, exactly as CRTCs
+are.
+
+**And a refusal is now per display where the thing refusing is the display's.**
+A connector, a CRTC, a plane list or a property schema that will not read takes
+that display out and the run carries on; the first such refusal is kept and
+returned only if no display survives. A capability the kernel would not enable,
+or a resource list that would not read, still refuses everything — none of that
+is about one display. **One working output and one broken one is a machine a
+person can use**, and the old code could only answer *this device has no
+route*.
+
+**Owner:** the Mac. **Depends on:** 1.
 
 `AtomicOutput` is one connector, one CRTC, one plane and three property maps.
 Two displays need two, and the per-display failure has to be per display.

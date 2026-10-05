@@ -42,13 +42,16 @@ impl Inventory for Fixture {
             "universal"
         })
     }
-    fn output(&self) -> Result<DirectOutput, DirectOutputError> {
+    fn outputs(&self) -> Result<Vec<DirectOutput>, DirectOutputError> {
         self.call("output")
             .map_err(|source| DirectOutputError::Query {
                 stage: "resources",
                 source,
             })?;
-        Ok(DirectOutput {
+        // **One display, as this fixture has always had.** Answering with two
+        // here would change what every existing case in this file measures;
+        // the two-display tests build their own inventory.
+        Ok(vec![DirectOutput {
             physical_size: Some((310, 170)),
             connector: id(1).into(),
             crtc: id(2).into(),
@@ -58,7 +61,7 @@ impl Inventory for Fixture {
                 ..Default::default()
             }
             .into(),
-        })
+        }])
     }
     fn connector(&self, _: &DirectOutput) -> io::Result<Vec<Property>> {
         self.call("connector")?;
@@ -369,4 +372,170 @@ fn non_drm_descriptor_refuses_capabilities_and_remains_owned_by_caller()
     );
     assert!(file.metadata().is_ok());
     Ok(())
+}
+
+/// Two displays, answering the same plane list to each.
+///
+/// Separate from [`Fixture`] on purpose: that one's `planes` is taken on first
+/// read and its tests assert an exact call sequence, so teaching it a second
+/// display would change what every existing case measures.
+struct TwoDisplays {
+    /// How many displays `outputs` answers with.
+    displays: u32,
+    /// The planes every display is offered, by id — the same list each time,
+    /// which is what a bitmask of `possible_crtcs` looks like from here.
+    ///
+    /// **Ids rather than `Plane`s, because `Plane` is not `Clone`** and giving
+    /// production a derive so a fixture can hold a list would be the test
+    /// shaping the code. They are rebuilt per call, which is also closer to
+    /// the truth: each `planes()` is a fresh snapshot.
+    planes: Vec<u32>,
+    /// A connector id whose property read fails, for the per-display refusal.
+    refuse_connector: Option<u32>,
+}
+
+impl Inventory for TwoDisplays {
+    fn enable(&self, _: drm::ClientCapability) -> io::Result<()> {
+        Ok(())
+    }
+    fn outputs(&self) -> Result<Vec<DirectOutput>, DirectOutputError> {
+        Ok((1..=self.displays)
+            .map(|which| DirectOutput {
+                physical_size: Some((310, 170)),
+                connector: id(which).into(),
+                crtc: id(100 + which).into(),
+                mode: drm_ffi::drm_mode_modeinfo {
+                    hdisplay: 1280,
+                    vdisplay: 720,
+                    ..Default::default()
+                }
+                .into(),
+            })
+            .collect())
+    }
+    fn connector(&self, output: &DirectOutput) -> io::Result<Vec<Property>> {
+        if self.refuse_connector == Some(u32::from(output.connector)) {
+            return Err(io::Error::from_raw_os_error(5));
+        }
+        Ok(vec![prop(1, "CRTC_ID", PropertyKind::Crtc)])
+    }
+    fn crtc(&self, _: &DirectOutput) -> io::Result<Vec<Property>> {
+        Ok(vec![
+            prop(2, "ACTIVE", PropertyKind::Boolean),
+            prop(3, "MODE_ID", PropertyKind::Blob),
+        ])
+    }
+    fn planes(&self, _: &DirectOutput) -> io::Result<Vec<Plane>> {
+        Ok(self.planes.iter().copied().map(plane).collect())
+    }
+}
+
+/// **Two displays get two atomic routes, and never the same plane.**
+///
+/// `more-than-one-display-plan.md` task 2. A plane's `possible_crtcs` is a
+/// bitmask, so the same plane is offered to both displays here — which is what
+/// the kernel does. Asking each independently for its lowest compatible
+/// primary plane hands plane 30 to both, and a plane scans out for one CRTC at
+/// a time.
+#[test]
+fn two_displays_are_routed_and_never_share_a_plane() -> Result<(), AtomicOutputError> {
+    let routed = discover_every(&TwoDisplays {
+        displays: 2,
+        planes: vec![40, 30],
+        refuse_connector: None,
+    })?;
+
+    let planes: Vec<u32> = routed.iter().map(|one| u32::from(one.plane)).collect();
+    let connectors: Vec<u32> = routed
+        .iter()
+        .map(|one| u32::from(one.output.connector))
+        .collect();
+
+    // `id(n)` is `n + 1`, so these are the kernel ids the fixture hands out.
+    assert_eq!(connectors, vec![2, 3], "a display was lost");
+    assert_eq!(planes, vec![31, 41], "the lowest free plane each time");
+    assert_eq!(
+        planes
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len(),
+        planes.len(),
+        "two displays were given the same plane"
+    );
+    Ok(())
+}
+
+/// **A display with no plane left is dropped, and the other still comes up.**
+///
+/// One primary plane and two displays is a machine with one screen working,
+/// which is a machine a person can use.
+#[test]
+fn a_display_with_no_plane_left_does_not_refuse_the_one_that_has_one()
+-> Result<(), AtomicOutputError> {
+    let routed = discover_every(&TwoDisplays {
+        displays: 2,
+        planes: vec![30],
+        refuse_connector: None,
+    })?;
+
+    let connectors: Vec<u32> = routed
+        .iter()
+        .map(|one| u32::from(one.output.connector))
+        .collect();
+    assert_eq!(
+        connectors,
+        vec![2],
+        "the second display took the only plane"
+    );
+    Ok(())
+}
+
+/// **A refusal that names one display's objects skips that display.**
+///
+/// The first display's connector properties cannot be read; the second is
+/// untouched by that and comes up. A device-wide failure — a capability, the
+/// resource list — still refuses everything, which the existing cases cover.
+#[test]
+fn one_displays_refusal_is_not_the_devices() -> Result<(), AtomicOutputError> {
+    let routed = discover_every(&TwoDisplays {
+        displays: 2,
+        planes: vec![40, 30],
+        refuse_connector: Some(2),
+    })?;
+
+    let connectors: Vec<u32> = routed
+        .iter()
+        .map(|one| u32::from(one.output.connector))
+        .collect();
+    assert_eq!(
+        connectors,
+        vec![3],
+        "one display's unreadable connector took the other down with it"
+    );
+    Ok(())
+}
+
+/// **Every display refusing is a refusal, and it is the first one's.**
+///
+/// Not `NoPlane` invented on the way out: the reason the first display could
+/// not be routed is the most useful thing to say, and a caller told *no
+/// compatible primary plane* about a device whose connector would not read has
+/// been sent to the wrong place.
+#[test]
+fn when_no_display_survives_the_first_refusal_is_the_answer() {
+    let refused = discover_every(&TwoDisplays {
+        displays: 1,
+        planes: vec![30],
+        refuse_connector: Some(2),
+    });
+    assert!(
+        matches!(
+            refused,
+            Err(AtomicOutputError::Query {
+                stage: "connector properties",
+                ..
+            })
+        ),
+        "a per-display refusal was replaced by a generic one"
+    );
 }
