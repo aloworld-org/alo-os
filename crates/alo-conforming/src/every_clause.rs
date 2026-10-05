@@ -380,15 +380,30 @@ pub const THE_CLAUSES: [Clause; 46] = [
         // `alo_shortcuts::Action::said` — *"Close the window"* — and a reader
         // was told `access.close-this-window`, *"close this window"*.
         //
-        // **Met for the window's buttons since 2026-10-04 and still not yet
-        // for the rest.** ADR 0089 made a control that performs an action take
-        // its name from `Action::word`, so for those three there is one string
-        // rather than two that must agree and the containment is trivial in
-        // all 24 languages. The clause asks it of **every** control with a
-        // visible label, and no other surface has been read against the thing
-        // that draws it — so this stays `not_yet`, now for a measured reason
-        // rather than a general one. Moving it on the evidence of one surface
-        // would be claiming a clause on a test that covers three controls.
+        // **Met on two surfaces of nine, and still not yet for the rest.**
+        // ADR 0089 made a control that performs an action take its name from
+        // `Action::word`, so for the window's three buttons there is one
+        // string rather than two that must agree and the containment is
+        // trivial in all 24 languages.
+        //
+        // **The approval surface followed on 2026-10-05**, and it is worth
+        // recording what was found rather than only that it was fixed: this
+        // crate announced `access.say-no` and `access.approve-it` while
+        // `alo-approving` drew `approving.no` and `approving.approve`. In
+        // English the announced names were *"no"* and *"approve"* against
+        // drawn labels *"No"* and *"Approve"* — **the containment this clause
+        // asks for was false on the capital letter alone**, before reaching
+        // the question of two vocabularies translated separately into 24
+        // languages. The two answers are now named by the words they are
+        // drawn with.
+        //
+        // The clause asks it of **every** control with a visible label.
+        // Recovery, sign-in, the desktop, the dock, the status area and the
+        // record have not been read against the things that draw them, so
+        // this stays `not_yet` — for a measured reason rather than a general
+        // one, and now with a count. Moving it on the evidence of two
+        // surfaces would be claiming a clause on tests that cover five
+        // controls.
         standing: not_yet(8, THE_PLAN),
         checked: NotAgainstTheText,
     },

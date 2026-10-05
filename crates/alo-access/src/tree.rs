@@ -318,11 +318,29 @@ impl Surface {
             ],
             // ADR 0001: what a person approves is the sentence the turn wrote,
             // and the two answers follow it with nothing chosen for them.
+            // **The two answers are named by the words they are drawn with**,
+            // which is ADR 0089's rule arriving at the surface it matters most
+            // on. Until 2026-10-05 this crate announced `access.say-no` and
+            // `access.approve-it` while `alo-approving` drew `approving.no`
+            // and `approving.approve` — two vocabularies for two buttons,
+            // translated independently into 24 languages, with nothing
+            // comparing them. In German the drawn words are *Nein* and
+            // *Genehmigen*; what a reader was told was whatever this crate's
+            // own keys happened to become.
+            //
+            // Clause 11.2.5.3 asks the programmatic name to contain the
+            // visible label. One string rather than two makes that true by
+            // construction, in every language, and makes it impossible for a
+            // translator to move one without the other.
             Self::Approval => vec![
                 Control::of(Role::Dialogue, words::SOMETHING_IS_ASKED, State::ReadOnly),
                 Control::of(Role::Label, words::WHAT_THE_TURN_WROTE, State::ReadOnly),
-                Control::of(Role::Button, words::SAY_NO, State::CanBeUsed),
-                Control::of(Role::Button, words::APPROVE_IT, State::CanBeUsed),
+                Control::of(Role::Button, alo_approving::words::NO, State::CanBeUsed),
+                Control::of(
+                    Role::Button,
+                    alo_approving::words::APPROVE,
+                    State::CanBeUsed,
+                ),
             ],
             Self::Record => vec![
                 Control::of(Role::Window, words::THE_RECORD, State::ReadOnly),
@@ -392,16 +410,38 @@ pub fn the_approval_in_reading_order() -> Vec<Control> {
 /// and never said is still a fault — but it is now one side of the tree rather
 /// than the whole of it, and
 /// [`EVERY_NAME_A_READER_SAYS_IN_ANOTHER_CRATES_WORDS`] is the other.
-pub const EVERY_NAME_A_READER_SAYS: usize = 38;
+pub const EVERY_NAME_A_READER_SAYS: usize = 36;
 
 /// How many names a reader says come from another crate's vocabulary.
 ///
-/// The three buttons a window is drawn with (ADR 0089). Counted separately
+/// The three buttons a window is drawn with, and the two answers on the
+/// approval surface (ADR 0089, and the same rule applied to `alo-approving`'s
+/// own words on 2026-10-05). Counted separately
 /// rather than folded into the number above, because the two have different
 /// failure modes: a word of ours that nothing says is a word to retire, and a
 /// name of somebody else's that nothing draws is the fault this ADR was
 /// written about.
-pub const EVERY_NAME_A_READER_SAYS_IN_ANOTHER_CRATES_WORDS: usize = 3;
+pub const EVERY_NAME_A_READER_SAYS_IN_ANOTHER_CRATES_WORDS: usize = 5;
+
+/// The words this tree borrows that are **not** an action's.
+///
+/// Three of the five come from `alo_shortcuts::Action::word` and are reached
+/// through `Control::does`, so a test can find them without a list. These two
+/// cannot: the approval answers are drawn by `alo-approving` and perform no
+/// `Action`, so the only thing saying they are deliberately somebody else's is
+/// this constant.
+///
+/// **A list rather than a prefix test**, because *any word from another crate
+/// is fine* is not the rule. The rule is that a control is named by the thing
+/// that draws it, and each borrowing is a decision somebody took — see
+/// `Surface::Approval`'s own note. A word appearing here that nothing draws is
+/// the fault ADR 0089 was written about, arriving from the other side.
+/// **`cfg(test)` because the count above is the public statement** and this is
+/// how it is checked. A second public list would be a second answer to *which
+/// words does this tree borrow*, kept in step by hand.
+#[cfg(test)]
+const BORROWED_AND_NOT_AN_ACTION: [Word; 2] =
+    [alo_approving::words::NO, alo_approving::words::APPROVE];
 
 #[cfg(test)]
 mod tests {
@@ -434,6 +474,17 @@ mod tests {
                     theirs.push(key);
                 }
                 None => {
+                    // **Borrowed first**, because a word this tree takes from
+                    // the crate that draws it is somebody else's however it
+                    // reaches the control — through `does` for an action, and
+                    // through a deliberate list for the two that perform none.
+                    if BORROWED_AND_NOT_AN_ACTION
+                        .iter()
+                        .any(|word| word.key().to_string() == key)
+                    {
+                        theirs.push(key);
+                        continue;
+                    }
                     assert!(
                         crate::words::EVERY_WORD
                             .iter()
@@ -573,8 +624,12 @@ mod tests {
             vec![
                 "access.something-is-asked".to_owned(),
                 "access.what-the-turn-wrote".to_owned(),
-                "access.say-no".to_owned(),
-                "access.approve-it".to_owned(),
+                // **The words the screen draws**, not this crate's. Until
+                // 2026-10-05 these read `access.say-no` and
+                // `access.approve-it`, and the two vocabularies were
+                // translated independently with nothing comparing them.
+                alo_approving::words::NO.key().to_string(),
+                alo_approving::words::APPROVE.key().to_string(),
             ]
         );
         // Nothing carries a state that would read as *chosen*.

@@ -13,7 +13,6 @@
 # One line per key: the key, a tab, then the English exactly as the crate declares it.
 
 access.an-application	an application
-access.approve-it	approve
 access.ask-the-agent	ask the agent
 access.bounce-keys	ignore the same key pressed twice quickly
 access.focus-always-visible	always show where the keyboard is
@@ -24,7 +23,6 @@ access.larger-text	make all text larger
 access.magnifier	magnify what is under the pointer
 access.one-thing-that-happened	one thing that happened
 access.reduced-motion	stop things sliding and fading
-access.say-no	no
 access.screen-reader	read the screen aloud
 access.settings	settings
 access.settings-here	settings for seeing, hearing and typing

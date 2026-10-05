@@ -194,13 +194,12 @@ pub const WHAT_THE_TURN_WROTE: Word = Word::saying(
     "The sentence describing the change, written by the turn that asked. It is what the person approves, so it is read whole and never summarised.",
 );
 
-/// The answer that changes nothing.
-pub const SAY_NO: Word = Word::saying("access.say-no", "no")
-    .noting("The answer that changes nothing. Read first, and nothing is chosen for the person.");
-
-/// The answer that carries the change out, once.
-pub const APPROVE_IT: Word = Word::saying("access.approve-it", "approve")
-    .noting("The answer that carries the change out, once.");
+// **`access.say-no` and `access.approve-it` were retired on 2026-10-05**,
+// deleted rather than left with a marker, under ADR 0068's fourth rule and for
+// the reason `access.a-setting` was: keeping a key alive keeps its stale
+// meaning reachable. The approval surface's two answers are now named by the
+// words they are drawn with — `alo_approving::words::{NO, APPROVE}` — so there
+// is one string per button instead of two that had to agree and never did.
 
 /// The window listing what has happened on this machine.
 pub const THE_RECORD: Word = Word::saying("access.the-record", "the record")
@@ -280,7 +279,7 @@ pub const GO_BACK_NOW: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 38] = [
+pub const EVERY_WORD: [Word; 36] = [
     SCREEN_READER,
     MAGNIFIER,
     HIGH_CONTRAST,
@@ -306,8 +305,6 @@ pub const EVERY_WORD: [Word; 38] = [
     THE_AGENT_IS_WORKING,
     SOMETHING_IS_ASKED,
     WHAT_THE_TURN_WROTE,
-    SAY_NO,
-    APPROVE_IT,
     THE_RECORD,
     WHAT_HAPPENED,
     ONE_THING_THAT_HAPPENED,
