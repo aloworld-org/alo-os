@@ -12,6 +12,19 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Settings opens on a signed-in desktop, takes the keyboard while it is
+  open, and closes when you press Escape.** The window itself was finished
+  some time ago and nothing on a running machine ever built one, so every
+  sentence it can say was reachable by a test and by nobody else. Pressing the
+  shortcut now opens it; the arrows move through it and Enter chooses, and
+  while it is open the application behind it hears none of those keys — the
+  pointer still reaches that application as it always did. Two things a change
+  made in it reach past the window straight away rather than at your next
+  sign-in: **a keyboard shortcut you rebind is in force on the next key you
+  press**, and **revoking what an agent may reach is told to the service that
+  is enforcing it**, instead of being written to a file the running service had
+  already read.
+
 - **A window can be put aside even when the application it belongs to has no
   name.** Some programs tell the machine neither what they are called nor what
   the window is called. Until now, minimising one of those was simply refused —

@@ -931,7 +931,40 @@ are worth a stage each for that reason.
 
 ### 18. A person opens Settings
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** the code is written and **no acceptance is met**, because all three
+are *by a person on a real machine*. **Depends on:** nothing.
+
+**What was wired, 2026-10-05, in `alo-shell` on loan to the development PC.**
+Two roads, because one without the other is worse than neither:
+
+| the road | where it enters |
+|---|---|
+| a chord opens the window | `a_chord_reaches_its_action.rs` → `dispatch_settings_command` |
+| a key reaches the open window | `a_key_reaches_settings.rs` → `settings_key` → `pressed` |
+
+`Server` now holds the window and the places; `direct_desktop.rs` builds the
+picture into `NativeLayers.settings` and asks per input batch whether Settings
+is taking the keys; `alo-desktop` answers where the places are, including the
+daemon's own socket through `alo_changing::this_persons_door`.
+
+**Why the key road was not left for a second change.** `SettingsWindow::close`
+had no production caller, `Escape` is `SettingsKey::Close`, and the open road
+alone would have shipped **a window a person cannot dismiss**. The same
+argument settled the other two conditions: a binding kept is told to the seat
+again, or Settings writes the file and nothing changes until the next sign-in;
+and the revoke row is given a real door, or it writes the file and leaves the
+running daemon serving the old list.
+
+**Focus is left exactly where it is**, which was already decided and written in
+`settings_seat.rs` — *every key is intercepted at the seat and never forwarded
+… keyboard focus is left where it is, as it is for the record window.*
+Interception is what stops the client hearing anything, so clearing focus would
+have bought nothing and told the client two things that did not happen.
+
+**What is still not true.** Every acceptance below needs the machine. The branch
+in `direct_desktop.rs` that calls into the key road needs a libinput context and
+so is read rather than measured, like every other line of the direct lane.
+Nothing here says a person has opened Settings.
 
 This plan already says the thing this task is for: *nothing opens Settings yet,
 because `alo-shortcuts` declares no action for it*.

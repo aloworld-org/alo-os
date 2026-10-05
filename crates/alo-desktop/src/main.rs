@@ -293,6 +293,39 @@ mod running {
     const HOW_OFTEN: std::time::Duration = std::time::Duration::from_secs(1);
 
     impl TheDesktop for ThisPersonsDesktop {
+        /// Where this person's settings are kept, so a chord can open them.
+        ///
+        /// **Answered rather than `None`, which is what makes `⊞`+`I` do
+        /// something on a real machine.** The chord was shipped, declared,
+        /// routed and dispatched, and `dispatch_settings_command` took a
+        /// `&mut SettingsWindow` that nothing in production had — so Settings
+        /// opened in tests and nowhere else. `the-shell-plan.md` task 18.
+        ///
+        /// **The uid is not taken from a variable**, which this file's own
+        /// header forbids: *whose session this is, is whose session this is,
+        /// and a desktop that took a person's number from a variable could be
+        /// started for the wrong one.* `alo_remembering::this_persons_grants`
+        /// asks the kernel, so the rule is kept by borrowing the question
+        /// rather than answering it twice.
+        ///
+        /// The folder is the one the shortcuts and the layout already come
+        /// from, read the same way and from the same two variables.
+        ///
+        /// **The daemon's door comes with the rest**, because a session that
+        /// could read a grant and not say it was revoked would show a revoke
+        /// button that leaves the running daemon serving the old list.
+        /// `alo_changing::this_persons_door` asks the same one kernel question
+        /// through the same one place that answers it.
+        fn the_settings_places(&mut self) -> Option<alo_shell::SettingsPlaces> {
+            Some(alo_shell::SettingsPlaces::of(
+                std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+                std::env::var_os("HOME").as_deref(),
+                &alo_remembering::this_persons_grants(),
+                std::path::Path::new(alo_remembering::THE_PAIRINGS),
+                &alo_changing::this_persons_door(),
+            ))
+        }
+
         /// What this person's chords mean, read from their own folder.
         ///
         /// **What this release ships, with the person's changes over it.** A

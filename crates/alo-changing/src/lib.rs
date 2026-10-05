@@ -100,6 +100,8 @@ pub mod seen_pairing;
 pub mod stood;
 pub mod the_door;
 pub mod unpairing;
+#[cfg(unix)]
+pub mod where_the_door_is;
 pub mod words;
 
 #[cfg(unix)]
@@ -114,4 +116,6 @@ pub use seen_pairing::SeenPairing;
 pub use stood::Stood;
 pub use the_door::Door;
 pub use unpairing::{RevokingPairings, Unpaired};
+#[cfg(unix)]
+pub use where_the_door_is::{THE_ROOT, THE_SOCKET, the_door_beneath, this_persons_door};
 pub use words::{Word, WordsError, changing_words, declare_into};

@@ -63,6 +63,34 @@ impl Server {
         self.shortcuts = Some(shortcuts);
     }
 
+    /// Where this person's settings are kept.
+    ///
+    /// Told for the reason the shortcuts above are, and the sentence is the
+    /// same one: **a compositor that opened a person's settings file would be a
+    /// compositor measuring.** The folder, the grants and the pairings are the
+    /// desktop's to know, and this crate opens none of them to find out.
+    ///
+    /// **A session that is never told opens no Settings** and keeps the road it
+    /// had, which is what leaves the sign-in screen, the nested lane and every
+    /// test unchanged.
+    ///
+    /// Calling it again replaces them, for the reason calling
+    /// [`Server::the_shortcuts_are`] again does: a person who signs in
+    /// somewhere new has not changed where their settings live, but a session
+    /// that learns a folder later has.
+    pub fn the_settings_places_are(&mut self, places: crate::SettingsPlaces) {
+        self.settings_places = Some(places);
+    }
+
+    /// The settings window this session owns, for the frame that draws it.
+    ///
+    /// Borrowed rather than taken, because drawing reads and never opens: the
+    /// one road that opens it is a chord, through
+    /// [`Server::the_chord_does_what_it_names`].
+    pub(crate) const fn the_settings_window(&self) -> &crate::SettingsWindow {
+        &self.settings
+    }
+
     /// The chord this key makes, if the person has bound it to anything.
     ///
     /// Asked **inside** the filter of the one `input` call that advances XKB, so
@@ -100,6 +128,25 @@ impl Server {
     /// zoom with no output are the two the canvas can refuse, and both are
     /// ordinary things to press: a compositor that stopped over either would be
     /// a machine a person lost for pressing a key on an empty desktop.
+    /// # Settings is reached here or nowhere
+    ///
+    /// Until 2026-10-05 this called `dispatch_canvas_command` directly, and
+    /// `dispatch_settings_command` — which is the same road with Settings
+    /// answered first and every other chord falling through to the canvas one —
+    /// had **no caller in production**. `the-shell-plan.md` task 18 is that
+    /// gap, and the shape of it was that `Super`+`I` was shipped, declared,
+    /// routed and dispatched while nothing on a running machine held a
+    /// `SettingsWindow` to open.
+    ///
+    /// **The window and the places are taken out and put back**, for the reason
+    /// the shortcuts are: the dispatcher wants `&mut SettingsWindow` and
+    /// `&SettingsPlaces` while it holds `&mut self`. Nothing in the chain
+    /// replaces either, so what is put back is what was taken.
+    ///
+    /// **A session nobody has told where settings are kept opens none**, and
+    /// falls through to the canvas road it was already on. That is the sign-in
+    /// screen, the nested lane and every test that never says: they keep
+    /// exactly the behaviour they had.
     pub(crate) fn the_chord_does_what_it_names(&mut self, chord: Chord) {
         let Some(shortcuts) = self.shortcuts.take() else {
             return;
@@ -109,9 +156,27 @@ impl Server {
         // back as it was — holds the state being left under that moment. Every
         // layer below takes it as an argument so a test can choose it; this is
         // the layer where *now* is not a choice.
-        let did = self.dispatch_canvas_command(&shortcuts, chord, std::time::SystemTime::now());
+        let now = std::time::SystemTime::now();
+        let said = match self.settings_places.take() {
+            Some(places) => {
+                let mut window = std::mem::take(&mut self.settings);
+                let did = self
+                    .dispatch_settings_command(&shortcuts, chord, &mut window, &places, now)
+                    .map(|what| what.map(|_| ()))
+                    .map_err(|why| why.to_string());
+                self.settings = window;
+                self.settings_places = Some(places);
+                did
+            }
+            // Nobody has said where this person's settings are kept, so there is
+            // nothing to open and the chord takes the road it always had.
+            None => self
+                .dispatch_canvas_command(&shortcuts, chord, now)
+                .map(|what| what.map(|_| ()))
+                .map_err(|why| why.to_string()),
+        };
         self.shortcuts = Some(shortcuts);
-        if let Err(why) = did {
+        if let Err(why) = said {
             eprintln!("alo-shell: a chord was pressed and could not be carried out — {why}");
         }
     }

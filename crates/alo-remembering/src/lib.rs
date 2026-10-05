@@ -119,5 +119,8 @@ pub use names::{MachineNames, NotNames, THE_NAMES_FORMAT};
 pub use pairings::{THE_PAIRINGS, pairings_kept, pairings_remembered};
 pub use refusing::NotRemembered;
 #[cfg(unix)]
-pub use whose::{Moved, could_not_tell_whose, moved_to_whoever_had_them, the_persons_grants};
+pub use whose::{
+    Moved, could_not_tell_whose, moved_to_whoever_had_them, the_persons_grants, this_person,
+    this_persons_grants,
+};
 pub use written::{THE_FIRST_FORMAT, THE_FORMAT, read, written};
