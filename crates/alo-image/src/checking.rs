@@ -417,7 +417,7 @@ fn the_weights_a_class_arrives_with(image: &Image, ram_gb: f32, wrong: &mut Vec<
             digest: weights.digest().unwrap_or(NOTHING).to_owned(),
         });
     }
-    if !weights.drops_the_source() {
+    if !weights.prunes_to_the_manifest() {
         wrong.push(Wrong::TheWeightsAreCarriedTwice);
     }
     if !weights.holds_the_store_to_its_manifest() {
@@ -2232,12 +2232,7 @@ mod tests {
     #[test]
     fn weights_carried_twice_are_caught() {
         let root = a_copy_of_the_image("weights-twice");
-        edited(
-            &root,
-            THE_CONTAINERFILE,
-            "rm -f \"/models/blobs/sha256-${THE_MODELS_SHA256}\"",
-            "true",
-        );
+        edited(&root, THE_CONTAINERFILE, "|| rm -f \"${blob}\"", "true");
 
         let wrong = everything_wrong_with(&image_at(&root));
 
@@ -2277,10 +2272,11 @@ mod tests {
             "{wrong:?}"
         );
         assert!(
-            !wrong
+            wrong
                 .iter()
                 .any(|it| matches!(it, Wrong::TheWeightsAreCarriedTwice)),
-            "the source is still dropped, and that is a separate finding: {wrong:?}"
+            "both findings are manifest-conditioned walks since 2026-10-05, so a recipe with \
+             no walk is caught by both: {wrong:?}"
         );
     }
 

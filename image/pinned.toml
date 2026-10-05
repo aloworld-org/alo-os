@@ -236,3 +236,8 @@ version = "0.0.5"
 digest = "sha256:6c9abbc5a6a0f5299991f4cca65152452b3cbae339b161059528d72f2aad3ba1"
 revision = "97c970c96f2c13f2341ed94fb264247fb6837442"
 key = "signing/alo-os.pub"
+
+# A release is in flight. The recipe names 0.0.6 and no digest is pinned for it
+# yet, because a digest follows the owner signing one. An installer still pulls
+# 0.0.5 above until that happens, which is what this field is for.
+next = "0.0.6"
