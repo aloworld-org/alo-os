@@ -126,12 +126,25 @@ mod tests {
         assert!(!said.is_a_bug(), "{said}");
     }
 
+    /// The file a person's grants are really in, asked of the crate that owns
+    /// it rather than spelled here.
+    ///
+    /// It used to be `/var/lib/alo/grants.toml`, written by hand in three
+    /// places in this file. A sentence naming a file by hand goes stale with
+    /// the file, and that path stopped being the one anybody's grants are in
+    /// when `docs/decisions/0088-a-machines-grants-belong-to-a-person.md`
+    /// gave each person their own — so these tests went on asserting that a
+    /// refusal names a file no machine reads.
+    fn a_persons_grants() -> std::path::PathBuf {
+        alo_remembering::the_persons_grants(std::path::Path::new(alo_remembering::THE_FOLDER), 1000)
+    }
+
     /// **A write that failed is one declared sentence**, whichever way the
     /// file failed — and it says that nothing moved.
     #[test]
     fn a_write_that_failed_is_one_declared_sentence() {
         let why = NotRemembered::NotWritten {
-            at: std::path::PathBuf::from("/var/lib/alo/grants.toml"),
+            at: a_persons_grants(),
             why: "No space left on device".to_owned(),
         };
         let said = NotChanged::from(why).said(&in_english());
@@ -145,12 +158,13 @@ mod tests {
     /// next.
     #[test]
     fn the_english_for_the_log_names_the_file() {
+        let at = a_persons_grants();
         let refused = NotChanged::from(NotRemembered::NotWritten {
-            at: std::path::PathBuf::from("/var/lib/alo/grants.toml"),
+            at: at.clone(),
             why: "No space left on device".to_owned(),
         });
         let written = refused.to_string();
-        assert!(written.contains("/var/lib/alo/grants.toml"), "{written}");
+        assert!(written.contains(&at.display().to_string()), "{written}");
         assert!(written.contains("No space left on device"), "{written}");
     }
 

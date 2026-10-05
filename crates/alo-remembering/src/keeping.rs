@@ -30,11 +30,30 @@ use alo_capability::Grants;
 use crate::believing::{read_believed, replaced_whole};
 use crate::refusing::NotRemembered;
 
-/// Where a machine keeps its grants.
+/// The folder a machine keeps its grants in.
 ///
-/// In the folder the image makes for what an agent did on this machine, beside
-/// the record — the two files that together say what was allowed and what
-/// happened.
+/// The one the image makes for what an agent did on this machine
+/// (`image/usr/lib/tmpfiles.d/alo.conf`), holding the grants beside the record.
+/// This crate **refuses a folder that is not there rather than making one**, so
+/// the name is stated here and not assembled anywhere else.
+///
+/// Named as its own constant because
+/// [`moved_to_whoever_had_them`](crate::moved_to_whoever_had_them) and
+/// [`the_persons_grants`](crate::the_persons_grants) are given the folder rather
+/// than a file, and the alternative — `Path::new(THE_GRANTS).parent()` — hands
+/// back an `Option` that every caller would have to answer for, over a fact that
+/// is not in doubt.
+pub const THE_FOLDER: &str = "/var/lib/alo";
+
+/// Where a machine kept its grants before they belonged to a person.
+///
+/// **One literal path with no person in it.** `docs/decisions/0088-a-machines-
+/// grants-belong-to-a-person.md` retired it: a person's grants are
+/// [`the_persons_grants`](crate::the_persons_grants), and this name survives
+/// only so that
+/// [`moved_to_whoever_had_them`](crate::moved_to_whoever_had_them) can
+/// recognise the file it is moving, and so that a machine installed before that
+/// decision is still readable. **Nothing reads it to serve a person.**
 pub const THE_GRANTS: &str = "/var/lib/alo/grants.toml";
 
 /// The grants kept at this path, believed, read, and already free of the

@@ -136,7 +136,30 @@ mod running {
             }
         };
 
-        let machine = ThisMachine::reading(alo_remembering::THE_GRANTS, &theirs);
+        // This person's grants, and not the machine's.
+        //
+        // `docs/decisions/0088-a-machines-grants-belong-to-a-person.md` names
+        // this reader zero times and so does `alo_remembering::whose`, which is
+        // the thing that made the migration worth measuring rather than
+        // assuming: wired into the agent alone, this process would go on reading
+        // a path that no longer holds anybody's grants, and **every test in
+        // `alo-remembering` would still pass**, because that crate knows neither
+        // daemon.
+        //
+        // The uid is `bus.whose()` — the number the kernel gave this process,
+        // already read above and not asked a second way. This process runs as
+        // the person whose session it serves, which is the one fact the grants
+        // file used to lack, and taking the uid from the bus keeps one source
+        // for it rather than two that could disagree.
+        //
+        // The agent does the move; this only reads. So a portal that starts
+        // before any agent has sees no file and answers that nothing is
+        // granted, which is true rather than a stub.
+        let grants = alo_remembering::the_persons_grants(
+            std::path::Path::new(alo_remembering::THE_FOLDER),
+            bus.whose(),
+        );
+        let machine = ThisMachine::reading(grants, &theirs);
         eprintln!(
             "alo-portald: grants from {}, settings from {}, answers in {}, sandboxes from {THE_PROCESSES}",
             machine.grants_file().display(),

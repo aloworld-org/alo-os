@@ -361,7 +361,14 @@ pub(crate) struct NothingIsRemembered;
 impl Remembering for NothingIsRemembered {
     fn read_again(&self, _now: SystemTime) -> Result<Grants, alo_remembering::NotRemembered> {
         Err(alo_remembering::NotRemembered::NotThere {
-            at: PathBuf::from(alo_remembering::THE_GRANTS),
+            // A person's own file, not the machine's. The path a *refusal*
+            // names changes nothing any test asserts, which is exactly why it
+            // would have gone on naming the retired file for as long as nobody
+            // looked at it.
+            at: alo_remembering::the_persons_grants(
+                &PathBuf::from(alo_remembering::THE_FOLDER),
+                1000,
+            ),
         })
     }
 }

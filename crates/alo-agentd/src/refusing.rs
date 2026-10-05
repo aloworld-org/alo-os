@@ -931,6 +931,33 @@ pub enum NotStarted {
         /// What `alo-remembering` said about the file.
         why: String,
     },
+    /// The grants this machine kept in one file could not be made a person's.
+    ///
+    /// The one move in `alo_remembering::whose`, run before any grant is read: a
+    /// machine installed before
+    /// `docs/decisions/0088-a-machines-grants-belong-to-a-person.md` keeps
+    /// `/var/lib/alo/grants.toml`, with no person in it, and this is the step to
+    /// a file of the person's own.
+    ///
+    /// **Not *there was nothing to move*, and not *this machine could not tell
+    /// whose they were*.** Both of those are ordinary machines and neither stops
+    /// anything: the first is every machine installed since, and the second
+    /// moves nothing, says so in a file beside the folder, and lets the person
+    /// start with no grants — which is the only answer ADR 0001 §3 permits. This
+    /// is the move itself failing: a folder that is not there, an old file this
+    /// machine would not believe, a new one it could not write.
+    ///
+    /// It stops the process for [`NotStarted::NoGrants`]'s reason, one step
+    /// earlier. A daemon that went on would serve under whichever of the two
+    /// files it happened to find, and *your grants did not move* would look
+    /// exactly like *you have not granted anything yet*.
+    #[error(
+        "the grants this machine kept could not be made this person's: {why}; alo-agentd will not serve under grants it cannot say the owner of"
+    )]
+    GrantsNotMoved {
+        /// What `alo-remembering` said about the move.
+        why: String,
+    },
     /// The pairings this machine kept could not be believed.
     ///
     /// The same refusal as [`NotStarted::NoGrants`] about the other file in

@@ -104,10 +104,15 @@ pub trait Remembering: std::fmt::Debug {
     fn read_again(&self, now: SystemTime) -> Result<Grants, NotRemembered>;
 }
 
-/// The file this machine really keeps its grants in.
+/// The file this person really keeps their grants in.
 ///
 /// Holds a path and nothing else, and the path is `src/main.rs`'s — the one
-/// place in this service that names `alo_remembering::THE_GRANTS`.
+/// place in this service that says which file a person's grants are in. It
+/// names `alo_remembering::the_persons_grants` and the machine description's
+/// person; before
+/// `docs/decisions/0088-a-machines-grants-belong-to-a-person.md` it named the
+/// machine's single `alo_remembering::THE_GRANTS`, and the type's name was
+/// already this one.
 #[derive(Debug, Clone)]
 pub struct ThePersonsFile {
     /// Where the grants are.

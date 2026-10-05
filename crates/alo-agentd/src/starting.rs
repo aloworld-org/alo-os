@@ -92,8 +92,15 @@
 //! # The grants are handed in, and this file cannot reach the file they were in
 //!
 //! [`until_stopped`] takes the grants rather than reading them. `src/main.rs`
-//! reads `alo_remembering::THE_GRANTS` before anything is opened and hands over
-//! an `alo_capability::Grants` — **a value, with no path in it**.
+//! reads **this person's own grants file** before anything is opened and hands
+//! over an `alo_capability::Grants` — **a value, with no path in it**.
+//!
+//! Which file that is, is `alo_remembering::the_persons_grants` and the machine
+//! description's person; it used to be the machine's single
+//! `alo_remembering::THE_GRANTS` and
+//! `docs/decisions/0088-a-machines-grants-belong-to-a-person.md` retired that.
+//! Nothing in this file changed when it moved, which is the point of handing a
+//! value over rather than a path.
 //!
 //! Since the person's door gained a way to say *what is granted has changed*, it
 //! also hands over a [`WhatIsGranted`] — the list, and a way to read that file
