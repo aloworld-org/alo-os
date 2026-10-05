@@ -186,6 +186,54 @@ set.
   this compositor cannot yet serve is the fault `presentation.rs` already
   refuses for one.
 
+### 3a. The session holds the arrangement of its screens
+
+**Status:** ready. **Owner:** the Mac. **Depends on:** 3.
+**Added 2026-10-05, while starting task 6**, which could not be done without
+it — and nor can 5 or 7.
+
+**What was found.** `crates/alo-shell/src/screens.rs` already has the type the
+rest of this plan needs. `ScreenPlace` carries `at: Position` — *its corner on
+the desk the arrangement makes* — alongside its pixels, its room and its scale.
+**Nothing in production builds a `Screens`.** The only caller of `Screens::of`
+is `screens_testing.rs`.
+
+```
+$ grep -rn "Screens::of" crates/alo-shell/src/ crates/alo-desktop/src/
+crates/alo-shell/src/screens_testing.rs:59
+```
+
+So the compositor knows how big each display is — task 3 gave it that — and
+**does not know where any of them is.** Two displays are two sizes and no
+geometry.
+
+**Why three tasks need it and the plan did not say so.**
+
+- **Task 5** lays the desktop out per display. Which display a window is on is
+  a question about position, not size.
+- **Task 6** constrains a popup to the screen it is on. *The left display's
+  inner edge* is a position.
+- **Task 7** gives each viewport a camera. A viewport is a rectangle on the
+  plane, and a display with no corner has no rectangle.
+
+Each would otherwise discover it separately, which is three readings of the
+same gap — the thing this plan's task 1 and 2 notes were written to stop.
+
+- **Acceptance:** the session holds a `Screens` built from the displays it has
+  actually presented, and asking which screen a point is on answers from the
+  arrangement rather than from the one viewport. A display that arrives or
+  leaves changes it.
+- **Constraint:** `alo-displays` decides the arrangement and this reads it.
+  `Screens::of` wants `Attached::now(reported, remembered, support)` plus an
+  `Appearance` and a `Tonight` — the first comes from the per-display metadata
+  task 3 now keeps, and the other three are the desktop's to supply, by the
+  same road the canvas layout and the shortcuts already travel
+  (`TheDesktop`). **The shell shows and never measures**, so it does not read
+  the kept display settings itself.
+- **What it does not do:** decide anything about arrangement. Where a person
+  puts their screens is `alo-displays`', and this task is the wiring that was
+  never done.
+
 ### 4. A frame is drawn per display
 
 **Status:** ready. **Owner:** the Mac. **Depends on:** 3.
@@ -203,6 +251,8 @@ set.
 ### 5. The desktop is laid out for each display it is drawn on
 
 **Status:** ready. **Owner:** the Mac. **Depends on:** 4.
+
+**Depends on:** 4, and **3a** — laying a desktop out per display needs to know where each display is, not only how big it is.
 **Likely to be two tasks** — recorded now rather than discovered.
 
 The dock, the status area and the put-aside panel are laid out once, from one
@@ -229,6 +279,8 @@ size, and handed to one draw. Each display needs its own layout at its own size
 
 **Status:** ready. **Owner:** the Mac. **Depends on:** 3.
 
+**Depends on:** 3, and **3a** — *the left display's inner edge* is a position, and the session has none until 3a.
+
 `Surfaces::camera`'s own note says this is why the camera's home had to be
 settled first: *which display's plane constrains a popup is a question the old
 shape could not be asked.* Now it can be.
@@ -241,6 +293,8 @@ shape could not be asked.* Now it can be.
 ### 7. A camera per viewport
 
 **Status:** ready. **Owner:** the Mac. **Depends on:** 5 and 6.
+
+**Depends on:** 5 and 6, and so **3a** through both — a viewport is a rectangle on the plane, and a display with no corner has no rectangle.
 
 **The only part canvas task 9's text describes**, and the last thing this plan
 does. Its acceptance is that task's, inherited word for word so the two cannot
