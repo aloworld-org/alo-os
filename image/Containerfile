@@ -171,10 +171,24 @@ WORKDIR /alo-os
 # workspace is libraries they reach, and a `--workspace` build here would
 # compile every test target into an image that runs none of them. The fourth is
 # the converting service, which is the binary `alo-converting` builds.
+# **No `--bin`, and that is the whole point of this comment.** This line read
+# `--package alo-software --bin alo-shipping`, which looks like *that package's
+# binary* and is not: **`--bin` is a target filter over every selected package**,
+# so naming one binary built that binary and nothing else. The stage finished
+# green with one of the six binaries in it:
+#
+#     /alo-os/target/x86_64-unknown-linux-musl/release/alo-shipping
+#
+# and the four daemons were simply absent. It was the `COPY --from=built` below
+# that failed, two hundred lines later, with *no such file or directory*.
+#
+# Each of the six packages declares exactly one binary, so selecting the packages
+# selects the binaries — `alo-software`'s is auto-discovered from
+# `src/bin/alo-shipping.rs`, which is why it needed no naming in the first place.
 RUN cargo build --release --target ${THE_TARGET} \
       --package alo-agentd --package alo-boundaryd --package alo-sessiond \
       --package alo-portald \
-      --package alo-software --bin alo-shipping \
+      --package alo-software \
       --package alo-converting
 
 # ---------------------------------------------------------------------------
