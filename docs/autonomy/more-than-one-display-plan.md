@@ -65,7 +65,32 @@ goes the moment a second output is advertised.
 
 ### 1. Discovery answers with every display, not the first
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** nothing.
+**Status:** **Done, 2026-10-05: the code.** `direct_output.rs`'s `select_every`
+answers with every usable display in the order a single-output shell already
+preferred them, and `discover_output` keeps its signature as the first of that
+list, so no existing caller moved. Five tests in `direct_output_tests.rs`.
+
+**It was not *stop returning early*, and the part that was not is worth the
+plan knowing.** A `Port` carries the **union** of the CRTCs its encoders allow,
+and those unions overlap. Asking each port independently for its lowest
+compatible CRTC — exactly what the single-output selection did, correctly, for
+one port — **hands the same CRTC to two displays**, which is not a
+configuration any kernel accepts. So a CRTC is taken as it is assigned and the
+next display chooses from what is left.
+
+**And the mode is now chosen before the CRTC**, which is the other way round
+from the version this replaces. With one display the order could not matter: a
+port missing either is skipped either way. With several it does — reserving a
+CRTC for a port then skipped for having no supported mode takes that CRTC away
+from a display that could have used it.
+
+Both faults are invisible with one display and neither needed hardware to
+find: the refusal tests already went through `Port`, which is a list, so *two
+displays* is a fixture rather than a second machine. **This is the shape the
+rest of the plan should expect** — the single-output code is not wrong, it is
+correct for one, and each task's work is the part that stops being true at two.
+
+**Owner:** the Mac. **Depends on:** nothing.
 
 `select` sorts ports — internal panel first, then lowest connector ID — and
 returns the first that has a usable mode and a compatible CRTC. The sort is
