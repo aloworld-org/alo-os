@@ -12,16 +12,61 @@ design change is the larger problem.*
 
 | file | root | what it is |
 |---|---|---|
-| `70-28.xml` | `70:28` | page *03 — alo OS · Living canvas* — 2,246,045 bytes, 25,221 lines, 20,105 nodes |
+| `70-28.xml` | `70:28` | page *03 — alo OS · Living canvas* — 2,247,251 bytes, 25,217 lines, 20,100 nodes |
 | `0-1.xml` | `0:1` | page *00 — Cover* |
 | `ROOTS.md` | — | every root id known to exist, exported or not, because the interface will not list them |
 
 ```text
-file key        nDxyF5Ho9oC4RObjVzwBNJ
+file key        nDxyF5Ho9oC4RObjVzwBNJ   canonical, by the owner 2026-10-04
+page            70:28                    03 — alo OS · Living canvas
 exported        2026-10-04
 exported by     the third PC, through the Figma MCP server on the owner's own account
-figma revision  NOT AVAILABLE — see Limitations
+figma revision  NOT EXPOSED by this interface — see Limitations
+inspected as    sha256 of each export, below
 ```
+
+## The canonical file, and the inspected revision
+
+**`nDxyF5Ho9oC4RObjVzwBNJ` is the canonical design file**, named by the owner on
+2026-10-04, with the living canvas at
+<https://www.figma.com/design/nDxyF5Ho9oC4RObjVzwBNJ?node-id=70-28>.
+**`8q0JVtnLroZYNdDkIQeJni` is historical reference and not implementation
+authority** — it is `docs/design/figma-brief.md`'s own first output, and the
+brief and `README.md` both pointed at it until this change.
+
+**Within the canonical file, the approved visible states and components are the
+reference, and hidden legacy layers are not.** Frame `337:23323` is the worked
+example: it draws the minimized panel's empty handle while also containing a
+hidden `200×600` shelf and a hidden `125.48`-tall first preview, both superseded.
+`get_metadata` reports `hidden="true"`, **and a hidden parent hides children that
+carry no flag of their own**, so visibility has to be tracked down the tree
+rather than read off one node.
+
+**The inspected revision is recorded as a content hash, because Figma does not
+offer a revision here.** This was measured rather than assumed: no tool in this
+interface returns a file version, a history id or a last-modified time, and the
+REST endpoint that would needs a personal access token this machine does not
+hold. A hash is what a reader can actually verify against the file they hold:
+
+```text
+70-28.xml  sha256  ccce167386b35110ea9b3a63ce2e9bb56582302e901c69124e91e4b26a2c97b6
+0-1.xml    sha256  e0632cdbf993d95831a4eff6792b93698011e4f6cb51125ee6243934661d7a16
+```
+
+**It identifies the export, not the Figma document**, and the difference matters:
+two exports of an unchanged file are byte-identical and hash the same, but a hash
+cannot tell you *when* the file last changed, only whether this export still
+matches what was committed. **A later change that obtains a token should record
+Figma's own revision beside these rather than in place of them**, because the
+hash remains the only figure a machine without Figma access can check — which is
+two of the three machines working on this repository.
+
+**Those three figures were stale until 2026-10-04 and nothing noticed.** The `#489`
+refresh carried the owner's edits into `70-28.xml` — five fewer nodes, four fewer
+lines, 1,206 more bytes — and left this table describing the file as it had been.
+A description of a file that the file cannot contradict is the recurring fault in
+`docs/quirks/`, so it is now asserted: `a_palette_with_one_source.rs` reads these
+numbers back off `70-28.xml` and fails if they drift again.
 
 ## How to reproduce it
 

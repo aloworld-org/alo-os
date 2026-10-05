@@ -14,7 +14,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 /// Compare complete frames, including clipped label edges and untouched ground.
 #[cfg(target_os = "linux")]
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    use alo_appearance::{Scheme, TextScale};
+    use alo_appearance::{Scheme, TextScale, Token};
     use alo_shell::{
         LabelGeometry, RowOrder, WindowControlLabels, WindowControlLayout, readback_xrgb,
     };
@@ -79,10 +79,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         TextScale::percent(percent).map_err(|_| "invalid fixture scale")?,
                     )?;
                     assert_eq!(label.said(), &control.action().said(&strings));
+                    // From the palette, not typed: window_control_label.rs
+                    // draws these two grounds and a copy here goes stale the
+                    // day either value moves.
                     let ground = match scheme {
-                        Scheme::Light => [248, 246, 242, 255],
-                        Scheme::Dark => [31, 37, 41, 255],
+                        Scheme::Light => Token::Cream.colour(),
+                        Scheme::Dark => Token::Charcoal.colour(),
                     };
+                    let ground = [ground.red(), ground.green(), ground.blue(), 255];
                     assert!(
                         label.pixels().iter().filter(|p| **p != ground).count() > 30,
                         "rendered text is present"

@@ -38,7 +38,14 @@ use crate::token::Token;
 ///
 /// The palette's own name for it. `THE_WALLPAPER` stood here until 2026-09-29
 /// and named a picture the image installed; ADR 0075 removed it.
-pub const THE_SURFACE: Token = Token::Porcelain;
+/// **It was [`Token::Porcelain`] until 2026-10-04, and that was the wrong
+/// name for it.** This is the workspace canvas — the desktop a person's windows
+/// sit on — which the design file calls `bg/canvas`. Resolving `porcelain` by
+/// role rather than by resemblance is what ADR 0093 did, and the name
+/// `Porcelain` now carries `bg/surface`, which is white. Shipping that here
+/// would have shipped a pure white desktop instead of the design's canvas, so
+/// this follows the role and not the name it used to share.
+pub const THE_SURFACE: Token = Token::Cream;
 
 /// The schedule a person gets when they turn *follow the time of day* on: dark
 /// from six in the evening, light again at seven in the morning.
@@ -163,14 +170,18 @@ mod tests {
     /// A fresh machine shows the surface the palette named, not a colour this
     /// crate chose and not nothing.
     ///
-    /// It showed a photograph until ADR 0075. What replaced it is
-    /// [`Token::Porcelain`], which `token.rs` documents as *the workspace
-    /// canvas* — so this asserts against the palette rather than against a
-    /// literal, and a release that moves that token moves this with it.
+    /// It showed a photograph until ADR 0075. What replaced it is the workspace
+    /// canvas — so this asserts against the palette rather than against a
+    /// literal, and a release that moves that colour moves this with it.
+    ///
+    /// **It asserted `Token::Porcelain` until 2026-10-04.** That name now
+    /// carries `bg/surface`, which is white, and a fresh machine does not show
+    /// a pure white desktop. [`THE_SURFACE`] followed the role rather than the
+    /// name (ADR 0093), and so does this.
     #[test]
     fn a_fresh_machine_is_not_grey() {
         let shipped = Shipped::of_the_image();
-        assert_eq!(shipped.background().colour(), Token::Porcelain.colour());
+        assert_eq!(shipped.background().colour(), Token::Cream.colour());
         assert_eq!(
             shipped.background(),
             Background::Colour(THE_SURFACE.colour())

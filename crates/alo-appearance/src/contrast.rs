@@ -111,25 +111,41 @@ mod tests {
         assert!((navy.contrast_with(cream) - cream.contrast_with(navy)).abs() < CLOSE_ENOUGH);
     }
 
-    /// **The palette's own text pair is measured, not assumed.** Navy on cream
-    /// is what the design brief puts most of the words on, and it clears
-    /// ordinary text by a distance — 13.56:1, checked against the same
+    /// **The palette's own text pair is measured, not assumed.** `text/primary`
+    /// on `bg/canvas` is what the design puts most of the words on, and it
+    /// clears ordinary text by a distance — 13.70:1, checked against the same
     /// arithmetic every contrast checker in the world implements.
+    ///
+    /// **13.56:1 until 2026-10-04**, when the canvas took the design file's
+    /// `#FAF7F2` in place of `#F8F6F2` (ADR 0093). A slightly lighter ground
+    /// reads slightly better, and the number is re-measured rather than
+    /// adjusted — the arithmetic was reproduced against the old value first and
+    /// agreed to five places.
     #[test]
     fn navy_on_cream_reads_and_the_number_is_the_published_one() {
         let measured = Token::Navy.colour().contrast_with(Token::Cream.colour());
         assert!(
-            (measured - 13.5649).abs() < 0.001,
+            (measured - 13.7013).abs() < 0.001,
             "navy on cream measured {measured}"
         );
         assert!(measured >= ENOUGH_FOR_TEXT);
     }
 
-    /// **Deep teal on cream clears both thresholds** — 5.78:1, over the 4.5 a
-    /// word needs and the 3.0 a shape carrying meaning needs. Deep teal, which
-    /// it replaced, reached **2.87:1** and reached neither, so alo's colour has
-    /// gone from unreadable as text on the reading ground to comfortably
-    /// readable. This is one of the three measurements ADR 0067 said were owed.
+    /// **Deep teal on the canvas clears both thresholds** — 5.84:1, over the
+    /// 4.5 a word needs and the 3.0 a shape carrying meaning needs.
+    /// **Terracotta**, which it replaced, reached **2.87:1** and reached
+    /// neither, so alo's colour has gone from unreadable as text on the reading
+    /// ground to comfortably readable. This is one of the three measurements
+    /// ADR 0067 said were owed.
+    ///
+    /// **This sentence said "Deep teal, which it replaced" until 2026-10-04**,
+    /// which named deep teal as its own predecessor and made the comparison
+    /// unreadable. ADR 0067 replaced *terracotta* with deep teal.
+    ///
+    /// **5.78:1 until 2026-10-04**, against cream `#F8F6F2`; the canvas now
+    /// carries the design file's `#FAF7F2` (ADR 0093) and the pair measures
+    /// 5.84:1. Terracotta against the same new ground is 2.89:1 — still under
+    /// both thresholds, so nothing ADR 0067 concluded moves.
     ///
     /// **And the mark and the word are still not optional**, which is the part
     /// worth keeping straight. Their reason has changed: it used to be that the
@@ -145,7 +161,7 @@ mod tests {
             .colour()
             .contrast_with(Token::Cream.colour());
         assert!(
-            (measured - 5.7794).abs() < 0.001,
+            (measured - 5.8375).abs() < 0.001,
             "deep teal on cream measured {measured}"
         );
         assert!(measured >= ENOUGH_FOR_A_SHAPE);

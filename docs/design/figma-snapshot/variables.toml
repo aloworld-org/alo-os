@@ -1,0 +1,353 @@
+# The design file's colour variables, as measured — so the palette check runs
+# here rather than against a live Figma.
+#
+# `docs/design/palette.toml` is what this repository reads. **This file is the
+# evidence for it**: what was measured in the design file, from which node, on
+# which day, and by which method. `a_palette_with_one_source.rs` compares the two
+# and names any disagreement.
+#
+# It exists because the development PC and the Mac have **no Figma access at
+# all** — a check only one machine can run is a check nobody can verify.
+#
+# # Provenance
+#
+# file key   nDxyF5Ho9oC4RObjVzwBNJ
+# page       70:28  *03 — alo OS · Living canvas*
+# measured   2026-10-04, by the third PC, on the owner's own Figma account
+# method     the Figma MCP server's `get_variable_defs`, per node
+#
+# # How the method limits this, stated before any value is read
+#
+# **Three limits, each measured rather than assumed.** They are here and not in a
+# commit message because a reader meets this file before trusting the check.
+#
+# **1. The set cannot be enumerated.** `get_variable_defs` returns the variables
+# a node's *subtree uses*, never the collection. Every node queried added names:
+#
+# ```text
+# 8:2        Foundations            20   12 colours and 8 typography
+# 253:17045  one dark screen        10   bg/subtle, navy/950, white, space/*, radius/*
+# 260:62     one notification        2   bg/elevated, border/strong
+#                                   --
+#                                   32   17 colour, 8 typography, 5 space, 2 radius
+# ```
+#
+# **Thirty-two observed, and no way to ask for the list.**
+# `search_design_system` returns nothing for these names because the file's
+# variables are local rather than published to a library, and
+# `list_file_components_for_code_connect` refuses on plan tier — *you need a Dev
+# or Full seat on an Organization or Enterprise plan*; this account is Pro.
+#
+# **This header said "twenty-four" until it was re-measured on 2026-10-04.** The
+# number was right about a different quantity than its label: it counted the
+# colours, the spacing and the radii, and did not look at the **eight typography
+# variables** the same node returns. A count whose label names a larger set than
+# the count covers is this repository's recurring fault, and the cure here is the
+# table above — which says what each node gave rather than only the total.
+#
+# **2. The name-to-value map is not mode-coherent, at any level.** The design has
+# a dark mode binding the same names to different values, and a single response
+# flattens whatever its subtree used. The swatch named *alo on dark*
+# (`258:16061`) returns `accent/default = #77C8C6` — the dark value — beside
+# `bg/surface = #FFFFFF` and `border/default = #E7EBEF`, which are light. **One
+# swatch, two modes, one map.**
+#
+# So *which* value a name resolves to depends on which node is asked, and
+# `accent/default` is the colour ADR 0067 reserves for the agent. Measured from
+# `258:16048` instead of `8:8`, this file would have carried the dark teal as the
+# light palette and the check would have agreed.
+#
+# **3. Collection, mode and variable identifiers are not exposed.** No tool here
+# returns them, and the owner's direction of 2026-10-04 asks for them — so this
+# is an **explicit gap, not an omission**. The Figma REST endpoint
+# `/v1/files/:key/variables/local` returns all three and needs a personal access
+# token this machine does not hold.
+#
+# So the `[light]` and `[dark]` tables below are **this file's own grouping of
+# what was observed**, not Figma's modes. They carry no mode id because none was
+# available, and `[provenance]` says so in the file rather than only here. A
+# later change that obtains a token should replace the grouping with the real
+# collection and mode identifiers rather than annotate it.
+#
+# # Audit gaps, which are gaps and not omissions
+#
+# **Unbound fills.** The variables do not describe every rendered surface.
+# `get_variable_defs` on the minimized rail (`337:23664`) returns `{}` — its
+# fills are not bound to variables at all. **So a surface agreeing with this file
+# is not the same as a surface being correct**, and the rail's own material
+# specification — base, opacity, blur, border, shadow — is not here and must be
+# measured from the fills and effects rather than inferred from a hex.
+#
+# **Four of the twelve are not confirmed from a pure-light node** by this
+# measurement: `text/muted`, `bg/cool`, `status/warning` and `status/danger`.
+# See `confirmed_from` on each entry.
+#
+# # Two earlier records in this repository agree, which is why the four stand
+#
+# Found while migrating rather than assumed. **Every one of the twelve is
+# attested by at least two independent records**, and the four weak ones are
+# attested by the oldest:
+#
+# **`docs/design/the-palette-foundations-states.md`** (PR #192, 2026-09-27) is
+# the owner's palette dictated a week before this measurement. It carries *Muted
+# text #596B78*, *Cool surface #EEF2F4*, *Warning #8C5A0A* and *Danger #B42318* —
+# **all four, at exactly these values** — plus light cream, white, navy, deep
+# teal, soft teal and positive green. Ten of the twelve.
+#
+# **`docs/design/the-canvas-in-numbers.md`** carries the remaining two from frame
+# `70:29`: `text/secondary #274C68` and `border/default #E7EBEF`.
+#
+# So the four are not *authority in place of measurement*. The owner stated them
+# on 2026-09-27, this file measured them on 2026-10-04, and the two agree.
+# `corroborated_by` on each entry names which record.
+
+format = 1
+
+[provenance]
+file_key = "nDxyF5Ho9oC4RObjVzwBNJ"
+canonical = "named by the owner, 2026-10-04; 8q0JVtnLroZYNdDkIQeJni is historical reference"
+inspected_as = "sha256 of 70-28.xml, recorded in MANIFEST.md — Figma exposes no revision here"
+page = "70:28"
+page_name = "03 — alo OS · Living canvas"
+measured_on = "2026-10-04"
+measured_by = "the third PC"
+method = "Figma MCP get_variable_defs, per node"
+collection = "not exposed by this interface"
+mode_ids = "not exposed by this interface"
+variable_ids = "not exposed by this interface"
+
+# ---------------------------------------------------------------------------
+# The light theme — what `palette.toml` is held to
+# ---------------------------------------------------------------------------
+#
+# `confirmed_from` is the node whose response carried this value. `8:8` is the
+# *Core colour system / Swatches* row and is the one node observed to be purely
+# light; `260:62` is `Kind=Failed, Theme=Light` and agreed with it on every name
+# the two share. Anything whose `confirmed_from` is `8:2` or `258:16048` was read
+# from a response that mixed modes elsewhere in itself.
+
+[light."text/primary"]
+hex = "#102A43"
+confirmed_from = "8:8"
+also_seen_in = ["8:2", "260:62"]
+corroborated_by = ["the-palette-foundations-states.md", "the-canvas-in-numbers.md"]
+
+[light."text/secondary"]
+hex = "#274C68"
+confirmed_from = "8:8"
+also_seen_in = ["8:2", "258:16048", "258:16061", "260:62"]
+corroborated_by = ["the-canvas-in-numbers.md"]
+
+[light."text/muted"]
+hex = "#596B78"
+confirmed_from = "8:2"
+corroborated_by = ["the-palette-foundations-states.md"]
+note = "not seen from a pure-light node here; the owner stated this value on 2026-09-27"
+
+[light."bg/canvas"]
+hex = "#FAF7F2"
+confirmed_from = "8:8"
+also_seen_in = ["8:2"]
+corroborated_by = ["the-palette-foundations-states.md"]
+
+[light."bg/surface"]
+hex = "#FFFFFF"
+confirmed_from = "8:8"
+also_seen_in = ["8:2", "258:16048", "258:16061", "260:62"]
+corroborated_by = ["the-palette-foundations-states.md", "the-canvas-in-numbers.md"]
+
+[light."bg/cool"]
+hex = "#EEF2F4"
+confirmed_from = "8:2"
+corroborated_by = ["the-palette-foundations-states.md"]
+note = "not seen from a pure-light node here; the owner stated this value on 2026-09-27"
+
+[light."border/default"]
+hex = "#E7EBEF"
+confirmed_from = "8:8"
+also_seen_in = ["8:2", "258:16048", "258:16061", "260:62"]
+corroborated_by = ["the-canvas-in-numbers.md"]
+
+[light."accent/default"]
+hex = "#0F6B72"
+confirmed_from = "8:8"
+also_seen_in = ["8:2", "260:62"]
+corroborated_by = ["the-palette-foundations-states.md", "the-canvas-in-numbers.md"]
+note = "the dark mode binds this name to #77C8C6 — see [dark]"
+
+[light."accent/soft"]
+hex = "#E8F4F2"
+confirmed_from = "8:8"
+also_seen_in = ["8:2"]
+corroborated_by = ["the-palette-foundations-states.md", "the-canvas-in-numbers.md"]
+
+[light."status/positive"]
+hex = "#146C43"
+confirmed_from = "8:8"
+also_seen_in = ["8:2"]
+corroborated_by = ["the-palette-foundations-states.md"]
+
+[light."status/warning"]
+hex = "#8C5A0A"
+confirmed_from = "8:2"
+corroborated_by = ["the-palette-foundations-states.md"]
+note = "not seen from a pure-light node here; the owner stated this value on 2026-09-27"
+
+[light."status/danger"]
+hex = "#B42318"
+confirmed_from = "8:2"
+corroborated_by = ["the-palette-foundations-states.md"]
+note = "not seen from a pure-light node here; the owner stated this value on 2026-09-27"
+
+# ---------------------------------------------------------------------------
+# The dark theme — observed, and deliberately not adopted
+# ---------------------------------------------------------------------------
+#
+# Read from `253:17045` (*34 · Your canvas / Dark*) and `258:16061` (*alo on
+# dark*). **Recorded so that dark-theme work starts from evidence rather than
+# from a fresh measurement**, and adopted by nothing: the owner's direction of
+# 2026-10-04 is that dark-theme parity must have its own measured evidence
+# before being marked complete. `palette.toml` is the light theme only.
+
+[dark]
+"text/primary" = "#FFFCF8"
+"text/secondary" = "#CBD5E1"
+"accent/default" = "#77C8C6"
+"accent/soft" = "#183B56"
+"border/default" = "#274C68"
+"bg/subtle" = "#183B56"
+"navy/950" = "#07131F"
+white = "#FFFFFF"
+
+# ---------------------------------------------------------------------------
+# Measured and not adopted
+# ---------------------------------------------------------------------------
+#
+# Real variables in the design file that `palette.toml` deliberately does not
+# carry. Here so that nobody has to rediscover them, and so that *absent from
+# the palette* is distinguishable from *absent from the design*.
+#
+# The spacing and radius variables are not palette — `palette.toml`'s own header
+# refuses to become the undifferentiated bucket `tokens.css` had become. The two
+# extra colours were seen once each and have no role assigned.
+
+[unadopted.spacing]
+"space/2" = 8
+"space/3" = 12
+"space/4" = 16
+"space/6" = 24
+"space/8" = 32
+seen_in = "253:17045"
+
+[unadopted.radius]
+"radius/sm" = 8
+"radius/md" = 12
+seen_in = "253:17045"
+
+# ---------------------------------------------------------------------------
+# Typography, measured and unadopted — and it disagrees with the brief
+# ---------------------------------------------------------------------------
+#
+# **Eight type variables, and the family is Manrope.**
+# `docs/design/figma-brief.md` says *Type: Inter throughout, EB Garamond for the
+# few editorial moments*. The design file binds none of those two and binds these
+# instead. Neither Inter nor EB Garamond appears as a variable in any node
+# queried.
+#
+# **Recorded and not acted on.** The owner approved twelve **colour** roles on
+# 2026-10-04 and said nothing about type; a font is a licensing decision and a
+# rendering decision as well as a design one, and `palette.toml` is a palette.
+# **So this is a flagged discrepancy for the owner, not a change** — and it is
+# here rather than only in a report because the next lane to need a font will
+# otherwise read the brief and use Inter.
+#
+# Measured from `8:2`; `Label/Medium` also appears in `8:8`.
+
+[unadopted.typography]
+seen_in = "8:2"
+family = "Manrope, except System/Mono"
+brief_says = "Inter throughout, EB Garamond for editorial moments"
+note = "a discrepancy for the owner to settle; nothing here adopts a font"
+
+[unadopted.typography."Display/Large"]
+family = "Manrope"
+style = "SemiBold"
+size = 48
+weight = 600
+line_height = 56
+letter_spacing = -1.2
+
+[unadopted.typography."Display/Medium"]
+family = "Manrope"
+style = "SemiBold"
+size = 36
+weight = 600
+line_height = 44
+letter_spacing = -0.8
+
+[unadopted.typography."Heading/Large"]
+family = "Manrope"
+style = "SemiBold"
+size = 28
+weight = 600
+line_height = 36
+letter_spacing = -0.4
+
+[unadopted.typography."Heading/Medium"]
+family = "Manrope"
+style = "SemiBold"
+size = 22
+weight = 600
+line_height = 30
+letter_spacing = -0.2
+
+[unadopted.typography."Body/Large"]
+family = "Manrope"
+style = "Regular"
+size = 16
+weight = 400
+line_height = 25
+letter_spacing = 0.0
+
+[unadopted.typography."Body/Medium"]
+family = "Manrope"
+style = "Regular"
+size = 14
+weight = 400
+line_height = 22
+letter_spacing = 0.0
+
+[unadopted.typography."Label/Medium"]
+family = "Manrope"
+style = "SemiBold"
+size = 13
+weight = 600
+line_height = 18
+letter_spacing = 0.1
+
+[unadopted.typography."System/Mono"]
+family = "Geist Mono"
+style = "Medium"
+size = 12
+weight = 500
+line_height = 18
+letter_spacing = 0.0
+
+[unadopted.colour]
+"bg/elevated" = "#FFFCF8"
+"border/strong" = "#CBD5E1"
+seen_in = "260:62"
+note = "seen once, no role assigned, not in palette.toml"
+
+# A thirteenth role, and deliberately not a thirteenth entry. `bg/subtle` has a
+# light value recorded in `the-canvas-in-numbers.md` from frame `70:29` and a
+# dark value measured here. The owner approved **twelve** roles on 2026-10-04 and
+# this is not one of them, so it is named rather than adopted — and it is a near
+# neighbour of `bg/cool #EEF2F4`, which `the-palette-foundations-states.md`
+# itself flagged as needing a decision rather than a guess.
+[unadopted."bg/subtle"]
+light = "#F2F4F6"
+dark = "#183B56"
+light_from = "docs/design/the-canvas-in-numbers.md, frame 70:29"
+dark_from = "253:17045"
+note = "not among the twelve approved on 2026-10-04; near neighbour of bg/cool"

@@ -666,15 +666,24 @@ this one.
 
 Every setting changed, exactly as `alo_appearance::keeping::keep` writes it:
 
+**Two hexes in this example changed on 2026-10-04 and the format did not.** The
+palette now follows the design file (ADR 0093): the colour called *cream* is
+`#FAF7F2` where it was `#F8F6F2`, and the one called *warm stone* is `#596B78`
+where it was `#7A6F62`. A colour is still a hash and six hexadecimal digits,
+every value that was valid still is, and nothing a reader of this contract was
+built against has moved — these are the values alo OS happens to write when a
+person picks those colours, which is why they appear in an example rather than
+in the format.
+
 ```toml
 format = 1
 
 accent = "Moss"
-displays = [["HDMI-1", { Colour = "#102A43" }], ["eDP-1", { Colour = "#7A6F62" }]]
+displays = [["HDMI-1", { Colour = "#102A43" }], ["eDP-1", { Colour = "#596B78" }]]
 text = 150
 
 [background]
-Colour = "#F8F6F2"
+Colour = "#FAF7F2"
 
 [following.TheClock.dark_from]
 hour = 18
