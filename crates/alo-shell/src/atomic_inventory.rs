@@ -15,8 +15,8 @@ impl Inventory for drm_inventory::Inventory<'_> {
     fn enable(&self, capability: drm::ClientCapability) -> io::Result<()> {
         self.set_client_capability(capability, true)
     }
-    fn output(&self) -> Result<DirectOutput, DirectOutputError> {
-        crate::discover_output(self.0)
+    fn outputs(&self) -> Result<Vec<DirectOutput>, DirectOutputError> {
+        crate::direct_output::select_every(&crate::drm_inventory::Inventory(self.0))
     }
     fn connector(&self, output: &DirectOutput) -> io::Result<Vec<Property>> {
         properties(self, output.connector)

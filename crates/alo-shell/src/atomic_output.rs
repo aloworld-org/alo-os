@@ -123,8 +123,13 @@ pub(crate) struct Plane {
 pub(crate) trait Inventory {
     /// Enable one per-file client capability.
     fn enable(&self, capability: drm::ClientCapability) -> io::Result<()>;
-    /// Discover the connector and mode afresh.
-    fn output(&self) -> Result<DirectOutput, DirectOutputError>;
+    /// Discover every usable display afresh, in preference order.
+    ///
+    /// **There is no single-display method beside this one.** There was until
+    /// 2026-10-05, and it went when `discover_every` stopped calling it:
+    /// a trait method nothing calls is a second road into the same question
+    /// that cannot disagree with the first only because nobody takes it.
+    fn outputs(&self) -> Result<Vec<DirectOutput>, DirectOutputError>;
     /// Read connector properties.
     fn connector(&self, output: &DirectOutput) -> io::Result<Vec<Property>>;
     /// Read CRTC properties.
@@ -140,6 +145,52 @@ fn query<T>(stage: &'static str, value: io::Result<T>) -> Result<T, AtomicOutput
 
 /// Fail closed in transport order, then select the lowest usable primary ID.
 fn discover(device: &impl Inventory) -> Result<AtomicOutput, AtomicOutputError> {
+    // The single-display road, kept as the first of the many so that every
+    // caller it already has is unmoved. `discover_every` refuses an empty
+    // answer, and this is still written as a refusal rather than a panic —
+    // see `direct_output::select` for why an `unreachable!` is not allowed
+    // either.
+    discover_every(device)?
+        .into_iter()
+        .next()
+        .ok_or(AtomicOutputError::NoPlane)
+}
+
+/// An atomic route for every usable display on this device.
+///
+/// `docs/autonomy/more-than-one-display-plan.md` task 2.
+///
+/// # A plane is given to one display, as a CRTC is
+///
+/// **The same fault as task 1's, one level down.** A plane's
+/// `possible_crtcs` is a bitmask, so a plane can be compatible with several
+/// CRTCs — and asking each display independently for its lowest compatible
+/// primary plane hands the same plane to two of them. A plane scans out for
+/// one CRTC at a time; two displays pointed at it is not a configuration that
+/// can be committed.
+///
+/// So a plane is taken as it is assigned, exactly as a CRTC is, and the next
+/// display chooses from what is left. Invisible with one display, which is
+/// why it is written here rather than found by an atomic commit refusing on a
+/// desk with a monitor plugged in.
+///
+/// # A display that cannot be routed does not refuse the ones that can
+///
+/// A machine with one working output and one whose plane advertises no usable
+/// format is a machine a person can use. So a failure that names **this
+/// display's** objects — its connector, its CRTC, its planes, its property
+/// schemas — skips that display and the run carries on; what is kept is the
+/// first such failure, and it is returned only if no display survives.
+///
+/// A failure that is the **device's** — a client capability the kernel would
+/// not enable, a resource list that could not be read — refuses everything,
+/// because none of it is about one display and retrying per display would ask
+/// the same question again.
+///
+/// # Errors
+/// [`AtomicOutputError`], as [`discover_atomic_output`]. An empty list is
+/// never an answer.
+fn discover_every(device: &impl Inventory) -> Result<Vec<AtomicOutput>, AtomicOutputError> {
     query(
         "universal planes",
         device.enable(drm::ClientCapability::UniversalPlanes),
@@ -148,7 +199,36 @@ fn discover(device: &impl Inventory) -> Result<AtomicOutput, AtomicOutputError> 
         "atomic capability",
         device.enable(drm::ClientCapability::Atomic),
     )?;
-    let output = device.output()?;
+    let outputs = device.outputs()?;
+    let mut taken: Vec<plane::Handle> = Vec::new();
+    let mut routed: Vec<AtomicOutput> = Vec::new();
+    let mut first_refusal: Option<AtomicOutputError> = None;
+    for output in outputs {
+        match route(device, output, &mut taken) {
+            Ok(Some(one)) => routed.push(one),
+            Ok(None) => {}
+            Err(why) => {
+                if first_refusal.is_none() {
+                    first_refusal = Some(why);
+                }
+            }
+        }
+    }
+    if routed.is_empty() {
+        // The first display's reason, not a generic one invented here: a
+        // caller told *no compatible primary plane* about a device whose
+        // connector would not read has been sent to the wrong place.
+        return Err(first_refusal.unwrap_or(AtomicOutputError::NoPlane));
+    }
+    Ok(routed)
+}
+
+/// One display's atomic route, or `None` where it has no primary plane left.
+fn route(
+    device: &impl Inventory,
+    output: DirectOutput,
+    taken: &mut Vec<plane::Handle>,
+) -> Result<Option<AtomicOutput>, AtomicOutputError> {
     let connector = query("connector properties", device.connector(&output))?;
     let crtc = query("CRTC properties", device.crtc(&output))?;
     let connector_properties = schema(
@@ -164,7 +244,7 @@ fn discover(device: &impl Inventory) -> Result<AtomicOutput, AtomicOutputError> 
     let mut planes = query("planes", device.planes(&output))?;
     planes.sort_by_key(|plane| u32::from(plane.handle));
     for plane in planes {
-        if !plane.compatible {
+        if !plane.compatible || taken.contains(&plane.handle) {
             continue;
         }
         let id = u32::from(plane.handle);
@@ -192,16 +272,17 @@ fn discover(device: &impl Inventory) -> Result<AtomicOutput, AtomicOutputError> 
                 ("SRC_H", Kind::Unsigned(u64::from(height) << 16)),
             ],
         )?;
-        return Ok(AtomicOutput {
+        taken.push(plane.handle);
+        return Ok(Some(AtomicOutput {
             output,
             plane: plane.handle,
             formats: plane.formats,
             connector_properties,
             crtc_properties,
             plane_properties,
-        });
+        }));
     }
-    Err(AtomicOutputError::NoPlane)
+    Ok(None)
 }
 
 /// Name the unusable object's property in diagnostics.
