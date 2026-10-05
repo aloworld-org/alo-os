@@ -41,8 +41,8 @@ would know which one was the machine.
 | 7 | The question is asked in Greek — Πόσο χώρο έχω; | Ελληνικά (el) |
 | 8 | The approval is read, and nothing is chosen for them | the machine is asking you something |
 | 9 | The approval is read, and nothing is chosen for them | what will happen if you approve |
-| 10 | The approval is read, and nothing is chosen for them | no |
-| 11 | The approval is read, and nothing is chosen for them | approve |
+| 10 | The approval is read, and nothing is chosen for them | No |
+| 11 | The approval is read, and nothing is chosen for them | Approve |
 | 12 | Escape, on the approval | it answers no |
 | 13 | The record is read | the record |
 | 14 | The record is read | what has happened |
@@ -72,8 +72,20 @@ published report is never rewritten.
   Greek; what this machine decides and can be held to is *which language that is*.
   The row records `alo_instructing::the_language_of`'s answer and its tag, because
   that is the part with a right and a wrong.
-- **Rows 8–11 read the approval with nothing chosen for them**, and **no** is read
-  before **approve**. A reader that reaches the safe answer first is not politeness;
+- **Rows 10 and 11 read `No` and `Approve`, and until 2026-10-05 this table
+  recorded them as `no` and `approve`.** The walk was reporting faithfully; what
+  it was reporting was a defect. This crate announced its own `access.say-no`
+  and `access.approve-it` while `alo-approving` drew `approving.no` and
+  `approving.approve` — two vocabularies for two buttons, translated separately
+  into 24 languages, with nothing comparing them. EN 301 549 clause 11.2.5.3
+  asks a control's programmatic name to **contain** the visible label, and
+  `"no"` does not contain `"No"`: the clause was false on the capital letter
+  before reaching the translation question at all. The answers are now named by
+  the words they are drawn with, so there is one string per button and this
+  table reads what a person sees.
+
+- **Rows 8–11 read the approval with nothing chosen for them**, and **No** is read
+  before **Approve**. A reader that reaches the safe answer first is not politeness;
   it is what stops an approval from being carried by a person's habit of pressing
   Enter at the end of a sentence.
 - **Row 12 is the refusal path.** Escape on an approval **answers no**. It does not
