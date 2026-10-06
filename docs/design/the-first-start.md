@@ -980,6 +980,46 @@ from the other.**
 **`disan` is example data**, and it is the owner's own name, as `Disan` is on
 `384:26375`.
 
+### Ready, with nothing connected — `376:30369`, *13c · Ready / Provider later*
+
+Read 2026-10-06. **The deferred-connection case has a ready state of its own**,
+and it is the requirement *a deferred connection must not masquerade as a
+successful connection* drawn rather than asked for.
+
+| slot | words |
+|---|---|
+| stage | SET UP · READY |
+| eyebrow | YOUR COMPUTER. YOUR WAY. |
+| title | **Start with your work.** |
+| introduction | Connect your chosen AI service whenever you are ready. |
+| row 1 | **Your account** — Disan · protected on this PC |
+| row 2 | **AI connection pending** — **Nothing is sent to a provider until you connect and authorise it.** |
+| actions | Open my canvas · Review choices, 160×48 |
+| footer | **You can change your choices later.** |
+
+**The title does not claim completion.** *Start with your work* rather than
+*You're all set* or *Ready to go* — a person who deferred is taken to a working
+canvas without being told something finished that did not.
+
+**The pending state is named as a row, not hidden.** *AI connection pending*
+sits where a connected machine's name sits on `384:26375`, so the same place on
+the same screen says either what is connected or that nothing is.
+
+**"connect *and authorise* it" is two steps, not one.** Connecting an account
+and authorising a send are separate, which is the same distinction the owner's
+instruction draws between choosing a route and connecting an account — and it
+means a build may not treat a stored credential as permission to use it.
+
+**The footer changes on this screen.** Every other screen reads *Local setup. No
+online account required.*; this one reads *You can change your choices later.*
+**The footer is not a constant** — a build that hard-coded it would say the
+wrong thing here.
+
+**One copy detail worth confirming rather than normalising:** this row reads
+*Disan · protected on this PC* where `384:26375` reads *Disan · **P**rotected on
+this PC*. One capital letter, two strings, and translators key off the string.
+**Not worth guessing at; worth one glance by whoever owns the file.**
+
 ### Your name — `183:10675`, *10 · Your name*
 
 Read 2026-10-06.
