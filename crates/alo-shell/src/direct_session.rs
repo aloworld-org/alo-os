@@ -1,9 +1,6 @@
 //! Libseat notifier integration for a single direct-display device.
 
-use crate::{
-    SessionError,
-    session_device::{SessionDevice, backend_error},
-};
+use crate::{SessionError, session_device::SessionDevice};
 use smithay::{
     backend::session::{Event, Session, libseat::LibSeatSession},
     reexports::calloop::EventLoop,
@@ -32,7 +29,7 @@ impl DirectSession {
     /// libseat backend; its internal panic behavior is an upstream limitation.
     pub fn new(path: PathBuf) -> Result<Self, SessionError> {
         let (session, notifier) =
-            LibSeatSession::new().map_err(|error| backend_error("connect", error))?;
+            LibSeatSession::new().map_err(crate::session_device::connect_error)?;
         let events = EventLoop::try_new().map_err(|error| SessionError::Backend {
             stage: "create event loop",
             source: io::Error::other(error.to_string()),
