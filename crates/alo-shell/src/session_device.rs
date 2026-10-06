@@ -38,7 +38,7 @@ pub enum SessionError {
     ///
     /// **It does not say how to fix it**, and that is deliberate: a greeter
     /// may be given a seat by a login session or by running `seatd`, and
-    /// [ADR 0088](../../../docs/decisions/0088-the-signed-in-session-is-kept-by-one-owner-and-notifications-ask-it-twice.md)
+    /// [ADR 0088](../../../docs/decisions/0088-a-machines-grants-belong-to-a-person.md)
     /// reserves that choice to the owner. An error that recommended one would
     /// be this crate deciding something it was told not to.
     #[error(
