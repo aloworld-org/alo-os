@@ -95,6 +95,139 @@ Nothing here proposes an answer; `CLAUDE.md` says read the ADR before proposing
 an alternative, and relitigating without new facts wastes the scarcest resource
 we have.
 
+## The AI choice, as corrected — the specification
+
+**Owner, 2026-10-06.** Section `383:26066`, arriving at `383:26067`. Every node
+id in this flow is in `figma-snapshot/ROOTS.md`.
+
+### The four, in this order, equal in size, typography and weight
+
+| | title | consequence |
+|---|---|---|
+| 1 | **On this computer** | alo works locally. Availability depends on this PC. |
+| 2 | **A machine on your network** | Selected content goes to a machine on your network. |
+| 3 | **My provider** | Use your provider. Selected content leaves this PC; provider charges may apply. |
+| 4 | **No AI** | Open apps, find files and use the full canvas by hand. |
+
+**No AI is a complete answer** — not a skip, not a fallback, not an invitation
+to persuade later. **alo's own service is not among them**: it appears after *My
+provider* is chosen, as an ordinary provider beside others, with no badge, no
+special styling, no automatic selection and no privileged ordering (ADR 0014).
+Provider names and ordering in the file are illustrative and establish no
+integration-support matrix.
+
+### Arrival
+
+- **Nothing selected, and no processing preference written.**
+- **Continue is visible and disabled**, explaining *"Choose one option to
+  continue."*
+- **Back and Accessibility stay usable.**
+- **Enter does not advance** while there is no selection.
+- **Unset and the explicit *No AI* are different in the data model.** They
+  already are: `SettingUp::selected` is `Option<Offered>` and starts `None`,
+  `Offered::NotAtAll` is its own variant, and answering with nothing selected is
+  `NotSetUp::NothingSelected` rather than a quiet default — with a test,
+  `setup_opens_with_nothing_selected_and_writes_nothing`. **The model was never
+  the gap; nothing on a machine draws it.**
+
+### Selection and focus are separate
+
+Selecting enables Continue, and is shown by a navy border **and the word
+`Selected`** — never colour alone. **Teal stays reserved for alo acting** and
+must never mean *chosen*.
+
+Keyboard focus is **a 2px navy outer ring with a 4px gap**, and is its own
+thing: **moving focus must never silently commit a processing choice.** Back
+navigation preserves an explicit choice; a genuinely new setup starts without
+one.
+
+Kept: *"You can change this later. External processing requires a visible
+choice."*
+
+### Measured geometry, from `383:26067` on 2026-10-06
+
+Read from the file rather than taken from the brief:
+
+| element | size | position |
+|---|---|---|
+| main column | 600 wide | x 160, y 112 |
+| each choice card | **600×108**, all equal | 10 between cards |
+| Continue · Disabled | **184×48** | x 0 of the action row |
+| Back | **184×48** | x 196 — a 12 gap |
+| Accessibility | 160×48 | x 40, y 876 |
+
+- **Small-height English:** equal **600×84** cards and a **28px** heading, with
+  all four visible at 1280×720 (`385:26174`).
+- **Long translation:** equal **600×132** cards (`385:26244`).
+- **These are examples, not maximums.** Measure translated and enlarged text,
+  then grow **every** card to the tallest required height — they stay equal.
+- **Never truncate** a title, a consequence or the `Selected` label, and **never
+  reduce text the person chose to enlarge** to make content fit.
+- **Wide screens:** keep the centred 600 column, do not stretch (`385:26208`).
+  **Narrow:** use the width with 32 side margins. **Short, or enlarged text:**
+  scroll the content while navigation and Accessibility stay reachable outside
+  the scrolling region. Reflow action rows without shrinking hit targets.
+- **Apply display scaling once**, at the existing logical-to-physical boundary.
+
+### Network processing — what the software must not claim
+
+The design shows the finished product: discovery (`384:26276`), identity review
+and pairing (`384:26324`), connected (`384:26375`). **It is not to be replaced
+in Figma with an unavailable or lesser option** — the design is the destination,
+and a limitation drawn into it outlives the limitation.
+
+In software, **report the real connection state**. Pairing is not implemented;
+`alo_setting_up::NotSetUp::NoPairedMachine` refuses it in words today, and that
+refusal disappears when pairing lands without the design changing. **Do not fake
+discovery, pairing or success**, and do not let a temporary runtime explanation
+become the permanent design.
+
+- Before pairing, **show the destination identity and the processing policy that
+  applies**. Pairing grants no blanket access to a person's work, and a message
+  from another machine grants no authority.
+- **Do not promise "nothing leaves the building" because the destination is
+  local.** That needs an enforced local-only processing policy. Sending to a
+  machine on the network **is** data leaving this PC and uses the same
+  disclosure and recording as any other destination.
+- **No silent fallback**, to another machine or to a cloud provider.
+
+### Provider — choosing a route is not connecting an account
+
+Kept: **Set up later**, **About this choice**, *"Until connected, you can use
+the whole computer by hand."*, *"Local setup. No online account required."*
+
+**Store the route and the connection as distinct states.** Postponing the
+connection must reach a usable canvas **without** reporting that AI is
+connected, that local AI was selected, or that the person chose *No AI*. Example
+account, machine and connection details in the prototype are never real state.
+
+### Accessibility, before an account exists
+
+It must work from Welcome onward, independent of account creation
+(`375:30435`, `384:26446`, `385:26281`, `387:26226`).
+
+- Accessible names carry **both** the choice's title and its consequence.
+- Expose selected/unselected **and position within the group**.
+- On arrival, announce the heading **and that nothing is selected**.
+- Say **why** Continue is unavailable.
+- Visible focus on every interactive control; everything keyboard-operable.
+- Accessibility stays reachable **before any setup decision**, and returning
+  from it comes back to the originating step **with its state**.
+- Accessibility preferences **survive setup and carry into the account**.
+
+**The design proposes `Ctrl`+`Alt`+`S` for the screen reader. Check the shortcut
+contract for a conflict before registering it** — `alo-shortcuts` prices every
+chord, and silently overriding another action is not open to this surface.
+
+**The file's keyboard reactions demonstrate the interaction; they do not prove
+native screen-reader support.** Implement through the OS accessibility and
+shortcut systems and test with assistive technology.
+
+### This is native Rust, not a web page
+
+Use the existing appearance and layout systems. The React and Tailwind in any
+`get_design_context` output is a visual target, never an implementation.
+
 ## The screens, as read on 2026-10-06
 
 Node ids are the file's own, per `ROOTS.md`: *anything written from this snapshot

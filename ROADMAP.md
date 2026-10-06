@@ -1704,6 +1704,22 @@ carries its own tasks, their state and what each depends on.
 
 - [ ] **AI can be declined entirely** — setup's fourth choice, and a system that
       is complete without it (ADR 0009)
+  - **Corrected 2026-10-06 — a correction to this work, not a deferral.** The
+    four at first start are settled in order and wording: *on this computer*, *a
+    machine on your network*, *my provider*, *no AI* — equal in size, typography
+    and weight, with alo's own service **inside** *my provider* and not a choice
+    of its own (ADR 0014 §4), and **nothing pre-selected on arrival**, Continue
+    visible and disabled saying *Choose one option to continue* (ADR 0025).
+    `docs/features.md`'s 2026-09-08 clarification named a different three — with
+    alo's service as one of them, and the paired machine explicitly *not* a
+    fourth primary source category — and is superseded there in place.
+    `crates/alo-setting-up`'s `THE_FOUR` already held the settled shape, and
+    `SettingUp::selected` already distinguishes unset from the explicit *no AI*,
+    so **the correction lands on the documents and the surface, not on that
+    crate**. The corrected design is section `383:26066`, inventoried in
+    `docs/design/figma-snapshot/ROOTS.md` and specified in
+    `docs/design/the-first-start.md`; the committed snapshot is **behind the
+    file** for every screen in this flow and its re-export is owed.
   - [x] **The code.**
         `alo-capability`'s `Agent` — the fourth answer as a value, and the
         half of ADR 0009 that would have been quietly got wrong. It is not a

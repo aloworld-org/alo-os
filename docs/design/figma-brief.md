@@ -131,11 +131,13 @@ Screens, in this order:
    weight — including not at all. Our service appears **inside** with a provider
    you add, listed beside the others.* Owner, 2026-10-06, keeping it.
 
-   **Three is right elsewhere and should not be "fixed" to match.**
-   `docs/features.md` names **three model sources** — local, a machine on the
-   network, a provider — and the fourth setup choice is not a source, because it
-   is the absence of one. Three sources, four choices. A reader who makes both
-   numbers agree has broken one of them.
+   **Where other counts of three appear, read them before matching them.**
+   `docs/features.md`'s three were *local models / your own API provider /
+   Alo* — a different three, with alo's service as one of them and no
+   paired-machine category at all. That passage is superseded by the owner's
+   instruction of 2026-10-06 and now says so in place; **this note previously
+   described those three as local, network and provider, which was this file's
+   own author inferring them from the code rather than reading them.**
 4. **Desktop at rest**
 5. **Launcher**
 6. **Agent overlay, just invoked and empty** — showing what it can currently see

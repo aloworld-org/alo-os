@@ -8,6 +8,36 @@ that prose was 55 top-level frames behind without anything saying so.
 **Approved by the owner on 2026-10-04**, with the size explicitly accepted: *an untraceable
 design change is the larger problem.*
 
+## This snapshot is behind the file, measured 2026-10-06
+
+**The thing this snapshot exists to prevent has happened to the snapshot.** Node `183:10679`
+is *14 · Setup / alo on this computer* in `70-28.xml` and *12 · Choose how alo helps* in the
+file, with entirely different children. The file's current first-start screens carry ids in
+the `370:`–`387:` ranges; **the highest id prefix anywhere in this snapshot is `358`**, and
+none of `370:30053`, `370:30057`, `371:30239`, `371:30245`, `371:30247` or `371:30252`
+appears in it. The export does not merely lack these screens — it describes screens that
+have been replaced.
+
+**A lane building first start from this snapshot would build a design that no longer
+exists.** `ROOTS.md` now carries the owner's inventory of the corrected flow, and
+`../the-first-start.md` carries the copy and measurements taken from the file directly.
+Until a re-export lands, **those two are authoritative for first start and this snapshot is
+not**.
+
+**It also never held any copy, which is how it was made rather than a fault.**
+`get_metadata` returns ids, names, positions and sizes and nothing else: 5,897 `<text>`
+nodes here, every one self-closing, and no `characters`, `content` or `value` attribute
+anywhere in the file. An onboarding screen is mostly words, so words come from
+`get_design_context` and are written down separately — which is what `../the-first-start.md`
+is for.
+
+**Read back in so far, measured rather than claimed:** the structure of the arrival frame
+`383:26067`, and the copy of `183:10673`, `183:10679` and `183:10683`. Everything else in
+`ROOTS.md`'s new table is unread. **A re-export of section `383:26066` is owed and is not
+done**, and it is the remaining dependency for this flow. Nobody should read that gap as the
+screens being absent: the interface lists one page for this file however many it has, and a
+limited listing has already been mistaken for absence once.
+
 ## What is in it
 
 | file | root | what it is |
