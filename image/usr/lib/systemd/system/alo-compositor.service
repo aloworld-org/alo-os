@@ -13,10 +13,18 @@ Description=alo OS sign-in screen: the compositor a machine boots to
 Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0024-what-a-person-signs-in-at.md
 
 # It takes a card from the login seat through libseat, and this image ships no
-# seatd — nothing installs one — so the seat comes from logind, which must be
-# answering before the card is asked for. A machine where it is not is one where
-# the card is refused in words, which is the honest failure and not this unit's
-# to prevent.
+# seatd — nothing installs one — so the seat comes from logind.
+#
+# **`After=` was not enough, and this comment used to say it was.** It read *the
+# seat comes from logind, which must be answering before the card is asked for*,
+# and that premise is false: ordering is not membership. libseat asks logind
+# which session the calling process belongs to, and **a system service belongs
+# to none**, so logind answered, the card was asked for, and the answer was
+# `display session connect failed: Function not implemented` — ENOSYS, which
+# from libseat means *no backend at all*. Measured on a written disk on
+# 2026-10-05, four restarts out of four, on a machine that was otherwise up.
+#
+# `PAMName=` below is what makes the process a member rather than a latecomer.
 After=systemd-logind.service
 
 [Service]
@@ -32,7 +40,27 @@ Type=exec
 # holds this line to that file — the same way it holds the other five units to
 # what they claim. A uid typed here that the machine does not have is a screen
 # nobody can sign in to.
-Environment=ALO_DISPLAY=/dev/dri/card0
+# **The virtual console the sign-in screen lives on**, and it is not cosmetic.
+# `pam_systemd` reads `PAM_TTY`, which systemd fills from this line, and a
+# session with no TTY is given no seat: `logind` answered
+# `seat= vtnr=0` and `libseat` had nothing to take a card from. With it, the
+# same machine answered `seat=seat0 vtnr=1`. Measured on a written disk,
+# 2026-10-05.
+TTYPath=/dev/tty1
+
+# **`ALO_DISPLAY` is deliberately not set here, and used to be.**
+#
+# It read `/dev/dri/card0`, on the same reasoning as the two lines below: a
+# machine says what it is rather than the code guessing. But a card *number*
+# is not a fact about a machine. Firmware that hands over a framebuffer gives
+# `simpledrm` minor 0, so the real GPU is minor 1 — and on 2026-10-05 this
+# unit asked `seat0` for `card0` while `logind` had put `card1` on it, and the
+# seat answered *No such file or directory*. Most UEFI machines hand over a
+# framebuffer, so most machines would have failed this way.
+#
+# The compositor now asks the seat, taking the device udev marks as the boot
+# VGA. The variable is still read where somebody sets it, because it is a
+# public configuration key; nothing in this image sets it.
 Environment=ALO_PERSON=1000
 Environment=ALO_KEYBOARD=gb
 
@@ -42,6 +70,17 @@ Environment=ALO_KEYBOARD=gb
 # process could reach is a sign-in screen that is not one.
 RuntimeDirectory=alo-compositor
 RuntimeDirectoryMode=0700
+
+# **The stack that makes this process a member of a logind session**, which is
+# what gives libseat a seat to hand over. `image/usr/lib/pam.d/alo-compositor`
+# is the file, it is in `/usr/lib` beside the base's own `systemd-run0` and
+# `systemd-user` rather than in `/etc`, and it authenticates nobody: a person's
+# password is `alo-accounts`' and the session they get is `alo-sessiond`'s.
+#
+# The owner chose this over shipping `seatd` on 2026-10-05: it configures an
+# engine that is already here rather than adding a second seat manager to a
+# machine that already runs logind.
+PAMName=alo-compositor
 
 # Root, because a card comes from the login seat and logind decides that on a
 # privileged caller, and because the sign-in screen exists before anybody is

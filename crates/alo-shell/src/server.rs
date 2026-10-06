@@ -135,6 +135,32 @@ pub struct Server {
     /// screen, the nested lane and every test on the road they already had: a
     /// seat that has been told no shortcuts looks none up.
     pub(crate) shortcuts: Option<alo_shortcuts::Shortcuts>,
+    /// **The settings window this session owns**, shut until a chord opens it.
+    ///
+    /// Held here for the reason the shortcuts above are, one step further on: a
+    /// chord arrives at the seat, and until this field existed there was nowhere
+    /// on a running machine for the window it names to live.
+    /// `crate::settings_command::Server::dispatch_settings_command` took one as
+    /// a `&mut` argument and **nothing in production had one to pass** — the
+    /// road was built and the destination was never constructed.
+    /// `the-shell-plan.md` task 18 is that gap.
+    ///
+    /// **Not an `Option`**, because *shut* is a state a `SettingsWindow` already
+    /// has and a second spelling of it would be a branch no caller can act on
+    /// differently — the same argument `remembered` below makes for itself.
+    pub(crate) settings: crate::SettingsWindow,
+    /// **Where this person's settings are kept**, told by the desktop.
+    ///
+    /// `None` until a desktop says, which keeps the sign-in screen, the nested
+    /// lane and every test on the road they already had.
+    ///
+    /// **Told rather than read**, which is this file's own rule for the
+    /// shortcuts and holds here for the same reason:
+    /// `crate::a_chord_reaches_its_action` says *a compositor that opened a
+    /// person's settings file would be a compositor measuring*. So the folder,
+    /// the grants and the pairings arrive from `crate::TheDesktop`, and this
+    /// crate opens none of them to find out where they are.
+    pub(crate) settings_places: Option<crate::SettingsPlaces>,
     /// **What this person's Places remember**, as the last keep left it.
     ///
     /// Held here for the same reason the shortcuts above are: a chord is
@@ -201,6 +227,10 @@ impl Server {
             gestures: Default::default(),
             // Nobody has told this seat what a chord means, so it takes none.
             shortcuts: None,
+            // Shut, and a person's chord is what opens it.
+            settings: crate::SettingsWindow::closed(),
+            // Nobody has told this seat where a person's settings are kept.
+            settings_places: None,
             // Nothing has been kept yet, so no Place remembers anything.
             remembered: alo_arranging::Arrangement::fresh(),
             // Nobody is walking backwards through anything yet.

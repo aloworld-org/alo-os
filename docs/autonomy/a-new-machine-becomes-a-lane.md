@@ -175,6 +175,66 @@ of the others owns, verified by reading dependencies rather than by intending it
 `alo-appearance` reaches the propose-then-approve road through `alo-saying`, so
 it consumes the Mac's `alo-asking` and opens it never.
 
+### `alo-shell` is on loan to the development PC for the joint, 2026-10-05
+
+**The owner moved it, in these words: *"Yes please wire them, mac has no vm."***
+It is a loan for one change rather than a reassignment, and it is written here
+because the Mac asked for that rather than assuming it — *"a stale ownership row
+cost this lane a correction yesterday and I was the one who made it."*
+
+**What the change is.** One owner in the running compositor holding the
+session's surfaces. `alo-desktop`'s `ThisPersonsDesktop` already holds
+`RunningWindow` and `FillingWindow` under the comment *Shut, because nothing on
+a machine opens it yet*, and `Server` holds the shortcuts and dispatches chords
+— so the joint is narrower than it looks:
+
+```
+the chord already lands    a_chord_reaches_its_action.rs:103
+it calls                   dispatch_canvas_command
+it should call             dispatch_settings_command, which falls through to
+                           the canvas one for every other chord
+the draw slot exists       scene_native.rs:37, settings: Option<&SettingsPicture>
+and is never filled
+```
+
+**Why it is one change and not four.** `SettingsWindow`, `TheDaemonsDoor`,
+`Previews` and `Windows` are each unconstructed in production, and each needs
+the same thing: somebody on a running machine to hold it. Wired separately, each
+becomes one more maintained state nothing reads. The Mac's reading, and it is
+the right one.
+
+**What the Mac keeps.** Everything else in `alo-shell`, `alo-canvas` and
+`alo-arranging`, and the seat failure — `alo-compositor` is refused a seat with
+ENOSYS and that diagnosis is theirs. The development PC says what it touches as
+it touches it, so nothing is started on top of it.
+
+**Why the loan rather than a move.** The Mac's machine has killed nine processes
+for memory in one day and pushed a change with `cargo clippy` recorded as *did
+not run*. That is a machine that cannot check its own work, not a lane that
+stopped caring — and the change spans three files with three conditions riding
+on it. It returns when they can compile.
+
+**The three conditions are the task rather than notes beside it**, and all three
+came from this lane's own measurements:
+
+1. `Server::the_shortcuts_are` is a snapshot told once at stand-up, so a binding
+   Settings writes must call it again **in the same change**, or Settings writes
+   a file and changes nothing until the next sign-in.
+2. A chord beats a focused client, so Settings opens over an application that
+   still believes it has the keyboard. What that client is told, and what it
+   sees when Settings closes, is decided before the window is drawn.
+3. `TheDaemonsDoor` is wired in the same change or it does not land. The day a
+   revoke button exists is the day a revoked grant must reach the running
+   daemon; `knocking.rs` says it is the only implementation that ships and
+   nothing in production builds one.
+
+**And one thing that must not be wired:** `Edge`. The owner's authorisation of
+2026-10-04 is explicit that nonfunctional edge choices are not to be exposed as
+finished settings, and `crate::layout::NotLaidOut` records that two of the four
+edges cannot be laid out today. It is in
+`crates/alo-citing/tests/every_surface_a_person_uses_is_built_somewhere.rs` as
+deliberately unreachable so that nobody fixes it.
+
 ### *A panel out of view costs nothing* is the Mac's, and it was assigned twice
 by one misread word
 

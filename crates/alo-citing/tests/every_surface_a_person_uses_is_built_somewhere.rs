@@ -62,16 +62,33 @@ enum Reach {
 /// types. A sweep reports error types reached through `?`, which never name
 /// themselves — noise that would make this check unreadable and therefore
 /// unread. These are things `docs/features.md` promises a person can *do*.
-const EVERY_SURFACE_A_PERSON_USES: [(&str, Reach); 6] = [
+const EVERY_SURFACE_A_PERSON_USES: [(&str, Reach); 7] = [
     (
-        "SettingsWindow",
+        "Edge",
         Reach::OnlyATestDoes {
-            why: "the-shell-plan.md task 18. Super+I is shipped, declared, routed \
-                  and dispatched, and settings_command.rs takes the window as a \
-                  parameter — nothing on a running machine holds one to pass it. \
-                  alo-shell's, taken 2026-10-05",
+            why: "DELIBERATE, and the one entry here that must not be 'fixed'. \
+                  crates/alo-dock/src/edge.rs carries the owner's authorisation \
+                  of 2026-10-04: the structural work comes first and \
+                  nonfunctional edge choices are not to be exposed as finished \
+                  settings. All four edges exist because the person's choice is \
+                  all four; two of them can be laid out today, and \
+                  crate::layout::NotLaidOut is that difference as a type rather \
+                  than a comment. Wiring this would offer a person two edges \
+                  that do not lay out. Found by the Mac reading the header \
+                  before wiring it, 2026-10-05",
         },
     ),
+    // **Paid, 2026-10-05.** This branch was written while it read
+    // `OnlyATestDoes`, with the reason *Super+I is shipped, declared, routed and
+    // dispatched, and settings_command.rs takes the window as a parameter —
+    // nothing on a running machine holds one to pass it*. It was paid before
+    // this branch landed, so **the entry this rebase kept is the one from main,
+    // not the one this commit was written with**: `Server` holds a window now.
+    //
+    // The list is what said so. The entry failed the moment production built
+    // one, which is this check working in the direction that matters — debt
+    // cannot be paid silently any more than it can grow silently.
+    ("SettingsWindow", Reach::AMachineCan),
     (
         "Screenshot",
         Reach::OnlyATestDoes {
@@ -212,7 +229,47 @@ fn builds_one(name: &str, text: &str) -> bool {
     let tight = format!("{name}{{");
     text.lines()
         .filter(|line| !declares_rather_than_builds(line))
-        .any(|line| line.contains(&associated) || line.contains(&spaced) || line.contains(&tight))
+        .any(|line| {
+            [&associated, &spaced, &tight]
+                .iter()
+                .any(|what| names_it_whole(line, what))
+        })
+}
+
+/// Whether a line holds this text as a **whole name** rather than the tail of a
+/// longer one.
+///
+/// **`contains` is not enough and it put a wrong entry in the list above.**
+/// Looking for `Edge::` matched `FrameEdge::Top`, so `alo_dock::Edge` was
+/// reported as built by six files in `alo-shell` — a crate that imports it zero
+/// times. The Python draft of this check had a word boundary and the Rust one
+/// lost it, which is the same fault the third PC warned about for crate names
+/// and I checked for crates and not for types.
+///
+/// So the character before a match must not continue an identifier: Rust
+/// identifiers are alphanumeric or `_`, and nothing else.
+///
+/// **A leading `::` must be allowed, and the first version of this forbade it.**
+/// Excluding `:` as well looked tidier — it would stop `other::Edge::` being
+/// read as a bare `Edge::` — but a qualified path is how one crate normally
+/// names another's type, so `alo_dock::Edge::Bottom` stopped counting as a use.
+/// Breaking it in both directions is what found that: injecting a real
+/// `alo_dock::Edge::Bottom` into production left the test **green**, which is
+/// the outcome that means a check cannot see the thing it is named for. A false
+/// positive had been traded for a worse false negative, and only the break said
+/// so.
+fn names_it_whole(line: &str, what: &str) -> bool {
+    let mut from = 0;
+    while let Some(at) = line.get(from..).and_then(|rest| rest.find(what)) {
+        let start = from + at;
+        let before = line.get(..start).and_then(|head| head.chars().next_back());
+        let whole = before.is_none_or(|c| !(c.is_alphanumeric() || c == '_'));
+        if whole {
+            return true;
+        }
+        from = start + 1;
+    }
+    false
 }
 
 /// Whether a line declares something rather than building one.

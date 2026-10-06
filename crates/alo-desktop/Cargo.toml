@@ -37,6 +37,16 @@ alo-shortcuts = { path = "../alo-shortcuts" }
 alo-access = { path = "../alo-access" }
 alo-dividing = { path = "../alo-dividing" }
 alo-dock = { path = "../alo-dock" }
+
+# Where this person's grants and pairings are kept, which Settings reads at the
+# moment a person opens it. For those two paths only: `this_persons_grants`
+# asks the kernel whose session this is, so this crate keeps its own rule that
+# a desktop never takes a person's number from a variable.
+alo-remembering = { path = "../alo-remembering" }
+# For one path: the socket this person's daemon listens on, which a revocation
+# in Settings knocks at. Named by the crate that owns the door rather than
+# spelled here, and keyed by the same one kernel question as the grants above.
+alo-changing = { path = "../alo-changing" }
 # The windows a person put aside. Held here because the panel at the edge is
 # drawn from it, and empty because nothing in this binary puts one aside yet.
 alo-put-aside = { path = "../alo-put-aside" }

@@ -150,7 +150,7 @@ fn believed(at: &Path, owner: u32, mode: u32, us: u32) -> Result<(), NotRemember
 
 /// The user this process runs as, asked of the kernel rather than of an
 /// environment.
-fn us() -> u32 {
+pub(crate) fn us() -> u32 {
     rustix::process::geteuid().as_raw()
 }
 
