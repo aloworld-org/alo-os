@@ -54,6 +54,14 @@ pub struct Server {
     /// advertised. `crate::display_lifecycle::Server::the_number_for` is what
     /// replaced it, and task 8 is why.
     pub(crate) display_numbers: std::collections::BTreeMap<String, alo_desktops::DisplayId>,
+    /// **Where this session's screens are**, as the desktop arranged them.
+    ///
+    /// `None` until a desktop answers with one. The compositor describes the
+    /// displays it has presented and `alo-displays` decides where they sit —
+    /// see `crate::the_session_holds_its_screens`, and
+    /// `more-than-one-display-plan.md` task 3a for why tasks 5, 6 and 7 all
+    /// wait on it.
+    pub(crate) screens: Option<crate::Screens>,
     /// Stable mapped-root order for trusted window cycling.
     pub(crate) switch_order: crate::window_switch::SwitchOrder,
     /// **How each display is divided and what desktops are on it.**
@@ -214,6 +222,8 @@ impl Server {
             surfaces,
             socket,
             display_numbers: std::collections::BTreeMap::new(),
+            // No desktop has arranged anything yet.
+            screens: None,
             presentations: std::collections::BTreeMap::new(),
             switch_order: Default::default(),
             fixed_controls: crate::canvas_fixed_controls::FixedControls::default(),

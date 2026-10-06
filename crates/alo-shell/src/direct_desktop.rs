@@ -125,6 +125,37 @@ pub trait TheDesktop {
         alo_shortcuts::Shortcuts::shipped()
     }
 
+    /// **The screens this session is drawing on**, built from the displays the
+    /// compositor has actually presented.
+    ///
+    /// # Why the shell hands over descriptions and takes back an arrangement
+    ///
+    /// Which displays exist, how many pixels each has and how big its glass is
+    /// are facts the **compositor** learns, one per presented output, and
+    /// nothing else can know them. Where those displays sit relative to one
+    /// another is a **decision** — `alo-displays` makes it, from what a person
+    /// arranged and remembered — and it needs that person's kept `Changes`, a
+    /// `Appearance` and a `Tonight`, none of which the shell may read. *The
+    /// shell shows and never measures*, and a file in a person's folder is a
+    /// reading like any other.
+    ///
+    /// So the shell says *here is what I have*, and the desktop answers *here
+    /// is where they are*. The same division the canvas layout and the
+    /// shortcuts already travel.
+    ///
+    /// **[`None`] by default**, which is honest for a desktop that was never
+    /// given a display model: every surface keeps laying out against the one
+    /// viewport it already uses, exactly as before. A desktop that answers
+    /// `None` is not broken; it is a desktop with no arrangement to offer.
+    ///
+    /// `docs/autonomy/more-than-one-display-plan.md` task 3a, which tasks 5, 6
+    /// and 7 all wait on: a display with no corner has no rectangle, and until
+    /// this exists the compositor knows how big each display is and not where
+    /// any of them is.
+    fn the_screens_of(&mut self, _reported: Vec<alo_displays::Reported>) -> Option<crate::Screens> {
+        None
+    }
+
     /// Where this person's settings are kept, asked for once as the session
     /// starts.
     ///
@@ -311,6 +342,7 @@ impl crate::DirectSession {
                             labels,
                             strings,
                             left,
+                            displays_described: Vec::new(),
                             told: alo_arranging::Arrangement::fresh(),
                             series: layout,
                             reader,
@@ -354,6 +386,13 @@ struct Desk<'a> {
     /// back. This is the one copy in the session, and
     /// `crate::canvas_a_place_remembers_time` is what reads it.
     series: alo_arranging::Arrangement,
+    /// The displays last described to the desktop, so a re-arrangement
+    /// happens when the set of them changes and not every frame.
+    ///
+    /// The same shape as `told` below and for the same reason: a frame is not
+    /// a change, and a display drawing its thousandth identical frame must
+    /// not cost an arrangement.
+    displays_described: Vec<alo_displays::Reported>,
     /// The layout last told to the desktop, so a save happens on a change.
     ///
     /// **Not every frame.** The owner's ruling asks for a save after meaningful
@@ -648,6 +687,25 @@ impl LoopInput for Desk<'_> {
                 &[alo_access::Surface::Desktop],
                 &alo_access::TurnedOn::nothing(),
             );
+        }
+        // **And the screens are re-arranged when the set of displays changes.**
+        //
+        // Asked against the descriptions rather than against a frame count, so
+        // a display whose mode changed is a new description and a display
+        // drawing its thousandth identical frame is not. Compared with what
+        // was last handed over, for the reason the layout below gives: a
+        // desktop does not know what arranging costs, and this crate must not
+        // decide how often one is done.
+        //
+        // `more-than-one-display-plan.md` task 3a. Nothing reads the
+        // arrangement yet — tasks 5, 6 and 7 are what will — and it is kept
+        // live from the first frame so that those tasks find it already true
+        // rather than having to wire this as well.
+        let reported = server.the_displays_as_reported();
+        if reported != self.displays_described {
+            self.displays_described.clone_from(&reported);
+            let arranged = self.desktop.the_screens_of(reported);
+            server.these_screens_are(arranged);
         }
         // **And the desktop is told when the layout has actually moved**, which
         // is what makes a person's canvas survive a restart.

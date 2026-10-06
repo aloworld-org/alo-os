@@ -188,7 +188,36 @@ set.
 
 ### 3a. The session holds the arrangement of its screens
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** 3.
+**Status:** **Done, 2026-10-06: the code.** The compositor describes every
+display it has presented in `alo-displays`' own words
+(`Server::the_displays_as_reported`), `TheDesktop::the_screens_of` turns those
+into an arrangement, and `Server::the_screens` holds it. Re-asked whenever the
+descriptions change — not per frame — by the same comparison the layout save
+uses. Four tests.
+
+**A display's identity is its socket, and that was not the obvious choice.**
+`Panel::of` wants a make, a model and a **serial**, and `OutputMetadata`
+carries no serial. A panel built from make and model alone is not an identity:
+`Identity` prefers the panel when one is given, so **two identical monitors
+became one screen** — measured, not predicted, by a test that expected to see
+both named and saw one identity twice.
+
+So no panel is offered and the connector identifies the screen. **What that
+costs is real and is the lesser loss:** a monitor moved from one port to
+another is a different screen to the arrangement, so what a person arranged
+for it is not found again. A forgotten arrangement is a person dragging a
+window back; two live displays collapsed into one is an arrangement that
+cannot describe the desk at all. The fix is upstream — a serial reaches this
+crate only if the compositor reads EDID, which it does not — and inventing one
+would be worse, making the two monitors *stably* one screen rather than
+visibly one.
+
+**The arrangement has no reader yet**, and that is deliberate rather than
+overlooked: tasks 5, 6 and 7 are its readers. It is kept live from the first
+frame so those tasks find it already true instead of each wiring it again,
+which is the whole reason this task was split out.
+
+**Owner:** the Mac. **Depends on:** 3.
 **Added 2026-10-05, while starting task 6**, which could not be done without
 it — and nor can 5 or 7.
 

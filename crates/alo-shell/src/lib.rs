@@ -280,6 +280,7 @@ mod status_row;
 mod surfaces;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;
+mod the_session_holds_its_screens;
 mod top_controls_region;
 pub mod which_preview_the_pointer_is_on;
 mod which_surface_claims_a_point;
