@@ -242,6 +242,43 @@ other. **Equality is within a list, not across lists.**
 with the promise: a person may leave setup without connecting an account, and
 the way out is the most prominent thing on it rather than a link in the corner.
 
+### The *No AI* detail — `194:10787`, *12 · Detail · No AI*
+
+Read 2026-10-06. **The screen that decides whether *No AI* reads as an answer or
+as a loss**, and it reads as an answer.
+
+| slot | words |
+|---|---|
+| stage | AI CHOICE · DETAILS |
+| eyebrow | NO AI |
+| title | **A complete computer.** |
+| introduction | The canvas, applications and ordinary tools remain available. |
+| row 1 | **The Bar still works** — Find local files, open apps, calculate and change settings. |
+| row 2 | **No agent activity** — No alo tasks are started. |
+| row 3 | **Your choice stays yours** — Enable alo later only if you want to. |
+| actions | **Choose No AI** *(primary)* · Back to choices |
+
+**It names what the person keeps, never what they give up**, and the third row
+is the no-persuasion rule written as copy: *Enable alo later **only if you want
+to***. ADR 0009's *no persuasion attached* is observed here rather than merely
+promised.
+
+**A name that disagrees with the code, and it is person-facing.** This screen
+calls a surface **The Bar**. The code calls it the launcher — `Action::Launcher`
+and `words::LAUNCHER` in `alo-shortcuts`. Every *"the bar"* in `docs/` is the
+idiom *clears the bar*, not a product name, so this is the first place that
+surface has been given that name anywhere in the repository. **One surface
+cannot have two person-facing names**, least of all in a product that
+externalises every string for translation. Which name wins is the owner's, and
+it is not only a setup question — it is whatever the launcher is called
+everywhere.
+
+**Detail actions are 160 wide, not 184.** The AI-choice screen's Continue and
+Back are 184×48; these are 160×48, and the rows here carry 16 of vertical
+padding against the choice cards' 14, with no fixed height. **The
+specification's 184 is the choice screen's number** and does not generalise to
+the details.
+
 ### Measured geometry, from `383:26067` on 2026-10-06
 
 Read from the file rather than taken from the brief:
