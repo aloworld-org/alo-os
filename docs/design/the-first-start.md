@@ -359,6 +359,54 @@ Three things follow, and none of them is a design question:
    works before there is a person may not belong to that crate at all. **That is
    an architecture question and this document does not answer it.**
 
+### A long translation — `385:26244`, *12m · Network selected / Long translation*
+
+Read 2026-10-06, and it answers more than the question it is named for.
+
+**The copy is real German, not lorem**, so the growth is a measurement rather
+than a guess:
+
+| | |
+|---|---|
+| On this computer | **Auf diesem Computer** — alo arbeitet lokal auf diesem Computer. Die Verfügbarkeit hängt von seiner Ausstattung ab. |
+| A machine on your network | **Ein Computer in deinem lokalen Netzwerk · Ausgewählt** |
+| | Ausgewählte Inhalte werden an einen Computer in deinem lokalen Netzwerk übertragen und dort verarbeitet. |
+| My provider | **Mein Anbieter** — Nutze deinen eigenen Anbieter. Ausgewählte Inhalte verlassen diesen PC; es können zusätzliche Anbietergebühren anfallen. |
+| No AI | **Keine KI** — Öffne Anwendungen, suche Dateien und nutze die gesamte Arbeitsfläche selbst, ohne einen KI-Assistenten. |
+
+**`Selected` translates too — `· Ausgewählt`.** The selection word is not a
+decoration appended in the shell; it is part of the translated string, and a
+build that concatenated an English *Selected* onto a translated title would be
+wrong in every language.
+
+**All four cards grow to 132 together.** 108 in English, 132 here, and the four
+stay equal — which is the rule *measure the translated text, then grow every
+card to the tallest required height* observed in the file rather than only
+stated.
+
+**And the layout changes shape when the content scrolls.** Measured on this
+frame, which is **1440×960, the same size as the arrival** — so these
+differences are the layout responding, not a different canvas:
+
+| | arrival `383:26067` | long translation `385:26244` |
+|---|---|---|
+| column | left-aligned, x 160 | **centred** — a 640 scroll container at x 400, the 600 column 20 inside it |
+| scrolling | none | `Setup content / vertical scroll`, 640×704 at y 88, scrolls vertically |
+| actions | inside the column | **outside the scroll container**, at y 812 |
+| Accessibility | y 876 | y 884 |
+| footer | y 892 | y 908 |
+
+**The actions and Accessibility sit outside the scrolling region.** That is the
+requirement — *scroll the content while keeping navigation and Accessibility
+reachable outside that scrolling region* — carried by the design rather than
+left to the implementation. Three actions here, each 184×48 at 0, 196 and 392,
+so a 12 gap.
+
+**A builder would get the column wrong by assuming one answer.** It is
+left-aligned at 160 when the content fits and centred in a scroll container when
+it does not; 1440 − 640 = 800, halved, is the 400. Neither position is *the*
+position.
+
 ### Measured geometry, from `383:26067` on 2026-10-06
 
 Read from the file rather than taken from the brief:
