@@ -744,6 +744,19 @@ COPY image/usr/lib/tmpfiles.d/ /usr/lib/tmpfiles.d/
 COPY image/usr/lib/pam.d/ /usr/lib/pam.d/
 COPY image/etc/alo/ /etc/alo/
 
+# **What this machine says it is.** The base's own file calls it Fedora Linux
+# 42, which a person who installed alo OS did not install, and carries
+# SUPPORT_END=2026-05-13 -- so systemd tells our customer, in red, on every
+# boot, that their OS is past its end-of-support date. That is a promise this
+# project never made. The Fedora Project also asks that a remix not carry its
+# marks, so this is compliance rather than taste.
+#
+# **After the last dnf, deliberately.** Package resolution reads VERSION_ID and
+# PLATFORM_ID from this file; both are kept as Fedora's, and nothing installs
+# below this line in any case. ID_LIKE says what it is built on rather than
+# hiding it.
+COPY image/usr/lib/os-release /usr/lib/os-release
+
 # **What this machine will accept as an update, and how it finds out.** ADR 0036
 # says an unsigned build is never staged; `alo_updating::apply` passes
 # `--enforce-container-sigpolicy` on every instruction, and this is the policy it
@@ -785,6 +798,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/systemd/system/alo-shipping.service \
                /usr/lib/pam.d/alo-compositor \
                /usr/lib/sysusers.d/alo.conf \
+               /usr/lib/os-release \
                /usr/lib/tmpfiles.d/alo.conf \
                /etc/alo/agentd.toml \
  && chown root:root /etc/alo/agentd.toml \
