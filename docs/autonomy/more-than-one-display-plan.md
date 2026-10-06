@@ -376,6 +376,45 @@ size, and handed to one draw. Each display needs its own layout at its own size
   Which display's bounds a frame is held to is a question this task answers
   rather than inherits.
 
+### The one thing 5b, 6 and 7 all need, measured 2026-10-06
+
+**No window is on a display.** Not *not yet recorded* — the opposite is
+asserted, once a frame, in `crate::desktop_membership`:
+
+```rust
+let displays: Vec<DisplayId> = self.desk.displays().collect();
+for surface in &open {
+    let number = self.desk.number_of(surface);
+    for display in &displays {
+        self.desk.put_on_the_current_desktop(*display, number);
+    }
+}
+```
+
+**Every window joins the current desktop of every display.** With one display
+that is a tautology and is why it has never been wrong. With two it is a
+decision nobody made: a window opened on the laptop is also on the monitor,
+and `show_the_current_desktops` then shows it on both.
+
+So the question *which display is this window on* has no answer to give, and
+three tasks need one:
+
+- **5b** holds a frame to the fixed-control bounds of its display.
+- **6** constrains a popup to the screen it is on.
+- **7** gives each viewport its own camera.
+
+**Build it once, not three times.** Each of the three would otherwise
+discover this separately, which is the fault this plan's task 9 note in
+`the-canvas-and-its-places.md` was written about.
+
+**And it is not this plan's to decide.** *Which display a window opens on* is
+a judgement about where a person's work goes, and `alo-desktops` is where
+judgements about desktops live — this plan **reads** that crate and re-decides
+nothing in it, by its own header. What belongs here is the compositor half:
+recording and honouring the answer. **The decision has to be asked for before
+5b, 6 or 7 can be finished**, and that is reported now rather than at the end
+of whichever task reaches it first.
+
 ### 5b. The bounds a frame is held to are the ones for the display it is on
 
 **Status:** ready. **Owner:** the Mac. **Depends on:** 5.
