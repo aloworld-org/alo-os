@@ -359,6 +359,31 @@ impl Server {
             // Reactive popup negotiation follows the backend's desired extent,
             // even on submission refusal. wl_output describes only submitted modes.
             self.surfaces.popups.output_size = Some(size);
+            // **And where every display is**, so a popup is constrained to
+            // the screen its parent is on rather than to whichever display
+            // drew last — `more-than-one-display-plan.md` task 6.
+            //
+            // Written once a frame beside the extent above, and from the
+            // arrangement rather than from this draw: the extent is what
+            // *this* display is, and the question a popup asks is about all
+            // of them. A session with no arrangement answers with this one
+            // display at the desk's origin, which is exactly what the single
+            // extent meant before this existed.
+            self.surfaces.popups.screens = self.the_screens().map_or_else(
+                || vec![smithay::utils::Rectangle::new((0, 0).into(), size)],
+                |screens| {
+                    screens
+                        .each()
+                        .map(|place| {
+                            let (across, along) = place.room().across_and_along();
+                            smithay::utils::Rectangle::new(
+                                (place.at().across(), place.at().down()).into(),
+                                (across, along).into(),
+                            )
+                        })
+                        .collect()
+                },
+            );
             // **The camera used to be assigned beside the extent and no longer is.**
             // `Popups` held a copy of it, and this line is where the copy was made
             // fresh once a frame — which is what kept it from ever being stale.

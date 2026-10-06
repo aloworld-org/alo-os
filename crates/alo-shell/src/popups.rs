@@ -48,6 +48,18 @@ pub(crate) struct Popups {
     entries: Vec<Entry>,
     /// Last positive framebuffer extent, at compositor scale one.
     pub(crate) output_size: Option<Size<i32, Physical>>,
+    /// **Each display's rectangle on the desk**, for constraining a popup to
+    /// the screen its parent is on — `more-than-one-display-plan.md` task 6.
+    ///
+    /// Told rather than asked, exactly as `output_size` above is and for the
+    /// same reason: `Surfaces` has no `Screens` and giving it one would make
+    /// every surface's placement depend on the arrangement. The `Server` knows
+    /// both and writes this down once a frame.
+    ///
+    /// Empty before the first frame, which is the same *nothing known yet*
+    /// `output_size`'s [`None`] is, and a popup opened then is unconstrained
+    /// rather than constrained to a guess.
+    pub(crate) screens: Vec<Rectangle<i32, Physical>>,
 }
 
 impl crate::Server {
@@ -175,14 +187,23 @@ impl Popups {
         roots: &[WlSurface],
     ) -> Option<Rectangle<i32, Logical>> {
         let popups: Vec<_> = self.mapped().cloned().collect();
-        crate::popup_placement::geometry(
-            positioner,
-            parent,
-            roots,
-            &popups,
-            self.output_size,
-            camera,
-        )
+        crate::popup_placement::geometry(positioner, parent, roots, &popups, &self.screens, camera)
+    }
+
+    /// Every surface that is a parent of a live popup, each once.
+    ///
+    /// For the one caller that has to act on *the screen a popup is on* —
+    /// a display leaving — and so needs the parents rather than the popups:
+    /// the parent is what has a position, and dismissing by tree takes the
+    /// children with it.
+    pub(crate) fn every_parent(&self) -> Vec<WlSurface> {
+        let mut parents: Vec<WlSurface> = Vec::new();
+        for entry in &self.entries {
+            if !entry.dismissed && !parents.contains(&entry.popup.parent) {
+                parents.push(entry.popup.parent.clone());
+            }
+        }
+        parents
     }
 
     /// Apply configure-before-buffer and terminal unmap semantics.
