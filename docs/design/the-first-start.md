@@ -578,6 +578,108 @@ placeholder name, not with a hopeful one. `alo_setting_up::NotSetUp::NoPairedMac
 is what is honest today, and this screen is what replaces it when the pairing
 road exists.
 
+### The screen reader on — `384:26446`, *Accessibility · Screen reader on*
+
+Read 2026-10-06. The same screen as `375:30435` with the first row changed:
+
+| slot | words |
+|---|---|
+| row 1 title | **Screen reader · On** |
+| row 1 sentence | Setup speaks focused controls **and their state**. Ctrl + Alt + S turns it off. |
+| page sentence | Press Ctrl + Alt + S at any time to turn the screen reader on or off. |
+
+**The `· word` construction does not always bring a border with it.** On a
+choice card, *· Selected* comes with a 2px navy border. Here, *· On* leaves the
+row at its ordinary 1px `#e7ebef`. **On a toggle row the word alone carries the
+state**, and a build that generalised the card's rule would draw a navy border
+around a switched-on setting and make it look chosen instead of on.
+
+**"speaks focused controls *and their state*"** is the selected/unselected
+exposure requirement in the design's own words — the thing a screen reader must
+announce beyond the label.
+
+**The shortcut is said twice, and differently.** The row says what it does *from
+here* — *turns it off* — and the page says what it does *generally* — *on or
+off*. Two strings, not one reused, because the row's sentence is only true while
+the reader is on.
+
+### A wide screen — `385:26208`, *12l · Arrival / 2560 × 1080*
+
+Measured 2026-10-06. The third width, and the one that proves the column is
+fixed rather than proportional:
+
+| | |
+|---|---|
+| frame | 2560×1080 |
+| scroll container | 640 wide at **x 960** — (2560 − 640) ÷ 2 |
+| cards | **still 600×108**, not stretched |
+| actions | x 980, y 932, **outside** the container |
+| Accessibility | y 1004 · footer y 1028 |
+
+**At two and a half times the width of the arrival frame the cards are the same
+600.** Three widths now give the same rule — 320 at 1280, 400 at 1440, 960 at
+2560 — so *keep a centred 600px column rather than stretching it* is measured
+rather than asserted, and a build that made the column proportional would be
+wrong at every one of them.
+
+### Finding a machine — `384:26276`, *12h · Connect a network machine*
+
+Read 2026-10-06.
+
+| slot | words |
+|---|---|
+| title | Choose a computer. |
+| introduction | Connect to a machine you recognise **and are allowed to use**. |
+| row 1 | **Office AI** — Managed by your organisation · Local processing |
+| row 2 | **Add a machine** — Enter the address provided by its owner. |
+| consequence | Review the machine's identity and processing policy before pairing. |
+| actions | **Set up later** *(primary)* · Back |
+
+**"and are allowed to use" is the authority point.** Finding a machine on a
+network implies no permission to use it, and the screen says so in the sentence
+a person reads first. *Enter the address provided by its owner* keeps ADR 0003's
+deliberate link on both ends: the address comes from the other machine's owner,
+not from a scan.
+
+**`Local processing` on the first row is the destination's own claim being
+displayed, and this is the sentence to be careful about.** A build must show
+**what the destination actually says** about its policy, or **say it cannot
+tell**. It must never print *Local processing* because an address looked local
+— that is the same fault as promising *nothing leaves the building*, one layer
+down, and harder to spot because it is phrased as a fact about somebody else's
+machine.
+
+**`Office AI` is example data.**
+
+### Connecting a provider — `385:26346`, *12o · Connect a provider*
+
+Read 2026-10-06.
+
+| slot | words |
+|---|---|
+| title | Connect your provider. |
+| introduction | Use the sign-in method or API key supplied by your provider. |
+| row 1 | **Provider connection** — Your chosen provider · Account or API key |
+| row 2 | **Before sending** — You see the content and destination before the request. |
+| consequence | Until connected, you can use the whole computer by hand. |
+| actions | **Set up later** *(primary)* · Back |
+
+**`Set up later` is the primary action on the screen whose whole purpose is
+connecting.** That is the third screen where leaving without connecting is the
+prominent path — the provider list and the network discovery are the others —
+and together they are *choosing a route is not connecting an account*, drawn
+rather than stated.
+
+**No credential field is drawn**, which agrees with *Setup does not require a
+provider account*. **`Your chosen provider` is a placeholder, not an example
+name**, unlike the provider list where Mistral and OpenAI appear.
+
+**"You see the content and destination before the request"** is a promise about
+every later send, not about setup. It ties this screen to the egress and
+approval machinery, and a build that connected a provider without that
+disclosure road existing would have made a promise here it cannot keep
+elsewhere.
+
 ## Responsive: the rule for every size, not only the three drawn
 
 **The file gives three widths and two heights. A machine has neither.** These
