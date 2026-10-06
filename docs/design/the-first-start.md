@@ -610,7 +610,24 @@ the file**, with its copy and geometry written down. What remains is not reading
 but confirming: the re-export of section `383:26066` into the committed
 snapshot, which `MANIFEST.md` names as the outstanding dependency.
 
-### Accessibility reached from Welcome — `387:26226`, and a third inference withdrawn
+### Settled 2026-10-06: the stage label does track the originating step
+
+**The designer has changed `387:26226`'s corner label to `WELCOME`.** So the
+stage *does* say which step a person came from, and the accessibility screen
+returns them there.
+
+**That reinstates the reading this document withdrew**, and the withdrawal was
+still right at the time: the file said `SET UP · AI CHOICE` on a frame named for
+Welcome, and **an inference contradicted by the file has to go, even when it
+later turns out to have been correct.** What changed is the evidence, not the
+reasoning. The section below is kept for that reason.
+
+**For a build:** the label is **state, not decoration**. It carries the
+originating step, so returning from accessibility lands back there — which is
+the owner's requirement *return from accessibility settings to the originating
+step, preserving its state*, now visible in the file as well as stated.
+
+### What that frame looked like before it was corrected
 
 Read 2026-10-06. The frame is named *Accessibility · Screen reader on /
 **Welcome*** and **its content is identical to `384:26446`**, the screen-reader
@@ -736,7 +753,27 @@ before**, **stay in control** — and *Disconnect or stop a task whenever you
 need* is the way out named a third time, after the provider list and the ready
 screen.
 
-### Action widths are not a rule, and my two attempts to make them one were both wrong
+### Settled 2026-10-06: detail actions are 184×48, and the differing widths were leftovers
+
+**The designer has standardised both buttons on all four AI-detail screens to
+184×48 logical pixels**, and says the differing widths were leftovers rather
+than an intended rule.
+
+**So the guidance below is withdrawn.** It read *there is no family rule and no
+per-screen rule… size each action to its own label*. That was a reasonable
+reading of the file as it stood, and it was the wrong conclusion: the variation
+was accidental, not meaningful. **Use 184×48 for detail actions.**
+
+The component's contract still holds and still matters — *named labels, a 48
+logical pixel target, secondary actions retain equal reachability* — and the
+sign-in family still uses 44, which is a different component and not covered by
+this.
+
+**Kept below because the reasoning was sound and only the data was unfinished.**
+A reader who meets two widths in an older export should know they were a
+transient state of the file rather than a distinction to preserve.
+
+### What the widths looked like before they were standardised
 
 **Corrected twice, and the second correction killed the pattern rather than
 adjusting it.**
