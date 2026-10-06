@@ -203,6 +203,45 @@ link.** It is visible, it is 184×48 like every other action, and it cannot be
 activated — which is what *visible but disabled* has to mean for a pointer, a
 keyboard and a screen reader alike.
 
+### The provider list — `183:10687`, *12g · Provider list / Arrival*
+
+**This is where ADR 0014 is either kept or broken, and the design keeps it.**
+Read 2026-10-06.
+
+| slot | words |
+|---|---|
+| stage | SET UP · AI CHOICE |
+| title | Choose your provider. |
+| introduction | Connect when you are ready. **No provider is selected.** |
+| provider 1 | **Mistral** — Use your account. Provider charges may apply. |
+| provider 2 | **alo in Europe** — Use your account. Provider charges may apply. |
+| provider 3 | **OpenAI** — Use your account. Provider charges may apply. |
+| consequence | Until connected, you can use the whole computer by hand. |
+| actions | Set up later · About this choice |
+
+**Three things make this ADR 0014 kept rather than merely claimed:**
+
+- **alo's service is second, between Mistral and OpenAI** — not first, and the
+  order is not alphabetical, so nothing puts it at the top by accident either.
+- **Its consequence line is identical to the other two**, word for word. No
+  badge, no extra sentence, no styling of its own.
+- **Nothing is pre-selected here either**, and the screen says so in words:
+  *No provider is selected.*
+
+**The names are illustrative and establish no integration-support matrix** —
+the owner's instruction of 2026-10-06 says so, and a reader must not take
+Mistral and OpenAI appearing here as a claim that either is supported in the
+current release.
+
+**Cards here are 600×92, not 600×108**, because a provider row carries a name
+rather than a title and a consequence of the same weight. The four on the AI
+choice stay 108 and equal to each other; these three stay 92 and equal to each
+other. **Equality is within a list, not across lists.**
+
+**`Set up later` is the primary action**, in navy, which is the screen agreeing
+with the promise: a person may leave setup without connecting an account, and
+the way out is the most prominent thing on it rather than a link in the corner.
+
 ### Measured geometry, from `383:26067` on 2026-10-06
 
 Read from the file rather than taken from the brief:
@@ -374,7 +413,8 @@ Every screen uses **Manrope**. The styles the two read screens carry:
 | Label/Small | Manrope SemiBold 11 / 16, +0.3 |
 
 `figma-brief.md` says *Inter throughout, EB Garamond for the few editorial
-moments*, and `updates/the-palette-follows-the-design-file.md` already records
+moments*, and `docs/autonomy/updates/the-palette-follows-the-design-file.md`
+already records
 that **the brief and the design file disagree about the typeface**. These
 screens are the file's side of that disagreement, and it is unresolved.
 
