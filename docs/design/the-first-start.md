@@ -582,6 +582,40 @@ placeholder name, not with a hopeful one. `alo_setting_up::NotSetUp::NoPairedMac
 is what is honest today, and this screen is what replaces it when the pairing
 road exists.
 
+### The local detail — `194:10709`, *12 · Detail · On this computer*
+
+Read 2026-10-06.
+
+| slot | words |
+|---|---|
+| eyebrow | ON THIS COMPUTER |
+| title | Help that stays on your PC. |
+| introduction | Local tasks are processed on this computer. |
+| row 1 | **What leaves** — No content goes to a model provider for local processing. |
+| row 2 | **What it needs** — A compatible local model and enough resources for the task. |
+| row 3 | **If it is unavailable** — Everything still works by hand. **No silent switch to cloud AI.** |
+| actions | Choose local · Back to choices |
+
+**"No silent switch to cloud AI" is ADR 0008's rule said to the person.** The
+instruction of 2026-10-06 puts the same thing to us — *no silent fallback to
+another machine or cloud provider* — and ADR 0014 §5 makes it the case that will
+be tested: *a local model that fails does not become a paid call to alo.* This
+is the sentence a person can hold us to, and a build that quietly fell back
+would be breaking a promise it printed on this screen.
+
+**Notice how narrow row 1 is.** It says *no content goes to a **model
+provider*** — not *nothing leaves this computer*. Updates, time, the network
+itself are all untouched by the claim. **The precision is the point**, and it is
+the same care the network detail takes in the other direction.
+
+**Row 3 is also the No AI promise, reached from the other side.** *Everything
+still works by hand* is `194:10787`'s *A complete computer* said to somebody who
+chose local and found their model missing.
+
+**Its actions are 160×48**, the second `194:` frame measured at 160 against
+`383:26261`'s 184 — which strengthens the reading that the older family uses one
+size and the newer another, without settling it.
+
 ### The network detail — `383:26261`, *12f · Detail · A machine on your network*
 
 Read 2026-10-06. **The screen that says the hard thing out loud.**
