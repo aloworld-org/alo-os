@@ -439,6 +439,48 @@ width. Actions at y 572 and Accessibility at y 644 are outside it, as before.
 to continue. You can change this later. External processing requires a visible
 choice.* — at the same 14 on 22. It is not abbreviated for the smaller screen.
 
+### Keyboard focus — `384:26478`, *12j0 · Keyboard focus / On this computer*
+
+Read 2026-10-06. **The frame that shows focus and selection are different
+things**, and it shows it by what it leaves alone.
+
+The focused card is **still an unselected card**: 1px `#e7ebef` border, no
+`· Selected` in its title, and **`Continue` is still the disabled grey
+control**. Nothing about having focus has chosen anything. *Focus movement alone
+does not commit a choice* is observable here rather than only required.
+
+**The ring is its own element, drawn outside the card.** The node is named
+`Keyboard focus / not selected` — the design names the state where focus sits on
+something unchosen:
+
+| | card | focus ring |
+|---|---|---|
+| size | 600×108 | **608×116** |
+| position | x 160, y 205 | **x 156, y 201** |
+| border | 1px `#e7ebef` | **2px navy `#102a43`** |
+| corner radius | 12 | **16** |
+
+So the ring is **2px navy, 4 outside the card on every side**, which is the
+specified *2px navy outer ring with a 4px gap* measured rather than restated.
+
+**Its radius is the card's plus the gap** — 12 + 4 = 16. That is how a ring
+concentric with a rounded rectangle is drawn, and a build that reused the card's
+12 would show a ring that pinches at the corners.
+
+**Three borders are now in play and they must not be confused:**
+
+| border | means |
+|---|---|
+| 1px `#e7ebef` | an ordinary, unselected choice |
+| **2px navy, on the card** | **selected** — and the title also says `Selected` |
+| **2px navy, 4px outside the card** | **focused** — and nothing is chosen by it |
+
+Selected and focused are both 2px navy. They are told apart by **where the
+border is** and by **the word in the title**, which is why the word is not
+decoration: for a person who cannot distinguish the two by position alone, the
+word is the only thing that separates *this is where I am* from *this is what I
+chose*.
+
 ### Measured geometry, from `383:26067` on 2026-10-06
 
 Read from the file rather than taken from the brief:
