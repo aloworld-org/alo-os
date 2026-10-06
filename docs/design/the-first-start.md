@@ -273,11 +273,693 @@ externalises every string for translation. Which name wins is the owner's, and
 it is not only a setup question — it is whatever the launcher is called
 everywhere.
 
-**Detail actions are 160 wide, not 184.** The AI-choice screen's Continue and
-Back are 184×48; these are 160×48, and the rows here carry 16 of vertical
-padding against the choice cards' 14, with no fixed height. **The
-specification's 184 is the choice screen's number** and does not generalise to
-the details.
+**This screen's actions are 160 wide, not 184** — the AI-choice screen's
+Continue and Back are 184×48 — and its rows carry 16 of vertical padding against
+the choice cards' 14, with no fixed height.
+
+**Do not read that as "detail actions are 160".** This document did, and the
+file contradicts it: `383:26261`, the network detail, uses **184**. See *A rule I
+stated that the file contradicts* below. The safe statement is the narrow one —
+**this frame is 160** — and the two sizes are an open question for whoever owns
+the file.
+
+### Confirming a pairing — `384:26324`, *12i · Confirm network pairing*
+
+Read 2026-10-06. **This screen meets all three of the owner's network
+requirements**, which is worth recording as observed rather than as owed.
+
+| slot | words |
+|---|---|
+| stage | SET UP · AI CHOICE |
+| title | Connect to Office AI? |
+| introduction | Check that this is the computer you intended to use. |
+| row 1 | **Machine identity** — Office AI · office-ai.local |
+| row 2 | **Processing policy** — Local models on this machine · No provider forwarding |
+| row 3 | **Your approval** — Pairing connects the machines. Each task still needs access to its work. |
+| consequence | Confirm the matching pairing request on the other computer. |
+| actions | Pair computer · Cancel |
+
+- **Identity and processing policy are both shown before pairing**, which is the
+  requirement, and they are two separate rows rather than one sentence.
+- **Pairing grants no blanket access to work** — row 3 says so in the person's
+  own words, and it is the clause that must survive translation.
+- **Both ends confirm.** *Confirm the matching pairing request on the other
+  computer* is ADR 0003's deliberate link made on both machines, and it is why a
+  message arriving from another machine grants no authority by itself.
+
+**`Office AI · office-ai.local` is example data and never real state.** So is
+the policy line beneath it: a real screen reads the destination's actual policy,
+and a machine that cannot read one says so rather than showing this.
+
+Rows are 600×92 with 14 of vertical padding; both actions are 184×48.
+
+### Accessibility during setup — `375:30435`, *Accessibility · Setup options*
+
+Read 2026-10-06.
+
+| slot | words |
+|---|---|
+| stage | SET UP · AI CHOICE |
+| title | Set up your way. |
+| introduction | **Available now, before you create an account.** |
+| row 1 | **Screen reader** — Read controls, choices and status aloud. |
+| row 2 | **Text size** — Make setup text larger without cutting off controls. |
+| row 3 | **More options** — High contrast, reduced motion and on-screen keyboard. |
+| consequence | Press **Ctrl + Alt + S** at any time to turn the screen reader on or off. |
+| action | Return to setup |
+
+**The stage reads `SET UP · AI CHOICE`.** This document first read that as the
+design carrying the originating step — *you came from the AI choice, so it still
+says so* — and therefore as evidence for the requirement that returning lands
+back where you were. **`387:26226` undermines that reading**; see below.
+
+Rows 600×92 with 14 padding; the single action 184×48.
+
+### The shortcut the design proposes — checked, and free, with three conditions
+
+**`Ctrl`+`Alt`+`S` collides with no shipped binding.** Measured in
+`crates/alo-shortcuts/src/defaults.rs` on 2026-10-06: every shipped chord uses
+`Super`, `Super`+`Shift`, `Alt` or `Alt`+`Shift` — the agent on `Super`+`A`, the
+launcher on `Super`+`Space`, Settings on `Super`+`I`, close on `Alt`+`F4`,
+minimise and maximise on `Super`+`Down` and `Super`+`Up`, snapping on
+`Super`+`Left`/`Right`, window and application switching on the `Alt`+`Tab` and
+`Super`+`Tab` families, zoom on `Super`+`Plus`/`Minus`, *show all* on
+`Super`+`0`. **No `Ctrl`+`Alt` chord is shipped at all.**
+
+Three things follow, and none of them is a design question:
+
+1. **"At any time" is a claim about the shipped set.** A person's binding beats
+   a shipped one — `alo-shortcuts` says so in its own header — so somebody may
+   already hold this chord.
+2. **There is no screen-reader action to bind.** Adding one is a **new
+   `Action`**, and the crate prices that: *every action here costs a chord that
+   no application on the machine can ever see again.* The change that adds it
+   owes the paragraph `docs/autonomy/the-shell-plan.md` task 18 requires — which
+   chord, why no existing action serves, and what applications can no longer
+   see. `Action::ALL` is iterated in `window_command.rs`, so a new variant is
+   held by whatever asserts over that list.
+3. **It must work before any account exists**, which the screen itself promises,
+   and `alo-shortcuts` keeps **a person's** bindings. A machine-wide chord that
+   works before there is a person may not belong to that crate at all. **That is
+   an architecture question and this document does not answer it.**
+
+### A long translation — `385:26244`, *12m · Network selected / Long translation*
+
+Read 2026-10-06, and it answers more than the question it is named for.
+
+**The copy is real German, not lorem**, so the growth is a measurement rather
+than a guess:
+
+| | |
+|---|---|
+| On this computer | **Auf diesem Computer** — alo arbeitet lokal auf diesem Computer. Die Verfügbarkeit hängt von seiner Ausstattung ab. |
+| A machine on your network | **Ein Computer in deinem lokalen Netzwerk · Ausgewählt** |
+| | Ausgewählte Inhalte werden an einen Computer in deinem lokalen Netzwerk übertragen und dort verarbeitet. |
+| My provider | **Mein Anbieter** — Nutze deinen eigenen Anbieter. Ausgewählte Inhalte verlassen diesen PC; es können zusätzliche Anbietergebühren anfallen. |
+| No AI | **Keine KI** — Öffne Anwendungen, suche Dateien und nutze die gesamte Arbeitsfläche selbst, ohne einen KI-Assistenten. |
+
+**`Selected` translates too — `· Ausgewählt`.** The selection word is not a
+decoration appended in the shell; it is part of the translated string, and a
+build that concatenated an English *Selected* onto a translated title would be
+wrong in every language.
+
+**All four cards grow to 132 together.** 108 in English, 132 here, and the four
+stay equal — which is the rule *measure the translated text, then grow every
+card to the tallest required height* observed in the file rather than only
+stated.
+
+**And the layout changes shape when the content scrolls.** Measured on this
+frame, which is **1440×960, the same size as the arrival** — so these
+differences are the layout responding, not a different canvas:
+
+| | arrival `383:26067` | long translation `385:26244` |
+|---|---|---|
+| column | left-aligned, x 160 | **centred** — a 640 scroll container at x 400, the 600 column 20 inside it |
+| scrolling | none | `Setup content / vertical scroll`, 640×704 at y 88, scrolls vertically |
+| actions | inside the column | **outside the scroll container**, at y 812 |
+| Accessibility | y 876 | y 884 |
+| footer | y 892 | y 908 |
+
+**The actions and Accessibility sit outside the scrolling region.** That is the
+requirement — *scroll the content while keeping navigation and Accessibility
+reachable outside that scrolling region* — carried by the design rather than
+left to the implementation. Three actions here, each 184×48 at 0, 196 and 392,
+so a 12 gap.
+
+**A builder would get the column wrong by assuming one answer.** It is
+left-aligned at 160 when the content fits and centred in a scroll container when
+it does not; 1440 − 640 = 800, halved, is the 400. Neither position is *the*
+position.
+
+### A short screen — `385:26174`, *12k · Arrival / 1280 × 720*
+
+Read 2026-10-06. The frame is **1280×720**, and all four choices are visible
+without scrolling.
+
+**What gets smaller, and what does not.** This is the rule a build would
+otherwise guess at:
+
+| | 1440×960 arrival | 1280×720 |
+|---|---|---|
+| heading | 36 on 44 | **28 on 36** |
+| card | 600×108, padding 14 down | **600×84, padding 12 down** |
+| gap between cards | 10 | **8** |
+| gap between blocks | 12 | **8** |
+| **choice title** | **16 on 25** | **16 on 25 — unchanged** |
+| **choice consequence** | **14 on 22** | **14 on 22 — unchanged** |
+
+**The readable text never shrinks.** The heading comes down, the padding
+tightens and the gaps close, and the 16 and 14 of the choice title and its
+consequence are untouched. That is *do not reduce user-selected text size to
+make content fit* kept by the design, and it tells a build **which knobs it may
+turn**: heading, padding, gaps — never body text.
+
+**The column is centred here too**, by the same arithmetic as the long
+translation: 1280 − 640 = 640, halved, is the 320 the scroll container sits at.
+So centring goes with the scroll container rather than with a particular screen
+width. Actions at y 572 and Accessibility at y 644 are outside it, as before.
+
+**The consequence paragraph is the same three sentences** — *Choose one option
+to continue. You can change this later. External processing requires a visible
+choice.* — at the same 14 on 22. It is not abbreviated for the smaller screen.
+
+### Keyboard focus — `384:26478`, *12j0 · Keyboard focus / On this computer*
+
+Read 2026-10-06. **The frame that shows focus and selection are different
+things**, and it shows it by what it leaves alone.
+
+The focused card is **still an unselected card**: 1px `#e7ebef` border, no
+`· Selected` in its title, and **`Continue` is still the disabled grey
+control**. Nothing about having focus has chosen anything. *Focus movement alone
+does not commit a choice* is observable here rather than only required.
+
+**The ring is its own element, drawn outside the card.** The node is named
+`Keyboard focus / not selected` — the design names the state where focus sits on
+something unchosen:
+
+| | card | focus ring |
+|---|---|---|
+| size | 600×108 | **608×116** |
+| position | x 160, y 205 | **x 156, y 201** |
+| border | 1px `#e7ebef` | **2px navy `#102a43`** |
+| corner radius | 12 | **16** |
+
+So the ring is **2px navy, 4 outside the card on every side**, which is the
+specified *2px navy outer ring with a 4px gap* measured rather than restated.
+
+**Its radius is the card's plus the gap** — 12 + 4 = 16. That is how a ring
+concentric with a rounded rectangle is drawn, and a build that reused the card's
+12 would show a ring that pinches at the corners.
+
+**Three borders are now in play and they must not be confused:**
+
+| border | means |
+|---|---|
+| 1px `#e7ebef` | an ordinary, unselected choice |
+| **2px navy, on the card** | **selected** — and the title also says `Selected` |
+| **2px navy, 4px outside the card** | **focused** — and nothing is chosen by it |
+
+Selected and focused are both 2px navy. They are told apart by **where the
+border is** and by **the word in the title**, which is why the word is not
+decoration: for a person who cannot distinguish the two by position alone, the
+word is the only thing that separates *this is where I am* from *this is what I
+chose*.
+
+### All four focus states — `384:26478`, `384:26513`, `384:26548`, `384:26583`
+
+Measured 2026-10-06, **all four rather than one and an assumption**. They are
+the same frame with the ring moved, and nothing else differs:
+
+| frame | focus on | ring y | card top |
+|---|---|---|---|
+| `384:26478` *12j0* | On this computer | 201 | 205 |
+| `384:26513` *12j1* | A machine on your network | 319 | 323 |
+| `384:26548` *12j2* | My provider | 437 | 441 |
+| `384:26583` *12j3* | No AI | 555 | 559 |
+
+- **The ring is 608×116 at x 156 in every one**, always 4 above its card.
+- **The step is 118** — 108 of card plus the 10 gap — so the ring tracks the
+  card pitch exactly rather than being placed by hand.
+- **`Continue` is the disabled grey control in all four.** Focus reaches the
+  last choice and the way on is still shut, because focus has chosen nothing.
+- **The ring is named `Keyboard focus / not selected` in all four**, including
+  the one on *No AI*.
+
+### Focused **and** selected — not drawn, and settled by the rules that are
+
+**No frame among the fourteen read draws a card that is both focused and
+selected**, and the state is reached the moment a person picks a choice and tabs
+back to it — or simply selects with the keyboard, where focus is *already* on
+the card being chosen. **It is the common case, not an edge one.**
+
+**It needs no new visual language, because the two marks never collide:**
+
+| | where it is drawn |
+|---|---|
+| **selected** | a 2px navy border **inside** the card's own 600×108 box, plus `· Selected` in the title |
+| **focused** | a 2px navy ring **outside** that box, 4 away on every side, 608×116, radius 16 |
+
+**So a focused, selected card is both at once, unchanged.** The ring's geometry
+does not move, and this is measured rather than assumed: a selected card is
+`h-[108px]` with a 2px border and an unselected one is `h-[108px]` with a 1px
+border — **the border is drawn inside the box and does not change its size**, so
+the 4 gap and the 608×116 ring are identical either way.
+
+**What a build must therefore not do**, each of which would be a reasonable
+guess and wrong:
+
+- **Drop the ring because the card is already navy.** Then a keyboard user
+  cannot tell which card they are on once they have chosen one.
+- **Drop the card's border because the ring is navy.** Then the selection
+  disappears while focus rests on it.
+- **Thicken or recolour either** to tell them apart. They are already told apart
+  by position — inside against outside — and by the word in the title.
+- **Reuse the card's 12 radius for the ring.** It is 16, for the reason the
+  section above gives.
+
+**The frame is still owed**, and `385:26281` shows the same ring around the
+Accessibility action — 168×56 at (36, 872) against a 160×48 action at
+(40, 876), the same 4 outside — so the rule is already general across cards and
+actions. This section specifies the combination from the design's own rules; it
+does not invent one, and a drawn frame should confirm it rather than discover
+it.
+
+### Connected — `384:26375`, *13d · Ready / Network machine*
+
+Read 2026-10-06. The end of the network road, and **the screen that could most
+easily have overclaimed.**
+
+| slot | words |
+|---|---|
+| title | Your canvas is ready. |
+| introduction | Office AI is connected. **You decide what work to send.** |
+| row 1 | **Your account** — Disan · Protected on this PC |
+| row 2 | **A machine on your network** — Office AI · **Review or disconnect in Settings** |
+| consequence | **Selected content leaves this PC for the paired machine.** |
+| actions | Open my canvas · Review choices |
+
+**It does not say *nothing leaves the building*.** The destination is on the
+person's own network and the screen still says, in its last line, that content
+leaves this PC. That is the requirement kept at the one moment it would have
+been easiest to drop — a success screen, where the temptation is to reassure.
+
+**It repeats that pairing is not permission.** *You decide what work to send*
+says again at the end what the pairing screen said at the start, and the two
+together are what make *each task still needs access to its work* a rule rather
+than a sentence on one screen.
+
+**The way out is named on the screen that completes the setup** — *Review or
+disconnect in Settings* — rather than left for a person to search for later.
+
+**`Disan` is example data, and it is the owner's own name.** So is `Office AI`.
+A build that carried either through would be showing one person's name to
+everybody, which is the sharpest form of the rule that **nothing in the
+prototype is real state**.
+
+**This screen is a claim the software has to earn.** It says a machine is
+connected. Until pairing is implemented, nothing may show it — not with a
+placeholder name, not with a hopeful one. `alo_setting_up::NotSetUp::NoPairedMachine`
+is what is honest today, and this screen is what replaces it when the pairing
+road exists.
+
+### All four selected states, measured — and the inventory is complete
+
+`183:10683` read 2026-10-06, the last of the twenty-six. Like the other two
+`183:` frames it is **current, not stale**: the corrected four, *A machine on
+your network* in second place, no *alo in Europe*.
+
+| frame | selected | `Continue` | actions |
+|---|---|---|---|
+| `183:10679` *12* | On this computer · Selected | enabled | 3 × 184 |
+| `383:26127` *12e* | A machine on your network · Selected | enabled | 3 × 184 |
+| `183:10683` *12a* | My provider · Selected | enabled | 3 × 184 |
+| `183:10691` *12c* | No AI · Selected | enabled | 3 × 184 |
+
+**One screen, four states, and the four behave identically.** Each marks its own
+card with the 2px navy border and the word, each enables `Continue`, each gains
+`About this choice` as a third action at 184. **`No AI` is not special-cased
+anywhere in this set** — which is ADR 0009's *same weight* holding not only in
+how the choice is drawn but in what happens after it is made.
+
+**The AI-choice screen's 184 is consistent across all four**, unlike the detail
+screens. So the width caution above is specific to the details, and a build may
+rely on 184 here.
+
+**Every frame in `figma-snapshot/ROOTS.md`'s inventory has now been read from
+the file**, with its copy and geometry written down. What remains is not reading
+but confirming: the re-export of section `383:26066` into the committed
+snapshot, which `MANIFEST.md` names as the outstanding dependency.
+
+### Accessibility reached from Welcome — `387:26226`, and a third inference withdrawn
+
+Read 2026-10-06. The frame is named *Accessibility · Screen reader on /
+**Welcome*** and **its content is identical to `384:26446`**, the screen-reader
+state reached from the AI choice — same title, same three rows, same sentences,
+same single `Return to setup` action.
+
+**Including the stage, which still reads `SET UP · AI CHOICE`.**
+
+**That breaks the inference this document drew from `375:30435`.** It had read
+the stage as the design remembering where the person came from, and therefore as
+support for *return from accessibility settings to the originating step*. If the
+stage tracked origin, **the frame named for Welcome would read `WELCOME`** —
+which is what `183:10673` shows on the Welcome screen itself. It does not.
+
+**Two readings remain and the file does not choose between them:**
+
+- The stage on `387:26226` is **a copy that was not finished**, and the stage
+  does track origin.
+- The stage **does not track origin at all**, and reading it that way was this
+  document's invention from a single frame.
+
+**Either way the requirement stands on its own.** *Return from accessibility
+settings to the originating step, preserving its state* is in the owner's
+instruction of 2026-10-06, and it needs no support from a stage label. **What a
+build must not do is infer the behaviour from this label**, in either direction.
+Worth one question to whoever owns the file, because it is one word and it
+decides whether the label is state or decoration.
+
+**Third inference this document made that the file then broke**, after *`· word`
+implies a navy border* and *detail actions have a family width*. All three were
+read off one or two frames. The method that has worked every time is the same:
+**read the next frame before believing the pattern.**
+
+### The provider detail — `194:10735`, *12 · Detail · My provider*
+
+Read 2026-10-06.
+
+| slot | words |
+|---|---|
+| eyebrow | MY PROVIDER |
+| title | Your account. Your choice. |
+| introduction | Connect a compatible provider using its supported sign-in method. |
+| row 1 | **What leaves** — The content needed for the request, shown before sending. |
+| row 2 | **What it costs** — Your provider's prices and account limits apply. |
+| row 3 | **Until connected** — The computer remains fully usable by hand. |
+| actions | Choose my provider *(184)* · Back to choices *(160)* |
+
+**Cost gets a row of its own.** Not a footnote, not a parenthesis on another
+line — one of three equal rows, beside what leaves and what still works. A
+person deciding whether to use their own provider is told that money is involved
+at the same weight as everything else they are told.
+
+**"shown before sending" appears here too**, matching `385:26346`'s *You see the
+content and destination before the request*. The same promise on the detail and
+on the connect screen, which is what makes it a commitment rather than a line of
+copy on one screen.
+
+**The three rows mirror the local detail's three exactly** — what leaves, what
+it needs or costs, what happens when it is not there — so a person comparing two
+choices is reading answers to the same three questions. That parallelism is the
+structure `alo-setting-up`'s vocabulary already aims at in its own words: *each
+of the four lines answers the same two questions so that a person can weigh them
+against each other.*
+
+### The local detail — `194:10709`, *12 · Detail · On this computer*
+
+Read 2026-10-06.
+
+| slot | words |
+|---|---|
+| eyebrow | ON THIS COMPUTER |
+| title | Help that stays on your PC. |
+| introduction | Local tasks are processed on this computer. |
+| row 1 | **What leaves** — No content goes to a model provider for local processing. |
+| row 2 | **What it needs** — A compatible local model and enough resources for the task. |
+| row 3 | **If it is unavailable** — Everything still works by hand. **No silent switch to cloud AI.** |
+| actions | Choose local · Back to choices |
+
+**"No silent switch to cloud AI" is ADR 0008's rule said to the person.** The
+instruction of 2026-10-06 puts the same thing to us — *no silent fallback to
+another machine or cloud provider* — and ADR 0014 §5 makes it the case that will
+be tested: *a local model that fails does not become a paid call to alo.* This
+is the sentence a person can hold us to, and a build that quietly fell back
+would be breaking a promise it printed on this screen.
+
+**Notice how narrow row 1 is.** It says *no content goes to a **model
+provider*** — not *nothing leaves this computer*. Updates, time, the network
+itself are all untouched by the claim. **The precision is the point**, and it is
+the same care the network detail takes in the other direction.
+
+**Row 3 is also the No AI promise, reached from the other side.** *Everything
+still works by hand* is `194:10787`'s *A complete computer* said to somebody who
+chose local and found their model missing.
+
+**Its actions are 160×48**, the second `194:` frame measured at 160 against
+`383:26261`'s 184 — which strengthens the reading that the older family uses one
+size and the newer another, without settling it.
+
+### The network detail — `383:26261`, *12f · Detail · A machine on your network*
+
+Read 2026-10-06. **The screen that says the hard thing out loud.**
+
+| slot | words |
+|---|---|
+| title | Use a shared computer. |
+| introduction | Connect to a computer managed by you or your organisation. |
+| row 1 | **What leaves this PC** — The selected content travels to the paired computer. |
+| row 2 | **Check the destination** — Review its name, owner and processing policy before pairing. |
+| row 3 | **Stay in control** — Choose which work to send. Disconnect or stop a task whenever you need. |
+| consequence | **A network connection alone does not guarantee that processing stays in the building.** |
+| actions | Choose network · Back to choices |
+
+**That last line is the requirement, written as copy for a person to read.** The
+instruction of 2026-10-06 says *do not promise "nothing leaves the building"
+merely because the destination is on the local network; that claim requires an
+enforced local-only processing policy.* **The design does not merely avoid the
+false promise — it tells the person the promise would be false.** A build must
+keep that sentence; losing it would be losing the only place the limit is
+stated to the person rather than to us.
+
+The three rows are the same three guarantees in order: **what leaves**, **check
+before**, **stay in control** — and *Disconnect or stop a task whenever you
+need* is the way out named a third time, after the provider list and the ready
+screen.
+
+### Action widths are not a rule, and my two attempts to make them one were both wrong
+
+**Corrected twice, and the second correction killed the pattern rather than
+adjusting it.**
+
+First this document said *detail actions are 160×48*, generalised from
+`194:10787`. Then `383:26261` turned up at 184, and the note became *the older
+`194:` family uses 160 and the newer `383:` family uses 184*. **Then
+`194:10735` turned up with both widths in one row.** Measured:
+
+| frame | primary | secondary |
+|---|---|---|
+| `194:10787` *Detail · No AI* | Choose No AI — 160 | Back to choices — 160 |
+| `194:10709` *Detail · On this computer* | Choose local — 160 | Back to choices — 160 |
+| `194:10735` *Detail · My provider* | **Choose my provider — 184** | **Back to choices — 160** |
+| `383:26261` *Detail · network* | Choose network — 184 | Back to choices — 184 |
+
+**So there is no family rule and no per-screen rule.** `Back to choices` is 160
+on three screens and 184 on a fourth; the longest label, *Choose my provider*,
+is 184 where the shorter ones are 160. The likeliest reading now is that **each
+action is sized to its own label** — but `383:26261` has a 184 *Back to
+choices*, which that reading does not explain either.
+
+**What is actually invariant, and is the component's own contract:** *Explicit
+setup action. Named labels; **48 logical pixel target**. Secondary actions
+retain equal reachability.* **Height and reachability are specified. Width is
+not.**
+
+**So a build should size each action to its label** and must not copy a number
+from one screen to another. The AI-choice screen's 184 is consistent across its
+own frames and can be relied on *there*; nothing in the details can.
+
+**This is the second pattern this document invented and the file then broke** —
+the first was *`· word` implies a navy border*, which the accessibility toggle
+contradicted. Both were generalisations from one or two instances. **The file
+is the authority and a pattern is a hypothesis until the next frame agrees with
+it.**
+
+### The screen reader on — `384:26446`, *Accessibility · Screen reader on*
+
+Read 2026-10-06. The same screen as `375:30435` with the first row changed:
+
+| slot | words |
+|---|---|
+| row 1 title | **Screen reader · On** |
+| row 1 sentence | Setup speaks focused controls **and their state**. Ctrl + Alt + S turns it off. |
+| page sentence | Press Ctrl + Alt + S at any time to turn the screen reader on or off. |
+
+**The `· word` construction does not always bring a border with it.** On a
+choice card, *· Selected* comes with a 2px navy border. Here, *· On* leaves the
+row at its ordinary 1px `#e7ebef`. **On a toggle row the word alone carries the
+state**, and a build that generalised the card's rule would draw a navy border
+around a switched-on setting and make it look chosen instead of on.
+
+**"speaks focused controls *and their state*"** is the selected/unselected
+exposure requirement in the design's own words — the thing a screen reader must
+announce beyond the label.
+
+**The shortcut is said twice, and differently.** The row says what it does *from
+here* — *turns it off* — and the page says what it does *generally* — *on or
+off*. Two strings, not one reused, because the row's sentence is only true while
+the reader is on.
+
+### A wide screen — `385:26208`, *12l · Arrival / 2560 × 1080*
+
+Measured 2026-10-06. The third width, and the one that proves the column is
+fixed rather than proportional:
+
+| | |
+|---|---|
+| frame | 2560×1080 |
+| scroll container | 640 wide at **x 960** — (2560 − 640) ÷ 2 |
+| cards | **still 600×108**, not stretched |
+| actions | x 980, y 932, **outside** the container |
+| Accessibility | y 1004 · footer y 1028 |
+
+**At two and a half times the width of the arrival frame the cards are the same
+600.** Three widths now give the same rule — 320 at 1280, 400 at 1440, 960 at
+2560 — so *keep a centred 600px column rather than stretching it* is measured
+rather than asserted, and a build that made the column proportional would be
+wrong at every one of them.
+
+### Finding a machine — `384:26276`, *12h · Connect a network machine*
+
+Read 2026-10-06.
+
+| slot | words |
+|---|---|
+| title | Choose a computer. |
+| introduction | Connect to a machine you recognise **and are allowed to use**. |
+| row 1 | **Office AI** — Managed by your organisation · Local processing |
+| row 2 | **Add a machine** — Enter the address provided by its owner. |
+| consequence | Review the machine's identity and processing policy before pairing. |
+| actions | **Set up later** *(primary)* · Back |
+
+**"and are allowed to use" is the authority point.** Finding a machine on a
+network implies no permission to use it, and the screen says so in the sentence
+a person reads first. *Enter the address provided by its owner* keeps ADR 0003's
+deliberate link on both ends: the address comes from the other machine's owner,
+not from a scan.
+
+**`Local processing` on the first row is the destination's own claim being
+displayed, and this is the sentence to be careful about.** A build must show
+**what the destination actually says** about its policy, or **say it cannot
+tell**. It must never print *Local processing* because an address looked local
+— that is the same fault as promising *nothing leaves the building*, one layer
+down, and harder to spot because it is phrased as a fact about somebody else's
+machine.
+
+**`Office AI` is example data.**
+
+### Connecting a provider — `385:26346`, *12o · Connect a provider*
+
+Read 2026-10-06.
+
+| slot | words |
+|---|---|
+| title | Connect your provider. |
+| introduction | Use the sign-in method or API key supplied by your provider. |
+| row 1 | **Provider connection** — Your chosen provider · Account or API key |
+| row 2 | **Before sending** — You see the content and destination before the request. |
+| consequence | Until connected, you can use the whole computer by hand. |
+| actions | **Set up later** *(primary)* · Back |
+
+**`Set up later` is the primary action on the screen whose whole purpose is
+connecting.** That is the third screen where leaving without connecting is the
+prominent path — the provider list and the network discovery are the others —
+and together they are *choosing a route is not connecting an account*, drawn
+rather than stated.
+
+**No credential field is drawn**, which agrees with *Setup does not require a
+provider account*. **`Your chosen provider` is a placeholder, not an example
+name**, unlike the provider list where Mistral and OpenAI appear.
+
+**"You see the content and destination before the request"** is a promise about
+every later send, not about setup. It ties this screen to the egress and
+approval machinery, and a build that connected a provider without that
+disclosure road existing would have made a promise here it cannot keep
+elsewhere.
+
+## Responsive: the rule for every size, not only the three drawn
+
+**The file gives three widths and two heights. A machine has neither.** These
+screens must hold at any size a display reports and at any text size a person
+chooses, so what follows states the rule for all of them — **derived from the
+three measured frames and the owner's instruction of 2026-10-06, with the
+regions nobody has drawn named as such.**
+
+### Width
+
+| available width | the column |
+|---|---|
+| **≥ 664** | **600, centred.** The scroll container is 640 and sits at (width − 640) ÷ 2 — measured 320 at 1280, 400 at 1440, 960 at 2560. |
+| **< 664** | **width − 64**, with 32 each side. No frame draws this. |
+
+**664 is 600 plus the two 32 margins**, and it is where one rule has to hand
+over to the other. **The column never stretches** — at 2560 the cards are still
+600, not 2.5× wider — because a line of text that long stops being readable,
+which is the reason the instruction gives for keeping it fixed.
+
+**The action row wraps before a hit target shrinks.** Three actions at 184 with
+12 between them is 576, which fits a 600 column. Below a 576-wide column it does
+not, and the rule is **wrap to a second row, never shrink** — every action stays
+at least 48 high and keeps its width, because *secondary actions retain equal
+reachability* is the component's own contract and a 40-tall button is not a
+smaller version of a 48-tall one, it is a worse one.
+
+### Height
+
+**Two mechanisms, in this order**, both measured at 1280×720:
+
+1. **Tighten.** Heading 36/44 → 28/36, card padding 14 → 12, gaps 10 → 8 and
+   12 → 8.
+2. **Scroll.** The content goes in a 640-wide scrolling region, and **the
+   actions and `Accessibility` move outside it** so they are reachable without
+   scrolling. That is the design's own arrangement on `385:26244` and
+   `385:26174`, not an invention here.
+
+**The readable text is in neither mechanism.** The choice title stays 16/25 and
+its consequence 14/22 at every size measured. **A build may tighten and it may
+scroll; it may not shrink what a person reads.**
+
+### Text size, which is the case the frames understate
+
+`alo_appearance::TextScale` goes to **200%** — its own doc calls that *the
+standard's floor*. **The card heights in the file are examples at one text
+size**, and the instruction says so: *these examples are not hard maximum
+heights; measure translated and enlarged text, then grow every card to the
+tallest required height.*
+
+| measured | card |
+|---|---|
+| English, 1440 | 600×108 |
+| English, short screen | 600×84 |
+| German, 1440 | **600×132** |
+| **200% text** | **not drawn anywhere** |
+
+**At 200% the consequence line alone is about 44 tall before wrapping**, so a
+card carrying a translated two-line consequence at 200% will exceed every height
+in the file. **All four still grow together and stay equal** — that is the rule
+the German frame establishes, and enlarging text does not exempt it.
+
+### What is not drawn, and must not be guessed quietly
+
+- **Any width below 1280.** The narrow rule above comes from the instruction,
+  not from a frame.
+- **Any text size above 100%.** The tallest card measured is 132, at 100%.
+- **The two together** — narrow *and* enlarged — which is where a phone-sized
+  display with large text lands, and where the action row has to wrap at the
+  same time as the cards grow.
+
+These are the three places a build will meet a geometry the file never showed
+it. **Each should be measured on a machine rather than reasoned about**, and
+`docs/autonomy/the-shell-plan.md` task 18's acceptance already insists on that:
+the walk is driven from a key or a pointer, with no test in the loop.
+
+### One scaling, at the boundary that already exists
+
+Everything above is **logical pixels**. Display scaling is applied **once**, at
+the existing logical-to-physical boundary, and never a second time inside this
+surface — two applications of a fractional scale is how a 48 target becomes 47
+and stops being a 48 target. `alo-appearance` owns the text scale and
+`alo-displays` the display's own; this surface reads them and multiplies
+nothing.
 
 ### Measured geometry, from `383:26067` on 2026-10-06
 
@@ -363,15 +1045,48 @@ shortcut systems and test with assistive technology.
 Use the existing appearance and layout systems. The React and Tailwind in any
 `get_design_context` output is a visual target, never an implementation.
 
-## Read before the correction — treat as superseded where they disagree
+## Re-read, and no longer stale — `183:10679` and `183:10691`
 
-**These two were read earlier on 2026-10-06, before the owner gave the corrected
-flow.** `183:10679` is listed in the corrected inventory, so it has very likely
-been updated since this reading; what is below is what it said *then*. Where it
-disagrees with `383:26067` above — and it does, on the introduction, the stage
-label and the presence of *alo in Europe* — **the corrected flow wins and this
-is history.** Re-reading `183:10679`, `183:10683`, `183:10691` and `183:10687`
-is owed, and is the cheapest remaining piece of this job.
+**They were updated in the file, and this section had them wrong twice over.**
+An earlier reading on 2026-10-06 caught them before the correction, showing *alo
+in Europe*, `SET UP · 4 OF 5` and *continue without AI*; this document then
+marked them as probably-stale history. **Re-read later the same day, both carry
+the corrected four**, with *A machine on your network* in second place, no *alo
+in Europe*, the `SET UP · AI CHOICE` stage and *Choose where alo runs, or choose
+No AI*. The older quotation below is kept only as the record of what moved.
+
+| frame | name now | selected card | `Continue` |
+|---|---|---|---|
+| `183:10679` | *12 · Choose how alo helps* | On this computer · Selected | **enabled, navy** |
+| `183:10691` | *12c · No AI selected* | No AI · Selected | **enabled, navy** |
+
+**`No AI` enables `Continue` exactly like the other three.** It is not a skip
+link, not a *continue without* at the side; it is chosen and confirmed on the
+same road as every other answer, which is ADR 0009's *same weight* at the level
+of what a person actually does.
+
+### This settles whether the arrival sentence is one key or three
+
+**It is at least two, and the first must stand alone.** The consequence
+paragraph differs between arrival and a chosen state:
+
+| state | the paragraph |
+|---|---|
+| arrival `383:26067` | **Choose one option to continue.** You can change this later. External processing requires a visible choice. |
+| something selected | You can change this later. External processing requires a visible choice. |
+
+The last two sentences appear **without** the first the moment anything is
+chosen. So *Choose one option to continue.* is its own string, shown only while
+nothing is selected — it cannot be baked into a single key with the other two,
+and a build that did would either repeat it after a choice or lose the other two
+before one.
+
+This is what `crates/alo-setting-up/src/words.rs` would need as a new key, and
+it is the one piece of that vocabulary work that does **not** wait on the two
+questions below: it adds a string rather than changing the meaning of an
+existing one, so ADR 0068's retirement rule does not apply to it.
+
+## Read before the correction — kept as the record of what moved
 
 ## The screens, as read on 2026-10-06
 
