@@ -582,6 +582,37 @@ placeholder name, not with a hopeful one. `alo_setting_up::NotSetUp::NoPairedMac
 is what is honest today, and this screen is what replaces it when the pairing
 road exists.
 
+### The provider detail — `194:10735`, *12 · Detail · My provider*
+
+Read 2026-10-06.
+
+| slot | words |
+|---|---|
+| eyebrow | MY PROVIDER |
+| title | Your account. Your choice. |
+| introduction | Connect a compatible provider using its supported sign-in method. |
+| row 1 | **What leaves** — The content needed for the request, shown before sending. |
+| row 2 | **What it costs** — Your provider's prices and account limits apply. |
+| row 3 | **Until connected** — The computer remains fully usable by hand. |
+| actions | Choose my provider *(184)* · Back to choices *(160)* |
+
+**Cost gets a row of its own.** Not a footnote, not a parenthesis on another
+line — one of three equal rows, beside what leaves and what still works. A
+person deciding whether to use their own provider is told that money is involved
+at the same weight as everything else they are told.
+
+**"shown before sending" appears here too**, matching `385:26346`'s *You see the
+content and destination before the request*. The same promise on the detail and
+on the connect screen, which is what makes it a commitment rather than a line of
+copy on one screen.
+
+**The three rows mirror the local detail's three exactly** — what leaves, what
+it needs or costs, what happens when it is not there — so a person comparing two
+choices is reading answers to the same three questions. That parallelism is the
+structure `alo-setting-up`'s vocabulary already aims at in its own words: *each
+of the four lines answers the same two questions so that a person can weigh them
+against each other.*
+
 ### The local detail — `194:10709`, *12 · Detail · On this computer*
 
 Read 2026-10-06.
@@ -643,26 +674,43 @@ before**, **stay in control** — and *Disconnect or stop a task whenever you
 need* is the way out named a third time, after the provider list and the ready
 screen.
 
-### A rule I stated that the file contradicts: detail actions are not always 160
+### Action widths are not a rule, and my two attempts to make them one were both wrong
 
-**Corrected here.** This document said *detail actions are 160×48*, generalised
-from `194:10787`. It is not a rule:
+**Corrected twice, and the second correction killed the pattern rather than
+adjusting it.**
 
-| frame | its actions |
-|---|---|
-| `194:10787` *Detail · No AI* | 160×48 |
-| `383:26261` *Detail · A machine on your network* | **184×48** |
+First this document said *detail actions are 160×48*, generalised from
+`194:10787`. Then `383:26261` turned up at 184, and the note became *the older
+`194:` family uses 160 and the newer `383:` family uses 184*. **Then
+`194:10735` turned up with both widths in one row.** Measured:
 
-The 184 frames are the `383:`–`387:` ones the owner's corrected inventory
-names, and the 160 frames are the older `194:` ones. **The likeliest reading is
-that the newer frames standardised on 184 and the older details have not been
-redrawn** — but that is a reading, not a measurement, and the two sizes are both
-in the file today.
+| frame | primary | secondary |
+|---|---|---|
+| `194:10787` *Detail · No AI* | Choose No AI — 160 | Back to choices — 160 |
+| `194:10709` *Detail · On this computer* | Choose local — 160 | Back to choices — 160 |
+| `194:10735` *Detail · My provider* | **Choose my provider — 184** | **Back to choices — 160** |
+| `383:26261` *Detail · network* | Choose network — 184 | Back to choices — 184 |
 
-**A build should not pick one and apply it to both.** Either the `194:` details
-are refreshed to 184, or the difference is deliberate and should be said; it is
-a question for whoever owns the file, and it is small enough to be easy to get
-silently wrong.
+**So there is no family rule and no per-screen rule.** `Back to choices` is 160
+on three screens and 184 on a fourth; the longest label, *Choose my provider*,
+is 184 where the shorter ones are 160. The likeliest reading now is that **each
+action is sized to its own label** — but `383:26261` has a 184 *Back to
+choices*, which that reading does not explain either.
+
+**What is actually invariant, and is the component's own contract:** *Explicit
+setup action. Named labels; **48 logical pixel target**. Secondary actions
+retain equal reachability.* **Height and reachability are specified. Width is
+not.**
+
+**So a build should size each action to its label** and must not copy a number
+from one screen to another. The AI-choice screen's 184 is consistent across its
+own frames and can be relied on *there*; nothing in the details can.
+
+**This is the second pattern this document invented and the file then broke** —
+the first was *`· word` implies a navy border*, which the accessibility toggle
+contradicted. Both were generalisations from one or two instances. **The file
+is the authority and a pattern is a hypothesis until the next frame agrees with
+it.**
 
 ### The screen reader on — `384:26446`, *Accessibility · Screen reader on*
 
