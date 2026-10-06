@@ -339,10 +339,22 @@ whether a machine with one broken output is usable.
 
 ### 5. The desktop is laid out for each display it is drawn on
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** 4.
+**Status:** **Done, 2026-10-06: the code**, for the layout half. Every display
+is laid out from **its own size and its own scale** instead of being handed the
+first display's pictures. The scale is the person's, held in their arrangement:
+`Server::the_scale_of_display` looks it up and decides nothing, because a shell
+working one out from pixels and millimetres would be deciding how large this
+person's interface is, in a drawing crate, which this plan's header and
+`the-shell-plan.md`'s both forbid. Three tests. **`On the machine.` is not
+ticked** — one laptop, no second display. See
+[`updates/the-desktop-is-laid-out-per-display.md`](updates/the-desktop-is-laid-out-per-display.md).
 
-**Depends on:** 4, and **3a** — laying a desktop out per display needs to know where each display is, not only how big it is.
-**Likely to be two tasks** — recorded now rather than discovered.
+**It did split, as this task said it would**, and the half that remains is now
+task **5b** below. What is *not* done here is the third acceptance clause — the
+fixed-control bounds are still the first display's.
+
+**Owner:** the Mac. **Depends on:** 4, and **3a** — laying a desktop out per
+display needs to know where each display is, not only how big it is.
 
 The dock, the status area and the put-aside panel are laid out once, from one
 size, and handed to one draw. Each display needs its own layout at its own size
@@ -363,6 +375,48 @@ size, and handed to one draw. Each display needs its own layout at its own size
   sets, and a frame reachable on one display may be unreachable on the other.
   Which display's bounds a frame is held to is a question this task answers
   rather than inherits.
+
+### 5b. The bounds a frame is held to are the ones for the display it is on
+
+**Status:** ready. **Owner:** the Mac. **Depends on:** 5.
+
+**Split out of 5 on 2026-10-06**, which predicted it would be two tasks. The
+layout half is done and this is the half it named: *the fixed-control bounds
+recorded by `the_fixed_controls_were_drawn` are the ones for the display being
+drawn, so `canvas_never_lost`'s rule is asked about the right rectangles.*
+
+**What is true now.** `Desk::present` lays out every display, and records the
+**first** display's dock band, panel column, indicator band and top controls
+into the server. With one display that is right and is what shipped. With two
+it means a frame is held to the furniture of a display it may not be on.
+
+**Two things this needs that it does not have, measured rather than assumed:**
+
+- **Nothing maps a surface to a display.** `Server::mapped_surfaces` is one
+  list and every display is handed all of it, so *which display is this frame
+  on* has no answer yet to hold a frame to. That is the same gap task 6 is
+  blocked on and task 7 needs, and it may be worth building once for all three
+  rather than three times.
+- **`FixedControlsDrawn` is one value on the server.** It is replaced per
+  frame; two displays would need one per display, keyed as the presentations
+  are.
+
+**What this task must not do, because it was checked and nearly got wrong.**
+`the_fixed_controls_were_drawn` takes an `alo_appearance::TextScale` and **not**
+a display scale. The owner ruled on 2026-10-01 that the 44 × 24 handle floor is
+logical, scaled by the person's text size and nothing else, and asked that any
+implication of a second conversion be removed;
+`desktop_raster_tests::the_dock_band_and_the_panel_column_do_not_move_with_the_displays_scale`
+measures that the rectangles do not move with the display's scale. Passing the
+display scale there would re-introduce a fault that ruling exists to prevent.
+**The rectangles still differ per display — because the displays differ in
+size, not in scale — which is why this task is real.**
+
+- **Acceptance:** with two displays of different sizes, a frame is held to the
+  bounds of the display it is on, and a frame reachable on one display is not
+  brought back because it is under the other's dock.
+- **Constraint:** the handle floor stays logical and text-scaled. This task
+  changes *which* rectangles are asked about, never how they are measured.
 
 ### 6. A popup is constrained to the screen it is on
 
