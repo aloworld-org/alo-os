@@ -280,6 +280,7 @@ mod tests {
             number: DiskNumber(0),
             shown: "Samsung SSD 870 EVO".to_owned(),
             after_the_restart: DiskName::named("ata-Samsung_SSD_870_EVO_S5Y1").unwrap(),
+            beside: None,
         }
     }
 

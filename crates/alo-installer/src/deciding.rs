@@ -81,6 +81,20 @@ pub struct ForAloOs {
     pub shown: String,
     /// Its name after the restart.
     pub after_the_restart: DiskName,
+    /// What Windows gives up, where this is the disk Windows is on and alo OS
+    /// goes **beside** it rather than onto an empty disk.
+    ///
+    /// [`None`] is the older road and still the common one: an empty disk alo
+    /// OS takes whole, where nothing of anybody's is moved. [`Some`] is task 4
+    /// of the installer plan — the disk is repartitioned, Windows is shrunk to
+    /// [`BesideWindows::to`], and **nothing is erased**.
+    ///
+    /// It is carried on the disk rather than beside it so that **the thing a
+    /// person typed the name of is the thing that says which road this is.** A
+    /// road chosen by one answer and a target chosen by another are two answers
+    /// that can disagree, and [`crate::consent`]'s whole shape is that there is
+    /// no second question.
+    pub beside: Option<BesideWindows>,
 }
 
 /// The offer, or the first reason there is none.
@@ -121,13 +135,16 @@ pub fn decide(found: &Found) -> Result<Offer, Refusal> {
         needed: short.needed,
         free: short.free,
     })?;
-    let disks_for_alo_os: Vec<ForAloOs> = disks
+    let mut disks_for_alo_os: Vec<ForAloOs> = disks
         .every()
         .filter_map(|disk| match disk.standing(windows.disk) {
             Standing::ForAloOs(after_the_restart) => Some(ForAloOs {
                 number: disk.number(),
                 shown: disks.shown_name(disk),
                 after_the_restart,
+                // An empty disk alo OS takes whole: nothing is shrunk, because
+                // there is nothing on it to keep.
+                beside: None,
             }),
             Standing::HoldsWindows | Standing::InUse | Standing::TooSmall | Standing::NotUsable => {
                 None
@@ -141,22 +158,35 @@ pub fn decide(found: &Found) -> Result<Offer, Refusal> {
     // want to keep it for something else — both roads are *offered* here and
     // chosen later, which is how `the_windows_disk` is already handled.
     let beside_windows = windows.beside_windows().ok();
-    // **The refusal stands until the road can be walked, and that is the whole
-    // of what is left of task 4.**
+
+    // **The Windows disk is one of the disks alo OS may go on**, where the
+    // volume can give up the room. That is the whole of what made a one-disk
+    // computer refusable: not that the road was missing, but that this list was
+    // the only answer the consent could match and the Windows disk was never in
+    // it.
     //
-    // Letting a one-disk computer past this line is a one-word change and it
-    // was measured to be the wrong one: the consent that follows asks for *the
-    // name of the disk alo OS goes on*, and a computer with one disk has no
-    // such name to type. The run reached that prompt and refused
-    // `NotADisksName`, so the person would have gone from a clear *no empty
-    // disk beside the one Windows is on* to a question they cannot answer.
+    // Offered rather than substituted: a machine with a second disk sees both,
+    // and which one a person types is which road they take. The empty disk is
+    // listed first because it is the road where nothing of theirs moves.
     //
-    // That is the same shape as the Settings window that opened and could not
-    // be closed, found in `alo-shell` on 2026-10-05: a road is not reachable
-    // until the whole of it is. What remains is person-facing and
-    // design-sensitive — the sentence that says how much Windows gives up, the
-    // typed consent for a road that does not name a disk, and the sequence that
-    // makes two partitions instead of one — and it is owed its own change.
+    // **The consent is unchanged.** It still asks for the name of the disk alo
+    // OS goes on, and it is now a question a one-disk computer can answer,
+    // which it was not when this returned `NoDiskForAloOs` here. A measured
+    // attempt on 2026-10-05 flipped that refusal alone and the run reached the
+    // prompt and died at `NotADisksName` — the person sent from a clear refusal
+    // to a question with no answer. The road is reachable when the whole of it
+    // is, and the missing part was this list.
+    if let Some(beside) = beside_windows
+        && let Some(after_the_restart) = windows_disk.after_the_restart()
+    {
+        disks_for_alo_os.push(ForAloOs {
+            number: windows_disk.number(),
+            shown: disks.shown_name(windows_disk),
+            after_the_restart,
+            beside: Some(beside),
+        });
+    }
+
     if disks_for_alo_os.is_empty() {
         return Err(Refusal::NoDiskForAloOs);
     }
@@ -166,6 +196,9 @@ pub fn decide(found: &Found) -> Result<Offer, Refusal> {
             number: windows_disk.number(),
             shown: disks.shown_name(windows_disk),
             after_the_restart,
+            // The road that replaces Windows takes the disk whole; nothing is
+            // shrunk and nothing is kept, which is what makes it the other road.
+            beside: None,
         });
     Ok(Offer {
         windows,

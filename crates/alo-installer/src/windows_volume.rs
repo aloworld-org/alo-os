@@ -274,21 +274,52 @@ mod tests {
     /// **The machine this road was built for: one 111.8 GB disk with Windows
     /// on it.**
     ///
-    /// The testing NUC, as that machine measured itself by hand at
-    /// 2026-10-05 18:39Z and reported: a CT120BX500SSD1 holding EFI, MSR, a
-    /// 110.71 GB NTFS C: with 69.7 GB free, and a recovery partition. Those are
-    /// its numbers, not mine — I have not touched that machine — and they are
-    /// here because a road whose only purpose is that computer should fail in
-    /// this file if it would refuse that computer.
+    /// The testing NUC, as that machine measured itself by hand, elevated and
+    /// read-only, at 2026-10-06 03:44:39Z with `Get-PartitionSupportedSize`.
+    /// Those are its numbers and nobody in this repository has touched that
+    /// machine; they are here because **a road whose only purpose is that
+    /// computer should fail in this file if it would refuse that computer**.
+    ///
+    /// # A fixture, not a prediction
+    ///
+    /// **This does not promise that the NUC will be offered the road.** It
+    /// cannot: `Get-PartitionSupportedSize` computes `SizeMin` from where
+    /// unmovable files sit *at the moment it is asked* — the pagefile,
+    /// hibernation, System Volume Information, the `$MFT`, shadow copies — so it
+    /// moves after a Windows Update, a restore point or a defragment. **The only
+    /// check that counts is the live one**: `program.rs` runs that cmdlet on the
+    /// night and `smallest` comes straight from it, so nothing here is baked
+    /// into the installer.
+    ///
+    /// What it does establish is narrower and worth having: **the code accepts a
+    /// shape a real disk really had**, rather than only the shapes somebody in
+    /// this repository would have thought to invent.
+    ///
+    /// Two drafts of this comment got that wrong in opposite directions. The
+    /// first invented a `SizeMin`; the second called `size` and `SizeMin` stable
+    /// properties of the partition and put the volatile one on the wrong side of
+    /// the line. **Only `size` is stable.**
+    ///
+    /// `free` is rounded **down** from a figure printed to one decimal place and
+    /// is not a measurement at all — an earlier draft carried
+    /// `69 * GIB + 716 * MIB`, a byte count reconstructed from the reported
+    /// *69.7 GB* and then quoted back as though it came off the disk.
+    /// `crate::sizes` says which way to round, and rounding down makes this ask
+    /// **less** of the volume than the machine had: passing at 69 means passing
+    /// at 69.7.
     #[test]
-    fn the_one_disk_machine_this_road_exists_for_is_offered_it() {
-        let c_drive = 110_u64 * GIB + 727 * MIB;
+    fn a_real_one_disk_windows_is_offered_the_road() {
+        // One shape a real Windows on one disk had: measured by the testing PC,
+        // elevated and read-only, 2026-10-06 03:44:39Z.
         let nuc = WindowsVolume {
-            free: 69 * GIB + 716 * MIB,
-            size: c_drive,
-            // Windows will not usually shrink to less than what is used, and
-            // this volume holds about 41 GB.
-            smallest: c_drive - (69 * GIB),
+            // Measured. The only one of these that does not move.
+            size: 118_873_915_392,
+            // Measured, and volatile: SizeMin at that moment, 42.13 GiB.
+            smallest: 45_234_069_504,
+            // Measured: C: is disk 0, partition 3, at this offset.
+            offset: 227_540_992,
+            // Rounded DOWN from "69.7 GB". Not measured, and it moves.
+            free: 69 * GIB,
             ..WindowsVolume::read(Some(PRINTED)).unwrap()
         };
 

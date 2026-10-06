@@ -305,6 +305,40 @@ pub const WILL_RESTART: Word = Word::saying(
      person types the name of.",
 );
 
+/// What alo OS is given, on the road that keeps Windows.
+///
+/// Said after [`WILL_SHRINK_WINDOWS`] and [`WILL_MAKE_THE_AREA`], which between
+/// them account for the rest of the space Windows gave up. The three sentences
+/// add up, and a person who adds them should get the number they were told.
+pub const WILL_GIVE_ALO_OS: Word = Word::saying(
+    "installer.will.give-alo-os",
+    "alo OS gets {area} GB of that space, on the disk {disk}. Windows keeps the rest",
+)
+.noting(
+    "{area} is a whole number of gigabytes. {disk} is the disk Windows is on, by its maker's name, \
+     not translated. alo OS is the product's name and is not translated.",
+);
+
+/// Restarting into the installer, on the road that keeps Windows.
+///
+/// **Not [`WILL_RESTART`], and the difference is the whole of this road.** That
+/// one says the installer *replaces everything on the disk you name below*,
+/// which is true when alo OS is given a whole disk and **false here** — nothing
+/// is replaced and Windows is still there afterwards.
+///
+/// Saying the wrong one would tell a person their disk is about to be erased
+/// while the installer does the opposite. Nothing would catch it, because
+/// [`WILL_RESTART`] is correct on its own road.
+pub const WILL_RESTART_KEEPING_WINDOWS: Word = Word::saying(
+    "installer.will.restart-keeping-windows",
+    "This computer restarts once. The installer puts alo OS in the space Windows gave up, then \
+     restarts again. Windows stays",
+)
+.noting(
+    "The restart happens by itself at the end of these steps. Nothing on the disk is erased, and \
+     Windows starts as it did before. alo OS is the product's name and is not translated.",
+);
+
 /// Fast Startup is on.
 pub const FOUND_FAST_STARTUP_ON: Word = Word::saying(
     "installer.found.fast-startup-on",
@@ -1109,7 +1143,7 @@ pub const REMOVE_GONE_BUT_THE_COPY_STAYS: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 121] = [
+pub const EVERY_WORD: [Word; 123] = [
     STARTING,
     CHECKING_THE_DOWNLOAD,
     GENUINE,
@@ -1140,8 +1174,10 @@ pub const EVERY_WORD: [Word; 121] = [
     NOTHING_CHANGED_YET,
     WILL_SHRINK_WINDOWS,
     WILL_MAKE_THE_AREA,
+    WILL_GIVE_ALO_OS,
     WILL_ADD_THE_ENTRY,
     WILL_RESTART,
+    WILL_RESTART_KEEPING_WINDOWS,
     FOUND_FAST_STARTUP_ON,
     FOUND_FAST_STARTUP_OFF,
     FOUND_FAST_STARTUP_NOT_READ,

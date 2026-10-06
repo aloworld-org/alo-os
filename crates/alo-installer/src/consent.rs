@@ -70,11 +70,13 @@ mod tests {
                 number: DiskNumber(1),
                 shown: "Msft Virtual Disk 1".to_owned(),
                 after_the_restart: DiskName::named("wwn-0x6002248011").unwrap(),
+                beside: None,
             },
             ForAloOs {
                 number: DiskNumber(2),
                 shown: "Samsung SSD 870 EVO".to_owned(),
                 after_the_restart: DiskName::named("ata-Samsung_SSD_870_EVO_S5Y1").unwrap(),
+                beside: None,
             },
         ]
     }
