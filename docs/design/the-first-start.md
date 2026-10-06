@@ -578,6 +578,91 @@ placeholder name, not with a hopeful one. `alo_setting_up::NotSetUp::NoPairedMac
 is what is honest today, and this screen is what replaces it when the pairing
 road exists.
 
+## Responsive: the rule for every size, not only the three drawn
+
+**The file gives three widths and two heights. A machine has neither.** These
+screens must hold at any size a display reports and at any text size a person
+chooses, so what follows states the rule for all of them — **derived from the
+three measured frames and the owner's instruction of 2026-10-06, with the
+regions nobody has drawn named as such.**
+
+### Width
+
+| available width | the column |
+|---|---|
+| **≥ 664** | **600, centred.** The scroll container is 640 and sits at (width − 640) ÷ 2 — measured 320 at 1280, 400 at 1440, 960 at 2560. |
+| **< 664** | **width − 64**, with 32 each side. No frame draws this. |
+
+**664 is 600 plus the two 32 margins**, and it is where one rule has to hand
+over to the other. **The column never stretches** — at 2560 the cards are still
+600, not 2.5× wider — because a line of text that long stops being readable,
+which is the reason the instruction gives for keeping it fixed.
+
+**The action row wraps before a hit target shrinks.** Three actions at 184 with
+12 between them is 576, which fits a 600 column. Below a 576-wide column it does
+not, and the rule is **wrap to a second row, never shrink** — every action stays
+at least 48 high and keeps its width, because *secondary actions retain equal
+reachability* is the component's own contract and a 40-tall button is not a
+smaller version of a 48-tall one, it is a worse one.
+
+### Height
+
+**Two mechanisms, in this order**, both measured at 1280×720:
+
+1. **Tighten.** Heading 36/44 → 28/36, card padding 14 → 12, gaps 10 → 8 and
+   12 → 8.
+2. **Scroll.** The content goes in a 640-wide scrolling region, and **the
+   actions and `Accessibility` move outside it** so they are reachable without
+   scrolling. That is the design's own arrangement on `385:26244` and
+   `385:26174`, not an invention here.
+
+**The readable text is in neither mechanism.** The choice title stays 16/25 and
+its consequence 14/22 at every size measured. **A build may tighten and it may
+scroll; it may not shrink what a person reads.**
+
+### Text size, which is the case the frames understate
+
+`alo_appearance::TextScale` goes to **200%** — its own doc calls that *the
+standard's floor*. **The card heights in the file are examples at one text
+size**, and the instruction says so: *these examples are not hard maximum
+heights; measure translated and enlarged text, then grow every card to the
+tallest required height.*
+
+| measured | card |
+|---|---|
+| English, 1440 | 600×108 |
+| English, short screen | 600×84 |
+| German, 1440 | **600×132** |
+| **200% text** | **not drawn anywhere** |
+
+**At 200% the consequence line alone is about 44 tall before wrapping**, so a
+card carrying a translated two-line consequence at 200% will exceed every height
+in the file. **All four still grow together and stay equal** — that is the rule
+the German frame establishes, and enlarging text does not exempt it.
+
+### What is not drawn, and must not be guessed quietly
+
+- **Any width below 1280.** The narrow rule above comes from the instruction,
+  not from a frame.
+- **Any text size above 100%.** The tallest card measured is 132, at 100%.
+- **The two together** — narrow *and* enlarged — which is where a phone-sized
+  display with large text lands, and where the action row has to wrap at the
+  same time as the cards grow.
+
+These are the three places a build will meet a geometry the file never showed
+it. **Each should be measured on a machine rather than reasoned about**, and
+`docs/autonomy/the-shell-plan.md` task 18's acceptance already insists on that:
+the walk is driven from a key or a pointer, with no test in the loop.
+
+### One scaling, at the boundary that already exists
+
+Everything above is **logical pixels**. Display scaling is applied **once**, at
+the existing logical-to-physical boundary, and never a second time inside this
+surface — two applications of a fractional scale is how a 48 target becomes 47
+and stops being a 48 target. `alo-appearance` owns the text scale and
+`alo-displays` the display's own; this surface reads them and multiplies
+nothing.
+
 ### Measured geometry, from `383:26067` on 2026-10-06
 
 Read from the file rather than taken from the brief:
