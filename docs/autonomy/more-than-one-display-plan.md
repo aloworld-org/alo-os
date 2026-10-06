@@ -265,7 +265,43 @@ same gap — the thing this plan's task 1 and 2 notes were written to stop.
 
 ### 4. A frame is drawn per display
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** 3.
+**Status:** ready, and **the only ready task in this plan** — 5, 6 and 7 are
+all behind it. **Owner:** the Mac. **Depends on:** 3.
+
+**Scoped 2026-10-06 by reading the setup, so the next start is not a
+discovery.** The desktop lane builds exactly one of each:
+
+```
+direct_desktop.rs:275   discover_atomic_output(fd)        one AtomicOutput
+direct_desktop.rs:277   SoftwarePainter::new()            one painter
+direct_desktop.rs:292   RoutedInput { extent }            from that one mode
+direct_desktop.rs:~300  run_with_input(server, Target::new(painter, fd, output), …)
+```
+
+**`discover_every` already exists and is private.** Task 2 built it; exposing
+it is one line, and it answers with every display already in preference order
+with distinct CRTCs and planes. **The discovery half of this task is done.**
+
+**What is actually left is ownership and lifetimes**, which is why it is the
+largest task here and not the obvious one:
+
+- A `Target` owns its painter and borrows the device descriptor, so N targets
+  means N painters and N borrows of one `fd`.
+- `run_with_input` takes **one** target, and six `LoopInput` impls and six
+  `LoopTarget` impls hang off that signature. **Changing it reaches the
+  sign-in lane**, which genuinely has one display and should not pay for this.
+- So the containable shape is **`Desk` owning the additional targets** and
+  drawing them in its own `present`, leaving the generic loop and the greeter
+  untouched. `Desk` already carries a lifetime; the extra targets add more.
+- Retirement has to follow: task 3 made the backend retire once and every
+  display withdraw its own global, and additional backends are not yet in
+  that path.
+
+**And the acceptance's third clause is the one to build first, not last** —
+*a display that fails to submit does not stop the other from painting, and
+says which one failed*. Per-display failure isolation is testable with the
+fake targets the loop tests already use, and it is the part that decides
+whether a machine with one broken output is usable.
 
 - **Acceptance:** both displays paint at their own mode. A client drawn on a
   display gets its frame callback **from the display that drew it**. A display
@@ -306,7 +342,33 @@ size, and handed to one draw. Each display needs its own layout at its own size
 
 ### 6. A popup is constrained to the screen it is on
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** 3.
+**Status:** **blocked on 4**, corrected 2026-10-06. **Owner:** the Mac.
+**Depends on:** 3, **3a** and **4** — not 3 and 3a alone, which is what this
+line said when the plan was written.
+
+**Why the dependency was wrong.** This task has to answer *which screen is
+this popup's parent on*, and **nothing in the compositor can answer it**:
+
+```
+a surface → a display    no such mapping exists anywhere in alo-shell
+popups.output_size       one global, set in render_frame from the one
+                         target's size — so it is whichever display drew
+                         the most recent frame, for every popup
+```
+
+`Screens` gives each display a corner and a room, which is what task 3a was
+for — but a *surface* is placed by `scene::trees` against the one viewport the
+compositor draws, and until a frame is drawn **per display** there is no fact
+of the matter about which display a given surface is on. Task 4 is what
+creates that fact.
+
+**So task 4 is the only ready task in this plan**, and 5, 6 and 7 are all
+behind it. That is worth stating plainly because the dependency list made 6
+look like cheap work that could be taken while 4 waited, and two readings of
+this plan have now gone that way — the first discovered 3a, the second
+discovered this.
+
+**Owner:** the Mac.
 
 **Depends on:** 3, and **3a** — *the left display's inner edge* is a position, and the session has none until 3a.
 
