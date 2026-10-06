@@ -260,11 +260,45 @@ ADR 0023 §1–2, and ADR 0033 §4–5. A Windows program in Rust —
 
 ### 4. Alongside Windows, switching between them easily, and back again
 
-**Status:** **blocked on a machine that can host the walk** — deferred past the
-first install on real hardware, 2026-09-28, by the owner, **because no machine this
-project owns can host it.** Three pieces of the Windows side have landed and are
-listed below; what remains is the walk itself, and the walk has nowhere to run.
-**Depends on:** 3, 8, 9, 10.
+**Status:** in progress — **the walk is on the testing NUC, on metal**, by the
+owner's ruling of 2026-10-06, which ends the deferral below. **Depends on:** 3,
+8, 9, 10.
+
+**The owner's ruling of 2026-10-06, which governs this task.** It supersedes
+both the deferral and the virtual-machine walk described further down; that
+paragraph is kept because it is what was measured, not because it is still the
+plan.
+
+1. **Physical only, never a virtual machine.** The walk is the testing NUC on
+   real hardware. No virtual machine stands in for it, so no amount of disk on
+   any other machine makes this task ready — and the 90 GB virtual disk below
+   is no longer anything this task waits for.
+2. **Windows alongside alo OS is the promise**
+   ([ADR 0023](decisions/0023-installed-from-the-machine-it-replaces.md) §1.4),
+   **and needing no USB stick is part of it.** *No stick needed* is a claim
+   about failure, not about success: a person who installs beside Windows with
+   no media and hits a failure must still have a Windows that boots.
+3. **Two runs, in this order.** First a failure injected **before the point of
+   no return**, on metal, with Windows still booting afterwards. Then the real
+   install, with switching both ways. Not the reverse: a walk that installs
+   first has already spent the thing the first run is there to protect.
+4. **crt-static first.** Nothing is installed on the NUC until an `.exe` starts
+   on a clean Windows. *(Landed and measured on the real artefact: the candidate
+   exe imports no `VCRUNTIME140`.)*
+5. **The refusal that keeps the Windows disk out is flipped last**, when the
+   whole road exists and not before.
+
+**The road, as it stands 2026-10-06.** The environment can now install into a
+partition rather than only over a whole disk: `alo.installing.into=` and
+`alo.installing.efi=` name the two partitions, both or neither; the file system
+is made on that one partition and mounted with Windows' start-up area beneath
+it; and the writer is handed a root, with no `--wipe` and no `to-disk` on that
+road. **What stands between a mis-staged command line and somebody's Windows is
+a label**: the environment writes only a partition carrying `ALO-ROOT`, which
+the installer on Windows puts on the space it made and on nothing else
+(`docs/booting.md`). What remains is the Windows half — making those two
+partitions, formatting and labelling the space, and writing those two words
+into the staged command line — and then the walk.
 
 *This line opened with `deferred` until 2026-10-03, and `deferred` is not a word the
 supervisor knows.* `tools/kernel-loop`'s `NOT_YET` holds `blocked` and `scheduled`, and
@@ -274,9 +308,11 @@ including one with no virtualisation and no 90 GB to spare. The state is now the
 thing on the line, which is where those two words are read. Nothing about the deferral
 changed: same date, same decision, same owner, same reason.
 
-It installs beside a real Windows in a virtual machine and walks the switching
-both ways, which is the largest disk of the three: one virtual disk holding a
-Windows install, alo OS, and room to move between them — about 90 GB.
+**Superseded by the ruling above.** What follows was the plan until 2026-10-06:
+to install beside a real Windows *in a virtual machine* and walk the switching
+both ways, on one virtual disk of about 90 GB. It is kept as the record of what
+was measured, and the measurements are still true of those machines. It is no
+longer what this task waits for.
 
 **What was measured, on 2026-09-28, before deferring it:**
 
@@ -302,6 +338,8 @@ cannot conjure a flag the host never gave.
 **What would have to change to take this up again:** a disk, not effort — either
 an external drive on the development PC, or the owner expanding the underlying
 VMware disks the third PC runs on. Both are host-level acts outside any lane.
+*(Answered differently by the ruling above: the walk went to metal instead, so
+neither of those is needed.)*
 
 **What this does not weaken.** A clean install on a whole empty disk is a
 different path and is unaffected; `docs/the-first-install-on-a-real-machine.md`
@@ -1852,17 +1890,17 @@ build walked the same way (the walk cross-builds `x86_64-pc-windows-gnu`).
 
 ### 20. A download that stops arriving ends the install in words, rather than *Still installing* for ever
 
-**Status:** blocked — on task 4, now **deferred**, by the owner's instruction of
-2026-09-26: this is held until task 4 lands, and the check is made before
-starting rather than after.
+**Status:** blocked — on task 4, by the owner's instruction of 2026-09-26: this
+is held until task 4 lands, and the check is made before starting rather than
+after.
 
-**The condition it waits on no longer has a date**, since task 4 was deferred on
-2026-09-28 for want of a machine that can host its walk. The instruction stands
-as written and a lane may not lift it; the owner either lifts it, so that this
-can be done while task 4 waits, or accepts that this waits with task 4. Written
-down here so the choice is visible rather than discovered later by somebody
-wondering why nothing moved. The work so far is off-repository on the development
-PC. **Depends on:** 18.
+**The condition it waits on has a machine again.** This paragraph said the
+condition had no date, because task 4 was deferred on 2026-09-28 for want of a
+machine that could host its walk. The owner's ruling of 2026-10-06 sent that
+walk to the testing NUC on metal and ended the deferral, so this waits on task 4
+landing rather than on a disk nobody has. The instruction itself stands as
+written and a lane may not lift it. The work so far is off-repository on the
+development PC. **Depends on:** 18.
 **Found by** task 18's second run on 2026-09-22
 (`updates/the-install-finishes-on-the-installers-own-road.md`). On the
 installer's own road, with the environment carrying `mkfs.btrfs`, `bootc

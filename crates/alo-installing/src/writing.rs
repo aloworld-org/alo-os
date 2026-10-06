@@ -36,7 +36,7 @@
 
 use alo_image::{THE_ONLY_FILESYSTEM, ThePin};
 
-use crate::disk::DiskName;
+use crate::disk::{DiskName, PartitionName};
 
 /// The console a person's own machine shows its start-up on.
 ///
@@ -89,13 +89,44 @@ impl TheConsole {
     }
 }
 
+/// Where a write goes, and the two roads are not the same shape.
+///
+/// **A whole disk is erased and a partition is not**, and the tool is given a
+/// different subcommand for each: `to-disk` makes the table itself, and
+/// `to-filesystem` is handed a root somebody else has already made and mounted.
+/// Carrying them as one enum rather than an optional partition beside a disk is
+/// what stops a caller passing both or neither.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Onto {
+    /// A whole disk, erased and partitioned by the tool. The older road, and
+    /// still the one a machine with a spare disk takes.
+    AWholeDisk(DiskName),
+    /// One partition of a disk that keeps everything else on it.
+    ///
+    /// The installer plan's task 4: alo OS beside Windows. The Windows
+    /// installer has already shrunk Windows and made this partition; the
+    /// environment makes a filesystem on it, mounts it, and installs into it.
+    ///
+    /// **`esp` is the EFI System Partition that is already there** — Windows'
+    /// own. A disk has one, firmware looks only there, and a second would be a
+    /// partition nothing reads. The loader goes into a directory of its own
+    /// beside Windows', which is what an ESP is for and what every dual-boot
+    /// machine does.
+    BesideWhatIsThere {
+        /// The partition alo OS is installed into, and nothing outside it.
+        root: PartitionName,
+        /// The EFI System Partition already on the disk.
+        esp: PartitionName,
+    },
+}
+
 /// The write, with everything it is given already checked.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Writing {
     /// The release, by digest.
     reference: String,
-    /// The disk, by its own name.
-    disk: DiskName,
+    /// Where it goes.
+    onto: Onto,
     /// What the installed machine shows its start-up on.
     console: TheConsole,
 }
@@ -110,7 +141,26 @@ impl Writing {
     pub fn of(pin: &ThePin, disk: &DiskName) -> Self {
         Self {
             reference: pin.reference(),
-            disk: disk.clone(),
+            onto: Onto::AWholeDisk(disk.clone()),
+            console: TheConsole::TheirScreen,
+        }
+    }
+
+    /// The pinned release **into one partition**, keeping everything else on
+    /// the disk — which on the machine this is for is somebody's Windows.
+    ///
+    /// The installer plan's task 4. The Windows installer has already shrunk
+    /// Windows and made the partition; this writes into it and touches nothing
+    /// around it. The loader goes into the EFI System Partition that is already
+    /// there, in a directory of its own beside Windows'.
+    #[must_use]
+    pub fn beside_what_is_there(pin: &ThePin, root: &PartitionName, esp: &PartitionName) -> Self {
+        Self {
+            reference: pin.reference(),
+            onto: Onto::BesideWhatIsThere {
+                root: root.clone(),
+                esp: esp.clone(),
+            },
             console: TheConsole::TheirScreen,
         }
     }
@@ -133,28 +183,69 @@ impl Writing {
         self.console
     }
 
-    /// The disk it writes.
+    /// Where it writes.
     #[must_use]
-    pub fn disk(&self) -> &DiskName {
-        &self.disk
+    pub const fn onto(&self) -> &Onto {
+        &self.onto
     }
+
+    /// The disk it writes, where it writes a whole one.
+    ///
+    /// [`None`] on the road that keeps what is already there: that write has a
+    /// partition and no disk, **and a caller that wanted the disk around it
+    /// wanted the wrong thing.**
+    #[must_use]
+    pub const fn disk(&self) -> Option<&DiskName> {
+        match &self.onto {
+            Onto::AWholeDisk(disk) => Some(disk),
+            Onto::BesideWhatIsThere { .. } => None,
+        }
+    }
+
+    /// Where the root is mounted while the tool installs into it.
+    ///
+    /// Not a path anybody chooses: the tool is handed a root that is already
+    /// mounted, and this environment is the only thing mounting it.
+    pub const THE_ROOT: &'static str = "/run/alo-os-root";
+
+    /// Where the EFI System Partition is mounted under that root.
+    ///
+    /// `bootc install to-filesystem` looks for the loader's home beneath the
+    /// root it is given, which is where a booted machine would have it.
+    pub const THE_ESP: &'static str = "/run/alo-os-root/boot/efi";
 
     /// The writer's arguments.
     ///
-    /// `--wipe` because the person agreed to replace this disk, and a disk with
-    /// a table on it is otherwise refused by the tool — which is the tool asking
-    /// the question the person already answered.
+    /// On the whole-disk road, `--wipe` because the person agreed to replace
+    /// this disk, and a disk with a table on it is otherwise refused by the
+    /// tool — which is the tool asking the question the person already
+    /// answered.
+    ///
+    /// **On the road beside Windows there is no `--wipe` and no `--filesystem`,
+    /// and that is the point.** `to-filesystem` is handed a root that already
+    /// exists, so the filesystem was chosen when it was made — by
+    /// [`Program::MakingTheRoot`](crate::Program::MakingTheRoot), which uses the
+    /// same [`THE_ONLY_FILESYSTEM`] for ADR 0045's reason. A `--wipe` on this
+    /// road would be an instruction to erase the disk the person is keeping.
     #[must_use]
     pub fn arguments(&self) -> Vec<String> {
-        let mut arguments = vec![
-            "install".to_owned(),
-            "to-disk".to_owned(),
-            "--source-imgref".to_owned(),
-            format!("registry:{}", self.reference),
-            "--wipe".to_owned(),
-            "--filesystem".to_owned(),
-            THE_ONLY_FILESYSTEM.to_owned(),
-        ];
+        let mut arguments = match &self.onto {
+            Onto::AWholeDisk(_) => vec![
+                "install".to_owned(),
+                "to-disk".to_owned(),
+                "--source-imgref".to_owned(),
+                format!("registry:{}", self.reference),
+                "--wipe".to_owned(),
+                "--filesystem".to_owned(),
+                THE_ONLY_FILESYSTEM.to_owned(),
+            ],
+            Onto::BesideWhatIsThere { .. } => vec![
+                "install".to_owned(),
+                "to-filesystem".to_owned(),
+                "--source-imgref".to_owned(),
+                format!("registry:{}", self.reference),
+            ],
+        };
         // **One `--karg` per argument**, which is how the tool takes them: a
         // single flag holding both would be one string the kernel never splits.
         // Before this the install passed none at all, and the machine it left
@@ -165,7 +256,15 @@ impl Writing {
             arguments.push("--karg".to_owned());
             arguments.push(karg);
         }
-        arguments.push(self.disk.path().display().to_string());
+        // **What the tool is pointed at, and the two roads point at different
+        // kinds of thing.** `to-disk` takes the disk it will partition;
+        // `to-filesystem` takes a directory somebody has already mounted a root
+        // on. Naming a disk where a root is expected would hand the tool a
+        // block device to walk as a filesystem.
+        match &self.onto {
+            Onto::AWholeDisk(disk) => arguments.push(disk.path().display().to_string()),
+            Onto::BesideWhatIsThere { .. } => arguments.push(Self::THE_ROOT.to_owned()),
+        }
         arguments
     }
 }
@@ -328,6 +427,128 @@ mod tests {
         assert!(
             !arguments.iter().any(|it| it.contains(' ')),
             "an argument holds a space, so something was packed into one string"
+        );
+    }
+
+    /// A pin to build writes from.
+    fn a_pin() -> ThePin {
+        ThePin::read(
+            &std::fs::read_to_string(Path::new(alo_image::THE_IMAGE).join(alo_image::THE_PIN))
+                .unwrap(),
+        )
+        .unwrap()
+    }
+
+    /// **The road that keeps Windows never says `--wipe`.**
+    ///
+    /// This is the one that would cost somebody their computer. `--wipe` tells
+    /// the tool to erase the disk and make its own table, and on this road the
+    /// disk is the one the person is keeping. The whole-disk road says it
+    /// because the person agreed to replace that disk; this road has no such
+    /// agreement and must never carry the flag that acts on one.
+    #[test]
+    fn the_road_that_keeps_windows_never_wipes() {
+        let root = PartitionName::named("virtio-alo-target-part4").unwrap();
+        let esp = PartitionName::named("virtio-alo-target-part1").unwrap();
+        let arguments = Writing::beside_what_is_there(&a_pin(), &root, &esp).arguments();
+
+        assert!(
+            !arguments.iter().any(|it| it == "--wipe"),
+            "the write that keeps Windows carries --wipe, which erases the disk it is keeping: \
+             {arguments:?}"
+        );
+    }
+
+    /// **And it never names a file system**, because it did not make one.
+    ///
+    /// `to-filesystem` is handed a root that already exists. The choice of
+    /// file system was made when it was made — by `Program::MakingTheRoot`,
+    /// with the same `THE_ONLY_FILESYSTEM` for ADR 0045's reason. A
+    /// `--filesystem` here would be an argument the tool has nothing to do
+    /// with, and a reader would think this road chose it.
+    #[test]
+    fn the_road_that_keeps_windows_names_no_filesystem() {
+        let root = PartitionName::named("virtio-alo-target-part4").unwrap();
+        let esp = PartitionName::named("virtio-alo-target-part1").unwrap();
+        let arguments = Writing::beside_what_is_there(&a_pin(), &root, &esp).arguments();
+
+        assert!(
+            !arguments.iter().any(|it| it == "--filesystem"),
+            "the write that keeps Windows names a file system it did not make: {arguments:?}"
+        );
+    }
+
+    /// **It is handed a root, not a disk.**
+    ///
+    /// The last argument is what the tool acts on, and the two roads point at
+    /// different kinds of thing: a block device to partition, or a directory
+    /// somebody already mounted a root on. Naming a disk where a root is
+    /// expected hands the tool a device to walk as a file system.
+    #[test]
+    fn the_road_that_keeps_windows_is_handed_a_root() {
+        let root = PartitionName::named("virtio-alo-target-part4").unwrap();
+        let esp = PartitionName::named("virtio-alo-target-part1").unwrap();
+        let arguments = Writing::beside_what_is_there(&a_pin(), &root, &esp).arguments();
+
+        assert_eq!(arguments.first().map(String::as_str), Some("install"));
+        assert_eq!(arguments.get(1).map(String::as_str), Some("to-filesystem"));
+        assert_eq!(
+            arguments.last().map(String::as_str),
+            Some(Writing::THE_ROOT)
+        );
+        assert!(
+            !arguments.iter().any(|it| it.contains("/dev/disk/by-id/")),
+            "the write that keeps Windows names a device, and it should name a mounted root: \
+             {arguments:?}"
+        );
+    }
+
+    /// **A write that keeps Windows has no disk to give**, and says so rather
+    /// than giving the disk the partition happens to sit on.
+    ///
+    /// Everything downstream — what is said, what is tidied — is about the disk
+    /// a person chose, and it gets that from what they were told, not from the
+    /// write. A caller reaching here for a disk is a caller asking the wrong
+    /// thing, and `None` is how it finds that out at compile time.
+    #[test]
+    fn a_write_that_keeps_windows_has_no_disk() {
+        let root = PartitionName::named("virtio-alo-target-part4").unwrap();
+        let esp = PartitionName::named("virtio-alo-target-part1").unwrap();
+
+        assert_eq!(
+            Writing::beside_what_is_there(&a_pin(), &root, &esp).disk(),
+            None
+        );
+        let disk = DiskName::named("virtio-alo-target").unwrap();
+        assert_eq!(Writing::of(&a_pin(), &disk).disk(), Some(&disk));
+    }
+
+    /// **Both roads still pull the same pinned release, by digest.**
+    ///
+    /// Whatever changes about where it lands, what lands is the release
+    /// `crate::verifying` checked — not a tag, not a different reference.
+    #[test]
+    fn both_roads_pull_the_pinned_release() {
+        let pin = a_pin();
+        let disk = DiskName::named("virtio-alo-target").unwrap();
+        let root = PartitionName::named("virtio-alo-target-part4").unwrap();
+        let esp = PartitionName::named("virtio-alo-target-part1").unwrap();
+
+        let whole = Writing::of(&pin, &disk).arguments();
+        let beside = Writing::beside_what_is_there(&pin, &root, &esp).arguments();
+
+        let reference = |arguments: &[String]| {
+            arguments
+                .iter()
+                .zip(arguments.iter().skip(1))
+                .find(|(argument, _)| argument.as_str() == "--source-imgref")
+                .map(|(_, value)| value.clone())
+        };
+
+        assert_eq!(reference(&whole), reference(&beside));
+        assert!(
+            reference(&whole).is_some_and(|it| it.contains("@sha256:")),
+            "the release is pulled by something other than a digest"
         );
     }
 }

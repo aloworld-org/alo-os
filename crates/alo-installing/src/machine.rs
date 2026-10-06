@@ -6,11 +6,11 @@
 //! console — is here as six methods, and `crate::running` is those six on
 //! Linux and nothing else.
 
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use alo_strings::Said;
 
-use crate::disk::DiskName;
 use crate::program::{Program, Ran};
 
 /// How long the sequence waits for the chosen disk to appear.
@@ -43,11 +43,18 @@ pub trait TheMachine {
     /// Whatever reading it said.
     fn command_line(&mut self) -> std::io::Result<String>;
 
-    /// Wait up to `at_most` for the named disk to appear, and say where the
-    /// kernel put it.
+    /// Wait up to `at_most` for the thing at this by-id path to appear, and say
+    /// where the kernel put it.
+    ///
+    /// **A path rather than a disk's name**, because the road that keeps what is
+    /// already on a disk waits for two partitions of it as well, and a partition
+    /// appears exactly as a disk does: udev makes the name, and the name points
+    /// at wherever the kernel happened to put the device. Callers pass
+    /// `DiskName::path` or `PartitionName::path`, each built from a name that
+    /// was already checked, so no unchecked path reaches here.
     ///
     /// [`None`] when it did not appear.
-    fn wait_for(&mut self, disk: &DiskName, at_most: Duration) -> Option<std::path::PathBuf>;
+    fn wait_for(&mut self, by_id: &Path, at_most: Duration) -> Option<PathBuf>;
 
     /// Run one program to its end.
     ///

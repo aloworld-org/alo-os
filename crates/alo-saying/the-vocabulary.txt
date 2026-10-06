@@ -893,6 +893,7 @@ installing.not-a-whole-disk	{disk} is part of a disk rather than a whole disk, s
 installing.not-genuine	This download is not a genuine alo OS, so nothing was changed
 installing.not-installed	alo OS could not be installed onto {disk}. That disk may now hold part of alo OS; nothing else on this computer was changed. Restart to try again
 installing.not-reachable	alo OS could not be downloaded, so nothing was changed. Check that this computer is connected to the internet by a network cable, then restart to try again
+installing.not-the-space-the-installer-made	The space for alo OS on the disk {disk} is not there, so nothing was changed. Start Windows and run the alo OS installer again
 installing.reading-the-choice	Reading which disk you chose before the restart
 installing.replacing-what-is-there	Everything on {disk} is being replaced, including the system that was on it. This is the road you agreed to twice, and there is no way back from here
 installing.restart-when-ready	You can turn this computer off or restart it now

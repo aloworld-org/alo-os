@@ -17,12 +17,16 @@
 //!
 //! # What it is told, and what it never assumes
 //!
-//! One thing arrives from outside it: which disk to install onto, as the disk's
-//! own name on the kernel command line ([`Told`]). What it installs and which
-//! key it accepts were built into it ([`Environment`]) and never arrive over the
-//! network. It never touches a disk it was not told to, refuses a disk that
-//! holds this installer or another operating system ([`Disks`]), and writes
-//! nothing until the release is shown to be the owner's ([`Verifying`]).
+//! What arrives from outside it is the choice the person made on the machine
+//! they still had, carried on the kernel command line ([`Told`]): which disk,
+//! and — on the road that keeps the system already on that disk — which two
+//! partitions of it. What it installs and which key it accepts were built into
+//! it ([`Environment`]) and never arrive over the network. It never touches a
+//! disk it was not told to; it refuses a disk that holds this installer or
+//! another operating system, and on the road that keeps one it refuses any
+//! partition but the one the installer on Windows made and labelled
+//! ([`Disks`]); and it writes nothing until the release is shown to be the
+//! owner's ([`Verifying`]).
 //!
 //! # What it says
 //!
@@ -40,6 +44,14 @@
 //! in `EFI/BOOT/chosen.cfg` beside the loader's configuration, and a boot
 //! entry reached once, through the firmware's next-boot choice, so that the
 //! restart this environment ends with never lands back in it.
+//!
+//! On the road that keeps the system already on the disk it owes one thing
+//! more: the space it made for alo OS carries the label
+//! [`THE_SPACE_THE_INSTALLER_MADE`], and the two partitions' names are on the
+//! command line ([`THE_PARTITION`], [`THE_EFI`]). The label is not a
+//! convenience — it is the whole of this environment's permission to make a
+//! file system on that partition, and without it a command line staged wrongly
+//! would be the end of somebody's Windows.
 
 mod complaint;
 mod console;
@@ -61,8 +73,11 @@ mod writing;
 
 pub use complaint::{Complaint, THE_LAST_LINES};
 pub use console::{ACTIVE, every_console, every_serial_line};
-pub use disk::{BY_ID, DiskName, NotADisk};
-pub use disks::{ANOTHER_SYSTEMS, Disks, Replacing, THIS_INSTALLER, Unsuitable};
+pub use disk::{BY_ID, DiskName, NotADisk, NotAPartition, PartitionName};
+pub use disks::{
+    ANOTHER_SYSTEMS, Disks, NotKeeping, Replacing, THE_SPACE_THE_INSTALLER_MADE, THE_START_UP_AREA,
+    THIS_INSTALLER, Unsuitable,
+};
 pub use ended::{Ended, Refusal};
 pub use entries::{Entries, Entry, THE_ENTRYS_NAME, THE_LOADER_THE_BASE_INSTALLS};
 pub use environment::{Environment, WHERE_IT_IS};
@@ -72,7 +87,9 @@ pub use program::{EVERY_PROGRAM, Program, Ran};
 pub use running::OnThisMachine;
 pub use sequence::install;
 pub use tidying::{Tidied, tidy_up};
-pub use told::{NotTold, REPLACING, THE_CHOICE, THE_REPLACING, Told};
+pub use told::{
+    Beside, NotTold, REPLACING, THE_CHOICE, THE_EFI, THE_PARTITION, THE_REPLACING, Told,
+};
 pub use verifying::{Verified, Verifying};
 pub use words::{EVERY_WORD, WordsError, declare_into, installing_words};
 pub use writing::{A_WATCHED_LINE, THE_PERSONS_SCREEN, TheConsole, Writing};

@@ -7,7 +7,7 @@
 //! `tests/installed_in_a_virtual_machine.rs` is what runs it.
 
 use std::io::{BufRead as _, BufReader, Write as _};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{ChildStderr, Command, Stdio};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
@@ -16,7 +16,6 @@ use alo_strings::Said;
 
 use crate::complaint::Complaint;
 use crate::console::{ACTIVE, every_console, every_serial_line};
-use crate::disk::DiskName;
 use crate::machine::TheMachine;
 use crate::program::{Program, Ran};
 
@@ -55,10 +54,10 @@ impl TheMachine for OnThisMachine {
         std::fs::read_to_string("/proc/cmdline")
     }
 
-    fn wait_for(&mut self, disk: &DiskName, at_most: Duration) -> Option<PathBuf> {
+    fn wait_for(&mut self, by_id: &Path, at_most: Duration) -> Option<PathBuf> {
         let began = Instant::now();
         loop {
-            if let Ok(device) = std::fs::canonicalize(disk.path()) {
+            if let Ok(device) = std::fs::canonicalize(by_id) {
                 return Some(device);
             }
             if began.elapsed() >= at_most {

@@ -4,8 +4,10 @@
 //!
 //! 1. read which disk was chosen, from the kernel command line (`crate::told`);
 //! 2. wait for that disk to appear, by its own name (`crate::disk`);
-//! 3. ask what it holds, and refuse the four things no consent could have been
-//!    about (`crate::disks`);
+//! 3. ask what it holds, and refuse what no consent could have been about
+//!    (`crate::disks`) — the four things a disk taken whole is refused for, or,
+//!    on the road that keeps what is there, anything other than the two
+//!    partitions the installer on Windows made this road for;
 //! 4. wait for a wired connection, then check the pinned release is signed by
 //!    the pinned key, over the network,
 //!    and read the answer back (`crate::verifying`);
@@ -27,8 +29,9 @@
 //! somewhere a person helping, or a test, can read it. The person watching is
 //! told in the vocabulary, which never names the machinery.
 
-use alo_strings::{Filling, Strings, Word};
+use alo_strings::{Filling, Said, Strings, Word};
 
+use crate::disk::{DiskName, PartitionName};
 use crate::disks::{Disks, Replacing, Unsuitable};
 use crate::ended::{Ended, Refusal, the_disk};
 use crate::environment::Environment;
@@ -37,7 +40,7 @@ use crate::program::Program;
 use crate::told::{NotTold, Told};
 use crate::verifying::{Verified, Verifying};
 use crate::words;
-use crate::writing::Writing;
+use crate::writing::{Onto, Writing};
 
 /// Install, or refuse, on this machine, with this environment — and say every
 /// step on the way.
@@ -85,15 +88,29 @@ fn installing(
 ) -> Ended {
     match before_writing(machine, strings, environment) {
         Err(refusal) => Ended::Refused(refusal),
-        Ok(writing) => {
+        Ok((writing, disk)) => {
+            // **The disk the person chose, not the one the write names.** On the
+            // road that keeps what is already there the write names a partition
+            // and no disk at all — `Writing::disk` is `None` there — while what
+            // this sequence says, tidies and ends with is still the disk. Asking
+            // the write for it would have been asking it the wrong question.
             say(
                 machine,
                 strings,
                 words::INSTALLING,
-                &the_disk(writing.disk().as_str()),
+                &the_disk(disk.as_str()),
             );
             let still = strings.say(&words::STILL_INSTALLING.key(), &Filling::nothing());
-            let disk = writing.disk().clone();
+            // **On the road that keeps what is there, the root is made and
+            // mounted here**, because the writer is handed a root rather than a
+            // disk. Each step is checked: a write into a root that was never
+            // mounted would install alo OS into this environment's own memory
+            // and report success.
+            if let Onto::BesideWhatIsThere { root, esp } = writing.onto().clone()
+                && !made_the_root(machine, &still, &root, &esp)
+            {
+                return Ended::NotInstalled(disk);
+            }
             let program = Program::Writing(writing);
             match machine.run(&program, &still, STILL_EVERY) {
                 Ok(ran) if ran.succeeded => {
@@ -116,12 +133,67 @@ fn installing(
     }
 }
 
+/// Make the root alo OS goes into, and mount it with the EFI partition under it.
+///
+/// Only on the road that keeps what is already on the disk. Three programs, in
+/// this order and no other: the file system is made, the root is mounted, and
+/// the EFI partition is mounted **beneath** it, because the writer looks for the
+/// loader's home under the root it is given.
+///
+/// **Every one is checked.** A `mount` that failed and was not noticed leaves
+/// the writer installing into an empty directory in this environment's own
+/// memory — which succeeds, says so, and leaves a disk with nothing on it. What
+/// each program complained of is noted where a technician reads it.
+///
+/// The sentence is the write's own, because to the person watching this *is*
+/// the install going on. Three sentences about machinery they were never shown
+/// would be three sentences about something they did not ask for.
+fn made_the_root(
+    machine: &mut impl TheMachine,
+    still: &Said,
+    root: &PartitionName,
+    esp: &PartitionName,
+) -> bool {
+    let steps = [
+        Program::MakingTheRoot {
+            partition: root.clone(),
+        },
+        Program::Mounting {
+            partition: root.clone(),
+            at: Writing::THE_ROOT,
+        },
+        Program::Mounting {
+            partition: esp.clone(),
+            at: Writing::THE_ESP,
+        },
+    ];
+    for program in steps {
+        match machine.run(&program, still, STILL_EVERY) {
+            Ok(ran) if ran.succeeded => {}
+            Ok(ran) => {
+                noted(machine, &program, &ran.complained);
+                return false;
+            }
+            Err(why) => {
+                noted(machine, &program, &why.to_string());
+                return false;
+            }
+        }
+    }
+    true
+}
+
 /// Steps 1 to 4, which only read, and the write they lead to.
+///
+/// Gives back the disk beside the write because the two are no longer the same
+/// question: a write can name a partition, and everything after it — what is
+/// said, what is tidied, what the environment ends with — is about the disk the
+/// person chose.
 fn before_writing(
     machine: &mut impl TheMachine,
     strings: &Strings,
     environment: &Environment,
-) -> Result<Writing, Refusal> {
+) -> Result<(Writing, DiskName), Refusal> {
     say(
         machine,
         strings,
@@ -131,11 +203,29 @@ fn before_writing(
     let line = machine
         .command_line()
         .map_err(|_| Refusal::ChoiceNotUnderstood)?;
-    let told = Told::from_the_command_line(&line).map_err(|why| match why {
-        NotTold::NothingChosen => Refusal::NoDiskChosen,
-        NotTold::MoreThanOne | NotTold::NotADisk(_) => Refusal::ChoiceNotUnderstood,
-        NotTold::APartition(named) => Refusal::NotAWholeDisk(named),
-    })?;
+    let told = match Told::from_the_command_line(&line) {
+        Ok(told) => told,
+        Err(why) => {
+            // **Which word was wrong is kept, and kept off the screen.** The
+            // person is told in the vocabulary, which never names a kernel
+            // word; whoever helps them afterwards needs to know exactly which
+            // one. Three of these can only happen if the installer that staged
+            // this line staged it wrong — a half-named road, or a name that is
+            // not a partition's — and that is a thing to be able to read
+            // afterwards rather than to guess at.
+            machine.note(&format!("the command line: {why}"));
+            return Err(match why {
+                NotTold::NothingChosen => Refusal::NoDiskChosen,
+                NotTold::MoreThanOne
+                | NotTold::NotADisk(_)
+                | NotTold::NoEfiPartition
+                | NotTold::NoPartitionToInstallInto
+                | NotTold::NotAPartition(_)
+                | NotTold::BothRoads => Refusal::ChoiceNotUnderstood,
+                NotTold::APartition(named) => Refusal::NotAWholeDisk(named),
+            });
+        }
+    };
     let disk = told.disk();
 
     say(
@@ -145,7 +235,7 @@ fn before_writing(
         &the_disk(disk.as_str()),
     );
     let device = machine
-        .wait_for(disk, THE_DISK_APPEARS_WITHIN)
+        .wait_for(&disk.path(), THE_DISK_APPEARS_WITHIN)
         .ok_or_else(|| Refusal::DiskNotConnected(disk.clone()))?;
 
     let checking = strings.say(&words::CHECKING_THE_DISK.key(), &the_disk(disk.as_str()));
@@ -156,28 +246,62 @@ fn before_writing(
         .filter(|ran| ran.succeeded)
         .and_then(|ran| Disks::read(&ran.printed).ok())
         .ok_or(Refusal::DisksNotRead)?;
-    let replacing = if told.replaces_what_is_there() {
-        Replacing::TheSystemOnTheDisk
-    } else {
-        Replacing::Nothing
-    };
-    if told.replaces_what_is_there() {
-        // Said here, where the disk has been read and nothing has been
-        // written yet: the last sentence before the road that has no way back.
-        machine.say(&strings.say(
-            &words::REPLACING_WHAT_IS_THERE.key(),
-            &the_disk(disk.as_str()),
-        ));
+    // **The two roads ask the disk different questions, and only one of them
+    // each.** A disk taken whole must hold nothing anybody would miss; a disk
+    // being kept is *meant* to hold Windows and the installer's own staging
+    // area, and what matters there is whether the two partitions named are the
+    // two the installer made this road for. Neither check is a weakened version
+    // of the other, and a line claiming both roads never reaches here
+    // (`NotTold::BothRoads`).
+    match told.beside() {
+        None => {
+            if told.replaces_what_is_there() {
+                // Said here, where the disk has been read and nothing has been
+                // written yet: the last sentence before the road that has no
+                // way back.
+                machine.say(&strings.say(
+                    &words::REPLACING_WHAT_IS_THERE.key(),
+                    &the_disk(disk.as_str()),
+                ));
+            }
+            let replacing = if told.replaces_what_is_there() {
+                Replacing::TheSystemOnTheDisk
+            } else {
+                Replacing::Nothing
+            };
+            listed
+                .may_receive(&device, replacing)
+                .map_err(|why| match why {
+                    Unsuitable::NotListed => Refusal::DiskNotConnected(disk.clone()),
+                    Unsuitable::NotAWholeDisk => Refusal::NotAWholeDisk(disk.as_str().to_owned()),
+                    Unsuitable::HoldsThisInstaller => Refusal::HoldsThisInstaller(disk.clone()),
+                    Unsuitable::HoldsAnotherSystem => Refusal::HoldsAnotherSystem(disk.clone()),
+                    Unsuitable::CannotBeWritten => Refusal::CannotBeWritten(disk.clone()),
+                })?;
+        }
+        Some(beside) => {
+            let waited = machine.wait_for(&beside.root().path(), THE_DISK_APPEARS_WITHIN);
+            let Some(root) = waited else {
+                machine.note(&format!(
+                    "the space for alo OS: {} never appeared",
+                    beside.root().as_str()
+                ));
+                return Err(Refusal::NotTheSpaceTheInstallerMade(disk.clone()));
+            };
+            let waited = machine.wait_for(&beside.efi().path(), THE_DISK_APPEARS_WITHIN);
+            let Some(esp) = waited else {
+                machine.note(&format!(
+                    "the start-up area: {} never appeared",
+                    beside.efi().as_str()
+                ));
+                return Err(Refusal::NotTheSpaceTheInstallerMade(disk.clone()));
+            };
+            if let Err(why) = listed.may_keep_what_is_there(&device, &root, &esp) {
+                machine.note(&format!("keeping what is on {}: {why}", disk.as_str()));
+                return Err(Refusal::NotTheSpaceTheInstallerMade(disk.clone()));
+            }
+        }
     }
-    listed
-        .may_receive(&device, replacing)
-        .map_err(|why| match why {
-            Unsuitable::NotListed => Refusal::DiskNotConnected(disk.clone()),
-            Unsuitable::NotAWholeDisk => Refusal::NotAWholeDisk(disk.as_str().to_owned()),
-            Unsuitable::HoldsThisInstaller => Refusal::HoldsThisInstaller(disk.clone()),
-            Unsuitable::HoldsAnotherSystem => Refusal::HoldsAnotherSystem(disk.clone()),
-            Unsuitable::CannotBeWritten => Refusal::CannotBeWritten(disk.clone()),
-        })?;
 
     let connecting = strings.say(&words::CONNECTING.key(), &Filling::nothing());
     machine.say(&connecting);
@@ -204,7 +328,16 @@ fn before_writing(
         Verified::NotReachable => return Err(Refusal::NotReachable),
     }
 
-    Ok(Writing::of(environment.pin(), disk))
+    // **The road is the one the line named, and nothing here chooses it.** The
+    // person chose on the machine they still had, before the restart. This reads
+    // what they chose and decides nothing they did not.
+    let writing = match told.beside() {
+        None => Writing::of(environment.pin(), disk),
+        Some(beside) => {
+            Writing::beside_what_is_there(environment.pin(), beside.root(), beside.efi())
+        }
+    };
+    Ok((writing, disk.clone()))
 }
 
 /// What a program that failed complained of, a line at a time, where a

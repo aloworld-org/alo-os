@@ -305,8 +305,22 @@ pub const REPLACING_WHAT_IS_THERE: Word = Word::saying(
      anything is written. {disk} is the disk's own name.",
 );
 
+/// On the road that keeps what is there: the space for alo OS is not there.
+pub const NOT_THE_SPACE_THE_INSTALLER_MADE: Word = Word::saying(
+    "installing.not-the-space-the-installer-made",
+    "The space for alo OS on the disk {disk} is not there, so nothing was changed. Start Windows \
+     and run the alo OS installer again",
+)
+.noting(
+    "{disk} is the disk's own name, not translated. Said only on the road that keeps the system \
+     already on the disk, when the space that installer made for alo OS is missing, is not the \
+     space it made, or is being used by something else. The person is told one thing, because \
+     there is one thing to do about all of them. 'Space' is the word for a part of a disk \
+     throughout these sentences; do not use a word for a partition or a volume.",
+);
+
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 28] = [
+pub const EVERY_WORD: [Word; 29] = [
     STARTING,
     REPLACING_WHAT_IS_THERE,
     TIDYING,
@@ -333,6 +347,7 @@ pub const EVERY_WORD: [Word; 28] = [
     CANNOT_BE_WRITTEN,
     NOT_REACHABLE,
     NOT_GENUINE,
+    NOT_THE_SPACE_THE_INSTALLER_MADE,
     NOT_INSTALLED,
     RESTART_WHEN_READY,
 ];

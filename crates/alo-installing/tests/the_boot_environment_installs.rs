@@ -160,14 +160,20 @@ impl TheMachine for Scripted {
         }
     }
 
-    fn wait_for(&mut self, disk: &alo_installing::DiskName, at_most: Duration) -> Option<PathBuf> {
+    fn wait_for(&mut self, by_id: &Path, at_most: Duration) -> Option<PathBuf> {
         assert!(
             at_most >= Duration::from_secs(10),
             "a disk is given time to appear"
         );
+        assert_eq!(
+            by_id.parent().map(Path::to_path_buf),
+            Some(PathBuf::from(alo_installing::BY_ID)),
+            "a name is waited for where udev puts it"
+        );
+        let named = by_id.file_name().and_then(std::ffi::OsStr::to_str)?;
         self.appears
             .iter()
-            .find(|(name, _)| *name == disk.as_str())
+            .find(|(name, _)| *name == named)
             .map(|(_, device)| PathBuf::from(device))
     }
 
@@ -330,7 +336,9 @@ fn a_genuine_release_onto_the_chosen_disk_is_installed_with_every_step_said() {
     let Program::Writing(writing) = &machine.ran[3] else {
         panic!("the fourth program is the write: {:?}", machine.ran);
     };
-    assert_eq!(writing.disk(), &disk);
+    // `Some`, because a write can now name a partition instead and has no disk
+    // at all when it does. This is the whole-disk road, so it has one.
+    assert_eq!(writing.disk(), Some(&disk));
     assert_eq!(
         writing.arguments().last().map(String::as_str),
         Some("/dev/disk/by-id/virtio-alo-target")
@@ -407,6 +415,321 @@ fn a_release_whose_signature_does_not_verify_writes_nothing_and_says_so() {
         "why the check failed is kept where a technician reads it"
     );
     the_machinery_is_never_on_the_screen(&machine);
+}
+
+/// The same machine after the installer on Windows has made and labelled the
+/// space for alo OS: a sixth partition on the Windows disk, and nothing else
+/// about the machine different.
+const THE_DISKS_BESIDE: &str = r#"{"blockdevices": [
+   {"name": "/dev/vda", "type": "disk", "ro": false, "mountpoints": [null], "children": [
+      {"name": "/dev/vda1", "type": "part", "ro": false, "mountpoints": [null], "parttype": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b", "label": null},
+      {"name": "/dev/vda2", "type": "part", "ro": false, "mountpoints": [null], "parttype": "e3c9e316-0b5c-4db8-817d-f92df00215ae", "label": null},
+      {"name": "/dev/vda3", "type": "part", "ro": false, "mountpoints": [null], "parttype": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7", "label": "Windows"},
+      {"name": "/dev/vda4", "type": "part", "ro": false, "mountpoints": [null], "parttype": "de94bba4-06d1-4d40-a16a-bfd50179d6ac", "label": null},
+      {"name": "/dev/vda5", "type": "part", "ro": false, "mountpoints": [null], "parttype": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b", "label": "ALO-INSTALL"},
+      {"name": "/dev/vda6", "type": "part", "ro": false, "mountpoints": [null], "parttype": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7", "label": "ALO-ROOT"}
+   ]},
+   {"name": "/dev/vdb", "type": "disk", "ro": false, "mountpoints": [null]}
+]}"#;
+
+/// The space the installer made, and Windows' own start-up area, by the names
+/// udev gives them.
+const THE_SPACE: &str = "virtio-alo-windows-part6";
+const THE_START_UP: &str = "virtio-alo-windows-part1";
+
+impl Scripted {
+    /// A machine whose person chose to keep what is on the Windows disk, and
+    /// whose installer named these two partitions of it.
+    fn keeping(root: &str, esp: &str) -> Self {
+        let mut machine = Self::choosing("virtio-alo-windows");
+        machine.command_line = Ok(format!(
+            "BOOT_IMAGE=/EFI/alo-installing/vmlinuz rd.systemd.unit=alo-installing.target \
+             rd.neednet=1 ip=dhcp console=ttyS0,115200 console=tty0 \
+             alo.installing.to=virtio-alo-windows alo.installing.into={root} \
+             alo.installing.efi={esp}"
+        ));
+        machine.appears.extend([
+            ("virtio-alo-windows-part1", "/dev/vda1"),
+            ("virtio-alo-windows-part3", "/dev/vda3"),
+            ("virtio-alo-windows-part5", "/dev/vda5"),
+            ("virtio-alo-windows-part6", "/dev/vda6"),
+            ("virtio-alo-target-part1", "/dev/vdb1"),
+        ]);
+        machine
+    }
+
+    /// Every argument of every program that was run, as one list.
+    ///
+    /// For asking the one question a reader of this road most wants answered:
+    /// *was any partition of Windows' ever named to a program?*
+    fn every_argument(&self) -> Vec<String> {
+        self.ran
+            .iter()
+            .flat_map(|program| {
+                let mut named = program.arguments();
+                named.push(program.path().to_owned());
+                named
+            })
+            .collect()
+    }
+}
+
+/// The answers the tidying gives, in its own order, on a machine laid out like
+/// the walk's.
+fn the_tidying_answers(machine: Scripted, disks: &str) -> Scripted {
+    machine
+        .answering(succeeded(THE_START_ENTRIES))
+        .answering(succeeded(THE_ENTRY_IT_MADE))
+        .answering(succeeded(""))
+        .answering(succeeded(THE_START_ENTRIES_AFTER_NAMING))
+        .answering(succeeded(""))
+        .answering(succeeded(disks))
+        .answering(succeeded(""))
+}
+
+/// **alo OS goes into the space the installer made and Windows stays**: the
+/// file system is made on that one partition, the root and Windows' start-up
+/// area are mounted, the writer is handed the root rather than the disk, and no
+/// partition of Windows' is ever named to any program.
+#[test]
+fn alo_os_goes_into_the_space_the_installer_made_and_windows_stays() {
+    let environment = the_environment();
+    let machine = Scripted::keeping(THE_SPACE, THE_START_UP)
+        .answering(succeeded(THE_DISKS_BESIDE))
+        .answering(succeeded(&the_owners_verification(
+            environment.pin().digest(),
+        )))
+        // The file system, the root mounted, the start-up area mounted under
+        // it, and then the write.
+        .answering(succeeded(""))
+        .answering(succeeded(""))
+        .answering(succeeded(""))
+        .answering(succeeded(""));
+    let mut machine = the_tidying_answers(machine, THE_DISKS_BESIDE);
+
+    let ended = install(&mut machine, &strings(), Ok(&environment));
+
+    let disk = alo_installing::DiskName::named("virtio-alo-windows").expect("a disk");
+    assert_eq!(ended, Ended::Installed(disk));
+    assert!(machine.restarted());
+
+    // The three programs that prepare the root, in this order and no other.
+    let space = alo_installing::PartitionName::named(THE_SPACE).expect("a partition");
+    let start_up = alo_installing::PartitionName::named(THE_START_UP).expect("a partition");
+    assert_eq!(
+        machine.ran[3],
+        Program::MakingTheRoot {
+            partition: space.clone()
+        }
+    );
+    assert_eq!(
+        machine.ran[4],
+        Program::Mounting {
+            partition: space,
+            at: "/run/alo-os-root",
+        }
+    );
+    assert_eq!(
+        machine.ran[5],
+        Program::Mounting {
+            partition: start_up,
+            at: "/run/alo-os-root/boot/efi",
+        }
+    );
+
+    // The write names a root and no disk, and nothing in it wipes anything.
+    let Program::Writing(writing) = &machine.ran[6] else {
+        panic!("the seventh program is the write: {:?}", machine.ran);
+    };
+    assert_eq!(writing.disk(), None, "a write beside Windows names no disk");
+    let arguments = writing.arguments();
+    assert!(arguments.contains(&"install".to_owned()), "{arguments:?}");
+    assert!(
+        arguments.contains(&"to-filesystem".to_owned()),
+        "{arguments:?}"
+    );
+    assert_eq!(
+        arguments.last().map(String::as_str),
+        Some("/run/alo-os-root")
+    );
+    for never in ["--wipe", "to-disk", "--filesystem"] {
+        assert!(
+            !arguments.iter().any(|one| one == never),
+            "{never} on the road that keeps Windows: {arguments:?}"
+        );
+    }
+
+    // **No partition of Windows' was named to any program.** The one a file
+    // system was made on is the one the installer made, and the start-up area
+    // was mounted and never made.
+    let named = machine.every_argument();
+    for windows in ["part2", "part3", "part4"] {
+        assert!(
+            !named.iter().any(|one| one.contains(windows)),
+            "a partition of Windows' was named: {windows} in {named:?}"
+        );
+    }
+    assert_eq!(
+        machine
+            .ran
+            .iter()
+            .filter(|program| matches!(program, Program::MakingTheRoot { .. }))
+            .count(),
+        1,
+        "a file system was made more than once"
+    );
+
+    // Windows keeps its place in the firmware's list, behind alo OS.
+    assert!(
+        machine.ran.contains(&Program::OrderingTheEntries {
+            order: ["000C", "0004", "0000"].map(str::to_owned).to_vec(),
+        }),
+        "{:?}",
+        machine.ran
+    );
+    assert_eq!(
+        machine.noted,
+        Vec::<String>::new(),
+        "an install that succeeded notes nothing"
+    );
+}
+
+/// **A command line naming Windows' own volume as the space for alo OS is
+/// refused, and no file system is made.**
+///
+/// The one that matters most. Nothing a person did can produce this line — it
+/// takes an installer that staged it wrongly — and the partition named is of
+/// exactly the type the space for alo OS is, so the only thing standing between
+/// it and `mkfs.btrfs --force` over somebody's Windows is the label.
+#[test]
+fn windows_own_volume_named_as_the_space_is_refused_and_nothing_is_made() {
+    let mut machine = Scripted::keeping("virtio-alo-windows-part3", THE_START_UP)
+        .answering(succeeded(THE_DISKS_BESIDE))
+        .answering(succeeded(&the_owners_verification(
+            the_environment().pin().digest(),
+        )));
+
+    let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+
+    let disk = alo_installing::DiskName::named("virtio-alo-windows").expect("a disk");
+    refused_with(
+        &machine,
+        &ended,
+        &Refusal::NotTheSpaceTheInstallerMade(disk),
+        "The space for alo OS on the disk virtio-alo-windows is not there, so nothing was changed. \
+         Start Windows and run the alo OS installer again",
+    );
+    assert!(
+        !machine
+            .ran
+            .iter()
+            .any(|program| matches!(program, Program::MakingTheRoot { .. })),
+        "a file system was made on a refusal: {:?}",
+        machine.ran
+    );
+    assert!(
+        !machine
+            .ran
+            .iter()
+            .any(|program| matches!(program, Program::Mounting { .. })),
+        "a partition was mounted on a refusal: {:?}",
+        machine.ran
+    );
+    assert_eq!(
+        machine.noted,
+        [
+            "keeping what is on virtio-alo-windows: the partition named does not carry the \
+          installer's own label"
+        ],
+        "which of them it was is kept where a technician reads it"
+    );
+    the_machinery_is_never_on_the_screen(&machine);
+}
+
+/// **A space named on another disk is refused**, even carrying the label: the
+/// second disk's first partition is labelled the same way a disk out of another
+/// machine would be.
+#[test]
+fn a_space_named_on_another_disk_is_refused() {
+    let labelled = THE_DISKS_BESIDE.replace(
+        r#"{"name": "/dev/vdb", "type": "disk", "ro": false, "mountpoints": [null]}"#,
+        r#"{"name": "/dev/vdb", "type": "disk", "ro": false, "mountpoints": [null], "children": [
+           {"name": "/dev/vdb1", "type": "part", "ro": false, "mountpoints": [null], "parttype": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7", "label": "ALO-ROOT"}]}"#,
+    );
+    assert_ne!(labelled, THE_DISKS_BESIDE, "the fixture was changed");
+    let mut machine = Scripted::keeping("virtio-alo-target-part1", THE_START_UP)
+        .answering(succeeded(&labelled))
+        .answering(succeeded(&the_owners_verification(
+            the_environment().pin().digest(),
+        )));
+
+    let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+
+    let disk = alo_installing::DiskName::named("virtio-alo-windows").expect("a disk");
+    assert_eq!(
+        ended,
+        Ended::Refused(Refusal::NotTheSpaceTheInstallerMade(disk))
+    );
+    assert!(!machine.wrote(), "{:?}", machine.ran);
+    assert_eq!(
+        machine.noted,
+        ["keeping what is on virtio-alo-windows: a partition named is not part of the chosen disk"]
+    );
+}
+
+/// **A space that never appeared is refused as the same thing**, because to the
+/// person it is: the space is not there.
+#[test]
+fn a_space_that_never_appeared_is_refused() {
+    let mut machine = Scripted::keeping("virtio-alo-windows-part9", THE_START_UP)
+        .answering(succeeded(THE_DISKS_BESIDE))
+        .answering(succeeded(&the_owners_verification(
+            the_environment().pin().digest(),
+        )));
+
+    let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+
+    let disk = alo_installing::DiskName::named("virtio-alo-windows").expect("a disk");
+    assert_eq!(
+        ended,
+        Ended::Refused(Refusal::NotTheSpaceTheInstallerMade(disk))
+    );
+    assert!(!machine.wrote(), "{:?}", machine.ran);
+    assert_eq!(
+        machine.noted,
+        ["the space for alo OS: virtio-alo-windows-part9 never appeared"]
+    );
+}
+
+/// **A line naming one of the two partitions is refused before a disk is looked
+/// at**, and so is a line saying both roads at once.
+#[test]
+fn half_a_road_and_both_roads_are_refused_before_anything_is_read() {
+    for line in [
+        "alo.installing.to=virtio-alo-windows alo.installing.into=virtio-alo-windows-part6",
+        "alo.installing.to=virtio-alo-windows alo.installing.efi=virtio-alo-windows-part1",
+        "alo.installing.to=virtio-alo-windows alo.installing.into=virtio-alo-windows-part6 \
+         alo.installing.efi=virtio-alo-windows-part1 alo.installing.replacing=windows",
+    ] {
+        let mut machine = Scripted::choosing("virtio-alo-windows");
+        machine.command_line = Ok(line.to_owned());
+
+        let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+
+        refused_with(
+            &machine,
+            &ended,
+            &Refusal::ChoiceNotUnderstood,
+            "The disk chosen for alo OS could not be understood, so nothing was changed",
+        );
+        assert_eq!(machine.ran, Vec::new(), "{line}: a program ran");
+        assert_eq!(machine.noted.len(), 1, "{line}: {:?}", machine.noted);
+        assert!(
+            machine.noted[0].starts_with("the command line: "),
+            "{line}: {:?}",
+            machine.noted
+        );
+    }
 }
 
 /// **No line a program complained of is ever a sentence on the screen.**

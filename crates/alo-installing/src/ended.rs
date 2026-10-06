@@ -1,7 +1,8 @@
 //! How an installation ended, and the sentence each ending is said in.
 //!
 //! Three endings. **Installed**, and the machine restarts. **Refused**, before
-//! anything was written, for one of eleven reasons each with its own sentence —
+//! anything was written, for one of the reasons below, each with its own
+//! sentence —
 //! and every one of those sentences says that nothing was changed, because it
 //! is true and it is the first thing a person needs. **Not installed**, after
 //! the disk began to be written, which is the one ending that cannot say that
@@ -48,6 +49,13 @@ pub enum Refusal {
     NotReachable,
     /// The download is not the owner's.
     NotGenuine,
+    /// On the road that keeps what is there: the space the installer made for
+    /// alo OS is not on the disk, or is not the space the installer made.
+    ///
+    /// Every one of `crate::NotKeeping`'s reasons ends here, because they are
+    /// one thing to the person — the space is not there — and one thing to do
+    /// about it. Which of them it was goes to the log.
+    NotTheSpaceTheInstallerMade(DiskName),
 }
 
 impl Ended {
@@ -88,6 +96,10 @@ impl Refusal {
             Self::CannotBeWritten(disk) => (words::CANNOT_BE_WRITTEN, the_disk(disk.as_str())),
             Self::NotReachable => (words::NOT_REACHABLE, Filling::nothing()),
             Self::NotGenuine => (words::NOT_GENUINE, Filling::nothing()),
+            Self::NotTheSpaceTheInstallerMade(disk) => (
+                words::NOT_THE_SPACE_THE_INSTALLER_MADE,
+                the_disk(disk.as_str()),
+            ),
         }
     }
 }
@@ -127,6 +139,7 @@ mod tests {
             Ended::Refused(Refusal::CannotBeWritten(disk.clone())),
             Ended::Refused(Refusal::NotReachable),
             Ended::Refused(Refusal::NotGenuine),
+            Ended::Refused(Refusal::NotTheSpaceTheInstallerMade(disk.clone())),
         ] {
             let (word, filling) = ended.said_as();
             let said = strings.say(&word.key(), &filling);
