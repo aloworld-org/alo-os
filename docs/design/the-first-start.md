@@ -144,6 +144,65 @@ one.
 Kept: *"You can change this later. External processing requires a visible
 choice."*
 
+### The arrival screen, word for word — `383:26067`
+
+Read 2026-10-06. **This is the authoritative copy for this screen**, and it
+differs from the older `183:*` frames quoted further down, which were read
+before the correction.
+
+| slot | words |
+|---|---|
+| brand | alo OS |
+| stage, top right | SET UP · AI CHOICE |
+| title | How would you like to work? |
+| introduction | Choose where alo runs, or **choose No AI**. |
+| choice 1 | **On this computer** — alo works locally. Availability depends on this PC. |
+| choice 2 | **A machine on your network** — Selected content goes to a machine on your network. |
+| choice 3 | **My provider** — Use your provider. Selected content leaves this PC; provider charges may apply. |
+| choice 4 | **No AI** — Open apps, find files and use the full canvas by hand. |
+| consequence | Choose one option to continue. You can change this later. External processing requires a visible choice. |
+| actions | Continue *(disabled)* · Back |
+| bottom left | Accessibility |
+| bottom right | Local setup. No online account required. |
+
+**Three things here are not what an earlier reading of this flow would tell
+you**, and each matters to whoever builds it:
+
+- **The introduction says *or choose No AI*, not *or continue without AI*.**
+  The older frame said the latter, and the difference is ADR 0009's whole
+  point: *continue without* is a skip, *choose No AI* is an answer. Use the
+  newer wording.
+- **The stage reads `SET UP · AI CHOICE`, not `SET UP · 4 OF 5`.** The step
+  count is gone from this screen.
+- **"Choose one option to continue." is the first sentence of the consequence
+  paragraph**, not a separate label beside the disabled control. One paragraph,
+  three sentences, in that order. A vocabulary that splits it into three keys
+  has to put them back in that order; one that keeps it as a single key cannot
+  reuse the middle sentence on the other states, where it also appears without
+  the first.
+
+### What the states change, and what they do not
+
+Measured across `383:26067` (arrival) and `383:26127` (network selected):
+
+| | arrival | something selected |
+|---|---|---|
+| selected card border | — | **2px** navy, and the title gains ` · Selected` |
+| unselected card border | 1px `#e7ebef` | 1px `#e7ebef` |
+| card | 600×**108**, padding 20 across and 14 down | the same |
+| **Continue** | **disabled** — ground `#eef2f4`, text `#596b78`, and **not interactive at all** | navy, interactive |
+| actions present | Continue, Back | Continue, Back, **About this choice** |
+| consequence | the three-sentence paragraph above | *You can change this later. External processing requires a visible choice.* |
+
+**`About this choice` appears only once something is selected**, which is the
+design answering a question the specification did not ask: there is nothing to
+explain until there is a choice to explain.
+
+**The disabled control is a non-interactive element in the design, not a styled
+link.** It is visible, it is 184×48 like every other action, and it cannot be
+activated — which is what *visible but disabled* has to mean for a pointer, a
+keyboard and a screen reader alike.
+
 ### Measured geometry, from `383:26067` on 2026-10-06
 
 Read from the file rather than taken from the brief:
@@ -227,6 +286,16 @@ shortcut systems and test with assistive technology.
 
 Use the existing appearance and layout systems. The React and Tailwind in any
 `get_design_context` output is a visual target, never an implementation.
+
+## Read before the correction — treat as superseded where they disagree
+
+**These two were read earlier on 2026-10-06, before the owner gave the corrected
+flow.** `183:10679` is listed in the corrected inventory, so it has very likely
+been updated since this reading; what is below is what it said *then*. Where it
+disagrees with `383:26067` above — and it does, on the introduction, the stage
+label and the presence of *alo in Europe* — **the corrected flow wins and this
+is history.** Re-reading `183:10679`, `183:10683`, `183:10691` and `183:10687`
+is owed, and is the cheapest remaining piece of this job.
 
 ## The screens, as read on 2026-10-06
 
