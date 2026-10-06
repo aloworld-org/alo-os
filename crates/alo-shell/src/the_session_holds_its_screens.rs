@@ -120,6 +120,42 @@ impl Server {
     pub fn these_screens_are(&mut self, screens: Option<crate::Screens>) {
         self.screens = screens;
     }
+
+    /// How many physical pixels this display draws for one logical one, in
+    /// hundredths.
+    ///
+    /// **The one road from a display to its own scale**, and the reason
+    /// `more-than-one-display-plan.md` task 5 could be built without deciding
+    /// anything: the number is the person's, held in the arrangement
+    /// `alo-displays` reads from their file, and this only looks it up. A
+    /// shell that worked a scale out from pixels and millimetres would be
+    /// deciding how large this person's interface is, in a drawing crate,
+    /// which both plans forbid in as many words.
+    ///
+    /// **A hundred when the arrangement does not know this display**, which
+    /// is one physical pixel per logical one — what every display got before
+    /// this existed, so a session with no arrangement lays out exactly as it
+    /// did. Not a guess dressed as an answer: a display the person has never
+    /// arranged has no scale of theirs to honour, and one-to-one is the only
+    /// honest reading of *they have not said*.
+    ///
+    /// Identified by socket, because that is what this compositor can tell
+    /// displays apart by — see [`Self::the_displays_as_reported`] for why
+    /// there is no panel to prefer.
+    #[must_use]
+    pub fn the_scale_of_display(&self, named: &str) -> u16 {
+        let Some(screens) = self.screens.as_ref() else {
+            return alo_displays::Scale::a_hundred().as_per_cent();
+        };
+        Socket::named(named)
+            .ok()
+            .map(alo_displays::Identity::Socket)
+            .and_then(|identity| screens.on(&identity))
+            .map_or_else(
+                || alo_displays::Scale::a_hundred().as_per_cent(),
+                |place| place.scale().as_per_cent(),
+            )
+    }
 }
 
 #[cfg(test)]
