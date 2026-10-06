@@ -662,15 +662,48 @@ shortcut systems and test with assistive technology.
 Use the existing appearance and layout systems. The React and Tailwind in any
 `get_design_context` output is a visual target, never an implementation.
 
-## Read before the correction — treat as superseded where they disagree
+## Re-read, and no longer stale — `183:10679` and `183:10691`
 
-**These two were read earlier on 2026-10-06, before the owner gave the corrected
-flow.** `183:10679` is listed in the corrected inventory, so it has very likely
-been updated since this reading; what is below is what it said *then*. Where it
-disagrees with `383:26067` above — and it does, on the introduction, the stage
-label and the presence of *alo in Europe* — **the corrected flow wins and this
-is history.** Re-reading `183:10679`, `183:10683`, `183:10691` and `183:10687`
-is owed, and is the cheapest remaining piece of this job.
+**They were updated in the file, and this section had them wrong twice over.**
+An earlier reading on 2026-10-06 caught them before the correction, showing *alo
+in Europe*, `SET UP · 4 OF 5` and *continue without AI*; this document then
+marked them as probably-stale history. **Re-read later the same day, both carry
+the corrected four**, with *A machine on your network* in second place, no *alo
+in Europe*, the `SET UP · AI CHOICE` stage and *Choose where alo runs, or choose
+No AI*. The older quotation below is kept only as the record of what moved.
+
+| frame | name now | selected card | `Continue` |
+|---|---|---|---|
+| `183:10679` | *12 · Choose how alo helps* | On this computer · Selected | **enabled, navy** |
+| `183:10691` | *12c · No AI selected* | No AI · Selected | **enabled, navy** |
+
+**`No AI` enables `Continue` exactly like the other three.** It is not a skip
+link, not a *continue without* at the side; it is chosen and confirmed on the
+same road as every other answer, which is ADR 0009's *same weight* at the level
+of what a person actually does.
+
+### This settles whether the arrival sentence is one key or three
+
+**It is at least two, and the first must stand alone.** The consequence
+paragraph differs between arrival and a chosen state:
+
+| state | the paragraph |
+|---|---|
+| arrival `383:26067` | **Choose one option to continue.** You can change this later. External processing requires a visible choice. |
+| something selected | You can change this later. External processing requires a visible choice. |
+
+The last two sentences appear **without** the first the moment anything is
+chosen. So *Choose one option to continue.* is its own string, shown only while
+nothing is selected — it cannot be baked into a single key with the other two,
+and a build that did would either repeat it after a choice or lose the other two
+before one.
+
+This is what `crates/alo-setting-up/src/words.rs` would need as a new key, and
+it is the one piece of that vocabulary work that does **not** wait on the two
+questions below: it adds a string rather than changing the meaning of an
+existing one, so ADR 0068's retirement rule does not apply to it.
+
+## Read before the correction — kept as the record of what moved
 
 ## The screens, as read on 2026-10-06
 
