@@ -980,6 +980,57 @@ from the other.**
 **`disan` is example data**, and it is the owner's own name, as `Disan` is on
 `384:26375`.
 
+### Your name — `183:10675`, *10 · Your name*
+
+Read 2026-10-06.
+
+| slot | words |
+|---|---|
+| stage | **SET UP · 2 OF 5** |
+| eyebrow | MAKE IT YOURS |
+| title | What should we call you? |
+| introduction | This name appears when you sign in. You can change it later. |
+| row 1 | **Your name** — disan |
+| row 2 | **Profile picture · optional** — Use your initial, or choose a picture. |
+| consequence | **Your account is created on this computer. No online account is required.** |
+| actions | Continue · Back, 160×48 |
+
+**`disan` is lowercase here too**, which is where *preserve user name casing*
+starts: the name is taken as typed on this screen and shown as typed on
+`176:10686`'s greeting and monogram. **A build that title-cased it at either end
+would break the rule at the other.**
+
+**The local-account promise is stated twice over** — in the consequence line and
+again in the footer that every screen carries. *No online account is required*
+is not a setup detail; it is the product.
+
+**The profile picture is optional and defaults to an initial**, which is why the
+sign-in monogram is a letter rather than a placeholder avatar.
+
+### The stage label is not one format, and this may be a fourth leftover
+
+**Measured, and raised as a question rather than written as a rule:**
+
+| frame | stage |
+|---|---|
+| `183:10675` *Your name* | **SET UP · 2 OF 5** |
+| `183:10679` and the AI-choice family | **SET UP · AI CHOICE** |
+| `194:10709` and the details | **AI CHOICE · DETAILS** |
+| `183:10695` access | **OPTIONAL · ALO ACCESS** |
+| `183:10673` Welcome | **WELCOME** |
+| `387:26226` accessibility from Welcome | **WELCOME** — corrected 2026-10-06 |
+
+**So some screens count steps and others name them.** Both are defensible: a
+count orients a person in a linear run, and a name suits a branch that is not on
+one. **But a flow of 60 states is not five steps**, and *2 OF 5* has to mean
+something a person can verify by walking it.
+
+**This is the same shape as the three leftovers already fixed** — the detail
+action widths, the Welcome stage label, and the orphaned provider explainer —
+each of which turned out to be an unfinished edit rather than a distinction. **I
+am not assuming a fourth.** It needs one answer from whoever owns the file:
+**is the step count still live, and if so what are the five steps?**
+
 ### How much alo may do — `183:10695`, *Optional · Access · Sealed box*
 
 Read 2026-10-06. **One screen with three states**, like the AI choice;
