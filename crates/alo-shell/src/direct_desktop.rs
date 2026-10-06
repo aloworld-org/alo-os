@@ -762,8 +762,13 @@ impl LoopInput for Desk<'_> {
             frame.windows = &windows;
             frame.filling_the_screen = server.a_window_is_filling_the_screen();
             frame.display_scale = server.the_scale_of_display(&named);
-            let laid_out =
-                crate::nested_desktop::frame_pictures(frame, None, None, self.labels, (size.w, size.h))?;
+            let laid_out = crate::nested_desktop::frame_pictures(
+                frame,
+                None,
+                None,
+                self.labels,
+                (size.w, size.h),
+            )?;
             theirs.push((other, laid_out));
         }
         let mut layered = Layered {

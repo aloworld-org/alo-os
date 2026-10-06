@@ -407,13 +407,27 @@ three tasks need one:
 discover this separately, which is the fault this plan's task 9 note in
 `the-canvas-and-its-places.md` was written about.
 
-**And it is not this plan's to decide.** *Which display a window opens on* is
-a judgement about where a person's work goes, and `alo-desktops` is where
-judgements about desktops live — this plan **reads** that crate and re-decides
-nothing in it, by its own header. What belongs here is the compositor half:
-recording and honouring the answer. **The decision has to be asked for before
-5b, 6 or 7 can be finished**, and that is reported now rather than at the end
-of whichever task reaches it first.
+**The mechanism is here already; only the rule is missing.** Corrected on
+2026-10-06, a few minutes after the paragraph above was first written saying
+the opposite — `put_on_the_current_desktop` is **`alo-shell`'s own**
+(`server_desk.rs:240`), not `alo-desktops`'. That crate is already keyed by
+display (`on_mut(display)`), and `Screens::main_screen` already names a main
+screen. So choosing one display instead of looping over all of them is a
+small change in this crate and needs no new code anywhere else.
+
+What is genuinely missing is the **rule**, and it is a product decision rather
+than an engineering one: *which display does a new window open on?*
+`docs/features.md` and `docs/design/` say nothing about it — searched, not
+assumed. Three readings, with the first already implementable today:
+
+1. **The main screen**, which the person's arrangement names.
+2. **The display the pointer is on**, which is where they are looking.
+3. **The display that last had focus**, which is where they were working.
+
+**This belongs to the owner, not to a lane**, because it decides where a
+person's work appears and `CLAUDE.md`'s *when the answer is not obvious, it is
+scope* applies. Reported now rather than at the end of whichever of 5b, 6 or 7
+reaches it first.
 
 ### 5b. The bounds a frame is held to are the ones for the display it is on
 
