@@ -30,7 +30,36 @@ onboarding part, read directly from the file.
 **Two of three machines have no Figma access**, so whoever draws these screens
 needs this document rather than the file.
 
-## A conflict to settle before anything is drawn
+## Settled by the owner, 2026-10-06
+
+**All three questions below were put to the owner and answered, and none of the
+answers changed a decision — each one keeps a decision the documents had drifted
+from.**
+
+1. **The four are the four**, as `THE_FOUR` has them and in that order: on this
+   computer, on another machine in your office, from a provider you add, not at
+   all. **alo's own service is not a box**; it appears inside *from a provider*,
+   beside the others. That is ADR 0014 §4 word for word, kept rather than
+   revisited.
+2. **A machine on this network stays on the screen.** The owner added that a
+   person may also be able to choose it later in Settings; that is a separate
+   surface and is not what first start shows.
+3. **Nothing is pre-selected on arrival**, per ADR 0025 and ADR 0014 §4's *no
+   default and no pre-selection*. The design file's frames each show a state
+   *after* a choice is made — `12` with the first selected, `12a · My provider
+   selected` with the second — which is what one frame per state looks like, not
+   a screen that arrives chosen. **The file has no frame of the arriving state
+   with nothing selected, and it needs one.**
+
+**Where the divergence came from, since it is not the designer's fault.**
+`figma-brief.md` listed **three** choices for this screen — this machine, a
+machine on your network, a provider you add — and left out *not at all*. ADR
+0009 had added it before that brief was written. A brief one choice short
+produces exactly what the file holds: four boxes where the missing one has been
+filled, reasonably, with something that is not ours. The brief is corrected as
+of 2026-10-06.
+
+## The conflict as it stood, kept for the record
 
 **The design offers `alo in Europe` as a choice of its own. ADR 0014 says it is
 not one.**
