@@ -328,10 +328,10 @@ Read 2026-10-06.
 | consequence | Press **Ctrl + Alt + S** at any time to turn the screen reader on or off. |
 | action | Return to setup |
 
-**The stage still reads `SET UP · AI CHOICE`** — the step the person came from,
-not a stage of its own. That is the design carrying the requirement that
-returning lands back on the originating step with its state, rather than
-dropping the person at the start of setup.
+**The stage reads `SET UP · AI CHOICE`.** This document first read that as the
+design carrying the originating step — *you came from the AI choice, so it still
+says so* — and therefore as evidence for the requirement that returning lands
+back where you were. **`387:26226` undermines that reading**; see below.
 
 Rows 600×92 with 14 padding; the single action 184×48.
 
@@ -581,6 +581,40 @@ connected. Until pairing is implemented, nothing may show it — not with a
 placeholder name, not with a hopeful one. `alo_setting_up::NotSetUp::NoPairedMachine`
 is what is honest today, and this screen is what replaces it when the pairing
 road exists.
+
+### Accessibility reached from Welcome — `387:26226`, and a third inference withdrawn
+
+Read 2026-10-06. The frame is named *Accessibility · Screen reader on /
+**Welcome*** and **its content is identical to `384:26446`**, the screen-reader
+state reached from the AI choice — same title, same three rows, same sentences,
+same single `Return to setup` action.
+
+**Including the stage, which still reads `SET UP · AI CHOICE`.**
+
+**That breaks the inference this document drew from `375:30435`.** It had read
+the stage as the design remembering where the person came from, and therefore as
+support for *return from accessibility settings to the originating step*. If the
+stage tracked origin, **the frame named for Welcome would read `WELCOME`** —
+which is what `183:10673` shows on the Welcome screen itself. It does not.
+
+**Two readings remain and the file does not choose between them:**
+
+- The stage on `387:26226` is **a copy that was not finished**, and the stage
+  does track origin.
+- The stage **does not track origin at all**, and reading it that way was this
+  document's invention from a single frame.
+
+**Either way the requirement stands on its own.** *Return from accessibility
+settings to the originating step, preserving its state* is in the owner's
+instruction of 2026-10-06, and it needs no support from a stage label. **What a
+build must not do is infer the behaviour from this label**, in either direction.
+Worth one question to whoever owns the file, because it is one word and it
+decides whether the label is state or decoration.
+
+**Third inference this document made that the file then broke**, after *`· word`
+implies a navy border* and *detail actions have a family width*. All three were
+read off one or two frames. The method that has worked every time is the same:
+**read the next frame before believing the pattern.**
 
 ### The provider detail — `194:10735`, *12 · Detail · My provider*
 
