@@ -481,6 +481,29 @@ decoration: for a person who cannot distinguish the two by position alone, the
 word is the only thing that separates *this is where I am* from *this is what I
 chose*.
 
+### All four focus states — `384:26478`, `384:26513`, `384:26548`, `384:26583`
+
+Measured 2026-10-06, **all four rather than one and an assumption**. They are
+the same frame with the ring moved, and nothing else differs:
+
+| frame | focus on | ring y | card top |
+|---|---|---|---|
+| `384:26478` *12j0* | On this computer | 201 | 205 |
+| `384:26513` *12j1* | A machine on your network | 319 | 323 |
+| `384:26548` *12j2* | My provider | 437 | 441 |
+| `384:26583` *12j3* | No AI | 555 | 559 |
+
+- **The ring is 608×116 at x 156 in every one**, always 4 above its card.
+- **The step is 118** — 108 of card plus the 10 gap — so the ring tracks the
+  card pitch exactly rather than being placed by hand.
+- **`Continue` is the disabled grey control in all four.** Focus reaches the
+  last choice and the way on is still shut, because focus has chosen nothing.
+- **The ring is named `Keyboard focus / not selected` in all four**, including
+  the one on *No AI*. The design never draws focus-on-a-selected-card here, so
+  **what a focused *and* selected card looks like is not specified** — that is a
+  gap worth naming rather than filling by guesswork, and it will arise the
+  moment a person selects a choice and then tabs back to it.
+
 ### Measured geometry, from `383:26067` on 2026-10-06
 
 Read from the file rather than taken from the brief:
