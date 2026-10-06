@@ -100,6 +100,13 @@ pub fn this_machine() -> String {
 /// hostname often cannot: this development PC calls itself `HYB4GchZ1tnQNqB`,
 /// which named a branch nobody could place. A machine told what it is called
 /// says so; one that is not falls back to what the operating system thinks.
+///
+/// **Five sources, and the last one exists because four were not enough.**
+/// On macOS none of the first four answer — the variables are unset in a
+/// non-interactive shell and `/etc/hostname` is a Linux file — so every Mac
+/// landing was named `a-machine` until 2026-10-06. A fallback chain that ends
+/// in a placeholder will reach the placeholder on whatever platform its author
+/// did not have in front of them, and nothing goes red when it does.
 fn hostname() -> Option<String> {
     for named in ["ALO_MACHINE", "COMPUTERNAME", "HOSTNAME"] {
         if let Ok(found) = std::env::var(named)
@@ -108,9 +115,25 @@ fn hostname() -> Option<String> {
             return Some(found);
         }
     }
-    std::fs::read_to_string("/etc/hostname")
+    if let Some(named) = std::fs::read_to_string("/etc/hostname")
         .ok()
         .map(|read| read.trim().to_owned())
+        .filter(|read| !read.is_empty())
+    {
+        return Some(named);
+    }
+    // **And then ask the operating system, because macOS has no
+    // `/etc/hostname`.** Every lane on a Mac fell through all four of the
+    // sources above — the environment variables are not exported to a
+    // non-interactive shell and the file does not exist — and landed on
+    // `a-machine`, which is the exact branch nobody can place that this
+    // function's own documentation warns about. Measured 2026-10-06 on a
+    // branch named `task/a-machine/feat-shell-a-frame-is-drawn-per-display`.
+    std::process::Command::new("hostname")
+        .output()
+        .ok()
+        .filter(|ran| ran.status.success())
+        .map(|ran| String::from_utf8_lossy(&ran.stdout).trim().to_owned())
         .filter(|read| !read.is_empty())
 }
 
@@ -377,8 +400,10 @@ fn contexts_in(answered: &str) -> Vec<String> {
 
 /// Whether every required check has succeeded on this head, or why not yet.
 ///
-/// Three answers rather than two, because *not finished* and *failed* are different things a
-/// caller does different things about: one is worth waiting for and the other never will be.
+/// Four answers rather than two, because *not finished*, *failed* and *I could not read the
+/// reply* are different things a caller does different things about: the first is worth
+/// waiting for and the other two never are. The fourth was added on 2026-10-06, after the
+/// third spent fifty minutes wearing the first's clothes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum TheChecks {
     /// Every required check has succeeded on this commit.
@@ -387,6 +412,16 @@ enum TheChecks {
     StillRunning(String),
     /// At least one finished and did not succeed. Waiting cannot help.
     OneFailed(String),
+    /// The reply was not a status answer, so nothing can be read from it.
+    ///
+    /// **Separate from `StillRunning` because waiting cannot fix it**, and
+    /// because the two were one answer until 2026-10-06 and that cost an hour.
+    /// Bad credentials, a renamed repository and a commit GitHub has never
+    /// heard of all reply with a `message` and no `statuses`; read as *has not
+    /// reported yet*, each of them spins until the deadline and then reports
+    /// that **CI** was slow, which is a true-sounding sentence about the wrong
+    /// machine.
+    Unreadable(String),
 }
 
 /// Ask what the required checks say about this head.
@@ -405,6 +440,17 @@ fn what_the_checks_say(at: &Path, head: &str, required: &[String]) -> Result<The
 /// Pure, for the reason [`contexts_in`] is: the three outcomes are the decision, and a decision
 /// exercised only through a network call is one nobody has watched handle *not reported yet*.
 fn read_the_checks(answered: &str, required: &[String]) -> TheChecks {
+    // **Is this a status answer at all?** Every real one carries `statuses`,
+    // even when the list is empty; every refusal carries `message` instead.
+    // Asked before any context is looked for, so *I could not read this* can
+    // never leave here dressed as *it has not reported yet*.
+    if !answered.contains("\"statuses\"") {
+        let why = text_in(answered, "message")
+            .unwrap_or_else(|| answered.chars().take(200).collect::<String>());
+        return TheChecks::Unreadable(format!(
+            "GitHub did not answer with a status for this commit: {why}"
+        ));
+    }
     for named in required {
         let Some(said) = the_state_of(answered, named) else {
             return TheChecks::StillRunning(format!(
@@ -426,20 +472,29 @@ fn read_the_checks(answered: &str, required: &[String]) -> TheChecks {
 /// about **every** context including ones protection does not require — so a repository with
 /// an unrelated failing check would read as failed when the required ones all passed.
 fn the_state_of(answered: &str, named: &str) -> Option<String> {
-    let looking_for = format!("\"context\":\"{named}\"");
-    let mut rest = answered;
-    while let Some(at) = rest.find(&looking_for) {
-        // The state for an entry may be written before or after its context, so look in the
-        // object around it rather than only forwards.
-        let before = rest.get(..at).unwrap_or_default();
-        let after = rest.get(at..).unwrap_or_default();
-        let from_the_object = before
-            .rfind('{')
-            .map_or(after, |opened| rest.get(opened..).unwrap_or_default());
-        if let Some(state) = text_in(from_the_object, "state") {
-            return Some(state);
+    // **The key is found, then its value is read** — never a `"key":"value"`
+    // pair built by hand and searched for literally. GitHub pretty-prints, so
+    // it sends `"context": "alo/gates-on-a-runner"` with a space, and the
+    // literal spelled without one matched nothing on every real reply while
+    // matching every fixture in this file. See
+    // `docs/misreadings/a-fixture-i-wrote-agreed-with-the-parser-i-wrote.md`.
+    const KEY: &str = "\"context\"";
+    let mut from = 0_usize;
+    while let Some(at) = answered.get(from..).and_then(|rest| rest.find(KEY)) {
+        let at = from.saturating_add(at);
+        let after = answered.get(at..).unwrap_or_default();
+        if text_in(after, "context").as_deref() == Some(named) {
+            // The state for an entry may be written before or after its context, so look in
+            // the object around it rather than only forwards.
+            let before = answered.get(..at).unwrap_or_default();
+            let from_the_object = before
+                .rfind('{')
+                .map_or(after, |opened| answered.get(opened..).unwrap_or_default());
+            if let Some(state) = text_in(from_the_object, "state") {
+                return Some(state);
+            }
         }
-        rest = after.get(looking_for.len()..).unwrap_or_default();
+        from = at.saturating_add(KEY.len());
     }
     None
 }
@@ -599,6 +654,7 @@ fn waited_for(at: &Path, head: &str, note: &mut dyn FnMut(&str)) -> Result<(), S
             TheChecks::OneFailed(why) => {
                 return Err(format!("a required check did not pass: {why}"));
             }
+            TheChecks::Unreadable(why) => return Err(why),
             TheChecks::StillRunning(why) => {
                 if began.elapsed() >= LONG_ENOUGH_FOR_A_RUN {
                     return Err(format!(
@@ -827,6 +883,103 @@ mod tests {
             {"state":"failure","context":"some/other-thing"},
             {"state":"success","context":"alo/gates-on-a-runner"}]}"#;
         assert_eq!(read_the_checks(said, &required), TheChecks::AllPassed);
+    }
+
+    /// **GitHub pretty-prints, and the parser reads what GitHub sends.**
+    ///
+    /// The shape below is the real one, taken from
+    /// `GET /repos/.../commits/<sha>/status` on 2026-10-06 — a space after
+    /// every colon. The parser spelled its search `"context":"<name>"` with
+    /// no space, so it matched **nothing** on every real reply and
+    /// **everything** in the fixtures above, which are hand-written compact.
+    ///
+    /// The cost, measured: pull request 542's required check passed at 16:52
+    /// and the loop was still reporting *has not reported on this commit yet*
+    /// fifty minutes later, on its way to announcing that CI had been slow.
+    ///
+    /// Every other fixture in this file stays compact on purpose. Both shapes
+    /// are valid JSON and the parser owes both an answer; what it may not do
+    /// is work on only the one its author happened to type.
+    #[test]
+    fn the_shape_github_actually_sends_is_read() {
+        let required = vec!["alo/gates-on-a-runner".to_owned()];
+        let as_github_sends_it = r#"{
+  "state": "success",
+  "statuses": [
+    {
+      "url": "https://api.github.com/repos/aloworld-org/alo-os/statuses/2ffe6d90",
+      "id": 123456789,
+      "state": "success",
+      "description": "the gates that run on a hosted runner, by the workflow",
+      "context": "alo/gates-on-a-runner",
+      "created_at": "2026-10-06T16:52:09Z",
+      "creator": {
+        "login": "github-actions[bot]",
+        "state": "irrelevant"
+      }
+    }
+  ],
+  "sha": "2ffe6d90489c8cd83361b05e27826709506b3461",
+  "total_count": 1
+}"#;
+        assert_eq!(
+            read_the_checks(as_github_sends_it, &required),
+            TheChecks::AllPassed,
+            "the parser could not read the shape GitHub actually sends"
+        );
+    }
+
+    /// **A pretty-printed failure is a failure, not a wait.**
+    ///
+    /// The same blindness in the direction that matters more: unreadable had
+    /// previously meant *keep waiting*, so a required check that **failed**
+    /// would also have been waited on until the deadline.
+    #[test]
+    fn a_pretty_printed_failure_is_not_waited_for() {
+        let required = vec!["alo/gates-on-a-runner".to_owned()];
+        let failed = "{\n  \"statuses\": [\n    {\n      \"state\": \"failure\",\n      \"context\": \"alo/gates-on-a-runner\"\n    }\n  ]\n}";
+        assert!(matches!(
+            read_the_checks(failed, &required),
+            TheChecks::OneFailed(_)
+        ));
+    }
+
+    /// **A reply that is not a status answer says so, and is never a wait.**
+    ///
+    /// Bad credentials, a renamed repository and an unknown commit all answer
+    /// with a `message` and no `statuses`. Read as *has not reported yet* —
+    /// which is what the parser did until 2026-10-06 — each one spins to the
+    /// deadline and then blames CI.
+    #[test]
+    fn a_reply_that_is_not_a_status_is_told_apart_from_one_still_running() {
+        let required = vec!["alo/gates-on-a-runner".to_owned()];
+        for refusal in [
+            r#"{"message":"Bad credentials","documentation_url":"https://docs.github.com"}"#,
+            r#"{"message":"Not Found","status":"404"}"#,
+        ] {
+            let read = read_the_checks(refusal, &required);
+            let why = match &read {
+                TheChecks::Unreadable(why) => why.as_str(),
+                _ => "",
+            };
+            assert!(
+                why.contains("Bad credentials") || why.contains("Not Found"),
+                "a refusal was not read as unreadable, or lost what GitHub said: {read:?}"
+            );
+        }
+    }
+
+    /// **An empty status list is still a status answer**, and still a wait.
+    ///
+    /// The guard above must not turn *CI has not started* into *I cannot read
+    /// this*: the first is worth waiting for and the second never is.
+    #[test]
+    fn an_empty_status_list_is_a_wait_and_not_a_refusal() {
+        let required = vec!["alo/gates-on-a-runner".to_owned()];
+        assert!(matches!(
+            read_the_checks(r#"{"state":"pending","statuses":[]}"#, &required),
+            TheChecks::StillRunning(_)
+        ));
     }
 
     /// **A failed required check is not something to wait for.**
