@@ -339,10 +339,22 @@ whether a machine with one broken output is usable.
 
 ### 5. The desktop is laid out for each display it is drawn on
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** 4.
+**Status:** **Done, 2026-10-06: the code**, for the layout half. Every display
+is laid out from **its own size and its own scale** instead of being handed the
+first display's pictures. The scale is the person's, held in their arrangement:
+`Server::the_scale_of_display` looks it up and decides nothing, because a shell
+working one out from pixels and millimetres would be deciding how large this
+person's interface is, in a drawing crate, which this plan's header and
+`the-shell-plan.md`'s both forbid. Three tests. **`On the machine.` is not
+ticked** — one laptop, no second display. See
+[`updates/the-desktop-is-laid-out-per-display.md`](updates/the-desktop-is-laid-out-per-display.md).
 
-**Depends on:** 4, and **3a** — laying a desktop out per display needs to know where each display is, not only how big it is.
-**Likely to be two tasks** — recorded now rather than discovered.
+**It did split, as this task said it would**, and the half that remains is now
+task **5b** below. What is *not* done here is the third acceptance clause — the
+fixed-control bounds are still the first display's.
+
+**Owner:** the Mac. **Depends on:** 4, and **3a** — laying a desktop out per
+display needs to know where each display is, not only how big it is.
 
 The dock, the status area and the put-aside panel are laid out once, from one
 size, and handed to one draw. Each display needs its own layout at its own size
@@ -363,6 +375,101 @@ size, and handed to one draw. Each display needs its own layout at its own size
   sets, and a frame reachable on one display may be unreachable on the other.
   Which display's bounds a frame is held to is a question this task answers
   rather than inherits.
+
+### The one thing 5b, 6 and 7 all need, measured 2026-10-06
+
+**No window is on a display.** Not *not yet recorded* — the opposite is
+asserted, once a frame, in `crate::desktop_membership`:
+
+```rust
+let displays: Vec<DisplayId> = self.desk.displays().collect();
+for surface in &open {
+    let number = self.desk.number_of(surface);
+    for display in &displays {
+        self.desk.put_on_the_current_desktop(*display, number);
+    }
+}
+```
+
+**Every window joins the current desktop of every display.** With one display
+that is a tautology and is why it has never been wrong. With two it is a
+decision nobody made: a window opened on the laptop is also on the monitor,
+and `show_the_current_desktops` then shows it on both.
+
+So the question *which display is this window on* has no answer to give, and
+three tasks need one:
+
+- **5b** holds a frame to the fixed-control bounds of its display.
+- **6** constrains a popup to the screen it is on.
+- **7** gives each viewport its own camera.
+
+**Build it once, not three times.** Each of the three would otherwise
+discover this separately, which is the fault this plan's task 9 note in
+`the-canvas-and-its-places.md` was written about.
+
+**The mechanism is here already; only the rule is missing.** Corrected on
+2026-10-06, a few minutes after the paragraph above was first written saying
+the opposite — `put_on_the_current_desktop` is **`alo-shell`'s own**
+(`server_desk.rs:240`), not `alo-desktops`'. That crate is already keyed by
+display (`on_mut(display)`), and `Screens::main_screen` already names a main
+screen. So choosing one display instead of looping over all of them is a
+small change in this crate and needs no new code anywhere else.
+
+What is genuinely missing is the **rule**, and it is a product decision rather
+than an engineering one: *which display does a new window open on?*
+`docs/features.md` and `docs/design/` say nothing about it — searched, not
+assumed. Three readings, with the first already implementable today:
+
+1. **The main screen**, which the person's arrangement names.
+2. **The display the pointer is on**, which is where they are looking.
+3. **The display that last had focus**, which is where they were working.
+
+**This belongs to the owner, not to a lane**, because it decides where a
+person's work appears and `CLAUDE.md`'s *when the answer is not obvious, it is
+scope* applies. Reported now rather than at the end of whichever of 5b, 6 or 7
+reaches it first.
+
+### 5b. The bounds a frame is held to are the ones for the display it is on
+
+**Status:** ready. **Owner:** the Mac. **Depends on:** 5.
+
+**Split out of 5 on 2026-10-06**, which predicted it would be two tasks. The
+layout half is done and this is the half it named: *the fixed-control bounds
+recorded by `the_fixed_controls_were_drawn` are the ones for the display being
+drawn, so `canvas_never_lost`'s rule is asked about the right rectangles.*
+
+**What is true now.** `Desk::present` lays out every display, and records the
+**first** display's dock band, panel column, indicator band and top controls
+into the server. With one display that is right and is what shipped. With two
+it means a frame is held to the furniture of a display it may not be on.
+
+**Two things this needs that it does not have, measured rather than assumed:**
+
+- **Nothing maps a surface to a display.** `Server::mapped_surfaces` is one
+  list and every display is handed all of it, so *which display is this frame
+  on* has no answer yet to hold a frame to. That is the same gap task 6 is
+  blocked on and task 7 needs, and it may be worth building once for all three
+  rather than three times.
+- **`FixedControlsDrawn` is one value on the server.** It is replaced per
+  frame; two displays would need one per display, keyed as the presentations
+  are.
+
+**What this task must not do, because it was checked and nearly got wrong.**
+`the_fixed_controls_were_drawn` takes an `alo_appearance::TextScale` and **not**
+a display scale. The owner ruled on 2026-10-01 that the 44 × 24 handle floor is
+logical, scaled by the person's text size and nothing else, and asked that any
+implication of a second conversion be removed;
+`desktop_raster_tests::the_dock_band_and_the_panel_column_do_not_move_with_the_displays_scale`
+measures that the rectangles do not move with the display's scale. Passing the
+display scale there would re-introduce a fault that ruling exists to prevent.
+**The rectangles still differ per display — because the displays differ in
+size, not in scale — which is why this task is real.**
+
+- **Acceptance:** with two displays of different sizes, a frame is held to the
+  bounds of the display it is on, and a frame reachable on one display is not
+  brought back because it is under the other's dock.
+- **Constraint:** the handle floor stays logical and text-scaled. This task
+  changes *which* rectangles are asked about, never how they are measured.
 
 ### 6. A popup is constrained to the screen it is on
 

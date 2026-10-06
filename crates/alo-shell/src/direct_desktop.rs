@@ -588,6 +588,15 @@ impl LoopInput for Desk<'_> {
         // state cannot know that a window has taken the whole screen,
         // and the Dock gives way to one that has.
         frame.filling_the_screen = server.a_window_is_filling_the_screen();
+        // **And this display's own scale**, which until now was the literal
+        // `100` that `alo-desktop` hands every frame — one physical pixel per
+        // logical one, true of this laptop and of nothing dense.
+        // `more-than-one-display-plan.md` task 5, and the standing rule it
+        // exists for: *no figure reaches a display without passing through
+        // that display's scale.* The number is the person's, held in their
+        // arrangement; `Server::the_scale_of_display` only looks it up.
+        let named = FrameTarget::metadata(target)?.name;
+        frame.display_scale = server.the_scale_of_display(&named);
         let pictures = crate::nested_desktop::frame_pictures(
             frame,
             None,
@@ -727,6 +736,41 @@ impl LoopInput for Desk<'_> {
         // with one display *nothing drew* and *this display refused* are the
         // same fact. With two they will not be, and this is the line that
         // stops raising and starts reporting.
+        // **Every other display is laid out at its own size and its own
+        // scale.** `more-than-one-display-plan.md` task 5. Until this, the
+        // displays beyond the first were drawn the *first* display's dock,
+        // status area and panel — laid out once from one size — so a second
+        // monitor of a different shape showed furniture built for its
+        // neighbour, and a dense one showed it at half the size it owns.
+        //
+        // Laid out before any of them is drawn, and kept in a list the draw
+        // borrows from, because each display's layers have to outlive the
+        // wrapper that paints them and all the wrappers go down one road.
+        //
+        // Settings is **not** among them: it is one window, and a window is
+        // on one display. Which one is not a question this task can answer —
+        // nothing maps a surface to a display until task 7 — so it stays on
+        // the display the loop itself holds, which is the internal panel
+        // where discovery found one. Drawing it on each display would be
+        // visibly wrong in a way no test here would catch: two Settings
+        // windows, one of them unreachable.
+        let mut theirs = Vec::with_capacity(others.len());
+        for other in others.iter_mut() {
+            let named = FrameTarget::metadata(other)?.name;
+            let size = FrameTarget::size(other);
+            let mut frame = self.desktop.now();
+            frame.windows = &windows;
+            frame.filling_the_screen = server.a_window_is_filling_the_screen();
+            frame.display_scale = server.the_scale_of_display(&named);
+            let laid_out = crate::nested_desktop::frame_pictures(
+                frame,
+                None,
+                None,
+                self.labels,
+                (size.w, size.h),
+            )?;
+            theirs.push((other, laid_out));
+        }
         let mut layered = Layered {
             target,
             layers: NativeLayers {
@@ -739,10 +783,21 @@ impl LoopInput for Desk<'_> {
         //
         // The loop's own display goes first, because discovery put it first
         // and because a refusal on a later one must not delay it.
-        let mut displays: Vec<&mut dyn crate::FrameTarget> = Vec::with_capacity(1 + others.len());
+        let mut painted: Vec<Layered<'_>> = theirs
+            .iter_mut()
+            .map(|(other, laid_out)| Layered {
+                target: *other,
+                layers: NativeLayers {
+                    desktop: Some(&laid_out.desktop),
+                    status: Some(&laid_out.status),
+                    ..NativeLayers::nothing()
+                },
+            })
+            .collect();
+        let mut displays: Vec<&mut dyn crate::FrameTarget> = Vec::with_capacity(1 + painted.len());
         displays.push(&mut layered);
-        for other in others.iter_mut() {
-            displays.push(other);
+        for display in &mut painted {
+            displays.push(display);
         }
         let became = server.render_each_display(&mut displays, time);
         // **Raised only when nothing reached a screen.** With one display
@@ -859,14 +914,18 @@ impl LoopInput for Desk<'_> {
 /// for the same reason: the server owns what a frame *is* — which clients, which
 /// popups, which cursor, and who is told it was drawn — and this only says what
 /// is painted above them.
-struct Layered<'a, T> {
+/// **Not generic over the display, deliberately.** One session's displays are
+/// not one type — the loop holds its own target and `Desk` holds the rest —
+/// and a generic wrapper would make a list of them impossible to write. The
+/// displays differ; what is painted above them does not.
+struct Layered<'a> {
     /// The display underneath, which decides whether anything was submitted.
-    target: &'a mut T,
+    target: &'a mut dyn crate::presentation::NativeTarget,
     /// This shell's own surfaces for this frame.
     layers: NativeLayers<'a>,
 }
 
-impl<T: crate::presentation::NativeTarget> FrameTarget for Layered<'_, T> {
+impl FrameTarget for Layered<'_> {
     fn metadata(&self) -> Result<crate::OutputMetadata, RenderError> {
         self.target.metadata()
     }

@@ -132,3 +132,97 @@ fn an_arrangement_is_kept_only_when_a_desktop_offers_one() {
         "a desktop answering None left an arrangement behind"
     );
 }
+
+/// A screen of a given density, for asking what scale it is laid out at.
+///
+/// Built here rather than taken from `screens_testing` because both fixtures
+/// there are about 165 dpi — a laptop panel and a 27-inch 4K — and two
+/// displays that happen to agree cannot show that each was asked separately.
+fn a_screen_of(socket: &str, pixels: (u32, u32), millimetres: (u32, u32)) -> Reported {
+    Reported::of(
+        Socket::named(socket).expect("a socket"),
+        None,
+        pixels,
+        Some(millimetres),
+    )
+    .expect("a screen")
+}
+
+/// The arrangement these screens make, with nothing remembered about them.
+fn arranged(reported: Vec<Reported>) -> crate::Screens {
+    crate::screens_testing::the_screens(
+        reported,
+        &alo_displays::Changes::untouched(),
+        &alo_appearance::Appearance::shipped(),
+        &crate::screens_testing::a_cold_evening(),
+    )
+}
+
+/// **Each display answers with its own scale, not the session's.**
+///
+/// `more-than-one-display-plan.md` task 5, and the standing rule it exists
+/// for: *no figure reaches a display without passing through that display's
+/// scale.* Two displays at different densities is the case that rule was
+/// written for, and before this the shell had one number for all of them —
+/// the literal `100` `alo-desktop` hands every frame.
+///
+/// A 24-inch 4K beside a 27-inch 1080p, because those genuinely differ: about
+/// 185 dpi against about 82.
+#[test]
+fn each_display_answers_with_its_own_scale() {
+    let (_directory, mut server) = server("own-scale");
+    let dense = a_screen_of("DP-1", (3840, 2160), (527, 296));
+    let sparse = a_screen_of("DP-2", (1920, 1080), (597, 336));
+    server.these_screens_are(Some(arranged(vec![dense, sparse])));
+
+    let on_the_dense = server.the_scale_of_display("DP-1");
+    let on_the_sparse = server.the_scale_of_display("DP-2");
+
+    assert_ne!(
+        on_the_dense, on_the_sparse,
+        "both displays were laid out at one scale"
+    );
+    assert!(
+        on_the_dense > on_the_sparse,
+        "the dense display was given the smaller scale: {on_the_dense} against {on_the_sparse}"
+    );
+    assert_eq!(
+        on_the_sparse, 100,
+        "a screen below one-to-one density was shrunk rather than left alone"
+    );
+}
+
+/// **A session with no arrangement lays every display out one to one.**
+///
+/// Which is what every display got before this existed, so a session that was
+/// never given a display model draws exactly as it did. The fallback is not a
+/// guess dressed as an answer — a person who has arranged nothing has stated
+/// no scale to honour.
+#[test]
+fn a_session_with_no_arrangement_is_one_to_one() {
+    let (_directory, server) = server("no-arrangement");
+    assert!(server.the_screens().is_none());
+    assert_eq!(server.the_scale_of_display("eDP-1"), 100);
+}
+
+/// **A display the arrangement does not know is one to one**, rather than
+/// borrowing the scale of a display that happens to be in it.
+///
+/// The failure this forbids is the quiet one: a monitor plugged in after the
+/// arrangement was made, drawn at its neighbour's density.
+#[test]
+fn a_display_the_arrangement_does_not_know_is_one_to_one() {
+    let (_directory, mut server) = server("unknown-display");
+    let dense = a_screen_of("DP-1", (3840, 2160), (527, 296));
+    server.these_screens_are(Some(arranged(vec![dense])));
+
+    assert!(
+        server.the_scale_of_display("DP-1") > 100,
+        "the fixture is not dense enough for this test to mean anything"
+    );
+    assert_eq!(
+        server.the_scale_of_display("HDMI-A-9"),
+        100,
+        "a display nobody arranged was given another display's scale"
+    );
+}
