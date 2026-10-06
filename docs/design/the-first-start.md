@@ -1047,9 +1047,44 @@ is not a setup detail; it is the product.
 **The profile picture is optional and defaults to an initial**, which is why the
 sign-in monogram is a letter rather than a placeholder avatar.
 
-### The stage label is not one format, and this may be a fourth leftover
+### Decided 2026-10-06: the strip carries our name, not a step count
 
-**Measured, and raised as a question rather than written as a rule:**
+**The owner's words: *our name is alo OS, not 2-of-5*.** The small label at the
+top of every setup screen is **identity, and it is to read `alo OS`** —
+`SET UP · 2 OF 5` on `183:10675` is not what ships.
+
+**Why the identity line and not a counter.** That strip is on screen through
+the whole of setup, **before any window, wallpaper or account exists** — it is
+the first and most persistent thing a person sees of what they are installing.
+A counter spends the most valuable line on the screen on the least valuable
+information.
+
+**And the count cannot be kept honest anyway.** The inventory holds sixty
+onboarding states. A person who takes the network-machine branch, turns the
+screen reader on, or adds both a PIN and a fingerprint **walks a different
+number of screens** from one who does not, so *N of 5* is either wrong or so
+coarse it tells nobody anything. **A build must not derive the denominator from
+the frame inventory**, and now has no reason to: there is no denominator.
+
+**What this does not decide.** Whether progress is shown *at all*, and in what
+form, is the designer's call — a rule, a row of dots, or nothing. It is only
+out of the identity line. **The question is with the designer**, together with
+where `OPTIONAL` goes, which is the one half of a current label doing real work:
+on `183:10695` it tells a person they may skip the screen.
+
+**`SET UP` alone is not the answer either.** It names the machine's activity
+rather than the thing being set up, which is the opposite of what the strip is
+for.
+
+**Superseded in place.** An earlier reading of this screen took the owner's
+*"this 2-of-5 is correct"* to settle the counter as live and derived five steps
+from it — language 1, name 2, protect 3, AI choice 4, ready 5, with step 4
+corroborated by `183:10679` having read `SET UP · 4 OF 5` before the
+correction. **That reading was wrong about what was being confirmed**, and the
+derivation is recorded here only so a reader who meets it elsewhere knows it is
+withdrawn rather than missing.
+
+### The stage label formats as the file draws them today
 
 | frame | stage |
 |---|---|
@@ -1060,16 +1095,17 @@ sign-in monogram is a letter rather than a placeholder avatar.
 | `183:10673` Welcome | **WELCOME** |
 | `387:26226` accessibility from Welcome | **WELCOME** — corrected 2026-10-06 |
 
-**So some screens count steps and others name them.** Both are defensible: a
-count orients a person in a linear run, and a name suits a branch that is not on
-one. **But a flow of 60 states is not five steps**, and *2 OF 5* has to mean
-something a person can verify by walking it.
+**None of these six is what ships.** The table records what was measured so a
+reader comparing the file against a build can tell a stale frame from a bug;
+the decision above replaces all of them with `alo OS`. **A build written from
+this table rather than from the decision would ship six different strips**, one
+of which is a counter the owner has ruled out.
 
-**This is the same shape as the three leftovers already fixed** — the detail
-action widths, the Welcome stage label, and the orphaned provider explainer —
-each of which turned out to be an unfinished edit rather than a distinction. **I
-am not assuming a fourth.** It needs one answer from whoever owns the file:
-**is the step count still live, and if so what are the five steps?**
+**The row that mattered before the decision, kept for the designer:**
+`183:10679` read `SET UP · 4 OF 5` before the 2026-10-06 correction and reads
+`SET UP · AI CHOICE` after it — **the only one of the six whose format
+changed.** That is worth knowing as evidence the correction touched this strip,
+whether or not it meant to.
 
 ### How much alo may do — `183:10695`, *Optional · Access · Sealed box*
 
