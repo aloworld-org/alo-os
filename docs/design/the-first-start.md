@@ -499,10 +499,46 @@ the same frame with the ring moved, and nothing else differs:
 - **`Continue` is the disabled grey control in all four.** Focus reaches the
   last choice and the way on is still shut, because focus has chosen nothing.
 - **The ring is named `Keyboard focus / not selected` in all four**, including
-  the one on *No AI*. The design never draws focus-on-a-selected-card here, so
-  **what a focused *and* selected card looks like is not specified** — that is a
-  gap worth naming rather than filling by guesswork, and it will arise the
-  moment a person selects a choice and then tabs back to it.
+  the one on *No AI*.
+
+### Focused **and** selected — not drawn, and settled by the rules that are
+
+**No frame among the fourteen read draws a card that is both focused and
+selected**, and the state is reached the moment a person picks a choice and tabs
+back to it — or simply selects with the keyboard, where focus is *already* on
+the card being chosen. **It is the common case, not an edge one.**
+
+**It needs no new visual language, because the two marks never collide:**
+
+| | where it is drawn |
+|---|---|
+| **selected** | a 2px navy border **inside** the card's own 600×108 box, plus `· Selected` in the title |
+| **focused** | a 2px navy ring **outside** that box, 4 away on every side, 608×116, radius 16 |
+
+**So a focused, selected card is both at once, unchanged.** The ring's geometry
+does not move, and this is measured rather than assumed: a selected card is
+`h-[108px]` with a 2px border and an unselected one is `h-[108px]` with a 1px
+border — **the border is drawn inside the box and does not change its size**, so
+the 4 gap and the 608×116 ring are identical either way.
+
+**What a build must therefore not do**, each of which would be a reasonable
+guess and wrong:
+
+- **Drop the ring because the card is already navy.** Then a keyboard user
+  cannot tell which card they are on once they have chosen one.
+- **Drop the card's border because the ring is navy.** Then the selection
+  disappears while focus rests on it.
+- **Thicken or recolour either** to tell them apart. They are already told apart
+  by position — inside against outside — and by the word in the title.
+- **Reuse the card's 12 radius for the ring.** It is 16, for the reason the
+  section above gives.
+
+**The frame is still owed**, and `385:26281` shows the same ring around the
+Accessibility action — 168×56 at (36, 872) against a 160×48 action at
+(40, 876), the same 4 outside — so the rule is already general across cards and
+actions. This section specifies the combination from the design's own rules; it
+does not invent one, and a drawn frame should confirm it rather than discover
+it.
 
 ### Measured geometry, from `383:26067` on 2026-10-06
 
