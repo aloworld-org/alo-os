@@ -117,6 +117,36 @@ fn the_workflow_builds_checksums_and_drafts_and_never_signs() {
     );
 }
 
+/// **The program it ships is read before it is shipped.**
+///
+/// Promise 22 is *download, click, reboot*. On 2026-10-05 it failed at *click*:
+/// the published `alo-installer.exe` imported `VCRUNTIME140.dll`, the zip
+/// carried no DLL beside it, and a clean Windows 11 has no Visual C++
+/// redistributable. It died in the loader before `main` with `0xC0000135` and
+/// printed nothing at all. **The first thing a customer would ever see, and it
+/// had never been seen**, because every machine that had run it was a machine
+/// that builds Rust and therefore has that runtime as a side effect.
+///
+/// The workflow built that program every release and never looked at it. This is
+/// the rule that it looks — and that it looks **before** the archive is made,
+/// because reading an artefact after it is packaged is reading something already
+/// on its way out.
+///
+/// It cannot be satisfied by starting the executable on the runner: a
+/// `windows-2025` runner builds Rust, so it has the redistributable, and that
+/// step would have passed on 2026-10-05 while the bug was live.
+#[test]
+fn the_program_it_ships_is_read_before_it_is_shipped() {
+    let release = TheRelease::read(&text(THE_RELEASE));
+
+    assert!(
+        release.reads_the_program_before_it_ships_it(),
+        "the release workflow puts alo-installer.exe into the download without reading what it \
+         asks Windows to load first -- which is how a program that cannot start on a clean \
+         machine was published and stayed published"
+    );
+}
+
 /// **What signs the installer is a recorded decision**, with the three roads and
 /// a recommendation, and it keeps the certificate away from the workflow.
 #[test]
