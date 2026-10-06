@@ -279,6 +279,86 @@ padding against the choice cards' 14, with no fixed height. **The
 specification's 184 is the choice screen's number** and does not generalise to
 the details.
 
+### Confirming a pairing — `384:26324`, *12i · Confirm network pairing*
+
+Read 2026-10-06. **This screen meets all three of the owner's network
+requirements**, which is worth recording as observed rather than as owed.
+
+| slot | words |
+|---|---|
+| stage | SET UP · AI CHOICE |
+| title | Connect to Office AI? |
+| introduction | Check that this is the computer you intended to use. |
+| row 1 | **Machine identity** — Office AI · office-ai.local |
+| row 2 | **Processing policy** — Local models on this machine · No provider forwarding |
+| row 3 | **Your approval** — Pairing connects the machines. Each task still needs access to its work. |
+| consequence | Confirm the matching pairing request on the other computer. |
+| actions | Pair computer · Cancel |
+
+- **Identity and processing policy are both shown before pairing**, which is the
+  requirement, and they are two separate rows rather than one sentence.
+- **Pairing grants no blanket access to work** — row 3 says so in the person's
+  own words, and it is the clause that must survive translation.
+- **Both ends confirm.** *Confirm the matching pairing request on the other
+  computer* is ADR 0003's deliberate link made on both machines, and it is why a
+  message arriving from another machine grants no authority by itself.
+
+**`Office AI · office-ai.local` is example data and never real state.** So is
+the policy line beneath it: a real screen reads the destination's actual policy,
+and a machine that cannot read one says so rather than showing this.
+
+Rows are 600×92 with 14 of vertical padding; both actions are 184×48.
+
+### Accessibility during setup — `375:30435`, *Accessibility · Setup options*
+
+Read 2026-10-06.
+
+| slot | words |
+|---|---|
+| stage | SET UP · AI CHOICE |
+| title | Set up your way. |
+| introduction | **Available now, before you create an account.** |
+| row 1 | **Screen reader** — Read controls, choices and status aloud. |
+| row 2 | **Text size** — Make setup text larger without cutting off controls. |
+| row 3 | **More options** — High contrast, reduced motion and on-screen keyboard. |
+| consequence | Press **Ctrl + Alt + S** at any time to turn the screen reader on or off. |
+| action | Return to setup |
+
+**The stage still reads `SET UP · AI CHOICE`** — the step the person came from,
+not a stage of its own. That is the design carrying the requirement that
+returning lands back on the originating step with its state, rather than
+dropping the person at the start of setup.
+
+Rows 600×92 with 14 padding; the single action 184×48.
+
+### The shortcut the design proposes — checked, and free, with three conditions
+
+**`Ctrl`+`Alt`+`S` collides with no shipped binding.** Measured in
+`crates/alo-shortcuts/src/defaults.rs` on 2026-10-06: every shipped chord uses
+`Super`, `Super`+`Shift`, `Alt` or `Alt`+`Shift` — the agent on `Super`+`A`, the
+launcher on `Super`+`Space`, Settings on `Super`+`I`, close on `Alt`+`F4`,
+minimise and maximise on `Super`+`Down` and `Super`+`Up`, snapping on
+`Super`+`Left`/`Right`, window and application switching on the `Alt`+`Tab` and
+`Super`+`Tab` families, zoom on `Super`+`Plus`/`Minus`, *show all* on
+`Super`+`0`. **No `Ctrl`+`Alt` chord is shipped at all.**
+
+Three things follow, and none of them is a design question:
+
+1. **"At any time" is a claim about the shipped set.** A person's binding beats
+   a shipped one — `alo-shortcuts` says so in its own header — so somebody may
+   already hold this chord.
+2. **There is no screen-reader action to bind.** Adding one is a **new
+   `Action`**, and the crate prices that: *every action here costs a chord that
+   no application on the machine can ever see again.* The change that adds it
+   owes the paragraph `docs/autonomy/the-shell-plan.md` task 18 requires — which
+   chord, why no existing action serves, and what applications can no longer
+   see. `Action::ALL` is iterated in `window_command.rs`, so a new variant is
+   held by whatever asserts over that list.
+3. **It must work before any account exists**, which the screen itself promises,
+   and `alo-shortcuts` keeps **a person's** bindings. A machine-wide chord that
+   works before there is a person may not belong to that crate at all. **That is
+   an architecture question and this document does not answer it.**
+
 ### Measured geometry, from `383:26067` on 2026-10-06
 
 Read from the file rather than taken from the brief:
