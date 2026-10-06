@@ -556,7 +556,15 @@ shape could not be asked.* Now it can be.
 
 ### 7. A camera per viewport
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** 5 and 6.
+**Status:** **Done, 2026-10-06: the code.** Each display holds its own
+camera and is drawn through it, so two displays are two views of one canvas
+rather than one view twice. Five tests, and three defects found by tests that
+already existed — see the report. **`On the machine.` is not ticked**: one
+laptop, no second display, which this plan's first paragraph said would be
+true of every task in it. See
+[`updates/a-camera-per-viewport.md`](updates/a-camera-per-viewport.md).
+
+**Owner:** the Mac. **Depends on:** 5 and 6.
 
 **Depends on:** 5 and 6, and so **3a** through both — a viewport is a rectangle on the plane, and a display with no corner has no rectangle.
 

@@ -541,8 +541,13 @@ impl Surfaces {
     /// status area are laid out from the output's size, a zoom does not resize
     /// them, and a control that converted a pointer would be compensating for a
     /// transform it is not under.
+    /// **The zoom of the display this point is on**, since task 7. One zoom
+    /// for the session would convert a pointer on the second display by the
+    /// first display's camera, which is a pointer landing somewhere nobody
+    /// pointed at.
     pub(crate) fn on_the_plane(&self, screen: Point<f64, Logical>) -> Point<f64, Logical> {
-        screen.downscale(crate::scene::drawn_at(self.camera))
+        let here = Point::<i32, smithay::utils::Physical>::from((screen.x as i32, screen.y as i32));
+        screen.downscale(crate::scene::drawn_at(self.camera_at(here)))
     }
 }
 

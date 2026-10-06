@@ -4,7 +4,15 @@ use super::{Popups, WlSurface, XdgPopupSurfaceData, with_states};
 
 impl Popups {
     /// Recompute against committed ancestors, never speculative parent configures.
-    pub(crate) fn refresh(&mut self, camera: alo_canvas::Camera, roots: &[WlSurface]) {
+    /// **No camera is handed in since task 7**, because each popup is placed
+    /// through the camera of the screen *its own* parent is on, and this
+    /// refreshes popups whose parents may be on different displays. One
+    /// camera for all of them had no meaning the moment there were two.
+    pub(crate) fn refresh(
+        &mut self,
+        roots: &[WlSurface],
+        cameras: &std::collections::BTreeMap<String, alo_canvas::Camera>,
+    ) {
         for index in 0..self.entries.len() {
             let Some(entry) = self.entries.get(index) else {
                 break;
@@ -38,7 +46,7 @@ impl Popups {
                 continue;
             }
             let Some(geometry) =
-                self.placement(camera, pending.positioner, &entry.popup.parent, roots)
+                self.placement(pending.positioner, &entry.popup.parent, roots, cameras)
             else {
                 let surface = entry.popup.surface.clone();
                 self.dismiss_tree(&surface);

@@ -199,7 +199,22 @@ pub(crate) struct Surfaces {
     /// also an undercount: there were **seven** places keeping the two in step, not
     /// three.
     pub(crate) place: alo_canvas::Place,
-    /// **Where on the plane the person is looking, and how far in.**
+    /// **Where on the plane the person is looking, and how far in — one
+    /// camera per display.**
+    ///
+    /// **A camera each, not a camera copied.** `more-than-one-display-plan.md`
+    /// task 7, and the distinction its constraint turns on: what was forbidden
+    /// is the shape collapsed on 2026-10-04, where *one* camera had a second
+    /// home kept in step by hand. These are different cameras holding
+    /// different views, which is what a viewport is — and the note below says
+    /// so outright: *canvas task 9 makes a camera per viewport.*
+    ///
+    /// Keyed by display name, as `Server::presentations` and the per-display
+    /// fixed controls are. A display with no entry is looking at
+    /// [`alo_canvas::Camera::new`] — the origin at life size — which is what
+    /// every display looked at before any of them had a camera of its own.
+    ///
+    /// # What it was, and why that had to go first
     ///
     /// One home, and this is it. It had two until 2026-10-04: a field on `Server`
     /// and a copy on `self.popups`, which **five** places kept in step by hand —
@@ -223,7 +238,7 @@ pub(crate) struct Surfaces {
     /// instead of keeping a copy — an argument cannot be left un-synced, and the
     /// three entry points that place a popup all had to answer for it to compile.
     /// The shell reads it back through `Server::the_camera`.
-    pub(crate) camera: alo_canvas::Camera,
+    pub(crate) cameras: std::collections::BTreeMap<String, alo_canvas::Camera>,
     /// **Which level the person is looking at**: one Place, or every Place.
     ///
     /// Stored rather than derived because the World and a Place are different
@@ -280,6 +295,46 @@ pub(crate) struct Surfaces {
 }
 
 impl Surfaces {
+    /// What the display showing this desk point is looking at.
+    ///
+    /// The first display's camera for a point on none of them, and the
+    /// origin at life size when no display has been described yet — the same
+    /// two fallbacks `crate::popup_placement` makes, and for the same reason:
+    /// a pointer is somewhere whether or not the arrangement can place it.
+    pub(crate) fn camera_at(
+        &self,
+        here: smithay::utils::Point<i32, smithay::utils::Physical>,
+    ) -> alo_canvas::Camera {
+        let named = self
+            .popups
+            .screens
+            .iter()
+            .find(|view| view.rect.contains(here))
+            .or_else(|| self.popups.screens.first())
+            .map_or("", |view| view.named.as_str());
+        // **Read now, from its one home.** A camera copied into `screens`
+        // once a frame is stale before the first frame and wrong after any
+        // pan, which is how the first version of this broke four tests that
+        // press a pointer before anything is drawn.
+        self.camera_of(named)
+    }
+
+    /// What this display is looking at, or the origin at life size.
+    ///
+    /// **A display with no camera of its own has not been looked away from**,
+    /// which is a real state rather than a missing one: every display starts
+    /// at [`alo_canvas::Camera::new`] and only a pan or a zoom gives it an
+    /// entry. Answering with the default rather than with `None` is what lets
+    /// every reader keep its shape.
+    pub(crate) fn camera_of(&self, named: &str) -> alo_canvas::Camera {
+        self.cameras
+            .get(named)
+            .copied()
+            .unwrap_or_else(alo_canvas::Camera::new)
+    }
+}
+
+impl Surfaces {
     /// Advertise only protocols this component implements.
     pub(crate) fn new(display: &DisplayHandle) -> Self {
         Self {
@@ -316,7 +371,7 @@ impl Surfaces {
             handed_over: Vec::new(),
             windows: Vec::new(),
             // A machine that has never been used is looking at its first Place.
-            camera: alo_canvas::Camera::new(),
+            cameras: std::collections::BTreeMap::new(),
             place: alo_canvas::Place::FIRST,
             showing: alo_canvas::Showing::OnePlace(alo_canvas::Place::FIRST),
             seats: SeatState::new(),
@@ -372,8 +427,7 @@ impl Surfaces {
         self.prune_window_modes();
         let parents: Vec<_> = self.mapped().cloned().collect();
         self.popups.prune(&parents);
-        let camera = self.camera;
-        self.popups.refresh(camera, &parents);
+        self.popups.refresh(&parents, &self.cameras);
         self.prune_popup_grab();
         self.prune_keyboard_focus();
         self.prune_pointer_focus();
@@ -588,8 +642,8 @@ impl XdgShellHandler for Surfaces {
     fn new_popup(&mut self, surface: PopupSurface, positioner: PositionerState) {
         self.prune();
         let parents: Vec<_> = self.mapped().cloned().collect();
-        let camera = self.camera;
-        self.popups.insert(camera, surface, positioner, &parents);
+        self.popups
+            .insert(surface, positioner, &parents, &self.cameras);
     }
     fn grab(&mut self, surface: PopupSurface, seat: WlSeat, serial: Serial) {
         self.grab_popup(surface, seat, serial);
@@ -687,9 +741,8 @@ impl XdgShellHandler for Surfaces {
     ) {
         self.prune();
         let parents: Vec<_> = self.mapped().cloned().collect();
-        let camera = self.camera;
         self.popups
-            .reposition(camera, &surface, positioner, token, &parents);
+            .reposition(&surface, positioner, token, &parents, &self.cameras);
     }
 }
 
