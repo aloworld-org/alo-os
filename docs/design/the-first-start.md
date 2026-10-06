@@ -980,6 +980,53 @@ from the other.**
 **`disan` is example data**, and it is the owner's own name, as `Disan` is on
 `384:26375`.
 
+### How much alo may do — `183:10695`, *Optional · Access · Sealed box*
+
+Read 2026-10-06. **One screen with three states**, like the AI choice;
+`183:10699` and `183:10703` are the same screen with a different row marked.
+
+| slot | words |
+|---|---|
+| stage | OPTIONAL · ALO ACCESS |
+| eyebrow | CONTROL ALWAYS |
+| title | Choose how much alo may do. |
+| introduction | **Sealed box is the default.** You can change this when a task needs more access. |
+| row 1 | **Sealed box · Selected** — Work stays inside the approved sandbox. |
+| row 2 | **Ask me each time** — Ask before each additional protected action. |
+| row 3 | **Full trust** — Allow approved scope to proceed without repeated prompts. |
+| consequence | **Activity remains visible, recorded and stoppable.** |
+| actions | Keep sealed box · Back |
+
+**This is the one screen in the flow where something *is* pre-selected, and the
+reason is the opposite of the AI choice's.** There, no option is safer than the
+others — a processing destination chosen for somebody is a decision made on
+their behalf, which is why ADR 0025 forbids it. **Here the default is the most
+restrictive option**, so pre-selecting it takes nothing away: a person who
+passes the screen without reading it has granted the least.
+
+**The screen is marked `OPTIONAL`**, which only works because of that. An
+optional screen whose default was *Full trust* would be a grant obtained by
+inattention.
+
+**It is also three amounts of authority on one screen**, which is where a build
+could widen what was granted without anybody noticing. The three must map onto
+what `alo-capability` and the grants model actually enforce, and **a build must
+never treat the row order as a slider** — *Ask me each time* is not halfway
+between the other two, it is a different mechanism.
+
+**`Activity remains visible, recorded and stoppable`** is the promise that makes
+the other two tolerable, and it is the record's and the egress indicator's to
+keep — neither of which is an AI feature, so neither is removed by choosing
+*Sealed box*.
+
+**One measurement to check rather than copy: the selected border here is
+1.5px**, where the AI-choice selected cards are 2px. The AI-choice frames are
+the newer `383:` generation and this is a `371:` one, and **the designer has
+just standardised two other leftovers of exactly this kind** — the detail action
+widths and a stage label. So this is likely a third leftover rather than a
+distinction. **Worth one question; not worth building two selection borders
+on a guess.**
+
 ## Responsive: the rule for every size, not only the three drawn
 
 **The file gives three widths and two heights. A machine has neither.** These
