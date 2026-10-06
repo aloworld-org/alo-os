@@ -191,27 +191,63 @@ each portal request is a grant in the sense of ADR 0001.
 
 ## The AI stack — model choice and deployment configurations
 
-**Three main model-selection choices** (owner clarification, 2026-09-08):
+**Four choices at first start, in this order** (owner, 2026-10-06, superseding
+the clarification of 2026-09-08 kept below):
 
-1. **Local models** — the person's selected model and runtime on their PC,
+1. **On this computer** — the person's selected model and runtime on their PC,
    including models such as Llama where the integration supports them.
-2. **Your own API provider** — a compatible API selected by the person,
-   such as OpenAI or Mistral, using the credentials that provider requires.
-3. **Alo** — alo's model service, with its provider, processing-location and
-   subscription requirements stated honestly rather than hidden.
+   *alo works locally. Availability depends on this PC.*
+2. **A machine on your network** — a machine this one has been paired with,
+   ADR 0003's one box serving an office.
+   *Selected content goes to a machine on your network.*
+3. **My provider** — a compatible API selected by the person, such as OpenAI or
+   Mistral, using the credentials that provider requires.
+   *Use your provider. Selected content leaves this PC; provider charges may
+   apply.*
+4. **No AI** — no model, no provider and no agent (ADR 0009).
+   *Open apps, find files and use the full canvas by hand.*
 
-These are the primary user-facing choices, not three different privacy policies.
+**All four carry equal size, typography and weight, and none is pre-selected**
+(ADR 0014 §4, ADR 0025). **No AI is a complete answer** — not a skip, not a
+fallback, and not an invitation to persuade the person later.
+
+**alo's own service is not one of the four.** It appears only after *My
+provider* is chosen, as an ordinary provider beside the others: no badge, no
+special styling, no automatic selection, no commercially privileged ordering
+(ADR 0014). Provider names and ordering shown in the design file are
+illustrative and do not establish an integration-support matrix.
+
+**Sending to a machine on your network is still data leaving this PC**, and uses
+the same disclosure and recording as any other destination. A local destination
+is not by itself a promise that nothing leaves the building; that claim needs an
+enforced local-only processing policy, which is a separate thing from where the
+machine sits.
+
+These are the primary user-facing choices, not four different privacy policies.
 Do not replace them with "prefer local processing" and "keep questions on this
 PC", or present those as competing setup choices. Any advanced privacy controls
 belong separately in settings. This establishes the model-selection direction,
 not acceptance of proposed ADR 0021 or new `ThisMachineOnly` semantics.
 
-The deployment configurations below are a separate technical distinction, not
-four competing model-source buttons. The existing no-agent path remains a
-separate opt-out, and paired-machine support is preserved without adding a
-fourth primary source category; its detailed placement remains to be designed.
-Existing release tiers still apply: this is not a claim that alo's hosted service
-or every listed integration is available in the current release.
+Existing release tiers still apply: this is not a claim that alo's hosted
+service, paired-machine processing or every listed integration is available in
+the current release.
+
+**What this supersedes, kept because the change is the point.** The 2026-09-08
+clarification named **three** main model-selection choices — *local models, your
+own API provider, and Alo* — with alo's own service as one of the three, and
+added that the deployment configurations were *not four competing model-source
+buttons*, that *the existing no-agent path remains a separate opt-out*, and that
+*paired-machine support is preserved without adding a fourth primary source
+category; its detailed placement remains to be designed*.
+
+Every one of those is now decided the other way: alo's service sits inside *My
+provider*, the no-agent path **is** the fourth choice rather than an opt-out
+beside them, and the paired machine **is** a primary choice and is placed,
+second. `crates/alo-setting-up`'s `THE_FOUR` already held this shape and this
+file had not caught up — which is how `docs/design/figma-brief.md` came to brief
+a designer one choice short, and how the design file came to carry a fourth box
+that was not ours.
 
 **alo OS works well with a model on this machine, with a model on a machine on
 your network, with a provider you added — and with no model at all.** Those are

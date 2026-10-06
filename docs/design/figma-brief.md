@@ -107,9 +107,37 @@ Screens, in this order:
 
 1. **Sign in** — wallpaper, one account, one field, nothing else
 2. **Lock** — time, date, who is signed in; no notification content
-3. **Setup: "Where should your AI run?"** — three choices in plain words (this
-   machine / a machine on your network / a provider you add), each stating what
-   leaves the machine and what happens offline
+3. **Setup: "Where should your AI run?"** — **four** choices in plain words
+   (this machine / a machine on your network / a provider you add / **not at
+   all**), each stating what leaves the machine and what happens offline
+
+   **Corrected 2026-10-06, and the uncorrected line had already reached a
+   designer.** This said *three choices* and listed the first three. The fourth
+   — *not at all* — is [ADR
+   0009](../decisions/0009-a-good-computer-without-the-agent.md)'s, *with the
+   same weight as the other three and no persuasion attached*, and it was
+   settled before this brief was written. The design file now carries four
+   boxes with a different fourth, which is what a brief short of one choice
+   produces: the gap was filled, reasonably, with something that is not ours.
+
+   **The four are the four in `crates/alo-setting-up`'s `THE_FOUR`**, in that
+   order, and a screen is not free to differ: *a compositor drawing it cannot
+   leave one out without removing a line of this crate, where a reviewer would
+   see it.*
+
+   **alo's own service is not a fifth and is not a box.** [ADR
+   0014](../decisions/0014-alos-own-model-is-a-provider-like-any-other.md) §4:
+   *Setup's four choices stay the same size, in the same order, with the same
+   weight — including not at all. Our service appears **inside** with a provider
+   you add, listed beside the others.* Owner, 2026-10-06, keeping it.
+
+   **Where other counts of three appear, read them before matching them.**
+   `docs/features.md`'s three were *local models / your own API provider /
+   Alo* — a different three, with alo's service as one of them and no
+   paired-machine category at all. That passage is superseded by the owner's
+   instruction of 2026-10-06 and now says so in place; **this note previously
+   described those three as local, network and provider, which was this file's
+   own author inferring them from the code rather than reading them.**
 4. **Desktop at rest**
 5. **Launcher**
 6. **Agent overlay, just invoked and empty** — showing what it can currently see

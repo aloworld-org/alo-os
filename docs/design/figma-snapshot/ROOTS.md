@@ -20,6 +20,47 @@ confirmed  2026-10-04, by the third PC
 | `351:25693` | section | 4680×7400 | Dock edges · v0.01 specification | inside `70-28.xml` |
 | `8:2` | frame | 1440×1266 | Foundations — alo OS | **no** |
 | `9:2` | frame | 1440×2160 | alo OS UI primitives | **no** |
+| `383:26066` | section | — | the corrected AI-choice flow, 2026-10-06 | **no** |
+
+## The corrected AI-choice flow, 2026-10-06
+
+**Given by the owner as an inventory** rather than enumerated from the
+interface, and recorded here verbatim so a reader who cannot open Figma holds
+the ids. Section root `383:26066`; the flow begins at `383:26067`.
+
+| state | id | read into this repository |
+|---|---|---|
+| Arrival, nothing selected | `383:26067` | **yes** — structure measured 2026-10-06 |
+| On this computer selected | `183:10679` | copy read, `../the-first-start.md` |
+| On this computer detail | `194:10709` | no |
+| Network machine selected | `383:26127` | no |
+| Network machine detail | `383:26261` | no |
+| My provider selected | `183:10683` | copy read, `../the-first-start.md` |
+| My provider detail | `194:10735` | no |
+| No AI selected | `183:10691` | no |
+| No AI detail | `194:10787` | no |
+| Provider list | `183:10687` | no |
+| Network discovery | `384:26276` | no |
+| Network pairing confirmation | `384:26324` | no |
+| Ready with network machine | `384:26375` | no |
+| Accessibility options | `375:30435` | no |
+| Screen reader on | `384:26446` | no |
+| Accessibility keyboard focus | `385:26281` | no |
+| Choice keyboard focus ×4 | `384:26478`, `384:26513`, `384:26548`, `384:26583` | no |
+| Small screen, 1280×720 | `385:26174` | no |
+| Wide screen, 2560×1080 | `385:26208` | no |
+| Long translation example | `385:26244` | no |
+| Provider connection | `385:26346` | no |
+| Screen reader enabled from Welcome | `387:26226` | no |
+
+**`183:10687` is now *12g · Provider list / Arrival*.** Its earlier name in
+`70-28.xml` — *14 · Setup / alo · Europe* — is no longer authoritative, and a
+reader matching on that name matches the wrong thing.
+
+**Three ids here are in `70-28.xml` under older names with different children.**
+`183:10679` is *12 · Choose how alo helps* in the file and *14 · Setup / alo on
+this computer* in the export; `183:10683` and `183:10691` are likewise changed.
+For anything in this flow, **read the file, not the export**.
 
 **`8:2` and `9:2` are not on `70:28`.** Neither appears anywhere in `70-28.xml`, so each
 sits on a page this snapshot does not hold and whose id is not known. **That is the proof
