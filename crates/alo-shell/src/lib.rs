@@ -292,6 +292,7 @@ mod the_panel_reveals;
 mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;
 mod top_controls_region;
+mod which_display_a_window_is_on;
 pub mod which_preview_the_pointer_is_on;
 mod which_surface_claims_a_point;
 mod window_activation;

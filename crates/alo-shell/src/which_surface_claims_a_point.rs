@@ -53,7 +53,12 @@ impl crate::Server {
         &self,
         at: Point<i32, Physical>,
     ) -> Option<alo_put_aside::the_region_the_panel_claims::WhatEachSurfaceSaid> {
-        let labelled = self.fixed_controls.labelled()?;
+        // **The display this point is on**, since task 5b: a pointer over the
+        // second screen was answered with the first screen's bands, which is a
+        // classifier confidently naming a surface that is not under it.
+        let labelled = self
+            .the_controls_of_the_display_for(Some(Rectangle::new(at, (1, 1).into())))
+            .and_then(crate::canvas_fixed_controls::FixedControls::labelled)?;
         Some(
             alo_put_aside::the_region_the_panel_claims::WhatEachSurfaceSaid {
                 // **No longer an absence.** This read `false` with a note saying so
@@ -82,7 +87,30 @@ impl crate::Server {
     /// statement made about the whole screen, and it is the form a draw can check.
     #[must_use]
     pub fn at_most_one_surface_claims_any_point(&self) -> Option<bool> {
-        let labelled = self.fixed_controls.labelled()?;
+        // **Asked of every display and true only if all of them hold.** The
+        // promise is about a point, and a point is on one display, so two
+        // displays are two statements rather than one — and a session where
+        // the second display's bands overlap is not a session where the
+        // promise holds. [`None`] stays *nothing drawn anywhere yet*.
+        let mut answered = None;
+        for display in self.the_labelled_controls_of_every_display() {
+            let holds = Self::at_most_one_claims(display);
+            answered = Some(answered.unwrap_or(true) && holds);
+        }
+        answered
+    }
+
+    /// The labelled controls each display last drew.
+    fn the_labelled_controls_of_every_display(
+        &self,
+    ) -> impl Iterator<Item = crate::canvas_fixed_controls::FixedControlsDrawn> + '_ {
+        self.fixed_controls
+            .values()
+            .filter_map(crate::canvas_fixed_controls::FixedControls::labelled)
+    }
+
+    /// Whether at most one surface claims any point of **one** display's set.
+    fn at_most_one_claims(labelled: crate::canvas_fixed_controls::FixedControlsDrawn) -> bool {
         let dock = labelled.dock_band;
         let panel = labelled.panel_reserved;
         let top = labelled.top_controls;
@@ -96,10 +124,10 @@ impl crate::Server {
         // check compared two of them until then — which would have passed while the
         // new band overlapped either one.
         let pairs = [(dock, Some(panel)), (dock, top), (top, Some(panel))];
-        Some(pairs.into_iter().all(|(one, other)| match (one, other) {
+        pairs.into_iter().all(|(one, other)| match (one, other) {
             (Some(one), Some(other)) => !overlap(one, other),
             _ => true,
-        }))
+        })
     }
 }
 

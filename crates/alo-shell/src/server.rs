@@ -77,7 +77,8 @@ pub struct Server {
     /// only inside the raster path at draw time — which is why
     /// `crate::canvas_never_lost`'s rule had no caller until this field existed.
     /// `crate::canvas_fixed_controls` carries the reasoning and the units.
-    pub(crate) fixed_controls: crate::canvas_fixed_controls::FixedControls,
+    pub(crate) fixed_controls:
+        std::collections::BTreeMap<String, crate::canvas_fixed_controls::FixedControls>,
     /// **Where the put-aside panel is, as the last draw laid it out.**
     ///
     /// Held for exactly the reason `fixed_controls` above is, and the parallel is
@@ -226,7 +227,7 @@ impl Server {
             screens: None,
             presentations: std::collections::BTreeMap::new(),
             switch_order: Default::default(),
-            fixed_controls: crate::canvas_fixed_controls::FixedControls::default(),
+            fixed_controls: std::collections::BTreeMap::new(),
             // Nothing has been drawn yet, which is why this is `None` rather than an
             // empty picture — see the field's own note.
             panel_as_drawn: None,

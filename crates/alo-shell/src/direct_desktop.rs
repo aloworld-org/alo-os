@@ -618,6 +618,7 @@ impl LoopInput for Desk<'_> {
         // and nothing could tell, because the shell had never been given the
         // panel's bounds to check against.
         server.the_fixed_controls_were_drawn(
+            &named,
             crate::canvas_fixed_controls::FixedControlsDrawn {
                 dock_band: pictures.desktop.dock.as_ref().map(|dock| dock.band),
                 panel_reserved: pictures.desktop.panel.reserved,

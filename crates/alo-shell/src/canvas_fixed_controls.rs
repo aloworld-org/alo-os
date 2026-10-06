@@ -203,11 +203,106 @@ impl FixedControls {
     }
 }
 
+/// What a frame is held to: the controls of its display, and the handle floor
+/// they were drawn with.
+///
+/// The two always travel together — a handle from one display's draw beside
+/// another's rectangles would be a floor measured against furniture it never
+/// saw — so they are one type rather than two returns.
+pub(crate) type WhatHoldsAFrame = (Vec<Rectangle<i32, Physical>>, (f64, f64));
+
 impl crate::Server {
+    /// The controls of the display this window is on.
+    ///
+    /// **`more-than-one-display-plan.md` task 5b.** Until this, there was one
+    /// set of controls for the session, so a frame on the second display was
+    /// held away from the *first* display's dock — a rectangle nothing
+    /// occupies where that frame is.
+    ///
+    /// **One display is answered exactly as before**, and that is deliberate
+    /// rather than incidental: where the session has drawn one display there
+    /// is one entry, it is the right one whatever the arrangement says, and
+    /// every caller that never knew about displays keeps its answer. The
+    /// arrangement is only consulted when there is a choice to make.
+    ///
+    /// [`None`] before the first draw, and for a window on no display at all.
+    pub(crate) fn the_controls_of_the_display_for(
+        &self,
+        window: Option<Rectangle<i32, Physical>>,
+    ) -> Option<&FixedControls> {
+        // With one display, which display is not a question. Asked first so
+        // that a session with no arrangement — every session on a machine
+        // nobody has arranged — behaves as it always did.
+        if self.fixed_controls.len() <= 1 {
+            return self.fixed_controls.values().next();
+        }
+        let named = window
+            .and_then(|window| self.the_display_a_window_is_on(window))
+            .map(|place| place.name().name().to_owned());
+        match named {
+            Some(named) => self.fixed_controls.get(&named),
+            // No window to ask about, and more than one display: the main
+            // screen is the honest default, because it is where a new window
+            // opens and so where an unplaced question belongs.
+            None => self
+                .the_screens()
+                .map(crate::Screens::main_screen)
+                .and_then(|main| self.the_screens().and_then(|screens| screens.on(main)))
+                .and_then(|place| self.fixed_controls.get(place.name().name())),
+        }
+    }
+
+    /// The rectangle this surface occupies, in desk coordinates.
+    ///
+    /// The same arithmetic `Server::window_areas` uses, here so that *which
+    /// display is this frame on* and *where is this frame* cannot drift into
+    /// two answers.
+    pub(crate) fn the_area_of(
+        surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
+    ) -> Rectangle<i32, Physical> {
+        let origin = crate::window_placement::window_buffer_origin(surface);
+        let geometry = crate::scene::geometry(surface);
+        Rectangle::new(
+            (origin + geometry.loc).to_physical(1.0).to_i32_round(),
+            geometry.size.to_physical(1.0).to_i32_round(),
+        )
+    }
+
+    /// The controls and handle floor governing this surface, on its own
+    /// display.
+    ///
+    /// **One lookup rather than two**, because the pair has to come from the
+    /// same display: a handle from one display's draw beside another's
+    /// rectangles would be a floor measured against furniture it never saw.
+    pub(crate) fn the_controls_governing(
+        &self,
+        surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
+    ) -> Option<WhatHoldsAFrame> {
+        let controls = self.the_controls_of_the_display_for(Some(Self::the_area_of(surface)))?;
+        Some((controls.bounds().to_vec(), controls.handle()?))
+    }
+
     /// Where the fixed controls are, for a drag to keep a name clear of.
+    ///
+    /// The session's answer where it has one display, and the **main
+    /// screen's** where it has several and no window was named. A caller that
+    /// knows which window it is asking about should use
+    /// [`Self::the_fixed_controls_on_the_display_for`] instead, which is what
+    /// task 5b exists to make possible.
     #[must_use]
     pub fn the_fixed_controls(&self) -> &[Rectangle<i32, Physical>] {
-        self.fixed_controls.bounds()
+        self.the_controls_of_the_display_for(None)
+            .map_or(&[], FixedControls::bounds)
+    }
+
+    /// Where the fixed controls are **on the display this window is on**.
+    #[must_use]
+    pub fn the_fixed_controls_on_the_display_for(
+        &self,
+        window: Rectangle<i32, Physical>,
+    ) -> &[Rectangle<i32, Physical>] {
+        self.the_controls_of_the_display_for(Some(window))
+            .map_or(&[], FixedControls::bounds)
     }
 
     /// The handle floor the last draw was measured with, or [`None`] where
@@ -225,7 +320,8 @@ impl crate::Server {
     /// owes a recheck once a frame exists.
     #[must_use]
     pub fn the_handle_the_controls_were_drawn_with(&self) -> Option<(f64, f64)> {
-        self.fixed_controls.handle()
+        self.the_controls_of_the_display_for(None)
+            .and_then(FixedControls::handle)
     }
 
     /// Every frame whose name the controls, **as they are now**, leave
@@ -276,13 +372,10 @@ impl crate::Server {
         // Nothing drawn is not everything hidden. Before the first frame there
         // are no bounds, and answering *all of them* would be the most alarming
         // possible way to say *I do not know yet*.
-        let Some(handle) = self.fixed_controls.handle() else {
-            return Vec::new();
-        };
-        let controls: Vec<Rectangle<i32, Physical>> = self.the_fixed_controls().to_vec();
-        if controls.is_empty() {
-            return Vec::new();
-        }
+        //
+        // **Asked per frame since task 5b**, because the controls a frame is
+        // held to are its own display's: hoisting this out of the loop is what
+        // made every frame answer to the first display's dock.
         self.mapped_surfaces()
             .filter_map(|surface| {
                 // **Only frames on the Place being looked at.** The Place was
@@ -324,6 +417,12 @@ impl crate::Server {
                 // reuses, and `of` says a number it took and did not use is simply
                 // never used again — but asking where a window is would change
                 // something about every window asked past on the way.
+                // The controls of **this frame's own display**, and nothing
+                // where that display has drawn nothing yet.
+                let (controls, handle) = self.the_controls_governing(surface)?;
+                if controls.is_empty() {
+                    return None;
+                }
                 (!self.enough_of_the_name_is_reachable(surface, at, at, &controls, handle))
                     .then(|| (crate::window_number::Numbers::of(surface), at))
             })
@@ -436,7 +535,15 @@ impl crate::Server {
     #[must_use = "the controls moved and frames may have been moved with them; dropping this \
                   drops the record a person would undo by"]
     pub fn bring_back_frames_the_moved_controls_hide(&mut self) -> Option<Vec<Recovery>> {
-        if !self.fixed_controls.a_recheck_is_owed() {
+        // **Any display owing a recheck owes the session one.** A frame made
+        // unreachable by the second display's dock is as lost as one behind
+        // the first's, so the debt is asked of all of them rather than of
+        // whichever happens to be first.
+        if !self
+            .fixed_controls
+            .values()
+            .any(FixedControls::a_recheck_is_owed)
+        {
             return None;
         }
         // Cleared before the recovery rather than after it. The recovery moves
@@ -444,7 +551,9 @@ impl crate::Server {
         // `the_fixed_controls_were_drawn` again — so clearing afterwards would
         // race its own effect in the one case where the controls are laid out
         // differently because of the move it just made.
-        self.fixed_controls.the_recheck_was_done();
+        for controls in self.fixed_controls.values_mut() {
+            controls.the_recheck_was_done();
+        }
         Some(self.bring_back_frames_the_controls_hide())
     }
 
@@ -454,12 +563,14 @@ impl crate::Server {
         id: u64,
         was: alo_canvas::At,
     ) -> Option<alo_canvas::At> {
-        let handle = self.fixed_controls.handle()?;
-        let controls: Vec<Rectangle<i32, Physical>> = self.the_fixed_controls().to_vec();
+        // The frame first, then the controls — the other way round asked the
+        // session for one answer and then applied it to a frame that may be on
+        // another display. Task 5b.
         let surface = self
             .mapped_surfaces()
             .find(|surface| crate::window_number::Numbers::given_to(surface) == Some(id))?
             .clone();
+        let (controls, handle) = self.the_controls_governing(&surface)?;
 
         // Eight units a step, out to a thousand. The step is smaller than a name
         // band, so no reachable gap is stepped over; the bound is there because
@@ -546,8 +657,12 @@ impl crate::Server {
     /// many pixels this screen draws for one logical unit. A fixed 44 × 24 would
     /// shrink against everything around it for the person who most needs it not
     /// to; an unconverted one shrinks against the screen.
+    /// **Named by the display that drew them**, since task 5b: each display
+    /// lays its own controls out, and one store for the session held whichever
+    /// drew last.
     pub fn the_fixed_controls_were_drawn(
         &mut self,
+        named: &str,
         drawn: FixedControlsDrawn,
         text: alo_appearance::TextScale,
     ) {
@@ -583,7 +698,10 @@ impl crate::Server {
         .flatten()
         .filter(|area| area.size.w > 0 && area.size.h > 0)
         .collect();
-        self.fixed_controls.drawn(bounds, handle, drawn);
+        self.fixed_controls
+            .entry(named.to_owned())
+            .or_default()
+            .drawn(bounds, handle, drawn);
     }
 }
 
@@ -750,12 +868,12 @@ impl crate::Server {
             crate::window_placement::set(&root, Some(wanted));
             return Ok(true);
         };
-        // Nothing drawn yet, so nothing known to be protected from.
-        let Some(handle) = self.fixed_controls.handle() else {
+        // Nothing drawn yet, so nothing known to be protected from — asked of
+        // **this frame's own display** since task 5b.
+        let Some((controls, handle)) = self.the_controls_governing(&root) else {
             crate::window_placement::set(&root, Some(wanted));
             return Ok(true);
         };
-        let controls: Vec<Rectangle<i32, Physical>> = self.the_fixed_controls().to_vec();
         let allowed = self.show_all_would_still_reach(&root, asked)
             && self.enough_of_the_name_is_reachable(&root, from, asked, &controls, handle);
         let may = if allowed { asked } else { from };

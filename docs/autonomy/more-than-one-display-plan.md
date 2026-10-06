@@ -407,6 +407,11 @@ three tasks need one:
 discover this separately, which is the fault this plan's task 9 note in
 `the-canvas-and-its-places.md` was written about.
 
+**Built on 2026-10-06 as part of 5b:** `Server::the_display_a_window_is_on`
+now answers *which display is this frame on*, so 6 and 7 inherit it rather
+than each building it. What follows was the reasoning that got there, kept
+because the correction in it is worth reading.
+
 **The mechanism is here already; only the rule is missing.** Corrected on
 2026-10-06, a few minutes after the paragraph above was first written saying
 the opposite — `put_on_the_current_desktop` is **`alo-shell`'s own**
@@ -431,7 +436,25 @@ reaches it first.
 
 ### 5b. The bounds a frame is held to are the ones for the display it is on
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** 5.
+**Status:** **Done, 2026-10-06: the code.** `FixedControls` is one store per
+display, keyed as the presentations are, and every consumer resolves which one
+— the hidden-frames search per frame, the reachability search from the frame
+it was given, the drag path from the window it holds, the pointer classifier
+from the point, and *at most one surface claims any point* from **every**
+display, true only if all of them hold. Eight tests. **`On the machine.` is
+not ticked**: one laptop, no second display. See
+[`updates/the-bounds-a-frame-is-held-to.md`](updates/the-bounds-a-frame-is-held-to.md).
+
+**The ground it needed was built here too**, because 6 and 7 need the same
+thing and this task reached it first: `Server::the_display_a_window_is_on`
+answers *which display is this frame on* by greatest overlap of desk
+rectangles. **No new coordinate system was introduced** — `Position` already
+says a display's corner is *negative to the left of the main screen*, so the
+compositor's one coordinate space already is the desk with the main screen at
+its origin. What was missing was anybody asking the arrangement which of its
+rectangles a point falls in.
+
+**Owner:** the Mac. **Depends on:** 5.
 
 **Split out of 5 on 2026-10-06**, which predicted it would be two tasks. The
 layout half is done and this is the half it named: *the fixed-control bounds
