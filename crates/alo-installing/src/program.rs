@@ -1,4 +1,4 @@
-//! The five programs this environment runs, and nothing else.
+//! The programs this environment runs, and nothing else.
 //!
 //! Law 2 binds an agent and there is no agent here — this environment runs
 //! before alo OS exists on the disk. The shape is kept anyway, because it is
@@ -13,11 +13,28 @@
 //! | [`Program::ListingTheDisks`] | reads what the disks hold; writes nothing |
 //! | [`Program::WaitingForTheNetwork`] | waits for a wired connection; writes nothing |
 //! | [`Program::Verifying`] | checks the download is the owner's; writes nothing |
-//! | [`Program::Writing`] | replaces the chosen disk with alo OS |
+//! | [`Program::MakingTheRoot`] | makes a file system on **one partition** |
+//! | [`Program::Mounting`] | mounts a partition, so a root can be handed over |
+//! | [`Program::Writing`] | puts alo OS on the chosen disk, or in one partition |
 //! | [`Program::Restarting`] | restarts the machine after a successful install |
+//!
+//! The table is the list; it was headed *the five programs* while there were
+//! five, and a count in a sentence is a thing that goes stale the moment
+//! somebody adds a variant. The ones below the gap are for putting the
+//! firmware's own list right afterwards.
+//!
+//! # Two of these are only for the road that keeps what is already there
+//!
+//! [`Program::MakingTheRoot`] and [`Program::Mounting`] exist because
+//! `bootc install to-disk` takes a whole disk and erases it. Putting alo OS
+//! **beside** Windows means the file system is made and mounted here, and the
+//! writer is handed a root rather than a disk. Both tools were already in the
+//! initramfs — `bootc` runs them itself on the other road — so nothing new is
+//! carried for this.
 
 use std::path::PathBuf;
 
+use crate::disk::PartitionName;
 use crate::verifying::Verifying;
 use crate::writing::Writing;
 
@@ -26,6 +43,14 @@ use crate::writing::Writing;
 /// A wired connection with an address server answers in seconds; a minute is
 /// for a slow one, and not for a cable that is not plugged in.
 const THE_NETWORK_WITHIN_SECONDS: &str = "60";
+
+/// What the root file system is called, on the road that makes it here.
+///
+/// The same name `bootc` gives a root it makes itself, so a machine installed
+/// beside Windows and a machine given a whole disk read the same to anything
+/// looking at the disk afterwards — a recovery tool, a person with a live USB,
+/// or the next version of this installer.
+const THE_ROOTS_LABEL: &str = "root";
 
 /// One program this environment runs.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -36,6 +61,29 @@ pub enum Program {
     WaitingForTheNetwork,
     /// Check that the pinned release is signed by the pinned key.
     Verifying(Verifying),
+    /// Make the file system alo OS lives in, on one partition.
+    ///
+    /// Only on the road that keeps what is already on the disk. On the other
+    /// road `bootc` makes it, which is what `--filesystem` tells it to do.
+    ///
+    /// **One partition, named as a partition.** The type refuses a whole disk,
+    /// because a file system written over a disk that holds a partition table
+    /// is the Windows this road exists to keep.
+    MakingTheRoot {
+        /// The partition the Windows installer already made for alo OS.
+        partition: PartitionName,
+    },
+    /// Mount a partition somewhere, so the writer can be handed a root.
+    ///
+    /// Used twice and in this order: the root first, then the EFI partition
+    /// **under** it, because the writer looks for the loader's home beneath the
+    /// root it is given.
+    Mounting {
+        /// The partition to mount.
+        partition: PartitionName,
+        /// Where it goes.
+        at: &'static str,
+    },
     /// Write the pinned release onto the chosen disk.
     Writing(Writing),
     /// Restart the machine.
@@ -94,7 +142,7 @@ pub struct Ran {
 /// to carrying every one of them: a program the environment runs and the
 /// initramfs does not hold is a refusal nobody sees until a machine restarts
 /// into it.
-pub const EVERY_PROGRAM: [&str; 7] = [
+pub const EVERY_PROGRAM: [&str; 9] = [
     "/usr/bin/lsblk",
     "/usr/bin/nm-online",
     "/usr/bin/cosign",
@@ -102,6 +150,11 @@ pub const EVERY_PROGRAM: [&str; 7] = [
     "/usr/bin/systemctl",
     "/usr/sbin/efibootmgr",
     "/usr/sbin/sfdisk",
+    // Both already in the initramfs, because `bootc` runs them itself on the
+    // road that takes a whole disk. The road that keeps what is there runs them
+    // directly instead, and nothing new has to be carried for it.
+    "/usr/sbin/mkfs.btrfs",
+    "/usr/bin/mount",
 ];
 
 impl Program {
@@ -115,6 +168,8 @@ impl Program {
             Self::ListingTheDisks => "/usr/bin/lsblk",
             Self::WaitingForTheNetwork => "/usr/bin/nm-online",
             Self::Verifying(_) => "/usr/bin/cosign",
+            Self::MakingTheRoot { .. } => "/usr/sbin/mkfs.btrfs",
+            Self::Mounting { .. } => "/usr/bin/mount",
             Self::Writing(_) => "/usr/bin/bootc",
             Self::Restarting => "/usr/bin/systemctl",
             Self::ListingTheStartEntries
@@ -141,6 +196,21 @@ impl Program {
                 .map(str::to_owned)
                 .to_vec(),
             Self::Verifying(verifying) => verifying.arguments(),
+            // `--force` because the partition the Windows installer just made
+            // is empty and the maker otherwise asks whether it may use a disk
+            // that looks used — a question the person already answered, and one
+            // nothing in this environment can answer for them. The *label* is
+            // the same one `bootc` gives a root it makes, so a machine written
+            // either way reads the same.
+            Self::MakingTheRoot { partition } => vec![
+                "--force".to_owned(),
+                "--label".to_owned(),
+                THE_ROOTS_LABEL.to_owned(),
+                partition.path().display().to_string(),
+            ],
+            Self::Mounting { partition, at } => {
+                vec![partition.path().display().to_string(), (*at).to_owned()]
+            }
             Self::Writing(writing) => writing.arguments(),
             Self::Restarting => vec!["reboot".to_owned()],
             // `--quiet` is never passed: what the tool prints is the entry it

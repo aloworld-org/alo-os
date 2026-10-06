@@ -61,7 +61,7 @@ mod writing;
 
 pub use complaint::{Complaint, THE_LAST_LINES};
 pub use console::{ACTIVE, every_console, every_serial_line};
-pub use disk::{BY_ID, DiskName, NotADisk};
+pub use disk::{BY_ID, DiskName, NotADisk, NotAPartition, PartitionName};
 pub use disks::{ANOTHER_SYSTEMS, Disks, Replacing, THIS_INSTALLER, Unsuitable};
 pub use ended::{Ended, Refusal};
 pub use entries::{Entries, Entry, THE_ENTRYS_NAME, THE_LOADER_THE_BASE_INSTALLS};

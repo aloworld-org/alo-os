@@ -29,6 +29,7 @@
 
 use alo_strings::{Filling, Strings, Word};
 
+use crate::disk::DiskName;
 use crate::disks::{Disks, Replacing, Unsuitable};
 use crate::ended::{Ended, Refusal, the_disk};
 use crate::environment::Environment;
@@ -85,15 +86,19 @@ fn installing(
 ) -> Ended {
     match before_writing(machine, strings, environment) {
         Err(refusal) => Ended::Refused(refusal),
-        Ok(writing) => {
+        Ok((writing, disk)) => {
+            // **The disk the person chose, not the one the write names.** On the
+            // road that keeps what is already there the write names a partition
+            // and no disk at all — `Writing::disk` is `None` there — while what
+            // this sequence says, tidies and ends with is still the disk. Asking
+            // the write for it would have been asking it the wrong question.
             say(
                 machine,
                 strings,
                 words::INSTALLING,
-                &the_disk(writing.disk().as_str()),
+                &the_disk(disk.as_str()),
             );
             let still = strings.say(&words::STILL_INSTALLING.key(), &Filling::nothing());
-            let disk = writing.disk().clone();
             let program = Program::Writing(writing);
             match machine.run(&program, &still, STILL_EVERY) {
                 Ok(ran) if ran.succeeded => {
@@ -117,11 +122,16 @@ fn installing(
 }
 
 /// Steps 1 to 4, which only read, and the write they lead to.
+///
+/// Gives back the disk beside the write because the two are no longer the same
+/// question: a write can name a partition, and everything after it — what is
+/// said, what is tidied, what the environment ends with — is about the disk the
+/// person chose.
 fn before_writing(
     machine: &mut impl TheMachine,
     strings: &Strings,
     environment: &Environment,
-) -> Result<Writing, Refusal> {
+) -> Result<(Writing, DiskName), Refusal> {
     say(
         machine,
         strings,
@@ -204,7 +214,7 @@ fn before_writing(
         Verified::NotReachable => return Err(Refusal::NotReachable),
     }
 
-    Ok(Writing::of(environment.pin(), disk))
+    Ok((Writing::of(environment.pin(), disk), disk.clone()))
 }
 
 /// What a program that failed complained of, a line at a time, where a

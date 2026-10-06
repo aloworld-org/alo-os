@@ -330,7 +330,9 @@ fn a_genuine_release_onto_the_chosen_disk_is_installed_with_every_step_said() {
     let Program::Writing(writing) = &machine.ran[3] else {
         panic!("the fourth program is the write: {:?}", machine.ran);
     };
-    assert_eq!(writing.disk(), &disk);
+    // `Some`, because a write can now name a partition instead and has no disk
+    // at all when it does. This is the whole-disk road, so it has one.
+    assert_eq!(writing.disk(), Some(&disk));
     assert_eq!(
         writing.arguments().last().map(String::as_str),
         Some("/dev/disk/by-id/virtio-alo-target")
