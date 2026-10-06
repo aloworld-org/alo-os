@@ -149,6 +149,18 @@ impl crate::Server {
         let Some(named) = self.desk.name_of(which).map(str::to_owned) else {
             return;
         };
+        // **Every popup on the display that is going is dismissed first.**
+        // `more-than-one-display-plan.md` task 6's second clause. A popup is
+        // constrained to the screen its parent is on, so a screen that is
+        // gone leaves its menus bound to a rectangle that no longer exists —
+        // and a grab held open across an unplug is a menu a person cannot
+        // reach and cannot close. Dismissing is what the protocol already
+        // does for a parent that goes away; this is the same answer for the
+        // *screen* going away.
+        //
+        // Before the display leaves the desk, because afterwards there is no
+        // rectangle left to ask which popups were on it.
+        self.dismiss_the_popups_on(which);
         let held = self.what_each_window_is_held_by();
         // Unknown is the only refusal, and the name above proves it is known.
         let _ = self.desk.display_left(which, &named, &|window| {
@@ -156,6 +168,50 @@ impl crate::Server {
                 .find(|(number, _)| *number == window)
                 .map(|(_, by)| by.clone())
         });
+    }
+
+    /// Dismiss every popup whose parent is on the display that is leaving.
+    ///
+    /// Nothing happens where the arrangement does not place that display, or
+    /// where a popup's parent is on no display at all: a popup nobody can
+    /// place is not a popup this knows to be lost, and dismissing on a guess
+    /// would shut a menu the person is using on a screen that is staying.
+    fn dismiss_the_popups_on(&mut self, which: DisplayId) {
+        let Some(named) = self.desk.name_of(which).map(str::to_owned) else {
+            return;
+        };
+        // **A session with no arrangement has one display, and this is it
+        // going.** Every popup is on it, so every popup is lost. Asked first
+        // because the per-display question below has no arrangement to ask,
+        // and answering *none of them* there would leave every menu on a
+        // single-display machine bound to a screen that has gone — which is
+        // every machine this lane can test, and the common case besides.
+        let Some(screens) = self.the_screens() else {
+            for parent in self.surfaces.popups.every_parent() {
+                self.surfaces.popups.dismiss_tree(&parent);
+            }
+            return;
+        };
+        // Compared by **name** rather than by rectangle. Two displays cannot
+        // share a corner and a size, but comparing four numbers to say so
+        // puts an arithmetic bug where an identity check belongs, and the
+        // name is what everything else here is keyed by.
+        if !screens.each().any(|place| place.name().name() == named) {
+            return;
+        }
+        let lost: Vec<_> = self
+            .surfaces
+            .popups
+            .every_parent()
+            .into_iter()
+            .filter(|parent| {
+                self.the_display_a_window_is_on(Self::the_area_of(parent))
+                    .is_some_and(|place| place.name().name() == named)
+            })
+            .collect();
+        for parent in lost {
+            self.surfaces.popups.dismiss_tree(&parent);
+        }
     }
 
     /// The number this display is known by, assigned the first time it is seen.

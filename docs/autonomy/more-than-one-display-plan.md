@@ -496,9 +496,28 @@ size, not in scale — which is why this task is real.**
 
 ### 6. A popup is constrained to the screen it is on
 
-**Status:** **blocked on 4**, corrected 2026-10-06. **Owner:** the Mac.
-**Depends on:** 3, **3a** and **4** — not 3 and 3a alone, which is what this
-line said when the plan was written.
+**Status:** **Done, 2026-10-06: the code.** A popup is constrained to the
+screen its parent is on, and a popup whose display goes is dismissed. Eight
+tests — seven on the arithmetic, one driving a real client through the whole
+road. **`On the machine.` is not ticked**: one laptop, no second display. See
+[`updates/a-popup-is-constrained-to-its-screen.md`](updates/a-popup-is-constrained-to-its-screen.md).
+
+**What unblocked it was 5b**, which built the surface-to-display mapping this
+task's own note below says does not exist. That note is kept because its
+reasoning was right: the mapping genuinely did not exist when it was written,
+and task 4 is what made it possible.
+
+**A true unplug is still not detected.** Nothing in this compositor watches
+for a display arriving or leaving mid-session — discovery runs once, as the
+session starts. The dismissal is wired to the *display has gone* path that
+does exist and is exercised: the session's output retiring, and a display
+whose area changes. **So the acceptance's words *unplugged mid-grab* are met
+for every way a display can currently go, and hotplug itself is a gap this
+plan does not close.** Recorded here rather than left for whoever first plugs
+a monitor in.
+
+**Owner:** the Mac. **Depends on:** 3, **3a** and **4** — not 3 and 3a alone,
+which is what this line said when the plan was written.
 
 **Why the dependency was wrong.** This task has to answer *which screen is
 this popup's parent on*, and **nothing in the compositor can answer it**:
