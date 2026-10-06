@@ -582,6 +582,34 @@ placeholder name, not with a hopeful one. `alo_setting_up::NotSetUp::NoPairedMac
 is what is honest today, and this screen is what replaces it when the pairing
 road exists.
 
+### All four selected states, measured — and the inventory is complete
+
+`183:10683` read 2026-10-06, the last of the twenty-six. Like the other two
+`183:` frames it is **current, not stale**: the corrected four, *A machine on
+your network* in second place, no *alo in Europe*.
+
+| frame | selected | `Continue` | actions |
+|---|---|---|---|
+| `183:10679` *12* | On this computer · Selected | enabled | 3 × 184 |
+| `383:26127` *12e* | A machine on your network · Selected | enabled | 3 × 184 |
+| `183:10683` *12a* | My provider · Selected | enabled | 3 × 184 |
+| `183:10691` *12c* | No AI · Selected | enabled | 3 × 184 |
+
+**One screen, four states, and the four behave identically.** Each marks its own
+card with the 2px navy border and the word, each enables `Continue`, each gains
+`About this choice` as a third action at 184. **`No AI` is not special-cased
+anywhere in this set** — which is ADR 0009's *same weight* holding not only in
+how the choice is drawn but in what happens after it is made.
+
+**The AI-choice screen's 184 is consistent across all four**, unlike the detail
+screens. So the width caution above is specific to the details, and a build may
+rely on 184 here.
+
+**Every frame in `figma-snapshot/ROOTS.md`'s inventory has now been read from
+the file**, with its copy and geometry written down. What remains is not reading
+but confirming: the re-export of section `383:26066` into the committed
+snapshot, which `MANIFEST.md` names as the outstanding dependency.
+
 ### Accessibility reached from Welcome — `387:26226`, and a third inference withdrawn
 
 Read 2026-10-06. The frame is named *Accessibility · Screen reader on /
