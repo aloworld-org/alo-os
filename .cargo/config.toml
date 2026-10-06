@@ -1,0 +1,27 @@
+# What a Windows build of this repository links against.
+#
+# **The installer must start on a Windows that has never built anything.** The
+# default MSVC toolchain links the Visual C++ runtime as a separate DLL, so
+# `alo-installer.exe` imports `VCRUNTIME140.dll` and dies in the Windows loader
+# with `0xC0000135`, `STATUS_DLL_NOT_FOUND`, before `main`, printing nothing.
+#
+# Measured on a clean Windows 11 Pro 26200 on 2026-10-05: elevated, nothing ran,
+# nothing changed. It had never been seen because the installer had only ever
+# been run on machines that build Rust, and a machine with a Rust toolchain has
+# that runtime as a side effect of having one.
+#
+# **This is the first thing a customer would ever see**, and ADR 0023's road is
+# *download, click, reboot*. Telling a person to install a Microsoft
+# redistributable first is the same shape as telling them to turn Secure Boot
+# off, which ADR 0033 §4 forbids for the same reason: it moves our problem onto
+# the person.
+#
+# Static linking rather than shipping the DLL beside the exe, because a zip whose
+# two files must stay together is a zip somebody will separate, and rather than
+# the GNU toolchain, because the MSVC one is what the signing road (ADR 0046)
+# and every Windows API binding here already assume.
+#
+# Only this target. A Linux build is unaffected, which is every other binary in
+# this workspace.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

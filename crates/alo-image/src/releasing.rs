@@ -78,6 +78,15 @@ const THE_BUILD: &str = "cargo build";
 /// The words the reason it does not sign is recorded under.
 const THE_REASON: &str = "Why it does not sign";
 
+/// The test that reads the built program's import table.
+///
+/// Named by its test file rather than by a step title, because a title is prose
+/// somebody will reword and a `--test` argument is the thing that runs.
+const THE_READING: &str = "the_installer_starts_on_a_clean_windows";
+
+/// What puts the program into the file a person downloads.
+const THE_ZIP: &str = "Compress-Archive";
+
 /// What the release's workflow says, as far as the rules above need it.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct TheRelease {
@@ -180,6 +189,25 @@ impl TheRelease {
     #[must_use]
     pub fn says_why_it_does_not_sign(&self) -> bool {
         self.read.comments().contains(THE_REASON)
+    }
+
+    /// Whether it reads the program it built before putting it in the download.
+    ///
+    /// **Promise 22 is *download, click, reboot*, and on 2026-10-05 it failed at
+    /// *click***: the published executable imported `VCRUNTIME140.dll`, the zip
+    /// shipped no DLL beside it, and a Windows that has never built anything
+    /// has no Visual C++ redistributable. It died in the loader before `main`
+    /// with `0xC0000135` and printed nothing. **This workflow had built that
+    /// program every release and never once looked at it.**
+    ///
+    /// Before the zip rather than merely somewhere: a reading that happens after
+    /// the archive is made is a reading of something already shipped.
+    #[must_use]
+    pub fn reads_the_program_before_it_ships_it(&self) -> bool {
+        matches!(
+            (self.first(THE_READING), self.first(THE_ZIP)),
+            (Some(read), Some(zipped)) if read < zipped
+        )
     }
 
     /// Every line that is not a comment, in order.

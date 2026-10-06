@@ -102,6 +102,23 @@ jobs:
       - name: Build the installer
         run: cargo build --release --locked -p alo-installer
 
+      # **Before it is zipped, it is read.** On 2026-10-05 the published
+      # installer died in the Windows loader on a clean machine with
+      # 0xC0000135, before `main`, printing nothing: it imported
+      # VCRUNTIME140.dll and the zip shipped no DLL beside it. Promise 22 --
+      # download, click, reboot -- failed at *click*, and nothing here had ever
+      # started the program it built.
+      #
+      # This runner is **not** a clean machine: it builds Rust, so it has the
+      # redistributable, and starting the executable here would have passed
+      # while the bug was live. So the test reads the program's import table
+      # instead, which says what Windows must find before the first
+      # instruction runs, and needs no machine to be missing anything.
+      - name: It starts on a Windows that has never built anything
+        run: >
+          cargo test --release --locked -p alo-installer
+          --test the_installer_starts_on_a_clean_windows
+
       - name: Put the download together
         shell: pwsh
         run: |
