@@ -41,6 +41,14 @@ pub struct DirectLoopResult {
     pub outcome: Result<(), DirectLoopError>,
     /// Output disable/withdrawal result; absent if discovery never made a target.
     pub retirement: Option<Result<(), RenderError>>,
+    /// Every display beyond the loop's own that refused to retire, named.
+    ///
+    /// Empty for a lane with one display, which is every lane but the
+    /// desktop's. Separate from `retirement` rather than folded into it
+    /// because they are different claims — *the display this loop held could
+    /// not be disabled*, and *one of the others could not* — and a session
+    /// that recovers from the second is not recovering from the first.
+    pub rest_retirement: Vec<(String, RenderError)>,
     /// Input suspension/close result, independent of the runtime outcome.
     pub input_cleanup: Option<Result<(), std::io::Error>>,
     /// Flush input reset before attempting output retirement.
@@ -82,6 +90,7 @@ impl crate::DirectSession {
                     return DirectLoopResult {
                         outcome: Err(error.into()),
                         retirement: None,
+                        rest_retirement: Vec::new(),
                         input_cleanup: None,
                         input_flush: None,
                         flush: None,
@@ -148,6 +157,11 @@ pub(crate) fn run_with_input(
             }
         }
     })();
+    // **The lane's own displays retire before the loop's.** `retire_output`
+    // below withdraws every display's global, so anything that still has a
+    // backend to disable has to have disabled it by then; see
+    // `LoopInput::retire_the_rest`.
+    let rest_retirement = input.retire_the_rest(server);
     let input_cleanup = input.shutdown(server);
     server.clear_input();
     let input_flush = input_cleanup.as_ref().map(|_| server.flush());
@@ -158,6 +172,7 @@ pub(crate) fn run_with_input(
         input_cleanup,
         input_flush,
         retirement,
+        rest_retirement,
         flush,
     }
 }

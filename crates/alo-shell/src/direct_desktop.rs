@@ -271,10 +271,41 @@ impl crate::DirectSession {
         let manager = self.input_session();
         self.with_active_device(|fd, poll| {
             let setup = (|| {
-                let output = crate::discover_atomic_output(fd)?;
+                // **Every display this device has, in preference order.**
+                // `more-than-one-display-plan.md` task 4: task 2 built the
+                // discovery and nothing outside a test had ever called it, so
+                // a machine with two monitors lit one. Asked **once** rather
+                // than once for the first and again for the rest — two
+                // discoveries would be two answers to *what is plugged in*,
+                // and they can differ across a hotplug between them.
+                //
+                // The first is this loop's own, because `run_with_input` holds
+                // one target and six implementations hang off that signature.
+                // The rest belong to `Desk`, which draws them in its own
+                // `present` and retires them in `retire_the_rest`. A refusal
+                // with no display at all is `discover_every`'s, unchanged.
+                let mut every = crate::discover_every_atomic_output(fd)?;
+                let output = every.remove(0);
                 poll()?;
                 let (width, height) = output.output.mode.size();
                 let painter = crate::software_scanout::SoftwarePainter::new()?;
+                // **A painter each, because a `Target` owns its painter**, and
+                // a borrow each of the one descriptor, which is what
+                // `Inventory` is. A display whose painter cannot be made is
+                // left out rather than taking the session down with it: the
+                // machine still has the display above, and that is exactly the
+                // isolation this task is about.
+                let others = every
+                    .into_iter()
+                    .filter_map(|output| {
+                        let painter = crate::software_scanout::SoftwarePainter::new().ok()?;
+                        Some(crate::direct_target::Target::new(
+                            painter,
+                            crate::drm_inventory::Inventory(fd),
+                            output,
+                        ))
+                    })
+                    .collect::<Vec<_>>();
                 // **Buffer sharing is promised here and not in
                 // `Surfaces::new`, because the line above is where a renderer
                 // starts existing.** The owner ruled on 2026-10-02 that DMA-BUF
@@ -294,7 +325,7 @@ impl crate::DirectSession {
                     owner: crate::SeatInput::new(manager)?,
                     extent: (i32::from(width), i32::from(height)),
                 };
-                Ok::<_, DirectLoopError>((output, painter, input))
+                Ok::<_, DirectLoopError>((output, painter, input, others))
             })();
             // **What this person's chords mean, told to the seat before the
             // loop owns it.** Until this line existed no chord reached a
@@ -316,7 +347,7 @@ impl crate::DirectSession {
                 server.the_settings_places_are(places);
             }
             match setup {
-                Ok((output, painter, input)) => crate::direct_loop::run_with_input(
+                Ok((output, painter, input, others)) => crate::direct_loop::run_with_input(
                     server,
                     crate::direct_target::Target::new(
                         painter,
@@ -338,6 +369,7 @@ impl crate::DirectSession {
                         let left = crate::WhereTheyLeftIt::from(layout.clone());
                         Desk {
                             input,
+                            others,
                             desktop,
                             labels,
                             strings,
@@ -354,6 +386,7 @@ impl crate::DirectSession {
                     input_cleanup: None,
                     input_flush: Some(server.flush()),
                     retirement: None,
+                    rest_retirement: Vec::new(),
                     flush: None,
                 },
             }
@@ -365,6 +398,23 @@ impl crate::DirectSession {
 struct Desk<'a> {
     /// The ordinary routing, unchanged — a client hears the keyboard here.
     input: crate::direct_input_loop::RoutedInput,
+    /// Every display but the one the loop itself holds.
+    ///
+    /// **Empty on a machine with one display**, which is every machine this
+    /// lane can test on, and the reason the first target stays where it was:
+    /// `run_with_input` takes one, six `LoopInput` implementations hang off
+    /// that signature, and the sign-in lane genuinely has one display and
+    /// should not pay for this one.
+    ///
+    /// Each owns its own painter and borrows the same device descriptor —
+    /// `Inventory` is a `BorrowedFd`, so N displays are N painters and N
+    /// borrows of one `fd`, never N descriptors.
+    others: Vec<
+        crate::direct_target::Target<
+            crate::software_scanout::SoftwarePainter,
+            crate::drm_inventory::Inventory<'a>,
+        >,
+    >,
     /// What the crates that decide each of these say is on the display now.
     desktop: &'a mut dyn TheDesktop,
     /// The bundled font every word on the desktop is laid out with.
@@ -503,6 +553,11 @@ impl LoopInput for Desk<'_> {
         target: &mut T,
         time: u32,
     ) -> Result<(), DirectLoopError> {
+        // **The extra displays are borrowed out of `self` first**, so that
+        // the rest of this body may keep borrowing the desk's other fields.
+        // Taking them instead would lose them on any `?` below, and they own
+        // live scanout.
+        let others = &mut self.others;
         // Asked before the frame is made, never after: a frame drawn from
         // readings taken after it would show a person the moment before.
         self.desktop.refreshed();
@@ -656,18 +711,55 @@ impl LoopInput for Desk<'_> {
             },
             std::time::SystemTime::now(),
         )?;
-        server.render_frame(
-            &mut Layered {
-                target,
-                layers: NativeLayers {
-                    desktop: Some(&pictures.desktop),
-                    status: Some(&pictures.status),
-                    settings: Some(&settings),
-                    ..NativeLayers::nothing()
-                },
+        // **The frame is drawn through the per-display road, with one display
+        // on it.** `more-than-one-display-plan.md` task 4. This desk builds one
+        // target today; `discover_every_atomic_output` is what will make it
+        // several, and that is this task's device half.
+        //
+        // Going through the road now rather than when the second target
+        // arrives puts the isolation **in the path a machine actually takes**
+        // instead of beside it, so the change that adds a display pushes a
+        // target onto a list rather than rewriting how a frame is drawn. A
+        // mechanism nothing calls is the fault this repository keeps meeting;
+        // one caller on the real road is the cure.
+        //
+        // The refusal is raised here exactly as `render_frame`'s was, because
+        // with one display *nothing drew* and *this display refused* are the
+        // same fact. With two they will not be, and this is the line that
+        // stops raising and starts reporting.
+        let mut layered = Layered {
+            target,
+            layers: NativeLayers {
+                desktop: Some(&pictures.desktop),
+                status: Some(&pictures.status),
+                settings: Some(&settings),
+                ..NativeLayers::nothing()
             },
-            time,
-        )?;
+        };
+        //
+        // The loop's own display goes first, because discovery put it first
+        // and because a refusal on a later one must not delay it.
+        let mut displays: Vec<&mut dyn crate::FrameTarget> = Vec::with_capacity(1 + others.len());
+        displays.push(&mut layered);
+        for other in others.iter_mut() {
+            displays.push(other);
+        }
+        let became = server.render_each_display(&mut displays, time);
+        // **Raised only when nothing reached a screen.** With one display
+        // *nothing drew* and *this display refused* are the same fact, and
+        // raising is right. With two they are not: a machine whose second
+        // monitor refused one frame is a machine a person is still working
+        // on, and taking the session down over it would make a spare display
+        // more dangerous than no display at all.
+        //
+        // The name is dropped on the raising road and only there — an error
+        // leaving this lane goes to a caller that cannot act on which display
+        // it was, and `DrawnPerDisplay` keeps the names for the one that can.
+        if !became.anything_drawn()
+            && let Some((_named, why)) = became.into_refusals().into_iter().next()
+        {
+            return Err(why.into());
+        }
         // **What a reader is told follows what is open**, and this is the call
         // that was missing: the tree and the bus were both written and tested
         // and nothing outside a test ever built either, so a screen reader on a
@@ -740,6 +832,20 @@ impl LoopInput for Desk<'_> {
             server.these_places_remember(&self.series);
         }
         Ok(())
+    }
+
+    /// Disable every display this desk opened beyond the loop's own.
+    ///
+    /// **Each one is attempted even where an earlier one refused**, which is
+    /// the same rule as drawing: a backend that could not be disabled is a
+    /// reason to report, never a reason to leave the next display lit. The
+    /// loop retires its own target after this returns, and that is what
+    /// withdraws every display's `wl_output` — see
+    /// `crate::output_retirement`, where task 3 split the two apart.
+    fn retire_the_rest(&mut self, _server: &mut Server) -> Vec<(String, crate::RenderError)> {
+        let mut displays: Vec<&mut dyn crate::FrameTarget> =
+            self.others.iter_mut().map(|it| it as _).collect();
+        crate::retire_each_display(&mut displays)
     }
 
     fn shutdown(self, server: &mut Server) -> Option<std::io::Result<()>> {

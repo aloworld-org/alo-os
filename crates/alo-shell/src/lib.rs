@@ -73,6 +73,7 @@
 
 mod a_chord_reaches_its_action;
 mod a_click_brings_a_window_back;
+mod a_frame_per_display;
 mod a_key_reaches_settings;
 mod access_bus;
 mod access_contrast;
@@ -136,6 +137,15 @@ mod direct_keyboard;
 mod direct_loop;
 mod direct_output;
 mod direct_pointer;
+/// The wire client the protocol tests drive, declared **once**.
+///
+/// Two `#[path]` includes of one file are two modules holding two copies, and
+/// each copy's unused half is dead code — which is how a shared test helper
+/// turns into seven clippy errors the moment a second test wants it. Declared
+/// here so every test module reaches the same one.
+#[cfg(test)]
+#[path = "direct_protocol_client.rs"]
+mod direct_protocol_client;
 mod direct_seat;
 mod direct_session;
 mod direct_sign_in;
@@ -346,6 +356,7 @@ pub use window_resize::{ResizeEdge, ResizeGeometry, ResizeGeometryError};
 pub use window_size::WindowSizeError;
 pub use window_switch::{WindowSwitchDirection, WindowSwitchError};
 
+pub use a_frame_per_display::{DrawnPerDisplay, retire_each_display};
 pub use access_bus::{NotRead, ReadAloudBus};
 pub use access_contrast::Contrast;
 pub use access_magnifier::{NotMagnified, magnified, magnifying};
@@ -355,7 +366,9 @@ pub use active_session::ActiveSessionResult;
 pub use approval_keys::ApprovalKey;
 pub use approval_raster::ApprovalLook;
 pub use approval_screen::{ApprovalAnswer, ApprovalOutcome, ApprovalScreen, ApprovalShows};
-pub use atomic_output::{AtomicOutput, AtomicOutputError, discover_atomic_output};
+pub use atomic_output::{
+    AtomicOutput, AtomicOutputError, discover_atomic_output, discover_every_atomic_output,
+};
 pub use booting::{
     AMachineToStandOn, Stood, WouldNotStand, stand_the_sign_in_screen_up, what_this_machine_can_say,
 };

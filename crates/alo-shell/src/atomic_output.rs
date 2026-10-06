@@ -69,6 +69,22 @@ pub fn discover_atomic_output(fd: BorrowedFd<'_>) -> Result<AtomicOutput, Atomic
     discover(&crate::drm_inventory::Inventory(fd))
 }
 
+/// An atomic route for **every** usable display on this device.
+///
+/// The many-display road, which `docs/autonomy/more-than-one-display-plan.md`
+/// task 2 built and task 4 is the first caller of. Ordered as discovery orders
+/// them — a usable internal panel first, then by ascending connector — with a
+/// CRTC and a primary plane given to one display each.
+///
+/// # Errors
+/// As [`discover_atomic_output`]. An empty list is never an answer: a device
+/// with no usable display is a refusal, not a session with no screens.
+pub fn discover_every_atomic_output(
+    fd: BorrowedFd<'_>,
+) -> Result<Vec<AtomicOutput>, AtomicOutputError> {
+    discover_every(&crate::drm_inventory::Inventory(fd))
+}
+
 /// Normalized property metadata retaining the driver-advertised type/range.
 #[derive(Clone)]
 pub(crate) struct Property {
@@ -190,7 +206,9 @@ fn discover(device: &impl Inventory) -> Result<AtomicOutput, AtomicOutputError> 
 /// # Errors
 /// [`AtomicOutputError`], as [`discover_atomic_output`]. An empty list is
 /// never an answer.
-fn discover_every(device: &impl Inventory) -> Result<Vec<AtomicOutput>, AtomicOutputError> {
+pub(crate) fn discover_every(
+    device: &impl Inventory,
+) -> Result<Vec<AtomicOutput>, AtomicOutputError> {
     query(
         "universal planes",
         device.enable(drm::ClientCapability::UniversalPlanes),

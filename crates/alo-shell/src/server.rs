@@ -337,9 +337,9 @@ impl Server {
     }
 
     /// Shared submission path; callers own native presentation retirement.
-    pub(crate) fn render_frame(
+    pub(crate) fn render_frame<T: crate::FrameTarget + ?Sized>(
         &mut self,
-        target: &mut impl crate::FrameTarget,
+        target: &mut T,
         time: u32,
     ) -> Result<usize, crate::RenderError> {
         let size = target.size();
