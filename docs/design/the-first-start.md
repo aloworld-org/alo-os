@@ -876,6 +876,73 @@ approval machinery, and a build that connected a provider without that
 disclosure road existing would have made a promise here it cannot keep
 elsewhere.
 
+## The flow is larger than the AI choice, and this is where the rest begins
+
+**The owner's inventory of 2026-10-06 covered the AI-choice flow. The file holds
+a finished flow around it**, renumbered throughout: `08` Welcome, `09` Language,
+region and keyboard, `12` the AI choice with its a–o variants, `13` Ready and
+Sign in, `14` Your first canvas.
+
+**The ids come from the committed snapshot and the names do not.** Names there
+are stale — `183:10715` is *14 · Setup / First canvas* in the export and
+*14 · Your first canvas* in the file — but **ids do not rot**, so the export
+remains a usable list of what to open even while it is wrong about what each
+one is called.
+
+**It is a floor rather than a total.** The AI-choice flow gained about a dozen
+frames the snapshot has never held, in the `383:`–`387:` range against its own
+ceiling of `358`. Other parts of the flow may have gained frames the same way,
+and **they cannot be counted**: `get_metadata` reports one page for this file
+however many it has, which `figma-snapshot/ROOTS.md` already records. **The
+frame list has been asked of the designer**, and it is the only thing that
+closes this honestly.
+
+### Signing in — `176:10686`, *13 · Sign in / Unlock*
+
+Read 2026-10-06. **The component carries its own specification**, which makes
+these constraints the designer's intent rather than our reading:
+
+> *Local authentication presentation. Default PIN entry, alternate methods,
+> fingerprint and error state. **Native authentication must succeed before
+> navigating to a Place; prototype links are demonstrations only. No hover
+> unlock. Preserve user name casing.** Other methods only when available.*
+
+**Every clause is a rule a build can break.** *Prototype links are
+demonstrations only* is the designer saying in the file what the owner's
+instruction says to us — never treat the prototype's success path as real state.
+*No hover unlock* forbids an obvious convenience. *Other methods only when
+available* means the alternates are drawn from what the machine actually has,
+not listed and then refused.
+
+| slot | what is drawn |
+|---|---|
+| wallpaper | layer named **Authentication / abstract wallpaper — no personal content** |
+| monogram | **lowercase `d`**, 64×64, radius 18, on `#eef2f4` |
+| greeting | **alo, disan** — 36/44 |
+| entry | 304×56, radius 18, placeholder *Enter your PIN* |
+| submit | a **44** target inside the entry, with an unlock arrow |
+| alternate | *Other ways to sign in*, 240×44 |
+| bottom row | 1360 wide at y 884 — *Accessibility* left; *Switch person* and a **power control, 48×48** right |
+| back | a chevron at the top left |
+
+**"Preserve user name casing" is visible in the artwork.** The greeting is
+*disan*, not *Disan*, and the monogram is a lowercase `d`. **A build must never
+title-case a person's name**, and the design demonstrates the rule rather than
+only stating it.
+
+**The lock screen's no-personal-content rule is in a layer name**, which is
+where somebody drawing the wallpaper will actually meet it.
+
+**And a measured difference from setup: this screen uses 44, where setup uses
+48.** The submit target and *Other ways to sign in* are both 44 tall, while the
+setup component's contract says *48 logical pixel target* and the power control
+here is 48. 44 is the WCAG 2.5.5 floor, so it is defensible — but **it is a
+different number in a different component family, and neither may be assumed
+from the other.**
+
+**`disan` is example data**, and it is the owner's own name, as `Disan` is on
+`384:26375`.
+
 ## Responsive: the rule for every size, not only the three drawn
 
 **The file gives three widths and two heights. A machine has neither.** These
