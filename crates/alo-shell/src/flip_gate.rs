@@ -104,11 +104,34 @@ impl FlipGate {
 }
 
 /// Zero is a terminal exhaustion sentinel; wrapping never restarts allocation.
+///
+/// **Written as its own compare-and-exchange loop rather than `fetch_update`,
+/// because that method is deprecated on some toolchains and not others.** It
+/// was renamed to `try_update`; a checkout that used either name would be
+/// warning-free on one Rust and `-D warnings` red on the next, and this
+/// repository gates with warnings denied. Measured on 2026-10-06: the hosted
+/// runner refused this line while the Mac lane's own toolchain compiled it
+/// silently, so no local gate on that machine could have caught it.
+///
+/// The loop is what `fetch_update` is. `compare_exchange_weak` may fail
+/// spuriously, which is why the answer it gives back on failure is used as
+/// the next attempt's starting value rather than re-read.
 fn allocate_cookie(next: &AtomicU64) -> io::Result<NonZeroU64> {
-    next.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
-        (value != 0).then(|| value.wrapping_add(1))
-    })
-    .ok()
-    .and_then(NonZeroU64::new)
-    .ok_or_else(|| io::Error::other("page-flip cookie space exhausted"))
+    let mut value = next.load(Ordering::Relaxed);
+    loop {
+        // Zero is terminal: once the space is exhausted it stays exhausted,
+        // and wrapping back to one would hand out a cookie still in flight.
+        let Some(raised) = (value != 0).then(|| value.wrapping_add(1)) else {
+            return Err(io::Error::other("page-flip cookie space exhausted"));
+        };
+        match next.compare_exchange_weak(value, raised, Ordering::Relaxed, Ordering::Relaxed) {
+            // The cookie is the value this call claimed, not the one left
+            // behind — the same value `fetch_update` answered with.
+            Ok(claimed) => {
+                return NonZeroU64::new(claimed)
+                    .ok_or_else(|| io::Error::other("page-flip cookie space exhausted"));
+            }
+            Err(taken) => value = taken,
+        }
+    }
 }
