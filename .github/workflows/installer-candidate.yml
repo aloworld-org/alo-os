@@ -1,0 +1,115 @@
+# Build `alo-installer.exe` and the environment it stages, for somebody to run
+# on a real Windows. Never publish it, never sign it, never make a Release.
+#
+# # Why this exists
+#
+# `release.yml` runs on a tag and only on a tag, which is right: a tag is the
+# owner's word that a version is a version, and `crates/alo-image`'s
+# `runs_only_on_a_tag` holds it there. But that leaves no way to put a built
+# installer in front of a person between tags, and on 2026-10-05 that gap cost
+# an evening: `crt-static` landed on `main` as the fix for an installer that
+# **did not start at all** on a clean Windows, and the only machine that could
+# confirm it had nothing to run.
+#
+# A fix nobody can try is a fix nobody has tried.
+#
+# # What it is not
+#
+# **Not a release.** No Release is made, no tag is read, nothing is signed, and
+# `image/pinned.toml` is not consulted — this is not the road a customer takes
+# and it must never become it. ADR 0046 reserves signing to a person holding a
+# certificate; ADR 0036 reserves the image's signature the same way. An artefact
+# from here is unsigned by design, Windows will say so, and that warning is
+# correct.
+#
+# **Not a thing that runs by itself.** `workflow_dispatch` only, like
+# `image.yml`, so there is never a red run nobody asked for.
+#
+# # What it checks before it hands anything over
+#
+# The same reading the release road does: the import table of the built
+# executable, through `the_installer_starts_on_a_clean_windows`. A candidate
+# that would die in the loader is worse than no candidate, because somebody
+# would carry it to a machine and learn nothing.
+name: Installer candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  environment:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the boot environment the installer stages
+        run: |
+          podman build -f image/installing/Containerfile \
+            --output type=local,dest=alo-installing .
+
+      - name: List every file it is
+        working-directory: alo-installing
+        run: |
+          find EFI -type f | LC_ALL=C sort | xargs sha256sum > alo-installing.sha256
+          cat alo-installing.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alo-installing
+          path: alo-installing
+
+  installer:
+    needs: environment
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: alo-installing
+          path: alo-installing
+
+      - name: Hold this build to that environment
+        shell: pwsh
+        run: |
+          $list = (Get-FileHash -Algorithm SHA256 alo-installing/alo-installing.sha256).Hash.ToLower()
+          "ALO_INSTALLER_ENVIRONMENT_SHA256=$list" >> $env:GITHUB_ENV
+
+      - name: Build the installer
+        run: cargo build --release --locked -p alo-installer
+
+      # The same reading the release road does, for the same reason: this
+      # runner builds Rust, so it has the Visual C++ redistributable and
+      # starting the program here would prove nothing about a machine that does
+      # not. The import table says what Windows must find before `main`.
+      - name: It starts on a Windows that has never built anything
+        run: >
+          cargo test --release --locked -p alo-installer
+          --test the_installer_starts_on_a_clean_windows
+
+      - name: Put the candidate together
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path candidate/alo-installing -Force | Out-Null
+          Copy-Item target/release/alo-installer.exe candidate/
+          Copy-Item -Recurse alo-installing/* candidate/alo-installing/
+          Compress-Archive -Path candidate/* -DestinationPath alo-installer-candidate.zip
+
+      - name: Say what it is, so nobody mistakes it for a release
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash -Algorithm SHA256 alo-installer-candidate.zip).Hash.ToLower()
+          "$hash  alo-installer-candidate.zip" | Out-File -Encoding ascii SHA256SUMS
+          Get-Content SHA256SUMS
+          "commit: $env:GITHUB_SHA" | Out-File -Encoding ascii -Append SHA256SUMS
+          Get-Content SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alo-installer-candidate
+          path: |
+            alo-installer-candidate.zip
+            SHA256SUMS
