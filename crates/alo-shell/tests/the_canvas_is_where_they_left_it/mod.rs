@@ -16,6 +16,14 @@ use alo_arranging::Arrangement;
 use alo_shell::WhereTheyLeftIt;
 use smithay::utils::Rectangle;
 
+/// The one display these tests draw on.
+///
+/// `the_fixed_controls_were_drawn` names its display since task 5b, because
+/// each display lays its own controls out. These fixtures have one, and with
+/// one the name is only a key: the lookup answers with the single entry
+/// whatever it is called.
+const THE_ONLY_DISPLAY: &str = "the-one-display";
+
 /// The viewport these tests render to.
 const VIEWPORT: (i32, i32) = (1280, 720);
 
@@ -52,6 +60,7 @@ fn put_back(
         // recovery is unchecked, which is the real behaviour before a first
         // frame and would make this test pass for the wrong reason.
         s.the_fixed_controls_were_drawn(
+            THE_ONLY_DISPLAY,
             alo_shell::FixedControlsDrawn {
                 dock_band: Some(a_dock()),
                 panel_reserved: smithay::utils::Rectangle::default(),

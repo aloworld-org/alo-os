@@ -41,6 +41,14 @@ use smithay::{
     utils::{Physical, Rectangle},
 };
 
+/// The one display these tests draw on.
+///
+/// `the_fixed_controls_were_drawn` names its display since task 5b, because
+/// each display lays its own controls out. These fixtures have one, and with
+/// one the name is only a key: the lookup answers with the single entry
+/// whatever it is called.
+const THE_ONLY_DISPLAY: &str = "the-one-display";
+
 /// The viewport these tests render to.
 const VIEWPORT: (i32, i32) = (1280, 720);
 
@@ -83,6 +91,7 @@ fn a_panel_down_the_right() -> Rectangle<i32, Physical> {
 fn drawn_with_a_dock(f: &Fixture) {
     f.backend(|s| {
         s.the_fixed_controls_were_drawn(
+            THE_ONLY_DISPLAY,
             alo_shell::FixedControlsDrawn {
                 dock_band: Some(a_dock_along_the_bottom()),
                 // A panel nobody has put a window into covers nothing, and a
@@ -101,6 +110,7 @@ fn drawn_with_a_dock(f: &Fixture) {
 fn drawn_with_a_dock_and_a_panel(f: &Fixture) {
     f.backend(|s| {
         s.the_fixed_controls_were_drawn(
+            THE_ONLY_DISPLAY,
             alo_shell::FixedControlsDrawn {
                 dock_band: Some(a_dock_along_the_bottom()),
                 panel_reserved: a_panel_down_the_right(),
@@ -121,6 +131,7 @@ fn drawn_with_a_dock_and_a_panel(f: &Fixture) {
 fn drawn_with_a_band_over_the_canvas(f: &Fixture) {
     f.backend(|s| {
         s.the_fixed_controls_were_drawn(
+            THE_ONLY_DISPLAY,
             alo_shell::FixedControlsDrawn {
                 dock_band: None,
                 panel_reserved: Rectangle::default(),
@@ -693,6 +704,7 @@ fn a_display_that_changed_owes_a_recheck() {
     let shorter = VIEWPORT.1 - 200;
     f.backend(move |s| {
         s.the_fixed_controls_were_drawn(
+            THE_ONLY_DISPLAY,
             alo_shell::FixedControlsDrawn {
                 dock_band: Some(Rectangle::new(
                     (0, shorter - DOCK).into(),
@@ -775,6 +787,7 @@ fn no_point_is_claimed_by_two_fixed_surfaces() {
     f.backend(|s| {
         let bar = VIEWPORT.0 / 2;
         s.the_fixed_controls_were_drawn(
+            THE_ONLY_DISPLAY,
             alo_shell::FixedControlsDrawn {
                 dock_band: Some(Rectangle::new(
                     ((VIEWPORT.0 - bar) / 2, VIEWPORT.1 - DOCK).into(),
@@ -826,6 +839,7 @@ fn no_point_is_claimed_by_two_fixed_surfaces() {
     let band = Rectangle::new((0, 0).into(), (VIEWPORT.0 / 2, 84).into());
     f.backend(move |s| {
         s.the_fixed_controls_were_drawn(
+            THE_ONLY_DISPLAY,
             alo_shell::FixedControlsDrawn {
                 dock_band: None,
                 panel_reserved: a_panel_down_the_right(),

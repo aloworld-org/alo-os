@@ -27,6 +27,14 @@ use smithay::{
     utils::{Physical, Rectangle},
 };
 
+/// The one display these tests draw on.
+///
+/// `the_fixed_controls_were_drawn` names its display since task 5b, because
+/// each display lays its own controls out. These fixtures have one, and with
+/// one the name is only a key: the lookup answers with the single entry
+/// whatever it is called.
+const THE_ONLY_DISPLAY: &str = "the-one-display";
+
 /// The viewport these tests render to.
 const VIEWPORT: (i32, i32) = (1280, 720);
 
@@ -50,6 +58,7 @@ fn a_dock_along_the_bottom() -> Rectangle<i32, Physical> {
 fn drawn_with_a_dock(f: &Fixture) {
     f.backend(|s| {
         s.the_fixed_controls_were_drawn(
+            THE_ONLY_DISPLAY,
             alo_shell::FixedControlsDrawn {
                 dock_band: Some(a_dock_along_the_bottom()),
                 // A panel nobody has put a window into covers nothing, which is
