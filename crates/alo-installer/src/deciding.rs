@@ -36,7 +36,7 @@ use crate::disks::Standing;
 use crate::ended::Refusal;
 use crate::found::Found;
 use crate::identities::DiskNumber;
-use crate::windows_volume::{Shrink, WindowsVolume};
+use crate::windows_volume::{BesideWindows, Shrink, WindowsVolume};
 
 /// What the installer offers to do.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,6 +57,19 @@ pub struct Offer {
     /// Offering a road whose disk cannot be named would be offering a road that
     /// cannot be walked, so `None` is how the question is not asked at all.
     pub the_windows_disk: Option<ForAloOs>,
+    /// The shrink that puts alo OS **on the disk Windows is on, beside it**, or
+    /// [`None`] when that volume cannot give up the area, alo OS's own space and
+    /// what Windows keeps free, all three.
+    ///
+    /// This is the third road and the installer plan's task 4. The other two
+    /// need a second disk ([`Self::disks_for_alo_os`]) or give up Windows
+    /// entirely ([`Self::the_windows_disk`]); a computer with one disk had
+    /// neither, and was refused outright.
+    ///
+    /// **Present does not mean chosen.** It is offered beside the others, and a
+    /// machine with a second disk will usually have both — which road is walked
+    /// is a person's answer, not this function's.
+    pub beside_windows: Option<BesideWindows>,
 }
 
 /// One disk alo OS may be installed onto.
@@ -121,6 +134,29 @@ pub fn decide(found: &Found) -> Result<Offer, Refusal> {
             }
         })
         .collect();
+    // **The road a one-disk computer has**, which is the installer plan's task
+    // 4 and the promise `the-windows-installer-program.md` records as owed:
+    // *one-disk computers are refused until task 4*. Asked of the volume whether
+    // or not another disk exists, because a person with a second disk may still
+    // want to keep it for something else — both roads are *offered* here and
+    // chosen later, which is how `the_windows_disk` is already handled.
+    let beside_windows = windows.beside_windows().ok();
+    // **The refusal stands until the road can be walked, and that is the whole
+    // of what is left of task 4.**
+    //
+    // Letting a one-disk computer past this line is a one-word change and it
+    // was measured to be the wrong one: the consent that follows asks for *the
+    // name of the disk alo OS goes on*, and a computer with one disk has no
+    // such name to type. The run reached that prompt and refused
+    // `NotADisksName`, so the person would have gone from a clear *no empty
+    // disk beside the one Windows is on* to a question they cannot answer.
+    //
+    // That is the same shape as the Settings window that opened and could not
+    // be closed, found in `alo-shell` on 2026-10-05: a road is not reachable
+    // until the whole of it is. What remains is person-facing and
+    // design-sensitive — the sentence that says how much Windows gives up, the
+    // typed consent for a road that does not name a disk, and the sequence that
+    // makes two partitions instead of one — and it is owed its own change.
     if disks_for_alo_os.is_empty() {
         return Err(Refusal::NoDiskForAloOs);
     }
@@ -137,5 +173,6 @@ pub fn decide(found: &Found) -> Result<Offer, Refusal> {
         windows_disk: disks.shown_name(windows_disk),
         disks_for_alo_os,
         the_windows_disk,
+        beside_windows,
     })
 }
