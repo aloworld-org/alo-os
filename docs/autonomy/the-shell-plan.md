@@ -16,8 +16,30 @@ does*, `alo-recounting` is *what a person is told afterwards*. Each of them
 says, in its own header, that the screen is somebody else's. This plan is that
 somebody.
 
-**Crates this plan owns:** `crates/alo-shell` and `tools/graphics-check`.
-Nothing else. Every decision these surfaces render is already made in a crate
+**Crates this plan owns:** `tools/graphics-check`. Nothing else.
+
+**`alo-shell` was handed to
+[`more-than-one-display-plan.md`](more-than-one-display-plan.md) on
+2026-10-06, and this plan no longer claims it.** Not a transfer of
+responsibility for what is already drawn — a release of the right to edit,
+because **this plan has no code work left in that crate.** Eighteen of its
+nineteen tasks are done, and the nineteenth, task 18, says in its own status
+that the code is written and every acceptance it has left is *by a person on
+a real machine*. A plan holding a crate it has no edit to make is a plan
+blocking another lane for a sentence nobody meant.
+
+**What brings it back:** a machine walk on task 18 that finds a fault in
+`alo-shell`. Then this plan takes the crate back by editing the sentence
+above, and the display plan yields — the same way round, written down the
+same way.
+
+*Why it needed saying at all: the double claim was created on 2026-10-05 by
+the Mac lane, which wrote `more-than-one-display-plan.md` claiming `alo-shell`
+while this plan still claimed it and still had an unfinished task. Nothing
+caught it for a day, because the check that catches it only runs when a task
+actually tries to edit the crate — so the error sat in two files, visible to
+anybody reading either, reported by nothing. It cost two parked runs and no
+work.* Every decision these surfaces render is already made in a crate
 this plan **reads and never edits** — `alo-greeting`, `alo-accounts`,
 `alo-approving`, `alo-egress`, `alo-indicator`, `alo-recounting`,
 `alo-appearance`, `alo-overlay`, `alo-strings`, `alo-saying`. If a surface

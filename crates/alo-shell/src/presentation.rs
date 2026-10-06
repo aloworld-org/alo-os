@@ -294,9 +294,9 @@ impl Presentation {
     /// Said here because a comparison that can no longer fail is the thing
     /// this repository keeps finding, and the honest version of it is a note
     /// at the site rather than a deletion somewhere else.
-    pub(crate) fn validate_target(
+    pub(crate) fn validate_target<T: FrameTarget + ?Sized>(
         &self,
-        target: &impl FrameTarget,
+        target: &T,
     ) -> Result<crate::OutputMetadata, RenderError> {
         let metadata = target.metadata()?;
         metadata.validate()?;
@@ -310,10 +310,10 @@ impl Presentation {
         Ok(metadata)
     }
     /// Validate, submit without dispatching, then publish mode and frame callbacks.
-    pub(crate) fn render(
+    pub(crate) fn render<T: FrameTarget + ?Sized>(
         &mut self,
         display: &DisplayHandle,
-        target: &mut impl FrameTarget,
+        target: &mut T,
         desktop: (&[WlSurface], &[crate::Popup]),
         cursor: &crate::Cursor,
         time: u32,

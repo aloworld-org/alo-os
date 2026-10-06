@@ -54,7 +54,7 @@ impl Dispatch<wl_registry::WlRegistry, ()> for Events {
 }
 
 /// Real protocol retirement, failed-disable refusal and a fresh output lifetime.
-pub(super) fn retirement(
+pub(crate) fn retirement(
     socket: UnixStream,
     send: mpsc::Sender<(u32, u32)>,
     responses: mpsc::Receiver<()>,
@@ -181,7 +181,7 @@ impl Dispatch<wl_output::WlOutput, ()> for Events {
 }
 
 /// Drive a real surface and callbacks; scene eligibility is controlled by the server fixture.
-pub(super) fn run(
+pub(crate) fn run(
     socket: UnixStream,
     send: mpsc::Sender<(u32, u32)>,
     responses: mpsc::Receiver<()>,
@@ -251,5 +251,67 @@ fn run_inner(
             }
         );
     }
+    Ok(())
+}
+
+/// One surface, two displays, and only one of them drawing it.
+///
+/// `more-than-one-display-plan.md` task 4's second acceptance clause: **a
+/// client drawn on a display gets its frame callback from the display that
+/// drew it.** The client asks for one callback, the server draws both
+/// displays in one pass, and only the first reports having submitted the
+/// surface — so a compositor that sent callbacks from the wrong display, or
+/// from every display, is caught by the count rather than by inspection.
+pub(crate) fn one_of_two_displays(
+    socket: UnixStream,
+    send: mpsc::Sender<(u32, u32)>,
+    responses: mpsc::Receiver<()>,
+    drawn_at: u32,
+) -> Result<(), String> {
+    one_of_two_displays_inner(socket, send, responses, drawn_at).map_err(|error| error.to_string())
+}
+
+fn one_of_two_displays_inner(
+    socket: UnixStream,
+    send: mpsc::Sender<(u32, u32)>,
+    responses: mpsc::Receiver<()>,
+    drawn_at: u32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    socket.set_read_timeout(Some(Duration::from_secs(3)))?;
+    let connection = Connection::from_socket(socket)?;
+    let mut queue = connection.new_event_queue();
+    let qh = queue.handle();
+    connection.display().get_registry(&qh, ());
+    let mut events = Events::default();
+    queue.roundtrip(&mut events)?;
+    let surface = events
+        .compositor
+        .as_ref()
+        .ok_or("missing compositor")?
+        .create_surface(&qh, ());
+    surface.frame(&qh, ());
+    surface.commit();
+    queue.roundtrip(&mut events)?;
+    send.send((0, surface.id().protocol_id()))?;
+    responses.recv_timeout(Duration::from_secs(5))?;
+    queue.roundtrip(&mut events)?;
+    queue.roundtrip(&mut events)?;
+    // **Exactly one**, carrying the time the drawing display drew at. Two
+    // would be the fault worth naming: a callback from a display that never
+    // put this surface on a screen tells the client to draw again for a frame
+    // nobody saw.
+    assert_eq!(
+        events.frames,
+        vec![drawn_at],
+        "the frame callback did not come from the display that drew"
+    );
+    // And it entered that display's output alone. A surface drawn on one
+    // screen that is a member of both is a client told it is somewhere it is
+    // not — which is what decides where it looks for scale and transform.
+    assert_eq!(
+        events.membership,
+        (1, 0),
+        "the surface entered an output that never drew it"
+    );
     Ok(())
 }

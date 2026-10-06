@@ -19,6 +19,14 @@ on 2026-10-05 that the remaining work is this lane's, queued behind
 `alo-desktops` and re-decides nothing in either — see *What this plan does not
 do*.
 
+**This claim was a double claim until 2026-10-06**, when
+[`the-shell-plan.md`](the-shell-plan.md) released the crate. This plan was
+written on 2026-10-05 naming `alo-shell` while that plan still claimed it and
+still had an unfinished task, which is an error in the plans and was this
+lane's to make. It is recorded in both so that a reader of either finds it,
+and so that the release can be reversed the same way: the shell plan takes
+`alo-shell` back if a machine walk on its task 18 finds a fault there.
+
 **The honest limit, at the top rather than discovered at the end.** Every
 acceptance below ends in *two displays*. **The lane that owns this plan has one
 laptop and no second display.** Every task here can be built and can have its
@@ -265,8 +273,24 @@ same gap — the thing this plan's task 1 and 2 notes were written to stop.
 
 ### 4. A frame is drawn per display
 
-**Status:** ready, and **the only ready task in this plan** — 5, 6 and 7 are
-all behind it. **Owner:** the Mac. **Depends on:** 3.
+**Status:** **Done, 2026-10-06: the code.** Every display the device has is
+discovered once, drawn in one pass through `render_frame`, and retired on its
+own. `Server::render_each_display` answers with `DrawnPerDisplay` — what each
+display drew, and which refused, each named — and the desktop lane owns the
+displays beyond the loop's one target and retires them through
+`LoopInput::retire_the_rest`. Nine tests. **`On the machine.` is not
+ticked**: the acceptance asks for both displays painting at their own mode,
+shown, and this lane has one laptop and no second display. See
+[`updates/a-frame-is-drawn-per-display.md`](updates/a-frame-is-drawn-per-display.md).
+
+**What it deliberately does not do**, so task 5 is not read as smaller than it
+is: the displays beyond the first draw clients, **not** the dock or the status
+area — the desktop raster is still laid out once. `popups.output_size` is
+still one global, so the last display drawn wins it, which is task 6.
+Discovery still happens once as the session starts, so a monitor plugged in
+mid-session is not seen.
+
+**Owner:** the Mac. **Depends on:** 3.
 
 **Scoped 2026-10-06 by reading the setup, so the next start is not a
 discovery.** The desktop lane builds exactly one of each:

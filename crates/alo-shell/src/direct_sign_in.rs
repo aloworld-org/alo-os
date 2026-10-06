@@ -98,6 +98,7 @@ impl crate::DirectSession {
                     input_cleanup: None,
                     input_flush: Some(server.flush()),
                     retirement: None,
+                    rest_retirement: Vec::new(),
                     flush: None,
                 },
             }

@@ -1,5 +1,6 @@
 //! Real callback and output events across direct-target commit outcomes.
 use super::*;
+use crate::direct_protocol_client as client;
 use smithay::reexports::wayland_server::Display;
 use std::{
     os::unix::net::UnixStream,
@@ -7,8 +8,6 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-#[path = "direct_protocol_client.rs"]
-mod client;
 
 #[test]
 fn output_retirement_orders_disable_withdrawal_and_fresh_lifetime()

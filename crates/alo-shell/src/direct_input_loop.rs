@@ -1,6 +1,8 @@
 //! Connect the direct frame loop to a session-owned libinput context.
 
-use crate::{DirectFrame, DirectLoopError, DirectLoopResult, SeatInput, Server, SessionError};
+use crate::{
+    DirectFrame, DirectLoopError, DirectLoopResult, RenderError, SeatInput, Server, SessionError,
+};
 use std::io;
 
 impl crate::DirectSession {
@@ -48,6 +50,7 @@ impl crate::DirectSession {
                     input_cleanup: None,
                     input_flush: Some(server.flush()),
                     retirement: None,
+                    rest_retirement: Vec::new(),
                     flush: None,
                 },
             }
@@ -105,6 +108,23 @@ pub(crate) trait LoopInput {
     /// show a password field to somebody already signed in.
     fn finished(&self) -> bool {
         false
+    }
+
+    /// Retire whatever displays this lane owns beyond the loop's own.
+    ///
+    /// **Called before the loop retires its own target**, which is the order
+    /// task 3 fixed and this preserves: a backend goes away once, and the
+    /// globals all withdraw after the last one has. The loop holds one target
+    /// — the signature six implementations hang off — so a lane that opened
+    /// further displays is the only thing that can close them.
+    ///
+    /// The default owns nothing and answers with nothing, which is the truth
+    /// for every lane but the desktop's. Each refusal carries the display's
+    /// own name, for the same reason
+    /// [`crate::DrawnPerDisplay`] carries it: *a display failed to retire*
+    /// sends somebody to look at all of them.
+    fn retire_the_rest(&mut self, _server: &mut Server) -> Vec<(String, RenderError)> {
+        Vec::new()
     }
 
     /// Consume input before output retirement, retaining callback close errors.
