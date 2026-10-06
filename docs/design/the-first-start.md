@@ -407,6 +407,38 @@ left-aligned at 160 when the content fits and centred in a scroll container when
 it does not; 1440 − 640 = 800, halved, is the 400. Neither position is *the*
 position.
 
+### A short screen — `385:26174`, *12k · Arrival / 1280 × 720*
+
+Read 2026-10-06. The frame is **1280×720**, and all four choices are visible
+without scrolling.
+
+**What gets smaller, and what does not.** This is the rule a build would
+otherwise guess at:
+
+| | 1440×960 arrival | 1280×720 |
+|---|---|---|
+| heading | 36 on 44 | **28 on 36** |
+| card | 600×108, padding 14 down | **600×84, padding 12 down** |
+| gap between cards | 10 | **8** |
+| gap between blocks | 12 | **8** |
+| **choice title** | **16 on 25** | **16 on 25 — unchanged** |
+| **choice consequence** | **14 on 22** | **14 on 22 — unchanged** |
+
+**The readable text never shrinks.** The heading comes down, the padding
+tightens and the gaps close, and the 16 and 14 of the choice title and its
+consequence are untouched. That is *do not reduce user-selected text size to
+make content fit* kept by the design, and it tells a build **which knobs it may
+turn**: heading, padding, gaps — never body text.
+
+**The column is centred here too**, by the same arithmetic as the long
+translation: 1280 − 640 = 640, halved, is the 320 the scroll container sits at.
+So centring goes with the scroll container rather than with a particular screen
+width. Actions at y 572 and Accessibility at y 644 are outside it, as before.
+
+**The consequence paragraph is the same three sentences** — *Choose one option
+to continue. You can change this later. External processing requires a visible
+choice.* — at the same 14 on 22. It is not abbreviated for the smaller screen.
+
 ### Measured geometry, from `383:26067` on 2026-10-06
 
 Read from the file rather than taken from the brief:
