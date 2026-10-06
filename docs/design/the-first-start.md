@@ -273,11 +273,15 @@ externalises every string for translation. Which name wins is the owner's, and
 it is not only a setup question — it is whatever the launcher is called
 everywhere.
 
-**Detail actions are 160 wide, not 184.** The AI-choice screen's Continue and
-Back are 184×48; these are 160×48, and the rows here carry 16 of vertical
-padding against the choice cards' 14, with no fixed height. **The
-specification's 184 is the choice screen's number** and does not generalise to
-the details.
+**This screen's actions are 160 wide, not 184** — the AI-choice screen's
+Continue and Back are 184×48 — and its rows carry 16 of vertical padding against
+the choice cards' 14, with no fixed height.
+
+**Do not read that as "detail actions are 160".** This document did, and the
+file contradicts it: `383:26261`, the network detail, uses **184**. See *A rule I
+stated that the file contradicts* below. The safe statement is the narrow one —
+**this frame is 160** — and the two sizes are an open question for whoever owns
+the file.
 
 ### Confirming a pairing — `384:26324`, *12i · Confirm network pairing*
 
@@ -577,6 +581,54 @@ connected. Until pairing is implemented, nothing may show it — not with a
 placeholder name, not with a hopeful one. `alo_setting_up::NotSetUp::NoPairedMachine`
 is what is honest today, and this screen is what replaces it when the pairing
 road exists.
+
+### The network detail — `383:26261`, *12f · Detail · A machine on your network*
+
+Read 2026-10-06. **The screen that says the hard thing out loud.**
+
+| slot | words |
+|---|---|
+| title | Use a shared computer. |
+| introduction | Connect to a computer managed by you or your organisation. |
+| row 1 | **What leaves this PC** — The selected content travels to the paired computer. |
+| row 2 | **Check the destination** — Review its name, owner and processing policy before pairing. |
+| row 3 | **Stay in control** — Choose which work to send. Disconnect or stop a task whenever you need. |
+| consequence | **A network connection alone does not guarantee that processing stays in the building.** |
+| actions | Choose network · Back to choices |
+
+**That last line is the requirement, written as copy for a person to read.** The
+instruction of 2026-10-06 says *do not promise "nothing leaves the building"
+merely because the destination is on the local network; that claim requires an
+enforced local-only processing policy.* **The design does not merely avoid the
+false promise — it tells the person the promise would be false.** A build must
+keep that sentence; losing it would be losing the only place the limit is
+stated to the person rather than to us.
+
+The three rows are the same three guarantees in order: **what leaves**, **check
+before**, **stay in control** — and *Disconnect or stop a task whenever you
+need* is the way out named a third time, after the provider list and the ready
+screen.
+
+### A rule I stated that the file contradicts: detail actions are not always 160
+
+**Corrected here.** This document said *detail actions are 160×48*, generalised
+from `194:10787`. It is not a rule:
+
+| frame | its actions |
+|---|---|
+| `194:10787` *Detail · No AI* | 160×48 |
+| `383:26261` *Detail · A machine on your network* | **184×48** |
+
+The 184 frames are the `383:`–`387:` ones the owner's corrected inventory
+names, and the 160 frames are the older `194:` ones. **The likeliest reading is
+that the newer frames standardised on 184 and the older details have not been
+redrawn** — but that is a reading, not a measurement, and the two sizes are both
+in the file today.
+
+**A build should not pick one and apply it to both.** Either the `194:` details
+are refreshed to 184, or the difference is deliberate and should be said; it is
+a question for whoever owns the file, and it is small enough to be easy to get
+silently wrong.
 
 ### The screen reader on — `384:26446`, *Accessibility · Screen reader on*
 
