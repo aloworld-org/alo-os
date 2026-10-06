@@ -213,6 +213,49 @@ done:
    downloaded* and nothing is changed. Carrying a wireless network across the
    restart is the staging program's problem to solve, and is not solved yet.
 
+### And, on the road that keeps the system already on the disk
+
+The installer plan's task 4 — alo OS beside Windows on one disk. Three things
+more, and the environment refuses rather than guesses when any of them is
+missing:
+
+5. **The space for alo OS, formatted and labelled `ALO-ROOT`.** The staging
+   program shrinks the Windows volume and makes one partition in what that
+   freed, and the label is how the environment knows that partition from
+   Windows' own. **The label is the whole of the environment's permission to
+   write it.** Before anything is made the environment reads what the disk
+   holds and refuses any partition that does not carry the label — including a
+   partition of exactly the type this one is, which is what a check on the type
+   alone would have let through. Without it, a command line staged wrongly
+   would be the end of somebody's Windows.
+6. **Both partitions on the kernel command line**: `alo.installing.into=` with
+   the space's own name under `/dev/disk/by-id/`, and `alo.installing.efi=`
+   with Windows' start-up area. **Both or neither.** One without the other is
+   refused before a disk is looked at: a root with nowhere to put a loader is
+   an install that finishes and starts nothing. Both are checked against the
+   chosen disk, so a name that happens to exist on another disk in the machine
+   is not reached, and the start-up area is checked to really be one.
+7. **Not `alo.installing.replacing=windows` as well.** Replacing what is there
+   and keeping it are opposite answers to the one question the person was
+   asked. A line saying both is refused, rather than one of them being taken
+   as the one that was meant.
+
+What the environment then does on that road: makes a Btrfs file system on that
+one partition, labelled `root` as `bootc` labels one it makes itself; mounts it;
+mounts Windows' start-up area beneath it at `boot/efi`; and runs
+`bootc install to-filesystem` against that root — never `to-disk`, and never
+`--wipe`. Each of the three steps is checked, because a mount that failed and
+went unnoticed leaves the writer installing into a directory in the
+environment's own memory, which succeeds, says so, and leaves a disk with
+nothing on it.
+
+**A second run over a half-finished install is refused.** The file-system maker
+gives the partition its own label, so the label the installer wrote is gone
+afterwards. The way to try again is to run the installer on Windows again, which
+makes the space again. That is the price of trusting one label, and it is worth
+paying: also accepting the label the maker writes would accept any partition
+anybody had labelled that, on a disk this road exists to keep.
+
 ### The program that stages it: `alo-installer`, on Windows
 
 `crates/alo-installer` is that program — what a person downloads and runs on the

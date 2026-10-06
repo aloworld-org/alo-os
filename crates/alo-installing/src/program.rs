@@ -245,34 +245,76 @@ impl Program {
     ///
     /// The writer's output is not read — it is long, it names the machinery,
     /// and it goes to the machine's log rather than to the person's screen.
+    ///
+    /// **Written out, and not as `matches!`.** See [`Program::writes`]: a
+    /// predicate over this enum that a test trusts has to be one the compiler
+    /// makes the next person visit.
     #[must_use]
     pub fn is_read(&self) -> bool {
-        matches!(
-            self,
+        match self {
             Self::ListingTheDisks
-                | Self::Verifying(_)
-                | Self::ListingTheStartEntries
-                | Self::NamingTheEntry { .. }
-        )
+            | Self::Verifying(_)
+            | Self::ListingTheStartEntries
+            | Self::NamingTheEntry { .. } => true,
+            Self::WaitingForTheNetwork
+            | Self::MakingTheRoot { .. }
+            | Self::Mounting { .. }
+            | Self::Writing(_)
+            | Self::Restarting
+            | Self::RemovingTheEntry { .. }
+            | Self::OrderingTheEntries { .. }
+            | Self::RemovingTheArea { .. } => false,
+        }
     }
 
     /// Whether it writes to a disk.
     ///
-    /// One of the five, and the one a test counts: a refusal is a sequence in
-    /// which this never ran.
+    /// What a test counts: a refusal is a sequence in which none of these ran.
+    /// So the question it answers has to be *does a disk come out different*,
+    /// not *is this the install* — and by that question the maker of the file
+    /// system is the most destructive program here. It is the one that turns the
+    /// space the installer made into a file system, and if it were ever pointed
+    /// at a partition Windows is using, that Windows would be gone. Mounting is
+    /// not here: it changes nothing on a disk, and a mount that failed is caught
+    /// by being checked rather than by being counted.
+    ///
+    /// **Written out, with no wildcard, and deliberately long.** This was a
+    /// `matches!` of two variants, which is a non-exhaustive match — so adding
+    /// the maker of file systems could not break it, and for the length of that
+    /// change every refusal test on the road that keeps Windows would have
+    /// passed with a file system already made. The next program added must not
+    /// compile until somebody has decided this answer for it, which is what a
+    /// match the compiler re-reads buys and a one-line predicate does not.
+    /// `docs/misreadings/two-predicates-in-one-file-and-only-one-was-armed.md`
+    /// is the whole of it.
     #[must_use]
     pub fn writes(&self) -> bool {
-        matches!(self, Self::Writing(_) | Self::RemovingTheArea { .. })
+        match self {
+            Self::Writing(_) | Self::MakingTheRoot { .. } | Self::RemovingTheArea { .. } => true,
+            Self::ListingTheDisks
+            | Self::WaitingForTheNetwork
+            | Self::Verifying(_)
+            | Self::Mounting { .. }
+            | Self::Restarting
+            | Self::ListingTheStartEntries
+            | Self::NamingTheEntry { .. }
+            | Self::RemovingTheEntry { .. }
+            | Self::OrderingTheEntries { .. } => false,
+        }
     }
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected Err is the failure being reported"
+)]
 mod tests {
     use super::*;
 
-    /// Only the writer writes, and only what is read is kept.
+    /// Only what writes says it writes, and only what is read is kept.
     #[test]
-    fn only_the_writer_writes() {
+    fn only_what_writes_says_it_writes() {
         assert!(!Program::ListingTheDisks.writes());
         assert!(!Program::WaitingForTheNetwork.writes());
         assert!(!Program::WaitingForTheNetwork.is_read());
@@ -280,6 +322,43 @@ mod tests {
         assert!(Program::ListingTheDisks.is_read());
         assert!(!Program::Restarting.is_read());
         assert_eq!(Program::Restarting.arguments(), ["reboot"]);
+
+        // **Making the file system writes.** Everything a refusal promises
+        // rests on this answer, so it is asserted rather than assumed.
+        let space = PartitionName::named("virtio-alo-windows-part6").expect("a partition");
+        assert!(
+            Program::MakingTheRoot {
+                partition: space.clone()
+            }
+            .writes()
+        );
+        // And mounting does not: nothing on a disk comes out different.
+        assert!(
+            !Program::Mounting {
+                partition: space,
+                at: "/run/alo-os-root",
+            }
+            .writes()
+        );
+    }
+
+    /// The maker is given the partition, with the label a `bootc` root carries
+    /// and the answer to the question it would otherwise ask.
+    #[test]
+    fn the_maker_is_given_the_partition_and_never_a_disk() {
+        let partition = PartitionName::named("virtio-alo-windows-part6").expect("a partition");
+        let program = Program::MakingTheRoot { partition };
+        assert_eq!(program.path(), "/usr/sbin/mkfs.btrfs");
+        assert_eq!(
+            program.arguments(),
+            [
+                "--force",
+                "--label",
+                "root",
+                "/dev/disk/by-id/virtio-alo-windows-part6",
+            ]
+        );
+        assert!(!program.is_read(), "what the maker prints is not an answer");
     }
 
     /// Every program is at a whole path, so nothing on a search path chooses.

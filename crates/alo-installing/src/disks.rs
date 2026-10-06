@@ -1,10 +1,13 @@
-//! Whether the chosen disk may be written, from what the machine says is on it.
+//! Whether what was chosen may be written, from what the machine says is on it.
 //!
-//! The person typed the disk's name and agreed to replace it before the restart.
-//! That agreement is about *that* disk, and a name is a claim about which disk
-//! it is — so before anything is written the environment asks the machine what
-//! the disk actually holds, and refuses four things no consent given on another
-//! screen could have been about:
+//! One question, asked for two roads. The person typed the disk's name before
+//! the restart, and a name is a claim about which disk it is — so before
+//! anything is written the environment asks the machine what is actually there.
+//!
+//! # The disk taken whole ([`Disks::may_receive`])
+//!
+//! Four things no consent given on another screen could have been about are
+//! refused:
 //!
 //! - **part of a disk**, or something that is not a disk at all — a disc drive,
 //!   a loop device, a memory card reader with nothing in it;
@@ -20,6 +23,16 @@
 //!   accident, and never as a default;
 //! - **a disk in use or that cannot be written**: read-only, or with anything
 //!   on it mounted.
+//!
+//! # The disk kept ([`Disks::may_keep_what_is_there`])
+//!
+//! The road that puts alo OS beside Windows asks none of those: there the disk
+//! is *meant* to hold Windows and the installer's own staging area. What it asks
+//! instead is whether the two partitions it was named are the two it may touch,
+//! and the answer turns on a label the installer wrote
+//! ([`THE_SPACE_THE_INSTALLER_MADE`]) rather than on a name on a command line.
+//! That method says why at length, because it is the check standing between a
+//! mis-staged name and somebody's Windows.
 //!
 //! # What is read
 //!
@@ -39,6 +52,21 @@ use serde::Deserialize;
 /// stages the environment writes it, and the environment recognises its own
 /// disk by it.
 pub const THIS_INSTALLER: &str = "ALO-INSTALL";
+
+/// The label the installer on Windows puts on the space it made for alo OS.
+///
+/// A FAT label, so at most eleven characters and upper case, written by the
+/// installer when it makes the partition and read here before anything is made
+/// on it. It is the whole of the environment's permission to write that
+/// partition: see [`Disks::may_keep_what_is_there`].
+pub const THE_SPACE_THE_INSTALLER_MADE: &str = "ALO-ROOT";
+
+/// The partition type a machine's start-up area is, as GPT names it.
+///
+/// The one place the firmware looks. On the road that keeps Windows this is
+/// Windows' own, already on the disk, and alo OS's loader goes into a directory
+/// of its own inside it.
+pub const THE_START_UP_AREA: &str = "c12a7328-f81f-11d2-ba4b-00a0c93ec93b";
 
 /// The partition types Windows makes, as GPT names them.
 ///
@@ -120,6 +148,37 @@ pub enum Unsuitable {
     CannotBeWritten,
 }
 
+/// Why the two partitions named may not be used, on a disk that is kept.
+///
+/// Every one of these is said to the person as the same sentence, because every
+/// one of them means the same thing to them — the space the installer made is
+/// not there — and the thing to do about all of them is the same. Which one it
+/// was goes to the log, where whoever is helping them can read it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum NotKeeping {
+    /// The machine does not list the chosen disk.
+    #[error("the machine lists no such disk")]
+    DiskNotListed,
+    /// One of them is not a partition of the chosen disk.
+    #[error("a partition named is not part of the chosen disk")]
+    NotOnThatDisk,
+    /// The same partition was named for both.
+    #[error("the same partition was named for alo OS and for starting up")]
+    OneSpaceForBoth,
+    /// The partition to install into is not the one the installer made.
+    #[error("the partition named does not carry the installer's own label")]
+    NotTheSpaceTheInstallerMade,
+    /// The partition named for starting up is not a start-up area.
+    #[error("the partition named for starting up is not a start-up area")]
+    NotAStartUpArea,
+    /// One of them is read-only.
+    #[error("a partition named cannot be written")]
+    CannotBeWritten,
+    /// One of them is mounted.
+    #[error("a partition named is in use")]
+    InUse,
+}
+
 impl Disks {
     /// What the lister printed.
     ///
@@ -186,12 +245,117 @@ impl Disks {
         }
         Ok(())
     }
+
+    /// Whether these two partitions may be used, on a disk that is being kept.
+    ///
+    /// The road that puts alo OS **beside** Windows. Not a lifted refusal but a
+    /// different question: on this road the disk is *meant* to hold another
+    /// operating system and the installer's own staging area, so
+    /// [`Disks::may_receive`]'s refusals are all the wrong ones, and the one
+    /// refusal that matters here is not among them.
+    ///
+    /// **A file system is about to be made on the partition named**, which is
+    /// the one irreversible thing in this environment: name Windows' own
+    /// partition by mistake and the Windows this road exists to keep is gone.
+    /// So the partition is not taken on its name. It is taken only when it
+    /// carries the label [`THE_SPACE_THE_INSTALLER_MADE`] — the label the
+    /// installer on Windows puts on the space it made and on nothing else,
+    /// exactly as it labels its own staging area [`THIS_INSTALLER`]. Windows'
+    /// own partitions do not carry it, a disk from another machine does not
+    /// carry it, and a kernel command line that was staged wrongly cannot make
+    /// one carry it.
+    ///
+    /// What else is held, and why each is not covered by that label:
+    ///
+    /// - **both partitions are on the disk the person chose.** A name is a claim
+    ///   about which partition it is; this is where the claim is checked against
+    ///   the disk the person typed, so a name that happens to exist on some
+    ///   other disk in the machine is not reached;
+    /// - **the start-up area really is one** ([`THE_START_UP_AREA`]). Nothing is
+    ///   made on it — alo OS's loader goes into a directory of its own beside
+    ///   Windows' — but it is mounted and written into, and a loader written
+    ///   into what is actually somebody's documents is a machine that does not
+    ///   start;
+    /// - **neither is in use**, and neither is read-only. A partition mounted in
+    ///   this environment is one something else is already holding.
+    ///
+    /// Each path is where the kernel put the device, as
+    /// `TheMachine::wait_for` resolved it — not a by-id name, because what
+    /// `lsblk` prints and what a name points at have to be compared as the same
+    /// kind of thing.
+    ///
+    /// **After the file system is made this says no.** The maker gives the
+    /// partition its own label, so a second run of this environment over a
+    /// half-finished install is refused rather than quietly starting again. That
+    /// is the honest consequence of trusting one label, and it is the one worth
+    /// having: the way to try again is to run the installer on Windows again,
+    /// which makes the space again, and the alternative — also accepting the
+    /// label the maker writes — would accept any partition anybody had labelled
+    /// that, on a disk this road is keeping.
+    ///
+    /// # Errors
+    /// [`NotKeeping`], naming which of them it was, for the log. The person is
+    /// told one sentence: all of these mean the space the installer made is not
+    /// there, and the thing to do about every one of them is the same.
+    pub fn may_keep_what_is_there(
+        &self,
+        disk: &Path,
+        root: &Path,
+        esp: &Path,
+    ) -> Result<(), NotKeeping> {
+        let Some(the_disk) = self.blockdevices.iter().find(|one| one.is(disk)) else {
+            return Err(NotKeeping::DiskNotListed);
+        };
+        if root == esp {
+            return Err(NotKeeping::OneSpaceForBoth);
+        }
+        let Some(the_root) = the_disk.partition(root) else {
+            return Err(NotKeeping::NotOnThatDisk);
+        };
+        let Some(the_esp) = the_disk.partition(esp) else {
+            return Err(NotKeeping::NotOnThatDisk);
+        };
+        if the_root.label.as_deref() != Some(THE_SPACE_THE_INSTALLER_MADE) {
+            return Err(NotKeeping::NotTheSpaceTheInstallerMade);
+        }
+        if the_esp
+            .parttype
+            .as_deref()
+            .map(str::to_ascii_lowercase)
+            .as_deref()
+            != Some(THE_START_UP_AREA)
+        {
+            return Err(NotKeeping::NotAStartUpArea);
+        }
+        if the_root.ro || the_esp.ro {
+            return Err(NotKeeping::CannotBeWritten);
+        }
+        if [the_root, the_esp]
+            .iter()
+            .any(|one| one.mountpoints.iter().any(Option::is_some))
+        {
+            return Err(NotKeeping::InUse);
+        }
+        Ok(())
+    }
 }
 
 impl Device {
     /// Whether this is the device at that path.
     fn is(&self, device: &Path) -> bool {
         Path::new(&self.name) == device
+    }
+
+    /// This disk's own partition at that path, where it has one.
+    ///
+    /// **A partition of this disk and not a descendant of it**: directly a
+    /// child, and of the kind the lister calls a partition. Anything stacked on
+    /// top of a partition — a decrypted volume, a volume group — is deeper in
+    /// the tree and is not a partition anything here may make a file system on.
+    fn partition(&self, device: &Path) -> Option<&Self> {
+        self.children
+            .iter()
+            .find(|child| child.is(device) && child.kind == "part")
     }
 
     /// Whether the device at that path is somewhere beneath this one.
@@ -387,6 +551,215 @@ mod tests {
         assert_eq!(
             whole.may_receive(Path::new("/dev/vda"), Replacing::TheSystemOnTheDisk),
             Err(Unsuitable::HoldsThisInstaller)
+        );
+    }
+
+    /// The same machine after the installer on Windows has made and labelled
+    /// the space for alo OS: Windows' start-up area, its reserved and recovery
+    /// areas, its own volume, the installer's staging area, and the new space.
+    const WINDOWS_MADE_THE_SPACE: &str = r#"{
+       "blockdevices": [
+          {"name": "/dev/vda", "type": "disk", "ro": false, "mountpoints": [null], "parttype": null, "label": null,
+           "children": [
+              {"name": "/dev/vda1", "type": "part", "ro": false, "mountpoints": [null], "parttype": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b", "label": null},
+              {"name": "/dev/vda2", "type": "part", "ro": false, "mountpoints": [null], "parttype": "e3c9e316-0b5c-4db8-817d-f92df00215ae", "label": null},
+              {"name": "/dev/vda3", "type": "part", "ro": false, "mountpoints": [null], "parttype": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7", "label": "Windows"},
+              {"name": "/dev/vda4", "type": "part", "ro": false, "mountpoints": [null], "parttype": "de94bba4-06d1-4d40-a16a-bfd50179d6ac", "label": null},
+              {"name": "/dev/vda5", "type": "part", "ro": false, "mountpoints": [null], "parttype": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b", "label": "ALO-INSTALL"},
+              {"name": "/dev/vda6", "type": "part", "ro": false, "mountpoints": [null], "parttype": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7", "label": "ALO-ROOT"}
+           ]
+          },
+          {"name": "/dev/vdb", "type": "disk", "ro": false, "mountpoints": [null], "parttype": null, "label": null,
+           "children": [
+              {"name": "/dev/vdb1", "type": "part", "ro": false, "mountpoints": [null], "parttype": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7", "label": "ALO-ROOT"}
+           ]
+          }
+       ]
+    }"#;
+
+    /// **The space the installer made may be used, on the disk Windows is on**,
+    /// with Windows' own start-up area — the one road where a disk holding
+    /// Windows and holding this installer is not refused for either.
+    #[test]
+    fn the_space_the_installer_made_may_be_used() {
+        let disks = Disks::read(WINDOWS_MADE_THE_SPACE).unwrap();
+        assert_eq!(
+            disks.may_keep_what_is_there(
+                Path::new("/dev/vda"),
+                Path::new("/dev/vda6"),
+                Path::new("/dev/vda1"),
+            ),
+            Ok(())
+        );
+        // And the same disk is still refused for a whole-disk install, on both
+        // of its roads: keeping what is there lifts nothing for anybody else.
+        for road in [Replacing::Nothing, Replacing::TheSystemOnTheDisk] {
+            assert_eq!(
+                disks.may_receive(Path::new("/dev/vda"), road),
+                Err(Unsuitable::HoldsThisInstaller)
+            );
+        }
+    }
+
+    /// **Every partition of Windows' own is refused as the space for alo OS**,
+    /// and so is the installer's staging area and Windows' start-up area.
+    ///
+    /// This is the check that stands between a command line staged wrongly and
+    /// somebody's Windows: the next thing that happens to whatever is named
+    /// here is `mkfs.btrfs --force`. The label is the whole of the permission,
+    /// so a partition of exactly the type the space for alo OS is — basic data,
+    /// `/dev/vda3` — is refused when it does not carry the label, which is the
+    /// case a type test would have let through.
+    #[test]
+    fn windows_own_partitions_are_refused_as_the_space_for_alo_os() {
+        let disks = Disks::read(WINDOWS_MADE_THE_SPACE).unwrap();
+        for named in [
+            "/dev/vda1",
+            "/dev/vda2",
+            "/dev/vda3",
+            "/dev/vda4",
+            "/dev/vda5",
+        ] {
+            // Both of Windows' start-up areas are named here in turn, so the
+            // other one stands in for the start-up area: naming one partition
+            // twice is refused earlier, for a different reason, and would have
+            // hidden what this test is asking.
+            let start_up = if named == "/dev/vda1" {
+                "/dev/vda5"
+            } else {
+                "/dev/vda1"
+            };
+            assert_eq!(
+                disks.may_keep_what_is_there(
+                    Path::new("/dev/vda"),
+                    Path::new(named),
+                    Path::new(start_up),
+                ),
+                Err(NotKeeping::NotTheSpaceTheInstallerMade),
+                "{named} was taken for the space the installer made"
+            );
+        }
+    }
+
+    /// **A space on another disk is refused**, label and all.
+    ///
+    /// The second disk's partition carries the same label, because a disk that
+    /// was in another machine can. What makes it refused is that it is not part
+    /// of the disk the person chose.
+    #[test]
+    fn a_space_on_another_disk_is_refused() {
+        let disks = Disks::read(WINDOWS_MADE_THE_SPACE).unwrap();
+        assert_eq!(
+            disks.may_keep_what_is_there(
+                Path::new("/dev/vda"),
+                Path::new("/dev/vdb1"),
+                Path::new("/dev/vda1"),
+            ),
+            Err(NotKeeping::NotOnThatDisk)
+        );
+        // And a disk the machine does not list at all.
+        assert_eq!(
+            disks.may_keep_what_is_there(
+                Path::new("/dev/vdc"),
+                Path::new("/dev/vda6"),
+                Path::new("/dev/vda1"),
+            ),
+            Err(NotKeeping::DiskNotListed)
+        );
+    }
+
+    /// **What is named for starting up has to be a start-up area**, and the two
+    /// may not be the same partition.
+    #[test]
+    fn what_is_named_for_starting_up_has_to_be_one() {
+        let disks = Disks::read(WINDOWS_MADE_THE_SPACE).unwrap();
+        assert_eq!(
+            disks.may_keep_what_is_there(
+                Path::new("/dev/vda"),
+                Path::new("/dev/vda6"),
+                Path::new("/dev/vda3"),
+            ),
+            Err(NotKeeping::NotAStartUpArea)
+        );
+        assert_eq!(
+            disks.may_keep_what_is_there(
+                Path::new("/dev/vda"),
+                Path::new("/dev/vda6"),
+                Path::new("/dev/vda6"),
+            ),
+            Err(NotKeeping::OneSpaceForBoth)
+        );
+        // The installer's own staging area is a start-up area, and naming it
+        // is not refused here: it is refused as the space for alo OS, which is
+        // the partition that gets written over.
+        assert_eq!(
+            disks.may_keep_what_is_there(
+                Path::new("/dev/vda"),
+                Path::new("/dev/vda6"),
+                Path::new("/dev/vda5"),
+            ),
+            Ok(())
+        );
+    }
+
+    /// **A space that is mounted or read-only is refused**, either of the two.
+    #[test]
+    fn a_space_in_use_or_read_only_is_refused() {
+        let mounted = WINDOWS_MADE_THE_SPACE.replace(
+            r#""mountpoints": [null], "parttype": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7", "label": "ALO-ROOT"}
+           ]
+          },
+          {"name": "/dev/vdb""#,
+            r#""mountpoints": ["/run/somebody-else"], "parttype": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7", "label": "ALO-ROOT"}
+           ]
+          },
+          {"name": "/dev/vdb""#,
+        );
+        assert_ne!(mounted, WINDOWS_MADE_THE_SPACE, "the fixture was changed");
+        assert_eq!(
+            Disks::read(&mounted).unwrap().may_keep_what_is_there(
+                Path::new("/dev/vda"),
+                Path::new("/dev/vda6"),
+                Path::new("/dev/vda1"),
+            ),
+            Err(NotKeeping::InUse)
+        );
+
+        let read_only = WINDOWS_MADE_THE_SPACE.replace(
+            r#""name": "/dev/vda1", "type": "part", "ro": false"#,
+            r#""name": "/dev/vda1", "type": "part", "ro": true"#,
+        );
+        assert_ne!(read_only, WINDOWS_MADE_THE_SPACE, "the fixture was changed");
+        assert_eq!(
+            Disks::read(&read_only).unwrap().may_keep_what_is_there(
+                Path::new("/dev/vda"),
+                Path::new("/dev/vda6"),
+                Path::new("/dev/vda1"),
+            ),
+            Err(NotKeeping::CannotBeWritten)
+        );
+    }
+
+    /// **Something stacked on a partition is not a partition**, so a decrypted
+    /// volume inside the space cannot be named as the space.
+    #[test]
+    fn something_stacked_on_a_partition_is_not_one() {
+        let printed = r#"{"blockdevices": [
+            {"name": "/dev/vda", "type": "disk", "ro": false, "mountpoints": [null], "children": [
+               {"name": "/dev/vda1", "type": "part", "ro": false, "mountpoints": [null], "parttype": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b", "label": null},
+               {"name": "/dev/vda6", "type": "part", "ro": false, "mountpoints": [null], "parttype": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7", "label": null, "children": [
+                  {"name": "/dev/dm-0", "type": "crypt", "ro": false, "mountpoints": [null], "label": "ALO-ROOT"}
+               ]}
+            ]}
+        ]}"#;
+        let disks = Disks::read(printed).unwrap();
+        assert_eq!(
+            disks.may_keep_what_is_there(
+                Path::new("/dev/vda"),
+                Path::new("/dev/dm-0"),
+                Path::new("/dev/vda1"),
+            ),
+            Err(NotKeeping::NotOnThatDisk)
         );
     }
 }
