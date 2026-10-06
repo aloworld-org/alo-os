@@ -540,6 +540,44 @@ actions. This section specifies the combination from the design's own rules; it
 does not invent one, and a drawn frame should confirm it rather than discover
 it.
 
+### Connected — `384:26375`, *13d · Ready / Network machine*
+
+Read 2026-10-06. The end of the network road, and **the screen that could most
+easily have overclaimed.**
+
+| slot | words |
+|---|---|
+| title | Your canvas is ready. |
+| introduction | Office AI is connected. **You decide what work to send.** |
+| row 1 | **Your account** — Disan · Protected on this PC |
+| row 2 | **A machine on your network** — Office AI · **Review or disconnect in Settings** |
+| consequence | **Selected content leaves this PC for the paired machine.** |
+| actions | Open my canvas · Review choices |
+
+**It does not say *nothing leaves the building*.** The destination is on the
+person's own network and the screen still says, in its last line, that content
+leaves this PC. That is the requirement kept at the one moment it would have
+been easiest to drop — a success screen, where the temptation is to reassure.
+
+**It repeats that pairing is not permission.** *You decide what work to send*
+says again at the end what the pairing screen said at the start, and the two
+together are what make *each task still needs access to its work* a rule rather
+than a sentence on one screen.
+
+**The way out is named on the screen that completes the setup** — *Review or
+disconnect in Settings* — rather than left for a person to search for later.
+
+**`Disan` is example data, and it is the owner's own name.** So is `Office AI`.
+A build that carried either through would be showing one person's name to
+everybody, which is the sharpest form of the rule that **nothing in the
+prototype is real state**.
+
+**This screen is a claim the software has to earn.** It says a machine is
+connected. Until pairing is implemented, nothing may show it — not with a
+placeholder name, not with a hopeful one. `alo_setting_up::NotSetUp::NoPairedMachine`
+is what is honest today, and this screen is what replaces it when the pairing
+road exists.
+
 ### Measured geometry, from `383:26067` on 2026-10-06
 
 Read from the file rather than taken from the brief:
