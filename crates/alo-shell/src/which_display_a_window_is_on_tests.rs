@@ -235,8 +235,7 @@ fn a_frame_is_held_to_the_controls_of_its_own_display() {
 /// entry is the answer even for a window the arrangement would place nowhere.
 #[test]
 fn one_display_answers_as_it_always_did() {
-    let (_directory, mut server) =
-        server_showing(vec![a_screen("DP-1", (1920, 1080), (597, 336))]);
+    let (_directory, mut server) = server_showing(vec![a_screen("DP-1", (1920, 1080), (597, 336))]);
     server.the_fixed_controls_were_drawn(
         "DP-1",
         a_dock_on((0, 0), 1920, 1080),

@@ -8,6 +8,7 @@ mod pointer_release;
 mod presentation;
 mod reactive;
 mod reposition;
+mod when_a_display_goes;
 
 /// Protocol-only fixture explicitly opts in, independently of nested rendering.
 fn fixture() -> Fixture {

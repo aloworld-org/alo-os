@@ -2,7 +2,7 @@
 
 use smithay::{
     reexports::wayland_server::protocol::wl_surface::WlSurface,
-    utils::{Logical, Physical, Rectangle, Size},
+    utils::{Logical, Physical, Point, Rectangle},
     wayland::shell::xdg::PositionerState,
 };
 
@@ -12,18 +12,29 @@ pub(crate) fn geometry(
     parent: &WlSurface,
     roots: &[WlSurface],
     popups: &[crate::Popup],
-    output: Option<Size<i32, Physical>>,
+    screens: &[Rectangle<i32, Physical>],
     camera: alo_canvas::Camera,
 ) -> Option<Rectangle<i32, Logical>> {
     if !safe_positioner(&positioner) {
         return None;
     }
-    let Some(size) = output.filter(|_| !positioner.constraint_adjustment.is_empty()) else {
+    if screens.is_empty() || positioner.constraint_adjustment.is_empty() {
         return Some(positioner.get_geometry());
-    };
+    }
     let (_, origin) = crate::scene::trees(roots, popups, camera)
         .into_iter()
         .find(|(surface, _)| surface == parent)?;
+    // **The screen this popup's parent is on, not the union of them and not
+    // the one that drew last.** `more-than-one-display-plan.md` task 6. Until
+    // this, the bound was a single size set by whichever display rendered the
+    // most recent frame, so a menu near the inner edge of the left display
+    // flipped against the right display's far edge — which is to say it did
+    // not flip at all, and opened off the screen it belongs to.
+    //
+    // Chosen by where the parent is in screen pixels, before the zoom is
+    // divided out, because a display's rectangle is in those same units.
+    let here = Point::<i32, Physical>::from((origin.x as i32, origin.y as i32));
+    let screen = the_screen_showing(screens, here)?;
     // **The output, in the parent's own units.** A positioner's rectangle is
     // expressed in the parent surface's units and a zoom does not change them —
     // the application is never told about the canvas. `trees` answers in screen
@@ -33,23 +44,66 @@ pub(crate) fn geometry(
     // 1,366 would flip menus that fit.
     let zoom = crate::scene::drawn_at(camera);
     let origin = origin.downscale(zoom) + crate::scene::geometry_origin(parent);
-    let (width, height) = (f64::from(size.w) / zoom, f64::from(size.h) / zoom);
+    let (left, top, width, height) = the_screen_in_the_parents_units(*screen, origin, zoom);
     // Deep client-controlled chains and extreme surface-tree offsets accumulate
     // in f64. Refuse before narrowing; 16 million leaves ample i32 headroom for
     // upstream flip/slide/resize sums with our one-million positioner operands.
     // The divided extent is bounded here too: at the furthest zoom out an output
     // is twenty times its own size in a parent's units.
-    if [origin.x, origin.y, width, height]
+    if [origin.x, origin.y, width, height, left, top]
         .into_iter()
         .any(|value| !value.is_finite() || value.abs() > 16_000_000.0)
     {
         return None;
     }
     let target = Rectangle::new(
-        (-(origin.x as i32), -(origin.y as i32)).into(),
+        (left as i32, top as i32).into(),
         (width as i32, height as i32).into(),
     );
     Some(positioner.get_unconstrained_geometry(target))
+}
+
+/// The screen a parent at this point is on.
+///
+/// **A parent on no screen at all is still a parent with a menu to open**, so
+/// the first screen is the fallback rather than a refusal — the arrangement's
+/// own order, which puts a usable internal panel first, and which is the
+/// whole arrangement when there is only one. A refusal here would mean a
+/// client that dragged its window a pixel off the desk could not open a menu.
+fn the_screen_showing(
+    screens: &[Rectangle<i32, Physical>],
+    here: Point<i32, Physical>,
+) -> Option<&Rectangle<i32, Physical>> {
+    screens
+        .iter()
+        .find(|screen| screen.contains(here))
+        .or_else(|| screens.first())
+}
+
+/// A screen's rectangle expressed in the parent surface's own units.
+///
+/// Returned as four numbers rather than a `Rectangle` because they are
+/// checked for finiteness before anything is narrowed to `i32`, and a
+/// rectangle of `i32` is exactly what must not be built from an unchecked
+/// `f64`.
+///
+/// **The corner is the half task 6 added.** It is zero for a display at the
+/// desk's origin — every single-display session, and the main screen of every
+/// other — so this changes nothing for them and is the whole of the fix for
+/// the rest. Before it, the bound was `(-origin.x, -origin.y)`: the screen
+/// assumed to start where the desk does, which is true of one display and of
+/// no second one.
+fn the_screen_in_the_parents_units(
+    screen: Rectangle<i32, Physical>,
+    origin: smithay::utils::Point<f64, Logical>,
+    zoom: f64,
+) -> (f64, f64, f64, f64) {
+    (
+        f64::from(screen.loc.x) / zoom - origin.x,
+        f64::from(screen.loc.y) / zoom - origin.y,
+        f64::from(screen.size.w) / zoom,
+        f64::from(screen.size.h) / zoom,
+    )
 }
 
 /// Bound every operand before invoking upstream i32 placement arithmetic.
@@ -67,3 +121,11 @@ fn safe_positioner(positioner: &PositionerState) -> bool {
     .into_iter()
     .all(|value| (-1_000_000..=1_000_000).contains(&value))
 }
+
+#[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+#[path = "popup_placement_tests.rs"]
+mod tests;
