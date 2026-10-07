@@ -1,0 +1,50 @@
+# What this machine says it is.
+#
+# **A machine that boots alo OS says Fedora on the way in.** GRUB offers
+# "Fedora Linux 42 (Adams) (ostree:0)", systemd greets with "Welcome to Fedora
+# Linux 42 (Adams)!", the login prompt reads "fedora login:", and the person
+# standing at it has not installed Fedora.
+#
+# It is not only a name. The base's own `SUPPORT_END=2026-05-13` makes systemd
+# print, in red, on every boot:
+#
+#     !! This OS version (Fedora Linux 42 (Adams)) is past its end-of-support
+#        date (2026-05-13)
+#
+# **That is a support promise this project never made and cannot expire**, told
+# to our own customer about our own product. Measured on a written disk,
+# 2026-10-05.
+#
+# And it is a trademark matter rather than a preference. The Fedora Project asks
+# that a modified remix not carry its marks, so shipping an image calling itself
+# "Fedora Linux 42" is the wrong side of that line. Changing it is the correct
+# thing, not a nicety.
+#
+# # What is kept, and why
+#
+# `ID_LIKE`, `VERSION_ID` and `PLATFORM_ID` stay Fedora's. Engines are
+# configured, never patched: this image *is* built on Fedora 42, package tooling
+# reasons about `$releasever` and the platform id, and a derivative that hides
+# its base makes every later question about it harder to answer. The name a
+# person reads changes; what the machine is built from is stated plainly.
+#
+# # Where this is applied
+#
+# `image/Containerfile` copies this over the base's own file **after the last
+# `dnf`**, so no package resolution ever sees it. Nothing in this workspace
+# reads `NAME` or `PRETTY_NAME`; the one reader is a walk's serial line, which
+# prints whatever is here.
+NAME="alo OS"
+ID=alo
+ID_LIKE=fedora
+VERSION="0.0.6"
+VERSION_ID=42
+PRETTY_NAME="alo OS 0.0.6"
+ANSI_COLOR="0;38;2;15;107;114"
+CPE_NAME="cpe:/o:aloworld:alo_os:0.0.6"
+PLATFORM_ID="platform:f42"
+DEFAULT_HOSTNAME="alo"
+HOME_URL="https://github.com/aloworld-org/alo-os"
+DOCUMENTATION_URL="https://github.com/aloworld-org/alo-os/tree/main/docs"
+SUPPORT_URL="https://github.com/aloworld-org/alo-os/blob/main/SECURITY.md"
+BUG_REPORT_URL="https://github.com/aloworld-org/alo-os/issues"
