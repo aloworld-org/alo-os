@@ -357,6 +357,46 @@ sentences say that Windows does not get the space back while alo OS is there,
 and stop — they do not say that removing alo OS later gives it back, because
 today it does not.
 
+**And it is not one sentence, it is seven.** Read 2026-10-07 by the Mac lane
+after the first was recorded. The removal vocabulary was written for a road
+where alo OS has a disk to itself, because until now that was the only road:
+
+| sentence | what it says | on the same-disk road |
+|---|---|---|
+| `remove.starting` | *Windows, and your files on it, are not touched* | **a promise, said first of all** |
+| `remove.will-erase` | *Removing it erases that disk* | that disk is Windows' |
+| `remove.not-found` | *The disk alo OS is on could not be found* | it was found; it may not be erased |
+| `remove.erasing` | *Erasing {disk}* | names Windows' disk |
+| `remove.gone` | *{disk} is empty, its space is free* | it cannot be emptied |
+| `remove.gone-but-the-copy-stays` | the same, and the copy | the same |
+| `remove.disk-not-cleared` | *erase it in Windows' own disk management* | that is Windows' disk |
+
+**`remove.starting` is the one that matters, and it needs its own paragraph.**
+It is said before any disk has been read — the first sentence the removal
+says, on every road, unconditionally. On the same-disk road it is true **only
+because the guard refuses afterwards.** It is not describing what the program
+does; it is describing what the program declines to attempt.
+
+So the day somebody lifts that filter to make removal work on this road, that
+sentence becomes the installer telling a person their files are safe while it
+erases them — **and it will still pass every test, because nothing holds a
+sentence to a filter.** That is the fault family `docs/misreadings/` keeps, in
+its most expensive form: not a check that cannot fire, but a promise whose
+truth is an accident of a check somewhere else.
+
+**What that adds to the task**, beyond the removal itself:
+
+- `remove.starting` is said **after** the road is known, not before it, so a
+  sentence about what is untouched is said by something that knows what it is
+  about to touch;
+- and the promise is tied to the thing that makes it true. A test that fails
+  if the filter is lifted without the sentence changing is worth more than the
+  sentence, because the filter is what somebody will edit.
+
+Found by reading, not by running. Nothing has shipped wrong: today the removal
+refuses this road and the promise holds. It is recorded now because the road
+that breaks it is being built in the same week.
+
 **One thing on this road is assumed rather than measured**, and it is written
 where it is used (`crates/alo-installer/src/naming.rs`): that Windows'
 partition number is the partition's index in the GPT table, which is what udev
