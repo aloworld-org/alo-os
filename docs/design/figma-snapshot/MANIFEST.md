@@ -8,49 +8,54 @@ that prose was 55 top-level frames behind without anything saying so.
 **Approved by the owner on 2026-10-04**, with the size explicitly accepted: *an untraceable
 design change is the larger problem.*
 
-## This snapshot is behind the file, measured 2026-10-06
+## Refreshed 2026-10-07, and the staleness is cleared
 
-**The thing this snapshot exists to prevent has happened to the snapshot.** Node `183:10679`
-is *14 · Setup / alo on this computer* in `70-28.xml` and *12 · Choose how alo helps* in the
-file, with entirely different children. The file's current first-start screens carry ids in
-the `370:`–`387:` ranges; **the highest id prefix anywhere in this snapshot is `358`**, and
-none of `370:30053`, `370:30057`, `371:30239`, `371:30245`, `371:30247` or `371:30252`
-appears in it. The export does not merely lack these screens — it describes screens that
-have been replaced.
+**The re-export this file said was owed has landed.** `70-28.xml` now carries the design as
+of 2026-10-07, including the four first-start section roots and the corrected AI-choice
+flow. The ids that were missing — `370:30053`, `370:30057`, `371:30239`, `371:30245`,
+`371:30247`, `371:30252` — are in it, and `183:10679` is *12 · Choose how alo helps* here as
+well as in the file.
 
-**A lane building first start from this snapshot would build a design that no longer
-exists.** `ROOTS.md` now carries the owner's inventory of the corrected flow, and
-`../the-first-start.md` carries the copy and measurements taken from the file directly.
-Until a re-export lands, **those two are authoritative for first start and this snapshot is
-not**.
+**What the refresh moved:**
 
-**It also never held any copy, which is how it was made rather than a fault.**
-`get_metadata` returns ids, names, positions and sizes and nothing else: 5,897 `<text>`
-nodes here, every one self-closing, and no `characters`, `content` or `value` attribute
-anywhere in the file. An onboarding screen is mostly words, so words come from
-`get_design_context` and are written down separately — which is what `../the-first-start.md`
-is for.
+| | before, 2026-10-04 | after, 2026-10-07 |
+|---|---|---|
+| bytes | 2,247,251 | **2,350,573** |
+| lines | 25,217 | **26,421** |
+| nodes | 20,100 | **21,072** |
+| `<text>` nodes | 5,897 | **5,965** |
 
-**Read back in so far, measured rather than claimed:** the structure of the arrival frame
-`383:26067`, and the copy of `183:10673`, `183:10679` and `183:10683`. Everything else in
-`ROOTS.md`'s new table is unread. **A re-export of section `383:26066` is owed and is not
-done**, and it is the remaining dependency for this flow. Nobody should read that gap as the
-screens being absent: the interface lists one page for this file however many it has, and a
-limited listing has already been mistaken for absence once.
+**Measured off the refreshed export, not read off the screens:** 77 frames under the four
+section roots, **69 carrying the identity label** and 8 without it, the 8 being the
+canvas states in section `372:30292`. The scripts that computed those figures are the
+record of how, and `../the-first-start.md` carries what they mean.
+
+**Written by a script from the tool's own bytes.** The response was 2.6 MB — far past what
+any reader could retype — so the harness persisted it and the script took the markup and
+dropped the 234-character trailer, which is step 3 of the procedure below. **This file was
+not transcribed by hand**, and that matters here more than anywhere: a snapshot exists to
+be diffed, and a hand-copied one would be the unverifiable prose it replaced.
+
+**It still holds no copy, which is how it is made rather than a fault.** `get_metadata`
+returns ids, names, positions and sizes and nothing else: 5,965 `<text>` nodes, every one
+self-closing, and **no `characters`, `content` or `value` attribute anywhere** — asserted
+by the verification run, not assumed. An onboarding screen is mostly words, so words come
+from `get_design_context` and are written down separately, which is what
+`../the-first-start.md` is for.
 
 ## What is in it
 
 | file | root | what it is |
 |---|---|---|
-| `70-28.xml` | `70:28` | page *03 — alo OS · Living canvas* — 2,247,251 bytes, 25,217 lines, 20,100 nodes |
+| `70-28.xml` | `70:28` | page *03 — alo OS · Living canvas* — 2,350,573 bytes, 26,421 lines, 21,072 nodes |
 | `0-1.xml` | `0:1` | page *00 — Cover* |
 | `ROOTS.md` | — | every root id known to exist, exported or not, because the interface will not list them |
 
 ```text
 file key        nDxyF5Ho9oC4RObjVzwBNJ   canonical, by the owner 2026-10-04
 page            70:28                    03 — alo OS · Living canvas
-exported        2026-10-04
-exported by     the third PC, through the Figma MCP server on the owner's own account
+exported        2026-10-07   70-28.xml refreshed; 0-1.xml unchanged from 2026-10-04
+exported by     the development PC, at the owner's instruction — see Refreshing it
 figma revision  NOT EXPOSED by this interface — see Limitations
 inspected as    sha256 of each export, below
 ```
@@ -79,9 +84,12 @@ REST endpoint that would needs a personal access token this machine does not
 hold. A hash is what a reader can actually verify against the file they hold:
 
 ```text
-70-28.xml  sha256  ccce167386b35110ea9b3a63ce2e9bb56582302e901c69124e91e4b26a2c97b6
+70-28.xml  sha256  dc185c2876b97ed3ca0530d38912ca2371174119109473c3464cb8cb11c73f5a
 0-1.xml    sha256  e0632cdbf993d95831a4eff6792b93698011e4f6cb51125ee6243934661d7a16
 ```
+
+*`70-28.xml`'s hash changed with the 2026-10-07 refresh; the previous export hashed
+`ccce1673…a2c97b6` and is in this file's own history.*
 
 **It identifies the export, not the Figma document**, and the difference matters:
 two exports of an unchanged file are byte-identical and hash the same, but a hash
@@ -97,6 +105,14 @@ lines, 1,206 more bytes — and left this table describing the file as it had be
 A description of a file that the file cannot contradict is the recurring fault in
 `docs/quirks/`, so it is now asserted: `a_palette_with_one_source.rs` reads these
 numbers back off `70-28.xml` and fails if they drift again.
+
+**That assertion earned itself on 2026-10-07.** The refresh above changed all three, and
+the test is what made updating them unavoidable rather than optional. **Its figures are not
+the obvious ones** — it counts bytes with `len()`, lines with Rust's `lines()`, and nodes
+as occurrences of `id="` rather than as XML elements — so the figures in this file were
+recomputed by that definition before being written here. An element count taken from an XML
+parser is a different measurement that happens to agree on this file, and agreeing by luck
+is how a check gets quietly weakened.
 
 ## How to reproduce it
 
@@ -165,6 +181,14 @@ snapshot and there is no way, through this interface, to discover that it is mis
 Every other lane **reads the committed snapshot** and does not call Figma — one lane reading
 a live file is a single point of failure, and two lanes reading it get two answers with no
 way to tell which is older.
+
+**The 2026-10-07 refresh was the development PC, by the owner's own instruction**, which
+named the file, the four section roots and the words *refresh the design snapshot*. That is
+the rule being overridden by whoever set it rather than a lane deciding for itself, and it
+is recorded here so the next reader does not treat the export as unauthorised. **The
+hazard the rule guards against did not arise**: this was one lane reading the file, and the
+figures above say which export is newer. **The rule stands for anything the owner has not
+directed**, and a lane that wants a refresh asks rather than reaching for the file key.
 
 **A failed refresh must leave this snapshot alone.** The procedure writes only after every
 check in step 5 and 6 passes, so a partial or refused response leaves the last good

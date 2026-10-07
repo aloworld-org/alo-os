@@ -233,6 +233,47 @@ Existing release tiers still apply: this is not a claim that alo's hosted
 service, paired-machine processing or every listed integration is available in
 the current release.
 
+### How a first-start screen is built (owner, 2026-10-07)
+
+Settled against the design file and verified against the refreshed snapshot;
+`docs/design/the-first-start.md` carries the measurements and the frame ids.
+
+- [v0.01] ★ **The strip at the top of every setup screen reads `alo OS`** — it
+  is identity, not state. It carries no step count and no record of which step
+  a person came from, and **the duplicate wordmark elsewhere on those screens
+  is removed**. 69 of the 77 frames have it.
+- [v0.01] **The eight frames without it are the running canvas, and must not
+  gain it.** A frame has the strip when it is a setup sheet; a frame showing
+  the canvas, the Dock and a place name has none. Stamping a setup label on the
+  canvas would say setup is still running after it has finished.
+- [v0.01] ★ **No overall setup counter, row of dots or decorative progress
+  line.** The screen's heading says what the current task is. Branches walk
+  different numbers of screens, so there is no honest denominator — and a build
+  must not derive one from the frame inventory.
+- [v0.01] **Real progress stays beside the operation it describes.** Download,
+  preparation and installation progress, and the error and recovery screens
+  around them, are not the counter and are not removed with it. *Removing a
+  decoration must not remove the one thing a person waiting actually needs.*
+- [v0.01] ★ **`Optional` appears immediately above the heading** on each
+  optional screen, as `Optional · <subject>`. Ten screens carry it: the three
+  access choices, file import and its two follow-ons, sign-in options, PIN,
+  fingerprint and account recovery.
+- [v0.01] **Each optional screen keeps its own way to decline**, and they are
+  not interchangeable — `Not now`, `Cancel`, `Back`, `Use password only`,
+  `Use password for now`, `Done`. A build must not normalise them into one.
+- [v0.01] ★ **One selection border: 2 logical pixels, navy `#102A43`, plus the
+  word `Selected`.** The former 1.5px access-screen border was a leftover.
+  **Keyboard focus stays separate** — an outer ring with its own gap — and
+  moving focus never commits a choice. **Teal never means selected or
+  focused**; it stays reserved for alo acting (ADR 0067). Display scaling is
+  applied once, at the existing conversion boundary.
+- [v1] **`Not now` on the three access screens leaves without granting or
+  changing permissions.** It must not commit the alternative the screen happens
+  to be displaying, must not raise or lower access, and is not the same action
+  as `Back`. Tiered at v1 because the three levels it must preserve are the
+  v1 item *running code, at the level the person picks*; the design exists now
+  and the rule is recorded now so that whoever builds the policy inherits it.
+
 **What this supersedes, kept because the change is the point.** The 2026-09-08
 clarification named **three** main model-selection choices — *local models, your
 own API provider, and Alo* — with alo's own service as one of the three, and

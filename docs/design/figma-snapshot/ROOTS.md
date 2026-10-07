@@ -10,6 +10,7 @@ exist on 2026-10-04. The list is not closed: a root absent from it may still exi
 ```text
 file key   nDxyF5Ho9oC4RObjVzwBNJ
 confirmed  2026-10-04, by the third PC
+refreshed  2026-10-07, by the development PC at the owner's instruction
 ```
 
 | id | kind | size | name | in this snapshot |
@@ -20,7 +21,15 @@ confirmed  2026-10-04, by the third PC
 | `351:25693` | section | 4680×7400 | Dock edges · v0.01 specification | inside `70-28.xml` |
 | `8:2` | frame | 1440×1266 | Foundations — alo OS | **no** |
 | `9:2` | frame | 1440×2160 | alo OS UI primitives | **no** |
-| `383:26066` | section | — | the corrected AI-choice flow, 2026-10-06 | **no** |
+| `370:30058` | section | 11400×3580 | 01 — Install alo OS | yes, `70-28.xml` |
+| `371:30134` | section | 11400×5960 | 02 — Set up your PC | yes, `70-28.xml` |
+| `372:30292` | section | 11400×3580 | 03 — Start working | yes, `70-28.xml` |
+| `383:26066` | section | 8500×8700 | 04 — AI choice | yes, `70-28.xml` |
+
+**All four section roots are in the snapshot as of the 2026-10-07 refresh.** They are
+children of page `70:28`, which is why they arrived with it rather than needing four
+exports — and why the earlier plan to re-export section `383:26066` on its own was never
+necessary.
 
 ## The whole first-start journey, 2026-10-06 — the designer's own inventory
 
@@ -43,6 +52,30 @@ onboarding** frames and states — including optional branches, accessibility,
 responsive examples and the first-canvas tour — and **17 installer** frames
 before onboarding. **It is an inventory of states, not 60 steps a person
 walks**; alternatives sit beside the step they belong to.
+
+### Confirmed against the refreshed export, 2026-10-07
+
+**The designer's count is right, and it is now checked rather than taken on trust.** A
+script walked `70-28.xml` and counted the direct frame children of each section root:
+
+| section | id | frames | with the identity label |
+|---|---|---|---|
+| Install alo OS | `370:30058` | 18 | 18 |
+| Set up your PC | `371:30134` | 21 | 21 |
+| Start working | `372:30292` | 15 | **7** |
+| AI choice, details and access | `383:26066` | 23 | 23 |
+| | | **77** | **69** |
+
+**Section 1 holds 18 frames, not 17**, and the eighteenth is `375:30435`
+*Accessibility · Setup options* — listed under accessibility in the inventory below and
+physically a child of the installer section. **Both descriptions are true**; a reader
+counting installer screens gets 17 and a script counting that section's children gets 18.
+
+**The eight frames without the identity label are all in Start working**, and the rule is
+structural rather than a list: **a frame carries the strip when it is a setup sheet with a
+`Main / …` column, and carries none when it shows the running canvas** with
+`Dock + alo Bar / fixed viewport` and `Place name`. Those eight are `183:10715`, `83:890`,
+`372:30350`, `372:30442`, `372:30498`, `377:26182`, `377:26232`, `377:26280`.
 
 ### Welcome, language and account — 10
 
@@ -71,6 +104,10 @@ a provider · `183:10691` 12c · No AI selected · `194:10787` 12 · Detail · N
 ### Optional access choices — 3
 
 `183:10695` Sealed box · `183:10699` Ask each time · `183:10703` Full trust
+
+**Each gained a `Not now` action on 2026-10-07**, at 184×48, third in the row:
+`394:26225` on `183:10695`, `394:26228` on `183:10699`, `394:26231` on `183:10703`.
+It leaves without granting or changing permissions — see `../the-first-start.md`.
 
 ### Ready states — 4
 
