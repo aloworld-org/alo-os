@@ -59,7 +59,7 @@ pub(crate) struct Popups {
     /// Empty before the first frame, which is the same *nothing known yet*
     /// `output_size`'s [`None`] is, and a popup opened then is unconstrained
     /// rather than constrained to a guess.
-    pub(crate) screens: Vec<Rectangle<i32, Physical>>,
+    pub(crate) screens: Vec<ScreenView>,
 }
 
 impl crate::Server {
@@ -81,6 +81,35 @@ impl crate::Server {
     pub fn popup_surfaces(&self) -> Vec<Popup> {
         self.surfaces.popups.mapped().cloned().collect()
     }
+}
+
+/// One display: where it is on the desk, and which display it is.
+///
+/// **It carries the display's name and not its camera, and that is the whole
+/// point.** The first version of this held a `Camera` beside the rectangle,
+/// written once a frame by the `Server` — which is exactly the shape
+/// `more-than-one-display-plan.md` task 7's constraint forbids and that was
+/// collapsed on 2026-10-04: a camera with a second home kept in step by hand.
+///
+/// It was not caught by reading. Three integration tests caught it, because
+/// a copy written once a frame is **stale before the first frame** and wrong
+/// after any pan — a pointer pressed before anything had been drawn was
+/// converted through a camera nobody was looking through.
+///
+/// So the name is carried and the camera is read from
+/// [`Surfaces::camera_of`], which is its one home.
+///
+/// Told to `Surfaces` by the `Server` once a frame, for the reason the extent
+/// beside it is: this file has no `Screens` and giving it one would make every
+/// surface's placement depend on the arrangement. A **rectangle** may be
+/// copied per frame — it is what the arrangement says, and it does not change
+/// under a pan.
+#[derive(Debug, Clone)]
+pub(crate) struct ScreenView {
+    /// Where this display is on the desk.
+    pub(crate) rect: Rectangle<i32, Physical>,
+    /// Which display it is, for asking what it is looking at.
+    pub(crate) named: String,
 }
 
 impl Popups {
@@ -114,10 +143,10 @@ impl Popups {
     /// Accept only mapped parents and arithmetic-safe initial placement.
     pub(crate) fn insert(
         &mut self,
-        camera: alo_canvas::Camera,
         role: PopupSurface,
         positioner: PositionerState,
         parents: &[WlSurface],
+        cameras: &std::collections::BTreeMap<String, alo_canvas::Camera>,
     ) {
         let parent = role.get_parent_surface().filter(|parent| {
             parents.contains(parent) || self.mapped().any(|p| &p.surface == parent)
@@ -126,7 +155,7 @@ impl Popups {
             role.send_popup_done();
             return;
         };
-        let Some(geometry) = self.placement(camera, positioner, &parent, parents) else {
+        let Some(geometry) = self.placement(positioner, &parent, parents, cameras) else {
             role.send_popup_done();
             return;
         };
@@ -149,17 +178,17 @@ impl Popups {
     /// Confirm a validated explicit request without changing committed placement.
     pub(crate) fn reposition(
         &mut self,
-        camera: alo_canvas::Camera,
         role: &PopupSurface,
         positioner: PositionerState,
         token: u32,
         parents: &[WlSurface],
+        cameras: &std::collections::BTreeMap<String, alo_canvas::Camera>,
     ) {
         let geometry = self
             .entries
             .iter()
             .find(|entry| &entry.role == role && !entry.dismissed && entry.role.alive())
-            .and_then(|entry| self.placement(camera, positioner, &entry.popup.parent, parents));
+            .and_then(|entry| self.placement(positioner, &entry.popup.parent, parents, cameras));
         let Some(geometry) = geometry else {
             self.dismiss(role);
             return;
@@ -181,13 +210,13 @@ impl Popups {
     /// parameter now.
     fn placement(
         &self,
-        camera: alo_canvas::Camera,
         positioner: PositionerState,
         parent: &WlSurface,
         roots: &[WlSurface],
+        cameras: &std::collections::BTreeMap<String, alo_canvas::Camera>,
     ) -> Option<Rectangle<i32, Logical>> {
         let popups: Vec<_> = self.mapped().cloned().collect();
-        crate::popup_placement::geometry(positioner, parent, roots, &popups, &self.screens, camera)
+        crate::popup_placement::geometry(positioner, parent, roots, &popups, &self.screens, cameras)
     }
 
     /// Every surface that is a parent of a live popup, each once.

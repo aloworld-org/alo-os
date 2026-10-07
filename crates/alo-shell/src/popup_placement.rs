@@ -12,8 +12,8 @@ pub(crate) fn geometry(
     parent: &WlSurface,
     roots: &[WlSurface],
     popups: &[crate::Popup],
-    screens: &[Rectangle<i32, Physical>],
-    camera: alo_canvas::Camera,
+    screens: &[crate::popups::ScreenView],
+    cameras: &std::collections::BTreeMap<String, alo_canvas::Camera>,
 ) -> Option<Rectangle<i32, Logical>> {
     if !safe_positioner(&positioner) {
         return None;
@@ -21,6 +21,27 @@ pub(crate) fn geometry(
     if screens.is_empty() || positioner.constraint_adjustment.is_empty() {
         return Some(positioner.get_geometry());
     }
+    // **Which screen first, then that screen's camera, then the tree.**
+    // `trees` needs a camera to say where the parent is *on a screen*, and
+    // the camera is the one belonging to the screen the parent is on — which
+    // would be circular if it were asked that way. It is not: the parent's
+    // place on the **plane** is camera-independent, so the screen is chosen
+    // from that and the camera follows. `more-than-one-display-plan.md`
+    // task 7.
+    let on_the_plane = crate::window_placement::window_buffer_origin(parent)
+        + crate::scene::geometry_origin(parent);
+    let here = Point::<i32, Physical>::from((
+        on_the_plane.x.floor() as i32,
+        on_the_plane.y.floor() as i32,
+    ));
+    let view = the_screen_showing(screens, here)?;
+    // Looked up rather than carried, so a pan cannot leave this reading a
+    // camera nobody is looking through.
+    let camera = cameras
+        .get(&view.named)
+        .copied()
+        .unwrap_or_else(alo_canvas::Camera::new);
+    let screen = &view.rect;
     let (_, origin) = crate::scene::trees(roots, popups, camera)
         .into_iter()
         .find(|(surface, _)| surface == parent)?;
@@ -33,8 +54,7 @@ pub(crate) fn geometry(
     //
     // Chosen by where the parent is in screen pixels, before the zoom is
     // divided out, because a display's rectangle is in those same units.
-    let here = Point::<i32, Physical>::from((origin.x as i32, origin.y as i32));
-    let screen = the_screen_showing(screens, here)?;
+
     // **The output, in the parent's own units.** A positioner's rectangle is
     // expressed in the parent surface's units and a zoom does not change them —
     // the application is never told about the canvas. `trees` answers in screen
@@ -71,12 +91,12 @@ pub(crate) fn geometry(
 /// whole arrangement when there is only one. A refusal here would mean a
 /// client that dragged its window a pixel off the desk could not open a menu.
 fn the_screen_showing(
-    screens: &[Rectangle<i32, Physical>],
+    screens: &[crate::popups::ScreenView],
     here: Point<i32, Physical>,
-) -> Option<&Rectangle<i32, Physical>> {
+) -> Option<&crate::popups::ScreenView> {
     screens
         .iter()
-        .find(|screen| screen.contains(here))
+        .find(|view| view.rect.contains(here))
         .or_else(|| screens.first())
 }
 

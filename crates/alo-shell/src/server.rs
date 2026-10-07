@@ -369,21 +369,29 @@ impl Server {
             // of them. A session with no arrangement answers with this one
             // display at the desk's origin, which is exactly what the single
             // extent meant before this existed.
-            self.surfaces.popups.screens = self.the_screens().map_or_else(
-                || vec![smithay::utils::Rectangle::new((0, 0).into(), size)],
-                |screens| {
-                    screens
-                        .each()
-                        .map(|place| {
-                            let (across, along) = place.room().across_and_along();
-                            smithay::utils::Rectangle::new(
+            // Each display's rectangle **and the camera it is looking
+            // through** — task 7. The two are written together because a
+            // popup needs both and taking them from different displays would
+            // constrain a menu to one screen at another's zoom.
+            self.surfaces.popups.screens = match self.the_screens() {
+                None => vec![crate::popups::ScreenView {
+                    rect: smithay::utils::Rectangle::new((0, 0).into(), size),
+                    named: String::new(),
+                }],
+                Some(screens) => screens
+                    .each()
+                    .map(|place| {
+                        let (across, along) = place.room().across_and_along();
+                        crate::popups::ScreenView {
+                            rect: smithay::utils::Rectangle::new(
                                 (place.at().across(), place.at().down()).into(),
                                 (across, along).into(),
-                            )
-                        })
-                        .collect()
-                },
-            );
+                            ),
+                            named: place.name().name().to_owned(),
+                        }
+                    })
+                    .collect(),
+            };
             // **The camera used to be assigned beside the extent and no longer is.**
             // `Popups` held a copy of it, and this line is where the copy was made
             // fresh once a frame — which is what kept it from ever being stale.
@@ -395,7 +403,31 @@ impl Server {
         // backend is told rather than asked: the first version of this seam
         // shipped a backend holding a camera nobody assigned, drawing a zoom it had
         // never been told about.
-        target.look_at(self.surfaces.camera)?;
+        // **This display's own camera.** `more-than-one-display-plan.md`
+        // task 7: every display was handed the session's one camera, so two
+        // displays were two views of the same thing — mirroring, whatever
+        // else had been made per display. A display that has never been
+        // panned or zoomed looks at the origin at life size, which is what
+        // all of them looked at before any had a camera of its own.
+        // **Which camera is a question about whether there is an
+        // arrangement.** With one, each display has its own and is drawn
+        // through it. Without one there is a single session camera, held
+        // under the one key its writer uses — `the_display_being_worked_on`
+        // answers the empty name when no display has been placed, because
+        // there is no display to name and exactly one to mean.
+        //
+        // Reading this under the display's own name instead cost a test:
+        // the pan was written under the empty key and read under
+        // `alo-drm-1`, so *the session panned and the display was never
+        // told* — which is the sentence
+        // `one_plane_under_one_viewport::a_panned_session_hands_its_camera_to_the_display`
+        // had been carrying since before any of this.
+        let looking = if self.screens.is_some() {
+            metadata.name.as_str()
+        } else {
+            ""
+        };
+        target.look_at(self.surfaces.camera_of(looking))?;
         self.surfaces.prune();
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
         let cursor = self.cursor();

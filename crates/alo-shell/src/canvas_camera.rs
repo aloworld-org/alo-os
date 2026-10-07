@@ -54,10 +54,48 @@
 use alo_canvas::{At, Camera, Zoom};
 
 impl crate::Server {
-    /// What this session is looking at.
+    /// What the display the person is working on is looking at.
+    ///
+    /// **One camera per display since task 7**, so *the* camera is now a
+    /// question about which display — and this answers it the way a person
+    /// would: the one their pointer is on, or the main screen when it is
+    /// nowhere known. A session with one display has one camera and this is
+    /// it, which is every machine this lane can test.
     #[must_use]
     pub fn the_camera(&self) -> Camera {
-        self.surfaces.camera
+        self.surfaces.camera_of(&self.the_display_being_worked_on())
+    }
+
+    /// Look at the plane from here, on the display being worked on.
+    ///
+    /// The one writer, so that *which display did this change* is answered in
+    /// a single place rather than at each of the six sites that used to
+    /// assign the field directly.
+    pub(crate) fn set_the_camera(&mut self, camera: Camera) {
+        let named = self.the_display_being_worked_on();
+        self.surfaces.cameras.insert(named, camera);
+    }
+
+    /// The display the person is working on, by name.
+    ///
+    /// Their pointer's display where it is on one, and the main screen
+    /// otherwise — a keyboard command has no position, and the main screen is
+    /// where the arrangement says a new window opens, so it is where an
+    /// unplaced action belongs.
+    ///
+    /// The empty name when the session has no arrangement, which is the one
+    /// display every unarranged machine has: one key, one camera, and the
+    /// behaviour this had before task 7.
+    pub(crate) fn the_display_being_worked_on(&self) -> String {
+        let Some(screens) = self.the_screens() else {
+            return String::new();
+        };
+        let under_the_pointer = self.where_the_pointer_is_in_pixels().and_then(|at| {
+            self.the_display_a_window_is_on(smithay::utils::Rectangle::new(at, (1, 1).into()))
+        });
+        under_the_pointer
+            .or_else(|| screens.on(screens.main_screen()))
+            .map_or_else(String::new, |place| place.name().name().to_owned())
     }
 
     /// Look at the plane from here instead.
@@ -67,8 +105,8 @@ impl crate::Server {
     /// rather than clamping: a person who panned and was silently not moved has a
     /// canvas that ignores them.
     pub fn look_at_the_canvas(&mut self, at: At) -> Option<Camera> {
-        let moved = self.surfaces.camera.looking_at(at)?;
-        self.surfaces.camera = moved;
+        let moved = self.the_camera().looking_at(at)?;
+        self.set_the_camera(moved);
         Some(moved)
     }
 
@@ -77,8 +115,8 @@ impl crate::Server {
     /// # Errors
     /// [`None`] where that leaves the plane.
     pub fn pan_the_canvas(&mut self, x: i32, y: i32) -> Option<Camera> {
-        let moved = self.surfaces.camera.panned_by(x, y)?;
-        self.surfaces.camera = moved;
+        let moved = self.the_camera().panned_by(x, y)?;
+        self.set_the_camera(moved);
         Some(moved)
     }
 
@@ -89,8 +127,16 @@ impl crate::Server {
     /// # Errors
     /// [`None`] where the resulting camera would leave the plane.
     pub fn zoom_the_canvas(&mut self, zoom: Zoom, held: (i32, i32)) -> Option<Camera> {
-        let moved = self.surfaces.camera.zoomed_to(zoom, held)?;
-        self.surfaces.camera = moved;
+        let moved = self.the_camera().zoomed_to(zoom, held)?;
+        self.set_the_camera(moved);
         Some(moved)
     }
 }
+
+#[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+#[path = "a_camera_per_viewport_tests.rs"]
+mod a_camera_per_viewport_tests;

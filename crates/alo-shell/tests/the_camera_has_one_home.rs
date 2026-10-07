@@ -89,7 +89,17 @@ fn structs_with_a_camera_field(text: &str) -> Vec<String> {
             let field = line.strip_prefix("    ").is_some_and(|it| {
                 !it.starts_with(' ') && !it.starts_with("//") && !it.starts_with('#')
             });
-            if field && line.contains("camera: ") {
+            // **Matched on the type, not on the field's name.** It read
+            // `camera: ` until 2026-10-06, and task 7 renamed the one home's
+            // field to `cameras` — a camera per display — so the scan stopped
+            // seeing it and this test failed on its own count rather than on
+            // a second home. That is the direction the assertion below calls
+            // dangerous, and it was right to: a scan keyed on a field's name
+            // misses every holder that spells it differently.
+            //
+            // Both forms are accepted, so this is strictly broader than what
+            // it replaced and cannot have stopped catching anything.
+            if field && (line.contains("Camera") || line.contains("camera: ")) {
                 found.push(name.clone());
             }
             continue;
@@ -127,7 +137,10 @@ fn structs_with_a_camera_field(text: &str) -> Vec<String> {
 fn only_one_type_in_this_crate_stores_the_camera_as_state() {
     /// Which types may hold a camera field, and what for.
     const ALLOWED: [(&str, &str); 4] = [
-        ("Surfaces", "the one home"),
+        (
+            "Surfaces",
+            "the one home: a camera per display, since task 7",
+        ),
         (
             "Target",
             "a backend's per-frame input, via FrameTarget::look_at",

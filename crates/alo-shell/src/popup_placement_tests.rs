@@ -13,6 +13,18 @@ fn screen(at: (i32, i32), size: (i32, i32)) -> Rectangle<i32, Physical> {
     Rectangle::new(at.into(), size.into())
 }
 
+/// That display, named for where it sits.
+///
+/// Task 7 pairs the rectangle with the display's **name**, not with a camera:
+/// a camera copied here would be stale before the first frame. These tests
+/// are about which rectangle is chosen, so the names only have to differ.
+fn view(at: (i32, i32), size: (i32, i32)) -> crate::popups::ScreenView {
+    crate::popups::ScreenView {
+        rect: screen(at, size),
+        named: format!("a display at {},{}", at.0, at.1),
+    }
+}
+
 /// **A display at the desk's origin is bound exactly as it always was.**
 ///
 /// The safeguard: before task 6 the bound was `(-origin.x, -origin.y)` with
@@ -94,13 +106,10 @@ fn a_display_left_of_the_main_screen_is_handled() {
 /// **A parent on the second display is given the second display.**
 #[test]
 fn the_screen_a_parent_is_on_is_the_one_chosen() {
-    let desk = [
-        screen((0, 0), (1920, 1080)),
-        screen((1920, 0), (1920, 1080)),
-    ];
+    let desk = [view((0, 0), (1920, 1080)), view((1920, 0), (1920, 1080))];
     let chosen = the_screen_showing(&desk, Point::from((2500, 100))).expect("a screen");
     assert_eq!(
-        chosen.loc.x, 1920,
+        chosen.rect.loc.x, 1920,
         "the parent's own display was not chosen"
     );
 }
@@ -109,12 +118,12 @@ fn the_screen_a_parent_is_on_is_the_one_chosen() {
 /// somewhere and refusing would leave a client unable to show one.
 #[test]
 fn a_parent_off_the_desk_falls_back_to_the_first_screen() {
-    let desk = [
-        screen((0, 0), (1920, 1080)),
-        screen((1920, 0), (1920, 1080)),
-    ];
+    let desk = [view((0, 0), (1920, 1080)), view((1920, 0), (1920, 1080))];
     let chosen = the_screen_showing(&desk, Point::from((-9000, -9000))).expect("a screen");
-    assert_eq!(chosen.loc.x, 0, "the fallback was not the first screen");
+    assert_eq!(
+        chosen.rect.loc.x, 0,
+        "the fallback was not the first screen"
+    );
 }
 
 /// **No screens at all is no answer**, which is the state before the first
