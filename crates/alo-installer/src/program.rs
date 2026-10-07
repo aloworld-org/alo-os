@@ -36,6 +36,8 @@
 //! | [`Program::Shrinking`] | [`Program::GrowingWindowsBack`] |
 //! | [`Program::MakingTheArea`] | [`Program::RemovingTheArea`] |
 //! | [`Program::PreparingTheArea`] | removing the area |
+//! | [`Program::MakingTheSpace`] | [`Program::RemovingTheSpace`] |
+//! | [`Program::LabellingTheSpace`] | removing the space |
 //! | [`Program::WritingTheEntry`] | [`Program::RemovingTheEntry`] |
 //! | [`Program::ListingTheEntry`] | removing the entry |
 //! | [`Program::TakingAwayTheLetter`] | nothing to put back |
@@ -195,6 +197,56 @@ pub enum Program {
         offset: u64,
         /// How big.
         size: u64,
+    },
+    /// Make the space alo OS goes in, at exactly this place and size, and
+    /// print its number.
+    ///
+    /// The road that keeps Windows (the installer plan's task 4). The same
+    /// command as [`Program::MakingTheArea`] and deliberately a separate
+    /// variant: the area is this installer's own and is taken away when it has
+    /// finished, and this is the person's new partition and is not. Two things
+    /// that are undone differently are two programs, whatever the command line
+    /// looks like.
+    MakingTheSpace {
+        /// The disk Windows is on.
+        disk: DiskNumber,
+        /// Where the space freed by shrinking Windows begins.
+        offset: u64,
+        /// How big alo OS's space is.
+        size: u64,
+    },
+    /// Put the installer's own label on that space, and no drive letter.
+    ///
+    /// **The label is the whole of the boot environment's permission to write
+    /// that partition.** It refuses any partition not carrying
+    /// `alo_installing::THE_SPACE_THE_INSTALLER_MADE`, so this step is what
+    /// makes the space usable at all — and what keeps a mis-staged command line
+    /// from reaching somebody's Windows.
+    ///
+    /// **A file system only to carry a name.** The environment makes Btrfs on
+    /// it a few minutes later and the label goes with it. FAT is used because
+    /// Windows writes a label on it without asking anything, and what is in the
+    /// file system is never read.
+    ///
+    /// **And no drive letter**, unlike the area. A letter would put the space
+    /// in front of the person in Explorer, as an empty disk inviting them to
+    /// put something in it, minutes before it is overwritten.
+    LabellingTheSpace {
+        /// Its disk.
+        disk: DiskNumber,
+        /// Its number.
+        partition: PartitionNumber,
+        /// Where it was made, checked again before anything is written.
+        offset: u64,
+    },
+    /// Take alo OS's space away again, where something later failed.
+    RemovingTheSpace {
+        /// Its disk.
+        disk: DiskNumber,
+        /// Its number.
+        partition: PartitionNumber,
+        /// Where it was made, checked again before it is removed.
+        offset: u64,
     },
     /// Format the area as FAT with the installer's label, give it a letter,
     /// and print the letter.
@@ -555,6 +607,33 @@ impl Program {
                  ConvertTo-Json -Compress -InputObject ([ordered]@{{ \
                    PartitionNumber = [uint32]$made.PartitionNumber; Offset = [uint64]$made.Offset }})"
             ),
+            Self::MakingTheSpace { disk, offset, size } => format!(
+                "$made = New-Partition -DiskNumber {disk} -Offset {offset} -Size {size} \
+                   -GptType '{BASIC_DATA}'; \
+                 ConvertTo-Json -Compress -InputObject ([ordered]@{{ \
+                   PartitionNumber = [uint32]$made.PartitionNumber; Offset = [uint64]$made.Offset }})"
+            ),
+            Self::LabellingTheSpace {
+                disk,
+                partition,
+                offset,
+            } => format!(
+                "{}\
+                 $null = Format-Volume -Partition $area -FileSystem FAT32 \
+                   -NewFileSystemLabel '{}' -Confirm:$false -Force",
+                still_the_space(*disk, *partition, *offset),
+                alo_installing::THE_SPACE_THE_INSTALLER_MADE
+            ),
+            Self::RemovingTheSpace {
+                disk,
+                partition,
+                offset,
+            } => format!(
+                "{}\
+                 Remove-Partition -DiskNumber {disk} -PartitionNumber {partition} \
+                   -Confirm:$false",
+                still_the_space(*disk, *partition, *offset)
+            ),
             Self::PreparingTheArea {
                 disk,
                 partition,
@@ -854,11 +933,26 @@ try {
 }"#;
 
 /// The lines that stop a script unless the partition it names is still the
-/// one this installer made, where it made it.
+/// one this installer made, where it made it - [`still_the_space`] for alo
+/// OS's own space, [`still_the_area`] for the installer's.
 ///
 /// Partition numbers on a disk are Windows' to reassign, and formatting or
 /// removing by number alone would be one renumbering away from destroying
 /// somebody's partition. The place a partition begins does not move.
+///
+/// Two of them, saying different things: *not the installer area* in front of
+/// somebody whose Windows was being kept would send a person helping them to
+/// look at the wrong partition. The check is identical; what it says it was
+/// looking at is not.
+fn still_the_space(disk: DiskNumber, partition: PartitionNumber, offset: u64) -> String {
+    format!(
+        "$area = Get-Partition -DiskNumber {disk} -PartitionNumber {partition}; \
+         if ([uint64]$area.Offset -ne {offset}) {{ throw 'not the space made for alo OS' }}; "
+    )
+}
+
+/// The same lines for the installer's own area, which is taken away when
+/// the installer has finished either way.
 fn still_the_area(disk: DiskNumber, partition: PartitionNumber, offset: u64) -> String {
     format!(
         "$area = Get-Partition -DiskNumber {disk} -PartitionNumber {partition}; \
@@ -898,6 +992,21 @@ mod tests {
                 disk,
                 partition,
                 offset: 2,
+            },
+            Program::MakingTheSpace {
+                disk,
+                offset: 4,
+                size: 5,
+            },
+            Program::LabellingTheSpace {
+                disk,
+                partition,
+                offset: 4,
+            },
+            Program::RemovingTheSpace {
+                disk,
+                partition,
+                offset: 4,
             },
             Program::WritingTheEntry {
                 disk,

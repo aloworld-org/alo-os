@@ -46,7 +46,7 @@
 //! seen from the Linux side**: QEMU's NVMe device reports no identifier by
 //! default, and the machine is not Hyper-V. `docs/booting.md` says so.
 
-use alo_installing::DiskName;
+use alo_installing::{DiskName, PartitionName};
 
 /// The name the environment will look for, where Windows' report is enough to
 /// make one.
@@ -67,6 +67,52 @@ pub fn after_the_restart(
         _ => return None,
     };
     DiskName::named(&named).ok()
+}
+
+/// The name the environment will know **one partition of that disk** by.
+///
+/// udev names a partition by its disk's own name and the partition's number:
+/// `ata-CT120BX500SSD1_1838E15788A1-part5`. The disk half is
+/// [`after_the_restart`]'s and carries the serial or the unique identifier, so
+/// everything that makes a disk name safe makes this one safe too.
+///
+/// # The one thing this assumes, and it is worth stating plainly
+///
+/// **That Windows' partition number is the partition's index in the GPT table,
+/// which is what udev counts.** On a disk Windows itself laid out they agree —
+/// the entries are written in the order the partitions sit on the disk, and
+/// Windows numbers them the same way. The testing NUC's disk was read from both
+/// ends on 2026-10-07 and its four partitions agreed, entry for entry.
+///
+/// **It is not guaranteed in general.** A GPT whose entries are out of order,
+/// or which has a gap where something was deleted, could number them
+/// differently on the two sides, and this would then name a real partition that
+/// is not the intended one.
+///
+/// # What catches it if the assumption fails
+///
+/// The boot environment **writes no partition that does not carry the label
+/// `ALO-ROOT`** (`alo_installing::THE_SPACE_THE_INSTALLER_MADE`), which the
+/// installer puts on the space it made and on nothing else. So a name that
+/// pointed at Windows' own volume is refused before a file system is made,
+/// rather than acted on.
+///
+/// **That is a backstop and not the plan.** The first run on real hardware
+/// reads back what Linux actually calls these partitions and compares, because
+/// a guard that is never meant to fire tells you nothing while it does not, and
+/// the thing it protects is somebody's Windows.
+///
+/// # Errors
+///
+/// [`None`] where the number is zero — udev counts partitions from one, so a
+/// zero is Windows reporting something this cannot name — and where the two
+/// parts together are not a name a partition can have.
+#[must_use]
+pub fn a_partition_after_the_restart(disk: &DiskName, number: u32) -> Option<PartitionName> {
+    if number == 0 {
+        return None;
+    }
+    PartitionName::named(&format!("{}-part{number}", disk.as_str())).ok()
 }
 
 /// A model or serial as udev writes it into a name: trimmed, every run of
@@ -114,6 +160,88 @@ mod tests {
     /// The name, as a string, for short assertions.
     fn named(bus: &str, model: &str, serial: &str, unique_id: &str) -> Option<String> {
         after_the_restart(bus, model, serial, unique_id).map(|name| name.as_str().to_owned())
+    }
+
+    /// A partition's name, as a string.
+    fn a_partition(bus: &str, model: &str, serial: &str, number: u32) -> Option<String> {
+        let disk = after_the_restart(bus, model, serial, "")?;
+        a_partition_after_the_restart(&disk, number).map(|name| name.as_str().to_owned())
+    }
+
+    /// **A partition is its disk's name and its number**, which is how udev
+    /// writes it.
+    ///
+    /// The disk here is the testing NUC's own, read from Windows on
+    /// 2026-10-07: a SATA Crucial CT120BX500SSD1 with serial 1838E15788A1.
+    /// Partition 5 is the one the installer will make for alo OS on that
+    /// machine, in the space Windows gives up.
+    #[test]
+    fn a_partition_is_its_disks_name_and_its_number() {
+        assert_eq!(
+            a_partition("SATA", "CT120BX500SSD1", "1838E15788A1", 5).as_deref(),
+            Some("ata-CT120BX500SSD1_1838E15788A1-part5")
+        );
+        assert_eq!(
+            a_partition("SATA", "CT120BX500SSD1", "1838E15788A1", 1).as_deref(),
+            Some("ata-CT120BX500SSD1_1838E15788A1-part1")
+        );
+    }
+
+    /// **A partition number of zero names nothing.** udev counts partitions
+    /// from one, so a zero is Windows reporting something this cannot name, and
+    /// a name made from it would be a name no partition has.
+    #[test]
+    fn a_partition_number_of_zero_names_nothing() {
+        assert_eq!(a_partition("SATA", "CT120BX500SSD1", "1838E15788A1", 0), None);
+    }
+
+    /// **The whole of what makes a disk name safe is carried into a partition's
+    /// name**: the serial number is in it, so a name made wrongly names no
+    /// partition at all rather than somebody else's.
+    #[test]
+    fn a_partitions_name_carries_the_disks_serial() {
+        let name = a_partition("SATA", "CT120BX500SSD1", "1838E15788A1", 5)
+            .expect("a SATA disk with a serial is named");
+        assert!(name.contains("1838E15788A1"), "{name}");
+    }
+
+    /// **A bus with no name has no partitions either.** USB above all: a name
+    /// that depends on the bridge chip is a name this cannot make, and a disk
+    /// with no name is not offered to install onto — so the question of its
+    /// partitions never arises.
+    #[test]
+    fn a_bus_with_no_name_has_no_partitions() {
+        assert_eq!(after_the_restart("USB", "SanDisk Ultra", "4C530001", ""), None);
+        assert_eq!(a_partition("USB", "SanDisk Ultra", "4C530001", 1), None);
+    }
+
+    /// **Every partition name this makes is one the boot environment accepts.**
+    ///
+    /// The two sides are different crates and different types: this builds a
+    /// string and `alo_installing::PartitionName` decides what a partition may
+    /// be called. A name this made that the environment refused would be an
+    /// install that stops after the restart, when the person has already
+    /// agreed and the machine has already moved.
+    #[test]
+    fn every_name_this_makes_is_one_the_environment_accepts() {
+        for (bus, model, serial, unique) in [
+            ("SATA", "CT120BX500SSD1", "1838E15788A1", ""),
+            ("SATA", "Samsung SSD 870 EVO", "S5Y1NJ0R123456", ""),
+            ("NVMe", "NVMe PVC10 SK hynix 512GB", "FD5B_42CE_BC8F_9D54.", ""),
+            ("SAS", "Msft Virtual Disk", "", "600224801B4C5D6E7F8091A2B3C4D5E6"),
+        ] {
+            let Some(disk) = after_the_restart(bus, model, serial, unique) else {
+                continue;
+            };
+            for number in [1_u32, 2, 5, 128] {
+                let partition = a_partition_after_the_restart(&disk, number);
+                assert!(
+                    partition.is_some(),
+                    "{bus} {model}: partition {number} of {} is not a name the environment accepts",
+                    disk.as_str()
+                );
+            }
+        }
     }
 
     /// Each bus with a known rule is named as udev names it.
