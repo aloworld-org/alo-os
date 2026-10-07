@@ -56,6 +56,7 @@
 //! | [`setting_up`] | Setup in front of somebody: what is selected, and the one answer it gets |
 //! | [`agent`] | Whether this machine has an agent at all, afterwards |
 //! | [`refusing`] | Every way an answer goes nowhere, and the sentence for each |
+//! | [`the_strip`] | What the strip at the top of a setup screen says, and which screens have one |
 //! | [`nudging`] | The check that nothing here leans on anybody |
 //! | [`words`] | Every string this crate can say, and the English beside each |
 //!
@@ -112,6 +113,7 @@ pub mod nudging;
 pub mod offered;
 pub mod refusing;
 pub mod setting_up;
+pub mod the_strip;
 pub mod words;
 
 #[cfg(test)]
@@ -123,4 +125,5 @@ pub use nudging::{EVERYTHING_THAT_LEANS, Leaning, Leant, what_would_lean_on_a_pe
 pub use offered::{Offered, THE_FOUR};
 pub use refusing::NotSetUp;
 pub use setting_up::SettingUp;
+pub use the_strip::{EVERY_SCREEN, Screen, THE_STRIP_SAYS};
 pub use words::{EVERY_WORD, Word, WordsError, declare_into, setting_up_words};
