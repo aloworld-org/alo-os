@@ -300,6 +300,10 @@ mod tests {
             // same-disk road is a different one and is left absent here on
             // purpose, so nothing below silently starts depending on it.
             beside_windows: None,
+            // Absent for the same reason: the road that replaces Windows takes
+            // the disk whole and lets the environment lay out its own start-up
+            // area, so it never asks which one was there before.
+            the_start_up_area: None,
         }
     }
 

@@ -192,7 +192,10 @@ mod tests {
     /// a name made from it would be a name no partition has.
     #[test]
     fn a_partition_number_of_zero_names_nothing() {
-        assert_eq!(a_partition("SATA", "CT120BX500SSD1", "1838E15788A1", 0), None);
+        assert_eq!(
+            a_partition("SATA", "CT120BX500SSD1", "1838E15788A1", 0),
+            None
+        );
     }
 
     /// **The whole of what makes a disk name safe is carried into a partition's
@@ -200,9 +203,12 @@ mod tests {
     /// partition at all rather than somebody else's.
     #[test]
     fn a_partitions_name_carries_the_disks_serial() {
-        let name = a_partition("SATA", "CT120BX500SSD1", "1838E15788A1", 5)
-            .expect("a SATA disk with a serial is named");
-        assert!(name.contains("1838E15788A1"), "{name}");
+        let name = a_partition("SATA", "CT120BX500SSD1", "1838E15788A1", 5);
+        assert!(
+            name.as_deref()
+                .is_some_and(|name| name.contains("1838E15788A1")),
+            "{name:?}"
+        );
     }
 
     /// **A bus with no name has no partitions either.** USB above all: a name
@@ -211,7 +217,10 @@ mod tests {
     /// partitions never arises.
     #[test]
     fn a_bus_with_no_name_has_no_partitions() {
-        assert_eq!(after_the_restart("USB", "SanDisk Ultra", "4C530001", ""), None);
+        assert_eq!(
+            after_the_restart("USB", "SanDisk Ultra", "4C530001", ""),
+            None
+        );
         assert_eq!(a_partition("USB", "SanDisk Ultra", "4C530001", 1), None);
     }
 
@@ -227,8 +236,18 @@ mod tests {
         for (bus, model, serial, unique) in [
             ("SATA", "CT120BX500SSD1", "1838E15788A1", ""),
             ("SATA", "Samsung SSD 870 EVO", "S5Y1NJ0R123456", ""),
-            ("NVMe", "NVMe PVC10 SK hynix 512GB", "FD5B_42CE_BC8F_9D54.", ""),
-            ("SAS", "Msft Virtual Disk", "", "600224801B4C5D6E7F8091A2B3C4D5E6"),
+            (
+                "NVMe",
+                "NVMe PVC10 SK hynix 512GB",
+                "FD5B_42CE_BC8F_9D54.",
+                "",
+            ),
+            (
+                "SAS",
+                "Msft Virtual Disk",
+                "",
+                "600224801B4C5D6E7F8091A2B3C4D5E6",
+            ),
         ] {
             let Some(disk) = after_the_restart(bus, model, serial, unique) else {
                 continue;

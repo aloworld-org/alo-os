@@ -812,6 +812,7 @@ installer.how-much-and-nothing-of-yours	{used} GB is used on {disk}, and none of
 installer.incomplete	This download is incomplete, so nothing was changed. Download alo OS again
 installer.leaving-the-way-back	Putting a program in the Start menu that restarts this computer into alo OS
 installer.making-the-area	Making the installer's area on the disk {disk}
+installer.making-the-space	Making alo OS's own space of {space} GB on the disk {disk}
 installer.no-disk-for-alo-os	This computer has no empty disk of at least {least} GB beside the one Windows is on, and this installer puts alo OS on a disk of its own, so nothing was changed
 installer.no-way-back-after-this	Erasing {disk} now. From this moment there is no way back
 installer.no-way-back-at-all	This computer has one disk and nothing else it can start from. Replacing Windows would leave you no way to change your mind, so nothing was changed
@@ -832,6 +833,7 @@ installer.remains.smaller	Windows on {volume} is {area} GB smaller than it was
 installer.remains.the-area	An area labelled ALO-INSTALL remains on the disk {disk}
 installer.remains.the-entry	An entry named alo OS remains among the systems this computer can start
 installer.remains.the-next-start	The next restart starts the alo OS installer, which installs onto the disk you named
+installer.remains.the-space	A space labelled ALO-ROOT remains on the disk {disk}
 installer.remains.the-way-back	The program that restarts this computer into alo OS is still installed. You can remove it in Windows' own settings
 installer.remove.disk-not-cleared	This computer no longer starts alo OS, but the disk alo OS is on could not be erased. Its files are still there, and you can erase it in Windows' own disk management
 installer.remove.entry-not-removed	alo OS could not be taken out of the systems this computer starts, so nothing was erased and alo OS is still here

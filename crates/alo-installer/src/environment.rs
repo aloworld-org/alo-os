@@ -33,7 +33,7 @@
 
 use std::path::{Path, PathBuf};
 
-use alo_installing::{DiskName, REPLACING, Replacing, PartitionName};
+use alo_installing::{DiskName, PartitionName, REPLACING, Replacing};
 use ring::digest::{SHA256, digest};
 
 use crate::machine::TheMachine;

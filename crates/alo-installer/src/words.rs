@@ -438,7 +438,12 @@ pub const SHRINKING_WINDOWS: Word = Word::saying(
     "installer.shrinking-windows",
     "Making Windows on {volume} {area} GB smaller",
 )
-.noting("{volume} is the drive Windows is on, for example C:.");
+.noting(
+    "{volume} is the drive Windows is on, for example C:. {area} is how much \
+     smaller it is being made, and it is not the same on every road: about a \
+     gigabyte where alo OS goes on another disk, and tens of them where alo OS \
+     goes beside Windows on this one. It is a number, not a word.",
+);
 
 /// Making the area.
 pub const MAKING_THE_AREA: Word = Word::saying(
@@ -446,6 +451,17 @@ pub const MAKING_THE_AREA: Word = Word::saying(
     "Making the installer's area on the disk {disk}",
 )
 .noting("{disk} is the disk's name as its maker gives it, not translated.");
+
+/// Making the space alo OS itself goes in, beside Windows.
+pub const MAKING_THE_SPACE: Word = Word::saying(
+    "installer.making-the-space",
+    "Making alo OS's own space of {space} GB on the disk {disk}",
+)
+.noting(
+    "{disk} is the disk's name as its maker gives it, not translated. {space} is \
+     how much space alo OS is given, which is what Windows gave up less the \
+     installer's own area. It is a number, not a word.",
+);
 
 /// Copying the installer.
 pub const COPYING_THE_INSTALLER: Word = Word::saying(
@@ -811,7 +827,11 @@ pub const REMAINS_SMALLER: Word = Word::saying(
     "installer.remains.smaller",
     "Windows on {volume} is {area} GB smaller than it was",
 )
-.noting("{volume} is the drive Windows is on, for example C:.");
+.noting(
+    "{volume} is the drive Windows is on, for example C:. {area} is how much \
+     smaller it is, read from what was actually taken rather than from what the \
+     installer meant to take. It is a number, not a word.",
+);
 
 /// The area remains.
 pub const REMAINS_THE_AREA: Word = Word::saying(
@@ -819,6 +839,17 @@ pub const REMAINS_THE_AREA: Word = Word::saying(
     "An area labelled ALO-INSTALL remains on the disk {disk}",
 )
 .noting("ALO-INSTALL is the label Windows shows for the area, and is not translated.");
+
+/// alo OS's own space remains.
+pub const REMAINS_THE_SPACE: Word = Word::saying(
+    "installer.remains.the-space",
+    "A space labelled ALO-ROOT remains on the disk {disk}",
+)
+.noting(
+    "{disk} is the disk's name as its maker gives it, not translated. ALO-ROOT is \
+     a label written on the disk, and is never translated. This is the space alo \
+     OS was to be installed into, and it is empty.",
+);
 
 /// The entry remains.
 pub const REMAINS_THE_ENTRY: Word = Word::saying(
@@ -1143,7 +1174,7 @@ pub const REMOVE_GONE_BUT_THE_COPY_STAYS: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 123] = [
+pub const EVERY_WORD: [Word; 125] = [
     STARTING,
     CHECKING_THE_DOWNLOAD,
     GENUINE,
@@ -1190,6 +1221,7 @@ pub const EVERY_WORD: [Word; 123] = [
     TYPE_THE_DISKS_NAME,
     SHRINKING_WINDOWS,
     MAKING_THE_AREA,
+    MAKING_THE_SPACE,
     COPYING_THE_INSTALLER,
     ADDING_THE_ENTRY,
     PUTTING_IT_BACK,
@@ -1215,6 +1247,7 @@ pub const EVERY_WORD: [Word; 123] = [
     NOT_PUT_BACK,
     REMAINS_SMALLER,
     REMAINS_THE_AREA,
+    REMAINS_THE_SPACE,
     REMAINS_THE_ENTRY,
     REMAINS_THE_NEXT_START,
     REMAINS_FAST_STARTUP_OFF,

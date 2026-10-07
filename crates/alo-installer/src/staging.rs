@@ -39,6 +39,7 @@ use crate::ended::{Ended, Refusal, Remains};
 use crate::environment::{self, TheEnvironment};
 use crate::identities::{DiskNumber, Entry, Letter, PartitionNumber};
 use crate::machine::TheMachine;
+use crate::naming;
 use crate::program::Program;
 use crate::sizes::{self, THE_AREA};
 use crate::words;
@@ -46,7 +47,7 @@ use crate::words;
 /// One change made, and what putting it back needs.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Made {
-    /// Windows was shrunk from this size.
+    /// Windows was shrunk from this size, by this much.
     Shrunk {
         /// Its disk.
         disk: DiskNumber,
@@ -54,6 +55,13 @@ enum Made {
         partition: PartitionNumber,
         /// The size it had.
         was: u64,
+        /// How much smaller it was made.
+        ///
+        /// Carried rather than worked out again when putting back, because
+        /// what a person is told their Windows lost has to be what it lost:
+        /// the amount depends on the road, and the road is not something
+        /// `put_back` can see.
+        by: u64,
     },
     /// The area was made here.
     TheArea {
@@ -66,6 +74,26 @@ enum Made {
     },
     /// Windows said it made a partition, and did not say which.
     AnAreaNotIdentified,
+    /// alo OS's own space was made here, on the road that keeps Windows.
+    ///
+    /// Journalled apart from the area because it is put back apart from it:
+    /// the area is this installer's and goes when the installer has finished
+    /// either way, and this is the person's new partition, which goes only if
+    /// something after it fails.
+    TheSpace {
+        /// Its disk.
+        disk: DiskNumber,
+        /// Its number.
+        partition: PartitionNumber,
+        /// Where it begins.
+        offset: u64,
+    },
+    /// Windows said it made alo OS's space, and did not say which partition.
+    ///
+    /// Nothing can be put back by number here, so putting back says what it
+    /// could not do rather than guessing at a partition on a disk somebody's
+    /// Windows is on.
+    ASpaceNotIdentified,
     /// The entry was made.
     TheEntry(Entry),
     /// Windows said it made an entry, and did not say which.
@@ -181,20 +209,39 @@ fn steps(
     }
 
     let windows = offer.windows;
-    let volume = Filling::of("volume", windows.letter.drive()).and("area", sizes::needed(THE_AREA));
 
+    // **How much Windows gives up is the road the person chose**, and the road
+    // is carried on the disk they named rather than asked about separately
+    // (`deciding::ForAloOs::beside`). Keeping Windows frees the installer's
+    // area *and* alo OS's own space, in one shrink: two shrinks would leave a
+    // machine half-moved if the second failed, and `BesideWindows` already
+    // asked the volume for all of it together or there is no road at all.
+    //
+    // `None` is the older road and still the common one - an empty disk alo
+    // OS takes whole, where Windows gives up nothing but the area.
+    let beside = chosen.beside;
+    let shrink_to = beside.map_or(offer.shrink.to, |beside| beside.to);
+    let area_begins = beside.map_or(offer.shrink.area_begins, |beside| beside.area_begins);
+
+    // **What this says is the number that is about to be taken.** It was
+    // the area, a constant gibibyte, because that was the only amount any
+    // road had ever taken - and on the road that keeps Windows it would
+    // have asked a person to watch a gigabyte go and taken sixty.
+    let volume = Filling::of("volume", windows.letter.drive())
+        .and("area", sizes::taken(windows.size.saturating_sub(shrink_to)));
     say(machine, strings, words::SHRINKING_WINDOWS, &volume);
     let shrunk = Made::Shrunk {
         disk: windows.disk,
         partition: windows.partition,
         was: windows.size,
+        by: windows.size.saturating_sub(shrink_to),
     };
     let shrinking = succeeded(
         machine,
         &Program::Shrinking {
             disk: windows.disk,
             partition: windows.partition,
-            to: offer.shrink.to,
+            to: shrink_to,
         },
     );
     if shrinking.is_err() {
@@ -222,7 +269,7 @@ fn steps(
         machine,
         &Program::MakingTheArea {
             disk: windows.disk,
-            offset: offer.shrink.area_begins,
+            offset: area_begins,
             size: THE_AREA,
         },
     )?;
@@ -236,7 +283,7 @@ fn steps(
         partition,
         offset: made.offset,
     });
-    if made.offset != offer.shrink.area_begins {
+    if made.offset != area_begins {
         return Err(());
     }
     let prepared = succeeded(
@@ -252,6 +299,63 @@ fn steps(
         .and_then(|prepared| Letter::of(&prepared.drive_letter))
         .ok_or(())?;
 
+    // **alo OS's own space, on the road that keeps Windows - made by
+    // Windows rather than after the restart.** A Linux that repartitioned
+    // a disk Windows is on, while Windows' own file system was last
+    // written by a kernel that has not finished with it, is how somebody
+    // loses a Windows. Windows lays out its own disk; alo OS only fills
+    // what it was given.
+    //
+    // The label is the whole of the boot environment's permission to write
+    // that partition (`alo_installing::may_keep_what_is_there`), so a
+    // space made and not labelled is a space the environment refuses -
+    // which is the safe way round for a failure between the two steps.
+    let alo_oss_space = match beside {
+        None => None,
+        Some(beside) => {
+            say(
+                machine,
+                strings,
+                words::MAKING_THE_SPACE,
+                &Filling::of("space", sizes::taken(beside.alo_os))
+                    .and("disk", offer.windows_disk.as_str()),
+            );
+            let printed = succeeded(
+                machine,
+                &Program::MakingTheSpace {
+                    disk: windows.disk,
+                    offset: beside.alo_os_begins,
+                    size: beside.alo_os,
+                },
+            )?;
+            let Ok(made) = serde_json::from_str::<MadeTheArea>(&printed) else {
+                journal.push(Made::ASpaceNotIdentified);
+                return Err(());
+            };
+            let space = PartitionNumber(made.partition_number);
+            journal.push(Made::TheSpace {
+                disk: windows.disk,
+                partition: space,
+                offset: made.offset,
+            });
+            // Journalled before it is checked, for the area's reason: a
+            // partition that exists somewhere other than where it was asked
+            // for is still a partition that has to be taken away.
+            if made.offset != beside.alo_os_begins {
+                return Err(());
+            }
+            succeeded(
+                machine,
+                &Program::LabellingTheSpace {
+                    disk: windows.disk,
+                    partition: space,
+                    offset: made.offset,
+                },
+            )?;
+            Some(space)
+        }
+    };
+
     say(
         machine,
         strings,
@@ -261,7 +365,38 @@ fn steps(
     let root = std::path::PathBuf::from(letter.root());
     // The road is the caller's, never this file's: it comes from the consent
     // that named it, and `staging.rs` has no way to decide to erase a disk.
-    let choice = environment::the_choice(&chosen.after_the_restart, replacing);
+    //
+    // **Three names on the road that keeps Windows**, where the one name is
+    // not enough: the disk alone tells the environment nothing about which
+    // partition on it is alo OS's and which one holds the loader Windows
+    // already starts from. Both are derived here, from Windows' own numbers,
+    // and a number that cannot be turned into a name is a refusal rather
+    // than a guess.
+    //
+    // It cannot say *replace this disk* as well: `the_choice_beside_what_is
+    // _there` takes no `Replacing` and so has nothing to say it with. That is
+    // the shape rather than a check, which is why there is no test that the
+    // check was armed.
+    let choice = match (alo_oss_space, offer.the_start_up_area) {
+        (Some(space), Some(start_up_area)) => {
+            let space = naming::a_partition_after_the_restart(&chosen.after_the_restart, space.0)
+                .ok_or(())?;
+            let start_up_area =
+                naming::a_partition_after_the_restart(&chosen.after_the_restart, start_up_area.0)
+                    .ok_or(())?;
+            environment::the_choice_beside_what_is_there(
+                &chosen.after_the_restart,
+                &space,
+                &start_up_area,
+            )
+        }
+        // A space was made and the disk could not say where the firmware
+        // starts from, or the other way about. Neither is a command line
+        // this installer may write: one road's half and the other's half is
+        // not a road.
+        (Some(_), None) | (None, Some(_)) if beside.is_some() => return Err(()),
+        _ => environment::the_choice(&chosen.after_the_restart, replacing),
+    };
     for (inside, bytes) in the_environment
         .files()
         .iter()
@@ -361,7 +496,12 @@ fn put_back(
         &Filling::nothing(),
     );
     let mut remains = Vec::new();
-    let mut area_remains = false;
+    // **Anything left in the freed region stops Windows growing back**, and
+    // on the road that keeps Windows there are two things that can be left
+    // there. Named for what it means rather than for the area, because a
+    // flag called `area_remains` that is also set by a space is the kind of
+    // name the next reader believes.
+    let mut the_freed_space_is_taken = false;
     for made in journal.into_iter().rev() {
         match made {
             // Put back to the value Windows held, not to a value this
@@ -402,22 +542,46 @@ fn put_back(
                     },
                 );
                 if removed.is_err() {
-                    area_remains = true;
+                    the_freed_space_is_taken = true;
                     remains.push(Remains::TheArea(offer.windows_disk.clone()));
                 }
             }
             Made::AnAreaNotIdentified => {
-                area_remains = true;
+                the_freed_space_is_taken = true;
                 remains.push(Remains::TheArea(offer.windows_disk.clone()));
+            }
+            Made::TheSpace {
+                disk,
+                partition,
+                offset,
+            } => {
+                let removed = succeeded(
+                    machine,
+                    &Program::RemovingTheSpace {
+                        disk,
+                        partition,
+                        offset,
+                    },
+                );
+                if removed.is_err() {
+                    the_freed_space_is_taken = true;
+                    remains.push(Remains::TheSpace(offer.windows_disk.clone()));
+                }
+            }
+            Made::ASpaceNotIdentified => {
+                the_freed_space_is_taken = true;
+                remains.push(Remains::TheSpace(offer.windows_disk.clone()));
             }
             Made::Shrunk {
                 disk,
                 partition,
                 was,
+                by,
             } => {
-                // Windows grows into the space the area was in, so with the
-                // area still there it cannot, and is not asked to.
-                let grown = !area_remains
+                // Windows grows into the region the shrink freed, so with
+                // anything still in it - the area, or alo OS's own space - it
+                // cannot, and is not asked to.
+                let grown = !the_freed_space_is_taken
                     && succeeded(
                         machine,
                         &Program::GrowingWindowsBack {
@@ -428,7 +592,10 @@ fn put_back(
                     )
                     .is_ok();
                 if !grown {
-                    remains.push(Remains::Smaller(offer.windows.letter));
+                    remains.push(Remains::Smaller {
+                        volume: offer.windows.letter,
+                        by,
+                    });
                 }
             }
         }

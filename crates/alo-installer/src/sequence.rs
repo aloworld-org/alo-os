@@ -95,7 +95,13 @@ fn installing(
     }
     let offer = decide(&found).map_err(Ended::Refused)?;
 
-    let area = sizes::needed(sizes::THE_AREA);
+    // **What the person is promised is read from the shrink that will happen**,
+    // not from the size of the installer's area. They are the same number while
+    // the area is all Windows ever gives up, and the sentence a person agrees to
+    // is not a place to leave a constant that is only accidentally right: the
+    // road that puts alo OS beside Windows takes tens of gigabytes, and a
+    // promise built from `THE_AREA` could not follow it.
+    let area = sizes::taken(offer.windows.size.saturating_sub(offer.shrink.to));
     say(
         machine,
         strings,

@@ -245,6 +245,15 @@ impl Disk {
     /// here instead. The naming does not depend on the standing: it is the same
     /// four fields either way.
     #[must_use]
+    pub fn after_the_restart(&self) -> Option<DiskName> {
+        naming::after_the_restart(
+            &self.bus_type,
+            &self.friendly_name,
+            &self.serial_number,
+            &self.unique_id,
+        )
+    }
+
     /// The number of the start-up area on this disk, where it has one.
     ///
     /// The partition the firmware looks in, by its type and never by its label
@@ -273,18 +282,11 @@ impl Disk {
         self.partitions
             .iter()
             .find(|partition| {
-                partition.gpt_type.eq_ignore_ascii_case(THE_START_UP_AREAS_TYPE)
+                partition
+                    .gpt_type
+                    .eq_ignore_ascii_case(THE_START_UP_AREAS_TYPE)
             })
             .map(|partition| PartitionNumber(partition.partition_number))
-    }
-
-    pub fn after_the_restart(&self) -> Option<DiskName> {
-        naming::after_the_restart(
-            &self.bus_type,
-            &self.friendly_name,
-            &self.serial_number,
-            &self.unique_id,
-        )
     }
 
     /// What it is to this installer, given which disk Windows is on.

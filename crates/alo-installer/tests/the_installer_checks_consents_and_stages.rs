@@ -896,14 +896,30 @@ fn what_could_not_be_put_back_is_said_exactly() {
         .failing("remove-area");
     let (ended, machine) = run(machine, released);
     let c = alo_installer::Letter::of("C").unwrap();
+    // **How much smaller, derived rather than restated.** The sentence a
+    // person reads here says a number, and until this change that number was
+    // a constant gibibyte however much had actually been taken. Worked out
+    // from the volume the scripted machine reports and the shrink the
+    // installer asked for, so a test that still passed while the installer
+    // reported what it *meant* to take would have to be wrong twice.
+    let volume = alo_installer::WindowsVolume::read(Some(VOLUME)).unwrap();
+    let took = volume.size - volume.shrink().unwrap().to;
     assert_eq!(
         ended,
         Ended::NotPutBack(vec![
             Remains::TheNextStart,
             Remains::TheArea("Samsung SSD 980 1TB".to_owned()),
-            Remains::Smaller(c),
+            Remains::Smaller {
+                volume: c,
+                by: took,
+            },
         ])
     );
+    // And it is the area this road gives up, to a mebibyte of alignment -
+    // which is what makes the assertion above a statement about this road
+    // rather than an echo of whatever the installer did.
+    assert!(took >= alo_installer::THE_AREA);
+    assert!(took < alo_installer::THE_AREA + alo_installer::MIB);
     // With the area still there, Windows is not asked to grow into it.
     assert!(!machine.kinds().contains(&"grow-back"));
     let tail: Vec<&str> = machine
