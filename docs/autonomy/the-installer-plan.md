@@ -290,7 +290,7 @@ plan.
 5. **The refusal that keeps the Windows disk out is flipped last**, when the
    whole road exists and not before.
 
-**The road, as it stands 2026-10-06.** The environment can now install into a
+**The road, as it stands 2026-10-07.** The environment can now install into a
 partition rather than only over a whole disk: `alo.installing.into=` and
 `alo.installing.efi=` name the two partitions, both or neither; the file system
 is made on that one partition and mounted with Windows' start-up area beneath
@@ -298,9 +298,37 @@ it; and the writer is handed a root, with no `--wipe` and no `to-disk` on that
 road. **What stands between a mis-staged command line and somebody's Windows is
 a label**: the environment writes only a partition carrying `ALO-ROOT`, which
 the installer on Windows puts on the space it made and on nothing else
-(`docs/booting.md`). What remains is the Windows half — making those two
-partitions, formatting and labelling the space, and writing those two words
-into the staged command line — and then the walk.
+(`docs/booting.md`).
+
+**The Windows half is built, 2026-10-07**
+(`updates/the-windows-half-makes-alo-oss-space.md`). The installer shrinks the
+Windows volume by the area and alo OS's space together in one shrink, makes
+alo OS's space at the offset the arithmetic worked out, labels it `ALO-ROOT`
+and gives it no drive letter, and stages a command line that names the disk,
+that partition and Windows' own start-up area. Windows lays out its own disk
+while it is running; alo OS only fills what it was given.
+
+**What remains before the walk**, in this order:
+
+- **the fork the owner asked for on 2026-10-06** — three choices rather than
+  two: keep Windows and put alo OS beside it, use a separate empty disk, or
+  replace Windows with alo OS only. Keeping asks once, because nothing of
+  anybody's is destroyed; *only alo OS* asks twice and goes through
+  `erasing_consent.rs` after saying what is lost. The sentence promising how
+  much Windows gives up moves inside that fork, because the amount is the
+  road's and not a constant;
+- **then the refusal flip**, one line in `deciding.rs`, which is term 5 of the
+  ruling above and is last;
+- **then the walk**, both runs, in the order term 3 sets.
+
+**One thing on this road is assumed rather than measured**, and it is written
+where it is used (`crates/alo-installer/src/naming.rs`): that Windows'
+partition number is the partition's index in the GPT table, which is what udev
+counts. The testing NUC's disk was read from both ends on 2026-10-07 and its
+four partitions agreed, entry for entry, but that is one disk Windows itself
+laid out. The `ALO-ROOT` label is what makes a wrong name a refusal rather
+than a loss, and the first run on metal reads back what Linux actually calls
+these partitions and compares.
 
 *This line opened with `deferred` until 2026-10-03, and `deferred` is not a word the
 supervisor knows.* `tools/kernel-loop`'s `NOT_YET` holds `blocked` and `scheduled`, and
