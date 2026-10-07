@@ -289,6 +289,13 @@ directly. In order, saying each step before it begins:
    least 24 GB beside the one Windows is on** — the environment replaces one
    whole disk, and putting alo OS on the Windows disk itself is the installer
    plan's task 4.
+
+   *The 17 GB and the 24 GB are unchanged by ADR 0095, and that is deliberate.
+   The image no longer carries 4.87 GiB of weights, so both floors could be
+   lower — but a refusal threshold is a decision about somebody's only computer,
+   neither number was ever only the image's size, and lowering one to let more
+   machines through is a thing to do on purpose with a measurement behind it
+   rather than as a side effect of another change.*
 5. **It says exactly what will happen** — Windows made 1 GB smaller, a 1 GB area
    made in that space, an entry named alo OS added, one restart into the
    installer, which replaces the disk named — and that nothing has changed yet.
@@ -488,6 +495,15 @@ that is the honest state of v0.01 and not a machine that came up wrong.
   evening. **Its disk booted the next morning, 2026-09-12:** 9.6 GB (the model
   is 4.5 GB of it), the same machine switched to it, heartbeat at 60 seconds,
   768 MB. So the image that carries the weights boots.
+- **That measurement is history, not a description of what ships.**
+  [ADR 0095](decisions/0095-the-release-carries-no-model-and-a-person-brings-their-own.md)
+  took the weights out on 2026-10-06, so the 4.5 GB inside that 9.6 GB is no
+  longer there and a disk written from the current recipe is about that much
+  smaller. The reading above is left exactly as it was taken — it is what the
+  disk of that evening measured, and rewriting a measurement to match a later
+  decision is how a record stops being one. **What it still shows is what it
+  was taken to show:** a disk written by this recipe boots, and the machine
+  switched to it.
 - **What neither run can show:** whether each service came up. The image ships
   no accounts (ADR 0024), so nobody can log in at that console to ask systemd;
   the heartbeat proves the kernel and nothing about the units. That stays owed

@@ -1,822 +1,152 @@
-//! What the image's recipe says about the weights a machine arrives with.
+//! Where a person's own weights live, and that the image ships none of its own.
 //!
-//! [ADR 0025](../../../docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md)
-//! was accepted as Option D, and the expensive half of what it took on is this:
-//! **a model on the disk of every machine we ship, sized for that machine**
-//! ([ADR 0007](../../../docs/decisions/0007-the-cpu-is-the-default.md)). A
-//! runtime with nothing to load answers exactly as little as no runtime at all,
-//! so until the recipe carries weights, *the local model is what the machine
-//! arrives ready to run* is a sentence about a machine nobody has.
+//! This file used to be 822 lines holding the image **to carrying** a model:
+//! the weights pinned by content, checked before anything read them, pruned to
+//! the manifest that named them, matched against the catalogue's recommendation
+//! for the certified laptop, and held to a licence we may redistribute under.
 //!
-//! [`crate::runtime`] is the same shape one artefact over, and the two are
-//! separate files because they are two different promises that go wrong in two
-//! different ways — the runtime by floating its version, the weights by naming a
-//! model nobody measured.
+//! [ADR 0095](../../../docs/decisions/0095-the-release-carries-no-model-and-a-person-brings-their-own.md)
+//! removed the thing all of that was about. **The release carries no weights.**
+//! A person brings weights they already have, or uses a provider, or works
+//! without one, and alo OS chooses none of those for them.
 //!
-//! # Carried, not fetched — and what that cost
+//! # Why those rules were deleted rather than left standing
 //!
-//! ADR 0025 left one thing open: *whether the image carries the weights or
-//! fetches them at setup*. It is carried. A machine that fetches at setup has
-//! not arrived ready when it is offline at setup, and the promise is about what
-//! is in the box rather than about the network somebody unpacks it beside. The
-//! price is an image 4.87 GiB larger and an update channel that moves those
-//! bytes whenever this pin moves, which is a cost paid by us; the other answer's
-//! price is paid by a person on their first morning, in a place where we cannot
-//! help them. `docs/quirks.md` carries the measurement.
+//! Every one of them had become a guard that cannot fire: there is nothing to
+//! pin, nothing to verify, nothing to prune and no licence to redistribute.
+//! `docs/misreadings/a-guard-that-cannot-fire-is-a-comment.md` is this
+//! repository's own lesson about what that does — a check that cannot fail
+//! reads as diligence and gets quoted as evidence, and is neither.
 //!
-//! # Carried once — asserted, because the first build carried them twice
+//! # The two questions that replaced them, and why each earns its place
 //!
-//! Building the recipe measured what the runtime's import really does
-//! (`docs/quirks.md`, 2026-09-11): it copies the checked file into its store
-//! under that file's own digest, writes a second blob of the same length under
-//! another, and names only the second in its manifest. A store left as the
-//! runtime left it is 4.5 GiB for 2.23 GiB of model, on the read-only half of
-//! every machine we ship, where nothing can ever prune it. So the weights stage
-//! removes the source blob **after** the import — the digest check has done its
-//! work by then and is untouched — and holds every blob left in the store to the
-//! manifest before the store leaves the stage. [`TheWeights::prunes_to_the_manifest`]
-//! and [`TheWeights::holds_the_store_to_its_manifest`] read those two lines, so
-//! a recipe that quietly went back to carrying the weights twice is a red test
-//! rather than an image twice the model's size larger than its own comment.
+//! **Does the recipe land weights?** If it ever does again, that is now the
+//! fault. 4.87 GiB can return in one `COPY` line, and nobody reviewing a recipe
+//! notices a layer getting bigger.
 //!
-//! # It is not enough for the recipe to name *a* model
-//!
-//! `docs/features.md` promises a catalogue *measured by us, not claimed by the
-//! publisher*, one line above the promise this file is about. So a recipe may
-//! not name weights the catalogue has never heard of, or an entry nobody has put
-//! to `alo-driving` — the check is `crate::checking`'s, against
-//! [`alo_models::Catalogue`], and this file is only what the recipe says.
-//!
-//! # And the template is part of the weights, not a detail beside them
-//!
-//! A grade is earned against a model **as it was served**, and what decides
-//! where one turn ends and the next begins is the runtime's template. The same
-//! weights under another template are a different machine answering, so the
-//! recipe pins the template the way it pins the file — one exact artefact, a
-//! whole digest, checked before anything reads it — and
-//! [`TheWeights::carries_its_template_pinned`] reads that line. It is one
-//! question rather than two because it moves for one reason: the day the model
-//! this image carries changes, both pins change together or the image serves a
-//! model in another model's words.
-//!
-//! # Read leniently, judged strictly
-//!
-//! [`TheWeights::read`] never refuses, for [`crate::runtime`]'s reason: the
-//! interesting states are the wrong ones, and a reader that refused them could
-//! never report them.
+//! **Is the store somewhere a person can write?** This is the one that nearly
+//! shipped wrong. The store was `/usr/share/alo/models`, which is right for
+//! weights that arrive with the machine and **impossible** for weights a person
+//! brings: `/usr` is the read-only half of a bootc machine. Taking the weights
+//! out without moving the store would have left every sentence about bringing
+//! your own reading correctly while the thing itself could not happen.
 
-use crate::recipe::{argument, copies_from_a_stage_to, in_stage, is_a_whole_digest};
-
-/// Where the weights land on the machine, as the runtime's own model store.
+/// Where the model runtime serves from, and where a person's own weights go.
 ///
-/// Ours rather than the runtime's default, because the default is a home
-/// directory belonging to a login this image does not make. What points the
-/// runtime at it is the unit that starts the runtime, and this image has none
-/// yet — which is said in as many words beside the `COPY` line, so that nobody
-/// reads a store on the disk as a model a machine is serving.
-pub const THE_WEIGHTS: &str = "/usr/share/alo/models/";
+/// Inside the model service's own state directory, which systemd makes before
+/// the process starts, owns, and keeps at `0700`
+/// (`image/usr/lib/systemd/system/alo-modeld.service`). **Writable**, which is
+/// the whole point: see this module's header.
+pub const THE_STORE_IS_AT: &str = "/var/lib/alo-model/models";
 
-/// The build stage that fetches the weights and imports them.
-const THE_STAGE: &str = "weights";
-
-/// The build argument that names the catalogue entry these weights are.
-const THE_MODEL_ARG: &str = "ARG THE_MODEL=";
-
-/// The build argument that names the quantisation.
-const THE_QUANTISATION_ARG: &str = "ARG THE_MODELS_QUANTISATION=";
-
-/// The build argument that names what the runtime on the machine answers to.
-const THE_ARTEFACT_ARG: &str = "ARG THE_MODELS_ARTEFACT=";
-
-/// The build argument that names where the weights are fetched from.
-const THE_SOURCE_ARG: &str = "ARG THE_MODELS_WEIGHTS=";
-
-/// The name of that argument alone, for finding the fetch that uses it.
-const THE_SOURCE_NAME: &str = "THE_MODELS_WEIGHTS";
-
-/// The build argument that holds the weights' digest.
-const THE_DIGEST_ARG: &str = "ARG THE_MODELS_SHA256=";
-
-/// The name of the digest argument alone, for finding the line that checks it.
-const THE_DIGEST_NAME: &str = "THE_MODELS_SHA256";
-
-/// The build argument that names where the runtime's template for this model is
-/// fetched from.
-const THE_TEMPLATE_ARG: &str = "ARG THE_MODELS_TEMPLATE=";
-
-/// The name of that argument alone, for finding the fetch that uses it.
-const THE_TEMPLATE_NAME: &str = "THE_MODELS_TEMPLATE";
-
-/// The build argument that holds the template's digest.
-const THE_TEMPLATE_DIGEST_ARG: &str = "ARG THE_MODELS_TEMPLATE_SHA256=";
-
-/// The name of that digest argument alone, for finding the line that checks it.
-const THE_TEMPLATE_DIGEST_NAME: &str = "THE_MODELS_TEMPLATE_SHA256";
-
-/// The file the import is told to read, which is where the template has to
-/// arrive to be the template this model is served with.
-const THE_MODELFILE: &str = "/Modelfile";
-
-/// What the checking of a digest looks like in a build step.
-const A_DIGEST_CHECKED: &str = "sha256sum --check";
-
-/// How a fetch says where it is putting what it fetched.
-const FETCHED_TO: &str = "--output";
-
-/// How the weights are imported into the runtime's store, which is the line the
-/// store exists after and the line the source blob may only be removed after.
-const IMPORTED: &str = "ollama create";
-
-/// What a walk of the store calls the blob it is looking at.
+/// Where weights landed while the image carried them.
 ///
-/// **This was `blobs/sha256-${THE_MODELS_SHA256}` until 2026-10-05**, and that
-/// was a question about the recipe's text rather than about what the text does.
-/// The recipe removed that one named digest, which was the duplicate while the
-/// weights came from a publisher's GGUF and became the **only** copy when
-/// `#113` moved them to the runtime library's own content-addressed blob — so
-/// the line deleted the model and this reader went on passing. Asking instead
-/// that the removal is conditioned on the manifest cannot tell the two
-/// sourcings apart, which is the point.
-const THE_WALKED_BLOB: &str = "${blob}";
+/// Kept so that a recipe putting them back is caught **by name**, and whoever
+/// reads the failure is told where to look rather than handed a rule and left
+/// to find the line.
+pub const WHERE_WEIGHTS_USED_TO_LAND: &str = "/usr/share/alo/models";
 
-/// How a line removes something.
-const REMOVED: &str = "rm ";
-
-/// How the stage walks the store, which is where holding every blob in it to
-/// the manifest begins.
-const EVERY_BLOB: &str = "for blob in /models/blobs/*";
-
-/// How a blob is looked for in the manifest.
-const LOOKED_UP: &str = "grep";
-
-/// What it is looked for in.
-const THE_MANIFEST: &str = "manifest";
-
-/// What a blob the manifest does not name does to the build.
-const REFUSED: &str = "exit 1";
-
-/// Names that mean *whatever is there today*.
+/// The halves of a bootc machine that can be written after the image is built.
 ///
-/// A digest says what arrived and this says what was asked for, and the two are
-/// not the same question: a moving name with a pinned digest is a recipe that
-/// stops building the morning the publisher pushes a commit, which is a broken
-/// release rather than a caught mistake.
-const MOVING: [&str; 4] = ["/main/", "/master/", "/HEAD/", ":latest"];
+/// `/usr` is the image. `/var` is the machine's own and is kept across an
+/// update; `/etc` is the person's. Anything added after installing lands in one
+/// of the two that are not the image, and weights are now something the person
+/// adds.
+const WHAT_A_MACHINE_MAY_WRITE: [&str; 2] = ["/var/", "/etc/"];
 
-/// What the image's recipe says about the weights it carries.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TheWeights {
-    /// The catalogue entry the recipe names, or [`None`] where it names none.
-    model: Option<String>,
-    /// The quantisation the recipe names, or [`None`] where it names none.
-    quantisation: Option<String>,
-    /// What the runtime on the machine answers to, or [`None`].
-    artefact: Option<String>,
-    /// Where the weights are fetched from, or [`None`].
-    from: Option<String>,
-    /// The digest the recipe pins, or [`None`] where it pins none.
-    digest: Option<String>,
-    /// Whether that digest is checked before anything else reads the file.
-    checked_first: bool,
-    /// Where the runtime's template for this model is fetched from, or
-    /// [`None`].
-    template: Option<String>,
-    /// The digest the recipe pins for it, or [`None`].
-    template_digest: Option<String>,
-    /// Whether that digest is checked before anything else reads the template.
-    template_checked_first: bool,
-    /// Whether the fetched template is what the import is handed.
-    template_reaches_the_import: bool,
-    /// Whether the weights are copied onto the machine.
-    lands: bool,
-    /// Whether the store is pruned, after the import, to what its manifest
-    /// names.
-    pruned_to_the_manifest: bool,
-    /// Whether every blob left in the store is held to the manifest.
-    held_to_manifest: bool,
-}
-
-impl TheWeights {
-    /// What this Containerfile says, read off its text.
-    ///
-    /// Never a refusal: a recipe that says nothing about weights reads as one
-    /// that carries none, which is `checking.rs`'s to report against the
-    /// decisions it breaks.
-    #[must_use]
-    pub fn read(containerfile: &str) -> Self {
-        let mut weights = Self {
-            model: None,
-            quantisation: None,
-            artefact: None,
-            from: None,
-            digest: None,
-            checked_first: false,
-            template: None,
-            template_digest: None,
-            template_checked_first: false,
-            template_reaches_the_import: false,
-            lands: false,
-            pruned_to_the_manifest: false,
-            held_to_manifest: false,
-        };
-
-        for line in containerfile.lines() {
-            let line = line.trim();
-            if line.starts_with('#') {
-                continue;
-            }
-            for (named, into) in [
-                (THE_MODEL_ARG, &mut weights.model),
-                (THE_QUANTISATION_ARG, &mut weights.quantisation),
-                (THE_ARTEFACT_ARG, &mut weights.artefact),
-                (THE_SOURCE_ARG, &mut weights.from),
-                (THE_DIGEST_ARG, &mut weights.digest),
-                (THE_TEMPLATE_ARG, &mut weights.template),
-                (THE_TEMPLATE_DIGEST_ARG, &mut weights.template_digest),
-            ] {
-                if let Some(said) = argument(line, named) {
-                    *into = Some(said.to_owned());
-                }
-            }
-            if copies_from_a_stage_to(line, THE_WEIGHTS) {
-                weights.lands = true;
-            }
-        }
-
-        weights.checked_first =
-            checked_before_it_was_read(containerfile, THE_SOURCE_NAME, THE_DIGEST_NAME);
-        weights.template_checked_first =
-            checked_before_it_was_read(containerfile, THE_TEMPLATE_NAME, THE_TEMPLATE_DIGEST_NAME);
-        weights.template_reaches_the_import = the_template_reaches_the_import(containerfile);
-        let (pruned_to_the_manifest, held_to_manifest) = carried_once(containerfile);
-        weights.pruned_to_the_manifest = pruned_to_the_manifest;
-        weights.held_to_manifest = held_to_manifest;
-        weights
-    }
-
-    /// Whether the stage prunes the store to what its manifest names,
-    /// **after** the import.
-    ///
-    /// After, because before it there is nothing to prune; and the digest check
-    /// is not this walk's business — it ran on the file before the import read
-    /// it, and what the store keeps afterwards changes nothing about what was
-    /// checked.
-    #[must_use]
-    pub const fn prunes_to_the_manifest(&self) -> bool {
-        self.pruned_to_the_manifest
-    }
-
-    /// Whether every blob left in the store is held to the manifest that names
-    /// it before the store leaves the stage.
-    ///
-    /// This is the line that makes *carried once* a build that goes red rather
-    /// than a comment: a runtime update that left a second copy behind under
-    /// some other name would be caught here, where [`Self::prunes_to_the_manifest`]
-    /// would not see it.
-    #[must_use]
-    pub const fn holds_the_store_to_its_manifest(&self) -> bool {
-        self.held_to_manifest
-    }
-
-    /// The catalogue entry the recipe names, or [`None`] where it names none.
-    #[must_use]
-    pub fn model(&self) -> Option<&str> {
-        said(&self.model)
-    }
-
-    /// The quantisation the recipe names, or [`None`] where it names none.
-    #[must_use]
-    pub fn quantisation(&self) -> Option<&str> {
-        said(&self.quantisation)
-    }
-
-    /// What the runtime on the machine answers to, or [`None`] where the recipe
-    /// says nothing.
-    #[must_use]
-    pub fn artefact(&self) -> Option<&str> {
-        said(&self.artefact)
-    }
-
-    /// Where the weights are fetched from, or [`None`] where the recipe says
-    /// nothing.
-    #[must_use]
-    pub fn from(&self) -> Option<&str> {
-        said(&self.from)
-    }
-
-    /// The digest the recipe names, or [`None`] where it names none.
-    #[must_use]
-    pub fn digest(&self) -> Option<&str> {
-        said(&self.digest)
-    }
-
-    /// Where the runtime's template for this model is fetched from, or [`None`]
-    /// where the recipe says nothing.
-    #[must_use]
-    pub fn template(&self) -> Option<&str> {
-        said(&self.template)
-    }
-
-    /// The digest the recipe names for that template, or [`None`].
-    #[must_use]
-    pub fn template_digest(&self) -> Option<&str> {
-        said(&self.template_digest)
-    }
-
-    /// Whether the template this model is served with is one exact artefact,
-    /// held to a whole digest checked **before anything reads it**, and handed
-    /// to the import.
-    ///
-    /// Four conditions and not three, because the fourth is the one that fails
-    /// silently: a template fetched, pinned and checked, and then not used, is
-    /// a build that passes every check in this file while the machine serves
-    /// the model under whatever the runtime guessed. What this reads is that
-    /// some line after the check names the fetched file and that the import is
-    /// handed a Modelfile; it cannot read that the two are the same command,
-    /// and does not claim to.
-    #[must_use]
-    pub fn carries_its_template_pinned(&self) -> bool {
-        self.template_checked_first
-            && self.template_reaches_the_import
-            && self.template().is_some_and(|from| !moves(from))
-            && self.template_digest().is_some_and(is_a_whole_digest)
-    }
-
-    /// Whether the weights are copied onto the machine at all.
-    #[must_use]
-    pub const fn land(&self) -> bool {
-        self.lands
-    }
-
-    /// Whether what is fetched is one exact thing rather than whatever is
-    /// published under a moving name today.
-    ///
-    /// The runtime's version pin, said about a file instead of a release: a
-    /// branch is not a revision, and `latest` is not a version.
-    #[must_use]
-    pub fn is_pinned(&self) -> bool {
-        self.from().is_some_and(|from| !moves(from))
-    }
-
-    /// Whether the weights are held to a whole digest that the build checks
-    /// **before anything reads them**.
-    ///
-    /// Stricter than [`crate::TheRuntime::is_verified`] on purpose, and the
-    /// difference is the failure this one can have: weights are imported by the
-    /// runtime rather than unpacked by `tar`, so a recipe that fetched, imported
-    /// and then checked would produce a model store built out of whatever
-    /// arrived and a build that went red afterwards — with the wrong bytes
-    /// already in a layer.
-    #[must_use]
-    pub fn is_verified(&self) -> bool {
-        self.checked_first && self.digest().is_some_and(is_a_whole_digest)
-    }
-}
-
-/// Whatever a recipe said, where it said anything.
-fn said(what: &Option<String>) -> Option<&str> {
-    what.as_deref().map(str::trim).filter(|it| !it.is_empty())
-}
-
-/// Whether this source names *whatever is there today* rather than one file.
-fn moves(from: &str) -> bool {
-    MOVING.iter().any(|moving| from.contains(moving))
-}
-
-/// Whether the weights stage checks the digest of the file it fetched from
-/// `source` before any other line in it touches that file.
+/// Whether this path is somewhere the machine may write after it is installed.
 ///
-/// Order is the whole question, so it is asked inside one stage: which file was
-/// fetched is what the fetch itself says, and every later line naming that file
-/// is something reading it.
-///
-/// **The fetch is found by the argument that names its source**, rather than by
-/// being the first fetch in the stage, because the stage fetches more than one
-/// thing and *the first one* would answer about the wrong file the day the
-/// order changed.
-fn checked_before_it_was_read(containerfile: &str, source: &str, digest: &str) -> bool {
-    let lines = in_stage(containerfile, THE_STAGE);
-
-    let Some(fetched) = fetched_from(&lines, source) else {
-        return false;
-    };
-
-    let mut checked = false;
-    for line in lines {
-        if line.contains(digest) && line.contains(A_DIGEST_CHECKED) {
-            checked = true;
-            continue;
-        }
-        if fetched_to(line).is_some() {
-            continue;
-        }
-        if line.contains(fetched) {
-            return checked;
-        }
-    }
-    checked
-}
-
-/// Where the fetch that reads the argument `source` puts what it fetched.
-///
-/// A line that merely mentions the argument — the `ARG` line that declares it,
-/// or the check that reads its digest — is not a fetch, so what is looked for
-/// is a line that both names the argument and says where it wrote.
-fn fetched_from<'a>(lines: &[&'a str], source: &str) -> Option<&'a str> {
-    lines
-        .iter()
-        .copied()
-        .filter(|line| line.contains(source))
-        .find_map(fetched_to)
-}
-
-/// Whether the template the recipe fetched is what the import is handed.
-///
-/// Two lines, in order: something after the digest check reads the fetched
-/// file, and the import is given a Modelfile to read. Neither alone is the
-/// answer — a template fetched and never read is the failure this exists for,
-/// and an import with no Modelfile is not this model being served at all.
-fn the_template_reaches_the_import(containerfile: &str) -> bool {
-    let lines = in_stage(containerfile, THE_STAGE);
-    let Some(fetched) = fetched_from(&lines, THE_TEMPLATE_NAME) else {
-        return false;
-    };
-    let Some(checked) = lines.iter().position(|line| {
-        line.contains(THE_TEMPLATE_DIGEST_NAME) && line.contains(A_DIGEST_CHECKED)
-    }) else {
-        return false;
-    };
-    let read = lines
-        .iter()
-        .skip(checked + 1)
-        .any(|line| line.contains(fetched) && fetched_to(line).is_none());
-    let imported = lines
-        .iter()
-        .any(|line| line.contains(IMPORTED) && line.contains(THE_MODELFILE));
-    read && imported
-}
-
-/// Whether the weights stage, after the import, prunes the store to what its
-/// manifest names and then holds what is left to that manifest — as two
-/// answers, because they are two walks that go wrong separately.
-///
-/// Read off the text the way the rest of this crate reads a recipe. **Both
-/// answers are a manifest-conditioned walk and they differ only in the
-/// else-branch**: the prune removes a blob the manifest does not name, and the
-/// hold refuses the build for one. A recipe with the second and not the first
-/// ships the weights twice; with the first and not the second, a future runtime
-/// leaving a copy under some other name is pruned silently instead of stopping
-/// the build.
-///
-/// Order is part of the question — a removal before the import would remove
-/// nothing and then import nothing — so both are asked inside the stage, after
-/// the line that imports.
-fn carried_once(containerfile: &str) -> (bool, bool) {
-    let lines = in_stage(containerfile, THE_STAGE);
-    let Some(imported) = lines.iter().position(|line| line.contains(IMPORTED)) else {
-        return (false, false);
-    };
-    let after: Vec<&str> = lines.into_iter().skip(imported + 1).collect();
-
-    let walked_then = |what: &str| {
-        let walked = after.iter().position(|line| line.contains(EVERY_BLOB));
-        walked.is_some_and(|walked| {
-            after.iter().skip(walked).any(|line| {
-                line.contains(LOOKED_UP) && line.contains(THE_MANIFEST) && line.contains(what)
-            })
-        })
-    };
-    let pruned = walked_then(REMOVED) && after.iter().any(|line| line.contains(THE_WALKED_BLOB));
-
-    // Three lines in order: the walk, the lookup, the refusal. Each is looked
-    // for after the one before it, by skipping rather than slicing.
-    let walked = after.iter().position(|line| line.contains(EVERY_BLOB));
-    let looked = walked.and_then(|walked| {
-        after
+/// A prefix, and nothing cleverer. A relative path, or one that climbs out with
+/// `..`, is **not** writable by this answer — not because it could not be, but
+/// because a path like that has not said where it is, and this question may
+/// only be answered yes by something that has.
+#[must_use]
+pub fn a_machine_may_write(path: &str) -> bool {
+    !path.contains("..")
+        && WHAT_A_MACHINE_MAY_WRITE
             .iter()
-            .skip(walked + 1)
-            .position(|line| line.contains(LOOKED_UP) && line.contains(THE_MANIFEST))
-            .map(|looked| walked + 1 + looked)
-    });
-    let held =
-        looked.is_some_and(|looked| after.iter().skip(looked).any(|line| line.contains(REFUSED)));
-
-    (pruned, held)
+            .any(|half| path.starts_with(half))
 }
 
-/// Where this line puts what it fetched, where it is a fetch.
-fn fetched_to(line: &str) -> Option<&str> {
-    let mut words = line.split_whitespace();
-    while let Some(word) = words.next() {
-        if word == FETCHED_TO {
-            return words.next();
-        }
-    }
-    None
+/// Everywhere the recipe copies something out of a build stage into a model
+/// store, which should be nowhere.
+///
+/// Matched on the landing place rather than on the stage's name, because a
+/// stage can be called anything and the question is what arrives on the
+/// machine. Any landing place with `models` in it counts: the store has moved
+/// once already, and a rule naming only the old place would miss weights put
+/// back in the new one.
+#[must_use]
+pub fn where_the_recipe_lands_weights(recipe: &str) -> Vec<String> {
+    recipe
+        .lines()
+        .map(str::trim)
+        .filter(|line| line.starts_with("COPY") && line.contains("--from="))
+        .filter_map(|line| line.split_whitespace().next_back())
+        .filter(|landing| landing.contains("models"))
+        .map(str::to_owned)
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// A recipe holding exactly the lines a test names.
-    fn saying(lines: &[&str]) -> TheWeights {
-        TheWeights::read(&lines.join("\n"))
-    }
-
-    /// The shape a correct recipe has, as a fixture the refusals below break one
-    /// line of.
-    fn a_correct_recipe() -> Vec<String> {
-        vec![
-            "ARG THE_MODEL=phi-3-mini-instruct".to_owned(),
-            "ARG THE_MODELS_QUANTISATION=Q4_K_M".to_owned(),
-            "ARG THE_MODELS_ARTEFACT=phi3:3.8b-mini-4k-instruct-q4_K_M".to_owned(),
-            "ARG THE_MODELS_WEIGHTS=https://example.test/resolve/a64113/it.gguf".to_owned(),
-            format!("ARG THE_MODELS_SHA256={}", "ab".repeat(32)),
-            "ARG THE_MODELS_TEMPLATE=https://example.test/resolve/a64113/it.gotmpl".to_owned(),
-            format!("ARG THE_MODELS_TEMPLATE_SHA256={}", "cd".repeat(32)),
-            "FROM builder AS weights".to_owned(),
-            "RUN curl --output /weights.gguf \"${THE_MODELS_WEIGHTS}\" \\".to_owned(),
-            " && curl --output /template.gotmpl \"${THE_MODELS_TEMPLATE}\" \\".to_owned(),
-            " && echo \"${THE_MODELS_SHA256}  /weights.gguf\" | sha256sum --check - \\".to_owned(),
-            " && echo \"${THE_MODELS_TEMPLATE_SHA256}  /template.gotmpl\" | sha256sum --check -"
-                .to_owned(),
-            "RUN cat /template.gotmpl > /Modelfile; \\".to_owned(),
-            "    ollama create it -f /Modelfile; \\".to_owned(),
-            " && for blob in /models/blobs/*; do \\".to_owned(),
-            "      grep -q \"sha256:${blob##*/sha256-}\" \"${manifest}\" || rm -f \"${blob}\"; \\"
-                .to_owned(),
-            "    done; \\".to_owned(),
-            " && for blob in /models/blobs/*; do \\".to_owned(),
-            "      grep -q \"sha256:${blob##*/sha256-}\" \"${manifest}\" || exit 1; \\".to_owned(),
-            "    done".to_owned(),
-            "FROM base".to_owned(),
-            "COPY --from=weights /models/ /usr/share/alo/models/".to_owned(),
-        ]
-    }
-
-    /// The same recipe with one line changed, the way a person edits a
-    /// Containerfile.
-    fn with(from: &str, to: &str) -> TheWeights {
-        let lines: Vec<String> = a_correct_recipe()
-            .into_iter()
-            .map(|line| line.replace(from, to))
-            .collect();
-        TheWeights::read(&lines.join("\n"))
-    }
-
-    /// **The whole shape reads off a recipe that carries it**, so the refusals
-    /// below are about what is missing rather than about a reader that never
-    /// worked.
+    /// **The recipe this repository ships lands no weights.**
     #[test]
-    fn a_recipe_that_carries_the_weights_pinned_reads_as_one() {
-        let read = TheWeights::read(&a_correct_recipe().join("\n"));
-
-        assert_eq!(read.model(), Some("phi-3-mini-instruct"));
-        assert_eq!(read.quantisation(), Some("Q4_K_M"));
-        assert_eq!(read.artefact(), Some("phi3:3.8b-mini-4k-instruct-q4_K_M"));
-        assert!(read.land());
-        assert!(read.is_pinned());
-        assert!(read.is_verified());
-        assert!(read.prunes_to_the_manifest());
-        assert!(read.holds_the_store_to_its_manifest());
+    fn the_shipped_recipe_lands_no_weights() {
+        let recipe =
+            std::fs::read_to_string(std::path::Path::new(crate::THE_IMAGE).join("Containerfile"))
+                .unwrap_or_default();
+        assert!(!recipe.is_empty(), "the recipe reads");
         assert_eq!(
-            read.template(),
-            Some("https://example.test/resolve/a64113/it.gotmpl")
+            where_the_recipe_lands_weights(&recipe),
+            Vec::<String>::new()
         );
-        assert_eq!(read.template_digest(), Some("cd".repeat(32).as_str()));
-        assert!(read.carries_its_template_pinned());
     }
 
-    /// **A template nothing pins is not a template this model was graded
-    /// under**, and each of the four ways it comes loose is one line of an
-    /// otherwise correct recipe.
+    /// **A recipe that puts them back is caught**, in the old place or a new
+    /// one.
     #[test]
-    fn a_template_that_is_not_pinned_checked_and_used_reads_as_none() {
-        let moving = with(
-            "https://example.test/resolve/a64113/it.gotmpl",
-            "https://example.test/resolve/main/it.gotmpl",
-        );
-        assert!(!moving.carries_its_template_pinned());
-        assert!(
-            moving.is_verified(),
-            "and the weights beside it are untouched, because they are a separate pin"
-        );
-
-        let half = with(&"cd".repeat(32), &"cd".repeat(16));
-        assert!(!half.carries_its_template_pinned());
-
-        let unchecked = with(
-            " && echo \"${THE_MODELS_TEMPLATE_SHA256}  /template.gotmpl\" | sha256sum --check -",
-            " && true",
-        );
-        assert!(!unchecked.carries_its_template_pinned());
-        assert!(
-            unchecked.is_verified(),
-            "the weights' own check is a different line and is still there"
-        );
-
-        let unused = with("RUN cat /template.gotmpl > /Modelfile; \\", "RUN true; \\");
-        assert!(!unused.carries_its_template_pinned());
-    }
-
-    /// **A template checked after something read it is not a check**, which is
-    /// the same mistake as the weights' and the one that leaves the wrong
-    /// words in a layer.
-    #[test]
-    fn a_template_checked_after_it_was_read_is_not_a_check() {
-        let afterwards = saying(&[
-            &format!("ARG THE_MODELS_TEMPLATE_SHA256={}", "cd".repeat(32)),
-            "FROM builder AS weights",
-            "RUN curl --output /template.gotmpl \"${THE_MODELS_TEMPLATE}\"",
-            "RUN cat /template.gotmpl > /Modelfile",
-            "RUN echo \"${THE_MODELS_TEMPLATE_SHA256}  /template.gotmpl\" | sha256sum --check -",
-            "RUN ollama create it -f /Modelfile",
-        ]);
-        assert!(!afterwards.carries_its_template_pinned());
-    }
-
-    /// **A recipe that fetches no template at all reads as one that pins
-    /// none**, rather than as a refusal — this file reports, and
-    /// `crate::checking` judges.
-    #[test]
-    fn a_recipe_with_no_template_in_it_pins_none() {
-        let read = saying(&[
-            "FROM builder AS weights",
-            "RUN ollama create it -f /Modelfile",
-        ]);
-        assert_eq!(read.template(), None);
-        assert_eq!(read.template_digest(), None);
-        assert!(!read.carries_its_template_pinned());
-    }
-
-    /// **A stage that never prunes reads as carrying the weights twice**,
-    /// which is what the real recipe did before 2026-10-05 — and the store is
-    /// still held to its manifest, because the two walks are two answers.
-    ///
-    /// The prune walk is removed and the refusal walk left standing, so this
-    /// also shows the two are read separately rather than one standing in for
-    /// the other.
-    #[test]
-    fn a_stage_that_never_prunes_reads_as_carrying_the_weights_twice() {
-        let left = with(
-            "      grep -q \"sha256:${blob##*/sha256-}\" \"${manifest}\" || rm -f \"${blob}\"; \\",
-            " && true \\",
-        );
-
-        assert!(!left.prunes_to_the_manifest());
-        assert!(left.holds_the_store_to_its_manifest());
-    }
-
-    /// **A store nothing holds to its manifest reads as held to nothing**, and
-    /// the prune does not stand in for it: a runtime update leaving a second
-    /// copy under some other name would be *pruned* by the first walk and must
-    /// still **stop the build**, which only the second walk does.
-    ///
-    /// **What separates the two answers is the else-branch, not the walk.**
-    /// Both are manifest-conditioned walks since 2026-10-05, so deleting the
-    /// walk breaks both — asserted here, because it is the one place a reader
-    /// can see that they share a prerequisite and are still two findings.
-    #[test]
-    fn a_store_nothing_holds_to_its_manifest_reads_as_held_to_nothing() {
-        // Only the refusal is gone: the store is pruned and nothing stops a
-        // blob the manifest does not name.
-        let unrefused = with("|| exit 1", "|| true");
-        assert!(unrefused.prunes_to_the_manifest());
-        assert!(!unrefused.holds_the_store_to_its_manifest());
-
-        // Only the prune is gone: the build still stops, and ships twice until
-        // it does.
-        let unpruned = with("|| rm -f \"${blob}\"", "|| true");
-        assert!(!unpruned.prunes_to_the_manifest());
-        assert!(unpruned.holds_the_store_to_its_manifest());
-
-        // No walk at all: neither answer can be read, because both are walks.
-        let unwalked = with("for blob in /models/blobs/*", "for blob in /nowhere/*");
-        assert!(!unwalked.prunes_to_the_manifest());
-        assert!(!unwalked.holds_the_store_to_its_manifest());
-
-        let unlooked = with("grep -q", "test -f");
-        assert!(!unlooked.holds_the_store_to_its_manifest());
-    }
-
-    /// **A removal before the import removes nothing**, because there is
-    /// nothing in the store yet — and a reader that swept the stage for an `rm`
-    /// would have counted it.
-    #[test]
-    fn a_removal_before_the_import_does_not_count() {
-        let early = saying(&[
-            &format!("ARG THE_MODELS_SHA256={}", "ab".repeat(32)),
-            "FROM builder AS weights",
-            "RUN curl --output /weights.gguf \"${THE_MODELS_WEIGHTS}\"",
-            "RUN for blob in /models/blobs/*; do grep -q x \"${manifest}\" \
-                 || rm -f \"${blob}\"; done",
-            "RUN ollama create it -f /weights.gguf",
-        ]);
-        assert!(!early.prunes_to_the_manifest());
-
-        let never_imported = saying(&[
-            "FROM builder AS weights",
-            "RUN for blob in /models/blobs/*; do grep -q x \"${manifest}\" \
-                 || rm -f \"${blob}\"; done",
-        ]);
-        assert!(!never_imported.prunes_to_the_manifest());
-        assert!(!never_imported.holds_the_store_to_its_manifest());
-    }
-
-    /// **A recipe that says nothing reads as one that carries nothing**, rather
-    /// than as a refusal — the wrong states are the ones the checker has to be
-    /// able to see.
-    #[test]
-    fn a_recipe_with_no_weights_in_it_carries_nothing_and_pins_nothing() {
-        let read = saying(&["FROM somewhere", "COPY image/etc/alo/ /etc/alo/"]);
-
-        assert_eq!(read.model(), None);
-        assert_eq!(read.quantisation(), None);
-        assert_eq!(read.artefact(), None);
-        assert_eq!(read.digest(), None);
-        assert!(!read.land());
-        assert!(!read.is_pinned());
-        assert!(!read.is_verified());
-    }
-
-    /// **A name that moves is not a pin.** A branch is a different file on two
-    /// builds of one image, and the digest beside it turns that into a broken
-    /// build rather than a caught mistake.
-    #[test]
-    fn weights_fetched_from_a_moving_name_are_not_pinned() {
-        for moving in [
-            "https://example.test/resolve/main/it.gguf",
-            "https://example.test/resolve/master/it.gguf",
-            "https://example.test/resolve/HEAD/it.gguf",
-            "registry.test/it:latest",
+    fn a_recipe_that_puts_weights_back_is_caught() {
+        for landing in [
+            "/usr/share/alo/models/",
+            "/var/lib/alo-model/models",
+            "/opt/somebody-elses/models/",
         ] {
-            let read = with("https://example.test/resolve/a64113/it.gguf", moving);
-            assert!(!read.is_pinned(), "`{moving}` was read as pinned");
+            let recipe =
+                format!("FROM scratch AS weights\nCOPY --from=weights /models/ {landing}\n");
+            assert_eq!(
+                where_the_recipe_lands_weights(&recipe),
+                vec![landing.to_owned()],
+                "{landing}"
+            );
         }
-        assert!(!saying(&["FROM base"]).is_pinned());
     }
 
-    /// **A digest nothing checks is prose**, and so is half a digest.
+    /// A copy that is not out of a stage, or lands somewhere else, is not
+    /// weights.
     #[test]
-    fn a_digest_that_is_not_checked_or_not_whole_verifies_nothing() {
-        let half = with(&"ab".repeat(32), &"ab".repeat(16));
-        assert!(!half.is_verified());
-
-        let not_hex = with(&"ab".repeat(32), &"zz".repeat(32));
-        assert!(!not_hex.is_verified());
-
-        let unchecked = with("sha256sum --check -", "true");
-        assert!(!unchecked.is_verified());
+    fn a_copy_that_is_not_weights_is_not_caught() {
+        let recipe = "COPY image/usr/lib/os-release /usr/lib/os-release\n\
+                      COPY --from=built /alo-agentd /usr/libexec/alo-agentd\n";
+        assert_eq!(where_the_recipe_lands_weights(recipe), Vec::<String>::new());
     }
 
-    /// **And a digest checked after the weights have already been read verifies
-    /// nothing either**, which is the mistake that looks like the correct
-    /// recipe with two lines swapped: the model store is built out of whatever
-    /// arrived, and the build goes red with those bytes already in a layer.
+    /// **The store the service is pointed at is one the machine may write**,
+    /// and the place weights used to land is not.
     #[test]
-    fn a_digest_checked_after_the_weights_were_read_is_not_a_check() {
-        let afterwards = saying(&[
-            &format!("ARG THE_MODELS_SHA256={}", "ab".repeat(32)),
-            "FROM builder AS weights",
-            "RUN curl --output /weights.gguf \"${THE_MODELS_WEIGHTS}\"",
-            "RUN ollama create it -f /weights.gguf",
-            "RUN echo \"${THE_MODELS_SHA256}  /weights.gguf\" | sha256sum --check -",
-        ]);
-        assert!(!afterwards.is_verified());
+    fn the_store_is_writable_and_the_old_place_is_not() {
+        assert!(a_machine_may_write(THE_STORE_IS_AT));
+        assert!(!a_machine_may_write(WHERE_WEIGHTS_USED_TO_LAND));
+        assert!(a_machine_may_write("/etc/alo/models"));
     }
 
-    /// **A check in some other stage is not this stage's check.** The runtime's
-    /// own digest is checked three stages away, and a reader that swept the
-    /// whole recipe would have counted it.
+    /// A path that has not said where it is cannot answer yes.
     #[test]
-    fn a_check_in_another_stage_does_not_verify_these_weights() {
-        let elsewhere = saying(&[
-            &format!("ARG THE_MODELS_SHA256={}", "ab".repeat(32)),
-            "FROM builder AS runtime",
-            "RUN echo \"${THE_MODELS_SHA256}  /it\" | sha256sum --check -",
-            "FROM builder AS weights",
-            "RUN curl --output /weights.gguf \"${THE_MODELS_WEIGHTS}\"",
-            "RUN ollama create it -f /weights.gguf",
-        ]);
-        assert!(!elsewhere.is_verified());
-    }
-
-    /// **Weights copied out of the build context are not weights landing.** A
-    /// multi-gigabyte artefact committed into this repository is the source-tree
-    /// shape ADR 0006 refuses, and a commented-out line lands nothing at all.
-    #[test]
-    fn a_copy_that_is_not_from_a_stage_does_not_count() {
-        assert!(!saying(&["COPY vendored/models/ /usr/share/alo/models/"]).land());
-        assert!(!saying(&["# COPY --from=weights /models/ /usr/share/alo/models/"]).land());
-        assert!(!saying(&["COPY --from=weights /models/ /usr/share/alo/elsewhere/"]).land());
-    }
-
-    /// An argument that is there and says nothing is not a statement — the rule
-    /// `alo_models::Catalogue` holds a curator to, one file over.
-    #[test]
-    fn an_argument_that_says_nothing_names_nothing() {
-        let blank = with("phi-3-mini-instruct", "   ");
-        assert_eq!(blank.model(), None);
+    fn a_path_that_has_not_said_where_it_is_is_not_writable() {
+        assert!(!a_machine_may_write("var/lib/alo-model/models"));
+        assert!(!a_machine_may_write("/var/lib/../usr/share/alo/models"));
+        assert!(!a_machine_may_write(""));
     }
 }

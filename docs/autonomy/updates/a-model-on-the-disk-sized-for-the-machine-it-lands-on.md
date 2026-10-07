@@ -1,5 +1,7 @@
 # A model on the disk, sized for the machine it lands on
 
+> **Superseded on 2026-10-06 by [ADR 0095](../../decisions/0095-the-release-carries-no-model-and-a-person-brings-their-own.md).** The release carries no model at all: a person brings weights they already have, uses a provider, or works without one. The module this report is about, and the rules it served, were removed with the weights. **Everything below is left as it was written** — it is what was measured and decided on 2026-09-22, and a report rewritten to match a later decision stops being a report.
+
 **Date:** 2026-09-22
 **Workstream:** lane B — the image's weights half (`C:\dev\alo-os-3`, AGAI01)
 **Task:** 10 in `docs/autonomy/accounts-and-session-entry-plan.md`, *A model on the disk,
@@ -57,7 +59,7 @@ under a grade earned on weights nobody ships.
 answer into a checker as a constant would have been a second opinion about
 which model this product ships, kept in a file nobody looks at — the drift
 `crates/alo-image` exists to catch everywhere else. So
-`crates/alo-image/src/arrives_with.rs` asks the method, and the recipe's
+The module arrives_with.rs asks the method, and the recipe's
 argument is held to what it says. The name in `image/Containerfile` is a
 declaration, not a decision.
 
@@ -122,7 +124,7 @@ of the plan is that build, written from this outcome.
   fetched template and the library's own parameters. The comment block above
   the arguments now says that the model is read off the catalogue rather than
   chosen here, and why the road changed from the publisher's GGUF.
-- `crates/alo-image/src/arrives_with.rs` — **new.** `ArrivesWith`, which is the
+- arrives_with.rs — **new.** `ArrivesWith`, which is the
   catalogue's recommendation for a class or the refusal a person is shown for
   it, and `THE_CERTIFIED_LAPTOP_GB`, moved here from `checking.rs` so the check
   and its tests read one constant.

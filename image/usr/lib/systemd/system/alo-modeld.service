@@ -49,11 +49,20 @@ CapabilityBoundingSet=
 AmbientCapabilities=
 NoNewPrivileges=yes
 
-# Where it looks for the model, which is where the weights landed and nowhere
-# else. The runtime's own default is a home directory belonging to a login this
-# image does not make, so without this line a machine carrying 2.23 GiB of model
-# would serve nothing and say it had nothing installed.
-Environment=OLLAMA_MODELS=/usr/share/alo/models
+# Where it looks for the model, and **it has to be somewhere writable**.
+#
+# This read `/usr/share/alo/models` while the image carried weights, which was
+# right then: they were ours, they arrived with the machine, and a read-only
+# place is the correct place for something nobody is meant to change. ADR 0095
+# ended that. **The weights are now the person's**, brought by them, and
+# `/usr/share` is on the read-only half of a bootc machine — so leaving this
+# line as it was would have made *bring your own weights* impossible while
+# every sentence about it still read correctly.
+#
+# `StateDirectory=alo-model` below makes `/var/lib/alo-model` before this
+# process starts, owned by this service and `0700`. The store goes inside it, so
+# the one place the runtime writes is the one place systemd already guarantees.
+Environment=OLLAMA_MODELS=/var/lib/alo-model/models
 
 # **The address is the one `crates/alo-models` knocks at, and it is loopback.**
 # The single most expensive thing that can go wrong in this file is one word:
@@ -94,9 +103,12 @@ Environment=OLLAMA_NO_CLOUD=1
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 
 # Somewhere of its own to write, made and owned by systemd before the process
-# starts. The runtime expects a writable home; /usr/share/alo/models is on the
-# read-only half of a bootc machine and is not it. 0700, because nothing else on
-# this machine has any business in it.
+# starts. 0700, because nothing else on this machine has any business in it.
+#
+# **Since ADR 0095 this holds the weights as well as the home.** The store is
+# `models/` inside it (`OLLAMA_MODELS` above), so a person's own weights land in
+# a directory systemd makes, owned by the one service that reads them, that no
+# other login can open and that survives an update of the read-only half.
 StateDirectory=alo-model
 StateDirectoryMode=0700
 Environment=HOME=/var/lib/alo-model
@@ -109,7 +121,17 @@ Environment=HOME=/var/lib/alo-model
 # `alo-models` finds nothing on, which is an answer this repository already has.
 
 [Install]
-# Started at boot, not at a sign-in. *The local model is what the machine
-# arrives ready to run* is a promise about the machine rather than about
-# whoever happens to be signed in to it, and this service belongs to no person.
+# Started at boot, not at a sign-in, and **the reason changed with ADR 0095**.
+# It used to be *the local model is what the machine arrives ready to run*,
+# which is no longer true: the machine arrives with no model. The reason now is
+# the half of that sentence which survives — whatever weights a person brought
+# belong to **the machine**, not to whoever happens to be signed in to it, so
+# the service that serves them belongs to no person either. Starting it at a
+# sign-in would make one person's session the owner of something the machine
+# holds, and a second person signing in would find it missing.
+#
+# It starts whether or not there are weights to serve. A machine with none is a
+# supported state (ADR 0009), not a half-installed one: the service comes up,
+# `crates/alo-models` finds nothing on it, and that is an answer this repository
+# already has words for.
 WantedBy=multi-user.target
