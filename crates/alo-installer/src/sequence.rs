@@ -95,13 +95,23 @@ fn installing(
     }
     let offer = decide(&found).map_err(Ended::Refused)?;
 
-    // **What the person is promised is read from the shrink that will happen**,
-    // not from the size of the installer's area. They are the same number while
-    // the area is all Windows ever gives up, and the sentence a person agrees to
-    // is not a place to leave a constant that is only accidentally right: the
-    // road that puts alo OS beside Windows takes tens of gigabytes, and a
-    // promise built from `THE_AREA` could not follow it.
-    let area = sizes::taken(offer.windows.size.saturating_sub(offer.shrink.to));
+    // **Two numbers, and they are only accidentally the same one.**
+    //
+    // What Windows gives up is read from the shrink that will happen, not from
+    // the size of the installer's area. Those agree while the area is the only
+    // thing Windows ever gives up, and the sentence a person agrees to is not a
+    // place to leave a constant that is right by coincidence.
+    let gives_up = sizes::taken(offer.windows.size.saturating_sub(offer.shrink.to));
+    // And the installer's own area is the same gibibyte on every road. It is
+    // **not** what Windows gives up on the road that keeps Windows, where the
+    // rest of the freed space is alo OS's - and the sentence it fills says *an
+    // area for the installer*, so a bigger number there would tell a person the
+    // installer wanted tens of gigabytes for itself.
+    //
+    // `words::WILL_GIVE_ALO_OS` says what the rest is for, and its own
+    // documentation is the reason these are separate: the three sentences add
+    // up, and a person who adds them should get the number they were told.
+    let the_area = sizes::taken(sizes::THE_AREA);
     say(
         machine,
         strings,
@@ -112,13 +122,13 @@ fn installing(
         machine,
         strings,
         words::WILL_SHRINK_WINDOWS,
-        &Filling::of("volume", offer.windows.letter.drive()).and("area", area.as_str()),
+        &Filling::of("volume", offer.windows.letter.drive()).and("area", gives_up.as_str()),
     );
     say(
         machine,
         strings,
         words::WILL_MAKE_THE_AREA,
-        &Filling::of("area", area.as_str()).and("disk", offer.windows_disk.as_str()),
+        &Filling::of("area", the_area.as_str()).and("disk", offer.windows_disk.as_str()),
     );
     say(
         machine,
