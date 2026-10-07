@@ -144,6 +144,37 @@ one.
 Kept: *"You can change this later. External processing requires a visible
 choice."*
 
+#### One selection border, everywhere — settled 2026-10-07
+
+**Selected is 2 logical pixels, navy `#102A43`, plus the word.** There is no
+second selection border anywhere in onboarding; the 1.5px one that used to sit
+on the access screens was a leftover and is gone.
+
+**Verified over all 77 frames by measurement rather than by opening them**,
+using the fact that a border changes what a card measures:
+
+| card state | measured height | why |
+|---|---|---|
+| ordinary | **85** | 1px border |
+| selected | **87** | 2px border — one more pixel on each edge |
+
+A surviving 1.5px border would measure **86**. **No card in the file measures
+86 or any fractional height** — the check is in `/root/snapshot-checks.py` and
+it reports `0 such heights`. That is the one-rule claim tested everywhere at
+once, instead of on the handful of screens anybody would think to look at.
+
+**Four heights are neither 85 nor 87**, and all four are explained rather than
+exceptions: `84` and `132` on `385:26174` and `385:26244`, which are the
+1280-wide and long-translation frames where a card shrinks or grows to hold its
+text. On `385:26244` all four cards measure 132 because they are fixed to one
+height there, so the selected one is **not** 2 taller than its siblings — the
+usual signature is absent. **Read directly rather than inferred:** `385:26260`
+is `border-2` in `#102A43`. The rule holds; the proxy simply does not apply on
+that frame, which is worth knowing before somebody uses the proxy alone.
+
+**The scale is applied once.** These are logical pixels and stay logical — see
+*One scaling, at the boundary that already exists* below.
+
 ### The arrival screen, word for word — `383:26067`
 
 Read 2026-10-06. **This is the authoritative copy for this screen**, and it
@@ -610,7 +641,31 @@ the file**, with its copy and geometry written down. What remains is not reading
 but confirming: the re-export of section `383:26066` into the committed
 snapshot, which `MANIFEST.md` names as the outstanding dependency.
 
-### Accessibility reached from Welcome — `387:26226`, and a third inference withdrawn
+### Superseded 2026-10-07: the strip is identity, and tracks nothing
+
+**The whole question below is closed, and not in favour of either answer it
+weighed.** The owner settled on 2026-10-07 that the strip reads `alo OS` on
+every frame that has one, `387:26226` included. **It is identity. It carries no
+state at all** — not a step count, and not the step a person came from.
+
+**So a build must not read anything out of it**, which is what this section and
+the two below it spent three readings trying to decide. The label is the same
+six characters on all 69 frames that carry it; there is nothing in it to infer
+from.
+
+**The requirement it was being used to support still stands, on its own.**
+*Return from accessibility settings to the originating step, preserving its
+state* is the owner's instruction of 2026-10-06 and is unaffected: the
+navigation has to remember where somebody came from. **What changed is that the
+strip was never the evidence for it** — which is exactly what the withdrawn
+inference below had concluded, for the wrong reason.
+
+**Kept rather than deleted**, because the reasoning is the useful part: an
+inference drawn from one frame was contradicted by the next, reinstated by a
+correction, and then made irrelevant by a decision. Three movements, and at no
+point was the label safe to build on.
+
+### What that frame looked like before it was corrected
 
 Read 2026-10-06. The frame is named *Accessibility · Screen reader on /
 **Welcome*** and **its content is identical to `384:26446`**, the screen-reader
@@ -736,7 +791,27 @@ before**, **stay in control** — and *Disconnect or stop a task whenever you
 need* is the way out named a third time, after the provider list and the ready
 screen.
 
-### Action widths are not a rule, and my two attempts to make them one were both wrong
+### Settled 2026-10-06: detail actions are 184×48, and the differing widths were leftovers
+
+**The designer has standardised both buttons on all four AI-detail screens to
+184×48 logical pixels**, and says the differing widths were leftovers rather
+than an intended rule.
+
+**So the guidance below is withdrawn.** It read *there is no family rule and no
+per-screen rule… size each action to its own label*. That was a reasonable
+reading of the file as it stood, and it was the wrong conclusion: the variation
+was accidental, not meaningful. **Use 184×48 for detail actions.**
+
+The component's contract still holds and still matters — *named labels, a 48
+logical pixel target, secondary actions retain equal reachability* — and the
+sign-in family still uses 44, which is a different component and not covered by
+this.
+
+**Kept below because the reasoning was sound and only the data was unfinished.**
+A reader who meets two widths in an older export should know they were a
+transient state of the file rather than a distinction to preserve.
+
+### What the widths looked like before they were standardised
 
 **Corrected twice, and the second correction killed the pattern rather than
 adjusting it.**
@@ -875,6 +950,373 @@ every later send, not about setup. It ties this screen to the egress and
 approval machinery, and a build that connected a provider without that
 disclosure road existing would have made a promise here it cannot keep
 elsewhere.
+
+## The flow is larger than the AI choice, and this is where the rest begins
+
+**The owner's inventory of 2026-10-06 covered the AI-choice flow. The file holds
+a finished flow around it**, renumbered throughout: `08` Welcome, `09` Language,
+region and keyboard, `12` the AI choice with its a–o variants, `13` Ready and
+Sign in, `14` Your first canvas.
+
+**The ids come from the committed snapshot and the names do not.** Names there
+are stale — `183:10715` is *14 · Setup / First canvas* in the export and
+*14 · Your first canvas* in the file — but **ids do not rot**, so the export
+remains a usable list of what to open even while it is wrong about what each
+one is called.
+
+**It is a floor rather than a total.** The AI-choice flow gained about a dozen
+frames the snapshot has never held, in the `383:`–`387:` range against its own
+ceiling of `358`. Other parts of the flow may have gained frames the same way,
+and **they cannot be counted**: `get_metadata` reports one page for this file
+however many it has, which `figma-snapshot/ROOTS.md` already records. **The
+frame list has been asked of the designer**, and it is the only thing that
+closes this honestly.
+
+### Signing in — `176:10686`, *13 · Sign in / Unlock*
+
+Read 2026-10-06. **The component carries its own specification**, which makes
+these constraints the designer's intent rather than our reading:
+
+> *Local authentication presentation. Default PIN entry, alternate methods,
+> fingerprint and error state. **Native authentication must succeed before
+> navigating to a Place; prototype links are demonstrations only. No hover
+> unlock. Preserve user name casing.** Other methods only when available.*
+
+**Every clause is a rule a build can break.** *Prototype links are
+demonstrations only* is the designer saying in the file what the owner's
+instruction says to us — never treat the prototype's success path as real state.
+*No hover unlock* forbids an obvious convenience. *Other methods only when
+available* means the alternates are drawn from what the machine actually has,
+not listed and then refused.
+
+| slot | what is drawn |
+|---|---|
+| wallpaper | layer named **Authentication / abstract wallpaper — no personal content** |
+| monogram | **lowercase `d`**, 64×64, radius 18, on `#eef2f4` |
+| greeting | **alo, disan** — 36/44 |
+| entry | 304×56, radius 18, placeholder *Enter your PIN* |
+| submit | a **44** target inside the entry, with an unlock arrow |
+| alternate | *Other ways to sign in*, 240×44 |
+| bottom row | 1360 wide at y 884 — *Accessibility* left; *Switch person* and a **power control, 48×48** right |
+| back | a chevron at the top left |
+
+**"Preserve user name casing" is visible in the artwork.** The greeting is
+*disan*, not *Disan*, and the monogram is a lowercase `d`. **A build must never
+title-case a person's name**, and the design demonstrates the rule rather than
+only stating it.
+
+**The lock screen's no-personal-content rule is in a layer name**, which is
+where somebody drawing the wallpaper will actually meet it.
+
+**And a measured difference from setup: this screen uses 44, where setup uses
+48.** The submit target and *Other ways to sign in* are both 44 tall, while the
+setup component's contract says *48 logical pixel target* and the power control
+here is 48. 44 is the WCAG 2.5.5 floor, so it is defensible — but **it is a
+different number in a different component family, and neither may be assumed
+from the other.**
+
+**`disan` is example data**, and it is the owner's own name, as `Disan` is on
+`384:26375`.
+
+### Ready, with nothing connected — `376:30369`, *13c · Ready / Provider later*
+
+Read 2026-10-06. **The deferred-connection case has a ready state of its own**,
+and it is the requirement *a deferred connection must not masquerade as a
+successful connection* drawn rather than asked for.
+
+| slot | words |
+|---|---|
+| stage | SET UP · READY |
+| eyebrow | YOUR COMPUTER. YOUR WAY. |
+| title | **Start with your work.** |
+| introduction | Connect your chosen AI service whenever you are ready. |
+| row 1 | **Your account** — Disan · protected on this PC |
+| row 2 | **AI connection pending** — **Nothing is sent to a provider until you connect and authorise it.** |
+| actions | Open my canvas · Review choices, 160×48 |
+| footer | **You can change your choices later.** |
+
+**The title does not claim completion.** *Start with your work* rather than
+*You're all set* or *Ready to go* — a person who deferred is taken to a working
+canvas without being told something finished that did not.
+
+**The pending state is named as a row, not hidden.** *AI connection pending*
+sits where a connected machine's name sits on `384:26375`, so the same place on
+the same screen says either what is connected or that nothing is.
+
+**"connect *and authorise* it" is two steps, not one.** Connecting an account
+and authorising a send are separate, which is the same distinction the owner's
+instruction draws between choosing a route and connecting an account — and it
+means a build may not treat a stored credential as permission to use it.
+
+**The footer changes on this screen.** Every other screen reads *Local setup. No
+online account required.*; this one reads *You can change your choices later.*
+**The footer is not a constant** — a build that hard-coded it would say the
+wrong thing here.
+
+**One copy detail worth confirming rather than normalising:** this row reads
+*Disan · protected on this PC* where `384:26375` reads *Disan · **P**rotected on
+this PC*. One capital letter, two strings, and translators key off the string.
+**Not worth guessing at; worth one glance by whoever owns the file.**
+
+### Your name — `183:10675`, *10 · Your name*
+
+Read 2026-10-06.
+
+| slot | words |
+|---|---|
+| stage | **SET UP · 2 OF 5** |
+| eyebrow | MAKE IT YOURS |
+| title | What should we call you? |
+| introduction | This name appears when you sign in. You can change it later. |
+| row 1 | **Your name** — disan |
+| row 2 | **Profile picture · optional** — Use your initial, or choose a picture. |
+| consequence | **Your account is created on this computer. No online account is required.** |
+| actions | Continue · Back, 160×48 |
+
+**`disan` is lowercase here too**, which is where *preserve user name casing*
+starts: the name is taken as typed on this screen and shown as typed on
+`176:10686`'s greeting and monogram. **A build that title-cased it at either end
+would break the rule at the other.**
+
+**The local-account promise is stated twice over** — in the consequence line and
+again in the footer that every screen carries. *No online account is required*
+is not a setup detail; it is the product.
+
+**The profile picture is optional and defaults to an initial**, which is why the
+sign-in monogram is a letter rather than a placeholder avatar.
+
+### Settled: the strip is identity and reads `alo OS`
+
+**The owner's words: *our name is alo OS, not 2-of-5*.** The small label at the
+top of every setup screen is **identity**, and it reads exactly `alo OS`.
+**Applied in the design file and verified here on 2026-10-07**, and settled as
+[ADR 0094](../decisions/0094-the-strip-above-a-setup-screen-is-the-products-name.md).
+
+**Why the identity line and not a counter.** That strip is on screen through
+the whole of setup, **before any window, wallpaper or account exists** — it is
+the first and most persistent thing a person sees of what they are installing.
+A counter spends the most valuable line on the screen on the least valuable
+information.
+
+**And the count could not have been kept honest.** A person who takes the
+network-machine branch, turns the screen reader on, or adds both a PIN and a
+fingerprint **walks a different number of screens** from one who does not, so
+*N of 5* is either wrong or so coarse it tells nobody anything. **A build must
+not derive a denominator from the frame inventory**, and now has no reason to:
+there is no denominator.
+
+**The duplicate wordmark elsewhere on these screens is removed, and must not
+come back.** One identity element per screen; a second is not reinforcement, it
+is two things to keep in step.
+
+#### Verified across all 77 frames, not sampled
+
+`docs/design/figma-snapshot/70-28.xml` was refreshed from the design file on
+2026-10-07 and measured by script, so these are counts rather than
+impressions:
+
+| | |
+|---|---|
+| frames under the four section roots | **77** |
+| frames carrying the identity label | **69** |
+| frames without it | **8** |
+| label nodes at the same position on a 1440-wide frame | **66** |
+
+**The eight without it are not omissions**, and the rule separating them is
+structural rather than a list to memorise:
+
+> **A frame has the identity strip exactly when it is a setup sheet — a
+> `Main / …` column of eyebrow, title, introduction, choices and actions. A
+> frame has no strip when it shows the running canvas**, which these eight do:
+> each carries `Dock + alo Bar / fixed viewport` and `Place name` instead.
+
+`183:10715`, `83:890`, `372:30350`, `372:30442`, `372:30498`, `377:26182`,
+`377:26232`, `377:26280`. **A build must not add the strip to these.** The
+canvas is the machine itself; stamping a setup label on it would say setup is
+still running after it has finished.
+
+#### One measured inconsistency, reported rather than resolved
+
+Sixty-six of the sixty-nine labels sit at `x=950` on a 1440-wide frame, which
+is a **70px right inset**. Three do not:
+
+| frame | frame width | right inset |
+|---|---|---|
+| `385:26174` *Arrival / 1280 × 720* | 1280 | **64** |
+| `385:26208` *Arrival / 2560 × 1080* | 2560 | **64** |
+| `385:26244` *Network selected / Long translation* | **1440** | **64** |
+
+**The first two are correct** — the inset is held while the width changes,
+which is what a responsive strip should do. **The third is a 1440 frame with a
+different inset from its sixty-six siblings**, and there are two readings: 64
+is the newer value and the other sixty-six are behind it, or this one frame is
+ahead of them. **A build should take 70 on 1440 because that is what
+sixty-six frames say**, and the discrepancy is the designer's to settle. It is
+6px on one frame and it changes nothing about the decision.
+
+### Progress belongs to the operation, not to setup
+
+**There is no overall setup counter, row of dots or decorative progress line.**
+The screen's own heading says what the current task is, which is the thing a
+person actually wants to know; branches that walk different numbers of screens
+need no invented common denominator.
+
+**Removing the counter must not remove real progress, and has not.** Measured
+in the refreshed snapshot:
+
+| what | where |
+|---|---|
+| `Measured progress / example` — a 600×6 track with a 408×6 fill | `370:30223`, `375:30344` |
+| `Progress explanation` — the sentence beside it | `370:30225`, `375:30346` |
+| `Action / Back to progress` | `375:30430` |
+
+**Those are download, preparation and installation progress**, each beside the
+operation it describes, on `370:30206` *Install after restart* and `375:30331`
+*Replace · Installing*. **A build must keep them**, together with the error and
+recovery screens around them — `370:30343` *Download interrupted* and
+`370:30371` *Preparation could not finish*. A person waiting on a disk write
+needs to know how far it has got; that is the opposite of a decorative step
+count, and the distinction is the whole of this decision.
+
+**Those frames are the installer and belong to another lane.** They are
+recorded here for the boundary, not claimed.
+
+### Optionality is explicit, on exactly ten screens
+
+**`Optional` appears immediately above the heading**, in the eyebrow slot, as
+`Optional · <subject>` — Manrope SemiBold 11/16, tracking 0.3, in
+`text/muted` `#596B78`. **All ten read individually on 2026-10-07:**
+
+| screen | frame | eyebrow |
+|---|---|---|
+| Sealed box | `183:10695` | Optional · alo access |
+| Ask each time | `183:10699` | Optional · alo access |
+| Full trust | `183:10703` | Optional · alo access |
+| Bring your work | `183:10707` | Optional · Bring your work |
+| Choose files to copy | `183:10711` | Optional · Copy files |
+| Review file copy | `184:10697` | Optional · Review copy |
+| Sign-in options | `185:10770` | Optional · Sign-in options |
+| Add a PIN | `186:10737` | Optional · PIN |
+| Account recovery | `371:30665` | Optional · Account recovery |
+| Add fingerprint | `371:30692` | Optional · Fingerprint |
+
+**This is where `OPTIONAL` went.** It used to be half of the corner strip on
+the access screens, and the open worry when the strip became identity was that
+the word would simply vanish — it was the one half of a stage label doing real
+work, because it tells a person they may skip the screen. **It moved into the
+eyebrow and reaches more screens than before**, which is a better answer than
+the one that was asked for.
+
+**The eyebrow it replaced said `CONTROL ALWAYS`** on `183:10695`. That was a
+claim about the product; `Optional · alo access` is a fact about the screen.
+
+**Each of the ten keeps its own existing way to decline**, and these are not
+interchangeable — a build must not normalise them:
+
+| screen | how a person declines |
+|---|---|
+| the three access screens | **`Not now`**, new on 2026-10-07 |
+| `183:10707` Bring your work | `Not now`, `371:30324`, **160 wide** not 184 |
+| `183:10711` Choose files to copy | `Cancel` |
+| `184:10697` Review file copy | `Back` |
+| `186:10737` Add a PIN | `Use password only` |
+| `371:30692` Add fingerprint | `Use password for now` |
+| `185:10770` Sign-in options | `Done` |
+| `371:30665` Account recovery | `Back to protection` |
+
+**The widths differ and that is not a leftover.** `371:30324` is a `Not now`
+at 160 on the file-import screen, where the three new ones are 184. It predates
+them and the owner's instruction was to preserve the other optional screens'
+existing ways to decline, so **160 stays there.** Noted because the previous
+round of corrections *did* standardise a width, and a build that generalised
+from that would change this one.
+
+### How much alo may do — `183:10695`, *Optional · Access · Sealed box*
+
+Read 2026-10-06. **One screen with three states**, like the AI choice;
+`183:10699` and `183:10703` are the same screen with a different row marked.
+
+| slot | words |
+|---|---|
+| strip | alo OS |
+| eyebrow | Optional · alo access |
+| title | Choose how much alo may do. |
+| introduction | **Sealed box is the default.** You can change this when a task needs more access. |
+| row 1 | **Sealed box · Selected** — Work stays inside the approved sandbox. |
+| row 2 | **Ask me each time** — Ask before each additional protected action. |
+| row 3 | **Full trust** — Allow approved scope to proceed without repeated prompts. |
+| consequence | **Activity remains visible, recorded and stoppable.** |
+| actions | Keep sealed box · Back · **Not now** |
+
+**This is the one screen in the flow where something *is* pre-selected, and the
+reason is the opposite of the AI choice's.** There, no option is safer than the
+others — a processing destination chosen for somebody is a decision made on
+their behalf, which is why ADR 0025 forbids it. **Here the default is the most
+restrictive option**, so pre-selecting it takes nothing away: a person who
+passes the screen without reading it has granted the least.
+
+**The screen is marked `OPTIONAL`**, which only works because of that. An
+optional screen whose default was *Full trust* would be a grant obtained by
+inattention.
+
+**It is also three amounts of authority on one screen**, which is where a build
+could widen what was granted without anybody noticing. The three must map onto
+what `alo-capability` and the grants model actually enforce, and **a build must
+never treat the row order as a slider** — *Ask me each time* is not halfway
+between the other two, it is a different mechanism.
+
+**`Activity remains visible, recorded and stoppable`** is the promise that makes
+the other two tolerable, and it is the record's and the egress indicator's to
+keep — neither of which is an AI feature, so neither is removed by choosing
+*Sealed box*.
+
+**The 1.5px border here was a leftover and is gone.** It is now 2px navy like
+every other selected card — settled by the owner and verified below. An earlier
+reading of this page raised it as a question and guessed it was probably a
+leftover; that guess was right, but it was a guess, and the resolution came
+from the owner rather than from the measurement.
+
+#### `Not now` — a way out that grants nothing
+
+**All three access screens gained a third action on 2026-10-07:**
+
+| screen | frame | the action |
+|---|---|---|
+| Sealed box | `183:10695` | `394:26225` |
+| Ask each time | `183:10699` | `394:26228` |
+| Full trust | `183:10703` | `394:26231` |
+
+**All three measure 184×48**, sit third in the row after the commit action and
+`Back`, and carry the ordinary 1px secondary border rather than the navy fill.
+
+**What it must do, and the trap it exists to avoid.** `Not now` **leaves
+without granting or changing permissions, and keeps whatever policy was already
+in force.** The trap is specific and worth naming because it is the easy bug:
+**these screens arrive with a row already marked** — `Sealed box · Selected` on
+`183:10695` — so the obvious implementation of a third action is *commit what
+is showing and move on*. That would turn a decline into a grant on the screens
+whose entire subject is how much authority alo has.
+
+**So three things a build may not do:**
+
+1. **Commit the displayed alternative.** `Not now` on `183:10703` must not
+   leave the machine at *Full trust* merely because that screen was the one
+   open.
+2. **Silently increase access.** Leaving may lower nothing and raise nothing;
+   the effective policy after `Not now` equals the effective policy before the
+   screen was shown.
+3. **Treat it as the same action as `Back`.** `Back` returns to the previous
+   screen in the run; `Not now` leaves the optional screen altogether. They
+   are two exits and the design draws both.
+
+**This is recorded here and is deliberately not code yet.** The three access
+levels it must not commit are a **`[v1]` feature** — `docs/features.md` line
+587, *running code, at the level the person picks* — and the current phase is
+`v0.01`. There is no policy value in this repository for `Not now` to leave
+unchanged, so writing the action now would mean inventing the policy it is
+supposed to preserve. **The rule is written down so that whoever builds the
+policy inherits it**; building it early would be the scope gate broken for the
+sake of looking finished.
 
 ## Responsive: the rule for every size, not only the three drawn
 

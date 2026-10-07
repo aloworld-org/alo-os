@@ -318,6 +318,33 @@ const THE_REAL_DECISION: &str =
 ///
 /// So this number going up is the milestone working rather than the ledger
 /// slipping: the gate now counts the canvas against the release it has to ship in.
+///
+/// **Fifteen became eighteen on 2026-10-07**, and the three are named for the
+/// same reason. [ADR
+/// 0094](../../../docs/decisions/0094-the-strip-above-a-setup-screen-is-the-products-name.md)
+/// settled how a first-start screen is built, which added seven `[v0.01]`
+/// promises to `docs/features.md`. Four of the seven arrive with a test behind
+/// them — the strip's text, the canvas having none, the counter being refused
+/// and the one selection border. **Three arrive with no evidence at all:**
+///
+/// ```text
+/// Real installation progress stays beside its own operation
+///                                     the installer is another lane's, and no screen exists
+/// Optional sits immediately above the heading
+///                                     measured in the design file; nothing here draws a screen
+/// Each optional screen keeps its own way to decline
+///                                     six different words across ten screens, nothing enforcing them
+/// ```
+///
+/// **All three are about a screen, and the four that are shown are about
+/// values.** That is the honest shape of this change rather than an accident of
+/// counting: a decision about how a surface looks can be written down and held
+/// against edits long before anything draws it, and the half that needs a
+/// surface cannot be shown by a crate that draws nothing. Recording any of the
+/// three as shown because a neighbouring rule is tested is the failure this
+/// ledger exists to catch.
+///
+/// Raised by the development PC, whose change forced it.
 #[test]
 fn each_promise_with_no_evidence_names_where_the_work_is() {
     let here = the_repository();
@@ -328,8 +355,8 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
         .unwrap_or_else(|findings| panic!("the ledger does not add up: {findings:?}"));
     assert_eq!(
         reconciled.wholly_owed(),
-        15,
-        "the ledger's own account of itself says fifteen v0.01 promises have no \
+        18,
+        "the ledger's own account of itself says eighteen v0.01 promises have no \
          evidence at all; the audit counted {}. Whichever moved, say so under \
          the promise it is about",
         reconciled.wholly_owed()
@@ -352,10 +379,12 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
 
     assert_eq!(
         owed_and_pointing.len(),
-        15,
-        "the entries with no evidence are not the fifteen the count says: \
+        18,
+        "the entries with no evidence are not the eighteen the count says: \
          {owed_and_pointing:?}"
     );
+    the_ledgers_own_sentence_about_itself_is_true(&ledger, &reconciled);
+
     for (promise, waits) in &owed_and_pointing {
         assert!(
             !waits.is_empty(),
@@ -363,6 +392,58 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
              is, so whoever reads it next starts the reading again"
         );
     }
+}
+
+/// **The ledger's own sentence about itself, held to the audit it describes.**
+///
+/// *The ledger claimed to be checked here and was not.* Under *What this audit
+/// found* it says **this line is the ledger's own count of itself and it is
+/// checked**, and names this test file as what reads the four numbers. Nothing
+/// read them. On 2026-10-07 the sentence said *53 promises, 2 shown whole, 41
+/// shown in part, 10 with no evidence at all* while the reconciliation computed
+/// **63, 2, 46 and 15** — stale on three of the four, and by ten promises on the
+/// first.
+///
+/// **That is the fault this whole crate was written to end**, arriving in the
+/// crate's own documentation: a description of a document that the document
+/// cannot contradict. The count of wholly owed promises was asserted, twice,
+/// and is what caught the drift; the other three were prose that read like
+/// measurements.
+///
+/// So the claim is now true rather than removed. The alternative was to delete
+/// the sentence saying it is checked, which would have left a reader with four
+/// numbers and no reason to trust any of them.
+fn the_ledgers_own_sentence_about_itself_is_true(ledger: &str, reconciled: &Reconciled) {
+    const THE_SENTENCE: &str = "**The audit in figures:";
+
+    let said = ledger
+        .lines()
+        .find(|line| line.trim_start().starts_with(THE_SENTENCE))
+        .unwrap_or_else(|| {
+            panic!(
+                "{THE_LEDGER} no longer states its own figures. The sentence beginning \
+                 \"{THE_SENTENCE}\" is what a reader meets first, and a ledger that \
+                 stopped counting itself is one nobody can check at a glance"
+            )
+        });
+
+    let numbers: Vec<usize> = said
+        .split(|what: char| !what.is_ascii_digit())
+        .filter(|piece| !piece.is_empty())
+        .filter_map(|piece| piece.parse().ok())
+        .collect();
+
+    let expected = vec![
+        reconciled.promises(),
+        reconciled.wholly_shown(),
+        reconciled.partly_owed(),
+        reconciled.wholly_owed(),
+    ];
+    assert_eq!(
+        numbers, expected,
+        "{THE_LEDGER} says of itself \"{said}\", and the audit computes {expected:?}. \
+         Whoever changes which promises are in this release brings that sentence with it"
+    );
 }
 
 /// And the refusal beside it: a promise with nothing behind it and nowhere to

@@ -1178,9 +1178,97 @@ evidence that a person can reach the Dock over a full-screen window — which is
 the distinction this ledger exists to keep. Where the work is: task 6 of
 `docs/autonomy/putting-a-window-aside.md`.
 
+### ★ **The strip above every setup screen reads `alo OS`.**
+
+**Shown by:** `crates/alo-setting-up/src/the_strip.rs`, where the text is a
+constant and three tests hold it: that it is the product's name, that it holds
+no digit anywhere, and that it is one name rather than the two halves the six
+old labels used. Putting the old counter back fails all three.
+
+**Still owed:** nothing draws it. The strip is a value with no surface reading
+it, so what is shown is that the rule exists and cannot be edited quietly — not
+that a person booting this machine sees it. The drawing is the compositor
+lane's. Where the work is: the first-start screens in
+`docs/design/the-first-start.md`, which carry the measurements a surface needs.
+
+### **The running canvas has no strip and must not gain one.**
+
+**Shown by:** `crates/alo-setting-up/src/the_strip.rs`. Its screen type has two
+variants and only the setup sheet returns a strip; giving the canvas one fails
+the test named for it. The distinction is measured rather than asserted — 8 of
+the design file's 77 frames have no strip and all 8 are canvas states, counted
+off the refreshed snapshot.
+
+**Still owed:** the same thing the entry above owes. No compositor consults
+that type, so nothing on a running machine can get this right or wrong yet.
+
+### ★ **Setup shows no overall progress counter.**
+
+**Shown by:** `crates/alo-setting-up/src/the_strip.rs`, whose counting test
+refuses a digit anywhere in the strip — deliberately stricter than the
+decision, so that neither the old counter nor a version number can arrive
+without arguing with it.
+
+**Still owed:** the rule covers the strip and not the rest of a screen. Nothing
+in this repository would catch a counter added somewhere else on a setup sheet,
+because there is no setup sheet to add one to. **That is a real limit of this
+evidence** and not a formality: the promise is about a screen, and what is
+tested is a string.
+
+### **Real installation progress stays beside its own operation.**
+
+**Still owed:** all of it. The progress a person waits on belongs to the
+installer, which is another lane's crate, and no screen exists on either side
+of that boundary. What exists is the design record: the measured track, its
+explanation and the two error-and-recovery screens are named with their frame
+ids in `docs/design/the-first-start.md`, so that whoever removes the counter
+cannot remove these by accident. **No test holds this**, and recording it as
+shown because the counter rule is tested would be the mistake this ledger
+exists to prevent — the two are opposite halves of one decision and only one
+of them is checked. Waiting on
+`docs/decisions/0094-the-strip-above-a-setup-screen-is-the-products-name.md`,
+whose fifth clause is this promise.
+
+### ★ **`Optional` sits immediately above the heading, on ten screens.**
+
+**Still owed:** all of it. The word's position and text were read individually
+off all ten screens in the design file on 2026-10-07 and written into
+`docs/design/the-first-start.md` with the frame ids, which is evidence about
+the design rather than about this repository. **Nothing here implements an
+optional screen**, so there is no eyebrow to place and no test that could fail.
+Waiting on
+`docs/decisions/0094-the-strip-above-a-setup-screen-is-the-products-name.md`,
+which records where the word went and why it moved.
+
+### **Each optional screen keeps its own way to decline.**
+
+**Still owed:** all of it, and it is the half most likely to be lost. Six
+different words decline across the ten screens, and one of them — the `Not now`
+on file import — is 160 wide where the three new ones are 184. A build that
+tidied those into one action or one width would be reasonable-looking and
+wrong. The list is in `docs/design/the-first-start.md`; nothing enforces it.
+Waiting on
+`docs/decisions/0094-the-strip-above-a-setup-screen-is-the-products-name.md`,
+which holds the rule against normalising them.
+
+### ★ **One selection border: 2 logical pixels of navy, plus the word.**
+
+**Shown by:** `crates/alo-appearance/src/selecting.rs`. The two edge widths are
+constants, the marking colour is navy and no other colour is reachable through
+it, and focus and selection are held independently so that committing answers
+from the chosen half alone. Flattening the edge to 1px, marking a selection in
+teal and making focus commit a choice each fail the test named for them.
+
+**Still owed:** nothing draws a card, so the measure is not yet a border on a
+screen. The word `Selected` that must accompany the colour is the design's and
+is not in this module — a surface that drew the edge and omitted the word would
+satisfy every test here and break the promise. **Named rather than left
+implicit**, because colour alone is the accessibility failure this rule exists
+to prevent.
+
 ## What this audit found
 
-**The audit in figures: 53 promises, 2 shown whole, 41 shown in part, 10 with no
+**The audit in figures: 70 promises, 2 shown whole, 50 shown in part, 18 with no
 evidence at all.**
 
 *This line is the ledger's own count of itself and it is checked.*
@@ -1189,6 +1277,16 @@ four numbers and compares each against what the reconciliation computes, so a
 promise entering or leaving a release fails the audit until this sentence is
 brought with it. **Whoever changes which promises are in v0.01 changes this
 line in the same commit.**
+
+**It was not checked until 2026-10-07, and it had drifted.** The sentence said
+*53 promises, 2 shown whole, 41 shown in part, 10 with no evidence at all* while
+the reconciliation computed **63, 2, 46 and 15** — three of the four numbers
+wrong, the first by ten promises. The claim above was true of the count of
+wholly owed promises, which was asserted and is what kept that one honest; the
+other three were prose that read like measurements. **A description of a
+document that the document cannot contradict is the fault this crate was written
+to end**, and it had made its way into this crate's own ledger. The test now
+reads the sentence and fails on all four.
 
 *Written in digits on 2026-09-30 because the figure had nowhere to live. The
 current count used to exist only as a literal in that test file, while the
