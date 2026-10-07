@@ -188,7 +188,7 @@ fn the_public_half_is_committed_and_the_private_half_is_not() {
 /// verifying, then edit this line. The verification cannot live here — it needs
 /// the registry, and nothing in this crate reaches the network.
 const THE_SIGNED_DIGEST: &str =
-    "sha256:6c9abbc5a6a0f5299991f4cca65152452b3cbae339b161059528d72f2aad3ba1";
+    "sha256:fcc732bb147e02fcb8b8840ce359a3e604295f2e453c5ef52d473ee328a3f8ae";
 
 /// **The digest an installer pulls is the one the owner signed, pinned in one
 /// file the crate reads, and the image agrees with it.**

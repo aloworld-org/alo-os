@@ -97,12 +97,14 @@ video decoder, no encoder and nothing to reach the media server with:
 
 | | |
 |---|---|
-| Release | `0.0.5` (`org.opencontainers.image.version`) |
-| Built from | `97c970c96f2c13f2341ed94fb264247fb6837442` (`org.opencontainers.image.revision`) |
-| Pushed to | `ghcr.io/aloworld-org/alo-os:0.0.5` |
-| Digest | `sha256:6c9abbc5a6a0f5299991f4cca65152452b3cbae339b161059528d72f2aad3ba1` |
-| Signed | by the owner, with the private half, by digest, no transparency log (`cosign sign --use-signing-config=false --tlog-upload=false`, cosign 3.1.3) |
-| Verified | `cosign verify --key image/signing/alo-os.pub --insecure-ignore-tlog=true` passes; a different key is refused (*Found: 0, Expected 1*) |
+| Release | `0.0.6` (`org.opencontainers.image.version`) |
+| Built from | `77db91c64e590be259b48a162091425213e28728` (`org.opencontainers.image.revision`) |
+| Pushed to | `ghcr.io/aloworld-org/alo-os:0.0.6` |
+| Digest | `sha256:fcc732bb147e02fcb8b8840ce359a3e604295f2e453c5ef52d473ee328a3f8ae` |
+| Built by | **`.github/workflows/image.yml`, on a hosted runner** — the first time this project built an image anywhere but on somebody's own machine |
+| Signed | by the owner, with the private half, by digest, no transparency log (`cosign sign --use-signing-config=false --tlog-upload=false --new-bundle-format=false`, cosign 3.1.3), 2026-10-07 |
+| Verified | `cosign verify --key image/signing/alo-os.pub --insecure-ignore-tlog=true` passes: the claims validated, the log checked offline, and the signature verified against the public key |
+| Readable by a machine | **yes, and read back rather than assumed** — `sha256-<digest>.sig` answered 200 and `sha256-<digest>` answered 200. The first returned 404 for releases 0.0.1 to 0.0.4 |
 
 **Both the digest and the revision above were read back from the registry**, not
 from the machine that built the image — the digest from `docker-content-digest`,
