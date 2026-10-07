@@ -27,20 +27,21 @@ red, that your operating system was past its end of support — a promise this
 project never made. That is gone. What it is built on is still stated plainly,
 because hiding that would help nobody.
 
-**This download is not signed, and Windows will say so.** When you run it,
-SmartScreen shows a blue box saying *Windows protected your PC* and offers only
-*Do not run*. To go on, choose **More info**, then **Run anyway**. We are telling
-you this here because a program that repartitions your only computer should
-never be something you were surprised by.
+**Windows does not know who made this program, and it will say so.** When you
+run it, Windows shows a blue box saying *Windows protected your PC*, and the
+only button offered is *Do not run*. To go on, choose **More info**, then **Run
+anyway**. We are telling you here, before you download it, because a program
+that repartitions your only computer should never be something you were
+surprised by.
 
-Check what you downloaded is what we published: `SHA256SUMS`, beside the
-download, is the checksum of every file in this Release.
+**You can check for yourself that what you downloaded is what we published.**
+`SHA256SUMS`, beside the download, is a short code worked out from every byte of
+the file. Work out the same code on your own machine:
 
     Get-FileHash -Algorithm SHA256 alo-installer.zip
 
-Compare that with the line in `SHA256SUMS`. That check does more for you than a
-signature would: it tells you the bytes are the ones we published, rather than
-telling you that somebody paid for a certificate.
+If it matches the line in `SHA256SUMS`, the file on your disk is the file we
+put there, byte for byte.
 
 **Windows stays.** alo OS is installed onto an empty disk beside it, and
 Windows starts exactly as it did before. Nothing on the Windows volume is
