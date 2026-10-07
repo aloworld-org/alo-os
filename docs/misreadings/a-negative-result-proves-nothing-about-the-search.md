@@ -77,6 +77,36 @@ output file** rather than being something asserted afterwards about having run
 it. A control you report is a claim; a control in the artefact is a fact about
 that artefact.
 
+### A control cannot validate the tree it ran in
+
+**And here is where the rule above is not enough**, found within the hour by
+the third PC following it and still reaching a wrong conclusion. They searched
+for a test file, found nothing, and ran a control in the same breath — the same
+pattern matched three other files — so by the paragraph above the negative was
+sound. It was not: the file is on `origin/main`, added by #474 and last touched
+by #556.
+
+A control verifies the **pattern**, the **path** and the **command**. It cannot
+verify the **tree**, because the control is subject to the same staleness as
+the search: a control in an old checkout passes exactly as well as one in a
+current checkout. That is the single failure mode a same-breath control cannot
+see, and it is the one that caused both of this entry's wrong claims.
+
+So listing *same pattern, same path, same tree, same command* as though the
+four were equally checked was wrong. Three of them a control establishes. For
+the fourth, either:
+
+- the control must be something that **would only exist if the tree were
+  current** — a file or key you know landed recently; or
+- skip controls and read the published tree: `git show origin/main:<path>`,
+  `git ls-tree origin/main <dir>`.
+
+The second is shorter and does not depend on remembering what landed when.
+
+*Credited to the attempt rather than to the suggestion: the rule was followed
+and the conclusion was still wrong, which is better evidence than anybody's
+opinion about the rule.*
+
 And when reporting one: say *my search returned nothing* until the control
 passes. The gap between that and *it does not exist* is exactly the fact that
 has not been measured.
