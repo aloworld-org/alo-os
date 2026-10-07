@@ -1,5 +1,20 @@
-//! **A candidate is a thing to try, never a thing to ship**, and the workflow
-//! that builds one must stay unable to become a release.
+//! **A candidate is a thing to try, never a thing to ship** — and since
+//! ADR 0096 that is carried by six controls rather than by keeping it off the
+//! download page.
+//!
+//! # What changed on 2026-10-07, and why this file reversed its central rule
+//!
+//! This held the candidate to *never makes a Release*, which was ADR 0046's
+//! rejected option. That clause leaned on **unsigned** meaning *not for the
+//! download page* — and the owner then published release 0.0.6 unsigned,
+//! deliberately, with notes explaining SmartScreen. Unsigned stopped
+//! distinguishing a candidate from a release, so a control had to be replaced
+//! rather than merely added to.
+//!
+//! ADR 0096 is that replacement, and it reframes the question: not *may a
+//! candidate be a pre-release*, but **may a workflow publish at all** — what a
+//! draft protects being that publication is a person's act rather than a
+//! workflow's. The controls below are the price of letting one publish.
 //!
 //! # What it is for
 //!
@@ -38,8 +53,23 @@ const THE_CANDIDATE: &str = concat!(
     "/../../.github/workflows/installer-candidate.yml"
 );
 
-/// What makes a Release, which this may never do.
-const PUBLISH: &str = "gh release create";
+/// The marker a candidate's tag is built with.
+const THE_TAG_MARKER: &str = "candidate-";
+
+/// The sentence a candidate's notes must carry, word for word.
+///
+/// A named constant rather than a rule about saying *plainly what it is*,
+/// because prose is what a test cannot hold to anything — the fault four of
+/// this repository's `docs/misreadings/` entries are about, and the third PC's
+/// own correction to their first proposal.
+const THE_NOTES_MARKER: &str = "It is not a release.";
+
+/// The variable the build date is compiled in through, for the programme's own
+/// first line.
+const THE_DATE: &str = "ALO_INSTALLER_CANDIDATE_BUILT";
+
+/// What would pin a candidate, which nothing here may touch.
+const THE_PIN: &str = "pinned.toml";
 
 /// What reads the built program before anybody is handed it.
 const THE_READING: &str = "the_installer_starts_on_a_clean_windows";
@@ -88,21 +118,119 @@ fn it_never_signs() {
     );
 }
 
-/// **It never makes a Release.**
+/// **Everything it publishes is a pre-release, and nothing is ever latest.**
 ///
-/// The distinction this whole file protects: an artefact somebody fetches from
-/// a workflow run is a thing to try, and an artefact on the Releases page is a
-/// thing a stranger downloads believing it was meant for them.
+/// # This test used to say the opposite, and the reversal is the decision
+///
+/// It read `it_never_publishes` until 2026-10-07, holding the candidate to
+/// ADR 0046's rejected option *publishing a Release that is not a draft*. That
+/// clause leaned on **unsigned** meaning *not for the download page*, and on
+/// 2026-10-07 the owner published release 0.0.6 unsigned, deliberately, with
+/// notes explaining SmartScreen. The property stopped distinguishing anything.
+///
+/// ADR 0096 replaced it: a workflow may publish, and only a candidate, and the
+/// six controls are **the price of letting it publish at all** rather than
+/// decoration on a decision already made. This file holds five of them; the
+/// sixth is the programme's own first line, held in `alo-installer`.
+///
+/// **This control is the only one enforced by somebody other than us.** GitHub
+/// defines `/releases/latest` as the most recent non-prerelease, non-draft
+/// release and refuses to make a pre-release latest, so it holds whether or
+/// not this test runs and whether or not a future reader understands why.
 #[test]
-fn it_never_publishes() {
+fn everything_it_publishes_is_a_prerelease_and_never_latest() {
     let candidate = the_candidate();
-    let publishes = candidate.live().iter().any(|line| line.contains(PUBLISH));
 
     assert!(
-        !publishes,
-        "the installer-candidate workflow makes a Release, which is `release.yml`'s to do on a \
-         tag the owner pushed -- a candidate that lands on the Releases page is a release \
-         nobody decided to make"
+        candidate.publishes_only_prereleases(),
+        "the installer-candidate workflow makes a Release that is not marked `--prerelease`. \
+         GitHub's `/releases/latest` is the most recent non-prerelease release, so an unmarked \
+         one becomes what a stranger downloads believing it was meant for them (ADR 0096)"
+    );
+    assert!(
+        !candidate.makes_something_latest(),
+        "the installer-candidate workflow asks for a Release to be the latest one, which is the \
+         one thing marking it a pre-release exists to prevent (ADR 0096)"
+    );
+}
+
+/// **Exactly one candidate exists at a time, and the previous goes first.**
+///
+/// *A candidate that lives forever becomes a release by default* — the third
+/// PC's sentence, and the control none of us had until they wrote it. Every
+/// distribution deletes its dailies.
+///
+/// Before rather than merely somewhere, for `looks_before_it_pushes`'s reason:
+/// a delete that ran afterwards would take the candidate just published.
+///
+/// **Seven days is intent and nothing enforces it.** What is enforced is this:
+/// the candidate on that page is always the newest. There is deliberately no
+/// scheduled deleter, because its failure mode is deleting something somebody
+/// is mid-walk on.
+#[test]
+fn exactly_one_candidate_exists_at_a_time() {
+    assert!(
+        the_candidate().deletes_the_previous_before_publishing(),
+        "the installer-candidate workflow does not take down the previous candidate before \
+         publishing the next, so candidates would accumulate on the releases page until one of \
+         them was old enough to be wrong and still look current (ADR 0096)"
+    );
+}
+
+/// **Its tag is built with the candidate marker, and never like a release.**
+#[test]
+fn its_tag_says_what_it_is() {
+    let candidate = the_candidate();
+
+    assert!(
+        candidate.runs_something_naming(THE_TAG_MARKER),
+        "the installer-candidate workflow does not build its tag with `{THE_TAG_MARKER}`, so \
+         the tag on the releases page would not say what it is (ADR 0096)"
+    );
+    assert!(
+        !candidate.runs_something_naming("v0."),
+        "the installer-candidate workflow writes a tag that looks like a release version. \
+         ROADMAP.md's *two numbers that look alike* is about exactly this confusion, and \
+         ADR 0046 reserves the release tag to the owner"
+    );
+}
+
+/// **Its notes carry the sentence, and the programme is given the date.**
+///
+/// Both by named constant. *Says plainly what it is* was in the first draft of
+/// this design and came out, because a test cannot hold prose to anything —
+/// which is the fault four `docs/misreadings/` entries describe and which the
+/// third PC corrected in their own proposal.
+#[test]
+fn it_says_what_it_is_where_a_person_will_read_it() {
+    let candidate = the_candidate();
+
+    assert!(
+        candidate.runs_something_naming(THE_NOTES_MARKER),
+        "the installer-candidate workflow publishes notes that do not contain \
+         `{THE_NOTES_MARKER}` -- the one sentence a person reads before downloading (ADR 0096)"
+    );
+    assert!(
+        candidate.runs_something_naming(THE_DATE),
+        "the installer-candidate workflow does not set `{THE_DATE}`, so the programme cannot \
+         say which day it was built on. That is ADR 0096's fifth control and the only one that \
+         survives the file outliving the page it came from"
+    );
+}
+
+/// **It never pins.**
+///
+/// There is exactly one pin in this repository, so a candidate that is never
+/// written into it cannot be resolved to by anything — a stronger invariant
+/// than any distribution has available, and the reason it is worth a test of
+/// its own rather than a line in the notes.
+#[test]
+fn it_never_pins() {
+    assert!(
+        !the_candidate().runs_something_naming(THE_PIN),
+        "the installer-candidate workflow touches `{THE_PIN}`. The pin is what an installer \
+         resolves to, and a candidate in it is a candidate somebody installs believing it is \
+         the release (ADR 0096)"
     );
 }
 

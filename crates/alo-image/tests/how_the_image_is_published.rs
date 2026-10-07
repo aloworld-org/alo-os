@@ -257,7 +257,17 @@ fn the_workflow_pushes_a_candidate_never_signs_and_says_why_it_waits() {
         workflow.looks_before_it_pushes(),
         "the workflow could push over a published release"
     );
-    assert!(workflow.says_why_it_is_not_yet_the_road());
+    // **`says_why_it_is_not_yet_the_road` is gone, and it went false before
+    // ADR 0096 rather than because of it.** `image.yml` had not run since
+    // 2026-09-15 because 4.87 GiB of weights would not fit a hosted runner.
+    // ADR 0095 took the weights out, the third PC dispatched it on 2026-10-07,
+    // and it built and pushed image 0.0.6 — the first image this project built
+    // on CI rather than on somebody's machine. CI **is** the road, so a rule
+    // asserting the file says it is not would mislead a reader about how the
+    // shipped image was made.
+    //
+    // What ADR 0036 actually reserved is below and unchanged: it never signs,
+    // and it never moves a published tag.
 }
 
 /// **The plan marks the publish done, and still carries what was signed.**

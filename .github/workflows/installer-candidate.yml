@@ -1,5 +1,6 @@
-# Build `alo-installer.exe` and the environment it stages, for somebody to run
-# on a real Windows. Never publish it, never sign it, never make a Release.
+# Build `alo-installer.exe` and the environment it stages, and publish it as a
+# pre-release for somebody to run on a real Windows. Never sign it, and never
+# let it be mistaken for a release.
 #
 # # Why this exists
 #
@@ -13,14 +14,35 @@
 #
 # A fix nobody can try is a fix nobody has tried.
 #
-# # What it is not
+# # What it is not, and the six ways it says so
 #
-# **Not a release.** No Release is made, no tag is read, nothing is signed, and
-# `image/pinned.toml` is not consulted — this is not the road a customer takes
-# and it must never become it. ADR 0046 reserves signing to a person holding a
-# certificate; ADR 0036 reserves the image's signature the same way. An artefact
-# from here is unsigned by design, Windows will say so, and that warning is
-# correct.
+# **Not a release**, and since ADR 0096 that is carried by six controls rather
+# than by withholding the download. It used to upload an artefact, which needs
+# a GitHub session — and a build only insiders can fetch gives no testing,
+# which is the hole the NUC walk was in. Nobody else gates test builds: Debian
+# and Ubuntu publish dailies publicly and unauthenticated.
+#
+#  1. it is marked `--prerelease`, so GitHub itself refuses to make it latest
+#     (that endpoint is defined as the most recent non-prerelease, non-draft
+#     release) — the one control enforced by the API rather than by us
+#  2. its tag carries `candidate` and a date, and is never `v<pinned version>`
+#  3. it never signs
+#  4. it is never written into `image/pinned.toml`
+#  5. the programme's own first line says it is a test build and gives the date
+#     it was built, through ALO_INSTALLER_CANDIDATE_BUILT below
+#  6. exactly one candidate exists at a time: this deletes the previous one
+#     before publishing the next
+#
+# ADR 0046 reserves signing to a person holding a certificate; ADR 0036 reserves
+# the image's signature the same way. An artefact from here is unsigned by
+# design, Windows will say so, and that warning is correct.
+#
+# **The checksum beside it proves less than Debian's does, and the difference
+# matters.** Debian signs its `SHA256SUMS` for daily builds; we cannot, because
+# a signing key in CI is exactly what ADR 0036 rejected. So ours says *these
+# are the bytes this workflow produced* — real against a corrupt download, and
+# worth nothing against anybody who can write to that page. ADR 0096 says so
+# plainly rather than leaving a reader to infer a parity we do not have.
 #
 # **Not a thing that runs by itself.** `workflow_dispatch` only, like
 # `image.yml`, so there is never a red run nobody asked for.
@@ -37,7 +59,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   environment:
@@ -78,6 +100,23 @@ jobs:
           $list = (Get-FileHash -Algorithm SHA256 alo-installing/alo-installing.sha256).Hash.ToLower()
           "ALO_INSTALLER_ENVIRONMENT_SHA256=$list" >> $env:GITHUB_ENV
 
+      # **The date the programme says it was built on**, compiled in the same
+      # way the environment hash above already is. ADR 0096's fifth control:
+      # the first line on screen reads *this is a test build of alo OS from
+      # <date>, it is not a release*. It is the only control that survives the
+      # file outliving the page it came from, which is the characteristic
+      # failure of a candidate — somebody who kept one and runs it in December
+      # has no page to consult and no network, and the date tells them anyway.
+      #
+      # A release build does not set this, and `alo-installer` holds that in
+      # both directions.
+      - name: Say which day this build is from
+        shell: pwsh
+        run: |
+          $day = (Get-Date -Format 'yyyy-MM-dd')
+          "ALO_INSTALLER_CANDIDATE_BUILT=$day" >> $env:GITHUB_ENV
+          "ALO_CANDIDATE_TAG=candidate-$day-$($env:GITHUB_SHA.Substring(0,7))" >> $env:GITHUB_ENV
+
       - name: Build the installer
         run: cargo build --release --locked -p alo-installer
 
@@ -113,3 +152,61 @@ jobs:
           path: |
             alo-installer-candidate.zip
             SHA256SUMS
+
+      # **Exactly one candidate exists at a time** — ADR 0096's sixth control.
+      # Deleted before the next is published, never after: a delete that ran
+      # afterwards would take the one just made. No scheduler, so there is
+      # nothing to fail on a timer and nothing that could delete a candidate
+      # somebody is mid-walk on. Seven days is the stated intent and **nothing
+      # enforces it**; what holds is that the candidate on that page is always
+      # the newest, and that the programme says which day it is from.
+      #
+      # `|| true` because there is nothing to delete the first time, and a
+      # first run that failed for having no predecessor would be a red run
+      # about success.
+      - name: Take down the previous candidate
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $old = gh release list --limit 100 --json tagName,isPrerelease |
+            ConvertFrom-Json |
+            Where-Object { $_.isPrerelease -and $_.tagName -like 'candidate-*' }
+          foreach ($one in $old) { gh release delete $one.tagName --yes --cleanup-tag }
+          exit 0
+
+      # **Published as a pre-release, which is what keeps it off
+      # `/releases/latest`** — GitHub defines that endpoint as the most recent
+      # non-prerelease, non-draft release and refuses to make a pre-release
+      # latest. That is the one control here enforced by the API rather than by
+      # a test of ours, so it holds whether or not anybody understands why.
+      #
+      # `--latest` is never passed, and `crates/alo-image` refuses the file if
+      # it ever is.
+      - name: Publish it where a person can actually download it
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notes = @"
+          **This is a test build of alo OS. It is not a release.**
+
+          Built from ``$env:GITHUB_SHA`` on $env:ALO_INSTALLER_CANDIDATE_BUILT.
+          It is not signed, and it is not a version anybody decided to
+          publish. If you are looking for alo OS, take the latest release
+          instead — this build is not it and is never what an install
+          resolves to.
+
+          The programme says the same thing on its own first line, so you will
+          know what you are holding even if you come back to this file months
+          from now.
+
+          ``SHA256SUMS`` beside the download is the checksum of these bytes as
+          this workflow produced them. It is worth having against a corrupt
+          download and it is not a signature.
+          "@
+          $notes | Out-File -Encoding utf8 candidate-notes.md
+          gh release create $env:ALO_CANDIDATE_TAG --prerelease `
+            alo-installer-candidate.zip SHA256SUMS `
+            --title "alo OS test build $env:ALO_INSTALLER_CANDIDATE_BUILT (not a release)" `
+            --notes-file candidate-notes.md

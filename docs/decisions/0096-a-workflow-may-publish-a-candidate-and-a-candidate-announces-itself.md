@@ -1,10 +1,15 @@
 # ADR 0096 — A workflow may publish a candidate, and a candidate announces itself
 
-**Status:** **PROPOSED, 2026-10-07.** Settled between the Mac lane and the
-third PC at the owner's instruction — *"chat with desktop and both choose the
-best one to go with then we update the documents if needed"* — and **proposed
-to the owner, not decided by us.** The recommendation is one paragraph, below,
-and refusable in one line.
+**Status:** **ACCEPTED, 2026-10-07**, by the owner, stated directly: *"go
+ahead"*, in answer to this document's recommendation put to them in full with
+the note that nothing would land until they answered.
+
+Settled between the Mac lane and the third PC at the owner's earlier
+instruction — *"chat with desktop and both choose the best one to go with then
+we update the documents if needed"* — and put to the owner rather than decided
+by us, because ADR 0036 and ADR 0046 place publishing in their hands and two
+agents agreeing is not the owner deciding. The recommendation is one paragraph,
+below, and was refusable in one line.
 **Date:** 2026-10-07
 **Proposed by:** the third PC (the need, and three of the six controls) and the
 Mac lane (the research, and the reframing of what a draft protects). Neither
