@@ -285,8 +285,8 @@ plan.
    install, with switching both ways. Not the reverse: a walk that installs
    first has already spent the thing the first run is there to protect.
 4. **crt-static first.** Nothing is installed on the NUC until an `.exe` starts
-   on a clean Windows. *(Landed and measured on the real artefact: the candidate
-   exe imports no `VCRUNTIME140`.)*
+   on a clean Windows. **This gate is passed, on metal, 2026-10-07.** See *The
+   walk of 2026-10-07* below.
 5. **The refusal that keeps the Windows disk out is flipped last**, when the
    whole road exists and not before.
 
@@ -309,6 +309,71 @@ own status paragraph says it has nowhere to run**, to whichever machine asked ne
 including one with no virtualisation and no 90 GB to spare. The state is now the first
 thing on the line, which is where those two words are read. Nothing about the deferral
 changed: same date, same decision, same owner, same reason.
+
+### The walk of 2026-10-07: the installer starts on a clean Windows
+
+**The owner's fourth term is met.** Image `0.0.6` started on the testing NUC, read
+the computer, said what it found, refused with a reason and changed nothing.
+Measured once, by hand, with the owner at the machine; nobody typed anything but
+Enter at the final prompt.
+
+| | |
+|---|---|
+| machine | Intel NUC6CAYH, Windows 11 Pro 10.0.26200, BIOS of 2018-11-04 |
+| run | 2026-10-07T15:46:25.8Z to 15:49:09.8Z, elevated, exit code 1 |
+| before it | **Image `0.0.5` died on this machine in the Windows loader**, `0xC0000135`, before `main`, printing nothing — it imported `VCRUNTIME140.dll` and the zip shipped no DLL beside it |
+
+**The whole of what it put on the screen**, captured through `Tee-Object`:
+
+```text
+This is the alo OS installer. It checks this computer first, and changes nothing until you agree
+Checking that this download is a genuine alo OS
+This download is a genuine alo OS
+Checking this computer. This only reads, and changes nothing
+This computer starts with UEFI, which alo OS needs
+Secure Boot is off
+This computer has a security chip (TPM), and it is ready
+Windows on C: is not encrypted with BitLocker
+Windows on C: has 69 GB free of 110 GB
+Whether Windows' Fast Startup is on could not be found out
+This computer has 8 GB of memory. alo OS is made for 16 GB or more, and is slow with less
+Windows is on the disk CT120BX500SSD1 (111 GB)
+This computer has no empty disk of at least 24 GB beside the one Windows is on, and this installer puts alo OS on a disk of its own, so nothing was changed
+Press Enter to close this window
+```
+
+**The refusal is the pass.** That machine has one disk, and this installer puts
+alo OS on a disk of its own. What was being measured is that the program starts,
+says what it found, and refuses in a sentence a person can act on — not that an
+install happens, which is not available on that machine and is not what task 4's
+walk is about either.
+
+**Three predictions held, and one of them was mine corrected by the machine.**
+Fast Startup read *could not be found out* and the question was **not** asked —
+which is what the testing lane predicted after replaying the installer's own
+reading code, against my prediction of *off*. Secure Boot read off and did not
+refuse, as its before-state said it would. And **no line mentions a model**:
+nothing implies one is included and nothing falls back to one, which is the
+first time that has been seen on hardware since ADR 0095.
+
+**Nothing changed, and that was measured rather than asserted.** An elevated
+after-state was captured at 15:49:53Z and line-diffed against the before-state of
+02:12:09Z, ignoring timestamps. What was compared: `Get-Disk`; all four
+partitions' number, type, GPT type, offset and size; the raw GPT header and all
+four entries; volume labels; `bcdedit /enum firmware` and `/enum {fwbootmgr}`
+including order and timeout; Secure Boot by cmdlet and registry; the whole TPM
+block; BitLocker; and `HiberbootEnabled`. **The only differing lines were C:'s
+free space and `SizeMin`** — 13.5 hours apart, including the testing lane's own
+download and unpack of the release, and not attributable to the installer, which
+said it only read.
+
+**What this does not show.** That an install works — this machine cannot host
+one. That alo OS can go beside Windows — the boot environment's half of that
+landed on 2026-10-06 and the Windows half is not built. And what a person meets
+**first**: the download used PowerShell, which attaches no Mark-of-the-Web, so
+SmartScreen never appeared. The release is unsigned by the owner's decision and
+the release page says so, but *what the warning actually looks like* is a
+separate run, through a browser, still owed.
 
 **Superseded by the ruling above.** What follows was the plan until 2026-10-06:
 to install beside a real Windows *in a virtual machine* and walk the switching

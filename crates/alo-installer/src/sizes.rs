@@ -30,8 +30,16 @@ pub const WINDOWS_KEEPS_FREE: u64 = 16 * GIB;
 /// The smallest disk alo OS is installed onto.
 ///
 /// `docs/booting.md`: the environment's test machine gives it a second disk of
-/// at least 24 GB, which holds the operating system and the model it arrives
-/// with.
+/// at least 24 GB.
+///
+/// **The reason written here used to be *the operating system and the model it
+/// arrives with*, and there is no model any more** — ADR 0095 took the weights
+/// out of the release, so a machine arrives with none. The number has not moved
+/// with the reason, deliberately: a refusal threshold is a decision about
+/// somebody's only computer, 24 GB was never only the model's size, and
+/// lowering it to let more machines through is a thing to do on purpose with a
+/// measurement behind it rather than as a side effect of another change.
+/// `docs/booting.md` carries the same note beside the 17 GB floor.
 pub const THE_LEAST_DISK: u64 = 24 * GIB;
 
 /// A size a person is told they have.
