@@ -95,6 +95,31 @@ Nothing here proposes an answer; `CLAUDE.md` says read the ADR before proposing
 an alternative, and relitigating without new facts wastes the scarcest resource
 we have.
 
+## Before the copy tables: every `stage` row in this document is superseded
+
+**Read this before copying any table below.** The per-screen copy tables record
+what each frame said on the day it was read, and several of them print a
+`stage` row of `SET UP · AI CHOICE`, `SET UP · READY`, `SET UP · 4 OF 5`,
+`AI CHOICE · DETAILS` or `OPTIONAL · ALO ACCESS`, with a few also listing a
+separate `brand` row.
+
+**None of those is what ships.** On 2026-10-07 the owner settled that the strip
+reads `alo OS` on all 69 frames that have one, and the duplicate wordmark was
+removed. A `stage` row below is **a dated reading, not an instruction** — the
+decision is in *Settled: the strip is identity and reads `alo OS`* and in
+[ADR 0094](../decisions/0094-the-strip-above-a-setup-screen-is-the-products-name.md).
+
+**The rows are kept rather than rewritten** because this document's value is
+that it says what was measured and when; editing the measurements to match a
+later decision would leave nothing able to contradict the decision. But a build
+that took a `stage` row literally would print a label the owner has ruled out,
+**so the correction is stated here, in front of them, rather than only in the
+section that settles it.**
+
+*This note was missing from the change that landed the decision, which updated
+the three sections arguing about the label and left eight copy tables still
+printing it. Found by grepping the landed file for `SET UP ·`.*
+
 ## The AI choice, as corrected — the specification
 
 **Owner, 2026-10-06.** Section `383:26066`, arriving at `383:26067`. Every node
@@ -181,10 +206,12 @@ Read 2026-10-06. **This is the authoritative copy for this screen**, and it
 differs from the older `183:*` frames quoted further down, which were read
 before the correction.
 
+**One row is corrected rather than left as read: the strip.** See the note
+below the table.
+
 | slot | words |
 |---|---|
-| brand | alo OS |
-| stage, top right | SET UP · AI CHOICE |
+| strip, top right | **alo OS** — corrected 2026-10-07 |
 | title | How would you like to work? |
 | introduction | Choose where alo runs, or **choose No AI**. |
 | choice 1 | **On this computer** — alo works locally. Availability depends on this PC. |
@@ -203,8 +230,10 @@ you**, and each matters to whoever builds it:
   The older frame said the latter, and the difference is ADR 0009's whole
   point: *continue without* is a skip, *choose No AI* is an answer. Use the
   newer wording.
-- **The stage reads `SET UP · AI CHOICE`, not `SET UP · 4 OF 5`.** The step
-  count is gone from this screen.
+- **The strip reads `alo OS`.** When this screen was read it said
+  `SET UP · AI CHOICE`, and a separate wordmark sat in the top left. Both were
+  replaced on 2026-10-07 by one strip carrying the product's name — see
+  *Settled: the strip is identity and reads `alo OS`*.
 - **"Choose one option to continue." is the first sentence of the consequence
   paragraph**, not a separate label beside the disabled control. One paragraph,
   three sentences, in that order. A vocabulary that splits it into three keys
