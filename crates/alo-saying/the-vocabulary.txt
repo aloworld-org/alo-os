@@ -870,8 +870,10 @@ installer.type-the-disk-and-the-word	To erase {disk} and install alo OS, type it
 installer.type-the-disks-name	To agree, type the name of the disk alo OS replaces, exactly as it is written above, and press Enter. Everything on that disk is replaced. To stop, press Enter without typing anything
 installer.what-is-on-it-now	On {disk} now: Windows on {volume}, and everything kept there. All of it goes
 installer.will.add-the-entry	An entry named alo OS is added to the systems this computer can start. Windows stays the one it starts normally
+installer.will.give-alo-os	alo OS gets {area} GB of that space, on the disk {disk}. Windows keeps the rest
 installer.will.make-the-area	A {area} GB area for the installer is made in that space, on the disk {disk}
 installer.will.restart	This computer restarts once into the installer, which replaces everything on the disk you name below with alo OS, then restarts again
+installer.will.restart-keeping-windows	This computer restarts once. The installer puts alo OS in the space Windows gave up, then restarts again. Windows stays
 installer.will.shrink-windows	Windows on {volume} is made {area} GB smaller. Your files and applications stay where they are
 installer.windows-disk-not-supported	The disk {disk} that Windows is on is laid out in an older way this installer does not support, so nothing was changed
 installing.cannot-be-written	The disk you chose, {disk}, is in use or cannot be written to, so nothing was changed

@@ -280,6 +280,7 @@ mod tests {
             number: DiskNumber(0),
             shown: "Samsung SSD 870 EVO".to_owned(),
             after_the_restart: DiskName::named("ata-Samsung_SSD_870_EVO_S5Y1").unwrap(),
+            beside: None,
         }
     }
 
@@ -294,6 +295,11 @@ mod tests {
             windows_disk: "Samsung SSD 870 EVO".to_owned(),
             disks_for_alo_os: Vec::new(),
             the_windows_disk: Some(the_disk()),
+            // This module is about the road that *replaces* Windows, and these
+            // tests say what it does when that is the only road offered. The
+            // same-disk road is a different one and is left absent here on
+            // purpose, so nothing below silently starts depending on it.
+            beside_windows: None,
         }
     }
 
