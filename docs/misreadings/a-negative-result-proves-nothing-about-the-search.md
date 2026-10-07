@@ -62,9 +62,20 @@ which is what I used the moment I was challenged, and which would have
 answered correctly the first time.
 
 More generally, **pair a negative with a positive control**: search for
-something you know is there, in the same breath, with the same pattern and
-path. If the control comes back empty the search is broken and the negative is
-worthless. `probe_should_be_7` is that idea made permanent.
+something you know is there, and do it **in the same breath** — same pattern
+shape, same path, same tree, same command. If the control comes back empty the
+search is broken and the negative is worthless.
+
+**In the same breath is the load-bearing part, not a convenience.** A control
+run separately, or from memory, or earlier, is a *second claim* that needs its
+own validation — and it validates whatever tree and pattern *it* ran against,
+which is exactly the thing in doubt. My phrasing search was a second look in
+the same stale tree: more thoroughness, no more evidence.
+
+That is why the third PC's `probe_should_be_7` lives **inside the probe's own
+output file** rather than being something asserted afterwards about having run
+it. A control you report is a claim; a control in the artefact is a fact about
+that artefact.
 
 And when reporting one: say *my search returned nothing* until the control
 passes. The gap between that and *it does not exist* is exactly the fact that
