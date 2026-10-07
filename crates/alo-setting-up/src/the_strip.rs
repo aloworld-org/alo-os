@@ -42,8 +42,9 @@
 //! Everything else a person reads in this crate is declared in [`crate::words`]
 //! and answered in the language they read. **This is not, because it is a
 //! product name and a translated product name is a different product.**
-//! `alo_letting_go::words` already says so where it has to explain itself to a
-//! translator: *"alo OS" is the product's name and is never translated.*
+//! Another crate's own notes already say so where they have to explain
+//! themselves to a translator: *"alo OS" is the product's name and is never
+//! translated.*
 //!
 //! So there is no key, nothing for a translator to fill in, and nothing a
 //! locale can change. **That is the one exception in this crate**, and it is
