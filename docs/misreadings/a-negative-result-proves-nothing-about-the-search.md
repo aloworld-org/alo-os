@@ -77,35 +77,60 @@ output file** rather than being something asserted afterwards about having run
 it. A control you report is a claim; a control in the artefact is a fact about
 that artefact.
 
-### A control cannot validate the tree it ran in
+### A control proves the search ran, not that it could have answered
 
-**And here is where the rule above is not enough**, found within the hour by
-the third PC following it and still reaching a wrong conclusion. They searched
-for a test file, found nothing, and ran a control in the same breath — the same
-pattern matched three other files — so by the paragraph above the negative was
-sound. It was not: the file is on `origin/main`, added by #474 and last touched
-by #556.
+**The formulation above is not the whole of it**, and the sharper version came
+from the third PC within the hour — by following this entry's rule correctly
+and still reaching a wrong conclusion.
 
-A control verifies the **pattern**, the **path** and the **command**. It cannot
-verify the **tree**, because the control is subject to the same staleness as
-the search: a control in an old checkout passes exactly as well as one in a
-current checkout. That is the single failure mode a same-breath control cannot
-see, and it is the one that caused both of this entry's wrong claims.
+They looked for `crates/alo-shell/tests/the_camera_has_one_home.rs`, found
+nothing, ran a control in the same breath that matched `camera` in three other
+files, and concluded the file was absent. It was not: it is on `origin/main`,
+added by #474 and last touched by #556, and I had edited and run it that
+afternoon.
 
-So listing *same pattern, same path, same tree, same command* as though the
-four were equally checked was wrong. Three of them a control establishes. For
-the fourth, either:
+**Their tree was current and their control was sound.** What they ran was
+`grep -rn "camera_has_one_home" --include=*.rs .` — a search of file
+**contents** for a **filename**. A test file does not generally contain its own
+name, so it could not match whatever the tree. Verified: that file contains its
+own name zero times, and a content search for it finds only the two prose
+references in `the_session_stays_with_its_owner.rs`.
 
-- the control must be something that **would only exist if the tree were
-  current** — a file or key you know landed recently; or
-- skip controls and read the published tree: `git show origin/main:<path>`,
-  `git ls-tree origin/main <dir>`.
+So:
 
-The second is shorter and does not depend on remembering what landed when.
+> **A positive control proves the search ran. It says nothing about whether the
+> search could have answered the question.**
 
-*Credited to the attempt rather than to the suggestion: the rule was followed
-and the conclusion was still wrong, which is better evidence than anybody's
-opinion about the rule.*
+Theirs ran perfectly. It confirmed the instrument while the instrument was
+pointed somewhere else — their words: *I checked my instrument and never
+checked my aim.* `ls` and `git ls-tree` were the question's own instruments and
+neither was used.
+
+### Two failures, two axes, one habit
+
+| | tree | instrument |
+|---|---|---|
+| mine | **stale** | right — grep for a key in the vocabulary |
+| theirs | current | **wrong** — content search for a filename |
+
+A same-breath control catches neither. It cannot see the tree, because it is
+subject to the same tree. It cannot see the aim, because it is aimed the same
+way. **Both of us validated what we had rather than what we needed.**
+
+So the cure has two halves, and the second is the one neither of us applied:
+
+- **read the published tree** — `git show origin/main:<path>`,
+  `git ls-tree origin/main <dir>` — which answers *does this exist* without a
+  control at all; and
+- **ask whether the instrument can answer the question.** Existence is
+  `ls` or `git ls-tree`. Content is `grep`. A content search can only ever tell
+  you about content, and no control will mention that it is the wrong tool.
+
+*The third PC's case is described as what it was at their insistence: I had
+first recorded it as a stale tree, which is my failure mode and not theirs, and
+they corrected it before the entry could carry a wrong attribution. The rule
+being followed correctly and the conclusion still being wrong is the stronger
+argument, and it only works if the account is accurate.*
 
 And when reporting one: say *my search returned nothing* until the control
 passes. The gap between that and *it does not exist* is exactly the fact that
