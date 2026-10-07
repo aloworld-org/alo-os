@@ -36,15 +36,14 @@ const PUSHED: &str = "push";
 /// What says the push it runs on is a tag's.
 const A_TAG: &str = "tags:";
 
-/// Every spelling of signing this workflow could reach for: the image's
-/// checker, and the three ways a Windows executable is signed.
-const SIGNING: [&str; 5] = [
-    "cosign sign",
-    "COSIGN_",
-    "signtool",
-    "osslsigncode",
-    "Set-AuthenticodeSignature",
-];
+/// Every spelling of signing this workflow could reach for.
+///
+/// **One list, held in `crate::workflow`**, so a spelling added for one road
+/// reaches both. These were two separate lists until 2026-10-07 and they had
+/// already drifted: this one knew about Authenticode and the other did not,
+/// which is how a candidate workflow could have signed an executable and
+/// passed a test citing ADR 0046.
+use crate::workflow::SIGNING;
 
 /// What a workflow says to reach for something the repository does not hold —
 /// a certificate, a key, a password. `github.token` is not one of these: it is

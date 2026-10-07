@@ -178,6 +178,26 @@ fn exactly_one_candidate_exists_at_a_time() {
 }
 
 /// **Its tag is built with the candidate marker, and never like a release.**
+///
+/// # What this and the two rules below prove, and what they do not
+///
+/// They prove the marker appears in something the workflow **runs**. They do
+/// **not** prove it is the tag: a workflow that echoed `candidate-` in a
+/// message and built its tag another way would pass. The same is true of the
+/// notes marker and the build-date variable below.
+///
+/// That is the limit of reading a workflow as lines, which
+/// `crate::workflow`'s header chose deliberately — a workflow needing a YAML
+/// parser to be understood is one these rules should refuse to believe anyway.
+/// It is the same limit that hid a `--prerelease` three lines below its
+/// command on 2026-10-07, and the answer then was to change the workflow
+/// rather than the reader.
+///
+/// **Stated rather than left for somebody to discover**, because *its tag says
+/// what it is* reads stronger than what it checks, and a rule whose name
+/// overstates its inputs is this repository's standing fault. Raised by the
+/// third PC reviewing this change; they said they would not block on it and
+/// they were right not to.
 #[test]
 fn its_tag_says_what_it_is() {
     let candidate = the_candidate();

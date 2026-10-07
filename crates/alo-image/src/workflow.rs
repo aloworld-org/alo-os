@@ -31,9 +31,43 @@ pub const THE_WORKFLOW: &str = concat!(
 /// The only trigger it may have: a person asking.
 const ASKED: &str = "workflow_dispatch";
 
-/// Every spelling of signing a workflow could use: the command, and the
-/// variables `cosign` reads a key and its password from.
-const SIGNING: [&str; 2] = ["cosign sign", "COSIGN_"];
+/// Every spelling of signing a workflow in this repository could reach for.
+///
+/// **Both kinds, because this repository signs two different things.** ADR 0036
+/// reserves the *image's* signature, which is `cosign`; ADR 0046 reserves the
+/// *installer's*, which is Authenticode. A reader that saw only one of them
+/// would answer *it never signs* about a workflow signing the other.
+///
+/// # This was two spellings until 2026-10-07, and the gap was real
+///
+/// It held `cosign sign` and `COSIGN_` alone, which was right for `image.yml`
+/// — where this constant was born and which signs nothing anyway. But
+/// `installer-candidate.yml` builds a **Windows executable**, and
+/// `the_installer_candidate_is_not_a_release.rs::it_never_signs` cites ADR 0046
+/// in its own message. So the name and the comment promised Authenticode while
+/// the inputs could only see `cosign`: **a candidate workflow that signed the
+/// executable would have passed.**
+///
+/// That is not a hypothetical in the ordinary way. The whole reason the
+/// candidate road exists is to iterate on a Windows installer, and *just sign
+/// it on the runner so SmartScreen stops warning* is exactly the
+/// reasonable-sounding edit somebody makes in three months.
+///
+/// Found by the third PC reviewing ADR 0096's own change — a check less
+/// specific than the question it is named for, which is this repository's
+/// standing fault.
+///
+/// Kept beside `crate::releasing`'s identical list rather than shared between
+/// them is what this is **not**: `releasing.rs` imports this one, so there is
+/// one list and a spelling added here reaches both roads.
+pub(crate) const SIGNING: [&str; 6] = [
+    "cosign sign",
+    "COSIGN_",
+    "signtool",
+    "osslsigncode",
+    "Set-AuthenticodeSignature",
+    ".pfx",
+];
 
 /// What pushes.
 const PUSH: &str = "podman push";
@@ -302,6 +336,34 @@ mod tests {
         ] {
             let read = with(push, &signing);
             assert!(read.signs(), "{signing}");
+        }
+    }
+
+    /// **Every spelling is caught, Authenticode included.**
+    ///
+    /// The fixture the third PC asked for when they found that `SIGNING` held
+    /// only `cosign`: without this test the widened list is a change nobody
+    /// has checked, and the gap it closes was invisible precisely because the
+    /// reader answered confidently about the wrong kind of signing.
+    ///
+    /// Each spelling on its own line, so a failure names which one is not
+    /// caught rather than that something is not.
+    #[test]
+    fn signing_a_windows_executable_is_caught_as_well_as_signing_an_image() {
+        for spelling in [
+            "cosign sign --key env://COSIGN_KEY $digest",
+            "COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}",
+            "signtool sign /fd sha256 alo-installer.exe",
+            "osslsigncode sign -certs cert.pem alo-installer.exe",
+            "Set-AuthenticodeSignature alo-installer.exe $cert",
+            "$cert = Get-PfxCertificate alo.pfx",
+        ] {
+            let read = TheWorkflow::read(&format!("    - run: {spelling}\n"));
+            assert!(
+                read.signs(),
+                "a workflow signing with `{spelling}` was not caught, so a road that signed \
+                 this way would pass a test naming ADR 0036 or ADR 0046"
+            );
         }
     }
 
