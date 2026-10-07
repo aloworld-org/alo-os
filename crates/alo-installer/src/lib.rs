@@ -29,9 +29,16 @@
 //! - **Show a key, a password or a signature** (ADR 0036). A download that is
 //!   not genuine is *this download is not a genuine alo OS, so nothing was
 //!   changed*, with no way past it.
-//! - **Install onto the disk Windows is on.** The environment replaces one whole
-//!   empty disk; putting alo OS into the same disk beside Windows is the
-//!   installer plan's task 4.
+//! - **Take a disk nobody named.** Every road is offered and none is chosen
+//!   here: a second disk, the disk Windows is on instead of Windows, or — since
+//!   the installer plan's task 4 — the disk Windows is on *beside* it, in space
+//!   freed from the Windows volume. A computer with one disk was refused
+//!   outright before that road existed, which is what
+//!   `updates/the-windows-installer-program.md` records as *one-disk computers
+//!   are refused until task 4*.
+//! - **Leave Windows without room to update itself.** The same-disk road asks
+//!   the volume for the area, alo OS's own space and `WINDOWS_KEEPS_FREE`
+//!   together, and refuses rather than squeezing any of the three.
 //!
 //! # And it runs on Windows
 //!
@@ -54,7 +61,6 @@ mod erasing_consent;
 mod fast_startup;
 mod found;
 mod identities;
-mod imports;
 mod machine;
 mod memory;
 mod naming;
@@ -91,9 +97,6 @@ pub use erasing_consent::erasing;
 pub use fast_startup::FastStartup;
 pub use found::Found;
 pub use identities::{DiskNumber, Entry, Letter, PartitionNumber};
-pub use imports::{
-    A_REDISTRIBUTABLE_LIBRARY, NotAProgram, THE_ONE_THAT_BROKE_A_MACHINE, TheImports,
-};
 pub use machine::{BEFORE_RESTARTING, Ran, TheMachine};
 pub use memory::MADE_FOR;
 #[cfg(windows)]
@@ -111,7 +114,7 @@ pub use switching::{Switched, THE_SWITCHS_WORD, restart_into_alo_os};
 pub use the_point_of_no_return::crossed;
 pub use the_replacing_road::may_replace;
 pub use what_replacing_destroys::{Day, WhatReplacingDestroys};
-pub use windows_volume::{NotEnoughSpace, Shrink, WindowsVolume};
+pub use windows_volume::{BesideWindows, NotEnoughSpace, Shrink, WindowsVolume};
 pub use words::{
     ANSWER_LEAVE_ON, ANSWER_TURN_OFF, ASK_FAST_STARTUP, DEFAULT_CHANGE_IT, DEFAULT_CHANGED,
     DEFAULT_IS, DEFAULT_KEPT, DEFAULT_NOT_REACHED, DEFAULT_NOT_READ, DEFAULT_NOT_THERE,

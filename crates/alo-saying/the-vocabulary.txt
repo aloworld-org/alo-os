@@ -870,8 +870,10 @@ installer.type-the-disk-and-the-word	To erase {disk} and install alo OS, type it
 installer.type-the-disks-name	To agree, type the name of the disk alo OS replaces, exactly as it is written above, and press Enter. Everything on that disk is replaced. To stop, press Enter without typing anything
 installer.what-is-on-it-now	On {disk} now: Windows on {volume}, and everything kept there. All of it goes
 installer.will.add-the-entry	An entry named alo OS is added to the systems this computer can start. Windows stays the one it starts normally
+installer.will.give-alo-os	alo OS gets {area} GB of that space, on the disk {disk}. Windows keeps the rest
 installer.will.make-the-area	A {area} GB area for the installer is made in that space, on the disk {disk}
 installer.will.restart	This computer restarts once into the installer, which replaces everything on the disk you name below with alo OS, then restarts again
+installer.will.restart-keeping-windows	This computer restarts once. The installer puts alo OS in the space Windows gave up, then restarts again. Windows stays
 installer.will.shrink-windows	Windows on {volume} is made {area} GB smaller. Your files and applications stay where they are
 installer.windows-disk-not-supported	The disk {disk} that Windows is on is laid out in an older way this installer does not support, so nothing was changed
 installing.cannot-be-written	The disk you chose, {disk}, is in use or cannot be written to, so nothing was changed
@@ -893,7 +895,6 @@ installing.not-a-whole-disk	{disk} is part of a disk rather than a whole disk, s
 installing.not-genuine	This download is not a genuine alo OS, so nothing was changed
 installing.not-installed	alo OS could not be installed onto {disk}. That disk may now hold part of alo OS; nothing else on this computer was changed. Restart to try again
 installing.not-reachable	alo OS could not be downloaded, so nothing was changed. Check that this computer is connected to the internet by a network cable, then restart to try again
-installing.not-the-space-the-installer-made	The space for alo OS on the disk {disk} is not there, so nothing was changed. Start Windows and run the alo OS installer again
 installing.reading-the-choice	Reading which disk you chose before the restart
 installing.replacing-what-is-there	Everything on {disk} is being replaced, including the system that was on it. This is the road you agreed to twice, and there is no way back from here
 installing.restart-when-ready	You can turn this computer off or restart it now

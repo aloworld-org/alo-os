@@ -36,7 +36,7 @@ use crate::disks::Standing;
 use crate::ended::Refusal;
 use crate::found::Found;
 use crate::identities::DiskNumber;
-use crate::windows_volume::{Shrink, WindowsVolume};
+use crate::windows_volume::{BesideWindows, Shrink, WindowsVolume};
 
 /// What the installer offers to do.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,6 +57,19 @@ pub struct Offer {
     /// Offering a road whose disk cannot be named would be offering a road that
     /// cannot be walked, so `None` is how the question is not asked at all.
     pub the_windows_disk: Option<ForAloOs>,
+    /// The shrink that puts alo OS **on the disk Windows is on, beside it**, or
+    /// [`None`] when that volume cannot give up the area, alo OS's own space and
+    /// what Windows keeps free, all three.
+    ///
+    /// This is the third road and the installer plan's task 4. The other two
+    /// need a second disk ([`Self::disks_for_alo_os`]) or give up Windows
+    /// entirely ([`Self::the_windows_disk`]); a computer with one disk had
+    /// neither, and was refused outright.
+    ///
+    /// **Present does not mean chosen.** It is offered beside the others, and a
+    /// machine with a second disk will usually have both — which road is walked
+    /// is a person's answer, not this function's.
+    pub beside_windows: Option<BesideWindows>,
 }
 
 /// One disk alo OS may be installed onto.
@@ -68,6 +81,20 @@ pub struct ForAloOs {
     pub shown: String,
     /// Its name after the restart.
     pub after_the_restart: DiskName,
+    /// What Windows gives up, where this is the disk Windows is on and alo OS
+    /// goes **beside** it rather than onto an empty disk.
+    ///
+    /// [`None`] is the older road and still the common one: an empty disk alo
+    /// OS takes whole, where nothing of anybody's is moved. [`Some`] is task 4
+    /// of the installer plan — the disk is repartitioned, Windows is shrunk to
+    /// [`BesideWindows::to`], and **nothing is erased**.
+    ///
+    /// It is carried on the disk rather than beside it so that **the thing a
+    /// person typed the name of is the thing that says which road this is.** A
+    /// road chosen by one answer and a target chosen by another are two answers
+    /// that can disagree, and `crate::consent`'s whole shape is that there is
+    /// no second question.
+    pub beside: Option<BesideWindows>,
 }
 
 /// The offer, or the first reason there is none.
@@ -115,12 +142,42 @@ pub fn decide(found: &Found) -> Result<Offer, Refusal> {
                 number: disk.number(),
                 shown: disks.shown_name(disk),
                 after_the_restart,
+                // An empty disk alo OS takes whole: nothing is shrunk, because
+                // there is nothing on it to keep.
+                beside: None,
             }),
             Standing::HoldsWindows | Standing::InUse | Standing::TooSmall | Standing::NotUsable => {
                 None
             }
         })
         .collect();
+    // **The road a one-disk computer has**, which is the installer plan's task
+    // 4 and the promise `the-windows-installer-program.md` records as owed:
+    // *one-disk computers are refused until task 4*. Asked of the volume whether
+    // or not another disk exists, because a person with a second disk may still
+    // want to keep it for something else — both roads are *offered* here and
+    // chosen later, which is how `the_windows_disk` is already handled.
+    let beside_windows = windows.beside_windows().ok();
+
+    // **The Windows disk is NOT yet one of the disks alo OS may go on.**
+    //
+    // The shrink above is worked out and carried, and nothing offers it. That
+    // is deliberate and it is the owner's ruling of 2026-10-06: *the refusal
+    // that keeps the Windows disk out is flipped last, when the whole road
+    // exists and not before.*
+    //
+    // **The road is not whole yet.** The boot environment can install into a
+    // partition and refuses any partition but the one labelled `ALO-ROOT`; what
+    // is missing is the Windows half — shrinking the volume, making the space,
+    // labelling it, and writing `alo.installing.into=` and
+    // `alo.installing.efi=` into the staged command line.
+    //
+    // **This is not caution, it is a measurement.** On 2026-10-05 this refusal
+    // was flipped on its own, and the run reached the prompt and died at
+    // `NotADisksName`: a person sent from a clear refusal to a question with no
+    // answer. A refusal is a worse thing to remove than it looks, because what
+    // replaces it is whatever happens next.
+
     if disks_for_alo_os.is_empty() {
         return Err(Refusal::NoDiskForAloOs);
     }
@@ -130,6 +187,9 @@ pub fn decide(found: &Found) -> Result<Offer, Refusal> {
             number: windows_disk.number(),
             shown: disks.shown_name(windows_disk),
             after_the_restart,
+            // The road that replaces Windows takes the disk whole; nothing is
+            // shrunk and nothing is kept, which is what makes it the other road.
+            beside: None,
         });
     Ok(Offer {
         windows,
@@ -137,5 +197,6 @@ pub fn decide(found: &Found) -> Result<Offer, Refusal> {
         windows_disk: disks.shown_name(windows_disk),
         disks_for_alo_os,
         the_windows_disk,
+        beside_windows,
     })
 }
