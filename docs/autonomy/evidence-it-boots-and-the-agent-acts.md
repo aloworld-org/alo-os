@@ -783,96 +783,87 @@ with the reading behind it is what this entry is for.
 service on any machine — the tests put its own protocol to a socket, which is
 the shape of the exchange rather than the thing working.
 
-### The local model is what the machine arrives ready to run
+### The release carries no model, and a person brings their own
 
 **Shown by:** `crates/alo-image/src/weights.rs`,
 `crates/alo-image/src/checking.rs`,
 `crates/alo-image/tests/what_the_image_owes_the_daemons.rs`,
-`crates/alo-choosing/tests/the_three_choices.rs`,
-`docs/autonomy/updates/the-weights-a-machine-arrives-with.md`,
-`docs/autonomy/updates/the-one-thing-that-serves-the-model.md`,
-`docs/autonomy/updates/the-recipe-built-rather-than-read.md`
+`crates/alo-models/src/choosing.rs`,
+`docs/autonomy/updates/the-release-carries-no-model.md`
 
-The promise this entry is about was reworded on 2026-09-11, when
-ADR 0025 was accepted as Option D under the owner's standing delegation. It used
-to read *model by default — sovereignty is the default configuration*, and what
-it gave up is the claim that a value sits in a settings file before a person has
-touched one: unbuildable here on purpose, since ADR 0016 keeps that file for the
-person and ADR 0024 ships no accounts to write it into. What it took on is
-heavier — **a model on the disk of every machine we ship, sized for that
-machine** (ADR 0007) — and that is what the image now declares.
+**This entry replaced one for *the local model is what the machine arrives ready
+to run*,** which was this promise from 2026-09-11 until 2026-10-06. The owner
+decided the release ships no weights: a model we picked was a model picked for
+them, it was sized for the one 16 GB laptop the hardware document certifies
+first, and everybody downloaded 4.87 GiB including the people who would never
+run it. ADR 0025's argument for carrying them was sound and is not called wrong
+— what changed is which half of it governs, and *nobody chooses for the person*
+is the half that does.
 
-The recipe says **which weights a certified machine arrives with**:
-qwen3-8b, Q4\_K\_M, the pinned runtime library's own blob addressed by content,
-held to a sha256 that is checked before any other step reads the file, with that
-artefact's own template pinned and checked beside it. The open
-question ADR 0025 left is **decided — the weights ride on the image** — because a
-machine that fetches at setup has not arrived ready when it is offline at setup;
-docs/quirks.md carries what that costs and what the other answer would have cost.
-**Which model is not a preference and is not written in the recipe**: since
-2026-09-22 it is the answer alo_models::Catalogue::agent_for_cpu gives for the
-16 GB laptop docs/hardware.md certifies first — run here, may be used without
-reading a licence first, and measured driving the verbs the way a turn asks —
-and crates/alo-image refuses a recipe that names anything else. **And where that
-method recommends nothing, the image carries nothing** and the machine says so
-through the answer alo-telling already gives, rather than shipping gigabytes of
-a model that cannot drive anything. Ten refusals hold each of those, each a
-disagreement naming the decision it
-breaks. The four setup choices, local first and nothing pre-selected, are the
-crate added for them and the settings nothing writes on a person's behalf.
+**What is shown.** The recipe lands no weights, read off the real recipe rather
+than off a fixture, and a recipe that puts them back fails — caught by where a
+copy lands rather than by a build stage's name, so weights returned under a
+different name or in the store's new place are caught too. The store the runtime
+serves from moved into the service's own state directory, and a second rule asks
+whether that place is one the machine may write: the read-only half of a bootc
+machine is where the weights used to land, so leaving the store there would have
+left every sentence about bringing your own weights reading correctly while the
+thing itself could not happen.
 
-**Something now serves them, 2026-09-11.** image/usr/lib/systemd/system/alo-modeld.service
-is the one thing on the machine that serves the model it arrived with, and until
-it existed a machine built from this recipe booted with gigabytes of model on its
-disk and no process serving it — which is the answer a machine with no model at
-all gives. It runs as alo-model (60991), a login and a group of its own that is
-neither the person's nor the agent's; it holds no capability and both lines say
-so; its store is the directory the weights landed in; it answers at the one
-loopback address alo-models knocks at, read off that crate rather than
-spelled twice; and it reaches nothing off this machine — an IP deny of everywhere
-under an allow list naming this machine alone, which is a kernel-side filter on
-its own control group rather than a comment. alo-image holds each of
-those, with a twin that breaks one line of a copy of the image and is caught.
+**What a machine with no model does** was built and tested before this change,
+which is what made the decision safe to take. It says so and names the
+alternatives in a fixed order, and no method in that crate answers with a place
+or with a model — so nothing chooses for the person.
 
-**Still owed:** *arrives ready to run*, which is the sentence in the promise.
-Three things stand in front of it, and one of them is smaller than it was.
-**No machine has booted this image.** The recipe itself was built on 2026-09-11
-— 27 minutes, 8.38 GiB, every login number created exactly as asked and
-`bootc container lint` passing 13 of its 14 checks — so the import step is now a
-measurement rather than a recipe, and the runtime started out of the image it
-produced lists the model the machine arrived with. **A build is not a boot**, and
-two things the first build measured were owed work rather than evidence, and
-were done on 2026-09-12 (task 34): the store carried the weights **twice**,
-because `ollama create` leaves the source GGUF beside the blob its manifest
-names — the weights stage now removes it after the import and holds every blob
-left to the manifest, and the rebuilt image is measured in
-`docs/autonomy/updates/the-weights-carried-once-and-a-runtime-that-does-not-call-home.md`;
-and the pinned runtime made **two requests to `ollama.com` within eight
-milliseconds of starting** — the unit now sets the runtime's own switch beside
-the filter, and with it the runtime asks neither. The egress claim above is
-**a setting read and, once, watched working — not at a boot**: the unit was
-started by the image's own systemd under a container, sixteen packets to the
-publisher's port were attempted by its login and none reached the host side of
-the bridge while an unfiltered process in the same container was answered.
-`docs/quirks.md` carries all of it with versions and dates. A packet counter
-beside a *booted* image is still owed, with the boot. **The bar is cleared and
-the road to it is not finished, 2026-09-22.** `qwen3-8b` drove 20 of 20 in the
-words a turn shows a model, which is why the image carries it — but that grade
-was earned **in the envelope**, and a shipped machine's agent turn does not yet
-ask that way. So what a machine arrives able to do is load and answer with a
-local model, and the last step between that and an agent turn is lane A's
-wiring of `alo-asking`'s local door rather than another model. The image's
-predicted size with those weights aboard, and the arithmetic it is predicted
-from, are in `docs/quirks.md`; no build of the recipe carrying them has been
-made. And **who on the machine may ask the model anything is not decided**: a
-loopback TCP port has no owner and no mode, so no line in any unit gates it, and
-`docs/decisions/0027-who-may-ask-the-model-anything.md` is where that is argued
-and priced. That last one does not block this promise — it is about v0.5's
-sandbox — and it is written here so the next reader inherits the reasoning
-rather than the port. This entry stays owed until a machine boots with the
-weights on it, and
-`docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md` is
-where the wording it is held to was settled.
+**Still owed:** the sentence a person reads when they first meet a machine with
+no model. *Out of the box, this machine answers nothing*, and that is the promise
+rather than a gap in it — but nothing in this repository draws a screen that
+offers the four roads, so the words exist without a surface. The decision this
+promise rests on is
+`docs/decisions/0095-the-release-carries-no-model-and-a-person-brings-their-own.md`,
+and the road back to answering out of the box is our own API, which is **future**
+and is marked so in the feature list. When it arrives, answering that way means
+inference leaving the machine — which Law 1 covers, and which no sentence may
+describe as zero egress.
+
+### Run a model we never catalogued.
+
+**Shown by:** `crates/alo-models/tests/a_model_we_never_catalogued.rs`,
+`crates/alo-models/tests/a_brought_file_is_one_the_runtime_answers_to.rs`,
+`crates/alo-models/tests/the_pinned_runtime_accepts_what_alo_os_sends.rs`,
+`crates/alo-choosing/src/choosing.rs`,
+`crates/alo-driving/tests/against_a_file_brought_to_this_machine.rs`,
+`crates/alo-image/src/weights.rs`,
+`docs/autonomy/updates/a-brought-file-is-one-the-runtime-answers-to.md`,
+`docs/autonomy/updates/the-pinned-runtime-and-what-alo-os-sends-it.md`,
+`docs/autonomy/updates/the-release-carries-no-model.md`
+
+**This entry moved here from the next release on 2026-10-06**, with the promise.
+The tier moved rather than the scope gate being crossed: with no weights
+shipped, this is how a person gets a local model at all, so a promise of
+bringing your own that waited for a later release would have been a promise with
+nothing behind it.
+
+**What is shown.** A brought file is one the runtime answers to rather than one
+we recognise, and the pinned runtime accepts what alo OS sends it — tested
+against the runtime itself. A person points alo OS at a file where it already
+is; the file is measured rather than described, its grade is *not measured*
+until somebody measures it, and every refusal names the path. Bringing a file is
+not choosing it, for the same reason adding a provider is not. A grade a
+measurement earns is written beside the person's own weights and never into the
+catalogue alo OS ships, which is not theirs. The catalogue recommends and does
+not gate.
+
+**What moving it added** is the store. The runtime used to serve from the
+read-only half of a bootc machine, which is right for weights that arrive with
+the image and impossible for weights a person brings; it now serves from the
+model service's own state directory, and a rule asks whether that place is one
+the machine may write.
+
+**Still owed:** somebody's own weights on their own machine. Everything above is
+tested here, and no person has yet brought a file to a booted alo OS and been
+answered from it. There is also **no surface**: the door exists and nothing in
+this repository draws the screen that opens it.
 
 ### Add your own provider in Settings
 
@@ -1268,7 +1259,7 @@ to prevent.
 
 ## What this audit found
 
-**The audit in figures: 70 promises, 2 shown whole, 50 shown in part, 18 with no
+**The audit in figures: 71 promises, 2 shown whole, 51 shown in part, 18 with no
 evidence at all.**
 
 *This line is the ledger's own count of itself and it is checked.*

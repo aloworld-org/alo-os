@@ -161,19 +161,19 @@ fn a_promise_that_waits_on_a_decision_names_one_that_is_there() {
 
     let default = alo_reconciling::entries_in(&ledger)
         .into_iter()
-        .find(|entry| entry.promise().contains("arrives ready to run"))
-        .expect("the ledger still has an entry about the local model the machine arrives with");
+        .find(|entry| entry.promise().contains("carries no model"))
+        .expect("the ledger still has an entry about the model the release carries");
     let owed = default
         .owed()
-        .expect("the machine-arrives-ready promise is owed rather than shown")
+        .expect("the no-model promise is owed rather than shown")
         .sentence()
         .to_owned();
     assert!(
         !default.names().is_empty(),
-        "the machine-arrives-ready promise names nothing that shows it, and the \
-         image declares the weights it carries — an entry that named nothing \
-         would send a reader looking for the implementation of a promise this \
-         repository has half built"
+        "the no-model promise names nothing that shows it, and the recipe is \
+         held to carrying no weights — an entry that named nothing would send a \
+         reader looking for the implementation of a promise this repository has \
+         half built"
     );
     assert!(
         decisions_named_in(&owed).contains(&THE_REAL_DECISION.to_owned()),
@@ -220,8 +220,8 @@ fn a_ledger_naming_a_decision_nobody_wrote_is_a_finding() {
 
 /// The decision this promise waits on, named once so both tests above break
 /// together if it is ever renamed.
-const THE_REAL_DECISION: &str =
-    "docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md";
+const THE_REAL_DECISION: &str = "docs/decisions/\
+     0095-the-release-carries-no-model-and-a-person-brings-their-own.md";
 
 /// **Every promise with no evidence at all says where the work is, and the
 /// pointer lands** — against this repository, on the disk it is checked out on.

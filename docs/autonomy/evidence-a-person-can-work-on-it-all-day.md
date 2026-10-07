@@ -1091,18 +1091,6 @@ accepted.
 **Still owed:** a test. *Unknown* rather than assumed-European is the whole point
 of the promise and it is decided; no test holds it.
 
-### Run a model we never catalogued
-
-**Shown by:** `crates/alo-models/tests/a_model_we_never_catalogued.rs`,
-`crates/alo-models/tests/a_brought_file_is_one_the_runtime_answers_to.rs`,
-`crates/alo-models/tests/the_pinned_runtime_accepts_what_alo_os_sends.rs`,
-`docs/autonomy/updates/a-brought-file-is-one-the-runtime-answers-to.md`,
-`docs/autonomy/updates/the-pinned-runtime-and-what-alo-os-sends-it.md`
-
-**Still owed:** somebody's own weights on their own machine. A brought file is one
-the runtime answers to rather than one we recognise, and the pinned runtime accepts
-what alo OS sends it — tested against the runtime itself.
-
 ### The machine warns and then gets out of the way
 
 **Shown by:** `crates/alo-models/tests/candidates_the_box_can_hold.rs`,
