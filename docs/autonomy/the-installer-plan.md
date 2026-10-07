@@ -321,6 +321,42 @@ while it is running; alo OS only fills what it was given.
   ruling above and is last;
 - **then the walk**, both runs, in the order term 3 sets.
 
+**And the way back, which nothing had listed and this task's own title
+promises** — *switching between them easily, and back again*. Measured
+2026-10-07 by reading `crates/alo-installer/src/removing.rs`, not run:
+
+`remove_alo_os` finds the disk to clear with
+`Disks::the_one_alo_os_is_on`, which **excludes the disk Windows is on**, and
+then clears that disk whole with `ClearingTheDiskAloOsIsOn`. So on the
+same-disk road the removal finds nothing and refuses.
+
+**That filter is a safety guard and not an oversight.** The program erases a
+whole disk; on the same-disk road that disk is the one Windows is on. Lifting
+the filter without changing what the program erases would make *remove alo
+OS* erase Windows. It refuses, nothing is changed, and nothing is erased —
+which is the right behaviour for a road it cannot walk.
+
+**What is wrong today is the sentence, and it is a small lie.**
+`installer.remove.not-found` says *The disk alo OS is on could not be found*.
+On the same-disk road that disk was found; it is the disk Windows is on, and
+the real reason is that this program erases whole disks. A person told their
+disk *could not be found* will go looking for a hardware fault that is not
+there.
+
+**What is owed, and it is its own task rather than part of the fork:**
+
+- a removal that takes away alo OS's **partition** and grows Windows back into
+  the space, rather than clearing a disk;
+- the same label guard the install side has — remove only a partition
+  carrying `ALO-ROOT`, so a wrong partition number is a refusal and not a
+  person's Windows;
+- a sentence that says the true reason while that removal does not exist.
+
+**Nothing the installer says may promise this before it exists.** The fork's
+sentences say that Windows does not get the space back while alo OS is there,
+and stop — they do not say that removing alo OS later gives it back, because
+today it does not.
+
 **One thing on this road is assumed rather than measured**, and it is written
 where it is used (`crates/alo-installer/src/naming.rs`): that Windows'
 partition number is the partition's index in the GPT table, which is what udev
