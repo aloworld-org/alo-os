@@ -564,7 +564,7 @@ worker taking this task would be choosing which model to ship by wishing.
 
 **Done, 2026-09-22.** The image carries **`qwen3-8b`** at four bits — the entry
 `Catalogue::agent_for_cpu(16.0)` recommends — and the recipe no longer says
-which model that is. `crates/alo-image/src/arrives_with.rs` asks the catalogue
+which model that is. The module arrives_with.rs asked the catalogue
 the same method the rest of alo OS asks, so a name typed into
 `image/Containerfile` that the catalogue does not recommend is a red test rather
 than an image; the twin is `phi-3-mini-instruct`, **the entry this image really
@@ -603,8 +603,10 @@ was earned **in the envelope**, lane A's wiring of a shipped machine's turn to
 ask that way has not landed, and the catalogue's recommendation still reads the
 free grade (ADR 0032 §5).
 
-Measured in `crates/alo-image/src/arrives_with.rs`,
-`crates/alo-image/src/checking.rs` and `crates/alo-image/src/weights.rs`.
+Measured in arrives_with.rs, `crates/alo-image/src/checking.rs` and
+`crates/alo-image/src/weights.rs`.
+
+*(That module was removed on 2026-10-06 by [ADR 0095](../decisions/0095-the-release-carries-no-model-and-a-person-brings-their-own.md) — the release carries no model, so there is no longer a question of which one a machine arrives with. The measurement above stands as what was measured then.)*
 `docs/quirks.md` carries the size and both findings beside task 8's
 measurement, and `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` is rewritten to say what is
 now shown. Report:

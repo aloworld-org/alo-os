@@ -16,9 +16,8 @@ use std::path::Path;
 
 use alo_image::{
     Image, NO_PARTITIONER, ROOT, THE_AGENT, THE_DOOR, THE_IMAGE, THE_LOADER, THE_ONLY_TOOL,
-    THE_OPENER, THE_RUNTIMES_BINARY, THE_SERVER, THE_WEIGHTS, everything_wrong_with,
+    THE_OPENER, THE_RUNTIMES_BINARY, THE_SERVER, THE_STORE_IS_AT, everything_wrong_with,
 };
-use alo_models::{Catalogue, OnCpu};
 
 /// The image this repository ships.
 ///
@@ -362,160 +361,26 @@ fn the_model_runtime_is_aboard_pinned_and_verified() {
     );
 }
 
-/// **The weights a machine arrives with are aboard, pinned, checked before
-/// anything reads them, and a model somebody measured.**
+/// **The image carries no weights at all**, which since
+/// [ADR 0095](../../../docs/decisions/0095-the-release-carries-no-model-and-a-person-brings-their-own.md)
+/// is what a correct image does.
 ///
-/// ADR 0025's expensive half: a model on the disk of every machine we ship,
-/// sized for that machine (ADR 0007). It is carried on the image rather than
-/// fetched at setup, because a machine that fetches at setup has not arrived
-/// ready when it is offline at setup.
+/// Two tests stood here. One held the weights to being aboard, pinned,
+/// verified and the catalogue's own recommendation; the other held the store to
+/// carrying them exactly once. Both were about 4.87 GiB that no longer ships: a
+/// person brings weights they already have, uses a provider, or works without
+/// one, and a model we chose would be a model chosen for them.
 ///
-/// The catalogue is the authority for which model, and this test reads both:
-/// the entry has been measured by `alo-driving`, its quantisation and artefact
-/// are the ones the recipe fetches and imports, it fits the ordinary business
-/// laptop `docs/hardware.md` certifies, and its licence permits commercial use
-/// outright — which matters here and nowhere else, because carrying weights in
-/// an image is redistributing them.
-///
-/// **It does not say the machine can be given the agent.** Nothing in the
-/// catalogue clears `Driving::Reliably` yet, this entry included; what is shown
-/// is a machine that arrives with a model on its disk rather than one that
-/// arrives with an agent that works.
+/// What replaces them is the opposite question, asked of the real recipe,
+/// because weights can return in a single `COPY` line and nobody reviewing a
+/// recipe notices a layer getting bigger.
 #[test]
-fn the_weights_a_machine_arrives_with_are_aboard_pinned_and_measured() {
+fn the_image_carries_no_weights() {
     let image = the_image();
-    let weights = image.weights();
-
-    assert!(
-        weights.land(),
-        "the recipe lands no weights at {THE_WEIGHTS}: {weights:?}"
-    );
-    assert!(
-        weights.is_pinned(),
-        "the weights are fetched from a moving name: {:?}",
-        weights.from()
-    );
-    assert!(
-        weights.is_verified(),
-        "the weights are not held to a digest checked before anything reads them: {:?}",
-        weights.digest()
-    );
-
-    let named = match weights.model() {
-        Some(model) => model,
-        None => panic!("the recipe carries weights and does not say which model: {weights:?}"),
-    };
-    let catalogue = match Catalogue::built_in() {
-        Ok(catalogue) => catalogue,
-        Err(why) => panic!("the catalogue this system ships did not read: {why}"),
-    };
-    let entry = match catalogue.get(named) {
-        Some(entry) => entry,
-        None => panic!("the image carries `{named}`, which the catalogue does not have"),
-    };
-
-    assert!(
-        entry.drives_verbs.has_been_measured(),
-        "`{named}` was never put to alo-driving"
-    );
     assert_eq!(
-        entry.quantised_at(),
-        weights.quantisation().zip(weights.artefact()),
-        "`{named}` is carried as something the catalogue does not state"
-    );
-    assert!(
-        entry.min_ram_gb <= 16.0 && entry.on_cpu != OnCpu::Slow,
-        "`{named}` needs {} GB and is graded {:?} with no card, and the machine this image is \
-         sized for has 16 GB and no card",
-        entry.min_ram_gb,
-        entry.on_cpu
-    );
-    assert!(
-        entry.safe_default_for_business(),
-        "`{named}` is under `{}`, and an image carrying weights hands their terms to everybody \
-         who receives it",
-        entry.licence.name
-    );
-}
-
-/// **The store the image carries is the weights once, and the recipe holds it
-/// there.** The first build of this recipe carried them twice — the runtime's
-/// copy of the checked file left beside the blob its manifest names, 2.23 GiB
-/// referenced by nothing on a read-only `/usr` — and the cost ADR 0025 accepted
-/// was *carried once*. So the weights stage drops the source blob after the
-/// import, with the digest check before it untouched, and holds every blob left
-/// in the store to the manifest before the store leaves the stage. This reads
-/// both lines off the real recipe.
-#[test]
-fn the_store_the_image_carries_is_the_weights_once() {
-    let image = the_image();
-    let weights = image.weights();
-
-    assert!(
-        weights.is_verified(),
-        "dropping the source blob is only cheaper if the digest check before it stayed"
-    );
-    assert!(
-        weights.prunes_to_the_manifest(),
-        "the weights stage leaves the runtime's copy of the checked file in the store"
-    );
-    assert!(
-        weights.holds_the_store_to_its_manifest(),
-        "nothing holds every blob in the store to the manifest that names it"
-    );
-}
-
-/// **Something on this machine serves the model it arrived with, and it is a
-/// login of its own that holds nothing.**
-///
-/// Until this unit existed the image carried a runtime and 2.23 GiB of weights
-/// and started neither, so `alo-models` knocked at the loopback address and got
-/// the answer a machine with no model at all gives. The four decisions in the
-/// unit are read back here off the real file.
-///
-/// Not the person, whose session comes and goes; not the agent, which ADR 0001
-/// §2 and §5 keep authority and identity away from; and no capability, because
-/// serving a model needs none — ADR 0018's argument said in the third place it
-/// has to be said.
-#[test]
-fn the_model_is_served_by_a_login_of_its_own_that_holds_nothing() {
-    let image = the_image();
-    let server = image.server();
-
-    let as_login = match server.as_login() {
-        Some(login) => login,
-        None => panic!("{THE_SERVER} does not say which login it runs as"),
-    };
-    let number = match image.login_called(as_login) {
-        Some(number) => number,
-        None => panic!("{THE_SERVER} runs as `{as_login}`, which this image does not make"),
-    };
-    assert_ne!(number, image.description().person());
-    assert_ne!(number, image.description().agent());
-
-    let group = match server.in_group() {
-        Some(group) => group,
-        None => panic!("{THE_SERVER} does not say which group it runs in"),
-    };
-    assert!(
-        image.group_called(group).is_some(),
-        "{THE_SERVER} runs in `{group}`, which this image does not make"
-    );
-    assert_ne!(Some(group), image.loader().in_group(), "the agent's group");
-    assert_ne!(Some(group), image.agent().in_group(), "the person's group");
-    assert_ne!(
-        Some(group),
-        image.opener().in_group(),
-        "the greeter's group"
-    );
-
-    assert!(
-        server.holds_nothing(),
-        "serving a model needs no capability, and both lines have to say so: {server:?}"
-    );
-    assert!(
-        server.wanted_by().contains(&"multi-user.target"),
-        "nothing starts {THE_SERVER}, which is the state the image shipped in until it existed"
+        image.lands_weights(),
+        Vec::<String>::new(),
+        "the recipe lands model weights, and ADR 0095 says the release carries none"
     );
 }
 
@@ -534,15 +399,19 @@ fn the_model_is_served_by_a_login_of_its_own_that_holds_nothing() {
 /// whatever network it is plugged into, with nothing on the egress indicator,
 /// because nothing left.
 #[test]
-fn the_model_service_is_pointed_at_the_weights_and_at_the_loopback_address() {
+fn the_model_service_is_pointed_at_a_writable_store_and_at_the_loopback_address() {
     let image = the_image();
     let stated = image.server().environment();
 
     let store: Vec<&str> = assigned(&stated, "OLLAMA_MODELS");
     assert_eq!(
         store,
-        vec![THE_WEIGHTS.trim_end_matches('/')],
-        "the model service is not pointed at the directory the weights landed in"
+        vec![THE_STORE_IS_AT.trim_end_matches('/')],
+        "the model service is not pointed at the store a person's own weights go in"
+    );
+    assert!(
+        alo_image::a_machine_may_write(THE_STORE_IS_AT),
+        "the store is somewhere the machine cannot write, so nobody can bring weights"
     );
 
     let address: Vec<&str> = assigned(&stated, "OLLAMA_HOST");

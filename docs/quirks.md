@@ -4319,10 +4319,10 @@ bytes without anybody noticing. The template is fetched the same way and for
 the same reason: a grade is earned against a model **as it was served**, and
 the same weights under a hand-copied template are a different machine
 answering.
-**Our response:** `crates/alo-image/src/arrives_with.rs` asks the catalogue
-which entry a machine of the certified class arrives with, rather than holding
-a name of its own, and `everything_wrong_with` refuses a recipe carrying
-anything else — `phi-3-mini-instruct`, which passes every other check here, is
+**Our response, until 2026-10-06:** the module arrives_with.rs asked the
+catalogue which entry a machine of the certified class arrives with, rather
+than holding a name of its own, and `everything_wrong_with` refused a recipe
+carrying anything else — `phi-3-mini-instruct`, which passes every other check here, is
 the twin that proves it. Where the catalogue recommends **nothing** for a
 class, the image must carry **nothing**, and the refusal names the same reason
 a person is shown (`alo_models::NoAgentHere`) rather than a sentence of the
@@ -4332,6 +4332,16 @@ here says the machine can be given an agent turn: the grade `qwen3-8b` earned
 was earned **in the envelope**, and wiring a shipped machine's turn to ask that
 way is lane A's work.
 **Date:** 2026-09-22.
+
+**And then the question went away.**
+[ADR 0095](decisions/0095-the-release-carries-no-model-and-a-person-brings-their-own.md)
+took the weights out of the release on 2026-10-06: a person brings weights they
+already have, uses a provider, or works without one. So there is no longer a
+model the image carries for the catalogue to be held against, and that module
+and its rules were removed. **The quirk above is still true of the runtime's
+library** — it is why a grade is earned against an artefact rather than a name —
+and it is now a thing a person's own weights meet rather than something the
+image does.
 
 ### The recipe with qwen3-8b fetches and verifies, and then the guest runs out of host disk
 **Version:** `image/Containerfile` at `d06e6834`, built with

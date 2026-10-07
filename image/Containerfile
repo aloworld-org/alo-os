@@ -47,66 +47,24 @@ ARG THE_RUNTIME_SHA256=cf95886728959aa09910bb34de5cca1cc5a8f68003b5597197d3f2c2d
 # reach nothing.
 ARG THE_CONVERTER=26.2.6
 ARG THE_CONVERTER_SHA256=9833c61bfbec0905c6da54f82ef56123818661c9fec99706d9afece3ad7e9988
-# The weights a machine arrives with (ADR 0025, ADR 0007), declared here because
-# **they ride on the image** rather than being fetched when somebody sets the
-# machine up: a machine that fetches at setup has not arrived ready when it is
-# offline at setup, and *the local model is what the machine arrives ready to
-# run* is a promise about the box rather than about the network it is unpacked
-# next to. What that costs is the image, and it is paid in one place: 4.87 GiB
-# of weights, carried once, in a layer that changes only when this pin does.
-# *Once* is asserted rather than assumed: the first build of this recipe carried
-# them twice (docs/quirks.md, 2026-09-11), and the weights stage now holds every
-# blob in the store to the manifest that names it.
+# **No weights, and this is where they used to be named.**
+# [ADR 0095](../docs/decisions/0095-the-release-carries-no-model-and-a-person-brings-their-own.md)
+# — the release carries no model. A person brings weights they already have, or
+# uses a provider, or works without one, and alo OS chooses none of those for
+# them. What stood here was 4.87 GiB of one model, picked by us for the one
+# 16 GB laptop `docs/hardware.md` certifies first, downloaded by everybody
+# including the people who would never run it.
 #
-# **Which model is not written here. It is read off the catalogue.**
-# `alo_models::Catalogue::agent_for_cpu` answers *which model gets the agent on a
-# machine of this class*, and `crates/alo-image` holds the argument below to that
-# answer for the 16 GB laptop `docs/hardware.md` certifies first — so a model
-# typed in here that the catalogue does not recommend fails a test rather than
-# shipping. That method asks three questions in order: does it run on this
-# machine, may it be used without reading a licence first, and **has somebody
-# measured it driving the verbs the way a turn asks** (ADR 0034, ADR 0037). The
-# third is the one that changed this line on 2026-09-22: until an entry cleared
-# that bar the image carried the largest measured entry that fitted, which was a
-# model graded `rarely` and could not have driven anything.
+# **The runtime stays.** It is fetched and checked two sections below, and
+# without it *bring your own weights* would be a sentence with nothing behind
+# it. What the runtime serves out of is `/var/lib/alo-model/models`, which is
+# writable, because weights a person brought are theirs and cannot live on the
+# read-only half of a bootc machine (`image/usr/lib/systemd/system/alo-modeld.service`).
 #
-# And where no entry clears it, **the image carries no weights at all** and the
-# machine says so through the answer `alo_models::NoAgentHere` already gives —
-# which is a machine that tells the truth rather than one that ships a model it
-# cannot use. That refusal is `crates/alo-image`'s too.
-#
-# `THE_MODEL` is the catalogue's own id; `THE_MODELS_ARTEFACT` is what the
-# runtime on the machine answers to, which is the catalogue's `artefact` field,
-# so the entry a person reads and the name their machine knows are one string.
-#
-# **The weights come from the runtime's own library, addressed by content**, and
-# that is a change of road from the first version of this block, which fetched
-# the publisher's GGUF and objected that *a registry tag is not a digest*. The
-# objection was right about tags and wrong about registries: a blob URL under
-# `/blobs/sha256:…` names one file and no other, which is a stronger pin than a
-# revision of a repository. What decided it is the grade. Every grade in the
-# catalogue was earned against the artefact `THE_MODELS_ARTEFACT` names, served
-# out of that library — and the publisher's own GGUF of the same model at the
-# same quantisation is **a different file**: 5_027_783_488 bytes against
-# 5_225_374_496, because the two were quantised by different hands. Carrying the
-# publisher's file would put weights on every machine that nobody here has
-# measured, under a grade earned on weights nobody ships, which is exactly the
-# gap `docs/features.md`'s *measured by us, not claimed by the publisher* is
-# about.
-#
-# `THE_MODELS_TEMPLATE` is the same library's template for the same artefact,
-# pinned and checked the same way. It is fetched rather than written out here
-# because it is 1_723 bytes of the engine's own configuration, it is what the
-# grade was earned under, and a hand-copied template is a silent way to serve a
-# model differently from the way it was measured. Engines are configured, never
-# patched, and this is the configuration the engine publishes.
-ARG THE_MODEL=qwen3-8b
-ARG THE_MODELS_QUANTISATION=Q4_K_M
-ARG THE_MODELS_ARTEFACT=qwen3:8b-q4_K_M
-ARG THE_MODELS_WEIGHTS=https://registry.ollama.ai/v2/library/qwen3/blobs/sha256:a3de86cd1c132c822487ededd47a324c50491393e6565cd14bafa40d0b8e686f
-ARG THE_MODELS_SHA256=a3de86cd1c132c822487ededd47a324c50491393e6565cd14bafa40d0b8e686f
-ARG THE_MODELS_TEMPLATE=https://registry.ollama.ai/v2/library/qwen3/blobs/sha256:ae370d884f108d16e7cc8fd5259ebc5773a0afa6e078b11f4ed7e39a27e0dfc4
-ARG THE_MODELS_TEMPLATE_SHA256=ae370d884f108d16e7cc8fd5259ebc5773a0afa6e078b11f4ed7e39a27e0dfc4
+# `crates/alo-models` already answers a machine with no model: it says so and
+# names the alternatives, in a fixed order, and has no method anywhere that
+# answers with a place or with a model. That was true before this change and is
+# what made it safe to make.
 
 # ---------------------------------------------------------------------------
 # What compiles alo OS, which is not what runs it
@@ -246,129 +204,6 @@ RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location \
  && echo "${THE_RUNTIME_SHA256}  /ollama-linux-amd64.tar.zst" | sha256sum --check - \
  && mkdir /runtime \
  && zstd --decompress --stdout /ollama-linux-amd64.tar.zst | tar --extract --directory /runtime
-
-# ---------------------------------------------------------------------------
-# The weights, fetched pinned, checked before anything reads them, and imported
-# into the runtime's own store
-# ---------------------------------------------------------------------------
-#
-# A stage of its own for the runtime stage's reason, one step further on: 4.87
-# GiB that changes only when the pin above changes has no business being rebuilt
-# because a Rust file did.
-#
-# The import is done **here**, with the pinned runtime itself, rather than on the
-# machine at first boot. A machine that imported its own weights the first time
-# somebody signed in would be a machine whose first minutes are spent doing
-# something that could have been done once, in a build, where a failure is a red
-# build rather than a person watching a progress bar on a laptop. What lands on
-# the image is therefore the runtime's model store, which the runtime reads and
-# nothing here writes.
-#
-# The template is the runtime library's own for this artefact, fetched beside the
-# weights and pinned the same way: without it the runtime has no way to know
-# where this model's turns begin and end, and *engines are configured, never
-# patched* is exactly what a Modelfile is. The parameters below are the same
-# library's for the same artefact, which is why none of them is rounder than the
-# publisher made it and why no context length is set here — the grade was earned
-# against this model served exactly as it is published, and a parameter added in
-# this file would be serving it some other way.
-#
-# **Carried once, and held to it.** Building this recipe the first time measured
-# what the import really does (docs/quirks.md, 2026-09-11): the runtime copies
-# the checked file into its store under the file's own digest, then writes a
-# second blob of the same length under another, and its manifest names only the
-# second — so a store left as the runtime left it is twice the model in it, on
-# the read-only half of every machine we ship, where nothing can ever prune it.
-# The runtime itself agrees the first blob is unused: at every start it tries to
-# delete it and, on a machine, fails against /usr.
-#
-# **So the store is pruned to what its manifest names**, and three things are
-# asserted before it leaves this stage: the runtime can still show the model off
-# what is left, which is what would fail if a future runtime referenced a blob
-# this pruned; there is exactly one manifest; and every blob in the store is
-# named by it. The digest check above is untouched — a cheaper import that
-# dropped it would not be cheaper.
-#
-# **It removed one named digest until 2026-10-05, and that stopped working the
-# day the weights moved.** The line was `rm -f
-# "/models/blobs/sha256-${THE_MODELS_SHA256}"`, and it was right while the
-# weights came from a publisher's own GGUF: that digest was the *downloaded
-# file's*, which the runtime stores as the duplicate and never names in a
-# manifest. `#113` moved the weights to the runtime library's own
-# content-addressed blob, so `THE_MODELS_SHA256` **became the digest the
-# manifest names** — the runtime reports `using existing layer` rather than
-# importing a second copy — and the line deleted the only weights in the store.
-# The build failed at the assertion written to catch exactly that:
-#
-#     ollama create  success, 1m42s
-#     rm             /models/blobs/sha256-a3de86cd…
-#     ollama show    404, couldn't open model file
-#     Error: model 'qwen3:8b-q4_K_M' not found
-#
-# **Nobody saw it for fifteen days because nothing built the image**, and the
-# test that reads this recipe asserted the *text* of that line rather than what
-# it does — `crates/alo-image/src/weights.rs`, which is corrected with it. A
-# pruned-by-manifest rule cannot tell the two sourcings apart, which is why it is
-# the rule rather than a second digest.
-FROM ${THE_BUILDER} AS weights
-
-ARG THE_MODELS_ARTEFACT
-ARG THE_MODELS_WEIGHTS
-ARG THE_MODELS_SHA256
-ARG THE_MODELS_TEMPLATE
-ARG THE_MODELS_TEMPLATE_SHA256
-
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
- && apt-get install --yes --no-install-recommends ca-certificates curl \
- && rm -rf /var/lib/apt/lists/*
-
-COPY --from=runtime /runtime /runtime
-
-# Two steps rather than one, and in this order on purpose: **nothing reads either
-# file until its digest has been checked.** A fetch and an import in one command
-# would be a machine that imported whatever arrived and verified it afterwards.
-RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location \
-      --output /weights.gguf "${THE_MODELS_WEIGHTS}" \
- && curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location \
-      --output /template.gotmpl "${THE_MODELS_TEMPLATE}" \
- && echo "${THE_MODELS_SHA256}  /weights.gguf" | sha256sum --check - \
- && echo "${THE_MODELS_TEMPLATE_SHA256}  /template.gotmpl" | sha256sum --check -
-
-ENV LD_LIBRARY_PATH=/runtime/lib/ollama
-ENV OLLAMA_MODELS=/models
-RUN set -eu; \
-    { printf '%s\n' 'FROM /weights.gguf'; \
-      printf 'TEMPLATE """'; \
-      cat /template.gotmpl; \
-      printf '%s\n' '"""' \
-        'PARAMETER repeat_penalty 1' \
-        'PARAMETER stop <|im_start|>' \
-        'PARAMETER stop <|im_end|>' \
-        'PARAMETER temperature 0.6' \
-        'PARAMETER top_k 20' \
-        'PARAMETER top_p 0.95'; \
-    } > /Modelfile; \
-    /runtime/bin/ollama serve & \
-    served=$!; \
-    for _ in $(seq 1 60); do \
-      /runtime/bin/ollama list >/dev/null 2>&1 && break; \
-      sleep 1; \
-    done; \
-    /runtime/bin/ollama list >/dev/null; \
-    /runtime/bin/ollama create "${THE_MODELS_ARTEFACT}" -f /Modelfile; \
-    test -d /models; \
-    manifest="$(find /models/manifests -type f)"; \
-    test "$(printf '%s\n' "${manifest}" | wc -l)" = 1; \
-    for blob in /models/blobs/*; do \
-      grep -q "sha256:${blob##*/sha256-}" "${manifest}" || rm -f "${blob}"; \
-    done; \
-    /runtime/bin/ollama show "${THE_MODELS_ARTEFACT}" >/dev/null; \
-    kill "${served}"; \
-    for blob in /models/blobs/*; do \
-      grep -q "sha256:${blob##*/sha256-}" "${manifest}" \
-        || { echo "${blob} is referenced by nothing"; exit 1; }; \
-    done
 
 # ---------------------------------------------------------------------------
 # The machine
@@ -697,13 +532,6 @@ COPY --from=runtime /runtime/lib/ollama/ /usr/lib/ollama/
 # are decided in that unit, in settings a person can read, and held to those
 # decisions by `crates/alo-image`.
 #
-# The modes are the store's own, made by root in the stage above with the
-# build's umask: readable by everybody, written by nobody. They are not chmod'ed
-# here the way the binaries below are, and that is deliberate — a recursive
-# chmod over 4.87 GiB writes a second copy of every one of those bytes into
-# another layer, and nothing about a `COPY` out of a build stage carries the
-# Windows checkout's invented permission bits that the chmod exists for.
-COPY --from=weights /models/ /usr/share/alo/models/
 
 # How this image becomes a disk a machine boots, said by the image itself.
 #

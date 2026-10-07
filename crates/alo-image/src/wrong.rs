@@ -425,18 +425,29 @@ pub enum Wrong {
         /// The digest the recipe names, or `-` where it names none.
         digest: String,
     },
-    /// The image carries no weights, so the runtime aboard it has nothing to
-    /// load.
+    /// The image carries weights, which since ADR 0095 it must not.
     #[error(
-        "this image does not land any weights at {at}, copied out of a build stage that fetched \
-         and checked them — ADR 0025 promises the local model is what the machine arrives ready \
-         to run, and a model runtime with nothing to load answers exactly as little as no runtime \
-         at all; a machine that has to fetch a model before it can do anything is a machine whose \
-         sovereignty is a download"
+        "this image lands model weights at {at} — ADR 0095 says the release carries none: a \
+         person brings weights they already have, uses a provider, or works without one, and a \
+         model we chose is a model chosen for them. Weights come back in one COPY line and \
+         nobody reviewing a recipe notices a layer getting bigger, which is why this is a test"
     )]
-    TheWeightsAreNotOnTheImage {
-        /// Where the weights should land, and do not.
-        at: PathBuf,
+    TheImageCarriesWeights {
+        /// Where the recipe lands them.
+        at: String,
+    },
+    /// The model store is somewhere the machine cannot write.
+    #[error(
+        "the model service {server} is pointed at {store}, which the machine cannot write to — \
+         since ADR 0095 the weights are the person's own, brought by them, and /usr is the \
+         read-only half of a bootc machine. A store there leaves every sentence about bringing \
+         your own weights reading correctly while the thing itself cannot happen"
+    )]
+    TheStoreIsNotWritable {
+        /// The unit that is pointed at it.
+        server: String,
+        /// Where it is pointed.
+        store: String,
     },
     /// The weights are fetched from a name that means something else tomorrow.
     #[error(

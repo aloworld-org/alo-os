@@ -30,7 +30,6 @@ use crate::runtime::TheRuntime;
 use crate::service::Service;
 use crate::unit::Unit;
 use crate::version::TheVersion;
-use crate::weights::TheWeights;
 
 /// The unit that loads the boundary, as systemd names it.
 pub const THE_LOADER: &str = "alo-boundaryd.service";
@@ -117,8 +116,9 @@ pub struct Image {
     store: TheStore,
     /// What its recipe says about the model runtime it carries.
     runtime: TheRuntime,
-    /// What its recipe says about the weights a machine arrives with.
-    weights: TheWeights,
+    /// Everywhere its recipe lands model weights, which on a correct image
+    /// is nowhere (ADR 0095).
+    lands_weights: Vec<String>,
     /// Which release its recipe says it builds.
     version: TheVersion,
     /// What its recipe says about the disk a machine boots from.
@@ -171,7 +171,7 @@ impl Image {
         let recipe = text(&root.join(CONTAINERFILE))?;
         let asserted = Asserted::read(&recipe);
         let runtime = TheRuntime::read(&recipe);
-        let weights = TheWeights::read(&recipe);
+        let lands_weights = crate::weights::where_the_recipe_lands_weights(&recipe);
         let version = TheVersion::read(&recipe);
         let disk = TheDisk::read(&recipe);
         let document = TheDocument::read(&text(&root.join(THE_DOCUMENT))?);
@@ -211,7 +211,7 @@ impl Image {
             description,
             store: TheStore::of(root),
             runtime,
-            weights,
+            lands_weights,
             version,
             disk,
             document,
@@ -326,10 +326,11 @@ impl Image {
         &self.runtime
     }
 
-    /// What this image's recipe says about the weights a machine arrives with.
+    /// Everywhere this image's recipe lands model weights, which on a correct
+    /// image is nowhere (ADR 0095).
     #[must_use]
-    pub const fn weights(&self) -> &TheWeights {
-        &self.weights
+    pub fn lands_weights(&self) -> &[String] {
+        &self.lands_weights
     }
 
     /// Which release this image's recipe says it builds.
