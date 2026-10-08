@@ -685,8 +685,17 @@ that keeps each claim checkable.
 
 ### 9. Every display records the controls it drew
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** nothing — this is a
-defect in task 5b's own change and needs no arrangement.
+**Status:** **Done, 2026-10-08: the code.** Landed as #569. The per-display
+layout moved above the recording, so the list that draws and the list that
+records are one list and a display cannot be in one without the other.
+`the_recheck_has_a_caller`'s guard now iterates **every** `FixedControlsDrawn`
+site, because this task created a second one it had been blind to. **On the
+machine:** not ticked. **Owner:** the Mac. **Depends on:** nothing.
+
+*This entry said `ready` for five hours after the code landed, so the loop
+offered task 9 twelve times and exited instantly each time, being handed
+finished work. A plan is what the loop reads; landing the code is not landing
+the task.*
 
 `Desk::present` records one display's fixed controls. Every other display's
 pictures are laid out and thrown away as far as the store is concerned.
@@ -756,7 +765,14 @@ what the compositor reported.
 
 ### 12. The default stops being silent when a person can choose
 
-**Status:** ready — task 11 landed on 2026-10-08. **Owner:** the Mac.
+**Status:** **Done, 2026-10-08: the code.**
+`crates/alo-desktop/tests/the_default_stops_being_silent.rs` refuses the
+**pair** — something in production keeping a display arrangement *while* this
+desktop still passes `Changes::untouched()`. Measured in the failing direction
+by injecting a writer into `alo-shell` and watching it name the file and line.
+Three rounds of false positives are written into it with the measurement that
+narrowed each. **On the machine:** nothing to show; this is a check, not a
+surface. **Owner:** the Mac.
 
 Task 11 passes `Changes::untouched()` — *the person has changed nothing* —
 which is **literally true on 2026-10-08**: nothing in production writes a
