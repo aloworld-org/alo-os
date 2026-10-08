@@ -468,15 +468,60 @@ mod tests {
 
     /// What kind each finding is, so an assertion names the refusal rather than
     /// counting anonymous ones.
+    ///
+    /// **Every variant is written out and there is no `_` arm.** That is what
+    /// makes adding a kind to [`Amiss`] fail to compile here until somebody
+    /// decides what an assertion should call it — which is the point of the
+    /// helper. A wildcard would have let the two forms this change adds land
+    /// with no test able to name them.
     fn kinds(found: &[Amiss]) -> Vec<&'static str> {
         found
             .iter()
             .map(|it| match it {
                 Amiss::AMilestoneWithASecondZero { .. } => "second zero",
                 Amiss::AnImageWrittenBare { .. } => "bare",
+                Amiss::ADateWrittenAsAVersion { .. } => "a date as a version",
+                Amiss::AProductVersionWithAV { .. } => "a v on a version",
                 Amiss::AMilestoneThatIsNotOne { .. } => "not a milestone",
             })
             .collect()
+    }
+
+    /// **A build identifier's date written with dots is refused.** ADR 0097
+    /// rule 3: dots are a version and hyphens are a date, so `2026.10.08` reads
+    /// as a product version with a point release that does not exist.
+    ///
+    /// The ADR's own first draft proposed this form, which is why it is a rule
+    /// rather than a style note.
+    #[test]
+    fn a_date_written_with_dots_is_refused() {
+        let found = held("a-plan.md", "The candidate built on 2026.10.08 is the one.");
+        assert_eq!(kinds(&found), vec!["a date as a version"], "{found:?}");
+    }
+
+    /// **The same date with hyphens is what the rule asks for**, and is left
+    /// alone. A rule nobody can pass is as useless as one nobody can fail.
+    #[test]
+    fn the_same_date_with_hyphens_is_left_alone() {
+        let found = held("a-plan.md", "The candidate built on 2026-10-08 is the one.");
+        assert_eq!(kinds(&found), Vec::<&str>::new(), "{found:?}");
+    }
+
+    /// **A product version carrying a `v` is refused.** A `v` is a milestone's
+    /// mark — `v0.0.6` — and ADR 0097 keeps milestones as planning numbers, so
+    /// the version a person says never wears one.
+    #[test]
+    fn a_product_version_with_a_v_is_refused() {
+        let found = held("a-plan.md", "Everybody is on v2026.10 by now.");
+        assert_eq!(kinds(&found), vec!["a v on a version"], "{found:?}");
+    }
+
+    /// **The same version without the `v` is the form ADR 0097 names**, and is
+    /// left alone.
+    #[test]
+    fn the_same_version_without_a_v_is_left_alone() {
+        let found = held("a-plan.md", "Everybody is on 2026.10 by now.");
+        assert_eq!(kinds(&found), Vec::<&str>::new(), "{found:?}");
     }
 
     /// **A bare image number in a paragraph that never says it is one.** The
