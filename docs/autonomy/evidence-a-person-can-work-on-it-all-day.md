@@ -1475,8 +1475,7 @@ reachable by nothing a person can do — and **the model is not reached in
 production either**, because `Server::the_screens()` is `None` on every running
 machine until `more-than-one-display-plan.md` task 11. Reached this release on
 2026-10-08 by the owner's direction, held at `[v0.5]` deliberately so it cannot
-delay the eight `[v0.01]` promises beside it. Where the work is: **task 10 of
-`docs/autonomy/screens-and-desks-plan.md`** is the size control and not this;
+delay the eight `[v0.01]` promises beside it. Where the work is: **task 22 of `docs/autonomy/more-than-one-display-plan.md`** is the size control and not this;
 this gesture is **not yet a numbered task in any plan**, and that is the honest
 state of it rather than a pointer invented to satisfy a check.
 

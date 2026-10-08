@@ -1267,8 +1267,7 @@ separate arrangement per **set** of screens and
 so the remembering is real and tested. What is owed is that nothing in production
 builds a `Screens` at all, so the arrangement is never reached, and nothing shows
 a person which desk they are at. Reached this release on 2026-10-08 by the
-owner's direction. Where the work is: **task 5 of
-`docs/autonomy/screens-and-desks-plan.md`**, which depends on **task 11 of
+owner's direction. Where the work is: **task 17 of `docs/autonomy/more-than-one-display-plan.md`**, which depends on **task 11 of
 `docs/autonomy/more-than-one-display-plan.md`**.
 
 ### You name your screens, and the name is yours
@@ -1280,7 +1279,7 @@ is a person's setting, the shell shows and never measures, and the seam that
 carries a person's display settings to the shell does not exist yet. Settled by
 [ADR 0098](../decisions/0098-a-screen-carries-the-name-its-person-gave-it.md).
 Reached this release on 2026-10-08 by the owner's direction. Where the work is:
-**task 6 of `docs/autonomy/screens-and-desks-plan.md`**, which depends on **task
+**task 18 of `docs/autonomy/more-than-one-display-plan.md`**, which depends on **task
 10 of `docs/autonomy/more-than-one-display-plan.md`** for the seam.
 
 ### Screens are named, not numbered, by default
@@ -1292,8 +1291,7 @@ name wants the screen's own make and model, which `OutputMetadata` carries, and
 which side it is on, which needs the arrangement. **A screen that says nothing
 about itself has no make to use**, and `alo-displays` already has a sentence for
 being remembered by its socket instead. Reached this release on 2026-10-08 by the
-owner's direction. Where the work is: **task 6 of
-`docs/autonomy/screens-and-desks-plan.md`**.
+owner's direction. Where the work is: **task 18 of `docs/autonomy/more-than-one-display-plan.md`**.
 
 ### alo OS says which desk it thinks you are at, once
 
@@ -1305,7 +1303,7 @@ translated and tested — `crates/alo-displays/src/notes.rs` holds nine notes an
 nothing reads it, because no production code builds a `Screens`. `notes.rs`'s own
 rule — *there is no note for the ordinary morning* — is written and must survive
 the wiring. Reached this release on 2026-10-08 by the owner's direction. Where
-the work is: **task 7 of `docs/autonomy/screens-and-desks-plan.md`**.
+the work is: **task 19 of `docs/autonomy/more-than-one-display-plan.md`**.
 
 ### Show me where
 
@@ -1316,8 +1314,7 @@ the work is: **task 7 of `docs/autonomy/screens-and-desks-plan.md`**.
 beside the others — so the guess half exists and the correction half does not.
 The card, the push gesture, and writing the result back as the person's
 arrangement are all new. Reached this release on 2026-10-08 by the owner's
-direction. Where the work is: **task 8 of
-`docs/autonomy/screens-and-desks-plan.md`**.
+direction. Where the work is: **task 20 of `docs/autonomy/more-than-one-display-plan.md`**.
 
 ### Unplug and nothing is lost; plug back in and nothing moved
 
@@ -1327,8 +1324,7 @@ direction. Where the work is: **task 8 of
 `Attached::plugged_in` and `Screens::windows_away` are built and tested, so
 **which** windows came home is answerable; nothing tells the person, nothing
 offers an undo, and nothing puts them back on return. Reached this release on
-2026-10-08 by the owner's direction. Where the work is: **task 9 of
-`docs/autonomy/screens-and-desks-plan.md`**.
+2026-10-08 by the owner's direction. Where the work is: **task 21 of `docs/autonomy/more-than-one-display-plan.md`**.
 
 ### How large things are, per screen, in words
 
@@ -1342,8 +1338,7 @@ output to every client as one pixel per pixel. Offering *smaller, just right,
 bigger* before that is fixed would give a person a double-size dock beside
 normal-size windows and call it a setting. `alo-displays` already has the
 sentence for a size it cannot draw. Reached this release on 2026-10-08 by the
-owner's direction. Where the work is: **task 4 of
-`docs/autonomy/screens-and-desks-plan.md`** for the defect, then **task 10** for
+owner's direction. Where the work is: **task 16 of `docs/autonomy/more-than-one-display-plan.md`** for the defect, then **task 10** for
 the control, in that order and not the other.
 
 

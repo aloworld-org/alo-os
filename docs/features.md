@@ -109,7 +109,7 @@ this file — the same way **Full screen** was added on 2026-09-30 and
 **Notifications** was moved into this release on 2026-10-02. The design is
 settled in [ADR 0098](decisions/0098-a-screen-carries-the-name-its-person-gave-it.md)
 and the work is ordered in
-[`docs/autonomy/screens-and-desks-plan.md`](autonomy/screens-and-desks-plan.md).*
+[`docs/autonomy/more-than-one-display-plan.md`](autonomy/more-than-one-display-plan.md).*
 
 *What makes these **scope** rather than sub-work, in one sentence: they add
 promises to a person. Somebody who can call a monitor `cat` has been offered

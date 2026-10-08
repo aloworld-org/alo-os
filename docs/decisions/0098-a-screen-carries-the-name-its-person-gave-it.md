@@ -10,7 +10,7 @@ one"*.
 desks**, [ADR 0068](0068-a-published-sentence-changes-by-getting-a-new-key.md)
 (what a translated string owes), `crates/alo-displays/src/identity.rs`,
 `crates/alo-shell/src/the_session_holds_its_screens.rs`,
-`docs/autonomy/screens-and-desks-plan.md`
+`docs/autonomy/more-than-one-display-plan.md`
 
 ## The question in one line
 
@@ -65,7 +65,7 @@ screen with nothing to say about itself is remembered by its port, and
 honest answer to a cable move is to recognise the near-miss and ask: *this looks
 like your office desk with one screen in a different port — use that
 arrangement?* That is work this ADR names and
-`docs/autonomy/screens-and-desks-plan.md` orders; it is not claimed as done.
+`docs/autonomy/more-than-one-display-plan.md` orders; it is not claimed as done.
 
 **Inventing a serial would be worse than having none.** It would make two
 monitors *stably* one screen rather than visibly one, which is the failure that

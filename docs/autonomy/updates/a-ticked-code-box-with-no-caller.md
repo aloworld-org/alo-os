@@ -60,8 +60,8 @@ A clause inside the tick saying what it covers, in the gate language that
 document already uses: that `alo-displays` is complete and tested, that
 **nothing in production reaches it**, that hotplug has the two functions and no
 watcher, and where the remaining work is — **tasks 10 to 12 of
-`more-than-one-display-plan.md`** for the arrangement, **tasks 1 to 4 of
-`screens-and-desks-plan.md`** for hotplug, position and scale.
+`more-than-one-display-plan.md`** for the arrangement, **tasks 13 to 16 of
+`more-than-one-display-plan.md`** (tasks 13 to 16) for hotplug, position and scale.
 
 The integration owner may reasonably judge that the reachability table already
 in `more-than-one-display-plan.md` is enough and the tick should stand. This
