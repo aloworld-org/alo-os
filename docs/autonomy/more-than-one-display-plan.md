@@ -756,7 +756,7 @@ code reads as though it were honouring them.
   something writes one, the desktop must stop passing `untouched`**.
 
 
-## The eight promises the owner added on 2026-10-08
+### The eight promises the owner added on 2026-10-08
 
 *"I want all the discussed features of the monitors to be in the next release
 after this one so you tasks today is to do all the features we have agreed

@@ -1295,9 +1295,9 @@ owner's direction. Where the work is: **task 18 of `docs/autonomy/more-than-one-
 
 ### alo OS says which desk it thinks you are at, once
 
-**Shown by:** nothing yet for the showing. The **sentences** are built,
-translated and tested — `crates/alo-displays/src/notes.rs` holds nine notes and
-`words.rs` declares each with its English and its translator's note.
+**Shown by:** nothing yet. The sentences themselves are built, translated and
+tested inside `alo-displays`, which is why this entry is about the showing
+rather than the words.
 
 **Still owed:** anything that shows one. `Screens::notes()` returns them and
 nothing reads it, because no production code builds a `Screens`. `notes.rs`'s own
