@@ -1461,3 +1461,23 @@ and conclude the record had been tidied. One of the five — *Every canvas also
 answers as a list* — was **already built** when it arrived, so its move is a
 correction of a promise built below its own tier rather than a widening of the
 release it moved into.
+
+### Two windows onto one desk
+
+**Shown by:** `crates/alo-shell/tests/the_camera_has_one_home.rs` for the
+architecture only — it asserts there is exactly one holder of a camera per
+display and that the expected count has not dropped. **Nothing shows the
+gesture.**
+
+**Still owed:** the gesture, which is the promise. Task 7 of this milestone's
+display plan gave each display its own camera onto one canvas, so the model is
+there. Pointing two screens at the
+same part of the desk, or at different parts, is possible in the model and
+reachable by nothing a person can do — and **the model is not reached in
+production either**, because `Server::the_screens()` is `None` on every running
+machine until `more-than-one-display-plan.md` task 11. Reached this release on
+2026-10-08 by the owner's direction, held at `[v0.5]` deliberately so it cannot
+delay the eight `[v0.01]` promises beside it. Where the work is: **task 22 of `docs/autonomy/more-than-one-display-plan.md`** is the size control and not this;
+this gesture is **not yet a numbered task in any plan**, and that is the honest
+state of it rather than a pointer invented to satisfy a check.
+

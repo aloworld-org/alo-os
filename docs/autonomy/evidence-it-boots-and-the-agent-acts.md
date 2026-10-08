@@ -1257,9 +1257,94 @@ satisfy every test here and break the promise. **Named rather than left
 implicit**, because colour alone is the accessibility failure this rule exists
 to prevent.
 
+### A desk comes back when you arrive at it
+
+**Shown by:** nothing yet, and more is built than for any other line here.
+
+**Still owed:** the caller and the surface. `alo-displays` already keeps a
+separate arrangement per **set** of screens and
+`crates/alo-displays/tests/three_sets_of_screens_remembered_apart.rs` proves it,
+so the remembering is real and tested. What is owed is that nothing in production
+builds a `Screens` at all, so the arrangement is never reached, and nothing shows
+a person which desk they are at. Reached this release on 2026-10-08 by the
+owner's direction. Where the work is: **task 17 of `docs/autonomy/more-than-one-display-plan.md`**, which depends on **task 11 of
+`docs/autonomy/more-than-one-display-plan.md`**.
+
+### You name your screens, and the name is yours
+
+**Shown by:** nothing yet.
+
+**Still owed:** all of it. There is nowhere for a name to live: a screen's name
+is a person's setting, the shell shows and never measures, and the seam that
+carries a person's display settings to the shell does not exist yet. Settled by
+[ADR 0099](../decisions/0099-a-screen-carries-the-name-its-person-gave-it.md).
+Reached this release on 2026-10-08 by the owner's direction. Where the work is:
+**task 18 of `docs/autonomy/more-than-one-display-plan.md`**, which depends on **task
+10 of `docs/autonomy/more-than-one-display-plan.md`** for the seam.
+
+### Screens are named, not numbered, by default
+
+**Shown by:** nothing yet.
+
+**Still owed:** all of it, and one part of it is not yet decidable. A default
+name wants the screen's own make and model, which `OutputMetadata` carries, and
+which side it is on, which needs the arrangement. **A screen that says nothing
+about itself has no make to use**, and `alo-displays` already has a sentence for
+being remembered by its socket instead. Reached this release on 2026-10-08 by the
+owner's direction. Where the work is: **task 18 of `docs/autonomy/more-than-one-display-plan.md`**.
+
+### alo OS says which desk it thinks you are at, once
+
+**Shown by:** nothing yet.
+
+**Still owed:** anything that shows one. The sentences themselves are built,
+translated and tested where they live, so what this entry is about is the
+showing rather than the words. `Screens::notes()` returns them and
+nothing reads it, because no production code builds a `Screens`. `notes.rs`'s own
+rule — *there is no note for the ordinary morning* — is written and must survive
+the wiring. Reached this release on 2026-10-08 by the owner's direction. Where
+the work is: **task 19 of `docs/autonomy/more-than-one-display-plan.md`**.
+
+### Show me where
+
+**Shown by:** nothing yet.
+
+**Still owed:** all of it, and it is the only line here with no engine behind it.
+`alo-displays` already *guesses* — `Note::NewHere` says a new screen was put
+beside the others — so the guess half exists and the correction half does not.
+The card, the push gesture, and writing the result back as the person's
+arrangement are all new. Reached this release on 2026-10-08 by the owner's
+direction. Where the work is: **task 20 of `docs/autonomy/more-than-one-display-plan.md`**.
+
+### Unplug and nothing is lost; plug back in and nothing moved
+
+**Shown by:** nothing yet.
+
+**Still owed:** the showing and the undo. `Attached::unplugged`,
+`Attached::plugged_in` and `Screens::windows_away` are built and tested, so
+**which** windows came home is answerable; nothing tells the person, nothing
+offers an undo, and nothing puts them back on return. Reached this release on
+2026-10-08 by the owner's direction. Where the work is: **task 21 of `docs/autonomy/more-than-one-display-plan.md`**.
+
+### How large things are, per screen, in words
+
+**Shown by:** nothing yet, and it must not be offered yet.
+
+**Still owed:** all of it, and **it is deliberately blocked rather than merely
+unstarted.** A display's size reaches `desktop_raster` — alo's own dock, panel
+and status area — and nothing applies it to an application's window, measured
+2026-10-08 at `crates/alo-shell/src/presentation.rs:341`, which advertises every
+output to every client as one pixel per pixel. Offering *smaller, just right,
+bigger* before that is fixed would give a person a double-size dock beside
+normal-size windows and call it a setting. `alo-displays` already has the
+sentence for a size it cannot draw. Reached this release on 2026-10-08 by the
+owner's direction. Where the work is: **task 16 of `docs/autonomy/more-than-one-display-plan.md`** for the defect, then **task 10** for
+the control, in that order and not the other.
+
+
 ## What this audit found
 
-**The audit in figures: 71 promises, 2 shown whole, 51 shown in part, 18 with no
+**The audit in figures: 78 promises, 2 shown whole, 51 shown in part, 25 with no
 evidence at all.**
 
 *This line is the ledger's own count of itself and it is checked.*
