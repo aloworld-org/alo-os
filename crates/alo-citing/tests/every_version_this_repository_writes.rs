@@ -56,10 +56,18 @@ fn is_not_ours(name: &str) -> bool {
 ///
 /// Checked in both directions by the test below: an entry naming a file that is
 /// gone is refused as well.
-const NOT_THIS_RULE_S: [(&str, &str); 3] = [
+const NOT_THIS_RULE_S: [(&str, &str); 4] = [
     (
         "ROADMAP.md",
         "it states the rule, and a rule has to be able to quote the form it forbids",
+    ),
+    (
+        "docs/decisions/0097-one-version-a-person-says-and-one-build-identifier.md",
+        "it is the rule for the dated scheme rather than a user of it: five hundred lines \
+         whose subject is these forms, quoting every one it forbids, including the build \
+         identifier its own first draft proposed and rejected. `states_the_rule` matches a \
+         paragraph by its words, which is right for a short rule and brittle for a document \
+         where nearly every section quotes a form",
     ),
     (
         "image/pinned.toml",
