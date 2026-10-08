@@ -402,9 +402,39 @@ truth is an accident of a check somewhere else.
   if the filter is lifted without the sentence changing is worth more than the
   sentence, because the filter is what somebody will edit.
 
-Found by reading, not by running. Nothing has shipped wrong: today the removal
-refuses this road and the promise holds. It is recorded now because the road
-that breaks it is being built in the same week.
+Found by reading, not by running. Nothing has shipped wrong: at the time this
+was written the removal refused this road and the promise held. It is recorded
+because the road that breaks it was being built in the same week.
+
+### Built, 2026-10-08
+
+`updates/the-way-back-from-the-same-disk.md`. Both obligations above are met and
+the road exists: the removal takes alo OS's own partition off the disk Windows
+is on, under the same guard the road that made it uses, and removes the firmware
+entry — the one step Windows' own disk management cannot reach.
+
+`installer.remove.starting` retired. The claim it carried came apart into three
+sentences, one of which gives the **true** reason where the old one said *the
+disk alo OS is on could not be found* on a road where the disk was found and is
+Windows'.
+
+And `a_promise_about_windows_waits_for_the_guard_that_makes_it_true` holds the
+pair, **watched failing** rather than assumed: the guard was lifted, the test
+went red naming what to do instead of deleting it, and `disks.rs` was restored
+from a copy taken beforehand and read back.
+
+**What is still owed, and is not this task's to assume:**
+
+- **Growing Windows back.** Deliberately left to Windows' own disk management:
+  the size Windows had is written down nowhere the program can read at removal
+  time, and a Windows half-grown by a program that guessed is worse than one a
+  person extends. If it is ever worth doing in the program it needs a size read
+  at removal time and a better reason than *we could*.
+- **Four removal sentences that still speak of erasing a disk** —
+  `remove.will-erase`, `remove.erasing`, `remove.gone` and
+  `remove.disk-not-cleared`. All four are correct on the road that has a disk of
+  its own. Whether they should name that road is a question nothing has
+  answered.
 
 **One thing on this road is assumed rather than measured**, and it is written
 where it is used (`crates/alo-installer/src/naming.rs`): that Windows'
