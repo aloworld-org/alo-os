@@ -107,7 +107,7 @@ one so you tasks today is to do all the features we have agreed on"**, following
 before one line of any of it is written, because `CLAUDE.md` binds building to
 this file — the same way **Full screen** was added on 2026-09-30 and
 **Notifications** was moved into this release on 2026-10-02. The design is
-settled in [ADR 0098](decisions/0098-a-screen-carries-the-name-its-person-gave-it.md)
+settled in [ADR 0099](decisions/0099-a-screen-carries-the-name-its-person-gave-it.md)
 and the work is ordered in
 [`docs/autonomy/more-than-one-display-plan.md`](autonomy/more-than-one-display-plan.md).*
 
@@ -117,7 +117,7 @@ something nobody was offered before, so not one line of it is written before thi
 file carries it with a tier.*
 
 - [v0.01] ★ **A desk comes back when you arrive at it** — the screens in front of you, how they are arranged, how large things are on each, and where your windows were. Plug in at one desk and that desk returns; move to another and that one does. Nothing to choose, and nothing to set up twice. *The engine is built and tested in `alo-displays` — a separate arrangement per set of screens, with `three_sets_of_screens_remembered_apart` proving it — and has never had a caller. This line is what lets it reach a machine*
-- [v0.01] ★ **You name your screens, and the name is yours** — any name you like, typed on the screen it belongs to. `cat` is a valid name for a monitor. Two screens may carry the same name, because forbidding that would take a choice away for the machine's convenience. **A name is a label, never a key:** the machine tells screens apart by what they report and which socket they are in, and shows the person's word. A person's own name is never translated, as a screen's make and model are not (ADR 0098)
+- [v0.01] ★ **You name your screens, and the name is yours** — any name you like, typed on the screen it belongs to. `cat` is a valid name for a monitor. Two screens may carry the same name, because forbidding that would take a choice away for the machine's convenience. **A name is a label, never a key:** the machine tells screens apart by what they report and which socket they are in, and shows the person's word. A person's own name is never translated, as a screen's make and model are not (ADR 0099)
 - [v0.01] **Screens are named, not numbered, by default** — *the laptop*, *the big one on the right*. A number is the one thing nobody can match to the screen in front of them, which is the step people actually fail at
 - [v0.01] **alo OS says which desk it thinks you are at, once** — and says nothing on the ordinary morning. *The sentences are written and translated already in `alo-displays`: your screens are arranged the way you last left them; this screen has not been used with this machine before; your screens have changed since you arranged them and your arrangement is still here; the arrangement you made at your other desk is still here for when you are back at it. `notes.rs` holds the rule that there is no note for the ordinary morning, because a system that announces every screen every time is one whose announcements nobody reads*
 - [v0.01] ★ **Show me where** — when a screen is new, alo puts it beside the others and says so. If that guess is wrong, a card on the new screen is pushed off the edge towards the screen it actually sits beside, and **that gesture is the arrangement**. No map of grey rectangles to drag. Doing nothing keeps the guess and leaves the card offered where the notes are, so somebody who only wants to work is never stopped and never asked twice

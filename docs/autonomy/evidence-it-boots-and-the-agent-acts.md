@@ -1277,7 +1277,7 @@ owner's direction. Where the work is: **task 17 of `docs/autonomy/more-than-one-
 **Still owed:** all of it. There is nowhere for a name to live: a screen's name
 is a person's setting, the shell shows and never measures, and the seam that
 carries a person's display settings to the shell does not exist yet. Settled by
-[ADR 0098](../decisions/0098-a-screen-carries-the-name-its-person-gave-it.md).
+[ADR 0099](../decisions/0099-a-screen-carries-the-name-its-person-gave-it.md).
 Reached this release on 2026-10-08 by the owner's direction. Where the work is:
 **task 18 of `docs/autonomy/more-than-one-display-plan.md`**, which depends on **task
 10 of `docs/autonomy/more-than-one-display-plan.md`** for the seam.
@@ -1344,7 +1344,7 @@ the control, in that order and not the other.
 
 ## What this audit found
 
-**The audit in figures: 71 promises, 2 shown whole, 51 shown in part, 18 with no
+**The audit in figures: 78 promises, 2 shown whole, 51 shown in part, 25 with no
 evidence at all.**
 
 *This line is the ledger's own count of itself and it is checked.*

@@ -355,8 +355,8 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
         .unwrap_or_else(|findings| panic!("the ledger does not add up: {findings:?}"));
     assert_eq!(
         reconciled.wholly_owed(),
-        18,
-        "the ledger's own account of itself says eighteen v0.01 promises have no \
+        25,
+        "the ledger's own account of itself says twenty-five v0.01 promises have no \
          evidence at all; the audit counted {}. Whichever moved, say so under \
          the promise it is about",
         reconciled.wholly_owed()
@@ -379,8 +379,8 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
 
     assert_eq!(
         owed_and_pointing.len(),
-        18,
-        "the entries with no evidence are not the eighteen the count says: \
+        25,
+        "the entries with no evidence are not the twenty-five the count says: \
          {owed_and_pointing:?}"
     );
     the_ledgers_own_sentence_about_itself_is_true(&ledger, &reconciled);

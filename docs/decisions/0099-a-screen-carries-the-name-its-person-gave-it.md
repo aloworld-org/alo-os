@@ -1,4 +1,4 @@
-# ADR 0098 — A screen carries the name its person gave it
+# ADR 0099 — A screen carries the name its person gave it
 
 **Status:** **ACCEPTED, 2026-10-08**, by the owner, stated directly: *"users can
 name the monitors by any name like 'cat'"*, and in the same conversation *"I want

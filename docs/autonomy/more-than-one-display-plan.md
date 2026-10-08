@@ -763,7 +763,7 @@ after this one so you tasks today is to do all the features we have agreed
 on"*, following *"users can name the monitors by any name like `cat`"*. The
 promises are in `docs/features.md` under **Screens and desks**; the naming
 decision is
-[ADR 0098](../decisions/0098-a-screen-carries-the-name-its-person-gave-it.md).
+[ADR 0099](../decisions/0099-a-screen-carries-the-name-its-person-gave-it.md).
 
 **They live in this plan rather than in one of their own, and the reason is not
 only tidiness.** The subject is identical — more than one display — the crates
@@ -863,14 +863,14 @@ double-size furniture beside unchanged application windows.**
 ### 18. A screen carries the name its person gave it
 
 **Status:** blocked on **task 10 of `more-than-one-display-plan.md`** for the
-seam. ADR 0098.
+seam. ADR 0099.
 
 - **Acceptance:** a name a person typed is kept, shown everywhere a screen is
   named, survives a restart, and `cat` works. A default name is descriptive and
   never a bare number.
 - **Constraint, and the one a later convenience will undo:** **nothing looks a
   screen up by the person's name.** Two screens both called `cat` are two
-  screens. Tested in both directions, because ADR 0098's four rules all rest on
+  screens. Tested in both directions, because ADR 0099's four rules all rest on
   tests that do not exist yet.
 
 ### 19. The machine says which desk it thinks you are at, once
