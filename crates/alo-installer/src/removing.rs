@@ -41,6 +41,7 @@ use alo_strings::{Filling, Strings, Word};
 
 use crate::disks::Disks;
 use crate::entries;
+use crate::identities::{DiskNumber, Entry, PartitionNumber};
 use crate::machine::TheMachine;
 use crate::program::Program;
 use crate::windows_volume::WindowsVolume;
@@ -117,19 +118,30 @@ pub fn remove_alo_os(machine: &mut impl TheMachine, strings: &Strings) -> Remove
         return Removed::NotRead;
     };
     let Some(disk) = disks.the_one_alo_os_is_on(windows.disk) else {
-        // **Which of two reasons, because they are not the same fact.** A disk
-        // carrying alo OS that happens to be the disk Windows is on was found
-        // and is not one this program may erase; no such disk at all is a
-        // computer this program cannot account for. Saying *could not be found*
-        // for the first sends a person looking for a hardware fault.
+        // **alo OS on the disk Windows is on has its own road.** It cannot use
+        // the one below, which clears a *whole disk* - here that disk is
+        // Windows'. So the partition is taken away and nothing else on the disk
+        // is touched, which is a different operation and says different
+        // sentences.
+        if let Some((space, offset)) = disks.alo_os_on_the_windows_disk(windows.disk) {
+            return take_the_space_away(
+                machine,
+                strings,
+                &disks,
+                windows.disk,
+                space,
+                offset,
+                entry,
+            );
+        }
+        // And no disk carries alo OS at all, which is a computer this program
+        // cannot account for. Said as *could not be found*, which is true here
+        // and was false on the road above - a person told that when the disk
+        // was found goes looking for a hardware fault.
         say(
             machine,
             strings,
-            if disks.alo_os_is_on_the_windows_disk(windows.disk) {
-                words::REMOVE_ON_THE_WINDOWS_DISK
-            } else {
-                words::REMOVE_NOT_FOUND
-            },
+            words::REMOVE_NOT_FOUND,
             &Filling::nothing(),
         );
         return Removed::NotFound;
@@ -248,6 +260,93 @@ fn read(machine: &mut impl TheMachine, program: &Program) -> Option<String> {
         .ok()
         .filter(|ran| ran.succeeded)
         .map(|ran| ran.printed)
+}
+
+/// Take alo OS's own space off the disk Windows is on, and leave the rest.
+///
+/// **The road the installer plan's task 4 owed**, and the half this program
+/// could not do: it clears a whole disk, and on this road that disk is Windows'.
+///
+/// # What it does and what it leaves to Windows
+///
+/// The firmware entry first, for `remove_alo_os`'s own reason — while it is
+/// there nothing has been taken away and the installer can simply be run again.
+/// Then alo OS's partition, under the same `still_the_space` guard that the
+/// road which *made* it uses: a partition number is Windows' to reassign, and
+/// the place a partition begins does not move, so a number alone is one
+/// renumbering away from taking somebody's Windows.
+///
+/// **It does not grow Windows back**, and that is deliberate rather than
+/// unfinished. The size Windows had is not written down anywhere this program
+/// can read at removal time; growing into free space is one step in Windows'
+/// own disk management, which does it safely and reversibly; and a Windows
+/// half-grown by a program that guessed is worse than one a person extends.
+/// The sentence says so plainly rather than leaving a person to notice.
+fn take_the_space_away(
+    machine: &mut impl TheMachine,
+    strings: &Strings,
+    disks: &Disks,
+    windows_is_on: DiskNumber,
+    space: PartitionNumber,
+    offset: u64,
+    entry: Entry,
+) -> Removed {
+    let shown = disks
+        .numbered(windows_is_on)
+        .map_or_else(String::new, |disk| disks.shown_name(disk));
+    let named = Filling::of("disk", shown.clone());
+
+    say(machine, strings, words::REMOVE_WILL_TAKE_THE_SPACE, &named);
+    let typed = machine.ask(&strings.say(
+        &words::REMOVE_TYPE_THE_DISKS_NAME.key(),
+        &Filling::nothing(),
+    ));
+    if !names_the_disk(&typed, &shown) {
+        say(
+            machine,
+            strings,
+            words::REMOVE_NOT_AGREED,
+            &Filling::nothing(),
+        );
+        return Removed::NotAgreed;
+    }
+
+    // The entry first, for the reason the other road gives: while it is there,
+    // nothing has been taken away and the installer can be run again.
+    if read(machine, &Program::RemovingTheEntry { entry }).is_none() {
+        say(
+            machine,
+            strings,
+            words::REMOVE_ENTRY_NOT_REMOVED,
+            &Filling::nothing(),
+        );
+        return Removed::EntryNotRemoved;
+    }
+    let _forgotten = read(machine, &Program::ForgettingTheNextStart);
+
+    // **The same guard the road that made this partition uses.** It throws
+    // rather than removing if the partition no longer begins where alo OS's
+    // space began.
+    let taken = read(
+        machine,
+        &Program::RemovingTheSpace {
+            disk: windows_is_on,
+            partition: space,
+            offset,
+        },
+    )
+    .is_some();
+    if !taken {
+        say(machine, strings, words::REMOVE_SPACE_NOT_TAKEN, &named);
+        return Removed::DiskNotCleared;
+    }
+
+    let the_copy_went = read(machine, &Program::RemovingWhatWasLeft).is_some();
+    say(machine, strings, words::REMOVE_SPACE_TAKEN, &named);
+    Removed::Gone {
+        disk: shown,
+        the_copy_went,
+    }
 }
 
 /// One sentence, looked up and put in front of the person.

@@ -100,6 +100,14 @@ struct Partition {
     /// for a filesystem it cannot read.
     #[serde(default)]
     label: String,
+    /// Where it begins on its disk, in bytes.
+    ///
+    /// Read because every program that changes a partition is guarded by it:
+    /// partition numbers are Windows' to reassign, and the place a partition
+    /// begins does not move, so `still_the_space` in `crate::program` refuses
+    /// unless both agree.
+    #[serde(default)]
+    offset: u64,
     /// Its GPT type, which Windows reports for every partition whether or not
     /// it can read what is inside.
     #[serde(default)]
@@ -188,14 +196,28 @@ impl Disks {
     /// `ALO-ROOT` is what the installer puts on the space it made and on
     /// nothing else.
     #[must_use]
-    pub fn alo_os_is_on_the_windows_disk(&self, windows_is_on: DiskNumber) -> bool {
-        self.numbered(windows_is_on).is_some_and(|disk| {
-            disk.partitions.iter().any(|partition| {
+    pub fn alo_os_on_the_windows_disk(
+        &self,
+        windows_is_on: DiskNumber,
+    ) -> Option<(PartitionNumber, u64)> {
+        self.numbered(windows_is_on)?
+            .partitions
+            .iter()
+            .find_map(|partition| {
                 partition
                     .label
                     .eq_ignore_ascii_case(alo_installing::THE_SPACE_THE_INSTALLER_MADE)
+                    .then_some((
+                        PartitionNumber(partition.partition_number),
+                        partition.offset,
+                    ))
             })
-        })
+    }
+
+    /// Whether alo OS is on the disk Windows is on.
+    #[must_use]
+    pub fn alo_os_is_on_the_windows_disk(&self, windows_is_on: DiskNumber) -> bool {
+        self.alo_os_on_the_windows_disk(windows_is_on).is_some()
     }
 
     /// The name a person is shown for this disk, and types to agree.
@@ -455,6 +477,7 @@ pub(crate) mod tests {
         let holding_a_linux = Disk {
             partitions: vec![Partition {
                 partition_number: 1,
+                offset: 1048576,
                 label: "home".to_owned(),
                 gpt_type: "{0fc63daf-8483-4772-8e79-3d69d8477de4}".to_owned(),
             }],

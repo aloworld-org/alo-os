@@ -544,7 +544,8 @@ impl Program {
                        $label = ''; \
                        try { $label = [string]($_ | Get-Volume).FileSystemLabel } catch { $label = '' }; \
                        [ordered]@{ PartitionNumber = [uint32]$_.PartitionNumber; \
-                         GptType = [string]$_.GptType; Label = $label } }); \
+                         GptType = [string]$_.GptType; Label = $label; \
+                         Offset = [uint64]$_.Offset } }); \
                    [ordered]@{ Number = [uint32]$disk.Number; \
                      FriendlyName = [string]$disk.FriendlyName; \
                      SerialNumber = [string]$disk.SerialNumber; \
