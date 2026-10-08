@@ -72,12 +72,13 @@ specification and the code were written by people describing the same product.
 | 17 | persistence across a real restart | `canvas_remembered.rs` (288 lines), `alo-arranging` (2,154 lines), test suite `the_canvas_is_where_they_left_it` — **plan task 9, open, reopened by the owner** |
 | 18 | light canvas surfaces, navy text, deep teal for alo | `alo-appearance` (7,920 lines), `docs/design/palette.toml`, ADR 0093 |
 
-## So what is actually wrong is three wires, not three missing features
+## What is wrong is wiring, not design - and one of the three is a chain
 
 This is the finding, and it is the opposite of the first draft's.
 
 **Every one of the three faults photographed on 2026-10-08 is a built thing with
-a hardcoded placeholder in front of it.**
+something unfinished in front of it.** Two are a single value. The third is a
+chain of four, and calling it a wire is the mistake this section made first.
 
 ### The surface is built and ships Cream. One black line covers it
 
@@ -102,14 +103,39 @@ That was wrong and it was wrong in the usual way: the ADR says *material*, the
 code says `Background`, and a search for the ADR's noun returns nothing and
 means nothing.
 
-### The dock's contents are modelled. A literal `0` is passed instead
+### The dock is designed and built. It has no caller, and that is not one wire
 
-`crates/alo-dock/src/holding.rs:48` declares
-`OnTheDock { app, pinned, windows, put_aside }`, and `announcing.rs` reads an
-icon out to a screen reader. `crates/alo-shell/src/desktop_raster.rs:197` passes
-`0`, under a comment saying `alo_dock::Holding` *is not plumbed into a
-compositor*. `Holding` appears in `crates/alo-shell/src/` in two comments and no
-line of code.
+**This section said *a literal `0` is passed instead*, as though connecting one
+value would fill the dock. That is wrong**, and the owner said so first — *I
+remember the dock was designed well, see in the repo, maybe it is just not
+wired.* The design is there. The wiring is more than one wire.
+
+`crates/alo-dock` is 8,702 lines across 30 files, and holds `OnTheDock { app,
+pinned, windows, put_aside }` (`holding.rs:48`), what a click does per state
+(`clicking.rs`), the window picker (`previews.rs`), how the bar grows and
+overflows (`Room::a_bar_holding`), hover and focus (`Peeking`), concealing and
+revealing (`revealing.rs`), dragging (`offering.rs`), and the accessible names
+and states a screen reader is given (`announcing.rs`, `labels.rs`).
+
+**What is missing is everything that would call it**, measured today, each with
+a positive control in the same command:
+
+| | |
+|---|---|
+| `alo_dock::Holding` outside its own crate | **2 mentions, both in comments** — `desktop_raster.rs:200` and `dock_raster.rs:26`. No line of code builds one |
+| what `Holding::showing` needs | a `&Windows` — every window open on this machine in the order last used. Nothing tracks that |
+| an icon in `alo-applications` | **0 of 17 files** name one. Control: *opener* appears in 3 |
+
+So the bar is **the honest width of a dock holding nothing, on a machine where
+nothing is pinned, nothing is tracked as open and no application has a picture.**
+`desktop_raster.rs:197`'s own comment is right that this is *true rather than a
+placeholder*.
+
+**An earlier draft of this document, and a message to the compositor lane, said
+it would be a sliver *whatever a person had pinned*.** That was wrong in the way
+worth recording: it names a state nothing can reach, because nothing can pin
+anything yet. A fault predicted for a situation that cannot occur is not a
+measurement.
 
 ### The window controls are built. There is no band to put them in
 
