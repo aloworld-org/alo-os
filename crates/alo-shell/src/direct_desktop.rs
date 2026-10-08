@@ -125,34 +125,41 @@ pub trait TheDesktop {
         alo_shortcuts::Shortcuts::shipped()
     }
 
-    /// **The screens this session is drawing on**, built from the displays the
-    /// compositor has actually presented.
+    /// **What this person has settled about their displays** — their
+    /// appearance, their night light and the arrangements they have kept.
     ///
-    /// # Why the shell hands over descriptions and takes back an arrangement
+    /// # Why this asks for settings and not for an arrangement
     ///
     /// Which displays exist, how many pixels each has and how big its glass is
-    /// are facts the **compositor** learns, one per presented output, and
-    /// nothing else can know them. Where those displays sit relative to one
-    /// another is a **decision** — `alo-displays` makes it, from what a person
-    /// arranged and remembered — and it needs that person's kept `Changes`, a
-    /// `Appearance` and a `Tonight`, none of which the shell may read. *The
-    /// shell shows and never measures*, and a file in a person's folder is a
-    /// reading like any other.
+    /// are facts the **compositor** learns, and nothing else can know them.
+    /// Where those displays sit relative to one another is a **decision**
+    /// `alo-displays` makes — and making it needs this person's kept
+    /// `Changes`, an `Appearance` and a `Tonight`, none of which the shell may
+    /// read, because *the shell shows and never measures* and a file in a
+    /// person's folder is a reading like any other.
     ///
-    /// So the shell says *here is what I have*, and the desktop answers *here
-    /// is where they are*. The same division the canvas layout and the
-    /// shortcuts already travel.
+    /// So **the desktop hands over the three readings and the shell builds the
+    /// arrangement**, through [`crate::TheirDisplays::the_screens_of`].
+    ///
+    /// # This replaced `the_screens_of`, which could not be implemented
+    ///
+    /// Until 2026-10-08 this method took a `Vec<alo_displays::Reported>` and
+    /// answered with a [`crate::Screens`] — and **`alo-desktop` has no
+    /// `alo-displays` dependency**, so the only crate obliged to implement it
+    /// could name neither the argument nor the answer. Every machine took the
+    /// default, `Server::the_screens()` was [`None`] everywhere, and five
+    /// tasks of `more-than-one-display-plan.md` were unreachable in production
+    /// while reading as done. `more-than-one-display-plan.md` task 10.
+    ///
+    /// Everything this needs is re-exported from this crate, which
+    /// `alo-desktop` already depends on, so answering costs it no new edge.
     ///
     /// **[`None`] by default**, which is honest for a desktop that was never
     /// given a display model: every surface keeps laying out against the one
     /// viewport it already uses, exactly as before. A desktop that answers
-    /// `None` is not broken; it is a desktop with no arrangement to offer.
-    ///
-    /// `docs/autonomy/more-than-one-display-plan.md` task 3a, which tasks 5, 6
-    /// and 7 all wait on: a display with no corner has no rectangle, and until
-    /// this exists the compositor knows how big each display is and not where
-    /// any of them is.
-    fn the_screens_of(&mut self, _reported: Vec<alo_displays::Reported>) -> Option<crate::Screens> {
+    /// `None` is not broken; it is a desktop with nothing of the person's to
+    /// offer.
+    fn their_displays(&mut self) -> Option<crate::TheirDisplays> {
         None
     }
 
@@ -897,7 +904,14 @@ impl LoopInput for Desk<'_> {
         let reported = server.the_displays_as_reported();
         if reported != self.displays_described {
             self.displays_described.clone_from(&reported);
-            let arranged = self.desktop.the_screens_of(reported);
+            // **The desktop is asked for the person's settings; the arrangement
+            // is made here.** Task 10 of `more-than-one-display-plan.md`. The
+            // shell holds what the machine reports and which sizes it can draw;
+            // the desktop holds the three things that are the person's.
+            let arranged = self
+                .desktop
+                .their_displays()
+                .and_then(|theirs| theirs.the_screens_of(reported));
             server.these_screens_are(arranged);
         }
         // **And the desktop is told when the layout has actually moved**, which
