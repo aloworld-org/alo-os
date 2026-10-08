@@ -79,6 +79,25 @@ pub enum Amiss {
         /// Enough of the sentence to find it by.
         saying: String,
     },
+    /// A build identifier's date written with dots, which reads as a product
+    /// version with a point release.
+    ADateWrittenAsAVersion {
+        /// The file it is in.
+        file: String,
+        /// The line its paragraph starts on.
+        line: usize,
+        /// What was written.
+        written: String,
+    },
+    /// A product version carrying a `v`, which is a milestone's mark.
+    AProductVersionWithAV {
+        /// The file it is in.
+        file: String,
+        /// The line its paragraph starts on.
+        line: usize,
+        /// What was written.
+        written: String,
+    },
     /// A milestone this repository does not have. There are three, ever.
     AMilestoneThatIsNotOne {
         /// The file it is in.
@@ -104,6 +123,27 @@ impl Display for Amiss {
                 out,
                 "{file}:{line} writes an image number with nothing saying it is an image. Write \
                  `image 0.0.6`, and give its date where a reader might care. In: {saying}"
+            ),
+            Self::ADateWrittenAsAVersion {
+                file,
+                line,
+                written,
+            } => write!(
+                out,
+                "{file}:{line} writes `{written}`, a date with dots, which reads as a product \
+                 version with a point release. ADR 0097 rule 3: dots are a version, hyphens are \
+                 a date. A build identifier is `2026-10-08+4799555`; a product version is \
+                 `2026.10` or `2026.10.1`."
+            ),
+            Self::AProductVersionWithAV {
+                file,
+                line,
+                written,
+            } => write!(
+                out,
+                "{file}:{line} writes `{written}`, a product version carrying a `v`. A `v` is a \
+                 milestone's mark (v0.01, v0.5, v1) and ADR 0097 keeps those as planning \
+                 numbers. A product version is written bare: `2026.10`."
             ),
             Self::AMilestoneThatIsNotOne {
                 file,
@@ -256,6 +296,74 @@ fn numbers_in(plain: &str) -> Vec<(usize, usize)> {
     found
 }
 
+/// Every dotted `YYYY.MM.DD` in a paragraph, by byte range.
+///
+/// **A build identifier's date written with dots** (ADR 0097 rule 3), which
+/// reads as a product version with a point release. The rule exists because
+/// that ADR's own first draft proposed exactly this form.
+///
+/// Four-two-two is the whole of the narrowing and it is enough, measured: the
+/// durations, the other projects' versions and the protocol example that a bare
+/// four-two shape matched in this repository are all four-two or four-two-one,
+/// and none of them matches this.
+fn dates_with_dots_in(plain: &str) -> Vec<(usize, usize)> {
+    /// `YYYY.MM.DD` is ten bytes.
+    const WIDTH: usize = 10;
+    shaped(plain, WIDTH, |it| {
+        matches!(it, [a, b, c, d, b'.', e, f, b'.', g, h]
+            if [a, b, c, d, e, f, g, h].iter().all(|byte| byte.is_ascii_digit()))
+    })
+}
+
+/// Every `vYYYY.MM` in a paragraph, by byte range.
+///
+/// A `v` is a milestone's mark and ADR 0097 keeps the milestones as planning
+/// numbers, so a product version never carries one.
+fn product_versions_with_a_v_in(plain: &str) -> Vec<(usize, usize)> {
+    /// `vYYYY.MM` is eight bytes.
+    const WIDTH: usize = 8;
+    shaped(plain, WIDTH, |it| {
+        matches!(it, [b'v' | b'V', a, b, c, d, b'.', e, f]
+            if [a, b, c, d, e, f].iter().all(|byte| byte.is_ascii_digit()))
+    })
+}
+
+/// Every run of this width whose bytes look right, and which is not part of a
+/// longer word or number.
+///
+/// The boundary check is `numbers_in`'s, lifted rather than copied: a shape
+/// inside a longer run of digits and dots is part of something else, and
+/// reporting it would be reporting a fragment.
+fn shaped(plain: &str, width: usize, looks: impl Fn(&[u8]) -> bool) -> Vec<(usize, usize)> {
+    let bytes = plain.as_bytes();
+    let mut found = Vec::new();
+    let mut at = 0;
+    while at + width <= bytes.len() {
+        if bytes.get(at..at + width).is_some_and(&looks) {
+            let part_of_a_longer_word =
+                |byte: &u8| byte.is_ascii_alphanumeric() || *byte == b'.' || *byte == b'-';
+            let before_is_part = at
+                .checked_sub(1)
+                .and_then(|just_before| bytes.get(just_before))
+                .is_some_and(part_of_a_longer_word);
+            let after = at + width;
+            // **A `+` after it is not a boundary that excuses it.** A build
+            // identifier written with dots ends `+4799555`, and that is the
+            // clearest case of this fault rather than a reason to skip it.
+            let after_is_part = bytes
+                .get(after)
+                .is_some_and(|byte| part_of_a_longer_word(byte) && *byte != b'+');
+            if !before_is_part && !after_is_part {
+                found.push((at, after));
+                at = after;
+                continue;
+            }
+        }
+        at += 1;
+    }
+    found
+}
+
 /// Hold one document to the rule.
 ///
 /// `file` is only used to name a finding. A paragraph that carries the rule's
@@ -290,6 +398,24 @@ pub fn held(file: &str, text: &str) -> Vec<Amiss> {
                 file: file.to_owned(),
                 line,
                 saying: nearby(&paragraph, at),
+            });
+        }
+        // **ADR 0097's two forbidden forms.** Reported by shape rather than by
+        // paragraph context, unlike the image rule above: these are wrong
+        // however the sentence around them reads, and the shapes are narrow
+        // enough that nothing else in this repository's prose matches them.
+        for (at, to) in dates_with_dots_in(&plain) {
+            found.push(Amiss::ADateWrittenAsAVersion {
+                file: file.to_owned(),
+                line,
+                written: plain[at..to].to_owned(),
+            });
+        }
+        for (at, to) in product_versions_with_a_v_in(&plain) {
+            found.push(Amiss::AProductVersionWithAV {
+                file: file.to_owned(),
+                line,
+                written: plain[at..to].to_owned(),
             });
         }
     }
@@ -342,15 +468,60 @@ mod tests {
 
     /// What kind each finding is, so an assertion names the refusal rather than
     /// counting anonymous ones.
+    ///
+    /// **Every variant is written out and there is no `_` arm.** That is what
+    /// makes adding a kind to [`Amiss`] fail to compile here until somebody
+    /// decides what an assertion should call it — which is the point of the
+    /// helper. A wildcard would have let the two forms this change adds land
+    /// with no test able to name them.
     fn kinds(found: &[Amiss]) -> Vec<&'static str> {
         found
             .iter()
             .map(|it| match it {
                 Amiss::AMilestoneWithASecondZero { .. } => "second zero",
                 Amiss::AnImageWrittenBare { .. } => "bare",
+                Amiss::ADateWrittenAsAVersion { .. } => "a date as a version",
+                Amiss::AProductVersionWithAV { .. } => "a v on a version",
                 Amiss::AMilestoneThatIsNotOne { .. } => "not a milestone",
             })
             .collect()
+    }
+
+    /// **A build identifier's date written with dots is refused.** ADR 0097
+    /// rule 3: dots are a version and hyphens are a date, so `2026.10.08` reads
+    /// as a product version with a point release that does not exist.
+    ///
+    /// The ADR's own first draft proposed this form, which is why it is a rule
+    /// rather than a style note.
+    #[test]
+    fn a_date_written_with_dots_is_refused() {
+        let found = held("a-plan.md", "The candidate built on 2026.10.08 is the one.");
+        assert_eq!(kinds(&found), vec!["a date as a version"], "{found:?}");
+    }
+
+    /// **The same date with hyphens is what the rule asks for**, and is left
+    /// alone. A rule nobody can pass is as useless as one nobody can fail.
+    #[test]
+    fn the_same_date_with_hyphens_is_left_alone() {
+        let found = held("a-plan.md", "The candidate built on 2026-10-08 is the one.");
+        assert_eq!(kinds(&found), Vec::<&str>::new(), "{found:?}");
+    }
+
+    /// **A product version carrying a `v` is refused.** A `v` is a milestone's
+    /// mark — `v0.0.6` — and ADR 0097 keeps milestones as planning numbers, so
+    /// the version a person says never wears one.
+    #[test]
+    fn a_product_version_with_a_v_is_refused() {
+        let found = held("a-plan.md", "Everybody is on v2026.10 by now.");
+        assert_eq!(kinds(&found), vec!["a v on a version"], "{found:?}");
+    }
+
+    /// **The same version without the `v` is the form ADR 0097 names**, and is
+    /// left alone.
+    #[test]
+    fn the_same_version_without_a_v_is_left_alone() {
+        let found = held("a-plan.md", "Everybody is on 2026.10 by now.");
+        assert_eq!(kinds(&found), Vec::<&str>::new(), "{found:?}");
     }
 
     /// **A bare image number in a paragraph that never says it is one.** The
