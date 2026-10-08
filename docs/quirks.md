@@ -7609,3 +7609,60 @@ pre-consent refusal, which is better, and it is not in this change. It is
 written down here rather than in a comment because the decision belongs with the
 measurement.
 **Date:** 2026-10-08.
+
+### `HibernateEnabled` is absent on a machine that hibernates
+**Version:** Windows 11 on an Intel NUC, read-only and unelevated,
+2026-10-08T01:27Z.
+**Behaviour:** the value whose presence an installer would read as *this
+computer hibernates* is simply **not there**, on a machine that plainly does.
+Read from the key `docs/quirks.md` already records as the right one:
+
+```
+HKLM\SYSTEM\CurrentControlSet\Control\Power
+  value names containing "Hibern":  HibernateEnabledDefault
+  HibernateEnabled                  ABSENT, not zero
+  HibernateEnabledDefault           DWord 1
+```
+
+And the machine hibernates: `C:\hiberfil.sys` is present at 3,372,613,632
+bytes, timestamped at that morning's restart.
+
+`HibernateEnabledDefault` **is not a substitute.** A default is what Windows
+would use, not what is in force, and nothing here has measured what Windows does
+with that value when the other is absent. An installer that read it as the state
+would be guessing in a confident voice.
+
+**What it cost.** `crate::fast_startup` returned *not read* whenever either
+value was absent, which is honest and was the only safe answer available. So the
+walk of 2026-10-07 put *Whether Windows' Fast Startup is on could not be found
+out* on that machine's screen and never asked the question
+[ADR 0064](decisions/0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md)
+term 9 requires - on a machine whose Fast Startup is on.
+
+**Our response:** the reading asks the file system as well as the registry.
+`Program::ReadingFastStartup` now also prints whether `hiberfil.sys` is among
+the entries at the root of the system drive, **and how many entries that
+enumeration found** - because an enumeration that found nothing is a broken
+instrument rather than an empty disk, and an instrument that cannot report its
+own failure reports *absent*.
+
+Presence is trusted, absence is not. A present file was measured; an absence is
+what a wrong instrument returns and also what a right one returns on a machine
+nobody has read, and **nothing here has measured a Windows with hibernation
+genuinely off.** So the file can turn *not read* into *on*, and never into
+*off*.
+
+And two readings that disagree make no answer rather than a chosen one: a
+registry zero beside a present hibernation file is a machine nobody here has
+measured, and *could not be found out* stays the true sentence for it. A
+registry zero with no file reading at all is still believed, as it was before
+any of this - an existing test caught that arm missing and is the reason it is
+written down.
+
+**What is not measured, and is therefore not claimed:** whether a Windows with
+hibernation turned off has no `hiberfil.sys`. It is the obvious reading and it
+is the one direction this reading does not rely on, precisely because nobody has
+read such a machine. The testing NUC after a `powercfg /h off` would settle it,
+and no program of this installer may name `powercfg`, so it is a measurement for
+a person rather than for the installer.
+**Date:** 2026-10-08.
