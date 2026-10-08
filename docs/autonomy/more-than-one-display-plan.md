@@ -632,7 +632,7 @@ that moment.
   **This task's own completion should leave behind something that fails** if a
   third display's assumptions are ever hard-coded the same way.
 
-## What a machine actually reaches, measured 2026-10-08
+### What a machine actually reaches, measured 2026-10-08
 
 **Ten tasks say *Done: the code*, and a reader takes that to mean the code
 runs.** For five of them it does not. `TheDesktop::the_screens_of` answers
@@ -665,7 +665,7 @@ none of their controls. So the store has one entry whatever the arrangement
 says, and the `len() <= 1` safeguard — written to keep one display behaving as
 before — returns that one entry for every window on every display.
 
-### Why this is recorded rather than quietly wired
+#### Why this is recorded rather than quietly wired
 
 The cheap fix is three edits: re-export the argument type, build a `Screens`
 from shipped defaults in `alo-desktop`, done in an hour. It would make
@@ -681,7 +681,7 @@ being real.
 So the rows above are written first, and the tasks below do it in the order
 that keeps each claim checkable.
 
-## Tasks that make this plan's work reach a machine
+### Tasks that make this plan's work reach a machine
 
 ### 9. Every display records the controls it drew
 
