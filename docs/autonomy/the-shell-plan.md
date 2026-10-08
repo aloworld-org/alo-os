@@ -1171,3 +1171,32 @@ sign-in screen and never carries a chord into the shortcut road.
   would produce exactly what this task was written against** — more code that is
   finished, tested and unreachable. So the work and the showing are one task,
   and it belongs to whoever has the machine.
+
+### 20. The desktop opens when a person signs in
+
+**Status:** ready. **Owner:** the Mac. **Depends on:** nothing.
+**Priority: the owner made this the evening's must on 2026-10-08**, over the
+eight **Screens and desks** promises, after being told the testing NUC would
+show the sign-in screen and nothing behind it.
+
+`alo-compositor.service` is enabled in the image and draws the sign-in screen.
+`alo-desktop` is **built, verified executable and installed at
+`/usr/bin/alo-desktop`** — `image/Containerfile` lines 277 and 302. Nothing
+launches it when a session opens, and `booting.rs` says so in its own words:
+
+> *It ends when a session opens. Standing the desktop up in that session is the
+> next task, and a compositor that drew a desktop here would be drawing one
+> nothing had decided.*
+
+So a person who signs in sees nothing. The dock, the canvas and the panel are
+all `[v0.01]` promises already, and `stand_the_desktop_up` already exists —
+**this makes existing promises true and adds none.**
+
+- **Acceptance:** a successful sign-in opens a session and the desktop is
+  standing in it — dock, canvas and status drawn — asserted in a test that signs
+  in and then looks, not one that calls `stand_the_desktop_up` directly.
+- **Constraint:** a refused sign-in opens nothing, tested as carefully as the
+  happy path.
+- **Constraint:** the sign-in screen keeps its own behaviour exactly. It is the
+  one screen whose code is written and which no person has ever seen, and the
+  candidate on the testing NUC is the first time anybody will.
