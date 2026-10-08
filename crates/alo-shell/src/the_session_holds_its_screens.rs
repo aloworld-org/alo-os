@@ -20,8 +20,16 @@
 //! **decides nothing** about where a screen sits: that is `alo-displays`'
 //! judgement from what a person arranged, and reaching it needs their kept
 //! `Changes`, an `Appearance` and a `Tonight` — none of which this crate may
-//! read. `crate::TheDesktop::the_screens_of` is the road, for the reason the
-//! canvas layout and the shortcuts already travel it.
+//! read. `crate::TheDesktop::their_displays` is the road, for the reason the
+//! canvas layout and the shortcuts already travel it: the desktop hands over
+//! the three readings that are the person's and the shell builds the
+//! arrangement from them, through `crate::TheirDisplays::the_screens_of`.
+//!
+//! **That road was `the_screens_of` on the trait until 2026-10-08, and it could
+//! not be travelled.** It took an `alo_displays::Reported` and answered with a
+//! `crate::Screens`, and `alo-desktop` depends on neither type — so the one
+//! crate obliged to implement it could not name its argument. Task 10 of the
+//! plan above.
 //!
 //! # A description is not an arrangement, and a refusal here is not a fault
 //!

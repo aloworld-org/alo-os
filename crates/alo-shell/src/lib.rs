@@ -291,6 +291,7 @@ mod surfaces;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;
+mod their_displays;
 mod top_controls_region;
 mod which_display_a_window_is_on;
 pub mod which_preview_the_pointer_is_on;
@@ -439,6 +440,17 @@ pub use scanout_frame::XrgbFrame;
 pub use scene_replacement::SceneReplacement;
 pub use scene_scanout::ActiveScene;
 pub use screens::{ScreenPlace, Screens, TheRoom};
+
+// **The types a desktop needs to answer `their_displays`, re-exported so that
+// answering costs it no new crate edge** — `more-than-one-display-plan.md`
+// task 10. `alo-desktop` depends on this crate already and not on
+// `alo-displays`, which is why `the_screens_of` could not be implemented by
+// the one crate that had to implement it.
+//
+// Re-exported rather than wrapped: a wrapper would be this crate holding its
+// own copy of somebody else's answer, which `TheDesktop`'s own header forbids
+// in as many words.
+pub use alo_displays::{Changes, Moment, NightLight, Reported, Tonight};
 pub use screens_raster::{ScreenPicture, desk};
 pub use server::Server;
 pub use session_desktop::{ADisplayToStandOn, StoodUp, stand_the_desktop_up};
@@ -461,6 +473,7 @@ pub use sign_in_password::PASSWORD_BYTES;
 pub use sign_in_raster::SignInLook;
 pub use sign_in_screen::{SignInScreen, SignInShows, Signing};
 pub use socket::SocketError;
+pub use their_displays::{THE_SIZES_THIS_COMPOSITOR_DRAWS, TheirDisplays};
 pub use top_controls_region::the_top_controls;
 pub use window_command::WindowCommandError;
 pub use window_control_focus::WindowControlFocus;
