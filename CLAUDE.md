@@ -340,6 +340,32 @@ cannot demonstrate.
   machine — they share its memory, CPU and disk, so **one Cargo
   operation per machine** stands, and they do not multiply the agent,
   so one task is actively implemented at a time.
+- **Say it in words the person can act on, and say what it changes for them.**
+  Every report, status, summary and answer to a person outside the code is
+  written in plain English and names **what it means for the person using the
+  machine, or for the machine itself**. A technical name may be used once its
+  meaning has been given; a report that assumes the reader already knows the
+  vocabulary is a report they cannot check.
+
+  **Naming the effect is the part that is usually skipped.** *A frame is drawn
+  per display* says nothing to anybody; *each monitor gets its own picture, and
+  one monitor failing no longer blanks the other* can be agreed or disagreed
+  with. Where the effect is **nothing yet** — code written and not reachable, a
+  decision taken and not built — say that outright, because *done* and *working*
+  read identically in a status and are not the same claim.
+
+  This binds hardest in the places it is least convenient: a task report, a
+  commit body a person may read a year later, and any answer to *how is it
+  going*. It is not a request to simplify the engineering; the ADRs, plans and
+  tests stay as precise as they are. It is a request that **the account given to
+  a person is one they can act on without reading the code.**
+
+  *Asked for by the owner on 2026-10-08, in these words: "explain to me in user
+  friendly terms and simple English and include how it will impact the users or
+  system … I do not understand them and that as a rule too" — after a day of
+  reports written in this repository's own vocabulary to somebody who had not
+  asked to learn it.*
+
 - **State your own errors, and record the ones that could be repeated.**
   Say it in the moment, to whoever is relying on the claim — plainly, once,
   without ceremony — and then put the ones somebody else could walk into in
