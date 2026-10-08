@@ -313,6 +313,24 @@ fn the_draw_brings_back_frames_the_moved_controls_hide() {
 /// struct"`. The figure was first reported as eight by counting grep's lines, which
 /// include the struct's own declaration — a declaration is not a construction, and
 /// `pub struct FixedControlsDrawn {` matches the same pattern.*
+/// # The draw has two sites since 2026-10-08, and that moved this guard
+///
+/// `more-than-one-display-plan.md` task 9 made the draw record **every**
+/// display's controls rather than only the one its own loop holds, so there are
+/// now two `FixedControlsDrawn` in `direct_desktop.rs`: one per other display,
+/// and one for the display the draw itself is on. The count above is dated and
+/// deliberately unguarded, so it is not the point. **What moved is the guard.**
+///
+/// It read `code.find`, which was the same thing as *the site* while there was
+/// one. With two it answers about whichever is written first and is silent about
+/// the other — and the whole argument of this file is that the draw's wiring is
+/// watched by nothing else. A second production site nothing looks at is this
+/// file's own subject, reappearing inside this file's own apparatus, three days
+/// after it was written. So both halves now iterate every literal.
+///
+/// The guard asks that each value is read from a `pictures` binding. The
+/// per-display loop's binding is named `its_pictures` for that reason, and the
+/// draw says so where somebody would rename it.
 #[test]
 fn the_draw_hands_over_the_controls_it_laid_out() {
     let at = src().join(THE_DRAW);
@@ -330,22 +348,39 @@ fn the_draw_hands_over_the_controls_it_laid_out() {
     // *after* the fields — `{ dock_band: …, ..Default::default() }` — so looking for
     // `FixedControlsDrawn { ..` would miss every real one. That was this
     // assertion's first form.
+    // **Every construction site in the draw, not the first of them.** Task 9 of
+    // `more-than-one-display-plan.md` made there be two: one inside the
+    // per-display loop, for each display that loop does not itself hold, and one
+    // for the display it does. Until then `code.find` and *the* site were the
+    // same thing. They are not any more, and a guard that answered about
+    // whichever came first in the file would have said nothing about the other
+    // — while the note above this test says this guard is the only thing that
+    // looks at the draw at all. **So the site it skipped would have been watched
+    // by nothing**, which is this file's own subject arriving in its own
+    // apparatus. Both halves below now ask every site.
     let opens = "FixedControlsDrawn {";
-    let at = code
-        .find(opens)
-        .unwrap_or_else(|| panic!("{THE_DRAW} does not construct a FixedControlsDrawn at all"));
-    let rest = code.get(at + opens.len()..).unwrap_or_default();
-    let literal = rest
-        .get(..rest.find('}').unwrap_or(rest.len()))
-        .unwrap_or("");
+    let literals: Vec<&str> = code
+        .match_indices(opens)
+        .map(|(at, _)| {
+            let rest = code.get(at + opens.len()..).unwrap_or_default();
+            rest.get(..rest.find('}').unwrap_or(rest.len()))
+                .unwrap_or("")
+        })
+        .collect();
     assert!(
-        !literal.contains(".."),
-        "{THE_DRAW} spreads into its `FixedControlsDrawn` — `{}` — so a control added \
-         to the set would arrive from somewhere else instead of being a compile \
-         error. A field absent from the literal cannot be read from the pictures \
-         either, so the set would lose both halves of its promise at once",
-        literal.trim()
+        !literals.is_empty(),
+        "{THE_DRAW} does not construct a FixedControlsDrawn at all"
     );
+    for literal in &literals {
+        assert!(
+            !literal.contains(".."),
+            "{THE_DRAW} spreads into a `FixedControlsDrawn` — `{}` — so a control added \
+             to the set would arrive from somewhere else instead of being a compile \
+             error. A field absent from the literal cannot be read from the pictures \
+             either, so the set would lose both halves of its promise at once",
+            literal.trim()
+        );
+    }
 
     // **And the gate the above rests on.** `..Default::default()` is the form
     // somebody would actually reach for, and it does not compile today for one
@@ -401,33 +436,40 @@ fn the_draw_hands_over_the_controls_it_laid_out() {
         controls.len()
     );
 
-    for control in &controls {
-        let from = format!("{control}:");
-        let at = code.find(&from).unwrap_or_else(|| {
-            panic!(
-                "{THE_DRAW} never sets `{control}`, which {HOLDS_THE_SET} declares as \
-                 part of the set a frame's name must stay clear of. A control the \
-                 draw does not hand over is a control the rule is not in force \
-                 against, which is how the Dock was the only member for weeks"
-            )
-        });
-        // From the field's name to the end of its value: the next comma at this
-        // depth. No value in this literal contains a comma, and one that did
-        // would be truncated rather than mis-read — a truncated value still has
-        // to contain `pictures.` to pass.
-        let rest = code.get(at + from.len()..).unwrap_or_default();
-        let value = rest
-            .get(..rest.find(',').unwrap_or(rest.len()))
-            .unwrap_or("");
-        assert!(
-            value.contains(FROM_THIS_FRAME),
-            "{THE_DRAW} sets `{control}` to `{}`, which is not read from the \
-             pictures this frame laid out. A constant there passes every test in \
-             this crate — measured, not feared: it was tried with \
-             `panel_reserved`, and seventeen tests did not notice. If the picture's \
-             own path moved, this failing is the guard working; say where the \
-             rectangle now comes from rather than loosening what counts",
-            value.trim()
-        );
+    // Each site, and within it each control: the value is read out of the
+    // literal it belongs to rather than out of the file, so a second site
+    // cannot be answered for by the first one's text.
+    for literal in &literals {
+        for control in &controls {
+            let from = format!("{control}:");
+            let at = literal.find(&from).unwrap_or_else(|| {
+                panic!(
+                    "a `FixedControlsDrawn` in {THE_DRAW} — `{}` — never sets `{control}`, \
+                     which {HOLDS_THE_SET} declares as part of the set a frame's name must \
+                     stay clear of. A control the draw does not hand over is a control the \
+                     rule is not in force against, which is how the Dock was the only \
+                     member for weeks",
+                    literal.trim()
+                )
+            });
+            // From the field's name to the end of its value: the next comma at
+            // this depth. No value in this literal contains a comma, and one
+            // that did would be truncated rather than mis-read — a truncated
+            // value still has to contain `pictures.` to pass.
+            let rest = literal.get(at + from.len()..).unwrap_or_default();
+            let value = rest
+                .get(..rest.find(',').unwrap_or(rest.len()))
+                .unwrap_or("");
+            assert!(
+                value.contains(FROM_THIS_FRAME),
+                "{THE_DRAW} sets `{control}` to `{}`, which is not read from the \
+                 pictures this frame laid out. A constant there passes every test in \
+                 this crate — measured, not feared: it was tried with \
+                 `panel_reserved`, and seventeen tests did not notice. If the picture's \
+                 own path moved, this failing is the guard working; say where the \
+                 rectangle now comes from rather than loosening what counts",
+                value.trim()
+            );
+        }
     }
 }
