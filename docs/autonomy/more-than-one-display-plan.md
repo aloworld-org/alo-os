@@ -700,7 +700,18 @@ pictures are laid out and thrown away as far as the store is concerned.
 
 ### 10. The seam the desktop can actually travel
 
-**Status:** ready. **Owner:** the Mac. **Depends on:** nothing.
+**Status:** **Done, 2026-10-08: the code.** `TheDesktop::their_displays`
+replaces `the_screens_of`, which took `alo_displays` types `alo-desktop` cannot
+name and was therefore implemented by nothing. The desktop now hands over the
+three readings that are the person's — appearance, night light resolved against
+its own clock, kept `Changes` — and `TheirDisplays::the_screens_of` builds the
+arrangement in the shell, which supplies the displays reported and
+`THE_SIZES_THIS_COMPOSITOR_DRAWS`. Those types are re-exported from `alo-shell`,
+so answering costs `alo-desktop` **no new crate edge**, which was the
+acceptance. Seven tests, including two displays becoming two screens — the first
+test in that crate able to reach a `Screens` at all. **On the machine:** not
+ticked and not tickable here; nothing in production answers yet, which is task
+11. **Owner:** the Mac. **Depends on:** nothing.
 
 `TheDesktop::the_screens_of` takes `Vec<alo_displays::Reported>` and
 **`alo-desktop` has no `alo-displays` dependency**, so the only crate that must
@@ -722,7 +733,7 @@ changes.
 
 ### 11. A machine builds the arrangement it reports
 
-**Status:** blocked on 10. **Owner:** the Mac.
+**Status:** ready — **unblocked 2026-10-08 by task 10.** **Owner:** the Mac.
 
 With the seam travelable, `alo-desktop` answers with an arrangement built from
 what the compositor reported.
