@@ -193,11 +193,15 @@ mod tests {
     /// - `SizeRemaining` is the **floor of what the machine displayed** on the
     ///   walk of 2026-10-07 — it said *69 GB free of 110 GB*, and free space is
     ///   rounded down, so 69 GiB is the least it can have been.
-    /// - `SizeMin` is **not measured**. It is low enough not to be the binding
-    ///   constraint, which is all this fixture needs of it; a test that turned
-    ///   on it would be testing a number nobody read.
+    /// - `SizeMin` is **measured, at a moment**: the machine's own
+    ///   `Get-PartitionSupportedSize` at 2026-10-07T15:49:53Z, the most recent
+    ///   of five elevated readings. **It moves.** Those five span 42,804,543,488
+    ///   to 46,402,490,368 — 3.35 GiB across 36 hours — so this is not a
+    ///   property of the volume and nothing here may treat it as one. It is far
+    ///   below the size this road shrinks Windows to, which is why the road is
+    ///   open on this machine at every one of those five moments.
     const THE_VOLUME: &str = r#"{"DriveLetter":"C","DiskNumber":0,"PartitionNumber":3,
-      "Offset":227540992,"Size":118873915392,"SizeMin":34341593088,
+      "Offset":227540992,"Size":118873915392,"SizeMin":44640423936,
       "SizeRemaining":74088902656}"#;
 
     /// This installer's own words.
@@ -336,6 +340,27 @@ mod tests {
         assert_eq!(beside.area_begins, 92_257_910_784);
         assert_eq!(beside.alo_os_begins, 93_331_652_608);
         assert_eq!(beside.alo_os, 24 * crate::sizes::GIB);
+
+        // **The road is open at every moment `SizeMin` was measured.**
+        // Windows will not shrink below what it reports it can, and what it
+        // reports moved by 3.35 GiB across 36 hours on this machine - so a
+        // road that is open against one reading and shut against another is
+        // a road whose availability depends on when the person ran the
+        // installer. These are the five the machine read, elevated.
+        for smallest in [
+            45_234_069_504_u64,
+            46_402_490_368,
+            42_804_543_488,
+            42_812_432_384,
+            44_640_423_936,
+        ] {
+            assert!(
+                beside.to > smallest,
+                "this road shrinks Windows to {} , below the {smallest} it reported it \
+                 could at one of the five moments it was read",
+                beside.to
+            );
+        }
 
         // **And the sentences add up.** What Windows gives up is the area plus
         // alo OS's share, and each is said as a whole number of gigabytes, so
