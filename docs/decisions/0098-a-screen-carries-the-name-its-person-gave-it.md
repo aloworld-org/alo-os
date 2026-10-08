@@ -7,7 +7,7 @@ one"*.
 **Date:** 2026-10-08
 **Proposed by:** the owner (the decision), the Mac lane (the consequences below)
 **Context:** Law 5 (*the person chooses*), `docs/features.md`'s **Screens and
-desks**, [ADR 0068](0068-a-sentence-whose-meaning-changed-gets-a-new-key.md)
+desks**, [ADR 0068](0068-a-published-sentence-changes-by-getting-a-new-key.md)
 (what a translated string owes), `crates/alo-displays/src/identity.rs`,
 `crates/alo-shell/src/the_session_holds_its_screens.rs`,
 `docs/autonomy/screens-and-desks-plan.md`
