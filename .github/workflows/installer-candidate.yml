@@ -164,16 +164,51 @@ jobs:
       # `|| true` because there is nothing to delete the first time, and a
       # first run that failed for having no predecessor would be a red run
       # about success.
+      # **This step said nothing and could not fail until 2026-10-08.** It was
+      # a `foreach` over the deletions followed by `exit 0`, with no output: a
+      # `gh release delete` that failed left the step green, and a step that
+      # deleted nothing looked identical to one that deleted three.
+      #
+      # It was found by the owner asking **what the delete step did** before a
+      # dispatch they had authorised — and the honest answer was *we cannot
+      # tell*, because both earlier dispatches found no previous candidate, so
+      # the only branch ever exercised was the one that does nothing. A step
+      # whose status cannot answer the question it exists to answer is not a
+      # step that has been tested; it is one nobody can test.
+      #
+      # So it now names each tag as it goes, fails when a deletion fails, and
+      # **asks the registry again afterwards** rather than inferring success
+      # from having run.
       - name: Take down the previous candidate
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $old = gh release list --limit 100 --json tagName,isPrerelease |
+          $old = @(gh release list --limit 100 --json tagName,isPrerelease |
             ConvertFrom-Json |
-            Where-Object { $_.isPrerelease -and $_.tagName -like 'candidate-*' }
-          foreach ($one in $old) { gh release delete $one.tagName --yes --cleanup-tag }
-          exit 0
+            Where-Object { $_.isPrerelease -and $_.tagName -like 'candidate-*' })
+          if ($old.Count -eq 0) {
+            Write-Host "found no previous candidate to take down"
+          }
+          foreach ($one in $old) {
+            Write-Host "deleting $($one.tagName)"
+            gh release delete $one.tagName --yes --cleanup-tag
+            if ($LASTEXITCODE -ne 0) {
+              throw "could not delete $($one.tagName): gh exited $LASTEXITCODE"
+            }
+            Write-Host "deleted $($one.tagName)"
+          }
+          # **What it did, asserted rather than assumed.** This step's whole job
+          # is that no candidate survives it, so it says so by asking again
+          # instead of by having run. Control 6 is *exactly one candidate exists
+          # at a time*: none after this step, one after the publish below.
+          $left = @(gh release list --limit 100 --json tagName,isPrerelease |
+            ConvertFrom-Json |
+            Where-Object { $_.isPrerelease -and $_.tagName -like 'candidate-*' })
+          Write-Host "candidates remaining: $($left.Count)"
+          if ($left.Count -ne 0) {
+            throw "a candidate survived this step: $($left.tagName -join ', ')"
+          }
 
       # **Published as a pre-release, which is what keeps it off
       # `/releases/latest`** — GitHub defines that endpoint as the most recent
