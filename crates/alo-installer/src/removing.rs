@@ -223,11 +223,21 @@ pub fn remove_alo_os(machine: &mut impl TheMachine, strings: &Strings) -> Remove
         machine,
         strings,
         if the_copy_went {
-            words::REMOVE_GONE
+            words::REMOVE_IS_GONE
         } else {
-            words::REMOVE_GONE_BUT_THE_COPY_STAYS
+            words::REMOVE_IS_GONE_BUT_THE_COPY_STAYS
         },
         &Filling::of("disk", shown.clone()),
+    );
+    // **The one thing the install changed and kept.** It turns Fast Startup off
+    // only at the person's word, a successful install keeps it off, and nothing
+    // here puts it back - deliberately, because restoring somebody's own
+    // setting without asking is deciding for them a second time. So it is said.
+    say(
+        machine,
+        strings,
+        words::REMOVE_FAST_STARTUP_IS_STILL_OFF,
+        &Filling::nothing(),
     );
     Removed::Gone {
         disk: shown,
@@ -343,6 +353,12 @@ fn take_the_space_away(
 
     let the_copy_went = read(machine, &Program::RemovingWhatWasLeft).is_some();
     say(machine, strings, words::REMOVE_SPACE_TAKEN, &named);
+    say(
+        machine,
+        strings,
+        words::REMOVE_FAST_STARTUP_IS_STILL_OFF,
+        &Filling::nothing(),
+    );
     Removed::Gone {
         disk: shown,
         the_copy_went,

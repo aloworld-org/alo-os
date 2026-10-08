@@ -1386,27 +1386,58 @@ pub const REMOVE_DISK_NOT_CLEARED: Word = Word::saying(
 );
 
 /// alo OS is gone.
-pub const REMOVE_GONE: Word = Word::saying(
-    "installer.remove.gone",
-    "alo OS is removed. {disk} is empty, its space is free, and this computer starts Windows as it \
-     did before alo OS was installed",
-)
-.noting("The last line when everything went. {disk} is the disk's name.");
-
-/// alo OS is gone, and this program is still on the computer.
-pub const REMOVE_GONE_BUT_THE_COPY_STAYS: Word = Word::saying(
-    "installer.remove.gone-but-the-copy-stays",
-    "alo OS is removed. {disk} is empty, its space is free, and this computer starts Windows as it \
-     did. This program is still on this computer, because it cannot delete itself while it is \
-     running; you can delete it yourself",
+///
+/// **Replaces `installer.remove.gone`, which said *this computer starts
+/// Windows as it did before alo OS was installed*.** That was false for
+/// anybody who answered *turn off* to the Fast Startup question: the install
+/// turns it off at the person's word, a successful install keeps it off, and
+/// nothing restores it. What that sentence promised is now said accurately by
+/// `REMOVE_FAST_STARTUP_IS_STILL_OFF` below, after this one — a private item, so
+/// this names it rather than linking to it.
+pub const REMOVE_IS_GONE: Word = Word::saying(
+    "installer.remove.is-gone",
+    "alo OS is removed. {disk} is empty, its space is free, and this computer starts \
+     Windows again",
 )
 .noting(
-    "Said when the removal ran from the copy the install left behind: Windows does not delete a \
-     running program.",
+    "The last line when everything went. {disk} is the disk's name as its maker gives \
+     it, not translated.",
+);
+
+/// The same, where the copy of this program could not go.
+pub const REMOVE_IS_GONE_BUT_THE_COPY_STAYS: Word = Word::saying(
+    "installer.remove.is-gone-but-the-copy-stays",
+    "alo OS is removed. {disk} is empty, its space is free, and this computer starts \
+     Windows again. This program is still on this computer, because it cannot delete \
+     itself while it is running; you can delete it yourself",
+)
+.noting(
+    "The same as the sentence above, said when the copy the install left in Windows \
+     could not be deleted because it is the program saying this.",
+);
+
+/// Fast Startup is still off, because nothing put it back.
+///
+/// **Said after either ending, and it is the thing the retired sentences got
+/// wrong.** The install turns Fast Startup off only at the person's word
+/// (ADR 0064 term 9), a successful install keeps it off, and `crate::removing`
+/// does not restore it — deliberately, because putting a person's own setting
+/// back without asking is the installer deciding for them a second time.
+///
+/// So it is said rather than silently left, and where to change it is named.
+pub const REMOVE_FAST_STARTUP_IS_STILL_OFF: Word = Word::saying(
+    "installer.remove.fast-startup-is-still-off",
+    "If you turned Windows' Fast Startup off when you installed alo OS, it is still off. \
+     You can turn it back on in Windows' own power settings",
+)
+.noting(
+    "Said last, after alo OS is removed. *Fast Startup* and *power settings* are the \
+     names Windows' own settings use in this language. Nothing here changed the setting \
+     back: it is the person's to change, which is why it is named rather than restored.",
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 139] = [
+pub const EVERY_WORD: [Word; 140] = [
     A_TEST_BUILD_FROM,
     A_TEST_BUILD,
     STARTING,
@@ -1523,8 +1554,9 @@ pub const EVERY_WORD: [Word; 139] = [
     REMOVE_ENTRY_NOT_REMOVED,
     REMOVE_ERASING,
     REMOVE_DISK_NOT_CLEARED,
-    REMOVE_GONE,
-    REMOVE_GONE_BUT_THE_COPY_STAYS,
+    REMOVE_IS_GONE,
+    REMOVE_IS_GONE_BUT_THE_COPY_STAYS,
+    REMOVE_FAST_STARTUP_IS_STILL_OFF,
     PRESS_ENTER_TO_CLOSE,
     // Replacing Windows: the road with no way back.
     ASK_TWO_SYSTEMS_OR_ONE,
