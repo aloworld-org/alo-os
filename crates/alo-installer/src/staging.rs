@@ -3,18 +3,32 @@
 //!
 //! In order, each step said before it begins:
 //!
-//! 1. shrink the Windows partition by exactly the area;
-//! 2. make the area in the space that freed, at the place it freed;
-//! 3. format it with the installer's label and give it a drive letter;
-//! 4. write the environment's files and the person's choice onto it, and read
-//!    each one back;
-//! 5. write a start-up entry named alo OS pointing at the area's loader into
+//! 1. turn Fast Startup off, where the person answered that it should be;
+//! 2. shrink the Windows partition — **by the area alone on the road that gives
+//!    alo OS a disk of its own, and by the area together with alo OS's space on
+//!    the road that keeps Windows**, in one shrink either way;
+//! 3. make the area in the space that freed, at the place it freed;
+//! 4. format it with the installer's label and give it a drive letter;
+//! 5. **on the road that keeps Windows only**, make alo OS's own partition in
+//!    the rest of the freed space and label it `ALO-ROOT`, with no drive letter;
+//! 6. write the environment's files and the person's choice onto the area, and
+//!    read each one back;
+//! 7. leave a copy of this program and a Start-menu shortcut, so a person can
+//!    get back in from inside Windows (`crate::switching`);
+//! 8. write a start-up entry named alo OS pointing at the area's loader into
 //!    the firmware — with none of the optional data a copy of Windows' own
 //!    entry carries — and list it last so Windows stays the one the computer
 //!    starts normally;
-//! 6. take the area's letter away again;
-//! 7. make the entry the next start, once — the firmware's next-boot choice,
-//!    which never changes the default (`docs/booting.md`).
+//! 9. take the area's letter away again;
+//! 10. make the entry the next start, once — the firmware's next-boot choice,
+//!     which never changes the default (`docs/booting.md`).
+//!
+//! **This list went stale once and nothing caught it.** Steps 1, 5 and 7 were
+//! missing and step 2 said *by exactly the area*, which the road that keeps
+//! Windows made false. It was found by the testing lane reading its own copy of
+//! this file against a checklist written from another — so a reader was going
+//! to act on one of them. Nothing in the gate compares a module's prose to its
+//! own code, so **a step added here is added to this list in the same change**.
 //!
 //! # Every step before the restart is reversible
 //!
