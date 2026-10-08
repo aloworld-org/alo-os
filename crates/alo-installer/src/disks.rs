@@ -169,6 +169,35 @@ impl Disks {
         (its.len() == 1).then(|| its.remove(0))
     }
 
+    /// Whether alo OS is on the disk Windows is on.
+    ///
+    /// **A different question from [`Self::the_one_alo_os_is_on`]**, which
+    /// answers *which disk may this program erase* and excludes the disk
+    /// Windows is on. That exclusion is a guard rather than an oversight: the
+    /// program clears a whole disk, so reaching Windows' own would erase
+    /// Windows. But it leaves the caller unable to tell *no disk carries alo OS*
+    /// from *the disk that does is Windows' own*, and those are different facts.
+    ///
+    /// A person told the first when the second is true goes looking for a
+    /// hardware fault that is not there.
+    ///
+    /// **Asked by the label, not by the partition's type.** Windows' own volume
+    /// and alo OS's space are both GPT basic data
+    /// (`alo_installing::may_keep_what_is_there` carries the same reading from
+    /// the other end), so a type cannot tell them apart. The label
+    /// `ALO-ROOT` is what the installer puts on the space it made and on
+    /// nothing else.
+    #[must_use]
+    pub fn alo_os_is_on_the_windows_disk(&self, windows_is_on: DiskNumber) -> bool {
+        self.numbered(windows_is_on).is_some_and(|disk| {
+            disk.partitions.iter().any(|partition| {
+                partition
+                    .label
+                    .eq_ignore_ascii_case(alo_installing::THE_SPACE_THE_INSTALLER_MADE)
+            })
+        })
+    }
+
     /// The name a person is shown for this disk, and types to agree.
     ///
     /// Its maker's name, trimmed, and followed by Windows' number for it when

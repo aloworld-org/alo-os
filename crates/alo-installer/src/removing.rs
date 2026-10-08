@@ -82,7 +82,7 @@ pub fn remove_alo_os(machine: &mut impl TheMachine, strings: &Strings) -> Remove
     say(
         machine,
         strings,
-        words::REMOVE_STARTING,
+        words::REMOVE_BEGINNING,
         &Filling::nothing(),
     );
 
@@ -117,14 +117,36 @@ pub fn remove_alo_os(machine: &mut impl TheMachine, strings: &Strings) -> Remove
         return Removed::NotRead;
     };
     let Some(disk) = disks.the_one_alo_os_is_on(windows.disk) else {
+        // **Which of two reasons, because they are not the same fact.** A disk
+        // carrying alo OS that happens to be the disk Windows is on was found
+        // and is not one this program may erase; no such disk at all is a
+        // computer this program cannot account for. Saying *could not be found*
+        // for the first sends a person looking for a hardware fault.
         say(
             machine,
             strings,
-            words::REMOVE_NOT_FOUND,
+            if disks.alo_os_is_on_the_windows_disk(windows.disk) {
+                words::REMOVE_ON_THE_WINDOWS_DISK
+            } else {
+                words::REMOVE_NOT_FOUND
+            },
             &Filling::nothing(),
         );
         return Removed::NotFound;
     };
+
+    // **Said here and not at the top, because here is where it becomes true.**
+    // The disk above is not the disk Windows is on - `the_one_alo_os_is_on`
+    // excludes it - so this removal touches no part of Windows. The sentence
+    // this replaced promised that before anything had been read, on every road,
+    // and on the road that keeps Windows it was true only because the guard
+    // above refuses.
+    say(
+        machine,
+        strings,
+        words::REMOVE_WINDOWS_IS_NOT_TOUCHED,
+        &Filling::nothing(),
+    );
     let shown = disks.shown_name(disk);
     let number = disk.number();
 
@@ -231,4 +253,88 @@ fn read(machine: &mut impl TheMachine, program: &Program) -> Option<String> {
 /// One sentence, looked up and put in front of the person.
 fn say(machine: &mut impl TheMachine, strings: &Strings, word: Word, filling: &Filling) {
     machine.say(&strings.say(&word.key(), filling));
+}
+
+/// **The promise and the guard that makes it true, held together.**
+///
+/// `installer.remove.starting` used to read *This removes alo OS from this
+/// computer. Windows, and your files on it, are not touched*, said as the first
+/// line on every road before any disk had been read. On the road that keeps
+/// Windows that promise held only because `Disks::the_one_alo_os_is_on`
+/// excludes the disk Windows is on and this program clears whole disks.
+///
+/// **It described what the program declined to attempt rather than what it
+/// did**, and nothing tied it to the guard. So the day somebody lifts that
+/// filter to make removal work on this road, the old sentence would have become
+/// the installer telling a person their files are safe while it erased them,
+/// with every test still green.
+///
+/// This is the pair. It fails if the exclusion goes while a sentence still
+/// promises in advance, which is the only arrangement that is dangerous and the
+/// one a test asserting the exclusion alone would never notice.
+#[cfg(test)]
+#[expect(
+    clippy::panic,
+    reason = "in a test, a panic naming what is wrong is the failure being reported"
+)]
+mod the_promise_is_tied_to_its_guard {
+    use std::path::Path;
+
+    /// One of this crate's source files, with its comment lines taken out.
+    ///
+    /// **Code only.** This module's own documentation quotes both the guard and
+    /// the retired promise in order to explain them, and a check that read
+    /// prose as code would refuse its own explanation - whose fix would be to
+    /// delete the explanation, which is the worst available outcome for a
+    /// promise whose whole problem was that nobody had written down what made
+    /// it true.
+    fn code_of(named: &str) -> String {
+        let at = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src")
+            .join(named);
+        let text = std::fs::read_to_string(&at)
+            .unwrap_or_else(|why| panic!("{} could not be read: {why}", at.display()));
+        text.lines()
+            .filter(|line| !line.trim_start().starts_with("//"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    /// **Either the guard excludes Windows' disk, or no sentence promises
+    /// Windows is untouched before the disk is known.**
+    #[test]
+    fn a_promise_about_windows_waits_for_the_guard_that_makes_it_true() {
+        let disks = code_of("disks.rs");
+        let removing = code_of("removing.rs");
+
+        let guarded = disks.contains("disk.number() != windows_is_on");
+        let promise = "REMOVE_WINDOWS_IS_NOT_TOUCHED";
+        let lookup = "the_one_alo_os_is_on";
+        let promised_after_the_lookup = match (removing.find(lookup), removing.find(promise)) {
+            (Some(looked), Some(promised)) => promised > looked,
+            _ => false,
+        };
+
+        assert!(
+            guarded,
+            "`Disks::the_one_alo_os_is_on` no longer excludes the disk Windows is on, so this \
+             program can now clear a disk Windows is on. Removing alo OS clears a WHOLE disk \
+             (`Program::ClearingTheDiskAloOsIsOn`), so if that is deliberate the removal must \
+             take alo OS's PARTITION instead, and {promise} must stop being said at all until \
+             that is what it does. Do not delete this test: rewrite it around whatever now \
+             makes the promise true."
+        );
+        assert!(
+            promised_after_the_lookup,
+            "{promise} is said before {lookup} has answered, so the installer promises Windows \
+             is untouched before it knows which disk alo OS is on. That is the shape the retired \
+             `installer.remove.starting` had, and the reason it retired."
+        );
+        assert!(
+            removing.contains("alo_os_is_on_the_windows_disk"),
+            "the removal no longer tells *no disk carries alo OS* from *the disk that does is \
+             Windows' own*, so a person is told their disk could not be found when it was found \
+             and is Windows'"
+        );
+    }
 }
