@@ -23,10 +23,10 @@ twice)
 **Supersedes:** the **image** half of `ROADMAP.md`'s *Two numbers that look
 alike*, for releases from this one onward. The milestone half stands untouched,
 and nothing already published is renamed.
-**Context:** [ADR 0033](0033-the-image-is-published-to-a-registry-and-pinned-by-digest.md)
-(published and pinned by digest), [ADR 0036](0036-only-the-owner-signs-a-release.md)
-(only the owner signs), [ADR 0046](0046-the-installer-is-the-owners-to-publish.md)
-(the installer is the owner's to publish),
+**Context:** [ADR 0033](0033-the-certified-laptop-is-installed-the-way-a-customer-installs.md)
+(whose §3 publishes the image to a registry and pins it by digest), [ADR 0036](0036-the-image-is-signed-by-a-key-a-person-holds.md) (the image is
+signed by a key a person holds), [ADR 0046](0046-the-installer-is-signed-by-a-certificate-a-person-holds.md)
+(the installer is signed by a certificate a person holds),
 [ADR 0096](0096-a-workflow-may-publish-a-candidate-and-a-candidate-announces-itself.md)
 (a candidate announces itself), `ROADMAP.md`, `image/usr/lib/os-release`,
 `image/pinned.toml`, `crates/alo-citing/tests/every_version_this_repository_writes.rs`
