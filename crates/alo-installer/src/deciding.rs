@@ -149,7 +149,7 @@ pub fn decide(found: &Found) -> Result<Offer, Refusal> {
         needed: short.needed,
         free: short.free,
     })?;
-    let disks_for_alo_os: Vec<ForAloOs> = disks
+    let mut disks_for_alo_os: Vec<ForAloOs> = disks
         .every()
         .filter_map(|disk| match disk.standing(windows.disk) {
             Standing::ForAloOs(after_the_restart) => Some(ForAloOs {
@@ -181,25 +181,56 @@ pub fn decide(found: &Found) -> Result<Offer, Refusal> {
     let the_start_up_area = windows_disk.the_start_up_area();
     let beside_windows = the_start_up_area.and_then(|_| windows.beside_windows().ok());
 
-    // **The Windows disk is NOT yet one of the disks alo OS may go on.**
+    // **The disk Windows is on is now a disk alo OS may go on**, and this is
+    // the last term of the owner's ruling of 2026-10-06: *the refusal that
+    // keeps the Windows disk out is flipped last, when the whole road exists
+    // and not before.*
     //
-    // The shrink above is worked out and carried, and nothing offers it. That
-    // is deliberate and it is the owner's ruling of 2026-10-06: *the refusal
-    // that keeps the Windows disk out is flipped last, when the whole road
-    // exists and not before.*
+    // **What makes the road whole**, each half walked or tested rather than
+    // argued:
     //
-    // **The road is not whole yet.** The boot environment can install into a
-    // partition and refuses any partition but the one labelled `ALO-ROOT`; what
-    // is missing is the Windows half — shrinking the volume, making the space,
-    // labelling it, and writing `alo.installing.into=` and
-    // `alo.installing.efi=` into the staged command line.
+    // - the boot environment installs into a partition rather than over a whole
+    //   disk, and refuses any partition not labelled `ALO-ROOT`
+    //   (`alo_installing::may_keep_what_is_there`);
+    // - the Windows half shrinks the volume by the area and alo OS's space
+    //   together, makes the space, labels it, and stages a command line naming
+    //   the disk, that partition and Windows' own start-up area
+    //   (`crate::staging`);
+    // - and the person is asked which road they want and told what it costs
+    //   before they consent to it, including that **Windows does not get this
+    //   space back** while alo OS is there (`crate::where_alo_os_goes`).
     //
-    // **This is not caution, it is a measurement.** On 2026-10-05 this refusal
-    // was flipped on its own, and the run reached the prompt and died at
+    // **Why the refusal was worth this much care.** On 2026-10-05 it was
+    // flipped on its own, and the run reached the prompt and died at
     // `NotADisksName`: a person sent from a clear refusal to a question with no
     // answer. A refusal is a worse thing to remove than it looks, because what
-    // replaces it is whatever happens next.
+    // replaces it is whatever happens next — and for five days what replaced
+    // this one was nothing.
+    //
+    // **And the start-up area is why this is one line rather than a condition.**
+    // `beside_windows` is already `None` unless the volume can give up the space
+    // *and* the firmware's own partition can be named, so a disk that cannot
+    // walk the road is never pushed here. The road opens exactly where it can
+    // be walked.
+    if let Some(beside) = beside_windows {
+        // `after_the_restart` is the name the boot environment waits for, and a
+        // disk it cannot name is a disk that would be agreed to and then not
+        // found. `None` here leaves the road closed on this machine rather than
+        // offering a disk nothing can point at.
+        if let Some(after_the_restart) = windows_disk.after_the_restart() {
+            disks_for_alo_os.push(ForAloOs {
+                number: windows_disk.number(),
+                shown: disks.shown_name(windows_disk),
+                after_the_restart,
+                beside: Some(beside),
+            });
+        }
+    }
 
+    // **Still refused where there is no road at all.** Nothing above lowers
+    // this: a machine with no empty disk big enough *and* no beside road — no
+    // space, or no start-up area to name — reaches here with an empty list and
+    // is told so, which is the sentence it has always been told.
     if disks_for_alo_os.is_empty() {
         return Err(Refusal::NoDiskForAloOs);
     }

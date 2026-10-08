@@ -60,12 +60,15 @@ pub enum Place {
 
 /// The places this computer actually has, and so which question to ask.
 ///
-/// Read from the offer rather than from a setting, because **the same-disk road
-/// becomes available the moment `crate::deciding` offers the Windows disk** and
-/// not before. Until it does, no disk alo OS may go on carries the shrink that
-/// keeps Windows, this finds nothing, and the question is not asked — which is
-/// the honest shape for a road that is built and not yet opened (the owner's
-/// ruling of 2026-10-06, term 5).
+/// Read from the offer rather than from a setting, because **a disk carrying
+/// the keep-Windows shrink is the disk Windows is on** — that is what the
+/// shrink is for, and `crate::deciding` gives it to no other disk. So this
+/// asks which disk is which by what it would do rather than by its number, and
+/// there is no second switch that can disagree with the first.
+///
+/// It read nothing until 2026-10-08, when the installer plan's task 6 opened
+/// the road by offering that disk — term 5 of the owner's ruling of
+/// 2026-10-06, *flipped last, when the whole road exists and not before.*
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Places<'a> {
     /// Both, so the person is asked.
@@ -152,7 +155,9 @@ pub fn where_alo_os_goes(machine: &mut impl TheMachine, strings: &Strings, named
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
-    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+    clippy::expect_used,
+    clippy::panic,
+    reason = "in a test, a panic naming what is wrong is the failure being reported"
 )]
 mod tests {
     use alo_installing::DiskName;
@@ -164,7 +169,7 @@ mod tests {
     use crate::ended::Refusal;
     use crate::fast_startup::FastStartup;
     use crate::found::Found;
-    use crate::identities::DiskNumber;
+    use crate::identities::{DiskNumber, PartitionNumber};
     use crate::machine::tests::Answering;
     use crate::security_chip::SecurityChip;
     use crate::starting::Starting;
@@ -203,6 +208,48 @@ mod tests {
     const THE_VOLUME: &str = r#"{"DriveLetter":"C","DiskNumber":0,"PartitionNumber":3,
       "Offset":227540992,"Size":118873915392,"SizeMin":44640423936,
       "SizeRemaining":74088902656}"#;
+
+    /// The same disk, with no partition the firmware starts from.
+    ///
+    /// Windows reports no label for a start-up area at all, so this differs
+    /// from the one above only in the GPT type of its first partition — which
+    /// is the one thing a Windows program may ask about it and get a reliable
+    /// answer.
+    const NO_START_UP_AREA: &str = r#"[
+      {"Number":0,"FriendlyName":"CT120BX500SSD1","SerialNumber":"1838E15788A1",
+       "BusType":"SATA","UniqueId":"","Size":120034123776,"PartitionStyle":"GPT",
+       "IsReadOnly":false,
+       "Partitions":[{"PartitionNumber":1,"GptType":"{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}","Label":"Recovery"},
+                     {"PartitionNumber":3,"GptType":"{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}","Label":"Windows"}]}
+    ]"#;
+
+    /// The same volume with no room to give: free space below what this road
+    /// asks, which is the area, the least disk and what Windows keeps free.
+    const THE_FULL_VOLUME: &str = r#"{"DriveLetter":"C","DiskNumber":0,"PartitionNumber":3,
+      "Offset":227540992,"Size":118873915392,"SizeMin":44640423936,
+      "SizeRemaining":2147483648}"#;
+
+    /// A machine that was read, with these disks and the volume above.
+    fn found(disks: &str) -> Found {
+        found_with(disks, THE_VOLUME)
+    }
+
+    /// The same, for a volume that is not the usual one.
+    fn found_with(disks: &str, volume: &str) -> Found {
+        Found {
+            starting: Starting {
+                uefi: Some(true),
+                secure_boot: Some(false),
+            },
+            chip: SecurityChip::Ready,
+            bitlocker: BitLocker::Off,
+            memory: Some(16 * 1024 * 1024 * 1024),
+            windows: WindowsVolume::read(Some(volume)),
+            disks: Disks::read(Some(disks)),
+            an_entry_is_named_alo_os: Some(false),
+            fast_startup: FastStartup::Off,
+        }
+    }
 
     /// This installer's own words.
     fn source() -> Strings {
@@ -372,59 +419,76 @@ mod tests {
         assert_eq!(crate::sizes::taken(beside.alo_os), "24");
     }
 
-    /// **Nothing offers the same-disk road yet, and this test is what says so.**
+    /// **A computer with one disk is offered the road, and asked nothing.**
     ///
-    /// Term 5 of the owner's ruling of 2026-10-06: *the refusal that keeps the
-    /// Windows disk out is flipped last, when the whole road exists and not
-    /// before.* So on a machine with one disk, `decide` works out the shrink
-    /// that would keep Windows — `beside_windows` is `Some` — and offers no
-    /// disk carrying it. The question above is therefore never asked on a real
-    /// machine, and `Place::TheSameDisk` is reached only from the tests here.
+    /// This replaces `nothing_offers_the_same_disk_road_yet`, which asserted the
+    /// opposite and failed on 2026-10-08 when the installer plan's task 6
+    /// opened the road — which is what it was written to do. Its message said
+    /// the question becomes reachable and what then needs a test is what a
+    /// person is actually shown, so that is what this checks.
     ///
-    /// **This fails when the installer plan's task 6 lands**, which is the
-    /// point of it. One line in `deciding.rs` puts the Windows disk into
-    /// `disks_for_alo_os` with that shrink on it, this assertion goes red, and
-    /// whoever wrote the line has to come and look at what they opened rather
-    /// than finding out from a person's computer.
+    /// The testing NUC's own shape: one disk, Windows on it, nowhere else for
+    /// alo OS to go. Until task 6 that machine was refused `NoDiskForAloOs`
+    /// and told *this installer puts alo OS on a disk of its own*.
     #[test]
-    fn nothing_offers_the_same_disk_road_yet() {
-        let found = Found {
-            starting: Starting {
-                uefi: Some(true),
-                secure_boot: Some(false),
-            },
-            chip: SecurityChip::Ready,
-            bitlocker: BitLocker::Off,
-            memory: Some(16 * 1024 * 1024 * 1024),
-            windows: WindowsVolume::read(Some(THE_VOLUME)),
-            disks: Disks::read(Some(ONE_DISK)),
-            an_entry_is_named_alo_os: Some(false),
-            fast_startup: FastStartup::Off,
-        };
-        let offer = decide(&found);
+    fn a_one_disk_computer_is_offered_the_road_and_asked_nothing() {
+        let offer = decide(&found(ONE_DISK)).expect("a one-disk computer is offered a road");
 
-        // **The refusal is named, not merely counted.** `is_err()` alone
-        // would pass on a machine refused for having Secure Boot on, or
-        // disks that could not be read, and would go on passing while the
-        // thing this test is about changed underneath it. `NoDiskForAloOs`
-        // is the refusal that stands between a one-disk computer and this
-        // road, and it is the one task 6 removes.
+        // Exactly one place, and it is the disk Windows is on, carrying the
+        // shrink that keeps Windows.
+        let [only] = offer.disks_for_alo_os.as_slice() else {
+            panic!(
+                "one disk should offer one place: {:?}",
+                offer.disks_for_alo_os
+            );
+        };
+        assert_eq!(only.number, DiskNumber(0), "not the disk Windows is on");
         assert!(
-            matches!(offer, Err(Refusal::NoDiskForAloOs)),
-            "a one-disk computer is no longer refused `NoDiskForAloOs`. If task 6 has \
-             landed, this test and this module's dormancy both need rewriting rather than \
-             deleting: the question is now reachable, so what needs a test is what a \
-             person is actually shown. If the refusal merely changed, say which one \
-             stands between a one-disk computer and this road now. Offer: {offer:?}"
+            only.beside.is_some(),
+            "the road offered does not keep Windows"
         );
 
-        // And the shrink that road would use is worked out and carried, which
-        // is what makes task 6 one line rather than a feature.
-        let windows = WindowsVolume::read(Some(THE_VOLUME)).unwrap();
+        // **And nothing is asked.** There is one place, so a question would be
+        // an invitation to type an answer that gets refused.
+        assert_eq!(places(&offer), Places::OnlyTheSameDisk(only));
+
+        // The start-up area is named, which is what the boot environment is
+        // told and what the road is gated on.
+        assert_eq!(offer.the_start_up_area, Some(PartitionNumber(1)));
+    }
+
+    /// **A disk the firmware does not start from is no beside road**, and on a
+    /// one-disk computer that is still a refusal.
+    ///
+    /// alo OS's loader goes into a directory of its own inside Windows' own
+    /// start-up area, so a disk with none is a machine that does not start the
+    /// way this installer believes it does. Task 6 opened the road **where it
+    /// can be walked** and this is the half of that sentence a test has to
+    /// hold: the refusal did not become a guess.
+    #[test]
+    fn a_disk_with_no_start_up_area_is_still_refused() {
+        let offer = decide(&found(NO_START_UP_AREA));
         assert!(
-            windows.beside_windows().is_ok(),
-            "this volume cannot give up the area and alo OS's space, so this test is no \
-             longer about a machine the road was built for"
+            matches!(offer, Err(Refusal::NoDiskForAloOs)),
+            "a computer whose firmware partition cannot be named was offered a road: {offer:?}"
+        );
+    }
+
+    /// **A volume that cannot give up the space is still refused, and told how
+    /// much.**
+    ///
+    /// The other half of *where it can be walked*. `NotEnoughSpace` carries
+    /// what this road asks rather than what the old one did, so a person short
+    /// of room is told the number for the road they cannot walk.
+    #[test]
+    fn a_volume_with_no_room_is_still_refused_and_told_how_much() {
+        let offer = decide(&found_with(ONE_DISK, THE_FULL_VOLUME));
+        let Err(Refusal::NotEnoughSpace { needed, free, .. }) = offer else {
+            panic!("a full volume was offered a road: {offer:?}");
+        };
+        assert!(
+            needed > free,
+            "it was refused for want of space while having enough: needed {needed}, free {free}"
         );
     }
 }
