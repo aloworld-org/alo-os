@@ -62,6 +62,7 @@ mod erasing_consent;
 mod fast_startup;
 mod found;
 mod identities;
+mod imports;
 mod machine;
 mod memory;
 mod naming;
@@ -100,6 +101,9 @@ pub use erasing_consent::erasing;
 pub use fast_startup::FastStartup;
 pub use found::Found;
 pub use identities::{DiskNumber, Entry, Letter, PartitionNumber};
+pub use imports::{
+    A_REDISTRIBUTABLE_LIBRARY, NotAProgram, THE_ONE_THAT_BROKE_A_MACHINE, TheImports,
+};
 pub use machine::{BEFORE_RESTARTING, Ran, TheMachine};
 pub use memory::MADE_FOR;
 #[cfg(windows)]
