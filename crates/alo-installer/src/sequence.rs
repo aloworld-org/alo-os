@@ -23,7 +23,7 @@
 use alo_installing::Replacing;
 use alo_strings::{Filling, Strings, Word};
 
-use crate::asking::{self, Answer};
+use crate::asking::{self, ASKED_AGAIN, Answer};
 use crate::checking;
 use crate::consent;
 use crate::deciding::decide;
@@ -35,6 +35,7 @@ use crate::program::Program;
 use crate::sizes;
 use crate::staging;
 use crate::the_replacing_road::{Road, walk, which_road};
+use crate::where_alo_os_goes::{self, Place, Places};
 use crate::words;
 
 /// Check, say, consent, stage and restart — or refuse — on this machine, and
@@ -95,53 +96,24 @@ fn installing(
     }
     let offer = decide(&found).map_err(Ended::Refused)?;
 
-    // **Two numbers, and they are only accidentally the same one.**
-    //
-    // What Windows gives up is read from the shrink that will happen, not from
-    // the size of the installer's area. Those agree while the area is the only
-    // thing Windows ever gives up, and the sentence a person agrees to is not a
-    // place to leave a constant that is right by coincidence.
-    let gives_up = sizes::taken(offer.windows.size.saturating_sub(offer.shrink.to));
-    // And the installer's own area is the same gibibyte on every road. It is
-    // **not** what Windows gives up on the road that keeps Windows, where the
-    // rest of the freed space is alo OS's - and the sentence it fills says *an
-    // area for the installer*, so a bigger number there would tell a person the
-    // installer wanted tens of gigabytes for itself.
-    //
-    // `words::WILL_GIVE_ALO_OS` says what the rest is for, and its own
-    // documentation is the reason these are separate: the three sentences add
-    // up, and a person who adds them should get the number they were told.
-    let the_area = sizes::taken(sizes::THE_AREA);
     say(
         machine,
         strings,
         words::NOTHING_CHANGED_YET,
         &Filling::nothing(),
     );
-    say(
-        machine,
-        strings,
-        words::WILL_SHRINK_WINDOWS,
-        &Filling::of("volume", offer.windows.letter.drive()).and("area", gives_up.as_str()),
-    );
-    say(
-        machine,
-        strings,
-        words::WILL_MAKE_THE_AREA,
-        &Filling::of("area", the_area.as_str()).and("disk", offer.windows_disk.as_str()),
-    );
-    say(
-        machine,
-        strings,
-        words::WILL_ADD_THE_ENTRY,
-        &Filling::nothing(),
-    );
-    say(machine, strings, words::WILL_RESTART, &Filling::nothing());
 
-    // **The fork.** Asked only where the road can be walked: the offer carries a
-    // target for it or it does not, and a road whose disk cannot be named is not
-    // a road to offer. Keeping Windows is what every unrecognised answer means,
-    // so nothing a person types by accident reaches the other one.
+    // **The first question, which is the owner's own: two systems, or one.**
+    //
+    // Asked before anything is described, because what the installer will do
+    // depends on the answer. It used to be the other way about - say what will
+    // happen, then ask which road - which worked while both roads did the same
+    // thing to Windows. They no longer do.
+    //
+    // Asked only where replacing can be walked: the offer carries a target for
+    // it or it does not, and a road whose disk cannot be named is not a road to
+    // offer. **Keeping Windows is what every unrecognised answer means**, so
+    // nothing a person types by accident reaches the road that erases a disk.
     if let Some(the_windows_disk) = offer.the_windows_disk.clone()
         && which_road(machine, strings) == Road::ReplaceWindows
     {
@@ -168,8 +140,124 @@ fn installing(
         return restart(machine, strings);
     }
 
+    // **The second question, and only where this computer has both places.**
+    //
+    // One disk and no empty one: alo OS goes beside Windows, because that is
+    // the only place it can go. An empty disk and no same-disk road: that disk.
+    // Neither is a choice, and a question with one answer is an invitation to
+    // type something that will be refused.
+    //
+    // `Places::None` is refused by `deciding::decide` before this is reached -
+    // it returns `NoDiskForAloOs` when nothing can hold alo OS - and this says
+    // so again rather than carrying on with no disk, because *refused
+    // elsewhere* is a fact about another function that can stop being true.
+    let (place, candidates) = match where_alo_os_goes::places(&offer) {
+        Places::Both { same, other } => {
+            let named = other.first().map_or("", |disk| disk.shown.as_str());
+            match where_alo_os_goes::where_alo_os_goes(machine, strings, named) {
+                Place::TheSameDisk => (Place::TheSameDisk, vec![same.clone()]),
+                Place::TheOtherDisk => (
+                    Place::TheOtherDisk,
+                    other.into_iter().cloned().collect::<Vec<_>>(),
+                ),
+            }
+        }
+        Places::OnlyTheSameDisk(same) => (Place::TheSameDisk, vec![same.clone()]),
+        Places::OnlyOtherDisks(other) => (
+            Place::TheOtherDisk,
+            other.into_iter().cloned().collect::<Vec<_>>(),
+        ),
+        Places::None => return Err(Ended::Refused(Refusal::NoDiskForAloOs)),
+    };
+
+    // **Now say what this road does**, with this road's numbers.
+    //
+    // What Windows gives up is read from the shrink that will happen. On the
+    // same-disk road that is the area and alo OS's space together; on the other
+    // road it is the area alone. The installer's own area is the same gibibyte
+    // either way - and the sentence it fills says *an area for the installer*,
+    // so filling it with the larger figure would tell a person the installer
+    // wanted tens of gigabytes for itself.
+    //
+    // `words::WILL_GIVE_ALO_OS` says what the rest is for, and its own
+    // documentation is the reason these are separate numbers: the sentences add
+    // up, and a person who adds them should get the number they were told.
+    let the_area = sizes::taken(sizes::THE_AREA);
+    let beside = candidates.first().and_then(|disk| disk.beside);
+    let gives_up = sizes::taken(
+        offer
+            .windows
+            .size
+            .saturating_sub(beside.map_or(offer.shrink.to, |beside| beside.to)),
+    );
+    say(
+        machine,
+        strings,
+        words::WILL_SHRINK_WINDOWS,
+        &Filling::of("volume", offer.windows.letter.drive()).and("area", gives_up.as_str()),
+    );
+    say(
+        machine,
+        strings,
+        words::WILL_MAKE_THE_AREA,
+        &Filling::of("area", the_area.as_str()).and("disk", offer.windows_disk.as_str()),
+    );
+    match (place, beside) {
+        (Place::TheSameDisk, Some(beside)) => {
+            say(
+                machine,
+                strings,
+                words::WILL_GIVE_ALO_OS,
+                &Filling::of("area", sizes::taken(beside.alo_os))
+                    .and("disk", offer.windows_disk.as_str()),
+            );
+            // **The sentence the retired question could not contain.** Windows
+            // gives this space up for as long as alo OS is there, by design and
+            // not by failure, and it stops where the truth stops: it does not
+            // say that removing alo OS later gives it back, because today
+            // `crate::removing` refuses this road (the installer plan's task 4).
+            say(
+                machine,
+                strings,
+                words::WINDOWS_DOES_NOT_GET_IT_BACK,
+                &Filling::nothing(),
+            );
+        }
+        // Windows lends the area and gets it back when the installer has
+        // finished, whether it finished or not.
+        (Place::TheOtherDisk, _) | (Place::TheSameDisk, None) => say(
+            machine,
+            strings,
+            words::WINDOWS_LENDS_THE_AREA,
+            &Filling::of("area", the_area.as_str()),
+        ),
+    }
+    say(
+        machine,
+        strings,
+        words::WILL_ADD_THE_ENTRY,
+        &Filling::nothing(),
+    );
+    // **Two restarts, and saying the wrong one is the worst mistake here.**
+    // `WILL_RESTART` says the installer *replaces everything on the disk you
+    // name below*, which is true of a disk alo OS takes whole and false of a
+    // disk Windows is still on. Nothing would catch it, because each is correct
+    // on its own road.
+    say(
+        machine,
+        strings,
+        match place {
+            Place::TheSameDisk => words::WILL_RESTART_KEEPING_WINDOWS,
+            Place::TheOtherDisk => words::WILL_RESTART,
+        },
+        &Filling::nothing(),
+    );
+
+    // The consent, over the disks this road offers and no others. A person who
+    // chose the empty disk cannot reach the Windows disk by typing its name,
+    // and the other way about.
     let typed = machine.ask(&strings.say(&words::TYPE_THE_DISKS_NAME.key(), &Filling::nothing()));
-    let chosen = consent::chosen(&typed, &offer.disks_for_alo_os).map_err(Ended::Refused)?;
+    let chosen = consent::chosen(&typed, &candidates).map_err(Ended::Refused)?;
 
     // Asked after the consent and before anything is changed, and only when
     // Fast Startup is on (ADR 0064 term 9). Either answer goes on with the
@@ -210,12 +298,6 @@ fn restart(machine: &mut impl TheMachine, strings: &Strings) -> Result<Ended, En
     }
     Ok(Ended::Staged { restarted })
 }
-
-/// How many times a question is asked again before it is left alone.
-///
-/// A question asked for ever is a computer a person cannot get out of, and the
-/// answer that changes nothing is a safe one to end at.
-const ASKED_AGAIN: usize = 3;
 
 /// The person's answer about Fast Startup, asked only when it is on.
 ///

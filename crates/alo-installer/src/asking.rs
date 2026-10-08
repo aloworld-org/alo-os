@@ -30,6 +30,17 @@ pub enum Answer {
     LeaveOn,
 }
 
+/// How many times a question is asked again before it is left alone.
+///
+/// **A question asked for ever is a computer a person cannot get out of**, and
+/// the answer each question ends at is the one that changes least: Fast Startup
+/// is left on, Windows is kept, and alo OS goes on the empty disk.
+///
+/// Here rather than in each of the three files that ask, because it had two
+/// copies already, each with a comment saying it was the same number the other
+/// one used. A third copy is how a number stops being the same one.
+pub(crate) const ASKED_AGAIN: usize = 3;
+
 /// The answer in what the person typed, or [`None`] when it is neither.
 #[must_use]
 pub fn answered(typed: &str, strings: &Strings) -> Option<Answer> {

@@ -500,17 +500,120 @@ pub const RESTART_IT_YOURSELF: Word = Word::saying(
 )
 .noting("Said when everything was prepared and Windows did not carry out the restart.");
 
-/// The question that offers the two roads.
-pub const ASK_WHICH_ROAD: Word = Word::saying(
-    "installer.ask-which-road",
-    "Windows can be kept, with alo OS beside it, or replaced. Keeping it changes nothing you \
-     cannot undo. Type {keep} or {replace}",
+/// Which road: both systems on this computer, or alo OS on its own.
+///
+/// **This replaces `installer.ask-which-road`, which retired.** That sentence
+/// held a question, a description of each road and a promise - *keeping it
+/// changes nothing you cannot undo* - under one key. The promise is true of the
+/// road that gives alo OS a disk of its own, where Windows lends the
+/// installer's area and gets it back. It is false of the road that puts alo OS
+/// on the disk Windows is on, where Windows gives up its space and does not get
+/// it back while alo OS is there. A sentence cannot promise reversibility for
+/// both, so the claim came apart (ADR 0068).
+///
+/// **And this one names no answers**, unlike the sentence it replaces. A
+/// question that enumerates has to retire every time the menu grows. The words
+/// to type are in [`TYPE_KEEP_OR_REPLACE`] beside it, which is the shape
+/// [`TYPE_ONE_OF_THESE_ANSWERS`] already has.
+pub const ASK_TWO_SYSTEMS_OR_ONE: Word = Word::saying(
+    "installer.ask.two-systems-or-one",
+    "Do you want both Windows and alo OS on this computer, or alo OS on its own?",
 )
 .noting(
-    "{keep} is ANSWER_KEEP_WINDOWS and {replace} is ANSWER_REPLACE_WINDOWS, each in this \
-     language. Asked once the computer has been checked and before anything is agreed to. The \
-     sentence says what keeping costs before it names replacing, because that is the order a \
-     person needs them in.",
+    "Asked once the computer has been checked and before anything is agreed to. alo OS is the \
+     product's name and is not translated. Keep it a question; the words a person types are a \
+     separate sentence.",
+);
+
+/// The words to type for that question.
+pub const TYPE_KEEP_OR_REPLACE: Word = Word::saying(
+    "installer.ask.type-keep-or-replace",
+    "Type {keep} or {replace}, and press Enter",
+)
+.noting(
+    "The gaps hold ANSWER_KEEP_WINDOWS and ANSWER_REPLACE_WINDOWS in this language. A person \
+     types one of them; anything else is not an answer, and an answer that is not understood \
+     means keeping Windows.",
+);
+
+/// Where alo OS goes, asked only when it could go in either place.
+///
+/// **Asked second, and only sometimes.** A computer with one disk has only the
+/// disk Windows is on, so there is nothing to choose and this is not asked. A
+/// computer with an empty disk big enough has both, and which one is the
+/// person's to say.
+///
+/// The two roads cost different things and each answer says what its own costs
+/// ([`WINDOWS_DOES_NOT_GET_IT_BACK`] and [`WINDOWS_LENDS_THE_AREA`]), which is
+/// the part the retired question tried to say once for both.
+pub const ASK_WHERE_ALO_OS_GOES: Word = Word::saying(
+    "installer.ask.where-alo-os-goes",
+    "Where should alo OS go: on the same disk as Windows, or on the empty disk {disk}?",
+)
+.noting(
+    "{disk} is the empty disk's name as its maker gives it, not translated. Asked only when this \
+     computer has both places. alo OS is the product's name and is not translated.",
+);
+
+/// The words to type for that question.
+pub const TYPE_SAME_OR_OTHER: Word = Word::saying(
+    "installer.ask.type-same-or-other",
+    "Type {same} or {other}, and press Enter",
+)
+.noting(
+    "The gaps hold ANSWER_THE_SAME_DISK and ANSWER_THE_OTHER_DISK in this language. An answer \
+     that is not understood means the empty disk, because that one takes nothing of the \
+     person's.",
+);
+
+/// The answer that puts alo OS on the disk Windows is on.
+pub const ANSWER_THE_SAME_DISK: Word = Word::saying("installer.answer.the-same-disk", "same")
+    .noting(
+        "One of two words a person types to answer ASK_WHERE_ALO_OS_GOES. Translate it to the \
+         plainest word in this language for *the same one*, and keep it to two words at most. It \
+         is **not** what an answer that is not understood means, so it does not have to read \
+         like the safe choice -- but it must not read like a dangerous one either, because \
+         nothing on this road is erased.",
+    );
+
+/// The answer that puts alo OS on an empty disk of its own.
+pub const ANSWER_THE_OTHER_DISK: Word = Word::saying("installer.answer.the-other-disk", "other")
+    .noting(
+        "The other of the two words. **This is what an answer that is not understood means**, so \
+         it must never read like a risky choice -- the same requirement ANSWER_KEEP_WINDOWS has, \
+         and for the same reason.",
+    );
+
+/// What the same-disk road costs, which nothing else says.
+///
+/// **The sentence that the retired question could not contain.** Windows gives
+/// up this space for as long as alo OS is there, by design and not by failure,
+/// and a person choosing that road is owed the fact before they choose it.
+///
+/// **It stops where the truth stops.** It does not say that removing alo OS
+/// later gives the space back, because today it does not: `removing.rs` clears
+/// a disk alo OS has to itself and refuses this road (the installer plan's task
+/// 4 records what is owed). A sentence promising a way back that no program
+/// walks would be the worst kind of false - the kind a person relies on.
+pub const WINDOWS_DOES_NOT_GET_IT_BACK: Word = Word::saying(
+    "installer.will.windows-does-not-get-it-back",
+    "Windows does not get that space back while alo OS is on this computer",
+)
+.noting(
+    "Said before the person chooses, on the road that puts alo OS on the same disk as Windows. \
+     Nothing of theirs is erased; the space is simply alo OS's from then on. alo OS is the \
+     product's name and is not translated.",
+);
+
+/// What the other-disk road costs, which is a loan.
+pub const WINDOWS_LENDS_THE_AREA: Word = Word::saying(
+    "installer.will.windows-lends-the-area",
+    "Windows lends {area} GB while alo OS is installed, and gets it back afterwards",
+)
+.noting(
+    "{area} is a whole number of gigabytes. Said before the person chooses, on the road that \
+     gives alo OS an empty disk of its own. The space is the installer's own working area and is \
+     taken away again when it has finished, whether it finished or not.",
 );
 
 /// The answer that keeps Windows, which is the road that changes nothing.
@@ -1174,7 +1277,7 @@ pub const REMOVE_GONE_BUT_THE_COPY_STAYS: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 125] = [
+pub const EVERY_WORD: [Word; 132] = [
     STARTING,
     CHECKING_THE_DOWNLOAD,
     GENUINE,
@@ -1288,7 +1391,14 @@ pub const EVERY_WORD: [Word; 125] = [
     REMOVE_GONE_BUT_THE_COPY_STAYS,
     PRESS_ENTER_TO_CLOSE,
     // Replacing Windows: the road with no way back.
-    ASK_WHICH_ROAD,
+    ASK_TWO_SYSTEMS_OR_ONE,
+    TYPE_KEEP_OR_REPLACE,
+    ASK_WHERE_ALO_OS_GOES,
+    TYPE_SAME_OR_OTHER,
+    ANSWER_THE_SAME_DISK,
+    ANSWER_THE_OTHER_DISK,
+    WINDOWS_DOES_NOT_GET_IT_BACK,
+    WINDOWS_LENDS_THE_AREA,
     ANSWER_KEEP_WINDOWS,
     ANSWER_REPLACE_WINDOWS,
     REPLACING_DESTROYS,

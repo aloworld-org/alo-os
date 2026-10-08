@@ -7553,3 +7553,59 @@ decision makes a second copy a **refusal at install** rather than a rule about
 which copy wins: there is no enumeration order worth trusting, and the one that
 holds here holds for a reason that has nothing to do with the design.
 **Date:** 2026-09-27.
+
+### The smallest Windows says it can shrink to moves between readings
+**Version:** Windows 11 on an Intel NUC with a 120 GB Crucial CT120BX500SSD1,
+2026-10-06 to 2026-10-07.
+**Behaviour:** `Get-PartitionSupportedSize -DriveLetter C` reports a `SizeMin`
+that is **not a property of the volume**. Read elevated, read-only, five times
+over 36 hours on one machine that nobody was using:
+
+```
+2026-10-06T03:44:39Z   45,234,069,504
+2026-10-07T02:00:44Z   46,402,490,368
+2026-10-07T02:12:09Z   42,804,543,488   (after a restart at 02:07:38Z)
+2026-10-07T02:14:24Z   42,812,432,384
+2026-10-07T15:49:53Z   44,640,423,936   (after the installer's first walk)
+```
+
+A spread of 3,597,946,880 bytes — 3.35 GiB — with no software installed or
+removed. The lowest reading follows a restart, which is consistent with the
+figure depending on where unmovable files happen to sit at that moment, but
+**what it depends on was not measured and is not claimed here.** What was
+measured is that it moves.
+
+**Why it matters to an installer rather than only being curious.** The installer
+reads the volume while it is checking the computer, works out from `SizeMin`
+whether a road is available, says what it will do, and asks the person to agree.
+The shrink itself happens afterwards. So the number the decision was made on is
+**not** the number Windows will enforce, and on a fuller disk a road offered
+against one reading could be refused by Windows against a later one — after the
+person has agreed to it.
+
+**Our response:** two things, and the first is already true rather than new.
+
+A shrink that fails is already handled rather than assumed away
+(`crates/alo-installer/src/staging.rs`): the volume is read back, the journal
+records the shrink only if the size actually moved, and the person is told what
+remains rather than told nothing changed. So a `SizeMin` that rose between the
+reading and the shrink ends in a refusal with a true sentence, not in a
+half-moved machine. That is the behaviour that makes this quirk survivable, and
+it was built for a different reason.
+
+And the margin is now held by a test.
+`where_alo_os_goes::tests::what_this_road_does_to_the_testing_nuc` asserts that
+the size this road shrinks Windows to on that machine — 92,030,369,792 — is
+above **every one of the five readings**, not above the one that happens to be
+in the fixture. A road whose availability depends on when somebody ran the
+installer is a road that is sometimes offered and sometimes not, with nothing
+said about why. On that machine the tightest of the five is 46,402,490,368 and
+the road shrinks to 92,030,369,792, so the headroom is 45,627,879,424 bytes —
+**42.49 GiB**, twelve times the spread.
+
+**What is not done:** re-reading `SizeMin` immediately before the shrink and
+refusing early if it has risen. That would turn a post-consent failure into a
+pre-consent refusal, which is better, and it is not in this change. It is
+written down here rather than in a comment because the decision belongs with the
+measurement.
+**Date:** 2026-10-08.

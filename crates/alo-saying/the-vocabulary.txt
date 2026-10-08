@@ -758,10 +758,15 @@ installer.already-started	An earlier start of this installer left its area or it
 installer.answer.keep-windows	keep
 installer.answer.leave-on	leave on
 installer.answer.replace-windows	replace
+installer.answer.the-other-disk	other
+installer.answer.the-same-disk	same
 installer.answer.turn-off	turn off
-installer.ask-which-road	Windows can be kept, with alo OS beside it, or replaced. Keeping it changes nothing you cannot undo. Type {keep} or {replace}
 installer.ask.fast-startup	Windows' Fast Startup is on. It can make Windows and alo OS disagree about the disk. Turn it off? (Recommended when sharing a disk.)
+installer.ask.two-systems-or-one	Do you want both Windows and alo OS on this computer, or alo OS on its own?
+installer.ask.type-keep-or-replace	Type {keep} or {replace}, and press Enter
 installer.ask.type-one-of-these-answers	Type {off} or {on}, and press Enter
+installer.ask.type-same-or-other	Type {same} or {other}, and press Enter
+installer.ask.where-alo-os-goes	Where should alo OS go: on the same disk as Windows, or on the empty disk {disk}?
 installer.bitlocker-changing	BitLocker is still encrypting or decrypting Windows on {volume}, so nothing was changed. Run this installer again when it has finished
 installer.bitlocker-not-confirmed	BitLocker is protecting {disk}. Erasing it would also destroy what unlocks it, and this installer cannot confirm you have that written down somewhere else, so nothing was changed
 installer.checking-the-computer	Checking this computer. This only reads, and changes nothing
@@ -877,6 +882,8 @@ installer.will.make-the-area	A {area} GB area for the installer is made in that 
 installer.will.restart	This computer restarts once into the installer, which replaces everything on the disk you name below with alo OS, then restarts again
 installer.will.restart-keeping-windows	This computer restarts once. The installer puts alo OS in the space Windows gave up, then restarts again. Windows stays
 installer.will.shrink-windows	Windows on {volume} is made {area} GB smaller. Your files and applications stay where they are
+installer.will.windows-does-not-get-it-back	Windows does not get that space back while alo OS is on this computer
+installer.will.windows-lends-the-area	Windows lends {area} GB while alo OS is installed, and gets it back afterwards
 installer.windows-disk-not-supported	The disk {disk} that Windows is on is laid out in an older way this installer does not support, so nothing was changed
 installing.cannot-be-written	The disk you chose, {disk}, is in use or cannot be written to, so nothing was changed
 installing.checking-it-is-genuine	Checking over the internet that this download is a genuine alo OS

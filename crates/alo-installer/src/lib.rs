@@ -77,6 +77,7 @@ mod switching;
 mod the_point_of_no_return;
 mod the_replacing_road;
 mod what_replacing_destroys;
+mod where_alo_os_goes;
 mod windows_volume;
 mod words;
 
@@ -114,6 +115,7 @@ pub use switching::{Switched, THE_SWITCHS_WORD, restart_into_alo_os};
 pub use the_point_of_no_return::crossed;
 pub use the_replacing_road::may_replace;
 pub use what_replacing_destroys::{Day, WhatReplacingDestroys};
+pub use where_alo_os_goes::{Place, Places, places, where_alo_os_goes};
 pub use windows_volume::{BesideWindows, NotEnoughSpace, Shrink, WindowsVolume};
 pub use words::{
     ANSWER_LEAVE_ON, ANSWER_TURN_OFF, ASK_FAST_STARTUP, DEFAULT_CHANGE_IT, DEFAULT_CHANGED,
