@@ -632,6 +632,129 @@ that moment.
   **This task's own completion should leave behind something that fails** if a
   third display's assumptions are ever hard-coded the same way.
 
+## What a machine actually reaches, measured 2026-10-08
+
+**Ten tasks say *Done: the code*, and a reader takes that to mean the code
+runs.** For five of them it does not. `TheDesktop::the_screens_of` answers
+`None` by default and **`alo-desktop` does not override it**, so
+`Server::the_screens()` is `None` on every running machine and every path that
+depends on an arrangement takes its single-display fallback.
+
+Found by the Mac lane on 2026-10-08, by reading
+`alo-citing`'s `every_surface_a_person_uses_is_built_somewhere` and following
+`NightLight` — one of the four surfaces it lists as reachable only by tests —
+back to what builds a `Screens`. Nothing does.
+
+| task | what a machine reaches today |
+|---|---|
+| 1, 2 discovery per display | **reached.** `discover_every_atomic_output` is called by the desk |
+| 3 a presentation per display | **reached**, keyed by name |
+| 3a the session holds the arrangement | reached, and **always `None`** — nothing answers with one |
+| 4 a frame per display | **reached.** Every display is discovered, drawn and isolated |
+| 5 laid out per display | **half.** Each display is laid out at its own *size*; its *scale* is 100 because the arrangement is `None` |
+| 5b bounds per display | **unreached, twice** — see below |
+| 6 a popup on its own screen | **unreached.** With no arrangement, `popups.screens` is one rectangle written from whichever display drew last |
+| 7 a camera per viewport | **unreached.** With no arrangement every display reads the camera under the empty key, so they mirror |
+| 8 the display number | **reached** |
+
+**Task 5b is unreached for two independent reasons**, and the second is a plain
+defect rather than a missing arrangement: `Desk::present` calls
+`the_fixed_controls_were_drawn` **once**, for the display the loop holds. The
+per-display loop beside it lays out every other display's pictures and records
+none of their controls. So the store has one entry whatever the arrangement
+says, and the `len() <= 1` safeguard — written to keep one display behaving as
+before — returns that one entry for every window on every display.
+
+### Why this is recorded rather than quietly wired
+
+The cheap fix is three edits: re-export the argument type, build a `Screens`
+from shipped defaults in `alo-desktop`, done in an hour. It would make
+`Screens` exist in production, pay `NightLight`'s debt entry, and turn all five
+rows above green.
+
+**It would also turn an honest *I have no arrangement* into *here is the
+arrangement*, and the only thing demonstrable about it would be that it
+compiles.** Unreachable code would become unverified code. The debt entry whose
+whole purpose is to say this is not done would be paid without the behaviour
+being real.
+
+So the rows above are written first, and the tasks below do it in the order
+that keeps each claim checkable.
+
+## Tasks that make this plan's work reach a machine
+
+### 9. Every display records the controls it drew
+
+**Status:** ready. **Owner:** the Mac. **Depends on:** nothing — this is a
+defect in task 5b's own change and needs no arrangement.
+
+`Desk::present` records one display's fixed controls. Every other display's
+pictures are laid out and thrown away as far as the store is concerned.
+
+- **Acceptance:** with two displays drawn, the store holds an entry per display,
+  and a frame on the second display is held to the second display's dock rather
+  than to the first's by the one-entry safeguard. The existing single-display
+  behaviour is unchanged.
+- **Constraint:** the safeguard stays. One display must keep answering exactly
+  as it does now, because that is every machine this lane can test on.
+
+### 10. The seam the desktop can actually travel
+
+**Status:** ready. **Owner:** the Mac. **Depends on:** nothing.
+
+`TheDesktop::the_screens_of` takes `Vec<alo_displays::Reported>` and
+**`alo-desktop` has no `alo-displays` dependency**, so the only crate that must
+implement it cannot name its argument. The road task 3a declared is not
+travelable from the crate that must travel it.
+
+**The patch is a re-export and the fix is the seam.** `Support` is documented as
+*which sizes the compositor underneath can actually draw — asked of the
+compositor, because it is a fact about the machine*. So the shell should build
+the arrangement from what it already holds, and ask the desktop only for what
+the desktop owns: this person's appearance, their night light, their kept
+changes.
+
+- **Acceptance:** `alo-desktop` can implement the road without naming an
+  `alo-displays` type and without a new crate edge; each side hands over only
+  what it owns.
+- **Constraint:** a desktop that answers nothing still gets today's behaviour —
+  `None` is a desktop with no arrangement to offer, not a broken one.
+
+### 11. A machine builds the arrangement it reports
+
+**Status:** blocked on 10. **Owner:** the Mac.
+
+With the seam travelable, `alo-desktop` answers with an arrangement built from
+what the compositor reported.
+
+- **Acceptance:** a test asserts **production** builds one — not that it can be
+  built. `every_surface_a_person_uses_is_built_somewhere`'s `NightLight` entry
+  is removed in the same change, because that list fails in both directions and
+  a paid debt must not be left listed.
+- **Constraint:** this ticks **nothing** about more than one display working. It
+  makes the five rows above reachable and verifies only that. Two displays
+  remain unshown, as the plan's first paragraph said they would.
+
+### 12. The default stops being silent when a person can choose
+
+**Status:** blocked on 11. **Owner:** the Mac.
+
+Task 11 passes `Changes::untouched()` — *the person has changed nothing* —
+which is **literally true on 2026-10-08**: nothing in production writes a
+display arrangement, so nobody can have arranged one. Verified by searching for
+production writers and finding none.
+
+**It stops being true the moment the settings road lands, and it stops
+silently.** A person who arranges their displays would have it ignored while the
+code reads as though it were honouring them.
+
+- **Acceptance:** a test fails when anything in production writes a display
+  arrangement while the desktop still passes `untouched`, naming
+  `where-a-persons-settings-are-kept-plan`'s task 8 as what changes it.
+- **Constraint:** it must fail for the right reason. A test asserting *nothing
+  writes an arrangement* passes forever and says nothing; the pair is **if
+  something writes one, the desktop must stop passing `untouched`**.
+
 ## What closes this plan
 
 Canvas task 9's acceptance, shown on a machine with two outputs. Until then the
