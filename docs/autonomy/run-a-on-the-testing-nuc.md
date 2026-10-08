@@ -201,6 +201,13 @@ not exist.** So the removal program is not on the machine, and running it from
 elsewhere would say *alo OS is not among the systems this computer can start*,
 which is correct and is not the thing being measured here.
 
+**And the area still has a drive letter.** Taking it away is step 9 and the
+kill is at step 6, so **Windows Explorer will show a new drive holding a
+partial copy of the environment.** That is expected and is not the installer
+misbehaving - a person at the screen should be told that before they see it.
+Remove the letter before deleting the partition, or let Disk Management do
+both. Found by the testing lane reading the sequence.
+
 **So the clean-up is three things, all in Windows' own tools:**
 
 | | what | with |
