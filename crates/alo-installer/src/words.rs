@@ -1237,6 +1237,55 @@ pub const REMOVE_WINDOWS_IS_NOT_TOUCHED: Word = Word::saying(
      advance.",
 );
 
+/// What removing alo OS from the disk Windows is on will do.
+///
+/// **Said instead of `REMOVE_WILL_ERASE`, because nothing is erased.** That
+/// sentence says *removing it erases that disk: alo OS itself, and everything
+/// kept in it*, which is true of a disk alo OS has to itself and false here —
+/// this takes one partition away and leaves every other partition on the disk,
+/// Windows' own among them, untouched.
+pub const REMOVE_WILL_TAKE_THE_SPACE: Word = Word::saying(
+    "installer.remove.will-take-the-space",
+    "alo OS is on the disk {disk}, in a space of its own beside Windows. Removing it takes that \
+     space away, with alo OS itself and everything kept in it. Windows and its own files are not \
+     touched",
+)
+.noting(
+    "{disk} is the disk's name as its maker gives it, not translated. Said where alo OS was \
+     installed beside Windows on one disk. Nothing but alo OS's own space is removed.",
+);
+
+/// alo OS's space is gone, and the room it had is not yet Windows'.
+///
+/// **It says what is left to do rather than implying nothing is.** Growing
+/// Windows back needs a size this program does not have at removal time, it is
+/// one step in Windows' own tool, and a half-grown Windows is worse than an
+/// unchanged one.
+pub const REMOVE_SPACE_TAKEN: Word = Word::saying(
+    "installer.remove.space-taken",
+    "alo OS is removed and its space is gone from {disk}. The room it had is empty and still \
+     separate from Windows. To give it back to Windows, open Windows' own disk management and \
+     extend the Windows drive into it",
+)
+.noting(
+    "{disk} is the disk's name as its maker gives it, not translated. *Disk management* is the \
+     name of Windows' own tool in this language. The room is empty: nothing of the person's is \
+     in it.",
+);
+
+/// alo OS's space could not be taken away.
+pub const REMOVE_SPACE_NOT_TAKEN: Word = Word::saying(
+    "installer.remove.space-not-taken",
+    "This computer no longer starts alo OS, but alo OS's space on {disk} could not be removed. \
+     Nothing of yours was touched, and you can remove that space in Windows' own disk management \
+     — it is the one labelled ALO-ROOT",
+)
+.noting(
+    "{disk} is the disk's name as its maker gives it, not translated. ALO-ROOT is a label \
+     written on the disk and is never translated. Said when the entry went and the partition did \
+     not, so the person is told exactly which of the two remains and which one it is.",
+);
+
 /// alo OS is on the disk Windows is on, so this program will not remove it.
 ///
 /// **The true reason, where `installer.remove.not-found` gave a false one.**
@@ -1357,7 +1406,7 @@ pub const REMOVE_GONE_BUT_THE_COPY_STAYS: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 136] = [
+pub const EVERY_WORD: [Word; 139] = [
     A_TEST_BUILD_FROM,
     A_TEST_BUILD,
     STARTING,
@@ -1462,6 +1511,9 @@ pub const EVERY_WORD: [Word; 136] = [
     REMOVE_BEGINNING,
     REMOVE_WINDOWS_IS_NOT_TOUCHED,
     REMOVE_ON_THE_WINDOWS_DISK,
+    REMOVE_WILL_TAKE_THE_SPACE,
+    REMOVE_SPACE_TAKEN,
+    REMOVE_SPACE_NOT_TAKEN,
     REMOVE_WILL_ERASE,
     REMOVE_TYPE_THE_DISKS_NAME,
     REMOVE_NOT_AGREED,
