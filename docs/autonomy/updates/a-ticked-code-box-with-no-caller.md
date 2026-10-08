@@ -74,14 +74,48 @@ owner and designates nobody.** No document in `docs/autonomy/` names who holds
 the role, and the history cannot answer it either, because every commit is
 authored by the repository's owner as the attribution rule requires.
 
-The nearest thing to a designation is `docs/autonomy/STATE.md:13432` and
-`:13477`, where the desktop lane describes itself as *"single desktop worker and
-shared-progress integration owner"*. **That is a lane's self-description in a
-progress log, not a designation by the owner** — so it is evidence of who has
-been doing it and not of who may.
+The nearest thing to a designation is two lines in `docs/autonomy/STATE.md`, and
+read in place they are weaker than they look. Both are the **only** occurrences
+of the phrase in that file:
+
+```
+## 2026-09-08 — Focused window layout command dispatch
+Single desktop worker in C:\dev\alo-os; integration owner of the four progress
+                                                                    (line 13432)
+## 2026-09-08 - Native window control strip painting
+Single desktop worker and shared-progress integration owner in C:\dev\alo-os.
+                                                                    (line 13477)
+```
+
+Three things about them, each checked in place:
+
+- **They are a lane's own description of itself**, at the top of an iteration
+  entry, in a journal whose job is to record what happened. Evidence of who has
+  been doing it; never of who may.
+- **They are dated 2026-09-08** — a month old.
+- **They name `C:\dev\alo-os`**, which is not the checkout any lane is working
+  in today.
+
+So the designation does not exist, and the only trace of one is stale and about
+somewhere else.
+
+**How this was found is worth more than the finding.** Each lane corrected the
+other, and neither correction was disputed. The Mac lane cited
+`SHARED_MAIN.md` line 492 and inferred from it that the document belonged to the
+desktop lane, which is not what the line says. The desktop lane then reported
+that *no document names who the owner is*, having searched three guessed
+phrasings — `designated integration owner`, `integration owner is`, `am the
+integration` — rather than the plain substring, which finds both hits at once.
+**Tested the spellings expected instead of the words**, which is
+`docs/misreadings/a-spelling-i-did-not-search-for-is-not-an-absence.md` and the
+confident negative `a-negative-result-proves-nothing-about-the-search.md` was
+written for three days earlier.
 
 The consequence, measured today: **two lanes each verified this finding
-independently and neither could land it**, because one may not edit the document
-and the other cannot show it was designated. This file is the route that works
-without resolving that. The designation itself is the owner's to make, and both
-lanes have raised it.
+independently and neither could land it** — one may not edit the document, and
+the other cannot show it was designated. `SHARED_MAIN.md` reserves four
+documents to a designated owner, the only trace of a designation is a month-old
+self-description from a checkout nobody is using, and three lanes are running.
+
+This file is the route that works without resolving any of that. The designation
+itself is the owner's to make, and both lanes have raised it.
