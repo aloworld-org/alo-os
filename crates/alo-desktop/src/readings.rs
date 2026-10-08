@@ -43,6 +43,13 @@ pub struct At {
     pub minute: u8,
     /// The moment itself, for the crates that take one.
     pub moment: std::time::SystemTime,
+    /// How far east of universal time this machine's clock is, in minutes.
+    ///
+    /// **Read here because this is where the clock is read.** A night light
+    /// follows the sun, so `alo_displays::Moment` wants an offset as well as an
+    /// instant — and the offset is a reading like the hour beside it. The shell
+    /// holds no clock and no time zone and must not acquire one.
+    pub minutes_east_of_universal_time: i32,
 }
 
 impl At {
@@ -57,6 +64,12 @@ impl At {
             minute: u8::try_from(now.minute())
                 .map_err(|_| "a minute outside an hour".to_owned())?,
             moment: std::time::SystemTime::now(),
+            // Whole minutes, which is what every real zone is and what
+            // `Moment::at` takes. A zone with seconds in its offset would be
+            // truncated here rather than refused: the sun does not move far in
+            // under a minute, and refusing the reading would take the night
+            // light away from somebody over an arithmetic detail.
+            minutes_east_of_universal_time: now.offset().seconds() / 60,
         })
     }
 }
