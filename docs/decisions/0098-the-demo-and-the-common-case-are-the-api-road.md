@@ -3,7 +3,11 @@
 **Status:** PROPOSED, 2026-10-08. **Proposed by:** the owner, stated directly:
 *"that is not the blocker because most of the users will use the apis as few
 users have such machines that can run the models so also us we shall do the demo
-with the apis not models on the local machine"*.
+with the apis not models on the local machine"*, and clarified in the same
+conversation: *"having models is okay, but if they are blocked with the hardware
+for testing we move on overall not all the people we target have gpus or
+language machines and also in our demo video we shall use apis not models since
+it is expensive for the gpus"*.
 **Date:** 2026-10-08
 **Amends:** `ROADMAP.md`'s v0.01 exit sentence, and the reasoning — not the
 number — in `docs/hardware.md`'s memory row.
@@ -14,6 +18,29 @@ or the first law.
 ## The question in one line
 
 Does a person have to run the model on their own machine for v0.01 to be proved?
+
+## Three reasons, and they are not the same reason
+
+**1. Most of the fleet cannot.** The owner: *not all the people we target have
+gpus or language machines.* `docs/hardware.md` already applies this logic to
+graphics — *this document's first certified machine has no discrete GPU on
+purpose: it decides whether there is a market* — and the same sentence applies
+one step further to memory. **A machine sized for what the model needs rather
+than for what the fleet has measures a market we are not selling to.**
+
+**2. Running them costs money, ours included.** *It is expensive for the gpus.*
+That is a different argument from scarcity and it bears on us rather than on
+customers: a demo filmed against local inference needs a GPU box running while
+it is filmed and re-filmed. Nothing in this repository has priced that, and
+nothing needs to — the point is that the cheaper road is also the one most
+customers take, so there is no trade.
+
+**3. A promise whose proof needs hardware nobody has blocks the promises beside
+it.** *If they are blocked with the hardware for testing we move on.* Twenty-nine
+promises wait on phase 8, phase 8 waits on a machine, and three of the
+twenty-nine are the only ones that need the machine to be large. Keeping them
+together means twenty-six wait on three. **That is what rule 3 separates**, and
+it is the reason this is a decision rather than a preference.
 
 ## What is wrong today, measured rather than felt
 
@@ -75,6 +102,24 @@ that could was one nobody has bought.
 machine, and saying so is the point of splitting the sentence rather than
 rewriting it.
 
+**Which promises those are, counted rather than estimated.** Three of v0.01's
+twenty-nine name a local model:
+
+- **Model stack** — catalogue, pull, serve, unload, remove. Its code is
+  finished.
+- **Agents point at the local model by default**, carrying *never a silent
+  fallback* (ADR 0008).
+- **Zero inference egress over a working day**, which already says in
+  `ROADMAP.md` what this ADR is saying: *with a local model, which is the claim
+  `docs/features.md` makes and the only one that is true. A machine using the
+  office GPU box or a hosted provider has non-zero inference egress by design,
+  shown on the indicator.*
+
+**So the document already makes this distinction in one place.** This decision
+extends it to the place that does not have it, rather than inventing it. An
+earlier draft of this ADR said *twenty-eight of twenty-nine* without counting;
+it is twenty-six.
+
 **And it does not make the testing NUC a certified machine.** That machine is
 8 GB, a 120 GB SATA disk, an Atom-class 6th-generation processor and not a
 laptop. It is the **installation** machine, and the right one: it arrives with
@@ -107,6 +152,24 @@ road this decision picks.
 That is an argument for the demo, not for the road. The zero-egress measurement
 stays a published claim about the local-model road and is not weakened by a demo
 that takes a different one.
+
+## The demo video, which nothing in this repository mentions
+
+The owner names one: *in our demo video we shall use apis not models.* A search
+of every markdown file finds no *demo video* anywhere, so it is new and has no
+task, no plan and no owner.
+
+**One requirement on it falls out of the first law and is not optional.** A
+video showing an agent acting over an API, without the egress indicator visible
+in frame, films the thing this product criticises — an agent reaching the
+network while the person watching cannot see it. The indicator is *a feature,
+not a diagnostic*, and a demo is where that is either true or revealed as
+decoration.
+
+So: **whatever else the video shows, it shows the indicator**, and it shows a
+person finding the egress afterwards in the record. That is the demonstrable
+half of law 1, and the API road is the only road on which it can be
+demonstrated at all.
 
 ## What would make this wrong
 
