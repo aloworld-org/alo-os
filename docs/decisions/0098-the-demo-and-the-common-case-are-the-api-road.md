@@ -199,9 +199,32 @@ they are not smaller, only different:
   escaped every other control, so this is what makes the rest true rather than
   decorative.
 
-**Auditability and containment, rather than locality.** That is a weaker claim
-about where data goes and a stronger one about what an agent can do, and it is
-the honest description of a machine using somebody else's API.
+**And the fifth law, which is what makes either of those add up to
+*sovereign*.** *The person chooses. alo never takes the choice away.* Four roads
+exist, the person picks one, nothing moves between them on its own in either
+direction, and a machine with no model at all is a supported state that does not
+nag. So on every road, ours included:
+
+> **The person decides where their inference happens, and can see it and change
+> it.**
+
+**Auditability without that is good logging.** Containment without it is a
+locked room. The three together are the product, and the third is the one a
+competitor cannot copy by adding a dashboard.
+
+**Auditability, containment and choice, rather than locality.** That is a weaker
+claim about where data goes and a stronger one about what an agent may do and
+who decides it — and it is the honest description of a machine using somebody
+else's API.
+
+**This is a continuation rather than a new claim, and
+[ADR 0095](0095-the-release-carries-no-model-and-a-person-brings-their-own.md)
+is where it was already made.** That decision says outright that *answering out
+of the box will then mean inference leaving the machine*, and rules that *a
+working day produces zero inference egress, measured at the network boundary*
+**belongs to the bring-your-own-weights road specifically, and must not be
+printed beside** a machine that answers through our API. This ADR carries that
+to the demo and the certified machine; it does not invent it.
 
 **Both are rare and the second is rarer.** A product can promise it does not
 send your data and be believed or not; a product whose agent *cannot* run an
