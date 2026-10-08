@@ -28,7 +28,9 @@
 //! | [`Program::ReadingWhatReplacingDestroys`] | how much is on Windows, and the newest day a person's own file changed |
 //! | [`Program::ListingTheDisks`] | every disk and its partitions |
 //! | [`Program::ListingTheStartEntries`] | the systems the firmware can start |
-//! | [`Program::ReadingFastStartup`] | whether Windows' Fast Startup is on |
+//! | [`Program::ReadingFastStartup`] | whether Windows' Fast Startup is on, from two
+//!   registry values, whether the hibernation file is there, and how many entries the
+//!   enumeration that looked for it found |
 //!
 //! | Changes, in the order they are made | Put back by |
 //! |---|---|
@@ -139,6 +141,30 @@ pub enum Program {
     /// The firmware's list of systems.
     ListingTheStartEntries,
     /// Whether Windows' Fast Startup is on, from Windows' own value.
+    ///
+    /// **Four things, because the registry alone cannot answer it.** Fast
+    /// Startup is hibernation of the kernel's own session, so the question is
+    /// *is Fast Startup set* **and** *does this machine hibernate at all* -
+    /// and on the testing NUC, 2026-10-08, the second value was simply absent
+    /// from the registry while the machine plainly did hibernate: a 3.37 GB
+    /// `hiberfil.sys` sat at the root of its system drive.
+    ///
+    /// So the file system is asked too, and **by enumerating the directory
+    /// rather than by opening the file.** Windows holds the hibernation image
+    /// open, and `Test-Path` and `Get-Item` report a locked file as one that
+    /// does not exist - with the same error a missing file gives. A reading
+    /// built on either of those would have told every machine in the world
+    /// that Fast Startup was off, because the file is locked whenever Windows
+    /// is running
+    /// (`docs/misreadings/a-locked-system-file-reads-as-a-file-that-does-not-exist.md`).
+    ///
+    /// **And it prints its own control.** `RootEntries` is how many entries
+    /// the enumeration found. The root of a Windows system drive always holds
+    /// some, so a count of zero is a broken instrument rather than an empty
+    /// disk - and an instrument that cannot report its own failure reports
+    /// *absent*, which is the answer this one must never give falsely.
+    ///
+    /// Reads only, and **names no `powercfg`**, which a test holds.
     ReadingFastStartup,
 
     /// Give the EFI system partition a drive letter, so the one file both
@@ -539,9 +565,14 @@ impl Program {
                    -ErrorAction SilentlyContinue).'{FAST_STARTUP}'; \
                  $hibernation = (Get-ItemProperty -Path '{THE_HIBERNATION_KEY}' \
                    -Name '{HIBERNATION}' -ErrorAction SilentlyContinue).'{HIBERNATION}'; \
+                 $root = $env:SystemDrive + '\\'; \
+                 $named = @([IO.Directory]::EnumerateFileSystemEntries($root) | \
+                   ForEach-Object {{ [IO.Path]::GetFileName($_) }}); \
                  ConvertTo-Json -Compress -InputObject ([ordered]@{{ \
                    HiberbootEnabled = $(if ($null -eq $value) {{ $null }} else {{ [uint32]$value }}); \
-                   HibernateEnabled = $(if ($null -eq $hibernation) {{ $null }} else {{ [uint32]$hibernation }}) }})"
+                   HibernateEnabled = $(if ($null -eq $hibernation) {{ $null }} else {{ [uint32]$hibernation }}); \
+                   RootEntries = [uint32]$named.Count; \
+                   HiberfilSys = [bool]($named -contains 'hiberfil.sys') }})"
             ),
             // The shortcut is made through Windows' own shell object, which is
             // how a shortcut is made on Windows, and read back: a shortcut that
