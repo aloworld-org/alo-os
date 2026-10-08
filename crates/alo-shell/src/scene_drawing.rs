@@ -122,9 +122,37 @@ pub(crate) fn paint(
     let mut frame = renderer
         .render(framebuffer, size, transform)
         .map_err(submission)?;
-    // Neutral clear, not the shell's pending token-based visual design.
+    // **The plane's own surface, which ADR 0075 says *is* the desktop.**
+    //
+    // This cleared to opaque black until 2026-10-08, under a comment calling it
+    // *neutral clear, not the shell's pending token-based visual design*. The
+    // design was not pending — `alo_appearance::Background` ships
+    // `Token::Cream`, `Wearing` warms it with that screen's night light and
+    // `ScreenBackground` draws it fitted to that screen's room. **All of it was
+    // built and reached by nothing**, so every picture a person has seen of this
+    // desktop was black, and the owner said in as many words that it is not the
+    // design.
+    //
+    // **Black stays where there is no desktop.** The sign-in screen, the
+    // recovery screen and the approval surface each clear behind their own
+    // artwork and `booting.rs` settles that the greeter is drawn light at the
+    // ordinary scale; a surface colour belongs to a person's session and nobody
+    // has opened one at a greeter. So the colour arrives with the desktop or
+    // not at all.
+    let behind_everything = native.desktop.map_or_else(
+        || Color32F::new(0.0, 0.0, 0.0, 1.0),
+        |desktop| {
+            let surface = desktop.surface;
+            Color32F::new(
+                f32::from(surface.red()) / 255.0,
+                f32::from(surface.green()) / 255.0,
+                f32::from(surface.blue()) / 255.0,
+                1.0,
+            )
+        },
+    );
     frame
-        .clear(Color32F::new(0.0, 0.0, 0.0, 1.0), &[damage])
+        .clear(behind_everything, &[damage])
         .map_err(submission)?;
     draw_render_elements(&mut frame, zoom, &drawing.elements, &[damage]).map_err(submission)?;
     if let Some(controls) = native.scene {

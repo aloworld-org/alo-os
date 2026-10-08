@@ -55,6 +55,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         TimeOfDay::checked(20, 0).map_err(|error| format!("{error:?}"))?,
     ];
 
+    // A name for the one display this fixture draws on. The appearance answers
+    // a background per display and has no other accessor, so a name is
+    // required; with one display it is only a key.
+    let the_one_display = alo_appearance::DisplayId::named("the-one-display")
+        .map_err(|error| format!("{error:?}"))?;
     let held = tempfile::tempdir()?;
     let documents = held.path().join("Documents");
     std::fs::create_dir_all(documents.join("letters").join("old"))?;
@@ -128,6 +133,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                     &TurnedOn::nothing(),
                                     now,
                                     reading,
+                                    // A name, because the appearance
+                                    // answers per display and has no
+                                    // other accessor. This fixture has
+                                    // one display, so any name serves.
+                                    &the_one_display,
                                 ),
                                 strings: &strings,
                                 egress,

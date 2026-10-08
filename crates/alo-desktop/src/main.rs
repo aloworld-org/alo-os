@@ -270,6 +270,33 @@ mod running {
                     &alo_access::TurnedOn::nothing(),
                     the_hour(&at)?,
                     alo_strings::Direction::LeftToRight,
+                    // **The card, not the connector, and that is wrong on a
+                    // machine where somebody has set a background per screen.**
+                    //
+                    // `Appearance::background_on` is keyed by display, and the
+                    // key everything else in this repository uses for a display
+                    // is its **connector** name — `eDP-1`, `DP-2` — which is
+                    // what `Server::the_scale_of_display` looks up. This
+                    // process is handed `&Path` to a DRM card and never learns
+                    // a connector name, so it cannot use that key.
+                    //
+                    // **It is harmless today and will stop being harmless
+                    // silently.** `Appearance::shipped()` holds no per-display
+                    // background, so `background_on` answers the shipped
+                    // surface — `Token::Cream` — for every key including this
+                    // one. The moment a person can set a background for one
+                    // screen, this asks under a name nothing will ever have
+                    // written, and they will get Cream while their own choice
+                    // sits in their folder unread.
+                    //
+                    // The road that changes it is the same one task 12 of
+                    // `more-than-one-display-plan.md` watches:
+                    // `where-a-persons-settings-are-kept-plan`'s task 8. When
+                    // it lands, the surface has to be asked per display the way
+                    // the scale already is — `direct_desktop` sets
+                    // `frame.display_scale` from the connector it is drawing,
+                    // and this belongs beside it rather than here.
+                    &the_display_this_card_is()?,
                 ),
                 strings,
                 egress,
@@ -630,6 +657,16 @@ mod running {
     fn the_hour(at: &crate::readings::At) -> Result<alo_appearance::TimeOfDay, String> {
         alo_appearance::TimeOfDay::checked(at.hour, at.minute)
             .map_err(|why| format!("a time of day this machine does not have: {why:?}"))
+    }
+
+    /// The display this process names its appearance against.
+    ///
+    /// **Not the connector name, and the long note at the call site says why
+    /// that matters.** This process is handed a DRM card path and never learns
+    /// a connector name, so it cannot use the key everything else uses.
+    fn the_display_this_card_is() -> Result<alo_appearance::DisplayId, String> {
+        alo_appearance::DisplayId::named("the-display-this-session-stood-on")
+            .map_err(|why| format!("this session's display cannot be named: {why:?}"))
     }
 
     /// The whole display as one share, since nothing has divided it.

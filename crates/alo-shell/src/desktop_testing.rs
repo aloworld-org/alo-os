@@ -32,9 +32,26 @@ pub(crate) fn noon() -> TimeOfDay {
     TimeOfDay::checked(12, 0).unwrap()
 }
 
+/// A display these fixtures name, so a background can be asked for.
+///
+/// `DesktopLook::of` wants one since 2026-10-08: the appearance answers a
+/// background **per display** and has no other accessor. These fixtures have
+/// one display and the name is only a key, so any name serves — what matters is
+/// that a fixture cannot ask for *the* background and so cannot drift from how
+/// a machine asks.
+pub(crate) fn a_display() -> alo_appearance::DisplayId {
+    alo_appearance::DisplayId::named("a-display").unwrap()
+}
+
 /// `appearance` at midday, read `reading`.
 pub(crate) fn noon_look(appearance: &Appearance, reading: Direction) -> DesktopLook {
-    DesktopLook::of(appearance, &TurnedOn::nothing(), noon(), reading)
+    DesktopLook::of(
+        appearance,
+        &TurnedOn::nothing(),
+        noon(),
+        reading,
+        &a_display(),
+    )
 }
 
 /// One second, which is the interval every reading here is taken over.

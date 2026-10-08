@@ -249,7 +249,13 @@ fn no_pixel_on_the_desktop_is_deep_teal() {
                 let mut appearance = an_appearance();
                 appearance.follow(Following::from(Shipped::the_evening_schedule()));
                 appearance.set_accent(accent);
-                let look = DesktopLook::of(&appearance, &TurnedOn::nothing(), now, reading);
+                let look = DesktopLook::of(
+                    &appearance,
+                    &TurnedOn::nothing(),
+                    now,
+                    reading,
+                    &crate::desktop_testing::a_display(),
+                );
                 let picture =
                     drawn(&Dock::shipped(), look, &running, &filling, (1920, 1080)).unwrap();
                 assert!(!picture.running.is_empty() && !picture.filling.is_empty());
@@ -292,6 +298,7 @@ fn the_whole_desktop_turns_dark_when_alo_appearance_says_so() {
             &TurnedOn::nothing(),
             now,
             Direction::LeftToRight,
+            &crate::desktop_testing::a_display(),
         );
         let picture = drawn(&dock, look, &running, &filling, size).unwrap();
         let (ground, dock_ground, ink) = match scheme {
