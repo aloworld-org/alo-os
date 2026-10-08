@@ -337,6 +337,49 @@ mod running {
         /// **A damaged file is said out loud and does not stop the session**,
         /// which is the same choice `the_layout_they_left` makes below and for
         /// the same reason.
+        /// What this person has settled about their displays.
+        ///
+        /// `more-than-one-display-plan.md` task 11, and the first time anything
+        /// in production answers this at all: until now `Server::the_screens()`
+        /// was [`None`] on every running machine, so every surface laid out
+        /// against one viewport whatever was plugged in.
+        ///
+        /// **Three readings, and each is this binary's to make.** The shell
+        /// shows and never measures: an appearance and a night light are
+        /// settings, the arrangements a person kept are a file in their folder,
+        /// and reaching a `Tonight` needs a clock and a time zone this process
+        /// has and the compositor must not.
+        ///
+        /// # What is shipped rather than read, and why each one is honest
+        ///
+        /// **The appearance is the shipped one.** `Appearance::shipped()` is
+        /// what this binary already hands the status area at line 269; reading
+        /// a person's chosen appearance is not built anywhere yet, and
+        /// inventing a second road to it here would be two answers to one
+        /// question.
+        ///
+        /// **The night light is the shipped setting, resolved against this
+        /// machine's own clock.** `NightLight::as_shipped()` is the setting and
+        /// `Moment` is the resolution, so the warmth a screen gets is this
+        /// evening's rather than a constant.
+        ///
+        /// **And the arrangements are `Changes::untouched()` — *this person has
+        /// changed nothing* — which is literally true today.** Nothing in
+        /// production writes a display arrangement, verified by search, so
+        /// nobody can have arranged one. **It stops being true the moment the
+        /// settings road lands, and it stops silently**, which is why task 12
+        /// of that plan is a test that fails when something starts writing one
+        /// while this still says `untouched`.
+        fn their_displays(&mut self) -> Option<alo_shell::TheirDisplays> {
+            let at = crate::readings::At::now().ok()?;
+            let moment = alo_shell::Moment::at(at.moment, at.minutes_east_of_universal_time);
+            Some(alo_shell::TheirDisplays {
+                appearance: alo_appearance::Appearance::shipped(),
+                tonight: alo_shell::NightLight::as_shipped().at(moment),
+                remembered: alo_shell::Changes::untouched(),
+            })
+        }
+
         fn the_shortcuts(&mut self) -> alo_shortcuts::Shortcuts {
             let shipped = alo_shortcuts::Shortcuts::shipped();
             let Some(at) = self.shortcuts_at.as_deref() else {

@@ -733,7 +733,15 @@ changes.
 
 ### 11. A machine builds the arrangement it reports
 
-**Status:** ready — task 10 landed on 2026-10-08. **Owner:** the Mac.
+**Status:** **Done, 2026-10-08: the code.** `alo-desktop`'s `their_displays`
+answers with this person's appearance, their night light resolved against that
+machine's own clock, and `Changes::untouched()`. **So `Server::the_screens()` is
+no longer `None` on a running machine.** Proved by `alo-citing`'s
+`every_surface_a_person_uses_is_built_somewhere`, whose `NightLight` debt entry
+**failed the moment production built one** and is now `Reach::AMachineCan` —
+that check refuses in both directions, so the entry could not be removed without
+the production call nor the call made without removing it. **On the machine:**
+not ticked; nobody has seen two displays. **Owner:** the Mac.
 
 With the seam travelable, `alo-desktop` answers with an arrangement built from
 what the compositor reported.
@@ -748,7 +756,7 @@ what the compositor reported.
 
 ### 12. The default stops being silent when a person can choose
 
-**Status:** blocked on 11. **Owner:** the Mac.
+**Status:** ready — task 11 landed on 2026-10-08. **Owner:** the Mac.
 
 Task 11 passes `Changes::untouched()` — *the person has changed nothing* —
 which is **literally true on 2026-10-08**: nothing in production writes a

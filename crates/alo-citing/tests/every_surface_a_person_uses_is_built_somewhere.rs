@@ -105,14 +105,13 @@ const EVERY_SURFACE_A_PERSON_USES: [(&str, Reach); 7] = [
                   machine runs. Measured 2026-10-05",
         },
     ),
-    (
-        "NightLight",
-        Reach::OnlyATestDoes {
-            why: "every NightLight::of and ::as_shipped is in screens_testing.rs, \
-                  a test block in keeping.rs, changes.rs or wearing.rs, or lib.rs's \
-                  doc example. Measured 2026-10-05",
-        },
-    ),
+    // **Paid on 2026-10-08 by task 11 of `more-than-one-display-plan.md`.**
+    // `alo-desktop`'s `their_displays` answers with a `NightLight::as_shipped()`
+    // resolved against that machine's own clock, so a running machine builds
+    // one. The entry failed the moment it did — this check refuses in both
+    // directions, and it is the only proof that production reaches this rather
+    // than that it could.
+    ("NightLight", Reach::AMachineCan),
     // The two below are the check's own control. If this instrument ever stops
     // seeing a production caller that is plainly there, it has broken, and
     // these fail rather than the list above quietly growing.

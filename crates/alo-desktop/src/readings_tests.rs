@@ -25,6 +25,8 @@ fn at(hour: u8, minute: u8) -> At {
         hour,
         minute,
         moment: std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_760_000_000),
+        // Universal time, so nothing in this file depends on where it runs.
+        minutes_east_of_universal_time: 0,
     }
 }
 
