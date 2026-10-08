@@ -43,8 +43,21 @@ touch.
 
 **What to do about it**, narrow enough to follow:
 
-> **Never carry a generated or shared file across branches. Regenerate it where
-> it lands.**
+> **Never carry any file across branches. Re-derive it where it lands.**
+
+**That sentence said *generated or shared* until 2026-10-08, and the narrower
+version missed a second instance in the same branch.** The same wholesale copy
+took `crates/alo-installer/src/lib.rs` from the same older branch and dropped
+`mod imports;` with four public symbols. `lib.rs` is neither generated nor
+shared, so the cure as written did not cover it, and `main` did not compile on
+Windows for two merges — found only when a candidate dispatch failed at the
+step that builds the installer, because the only test of those symbols is
+`#![cfg(windows)]` and no gate in this project runs on Windows.
+
+So the cure is about **copying**, not about what kind of file is copied. The
+question *who else writes to this* was the wrong question; the right one is
+*what did this file's branch not know yet*, and the answer is always
+*everything merged since its base*.
 
 For a snapshot, run its own documented command on the branch after rebasing. For
 anything else a tool owns — a lock file, a checksum list, a vocabulary — take
