@@ -44,7 +44,7 @@ acceptance it was closed against:
 | 8. A frame is never lost | **Open** |
 | 9. The canvas is where they left it | **Open**, reopened by the owner 2026-10-03 |
 | 10. The walk, which is also the film's sequence | **Done** 2026-09-30 |
-| 11. The Dock at any edge a person chooses | **Open, and blocked on design** |
+| 11. The Dock at any edge a person chooses | **Open** — the blocker was stale and was cleared 2026-10-08 |
 
 ## The specification, section by section, against the files that answer it
 
@@ -63,7 +63,7 @@ specification and the code were written by people describing the same product.
 | 8 | resizing from edges and corners | `window_resize.rs` (219 lines + 103 of tests), `canvas_resize.rs` — plan task 4, **done** |
 | 9 | normal, compact, put aside, full screen | `window_mode.rs`, `window_mode_plan.rs`, `window_minimize.rs`, `window_maximize.rs`, `window_full_screen.rs`, `putting_a_window_aside.rs`, the whole of `alo-put-aside` (7,407 lines, 38 files) |
 | 10 | full screen with no permanent margin, controls revealed | `window_full_screen.rs`, test suite `a_window_that_fills_the_screen` |
-| 11 | the Dock, returning a person to their windows | `alo-dock` (8,702 lines, 30 files), `a_click_brings_a_window_back.rs` (226 lines + 120 of tests). **Plan task 11 is open and was blocked on design** |
+| 11 | the Dock, returning a person to their windows | `alo-dock` (8,702 lines, 30 files), `a_click_brings_a_window_back.rs` (226 lines + 120 of tests). **Plan task 11 is open; its *blocked on design* was stale and was cleared on 2026-10-08** |
 | 12 | the panel: previews, rail, handle, peek, restore | `alo-put-aside/src/panel.rs`, `preview.rs`, `peeking_at_a_preview.rs`, `restoring.rs`, `where_it_goes_back.rs`, `restoring_into_a_taken_place.rs`, `peeking_at_a_put_aside_window.rs` |
 | 13 | arranging several windows | `window_dividing.rs`, `alo-dividing` (4,760 lines, 21 files) |
 | 14 | alo acting on an explicit scope, and Stop | `alo-put-aside/src/alo_at_work.rs`, `what_alo_is_doing.rs`, `how_far_alo_has_got.rs`, `the_scope_alo_may_change.rs`, `what_an_agent_may_do.rs`, `proposing.rs`, `requires_you.rs`, `whether_it_is_private.rs` |
@@ -152,6 +152,17 @@ component … consistent title bands* is the piece that is not there.
 | the canvas walk, `ALO_NESTED_SUBMODE=canvas-walk` | **all ten moments, exit 0** — three applications opened, one dragged, one resized, the canvas panned, Show all, zoomed back in, then pan, Show all, zoom and focus **by keyboard alone** |
 | `a_real_application --run foot` | an outside application connected to the compositor's socket, drew, and was composited — 83 surfaces over 15 seconds |
 | `desktop_check --save-to` | 32 pictures of the desktop in both schemes and both readings |
+
+**The 32 pictures are evidence about the code and no evidence at all about
+whether the code matches the design.** They are photographs of the running
+compositor; no design node was consulted to make or to judge them. Where this
+document reads a design it reads `docs/design/figma-snapshot/70-28.xml`, the
+committed snapshot refreshed 2026-10-07 — **not the live file**, which may have
+moved since.
+
+So *this is not the screens we designed* is a judgement about a comparison
+**nobody has yet made**. Making it means holding the live file against the code,
+which is the compositor lane's and is under way.
 
 The walk is §3 and §4 demonstrated end to end, including their keyboard routes.
 **What it does not show is appearance**: 832 of 1,049,088 pixels are painted,
