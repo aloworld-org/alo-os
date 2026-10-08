@@ -846,8 +846,9 @@ installer.remove.beginning	Removing alo OS from this computer
 installer.remove.disk-not-cleared	This computer no longer starts alo OS, but the disk alo OS is on could not be erased. Its files are still there, and you can erase it in Windows' own disk management
 installer.remove.entry-not-removed	alo OS could not be taken out of the systems this computer starts, so nothing was erased and alo OS is still here
 installer.remove.erasing	Erasing {disk}. This takes a moment
-installer.remove.gone	alo OS is removed. {disk} is empty, its space is free, and this computer starts Windows as it did before alo OS was installed
-installer.remove.gone-but-the-copy-stays	alo OS is removed. {disk} is empty, its space is free, and this computer starts Windows as it did. This program is still on this computer, because it cannot delete itself while it is running; you can delete it yourself
+installer.remove.fast-startup-is-still-off	If you turned Windows' Fast Startup off when you installed alo OS, it is still off. You can turn it back on in Windows' own power settings
+installer.remove.is-gone	alo OS is removed. {disk} is empty, its space is free, and this computer starts Windows again
+installer.remove.is-gone-but-the-copy-stays	alo OS is removed. {disk} is empty, its space is free, and this computer starts Windows again. This program is still on this computer, because it cannot delete itself while it is running; you can delete it yourself
 installer.remove.not-agreed	Nothing was changed. alo OS is still on this computer
 installer.remove.not-found	The disk alo OS is on could not be found, so nothing was changed. Nothing was erased
 installer.remove.not-read	This computer's disks, or the systems it can start, could not be read, so nothing was changed
