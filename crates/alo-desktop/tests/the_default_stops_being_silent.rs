@@ -35,6 +35,11 @@
 //! Where that lands: `where-a-persons-settings-are-kept-plan`'s task 8 is what
 //! changes this, and whoever lands it will meet this test rather than a comment.
 
+#![expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None is the failure being reported"
+)]
+
 use std::path::{Path, PathBuf};
 
 /// The repository root, from this crate's own manifest directory.
@@ -60,18 +65,17 @@ fn every_production_source(at: &Path, into: &mut Vec<(String, String)>) {
     for entry in entries.flatten() {
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().into_owned();
-        if path.is_dir() {
-            if name == "target" || name == "tests" || name.starts_with('.') {
-                continue;
-            }
+        let is_a_folder_to_walk =
+            path.is_dir() && name != "target" && name != "tests" && !name.starts_with('.');
+        let is_production_source =
+            !path.is_dir() && name.ends_with(".rs") && !name.ends_with("_tests.rs");
+        if is_a_folder_to_walk {
             every_production_source(&path, into);
-        } else if name.ends_with(".rs") && !name.ends_with("_tests.rs") {
-            if let Ok(text) = std::fs::read_to_string(&path) {
-                into.push((
-                    path.to_string_lossy().into_owned(),
-                    production_part_of(&text),
-                ));
-            }
+        } else if is_production_source && let Ok(text) = std::fs::read_to_string(&path) {
+            into.push((
+                path.to_string_lossy().into_owned(),
+                production_part_of(&text),
+            ));
         }
     }
 }
