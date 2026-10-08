@@ -842,6 +842,7 @@ installer.remains.the-entry	An entry named alo OS remains among the systems this
 installer.remains.the-next-start	The next restart starts the alo OS installer, which installs onto the disk you named
 installer.remains.the-space	A space labelled ALO-ROOT remains on the disk {disk}
 installer.remains.the-way-back	The program that restarts this computer into alo OS is still installed. You can remove it in Windows' own settings
+installer.remove.beginning	Removing alo OS from this computer
 installer.remove.disk-not-cleared	This computer no longer starts alo OS, but the disk alo OS is on could not be erased. Its files are still there, and you can erase it in Windows' own disk management
 installer.remove.entry-not-removed	alo OS could not be taken out of the systems this computer starts, so nothing was erased and alo OS is still here
 installer.remove.erasing	Erasing {disk}. This takes a moment
@@ -851,9 +852,10 @@ installer.remove.not-agreed	Nothing was changed. alo OS is still on this compute
 installer.remove.not-found	The disk alo OS is on could not be found, so nothing was changed. Nothing was erased
 installer.remove.not-read	This computer's disks, or the systems it can start, could not be read, so nothing was changed
 installer.remove.not-there	alo OS is not among the systems this computer can start, so there is nothing to remove. Nothing was changed
-installer.remove.starting	This removes alo OS from this computer. Windows, and your files on it, are not touched
+installer.remove.on-the-windows-disk	alo OS is on the same disk as Windows, and this program removes alo OS only from a disk of its own. Nothing was changed. You can remove alo OS's space yourself in Windows' own disk management, and give the space back to Windows there
 installer.remove.type-the-disks-name	To remove alo OS, type the name of that disk, exactly as it is written above, and press Enter. To leave everything as it is, press Enter without typing anything
 installer.remove.will-erase	alo OS is on the disk {disk}. Removing it erases that disk: alo OS itself, and everything kept in it. The space becomes free again, and Windows starts as it does now
+installer.remove.windows-is-not-touched	Windows, and your files on it, are not touched
 installer.replacing-destroys	Replacing Windows erases {disk} completely. Windows, every program on it and every file on it go, and nothing that is only on this disk can be got back afterwards
 installer.restart-it-yourself	Everything is ready, and this computer could not restart by itself. Restart it to continue installing alo OS
 installer.restarting	Everything is ready. This computer restarts in a few seconds, and installing continues after the restart

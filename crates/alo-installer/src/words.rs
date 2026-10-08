@@ -1205,13 +1205,56 @@ pub const PRESS_ENTER_TO_CLOSE: Word = Word::saying(
 // ---------------------------------------------------------------------------
 
 /// The removal's first line.
-pub const REMOVE_STARTING: Word = Word::saying(
-    "installer.remove.starting",
-    "This removes alo OS from this computer. Windows, and your files on it, are not touched",
+/// What the removal is, said before anything has been read.
+///
+/// **This carries no promise, and the sentence it replaced did.**
+/// `installer.remove.starting` read *This removes alo OS from this computer.
+/// Windows, and your files on it, are not touched*, and was said as the first
+/// line on every road before any disk had been read. On the road that keeps
+/// Windows that promise held only because a guard refused afterwards — it
+/// described what the program declined to attempt rather than what it did, and
+/// nothing held it to that guard. The key retired (ADR 0068) and the claim came
+/// apart into this, [`REMOVE_WINDOWS_IS_NOT_TOUCHED`] said where it is true, and
+/// [`REMOVE_ON_THE_WINDOWS_DISK`] where it is not.
+pub const REMOVE_BEGINNING: Word = Word::saying(
+    "installer.remove.beginning",
+    "Removing alo OS from this computer",
 )
 .noting(
     "The first line of the small program that removes alo OS. It is the same program the person \
-     installed with, started to undo that.",
+     installed with, started to undo that. It deliberately promises nothing: what is and is not \
+     touched is said once the program knows which, in the two sentences after it.",
+);
+
+/// Windows is not touched, said only on the road where that is true.
+pub const REMOVE_WINDOWS_IS_NOT_TOUCHED: Word = Word::saying(
+    "installer.remove.windows-is-not-touched",
+    "Windows, and your files on it, are not touched",
+)
+.noting(
+    "Said after the program has found which disk alo OS is on and that it is not the disk Windows \
+     is on. It is a statement about what this removal will do, not a reassurance offered in \
+     advance.",
+);
+
+/// alo OS is on the disk Windows is on, so this program will not remove it.
+///
+/// **The true reason, where `installer.remove.not-found` gave a false one.**
+/// That sentence says *the disk alo OS is on could not be found*, and on this
+/// road the disk was found: it is the disk Windows is on, and this program
+/// erases whole disks. A person told their disk could not be found goes looking
+/// for a hardware fault that is not there.
+pub const REMOVE_ON_THE_WINDOWS_DISK: Word = Word::saying(
+    "installer.remove.on-the-windows-disk",
+    "alo OS is on the same disk as Windows, and this program removes alo OS only from a disk of \
+     its own. Nothing was changed. You can remove alo OS's space yourself in Windows' own disk \
+     management, and give the space back to Windows there",
+)
+.noting(
+    "Said when alo OS was installed beside Windows on one disk. Nothing is wrong with the \
+     computer and nothing was changed: this program is not able to do it yet. The last sentence \
+     is the way a person gets their space back today, and *disk management* is the name of \
+     Windows' own tool in this language.",
 );
 
 /// What will be erased, before the person agrees to it.
@@ -1314,7 +1357,7 @@ pub const REMOVE_GONE_BUT_THE_COPY_STAYS: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 134] = [
+pub const EVERY_WORD: [Word; 136] = [
     A_TEST_BUILD_FROM,
     A_TEST_BUILD,
     STARTING,
@@ -1416,7 +1459,9 @@ pub const EVERY_WORD: [Word; 134] = [
     DEFAULT_NOT_THERE,
     DEFAULT_NOT_READ,
     DEFAULT_NOT_REACHED,
-    REMOVE_STARTING,
+    REMOVE_BEGINNING,
+    REMOVE_WINDOWS_IS_NOT_TOUCHED,
+    REMOVE_ON_THE_WINDOWS_DISK,
     REMOVE_WILL_ERASE,
     REMOVE_TYPE_THE_DISKS_NAME,
     REMOVE_NOT_AGREED,
