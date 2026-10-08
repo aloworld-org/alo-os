@@ -45,6 +45,7 @@
 //! On any other host this crate compiles to its types and its decisions, which
 //! is where it is tested; the program says so and ends.
 
+mod a_test_build;
 mod administrator;
 mod asking;
 mod bitlocker;
@@ -81,6 +82,7 @@ mod where_alo_os_goes;
 mod windows_volume;
 mod words;
 
+pub use a_test_build::{ThisBuild, this_build, what_was_built};
 pub use administrator::HIGH_MANDATORY_LEVEL;
 pub use bitlocker::BitLocker;
 pub use checking::{check, is_an_administrator};
@@ -122,7 +124,7 @@ pub use words::{
     DEFAULT_IS, DEFAULT_KEPT, DEFAULT_NOT_REACHED, DEFAULT_NOT_READ, DEFAULT_NOT_THERE,
     EVERY_REFUSAL, EVERY_WORD, FAST_STARTUP_LEFT_ON, PRESS_ENTER_TO_CLOSE,
     REMAINS_FAST_STARTUP_OFF, REMOVE_GONE, REMOVE_NOT_AGREED, REMOVE_NOT_FOUND, REMOVE_NOT_THERE,
-    REMOVE_TYPE_THE_DISKS_NAME, REMOVE_WILL_ERASE, SWITCH_AGREED, SWITCH_NOT_AGREED,
+    REMOVE_TYPE_THE_DISKS_NAME, REMOVE_WILL_ERASE, STARTING, SWITCH_AGREED, SWITCH_NOT_AGREED,
     SWITCH_NOT_READ, SWITCH_NOT_SET, SWITCH_NOT_THERE, SWITCH_WILL_RESTART, WordsError,
     declare_into, installer_words,
 };

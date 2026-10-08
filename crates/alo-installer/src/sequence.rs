@@ -23,6 +23,7 @@
 use alo_installing::Replacing;
 use alo_strings::{Filling, Strings, Word};
 
+use crate::a_test_build;
 use crate::asking::{self, ASKED_AGAIN, Answer};
 use crate::checking;
 use crate::consent;
@@ -41,6 +42,14 @@ use crate::words;
 /// Check, say, consent, stage and restart — or refuse — on this machine, and
 /// say every step on the way.
 pub fn install(machine: &mut impl TheMachine, strings: &Strings, released: Released) -> Ended {
+    // **Before anything else, including the programme's own name.** ADR 0096
+    // control five: a test build says so on its first line, because the person
+    // it protects kept a candidate and is running it later, with no page to
+    // consult and no network. A release says nothing, which is every release,
+    // every local build and every test binary.
+    if let Some((word, filling)) = a_test_build::this_build().said_as() {
+        say(machine, strings, word, &filling);
+    }
     say(machine, strings, words::STARTING, &Filling::nothing());
     let ended = installing(machine, strings, released).unwrap_or_else(|ended| ended);
     match &ended {

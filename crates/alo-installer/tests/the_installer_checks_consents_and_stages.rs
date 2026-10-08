@@ -27,7 +27,7 @@ use alo_installer::{
     EVERY_FILE_IT_NEEDS, Ended, Program, Ran, Refusal, Released, Remains, THE_CHOICE,
     THE_DIRECTORY, THE_LIST, TheMachine, check, install, installer_words, sha256_hex,
 };
-use alo_strings::{Said, Strings};
+use alo_strings::{Filling, Said, Strings};
 
 /// Where the scripted download is.
 const DOWNLOADED: &str = "/Downloads";
@@ -332,6 +332,51 @@ fn strings() -> Strings {
 fn run(mut machine: Scripted, released: Released) -> (Ended, Scripted) {
     let ended = install(&mut machine, &strings(), released);
     (ended, machine)
+}
+
+/// **A release says nothing about being a test build, and says its own name
+/// first.**
+///
+/// ADR 0096 control five is tested both ways. `crate::a_test_build`'s own tests
+/// drive the pure reading with a day, with a value that is not a day, and with
+/// nothing. This holds the other direction **against a build of the real
+/// shape**: `ALO_INSTALLER_CANDIDATE_BUILT` is compiled in, a test binary is
+/// not built by the candidate workflow, so this binary is release-shaped and
+/// what it says first is what a release says first.
+///
+/// A flag a test set would prove the branch runs. This proves the branch is not
+/// taken on the thing people actually download.
+#[test]
+fn a_release_says_its_own_name_first_and_nothing_about_test_builds() {
+    let (machine, released) = Scripted::installable();
+    let (_ended, machine) = run(machine, released);
+
+    let said = strings()
+        .say(&alo_installer::STARTING.key(), &Filling::nothing())
+        .text()
+        .to_owned();
+    assert_eq!(
+        machine.said.first(),
+        Some(&said),
+        "a release did not say its own name first: {:?}",
+        machine.said.first()
+    );
+
+    // And nothing anywhere in the run claims to be a test build. Checked over
+    // every line rather than only the first, because a warning in the middle
+    // would be as wrong and would not be caught by the assertion above.
+    for line in &machine.said {
+        assert!(
+            !line.contains("test build"),
+            "a release called itself a test build: {line}"
+        );
+    }
+
+    // The reading agrees, from the same compiled-in value.
+    assert_eq!(
+        alo_installer::this_build(),
+        alo_installer::ThisBuild::ARelease
+    );
 }
 
 /// The English of a refusal's sentence, as the machine would have been told it.
