@@ -41,28 +41,90 @@ Each file begins `89504e470d0a1a0a`, and their sizes run from 17,415 bytes for
 the dock alone to 346,165 for what is running read again — content, not one
 flat colour.
 
-**32 frames, where a run without the flag reported 33.** The loop that draws one
-standing ends on a clock rather than a count, and keeping a frame paints it a
-second time, so fewer fit in the same 60 milliseconds. The count is a property
-of the clock, not a claim about the renderer, and it is not the same number with
-the flag on.
+### The frame count is not a constant, and one of these numbers was noise
+
+An earlier draft of this document said *32 frames, where a run without the flag
+reported 33*, and explained the difference by the cost of keeping a frame. **That
+was reading noise as signal**, and running it three times says so:
+
+| `--save-to` | frames submitted |
+|---|---|
+| off | 32 |
+| off | 34 |
+| off | 33 |
+| on | 32 |
+| on | 32 |
+
+The loop that draws one standing ends **on a clock, not on a count** — it submits
+for 60 milliseconds and stops — so the number measures how fast the machine was.
+Keeping a frame paints the scene twice and should cost frames, but 32 is inside
+the spread of the runs with the flag off, so **this measured that the count
+varies and did not measure what the flag costs.**
+
+What it does establish is that `what-the-probes-draw-today.md`'s *33 frames* is
+one sample of a varying quantity, not a property of the renderer, and that a test
+asserting it would go red on a slower machine.
 
 ## What the pictures show, and what is the fixture's doing
 
-Three things in them are **the fixture handing the compositor an empty machine**,
-and would look different on a real one: nothing is pinned to the dock, no window
-carries chrome because the fixture passes no controls, and no application is
-running.
+Two things in them are **the fixture handing the compositor an empty machine**
+and would differ on a real one: no window carries chrome, because the fixture
+passes no controls, and no application is running.
 
-One is not the fixture's doing and is the finding:
+The rest is not the fixture's doing.
 
-- **`crates/alo-shell/src/desktop_raster.rs` draws no background.** The file is
-  348 lines and holds 5 functions; a search of it for `background` or
-  `wallpaper` returns nothing, with a positive control on the same file to prove
-  the search ran. The black behind everything in all 32 pictures is what the
-  desktop draws, not what the fixture passed. A background exists for the lock
-  screen (`lock_background.rs`) and for the screens panel
-  (`screens_raster.rs`). The desktop has none.
+### The dock is drawn from a hardcoded zero
+
+This was got wrong twice before it was got right, which is worth recording
+because both wrong answers were plausible.
+
+- *the fixture pins nothing* — *wrong.* The fixture cannot affect it.
+- *`alo-dock` cannot model a filled dock* — **also wrong.**
+  `crates/alo-dock/src/holding.rs:48` declares `OnTheDock` holding `app: AppId`,
+  `pinned: Pinned`, `windows: usize` and `put_aside: usize`, and
+  `announcing.rs` reads an icon out to a screen reader.
+
+What is actually there is in `crates/alo-shell/src/desktop_raster.rs:197`:
+
+```rust
+let dock_picture = crate::dock_raster::picture(
+    dock, look, size,
+    // Nothing in this crate decides what the Dock holds yet:
+    // `alo_dock::Holding` answers that and is not plumbed into a
+    // compositor. A bar holding nothing is narrow, which is true
+    // rather than a placeholder.
+    0,
+)?;
+```
+
+`dock_raster::picture` takes `holding: usize` and sizes a bar by it —
+`Room::a_bar_holding(holding)`. **It draws no icon.** `alo_dock::Holding` reaches
+`crates/alo-shell/src/` in exactly two places, and both are comments; it is
+named in no line of code.
+
+So the 14-pixel sliver is **a bar holding zero by a constant in the shipped
+drawing path.** It is not the fixture, and it would be a sliver on a certified
+machine for every person, whatever they had pinned. `docs/features.md` promises
+*The alo Dock — it shows what you can open and brings what is already open into
+focus*; the second half exists and **the first half is a literal `0`.**
+
+### The desktop draws no surface, which is not the same as no wallpaper
+
+`crates/alo-shell/src/desktop_raster.rs` is 348 lines and 5 functions, and a
+search of it for `background` or `wallpaper` returns nothing — positive control
+on the same file, so the zero is real. The black behind all 32 pictures is the
+desktop's own.
+
+**It would be wrong to call that a missing wallpaper.** ADR 0075 is accepted and
+decides:
+
+> alo OS ships no wallpaper. The plane's own surface is the desktop, and what a
+> person chooses is that surface's material — not a photograph behind it.
+
+So black is not a missing photograph. It is **a surface with no material**, and
+*Set the surface's material* is a `[v0.5]` line. A background is drawn for the
+lock screen (`lock_background.rs`) and for the screens panel
+(`screens_raster.rs`); the desktop has none.
 
 And two are what the built windows say, which a picture makes plain and a frame
 count cannot:

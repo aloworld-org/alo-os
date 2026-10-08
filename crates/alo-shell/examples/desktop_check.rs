@@ -15,14 +15,40 @@
 //!
 //! Off unless asked for. With it, one picture is written for each standing in
 //! each scheme and each reading — what was drawn, rather than the count of
-//! frames this otherwise reports, which stays exactly as it was. It exists
-//! because thirteen fixtures in this folder draw and **nobody has said what a
-//! person makes of them**: whether the dock reads as a dock, whether the
-//! egress line is findable without being told it is there. That is not a test
-//! and cannot be one. It needs eyes, and eyes need pictures.
+//! frames that is all this otherwise reports. It exists because thirteen
+//! fixtures in this folder draw and **nobody has said what a person makes of
+//! them**: whether the dock reads as a dock, whether the egress line is
+//! findable without being told it is there. That is not a test and cannot be
+//! one. It needs eyes, and eyes need pictures.
 //!
-//! Three things are true of every picture it writes, and the first is the one
-//! that matters to anybody reading this file later:
+//! # The frame count is not a constant, and must never be asserted
+//!
+//! The loop that draws one standing ends **on a clock, not on a count**: it
+//! submits frames for 60 milliseconds and then stops. So the number this
+//! prints is a measure of how fast the machine was, and it is different every
+//! time. Measured here on one machine in one sitting, with `--save-to` off:
+//!
+//! ```text
+//! 32 frames submitted
+//! 34 frames submitted
+//! 33 frames submitted
+//! ```
+//!
+//! This is written down because the number looks like a property and is not
+//! one. `docs/autonomy/updates/what-the-probes-draw-today.md` records *33
+//! frames* from an earlier run, and that is one sample of a varying quantity
+//! rather than a fact about the renderer. **A test that asserts it will go red
+//! on a slower machine**, and the person reading this file will be the one
+//! trying to work out why.
+//!
+//! Keeping a frame paints the scene a second time, so `--save-to` should cost
+//! frames — both runs with it on gave 32. **That is inside the spread of the
+//! runs with it off, so this says the flag is not free and does not claim to
+//! have measured what it costs.**
+//!
+//! # Three things are true of every picture
+//!
+//! The first is the one that matters to anybody reading this file later:
 //!
 //! 1. **it is not the screenshot promise.** That is a `[v0.5]` feature with a
 //!    person's own capture, a grant and a record. Nothing a person or an agent
