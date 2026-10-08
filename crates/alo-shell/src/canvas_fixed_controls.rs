@@ -233,7 +233,23 @@ impl crate::Server {
         // With one display, which display is not a question. Asked first so
         // that a session with no arrangement — every session on a machine
         // nobody has arranged — behaves as it always did.
-        if self.fixed_controls.len() <= 1 {
+        //
+        // **Keyed on how many displays this session has drawn, not on how
+        // many sets of controls were recorded**, and the difference is a bug
+        // this safeguard hid for two days. It read `fixed_controls.len() <= 1`
+        // until 2026-10-08, which means *one set was recorded* — and
+        // `Desk::present` recorded only the display the loop held, so on a
+        // two-display machine the count was one and this handed the first
+        // display's dock to every window on the second. The safeguard was
+        // written to protect a single display and was doing the opposite.
+        //
+        // `presentations` is the honest question: it is keyed per display and
+        // gains an entry when one draws. So *one display* is one display, and
+        // a display that has drawn without recording its controls answers
+        // `None` — nothing drawn there yet, which is this method's documented
+        // answer before a first frame — rather than another display's
+        // furniture. Failing to nothing beats failing to somewhere wrong.
+        if self.presentations.len() <= 1 {
             return self.fixed_controls.values().next();
         }
         let named = window

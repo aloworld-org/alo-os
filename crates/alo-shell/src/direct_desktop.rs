@@ -617,6 +617,86 @@ impl LoopInput for Desk<'_> {
         // its name clear of the Dock and sit entirely under the put-aside panel,
         // and nothing could tell, because the shell had never been given the
         // panel's bounds to check against.
+        // **Every other display is laid out at its own size and its own
+        // scale.** `more-than-one-display-plan.md` task 5. Until this, the
+        // displays beyond the first were drawn the *first* display's dock,
+        // status area and panel — laid out once from one size — so a second
+        // monitor of a different shape showed furniture built for its
+        // neighbour, and a dense one showed it at half the size it owns.
+        //
+        // Laid out before any of them is drawn, and kept in a list the draw
+        // borrows from, because each display's layers have to outlive the
+        // wrapper that paints them and all the wrappers go down one road.
+        //
+        // Settings is **not** among them: it is one window, and a window is
+        // on one display. Which one is not a question this task can answer —
+        // nothing maps a surface to a display until task 7 — so it stays on
+        // the display the loop itself holds, which is the internal panel
+        // where discovery found one. Drawing it on each display would be
+        // visibly wrong in a way no test here would catch: two Settings
+        // windows, one of them unreachable.
+        let mut theirs = Vec::with_capacity(others.len());
+        for other in others.iter_mut() {
+            let named = FrameTarget::metadata(other)?.name;
+            let size = FrameTarget::size(other);
+            let mut frame = self.desktop.now();
+            frame.windows = &windows;
+            frame.filling_the_screen = server.a_window_is_filling_the_screen();
+            frame.display_scale = server.the_scale_of_display(&named);
+            // **This binding's name is load-bearing**, and was `laid_out`
+            // until 2026-10-08. `the_recheck_has_a_caller`'s guard reads the
+            // draw's text and asks that every control handed to the rule is
+            // read from a `pictures` binding rather than from a constant — the
+            // one thing the compiler cannot ask, because a literal rectangle
+            // satisfies `E0063` perfectly. A name that does not say `pictures`
+            // fails that guard, which is the guard working: rename this and
+            // either give it a name that still says what it is, or say in that
+            // test where the rectangles now come from. Do not loosen it.
+            let its_pictures = crate::nested_desktop::frame_pictures(
+                frame,
+                None,
+                None,
+                self.labels,
+                (size.w, size.h),
+            )?;
+            theirs.push((other, its_pictures));
+        }
+        // **Every display's controls, from the one list that also draws
+        // them.** `more-than-one-display-plan.md` task 9.
+        //
+        // This recorded the loop's own display alone until 2026-10-08, with
+        // the per-display layout sitting after it — so the store held one
+        // entry whatever the arrangement said, and task 5b's `len() <= 1`
+        // safeguard, written to keep a single display behaving exactly as
+        // before, handed that one entry to every window on every display. The
+        // safeguard was doing the opposite of its job because the writer was
+        // only ever called once.
+        //
+        // **Fixed by moving the layout above this rather than by adding a
+        // second call**, so the list that draws and the list that records are
+        // the same list and a display cannot be in one without the other. A
+        // second call would have fixed today and left the next display to be
+        // forgotten the same way.
+        //
+        // It also puts every display's furniture in front of
+        // `bring_back_frames_the_moved_controls_hide` below, which until now
+        // asked its question with only the first display's bounds recorded —
+        // so a frame hidden by the second display's dock was not found.
+        for (other, its_pictures) in &theirs {
+            let Ok(its) = FrameTarget::metadata(*other) else {
+                continue;
+            };
+            server.the_fixed_controls_were_drawn(
+                &its.name,
+                crate::canvas_fixed_controls::FixedControlsDrawn {
+                    dock_band: its_pictures.desktop.dock.as_ref().map(|dock| dock.band),
+                    panel_reserved: its_pictures.desktop.panel.reserved,
+                    what_is_leaving: its_pictures.status.band,
+                    top_controls: its_pictures.desktop.top_controls,
+                },
+                self.desktop.now().look.scale(),
+            );
+        }
         server.the_fixed_controls_were_drawn(
             &named,
             crate::canvas_fixed_controls::FixedControlsDrawn {
@@ -737,41 +817,6 @@ impl LoopInput for Desk<'_> {
         // with one display *nothing drew* and *this display refused* are the
         // same fact. With two they will not be, and this is the line that
         // stops raising and starts reporting.
-        // **Every other display is laid out at its own size and its own
-        // scale.** `more-than-one-display-plan.md` task 5. Until this, the
-        // displays beyond the first were drawn the *first* display's dock,
-        // status area and panel — laid out once from one size — so a second
-        // monitor of a different shape showed furniture built for its
-        // neighbour, and a dense one showed it at half the size it owns.
-        //
-        // Laid out before any of them is drawn, and kept in a list the draw
-        // borrows from, because each display's layers have to outlive the
-        // wrapper that paints them and all the wrappers go down one road.
-        //
-        // Settings is **not** among them: it is one window, and a window is
-        // on one display. Which one is not a question this task can answer —
-        // nothing maps a surface to a display until task 7 — so it stays on
-        // the display the loop itself holds, which is the internal panel
-        // where discovery found one. Drawing it on each display would be
-        // visibly wrong in a way no test here would catch: two Settings
-        // windows, one of them unreachable.
-        let mut theirs = Vec::with_capacity(others.len());
-        for other in others.iter_mut() {
-            let named = FrameTarget::metadata(other)?.name;
-            let size = FrameTarget::size(other);
-            let mut frame = self.desktop.now();
-            frame.windows = &windows;
-            frame.filling_the_screen = server.a_window_is_filling_the_screen();
-            frame.display_scale = server.the_scale_of_display(&named);
-            let laid_out = crate::nested_desktop::frame_pictures(
-                frame,
-                None,
-                None,
-                self.labels,
-                (size.w, size.h),
-            )?;
-            theirs.push((other, laid_out));
-        }
         let mut layered = Layered {
             target,
             layers: NativeLayers {
@@ -786,11 +831,11 @@ impl LoopInput for Desk<'_> {
         // and because a refusal on a later one must not delay it.
         let mut painted: Vec<Layered<'_>> = theirs
             .iter_mut()
-            .map(|(other, laid_out)| Layered {
+            .map(|(other, its_pictures)| Layered {
                 target: *other,
                 layers: NativeLayers {
-                    desktop: Some(&laid_out.desktop),
-                    status: Some(&laid_out.status),
+                    desktop: Some(&its_pictures.desktop),
+                    status: Some(&its_pictures.status),
                     ..NativeLayers::nothing()
                 },
             })

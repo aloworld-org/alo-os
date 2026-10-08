@@ -175,6 +175,43 @@ fn no_arrangement_answers_no_display() {
     );
 }
 
+/// A display that draws, and says which one it is.
+///
+/// Needed since 2026-10-08: the per-display controls safeguard asks how many
+/// displays this session has **drawn**, not how many sets of controls were
+/// recorded, so a test about two displays has to have two displays draw. The
+/// earlier version of the test below recorded controls for two names without
+/// either drawing, which is not a two-display session — and it passed only
+/// because the safeguard was counting the wrong thing.
+struct ADisplay {
+    /// Its connector name, which is what the controls are keyed by.
+    named: &'static str,
+}
+
+impl crate::FrameTarget for ADisplay {
+    fn size(&self) -> smithay::utils::Size<i32, Physical> {
+        (1920, 1080).into()
+    }
+    fn submit(
+        &mut self,
+        _: &[smithay::reexports::wayland_server::protocol::wl_surface::WlSurface],
+    ) -> Result<
+        Vec<smithay::reexports::wayland_server::protocol::wl_surface::WlSurface>,
+        crate::RenderError,
+    > {
+        Ok(vec![])
+    }
+    fn metadata(&self) -> Result<crate::OutputMetadata, crate::RenderError> {
+        Ok(crate::OutputMetadata {
+            name: self.named.to_owned(),
+            make: "alo".to_owned(),
+            model: "a monitor".to_owned(),
+            physical_size: (310, 170),
+            refresh: 60_000,
+        })
+    }
+}
+
 /// Controls with a dock band of this height along the bottom of a display
 /// that is `across` wide and `down` tall, with its corner at `at`.
 fn a_dock_on(at: (i32, i32), across: i32, down: i32) -> crate::FixedControlsDrawn {
@@ -200,6 +237,17 @@ fn a_dock_on(at: (i32, i32), across: i32, down: i32) -> crate::FixedControlsDraw
 fn a_frame_is_held_to_the_controls_of_its_own_display() {
     let (_directory, mut server) = server_showing(two_side_by_side());
     let text = alo_appearance::TextScale::ordinary();
+    // **Both displays draw first**, so this is a session with two displays
+    // rather than a session with two sets of controls. The safeguard asks the
+    // first question.
+    let mut first = ADisplay { named: "DP-1" };
+    let mut second = ADisplay { named: "DP-2" };
+    let drawn = server.render_each_display(&mut [&mut first, &mut second], 1);
+    assert_eq!(
+        drawn.drawn().len(),
+        2,
+        "both displays have to draw for this to be a two-display session"
+    );
     let second_at = server
         .the_screens()
         .expect("an arrangement")
@@ -248,5 +296,66 @@ fn one_display_answers_as_it_always_did() {
         far_away.len(),
         1,
         "the one display stopped answering for a window off the desk"
+    );
+}
+
+/// **A display that drew without recording its controls is held to nothing,
+/// not to another display's furniture.**
+///
+/// This is the test that would have caught `more-than-one-display-plan.md`
+/// task 9's defect, and it is written from it rather than from the fix.
+///
+/// `Desk::present` recorded only the display the draw loop held, so on a
+/// two-display machine one set of controls existed and the safeguard —
+/// `fixed_controls.len() <= 1`, meaning *one set was recorded* — handed the
+/// first display's dock to every window on the second. A safeguard written to
+/// protect a single display was doing the opposite, and it hid the defect for
+/// two days.
+///
+/// The condition is now *how many displays have drawn*, which `presentations`
+/// answers. So the unrecorded display gets `None` — the same answer this gives
+/// before any frame, because nothing has been drawn **there** yet — and a
+/// future change that forgets a display again fails to nothing rather than to
+/// somewhere wrong.
+#[test]
+fn a_display_whose_controls_were_never_recorded_is_held_to_nothing() {
+    let (_directory, mut server) = server_showing(two_side_by_side());
+    let mut first = ADisplay { named: "DP-1" };
+    let mut second = ADisplay { named: "DP-2" };
+    assert_eq!(
+        server
+            .render_each_display(&mut [&mut first, &mut second], 1)
+            .drawn()
+            .len(),
+        2
+    );
+    let second_at = server
+        .the_screens()
+        .expect("an arrangement")
+        .each()
+        .map(|place| place.at().across())
+        .find(|across| *across != 0)
+        .expect("a second screen");
+
+    // Only the first display records anything — the defect, reproduced.
+    server.the_fixed_controls_were_drawn(
+        "DP-1",
+        a_dock_on((0, 0), 1920, 1080),
+        alo_appearance::TextScale::ordinary(),
+    );
+
+    let on_the_first = server.the_fixed_controls_on_the_display_for(a_window((10, 10), (100, 100)));
+    let on_the_second =
+        server.the_fixed_controls_on_the_display_for(a_window((second_at + 10, 10), (100, 100)));
+
+    assert_eq!(
+        on_the_first.len(),
+        1,
+        "the display that recorded its controls stopped answering with them"
+    );
+    assert!(
+        on_the_second.is_empty(),
+        "a window on the display that recorded nothing was held to the other \
+         display's dock, which is the fault this test exists for"
     );
 }
