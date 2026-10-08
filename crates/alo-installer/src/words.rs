@@ -31,7 +31,44 @@ pub use alo_strings::Word;
 // Starting, and whether the download is genuine.
 // ---------------------------------------------------------------------------
 
-/// The first line.
+/// This is a test build, and the day it was built.
+///
+/// [ADR 0096](../../../docs/decisions/0096-a-workflow-may-publish-a-candidate-and-a-candidate-announces-itself.md)
+/// control five, and **the first line on screen** — before [`STARTING`],
+/// because the person it protects kept a candidate and is running it later,
+/// with no page to consult and no network, and this is the only thing that
+/// reaches them.
+pub const A_TEST_BUILD_FROM: Word = Word::saying(
+    "installer.a-test-build-from",
+    "This is a test build of alo OS from {day}. It is not a release",
+)
+.noting(
+    "{day} is a date as year-month-day, for example 2026-09-28, the day this program was \
+     built. alo OS is the product's name and is not translated. **This is the first thing a \
+     person sees**, so it has to read as a plain warning rather than as a technical note: \
+     they may be about to install it on the only computer they have.",
+);
+
+/// The same, where the day it was built is not a day.
+///
+/// **The warning survives a broken date.** *It is a test build* is the half
+/// that protects somebody and the day is the improvement, so a value the
+/// program cannot read as a day loses the day and keeps the warning rather
+/// than showing junk or saying nothing at all.
+pub const A_TEST_BUILD: Word = Word::saying(
+    "installer.a-test-build",
+    "This is a test build of alo OS. It is not a release",
+)
+.noting(
+    "The same warning as the sentence above, for a build that cannot say which day it was \
+     made. alo OS is the product's name and is not translated.",
+);
+
+/// The first line, on a release.
+///
+/// A test build says `A_TEST_BUILD_FROM` above this one (ADR 0096 control
+/// five), so this is the first line a person reads on everything that is not
+/// a test build — which is every release.
 pub const STARTING: Word = Word::saying(
     "installer.starting",
     "This is the alo OS installer. It checks this computer first, and changes nothing until you \
@@ -1277,7 +1314,9 @@ pub const REMOVE_GONE_BUT_THE_COPY_STAYS: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 132] = [
+pub const EVERY_WORD: [Word; 134] = [
+    A_TEST_BUILD_FROM,
+    A_TEST_BUILD,
     STARTING,
     CHECKING_THE_DOWNLOAD,
     GENUINE,

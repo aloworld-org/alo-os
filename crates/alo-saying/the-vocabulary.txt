@@ -753,6 +753,8 @@ in-use.the-screen	The screen is in use by {who}
 indicator.no-compositor	What is leaving this machine cannot be shown: the desktop is not running. Sign in to the desktop, and the indicator appears with it
 indicator.nothing-is-leaving	Nothing is leaving this machine right now
 indicator.nothing-to-show-on	What is leaving this machine cannot be shown: no screen is connected. Connect a screen, and the indicator appears on it
+installer.a-test-build	This is a test build of alo OS. It is not a release
+installer.a-test-build-from	This is a test build of alo OS from {day}. It is not a release
 installer.adding-the-entry	Adding alo OS to the systems this computer can start
 installer.already-started	An earlier start of this installer left its area or its entry on this computer, so nothing was changed
 installer.answer.keep-windows	keep

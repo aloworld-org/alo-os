@@ -93,6 +93,19 @@ pub const THE_REPLACING_BEGINS: &str = "set alo_installing_replacing=";
 /// program set it — or nothing, for a program that is not a release.
 pub const THE_RELEASED_LIST: Option<&str> = option_env!("ALO_INSTALLER_ENVIRONMENT_SHA256");
 
+/// The day a candidate workflow built this program, as `YYYY-MM-DD` — or
+/// nothing, for a program that is a release.
+///
+/// [ADR 0096](../../../docs/decisions/0096-a-workflow-may-publish-a-candidate-and-a-candidate-announces-itself.md)
+/// control five, compiled in the way the list's digest above already is.
+/// `crate::a_test_build` is what reads it, and what decides what a person is
+/// told — including what to say when this is set to something that is not a
+/// day.
+///
+/// **Nothing is the ordinary case.** A release, a local build and every test
+/// binary all have nothing here, and all of them say nothing about it.
+pub const THE_CANDIDATE_BUILT: Option<&str> = option_env!("ALO_INSTALLER_CANDIDATE_BUILT");
+
 /// Room the FAT file system takes for itself in the area.
 const THE_FILE_SYSTEMS_OWN: u64 = 16 * MIB;
 
