@@ -1464,12 +1464,14 @@ release it moved into.
 
 ### Two windows onto one desk
 
-**Shown by:** nothing yet for the gesture. The **architecture** is built and
-tested: `more-than-one-display-plan.md` task 7 gives each display its own camera
-onto one canvas, and `the_camera_has_one_home` asserts there is exactly one
-holder of a camera per display and that the expected count has not dropped.
+**Shown by:** `crates/alo-shell/tests/the_camera_has_one_home.rs` for the
+architecture only — it asserts there is exactly one holder of a camera per
+display and that the expected count has not dropped. **Nothing shows the
+gesture.**
 
-**Still owed:** the gesture, which is the promise. Pointing two screens at the
+**Still owed:** the gesture, which is the promise. Task 7 of this milestone's
+display plan gave each display its own camera onto one canvas, so the model is
+there. Pointing two screens at the
 same part of the desk, or at different parts, is possible in the model and
 reachable by nothing a person can do — and **the model is not reached in
 production either**, because `Server::the_screens()` is `None` on every running

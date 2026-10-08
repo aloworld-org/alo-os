@@ -1295,11 +1295,11 @@ owner's direction. Where the work is: **task 18 of `docs/autonomy/more-than-one-
 
 ### alo OS says which desk it thinks you are at, once
 
-**Shown by:** nothing yet. The sentences themselves are built, translated and
-tested inside `alo-displays`, which is why this entry is about the showing
-rather than the words.
+**Shown by:** nothing yet.
 
-**Still owed:** anything that shows one. `Screens::notes()` returns them and
+**Still owed:** anything that shows one. The sentences themselves are built,
+translated and tested where they live, so what this entry is about is the
+showing rather than the words. `Screens::notes()` returns them and
 nothing reads it, because no production code builds a `Screens`. `notes.rs`'s own
 rule — *there is no note for the ordinary morning* — is written and must survive
 the wiring. Reached this release on 2026-10-08 by the owner's direction. Where
