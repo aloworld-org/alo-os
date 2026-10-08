@@ -67,7 +67,10 @@ fn every_production_source(at: &Path, into: &mut Vec<(String, String)>) {
             every_production_source(&path, into);
         } else if name.ends_with(".rs") && !name.ends_with("_tests.rs") {
             if let Ok(text) = std::fs::read_to_string(&path) {
-                into.push((path.to_string_lossy().into_owned(), production_part_of(&text)));
+                into.push((
+                    path.to_string_lossy().into_owned(),
+                    production_part_of(&text),
+                ));
             }
         }
     }
