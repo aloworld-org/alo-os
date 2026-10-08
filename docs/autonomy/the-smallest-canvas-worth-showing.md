@@ -887,11 +887,22 @@ anybody noticing**, which is what a blocker recorded as prose does. The
 committed snapshot `docs/design/figma-snapshot/70-28.xml`, refreshed 2026-10-07,
 holds **fourteen frames** for the three edges:
 
-| edge | resting | overflow | full screen · revealed | shared edge | composer open |
-|---|---|---|---|---|---|
-| Left | 70×391 | 70×807 | 70×391 | 70×391 | 70×391 |
-| Right | 70×391 | 70×807 | 70×391 | 70×391 | 70×391 |
-| Top | 691×74 | 1263×74 | 691×74 | 691×74 | — |
+| edge | resting | overflow | full screen · concealed | full screen · revealed | shared edge | composer open |
+|---|---|---|---|---|---|---|
+| Left | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Right | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Top | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+
+**Six variants each, not five.** An earlier version of this table listed five and
+left out *full screen · concealed*, because it was built from the frames that
+embed a `Dock / Left` instance rather than from the set itself. Corrected by
+enumerating the parent.
+
+**And the absence for Top is proven rather than likely.** The parent is a Figma
+**section**, `351:25693`, *Dock edges · v0.01 specification*, with **37 direct
+children**: a title, a subtitle, seventeen captions, seventeen frames and an
+*Implementation contract*. Enumerated in full, so *Top has no composer variant*
+is a complete count rather than a search that found nothing.
 
 None carries a `hidden` flag, and the side variants are **70 wide and 391 tall**
 — a band laid out for a vertical edge, not a horizontal one rotated, which is
