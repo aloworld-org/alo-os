@@ -104,10 +104,35 @@ pub enum Refusal {
 /// One change that could not be put back.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Remains {
-    /// The Windows volume is smaller by the area.
-    Smaller(Letter),
+    /// The Windows volume is smaller, by this much.
+    ///
+    /// **The amount is carried rather than assumed.** It used to be the
+    /// installer's area, a constant gibibyte, because that was the only amount
+    /// any road had ever taken. The road that keeps Windows takes tens of
+    /// gigabytes, and a sentence that told a person their Windows was a
+    /// gigabyte smaller when it was sixty would be this installer saying
+    /// something false about somebody's own computer - the one thing it may
+    /// never do.
+    ///
+    /// Read from the size Windows had less the size it was shrunk to, so a
+    /// shrink that gave up more than it was asked for is still said truthfully.
+    Smaller {
+        /// The drive Windows is on.
+        volume: Letter,
+        /// How many bytes smaller it is.
+        by: u64,
+    },
     /// The area is still on this disk, by its shown name.
     TheArea(String),
+    /// alo OS's own space is still on this disk, by its shown name.
+    ///
+    /// Only the road that keeps Windows can leave one. It is empty - nothing
+    /// of the person's was ever in it - which is why it is a different sentence
+    /// from [`Self::TheArea`] rather than the same one: a person reading what
+    /// is left on their disk is owed the difference between *the installer left
+    /// something of its own behind* and *the space it made for alo OS is still
+    /// there, and empty*.
+    TheSpace(String),
     /// The entry is still among the systems the computer can start.
     TheEntry,
     /// The next start is the installer's.
@@ -176,11 +201,12 @@ impl Remains {
     #[must_use]
     pub fn said_as(&self) -> (Word, Filling) {
         match self {
-            Self::Smaller(volume) => (
+            Self::Smaller { volume, by } => (
                 words::REMAINS_SMALLER,
-                Filling::of("volume", volume.drive()).and("area", sizes::needed(sizes::THE_AREA)),
+                Filling::of("volume", volume.drive()).and("area", sizes::taken(*by)),
             ),
             Self::TheArea(disk) => (words::REMAINS_THE_AREA, Filling::of("disk", disk.as_str())),
+            Self::TheSpace(disk) => (words::REMAINS_THE_SPACE, Filling::of("disk", disk.as_str())),
             Self::TheEntry => (words::REMAINS_THE_ENTRY, Filling::nothing()),
             Self::TheNextStart => (words::REMAINS_THE_NEXT_START, Filling::nothing()),
             Self::FastStartupOff => (words::REMAINS_FAST_STARTUP_OFF, Filling::nothing()),
@@ -245,8 +271,18 @@ mod tests {
             assert!(said.text().contains("nothing was changed"), "{refusal:?}");
         }
         for remains in [
-            Remains::Smaller(c),
+            Remains::Smaller {
+                volume: c,
+                by: sizes::THE_AREA,
+            },
+            Remains::Smaller {
+                // The amount the keep-Windows road takes, which is what
+                // used to be impossible to say.
+                volume: c,
+                by: 64 * sizes::GIB,
+            },
             Remains::TheArea("Msft Virtual Disk 0".to_owned()),
+            Remains::TheSpace("Msft Virtual Disk 0".to_owned()),
             Remains::TheEntry,
             Remains::TheNextStart,
         ] {

@@ -35,7 +35,7 @@ use crate::bitlocker::BitLocker;
 use crate::disks::Standing;
 use crate::ended::Refusal;
 use crate::found::Found;
-use crate::identities::DiskNumber;
+use crate::identities::{DiskNumber, PartitionNumber};
 use crate::windows_volume::{BesideWindows, Shrink, WindowsVolume};
 
 /// What the installer offers to do.
@@ -70,6 +70,20 @@ pub struct Offer {
     /// machine with a second disk will usually have both — which road is walked
     /// is a person's answer, not this function's.
     pub beside_windows: Option<BesideWindows>,
+    /// The partition on the Windows disk that the firmware starts from,
+    /// where that disk has one.
+    ///
+    /// **Only the road that keeps Windows needs it.** alo OS's loader goes
+    /// into a directory of its own inside that partition rather than into one
+    /// of alo OS's own, because there is only one start-up area on a disk and
+    /// Windows already has it. The boot environment is told which partition it
+    /// is, by number, rather than left to go looking on a disk it is keeping.
+    ///
+    /// A disk with none is a machine that does not start the way this
+    /// installer believes it does, and [`Self::beside_windows`] is [`None`]
+    /// there: a road whose start-up area cannot be named is a road that cannot
+    /// be walked, so it is not offered.
+    pub the_start_up_area: Option<PartitionNumber>,
 }
 
 /// One disk alo OS may be installed onto.
@@ -157,7 +171,15 @@ pub fn decide(found: &Found) -> Result<Offer, Refusal> {
     // or not another disk exists, because a person with a second disk may still
     // want to keep it for something else — both roads are *offered* here and
     // chosen later, which is how `the_windows_disk` is already handled.
-    let beside_windows = windows.beside_windows().ok();
+    //
+    // **And gated on the start-up area being nameable**, which is the
+    // difference between a road that is offered and a road that can be
+    // walked. This is the fault family `docs/misreadings/` keeps: a check
+    // whose inputs are less specific than its question. *Can this volume give
+    // up the space* is not the whole question; *and can the loader be put
+    // somewhere the firmware will look* is the rest of it.
+    let the_start_up_area = windows_disk.the_start_up_area();
+    let beside_windows = the_start_up_area.and_then(|_| windows.beside_windows().ok());
 
     // **The Windows disk is NOT yet one of the disks alo OS may go on.**
     //
@@ -198,5 +220,6 @@ pub fn decide(found: &Found) -> Result<Offer, Refusal> {
         disks_for_alo_os,
         the_windows_disk,
         beside_windows,
+        the_start_up_area,
     })
 }

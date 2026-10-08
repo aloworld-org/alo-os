@@ -33,7 +33,7 @@
 
 use std::path::{Path, PathBuf};
 
-use alo_installing::{DiskName, REPLACING, Replacing};
+use alo_installing::{DiskName, PartitionName, REPLACING, Replacing};
 use ring::digest::{SHA256, digest};
 
 use crate::machine::TheMachine;
@@ -61,6 +61,24 @@ pub const THE_CHOICE: &str = "EFI/BOOT/chosen.cfg";
 
 /// What the choice's one line begins with; the disk's name follows it.
 pub const THE_CHOICE_BEGINS: &str = "set alo_installing_to=";
+
+/// What the loader writes for the partition alo OS goes **into**, on the road
+/// that keeps what is already on the disk.
+///
+/// The installer plan's task 4. Written **beside** the disk rather than instead
+/// of it: the environment still waits for the disk, looks at it and says its
+/// name, because that is what the person chose and what every sentence is
+/// about. This says where on it alo OS goes.
+pub const THE_SPACE_BEGINS: &str = "set alo_installing_into=";
+
+/// And what the loader writes for the start-up area already on that disk —
+/// Windows' own.
+///
+/// **Both or neither.** `alo_installing::Told` refuses a command line carrying
+/// one without the other before it looks at a disk, because a root with nowhere
+/// to put a loader is an install that finishes and starts nothing. So these two
+/// lines are written together here or not at all.
+pub const THE_START_UP_AREA_BEGINS: &str = "set alo_installing_efi=";
 
 /// What the choice's second line begins with, on the one road that replaces the
 /// system already on the disk.
@@ -184,6 +202,35 @@ pub fn the_choice(disk: &DiskName, replacing: Replacing) -> String {
             format!("{choice}{THE_REPLACING_BEGINS}{REPLACING}\n")
         }
     }
+}
+
+/// The same choice, for the road that **keeps** what is already on the disk.
+///
+/// Three lines: the disk, the space alo OS goes into, and the start-up area
+/// already there. The installer plan's task 4.
+///
+/// **It cannot say *replace* as well, and that is enforced by its shape rather
+/// than by a rule.** `the_choice` takes a [`Replacing`] and this takes none, so
+/// there is no call that produces both — and `alo_installing::Told` refuses a
+/// command line claiming both roads if one ever reaches it anyway. Replacing
+/// what is there and keeping it are opposite answers to the one question the
+/// person was asked, and nothing here picks the safer of them.
+///
+/// **Both partitions or neither**, for the same reason: the environment refuses
+/// one without the other before it looks at a disk, so writing one alone would
+/// stage a command line that cannot be walked.
+#[must_use]
+pub fn the_choice_beside_what_is_there(
+    disk: &DiskName,
+    space: &PartitionName,
+    start_up_area: &PartitionName,
+) -> String {
+    format!(
+        "{THE_CHOICE_BEGINS}{}\n{THE_SPACE_BEGINS}{}\n{THE_START_UP_AREA_BEGINS}{}\n",
+        disk.as_str(),
+        space.as_str(),
+        start_up_area.as_str()
+    )
 }
 
 /// A path inside the area, beneath a root on this machine.

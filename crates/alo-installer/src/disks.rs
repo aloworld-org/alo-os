@@ -16,6 +16,8 @@
 //! the sentence the person reads says so.
 
 use alo_installing::{DiskName, THIS_INSTALLER};
+
+use crate::identities::PartitionNumber;
 use serde::Deserialize;
 
 use crate::identities::DiskNumber;
@@ -41,6 +43,13 @@ pub const THE_IMAGES_PARTITION_TYPES: [&str; 3] = [
     "{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}",
     "{4f68bce3-e8cd-4db1-96e7-fbcaf984b709}",
 ];
+
+/// The type of the partition a machine starts from, as GPT names it.
+///
+/// One of `THE_IMAGES_PARTITION_TYPES` above, named on its own because the road
+/// that keeps Windows asks a different question of it: not *does this disk hold
+/// an operating system* but *which partition does the firmware look in*.
+pub const THE_START_UP_AREAS_TYPE: &str = "{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}";
 
 /// The type of the partition alo OS itself lives on — Linux's root for this
 /// architecture. A disk without one holds no alo OS, whatever else it carries.
@@ -79,6 +88,14 @@ pub struct Disk {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 struct Partition {
+    /// Its number on its disk, which is what every program that changes a
+    /// partition is given.
+    ///
+    /// Read here because the road that keeps Windows has to name Windows' own
+    /// start-up area to the boot environment, and a type with no number is a
+    /// partition nothing can point at.
+    #[serde(default)]
+    partition_number: u32,
     /// Its volume's label, where it has one — and Windows gives none at all
     /// for a filesystem it cannot read.
     #[serde(default)]
@@ -237,6 +254,41 @@ impl Disk {
         )
     }
 
+    /// The number of the start-up area on this disk, where it has one.
+    ///
+    /// The partition the firmware looks in, by its type and never by its label
+    /// — Windows reports no label for it at all, and a disk that has been
+    /// installed to by somebody else may report something else again. The type
+    /// is the one thing a Windows program may ask about it and get a reliable
+    /// answer (see `THE_IMAGES_PARTITION_TYPES` above, which is the same
+    /// reading from the other end).
+    ///
+    /// **Needed only by the road that keeps what is already on the disk.** alo
+    /// OS's loader goes into a directory of its own inside Windows' start-up
+    /// area, so the boot environment has to be told which partition that is —
+    /// and it is told by name, not left to go hunting on a disk it is keeping.
+    ///
+    /// [`None`] where the disk has none, which for the disk Windows is on would
+    /// mean a machine that does not start the way this installer believes it
+    /// does. The caller refuses rather than guessing a number.
+    ///
+    /// **The first one, where a disk somehow has two.** A second start-up area
+    /// is a disk somebody else has already installed to, and the firmware's own
+    /// order is not a thing this program can read — so the honest answer is the
+    /// first, and the road that keeps Windows is for a disk with Windows on it
+    /// rather than for an unknown arrangement.
+    #[must_use]
+    pub fn the_start_up_area(&self) -> Option<PartitionNumber> {
+        self.partitions
+            .iter()
+            .find(|partition| {
+                partition
+                    .gpt_type
+                    .eq_ignore_ascii_case(THE_START_UP_AREAS_TYPE)
+            })
+            .map(|partition| PartitionNumber(partition.partition_number))
+    }
+
     /// What it is to this installer, given which disk Windows is on.
     ///
     /// In the order a person most needs to hear: that it holds Windows before
@@ -373,6 +425,7 @@ pub(crate) mod tests {
         assert_eq!(read_only.standing(DiskNumber(0)), Standing::NotUsable);
         let holding_a_linux = Disk {
             partitions: vec![Partition {
+                partition_number: 1,
                 label: "home".to_owned(),
                 gpt_type: "{0fc63daf-8483-4772-8e79-3d69d8477de4}".to_owned(),
             }],

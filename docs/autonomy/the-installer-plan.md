@@ -290,7 +290,7 @@ plan.
 5. **The refusal that keeps the Windows disk out is flipped last**, when the
    whole road exists and not before.
 
-**The road, as it stands 2026-10-06.** The environment can now install into a
+**The road, as it stands 2026-10-07.** The environment can now install into a
 partition rather than only over a whole disk: `alo.installing.into=` and
 `alo.installing.efi=` name the two partitions, both or neither; the file system
 is made on that one partition and mounted with Windows' start-up area beneath
@@ -298,9 +298,113 @@ it; and the writer is handed a root, with no `--wipe` and no `to-disk` on that
 road. **What stands between a mis-staged command line and somebody's Windows is
 a label**: the environment writes only a partition carrying `ALO-ROOT`, which
 the installer on Windows puts on the space it made and on nothing else
-(`docs/booting.md`). What remains is the Windows half — making those two
-partitions, formatting and labelling the space, and writing those two words
-into the staged command line — and then the walk.
+(`docs/booting.md`).
+
+**The Windows half is built, 2026-10-07**
+(`updates/the-windows-half-makes-alo-oss-space.md`). The installer shrinks the
+Windows volume by the area and alo OS's space together in one shrink, makes
+alo OS's space at the offset the arithmetic worked out, labels it `ALO-ROOT`
+and gives it no drive letter, and stages a command line that names the disk,
+that partition and Windows' own start-up area. Windows lays out its own disk
+while it is running; alo OS only fills what it was given.
+
+**What remains before the walk**, in this order:
+
+- **the fork the owner asked for on 2026-10-06** — three choices rather than
+  two: keep Windows and put alo OS beside it, use a separate empty disk, or
+  replace Windows with alo OS only. Keeping asks once, because nothing of
+  anybody's is destroyed; *only alo OS* asks twice and goes through
+  `erasing_consent.rs` after saying what is lost. The sentence promising how
+  much Windows gives up moves inside that fork, because the amount is the
+  road's and not a constant;
+- **then the refusal flip**, one line in `deciding.rs`, which is term 5 of the
+  ruling above and is last;
+- **then the walk**, both runs, in the order term 3 sets.
+
+**And the way back, which nothing had listed and this task's own title
+promises** — *switching between them easily, and back again*. Measured
+2026-10-07 by reading `crates/alo-installer/src/removing.rs`, not run:
+
+`remove_alo_os` finds the disk to clear with
+`Disks::the_one_alo_os_is_on`, which **excludes the disk Windows is on**, and
+then clears that disk whole with `ClearingTheDiskAloOsIsOn`. So on the
+same-disk road the removal finds nothing and refuses.
+
+**That filter is a safety guard and not an oversight.** The program erases a
+whole disk; on the same-disk road that disk is the one Windows is on. Lifting
+the filter without changing what the program erases would make *remove alo
+OS* erase Windows. It refuses, nothing is changed, and nothing is erased —
+which is the right behaviour for a road it cannot walk.
+
+**What is wrong today is the sentence, and it is a small lie.**
+`installer.remove.not-found` says *The disk alo OS is on could not be found*.
+On the same-disk road that disk was found; it is the disk Windows is on, and
+the real reason is that this program erases whole disks. A person told their
+disk *could not be found* will go looking for a hardware fault that is not
+there.
+
+**What is owed, and it is its own task rather than part of the fork:**
+
+- a removal that takes away alo OS's **partition** and grows Windows back into
+  the space, rather than clearing a disk;
+- the same label guard the install side has — remove only a partition
+  carrying `ALO-ROOT`, so a wrong partition number is a refusal and not a
+  person's Windows;
+- a sentence that says the true reason while that removal does not exist.
+
+**Nothing the installer says may promise this before it exists.** The fork's
+sentences say that Windows does not get the space back while alo OS is there,
+and stop — they do not say that removing alo OS later gives it back, because
+today it does not.
+
+**And it is not one sentence, it is seven.** Read 2026-10-07 by the Mac lane
+after the first was recorded. The removal vocabulary was written for a road
+where alo OS has a disk to itself, because until now that was the only road:
+
+| sentence | what it says | on the same-disk road |
+|---|---|---|
+| `remove.starting` | *Windows, and your files on it, are not touched* | **a promise, said first of all** |
+| `remove.will-erase` | *Removing it erases that disk* | that disk is Windows' |
+| `remove.not-found` | *The disk alo OS is on could not be found* | it was found; it may not be erased |
+| `remove.erasing` | *Erasing {disk}* | names Windows' disk |
+| `remove.gone` | *{disk} is empty, its space is free* | it cannot be emptied |
+| `remove.gone-but-the-copy-stays` | the same, and the copy | the same |
+| `remove.disk-not-cleared` | *erase it in Windows' own disk management* | that is Windows' disk |
+
+**`remove.starting` is the one that matters, and it needs its own paragraph.**
+It is said before any disk has been read — the first sentence the removal
+says, on every road, unconditionally. On the same-disk road it is true **only
+because the guard refuses afterwards.** It is not describing what the program
+does; it is describing what the program declines to attempt.
+
+So the day somebody lifts that filter to make removal work on this road, that
+sentence becomes the installer telling a person their files are safe while it
+erases them — **and it will still pass every test, because nothing holds a
+sentence to a filter.** That is the fault family `docs/misreadings/` keeps, in
+its most expensive form: not a check that cannot fire, but a promise whose
+truth is an accident of a check somewhere else.
+
+**What that adds to the task**, beyond the removal itself:
+
+- `remove.starting` is said **after** the road is known, not before it, so a
+  sentence about what is untouched is said by something that knows what it is
+  about to touch;
+- and the promise is tied to the thing that makes it true. A test that fails
+  if the filter is lifted without the sentence changing is worth more than the
+  sentence, because the filter is what somebody will edit.
+
+Found by reading, not by running. Nothing has shipped wrong: today the removal
+refuses this road and the promise holds. It is recorded now because the road
+that breaks it is being built in the same week.
+
+**One thing on this road is assumed rather than measured**, and it is written
+where it is used (`crates/alo-installer/src/naming.rs`): that Windows'
+partition number is the partition's index in the GPT table, which is what udev
+counts. The testing NUC's disk was read from both ends on 2026-10-07 and its
+four partitions agreed, entry for entry, but that is one disk Windows itself
+laid out. The `ALO-ROOT` label is what makes a wrong name a refusal rather
+than a loss, and the first run on metal reads back what Linux actually calls
+these partitions and compares.
 
 *This line opened with `deferred` until 2026-10-03, and `deferred` is not a word the
 supervisor knows.* `tools/kernel-loop`'s `NOT_YET` holds `blocked` and `scheduled`, and
