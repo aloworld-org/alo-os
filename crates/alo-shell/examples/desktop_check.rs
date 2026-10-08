@@ -10,6 +10,63 @@
 //! appearance decides, read left to right and right to left. A virtual output
 //! proves the drawing path, not a panel: a certified machine has not seen this
 //! desktop.
+//!
+//! # `--save-to <folder>`, and what the pictures in it are
+//!
+//! Off unless asked for. With it, one picture is written for each standing in
+//! each scheme and each reading — what was drawn, rather than the count of
+//! frames that is all this otherwise reports. It exists because thirteen
+//! fixtures in this folder draw and **nobody has said what a person makes of
+//! them**: whether the dock reads as a dock, whether the egress line is
+//! findable without being told it is there. That is not a test and cannot be
+//! one. It needs eyes, and eyes need pictures.
+//!
+//! # The frame count is not a constant, and must never be asserted
+//!
+//! The loop that draws one standing ends **on a clock, not on a count**: it
+//! submits frames for 60 milliseconds and then stops. So the number this
+//! prints is a measure of how fast the machine was, and it is different every
+//! time. Measured here on one machine in one sitting, with `--save-to` off:
+//!
+//! ```text
+//! 32 frames submitted
+//! 34 frames submitted
+//! 33 frames submitted
+//! ```
+//!
+//! This is written down because the number looks like a property and is not
+//! one. `docs/autonomy/updates/what-the-probes-draw-today.md` records *33
+//! frames* from an earlier run, and that is one sample of a varying quantity
+//! rather than a fact about the renderer. **A test that asserts it will go red
+//! on a slower machine**, and the person reading this file will be the one
+//! trying to work out why.
+//!
+//! Keeping a frame paints the scene a second time, so `--save-to` should cost
+//! frames — both runs with it on gave 32. **That is inside the spread of the
+//! runs with it off, so this says the flag is not free and does not claim to
+//! have measured what it costs.**
+//!
+//! # Three things are true of every picture
+//!
+//! The first is the one that matters to anybody reading this file later:
+//!
+//! 1. **it is not the screenshot promise.** That is a `[v0.5]` feature with a
+//!    person's own capture, a grant and a record. Nothing a person or an agent
+//!    can reach gained the ability to write a frame to disk — see
+//!    `support/saving_frames.rs`, which says exactly who can ask;
+//! 2. **it is what the renderer produced, not what reached a screen.**
+//!    `alo_shell::Nested::keep_each_frame` paints the same scene a second time
+//!    into a buffer that can be read, and `alo-shell`'s readback is documented
+//!    as supplying *unbound uploads, not presentation or flips*;
+//! 3. **it is software rendered here.** Under WSLg Mesa falls back —
+//!    `ZINK: failed to choose pdev` — so the geometry, the text layout and the
+//!    colours are the design's, while filtering and blending need not match
+//!    what a graphics card would do.
+
+/// Writing a drawn frame out, for a fixture asked to with `--save-to`.
+#[cfg(target_os = "linux")]
+#[path = "support/saving_frames.rs"]
+mod saving_frames;
 
 /// Main-thread graphics initialisation is required by winit.
 fn main() -> std::process::ExitCode {
@@ -50,9 +107,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut appearance = Appearance::shipped();
     appearance.follow(Following::from(Shipped::the_evening_schedule()));
     appearance.set_accent(Accent::Indigo);
+    // Each hour carries the scheme a person's own evening schedule puts it in,
+    // so that a saved picture is named by what somebody looking at it sees
+    // rather than by a number they would have to go and work out.
     let times = [
-        TimeOfDay::checked(9, 0).map_err(|error| format!("{error:?}"))?,
-        TimeOfDay::checked(20, 0).map_err(|error| format!("{error:?}"))?,
+        (
+            "light at 9am",
+            TimeOfDay::checked(9, 0).map_err(|error| format!("{error:?}"))?,
+        ),
+        (
+            "dark at 8pm",
+            TimeOfDay::checked(20, 0).map_err(|error| format!("{error:?}"))?,
+        ),
     ];
 
     let held = tempfile::tempdir()?;
@@ -68,7 +134,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     std::fs::write(documents.join("photo.jpg"), vec![0; 40_000])?;
 
+    // Asked for before anything is drawn, so a mistyped folder stops the run
+    // at the start rather than after two minutes of drawing nobody kept.
+    let mut saving = saving_frames::SaveTo::from_arguments()?;
+
     let mut nested = Nested::new("alo desktop check", (1366, 768))?;
+    if saving.is_some() {
+        // A second painting of each frame into a buffer that can be read. Left
+        // on for the whole run rather than turned on for a last frame: the
+        // frames of one standing are drawn in a loop that ends on a clock, so
+        // which one is last is not known until it has been.
+        nested.keep_each_frame(true);
+    }
     nested.pump()?;
     let mut labels = WindowControlLabels::new()?;
 
@@ -109,8 +186,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         )?);
         {
             let dock = Dock::shipped();
-            for now in times {
-                for reading in [Direction::LeftToRight, Direction::RightToLeft] {
+            for (scheme, now) in times {
+                for (which_way, reading) in [
+                    ("read left to right", Direction::LeftToRight),
+                    ("read right to left", Direction::RightToLeft),
+                ] {
                     let until = Instant::now() + Duration::from_millis(60);
                     while Instant::now() < until {
                         nested.pump()?;
@@ -150,6 +230,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         )?;
                         submitted += 1;
                         std::thread::sleep(Duration::from_millis(16));
+                    }
+                    // One picture for this standing in this scheme and this
+                    // reading, after its frames have been submitted — not one
+                    // per frame, which would be the same picture four times.
+                    if let Some(saving) = saving.as_mut() {
+                        let frame = nested
+                            .the_frame_just_drawn()
+                            .ok_or("keeping was asked for and no frame was kept")?;
+                        let at = saving.frame(&format!("{what}, {scheme}, {which_way}"), frame)?;
+                        println!("  wrote {}", at.display());
                     }
                 }
             }
@@ -253,6 +343,20 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Err("the departure did not end".into());
     }
     println!("{submitted} frames submitted");
+    if let Some(saving) = saving {
+        println!(
+            "{} pictures of what was drawn in {}",
+            saving.written(),
+            saving.folder().display()
+        );
+        // Said every time a picture is written, next to the pictures, because
+        // this is the sentence that stops one of them being shown as proof
+        // that a machine displayed the desktop. It has not.
+        println!(
+            "software rendered into a buffer that was read back, on a virtual output: \
+             what the renderer drew, not what a screen showed"
+        );
+    }
     Ok(())
 }
 /// A desk where nothing has been put aside.

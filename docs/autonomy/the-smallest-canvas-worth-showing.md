@@ -876,11 +876,62 @@ out of the published report.
 
 ### 11. The Dock at any edge a person chooses
 
-**Status:** **Open, and blocked on design.** **Depends on:** the left, right and
-top designs below, which do not exist. **Owner:** the `alo-dock` lane — this PC,
-lane B, under the settings plan's row in
+**Status:** **Open, and no longer blocked — the designs arrived.** **Owner:** the
+`alo-dock` lane — this PC, lane B, under the settings plan's row in
 [the lane table](a-new-machine-becomes-a-lane.md). **Written 2026-10-01 by the
-owner's direction.**
+owner's direction; unblocked 2026-10-08.**
+
+**What changed.** This task said *blocked on design … which do not exist*, and
+that was true when it was written on 2026-10-01. **It stopped being true without
+anybody noticing**, which is what a blocker recorded as prose does. The
+committed snapshot `docs/design/figma-snapshot/70-28.xml`, refreshed 2026-10-07,
+holds **fourteen frames** for the three edges:
+
+| edge | resting | overflow | full screen · concealed | full screen · revealed | shared edge | composer open |
+|---|---|---|---|---|---|---|
+| Left | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Right | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Top | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+
+**Six variants each, not five.** An earlier version of this table listed five and
+left out *full screen · concealed*, because it was built from the frames that
+embed a `Dock / Left` instance rather than from the set itself. Corrected by
+enumerating the parent.
+
+**And the absence for Top is proven rather than likely.** The parent is a Figma
+**section**, `351:25693`, *Dock edges · v0.01 specification*, with **37 direct
+children**: a title, a subtitle, seventeen captions, seventeen frames and an
+*Implementation contract*. Enumerated in full, so *Top has no composer variant*
+is a complete count rather than a search that found nothing.
+
+None carries a `hidden` flag, and the side variants are **70 wide and 391 tall**
+— a band laid out for a vertical edge, not a horizontal one rotated, which is
+the thing *both orientations* exists to require.
+
+**The hardest half of the blocker is answered by name.** This task said *the side
+variants must carry a usable alo Bar interaction of their own rather than the
+horizontal composer rotated*, and **`Dock Left / Composer open` and `Dock Right /
+Composer open` are drawn.** The owner's specification says the same thing in
+words — §11, *the alo composer opens horizontally into available space rather
+than becoming a rotated text field*.
+
+**And the behaviour each variant has to keep is now specified** in
+`docs/design/the-canvas-as-a-workspace.md`, which did not exist when this was
+written: §11 for overflow and for returning a person to their windows, §10 for
+the reveal path and its *continuous pointer path … moving towards an icon must
+not make it disappear*, §12 for the shared edge — *the panel retains its
+designated handle and opens its previews inward*.
+
+**Two questions remain for the owner, and neither blocks a start:**
+
+1. **Is `Full screen · revealed` also the hover-revealed case?** This task asked
+   for both *hover-revealed — the band revealed over a window that covers it*
+   and *full-screen*. The bottom edge has `Dock 02 · Hover target` and `Dock 11 ·
+   Full screen edge` as separate frames; the three new edges have one frame
+   each. Either the two cases are one at these edges, or one is still owed.
+2. **Does Top need a `Composer open`?** The other two have one because a vertical
+   edge cannot hold a horizontal composer. A top dock is already horizontal, so
+   it may need nothing — but that is the owner's to say rather than this lane's.
 
 `docs/features.md` promises it at **[v0.01]**: *the bottom edge by default, and
 the person may choose bottom, left, right or top*, working **in both
@@ -915,13 +966,14 @@ tests are what changes when this is done.
   timers**, which `docs/features.md` promises at v0.01 for the reason that a
   timer makes the behaviour depend on how fast somebody can move. Per-display
   placement stays at **[v0.5]** and is not in this task.
-- **Still owed before this can start:** the designs. See below.
+- **Nothing is owed before this can start.** The designs arrived; see below.
 
-#### The designs this task waits on
+#### The designs this task waited on, and what arrived
 
-**The left, right and top variants do not exist, and the instruction to schedule
-them did not create them.** The owner's direction of 2026-10-01 names this as a
-real blocker rather than a dependency to work around. What each variant needs:
+**This section said the left, right and top variants do not exist.** That was
+measured and true on 2026-10-01. The snapshot refreshed on 2026-10-07 has all
+three, so what follows is kept as the list of what each variant needed, with
+what arrived against it:
 
 - **resting** — the band at that edge with nothing hovered
 - **overflow** — more to show than the edge has room for
@@ -934,6 +986,7 @@ than the horizontal composer rotated.** A composer laid out along a short
 vertical edge is not the same control, and rotating it is the thing the *both
 orientations* clause in the promise exists to forbid.
 
-**Nothing in this task is startable from the bottom variant alone.** The Figma
-file has that one; building the other three from it would be this lane deciding
-a design, which the fifth law gives to the design rather than to the code.
+**That reasoning stands and is now satisfied rather than withdrawn.** Building
+the other three from the bottom variant would have been this lane deciding a
+design, which the fifth law gives to the design rather than to the code. The
+three were drawn instead, which is the right way for a blocker like this to end.

@@ -32,11 +32,22 @@ pub(crate) fn number(number: &Number, strings: &Strings) -> String {
 }
 
 /// The machine's memory, then the memory available, drawn above the rows.
+///
+/// **Each carries the word for what it is**, and this file does not write that
+/// word. `alo_measuring::Running::what_stands_above` says what a reading is,
+/// because that is the crate that took it — and because
+/// `crates/alo-shell/tests/desktop_source.rs` holds this file to wording
+/// nothing at all. A first attempt built the sentence here and that test
+/// refused it.
+///
+/// The digits are untouched either way: the rule at the top of this file
+/// stands, and a label is not a unit.
 pub(crate) fn remarks(running: &Running, strings: &Strings) -> Vec<String> {
-    vec![
-        number(running.memory_total(), strings),
-        number(running.memory_available(), strings),
-    ]
+    running
+        .what_stands_above(strings)
+        .into_iter()
+        .map(Said::into_text)
+        .collect()
 }
 
 /// Every process still running, then every process that ended, as rows.

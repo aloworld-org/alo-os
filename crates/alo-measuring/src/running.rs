@@ -10,7 +10,7 @@
 
 use std::time::Duration;
 
-use alo_strings::{Counting, Filling, Said, Strings};
+use alo_strings::{Counting, Filling, Said, Strings, Word};
 
 use crate::source::Number;
 use crate::words;
@@ -180,6 +180,46 @@ impl Running {
     pub fn memory_available(&self) -> &Number {
         &self.memory_available
     }
+
+    /// The two memory readings, each with the word for what it is.
+    ///
+    /// **What a window stands above its rows.** Until 2026-10-08 a window drew
+    /// these as two bare integers, one above the other, and a person reading
+    /// `33657806848` over `32728788992` had nothing to tell them which was
+    /// which, or that either was memory at all.
+    ///
+    /// **The wording is here rather than in whatever draws it.**
+    /// `crates/alo-shell/tests/desktop_source.rs` holds that the two files
+    /// making the desktop's rows word nothing — *the desktop adds no number of
+    /// its own* — and what a reading **is** belongs to the crate that took it,
+    /// the same way `Counted::said` and `Number::instead` already do. A first
+    /// attempt put this in the drawing and that test refused it, correctly.
+    ///
+    /// **The digits are untouched.** A reading the kernel gave is its own
+    /// digits; one it did not give is this crate's sentence in its place rather
+    /// than a zero, and that sentence still reads under a label because it says
+    /// why there is no number. Nothing here rounds, scales into a unit, sums or
+    /// averages.
+    #[must_use]
+    pub fn what_stands_above(&self, strings: &Strings) -> Vec<Said> {
+        vec![
+            beside(&words::MEMORY_ALL, &self.memory_total, strings),
+            beside(&words::MEMORY_AVAILABLE, &self.memory_available, strings),
+        ]
+    }
+}
+
+/// One reading with the word for what it is beside it.
+fn beside(word: &Word, reading: &Number, strings: &Strings) -> Said {
+    let digits = reading.value().map_or_else(
+        || {
+            reading
+                .instead(strings)
+                .map_or_else(String::new, Said::into_text)
+        },
+        |value| value.to_string(),
+    );
+    strings.say(&word.key(), &Filling::of("bytes", digits))
 }
 
 #[cfg(test)]
