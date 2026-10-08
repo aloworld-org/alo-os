@@ -88,14 +88,31 @@ fn every_number_in_the_running_window_is_the_one_the_kernel_gave() {
     let picture = drawn(&window, noon_look(&an_appearance(), Direction::LeftToRight));
 
     // The machine's memory above the rows, as the kernel counted it.
+    //
+    // **The digits must be the kernel's, and must now carry a word.** Until
+    // 2026-10-08 these two were drawn as bare integers and this assertion was
+    // an equality against them — a person saw one long number above another and
+    // could not tell which was which, or that either was memory. So the test
+    // keeps what it was for, that the number is untouched, and gains what it
+    // was missing: that the number is not alone. `contains` rather than the
+    // whole sentence, so the wording stays `alo-measuring`'s and a translation
+    // does not have to be repeated here to keep this passing.
     let remarks: Vec<&str> = picture.remarks.iter().map(|r| r.text.as_str()).collect();
-    assert_eq!(
-        remarks,
-        [
-            expected(running.memory_total()).as_str(),
-            expected(running.memory_available()).as_str()
-        ]
-    );
+    assert_eq!(remarks.len(), 2, "{remarks:?}");
+    for (remark, reading) in remarks
+        .iter()
+        .zip([running.memory_total(), running.memory_available()])
+    {
+        let digits = expected(reading);
+        assert!(
+            remark.contains(&digits),
+            "the kernel's own digits are not in {remark:?}"
+        );
+        assert_ne!(
+            *remark, digits,
+            "the reading is drawn with no word to say what it is"
+        );
+    }
     assert_eq!(running.memory_total().value(), Some(16_000_000 * 1024));
 
     // Every process, then every process that ended, in alo-measuring's order.

@@ -15,8 +15,8 @@
 //! sentence, never a zero. How a large number is grouped for a reader's region
 //! is not decided in any crate yet, so none is grouped here.
 
-use alo_measuring::{Number, Running, words};
-use alo_strings::{Filling, Said, Strings, Word};
+use alo_measuring::{Number, Running};
+use alo_strings::{Said, Strings};
 
 use crate::desktop_list::ListRow;
 
@@ -33,39 +33,21 @@ pub(crate) fn number(number: &Number, strings: &Strings) -> String {
 
 /// The machine's memory, then the memory available, drawn above the rows.
 ///
-/// **Each carries the word for what it is.** Until 2026-10-08 these were two
-/// bare numbers — a person saw `33657806848` above `32728788992` with nothing
-/// to tell them which was which, or that either was memory at all. The file
-/// knew: the line above this one has said so all along, to whoever read the
-/// source.
+/// **Each carries the word for what it is**, and this file does not write that
+/// word. `alo_measuring::Running::what_stands_above` says what a reading is,
+/// because that is the crate that took it — and because
+/// `crates/alo-shell/tests/desktop_source.rs` holds this file to wording
+/// nothing at all. A first attempt built the sentence here and that test
+/// refused it.
 ///
-/// The sentence is `alo-measuring`'s rather than one of this crate's, because
-/// *what this number is* is a fact about the reading and not about the drawing,
-/// and that crate already owns every other sentence these two windows say.
-///
-/// **The digits are untouched.** The rule at the top of this file stands — the
-/// number is drawn as the number, never rounded and never scaled into a unit.
-/// A label is not a unit.
+/// The digits are untouched either way: the rule at the top of this file
+/// stands, and a label is not a unit.
 pub(crate) fn remarks(running: &Running, strings: &Strings) -> Vec<String> {
-    vec![
-        beside(&words::MEMORY_ALL, running.memory_total(), strings),
-        beside(
-            &words::MEMORY_AVAILABLE,
-            running.memory_available(),
-            strings,
-        ),
-    ]
-}
-
-/// One reading with the word for what it is beside it.
-///
-/// The reading still goes through [`number`], so one the kernel did not give is
-/// `alo-measuring`'s sentence in its place rather than a zero — and it reads
-/// correctly under a label, because that sentence says why there is no number.
-fn beside(word: &Word, reading: &Number, strings: &Strings) -> String {
-    strings
-        .say(&word.key(), &Filling::of("bytes", number(reading, strings)))
-        .into_text()
+    running
+        .what_stands_above(strings)
+        .into_iter()
+        .map(Said::into_text)
+        .collect()
 }
 
 /// Every process still running, then every process that ended, as rows.
