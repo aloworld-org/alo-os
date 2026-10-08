@@ -1,6 +1,9 @@
 # ADR 0098 — The demo and the common case are the API road
 
-**Status:** PROPOSED, 2026-10-08. **Proposed by:** the owner, stated directly:
+**Status:** **ACCEPTED, 2026-10-08**, by the owner — *"I go with your
+suggestions"*, to a recommendation that it be accepted with *What sovereign
+means on this road* added, which it now carries.
+**Proposed by:** the owner, stated directly:
 *"that is not the blocker because most of the users will use the apis as few
 users have such machines that can run the models so also us we shall do the demo
 with the apis not models on the local machine"*, and clarified in the same
@@ -170,6 +173,67 @@ So: **whatever else the video shows, it shows the indicator**, and it shows a
 person finding the egress afterwards in the record. That is the demonstrable
 half of law 1, and the API road is the only road on which it can be
 demonstrated at all.
+
+## What *sovereign* means on this road
+
+`CLAUDE.md`'s first sentence calls alo OS **a sovereign AI workstation** whose
+first-class workload is *a model the customer owns*. If the demo, the common
+case and the certified machine are all the API road, **the word cannot go on
+meaning what it meant**, and a decision that is quiet about that lets a reader
+assume it survives unchanged.
+
+So, plainly. On the local-model road the claim is **nothing leaves**: a working
+day produces zero inference egress, measured at the network boundary and
+published. That claim is unaffected by this decision and is what the 32 GB
+machine proves.
+
+**On the API road the claim is the other two halves of the first two laws**, and
+they are not smaller, only different:
+
+- **Every network egress an agent causes is visible at the moment it happens and
+  afterwards in a record.** Not *we do not send your data* — *you can see every
+  time we do, and find it again later.*
+- **No verb runs an arbitrary command.** Every capability is an enumerated verb
+  with typed, validated arguments: no `exec`, no shell, no script the model
+  authored, no advanced escape hatch. A model that can write code that runs has
+  escaped every other control, so this is what makes the rest true rather than
+  decorative.
+
+**And the fifth law, which is what makes either of those add up to
+*sovereign*.** *The person chooses. alo never takes the choice away.* Four roads
+exist, the person picks one, nothing moves between them on its own in either
+direction, and a machine with no model at all is a supported state that does not
+nag. So on every road, ours included:
+
+> **The person decides where their inference happens, and can see it and change
+> it.**
+
+**Auditability without that is good logging.** Containment without it is a
+locked room. The three together are the product, and the third is the one a
+competitor cannot copy by adding a dashboard.
+
+**Auditability, containment and choice, rather than locality.** That is a weaker
+claim about where data goes and a stronger one about what an agent may do and
+who decides it — and it is the honest description of a machine using somebody
+else's API.
+
+**This is a continuation rather than a new claim, and
+[ADR 0095](0095-the-release-carries-no-model-and-a-person-brings-their-own.md)
+is where it was already made.** That decision says outright that *answering out
+of the box will then mean inference leaving the machine*, and rules that *a
+working day produces zero inference egress, measured at the network boundary*
+**belongs to the bring-your-own-weights road specifically, and must not be
+printed beside** a machine that answers through our API. This ADR carries that
+to the demo and the certified machine; it does not invent it.
+
+**Both are rare and the second is rarer.** A product can promise it does not
+send your data and be believed or not; a product whose agent *cannot* run an
+arbitrary command has made a structural choice a competitor cannot retrofit.
+
+**What this forbids.** Saying *sovereign* on the API road without saying which
+of the two claims is meant. The word is doing different work on each road, and a
+page, a demo or a sentence that uses it for both is selling the locality claim
+on the road that does not have it.
 
 ## What would make this wrong
 
