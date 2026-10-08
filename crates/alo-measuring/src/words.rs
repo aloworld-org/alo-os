@@ -296,6 +296,43 @@ pub const UNNAMED: Counted = Counted {
 };
 
 // ---------------------------------------------------------------------------
+// What stands above the rows of what is running — `crate::Running`.
+//
+// Two numbers were drawn there with no word beside either: a person saw
+// `33657806848` and `32728788992` and had to guess which was which. The window
+// has always known what they are — `crate::running_rows`' own comment says *the
+// machine's memory, then the memory available* — and said it only to whoever
+// read the source.
+//
+// **A word beside a number is not a unit.** `alo-shell`'s `running_rows` header
+// rules that nothing there rounds a number or scales it into a unit, and that
+// rule stands: these say how many bytes, in the digits the kernel gave, and the
+// digits are untouched.
+// ---------------------------------------------------------------------------
+
+/// How much memory this machine has, said above the rows.
+pub const MEMORY_ALL: Word = Word::saying(
+    "measuring.running.memory-all",
+    "Memory on this machine: {bytes} bytes",
+)
+.noting(
+    "Stands above the list of what is running. {bytes} is the number the kernel gave, in bytes, \
+     written out in full and never rounded or shortened into a unit. A phrase rather than a \
+     sentence: it is a label on a number.",
+);
+
+/// How much of it is still free, said above the rows.
+pub const MEMORY_AVAILABLE: Word = Word::saying(
+    "measuring.running.memory-available",
+    "Memory still available: {bytes} bytes",
+)
+.noting(
+    "Stands directly under the sentence above. Said as its own whole phrase, not as a \
+     continuation of that one, so a translator need not have read it. {bytes} is the kernel's \
+     own number, in bytes, never rounded.",
+);
+
+// ---------------------------------------------------------------------------
 // The two verbs: what each does, what a person is shown, and what each
 // argument is for. `crate::verbs` declares them from these.
 // ---------------------------------------------------------------------------
@@ -377,7 +414,9 @@ pub const MISSING: Word = Word::saying(
 );
 
 /// Everything this crate can say in one sentence each.
-pub const EVERY_WORD: [Word; 24] = [
+pub const EVERY_WORD: [Word; 26] = [
+    MEMORY_ALL,
+    MEMORY_AVAILABLE,
     NOT_ON_THIS_HOST,
     UNREADABLE,
     NO_INTERVAL,
@@ -481,7 +520,7 @@ mod tests {
     /// A key names one string.
     #[test]
     fn the_list_declares_into_a_vocabulary_once() {
-        assert_eq!(measuring_words().unwrap().how_many(), 27);
+        assert_eq!(measuring_words().unwrap().how_many(), 29);
         let mut vocabulary = Vocabulary::empty();
         declare_into(&mut vocabulary).unwrap();
         let again = declare_into(&mut vocabulary).unwrap_err();

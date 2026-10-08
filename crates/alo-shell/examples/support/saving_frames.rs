@@ -8,8 +8,9 @@
 //! the format or the code, which would look much the same; it is who can ask:
 //!
 //! - nothing in `alo-shell`'s public surface calls this. It is an example's
-//!   helper, compiled only into `desktop_check` and only when that fixture is
-//!   run by hand with `--save-to`;
+//!   helper, compiled only into the fixtures that include it — `desktop_check`
+//!   and `a_real_application` — and writing only when one is run by hand with
+//!   `--save-to`;
 //! - no agent verb, no D-Bus method, no server request and no key reaches it.
 //!   `alo-shell`'s readback says of the pixels it hands back that *it
 //!   exposes no server request, agent verb, screenshot or background capture*,
@@ -50,11 +51,30 @@ impl SaveTo {
     /// [`None`] when the flag is absent, which is every ordinary run.
     ///
     /// # Errors
+    /// Every one [`Self::from_these`] makes.
+    #[allow(
+        dead_code,
+        reason = "used by desktop_check and not by a_real_application, which parses its own \
+                  arguments. expect would be unfulfilled in the other build and refused"
+    )]
+    pub fn from_arguments() -> Result<Option<Self>, Box<dyn std::error::Error>> {
+        Self::from_these(std::env::args().skip(1).collect())
+    }
+
+    /// The same, from arguments a caller has already taken its own out of.
+    ///
+    /// **Split from [`Self::from_arguments`] so one file owns what `--save-to`
+    /// means.** A fixture with flags of its own — `a_real_application` has
+    /// `--run` and `--seconds` — cannot use the whole command line, and the
+    /// alternative was each fixture parsing this flag again and drifting on
+    /// what an unknown argument does.
+    ///
+    /// # Errors
     /// The flag with nothing after it, an unknown argument, or a folder that
     /// cannot be made. Each is a person's mistake at the start of a run, and
     /// being told beats a fixture that draws for two minutes and saves nothing.
-    pub fn from_arguments() -> Result<Option<Self>, Box<dyn std::error::Error>> {
-        let mut arguments = std::env::args().skip(1);
+    pub fn from_these(these: Vec<String>) -> Result<Option<Self>, Box<dyn std::error::Error>> {
+        let mut arguments = these.into_iter();
         let mut folder = None;
         while let Some(argument) = arguments.next() {
             match argument.as_str() {
@@ -77,11 +97,21 @@ impl SaveTo {
     }
 
     /// The folder being written into, for a fixture that wants to name it.
+    #[allow(
+        dead_code,
+        reason = "used by desktop_check and not by a_real_application, which parses its own \
+                  arguments. expect would be unfulfilled in the other build and refused"
+    )]
     pub fn folder(&self) -> &std::path::Path {
         &self.folder
     }
 
     /// How many frames have been written so far.
+    #[allow(
+        dead_code,
+        reason = "used by desktop_check and not by a_real_application, which parses its own \
+                  arguments. expect would be unfulfilled in the other build and refused"
+    )]
     pub fn written(&self) -> usize {
         self.written
     }
