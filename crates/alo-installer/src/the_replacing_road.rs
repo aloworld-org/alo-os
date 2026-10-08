@@ -23,7 +23,7 @@
 use alo_installing::Replacing;
 use alo_strings::{Filling, Strings, Word};
 
-use crate::asking::is_the_word;
+use crate::asking::{ASKED_AGAIN, is_the_word};
 use crate::bitlocker::BitLocker;
 use crate::deciding::{ForAloOs, Offer};
 use crate::ended::Refusal;
@@ -86,19 +86,29 @@ pub enum Road {
     ReplaceWindows,
 }
 
-/// How many times the road is asked again before it is left alone.
+/// Ask whether this computer has two systems or one, and take the answer.
 ///
-/// The same number `sequence.rs` uses for Fast Startup, and for the same reason:
-/// a question asked for ever is a computer a person cannot get out of. The answer
-/// it ends at is the one that changes nothing.
-const ASKED_AGAIN: usize = 3;
-
-/// Ask which road, and take the answer.
+/// The owner's instruction of 2026-10-06: *both Windows and alo OS, or alo OS
+/// on its own.* Where alo OS goes when both are kept is a second question and
+/// a different one (`crate::where_alo_os_goes`), asked only when a computer
+/// has both places.
 ///
-/// **Keeping Windows is what an unrecognised answer means**, every time and after
-/// the last time. Nothing a person types by accident, and nothing a console
-/// returns when it is gone, can reach the road that erases a disk — that road is
-/// only ever the word for it, typed.
+/// **Keeping Windows is what an unrecognised answer means**, every time and
+/// after the last time. Nothing a person types by accident, and nothing a
+/// console returns when it is gone, can reach the road that erases a disk —
+/// that road is only ever the word for it, typed.
+///
+/// **Two sentences, where this used to ask with one.**
+/// `installer.ask-which-road` held the question, a description of each road
+/// and a promise — *keeping it changes nothing you cannot undo* — under one
+/// key. That promise is honest about giving alo OS a disk of its own, where
+/// Windows lends the installer's area and gets it back. It is false about the
+/// road that puts alo OS on the disk Windows is on, where Windows gives up its
+/// space and does not get it back while alo OS is there. A sentence cannot
+/// promise reversibility for both, so the key retired (ADR 0068) and the claim
+/// came apart: the question here, the words to type in
+/// [`words::TYPE_KEEP_OR_REPLACE`], and what each road costs said on the road
+/// it is true of.
 pub fn which_road(machine: &mut impl TheMachine, strings: &Strings) -> Road {
     let answers = Filling::of(
         "keep",
@@ -113,7 +123,13 @@ pub fn which_road(machine: &mut impl TheMachine, strings: &Strings) -> Road {
             .into_text(),
     );
     for _ in 0..ASKED_AGAIN {
-        let typed = machine.ask(&strings.say(&words::ASK_WHICH_ROAD.key(), &answers));
+        say(
+            machine,
+            strings,
+            words::ASK_TWO_SYSTEMS_OR_ONE,
+            &Filling::nothing(),
+        );
+        let typed = machine.ask(&strings.say(&words::TYPE_KEEP_OR_REPLACE.key(), &answers));
         if is_the_word(&typed, words::ANSWER_REPLACE_WINDOWS, strings) {
             return Road::ReplaceWindows;
         }
@@ -232,6 +248,7 @@ pub fn walk<M: TheMachine, T>(
 mod tests {
     use super::*;
     use crate::disks::Disks;
+    use crate::machine::tests::Answering;
     // `disks.rs`' own description of what Windows prints, reused rather than
     // copied, so this crate holds one idea of what a machine's disks look like.
     use crate::disks::tests::PRINTED as SEVERAL_DISKS;
@@ -304,57 +321,6 @@ mod tests {
             // the disk whole and lets the environment lay out its own start-up
             // area, so it never asks which one was there before.
             the_start_up_area: None,
-        }
-    }
-
-    /// A machine that answers each question with the next of these.
-    struct Answering {
-        /// What it will say, in order.
-        answers: Vec<String>,
-        /// How many questions it was asked.
-        asked: usize,
-    }
-
-    impl Answering {
-        fn of(answers: &[&str]) -> Self {
-            Self {
-                answers: answers.iter().map(|a| (*a).to_owned()).collect(),
-                asked: 0,
-            }
-        }
-    }
-
-    impl TheMachine for Answering {
-        fn say(&mut self, _said: &alo_strings::Said) {}
-
-        fn ask(&mut self, _said: &alo_strings::Said) -> String {
-            let answer = self.answers.get(self.asked).cloned().unwrap_or_default();
-            self.asked += 1;
-            answer
-        }
-
-        fn run(&mut self, _program: &Program) -> std::io::Result<crate::machine::Ran> {
-            unreachable!("the question runs no program")
-        }
-
-        fn downloaded_into(&mut self) -> std::io::Result<std::path::PathBuf> {
-            unreachable!()
-        }
-
-        fn this_program(&mut self) -> std::io::Result<std::path::PathBuf> {
-            unreachable!()
-        }
-
-        fn read(&mut self, _file: &std::path::Path) -> std::io::Result<Vec<u8>> {
-            unreachable!()
-        }
-
-        fn write(&mut self, _file: &std::path::Path, _bytes: &[u8]) -> std::io::Result<()> {
-            unreachable!()
-        }
-
-        fn pause(&mut self, _for_as_long_as: std::time::Duration) {
-            unreachable!("nothing here waits on a timer")
         }
     }
 
