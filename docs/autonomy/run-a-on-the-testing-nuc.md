@@ -190,36 +190,44 @@ space, and `SizeMin`.
 
 ## How to leave the machine
 
-The installer left a copy of itself and a Start-menu shortcut. **Run the
-removal** — Windows' own settings, or that copy — and record what it says. On
-this road it is expected to **refuse**: removal clears a disk alo OS has to
-itself and this alo OS is on the disk Windows is on. The sentence it gives will
-say *the disk alo OS is on could not be found*, which is the wrong reason, and
-that is recorded as owed with task 4.
+**There is no firmware entry to remove, and no removal program to run.** This
+section said there were, and it was wrong: it was written when the kill was
+after the entry was written, and the kill moved to the file copy without this
+moving with it.
 
-So the machine is put back by hand, and it is **five things rather than two**.
-The testing lane listed them; Disk Management covers only the middle three:
+At the moment you kill it, steps 7 and 8 have not happened. **The installer's
+copy of itself, its Start-menu shortcut and the firmware entry named alo OS do
+not exist.** So the removal program is not on the machine, and running it from
+elsewhere would say *alo OS is not among the systems this computer can start*,
+which is correct and is not the thing being measured here.
+
+**So the clean-up is three things, all in Windows' own tools:**
 
 | | what | with |
 |---|---|---|
-| 1 | delete the 1 GB `ALO-INSTALL` area | Disk Management |
-| 2 | delete the 24 GB `ALO-ROOT` partition | Disk Management |
-| 3 | extend C: back by about 25 GiB | Disk Management |
-| 4 | **remove the firmware entry named alo OS** | `bcdedit /delete`, or the firmware's own setup |
-| 5 | put Fast Startup back on, and delete the installer's copy and its Start-menu shortcut | Windows settings |
+| 1 | delete the 1 GB `ALO-INSTALL` area and the 24 GB `ALO-ROOT` partition | Disk Management |
+| 2 | extend C: back by about 25 GiB | Disk Management |
+| 3 | put Fast Startup back on | Windows settings |
 
-**Step 4 is the one that matters and the one nothing else reaches.** Without it
-the firmware's boot list stays changed against the before-state, so the
-after-diff will show a difference that is not the installer's fault and is not
-nothing either. Disk Management cannot touch it.
-
-**Who runs `bcdedit` is the owner's to say.** It is a Windows tool and a
-measurement action rather than a code change, and the testing lane has said it
-is willing on the owner's word. Nobody should decide that from a checklist.
+**Check the firmware list anyway, and expect it unchanged.** `bcdedit /enum
+firmware` should match the before-state exactly. If it names alo OS, the kill
+landed later than intended and the run measured something else — say so, and
+then `bcdedit /delete` is needed and **who runs it is the owner's to say.** It
+is a Windows tool and a measurement action rather than a code change.
 
 **Say what the whole of it took**, because that is what a person who changed
-their mind faces today — and it is the argument for the removal task recorded
-with task 4.
+their mind faces, and it is the measurement behind the removal work.
+
+### What changes for run B, and is not true yet
+
+Pull request 583 gives the removal a road on this disk: it takes alo OS's
+partition away and removes the firmware entry, under the same guard that made
+the partition. It does **not** grow Windows back — that stays one step in Disk
+Management, deliberately.
+
+**It is open and not merged, and the candidate on the release page was built
+before it.** So the build being carried tonight does not have it, and run B's
+clean-up is the thing to re-read this for rather than this run's.
 
 ## What this run does not show
 
