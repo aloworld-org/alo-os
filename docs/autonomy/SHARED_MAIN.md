@@ -496,6 +496,33 @@ Only the designated integration owner edits these shared documents:
 - `docs/autonomy/QUEUE.md`
 - `docs/autonomy/STATE.md`
 
+### Who that is
+
+**The Mac lane, named by the owner on 2026-10-08.** Asked who it should be, they
+said *"anyone as long as I say so"*, and then chose.
+
+**Until that day this line designated nobody**, and the cost was measured rather
+than imagined: the Mac lane's pull request 568 sat on a red gate for a day
+because `every_plan_is_named_on_the_roadmap` wants a new plan's filename in
+`ROADMAP.md`, and **neither lane could write it.** Two lanes also independently
+verified a wrong tick in that file and neither could correct it. A rule naming a
+role nobody holds is a rule that stops work rather than ordering it.
+
+**Why that lane rather than the one that proposed this.** The third PC produced
+most of the day's changes, and the lane recording progress should not be the
+lane producing most of what is recorded. The Mac lane also put the gap to the
+owner rather than asking the third PC to make the edit for it, which is the
+judgement the role needs more than any amount of writing.
+
+**It is a serialisation role, not a judgement one.** `../misreadings/README.md`
+records three lanes appending to one file colliding 28 times in a week. The role
+exists so that one writer orders those edits; it does not make that lane's view
+of the work more correct than anybody else's, and a lane disagreeing with an
+entry says so in its own task report as before.
+
+**Changing it is the owner's, in writing, here.** *Anyone as long as I say so*
+is the rule; this line is where the saying lives.
+
 Other contributors include proposed changes to these documents in their own task
 report. They still update code-local rustdoc and relevant contracts in the same
 task; coordinate ownership before editing another shared specification. Tests
