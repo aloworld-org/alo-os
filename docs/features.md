@@ -97,6 +97,34 @@ Nothing here is a differentiator. All of it is required.
 - [v0.5] ★ **Divide the screen** — drag a window to an edge to take half, a corner to take a quarter, or split what is already open with the keyboard. The split holds while you work: resizing one side resizes its neighbour rather than overlapping it
 - [v0.5] Remember a split, so returning to a pair of windows restores the arrangement rather than the last position of each
 - [v0.5] Splitting works on an external display independently of the laptop's own
+
+**Screens and desks**
+
+*Added 2026-10-08 by the owner's direction, into the current release:* **"I want
+all the discussed features of the monitors to be in the next release after this
+one so you tasks today is to do all the features we have agreed on"**, following
+**"users can name the monitors by any name like 'cat'"**. *The tier is set here
+before one line of any of it is written, because `CLAUDE.md` binds building to
+this file — the same way **Full screen** was added on 2026-09-30 and
+**Notifications** was moved into this release on 2026-10-02. The design is
+settled in [ADR 0098](decisions/0098-a-screen-carries-the-name-its-person-gave-it.md)
+and the work is ordered in
+[`docs/autonomy/screens-and-desks-plan.md`](autonomy/screens-and-desks-plan.md).*
+
+*What makes these **scope** rather than sub-work, in one sentence: they add
+promises to a person. Somebody who can call a monitor `cat` has been offered
+something nobody was offered before, so not one line of it is written before this
+file carries it with a tier.*
+
+- [v0.01] ★ **A desk comes back when you arrive at it** — the screens in front of you, how they are arranged, how large things are on each, and where your windows were. Plug in at one desk and that desk returns; move to another and that one does. Nothing to choose, and nothing to set up twice. *The engine is built and tested in `alo-displays` — a separate arrangement per set of screens, with `three_sets_of_screens_remembered_apart` proving it — and has never had a caller. This line is what lets it reach a machine*
+- [v0.01] ★ **You name your screens, and the name is yours** — any name you like, typed on the screen it belongs to. `cat` is a valid name for a monitor. Two screens may carry the same name, because forbidding that would take a choice away for the machine's convenience. **A name is a label, never a key:** the machine tells screens apart by what they report and which socket they are in, and shows the person's word. A person's own name is never translated, as a screen's make and model are not (ADR 0098)
+- [v0.01] **Screens are named, not numbered, by default** — *the laptop*, *the big one on the right*. A number is the one thing nobody can match to the screen in front of them, which is the step people actually fail at
+- [v0.01] **alo OS says which desk it thinks you are at, once** — and says nothing on the ordinary morning. *The sentences are written and translated already in `alo-displays`: your screens are arranged the way you last left them; this screen has not been used with this machine before; your screens have changed since you arranged them and your arrangement is still here; the arrangement you made at your other desk is still here for when you are back at it. `notes.rs` holds the rule that there is no note for the ordinary morning, because a system that announces every screen every time is one whose announcements nobody reads*
+- [v0.01] ★ **Show me where** — when a screen is new, alo puts it beside the others and says so. If that guess is wrong, a card on the new screen is pushed off the edge towards the screen it actually sits beside, and **that gesture is the arrangement**. No map of grey rectangles to drag. Doing nothing keeps the guess and leaves the card offered where the notes are, so somebody who only wants to work is never stopped and never asked twice
+- [v0.01] **Unplug and nothing is lost; plug back in and nothing moved** — the windows on a screen that goes come home visibly, with how many and from where, and an undo. Plugging it back puts them where they were
+- [v0.01] **How large things are, per screen, in words** — *smaller*, *just right*, *bigger*, previewed on the screen being changed, with no percentages. **It cannot be offered until a display's size reaches an application's window and not only alo's own dock and panel** — measured 2026-10-08, and offering it before then would be a control that lies
+- [v0.5] **Two windows onto one desk** — point both screens at the same part of your desk, or at different parts, and either is ordinary. *The architecture is already this: `more-than-one-display-plan.md` task 7 gives each display its own camera onto one canvas. The gesture is the new promise, and it stays at `[v0.5]` so it cannot delay the lines above*
+- [v1] **Ask alo to use a screen by its name** — *put the chat on cat*. Kept at `[v1]` because an agent verb is a public contract surface, typed and enumerated under ADR 0001, and a contract is not changed to make a feature land sooner
 - [v0.01] Switching between windows, and between applications
 - [v0.5] Drag and drop between applications
 - [v0.5] Right-click context menus, wherever a person expects one
