@@ -733,7 +733,7 @@ changes.
 
 ### 11. A machine builds the arrangement it reports
 
-**Status:** ready — **unblocked 2026-10-08 by task 10.** **Owner:** the Mac.
+**Status:** ready — task 10 landed on 2026-10-08. **Owner:** the Mac.
 
 With the seam travelable, `alo-desktop` answers with an arrangement built from
 what the compositor reported.

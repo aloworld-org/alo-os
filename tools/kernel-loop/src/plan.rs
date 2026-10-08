@@ -261,7 +261,7 @@ fn read(written: &str) -> Vec<Task> {
         if marked_done(line) {
             current.done = true;
         }
-        if line.starts_with(THE_STATUS) && NOT_YET.iter().any(|word| line.contains(word)) {
+        if line.starts_with(THE_STATUS) && says_not_yet(line) {
             current.blocked = true;
         }
         if let Some(after) = line.split("**Depends on:**").nth(1) {
@@ -269,6 +269,28 @@ fn read(written: &str) -> Vec<Task> {
         }
     }
     tasks
+}
+
+/// Whether a status line says the task is not yet executable.
+///
+/// **A whole word, never a substring**, and the difference has cost two lanes
+/// an hour each. `NOT_YET` holds *blocked*, and **`unblocked` contains it** — so
+/// a status reading *ready — unblocked by task 10* was read as blocked and the
+/// task was stepped over while being ready the whole time.
+///
+/// It happened first in `accounts-and-session-entry-plan.md`, whose own text
+/// carries the warning *do not write `unblocked` in a status line*. That is a
+/// cure written where the next person will not look: the second lane to hit it
+/// was reading a different plan and had no reason to read that one. **A trap
+/// with a note beside it is still a trap**, so the reader is fixed here instead
+/// and the note becomes true rather than necessary.
+fn says_not_yet(line: &str) -> bool {
+    line.split(|what: char| !what.is_alphanumeric())
+        .any(|word| {
+            NOT_YET
+                .iter()
+                .any(|not_yet| word.eq_ignore_ascii_case(not_yet))
+        })
 }
 
 /// Whether a line of a task's section says the task is finished.
@@ -788,5 +810,38 @@ The plan says a finished task is marked `**Done, <date>.**`; this one is not.
                 "the plan's tasks are not numbered in order: {task:?}"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod says_not_yet_tests {
+    use super::says_not_yet;
+
+    /// **A status that says *unblocked* is not blocked.**
+    ///
+    /// The whole reason this function exists. Two lanes lost an hour to the
+    /// substring reading, and this is the case that must never regress.
+    #[test]
+    fn unblocked_is_not_blocked() {
+        assert!(!says_not_yet(
+            "**Status:** ready — **unblocked 2026-10-08 by task 10.** **Owner:** the Mac."
+        ));
+    }
+
+    /// **And a status that is genuinely blocked still reads as blocked**, so
+    /// the fix above cannot have been made by weakening the check.
+    #[test]
+    fn blocked_still_reads_as_blocked() {
+        assert!(says_not_yet(
+            "**Status:** blocked on 11. **Owner:** the Mac."
+        ));
+        assert!(says_not_yet("**Status:** blocked — on a machine."));
+        assert!(says_not_yet("**Status:** scheduled for after the models."));
+    }
+
+    /// **Ready is ready**, which is the other half nothing else asserts.
+    #[test]
+    fn ready_is_executable() {
+        assert!(!says_not_yet("**Status:** ready. **Owner:** the Mac."));
     }
 }
