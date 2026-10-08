@@ -752,6 +752,25 @@ fn the_whole_road_starts_the_environment_on_the_next_restart() {
 /// itself off: handed over as a systemd credential in the firmware's tables,
 /// which Windows and the environment never act on (nothing they start wants
 /// it), so nothing on any disk is changed to make it say this.
+/// **Three readings of what the machine is, each labelled, because the file
+/// carries three and they are not the same.**
+///
+/// `image/usr/lib/os-release` keeps `VERSION` and `CPE_NAME` ours while
+/// `VERSION_ID` and `PLATFORM_ID` stay Fedora's, for the reason that file's
+/// own header gives: package resolution reasons about `$releasever` and the
+/// platform id, and engines are configured rather than patched.
+///
+/// **This printed `$VERSION_ID` until 2026-10-08**, so the only reader of
+/// that file in the workspace - and the only place a walk on metal reports
+/// what the machine calls itself - echoed `alo OS 42`. A reading pointed at a
+/// number that cannot change when ours does would have gone on passing
+/// through any version-scheme change (ADR 0097).
+///
+/// `IMAGE_VERSION` is printed although nothing sets it yet: ADR 0097 owes
+/// that field to the image lane once it is measured that no engine reads it,
+/// and printing it now means the walk reports empty until it exists and the
+/// build identifier afterwards, with no second edit here. **Empty is a true
+/// reading of a field nothing sets**, which is what a walk is for.
 const THE_INSTALLED_SYSTEM_SAYS: &str = "[Unit]\n\
      Description=What the installed system started from, said on the serial line for the walk\n\
      After=multi-user.target\n\
@@ -760,7 +779,9 @@ const THE_INSTALLED_SYSTEM_SAYS: &str = "[Unit]\n\
      ExecStart=/usr/bin/echo ALO-INSTALLED-BEGIN\n\
      ExecStart=-/usr/bin/findmnt --noheadings --output SOURCE,FSTYPE /sysroot\n\
      ExecStart=-/usr/bin/sh -c 'lsblk --noheadings --inverse --output NAME,SERIAL \"$$(findmnt --noheadings --output SOURCE /sysroot | cut -d[ -f1)\"'\n\
-     ExecStart=-/usr/bin/sh -c '. /usr/lib/os-release; echo \"os-release: $$NAME $$VERSION_ID\"'\n\
+     ExecStart=-/usr/bin/sh -c '. /usr/lib/os-release; echo \"os-release: $$NAME $$VERSION\"'\n\
+     ExecStart=-/usr/bin/sh -c '. /usr/lib/os-release; echo \"os-release build: $$IMAGE_ID $$IMAGE_VERSION\"'\n\
+     ExecStart=-/usr/bin/sh -c '. /usr/lib/os-release; echo \"os-release base: $$VERSION_ID $$PLATFORM_ID\"'\n\
      ExecStart=-/usr/bin/systemctl show --property=Id,ActiveState,SubState alo-boundaryd.service alo-agentd.service\n\
      ExecStart=-/usr/sbin/efibootmgr\n\
      ExecStart=-/usr/bin/lsblk --noheadings --output NAME,LABEL,SIZE\n\
