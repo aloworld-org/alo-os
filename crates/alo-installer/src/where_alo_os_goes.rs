@@ -170,8 +170,8 @@ mod tests {
     use crate::starting::Starting;
     use crate::windows_volume::{BesideWindows, WindowsVolume};
 
-    /// **The machine this road was built for**: one disk, Windows on it, and
-    /// room to give alo OS a share. The testing NUC's shape.
+    /// **The machine this road was built for**: the testing NUC, one disk with
+    /// Windows on it.
     const ONE_DISK: &str = r#"[
       {"Number":0,"FriendlyName":"CT120BX500SSD1","SerialNumber":"1838E15788A1",
        "BusType":"SATA","UniqueId":"","Size":120034123776,"PartitionStyle":"GPT",
@@ -180,10 +180,25 @@ mod tests {
                      {"PartitionNumber":3,"GptType":"{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}","Label":"Windows"}]}
     ]"#;
 
-    /// What Windows prints for that volume, with room for both.
+    /// What Windows prints for that volume.
+    ///
+    /// **Which of these numbers are measurements, and which are not.** This
+    /// matters because an earlier version of this fixture had a size chosen to
+    /// be *like* the NUC's, and figures computed from it were then reported as
+    /// that machine's own. A fixture written to resemble a machine reads, in
+    /// the hands of whoever wrote it, as the machine.
+    ///
+    /// - `Size` and `Offset` are **measured**: that volume's own bytes, read on
+    ///   the machine 2026-10-08.
+    /// - `SizeRemaining` is the **floor of what the machine displayed** on the
+    ///   walk of 2026-10-07 — it said *69 GB free of 110 GB*, and free space is
+    ///   rounded down, so 69 GiB is the least it can have been.
+    /// - `SizeMin` is **not measured**. It is low enough not to be the binding
+    ///   constraint, which is all this fixture needs of it; a test that turned
+    ///   on it would be testing a number nobody read.
     const THE_VOLUME: &str = r#"{"DriveLetter":"C","DiskNumber":0,"PartitionNumber":3,
-      "Offset":123731968,"Size":119034123776,"SizeMin":34341593088,
-      "SizeRemaining":90000000000}"#;
+      "Offset":227540992,"Size":118873915392,"SizeMin":34341593088,
+      "SizeRemaining":74088902656}"#;
 
     /// This installer's own words.
     fn source() -> Strings {
@@ -293,6 +308,43 @@ mod tests {
             Places::Both { .. }
         ));
         assert_eq!(places(&offering(Vec::new())), Places::None);
+    }
+
+    /// **What this road would do to the testing NUC, from that machine's own
+    /// bytes.**
+    ///
+    /// Not a restatement of the arithmetic - `windows_volume`'s own tests check
+    /// the shrink against itself. This checks the **numbers a person on that
+    /// machine will be shown**, because those are what the walk compares
+    /// against, and because figures for this machine were once reported from a
+    /// fixture rather than from it.
+    ///
+    /// The three sentences a person reads must add up:
+    /// `installer.will.give-alo-os`'s own documentation says so, and a person
+    /// who adds the area and alo OS's share should get the amount Windows gave
+    /// up.
+    #[test]
+    fn what_this_road_does_to_the_testing_nuc() {
+        let windows = WindowsVolume::read(Some(THE_VOLUME)).unwrap();
+        let beside = windows.beside_windows().unwrap();
+
+        assert_eq!(windows.size, 118_873_915_392, "not that machine's volume");
+        assert_eq!(
+            beside.to, 92_030_369_792,
+            "Windows is not left where it was"
+        );
+        assert_eq!(beside.area_begins, 92_257_910_784);
+        assert_eq!(beside.alo_os_begins, 93_331_652_608);
+        assert_eq!(beside.alo_os, 24 * crate::sizes::GIB);
+
+        // **And the sentences add up.** What Windows gives up is the area plus
+        // alo OS's share, and each is said as a whole number of gigabytes, so
+        // the addition has to hold after rounding and not only before it.
+        let gives_up = windows.size - beside.to;
+        assert_eq!(gives_up, crate::sizes::THE_AREA + beside.alo_os);
+        assert_eq!(crate::sizes::taken(gives_up), "25");
+        assert_eq!(crate::sizes::taken(crate::sizes::THE_AREA), "1");
+        assert_eq!(crate::sizes::taken(beside.alo_os), "24");
     }
 
     /// **Nothing offers the same-disk road yet, and this test is what says so.**

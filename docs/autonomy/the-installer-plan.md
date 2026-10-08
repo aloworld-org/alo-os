@@ -310,15 +310,24 @@ while it is running; alo OS only fills what it was given.
 
 **What remains before the walk**, in this order:
 
-- **the fork the owner asked for on 2026-10-06** — three choices rather than
-  two: keep Windows and put alo OS beside it, use a separate empty disk, or
-  replace Windows with alo OS only. Keeping asks once, because nothing of
-  anybody's is destroyed; *only alo OS* asks twice and goes through
-  `erasing_consent.rs` after saying what is lost. The sentence promising how
-  much Windows gives up moves inside that fork, because the amount is the
-  road's and not a constant;
+- **the fork the owner asked for on 2026-10-06 is built, 2026-10-07**
+  (`updates/the-person-chooses-two-systems-or-one.md`). **Two questions rather
+  than three choices**, which is the one place the shape changed from what was
+  planned here: *both Windows and alo OS, or alo OS on its own*, and then,
+  only where a computer has both places, *the same disk as Windows, or the
+  empty disk*. A single three-answer menu would have offered *use a separate
+  empty disk* to a computer with no second disk — this machine, for one — and
+  then refused it for choosing it. Each road says its own amounts after it is
+  chosen and before it is consented to, and `installer.ask-which-road` retired
+  because its promise *keeping it changes nothing you cannot undo* is false on
+  the road that keeps Windows;
 - **then the refusal flip**, one line in `deciding.rs`, which is term 5 of the
-  ruling above and is last;
+  ruling above and is last. **It is ready and it has been watched working**:
+  the line was written in on 2026-10-07 to see
+  `where_alo_os_goes::tests::nothing_offers_the_same_disk_road_yet` go red,
+  the other four tests stayed green, and `deciding.rs` was restored from a
+  copy taken beforehand and read back. So what task 6 opens has been seen
+  open once, on this machine, with the refusal put back;
 - **then the walk**, both runs, in the order term 3 sets.
 
 **And the way back, which nothing had listed and this task's own title
