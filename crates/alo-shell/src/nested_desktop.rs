@@ -125,6 +125,50 @@ pub struct DesktopFrame<'a> {
     /// fractional display scale is a real thing — 125 and 150 are ordinary — and
     /// an integer factor would silently floor them to one.
     pub display_scale: u16,
+    /// How many applications the Dock is holding, so its band is the width its
+    /// contents need.
+    ///
+    /// # The same shape as `display_scale` above, one argument further on
+    ///
+    /// `dock_raster::picture` has always taken a count and sized the band from
+    /// it — `Room::a_bar_holding(holding)` — and **its call site passed the
+    /// literal `0`**, under a comment saying *nothing in this crate decides what
+    /// the Dock holds yet: `alo_dock::Holding` answers that and is not plumbed
+    /// into a compositor. A bar holding nothing is narrow, which is true rather
+    /// than a placeholder.* **That comment is correct**, and the seam was short
+    /// by an argument rather than wrong.
+    ///
+    /// # What a zero here is, and what it is not
+    ///
+    /// **Zero is the honest answer today and it is not this field's default.**
+    /// Measured 2026-10-08: nothing outside `alo-dock` ever builds a `Holding`,
+    /// a `Holding` needs an `alo_dock::Windows` nothing tracked, and
+    /// `alo-applications` has no icon concept in seventeen files. So a dock
+    /// holding nothing was true, and the 16 logical pixels it draws —
+    /// `MARGIN + MARGIN`, with nothing between — were the right 16 pixels.
+    ///
+    /// **What was wrong was that it could not become anything else.** A constant
+    /// where a count belongs does not correct itself when the inputs arrive, and
+    /// two of them in two files is how they drift apart.
+    ///
+    /// # Why the desktop counts and the shell does not
+    ///
+    /// *The shell shows and never measures.* Which applications are on the Dock
+    /// is the person's — pinned, open, or neither — and `Holding::showing`
+    /// answers it from a `Windows` whose **order is most recently used first,
+    /// across every application**. That order is the whole of *click an app to
+    /// return to where you last used it*, and it is session state this crate
+    /// does not hold.
+    ///
+    /// So the desktop counts and hands over a number, exactly as it hands over
+    /// `display_scale` and the four readings.
+    ///
+    /// The figure the design expects, for whoever draws the glyphs: the Dock's
+    /// implementation contract at Figma node `348:28451` gives a 32-pixel glyph
+    /// in a 44 target, pitched 56 — which is `ICON 48 + GAP 8`, the pitch
+    /// `alo-dock` already uses. See
+    /// `docs/autonomy/updates/the-dock-has-an-implementation-contract.md`.
+    pub dock_holds: usize,
 }
 
 impl Nested {
@@ -299,6 +343,7 @@ pub(crate) fn frame_pictures(
             panel_is_revealed: desktop.panel_is_revealed,
             filling_the_screen: desktop.filling_the_screen,
             display_scale: desktop.display_scale,
+            dock_holds: desktop.dock_holds,
         },
         &mut labels.fonts,
         size,
