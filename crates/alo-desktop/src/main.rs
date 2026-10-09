@@ -567,6 +567,20 @@ mod running {
                 // division at half the room it owns — and saying so here is the
                 // difference between a default and a silence.
                 display_scale: 100,
+                // **Nothing builds a `Holding` yet, so nothing is on the Dock.**
+                // Measured 2026-10-08: the only `.pin()` calls are
+                // `alo-dock`'s own tests, `Holding::showing` wants an
+                // `alo_dock::Windows` nothing tracked, and `alo-applications`
+                // names an icon in none of its seventeen files. So zero is the
+                // count and not a placeholder — a person with nothing pinned,
+                // nothing open and nothing installed has an empty Dock.
+                //
+                // **What makes it real is the third PC's half of this seam**: an
+                // `AppId` per mapped surface, then a `Windows` built from them,
+                // then `Holding::showing`. The literal now sits where the answer
+                // can be known rather than in the crate that draws, which is the
+                // whole of why this field exists.
+                dock_holds: 0,
                 look: self.look,
                 strings: &self.strings,
                 egress: &self.egress,
