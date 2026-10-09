@@ -2330,3 +2330,186 @@ be nothing for it to link against.
   release is pinned in the same change that its digest is known — which is what
   stopped task 38 from declaring a candidate it could not build.
 
+
+### 41. The Dock holds what the person has and what is open
+
+**Status:** scheduled — its two inputs are outside this plan. `alo-installed`
+has to reach `main`, and the third PC is building the `Windows` from the
+compositor's mapped surfaces. **Flip this to `ready` when both are there**;
+until then the loop steps over it and the nine tasks below wait on it rather
+than being attempted out of order. **Owner:** the Mac. **Depends on:** nothing
+in this plan.
+
+`alo_dock::Holding` is complete and **the compositor calls it nowhere** —
+measured 2026-10-09, eleven behaviour modules in `alo-dock` and three called.
+`Holding::showing` wants an `alo_dock::Windows`, *every window open on this
+machine, in the order they were last used*.
+
+Two inputs arrive separately: `alo-installed` reads the machine's applications
+(crate landed for this), and the third PC builds a `Windows` from the
+compositor's mapped surfaces.
+
+- **Acceptance:** a session with an application installed and a window open has
+  both on the Dock, and `DesktopFrame::dock_holds` is the count of what
+  `Holding::showing` returned rather than a number computed twice.
+- **Constraint:** **the order is use-order, not mapped order.** `windows.rs`
+  says *the order is the whole point* — it is the whole of *click an app to
+  return to where you last used it*. A builder producing mapped order compiles,
+  passes a membership test and silently breaks the promise, so the test asserts
+  the **order**.
+- **Constraint:** pinned applications keep their position whether open or
+  closed. §4 of the Dock's specification, and `Holding` already answers it —
+  nothing here reorders.
+
+### 42. Every icon has a place
+
+**Status:** ready — nothing about this task itself is unresolved; its order comes from **Depends on** below. **Owner:** the Mac. **Depends on:** 41.
+
+`alo_dock::layout` works out where each icon sits and **nothing calls it**. The
+band is drawn and nothing is drawn in it.
+
+- **Acceptance:** each application on the Dock has a rectangle, in the order
+  `Holding::showing` gave, at the pitch `measures` declares — `ICON` plus `GAP`
+  — within `MARGIN` of each face.
+- **Constraint:** **icon positions are stable.** `holding.rs` opens with it: *an
+  icon that moved when something else opened would make the Dock a thing a
+  person has to read before clicking.* A test opens a second application and
+  asserts the first icon has not moved.
+- **Constraint:** nothing here decides how many fit. `fit` already answers that
+  and is already called.
+
+### 43. An application with no artwork shows its first letter
+
+**Status:** ready — nothing about this task itself is unresolved; its order comes from **Depends on** below. **Owner:** the Mac. **Depends on:** 42.
+
+**The owner's decision of 2026-10-09**, asked what an application alo has no
+glyph for should look like: *first letter of its name*.
+
+Today that is **every** application: the design names four glyphs — Docs,
+Browser, Blender, Files — and none exists as artwork. So the first letter is not
+a fallback, it is the only glyph there is, and it is what makes a Dock visible
+at all.
+
+- **Acceptance:** an application on the Dock draws its name's first letter,
+  `GLYPH` logical pixels inside its `ICON` target, in the palette's own text
+  colour. Two applications with different names draw different letters.
+- **Constraint:** **the letter is the person's, not ASCII's.** A name beginning
+  with a non-Latin character draws that character. Taking `name[0]` as a byte
+  would split a multi-byte character and draw nothing — a test holds a name
+  beginning outside ASCII.
+- **Constraint:** `GLYPH` is 32 and does not shrink. The owner revised *may
+  reduce from 32 to 28* away: *smaller artwork alone does not create more usable
+  space.* `measures.rs` holds that at compile time.
+
+### 44. One click does what the Dock's own table says
+
+**Status:** ready — nothing about this task itself is unresolved; its order comes from **Depends on** below. **Owner:** the Mac. **Depends on:** 42.
+
+`alo_dock::clicking` answers what a click means for each state — closed,
+launching, one window, one window elsewhere, one on another Place, one put
+aside, several, background-only — and **nothing calls it.**
+
+- **Acceptance:** a click on an application with one window focuses that window;
+  with several, opens the picker; with none, launches. Driven through the
+  compositor rather than by calling `clicking` directly.
+- **Constraint:** **a click on an active application must not close or put aside
+  its window**, and *new window* is never the surprising result of clicking
+  something that already has windows. §5 says both outright.
+- **Constraint:** launching goes through `alo_applications::opener` and its
+  grant. The Dock does not acquire a second road to running a program.
+
+### 45. Choosing between an application's windows
+
+**Status:** ready — nothing about this task itself is unresolved; its order comes from **Depends on** below. **Owner:** the Mac. **Depends on:** 44.
+
+`alo_dock::previews` is the window picker and **nothing calls it.**
+
+- **Acceptance:** an application with several windows opens a list carrying each
+  window's own title and its Place; the active one is identified; Escape
+  dismisses it and returns focus to the Dock icon it came from.
+- **Constraint:** **the list does not rearrange under the pointer.** §7.
+- **Constraint:** a hover preview must not change a window's saved geometry or
+  become a second copy of it. §7 again, and it is the one that would be found
+  late.
+
+### 46. Hover says what it is, and moves nothing
+
+**Status:** ready — nothing about this task itself is unresolved; its order comes from **Depends on** below. **Owner:** the Mac. **Depends on:** 42.
+
+`alo_dock::peeking` exists and **nothing calls it.**
+
+- **Acceptance:** pointing at an icon reveals its name and open-window count;
+  keyboard focus reveals the same.
+- **Constraint:** **hover alone launches nothing, restores nothing, switches no
+  Place and gives alo no access.** §10 lists all of it.
+- **Constraint:** **no magnification that pushes neighbours sideways** — *the
+  person should be able to aim once and click*. The owner's 2026-10-09 decision
+  removes hover enlargement entirely.
+
+### 47. Names give way to icons where the edge demands it
+
+**Status:** ready — nothing about this task itself is unresolved; its order comes from **Depends on** below. **Owner:** the Mac. **Depends on:** 42.
+
+`alo_dock::labels` holds three states, one of which is a name that is not drawn,
+and `docs/features.md` promises *labels give way to icons where the short edge
+demands it.* **Nothing calls it.**
+
+- **Acceptance:** a Dock with room draws names; one without draws icons alone;
+  which applies comes from `Layout` rather than from a second judgement here.
+- **Constraint:** a name that is not drawn is still the accessible name. Dropping
+  it from the drawing must not drop it from what a screen reader says.
+
+### 48. A screen reader is told what a Dock icon is
+
+**Status:** ready — nothing about this task itself is unresolved; its order comes from **Depends on** below. **Owner:** the Mac. **Depends on:** 42.
+
+`alo_dock::announcing` says what is read out for one icon — *Browser, three
+windows* — and **nothing calls it.**
+
+- **Acceptance:** each icon carries an accessible name with its application and
+  its window count, through the same tree the agent uses, and states are
+  distinguishable without relying on colour.
+- **Constraint:** §20 — announce useful changes, not every animation. A dock that
+  narrates itself is one a person turns off.
+
+### 49. A file dragged onto an icon says what will happen first
+
+**Status:** ready — nothing about this task itself is unresolved; its order comes from **Depends on** below. **Owner:** the Mac. **Depends on:** 44.
+
+`alo_dock::offering` names a gesture before it happens and **nothing calls it.**
+
+- **Acceptance:** dragging a file over an icon says whether that application can
+  accept it and what the action would be; releasing does it; the file survives a
+  drop that fails.
+- **Constraint:** **nothing happens on the way.** `offering.rs`'s own header.
+  Hovering during a drag is not a drop.
+- **Constraint:** do not imply an application supports an operation it does not.
+  §17.
+
+### 50. Find and open an application, from the Dock
+
+**Status:** ready — nothing about this task itself is unresolved; its order comes from **Depends on** below. **Owner:** the Mac. **Depends on:** 43.
+
+§14's alo Bar is *the Dock's entry point for finding things and requesting
+help*, and **no crate in this workspace names one.** The design draws it: *Find,
+open, or ask*, 344 × 48 in the bottom Dock, 466 × 104 as a horizontal popover on
+a side Dock.
+
+**Only part of §14 is in this release, and the scope line is exact:**
+
+| §14 asks for | tier |
+|---|---|
+| find an application | **`[v0.01]`** — *Launcher and window management* |
+| find a file or folder | `[v0.5]` — *Search your own files* |
+| applications contribute to search | `[v1]` |
+
+- **Acceptance:** typing part of an application's name offers it, and choosing it
+  opens it through `alo_applications::opener`. Keyboard throughout: move, open,
+  return to the query, dismiss.
+- **Constraint:** **this release finds applications and nothing else.** A file
+  result would cross the scope gate, however natural it feels while in there.
+- **Constraint:** **it works with no model.** §14: *these functions must work in
+  No AI mode.* Entering text authorises no external processing — and on a side
+  Dock the composer opens horizontally and the input is never rotated.
+- **Constraint:** the Dock's search must not become a second way to run a
+  program. One road, through the grant that governs it.
