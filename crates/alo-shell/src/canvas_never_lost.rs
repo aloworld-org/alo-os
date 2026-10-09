@@ -151,10 +151,26 @@ impl crate::Server {
 /// visible pixel — a frame nobody could actually pick up, passing a check written
 /// to stop exactly that.
 ///
-/// Forty-four is the width a finger or a hurried pointer can be relied on to hit;
-/// twenty-four is a frame's name band at the height it is drawn. Settled by the
-/// owner on 2026-09-30 with the status area's placement, and recorded in task 8 of
-/// `docs/autonomy/the-smallest-canvas-worth-showing.md`.
+/// Forty-four is the width a finger or a hurried pointer can be relied on to
+/// hit. **Twenty-four is how much of the band must stay uncovered, and not the
+/// band's height** — the band is **48**.
+///
+/// This comment said *twenty-four is a frame's name band at the height it is
+/// drawn* until 2026-10-08, and that is wrong in the direction that does
+/// damage: somebody building the band from this line would draw it 24 tall and
+/// every test about exposure would still pass, because a 24-tall band fully
+/// exposed satisfies a rule asking for 24 exposed.
+///
+/// Three sources say 48, and none of them says 24:
+/// `canvas_never_lost_handle_tests.rs:20` — *a 300-pixel name band at the
+/// origin, **48 tall***, with `BAND` declared from it and a case noting *a band
+/// running 0..48*; the design file's `Canvas / Window title`, which is 48 in
+/// 1,574 of its 1,814 instances; and a reading of that node from the live file
+/// on 2026-10-08.
+///
+/// Settled by the owner on 2026-09-30 with the status area's placement — *one
+/// exposed pixel is technically reachable and practically lost* — and recorded
+/// in task 8 of `docs/autonomy/the-smallest-canvas-worth-showing.md`.
 pub const A_USABLE_HANDLE: (f64, f64) = (44.0, 24.0);
 
 impl crate::Server {

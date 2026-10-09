@@ -122,12 +122,28 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         // frame, when what is true is that this fixture did not request one.
         let first = server.mapped_surfaces().next().cloned();
         drawn += match &first {
-            Some(surface) => nested.render_window_controls(
-                &mut server,
-                Some((surface, (0, 0))),
-                asked.scheme,
-                drawn_as_time(drawn),
-            )?,
+            // **On the window, not in the corner of the screen.**
+            //
+            // This passed `(0, 0)` until 2026-10-09 and the controls drew at
+            // the screen's top-left while the application sat elsewhere — the
+            // owner saw a picture of it and said they belong on the app
+            // window. `WindowControlLayout::new` lays its three out starting
+            // **at** the origin it is handed, so the origin is the whole of
+            // where they go and this fixture was handing it the wrong one.
+            //
+            // **Top right, which is where the design puts them.** `Glass /
+            // Window controls` sits at x=794 of a 936-wide window, inset 8
+            // from the top — so the origin is the window's right edge, less
+            // the strip, less the inset.
+            Some(surface) => {
+                let at = where_the_controls_go(surface);
+                nested.render_window_controls(
+                    &mut server,
+                    Some((surface, at)),
+                    asked.scheme,
+                    drawn_as_time(drawn),
+                )?
+            }
             None => server.render(&mut nested, drawn_as_time(drawn))?,
         };
         let mapped = server.mapped_surfaces().count();
@@ -228,4 +244,44 @@ fn what_was_asked() -> Result<Asked, Box<dyn std::error::Error>> {
 #[cfg(target_os = "linux")]
 fn drawn_as_time(drawn: usize) -> u32 {
     u32::try_from(drawn.saturating_mul(16) % u32::MAX as usize).unwrap_or(0)
+}
+
+/// How wide the shell's three window controls are together.
+///
+/// `window_controls.rs` lays them out at offsets 0, 36 and 72, each 32 wide,
+/// so the strip spans 0..104. **Read off that file rather than guessed**, and
+/// it is not the design's 140 — the design's controls are 44 wide where the
+/// code's are 32, which `crates/alo-dock`'s own measurement settles as a 32
+/// glyph inside a 48 target rather than a disagreement.
+#[cfg(target_os = "linux")]
+const THE_STRIP_IS_WIDE: i32 = 104;
+
+/// The design's inset of the controls from the window's top and right edges.
+#[cfg(target_os = "linux")]
+const INSET: i32 = 8;
+
+/// Where this window's controls belong: its own top right, inset.
+///
+/// **This arithmetic should not be a fixture's.** Where the controls sit on a
+/// window is the design's answer and the shell's to apply, and every caller
+/// doing it again is every caller getting a chance to do it differently. It is
+/// here because `alo-shell` exports `window_buffer_origin` and **nothing
+/// public for a window's width** — so no caller outside the crate can place
+/// them to the design without reaching past the API, which is what this does.
+///
+/// Recorded as a gap rather than left as a trick.
+#[cfg(target_os = "linux")]
+fn where_the_controls_go(
+    surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
+) -> (i32, i32) {
+    // **The window, not the surface.** A client drawing its own decorations
+    // puts its shadow in the surface's margin, so the buffer starts above and
+    // left of anything a person calls the window's corner. Measured here on
+    // 2026-10-09: placed from the buffer, these drew about fifty pixels above
+    // the calculator's visible top edge and read as belonging to the screen.
+    let window = alo_shell::where_a_window_is(surface);
+    // A window narrower than its own controls keeps them at its left edge
+    // rather than hanging them off its side.
+    let inset = (window.size.w - THE_STRIP_IS_WIDE - INSET).max(0);
+    (window.loc.x + inset, window.loc.y + INSET)
 }
