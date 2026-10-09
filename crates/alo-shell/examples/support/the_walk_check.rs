@@ -341,6 +341,8 @@ fn the_desktop(
         &alo_access::TurnedOn::nothing(),
         alo_appearance::TimeOfDay::checked(9, 41).map_err(|why| format!("{why:?}"))?,
         alo_strings::Direction::LeftToRight,
+        // One display in this walk, so the name is only a key.
+        &alo_appearance::DisplayId::named("the-walks-display").map_err(|why| format!("{why:?}"))?,
     );
 
     // The indicator is told that nothing is leaving. A desktop whose indicator

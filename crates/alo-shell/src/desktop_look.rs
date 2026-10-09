@@ -39,6 +39,20 @@ pub struct DesktopLook {
     reading: Direction,
     /// The design's palette, or the one high contrast decides.
     contrast: Contrast,
+    /// The colour the plane's own surface is, on the display this frame is for.
+    ///
+    /// **ADR 0075: alo OS ships no wallpaper, and the plane's own surface is
+    /// the desktop.** So this is the *material* that decision names, in the one
+    /// form `alo_appearance::Background` has today — a plain colour. The image
+    /// ships `Token::Cream` for it, and `shipped.rs` says why that rather than
+    /// the white its token name once shared.
+    ///
+    /// **Per display, because the appearance only answers per display.**
+    /// `Appearance::background_on` takes a `DisplayId` and there is no other
+    /// accessor, which is `docs/features.md`'s *per display on a multi-monitor
+    /// desk* made structural rather than optional: a caller cannot ask for
+    /// *the* background, only for this screen's.
+    surface: Colour,
 }
 
 impl DesktopLook {
@@ -55,6 +69,7 @@ impl DesktopLook {
         turned_on: &TurnedOn,
         now: TimeOfDay,
         reading: Direction,
+        on: &alo_appearance::DisplayId,
     ) -> Self {
         Self {
             scheme: appearance.scheme_at(now),
@@ -62,7 +77,21 @@ impl DesktopLook {
             scale: appearance.text(),
             reading,
             contrast: Contrast::of(turned_on),
+            surface: appearance.background_on(on).colour(),
         }
+    }
+
+    /// The colour the plane's surface is drawn.
+    ///
+    /// **Until 2026-10-08 nothing asked, and `scene_drawing` cleared to black**
+    /// with a comment calling it *neutral clear, not the shell's pending
+    /// token-based visual design*. The design was not pending: `Background`,
+    /// `Wearing` and `ScreenBackground` were all built and the shipped colour
+    /// was `Token::Cream`. What was missing was a caller, which is the third
+    /// capability found that way in one day.
+    #[must_use]
+    pub const fn surface(self) -> Colour {
+        self.surface
     }
 
     /// Light or dark.
@@ -272,6 +301,7 @@ mod tests {
                 &TurnedOn::nothing(),
                 now,
                 Direction::LeftToRight,
+                &crate::desktop_testing::a_display(),
             );
             assert_eq!(look.scheme(), appearance.scheme_at(now));
             assert_eq!(look.accent(), appearance.accent_at(now));
@@ -284,7 +314,8 @@ mod tests {
                 &appearance,
                 &TurnedOn::nothing(),
                 morning(),
-                Direction::LeftToRight
+                Direction::LeftToRight,
+                &crate::desktop_testing::a_display(),
             )
             .scheme(),
             Scheme::Light
@@ -294,7 +325,8 @@ mod tests {
                 &appearance,
                 &TurnedOn::nothing(),
                 evening(),
-                Direction::LeftToRight
+                Direction::LeftToRight,
+                &crate::desktop_testing::a_display(),
             )
             .scheme(),
             Scheme::Dark
@@ -308,6 +340,7 @@ mod tests {
             &TurnedOn::nothing(),
             evening(),
             Direction::RightToLeft,
+            &crate::desktop_testing::a_display(),
         );
         assert_eq!(look.accent(), Accent::Rose.on(Scheme::Dark));
         assert_eq!(look.reading(), Direction::RightToLeft);

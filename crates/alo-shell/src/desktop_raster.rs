@@ -69,6 +69,12 @@ pub(crate) struct DesktopPicture {
     pub(crate) filling: ListPicture,
     /// How this display is divided, and what a drop would do.
     pub(crate) division: crate::division_raster::DivisionPicture,
+    /// The colour the plane's surface is, for this frame's display.
+    ///
+    /// Carried rather than drawn here: the surface is behind **every** element,
+    /// including a client's window, so it is the frame's clear colour and not
+    /// one more picture in a list that composites above it.
+    pub(crate) surface: alo_appearance::Colour,
 }
 
 /// What a desktop has on it, as the crates that decide each said it.
@@ -296,6 +302,7 @@ pub(crate) fn picture(
         running,
         filling,
         division,
+        surface: look.surface(),
     })
 }
 
