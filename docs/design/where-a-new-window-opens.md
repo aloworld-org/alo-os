@@ -99,6 +99,50 @@ would put one somewhere inaccessible, placement **restarts within the view**
 rather than continuing off the edge. A person opening ten terminals must end
 with ten reachable terminals.
 
+## The host's side of it, added 2026-10-09
+
+The owner assigned the integration to the lane that owns the host:
+
+> **Window band:** the host controls visibility from pointer position, keyboard
+> focus and active interactions. Keep it visible while the person moves onto
+> its controls or drags the window. **Hover must not change which windows exist
+> or are visible.**
+>
+> **Placement:** at a new window's first map, the host supplies the current
+> Place, camera/view bounds, reading direction, active-window geometry and
+> fixed-control bounds. **Pass these into the placement calculation explicitly;
+> do not duplicate the host's state inside the window store.**
+>
+> **Apply default placement once.** Restoring a window uses saved geometry;
+> later redraws or remapping must not unexpectedly reposition it.
+>
+> Preserve the agreed 16-unit neighbouring gap and 48-unit overlap offset,
+> subject to reachability.
+
+And the bar for calling it finished:
+
+> Completion requires a **production demonstration**: open two windows,
+> exercise placement, reveal and use the band, and verify that restoring
+> preserves geometry. **An exported function with no caller is not evidence of
+> working behaviour.**
+
+## One question this leaves open, named rather than answered
+
+**Does a remap keep its place?**
+
+`crate::window_placement::reset` clears a window's placement when it **unmaps**,
+on the rule that *placement belongs to one mapping lifetime, not the reusable
+protocol object*. So a client that unmaps and remaps the same surface arrives
+unplaced and is placed afresh.
+
+The contract says *later redraws or remapping must not unexpectedly reposition
+it*. A redraw does not — `place_unless_already_placed` holds that. **A remap
+after an unmap does**, because the placement was cleared in between.
+
+Which is right depends on what a remap means to the person: a window that
+flickered, or a new window. The two readings give different behaviour and the
+same code, so it is recorded here rather than settled quietly.
+
 ## Where this is implemented
 
 Nowhere yet, on 2026-10-09. `new_toplevel` in `crates/alo-shell/src/surfaces.rs`
