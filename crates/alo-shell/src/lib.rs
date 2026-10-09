@@ -369,7 +369,8 @@ pub use window_mode::WindowModeError;
 /// crate answers only **where**.
 pub use window_name_band::{BAND_IS_TALL, band_of, is_reachable};
 pub use window_placement::{
-    WindowPlacementError, has_been_placed, place_unless_already_placed, window_buffer_origin,
+    WindowPlacementError, has_been_placed, place_unless_already_placed, where_a_window_is,
+    window_buffer_origin,
 };
 pub use window_raise::WindowRaiseError;
 pub use window_resize::{ResizeEdge, ResizeGeometry, ResizeGeometryError};

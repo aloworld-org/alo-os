@@ -83,6 +83,31 @@ const A_REACHABLE_CORNER: (i32, i32) = (44, 24);
 /// Always returns a point: rule 5 means there is no case where alo declines to
 /// open a window, only cases where it opens in front of something.
 ///
+/// # Every rectangle is on the plane, and that is not free
+///
+/// `view`, `open`, `active` and `fixed` must all be in **plane space** — the
+/// endless canvas a person pans and zooms — because this compares them against
+/// each other.
+///
+/// **`fixed` is the one that is not already there.** A window's position is a
+/// point on the plane; the Dock is fastened to the display's edge and stays
+/// put however far the canvas zooms. So the recorded control bounds are screen
+/// space, and handing them in unconverted is right **only at zoom 1 with the
+/// camera at the origin** — which is every test's default here and exactly why
+/// nothing in this file catches it. Zoomed to half, a person would get windows
+/// avoiding a Dock twice its apparent size, in the wrong part of the plane.
+///
+/// The conversion belongs to the caller, because only the caller has the
+/// camera. It is `crate::scene`'s mapping inverted:
+///
+/// ```text
+/// screen = (plane - camera.at) * zoom
+/// plane  = screen / zoom + camera.at
+/// ```
+///
+/// Found by the host lane on 2026-10-09 while writing the caller, after both
+/// this file's header and a direct question about the parameter had missed it.
+///
 /// # What each argument is, because two of them are easy to fill wrongly
 ///
 /// **`view` is what the person can currently see on this display, and it is
