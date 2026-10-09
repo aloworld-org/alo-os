@@ -3,21 +3,53 @@
 
   WHY THIS IS A FILE OF ITS OWN AND NOT INSIDE 70-28.xml
 
-  It belongs to page 70:28, and 70-28.xml was exported on 2026-10-07 whose
-  highest node ids are 394:*. This component is 398:* — drawn after that
-  export. A full re-export of the page is 2.6 MB, which is how MANIFEST.md
-  records the last one being made: the harness persisted the tool's own bytes
-  and a script wrote the file. That road was not available here, so this
-  captures the one subtree that changed, in the same shape, rather than
-  leaving the record silent about a component being implemented against.
+  It belongs to page 70:28, and 70-28.xml does not contain it: a search of
+  that file for "External window edge" returns nothing, against 7,344 frames
+  that it does contain. A full re-export of the page is 2.6 MB, which is how
+  MANIFEST.md records the last one being made - the harness persisted the
+  tool's own bytes and a script wrote the file. That road was not available
+  here, so this captures the one subtree being implemented against rather than
+  leaving the record silent about it.
+
+  **70-28.xml is stale for this component and this file is authoritative for
+  it.** The page export is still the record for everything else.
+
+  THIS IS AFTER THE COMPACT-SIZE UPDATE, AND NOT BECAUSE OF ITS NODE IDS
+
+  The owner warned that ids do not establish freshness: existing 398:* nodes
+  were edited in place, and the new visual elements were added under 402:*.
+  So "398 is higher than 394" proves nothing about this capture.
+
+  Two things do.
+
+  First, it was read from the LIVE FILE on 2026-10-09, node by node, with
+  get_metadata. It is not derived from any earlier export, so it is current as
+  of that read by construction.
+
+  Second, and checkable by anybody reading this file: the 402:* elements are
+  HERE. 402:26312, 402:26313 and 402:26318 each appear below, each named
+  "32px visible edge / 44px interaction", each 32 high at y 12 of a 44 region.
+  Those nodes ARE the compact-size update. A capture made before it could not
+  contain them.
 
   WHAT IS AND IS NOT HERE
 
   Every node of the component, with its own ids, names and geometry, read with
   get_metadata. Geometry is what that tool returns: id, name, x, y, width,
-  height. Fills, strokes, radii and effects are NOT node metadata and are not
-  here; the variables each variant resolves are in variables.toml under this
-  component's heading, read with get_variable_defs.
+  height.
+
+  Fills, strokes, radii and effects are NOT node metadata and are not here.
+  The variables each variant resolves were read separately with
+  get_variable_defs and are recorded in variables.toml - bg/cool and
+  status/danger carry 398:26260 in their also_seen_in, and that reading is what
+  moved both from "the owner stated this value" to measured. The rest
+  (bg/surface, border/default, text/primary, text/muted, radius/sm, radius/md)
+  were already recorded from Foundations and are unchanged by this reading.
+
+  An earlier version of this header said the variables were "under this
+  component's heading" in variables.toml. There was no such heading and nothing
+  had been written there; it was a false statement in a committed file and is
+  corrected here rather than quietly deleted.
 
   Coordinates are local to each parent, as the tool reports them.
 -->

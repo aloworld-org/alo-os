@@ -8,6 +8,33 @@ that prose was 55 top-level frames behind without anything saying so.
 **Approved by the owner on 2026-10-04**, with the size explicitly accepted: *an untraceable
 design change is the larger problem.*
 
+## Stale for one component, 2026-10-09
+
+**`70-28.xml` is stale for `Canvas / External window edge` and
+`398-26305.xml` is authoritative for it.** The page export is still the record
+for everything else in the file.
+
+The component is not in the page export at all - searched for by name, nothing,
+against the 7,344 frames that export does hold. It is being implemented
+against, so it is captured in full as its own file rather than left unrecorded.
+
+**Freshness is not claimed from node ids, and must not be.** The owner's
+direction of 2026-10-09: *node IDs alone do not establish freshness: existing
+398:\* nodes were edited, and new visual elements were added under 402:\*.*
+So the capture evidences itself two other ways - it was read from the live file
+node by node on 2026-10-09 rather than derived from any export, and it contains
+`402:26312`, `402:26313` and `402:26318`, each named *32px visible edge / 44px
+interaction*, which are the compact-size update itself. A capture made before
+that update could not hold them.
+
+The tokens its variants resolve are in `variables.toml`. Two of them -
+`bg/cool` and `status/danger` - carried *the owner stated this value* because
+no light node here had shown them; `398:26260` resolved both directly, so both
+are now measured and name that node in `also_seen_in`.
+
+A full-page re-export remains owed and does not block this component, by the
+owner's direction of the same day.
+
 ## Refreshed 2026-10-07, and the staleness is cleared
 
 **The re-export this file said was owed has landed.** `70-28.xml` now carries the design as

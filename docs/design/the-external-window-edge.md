@@ -8,8 +8,15 @@ file rather than read off a picture.** Recorded before implementation, which is
 
 **The design:** `Canvas / External window edge`, node `398:26305` of
 `nDxyF5Ho9oC4RObjVzwBNJ`, seven variants. Read live on 2026-10-09 and committed
-at `figma-snapshot/398-26305.xml` — **it is not in `70-28.xml`**, whose export
-of 2026-10-07 stops at node ids `394:*`, so the component was drawn after it.
+at `figma-snapshot/398-26305.xml`, **which is authoritative for this component
+while `70-28.xml` is stale for it** — the page export does not contain it at
+all.
+
+**Freshness is not claimed from node ids.** The owner's direction: *node IDs
+alone do not establish freshness: existing 398:\* nodes were edited, and new
+visual elements were added under 402:\*.* The capture evidences itself by
+being read from the live file on 2026-10-09, and by containing `402:26312`,
+`402:26313` and `402:26318` — the compact-size elements themselves.
 
 **It supersedes the earlier 56px strip proposal**, by the owner's direction.
 
@@ -31,15 +38,40 @@ what its titlebar looks like. `crates/alo-shell/src/surfaces.rs` already answers
 every `xdg_decoration` request with `Mode::ServerSide`; what an application then
 does is a fact to be read, not inferred.
 
-## Two cases
+## The decoration decision
 
-| the application | alo's external edge carries |
+The owner's ruling of 2026-10-09, which settles what is drawn for each kind of
+window:
+
+| window | what appears |
 |---|---|
-| supplies its own decorations | a movement affordance and a window menu — **no duplicate minimise/maximise/close** |
-| delegates decorations to the shell | a movement affordance, the window title, and alo's window controls |
+| the application draws its own header | **keep that header**, and add alo's external movement edge and window menu — **no duplicate window buttons** |
+| the shell supplies decorations | the external edge carries the title, the movement and the controls — **and `Canvas / Window title` is not also drawn inside** |
+| a borderless application | its content is preserved, and it gets the external movement edge and access to shell actions |
 
 An application with incomplete controls still reaches every shell action
 through the window menu and the keyboard.
+
+### The internal 48px band is superseded, and this is what that means
+
+**For ordinary shell-decorated windows the internal `Canvas / Window title`
+band is replaced by this edge.** Two bands on one window is the duplicate
+surface this ruling exists to prevent.
+
+**That it is still in Figma does not authorise a second band.** A component
+left in a design file is not an instruction to draw it, and this is written
+down because the next person to find `Canvas / Window title` — 1,814 instances,
+48 tall — will reasonably assume it is current.
+
+**Shared implementation pieces are kept where useful; the duplicate surface
+leaves the rendering path.** So `crate::window_name_band`'s arithmetic may
+survive as arithmetic — a band's rectangle, a reachable handle — while nothing
+draws a second band on a window that has this edge.
+
+**What this does not touch:** `canvas_never_lost`'s `A_USABLE_HANDLE` of
+44 × 24. That is the minimum reachable grab area, it is about not losing a
+window, and this edge's 44-high interaction region accommodates it rather than
+replacing it.
 
 ## The measurements
 
@@ -163,11 +195,13 @@ that dragging or window actions work.
 
 > Do not mark this complete merely because the drawing component exists.
 
-## What this supersedes
+## What this supersedes — settled 2026-10-09
 
-`crate::window_name_band`'s `BAND_IS_TALL` is **48**, from `Canvas / Window
-title` — the band *inside* a shell-drawn window. This edge is **outside** the
-window and its strip is 32 in a 44 region. **They are different surfaces and
-both numbers are current**; anything reading one for the other is wrong.
-Whether the internal band survives alongside this edge is the owner's and is
-not decided here.
+An earlier version of this document said the internal 48px band and this edge
+were *different surfaces and both numbers are current*, and left whether the
+band survives as an open question for the owner.
+
+**The owner has answered: it does not, for ordinary shell-decorated windows.**
+See *The decoration decision* above. 32-in-44 is the live measurement; 48 is
+the superseded internal band; and the duplicate surface comes out of the
+rendering path while any useful arithmetic may stay.
