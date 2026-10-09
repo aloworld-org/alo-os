@@ -329,6 +329,7 @@ mod window_control_scene;
 mod window_control_snapshot;
 mod window_controls;
 mod window_dividing;
+mod window_edge;
 mod window_full_screen;
 mod window_maximize;
 mod window_minimize;
@@ -348,6 +349,11 @@ pub use status_items::StatusItems;
 pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_dividing::NotDivided;
+pub use window_edge::{
+    A_TARGET_IS, ARTWORK_IS, BETWEEN_TARGETS, Control, Decorations, Edge, OnTheEdge,
+    THE_DRAG_STARTS_AT, THE_GRIP_IS, THE_REGION_IS_TALL, THE_STRIP_IS_TALL, THE_STRIP_STARTS_AT,
+    edge_of,
+};
 pub use window_full_screen::WindowFullScreenError;
 pub use window_maximize::WindowMaximizeError;
 pub use window_minimize::WindowMinimizeError;
