@@ -769,6 +769,44 @@ impl LoopInput for Desk<'_> {
         // `crate::canvas_fixed_controls::Server::bring_back_frames_the_moved_controls_hide`,
         // which holds the argument and the `was` that road will need.
         let _ = server.bring_back_frames_the_moved_controls_hide();
+        // **And a window that has just opened is given somewhere to be.**
+        //
+        // `docs/design/where-a-new-window-opens.md` is the owner's
+        // specification and `crate::where_a_window_opens` implements it; until
+        // this line it had no caller, so `new_toplevel`'s Place-and-no-position
+        // stood and **the second window opened exactly on the first**. That
+        // breaks `docs/features.md`'s `[v0.01] ★ Every goal is a canvas` —
+        // *nothing is stacked* — on the second window, which is why this is an
+        // existing promise made true rather than a feature added.
+        //
+        // **Here, and the position in this function is the whole argument.**
+        // Three things have to have already happened and one must not have:
+        //
+        // - the buffer has arrived, so the window has an extent. `server.dispatch()`
+        //   ran before `present` and that is where `commit` sets `mapped`.
+        // - a window being **restored** has already been put back, a hundred
+        //   lines above. So a remembered place wins and arrives here already
+        //   placed — the contract's rules 1 and 2, kept by order rather than by
+        //   a condition.
+        // - **this frame's** fixed controls are recorded, by the two calls just
+        //   above. At the top of `present` they would be the previous frame's,
+        //   and on the first frame there would be none at all — a window placed
+        //   against controls that had not been laid out yet.
+        // - and the frame has not been composited: `render_each_display` is
+        //   below. So the window is drawn where it belongs on its **first**
+        //   frame and a person never sees it at the origin.
+        //
+        // It is beside `bring_back_frames_the_moved_controls_hide` on purpose:
+        // that asks *the controls moved, is an open window now unreachable*,
+        // and this asks *a window arrived, where does it go* — the same
+        // question about a different thing changing, and both need this frame's
+        // bounds.
+        //
+        // The count is dropped rather than read: a frame on which nothing
+        // opened places nothing, which is almost every frame and is not news.
+        // `crates/alo-shell/src/a_new_window_is_placed_tests.rs` reads it.
+        let _placed =
+            server.place_every_window_that_just_opened(&named, size, frame.look.reading());
         // **And where the panel ended up, for the same reason and in the same place.**
         // Its slots are laid out in `crate::panel_raster` and exist only for this
         // frame; a pointer arriving afterwards has nothing to be tested against

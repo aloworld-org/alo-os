@@ -75,6 +75,7 @@ mod a_chord_reaches_its_action;
 mod a_click_brings_a_window_back;
 mod a_frame_per_display;
 mod a_key_reaches_settings;
+mod a_new_window_is_placed;
 mod access_bus;
 mod access_contrast;
 mod access_magnifier;
