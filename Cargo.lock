@@ -883,6 +883,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-installed"
+version = "0.0.1"
+dependencies = [
+ "alo-applications",
+]
+
+[[package]]
 name = "alo-installer"
 version = "0.0.1"
 dependencies = [
