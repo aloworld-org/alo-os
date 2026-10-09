@@ -122,6 +122,27 @@ const NOT_READ_BY_A_PERSON: &[(&str, &str, &str, &str)] = &[
         "was not settings this alo OS reads",
         "NotWritten::NotExpressible's detail for whoever fixes alo OS; a person reads choosing.change.not-expressible",
     ),
+    (
+        "alo-dock",
+        "measures.rs",
+        "the owner's sizes no longer agree",
+        "the message of a `const` assertion, which is the strongest case on this list: a const assertion that fires stops the compiler, so no binary exists and the sentence cannot reach a running machine at all \
+         — only the developer whose build it broke. This one names which of ICON, GLYPH, MARGIN and GAP was changed out of agreement",
+    ),
+    (
+        "alo-dock",
+        "measures.rs",
+        "the Dock is no longer 64 logical pixels thick",
+        "the message of a `const` assertion, which is the strongest case on this list: a const assertion that fires stops the compiler, so no binary exists and the sentence cannot reach a running machine at all \
+         — only the developer whose build it broke. This one names the owner's own figure for the Dock's thickness, held beside the three it is built from",
+    ),
+    (
+        "alo-dock",
+        "measures.rs",
+        "the Dock's target is below the floor",
+        "the message of a `const` assertion, which is the strongest case on this list: a const assertion that fires stops the compiler, so no binary exists and the sentence cannot reach a running machine at all \
+         — only the developer whose build it broke. This one names WCAG 2.5.5's enhanced minimum, which every other control in alo OS is built to",
+    ),
 ];
 
 /// One piece of a source file: a character of code, or a whole string literal.
