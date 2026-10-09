@@ -2488,7 +2488,14 @@ windows* — and **nothing calls it.**
 
 ### 50. Find and open an application, from the Dock
 
-**Status:** ready — nothing about this task itself is unresolved; its order comes from **Depends on** below. **Owner:** the Mac. **Depends on:** 43.
+**Status:** ready. **Owner:** the Mac. **Depends on:** nothing in this plan —
+`alo-installed` is on `main` and that is all this needs.
+
+*This said **Depends on: 43** when the ten were first written, which was wrong
+and was holding the loop idle: finding an application by name needs the list of
+what is installed, not the Dock's contents and not its glyphs. A person can
+search for and open an application before the Dock draws a single icon. The
+dependency was inherited from the task sitting next to it rather than measured.*
 
 §14's alo Bar is *the Dock's entry point for finding things and requesting
 help*, and **no crate in this workspace names one.** The design draws it: *Find,
