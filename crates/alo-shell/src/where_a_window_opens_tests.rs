@@ -35,6 +35,7 @@ fn it_opens_to_the_right_when_there_is_room() {
         Some(active),
         wanted(),
         Direction::LeftToRight,
+        &[],
     );
     assert_eq!(
         where_it_goes,
@@ -54,6 +55,7 @@ fn it_opens_to_the_left_when_the_person_reads_right_to_left() {
         Some(active),
         wanted(),
         Direction::RightToLeft,
+        &[],
     );
     assert_eq!(
         where_it_goes,
@@ -75,6 +77,7 @@ fn it_takes_the_other_side_before_it_overlaps() {
         Some(active),
         wanted(),
         Direction::LeftToRight,
+        &[],
     );
     assert_eq!(
         where_it_goes,
@@ -99,6 +102,7 @@ fn it_overlaps_on_purpose_when_the_view_is_full() {
         Some(active),
         wanted(),
         Direction::LeftToRight,
+        &[],
     );
     assert_eq!(where_it_goes, Point::from((48, 48)));
     assert!(
@@ -121,6 +125,7 @@ fn it_never_asks_for_anything_open_to_move() {
         Some(active),
         wanted(),
         Direction::LeftToRight,
+        &[],
     );
     assert_eq!(open, before, "the windows that were open are untouched");
 }
@@ -138,8 +143,14 @@ fn opening_many_never_walks_one_out_of_reach() {
     let mut active = at(0, 0, 1366, 768);
     open.push(active);
     for opened in 0..10 {
-        let where_it_goes =
-            where_a_window_opens(view, &open, Some(active), wanted(), Direction::LeftToRight);
+        let where_it_goes = where_a_window_opens(
+            view,
+            &open,
+            Some(active),
+            wanted(),
+            Direction::LeftToRight,
+            &[],
+        );
         let handle = Rectangle::new(where_it_goes, Size::from((44, 24)));
         assert_eq!(
             view.intersection(handle),
@@ -154,7 +165,8 @@ fn opening_many_never_walks_one_out_of_reach() {
 /// **With no active window, near the centre.** Rule 6.
 #[test]
 fn with_nothing_active_it_opens_near_the_middle() {
-    let where_it_goes = where_a_window_opens(a_view(), &[], None, wanted(), Direction::LeftToRight);
+    let where_it_goes =
+        where_a_window_opens(a_view(), &[], None, wanted(), Direction::LeftToRight, &[]);
     assert_eq!(
         where_it_goes,
         Point::from(((1366 - 400) / 2, (768 - 300) / 2))
@@ -173,6 +185,7 @@ fn it_refuses_a_side_the_window_would_hang_out_of() {
         Some(active),
         wanted(),
         Direction::LeftToRight,
+        &[],
     );
     assert_ne!(
         where_it_goes,
@@ -183,5 +196,55 @@ fn it_refuses_a_side_the_window_would_hang_out_of() {
         where_it_goes,
         Point::from((900 - A_SMALL_GAP - 400, 100)),
         "so it went to the left instead"
+    );
+}
+
+/// **A window is never placed with its handle under a fixed control.**
+///
+/// The contract: *fixed controls must not completely cover the new window's
+/// usable movement handle.* A Dock across the top of the view is the case
+/// that bites, because the handle is the window's **top** corner and a
+/// top-edge Dock is the one arrangement that lands on it.
+#[test]
+fn it_never_puts_the_handle_under_a_fixed_control() {
+    let dock_on_top = at(0, 0, 1366, 92);
+    let where_it_goes = where_a_window_opens(
+        a_view(),
+        &[],
+        None,
+        wanted(),
+        Direction::LeftToRight,
+        &[dock_on_top],
+    );
+    let handle = Rectangle::new(where_it_goes, Size::from((44, 24)));
+    assert_ne!(
+        dock_on_top.intersection(handle),
+        Some(handle),
+        "the handle at {where_it_goes:?} is completely under the dock"
+    );
+}
+
+/// **Completely covered is the test, not touched.**
+///
+/// A control clipping a corner of the handle leaves the rest pressable.
+/// Refusing that would reserve room the contract does not ask for — the same
+/// mistake as a Dock reserving a wide empty bar, which §8 of the dock
+/// specification warns against by name.
+#[test]
+fn a_control_that_only_clips_the_handle_is_allowed() {
+    // One pixel of overlap with where the centred window's handle lands.
+    let middle = Point::from(((1366 - 400) / 2, (768 - 300) / 2));
+    let clipping = at(middle.x + 43, middle.y + 23, 400, 400);
+    let where_it_goes = where_a_window_opens(
+        a_view(),
+        &[],
+        None,
+        wanted(),
+        Direction::LeftToRight,
+        &[clipping],
+    );
+    assert_eq!(
+        where_it_goes, middle,
+        "a control clipping one corner should not have moved the window"
     );
 }

@@ -50,6 +50,53 @@ pub(crate) fn reset(surface: &WlSurface) {
     set(surface, None);
 }
 
+/// Whether this window has been placed at all.
+///
+/// [`false`] for a window that has never been given a position — which is
+/// every window at its first map, and is the question
+/// [`place_unless_already_placed`] asks.
+#[must_use]
+pub fn has_been_placed(surface: &WlSurface) -> bool {
+    with_states(surface, |states| {
+        states.data_map.get::<Placement>().is_some_and(|data| {
+            data.0
+                .lock()
+                .unwrap_or_else(|_| std::process::abort())
+                .is_some()
+        })
+    })
+}
+
+/// Give a window a default position, and only if it has none.
+///
+/// **The owner's rule of 2026-10-09: *apply default placement once.
+/// Restoring a window uses saved geometry; later redraws or remapping must not
+/// unexpectedly reposition it.*** Held here rather than by every caller
+/// remembering to check, because the failure it prevents is a window that
+/// walks across the desk a little on each commit and nobody can say why.
+///
+/// Says whether it placed anything, so a host can tell *I placed it* from *it
+/// was already somewhere* without asking twice.
+///
+/// # One thing this does not settle, and it is not this function's to settle
+///
+/// `reset` clears a placement when a window **unmaps**, on the rule above it
+/// that placement belongs to one mapping lifetime. So a client that unmaps and
+/// maps the same surface again arrives here unplaced and is placed afresh.
+///
+/// Whether that is *remapping must not unexpectedly reposition it* or whether
+/// it is a new window that should be placed is a question about what a remap
+/// means to a person, and the answer changes behaviour rather than code. It is
+/// recorded in `docs/design/where-a-new-window-opens.md` as open rather than
+/// decided quietly in either direction here.
+pub fn place_unless_already_placed(surface: &WlSurface, point: Point<i32, Logical>) -> bool {
+    if has_been_placed(surface) {
+        return false;
+    }
+    set(surface, Some(point));
+    true
+}
+
 /// Replace compositor-owned placement on the display thread.
 pub(crate) fn set(surface: &WlSurface, point: Option<Point<i32, Logical>>) {
     with_states(surface, |states| {

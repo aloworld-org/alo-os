@@ -93,6 +93,7 @@ pub fn where_a_window_opens(
     active: Option<Rectangle<i32, Logical>>,
     wanted: Size<i32, Logical>,
     reading: Direction,
+    fixed: &[Rectangle<i32, Logical>],
 ) -> Point<i32, Logical> {
     if let Some(active) = active {
         // **Rule 3: beside the active window, preferred side first.** Right in
@@ -109,7 +110,7 @@ pub fn where_a_window_opens(
             ],
         };
         for at in beside {
-            if is_free(at, wanted, view, open) {
+            if is_free(at, wanted, view, open) && is_reachable_in(at, wanted, view, fixed) {
                 return at;
             }
         }
@@ -122,17 +123,17 @@ pub fn where_a_window_opens(
         // window's handle outside the view restarts placement inside it rather
         // than walking the next one further out. A person opening ten
         // terminals ends with ten reachable terminals.
-        if is_reachable_in(offset, wanted, view) {
+        if is_reachable_in(offset, wanted, view, fixed) {
             return offset;
         }
-        return the_view_starts_here(view);
+        return the_view_starts_here(view, wanted, fixed);
     }
     // **Rule 6: no active window, so near the centre of the view.**
     let middle = Point::from((
         view.loc.x + (view.size.w - wanted.w) / 2,
         view.loc.y + (view.size.h - wanted.h) / 2,
     ));
-    if is_free(middle, wanted, view, open) {
+    if is_free(middle, wanted, view, open) && is_reachable_in(middle, wanted, view, fixed) {
         return middle;
     }
     // Something is in the middle already. Step by the same deliberate offset
@@ -142,16 +143,46 @@ pub fn where_a_window_opens(
         middle.x + A_DELIBERATE_OFFSET,
         middle.y + A_DELIBERATE_OFFSET,
     ));
-    if is_reachable_in(stepped, wanted, view) {
+    if is_reachable_in(stepped, wanted, view, fixed) {
         stepped
     } else {
-        the_view_starts_here(view)
+        the_view_starts_here(view, wanted, fixed)
     }
 }
 
 /// Where placement restarts when another offset would leave the view.
-fn the_view_starts_here(view: Rectangle<i32, Logical>) -> Point<i32, Logical> {
-    Point::from((view.loc.x + A_SMALL_GAP, view.loc.y + A_SMALL_GAP))
+///
+/// One gap in from the view's own corner, and then stepped until the handle is
+/// clear of the fixed controls — a Dock at the top or the left would otherwise
+/// put the restart position under it, which is the one thing rule 7 and *fixed
+/// controls must not completely cover the handle* agree about.
+fn the_view_starts_here(
+    view: Rectangle<i32, Logical>,
+    wanted: Size<i32, Logical>,
+    fixed: &[Rectangle<i32, Logical>],
+) -> Point<i32, Logical> {
+    let start = Point::from((view.loc.x + A_SMALL_GAP, view.loc.y + A_SMALL_GAP));
+    let mut at = start;
+    // Bounded: a view is finite and each step is a whole band, so this ends.
+    // It gives up rather than looping, because a view entirely covered by
+    // fixed controls is a machine with no room for a window at all and the
+    // honest answer is the corner rather than no answer.
+    for _ in 0..the_most_steps_a_view_holds(view) {
+        if is_reachable_in(at, wanted, view, fixed) {
+            return at;
+        }
+        at = Point::from((at.x + A_DELIBERATE_OFFSET, at.y + A_DELIBERATE_OFFSET));
+    }
+    start
+}
+
+/// How many whole-band steps fit in a view, so a search over it terminates.
+fn the_most_steps_a_view_holds(view: Rectangle<i32, Logical>) -> i32 {
+    view.size
+        .w
+        .max(view.size.h)
+        .saturating_div(A_DELIBERATE_OFFSET)
+        .saturating_add(1)
 }
 
 /// Immediately to the right of this window, one gap away, at its top.
@@ -190,15 +221,21 @@ fn is_free(
     !open.iter().any(|window| window.overlaps(want))
 }
 
-/// Whether enough of a window at `at` is inside the view to be grabbed.
+/// Whether enough of a window at `at` can actually be grabbed.
 ///
-/// Its handle, which is the top-left corner of its name band. A window whose
-/// band is outside the view is one a person has to go and find before they can
-/// move it.
+/// Its handle, which is the top-left corner of its name band. Two ways to fail
+/// and the contract names both: a handle **outside the view** is one a person
+/// must go and find, and a handle **under the Dock or the panel** is one they
+/// can see and cannot press. *Fixed controls must not completely cover the new
+/// window's usable movement handle.*
+///
+/// `fixed` is every fixed control's bounds, handed in by the host. Empty is a
+/// true answer for a machine showing none, not a missing argument.
 fn is_reachable_in(
     at: Point<i32, Logical>,
     wanted: Size<i32, Logical>,
     view: Rectangle<i32, Logical>,
+    fixed: &[Rectangle<i32, Logical>],
 ) -> bool {
     let handle = Rectangle::new(
         at,
@@ -207,7 +244,16 @@ fn is_reachable_in(
             A_REACHABLE_CORNER.1.min(wanted.h),
         )),
     );
-    view.intersection(handle) == Some(handle)
+    if view.intersection(handle) != Some(handle) {
+        return false;
+    }
+    // **Completely covered is the test, not touched.** A control overlapping a
+    // corner of the handle leaves the rest pressable, and refusing that would
+    // reserve room the contract does not ask for — the same mistake as a Dock
+    // reserving a wide empty bar.
+    !fixed
+        .iter()
+        .any(|control| control.intersection(handle) == Some(handle))
 }
 
 #[cfg(test)]

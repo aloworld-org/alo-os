@@ -368,7 +368,9 @@ pub use window_mode::WindowModeError;
 /// point at it, select it or zoom out*, so **when** is the host's and this
 /// crate answers only **where**.
 pub use window_name_band::{BAND_IS_TALL, band_of, is_reachable};
-pub use window_placement::{WindowPlacementError, window_buffer_origin};
+pub use window_placement::{
+    WindowPlacementError, has_been_placed, place_unless_already_placed, window_buffer_origin,
+};
 pub use window_raise::WindowRaiseError;
 pub use window_resize::{ResizeEdge, ResizeGeometry, ResizeGeometryError};
 pub use window_size::WindowSizeError;
