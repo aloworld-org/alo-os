@@ -335,6 +335,7 @@ mod window_minimize;
 mod window_mode;
 mod window_mode_plan;
 mod window_move;
+mod window_name_band;
 mod window_number;
 mod window_placement;
 mod window_raise;
@@ -352,6 +353,13 @@ pub use window_full_screen::WindowFullScreenError;
 pub use window_maximize::WindowMaximizeError;
 pub use window_minimize::WindowMinimizeError;
 pub use window_mode::WindowModeError;
+/// Where a frame's name band is, for a host that has decided to reveal one.
+///
+/// Public for the same reason  is: the promise at
+///   is that a frame's name *appears when they
+/// point at it, select it or zoom out*, so **when** is the host's and this
+/// crate answers only **where**.
+pub use window_name_band::{BAND_IS_TALL, band_of, is_reachable};
 pub use window_placement::{WindowPlacementError, window_buffer_origin};
 pub use window_raise::WindowRaiseError;
 pub use window_resize::{ResizeEdge, ResizeGeometry, ResizeGeometryError};
