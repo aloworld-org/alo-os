@@ -166,6 +166,7 @@ mod egress_status_place;
 mod egress_status_raster;
 #[cfg(test)]
 mod egress_status_testing;
+mod every_windows_edge;
 mod filling_keys;
 mod filling_rows;
 mod filling_window;
