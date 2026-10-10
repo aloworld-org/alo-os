@@ -203,15 +203,25 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         // The edge is above the window and outside its content, so nothing of
         // alo's covers anything the application drew.
         let roots: Vec<_> = server.mapped_surfaces().cloned().collect();
+        // **The host's answer, asked once for this frame.** §5 of
+        // `docs/design/the-external-window-edge.md` is the shell's and not a
+        // fixture's: `Server::the_edges_were_told_where_the_pointer_is` reads
+        // the pointer and advances one `alo_dock::Revealing` per window.
+        server.the_edges_were_told_where_the_pointer_is();
         let edges: Vec<_> = roots
             .iter()
             .filter_map(|surface| {
                 let window = alo_shell::where_a_window_is(surface);
-                // **Revealed, because a fixture has no pointer to reveal it
-                // with.** Which is the host's answer from pointer, focus,
-                // menu and drag, and a photograph of a concealed edge would
-                // show a two-pixel grip and prove nothing.
-                let edge = alo_shell::edge_of(window, asked.decorations, true);
+                // **This window's own answer, not a literal.** This passed
+                // `true` until 2026-10-10, under a comment saying a fixture has
+                // no pointer to reveal an edge with — true of a fixture and the
+                // reason it was written, and it made this the only caller of
+                // `edge_of` outside a test and the only one that could not be
+                // wrong. A walk that moves the pointer onto an edge now sees it
+                // reveal, and one that does not sees the grip, which is what a
+                // person with no mouse on that window sees.
+                let revealed = server.is_this_windows_edge_revealed(surface);
+                let edge = alo_shell::edge_of(window, asked.decorations, revealed);
                 let title = server.the_name_of(surface);
                 alo_shell::EdgePicture::of(
                     &edge,

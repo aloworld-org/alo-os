@@ -17,7 +17,7 @@
 //! `4.9` is in the pixel that starts at `4` — so it is the answer wanted rather than an
 //! accident of arithmetic.
 
-use smithay::utils::{Physical, Point};
+use smithay::utils::{Logical, Physical, Point};
 
 impl crate::Server {
     /// The pointer in physical pixels, or `None` when the seat has no pointer.
@@ -28,6 +28,41 @@ impl crate::Server {
     /// column, so a question about the panel would answer *yes* on a machine with no
     /// mouse attached.
     pub(crate) fn where_the_pointer_is_in_pixels(&self) -> Option<Point<i32, Physical>> {
+        let at = self.surfaces.pointer.as_ref()?.location;
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "a pointer inside a pixel belongs to that pixel: the half-open rule the \
+                      rectangles use, and the reason is in this file's header"
+        )]
+        Some(Point::from((at.x as i32, at.y as i32)))
+    }
+
+    /// The pointer in **logical** pixels, which is the space the seat keeps it
+    /// in.
+    ///
+    /// The window edge is laid out in logical coordinates — `crate::edge_of`
+    /// takes a `Rectangle<i32, Logical>` from `crate::where_a_window_is` — so
+    /// this is the accessor its reveal asks, and there is **no conversion in it
+    /// at all**: the seat's own `Point<f64, Logical>`, truncated by this file's
+    /// one rule.
+    ///
+    /// Added rather than reusing the sibling above **because the sibling's
+    /// return type is not its source's space.** Measured 2026-10-10:
+    /// `crate::pointer::Pointer::location` is declared `Point<f64, Logical>`,
+    /// `where_the_pointer_is_in_pixels` returns `Point<i32, Physical>`, and
+    /// between the two there is a cast and **no multiplication by any scale**.
+    /// The rectangles it is compared against are physical —
+    /// `crate::panel_raster::picture` lays the panel out through
+    /// `DesktopLook::scale` — so on a display at anything but one-to-one those
+    /// two readings are in different spaces, and the panel's reveal and
+    /// `crate::a_click_brings_a_window_back` are off by that factor.
+    ///
+    /// **Recorded here and not fixed here**, deliberately: the fix needs this
+    /// display's real scale at this call site, which is the same missing source
+    /// `alo-desktop`'s `display_scale: 100` names, and correcting the type
+    /// without the scale would move the error rather than remove it. The edge
+    /// does not inherit the fault because it never leaves logical space.
+    pub(crate) fn where_the_pointer_is_in_logical_pixels(&self) -> Option<Point<i32, Logical>> {
         let at = self.surfaces.pointer.as_ref()?.location;
         #[expect(
             clippy::cast_possible_truncation,

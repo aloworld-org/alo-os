@@ -292,6 +292,7 @@ mod surfaces;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;
+mod the_window_edge_reveals;
 mod their_displays;
 mod top_controls_region;
 mod where_a_window_opens;
