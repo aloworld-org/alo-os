@@ -330,6 +330,7 @@ mod window_control_snapshot;
 mod window_controls;
 mod window_dividing;
 mod window_edge;
+mod window_edge_paint;
 mod window_full_screen;
 mod window_maximize;
 mod window_minimize;
@@ -354,6 +355,11 @@ pub use window_edge::{
     THE_DRAG_STARTS_AT, THE_GRIP_IS, THE_REGION_IS_TALL, THE_STRIP_IS_TALL, THE_STRIP_STARTS_AT,
     edge_of,
 };
+/// What the external window edge is drawn out of: rectangles and roles.
+///
+/// Separate from the geometry because they are two reasons to change - the
+/// design moving a control, and the design recolouring one.
+pub use window_edge_paint::{Pointing, Solid, solids};
 pub use window_full_screen::WindowFullScreenError;
 pub use window_maximize::WindowMaximizeError;
 pub use window_minimize::WindowMinimizeError;
