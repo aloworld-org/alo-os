@@ -72,6 +72,40 @@ pub(crate) fn sentence(
     shaped
 }
 
+/// How wide this text wants to be, shaped and unwrapped.
+///
+/// **The question [`sentence`] cannot answer.** That one wraps, and clamps
+/// its reported width to the box it was given, so text too wide to fit comes
+/// back the same width as text that just fits. Anything deciding whether to
+/// truncate needs the width the text actually wants.
+///
+/// Shaped with the same attributes and the same `Shaping::Advanced` as every
+/// other sentence on this machine, so a measurement and a drawing cannot
+/// disagree about the same string.
+pub(crate) fn how_wide(fonts: &mut FontSystem, text: &str, metrics: Metrics) -> i32 {
+    let mut buffer = Buffer::new(fonts, metrics);
+    // No wrapping and no width: the natural run, however long.
+    buffer.set_wrap(fonts, Wrap::None);
+    buffer.set_size(fonts, None, None);
+    buffer.set_text(
+        fonts,
+        text,
+        &Attrs::new().family(Family::SansSerif),
+        Shaping::Advanced,
+    );
+    buffer.shape_until_scroll(fonts, false);
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a shaped run's width in whole pixels is what a layout measures in"
+    )]
+    let widest = buffer
+        .layout_runs()
+        .map(|run| run.line_w)
+        .fold(0.0, f32::max)
+        .ceil() as i32;
+    widest
+}
+
 /// Ink a shaped buffer into a box of `size`, moved `shift` pixels across.
 pub(crate) fn inked(
     fonts: &mut FontSystem,
