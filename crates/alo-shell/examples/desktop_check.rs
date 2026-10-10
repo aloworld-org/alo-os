@@ -175,6 +175,31 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Err(refused.said(&strings).into_text().into());
     }
 
+    // **Three applications for the Dock to hold**, built the way `alo-dock`
+    // would hand them over rather than assembled by hand: `OnTheDock` has no
+    // public constructor and should not gain one for a fixture, because a
+    // picture of a Dock showing something the Dock would never show is worse
+    // than no picture.
+    //
+    // Their names are ordinary ones a person would recognise, and their first
+    // letters differ — which is what makes the picture show three icons rather
+    // than one repeated.
+    let a_few_applications = {
+        let patch = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1)
+            .map_err(|error| format!("{error:?}"))?;
+        let mut windows = alo_dock::Windows::none();
+        for (number, named) in ["Files", "Mail", "Browser"].into_iter().enumerate() {
+            windows.opened(alo_dock::Window::of(
+                alo_dock::WindowId::numbered(number as u64),
+                Some(alo_dock::AppId::named(named).map_err(|error| format!("{error:?}"))?),
+                named,
+                patch,
+                alo_dock::HowItSits::OnTheCanvas,
+            ));
+        }
+        alo_dock::Holding::nothing().showing(&windows)
+    };
+
     let mut submitted = 0;
     let mut draw = |what: &str,
                     egress: &EgressStatus,
@@ -207,13 +232,25 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             &mut labels,
                             DesktopFrame {
                                 display_scale: 100,
-                                // Nothing is pinned or open in this fixture,
-                                // so the band is the width of a Dock holding
-                                // nothing. **Deliberately not raised to show a
-                                // wider bar**: §8 of the Dock specification says
-                                // it must not reserve a large empty bar, and an
-                                // icon-less wide band is exactly that.
-                                on_the_dock: &[],
+                                // **Three applications, so there is a Dock to
+                                // look at.** This held nothing until
+                                // 2026-10-10, with the note *deliberately not
+                                // raised to show a wider bar — §8 says it must
+                                // not reserve a large empty bar, and an
+                                // icon-less wide band is exactly that.* That
+                                // reasoning was right and it was about an
+                                // **empty** bar: nothing drew an icon, so a
+                                // wider band would have been reserved room with
+                                // nothing in it.
+                                //
+                                // Icons are drawn now — an application with no
+                                // artwork shows its first letter, by the
+                                // owner's ruling of that day — so a bar holding
+                                // three is three icons wide and not a reserved
+                                // emptiness. Which is the whole point of this
+                                // fixture: *it needs eyes, and eyes need
+                                // pictures.*
+                                on_the_dock: &a_few_applications,
                                 dock: &dock,
                                 look: DesktopLook::of(
                                     &appearance,
