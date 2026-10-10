@@ -1,5 +1,11 @@
 # Paged native control label rendering
 
+> **Retired on 2026-10-10, and this report is kept as the record of what was built.** The internal window control strip and the paged name reader were removed whole - 70 files, 14,284 lines - and the external window edge is the only window chrome this shell draws now: [the-external-window-edge.md](../../design/the-external-window-edge.md).
+>
+> The files named below are gone, so they are written as module names without a path. That form is this repository's own ruling, and the reason is in it: *a quotation written in the form of a pointer is a pointer* - it reads like a live one to somebody skimming and to any check.
+>
+> **It was never reached.** The contract records it by measurement: *`window_control_reader_*` - 2,039 lines, retired on 2026-10-10 - was a paged name reader ... It had **no production caller, ever**, measured with a positive control.* Deleting it took nothing away from a person.
+
 Date: 2026-09-09. Workstream: native desktop compositor.
 Responsible contributor: desktop integration worker in `C:\dev\alo-os`.
 Status: ready for independent supervisor integration gates. No feature/release tick.
@@ -28,7 +34,7 @@ both are checked before allocating page rasters. This bounds memory independentl
 of text length. It is an internal resource choice consistent with ADRs 0002/0010,
 not a new palette, font, agent surface or product scope decision.
 
-Sources: `crates/alo-shell/src/window_control_label_pages.rs` (page planning/API),
+Sources: `window_control_label_pages` (page planning/API),
 `window_control_label_page_raster.rs` (whole-line rasterization), shared shaping in
 `window_control_label.rs`, module exports in `lib.rs`, page unit tests and
 `examples/control_label_pages_check.rs`. The public native-control contract is

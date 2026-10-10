@@ -1,5 +1,9 @@
 # Native control pointer feedback
 
+> **Retired on 2026-10-10, and this report is kept as the record of what was built.** The internal window control strip and the paged name reader were removed whole - 70 files, 14,284 lines - and the external window edge is the only window chrome this shell draws now: [the-external-window-edge.md](../../design/the-external-window-edge.md).
+>
+> The files named below are gone, so they are written as module names without a path. That form is this repository's own ruling, and the reason is in it: *a quotation written in the form of a pointer is a pointer* - it reads like a live one to somebody skimming and to any check.
+
 Date: 2026-09-09. Workstream: native desktop window management.
 Responsible contributor: desktop development worker in `C:\dev\alo-os`.
 Status: ready for integration; independent supervisor publication gates pending.
@@ -7,7 +11,7 @@ Status: ready for integration; independent supervisor publication gates pending.
 ## Change and decisions
 
 Completed the hover/pressed feedback component selected in QUEUE before
-implementation. `crates/alo-shell/src/window_control_feedback.rs` adds read-only
+implementation. `window_control_feedback` adds read-only
 `Server::window_control_feedback`: an explicit live root, current geometry and
 optional pointer position produce the existing snapshot with per-control idle,
 hovered or pressed state. The existing hit test, availability planner, input-busy

@@ -1,12 +1,18 @@
 # Live native control label presentation
 
+> **Retired on 2026-10-10, and this report is kept as the record of what was built.** The internal window control strip and the paged name reader were removed whole - 70 files, 14,284 lines - and the external window edge is the only window chrome this shell draws now: [the-external-window-edge.md](../../design/the-external-window-edge.md).
+>
+> The files named below are gone, so they are written as module names without a path. That form is this repository's own ruling, and the reason is in it: *a quotation written in the form of a pointer is a pointer* - it reads like a live one to somebody skimming and to any check.
+>
+> **It was never reached.** The contract records it by measurement: *`window_control_reader_*` - 2,039 lines, retired on 2026-10-10 - was a paged name reader ... It had **no production caller, ever**, measured with a positive control.* Deleting it took nothing away from a person.
+
 Date: 2026-09-09. Workstream: native desktop. Responsible contributor: desktop
 Codex worker in C:\dev\alo-os, sole integration owner.
 Status: ready for integration; independent supervisor publication gates pending.
 
 ## Change and decisions
 
-Added `crates/alo-shell/src/window_control_label_target.rs`, exported through
+Added `window_control_label_target`, exported through
 `src/lib.rs`: a read-only per-frame selector returning the current WindowControl
 and output-contained LabelGeometry. Hover uses the shared clipped hit test;
 explicit native focus selects an action in the current strip, including disabled

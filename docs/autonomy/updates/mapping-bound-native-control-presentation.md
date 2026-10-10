@@ -1,12 +1,16 @@
 # Mapping-bound native control presentation
 
+> **Retired on 2026-10-10, and this report is kept as the record of what was built.** The internal window control strip and the paged name reader were removed whole - 70 files, 14,284 lines - and the external window edge is the only window chrome this shell draws now: [the-external-window-edge.md](../../design/the-external-window-edge.md).
+>
+> The files named below are gone, so they are written as module names without a path. That form is this repository's own ruling, and the reason is in it: *a quotation written in the form of a pointer is a pointer* - it reads like a live one to somebody skimming and to any check.
+
 Date: 2026-09-09. Workstream: native desktop. Responsible contributor: desktop
 Codex worker in C:\dev\alo-os, sole release-progress integration owner.
 Status: ready for integration; independent supervisor publication gates pending.
 
 ## Change, decisions and acceptance
 
-Added `crates/alo-shell/src/window_control_presentation.rs`: one server-owned
+Added `window_control_presentation`: one server-owned
 explicitly painted root, existing visibility identity, viewport/origin, observed
 maximize/restore intent and native label focus. Reuse of the existing Arc identity
 detects hide/reveal and unmap/remap even between host observations. No protocol

@@ -30,17 +30,16 @@ use alo_access::Surface;
 /// The frames and screens the shell exports that are surfaces a person meets.
 ///
 /// Two of its exports are not: `DirectFrame` and `XrgbFrame` are how a frame
-/// reaches a screen, and `NestedReaderFrame`, `WindowControlLabelFrame` and
-/// `WindowControlReaderFrame` are the keyboard's own labels — the *reader* in
-/// those names is the label reader for keyboard navigation, not a screen
-/// reader, which is worth saying because the name invites the other reading.
-const NOT_A_SURFACE_A_PERSON_MEETS: [&str; 5] = [
-    "DirectFrame",
-    "XrgbFrame",
-    "NestedReaderFrame",
-    "WindowControlLabelFrame",
-    "WindowControlReaderFrame",
-];
+/// reaches a screen rather than something a person meets on one.
+///
+/// **Three more were listed here until 2026-10-10** — `NestedReaderFrame`,
+/// `WindowControlLabelFrame` and `WindowControlReaderFrame`, the keyboard's own
+/// labels, with a note that the *reader* in those names was the label reader
+/// and not a screen reader. All three went with the old window chrome, and they
+/// are not kept here against their return: an exemption for a type nothing
+/// defines excuses whatever is named that next, which is the opposite of what a
+/// list of exceptions is for.
+const NOT_A_SURFACE_A_PERSON_MEETS: [&str; 2] = ["DirectFrame", "XrgbFrame"];
 
 #[test]
 fn every_frame_the_shell_exports_is_a_surface_something_can_be_said_about() {

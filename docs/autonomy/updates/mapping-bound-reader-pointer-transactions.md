@@ -1,5 +1,11 @@
 # Mapping-bound reader pointer transactions
 
+> **Retired on 2026-10-10, and this report is kept as the record of what was built.** The internal window control strip and the paged name reader were removed whole - 70 files, 14,284 lines - and the external window edge is the only window chrome this shell draws now: [the-external-window-edge.md](../../design/the-external-window-edge.md).
+>
+> The files named below are gone, so they are written as module names without a path. That form is this repository's own ruling, and the reason is in it: *a quotation written in the form of a pointer is a pointer* - it reads like a live one to somebody skimming and to any check.
+>
+> **It was never reached.** The contract records it by measurement: *`window_control_reader_*` - 2,039 lines, retired on 2026-10-10 - was a paged name reader ... It had **no production caller, ever**, measured with a positive control.* Deleting it took nothing away from a person.
+
 Date: 2026-09-09. Workstream: native desktop compositor.
 Responsible contributor: desktop integration worker in `C:\dev\alo-os`.
 Status: ready for independent supervisor gates. Pointer transaction and semantic
@@ -7,7 +13,7 @@ feedback component complete; rendered reader interaction remains unfinished.
 
 ## Change and decisions
 
-`crates/alo-shell/src/window_control_reader_pointer.rs` adds explicit trusted-host
+`window_control_reader_pointer` adds explicit trusted-host
 pointer ownership. Hits name covered content or previous/next/dismiss commands;
 only the primary button on an enabled command arms. A release acts once on the
 same reader, page visit and target. Leaving the command, page away-and-back,

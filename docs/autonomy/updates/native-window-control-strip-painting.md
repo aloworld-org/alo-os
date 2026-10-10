@@ -1,5 +1,9 @@
 # Native window control strip painting
 
+> **Retired on 2026-10-10, and this report is kept as the record of what was built.** The internal window control strip and the paged name reader were removed whole - 70 files, 14,284 lines - and the external window edge is the only window chrome this shell draws now: [the-external-window-edge.md](../../design/the-external-window-edge.md).
+>
+> The files named below are gone, so they are written as module names without a path. That form is this repository's own ruling, and the reason is in it: *a quotation written in the form of a pointer is a pointer* - it reads like a live one to somebody skimming and to any check.
+
 Date: 2026-09-08. Workstream: native desktop interaction.
 Responsible contributor: single desktop worker and progress integration owner in
 `C:\dev\alo-os`. Status: ready for integration after the checks below.
@@ -14,7 +18,7 @@ retain their hit areas, preventing a future router from treating unavailability
 as permission to click through. They have a separate non-color mark as well as
 a changed ground. Maximize and restore use distinct original glyphs.
 
-`crates/alo-shell/src/window_controls.rs` owns geometry and action metadata;
+`window_controls` owns geometry and action metadata;
 `window_control_paint.rs` owns clipped solid drawing and glyphs. The shell adds
 an existing workspace dependency on `alo-appearance`, reflected in Cargo.lock,
 to reuse light/dark tokens. ADR 0010's terracotta is never used. `Action::said`

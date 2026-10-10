@@ -1,5 +1,11 @@
 # Publication-bound reader input coordination
 
+> **Retired on 2026-10-10, and this report is kept as the record of what was built.** The internal window control strip and the paged name reader were removed whole - 70 files, 14,284 lines - and the external window edge is the only window chrome this shell draws now: [the-external-window-edge.md](../../design/the-external-window-edge.md).
+>
+> The files named below are gone, so they are written as module names without a path. That form is this repository's own ruling, and the reason is in it: *a quotation written in the form of a pointer is a pointer* - it reads like a live one to somebody skimming and to any check.
+>
+> **It was never reached.** The contract records it by measurement: *`window_control_reader_*` - 2,039 lines, retired on 2026-10-10 - was a paged name reader ... It had **no production caller, ever**, measured with a positive control.* Deleting it took nothing away from a person.
+
 Date: 2026-09-10. Workstream: native desktop and release-progress integration.
 Responsible contributor: desktop development worker in `C:\dev\alo-os`.
 Status: ready for integration; independent supervisor gates pending.
@@ -18,7 +24,7 @@ devices disarm old commands, while cancelled releases remain owned and ordinary
 typing keeps its existing route. This is a complete ordered-input component;
 attachment to parent event pumps remains an explicit next component.
 
-- `crates/alo-shell/src/window_control_reader_input.rs`: `WindowControlReaderInput`
+- `window_control_reader_input`: `WindowControlReaderInput`
   owns keys, pointer feedback/releases and observed publication identity. `key`
   accepts the trusted host's semantic mapping; None preserves ordinary typing.
   `pointer` derives hits from actual backend positions and live publication,

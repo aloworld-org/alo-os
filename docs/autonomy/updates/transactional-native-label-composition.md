@@ -1,5 +1,9 @@
 # Transactional native label composition
 
+> **Retired on 2026-10-10, and this report is kept as the record of what was built.** The internal window control strip and the paged name reader were removed whole - 70 files, 14,284 lines - and the external window edge is the only window chrome this shell draws now: [the-external-window-edge.md](../../design/the-external-window-edge.md).
+>
+> The files named below are gone, so they are written as module names without a path. That form is this repository's own ruling, and the reason is in it: *a quotation written in the form of a pointer is a pointer* - it reads like a live one to somebody skimming and to any check.
+
 Date: 2026-09-09. Workstream: native desktop compositor.
 Responsible contributor: desktop integration worker in `C:\dev\alo-os`.
 Status: ready for integration after the checks recorded below; independent
@@ -31,7 +35,7 @@ are unchanged. Pointer exclusion belongs beside presentation, not inside immutab
 label pixels. This avoids granting authority to a retained raster and prevents
 motion followed by a press in one input batch from clicking through stale pixels.
 
-Sources: `crates/alo-shell/src/window_control_frame.rs`,
+Sources: `window_control_frame`,
 `window_control_overlay.rs`, `window_control_presentation.rs`,
 `window_control_label_target.rs`, `window_control_feedback.rs`,
 `nested_control_input.rs`, `presentation.rs`, `server.rs` and exports in `lib.rs`.
