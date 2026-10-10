@@ -155,6 +155,7 @@ mod display_lifecycle;
 mod display_resources;
 mod division_raster;
 mod dock_raster;
+
 mod dock_room;
 mod dock_windows;
 mod drawing;
@@ -298,6 +299,9 @@ mod their_displays;
 mod top_controls_region;
 mod what_the_server_tells_a_frame;
 mod where_a_window_opens;
+/// Where the Dock is on one display: the band on its edge and the slots
+/// inside it, worked out once for the draw and for a press.
+mod where_the_dock_is;
 mod which_display_a_window_is_on;
 pub mod which_preview_the_pointer_is_on;
 mod which_surface_claims_a_point;

@@ -73,9 +73,8 @@
 //! dock is a band of the person's colours with the accent along its inside
 //! edge. `tests/desktop_source.rs` reads these files to hold that.
 
-use alo_dock::measures::{A_UTILITY_GLYPH, FLOATING_ABOVE_THE_EDGE, GLYPH, ICON, MARGIN};
-use alo_dock::places::Places;
-use alo_dock::{Dock, Layout, OnTheDock, Room, Screen};
+use alo_dock::measures::{A_UTILITY_GLYPH, GLYPH, ICON};
+use alo_dock::{Dock, Layout, OnTheDock};
 
 use cosmic_text::{FontSystem, Metrics};
 use smithay::utils::{Physical, Rectangle};
@@ -83,6 +82,7 @@ use smithay::utils::{Physical, Rectangle};
 use crate::RenderError;
 use crate::desktop_look::DesktopLook;
 use crate::painted::{Inked, Solid};
+use crate::where_the_dock_is::TheDocksPlaces;
 
 /// What the overflow control shows: a horizontal ellipsis.
 ///
@@ -114,9 +114,6 @@ use crate::painted::{Inked, Solid};
 /// would read aloud as three full stops.
 const THE_OVERFLOWS_MARK: char = '\u{2026}';
 
-/// The largest display side, in pixels, the dock is laid out for.
-const LARGEST_SIDE: i32 = 16_384;
-
 /// The dock for one display, ready to paint.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct DockPicture {
@@ -142,40 +139,6 @@ pub(crate) struct DockPicture {
     /// either: `alo_dock::fit` puts nothing aside until the edge runs out, and
     /// `alo_dock::Places` draws no control for an empty overflow.
     pub(crate) over: Vec<OnTheDock>,
-}
-
-/// Where the bar sits on this edge: `along` units down its edge, `thickness`
-/// across, lifted `floating` clear of the screen's own edge.
-///
-/// **One function for four edges rather than four placements.** The bar is the
-/// same rectangle each time — as long as what it holds, as thick as its lane — and
-/// only two things vary: which axis the length runs along, and which end of the
-/// other axis it is lifted from. Written as four `if`s in the caller, the two that
-/// are never drawn in this release would be the two nobody notices going wrong.
-///
-/// **`floating` is the gap, not the position.** The bar is inset from its edge
-/// rather than flush to it, which is the design file's rule for every edge and the
-/// reason the egress corner has to subtract it too.
-fn the_band_on(
-    edge: alo_dock::Edge,
-    size: (i32, i32),
-    along: i32,
-    thickness: i32,
-    floating: i32,
-) -> Rectangle<i32, Physical> {
-    let (width, height) = size;
-    let origin = match edge {
-        alo_dock::Edge::Bottom => ((width - along) / 2, height - thickness - floating),
-        alo_dock::Edge::Top => ((width - along) / 2, floating),
-        alo_dock::Edge::Left => (floating, (height - along) / 2),
-        alo_dock::Edge::Right => (width - thickness - floating, (height - along) / 2),
-    };
-    let extent = if edge.runs_across() {
-        (along, thickness)
-    } else {
-        (thickness, along)
-    };
-    Rectangle::new(origin.into(), extent.into())
 }
 
 /// The accent along the band's **inside** edge: the one facing the canvas.
@@ -232,63 +195,24 @@ pub(crate) fn picture(
     on_the_dock: &[OnTheDock],
     fonts: &mut FontSystem,
 ) -> Result<DockPicture, RenderError> {
-    let (width, height) = size;
-    if width > LARGEST_SIDE || height > LARGEST_SIDE {
-        return Err(RenderError::DesktopScene);
-    }
-    let screen = Screen::of(
-        u32::try_from(width).map_err(|_| RenderError::DesktopScene)?,
-        u32::try_from(height).map_err(|_| RenderError::DesktopScene)?,
-    )
-    .map_err(|_| RenderError::DesktopScene)?;
+    let height = size.1;
+    // **Where the Dock is, asked rather than worked out here.** This file
+    // computed the band, the slots and the overflow itself and kept none of it,
+    // so a press had no way to ask what was under the pointer without
+    // rasterising a frame. `crate::where_the_dock_is` is the one answer both
+    // read; neither can be right while the other is wrong.
+    let standing = crate::where_the_dock_is::where_the_dock_is(dock, size, on_the_dock)?;
+    let TheDocksPlaces {
+        layout,
+        band,
+        thickness,
+        places,
+        over,
+    } = standing;
     let palette = look.palette().map_err(|_| RenderError::AccentRefused)?;
     let measure = look.measure();
-    let layout = dock.layout_on(screen);
-    let thickness = i32::try_from(layout.thickness().as_pixels())
-        .map_err(|_| RenderError::DesktopScene)?
-        .clamp(1, width.min(height));
     let rule = measure.px(2).min(thickness);
 
-    // As wide as what it holds, clamped to the screen less its margins. The
-    // count comes from whoever decided what the Dock shows, so the bar drawn
-    // and the list decided cannot disagree.
-    let margin = i32::try_from(MARGIN).unwrap_or(i32::MAX);
-    let floating = i32::try_from(FLOATING_ABOVE_THE_EDGE).unwrap_or(i32::MAX);
-    // **The edge the bar runs along, not always the width.** A dock down a side is
-    // as long as the screen is tall, and clamping it to the width would make a
-    // portrait screen's side dock short for a reason that has nothing to do with
-    // where it is — which is the mistake `alo_dock::layout`'s own header warns
-    // about one level up, for thickness.
-    let along = if layout.edge().runs_across() {
-        width
-    } else {
-        height
-    };
-    let widest = (along - 2 * margin).max(1);
-
-    // **This is where the overflow begins, and it is the first time anything has
-    // asked.** `alo_dock::fit` has existed, complete and tested, with no caller
-    // outside its own tests — because it takes *room for `at_most` slots* and
-    // nothing worked that number out. This file is the only place that can:
-    // `alo-dock` knows how wide a bar holding `n` is and refuses to know about a
-    // screen, and the caller above knows about windows and not about edges. The
-    // two meet here.
-    //
-    // The count is slots, not applications: `fit` keeps one back for the control
-    // when it has to put anything aside, which is why a bar that overflows shows
-    // one application fewer than one that just fits.
-    let at_most = Room::pixels(u32::try_from(widest).unwrap_or(u32::MAX)).how_many_fit();
-    let fitted = alo_dock::fit(on_the_dock.to_vec(), at_most);
-    let places = Places::of(&fitted);
-    let wanted = i32::try_from(Room::a_bar_holding(places.how_many()).as_pixels())
-        .map_err(|_| RenderError::DesktopScene)?;
-    // Still clamped, and now it is genuinely the last resort the header claims:
-    // `at_most` came from `widest`, so `wanted` cannot exceed it except on a
-    // display too small to hold one slot, where there is nothing to choose.
-    let bar_width = wanted.clamp(1, widest);
-
-    // Centred along its edge, and lifted clear of it.
-    let band = the_band_on(layout.edge(), size, bar_width, thickness, floating);
     let accent = the_accent_on(layout.edge(), band, rule);
 
     let solids = vec![
@@ -402,7 +326,7 @@ pub(crate) fn picture(
         accent,
         solids,
         inked,
-        over: fitted.over().to_vec(),
+        over,
     })
 }
 
@@ -451,77 +375,15 @@ mod tests {
 
     use super::*;
     use crate::desktop_testing::{an_appearance, noon_look};
+    use crate::where_the_dock_is::the_band_on;
     use alo_appearance::{Accent, TextScale};
+    use alo_dock::measures::{FLOATING_ABOVE_THE_EDGE, MARGIN};
+    use alo_dock::{Room, Screen};
     use alo_strings::Direction;
 
     /// Whether `inner` lies wholly inside `outer`.
     fn inside(inner: Rectangle<i32, Physical>, outer: Rectangle<i32, Physical>) -> bool {
         outer.intersection(inner) == Some(inner)
-    }
-
-    /// **The bar is placed on all four edges, and only the bottom is ever drawn.**
-    ///
-    /// `Dock::shipped` is on the bottom and nothing can change it, by the owner's
-    /// order of work — so a test that went through `picture` could only ever
-    /// exercise one of the four placements, and the other three would be reached
-    /// for the first time by whoever turns the setting on.
-    ///
-    /// So this asks the placement directly. **It is the half of *all four edges
-    /// work* that a drawing test cannot reach**, and the three untried branches are
-    /// exactly where a wrong sign or a swapped axis would sit unnoticed.
-    #[test]
-    fn the_bar_sits_on_whichever_edge_it_was_laid_along() {
-        use alo_dock::Edge;
-        let size = (1920, 1080);
-        let (along, thick, floating) = (600, 70, 8);
-
-        for edge in Edge::EVERY {
-            let band = the_band_on(edge, size, along, thick, floating);
-
-            // The extent follows the orientation: long way along its edge.
-            let (expect_w, expect_h) = if edge.runs_across() {
-                (along, thick)
-            } else {
-                (thick, along)
-            };
-            assert_eq!(
-                (band.size.w, band.size.h),
-                (expect_w, expect_h),
-                "{edge:?} is laid out across the wrong axis"
-            );
-
-            // Inset from its own edge by the floating gap, never flush to it.
-            let gap = match edge {
-                Edge::Bottom => 1080 - (band.loc.y + band.size.h),
-                Edge::Top => band.loc.y,
-                Edge::Left => band.loc.x,
-                Edge::Right => 1920 - (band.loc.x + band.size.w),
-            };
-            assert_eq!(gap, floating, "{edge:?} is not floating clear of its edge");
-
-            // Centred along the edge it runs down, to within a pixel.
-            let (before, after) = if edge.runs_across() {
-                (band.loc.x, 1920 - (band.loc.x + band.size.w))
-            } else {
-                (band.loc.y, 1080 - (band.loc.y + band.size.h))
-            };
-            assert!(
-                (before - after).abs() <= 1,
-                "{edge:?} is not centred: {before} before, {after} after"
-            );
-
-            // And wholly on the screen, which the arithmetic above could satisfy
-            // while putting a negative origin somewhere.
-            assert!(
-                band.loc.x >= 0 && band.loc.y >= 0,
-                "{edge:?} starts off the screen at {:?}",
-                band.loc
-            );
-            assert!(
-                band.loc.x + band.size.w <= 1920 && band.loc.y + band.size.h <= 1080,
-                "{edge:?} runs off the screen"
-            );
-        }
     }
 
     /// **The accent lies on the band's inside edge, on all four edges.**
@@ -650,26 +512,6 @@ mod tests {
                 "{edge:?} puts the accent exactly where an earlier edge does: {accent:?}"
             );
             seen.push(accent);
-        }
-        assert_eq!(seen.len(), 4);
-    }
-
-    /// **No two edges put the bar in the same place.**
-    ///
-    /// Four placements that each pass the checks above could still be two
-    /// placements written twice — a copied arm with its edge not changed is the
-    /// likeliest way this goes wrong, and every assertion above would hold.
-    #[test]
-    fn the_four_edges_are_four_different_places() {
-        use alo_dock::Edge;
-        let mut seen: Vec<Rectangle<i32, Physical>> = Vec::new();
-        for edge in Edge::EVERY {
-            let band = the_band_on(edge, (1920, 1080), 600, 70, 8);
-            assert!(
-                !seen.contains(&band),
-                "{edge:?} lands exactly where an earlier edge does: {band:?}"
-            );
-            seen.push(band);
         }
         assert_eq!(seen.len(), 4);
     }
