@@ -2198,6 +2198,25 @@ not ship without, checked at the pixels rather than at the call.
   logind session, which is not how a person's session works. So *started by the
   session* cannot be shown yet, and it needs that change and task 40's unit.
 
+  **And task 40's unit is not a unit for this**, measured 2026-10-10. The image
+  builds `alo-desktop` and installs it to `/usr/bin/alo-desktop`
+  (`image/Containerfile:277`, `:302`), and **no unit starts it** — all eight
+  `ExecStart=` lines under `image/usr/lib/systemd/` were enumerated and none
+  names it. The one that runs, `alo-compositor.service`, starts a binary whose
+  post-sign-in branch prints *this process has nothing yet to draw in it* and
+  returns `SUCCESS`. Task 40 is *the image carries the compositor a machine
+  boots to* and the unit it carries is that one. So the sentence above points at
+  a remedy that the thing it names does not provide, and whoever picks this up
+  should not expect to find it written. **What it needs is a decision before a
+  unit**: whether the desktop is a second process the session starts or a mode
+  of the compositor — two programs cannot both be the Wayland compositor for one
+  seat, and `What is landed` above says *a second program rather than a mode of
+  the greeter, because the two belong to different people*, which is an answer
+  about ownership and not yet about processes.
+
+  *A cross-reference is the one kind of claim that gets less scrutiny than a
+  bare assertion, because it reads as though somebody already checked.*
+
 #### What already exists for this task's nouns, read on 2026-09-23 before starting
 
 Taken before any code was written, because four tasks in two days turned out to
