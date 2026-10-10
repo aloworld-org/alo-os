@@ -114,6 +114,21 @@ pub struct Server {
     /// only the latest would silently drop a window a person asked to put away, which is the
     /// one outcome this whole surface exists to prevent.
     pub(crate) asked_to_put_aside: Vec<WlSurface>,
+    /// Whether each window's external edge is revealed, one machine per window.
+    ///
+    /// §5 of `docs/design/the-external-window-edge.md`. The edge is **per
+    /// window**, so the state is too: a pointer resting on one window's edge
+    /// says nothing about another's, and a single `Revealing` here would reveal
+    /// every edge on the screen at once.
+    ///
+    /// **A list and not a map**, keyed by the surface itself. `WlSurface` is not
+    /// `Ord`, the count is the number of windows a person has open, and a list
+    /// is what `asked_to_put_aside` above already is. `crate::the_window_edge_reveals`
+    /// is the only thing that reads or writes it, and it prunes the surfaces
+    /// that are no longer mapped on the way through — so a window that closes
+    /// takes its reveal state with it rather than leaving one for whatever
+    /// surface is allocated at that address next.
+    pub(crate) edges_revealed: Vec<(WlSurface, alo_dock::revealing::Revealing)>,
     /// Where the **person** clicked the panel, not yet acted on.
     ///
     /// The point of the press, rather than the pointer read again later. A peek asks where the
@@ -233,6 +248,7 @@ impl Server {
             panel_as_drawn: None,
             // Nobody has asked for anything yet.
             asked_to_put_aside: Vec::new(),
+            edges_revealed: Vec::new(),
             asked_to_bring_back: Vec::new(),
             clicks_the_panel_took: std::collections::HashSet::new(),
             gestures: Default::default(),
