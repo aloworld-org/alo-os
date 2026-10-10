@@ -115,7 +115,10 @@ and does not reach the panel at all.
 > covering each other.
 
 **So the top region as drawn is the loose one**, and 1440 × 84 is superseded by
-that rule rather than recorded as the answer. The bottom already complies, which
+that rule rather than recorded as the answer.
+
+**And 84 is an overlay envelope, not a band taken out of the canvas** — see the
+owner's ruling at the end of this document. The bottom already complies, which
 is why it stops 192 short of the panel.
 
 ### The invariant that falls out of it
@@ -292,3 +295,53 @@ standing instruction is the one this file was already following for a different
 reason: **the edge is layout data, never inferred from a coordinate.** A
 classifier that reads *this x is large, therefore right* has decided a language's
 direction from arithmetic.
+
+## 84px overlay envelope; no reserved desktop band
+
+**The owner's ruling of 2026-10-09**, which settles a conflict between this
+document and the design file's *Build contract · v0.01*. That contract says
+*top controls are system overlays, not a reserved desktop band*; this document
+recorded `1440 × 84` in a table of regions; and `crate::top_controls_region`
+read the second as licence to take 84 logical pixels out of the canvas.
+
+Their words, and each sentence governs something different:
+
+> **Keep the canvas full-size.** The top controls are a system overlay. They
+> must not push windows down, shrink the canvas viewport or leave a permanent
+> empty band.
+>
+> **Retain the 84px region as the documented overlay envelope.** Its existence
+> does not mean those pixels are permanently occupied or that the entire
+> rectangle should intercept input. Hidden controls must not block applications
+> beneath them, apart from the defined reveal trigger. Visible controls receive
+> input within their actual interactive bounds.
+>
+> **Keep *Return to canvas*.** Moving window controls onto the external edge
+> does not remove this navigation action. Remove duplicated window controls
+> from the top overlay. Preserve the agreed separation between the top overlay,
+> Dock and side panel.
+
+### So 84 is three different things, and only one of them is a band
+
+The figure survives. What changes is what it is a figure **for**, and the three
+must not be collapsed:
+
+| | what it means | what it may do |
+|---|---|---|
+| **viewport layout** | nothing — the canvas is the whole display | takes **no** room, ever |
+| **reveal region** | where a pointer brings the overlay out | intercepts only the defined reveal trigger while concealed |
+| **visible control targets** | where each drawn control answers a press | intercepts within its own bounds, not the envelope's |
+
+**A hidden overlay must not block an application beneath it.** An 84-tall
+rectangle that swallowed presses while nothing was drawn in it would be a
+window a person can see and cannot click, which is worse than a band that
+merely wastes room.
+
+### What the overlay still carries
+
+**Return to canvas**, which is navigation and is not a window control. It stays.
+
+**Not** minimise, maximise or close — those moved to
+`the-external-window-edge.md`'s strip, attached to the window, and a copy in
+the top overlay would be the duplicate surface that whole replacement exists to
+prevent.

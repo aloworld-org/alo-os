@@ -68,6 +68,14 @@ leaves the rendering path.** So `crate::window_name_band`'s arithmetic may
 survive as arithmetic — a band's rectangle, a reachable handle — while nothing
 draws a second band on a window that has this edge.
 
+**And the top overlay keeps *Return to canvas*.** The owner's ruling of
+2026-10-09: moving window controls onto this edge *does not remove this
+navigation action*. What leaves the top overlay is the duplicated window
+controls — minimise, maximise and close — because a copy of them there would be
+the duplicate surface this replacement exists to prevent. The overlay's own
+84-pixel region stays as an **overlay envelope and not a reserved desktop
+band**; `the-regions-a-pointer-can-be-in.md` carries that ruling in full.
+
 **What this does not touch:** `canvas_never_lost`'s `A_USABLE_HANDLE` of
 44 × 24. That is the minimum reachable grab area, it is about not losing a
 window, and this edge's 44-high interaction region accommodates it rather than
