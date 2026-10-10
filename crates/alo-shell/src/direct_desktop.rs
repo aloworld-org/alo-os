@@ -17,6 +17,7 @@
 //! stopped drawing, for a reason nobody would find.
 
 use crate::scene_native::NativeLayers;
+use crate::what_the_server_tells_a_frame::what_only_the_server_knows;
 use crate::{
     Cursor, DesktopFrame, DirectLoopError, FrameTarget, Popup, RenderError, Server, SessionError,
     WindowControlLabels, direct_input_loop::LoopInput,
@@ -590,20 +591,8 @@ impl LoopInput for Desk<'_> {
         // dock. The dock's question needs both, and they meet here.
         let windows = server.window_areas();
         let mut frame = self.desktop.now();
-        frame.windows = &windows;
-        // The server's half, like the windows above: a desktop's own
-        // state cannot know that a window has taken the whole screen,
-        // and the Dock gives way to one that has.
-        frame.filling_the_screen = server.a_window_is_filling_the_screen();
-        // **And this display's own scale**, which until now was the literal
-        // `100` that `alo-desktop` hands every frame — one physical pixel per
-        // logical one, true of this laptop and of nothing dense.
-        // `more-than-one-display-plan.md` task 5, and the standing rule it
-        // exists for: *no figure reaches a display without passing through
-        // that display's scale.* The number is the person's, held in their
-        // arrangement; `Server::the_scale_of_display` only looks it up.
         let named = FrameTarget::metadata(target)?.name;
-        frame.display_scale = server.the_scale_of_display(&named);
+        what_only_the_server_knows(&mut frame, server, &windows, &named);
         let pictures = crate::nested_desktop::frame_pictures(
             frame,
             None,
@@ -647,9 +636,7 @@ impl LoopInput for Desk<'_> {
             let named = FrameTarget::metadata(other)?.name;
             let size = FrameTarget::size(other);
             let mut frame = self.desktop.now();
-            frame.windows = &windows;
-            frame.filling_the_screen = server.a_window_is_filling_the_screen();
-            frame.display_scale = server.the_scale_of_display(&named);
+            what_only_the_server_knows(&mut frame, server, &windows, &named);
             // **This binding's name is load-bearing**, and was `laid_out`
             // until 2026-10-08. `the_recheck_has_a_caller`'s guard reads the
             // draw's text and asks that every control handed to the rule is
