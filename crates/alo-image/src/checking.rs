@@ -38,6 +38,15 @@ pub const THE_DOOR: &str = "/run/alo";
 /// root may put a name in it.
 const THE_DOORS_MODE: u32 = 0o755;
 
+/// The account number this image's one person has.
+const THE_PERSON: u32 = 1000;
+
+/// A home is the person's alone: nobody else on the machine reads it.
+const A_HOMES_MODE: u32 = 0o700;
+
+/// What the recipe has to say, so nothing else takes the shell's screen.
+const THE_GETTY_IS_MASKED: &str = "systemctl mask getty@tty1.service";
+
 /// Where systemd's `RuntimeDirectory=` is relative to, and the only reason this
 /// crate knows the string: [`THE_DOOR`] is absolute and that setting is not.
 const THE_RUN: &str = "/run";
@@ -134,6 +143,8 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_opener_can_be_knocked_on_by_the_greeter_alone(image, &mut wrong);
     the_agent_holds_nothing(image, &mut wrong);
     the_screen_holds_nothing(image, &mut wrong);
+    the_person_has_a_home_of_their_own(image, &mut wrong);
+    nothing_else_takes_the_shells_screen(image, &mut wrong);
     the_desktop_is_the_persons(image, &mut wrong);
     the_desktop_lives_and_dies_with_its_session(image, &mut wrong);
     the_logins_are_the_ones_this_image_makes(image, &mut wrong);
@@ -849,6 +860,67 @@ fn the_screen_holds_nothing(image: &Image, wrong: &mut Vec<Wrong>) {
     }
 }
 
+/// **The person has a home, and it is theirs alone.**
+///
+/// `systemd-sysusers` writes a line in `/etc/passwd` naming a home and does not
+/// create one. Every ordinary distribution has an installer step that does;
+/// this image had none, and a boot on 2026-10-10 found it the way a person
+/// would have - the desktop reporting *the canvas layout was not kept:
+/// Disk(PermissionDenied)*, silently, every time.
+///
+/// **Read from the login line rather than written here**, so a change to where
+/// a person lives cannot leave this checking an address nobody uses. The
+/// directory looked for is `/var/home/...` because this is an ostree
+/// deployment where `/home` is a symlink, and `systemd-tmpfiles` declines to
+/// create a directory through one.
+fn the_person_has_a_home_of_their_own(image: &Image, wrong: &mut Vec<Wrong>) {
+    let Some(person) = image
+        .declares()
+        .iter()
+        .find(|it| it.login_called("alo") == Some(THE_PERSON))
+    else {
+        // No person declared is a different fault, and
+        // `the_logins_are_the_ones_this_image_makes` is where it is named.
+        return;
+    };
+    let Some(home) = person.home() else {
+        return;
+    };
+    let real = home.replacen("/home/", "/var/home/", 1);
+    match image.directory_at(Path::new(&real)) {
+        None => wrong.push(Wrong::ThePersonHasNoHome { home: real }),
+        Some(made) => {
+            let theirs = person.login_name().unwrap_or("alo");
+            if made.mode() != A_HOMES_MODE || made.owner() != theirs {
+                wrong.push(Wrong::ThePersonsHomeIsNotTheirs {
+                    home: real,
+                    mode: made.mode(),
+                    owner: made.owner().to_owned(),
+                });
+            }
+        }
+    }
+}
+
+/// **Nothing else takes the screen the shell is on.**
+///
+/// `alo-compositor.service` and `alo-desktop.service` both carry
+/// `TTYPath=/dev/tty1`, which is what gives each of them a seat. The base also
+/// enables `getty@tty1`, and on a booted machine that getty restarted the
+/// instant the greeter exited and drew a login prompt over a desktop that was
+/// running - then took the keystrokes meant for the sign-in fields.
+///
+/// **Masked and not merely disabled**, because `getty@.service` is a template
+/// instantiated on demand: a disabled instance is started again by anything
+/// that asks for tty1.
+fn nothing_else_takes_the_shells_screen(image: &Image, wrong: &mut Vec<Wrong>) {
+    if !image.recipe_says(THE_GETTY_IS_MASKED) {
+        wrong.push(Wrong::SomethingElseOwnsTheScreen {
+            unit: "getty@tty1.service".to_owned(),
+        });
+    }
+}
+
 /// **A desktop is the person's, and the greeter is the machine's.**
 ///
 /// `the_screen_holds_nothing` above says the compositor *is* root and is the
@@ -1279,6 +1351,93 @@ mod tests {
             "nothing starts this desktop: wanted by {:?}",
             desktop.wanted_by()
         );
+    }
+
+    /// **A person with no home is caught.**
+    ///
+    /// The fault a boot found on 2026-10-10 and nothing else had: the home is
+    /// declared in `sysusers.d`, `systemd-sysusers` writes a passwd line and
+    /// never a directory, and no step in this image made one. The desktop
+    /// reported it in its own words every time - *the canvas layout was not
+    /// kept: Disk(PermissionDenied)* - to nobody.
+    #[test]
+    fn a_person_with_no_home_is_caught() {
+        let root = a_copy_of_the_image("no-home");
+        edited(&root, THE_TMPFILES, "d /var/home/alo 0700 alo alo -", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::ThePersonHasNoHome { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A home anybody can read is caught**, which is not a home.
+    #[test]
+    fn a_home_the_whole_machine_can_read_is_caught() {
+        let root = a_copy_of_the_image("open-home");
+        edited(
+            &root,
+            THE_TMPFILES,
+            "d /var/home/alo 0700 alo alo -",
+            "d /var/home/alo 0755 alo alo -",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::ThePersonsHomeIsNotTheirs { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A getty left to take the shell's screen is caught.**
+    ///
+    /// Measured on a booted machine: it restarted the instant the greeter
+    /// exited and drew a login prompt over a running desktop, and took the
+    /// keystrokes meant for the sign-in fields.
+    #[test]
+    fn a_getty_that_would_take_the_shells_screen_is_caught() {
+        let root = a_copy_of_the_image("getty-on-tty1");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "systemctl mask getty@tty1.service",
+            "true",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::SomethingElseOwnsTheScreen { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And the image this repository ships has neither fault**, which is the
+    /// half that says the checks above are about something real.
+    #[test]
+    fn the_shipped_image_gives_its_person_a_home_and_keeps_its_screen() {
+        let image = image_at(Path::new(crate::THE_IMAGE));
+        let wrong = everything_wrong_with(&image);
+        for found in &wrong {
+            assert!(
+                !matches!(
+                    found,
+                    Wrong::ThePersonHasNoHome { .. }
+                        | Wrong::ThePersonsHomeIsNotTheirs { .. }
+                        | Wrong::SomethingElseOwnsTheScreen { .. }
+                ),
+                "{found:?}"
+            );
+        }
     }
 
     #[test]

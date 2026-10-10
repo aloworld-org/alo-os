@@ -116,6 +116,8 @@ pub struct Image {
     screen: Service,
     /// The service that stands the person's own desktop up.
     desktop: Service,
+    /// The recipe this image is built from, for the decisions it carries.
+    recipe: String,
     /// The directories made at boot.
     made: Vec<Made>,
     /// The logins and groups made at boot.
@@ -220,6 +222,7 @@ impl Image {
             server,
             screen,
             desktop,
+            recipe: recipe.clone(),
             made,
             declared,
             asserted,
@@ -260,6 +263,17 @@ impl Image {
     #[must_use]
     pub const fn server(&self) -> &Service {
         &self.server
+    }
+
+    /// Whether the recipe says this, anywhere in it.
+    ///
+    /// **A question and not the text**, so a caller asks about one decision
+    /// rather than being handed a build file to search. The recipe is read
+    /// leniently elsewhere in this crate for the same reason it is here: a
+    /// machine's build is a long document and most of it is not a promise.
+    #[must_use]
+    pub fn recipe_says(&self, what: &str) -> bool {
+        self.recipe.contains(what)
     }
 
     /// The service that stands the person's own desktop up.

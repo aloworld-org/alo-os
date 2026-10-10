@@ -611,6 +611,26 @@ COPY --chmod=0644 image/signing/alo-os.pub /etc/containers/alo-os.pub
 # The description in particular is checked by `alo-agentd` before it is parsed:
 # a group-writable one is a description the group writes this machine with, and
 # the service refuses to start rather than believe it.
+# **`getty@tty1` is masked, because two things cannot own one screen.**
+#
+# The base enables a console login on tty1 and so does this image's own shell:
+# `alo-compositor.service` and `alo-desktop.service` both carry
+# `TTYPath=/dev/tty1`, which is what gives them a seat. Measured on a booted
+# machine on 2026-10-10: the getty started at boot, **restarted the instant the
+# greeter exited**, and drew a login prompt over a desktop that was running —
+# `alo-desktop` had taken `/dev/dri/card0` and said so, and the screen showed a
+# console cursor. It also took the keystrokes meant for the sign-in fields:
+# `agetty: tty1: invalid character 0x9 in login name` is a Tab.
+#
+# **Masked rather than disabled**, because `getty@.service` is instantiated on
+# demand and a disabled template is started again by anything that asks for
+# tty1.
+#
+# **And only tty1.** `NAutoVTs` leaves tty2 to tty6 as they were, so
+# Ctrl+Alt+F2 still reaches a console — CLAUDE.md law 2 is explicit that alo OS
+# ships a terminal, *because a system that does not trust its owner with a
+# shell is a toy*, and a machine whose shell has crashed must still be
+# reachable.
 RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/libexec/alo-convertd /usr/libexec/alo-portald \
                /usr/libexec/alo-shipping \
@@ -632,6 +652,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/tmpfiles.d/alo.conf \
                /etc/alo/agentd.toml \
  && chown root:root /etc/alo/agentd.toml \
+ && systemctl mask getty@tty1.service \
  && systemctl enable alo-boundaryd.service alo-agentd.service alo-sessiond.service \
                      alo-modeld.service alo-convertd.socket \
                      alo-compositor.service alo-portald.service \
