@@ -1523,6 +1523,7 @@ dependencies = [
  "alo-keeping-up",
  "alo-locking",
  "alo-measuring",
+ "alo-menus",
  "alo-models",
  "alo-nearby",
  "alo-networks",

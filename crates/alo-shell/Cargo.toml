@@ -96,6 +96,7 @@ alo-notifying = { path = "../alo-notifying" }
 # What is running and what is filling the disk: the readings and the count the
 # two desktop windows draw, every number as the kernel or the count gave it.
 # Read, never acted on — `tests/desktop_source.rs` holds the windows to that.
+alo-menus = { path = "../alo-menus" }
 alo-measuring = { path = "../alo-measuring" }
 # What a pairing permits, and the list Settings reads to show them. Read, never
 # written: the pairings file is the daemon's alone.

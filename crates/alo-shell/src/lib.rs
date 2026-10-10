@@ -341,6 +341,7 @@ mod window_edge_tooltip;
 mod window_edge_who_draws;
 mod window_full_screen;
 mod window_maximize;
+mod window_menu;
 mod window_minimize;
 mod window_mode;
 mod window_mode_plan;
@@ -384,6 +385,13 @@ pub use window_edge_picture::EdgePicture;
 pub use window_edge_reading::{the_controls_of, what_a_reader_is_told, what_it_does};
 /// A window's title on its edge: what is shown, and what is still said aloud.
 pub use window_edge_title::{AN_ELLIPSIS, FittedTitle, fitted};
+pub use window_edge_tooltip::{
+    A_LINE_IS_TALL, AROUND_THE_WORDS, AT_MOST_LINES, AT_MOST_WIDE, BELOW_THE_EDGE, Because,
+    Tooltip, tooltip_of,
+};
+pub use window_edge_who_draws::who_draws_a_frame;
+pub use window_full_screen::WindowFullScreenError;
+pub use window_maximize::WindowMaximizeError;
 /// **Who draws a frame's header**, in the one place both the drawing and the
 /// reading ask. Its body is what changes when the toplevel's decoration state
 /// is read per frame; see the file's header.
@@ -393,13 +401,16 @@ pub use window_edge_title::{AN_ELLIPSIS, FittedTitle, fitted};
 /// convenient one: a tooltip is transient, so the window menu carries the title
 /// a person needs to read slowly or copy. Placed below the edge's region by
 /// construction, which is what keeps it off the drag area and every control.
-pub use window_edge_tooltip::{
-    A_LINE_IS_TALL, AROUND_THE_WORDS, AT_MOST_LINES, AT_MOST_WIDE, BELOW_THE_EDGE, Because,
-    Tooltip, tooltip_of,
+/// **The window menu, and the title a person can select and copy from it.**
+///
+/// The third of the three roads the owner's ruling of 2026-10-10 names, and
+/// the only one that always exists: a tooltip is transient and a touch screen
+/// has no hover. Its entries are `alo_menus`' closed list, which had no caller
+/// in this crate before this.
+pub use window_menu::{
+    A_ROW_IS_TALL, A_RULE_IS_TALL, A_TITLE_LINE_IS_TALL, AROUND_THE_RULE, AT_MOST_TITLE_LINES, Row,
+    THE_MENU_IS_WIDE, TitleLine, WITHIN_THE_MENU, WindowMenu, window_menu,
 };
-pub use window_edge_who_draws::who_draws_a_frame;
-pub use window_full_screen::WindowFullScreenError;
-pub use window_maximize::WindowMaximizeError;
 pub use window_minimize::WindowMinimizeError;
 pub use window_mode::WindowModeError;
 
