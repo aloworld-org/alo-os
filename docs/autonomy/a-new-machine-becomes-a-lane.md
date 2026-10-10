@@ -345,7 +345,7 @@ Measured rather than assumed, by resolving the pull requests against each crate 
 
 | Crate | Machines that have landed in it | How |
 |---|---|---|
-| `crates/alo-shell` | the Mac, the development PC | canvas files, panel files, the draw, the fixed controls |
+| `crates/alo-shell` | the Mac, the development PC, **the third PC** | canvas files, panel files, the draw, the fixed controls — and, since 2026-10-09, the window's own edge |
 | `crates/alo-desktop` | the Mac, the development PC | the binary that stands a desktop up; **it has zero `#[test]`**, which is a finding two lanes hit in one day and is with the owner |
 | `crates/alo-reconciling` | the Mac, the development PC | the gate reads every plan, so a change to any plan's shape reaches it |
 | `crates/alo-dock` | the development PC, and one branch this method could not attribute | named here as **probable** rather than measured, because a branch outside the `task/<machine>/…` form cannot be resolved to a machine |
@@ -353,6 +353,37 @@ Measured rather than assumed, by resolving the pull requests against each crate 
 **`alo-canvas`, `alo-arranging` and `alo-put-aside` are *not* shared** on the same
 measurement — one machine each — and are left in their plans' rows. Shared ground is
 what the evidence shows, not every crate two plans mention.
+
+**The third PC was added on 2026-10-10, and the row was stale rather than wrong.**
+The table above was measured on 2026-10-02, when that machine had landed nothing in
+this crate. It has since, and the evidence is the same kind the rest of the table
+rests on — branches resolved to a machine by their `task/<machine>/…` form:
+
+```text
+task/third-pc/the-external-window-edge    28 alo-shell files   (#603, open)
+task/third-pc/the-window-frame-is-designed  24 alo-shell files
+```
+
+**This is not a governance change and was not treated as one.** *Shared ground is
+what the evidence shows* is this section's own rule, and three machines in the crate
+is what it shows. Nothing about who may edit it changed: it was in no lane's row
+before and it is in no lane's row now.
+
+**It is recorded because the absence misled somebody.** The third PC read the crate
+table as *`alo-shell` has one owner and it is the Mac*, asked whether it should hand
+its branch over, and had been editing the crate on an invitation given in chat that
+exists nowhere in this repository. The invitation was never needed — this section had
+already settled it, in the owner's own words, eight days earlier. **A lane that
+cannot find the permission it already has will ask for one, and the asking is the
+cost.**
+
+**And the rule was being kept by lanes who thought they were improvising.** Before
+either of them had read this section, the third PC named the files it had changed,
+listed the one signature that would break the Mac lane, and said what it was still
+finishing so the two would not collide; the Mac lane answered with the shapes it had
+changed in the files the other might read. That is *say which files before you start,
+pull before you branch, and tell the other lane when it lands*, arrived at twice
+independently — which is the strongest thing that can be said for a convention.
 
 ### The rule, which is the one those two lanes were already following
 
