@@ -33,15 +33,20 @@
 //! fallback, combining marks and right-to-left runs are its answer and not
 //! this file's.
 //!
-//! **Truncation cuts at a character boundary, which is not always a grapheme
-//! boundary.** A title ending mid-cluster — a letter and its combining accent
-//! split apart — is possible, and this file does not prevent it. Saying so
-//! rather than implying correctness: a grapheme-aware cut needs a segmentation
-//! crate this workspace does not have, and adding one is a dependency
-//! somebody should choose deliberately. The full title is never cut, so
-//! nothing a reader hears is affected.
+//! **Truncation cuts at grapheme boundaries**, so an accented letter is never
+//! split from its accent and an emoji sequence is never split into the parts
+//! it is built from. `unicode-segmentation` answers where those boundaries
+//! are, and it was already in this tree — **`cosmic-text` depends on it**, so
+//! the text stack this shell draws with had the answer and nothing new enters
+//! the supply chain by asking for it directly.
+//!
+//! An earlier version of this file cut at character boundaries and said so as
+//! a limitation. The owner's direction of 2026-10-09 was to fix it rather than
+//! record it: *do not split accented letters, emoji sequences or other
+//! combined characters.*
 
 use cosmic_text::{FontSystem, Metrics};
+use unicode_segmentation::UnicodeSegmentation;
 
 /// The ellipsis a truncated title ends with.
 ///
@@ -89,9 +94,13 @@ pub fn fitted(fonts: &mut FontSystem, title: &str, room: i32, metrics: Metrics) 
     }
     // Too wide. Take the longest prefix whose ellipsis still fits, by halving
     // rather than stepping: a title is shaped once per probe and a long one
-    // stepped character by character would shape it hundreds of times.
+    // stepped one cluster at a time would shape it hundreds of times.
+    //
+    // **Grapheme boundaries, not character ones.** A cut between a letter and
+    // its combining accent, or inside an emoji built from several code
+    // points, is a cut that renders as something the person never typed.
     let boundaries: Vec<usize> = title
-        .char_indices()
+        .grapheme_indices(true)
         .map(|(at, _)| at)
         .chain(std::iter::once(title.len()))
         .collect();

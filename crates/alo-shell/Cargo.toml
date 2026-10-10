@@ -132,6 +132,12 @@ alo-turn = { path = "../alo-turn" }
 # `crates/alo-shell/src/software_scanout.rs`.
 pixman = "=0.2.1"
 cosmic-text = { version = "=0.14.2", default-features = false, features = ["std", "swash"] }
+# Where a grapheme ends, so a title truncated to fit its window edge never
+# splits a letter from its accent or an emoji from the parts it is built of.
+# **Already in this tree**: cosmic-text depends on it, so the text stack this
+# crate draws with had the answer and naming it directly adds nothing to the
+# supply chain.
+unicode-segmentation = "1.13"
 smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "renderer_gl", "backend_winit", "backend_session_libseat", "backend_libinput", "backend_udev", "use_system_lib", "desktop", "renderer_pixman"] }
 rustix.workspace = true
 thiserror.workspace = true
