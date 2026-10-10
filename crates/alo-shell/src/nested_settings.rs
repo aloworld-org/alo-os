@@ -20,7 +20,7 @@ use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 use crate::approval_raster::ApprovalPicture;
 use crate::egress_status_raster::EgressStatusPicture;
 use crate::nested_egress_status::status_picture;
-use crate::scene_native::{NativeLayers, NativeScene};
+use crate::scene_native::NativeLayers;
 use crate::settings_raster::{SettingsPicture, picture};
 use crate::{
     ApprovalFrame, EgressStatusFrame, FrameTarget, InputError, Nested, RenderError, Server,
@@ -101,7 +101,6 @@ impl Nested {
         roots: &[WlSurface],
         popups: &[crate::Popup],
         cursor: &crate::Cursor,
-        controls: Option<crate::WindowControlScene<'_>>,
         labels: &mut WindowControlLabels,
         egress: EgressStatusFrame<'_>,
         settings: SettingsFrame<'_>,
@@ -115,7 +114,7 @@ impl Nested {
             popups,
             cursor,
             NativeLayers {
-                scene: controls.map(NativeScene::Controls),
+                scene: None,
                 settings: Some(&sections),
                 approval: question.as_ref(),
                 status: Some(&status),

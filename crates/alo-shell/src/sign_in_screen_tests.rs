@@ -1,5 +1,6 @@
 //! The sign-in screen against real accounts and a door that counts its knocks.
 #![expect(
+    clippy::expect_used,
     clippy::unwrap_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
@@ -311,10 +312,38 @@ fn every_sentence_the_screen_can_show_is_collected_and_none_is_written_here() {
         .chain(alo_sessiond::EVERY_WORD.iter())
         .map(|word| word.says())
         .collect();
-    let the_shells_own: Vec<&str> = crate::window_control_reader_words::READER_WORDS
-        .iter()
-        .map(|word| word.says())
-        .collect();
+    // **The shell declares no vocabulary of its own, and this is what says
+    // so.** The negative control here was `READER_WORDS` - the paged name
+    // reader's four sentences - and it was the only `[Word; N]` this crate
+    // declared. The reader went on 2026-10-10 and took them with it, which
+    // leaves `the_shells_own` empty.
+    //
+    // **An empty list makes the assertion below vacuous**, so the emptiness is
+    // asserted instead: a rule nobody can fail is not a rule. If somebody
+    // declares shell wording again, this fails and whoever wrote it has to
+    // decide whether it may appear on the sign-in screen - which is the
+    // question the original test was asking.
+    let the_shells_own: Vec<&str> = Vec::new();
+    let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let declaring = std::fs::read_dir(&src)
+        .expect("the source directory is beside this file")
+        .filter_map(Result::ok)
+        .filter(|entry| entry.path().extension().is_some_and(|it| it == "rs"))
+        .filter(|entry| {
+            // **Not the file asking.** This names the thing it forbids in its
+            // own message, so counting itself made the guard fail for the
+            // reason it exists to catch. Test files are out of scope anyway:
+            // the question is what a machine runs.
+            !entry.file_name().to_string_lossy().ends_with("_tests.rs")
+        })
+        .filter(|entry| {
+            std::fs::read_to_string(entry.path()).is_ok_and(|text| text.contains(": [Word;"))
+        })
+        .count();
+    assert_eq!(
+        declaring, 0,
+        "this crate declares its own wording again, so `the_shells_own` above          is no longer the empty list this test assumes - put those words in it"
+    );
 
     let mut shown: Vec<Said> = Vec::new();
     let mut collect = |screen: &SignInScreen<CountingDoor>| match screen.shows() {

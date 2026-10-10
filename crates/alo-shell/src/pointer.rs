@@ -486,7 +486,6 @@ impl Server {
     /// Native presentation/focus retire and execution cancels even without a pointer;
     /// its matching primary release remains owned by the native transaction.
     pub fn pointer_leave(&mut self) -> Result<(), InputError> {
-        self.retire_window_controls();
         self.surfaces.dismiss_popup_grab();
         self.surfaces.clear_pointer()
     }

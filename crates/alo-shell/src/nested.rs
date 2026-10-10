@@ -66,10 +66,6 @@ pub struct Nested {
 }
 
 impl Nested {
-    /// Actual parent position for transaction feedback, never cached client focus.
-    pub(crate) fn control_position(&self) -> Option<(f64, f64)> {
-        self.control_input.position()
-    }
     /// Initialize graphics, refusing missing Wayland configuration and failures.
     pub fn new(title: &str, size: (u32, u32)) -> Result<Self, RenderError> {
         if size.0 == 0 || size.1 == 0 || size.0 > i32::MAX as u32 || size.1 > i32::MAX as u32 {
@@ -181,7 +177,7 @@ impl Nested {
     /// explicit activation. Parent focus loss/close releases keys and clears focus.
     /// A keyboard-enabled server is required; pointer events remain unconnected.
     pub fn pump_keyboard(&mut self, server: &mut crate::Server) -> Result<(), RenderError> {
-        self.pump_input(server, false, None, None)
+        self.pump_input(server, false)
     }
 
     /// Route keyboard and pointer events after `Server::enable_pointer`.
@@ -192,49 +188,13 @@ impl Nested {
     /// Published native controls intercept primary gestures; absent presentation
     /// uses ordinary client routing. This method does not compose controls/labels.
     pub fn pump_seat(&mut self, server: &mut crate::Server) -> Result<(), RenderError> {
-        self.pump_input(server, true, None, None)
-    }
-
-    /// Route a published reader through the ordered parent seat events.
-    /// PageUp/PageDown navigate and Escape dismisses; other keys keep typing.
-    /// Render with `render_reader` to use this backend's feedback owner. Continue
-    /// pumping a full seat with None after removal to drain owned pointer releases.
-    /// Selection/removal remains the host's responsibility; inspect the live reader
-    /// and redraw after pumping. This does not open a reader automatically.
-    pub fn pump_reader_seat(
-        &mut self,
-        server: &mut crate::Server,
-        reader: Option<&mut crate::WindowControlReader>,
-    ) -> Result<(), RenderError> {
-        self.pump_input(server, true, reader, None)
-    }
-
-    /// Pump a retained full-name session, opening native-focused names with F1.
-    /// Opening happens once on release, after complete preparation at press.
-    /// Render the resulting reader before its navigation can acquire input.
-    /// An already open reader uses PageUp/PageDown/Escape and ordinary typing.
-    /// Remove a dismissed reader from the slot after pumping and remove its pixels.
-    pub fn pump_reader_session(
-        &mut self,
-        server: &mut crate::Server,
-        session: &mut crate::NestedReaderSession<'_>,
-    ) -> Result<(), RenderError> {
-        self.pump_input(server, true, None, Some(session))
+        self.pump_input(server, true)
     }
 
     /// Share ordered parent activation handling across keyboard-only and full seats.
-    fn pump_input(
-        &mut self,
-        server: &mut crate::Server,
-        pointer: bool,
-        mut reader: Option<&mut crate::WindowControlReader>,
-        mut session: Option<&mut crate::NestedReaderSession<'_>>,
-    ) -> Result<(), RenderError> {
+    fn pump_input(&mut self, server: &mut crate::Server, pointer: bool) -> Result<(), RenderError> {
         let mut failure = None;
         let mut control_input = std::mem::take(&mut self.control_input);
-        if session.is_none() {
-            control_input.opening.cancel();
-        }
         let result = self.pump_events(|event, focused| {
             if failure.is_some() {
                 return;
@@ -263,28 +223,23 @@ impl Nested {
                 };
                 if let Err(error) = translated.map_err(RenderError::Input).and_then(|event| {
                     control_input
-                        .route_reader(
-                            server,
-                            session
-                                .as_mut()
-                                .and_then(|s| s.reader.as_mut())
-                                .or(reader.as_deref_mut()),
-                            focused,
-                            event,
-                        )
-                        .map(|_| ())
-                        .map_err(RenderError::WindowControl)
+                        .route(server, focused, event)
+                        .map_err(RenderError::Input)
                 }) {
                     failure = Some(error);
                     return;
                 }
             }
-            if !pointer {
-                if focused {
-                    control_input.reader.synchronize(server, None, true);
-                } else {
-                    control_input.cancel(server);
-                }
+            // **A keyboard-only pump still has to say the pointer left.**
+            // This synchronised the reader while focused and cancelled it
+            // otherwise; with no reader, what is left is the leave, and
+            // `route` with `active: false` is where that lives.
+            if !pointer
+                && !focused
+                && let Err(error) = control_input.route(server, false, None)
+            {
+                failure = Some(RenderError::Input(error));
+                return;
             }
             let focus = if focused {
                 server.mapped_surfaces().next().cloned()
@@ -297,26 +252,26 @@ impl Nested {
             }
             if let Some(WinitEvent::Input(InputEvent::Keyboard { event })) = event {
                 let code = u32::from(event.key_code()).saturating_sub(8);
-                let key = (code, event.state(), event.time_msec());
-                let routed = if let Some(session) = session.as_mut() {
-                    control_input.reader_session_key(server, session, focused, key)
-                } else {
-                    control_input
-                        .reader_key(server, reader.as_deref_mut(), focused, key)
-                        .map_err(RenderError::Input)
-                };
-                if let Err(error) = routed {
-                    failure = Some(error);
+                // **Only a focused parent routes a key**, which the reader's
+                // own router enforced and is now stated here: an unfocused
+                // nested window delivering keys would be a person typing into
+                // a window they are not looking at.
+                if focused
+                    && let Err(error) = server.keyboard_key(code, event.state(), event.time_msec())
+                {
+                    failure = Some(RenderError::Input(error));
                 }
             }
         });
         self.control_input = control_input;
-        if let Some(error) = failure {
-            self.control_input.cancel(server);
-            return Err(error);
+        // **A failure forgets the position**, as cancelling the strip's input
+        // did: a pump that refused halfway must not let the next button be
+        // routed from a coordinate this one did not accept.
+        if failure.is_some() || result.is_err() {
+            let _ = self.control_input.route(server, false, None);
         }
-        if result.is_err() {
-            self.control_input.cancel(server);
+        if let Some(error) = failure {
+            return Err(error);
         }
         result
     }
@@ -357,30 +312,6 @@ impl FrameTarget for Nested {
         self.camera = camera;
         Ok(())
     }
-    fn submit_reader(
-        &mut self,
-        roots: &[WlSurface],
-        popups: &[crate::Popup],
-        cursor: &crate::Cursor,
-        reader: &crate::WindowControlReaderScene<'_>,
-    ) -> Result<Vec<WlSurface>, RenderError> {
-        self.submit_native_scene(
-            roots,
-            popups,
-            cursor,
-            Some(crate::scene_native::NativeScene::Reader(reader)),
-            None,
-        )
-    }
-    fn submit_controls(
-        &mut self,
-        roots: &[WlSurface],
-        popups: &[crate::Popup],
-        cursor: &crate::Cursor,
-        controls: Option<crate::WindowControlScene<'_>>,
-    ) -> Result<Vec<WlSurface>, RenderError> {
-        self.submit_control_scene(roots, popups, cursor, controls)
-    }
     fn metadata(&self) -> Result<crate::OutputMetadata, RenderError> {
         Ok(crate::OutputMetadata {
             name: "alo-nested".into(),
@@ -411,7 +342,7 @@ impl FrameTarget for Nested {
         popups: &[crate::Popup],
         cursor: &crate::Cursor,
     ) -> Result<Vec<WlSurface>, RenderError> {
-        self.submit_control_scene(roots, popups, cursor, None)
+        self.submit_control_scene(roots, popups, cursor)
     }
 }
 
@@ -428,15 +359,8 @@ impl Nested {
         roots: &[WlSurface],
         popups: &[crate::Popup],
         cursor: &crate::Cursor,
-        controls: Option<crate::WindowControlScene<'_>>,
     ) -> Result<Vec<WlSurface>, RenderError> {
-        self.submit_native_scene(
-            roots,
-            popups,
-            cursor,
-            controls.map(crate::scene_native::NativeScene::Controls),
-            None,
-        )
+        self.submit_native_scene(roots, popups, cursor, None, None)
     }
 
     /// One shared submission boundary for complete labels and paged readers.

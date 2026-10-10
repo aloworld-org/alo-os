@@ -127,7 +127,6 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         &[],
                         &[],
                         &Cursor::Default,
-                        None,
                         &mut labels,
                         EgressStatusFrame {
                             status: &status,

@@ -11,9 +11,7 @@
 //! `std::env::args()` are [`Flags`] now, so the fixture passes what a person
 //! typed and a test passes what it means to check.
 
-use crate::{
-    Fixture, application, nested_control_frame_check, nested_reader_frame_check, popup_check,
-};
+use crate::{Fixture, application, popup_check};
 
 /// Which of the optional checks this run makes.
 ///
@@ -25,10 +23,6 @@ pub struct Flags {
     pub cursor: bool,
     /// Enable the popup protocol and exercise popups.
     pub popups: bool,
-    /// Compose and route the native window-control strip.
-    pub controls: bool,
-    /// Compose the paged reader over that strip.
-    pub reader: bool,
     /// Print each submission's timings.
     pub trace: bool,
 }
@@ -49,8 +43,6 @@ impl Flags {
         Self {
             cursor: has("--cursor"),
             popups: has("--popups"),
-            controls: has("--controls"),
-            reader: has("--reader"),
             trace: has("--trace"),
         }
     }
@@ -61,8 +53,6 @@ impl Flags {
         Self {
             cursor: true,
             popups: true,
-            controls: true,
-            reader: true,
             trace: false,
         }
     }
@@ -98,11 +88,11 @@ impl Flags {
     /// five seconds, which is the price, and this fixture already spends minutes.
     #[must_use]
     pub const fn patience(self) -> std::time::Duration {
-        if self.reader || self.controls {
-            std::time::Duration::from_secs(60)
-        } else {
-            std::time::Duration::from_secs(5)
-        }
+        // **One budget again.** The sixty seconds was for a run driving the
+        // reader's twelve EGL page submissions and the strip's eight before
+        // asking for a frame at all; both went on 2026-10-10. Five is what the
+        // plain run always had, and every run is the plain run now.
+        std::time::Duration::from_secs(5)
     }
 
     /// How long the whole check may take, for a run with these switches on.
@@ -113,11 +103,7 @@ impl Flags {
     /// true about why.
     #[must_use]
     pub const fn whole_run(self) -> std::time::Duration {
-        if self.reader || self.controls {
-            std::time::Duration::from_secs(120)
-        } else {
-            std::time::Duration::from_secs(10)
-        }
+        std::time::Duration::from_secs(10)
     }
 }
 
@@ -284,10 +270,6 @@ pub fn run(flags: Flags) -> Result<(), Box<dyn std::error::Error>> {
     });
     let start = Instant::now();
     let mut rendered = 0;
-    let controls_check = flags.controls;
-    let mut controls_checked = false;
-    let reader_check = flags.reader;
-    let mut reader_checked = false;
     let trace = flags.trace;
     while !client.is_finished() {
         if start.elapsed() > flags.whole_run() {
@@ -313,22 +295,6 @@ pub fn run(flags: Flags) -> Result<(), Box<dyn std::error::Error>> {
                 server.mapped_surfaces().count()
             );
         }
-        if reader_check && !reader_checked && server.mapped_surfaces().next().is_some() {
-            nested_reader_frame_check::run(
-                &mut server,
-                &mut nested,
-                start.elapsed().as_millis() as u32,
-            )?;
-            reader_checked = true;
-        }
-        if controls_check && !controls_checked && server.mapped_surfaces().next().is_some() {
-            nested_control_frame_check::run(
-                &mut server,
-                &mut nested,
-                start.elapsed().as_millis() as u32,
-            )?;
-            controls_checked = true;
-        }
         rendered += server.render(&mut nested, start.elapsed().as_millis() as u32)?;
         if trace {
             eprintln!("Nested trace {:?}: after render", start.elapsed());
@@ -341,8 +307,6 @@ pub fn run(flags: Flags) -> Result<(), Box<dyn std::error::Error>> {
     assert!(server.popup_surfaces().is_empty());
     assert_eq!(server.render(&mut nested, 10000)?, 0);
     assert!(rendered > 0);
-    assert!(!controls_check || controls_checked);
-    assert!(!reader_check || reader_checked);
     println!(
         "Nested GLES submissions included {rendered} client surfaces; unmap/remap, refusal and disconnect passed; physical display unverified"
     );

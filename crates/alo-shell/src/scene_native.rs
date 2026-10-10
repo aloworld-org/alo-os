@@ -1,5 +1,5 @@
 //! Shared native scene selection, validation and painting between clients and cursors.
-use crate::{RenderError, WindowControlReaderScene};
+use crate::RenderError;
 use smithay::{
     backend::renderer::Frame,
     utils::{Physical, Size},
@@ -10,15 +10,6 @@ use smithay::{
 pub(crate) enum NativeScene<'a> {
     /// An exclusive opaque lock texture; no other layer may be imported.
     Lock(&'a crate::lock_raster::LockPicture),
-    /// Existing strip with an optional complete label.
-    ///
-    /// **Superseded.** `docs/design/the-external-window-edge.md` replaces this
-    /// with [`NativeLayers::edges`] for ordinary shell-decorated windows, by
-    /// the owner's ruling of 2026-10-09. It remains only while the reader and
-    /// label paths that share its layout are moved across.
-    Controls(crate::WindowControlScene<'a>),
-    /// Complete paged reader and its original strip.
-    Reader(&'a WindowControlReaderScene<'a>),
     /// The sign-in screen, which is the whole output.
     SignIn(&'a crate::sign_in_raster::SignInPicture),
     /// The recovery screen, which is the whole output: a machine whose desktop
@@ -32,7 +23,15 @@ pub(crate) enum NativeScene<'a> {
 /// them.
 #[derive(Clone, Copy)]
 pub(crate) struct NativeLayers<'a> {
-    /// Controls, a reader or the sign-in screen, when one is selected.
+    /// The one surface that takes the whole output, when one is up.
+    ///
+    /// **Every variant is whole-output, which it was not until 2026-10-10.**
+    /// This held `Controls` and `Reader` — per-window chrome and a paged label
+    /// reader — beside the lock, sign-in and recovery screens, so a field whose
+    /// type means *one of these* was a grab-bag that happened to contain
+    /// something every window has. The external window edge replaced both and
+    /// `docs/design/the-external-window-edge.md` is where it lives; an edge is
+    /// in [`Self::edges`], which is a slice because every window wears one.
     pub(crate) scene: Option<NativeScene<'a>>,
     /// Every open window's external edge, in the order the windows are drawn.
     ///
@@ -117,8 +116,6 @@ impl NativeScene<'_> {
                     Err(RenderError::LockScene)
                 }
             }
-            Self::Controls(scene) => scene.validate(size),
-            Self::Reader(scene) => scene.validate(size),
             Self::SignIn(picture) => picture.validate(size),
             Self::Recovery(picture) => picture.validate(size),
         }
@@ -128,16 +125,8 @@ impl NativeScene<'_> {
     pub(crate) fn paint(self, frame: &mut impl Frame) -> Result<(), RenderError> {
         match self {
             Self::Lock(_) => Err(RenderError::LockScene),
-            Self::Reader(scene) => scene.paint(frame),
             Self::SignIn(picture) => picture.paint(frame),
             Self::Recovery(picture) => picture.paint(frame),
-            Self::Controls(scene) => {
-                scene.layout.paint(frame, scene.scheme)?;
-                if let Some(label) = scene.label {
-                    label.paint(frame)?;
-                }
-                Ok(())
-            }
         }
     }
 }

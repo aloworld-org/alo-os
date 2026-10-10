@@ -495,14 +495,6 @@ impl Surfaces {
         self.windows.iter().filter(|w| w.surface.alive()).count()
     }
 
-    /// Identity changes at each unmap or visibility transition, including within dispatch.
-    pub(crate) fn window_visibility(&self, surface: &WlSurface) -> Option<std::sync::Arc<()>> {
-        self.windows
-            .iter()
-            .find(|w| w.drawn() && w.surface.wl_surface() == surface)
-            .map(|w| w.visibility.clone())
-    }
-
     /// Resolve only a live mapped root owned by this display, never a child.
     pub(crate) fn mapped_toplevel(&self, surface: &WlSurface) -> Option<&ToplevelSurface> {
         self.windows

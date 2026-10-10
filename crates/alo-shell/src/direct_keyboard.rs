@@ -54,7 +54,6 @@ impl Server {
     /// supply fresh pointer motion. No device is opened or closed here.
     /// Native presentation/focus retire; presses disarm but retain release ownership.
     pub fn clear_input(&mut self) {
-        self.retire_window_controls();
         // These operations can only refuse an absent capability, intentionally
         // allowed for a display without input or with a keyboard-only seat.
         let _ = self.keyboard_focus(None);

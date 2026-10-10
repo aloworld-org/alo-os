@@ -8,7 +8,6 @@
 
 use alo_access::{Control, Surface};
 
-use crate::window_controls::{WindowControl, WindowControlLayout};
 use crate::window_edge_reading::the_controls_of;
 
 use super::*;
@@ -226,36 +225,64 @@ fn the_keyboards_stops_are_the_controls_that_can_be_used() {
 /// written about what the two lists had drifted into: `alo-access` announced
 /// *close this window* and *move this window* while this crate drew minimise,
 /// maximise and close. Two buttons drawn and never announced, one announced
-/// and never drawn, and **nothing compared them** — each list was correct
-/// about what it contained, and no test asked whether the two contained the
-/// same things.
+/// **`Surface::WindowControls` is a surface nothing draws**, and that is
+/// recorded here rather than left for a reader to discover.
 ///
-/// So this asks exactly that, both ways round. A containment check over the
-/// pairs they agree on would have passed while the strip was short by two,
-/// which is why the assertion is on the sets rather than on the words.
+/// This test asserted that the three tiles a window drew and the three a reader
+/// was told about were the same **set** — both ways round, because a
+/// containment check would have passed while the strip was short by two. The
+/// strip was retired on 2026-10-10 by
+/// `docs/design/the-external-window-edge.md`, so there is nothing left to draw
+/// and the comparison has one empty side.
+///
+/// **The guarantee moved and did not go.** `window_edge_reading` and
+/// `access_nodes`' own
+/// `what_a_reader_is_told_is_what_the_edge_lays_out` hold exactly it for the
+/// edge: one function answers which controls a window has, and the layout and
+/// the reader both ask it, so a control drawn that no reader can name is
+/// unrepresentable rather than merely tested for.
+///
+/// **What is still owed**, and this is what the assertion below is for:
+/// `alo_access::Surface::WindowControls` still declares those controls as a
+/// surface of this machine. `alo-access` is a public contract, so retiring an
+/// entry from it is versioning and deprecation and not a deletion inside
+/// somebody's removal. Until that happens the tree carries a surface no
+/// machine draws, and this fails the day somebody wires one again.
 #[test]
-fn every_button_drawn_on_a_window_is_a_button_a_reader_is_told_about() {
-    let drawn: Vec<alo_shortcuts::Action> =
-        WindowControlLayout::new((1280, 720), (0, 0), [true; 3], false)
-            .expect("a strip on an ordinary viewport")
-            .controls()
-            .iter()
-            .map(WindowControl::action)
-            .collect();
+fn the_retired_control_surface_is_still_declared_and_nothing_draws_it() {
     let announced: Vec<alo_shortcuts::Action> = Surface::WindowControls
         .read_aloud()
         .into_iter()
         .filter_map(|control| control.does)
         .collect();
-
-    assert_eq!(
-        drawn, announced,
-        "the strip draws {drawn:?} and a reader is told about {announced:?}"
-    );
     assert_eq!(
         announced.len(),
-        Surface::WindowControls.read_aloud().len(),
-        "a control on this surface is announced without performing anything"
+        3,
+        "the contract still declares three window controls: {announced:?}"
+    );
+    // **Nothing in this crate lays them out.** Checked as an absence of the
+    // type rather than of a call, because the layout was the only thing that
+    // could produce one and it is gone.
+    let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let laid_out = std::fs::read_dir(&src)
+        .expect("the source directory is beside this file")
+        .filter_map(Result::ok)
+        .filter(|entry| entry.path().extension().is_some_and(|it| it == "rs"))
+        .filter(|entry| {
+            // **Not the file asking.** This names the thing it forbids in its
+            // own message, so counting itself made the guard fail for the
+            // reason it exists to catch. Test files are out of scope anyway:
+            // the question is what a machine runs.
+            !entry.file_name().to_string_lossy().ends_with("_tests.rs")
+        })
+        .filter(|entry| {
+            std::fs::read_to_string(entry.path())
+                .is_ok_and(|text| text.contains("WindowControlLayout"))
+        })
+        .count();
+    assert_eq!(
+        laid_out, 0,
+        "a file lays out the retired control strip again; the edge is          `crate::window_edge::edge_of` and this surface is owed a deprecation"
     );
 }
 

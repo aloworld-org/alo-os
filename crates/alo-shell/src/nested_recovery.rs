@@ -136,7 +136,6 @@ impl Nested {
         roots: &[WlSurface],
         popups: &[crate::Popup],
         cursor: &Cursor,
-        controls: Option<crate::WindowControlScene<'_>>,
         labels: &mut WindowControlLabels,
         desktop: DesktopFrame<'_>,
         record: Option<RecordFrame<'_>>,
@@ -158,7 +157,7 @@ impl Nested {
                     popups,
                     cursor,
                     NativeLayers {
-                        scene: controls.map(NativeScene::Controls),
+                        scene: None,
                         desktop: Some(&pictures.desktop),
                         record: pictures.record.as_ref(),
                         approval: pictures.approval.as_ref(),

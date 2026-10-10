@@ -102,10 +102,6 @@ mod grab_check;
 mod interactive_resize_check;
 #[path = "../examples/support/nested_client_check.rs"]
 mod nested_client_check;
-#[path = "../examples/support/nested_control_frame_check.rs"]
-mod nested_control_frame_check;
-#[path = "../examples/support/nested_reader_frame_check.rs"]
-mod nested_reader_frame_check;
 #[path = "../examples/support/offscreen_check.rs"]
 mod offscreen_check;
 #[path = "../examples/support/offscreen_client.rs"]
@@ -126,14 +122,6 @@ mod the_canvas_walk_check;
 mod the_canvas_walk_moments;
 #[path = "../examples/support/the_walk_check.rs"]
 mod the_walk_check;
-#[path = "../examples/support/window_control_label_check.rs"]
-mod window_control_label_check;
-#[path = "../examples/support/window_control_scene_check.rs"]
-mod window_control_scene_check;
-#[path = "../examples/support/window_control_snapshot_check.rs"]
-mod window_control_snapshot_check;
-#[path = "../examples/support/window_controls_pixels.rs"]
-mod window_controls_pixels;
 #[path = "../examples/support/window_maximize_check.rs"]
 mod window_maximize_check;
 #[path = "../examples/support/window_minimize_check.rs"]
