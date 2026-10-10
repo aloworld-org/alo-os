@@ -186,6 +186,79 @@ and reachability. Host-owned camera and input state stays in the host and is
 passed in explicitly — the same rule `where-a-new-window-opens.md` carries, and
 the same reason: a second copy is a second answer.
 
+## A title a person can read, however long it is
+
+**The owner's ruling of 2026-10-10**, which closes a gap this edge created. The
+title is truncated with an ellipsis when it does not fit, and until this ruling
+the whole string survived **only for a screen reader** —
+`EdgePicture::the_whole_title`. A sighted person with a narrow window could not
+read their own document's name, and nothing on the screen said there was more.
+
+That gap had a predecessor and it is worth naming, because it is the reason this
+ruling is not simply *make the edge wider*. `window_control_reader_*` — 2,039
+lines, retired on 2026-10-10 — was a **paged name reader**: *Page 2 of 3*,
+*Previous page*, *Done reading*, built so a person could read a control name too
+long for a small tile. It had **no production caller, ever**, measured with a
+positive control. So the problem was recognised, answered at length, and never
+reached anybody. Deleting it took nothing away from a person and left the
+question open.
+
+> **A sighted person must be able to read the complete title.**
+>
+> * The window edge uses grapheme-safe truncation with an ellipsis, measured in
+>   the actual Manrope font.
+> * Hovering the title or focusing it with the keyboard reveals the full title
+>   in a wrapping tooltip, positioned within the screen and clear of the window
+>   controls.
+> * The tooltip must not interfere with dragging or button interaction.
+> * The window menu also exposes the full, selectable title, providing a
+>   persistent way to read and copy it with pointer, keyboard or touch.
+> * Screen readers always receive the complete title.
+
+### Three ways to the same string, and why it is three and not one
+
+Each clause answers a different person, which is why none of them is redundant:
+
+| | what it is for |
+|---|---|
+| the **ellipsis** | somebody who only needs to know there is more |
+| the **tooltip** | somebody reading it now, with a pointer or the keyboard |
+| the **window menu** | somebody who needs it to stay still — to read slowly, to copy it, or to reach it by touch |
+
+**The tooltip alone would have failed two people.** It is transient by nature,
+so it cannot be read slowly, cannot be copied, and on a touch screen there is no
+hover to produce it. *Pointer, keyboard or touch* in the ruling is what makes
+the menu's half non-negotiable: a tooltip is the convenient road and the menu is
+the one that always exists.
+
+### What this costs, said plainly
+
+**The window menu does not exist.** `crates/alo-shell/tests/support/wm_capabilities.rs`
+uses `WindowMenu` as its example of a capability this compositor deliberately
+does **not** advertise, and asserts the set is exact without it. So
+`OnTheEdge::Menu` has been a control with no action and no word —
+`window_edge_reading`'s `what_it_does` answers `None` for it, with a test that
+fails the day somebody gives it one.
+
+This ruling is that day. A menu with a selectable title is the first thing the
+window menu is **for**, rather than a surface built and then furnished.
+
+### The three already true, and the measurement behind each
+
+- **Grapheme-safe truncation** — `window_edge_title::fitted` cuts on
+  `grapheme_indices(true)`, so a combining accent is never separated from its
+  letter and an emoji sequence is never split. Held by
+  `a_combining_accent_is_never_cut_from_its_letter` and
+  `an_emoji_sequence_is_never_split`.
+- **Measured in the actual Manrope** — `painted_text::how_wide` shapes through
+  the bundled face rather than estimating, and
+  `the_face_alo_asks_for_is_the_face_that_shapes` asserts the face that answers
+  is the face asked for. The font matters to the arithmetic: a title fitted
+  against Inter and drawn in Manrope is a title that overruns.
+- **Screen readers get the whole string** — a window's node in the tree is named
+  from `FrameName`, which is the application's own untruncated string. The
+  truncation happens in the picture and never in the tree.
+
 ## What completion requires
 
 Real applications in all three states — shell decorations, application-owned
@@ -200,6 +273,11 @@ minimise, maximise/restore and close.
 
 **The Figma prototype demonstrates hover transitions only.** It is not evidence
 that dragging or window actions work.
+
+**And a long title reached three ways**, which the owner's ruling of 2026-10-10
+asks for by name: *verify long-title access through pointer, keyboard and the
+window menu before marking them complete.* Three roads, three checks, and a
+tooltip that appears on hover is evidence for exactly one of them.
 
 > Do not mark this complete merely because the drawing component exists.
 

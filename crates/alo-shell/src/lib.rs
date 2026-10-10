@@ -337,6 +337,7 @@ mod window_edge_paint;
 mod window_edge_picture;
 mod window_edge_reading;
 mod window_edge_title;
+mod window_edge_tooltip;
 mod window_edge_who_draws;
 mod window_full_screen;
 mod window_maximize;
@@ -386,6 +387,16 @@ pub use window_edge_title::{AN_ELLIPSIS, FittedTitle, fitted};
 /// **Who draws a frame's header**, in the one place both the drawing and the
 /// reading ask. Its body is what changes when the toplevel's decoration state
 /// is read per frame; see the file's header.
+/// **The whole title, for somebody who can see and is reading it now.**
+///
+/// One of the three roads the owner's ruling of 2026-10-10 names, and the
+/// convenient one: a tooltip is transient, so the window menu carries the title
+/// a person needs to read slowly or copy. Placed below the edge's region by
+/// construction, which is what keeps it off the drag area and every control.
+pub use window_edge_tooltip::{
+    A_LINE_IS_TALL, AROUND_THE_WORDS, AT_MOST_LINES, AT_MOST_WIDE, BELOW_THE_EDGE, Because,
+    Tooltip, tooltip_of,
+};
 pub use window_edge_who_draws::who_draws_a_frame;
 pub use window_full_screen::WindowFullScreenError;
 pub use window_maximize::WindowMaximizeError;
