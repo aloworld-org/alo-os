@@ -294,6 +294,7 @@ mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;
 mod their_displays;
 mod top_controls_region;
+mod what_the_server_tells_a_frame;
 mod where_a_window_opens;
 mod which_display_a_window_is_on;
 pub mod which_preview_the_pointer_is_on;
