@@ -77,6 +77,52 @@ pub enum Wrong {
         /// What the unit bounds it to.
         held: Vec<String>,
     },
+    /// The person has no home directory made at boot.
+    ///
+    /// **Found by booting the image on 2026-10-10**, and invisible from the
+    /// source: a `sysusers.d` line declares the home and `systemd-sysusers`
+    /// does not create one - it writes a line in `/etc/passwd` and nothing
+    /// else. On an ordinary distribution an installer makes the directory;
+    /// this image had no step that did.
+    ///
+    /// What a person loses is everything they arrange. The desktop said so in
+    /// its own words on that boot - *the canvas layout was not kept:
+    /// Disk(PermissionDenied)* - and would have said it again every time.
+    #[error(
+        "the person's home {home} is declared and never made, so everything they arrange is \
+         lost: systemd-sysusers writes a passwd line and never a directory"
+    )]
+    ThePersonHasNoHome {
+        /// Where their home was declared to be.
+        home: String,
+    },
+    /// The person's home is made, but not as theirs alone.
+    #[error(
+        "the person's home {home} is made {mode:o} owned by {owner}, and a home anybody can \
+         read is not a home"
+    )]
+    ThePersonsHomeIsNotTheirs {
+        /// Where it is.
+        home: String,
+        /// How it is made.
+        mode: u32,
+        /// Who owns it.
+        owner: String,
+    },
+    /// Something other than this shell owns the screen the shell is on.
+    ///
+    /// **Measured on a booted machine on 2026-10-10.** `getty@tty1` started at
+    /// boot and restarted the instant the greeter exited, drawing a console
+    /// login over a desktop that was running - and taking the keystrokes meant
+    /// for the sign-in fields with it.
+    #[error(
+        "{unit} is not masked, and it takes the same screen as the shell: two things on one \
+         virtual terminal is a login prompt drawn over a desktop"
+    )]
+    SomethingElseOwnsTheScreen {
+        /// The unit that would take it.
+        unit: String,
+    },
     /// The desktop's service is not the person's.
     ///
     /// **The inverse of [`Self::TheScreenHoldsSomething`]'s case, and the
