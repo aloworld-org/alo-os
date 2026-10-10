@@ -422,7 +422,7 @@ fn the_desktop(
         &[],
         &[],
         &alo_shell::Cursor::Default,
-        None,
+        &[],
         &mut labels,
         desk.frame(None, &[]),
         None,
@@ -450,7 +450,7 @@ fn the_desktop(
         &[],
         &[],
         &alo_shell::Cursor::Default,
-        None,
+        &[],
         &mut labels,
         desk.frame(
             Some(alo_shell::Capturing {
@@ -498,7 +498,7 @@ fn the_desktop(
         &[],
         &[],
         &alo_shell::Cursor::Default,
-        None,
+        &[],
         &mut labels,
         desk.frame(None, &showing),
         None,

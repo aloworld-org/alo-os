@@ -120,14 +120,9 @@ impl Nested {
             cursor,
             NativeLayers {
                 scene: controls.map(NativeScene::Controls),
-                desktop: None,
-                record: None,
-                settings: None,
                 approval: Some(&question),
                 status: Some(&status),
-                in_use: None,
-                notifications: None,
-                capturing: None,
+                ..NativeLayers::nothing()
             },
         )
     }

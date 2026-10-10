@@ -13,16 +13,10 @@ pub(crate) enum NativeScene<'a> {
     /// Existing strip with an optional complete label.
     ///
     /// **Superseded.** `docs/design/the-external-window-edge.md` replaces this
-    /// with [`Self::TheWindowEdge`] for ordinary shell-decorated windows, by
+    /// with [`NativeLayers::edges`] for ordinary shell-decorated windows, by
     /// the owner's ruling of 2026-10-09. It remains only while the reader and
     /// label paths that share its layout are moved across.
     Controls(crate::WindowControlScene<'a>),
-    /// alo's external window edge: the strip above a window carrying its
-    /// movement, its title and its controls.
-    ///
-    /// Outside the application's content, so revealing it moves nothing the
-    /// application drew.
-    TheWindowEdge(&'a crate::window_edge_picture::EdgePicture),
     /// Complete paged reader and its original strip.
     Reader(&'a WindowControlReaderScene<'a>),
     /// The sign-in screen, which is the whole output.
@@ -40,6 +34,20 @@ pub(crate) enum NativeScene<'a> {
 pub(crate) struct NativeLayers<'a> {
     /// Controls, a reader or the sign-in screen, when one is selected.
     pub(crate) scene: Option<NativeScene<'a>>,
+    /// Every open window's external edge, in the order the windows are drawn.
+    ///
+    /// **A slice and not a scene, because an edge is not one of a set of
+    /// alternatives.** It lived in [`Self::scene`] until 2026-10-10, as a
+    /// `TheWindowEdge` variant beside the lock screen, the reader and the
+    /// sign-in screen — a field that holds *one of* those. So a machine with
+    /// three windows open could draw exactly one edge, and its only caller
+    /// built every window's edge and then passed `edges.first()`. Nothing was
+    /// wrong with any line of it; the shape could not express what a person
+    /// sees, which is every window wearing its own.
+    ///
+    /// **Above the clients and below the desktop**, with the other layers: an
+    /// edge sits on its window and the Dock sits over both.
+    pub(crate) edges: &'a [crate::window_edge_picture::EdgePicture],
     /// The dock and the desktop windows, when the frame carries the desktop.
     pub(crate) desktop: Option<&'a crate::desktop_raster::DesktopPicture>,
     /// The record window, when the frame carries one.
@@ -71,6 +79,7 @@ impl NativeLayers<'_> {
     pub(crate) const fn nothing() -> Self {
         Self {
             scene: None,
+            edges: &[],
             desktop: None,
             record: None,
             settings: None,
@@ -85,6 +94,7 @@ impl NativeLayers<'_> {
     /// Whether there is anything of this shell's own on this frame at all.
     pub(crate) const fn is_empty(&self) -> bool {
         self.scene.is_none()
+            && self.edges.is_empty()
             && self.desktop.is_none()
             && self.record.is_none()
             && self.settings.is_none()
@@ -108,12 +118,6 @@ impl NativeScene<'_> {
                 }
             }
             Self::Controls(scene) => scene.validate(size),
-            // **Nothing to refuse.** The others carry pixels laid out for one
-            // output extent and are wrong on any other, so they check. An
-            // edge is laid out against its window and already declined to
-            // exist if it would fall off the output — `EdgePicture::of`
-            // returns `None` rather than a picture nobody could reach.
-            Self::TheWindowEdge(_) => Ok(()),
             Self::Reader(scene) => scene.validate(size),
             Self::SignIn(picture) => picture.validate(size),
             Self::Recovery(picture) => picture.validate(size),
@@ -134,7 +138,6 @@ impl NativeScene<'_> {
                 }
                 Ok(())
             }
-            Self::TheWindowEdge(edge) => edge.paint(frame),
         }
     }
 }

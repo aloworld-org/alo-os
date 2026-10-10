@@ -454,17 +454,20 @@ impl Nested {
             cursor,
             crate::scene_native::NativeLayers {
                 scene: controls,
-                desktop: None,
-                record: None,
-                settings: None,
-                approval: None,
                 status,
-                // The nested paths that are not the desktop do not carry the
-                // in-use indicator yet; `crate::nested_desktop` is the one that
-                // does. Named in shell task 11 rather than left to be found.
-                in_use: None,
-                notifications: None,
-                capturing: None,
+                // **Everything else absent, through `nothing()` rather than by
+                // naming each one.** That constructor exists so a layer added to
+                // the struct arrives as absent here instead of as a compile
+                // error this file answers its own way — and this was one of five
+                // call sites that named every field and so got the error
+                // anyway, on the day the edges became a layer.
+                //
+                // Among the absences: the nested paths that are not the desktop
+                // do not carry the in-use indicator yet, and `crate::nested_desktop`
+                // is the one that does. Named in shell task 11 rather than left
+                // to be found, and kept here because the field it was written
+                // beside is gone.
+                ..crate::scene_native::NativeLayers::nothing()
             },
         )
     }
