@@ -238,7 +238,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 &roots,
                 &[],
                 &Cursor::Default,
-                edges.first(),
+                // **Every window's edge, not the first.** This passed
+                // `edges.first()` until 2026-10-10 — correct for the signature
+                // it had, which took one picture because the layer it went into
+                // held one of the lock screen, the reader or the sign-in screen.
+                // Two windows open meant one edge drawn and the other built and
+                // discarded, silently.
+                &edges,
                 &mut labels,
                 DesktopFrame {
                     // **The Dock is told what is open, which is the chain two

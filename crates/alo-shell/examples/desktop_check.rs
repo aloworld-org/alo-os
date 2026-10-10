@@ -203,7 +203,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             &[],
                             &[],
                             &Cursor::Default,
-                            None,
+                            &[],
                             &mut labels,
                             DesktopFrame {
                                 display_scale: 100,

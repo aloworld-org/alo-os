@@ -190,6 +190,14 @@ fn validate_layers(
     if let Some(scene) = layers.scene {
         scene.validate(size)?;
     }
+    // **The edges check nothing, and that is their own rule rather than an
+    // omission here.** Every other picture carries pixels laid out for one
+    // output extent and is wrong on any other, so each is asked. An edge is
+    // laid out against its *window* and `EdgePicture::of` already declines to
+    // exist when it would fall off the output — it returns `None` rather than a
+    // picture nobody could reach — so there is nothing left for this to refuse.
+    // The sentence was in `NativeScene::validate`'s `TheWindowEdge` arm before
+    // the edges became a layer of their own, and it moves here with them.
     if let Some(desktop) = layers.desktop {
         desktop.validate(size)?;
     }
@@ -228,6 +236,14 @@ fn paint_layers(
 ) -> Result<(), RenderError> {
     if let Some(scene) = layers.scene {
         scene.paint(frame)?;
+    }
+    // **Every window's edge, not the first.** Each is painted in the order the
+    // windows are drawn, so an edge sits on its own window; the desktop below
+    // puts the Dock over all of them. An empty slice paints nothing, which is
+    // this function's rule for every other layer and is what a machine with no
+    // window open wants.
+    for edge in layers.edges {
+        edge.paint(frame)?;
     }
     if let Some(desktop) = layers.desktop {
         desktop.paint(frame)?;
