@@ -52,6 +52,7 @@ pub(crate) fn what_only_the_server_knows<'a>(
     server: &crate::Server,
     windows: &'a [Rectangle<i32, Physical>],
     on_the_dock: &'a [alo_dock::OnTheDock],
+    the_overflows_heading: &'a str,
     named: &str,
 ) {
     frame.windows = windows;
@@ -78,6 +79,14 @@ pub(crate) fn what_only_the_server_knows<'a>(
     // Dock of what is running, which is what a machine with no saved pins
     // should show.
     frame.on_the_dock = on_the_dock;
+    // **Whether the overflow list is open**, which a desktop's own state cannot
+    // know: it is turned over by a press, and presses reach the `Server`.
+    frame.the_overflow_is_open = server.the_overflow_is_open();
+    // **And what its heading says**, said by the lane rather than by the draw.
+    // This is the lane's answer and not the server's, and it is set here for the
+    // reason the other five are: `direct_desktop` builds a frame at two sites,
+    // and a field set at each of them is a field that drifts between them.
+    frame.the_overflows_heading = the_overflows_heading;
 }
 
 #[cfg(test)]

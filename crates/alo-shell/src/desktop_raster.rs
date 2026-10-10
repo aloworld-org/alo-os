@@ -106,6 +106,14 @@ pub(crate) struct Shown<'a> {
     /// band's own space. An empty slice is the true answer on a desktop with
     /// nothing open, not a placeholder — see [`crate::dock_room`].
     pub(crate) windows: &'a [smithay::utils::Rectangle<i32, smithay::utils::Physical>],
+    /// Whether the list of applications the Dock had no room for is open.
+    ///
+    /// Handed in like the rest, and for the sharpest version of the same
+    /// reason: a person opened it with a press, presses reach the `Server`, and
+    /// this crate's drawing half has no way to know.
+    pub(crate) the_overflow_is_open: bool,
+    /// What the overflow list's heading says, already said by the lane.
+    pub(crate) the_overflows_heading: &'a str,
     /// The windows a person put aside, which the panel at the edge shows.
     ///
     /// Handed in like the rest: `alo-put-aside` decides what is in the panel
@@ -213,6 +221,8 @@ pub(crate) fn picture(
         panel_is_revealed,
         display_scale,
         on_the_dock,
+        the_overflow_is_open,
+        the_overflows_heading,
     } = shown;
     // **The count the desktop handed over, not a constant.** This passed a
     // literal `0` until 2026-10-09, with a comment saying a bar holding nothing
@@ -221,7 +231,14 @@ pub(crate) fn picture(
     // populating an `alo_dock::Holding`. `DesktopFrame::on_the_dock` carries the
     // number and its own note says why the desktop counts and this crate does
     // not.
-    let dock_picture = crate::dock_raster::picture(dock, look, size, on_the_dock, fonts)?;
+    let dock_picture = crate::dock_raster::picture(
+        dock,
+        look,
+        size,
+        on_the_dock,
+        (the_overflow_is_open, the_overflows_heading),
+        fonts,
+    )?;
 
     // **Laid out first, shown or not.** The band has to exist before anything
     // can ask whether a window is over it, and `room_beside` below uses it

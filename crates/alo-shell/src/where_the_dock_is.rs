@@ -33,7 +33,7 @@
 
 use alo_dock::places::Places;
 use alo_dock::{Dock, Layout, OnTheDock, Room, Screen};
-use smithay::utils::{Physical, Rectangle};
+use smithay::utils::{Physical, Point, Rectangle};
 
 use crate::RenderError;
 
@@ -56,21 +56,41 @@ pub(crate) struct TheDocksPlaces {
     pub(crate) over: Vec<OnTheDock>,
 }
 
-// **`how_far_along` is deliberately not here yet.**
-//
-// Turning a point on a screen into a distance along the bar is the other half
-// of this file, and it was written, tested on four edges, and then taken out
-// again before landing — because **nothing presses the Dock**. Measured
-// 2026-10-10 across the 2531 `.rs` files outside `alo-dock`:
-// `alo_dock::clicking` has no caller, `alo_dock::menu` has none, and
-// `alo_dock::Places` is named twice, both in `crate::dock_raster` and both for
-// drawing, so `Places::at` is never called by anything.
-//
-// A correct hit test nothing calls is the fault class `CLAUDE.md` names first —
-// *a check that stands in for the thing is not the thing* — and this crate has
-// just spent two changes removing two of them. It comes back in the change that
-// routes a press, with its caller, and `clippy` refusing an unused `pub(crate)`
-// method is what will keep that promise rather than this comment.
+impl TheDocksPlaces {
+    /// How far along the bar this point is, or [`None`] if it is not on the bar
+    /// at all.
+    ///
+    /// **Along, not `x`.** `alo_dock::Places` lays the slots out as distances
+    /// from the bar's own start without knowing which edge the bar is on, so
+    /// this is the one place that turns a point on a screen into that distance.
+    /// A dock down the left of the screen measures down; one along the bottom
+    /// measures across, and getting that wrong on the two edges nobody draws by
+    /// default is exactly how it would go unnoticed.
+    ///
+    /// **Half-open at both ends**, like `alo_dock::APlace::holds`: the first
+    /// pixel of the band is on it and the first pixel past it is not, so a press
+    /// on the seam between the Dock and the canvas belongs to one of them.
+    ///
+    /// *This was written, tested on four edges and taken out again before
+    /// landing on 2026-10-10, because nothing pressed the Dock. It is back with
+    /// its caller.*
+    #[must_use]
+    pub(crate) fn how_far_along(&self, at: Point<i32, Physical>) -> Option<u32> {
+        let inside = at.x >= self.band.loc.x
+            && at.y >= self.band.loc.y
+            && at.x < self.band.loc.x + self.band.size.w
+            && at.y < self.band.loc.y + self.band.size.h;
+        if !inside {
+            return None;
+        }
+        let along = if self.layout.edge().runs_across() {
+            at.x - self.band.loc.x
+        } else {
+            at.y - self.band.loc.y
+        };
+        u32::try_from(along).ok()
+    }
+}
 
 /// Where `dock` sits on a display of `size`, holding `on_the_dock`.
 ///

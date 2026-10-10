@@ -64,6 +64,8 @@ impl ADesktop {
 impl crate::TheDesktop for ADesktop {
     fn now(&self) -> crate::DesktopFrame<'_> {
         crate::DesktopFrame {
+            the_overflow_is_open: false,
+            the_overflows_heading: "",
             dock: &self.dock,
             look: self.look,
             strings: &self.strings,

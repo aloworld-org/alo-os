@@ -209,6 +209,7 @@ fn with_night_light_off_the_dock_is_drawn_exactly_as_it_was_decided() {
             look,
             picture.size.across_and_along(),
             &[],
+            (false, ""),
             &mut fonts(),
         )
         .unwrap();

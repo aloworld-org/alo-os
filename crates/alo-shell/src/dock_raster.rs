@@ -139,6 +139,15 @@ pub(crate) struct DockPicture {
     /// either: `alo_dock::fit` puts nothing aside until the edge runs out, and
     /// `alo_dock::Places` draws no control for an empty overflow.
     pub(crate) over: Vec<OnTheDock>,
+    /// Where this draw put the Dock, for the press that will ask later.
+    ///
+    /// **The same value the three fields above were taken from**, destructured
+    /// in one expression and never written again — so this is one answer read
+    /// two ways rather than a second home that can drift from the first. The
+    /// draw hands it to `Server::the_docks_slots_were_drawn`, which is the one
+    /// place a press can find out where the slots are: outside a frame they do
+    /// not exist.
+    pub(crate) standing: TheDocksPlaces,
 }
 
 /// The accent along the band's **inside** edge: the one facing the canvas.
@@ -181,6 +190,149 @@ fn the_accent_on(
     Rectangle::new(origin.into(), extent.into())
 }
 
+/// What the overflow list needs drawing: everything but the pixels.
+///
+/// A struct rather than eight arguments, because every one of them is a
+/// different type of number and a caller that swapped two would compile.
+struct TheOverflowIsDrawn<'a> {
+    /// The applications the bar had no room for, in order.
+    over: &'a [OnTheDock],
+    /// The Dock's band, which the list opens inward from.
+    at: Rectangle<i32, Physical>,
+    /// Which edge the Dock is on, so *inward* has a direction.
+    edge: alo_dock::Edge,
+    /// The display, so the list can be kept on it.
+    room: (i32, i32),
+    /// The person's text size, which the rows grow with.
+    text: alo_appearance::TextScale,
+    /// What the heading says, already said: this file may not word a sentence.
+    heading: &'a str,
+    /// The person's colours.
+    palette: crate::desktop_look::DesktopPalette,
+}
+
+/// Draw the list the overflow control opens, into `solids` and `inked`.
+///
+/// **It opens inward from the bar**, which is the design file's own name for the
+/// frame: `More apps / opens inward`, 248 wide beside a left dock, a right dock,
+/// a top dock and the bottom one. So the width is a measurement and the side it
+/// opens toward follows the Dock's edge.
+///
+/// **How tall it is comes from `alo_dock::overflow`**, not from here. That is the
+/// owner's ruling of 2026-10-10 — rows at a 44 minimum, growing with the text,
+/// the panel growing past the drawn 313 and then scrolling — and this file's job
+/// is to put it where the bar is and ink the names into it.
+fn the_overflow_list(
+    solids: &mut Vec<Solid>,
+    inked: &mut Vec<Inked>,
+    drawn: TheOverflowIsDrawn<'_>,
+    fonts: &mut FontSystem,
+) {
+    let TheOverflowIsDrawn {
+        over,
+        at,
+        edge,
+        room,
+        text,
+        heading,
+        palette,
+    } = drawn;
+    let (width, height) = room;
+    let beside = i32::try_from(alo_dock::measures::BESIDE_A_NAME_IN_THE_OVERFLOW).unwrap_or(0);
+    let around = i32::try_from(alo_dock::measures::AROUND_THE_OVERFLOWS_HEADING).unwrap_or(0);
+    let gap = i32::try_from(alo_dock::measures::GAP).unwrap_or(0);
+
+    // **How much room there is between the bar and the far side of the screen**,
+    // which is what the list may grow into before it has to scroll.
+    let headroom = match edge {
+        alo_dock::Edge::Bottom => at.loc.y - gap,
+        alo_dock::Edge::Top => height - (at.loc.y + at.size.h) - gap,
+        alo_dock::Edge::Left | alo_dock::Edge::Right => height - 2 * gap,
+    }
+    .max(1);
+
+    let panel = alo_dock::overflow::ThePanel::of(
+        over.len(),
+        text,
+        alo_dock::Room::pixels(u32::try_from(headroom).unwrap_or(0)),
+    );
+    let across = i32::try_from(panel.width().as_pixels()).unwrap_or(0);
+    let down = i32::try_from(panel.height().as_pixels()).unwrap_or(0);
+
+    // **Inward from the bar, and kept on the screen.** The list hangs off the
+    // control's end of the bar on an edge that runs across, and beside the bar on
+    // one that runs down — then is pulled back onto the display, because a list
+    // half off the screen is a list a person cannot read.
+    let origin = match edge {
+        alo_dock::Edge::Bottom => (at.loc.x + at.size.w - across, at.loc.y - gap - down),
+        alo_dock::Edge::Top => (at.loc.x + at.size.w - across, at.loc.y + at.size.h + gap),
+        alo_dock::Edge::Left => (at.loc.x + at.size.w + gap, at.loc.y + at.size.h - down),
+        alo_dock::Edge::Right => (at.loc.x - gap - across, at.loc.y + at.size.h - down),
+    };
+    let left = origin.0.clamp(0, (width - across).max(0));
+    let top = origin.1.clamp(0, (height - down).max(0));
+
+    solids.push(Solid {
+        area: Rectangle::new((left, top).into(), (across, down).into()),
+        colour: palette.dock,
+    });
+
+    let line = i32::try_from(alo_dock::Room::a_line_at(text).as_pixels()).unwrap_or(1);
+    let size = i32::try_from(alo_dock::Room::text_at(text).as_pixels()).unwrap_or(1);
+    let metrics = Metrics::new(size as f32, line as f32);
+
+    // The heading, then the rule under it.
+    let said = crate::painted_text::sentence(
+        fonts,
+        heading,
+        across - 2 * beside,
+        metrics,
+        palette.dock,
+        palette.ink,
+    );
+    if let Some(drawn) = said.placed(left + beside, top + around, height) {
+        inked.push(drawn);
+    }
+    solids.push(Solid {
+        area: Rectangle::new(
+            (left + beside, top + around + line + around).into(),
+            (
+                across - 2 * beside,
+                i32::try_from(alo_dock::measures::A_DIVIDER).unwrap_or(1),
+            )
+                .into(),
+        ),
+        colour: palette.accent,
+    });
+
+    // One row per application that is on the screen, its name inked into it.
+    let (first, showing) = panel.showing();
+    for which in first..first.saturating_add(showing) {
+        let Some(application) = over.get(which) else {
+            break;
+        };
+        let Some(sits) = panel.where_a_row_sits(which) else {
+            continue;
+        };
+        let row = top + i32::try_from(sits.as_pixels()).unwrap_or(0);
+        let a_row = i32::try_from(panel.a_row().as_pixels()).unwrap_or(1);
+        let name = crate::painted_text::sentence(
+            fonts,
+            application.app().name(),
+            across - 2 * beside,
+            metrics,
+            palette.dock,
+            palette.ink,
+        );
+        // Centred down its row, which is taller than the text whenever the floor
+        // is what decided it.
+        let into = row + ((a_row - name.height) / 2).max(0);
+        if let Some(drawn) = name.placed(left + beside, into, height) {
+            inked.push(drawn);
+        }
+    }
+}
+
 /// Lay `dock` out on a display of `size` and rasterise it.
 ///
 /// # Errors
@@ -193,9 +345,10 @@ pub(crate) fn picture(
     look: DesktopLook,
     size: (i32, i32),
     on_the_dock: &[OnTheDock],
+    the_overflow: (bool, &str),
     fonts: &mut FontSystem,
 ) -> Result<DockPicture, RenderError> {
-    let height = size.1;
+    let (width, height) = size;
     // **Where the Dock is, asked rather than worked out here.** This file
     // computed the band, the slots and the overflow itself and kept none of it,
     // so a press had no way to ask what was under the pointer without
@@ -206,16 +359,17 @@ pub(crate) fn picture(
         layout,
         band,
         thickness,
-        places,
-        over,
+        ref places,
+        ref over,
     } = standing;
+    let (over, places) = (over.clone(), places.clone());
     let palette = look.palette().map_err(|_| RenderError::AccentRefused)?;
     let measure = look.measure();
     let rule = measure.px(2).min(thickness);
 
     let accent = the_accent_on(layout.edge(), band, rule);
 
-    let solids = vec![
+    let mut solids = vec![
         Solid {
             area: band,
             colour: palette.dock,
@@ -258,7 +412,7 @@ pub(crate) fn picture(
     // one number while the thickness was `MARGIN + ICON + MARGIN`, and that is
     // what let this line look derived for as long as it did.
     let across = ((thickness - icon) / 2).max(0);
-    let mut inked = Vec::new();
+    let mut inked: Vec<Inked> = Vec::new();
     for place in places.each() {
         let along_the_bar = i32::try_from(place.from_the_start()).unwrap_or(i32::MAX);
         // The icon's own box, `ICON` square: `from_the_start` along the bar's
@@ -319,6 +473,31 @@ pub(crate) fn picture(
         }
     }
 
+    // **The list the control opens, when a person has opened it.**
+    //
+    // Drawn last so it sits over the bar and over the canvas, which is what a
+    // list opened from a control has to do. `alo_dock::overflow::ThePanel` is
+    // the layout — rows at the floor every control is held to, growing with the
+    // text, scrolling when the room runs out — and this is the only thing that
+    // turns it into pixels.
+    let (the_overflow_is_open, heading) = the_overflow;
+    if the_overflow_is_open && !over.is_empty() {
+        the_overflow_list(
+            &mut solids,
+            &mut inked,
+            TheOverflowIsDrawn {
+                over: &over,
+                at: band,
+                edge: layout.edge(),
+                room: (width, height),
+                text: look.scale(),
+                heading,
+                palette,
+            },
+            fonts,
+        );
+    }
+
     Ok(DockPicture {
         size,
         layout,
@@ -327,6 +506,7 @@ pub(crate) fn picture(
         solids,
         inked,
         over,
+        standing,
     })
 }
 
@@ -376,6 +556,12 @@ mod tests {
     use super::*;
     use crate::desktop_testing::{an_appearance, noon_look};
     use crate::where_the_dock_is::the_band_on;
+
+    /// A Dock whose overflow list a person has not opened, which is every frame
+    /// but the one after they press the control.
+    const fn closed() -> (bool, &'static str) {
+        (false, "")
+    }
     use alo_appearance::{Accent, TextScale};
     use alo_dock::measures::{FLOATING_ABOVE_THE_EDGE, MARGIN};
     use alo_dock::{Room, Screen};
@@ -467,7 +653,7 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn = picture(&dock, look, size, &held, &mut fonts()).unwrap();
+            let drawn = picture(&dock, look, size, &held, closed(), &mut fonts()).unwrap();
 
             assert_eq!(
                 drawn.accent,
@@ -525,7 +711,8 @@ mod tests {
         let mut whichever_way_read: Option<Rectangle<i32, Physical>> = None;
         for reading in [Direction::LeftToRight, Direction::RightToLeft] {
             let look = noon_look(&an_appearance(), reading);
-            let drawn = picture(&dock, look, size, &on_the_dock(4), &mut fonts()).unwrap();
+            let drawn =
+                picture(&dock, look, size, &on_the_dock(4), closed(), &mut fonts()).unwrap();
             let layout = dock.layout_on(Screen::of(1920, 1080).unwrap());
             assert_eq!(drawn.layout, layout);
 
@@ -576,6 +763,7 @@ mod tests {
                 look,
                 (1920, 1080),
                 &on_the_dock(holding),
+                closed(),
                 &mut fonts(),
             )
             .unwrap();
@@ -610,7 +798,15 @@ mod tests {
     fn two_hundred_applications_fit_the_screen_with_none_of_them_lost() {
         let look = noon_look(&an_appearance(), Direction::LeftToRight);
         let held = on_the_dock(200);
-        let drawn = picture(&Dock::shipped(), look, (1366, 768), &held, &mut fonts()).unwrap();
+        let drawn = picture(
+            &Dock::shipped(),
+            look,
+            (1366, 768),
+            &held,
+            closed(),
+            &mut fonts(),
+        )
+        .unwrap();
         let margin = i32::try_from(MARGIN).unwrap();
         let widest = 1366 - 2 * margin;
 
@@ -674,7 +870,7 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn = picture(&dock, look, size, &held, &mut fonts()).unwrap();
+            let drawn = picture(&dock, look, size, &held, closed(), &mut fonts()).unwrap();
 
             // Within the edge it runs along, less the room either side.
             let (ran, edge_length) = if edge.runs_across() {
@@ -741,6 +937,133 @@ mod tests {
         );
     }
 
+    /// **The list is drawn when a person opens it, and not before.**
+    ///
+    /// Three frames of one Dock, differing only in the thing a press turns over:
+    /// closed draws the bar alone, open draws the bar and the list, and open on
+    /// a Dock with nothing behind the control draws the bar alone again.
+    ///
+    /// The third is the one worth having. `the_overflow_is_open` lives on the
+    /// `Server` and is not cleared when the Dock stops overflowing — a person
+    /// closes a window and the bar fits again — so a draw that trusted the flag
+    /// alone would paint an empty list over the canvas.
+    #[test]
+    fn the_list_is_drawn_only_when_it_is_open_and_has_something_in_it() {
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let crowded = on_the_dock(200);
+        let open = (true, "More open apps");
+
+        let shut = picture(
+            &Dock::shipped(),
+            look,
+            (1366, 768),
+            &crowded,
+            closed(),
+            &mut fonts(),
+        )
+        .unwrap();
+        let opened = picture(
+            &Dock::shipped(),
+            look,
+            (1366, 768),
+            &crowded,
+            open,
+            &mut fonts(),
+        )
+        .unwrap();
+
+        assert!(!shut.over.is_empty(), "the premise: something overflowed");
+        assert!(
+            opened.solids.len() > shut.solids.len(),
+            "opening the list drew no more shapes: {} against {}",
+            opened.solids.len(),
+            shut.solids.len()
+        );
+        assert!(
+            opened.inked.len() > shut.inked.len(),
+            "opening the list inked no more text: {} against {}",
+            opened.inked.len(),
+            shut.inked.len()
+        );
+
+        // Open, on a Dock with room for everything: the flag says open and
+        // there is nothing to show.
+        let roomy = picture(
+            &Dock::shipped(),
+            look,
+            (1920, 1080),
+            &on_the_dock(4),
+            open,
+            &mut fonts(),
+        )
+        .unwrap();
+        let roomy_shut = picture(
+            &Dock::shipped(),
+            look,
+            (1920, 1080),
+            &on_the_dock(4),
+            closed(),
+            &mut fonts(),
+        )
+        .unwrap();
+        assert!(roomy.over.is_empty(), "the premise");
+        assert_eq!(
+            (roomy.solids.len(), roomy.inked.len()),
+            (roomy_shut.solids.len(), roomy_shut.inked.len()),
+            "an empty list was drawn over the canvas"
+        );
+    }
+
+    /// **The list stays on the screen, on every edge.**
+    ///
+    /// It opens inward from the bar, and the bar is already near an edge — so
+    /// the direction *inward* is the one thing that differs between the four,
+    /// and a list that opened the wrong way would be half off the display. Every
+    /// shape and every letter is checked, because a panel inside the screen with
+    /// its rows outside it is the same bug one layer down.
+    #[test]
+    fn the_open_list_stays_on_the_screen_on_every_edge() {
+        use alo_dock::Edge;
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let crowded = on_the_dock(200);
+        let size = (1366, 768);
+
+        for edge in Edge::EVERY {
+            let mut dock = Dock::shipped();
+            dock.set_edge(edge);
+            let drawn = picture(
+                &dock,
+                look,
+                size,
+                &crowded,
+                (true, "More open apps"),
+                &mut fonts(),
+            )
+            .unwrap();
+
+            for solid in &drawn.solids {
+                assert!(
+                    solid.area.loc.x >= 0
+                        && solid.area.loc.y >= 0
+                        && solid.area.loc.x + solid.area.size.w <= size.0
+                        && solid.area.loc.y + solid.area.size.h <= size.1,
+                    "{edge:?}: a shape at {:?} is off a {size:?} screen",
+                    solid.area
+                );
+            }
+            for letter in &drawn.inked {
+                assert!(
+                    letter.area.loc.x >= 0
+                        && letter.area.loc.y >= 0
+                        && letter.area.loc.x + letter.area.size.w <= size.0
+                        && letter.area.loc.y + letter.area.size.h <= size.1,
+                    "{edge:?}: a letter at {:?} is off a {size:?} screen",
+                    letter.area
+                );
+            }
+        }
+    }
+
     /// **A bar with room for everything has no control and nothing over.**
     ///
     /// The companion to the test above, and the premise that keeps it honest: if
@@ -750,7 +1073,15 @@ mod tests {
     fn a_dock_that_fits_puts_nothing_aside() {
         let look = noon_look(&an_appearance(), Direction::LeftToRight);
         let held = on_the_dock(4);
-        let drawn = picture(&Dock::shipped(), look, (1920, 1080), &held, &mut fonts()).unwrap();
+        let drawn = picture(
+            &Dock::shipped(),
+            look,
+            (1920, 1080),
+            &held,
+            closed(),
+            &mut fonts(),
+        )
+        .unwrap();
         assert!(
             drawn.over.is_empty(),
             "a Dock of four overflowed on a 1920 screen"
@@ -780,9 +1111,33 @@ mod tests {
         let look = noon_look(&appearance, Direction::LeftToRight);
         let dock = Dock::shipped();
 
-        let laptop = picture(&dock, look, (1366, 768), &on_the_dock(4), &mut fonts()).unwrap();
-        let desk = picture(&dock, look, (3840, 2160), &on_the_dock(4), &mut fonts()).unwrap();
-        let portrait = picture(&dock, look, (1080, 1920), &on_the_dock(4), &mut fonts()).unwrap();
+        let laptop = picture(
+            &dock,
+            look,
+            (1366, 768),
+            &on_the_dock(4),
+            closed(),
+            &mut fonts(),
+        )
+        .unwrap();
+        let desk = picture(
+            &dock,
+            look,
+            (3840, 2160),
+            &on_the_dock(4),
+            closed(),
+            &mut fonts(),
+        )
+        .unwrap();
+        let portrait = picture(
+            &dock,
+            look,
+            (1080, 1920),
+            &on_the_dock(4),
+            closed(),
+            &mut fonts(),
+        )
+        .unwrap();
         assert!(laptop.layout.labels().are_shown());
         assert!(desk.layout.labels().are_shown());
         assert_eq!(
@@ -822,6 +1177,7 @@ mod tests {
                 look,
                 (1920, 1080),
                 &on_the_dock(4),
+                closed(),
                 &mut fonts(),
             )
             .unwrap();
@@ -846,7 +1202,14 @@ mod tests {
         for size in [(0, 0), (100, 100), (-5, 800), (20_000, 1080)] {
             assert!(
                 matches!(
-                    picture(&Dock::shipped(), look, size, &on_the_dock(4), &mut fonts()),
+                    picture(
+                        &Dock::shipped(),
+                        look,
+                        size,
+                        &on_the_dock(4),
+                        closed(),
+                        &mut fonts()
+                    ),
                     Err(RenderError::DesktopScene)
                 ),
                 "{size:?}"
@@ -865,7 +1228,7 @@ mod tests {
         let dock = Dock::shipped();
         let look = noon_look(&an_appearance(), Direction::LeftToRight);
         let held = on_the_dock(3);
-        let drawn = picture(&dock, look, (1920, 1080), &held, &mut fonts()).unwrap();
+        let drawn = picture(&dock, look, (1920, 1080), &held, closed(), &mut fonts()).unwrap();
 
         assert_eq!(
             drawn.inked.len(),
@@ -925,7 +1288,7 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn = picture(&dock, look, size, &held, &mut fonts()).unwrap();
+            let drawn = picture(&dock, look, size, &held, closed(), &mut fonts()).unwrap();
             assert_eq!(drawn.inked.len(), held.len(), "{edge:?}");
 
             // The band's centre across its thickness, and each letter's.
@@ -967,7 +1330,15 @@ mod tests {
     #[test]
     fn a_dock_holding_nothing_draws_no_letters() {
         let look = noon_look(&an_appearance(), Direction::LeftToRight);
-        let drawn = picture(&Dock::shipped(), look, (1920, 1080), &[], &mut fonts()).unwrap();
+        let drawn = picture(
+            &Dock::shipped(),
+            look,
+            (1920, 1080),
+            &[],
+            closed(),
+            &mut fonts(),
+        )
+        .unwrap();
         assert!(drawn.inked.is_empty());
         assert!(
             !drawn.solids.is_empty(),
@@ -998,7 +1369,15 @@ mod tests {
             ));
         }
         let held = alo_dock::Holding::nothing().showing(&windows);
-        let drawn = picture(&Dock::shipped(), look, (1920, 1080), &held, &mut fonts()).unwrap();
+        let drawn = picture(
+            &Dock::shipped(),
+            look,
+            (1920, 1080),
+            &held,
+            closed(),
+            &mut fonts(),
+        )
+        .unwrap();
 
         assert_eq!(drawn.inked.len(), 3);
         // **No indexing**, which this workspace denies: consecutive pairs

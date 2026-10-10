@@ -94,6 +94,36 @@ pub struct Server {
     /// this display. `crate::peeking_at_a_put_aside_window` answers `Ok(None)`
     /// there instead of inventing one.
     pub(crate) panel_as_drawn: Option<crate::which_preview_the_pointer_is_on::ThePanelAsDrawn>,
+    /// **Where each display's Dock is, as the last draw laid it out.**
+    ///
+    /// The same shape and the same argument as `panel_as_drawn` above and
+    /// `fixed_controls` before it: the band and its slots are computed in
+    /// `crate::where_the_dock_is`, called from the draw, so outside a frame they
+    /// do not exist. A press arriving between frames has nothing to be tested
+    /// against, which is why nothing in this compositor could press the Dock
+    /// until 2026-10-10.
+    ///
+    /// **Keyed by display, like `fixed_controls` and unlike `panel_as_drawn`.** A
+    /// person with a laptop and a screen beside it has a Dock on each, laid out
+    /// for each display's own size, and a single slot here would let a press on
+    /// one display be answered with the other's geometry. The pointer's location
+    /// is global and these bands are too.
+    ///
+    /// Empty until the first draw, which is the honest answer rather than a
+    /// default: a Dock nobody has laid out has no slots, and a guess would claim
+    /// a band that has not been measured on this display.
+    pub(crate) dock_as_drawn:
+        std::collections::BTreeMap<String, crate::where_the_dock_is::TheDocksPlaces>,
+    /// Whether the list of applications the bar had no room for is open.
+    ///
+    /// **One home, and it is here rather than on the desktop**, because the
+    /// thing that turns it over is a press and presses arrive here. The draw
+    /// reads it; nothing else writes it.
+    ///
+    /// It is **not** per display. The overflow is a list a person opened, not a
+    /// property of a screen, and two displays showing two open lists for one
+    /// press would be two answers to one question.
+    pub(crate) the_overflow_is_open: bool,
     /// Windows the **person** has asked to put aside, not yet acted on.
     ///
     /// # Why a request rather than the act
@@ -246,6 +276,8 @@ impl Server {
             // Nothing has been drawn yet, which is why this is `None` rather than an
             // empty picture — see the field's own note.
             panel_as_drawn: None,
+            dock_as_drawn: std::collections::BTreeMap::new(),
+            the_overflow_is_open: false,
             // Nobody has asked for anything yet.
             asked_to_put_aside: Vec::new(),
             edges_revealed: Vec::new(),

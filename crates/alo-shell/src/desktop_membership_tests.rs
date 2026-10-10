@@ -174,6 +174,8 @@ fn what_is_drawn_on_two_desktops_carries_the_indicator_and_the_question() {
             let mut labels = WindowControlLabels::new().unwrap();
             let pictures = crate::nested_desktop::frame_pictures(
                 DesktopFrame {
+                    the_overflow_is_open: false,
+                    the_overflows_heading: "",
                     dock: &dock,
                     look: noon_look(&an_appearance(), Direction::LeftToRight),
                     strings: &strings,

@@ -7,16 +7,15 @@
 
 #![expect(
     clippy::expect_used,
+    clippy::panic,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported, and \
-              `expect` names what was wanted. `clippy::panic` was expected here too and is not \
-              any more: the three tests that reached for a formatted panic went with \
-              `how_far_along`, and an expectation that has stopped being needed is itself a \
-              clippy error, which is how it was found"
+              a formatted panic names the edge it was on"
 )]
 
+use alo_dock::places::WhatIsHere;
 use alo_dock::{Dock, Edge};
 
-use super::{the_band_on, where_the_dock_is};
+use super::{TheDocksPlaces, the_band_on, where_the_dock_is};
 
 /// This many applications on a Dock, built the way `alo-dock` would hand them
 /// over rather than assembled by hand.
@@ -118,4 +117,139 @@ fn a_display_too_small_or_too_large_is_refused() {
     assert!(where_the_dock_is(&dock, (1920, 100_000), &on_the_dock(1)).is_err());
     // The premise: an ordinary display is not refused.
     assert!(where_the_dock_is(&dock, (1920, 1080), &on_the_dock(1)).is_ok());
+}
+
+/// The Dock on this edge of a 1920 × 1080 display, holding `how_many`.
+fn on_the_edge(edge: Edge, how_many: usize) -> TheDocksPlaces {
+    let mut dock = Dock::shipped();
+    dock.set_edge(edge);
+    where_the_dock_is(&dock, (1920, 1080), &on_the_dock(how_many))
+        .unwrap_or_else(|why| panic!("{edge:?} would not lay out: {why:?}"))
+}
+
+/// **A press in the middle of a slot reaches that slot, on every edge.**
+///
+/// The whole reason this file exists. `alo_dock::Places` lays slots out as
+/// distances from the bar's own start without knowing which edge the bar is on,
+/// so turning a point on a screen into that distance is the one step that can
+/// get the axis wrong — and getting it wrong on the two edges nobody draws by
+/// default is exactly how it would go unnoticed, which is what happened to the
+/// accent two changes ago.
+#[test]
+fn a_press_in_the_middle_of_a_slot_reaches_that_slot_on_every_edge() {
+    for edge in Edge::EVERY {
+        let dock = on_the_edge(edge, 5);
+        assert_eq!(dock.places.how_many(), 5, "{edge:?}");
+
+        for (which, place) in dock.places.each().iter().enumerate() {
+            let middle = i32::try_from(place.from_the_start() + place.across() / 2)
+                .expect("a place on a bar fits in an i32");
+            let at = if edge.runs_across() {
+                (
+                    dock.band.loc.x + middle,
+                    dock.band.loc.y + dock.band.size.h / 2,
+                )
+            } else {
+                (
+                    dock.band.loc.x + dock.band.size.w / 2,
+                    dock.band.loc.y + middle,
+                )
+            };
+
+            let along = dock
+                .how_far_along(at.into())
+                .unwrap_or_else(|| panic!("{edge:?}: slot {which}'s middle is not on the bar"));
+            let found = dock
+                .places
+                .at(along)
+                .unwrap_or_else(|| panic!("{edge:?}: nothing at {along} along the bar"));
+            assert_eq!(
+                found.what(),
+                place.what(),
+                "{edge:?}: pressing slot {which} reached something else"
+            );
+        }
+    }
+}
+
+/// **A press off the bar is not on the bar**, on every edge and on every side of
+/// it.
+///
+/// `how_far_along` answering for a point beside the Dock would make every press
+/// on the canvas near it open an application.
+#[test]
+fn a_press_beside_the_bar_is_not_on_it() {
+    for edge in Edge::EVERY {
+        let dock = on_the_edge(edge, 5);
+        let (left, top) = (dock.band.loc.x, dock.band.loc.y);
+        let (right, bottom) = (left + dock.band.size.w, top + dock.band.size.h);
+        let middle = (left + dock.band.size.w / 2, top + dock.band.size.h / 2);
+
+        for (named, at) in [
+            ("just before its start", (left - 1, middle.1)),
+            ("just past its end", (right, middle.1)),
+            ("just above it", (middle.0, top - 1)),
+            ("just below it", (middle.0, bottom)),
+            ("the middle of the screen", (960, 540)),
+            ("the origin", (0, 0)),
+        ] {
+            assert_eq!(
+                dock.how_far_along(at.into()),
+                None,
+                "{edge:?}: a point {named}, at {at:?}, was read as being on the bar whose band \
+                 is {:?}",
+                dock.band
+            );
+        }
+
+        // **The premise**: a point that really is on the bar does answer, so the
+        // six above are not all `None` because nothing ever is.
+        assert!(
+            dock.how_far_along(middle.into()).is_some(),
+            "{edge:?}: the middle of the band is not on the bar, so this test proves nothing"
+        );
+    }
+}
+
+/// **The overflow control is reachable by a press, on every edge.**
+///
+/// The slot a person goes for when they have the most open.
+#[test]
+fn the_overflow_control_can_be_pressed_on_every_edge() {
+    for edge in Edge::EVERY {
+        let dock = on_the_edge(edge, 200);
+        assert!(!dock.over.is_empty(), "{edge:?}: nothing overflowed");
+
+        let control = dock
+            .places
+            .each()
+            .last()
+            .unwrap_or_else(|| panic!("{edge:?}: no slots at all"));
+        assert!(
+            control.is_the_overflow(),
+            "{edge:?}: the last slot is not the control"
+        );
+
+        let middle = i32::try_from(control.from_the_start() + control.across() / 2)
+            .expect("a place on a bar fits in an i32");
+        let at = if edge.runs_across() {
+            (
+                dock.band.loc.x + middle,
+                dock.band.loc.y + dock.band.size.h / 2,
+            )
+        } else {
+            (
+                dock.band.loc.x + dock.band.size.w / 2,
+                dock.band.loc.y + middle,
+            )
+        };
+        let along = dock
+            .how_far_along(at.into())
+            .unwrap_or_else(|| panic!("{edge:?}: the control's middle is not on the bar"));
+        assert_eq!(
+            dock.places.at(along).map(|place| place.what()),
+            Some(&WhatIsHere::TheOverflow),
+            "{edge:?}: pressing the control reached an application"
+        );
+    }
 }

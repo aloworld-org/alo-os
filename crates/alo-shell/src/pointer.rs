@@ -196,6 +196,35 @@ impl Server {
             }
             return Ok(false);
         }
+        // **The Dock first, because the Dock is on top of everything.** It is
+        // furniture lying on the canvas and a frame cannot be in front of it, so
+        // a press that lands on the band is the Dock's and must not also reach
+        // whatever is behind it — a person aiming at an icon would otherwise move
+        // the view as well.
+        //
+        // Asked here rather than in a later arm for the same reason the resize
+        // bands below are asked before the name: *which gesture is the more
+        // specific* is a question to answer deliberately rather than leave to the
+        // order two hit tests happen to run in.
+        //
+        // **And a press anywhere else closes the overflow**, which is what a
+        // person expects of every list on this machine. So the press is offered
+        // to the Dock first and the list is closed if the Dock did not take it,
+        // in that order — the other way round would close a list on the very
+        // press that opened it.
+        if state == ButtonState::Pressed
+            && let Some(location) = self
+                .surfaces
+                .pointer
+                .as_ref()
+                .map(|pointer| pointer.location)
+        {
+            let at = (location.x as i32, location.y as i32).into();
+            if self.the_dock_takes_this_press(at) {
+                return Ok(false);
+            }
+            self.the_overflow_closes();
+        }
         // **Taking hold of a frame by an edge or a corner**, which is the only way
         // a frame resizes — ADR 0071, and the road that replaces the
         // `xdg_toplevel.resize` this compositor now refuses. Asked before the name
