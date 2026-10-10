@@ -18,9 +18,9 @@
 //! *The tooltip must not interfere with dragging or button interaction.* The
 //! cheap way to satisfy that is to compute an overlap against every
 //! [`EdgeControl::target`] and nudge. This does something stronger and simpler:
-//! **it is never inside the edge's region at all.** It sits below
-//! [`THE_REGION_IS_TALL`], so the drag region and all four control targets are
-//! above it and no arithmetic can put it on one.
+//! **it is never inside the edge's region at all**, wherever [`placed`] puts
+//! it. The drag region and every control target are inside that region, so no
+//! arithmetic can put the panel on one.
 //!
 //! That also means it overlays the application's own content, which is what a
 //! tooltip is. The edge's *permanent* promise — `no application content
@@ -32,10 +32,15 @@
 //! [`EdgePicture::of`] answers `None` for an edge that would fall off its
 //! output, because an edge drawn half off a screen is wrong. A tooltip is the
 //! other case: it is **moved** to fit rather than withheld, because withholding
-//! it would leave the person who asked for the title with nothing. So a title
-//! on a window near the right edge gets a panel shifted left, and one on a
-//! window near the bottom gets a panel that is still below the edge and as far
-//! down as the output allows.
+//! it would leave the person who asked for the title with nothing.
+//!
+//! **And below the edge is a preference, not a rule.** The owner's correction
+//! of 2026-10-10: *"always below" must not take priority over keeping the
+//! complete title readable.* An earlier version here clamped to a floor of
+//! *below the region* and let a panel hang off the bottom of a short output -
+//! one rule kept absolute while the one that mattered failed. [`placed`] tries
+//! below, then above the window, then beside it, and every one of the three is
+//! outside the region.
 //!
 //! # Only when something is hidden
 //!
@@ -82,6 +87,68 @@ pub enum Because {
     APointerIsOnIt,
     /// The keyboard has focused the title.
     TheKeyboardIsOnIt,
+}
+
+/// Whether the whole title is being shown, and whether somebody has dismissed
+/// it.
+///
+/// # Why dismissal is a machine and not a boolean
+///
+/// The ruling asks for a tooltip that is **dismissible**. A person who presses
+/// Escape while still pointing at the title expects it to go, and expects it to
+/// stay gone - so the reason it is shown and the fact it was dismissed are two
+/// different things, and a single flag cannot hold both. With one flag, the
+/// next frame sees the pointer still on the title and shows the panel again.
+///
+/// **Dismissal lasts until the reason goes away.** The pointer leaving, or the
+/// keyboard moving off, is what clears it - which is the same rule a menu
+/// follows and the one a person already knows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ShowingTheTitle {
+    /// Why it would be shown, if anything.
+    reason: Option<Because>,
+    /// Whether this showing was dismissed.
+    dismissed: bool,
+}
+
+impl ShowingTheTitle {
+    /// Nothing is showing the title.
+    #[must_use]
+    pub const fn nothing() -> Self {
+        Self {
+            reason: None,
+            dismissed: false,
+        }
+    }
+
+    /// A pointer or the keyboard is on the title.
+    ///
+    /// **A reason arriving does not undo a dismissal**, because the pointer has
+    /// not moved: a person who dismissed the panel and left their pointer where
+    /// it was asked for it to be gone, not for it to flicker.
+    pub const fn now(&mut self, because: Because) {
+        self.reason = Some(because);
+    }
+
+    /// The pointer left, or the keyboard moved off.
+    ///
+    /// This is what clears a dismissal, so pointing at the title again shows
+    /// the panel again.
+    pub const fn gone(&mut self) {
+        self.reason = None;
+        self.dismissed = false;
+    }
+
+    /// Somebody dismissed it, with Escape or by pressing elsewhere.
+    pub const fn dismiss(&mut self) {
+        self.dismissed = true;
+    }
+
+    /// Why the panel should be drawn this frame, if it should.
+    #[must_use]
+    pub const fn because(self) -> Option<Because> {
+        if self.dismissed { None } else { self.reason }
+    }
 }
 
 /// The whole title, laid out below its window's edge.
@@ -132,11 +199,8 @@ pub fn tooltip_of(
         i32::try_from(lines.len()).unwrap_or(1) * A_LINE_IS_TALL + 2 * AROUND_THE_WORDS,
     ));
 
-    // **Below the region, always.** The drag area and every control target are
-    // inside it, so nothing here can land on one.
-    let under_the_edge = edge.region.loc.y + THE_REGION_IS_TALL + BELOW_THE_EDGE;
-    let put = Point::from((at.x - AROUND_THE_WORDS, under_the_edge));
-    let panel = within(Rectangle::new(put, size), output, under_the_edge);
+    // **Below for preference, elsewhere when below will not hold it.**
+    let panel = placed(edge, at, size, output);
 
     let lines = lines
         .into_iter()
@@ -164,22 +228,60 @@ fn the_metrics() -> cosmic_text::Metrics {
     cosmic_text::Metrics::new(12.0, 16.0)
 }
 
-/// Move `panel` so it is inside `output`, keeping it below `floor`.
+/// Where the panel goes: below the edge for preference, elsewhere when below
+/// will not hold it whole.
 ///
-/// **Moved and never shrunk.** A narrower panel would re-wrap, and a panel that
-/// re-wrapped as a person moved their window would be one whose shape depends
-/// on where it is rather than on what it says.
-fn within(
-    panel: Rectangle<i32, Logical>,
+/// # Three places, tried in order, and why that order
+///
+/// The owner's correction of 2026-10-10: *"always below" must not take priority
+/// over keeping the complete title readable. Prefer below the edge, but use
+/// another clear position when necessary.*
+///
+/// An earlier version clamped to a floor of *below the region* and let the
+/// panel hang off the bottom of a short output, which made one rule absolute
+/// and let the one that mattered fail: a panel half off the screen is a title
+/// nobody can read.
+///
+/// | | |
+/// |---|---|
+/// | **below the edge** | the ordinary place, and the one that cannot cover the title it describes |
+/// | **above the window** | when below would run off the output - a window near the bottom of a screen has room above it |
+/// | **beside the edge** | when neither fits vertically, which is a window taller than its output |
+///
+/// **Every one of them is outside the edge's region**, which is what keeps
+/// *must not interfere with dragging or button interaction* true however the
+/// placement falls out. The beside case is the only one that needs saying: it
+/// is pushed clear of the region's full height rather than merely of a control,
+/// so a design that adds a fifth control cannot reach it.
+fn placed(
+    edge: &WindowEdge,
+    at: Point<i32, Logical>,
+    size: Size<i32, Logical>,
     output: (i32, i32),
-    floor: i32,
 ) -> Rectangle<i32, Logical> {
-    let x = panel.loc.x.min(output.0 - panel.size.w).max(0);
-    // Below the edge first, inside the output second: a panel pushed up to fit
-    // a short output would land on the controls, which is the one place it may
-    // not be.
-    let y = panel.loc.y.min(output.1 - panel.size.h).max(floor);
-    Rectangle::new(Point::from((x, y)), panel.size)
+    let left = |x: i32| x.min(output.0 - size.w).max(0);
+    let region = edge.region;
+    let below = region.loc.y + THE_REGION_IS_TALL + BELOW_THE_EDGE;
+    let above = region.loc.y - BELOW_THE_EDGE - size.h;
+
+    // Below, if the whole panel fits there.
+    if below + size.h <= output.1 {
+        return Rectangle::new(Point::from((left(at.x - AROUND_THE_WORDS), below)), size);
+    }
+    // Above the edge, if the whole panel fits there.
+    if above >= 0 {
+        return Rectangle::new(Point::from((left(at.x - AROUND_THE_WORDS), above)), size);
+    }
+    // Beside it: clear of the region's whole height, and as far down the output
+    // as the panel fits. A window taller than its own display is the case that
+    // reaches here, and the title is still whole and still on the screen.
+    let beside = if region.loc.x + region.size.w + BELOW_THE_EDGE + size.w <= output.0 {
+        region.loc.x + region.size.w + BELOW_THE_EDGE
+    } else {
+        (region.loc.x - BELOW_THE_EDGE - size.w).max(0)
+    };
+    let y = (output.1 - size.h).max(0);
+    Rectangle::new(Point::from((beside, y)), size)
 }
 
 /// `whole`, broken into lines that each fit `room`.

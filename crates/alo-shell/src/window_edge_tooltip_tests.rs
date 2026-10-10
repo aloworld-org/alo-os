@@ -219,14 +219,19 @@ fn a_panel_near_an_edge_is_moved_inside_the_screen() {
     );
 }
 
-/// **Staying below the edge wins over fitting the output.**
+/// **On a short output the panel moves rather than hanging off the screen.**
 ///
-/// On a short output the panel would be pushed up to fit, and up is where the
-/// controls are. The clamp keeps the floor, so a panel that cannot fit below
-/// the edge hangs off the bottom rather than landing on a button — the one
-/// place the ruling forbids.
+/// This asserted the opposite until the owner's correction of 2026-10-10:
+/// *"always below" must not take priority over keeping the complete title
+/// readable.* It held the floor at *below the region* and accepted a panel
+/// running off the bottom — one rule kept absolute while the one that mattered
+/// failed, because a title half off the screen is a title nobody can read.
+///
+/// Both promises are checked together, since either alone is satisfiable by
+/// breaking the other: **whole on the screen**, and **outside the edge's
+/// region** so it is still clear of the drag area and every control.
 #[test]
-fn a_short_output_does_not_push_the_panel_onto_the_controls() {
+fn a_short_output_moves_the_panel_rather_than_losing_the_title() {
     let mut fonts = fonts();
     let edge = edge_of(window(), Decorations::TheShellDraws, true);
     let cut = fitted(
@@ -235,17 +240,64 @@ fn a_short_output_does_not_push_the_panel_onto_the_controls() {
         120,
         cosmic_text::Metrics::new(12.0, 16.0),
     );
-    // An output barely taller than the window's own top.
+    // An output barely taller than the window's own top, so below cannot hold
+    // the panel at all.
     let cramped = (THE_OUTPUT.0, edge.region.loc.y + THE_REGION_IS_TALL + 10);
     let shown = tooltip_of(&edge, &cut, Because::APointerIsOnIt, &mut fonts, cramped)
         .expect("a cut title on a short output still has a panel");
 
     assert!(
-        shown.panel.loc.y >= edge.region.loc.y + THE_REGION_IS_TALL,
-        "{:?} was pushed up into the edge's region",
+        shown.panel.loc.y >= 0 && shown.panel.loc.y + shown.panel.size.h <= cramped.1,
+        "{:?} is not whole on an output {} tall",
+        shown.panel,
+        cramped.1
+    );
+    assert!(
+        shown.panel.loc.x >= 0 && shown.panel.loc.x + shown.panel.size.w <= cramped.0,
+        "{:?} is not whole across an output {} wide",
+        shown.panel,
+        cramped.0
+    );
+    assert_eq!(
+        shown.panel.intersection(edge.region),
+        None,
+        "{:?} landed inside the edge's region, where the controls are",
         shown.panel
     );
-    assert_eq!(shown.panel.intersection(edge.region), None);
+    for control in &edge.controls {
+        assert_eq!(
+            shown.panel.intersection(control.target),
+            None,
+            "{:?} landed on {:?}",
+            shown.panel,
+            control.does
+        );
+    }
+}
+
+/// **Below is still the preference, and that is asserted rather than assumed.**
+///
+/// The correction loosened the rule, and a loosened rule is the kind that
+/// quietly stops being followed at all. On an ordinary output the panel is
+/// below the edge, which is the place that cannot cover the title it describes.
+#[test]
+fn on_an_ordinary_output_the_panel_is_below_the_edge() {
+    let mut fonts = fonts();
+    let edge = edge_of(window(), Decorations::TheShellDraws, true);
+    let cut = fitted(
+        &mut fonts,
+        A_LONG_TITLE,
+        120,
+        cosmic_text::Metrics::new(12.0, 16.0),
+    );
+    let shown = tooltip_of(&edge, &cut, Because::APointerIsOnIt, &mut fonts, THE_OUTPUT)
+        .expect("a cut title has a panel");
+
+    assert!(
+        shown.panel.loc.y >= edge.region.loc.y + THE_REGION_IS_TALL,
+        "{:?} is not below the edge on a 900-tall output, where there is room",
+        shown.panel
+    );
 }
 
 /// **Four lines at most, and the rest is the menu's.**
@@ -335,4 +387,53 @@ fn a_non_latin_title_wraps_between_graphemes() {
             "{line:?} begins with a combining mark, so a letter was split"
         );
     }
+}
+
+/// **Dismissing it keeps it dismissed while the pointer stays.**
+///
+/// The failure a single flag gives: Escape hides the panel, the next frame sees
+/// the pointer still on the title, and the panel comes back. A person who
+/// dismissed it asked for it to be gone, not to flicker.
+#[test]
+fn a_dismissed_title_stays_dismissed_until_the_pointer_leaves() {
+    let mut showing = ShowingTheTitle::nothing();
+    assert_eq!(showing.because(), None, "nothing shows a title by default");
+
+    showing.now(Because::APointerIsOnIt);
+    assert_eq!(showing.because(), Some(Because::APointerIsOnIt));
+
+    showing.dismiss();
+    assert_eq!(showing.because(), None, "Escape did not dismiss it");
+
+    // The pointer has not moved, so the host says so again every frame.
+    showing.now(Because::APointerIsOnIt);
+    assert_eq!(
+        showing.because(),
+        None,
+        "it came back while the pointer had not moved"
+    );
+
+    // And leaving clears the dismissal, so pointing again shows it again.
+    showing.gone();
+    showing.now(Because::APointerIsOnIt);
+    assert_eq!(
+        showing.because(),
+        Some(Because::APointerIsOnIt),
+        "leaving and returning did not show the title again"
+    );
+}
+
+/// **The keyboard road is dismissible on the same terms.**
+///
+/// A person reading the title with the keyboard presses Escape for the same
+/// reason, and moving focus away is what the pointer leaving is.
+#[test]
+fn the_keyboard_road_dismisses_and_clears_the_same_way() {
+    let mut showing = ShowingTheTitle::nothing();
+    showing.now(Because::TheKeyboardIsOnIt);
+    showing.dismiss();
+    assert_eq!(showing.because(), None);
+    showing.gone();
+    showing.now(Because::TheKeyboardIsOnIt);
+    assert_eq!(showing.because(), Some(Because::TheKeyboardIsOnIt));
 }
