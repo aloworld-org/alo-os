@@ -348,3 +348,233 @@ fn the_rows_above_the_strip_are_the_approach_and_not_nothing() {
         "above the strip and left of the controls is the region, which keeps the edge revealed"
     );
 }
+
+/// **Each control's target reaches that control**, asked at every one.
+#[test]
+fn a_press_on_a_control_is_that_controls_action() {
+    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    assert!(
+        !edge.controls.is_empty(),
+        "a revealed shell-drawn edge has controls; without this the loop proves nothing"
+    );
+    for control in &edge.controls {
+        let middle = at(
+            control.target.loc.x + control.target.size.w / 2,
+            control.target.loc.y + control.target.size.h / 2,
+        );
+        assert_eq!(
+            what_a_press_does(&edge, middle),
+            WhatAPressDoes::This(control.does),
+            "a press at the centre of {:?} must reach it",
+            control.does
+        );
+    }
+}
+
+/// **Buttons do not start a drag** — the specification's own clause, and the
+/// one a caller could most easily get wrong by hit-testing in the other order.
+///
+/// Asserted at each control's **corner**, not its centre: the corner is the
+/// part of a 44 × 44 target that lies outside the 32 × 28 highlight, so this
+/// also fails if anything starts reading the wrong rectangle.
+#[test]
+fn no_press_anywhere_on_a_control_moves_the_window() {
+    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    for control in &edge.controls {
+        for corner in [
+            at(control.target.loc.x, control.target.loc.y),
+            at(
+                control.target.loc.x + control.target.size.w - 1,
+                control.target.loc.y + control.target.size.h - 1,
+            ),
+        ] {
+            assert_ne!(
+                what_a_press_does(&edge, corner),
+                WhatAPressDoes::MovesTheWindow,
+                "a press at {corner:?} on {:?} would drag the window. *Buttons and menus do not \
+                 start a drag*, and the only thing keeping that true is that one classification \
+                 answers once and the control is its more specific answer",
+                control.does
+            );
+            assert_eq!(
+                what_a_press_does(&edge, corner),
+                WhatAPressDoes::This(control.does)
+            );
+        }
+    }
+}
+
+/// **The movement region moves the window**, and it is `drag` rather than the
+/// strip.
+#[test]
+fn a_press_on_the_movement_region_moves_the_window() {
+    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let middle = at(
+        edge.drag.loc.x + edge.drag.size.w / 2,
+        edge.drag.loc.y + edge.drag.size.h / 2,
+    );
+    assert!(
+        edge.controls.iter().all(|it| !holds(it.target, middle)),
+        "the premise: the drag region's middle is on no control. `edge_of` ends the revealed \
+         drag one gap before the first control, and if that ever changes this test is measuring \
+         something else"
+    );
+    assert_eq!(
+        what_a_press_does(&edge, middle),
+        WhatAPressDoes::MovesTheWindow
+    );
+}
+
+/// **A window whose edge is concealed is still movable.**
+///
+/// The clause *borderless applications stay movable and recoverable*. At rest
+/// the drag region is the shallow band the grip is drawn in, and a press there
+/// moves the window without anybody having revealed the edge first — so a
+/// person who cannot see a title bar can still move the window by aiming at the
+/// grip.
+#[test]
+fn a_concealed_edge_can_still_be_dragged_by_its_grip() {
+    let edge = edge_of(specimen(), Decorations::TheShellDraws, false);
+    assert!(
+        edge.strip.is_none() && edge.controls.is_empty(),
+        "the premise: this edge is concealed"
+    );
+    let on_the_grip = at(
+        edge.drag.loc.x + edge.drag.size.w / 2,
+        edge.drag.loc.y + edge.drag.size.h / 2,
+    );
+    assert_eq!(
+        what_a_press_does(&edge, on_the_grip),
+        WhatAPressDoes::MovesTheWindow,
+        "a concealed edge's resting band does not drag, so a borderless window cannot be moved"
+    );
+    // **And it still reveals from there.** The two answers are read off one
+    // classification, and a band that drags but does not reveal would be a
+    // person pressing to move a window they cannot see the edge of.
+    assert_eq!(
+        what_the_pointer_is(&edge, on_the_grip),
+        ThePointer::AtTheEdge,
+        "the resting band is inside the interaction region, so it asks for the edge too"
+    );
+}
+
+/// **A press the edge has no business with does nothing**, in both states.
+///
+/// The application's content, and the approach rows above the strip. A
+/// classifier that answered `MovesTheWindow` for the whole region would make
+/// every press near the top of a window a window move.
+#[test]
+fn a_press_off_the_movement_region_does_nothing() {
+    for revealed in [false, true] {
+        let edge = edge_of(specimen(), Decorations::TheShellDraws, revealed);
+        assert_eq!(
+            what_a_press_does(&edge, at(300, 300)),
+            WhatAPressDoes::Nothing,
+            "revealed = {revealed}: a press inside the application is not the edge's"
+        );
+        assert_eq!(
+            what_a_press_does(&edge, at(300, THE_REGION_IS_TALL)),
+            WhatAPressDoes::Nothing,
+            "revealed = {revealed}: the application's first row is not the edge's"
+        );
+    }
+    // The approach, above a revealed edge's strip and clear of its drag.
+    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let above = at(4, 0);
+    assert!(
+        !holds(edge.drag, above),
+        "the premise: this point is outside the movement region"
+    );
+    assert_eq!(what_a_press_does(&edge, above), WhatAPressDoes::Nothing);
+}
+
+/// **An application that draws its own header keeps movement and the menu**,
+/// and both are pressable.
+#[test]
+fn an_application_drawn_edge_is_movable_and_has_its_menu() {
+    let edge = edge_of(specimen(), Decorations::TheApplicationDraws, true);
+    let middle = at(
+        edge.drag.loc.x + edge.drag.size.w / 2,
+        edge.drag.loc.y + edge.drag.size.h / 2,
+    );
+    assert_eq!(
+        what_a_press_does(&edge, middle),
+        WhatAPressDoes::MovesTheWindow
+    );
+    let menu = edge
+        .controls
+        .iter()
+        .find(|it| matches!(it.does, crate::window_edge::OnTheEdge::Menu))
+        .expect("alo adds the menu to an application-drawn edge");
+    assert_eq!(
+        what_a_press_does(&edge, at(menu.target.loc.x, menu.target.loc.y)),
+        WhatAPressDoes::This(crate::window_edge::OnTheEdge::Menu)
+    );
+}
+
+/// **A control wins over a drag region that overlaps it**, held against an edge
+/// built to overlap on purpose.
+///
+/// `edge_of` ends the revealed movement region one gap **before** the first
+/// control, so the two do not overlap in anything this repository lays out —
+/// which was measured rather than assumed: swapping the two questions in
+/// `where_on_the_edge` on 2026-10-10 left **all 742 lib tests passing**. The
+/// order was defensive and nothing could tell.
+///
+/// That is a claim about today's geometry, not about the rule. If `edge_of` ever
+/// extends the drag under the controls — a wider title, a different inset — the
+/// order becomes load-bearing and *buttons and menus do not start a drag* would
+/// be broken with every test still green. So this builds the overlap by hand
+/// instead of waiting for one: `WindowEdge`'s fields are public, and a drag
+/// spanning the whole region is exactly what a later change might produce.
+#[test]
+fn a_control_beats_a_drag_region_that_covers_it() {
+    let ordinary = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let control = *ordinary
+        .controls
+        .first()
+        .expect("a revealed edge has controls");
+    // The same edge, with the movement region widened across everything.
+    let overlapping = crate::window_edge::WindowEdge {
+        drag: ordinary.region,
+        ..ordinary.clone()
+    };
+    assert!(
+        holds(
+            overlapping.drag,
+            at(control.target.loc.x, control.target.loc.y)
+        ),
+        "the premise: this edge's drag region really does cover the control. Without it this \
+         test asserts nothing and would pass whatever order the questions are asked in"
+    );
+
+    let corner = at(control.target.loc.x, control.target.loc.y);
+    assert_eq!(
+        where_on_the_edge(&overlapping, corner),
+        WhereOnTheEdge::AControl(control.does),
+        "a drag region covering a control took the press. The control is the more specific \
+         answer and has to win, or pressing Close would move the window"
+    );
+    assert_eq!(
+        what_a_press_does(&overlapping, corner),
+        WhatAPressDoes::This(control.does)
+    );
+    assert_ne!(
+        what_a_press_does(&overlapping, corner),
+        WhatAPressDoes::MovesTheWindow
+    );
+
+    // And the drag still answers where no control is.
+    let clear = at(ordinary.region.loc.x + 2, ordinary.region.loc.y + 2);
+    assert!(
+        overlapping
+            .controls
+            .iter()
+            .all(|it| !holds(it.target, clear)),
+        "the premise: this point is on no control"
+    );
+    assert_eq!(
+        where_on_the_edge(&overlapping, clear),
+        WhereOnTheEdge::TheDrag
+    );
+}

@@ -527,6 +527,27 @@ impl LoopInput for Desk<'_> {
         // and the window's own controls record the ask on the server, because neither has a
         // desktop in scope; this is the one place that holds both. See
         // `Server::asked_to_put_aside`.
+        // **What was pressed on a window's edge, met before the put-aside asks
+        // rather than after.** An edge's Minimise joins `asked_to_put_aside`,
+        // which the next line is what performs — so this has to run first or a
+        // person's press would wait a whole frame for no reason. §6 of
+        // `docs/design/the-external-window-edge.md`.
+        for (_, does) in server.meet_what_was_pressed_on_an_edge() {
+            // **Said rather than dropped.** The one action on the edge with no
+            // mechanism behind it is the window menu: `OnTheEdge::Menu` is
+            // there because an application that draws its own header keeps
+            // movement and the menu, and nothing in this crate opens one. A
+            // press that reached here and vanished is what a person reports as
+            // *the button does nothing*, so the machine says so.
+            //
+            // Once per press and not once per frame, because
+            // `meet_what_was_pressed_on_an_edge` drains its list — a person has
+            // to press it again to see this again.
+            eprintln!(
+                "alo-shell: {does:?} was pressed on a window's edge and this machine has no \
+                 mechanism for it yet"
+            );
+        }
         server.put_aside_what_was_asked_for(self.desktop.the_panel());
         // **And the other direction, met in the same place and for the same reason.** A click
         // on a preview was claimed where input happens, because whether the panel owns a click

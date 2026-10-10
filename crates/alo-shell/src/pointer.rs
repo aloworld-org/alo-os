@@ -214,6 +214,22 @@ impl Server {
         {
             return Ok(false);
         }
+        // **A press on a window's external edge**, which carries movement, the
+        // title and the controls — §6 of
+        // `docs/design/the-external-window-edge.md`.
+        //
+        // **Asked after the resize bands and before the name**, and both halves
+        // of that are deliberate. The eight resize bands surround the frame and
+        // its edge, so a press in one of them was never a press on the edge, and
+        // the comment above says why the more specific gesture is read first.
+        // The name band is the road the edge supersedes — they answer about the
+        // same strip of screen, and the edge is the more specific of the two
+        // because it has controls on it. Where the edge says the press is not
+        // its own, the name band below still answers, so a window whose edge
+        // declined to exist is still movable.
+        if state == ButtonState::Pressed && self.a_press_on_an_edge(button, state) {
+            return Ok(false);
+        }
         // **Taking hold of a frame by its name**, which is the only way a frame
         // moves — ADR 0071. The band above a frame is the shell's own and no
         // client was told about this press, so nothing is delivered and this

@@ -114,6 +114,20 @@ pub struct Server {
     /// only the latest would silently drop a window a person asked to put away, which is the
     /// one outcome this whole surface exists to prevent.
     pub(crate) asked_to_put_aside: Vec<WlSurface>,
+    /// What a person pressed on a window's edge, not yet carried out.
+    ///
+    /// §6 of `docs/design/the-external-window-edge.md`. Recorded here and met
+    /// in `crate::direct_desktop` for `asked_to_put_aside`'s reason above:
+    /// Minimise needs the live `Panel`, and input has no desktop in scope.
+    /// Close and Maximise join it rather than acting in the press handler
+    /// because their mechanisms answer with their own error types, and an input
+    /// path that returned `InputError` for a refused close would be
+    /// relabelling somebody else's failure.
+    ///
+    /// **A list, like the one above, because two presses in one batch are two
+    /// windows** — and because a person may press Close on one window and
+    /// Minimise on another before either frame is drawn.
+    pub(crate) asked_on_an_edge: Vec<(WlSurface, crate::window_edge::OnTheEdge)>,
     /// Whether each window's external edge is revealed, one machine per window.
     ///
     /// §5 of `docs/design/the-external-window-edge.md`. The edge is **per
@@ -248,6 +262,7 @@ impl Server {
             panel_as_drawn: None,
             // Nobody has asked for anything yet.
             asked_to_put_aside: Vec::new(),
+            asked_on_an_edge: Vec::new(),
             edges_revealed: Vec::new(),
             asked_to_bring_back: Vec::new(),
             clicks_the_panel_took: std::collections::HashSet::new(),
