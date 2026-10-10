@@ -1,5 +1,11 @@
 # Live native reader selection
 
+> **Retired on 2026-10-10, and this report is kept as the record of what was built.** The internal window control strip and the paged name reader were removed whole - 70 files, 14,284 lines - and the external window edge is the only window chrome this shell draws now: [the-external-window-edge.md](../../design/the-external-window-edge.md).
+>
+> The files named below are gone, so they are written as module names without a path. That form is this repository's own ruling, and the reason is in it: *a quotation written in the form of a pointer is a pointer* - it reads like a live one to somebody skimming and to any check.
+>
+> **It was never reached.** The contract records it by measurement: *`window_control_reader_*` - 2,039 lines, retired on 2026-10-10 - was a paged name reader ... It had **no production caller, ever**, measured with a positive control.* Deleting it took nothing away from a person.
+
 Date: 2026-09-10. Workstream: native desktop and release-progress integration.
 Responsible contributor: desktop development worker in `C:\dev\alo-os`.
 Status: ready for integration; independent supervisor gates pending.
@@ -18,7 +24,7 @@ control strip. Native focus takes precedence over fresh pointer hover; disabled
 names remain accessible without executing a window command or stealing typing.
 This completes the explicit opening component, not usable full-name access.
 
-- `crates/alo-shell/src/window_control_reader_selection.rs` adds
+- `window_control_reader_selection` adds
   `Server::open_presented_window_control_reader` and `Nested::open_control_reader`.
   Selection reuses the live publication and current backend pointer position;
   it does not reuse a cached action or infer application keyboard focus.

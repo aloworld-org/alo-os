@@ -397,8 +397,6 @@ pub(crate) const fn not_wired_yet(
         NativeScene::SignIn(_) => None,
         NativeScene::Lock(_) => Some("the lock screen"),
         NativeScene::Recovery(_) => Some("the recovery screen"),
-        NativeScene::Controls(_) => Some("the window controls"),
-        NativeScene::Reader(_) => Some("the reader"),
     }
 }
 

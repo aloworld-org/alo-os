@@ -1,11 +1,15 @@
 # Transactional native control submission
 
+> **Retired on 2026-10-10, and this report is kept as the record of what was built.** The internal window control strip and the paged name reader were removed whole - 70 files, 14,284 lines - and the external window edge is the only window chrome this shell draws now: [the-external-window-edge.md](../../design/the-external-window-edge.md).
+>
+> The files named below are gone, so they are written as module names without a path. That form is this repository's own ruling, and the reason is in it: *a quotation written in the form of a pointer is a pointer* - it reads like a live one to somebody skimming and to any check.
+
 Date: 2026-09-09. Workstream: native desktop. Responsible contributor: desktop
 integration worker in `C:\dev\alo-os`. Status: ready for integration.
 
 ## Change and decisions
 
-`crates/alo-shell/src/window_control_frame.rs` owns a complete strip transaction:
+`window_control_frame` owns a complete strip transaction:
 explicit live root, origin and pointer feedback are refreshed against the actual
 backend viewport, submitted with clients/popups/cursor, then published through the
 existing mapping-bound lifetime. No client dispatch occurs between those stages.

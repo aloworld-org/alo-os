@@ -37,17 +37,23 @@
 
 /// Every stage of the offscreen walk, in the order the client drives them.
 ///
-/// **Order is the order they are sent**, which is not numeric order: the scene
-/// matrices at 29 and 30 are driven before 1, 2 and 3 because those three are
-/// acknowledgements of them. That is why this is a list and not a range.
-pub const EVERY_STAGE: [u8; 28] = [
+/// **Order is the order they are sent**, which is not numeric order. It was 29
+/// and 30 before 1, 2 and 3 - the scene matrices first, because those three
+/// acknowledged them - and with the strip retired the order no longer has that
+/// reason. It stays a list rather than a range because the division stages at
+/// 31 to 34 still come first, and because 23 to 28 are a gap.
+pub const EVERY_STAGE: [u8; 26] = [
     // **Task 17's own, and they come first.** A division needs two windows and the
     // refusal needs exactly one, so these three want a known window population —
     // and the cleanest one is the empty display this probe starts on. Threading
     // them into the gap at 23 would have meant reasoning about whether the script
     // had one window mapped or two at that point, with one of them minimised.
     33, 31, 32, 34, // Everything the probe already walked, unchanged.
-    29, 30, 1, 2, 3, 8, 6, 7, 4, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 5,
+    // **29 and 30 left on 2026-10-10 with the control strip.** They drew it in
+    // each scheme and checked its pixels against a literal mask; there is no
+    // strip to draw. The numbers are not reused, for the reason the gaps above
+    // are kept - a stage number in an old log still means what it meant.
+    1, 2, 3, 8, 6, 7, 4, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 5,
 ];
 
 /// Whether this stage is one of task 17's division stages.

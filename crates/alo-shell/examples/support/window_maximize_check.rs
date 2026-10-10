@@ -1,4 +1,15 @@
 //! Full-frame GLES checks through client maximize/restore requests.
+//!
+//! **This also checked the control strip** - that its three tiles were enabled,
+//! that the maximise tile showed *restore* at the right stages, and that its
+//! pixels matched a literal mask. The strip was retired on 2026-10-10, and what
+//! is left is the part that was never about it: a client asking to be
+//! maximised, and every one of 6400 pixels afterwards.
+//!
+//! **Worth saying why this was not deleted with the tiles.** It is the only
+//! check of client-requested maximise and restore anywhere - `window_maximize`
+//! and `window_minimize` have no unit tests at all - so deleting it with the
+//! strip would have taken a guarantee out with a surface.
 use alo_shell::{Cursor, Server, render_scanout};
 use smithay::backend::renderer::gles::GlesRenderer;
 
@@ -10,18 +21,6 @@ pub fn stage(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let roots: Vec<_> = server.mapped_surfaces().cloned().collect();
     let root = roots.first().ok_or("maximize root missing")?;
-    let controls = server.window_control_snapshot(root, (120, 48), (3, 4))?;
-    assert_eq!(controls.surface(), root);
-    assert_eq!(controls.layout().restoring(), stage <= 18);
-    assert_eq!(controls.maximize_refusal(), None);
-    assert!(
-        controls
-            .layout()
-            .controls()
-            .iter()
-            .all(|control| control.enabled())
-    );
-    crate::window_control_snapshot_check::paint(renderer, controls.layout(), stage <= 18)?;
     let (origin, size) = match stage {
         17 => ((20, 20), (32, 24)),
         18 => ((20, 20), (32, 24)), // Acknowledgement has no pixel effect.

@@ -62,24 +62,6 @@ pub(crate) struct Keyboard {
     pub(crate) popup_key: Option<(Serial, WlSurface)>,
 }
 
-impl Keyboard {
-    /// Native name opening must not acquire application modifier chords.
-    ///
-    /// Asked of the **forwarded** set: a chord held over empty canvas belongs to
-    /// no application, so there is nothing to acquire it from.
-    pub(crate) fn has_pressed_keys(&self) -> bool {
-        !self.forwarded.is_empty()
-    }
-
-    /// Whether a valid evdev key is already owned by ordinary client routing.
-    ///
-    /// The forwarded set for the same reason: a key no client was told about is
-    /// not one ordinary client routing owns.
-    pub(crate) fn client_holds(&self, code: u32) -> bool {
-        self.forwarded.contains(&(code + 8).into())
-    }
-}
-
 impl Server {
     /// Bind a display with a keyboard seat and an explicitly supplied XKB layout.
     ///

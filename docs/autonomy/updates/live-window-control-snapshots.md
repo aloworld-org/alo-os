@@ -1,5 +1,9 @@
 # Live window control snapshots
 
+> **Retired on 2026-10-10, and this report is kept as the record of what was built.** The internal window control strip and the paged name reader were removed whole - 70 files, 14,284 lines - and the external window edge is the only window chrome this shell draws now: [the-external-window-edge.md](../../design/the-external-window-edge.md).
+>
+> The files named below are gone, so they are written as module names without a path. That form is this repository's own ruling, and the reason is in it: *a quotation written in the form of a pointer is a pointer* - it reads like a live one to somebody skimming and to any check.
+
 Date: 2026-09-09. Workstream: native desktop window management.
 Responsible contributor: desktop development worker in `C:\dev\alo-os`.
 Status: ready for integration; independent supervisor publication gates pending.
@@ -40,7 +44,7 @@ method that could accidentally treat captured availability as authorization.
 ## Acceptance and executed checks
 
 All six new private-display integration tests in
-`crates/alo-shell/tests/window_controls/mod.rs` passed on their first focused run.
+the `window_controls` integration suite passed on their first focused run.
 They cover capture without wire/focus/geometry/typing effects, invalid view bounds,
 failed/successful/unsupported/retired output, pending toggles and tiled intent,
 pending versus committed restore hints, excessive geometry, popup busy refusal,

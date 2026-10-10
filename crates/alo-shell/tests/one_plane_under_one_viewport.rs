@@ -56,7 +56,7 @@ fn every_source_file() -> Vec<PathBuf> {
 /// Read as *what a person sees that a pan must not move*. Every one of these is
 /// painted above `crate::scene::trees` from the output's own size, and none of
 /// them is a frame on the plane.
-const THE_VIEWPORT_LAYER: [&str; 11] = [
+const THE_VIEWPORT_LAYER: [&str; 14] = [
     "desktop_raster.rs",
     "dock_raster.rs",
     "egress_status_raster.rs",
@@ -66,8 +66,16 @@ const THE_VIEWPORT_LAYER: [&str; 11] = [
     "approval_raster.rs",
     "record_raster.rs",
     "settings_raster.rs",
-    "window_control_overlay.rs",
-    "window_controls.rs",
+    // **The external window edge, which replaced the control strip here.**
+    // `window_control_overlay.rs` and `window_controls.rs` were this layer's
+    // until 2026-10-10. An edge is drawn on a window's own rectangle in logical
+    // units and converted once against an output, so it has no business reading
+    // the camera - and that is a claim worth holding rather than stating.
+    "window_edge.rs",
+    "window_edge_paint.rs",
+    "window_edge_picture.rs",
+    "window_edge_title.rs",
+    "every_windows_edge.rs",
 ];
 
 /// **No file that draws a viewport surface names the camera.**

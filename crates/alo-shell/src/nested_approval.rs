@@ -21,7 +21,7 @@ use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 
 use crate::approval_raster::{ApprovalLook, ApprovalPicture, picture};
 use crate::nested_egress_status::status_picture;
-use crate::scene_native::{NativeLayers, NativeScene};
+use crate::scene_native::NativeLayers;
 use crate::{
     ApprovalOutcome, ApprovalScreen, EgressStatusFrame, FrameTarget, InputError, Nested,
     RenderError, Server, WindowControlLabels,
@@ -98,16 +98,17 @@ impl Nested {
     /// be held whole on this window; every refusal
     /// `Nested::submit_with_egress_status` makes about the indicator; and the
     /// backend's own submission failures. A refused frame draws nothing.
-    #[expect(
-        clippy::too_many_arguments,
-        reason = "one session frame: clients, popups, cursor, controls, fonts, the indicator and the question"
-    )]
+    // **One argument fewer, and it no longer needs excusing.** This carried
+    // `#[expect(clippy::too_many_arguments)]` with the reason *one session
+    // frame: clients, popups, cursor, controls, fonts, the indicator and the
+    // question* - and `controls` was the window control strip, retired on
+    // 2026-10-10. Six is under the lint's threshold, so the expectation became
+    // unfulfilled rather than unnecessary, which is clippy saying the same thing.
     pub fn submit_with_approval(
         &mut self,
         roots: &[WlSurface],
         popups: &[crate::Popup],
         cursor: &crate::Cursor,
-        controls: Option<crate::WindowControlScene<'_>>,
         labels: &mut WindowControlLabels,
         egress: EgressStatusFrame<'_>,
         approval: ApprovalFrame<'_>,
@@ -119,7 +120,7 @@ impl Nested {
             popups,
             cursor,
             NativeLayers {
-                scene: controls.map(NativeScene::Controls),
+                scene: None,
                 approval: Some(&question),
                 status: Some(&status),
                 ..NativeLayers::nothing()

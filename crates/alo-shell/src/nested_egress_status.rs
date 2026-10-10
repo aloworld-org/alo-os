@@ -45,7 +45,6 @@ impl Nested {
         roots: &[WlSurface],
         popups: &[crate::Popup],
         cursor: &crate::Cursor,
-        controls: Option<crate::WindowControlScene<'_>>,
         labels: &mut WindowControlLabels,
         egress: EgressStatusFrame<'_>,
     ) -> Result<Vec<WlSurface>, RenderError> {
@@ -56,13 +55,7 @@ impl Nested {
             TheRoom::with_nothing_put_aside((size.w, size.h)),
             0,
         )?;
-        self.submit_native_scene(
-            roots,
-            popups,
-            cursor,
-            controls.map(crate::scene_native::NativeScene::Controls),
-            Some(&status),
-        )
+        self.submit_native_scene(roots, popups, cursor, None, Some(&status))
     }
 }
 

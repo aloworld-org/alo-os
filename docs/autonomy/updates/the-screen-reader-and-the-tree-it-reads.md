@@ -43,11 +43,19 @@ was installed on the Mac and nothing was added to the image.
 | approval | `ApprovalFrame`, `ApprovalScreen` | the question, the sentence, no, approve |
 | record | `RecordFrame` | the record, what happened, each entry |
 | settings | `SettingsFrame` | settings, what can be changed, each setting on or off |
-| window controls | `WindowControlFrame` | close, move |
+| window controls | *inside the frame that owns the output* | minimise, maximise, close |
 
 The dock has no frame of its own — it is drawn inside the desktop's — and it is
 listed anyway, because it is a surface a person meets and a reader must be able
-to name it. That is the one entry in this table that is not held to an export.
+to name it.
+
+**Two entries, since 2026-10-10.** The window controls joined the dock when the
+internal control strip was retired and the external window edge replaced it: the
+edge is a layer drawn within the frame that owns the output and exports no frame
+of its own. Both cells of that row were wrong until then — it named
+`WindowControlFrame`, which no longer exists, and *close, move*, which stopped
+being what a reader is told on 2026-10-04 when minimise and maximise were added
+and arranging was taken out (ADR 0089).
 
 **The access settings are in the sign-in surface**, held by its own test: task 1
 put every accessibility setting where there is no account yet, and this puts the

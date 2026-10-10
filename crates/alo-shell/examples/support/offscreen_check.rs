@@ -58,22 +58,11 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                 stage if crate::offscreen_stages::is_a_division_stage(stage) => {
                     crate::offscreen_division_check::stage(&mut server, renderer, stage)?;
                 }
-                29 | 30 => crate::window_control_scene_check::run(
-                    &server,
-                    renderer,
-                    if stage == 29 {
-                        alo_appearance::Scheme::Light
-                    } else {
-                        alo_appearance::Scheme::Dark
-                    },
-                )?,
                 22 => crate::window_minimize_check::client_request(&mut server, renderer)?,
-                17..=21 => {
-                    crate::window_maximize_check::stage(&mut server, renderer, stage)?;
-                    if stage == 21 {
-                        crate::window_minimize_check::run(&mut server, renderer)?;
-                    }
-                }
+                // **17 to 21 are client maximise and restore.** Stage 21 also
+                // drove the strip's out-and-back cancellation, which went with
+                // the strip; the pixels either side of it did not.
+                17..=21 => crate::window_maximize_check::stage(&mut server, renderer, stage)?,
                 13..=16 => crate::interactive_resize_check::stage(&mut server, renderer, stage)?,
                 11 => {
                     // The cursor fixture must not inject a second motion between

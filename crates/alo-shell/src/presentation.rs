@@ -14,9 +14,6 @@ pub enum RenderError {
     /// The lock frame, selected image or clock cannot be represented safely.
     #[error("the lock screen cannot be drawn safely")]
     LockScene,
-    /// Fresh reader wording, pagination or placement refused before submission.
-    #[error(transparent)]
-    ControlReader(#[from] crate::WindowControlPageError),
     /// Fresh native label selection or shaping refused before submission.
     #[error(transparent)]
     ControlLabel(#[from] crate::WindowControlLabelError),
@@ -44,15 +41,6 @@ pub enum RenderError {
     /// is the failure mode this whole seam exists to prevent.
     #[error("this backend draws the plane at its origin and was asked to move it")]
     PlaneNotMovedOnThisBackend,
-    /// The backend omitted the root whose strip it was asked to compose.
-    #[error("native control target omitted from submitted scene")]
-    ControlTargetOmitted,
-    /// The explicitly selected native control target is no longer paintable.
-    #[error(transparent)]
-    ControlSnapshot(#[from] crate::WindowControlSnapshotError),
-    /// Native output geometry differs or its label is obscured/clipped.
-    #[error("native control scene requires matching geometry and an unobscured complete label")]
-    ControlScene,
     /// The sign-in screen cannot be laid out for this output, or was laid out
     /// for a different one.
     #[error("the sign-in screen does not fit this output")]
@@ -136,9 +124,6 @@ pub enum RenderError {
     /// Keyboard backend initialization or routing refused.
     #[error(transparent)]
     Input(#[from] crate::InputError),
-    /// Native control routing refused; the event must not be retried.
-    #[error(transparent)]
-    WindowControl(#[from] crate::WindowControlRouteError),
     /// No positive framebuffer extent was supplied.
     #[error("empty framebuffer")]
     EmptySize,
@@ -162,31 +147,6 @@ pub enum RenderError {
 pub trait FrameTarget {
     /// Submit a complete reader with its strip, clients, popups and cursor.
     /// Refuse unsupported content; never silently submit only the strip.
-    /// No dispatch or publication is allowed during this transaction.
-    fn submit_reader(
-        &mut self,
-        _roots: &[WlSurface],
-        _popups: &[crate::Popup],
-        _cursor: &crate::Cursor,
-        _reader: &crate::WindowControlReaderScene<'_>,
-    ) -> Result<Vec<WlSurface>, RenderError> {
-        Err(RenderError::ControlsUnsupported)
-    }
-    /// Submit native controls in the same frame as clients, popups and cursor.
-    /// Implementations must honor the supplied scene or refuse before submission.
-    /// None removes native content. No dispatch or publication is allowed here.
-    fn submit_controls(
-        &mut self,
-        roots: &[WlSurface],
-        popups: &[crate::Popup],
-        cursor: &crate::Cursor,
-        controls: Option<crate::WindowControlScene<'_>>,
-    ) -> Result<Vec<WlSurface>, RenderError> {
-        if controls.is_some() {
-            return Err(RenderError::ControlsUnsupported);
-        }
-        self.submit_popups(roots, popups, cursor)
-    }
     /// Stop submission and disable the output before releasing its storage.
     /// No client dispatch is allowed. Failure must forbid further submission
     /// when hardware state is uncertain. Legacy targets explicitly refuse.

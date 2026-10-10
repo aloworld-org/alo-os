@@ -81,7 +81,7 @@ pub fn render_scanout(
     popups: &[Popup],
     cursor: &Cursor,
 ) -> Result<PreparedScanout, RenderError> {
-    render_control_scanout(renderer, size, roots, popups, cursor, None)
+    render_control_scanout(renderer, size, roots, popups, cursor)
 }
 
 /// Prepare the shared client/native/cursor scene without publishing presentation.
@@ -96,7 +96,6 @@ pub fn render_control_scanout(
     roots: &[WlSurface],
     popups: &[Popup],
     cursor: &Cursor,
-    controls: Option<crate::WindowControlScene<'_>>,
 ) -> Result<PreparedScanout, RenderError> {
     // **The plane's origin, and that is true rather than convenient.** This road
     // scans out the window controls, which are the viewport layer; nothing has
@@ -111,7 +110,7 @@ pub fn render_control_scanout(
         popups,
         cursor,
         crate::scene_native::NativeLayers {
-            scene: controls.map(crate::scene_native::NativeScene::Controls),
+            scene: None,
             ..crate::scene_native::NativeLayers::nothing()
         },
         alo_canvas::Camera::new(),
@@ -141,9 +140,6 @@ pub(crate) fn render_native_scanout(
     camera: alo_canvas::Camera,
 ) -> Result<PreparedScanout, RenderError> {
     validate_size(size)?;
-    if let Some(crate::scene_native::NativeScene::Controls(controls)) = layers.scene {
-        controls.validate(size)?;
-    }
     let mut buffer: GlesRenderbuffer = renderer
         .create_buffer(DrmFourcc::Abgr8888, (size.w, size.h).into())
         .map_err(|error| RenderError::Submission(format!("create offscreen target: {error}")))?;

@@ -17,14 +17,6 @@ use crate::{
 /// No environment is mutated and no client process is launched. Drop closes
 /// clients and removes the owned socket. Dispatch must be driven by the backend.
 pub struct Server {
-    /// Submitted opaque label and pointer releases owned independently of pixels.
-    pub(crate) control_overlay: crate::window_control_overlay::Overlay,
-    /// Native control ownership is separate from client pointer grabs.
-    pub(crate) control_press: Option<crate::window_control_input::Press>,
-    /// Explicitly composed strip and mapping-bound native label focus.
-    pub(crate) control_presentation: Option<crate::window_control_presentation::Presentation>,
-    /// Successfully submitted reader/page identity and exact hit bounds.
-    pub(crate) reader_presentation: Option<crate::window_control_reader_frame::ReaderPresentation>,
     /// The display is private so every inserted client has our client state.
     display: Display<Surfaces>,
     /// Protocol state and mapped toplevels.
@@ -230,10 +222,6 @@ impl Server {
         let surfaces = Surfaces::new(&display.handle());
         let socket = Socket::bind(runtime, name)?;
         Ok(Self {
-            control_overlay: Default::default(),
-            control_press: None,
-            control_presentation: None,
-            reader_presentation: None,
             display,
             surfaces,
             socket,
@@ -350,7 +338,12 @@ impl Server {
         target: &mut impl crate::FrameTarget,
         time: u32,
     ) -> Result<usize, crate::RenderError> {
-        self.render_window_controls(target, None, time)
+        // **No native scene of its own.** This passed `None` for the window
+        // control strip until the strip was retired on 2026-10-10; the
+        // external window edge reaches a frame through `NativeLayers::edges`
+        // and the direct backend builds it, so an ordinary render has nothing
+        // of the shell's to select.
+        self.render_frame(target, time)
     }
 
     /// Shared submission path; callers own native presentation retirement.

@@ -239,7 +239,16 @@ impl Surface {
             Self::Approval => &["ApprovalFrame", "ApprovalScreen"],
             Self::Record => &["RecordFrame"],
             Self::Settings => &["SettingsFrame"],
-            Self::WindowControls => &["WindowControlFrame"],
+            // **Nothing, since 2026-10-10**, for the reason the note above
+            // already gives: *none where a surface is drawn inside another's
+            // frame, as the dock is inside the desktop's.* The window edge is
+            // drawn as a layer within the frame that owns the output and
+            // exports no frame of its own. This named `WindowControlFrame`
+            // until then - the internal control strip's own frame, retired
+            // with the rest of the old chrome - and a name left behind in a
+            // list that exists to catch names left behind is the fault this
+            // list is for.
+            Self::WindowControls => &[],
         }
     }
 
@@ -366,9 +375,17 @@ impl Surface {
                 read
             }
             // **The three buttons a window is drawn with, in the order they
-            // are drawn in** — `alo_shell::WindowControls` lays them out at
-            // x-offsets 0, 36 and 72, and this list is the same list in the
-            // same order. Until 2026-10-04 it was two controls of this crate's
+            // are drawn in** — `alo_shell::the_controls_of` answers
+            // `Minimise, Maximise, Close` for a frame the shell draws, and this
+            // list is the same list in the same order.
+            //
+            // **It named the retired strip until 2026-10-10**, down to its
+            // x-offsets of 0, 36 and 72. The edge lays its controls out from
+            // the frame's right edge rather than from a fixed origin, so the
+            // offsets are no longer true of anything and the order is what
+            // survived. The order is the part that matters here: it is what a
+            // reader is told, and a list in a different order from the drawing
+            // would have a reader reach for the wrong button. Until 2026-10-04 it was two controls of this crate's
             // own naming, *close this window* and *move this window*: minimise
             // and maximise were drawn and never announced, and arranging was
             // announced and never drawn, because snapping is a chord with no

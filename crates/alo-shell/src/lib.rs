@@ -194,9 +194,6 @@ mod nested_desktop;
 mod nested_egress_status;
 mod nested_lock;
 mod nested_pointer;
-mod nested_reader_frame;
-mod nested_reader_input;
-mod nested_reader_session;
 mod nested_record;
 mod nested_recovery;
 mod nested_settings;
@@ -303,35 +300,7 @@ mod which_surface_claims_a_point;
 mod window_activation;
 mod window_close;
 mod window_command;
-mod window_control_feedback;
-mod window_control_focus;
-mod window_control_frame;
-mod window_control_input;
 mod window_control_label;
-mod window_control_label_expansion;
-mod window_control_label_page_raster;
-mod window_control_label_pages;
-mod window_control_label_paint;
-mod window_control_label_target;
-mod window_control_name_fallback;
-mod window_control_overlay;
-mod window_control_paint;
-mod window_control_presentation;
-mod window_control_reader;
-mod window_control_reader_chrome;
-mod window_control_reader_frame;
-mod window_control_reader_input;
-mod window_control_reader_interaction;
-mod window_control_reader_keys;
-mod window_control_reader_navigation;
-mod window_control_reader_pointer;
-mod window_control_reader_scene;
-mod window_control_reader_selection;
-pub mod window_control_reader_words;
-mod window_control_routing;
-mod window_control_scene;
-mod window_control_snapshot;
-mod window_controls;
 mod window_dividing;
 mod window_edge;
 mod window_edge_paint;
@@ -466,8 +435,6 @@ pub use nested_control_input::NestedControlInput;
 pub use nested_desktop::DesktopFrame;
 pub use nested_egress_status::EgressStatusFrame;
 pub use nested_pointer::NestedPointerEvent;
-pub use nested_reader_frame::NestedReaderFrame;
-pub use nested_reader_session::NestedReaderSession;
 pub use nested_record::RecordFrame;
 pub use nested_recovery::RecoveryFrame;
 pub use nested_settings::SettingsFrame;
@@ -527,46 +494,10 @@ pub use socket::SocketError;
 pub use their_displays::{THE_SIZES_THIS_COMPOSITOR_DRAWS, TheirDisplays};
 pub use top_controls_region::the_top_controls;
 pub use window_command::WindowCommandError;
-pub use window_control_focus::WindowControlFocus;
-pub use window_control_frame::WindowControlFrame;
-pub use window_control_frame::WindowControlLabelFrame;
-pub use window_control_input::{
-    WindowControlPressError, WindowControlRelease, WindowControlReleaseError,
-};
-pub use window_control_label::{
-    LabelGeometry, WindowControlLabel, WindowControlLabelError, WindowControlLabels,
-};
-pub use window_control_label_pages::{
-    WindowControlLabelPage, WindowControlLabelPages, WindowControlPageError,
-};
-pub use window_control_label_target::{WindowControlLabelSelection, WindowControlLabelTarget};
-pub use window_control_reader::{
-    WindowControlReader, WindowControlReaderPage, WindowControlReaderStyle,
-};
-pub use window_control_reader_chrome::PreparedWindowControlReaderChrome;
-pub use window_control_reader_frame::WindowControlReaderFrame;
-pub use window_control_reader_input::WindowControlReaderInput;
-pub use window_control_reader_interaction::WindowControlReaderInteraction;
-pub use window_control_reader_navigation::{
-    WindowControlReaderChrome, WindowControlReaderNavigation,
-};
-pub use window_control_reader_scene::WindowControlReaderScene;
-pub use window_control_routing::{
-    PaintedWindowControls, WindowControlPointerEvent, WindowControlRoute, WindowControlRouteError,
-};
-pub use window_control_scene::WindowControlScene;
-pub use window_control_snapshot::{WindowControlSnapshot, WindowControlSnapshotError};
-pub use window_controls::{
-    WindowControl, WindowControlFeedback, WindowControlLayout, WindowControlLayoutError,
-};
+pub use window_control_label::{WindowControlLabelError, WindowControlLabels};
 
 pub use seat_input::{InputDispatchError, InputUpdate, SeatInput};
 pub use session_input::{SessionInput, SessionInputStatus};
-
-pub use window_control_reader_keys::{ReaderKeyCommand, ReaderKeyRoute, WindowControlReaderKeys};
-pub use window_control_reader_pointer::{
-    ReaderPointerFeedback, ReaderPointerHit, WindowControlReaderPointer,
-};
 
 pub use lock_background::LockBackground;
 pub use lock_raster::LockLook;

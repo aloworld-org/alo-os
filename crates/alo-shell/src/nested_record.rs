@@ -20,7 +20,7 @@ use crate::approval_raster::ApprovalPicture;
 use crate::egress_status_raster::EgressStatusPicture;
 use crate::nested_egress_status::status_picture;
 use crate::record_raster::{RecordPicture, picture};
-use crate::scene_native::{NativeLayers, NativeScene};
+use crate::scene_native::NativeLayers;
 use crate::{
     ApprovalFrame, EgressStatusFrame, FrameTarget, InputError, Nested, RecordLook, RecordOpened,
     RecordWindow, RenderError, Server, WindowControlLabels,
@@ -99,7 +99,6 @@ impl Nested {
         roots: &[WlSurface],
         popups: &[crate::Popup],
         cursor: &crate::Cursor,
-        controls: Option<crate::WindowControlScene<'_>>,
         labels: &mut WindowControlLabels,
         egress: EgressStatusFrame<'_>,
         record: RecordFrame<'_>,
@@ -113,7 +112,7 @@ impl Nested {
             popups,
             cursor,
             NativeLayers {
-                scene: controls.map(NativeScene::Controls),
+                scene: None,
                 record: Some(&account),
                 approval: question.as_ref(),
                 status: Some(&status),

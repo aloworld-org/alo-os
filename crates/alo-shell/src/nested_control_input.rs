@@ -1,74 +1,67 @@
-//! Parent pointer position and native/client routing for the nested event pump.
-use crate::{
-    InputError, NestedPointerEvent, Server, WindowControlPointerEvent, WindowControlRouteError,
-};
-use smithay::backend::input::ButtonState;
+//! Parent pointer position for the nested event pump, and ordinary routing.
+//!
+//! # What changed when the control strip was retired
+//!
+//! This routed every pointer event through
+//! `Server::route_presented_window_control_pointer`, which **intercepted**
+//! presses landing on one of the three control tiles and otherwise fell through
+//! to ordinary seat routing. With the strip gone there is nothing to intercept,
+//! so it calls the ordinary routes directly — the same `pointer_motion`,
+//! `pointer_button` and `pointer_axis` the interception ended in.
+//!
+//! **So the refusal narrowed, and the type says so.** `route` returned
+//! `WindowControlRouteError`, whose three variants were ordinary input
+//! validation, a native press refused, and a native release consumed. The last
+//! two were the tiles'. What is left is [`InputError`], and a wrapper enum with
+//! one variant would claim a choice that no longer exists.
+//!
+//! **What the strip's router did that this deliberately stops doing:** it
+//! drained an owned primary *release* even while the parent was deactivated,
+//! because a tile that had taken ownership of a press had to be told the button
+//! came back up. Nothing owns a press now, so a release while deactivated is an
+//! ordinary release and `pointer_leave` is the whole of what deactivation owes.
+//!
+//! **The name is owed a change and has not had one.** This is the nested
+//! backend's pointer history and has nothing to do with window controls. The
+//! rename is left out of this removal deliberately: `WindowControlLabels` in the
+//! same crate is the shell's only font system, and renaming that is 220 mentions
+//! across 85 files. Both belong in one change about names rather than inside one
+//! about deletions.
+
+use crate::{InputError, NestedPointerEvent, Server};
 
 /// One nested backend's pointer history, independent of the client seat position.
 ///
-/// Keep this with its backend and server for their entire lifetime. Native grabs
-/// intentionally freeze client motion, so subsequent buttons must use this actual
-/// parent position instead. Reader transactions retain publication-bound authority
-/// and cancelled release ownership; use `route_reader` throughout a reader session.
+/// Keep this with its backend and server for their entire lifetime.
 #[derive(Default)]
 pub struct NestedControlInput {
     /// Last finite parent motion since activation; never inferred from client focus.
     pub(crate) position: Option<(f64, f64)>,
-    /// Reader ownership survives removal, deactivation and routing failures.
-    pub(crate) reader: crate::WindowControlReaderInput,
-    /// Pending native F1 opening, including cancelled release ownership.
-    pub(crate) opening: crate::nested_reader_session::NameOpening,
 }
 
 impl NestedControlInput {
     /// Current parent position for fresh hover feedback, absent after input loss.
+    #[must_use]
     pub fn position(&self) -> Option<(f64, f64)> {
         self.position
     }
 
-    /// Route one ordered parent event exactly once against published controls.
+    /// Route one parent pointer event to the client seat.
     ///
-    /// Supply None on activation changes/close. Deactivation retires presentation
-    /// and requires fresh motion, but still drains owned native primary releases.
-    /// Invalid motion cancels input and forgets position before refusal. Errors
-    /// must not be retried or forwarded. Scroll and non-primary buttons retain
-    /// ordinary seat routing; keyboard input is handled separately by the pump.
+    /// Supply `None` on activation changes and on close. Deactivation forgets
+    /// the position and requires fresh motion. Invalid motion forgets the
+    /// position and leaves the pointer **before** refusing, so a retry cannot
+    /// resume from a coordinate nothing accepted. Errors must not be retried or
+    /// forwarded.
     pub fn route(
         &mut self,
         server: &mut Server,
         active: bool,
         event: Option<NestedPointerEvent>,
-    ) -> Result<(), WindowControlRouteError> {
+    ) -> Result<(), InputError> {
         if !active {
             self.position = None;
             server.pointer_leave()?;
-        }
-        if let Some(NestedPointerEvent::Button {
-            code,
-            state: ButtonState::Released,
-            ..
-        }) = &event
-            && server.control_overlay.release(*code)
-        {
-            return Ok(());
-        }
-        // A cancelled release is still ours, even with no new motion or while
-        // inactive. NaN cannot hit a control; retirement already disarmed it.
-        if let Some(NestedPointerEvent::Button {
-            code: 0x110,
-            state: ButtonState::Released,
-            time,
-        }) = &event
-            && server.control_press.is_some()
-        {
-            server.route_presented_window_control_pointer(
-                self.position.unwrap_or((f64::NAN, f64::NAN)),
-                WindowControlPointerEvent::Button(0x110, ButtonState::Released),
-                *time,
-            )?;
-            return Ok(());
-        }
-        if !active {
             return Ok(());
         }
         match event {
@@ -76,32 +69,28 @@ impl NestedControlInput {
                 if !crate::pointer::bounded(x) || !crate::pointer::bounded(y) {
                     self.position = None;
                     server.pointer_leave()?;
-                    return Err(InputError::InvalidPointer.into());
+                    return Err(InputError::InvalidPointer);
                 }
                 if server.surfaces.pointer.is_none() {
-                    return Err(InputError::PointerUnavailable.into());
+                    return Err(InputError::PointerUnavailable);
                 }
-                server.route_presented_window_control_pointer(
-                    (x, y),
-                    WindowControlPointerEvent::Motion,
-                    time,
-                )?;
+                server.pointer_motion(x, y, time)?;
                 self.position = Some((x, y));
             }
             Some(NestedPointerEvent::Button { code, state, time }) => {
-                if let Some(position) = self.position {
-                    server.route_presented_window_control_pointer(
-                        position,
-                        WindowControlPointerEvent::Button(code, state),
-                        time,
-                    )?;
+                // **Only with a position**, as before: a button arriving before
+                // any motion has no place to have happened, and routing it
+                // would put a press wherever the seat was last left.
+                if self.position.is_some() {
+                    server.pointer_button(code, state, time)?;
                 }
             }
-            Some(NestedPointerEvent::Axis(frame)) => {
-                if let Some(position) = self.position {
-                    server.route_presented_window_control_axis(position, frame)?;
-                }
+            Some(NestedPointerEvent::Axis(frame)) if self.position.is_some() => {
+                server.pointer_axis(frame)?;
             }
+            // A scroll before any motion, like a button before any motion: no
+            // place for it to have happened, so it does not happen.
+            Some(NestedPointerEvent::Axis(_)) => {}
             None => {}
         }
         Ok(())

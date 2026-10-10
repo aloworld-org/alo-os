@@ -174,7 +174,19 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     app.sync();
     // Independent scene matrices have separate acknowledgements. Neither may
     // submit an output or complete a callback; all waits keep the same bound.
-    for stage in [29, 30, 1, 2, 3] {
+    //
+    // **29 and 30 left on 2026-10-10 with the control strip**, which they drew
+    // in each scheme. They were acknowledged before 1, 2 and 3 because those
+    // three acknowledged *them*; 1 is now the first.
+    //
+    // **And this list is a second place that has to agree with
+    // `offscreen_stages::EVERY_STAGE`.** That file's header says the client
+    // drives from it and that nothing anywhere has to be kept in step by a
+    // person - true of the checker, not of this loop, which holds its own
+    // literal. Removing the two there left this one asking for a stage nothing
+    // would answer, and the fixture said so within five seconds rather than
+    // passing. The check caught it; the claim in the header did not.
+    for stage in [1, 2, 3] {
         assert!(send.send(stage).is_ok());
         assert!(
             receive.recv_timeout(Duration::from_secs(5)).is_ok(),

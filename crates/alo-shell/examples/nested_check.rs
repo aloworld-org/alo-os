@@ -23,6 +23,10 @@ mod offscreen_division_check;
 #[cfg(target_os = "linux")]
 #[path = "support/offscreen_stages.rs"]
 mod offscreen_stages;
+#[path = "support/window_maximize_check.rs"]
+mod window_maximize_check;
+#[path = "support/window_minimize_check.rs"]
+mod window_minimize_check;
 
 #[cfg(target_os = "linux")]
 #[path = "support/offscreen_client.rs"]
@@ -43,32 +47,16 @@ mod interactive_resize_check;
 #[path = "support/nested_client_check.rs"]
 mod nested_client_check;
 #[cfg(target_os = "linux")]
-#[path = "support/nested_control_frame_check.rs"]
-mod nested_control_frame_check;
 #[cfg(target_os = "linux")]
-#[path = "support/nested_reader_frame_check.rs"]
-mod nested_reader_frame_check;
 #[cfg(target_os = "linux")]
 #[path = "support/resize_geometry_check.rs"]
 mod resize_geometry_check;
 #[cfg(target_os = "linux")]
-#[path = "support/window_control_label_check.rs"]
-mod window_control_label_check;
 #[cfg(target_os = "linux")]
-#[path = "support/window_control_scene_check.rs"]
-mod window_control_scene_check;
 #[cfg(target_os = "linux")]
-#[path = "support/window_control_snapshot_check.rs"]
-mod window_control_snapshot_check;
 #[cfg(target_os = "linux")]
-#[path = "support/window_controls_pixels.rs"]
-mod window_controls_pixels;
 #[cfg(target_os = "linux")]
-#[path = "support/window_maximize_check.rs"]
-mod window_maximize_check;
 #[cfg(target_os = "linux")]
-#[path = "support/window_minimize_check.rs"]
-mod window_minimize_check;
 #[cfg(target_os = "linux")]
 #[path = "support/window_placement_check.rs"]
 mod window_placement_check;

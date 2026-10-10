@@ -1,5 +1,9 @@
 # Native control pointer routing
 
+> **Retired on 2026-10-10, and this report is kept as the record of what was built.** The internal window control strip and the paged name reader were removed whole - 70 files, 14,284 lines - and the external window edge is the only window chrome this shell draws now: [the-external-window-edge.md](../../design/the-external-window-edge.md).
+>
+> The files named below are gone, so they are written as module names without a path. That form is this repository's own ruling, and the reason is in it: *a quotation written in the form of a pointer is a pointer* - it reads like a live one to somebody skimming and to any check.
+
 Date: 2026-09-09. Workstream: native desktop window management.
 Responsible contributor: desktop development worker in `C:\dev\alo-os`.
 Status: ready for integration; independent supervisor publication gates pending.
@@ -7,7 +11,7 @@ Status: ready for integration; independent supervisor publication gates pending.
 ## Change and decisions
 
 Completed the queued primary/motion router component, selected in QUEUE before
-implementation. `crates/alo-shell/src/window_control_routing.rs` adds the trusted
+implementation. `window_control_routing` adds the trusted
 `Server::route_window_control_pointer` boundary: current explicit painted root,
 viewport/origin, position and timestamp; typed native/client outcomes and refusals.
 Native primary gestures and held motion are consumed; other input uses the existing
