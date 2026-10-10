@@ -82,32 +82,56 @@ fn every_control_is_a_button_a_person_can_use() {
     }
 }
 
-/// **An application with its own header is not announced twice.**
+/// **An application with its own header is not announced twice — and now its
+/// menu is.**
 ///
-/// It keeps its own buttons, so alo's edge carries only a menu — and until the
-/// menu has an action it has no word, so a reader is told about nothing of
-/// alo's rather than about something alo cannot name.
+/// It keeps its own buttons, so alo's edge carries only a menu. Until
+/// 2026-10-10 that menu had no action and therefore no word, so a reader on
+/// such a window was told about nothing of alo's at all. It has one now, which
+/// is the whole point: the menu is the road to the full title, and an
+/// application-decorated window is exactly where alo has no title of its own
+/// to show.
 #[test]
 fn an_application_with_its_own_header_gets_no_duplicate_controls() {
     let edge = edge_of(window(), Decorations::TheApplicationDraws, true);
     assert_eq!(edge.controls.len(), 1);
     assert_eq!(edge.controls[0].does, OnTheEdge::Menu);
-    assert!(
-        what_a_reader_is_told(Decorations::TheApplicationDraws).is_empty(),
-        "alo announced a control over an application that has its own"
+    let told = what_a_reader_is_told(Decorations::TheApplicationDraws);
+    assert_eq!(
+        told.len(),
+        1,
+        "an application-decorated window offers alo's menu and nothing else: {told:?}"
+    );
+    assert_eq!(
+        told[0].does,
+        Some(alo_shortcuts::Action::WindowOptions),
+        "the one thing announced is not the window's options"
     );
 }
 
-/// **The window menu has no action, and that is recorded rather than faked.**
+/// **Every control on the edge has an action, including the menu.**
 ///
-/// A reader announcing a menu it could only name in English would be worse
-/// than one that does not announce it. The fix is an `Action` with a word like
-/// every other control's, and this test is what will fail when somebody adds
-/// one — at which point the two assertions below swap round.
+/// This test was `the_window_menu_is_the_one_control_with_no_action_yet` and
+/// held the opposite, with a note saying it would fail the day somebody gave
+/// the menu one — *at which point the two assertions below swap round*. They
+/// have. The owner's ruling of 2026-10-10 made the menu the road to a long
+/// title, so a control with no action was a title with no road.
 #[test]
-fn the_window_menu_is_the_one_control_with_no_action_yet() {
-    assert!(what_it_does(OnTheEdge::Menu).is_none());
-    for named in [OnTheEdge::Minimise, OnTheEdge::Maximise, OnTheEdge::Close] {
-        assert!(what_it_does(named).is_some(), "{named:?} lost its action");
+fn every_control_on_the_edge_has_an_action() {
+    for control in [
+        OnTheEdge::Minimise,
+        OnTheEdge::Maximise,
+        OnTheEdge::Close,
+        OnTheEdge::Menu,
+    ] {
+        assert!(
+            what_it_does(control).is_some(),
+            "{control:?} has no action, so a reader has no word for it"
+        );
     }
+    assert_eq!(
+        what_it_does(OnTheEdge::Menu),
+        Some(alo_shortcuts::Action::WindowOptions),
+        "the menu's action is not the one named for what it does"
+    );
 }

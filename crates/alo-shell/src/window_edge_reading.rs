@@ -46,18 +46,26 @@ use crate::window_edge::{Decorations, OnTheEdge};
 
 /// What pressing this does, as an action the rest of the machine already has.
 ///
-/// [`None`] for the window menu, which has no [`Action`] yet — recorded rather
-/// than given a fabricated one. A reader that announced a menu it could not
-/// name, or named it in English only, would be worse than one that does not
-/// announce it, and the honest fix is an action with a word like every other.
+/// **Every control has one, from 2026-10-10.** The window menu answered [`None`]
+/// until then — recorded rather than given a fabricated name, because a reader
+/// announcing a menu it could only say in English would be worse than one that
+/// does not announce it. The owner's ruling of that date made the honest fix
+/// necessary rather than merely owed: the menu is where a long title is
+/// selectable, so a control nobody can reach is a title nobody can read.
+///
+/// `Action::WindowOptions` is named for what it does and not for the box it
+/// opens (ADR 0089), its chord is `Alt+Space` because that is what every
+/// desktop a person arrives from already spells it, and its sentence is in the
+/// shared vocabulary, so a reader says it in the person's own language like
+/// every other control here.
 #[must_use]
-pub fn what_it_does(control: OnTheEdge) -> Option<Action> {
-    match control {
-        OnTheEdge::Minimise => Some(Action::MinimiseWindow),
-        OnTheEdge::Maximise => Some(Action::MaximiseWindow),
-        OnTheEdge::Close => Some(Action::CloseWindow),
-        OnTheEdge::Menu => None,
-    }
+pub const fn what_it_does(control: OnTheEdge) -> Option<Action> {
+    Some(match control {
+        OnTheEdge::Minimise => Action::MinimiseWindow,
+        OnTheEdge::Maximise => Action::MaximiseWindow,
+        OnTheEdge::Close => Action::CloseWindow,
+        OnTheEdge::Menu => Action::WindowOptions,
+    })
 }
 
 /// Every control a window with these decorations has, in the order a reader

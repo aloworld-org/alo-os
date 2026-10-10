@@ -52,6 +52,14 @@ pub enum Action {
     /// by keyboard and a person who has never been told a chord exists are
     /// different people*.
     Settings,
+    /// Show what can be done to the window in front.
+    ///
+    /// **The road a person reaches the window's own options by**, and the one
+    /// the owner's ruling of 2026-10-10 makes necessary: the window menu is
+    /// where the full title is selectable, which is the only place a person can
+    /// read a long one slowly, copy it, or reach it by touch where there is no
+    /// hover at all.
+    WindowOptions,
     /// Close the window in front.
     CloseWindow,
     /// Put the window in front out of the way.
@@ -119,6 +127,7 @@ impl Action {
         Self::Launcher,
         Self::Settings,
         Self::CloseWindow,
+        Self::WindowOptions,
         Self::MinimiseWindow,
         Self::MaximiseWindow,
         Self::SnapLeft,
@@ -143,6 +152,7 @@ impl Action {
             Self::Launcher => words::LAUNCHER,
             Self::Settings => words::SETTINGS,
             Self::CloseWindow => words::CLOSE_WINDOW,
+            Self::WindowOptions => words::WINDOW_OPTIONS,
             Self::MinimiseWindow => words::MINIMISE_WINDOW,
             Self::MaximiseWindow => words::MAXIMISE_WINDOW,
             Self::SnapLeft => words::SNAP_LEFT,

@@ -37,10 +37,15 @@ const ALT_SHIFT: Modifiers = ALT.and(Modifier::Shift);
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 17] = [
+const SHIPPED: [(Action, Chord); 18] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::Settings, Chord::shipped(SUPER, Key::I)),
+    // **Alt+Space, which is not a new habit.** `docs/features.md` promises the
+    // habits people arrive with still work, and every desktop a person arrives
+    // from spells *this window's own menu* as Alt+Space. Super is alo's own
+    // modifier and is already crowded.
+    (Action::WindowOptions, Chord::shipped(ALT, Key::Space)),
     (Action::CloseWindow, Chord::shipped(ALT, Key::F4)),
     (Action::MinimiseWindow, Chord::shipped(SUPER, Key::Down)),
     (Action::MaximiseWindow, Chord::shipped(SUPER, Key::Up)),

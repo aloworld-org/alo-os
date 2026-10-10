@@ -112,6 +112,9 @@ pub const fn the_tab_stop_for(action: Action) -> Surface {
         Action::CloseWindow
         | Action::MinimiseWindow
         | Action::MaximiseWindow
+        // Showing the window's options is done to that window, and the control
+        // that does it sits on that window's own edge beside the other three.
+        | Action::WindowOptions
         | Action::SnapLeft
         | Action::SnapRight
         // Sending the window in front to another Place is done *to that window*,

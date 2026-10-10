@@ -1433,6 +1433,7 @@ shortcuts.action.close-window	Close the window
 shortcuts.action.go-back-on-this-place	Put this Place back as it was
 shortcuts.action.launcher	Open the launcher
 shortcuts.action.maximise-window	Maximise the window, or put it back
+shortcuts.action.window-options	Show the window's options
 shortcuts.action.minimise-window	Minimise the window
 shortcuts.action.move-the-window-to-the-next-place	Move this window to the next Place
 shortcuts.action.next-application	Next application
