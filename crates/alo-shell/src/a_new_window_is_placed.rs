@@ -57,6 +57,27 @@
 //! is looking, and on a two-monitor desk *where they are looking* is a question
 //! this shell cannot yet answer per display.
 //!
+//! # One answer to *where is that window*
+//!
+//! This file had a private helper that added `geometry.loc` to
+//! [`crate::window_buffer_origin`] and took `geometry.size`.
+//! [`crate::where_a_window_is`] landed in #599 doing the same sum, so the
+//! helper went: two copies of *where a window is* is the kind of pair that
+//! agrees until one of them is corrected.
+//!
+//! **The surface's origin alone is not the window.** A client drawing its own
+//! decorations starts its buffer inside its shadow margin, and `geometry.loc`
+//! is what accounts for it — so either function is right and
+//! `window_buffer_origin` **on its own** is not. The third PC measured that
+//! gap at about fifty pixels on GNOME Calculator.
+//!
+//! The cost of switching is a rounding choice: the helper rounded a window's
+//! occupied rectangle **outward**, so a window covering 100.4 units blocked
+//! 101. The shared function rounds to nearest. That is given up on purpose —
+//! placement and the reachability checks now read the same answer, and two
+//! subsystems disagreeing about where a window is costs more than a sub-pixel
+//! of overlap.
+//!
 //! **No second scale conversion happens here, deliberately.**
 //! `crate::canvas_fixed_controls` records that the owner's ruling of
 //! 2026-10-01 asks for exactly one, and that the bounds it stores are in the
@@ -104,16 +125,6 @@ fn onto_the_plane(
         Rectangle::<f64, Logical>::new(Point::from((left, top)), Size::from((width, height)))
             .to_i32_up(),
     )
-}
-
-/// Where a mapped window's rectangle is on the plane.
-fn on_the_plane(surface: &WlSurface) -> Rectangle<i32, Logical> {
-    let origin = crate::window_placement::window_buffer_origin(surface);
-    let geometry = crate::scene::geometry(surface);
-    // Outward again, and for the mirror of the reason above: a window
-    // occupying 100.4 units blocks 101, so a new one cannot be placed
-    // overlapping it by a fraction and called free.
-    Rectangle::new(origin + geometry.loc, geometry.size).to_i32_up()
 }
 
 impl Server {
@@ -220,7 +231,7 @@ impl Server {
                 .mapped_surfaces()
                 .filter(|other| *other != &surface)
                 .filter(|other| crate::canvas_place::the_place_of(other) == place)
-                .map(on_the_plane)
+                .map(crate::where_a_window_is)
                 .collect();
             // **The frontmost other window, not the focused one.** Rule 8 has
             // a person-initiated opening *activate* the new window, so by the
@@ -229,9 +240,12 @@ impl Server {
             // itself*. Front-to-back stacking answers what a person means by
             // the window they were working in, and cannot name the new one.
             let active = open.first().copied();
-            // **Up, not rounded.** A window wanting 100.4 is given 101 of
-            // room: rounding a wanted size down would let the placer call a
-            // gap big enough when the window overflows it by a fraction.
+            // **Up, not rounded**, and this one stays mine: a window wanting
+            // 100.4 is given 101 of room, because rounding a *wanted* size
+            // down would let the placer call a gap big enough when the window
+            // overflows it by a fraction. `where_a_window_is` above answers
+            // where an **existing** window is, which is a different question
+            // and rounds to nearest.
             let wanted = crate::scene::geometry(&surface).size.to_i32_ceil();
             // A window with no extent is not placed. It is the reason this
             // runs after the buffer arrives rather than at `new_toplevel`:
