@@ -139,6 +139,13 @@ const NOT_READ_BY_A_PERSON: &[(&str, &str, &str, &str)] = &[
     (
         "alo-dock",
         "measures.rs",
+        "a utility symbol is outside the 20-to-24 the owner gave",
+        "the message of a `const` assertion, which is the strongest case on this list: a const assertion that fires stops the compiler, so no binary exists and the sentence cannot reach a running machine at all \
+         — only the developer whose build it broke. This one names the owner's range for a utility symbol — search, overflow — against an application's artwork, which is a different size on purpose",
+    ),
+    (
+        "alo-dock",
+        "measures.rs",
         "the Dock's target is below the floor",
         "the message of a `const` assertion, which is the strongest case on this list: a const assertion that fires stops the compiler, so no binary exists and the sentence cannot reach a running machine at all \
          — only the developer whose build it broke. This one names WCAG 2.5.5's enhanced minimum, which every other control in alo OS is built to",

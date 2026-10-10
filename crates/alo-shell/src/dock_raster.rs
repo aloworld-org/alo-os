@@ -73,18 +73,46 @@
 //! dock is a band of the person's colours with the accent along its inside
 //! edge. `tests/desktop_source.rs` reads these files to hold that.
 
-use alo_dock::measures::{FLOATING_ABOVE_THE_EDGE, GLYPH, ICON, MARGIN};
-use alo_dock::places::Places;
-use alo_dock::{Dock, Layout, OnTheDock, Room, Screen};
+use alo_dock::measures::{A_UTILITY_GLYPH, GLYPH, ICON};
+use alo_dock::{Dock, Layout, OnTheDock};
+
 use cosmic_text::{FontSystem, Metrics};
 use smithay::utils::{Physical, Rectangle};
 
 use crate::RenderError;
 use crate::desktop_look::DesktopLook;
 use crate::painted::{Inked, Solid};
+use crate::where_the_dock_is::TheDocksPlaces;
 
-/// The largest display side, in pixels, the dock is laid out for.
-const LARGEST_SIDE: i32 = 16_384;
+/// What the overflow control shows: a horizontal ellipsis.
+///
+/// **A mark, not a word, and so not `alo_dock::words`.** The control's *name* is
+/// a sentence a person reads — `alo_dock::words::SHOW_MORE_OPEN_APPS`, which a
+/// screen reader speaks and a tooltip shows — and this is the thing drawn in its
+/// 48 slot. U+2026 means *there is more here* in every language this product
+/// ships in, which a translated string could not: a letter or an abbreviation
+/// would have to be translated and would then be a different width in every
+/// locale, inside a slot that is one size everywhere.
+///
+/// It is drawn through the same text path as an application's first letter,
+/// because that is what this file already has and a second path would be a
+/// second place for a mark to be mispositioned.
+///
+/// # A `char`, and written as a code point, for two guards rather than one
+///
+/// `tests/desktop_source.rs` holds that no file in this path *words a
+/// sentence*: a line here may hold no `"` at all, because every sentence a
+/// person meets comes from `alo-saying` and a literal is how that stops being
+/// true. This is not an exception to that rule — the control's **name** is
+/// `alo_dock::words::SHOW_MORE_OPEN_APPS`, in the vocabulary, translated, and
+/// it is what a screen reader speaks and a tooltip shows. What is left here is
+/// one character of artwork, and a `char` is the type that says so.
+///
+/// Written `'\u{2026}'` rather than pasted, so that a reader sees which code
+/// point it is rather than three dots that might be a period repeated — which
+/// is a different character, a different width, and the thing a screen reader
+/// would read aloud as three full stops.
+const THE_OVERFLOWS_MARK: char = '\u{2026}';
 
 /// The dock for one display, ready to paint.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -105,40 +133,12 @@ pub(crate) struct DockPicture {
     /// bare band — and is what every machine showed until 2026-10-10, because
     /// nothing drew an icon at all.
     pub(crate) inked: Vec<Inked>,
-}
-
-/// Where the bar sits on this edge: `along` units down its edge, `thickness`
-/// across, lifted `floating` clear of the screen's own edge.
-///
-/// **One function for four edges rather than four placements.** The bar is the
-/// same rectangle each time — as long as what it holds, as thick as its lane — and
-/// only two things vary: which axis the length runs along, and which end of the
-/// other axis it is lifted from. Written as four `if`s in the caller, the two that
-/// are never drawn in this release would be the two nobody notices going wrong.
-///
-/// **`floating` is the gap, not the position.** The bar is inset from its edge
-/// rather than flush to it, which is the design file's rule for every edge and the
-/// reason the egress corner has to subtract it too.
-fn the_band_on(
-    edge: alo_dock::Edge,
-    size: (i32, i32),
-    along: i32,
-    thickness: i32,
-    floating: i32,
-) -> Rectangle<i32, Physical> {
-    let (width, height) = size;
-    let origin = match edge {
-        alo_dock::Edge::Bottom => ((width - along) / 2, height - thickness - floating),
-        alo_dock::Edge::Top => ((width - along) / 2, floating),
-        alo_dock::Edge::Left => (floating, (height - along) / 2),
-        alo_dock::Edge::Right => (width - thickness - floating, (height - along) / 2),
-    };
-    let extent = if edge.runs_across() {
-        (along, thickness)
-    } else {
-        (thickness, along)
-    };
-    Rectangle::new(origin.into(), extent.into())
+    /// What there was no room for, in order, behind the overflow control.
+    ///
+    /// **Empty is the ordinary case** and means there is no control on the bar
+    /// either: `alo_dock::fit` puts nothing aside until the edge runs out, and
+    /// `alo_dock::Places` draws no control for an empty overflow.
+    pub(crate) over: Vec<OnTheDock>,
 }
 
 /// The accent along the band's **inside** edge: the one facing the canvas.
@@ -195,45 +195,24 @@ pub(crate) fn picture(
     on_the_dock: &[OnTheDock],
     fonts: &mut FontSystem,
 ) -> Result<DockPicture, RenderError> {
-    let (width, height) = size;
-    if width > LARGEST_SIDE || height > LARGEST_SIDE {
-        return Err(RenderError::DesktopScene);
-    }
-    let screen = Screen::of(
-        u32::try_from(width).map_err(|_| RenderError::DesktopScene)?,
-        u32::try_from(height).map_err(|_| RenderError::DesktopScene)?,
-    )
-    .map_err(|_| RenderError::DesktopScene)?;
+    let height = size.1;
+    // **Where the Dock is, asked rather than worked out here.** This file
+    // computed the band, the slots and the overflow itself and kept none of it,
+    // so a press had no way to ask what was under the pointer without
+    // rasterising a frame. `crate::where_the_dock_is` is the one answer both
+    // read; neither can be right while the other is wrong.
+    let standing = crate::where_the_dock_is::where_the_dock_is(dock, size, on_the_dock)?;
+    let TheDocksPlaces {
+        layout,
+        band,
+        thickness,
+        places,
+        over,
+    } = standing;
     let palette = look.palette().map_err(|_| RenderError::AccentRefused)?;
     let measure = look.measure();
-    let layout = dock.layout_on(screen);
-    let thickness = i32::try_from(layout.thickness().as_pixels())
-        .map_err(|_| RenderError::DesktopScene)?
-        .clamp(1, width.min(height));
     let rule = measure.px(2).min(thickness);
 
-    // As wide as what it holds, clamped to the screen less its margins. The
-    // count comes from whoever decided what the Dock shows, so the bar drawn
-    // and the list decided cannot disagree.
-    let margin = i32::try_from(MARGIN).unwrap_or(i32::MAX);
-    let floating = i32::try_from(FLOATING_ABOVE_THE_EDGE).unwrap_or(i32::MAX);
-    let wanted = i32::try_from(Room::a_bar_holding(on_the_dock.len()).as_pixels())
-        .map_err(|_| RenderError::DesktopScene)?;
-    // **The edge the bar runs along, not always the width.** A dock down a side is
-    // as long as the screen is tall, and clamping it to the width would make a
-    // portrait screen's side dock short for a reason that has nothing to do with
-    // where it is — which is the mistake `alo_dock::layout`'s own header warns
-    // about one level up, for thickness.
-    let along = if layout.edge().runs_across() {
-        width
-    } else {
-        height
-    };
-    let widest = (along - 2 * margin).max(1);
-    let bar_width = wanted.clamp(1, widest);
-
-    // Centred along its edge, and lifted clear of it.
-    let band = the_band_on(layout.edge(), size, bar_width, thickness, floating);
     let accent = the_accent_on(layout.edge(), band, rule);
 
     let solids = vec![
@@ -259,9 +238,9 @@ pub(crate) fn picture(
     // bar is on — `from_the_start` is a distance **along**, not an `x` — so the
     // one thing left here is which axis *along* is, which is the same question
     // `the_band_on` above already answers for the band.
-    let places = Places::of(on_the_dock);
     let icon = i32::try_from(ICON).unwrap_or(i32::MAX);
     let glyph = i32::try_from(GLYPH).unwrap_or(i32::MAX);
+    let utility = i32::try_from(A_UTILITY_GLYPH).unwrap_or(i32::MAX);
     // **Centred across the bar, which is a rule rather than a number.** This read
     // `MARGIN` — 8 — until 2026-10-10, and the bar is 76 thick with a 48 icon in
     // it, so every letter sat six logical pixels above where the design puts it.
@@ -293,9 +272,26 @@ pub(crate) fn picture(
         // arrives in disappears into the band rather than drawing a tile the
         // design does not ask for. `docs/design/the-alo-dock.md`: a control at
         // rest contributes artwork and nothing else.
+        // **An application's letter, or the control's mark.** The slot is the
+        // same size either way — the owner's ruling of 2026-10-10 makes the
+        // overflow one application slot — and what is drawn in it is not: a
+        // letter would read as an application a person could open, and there is
+        // no application called *more*.
+        //
+        // `A_UTILITY_GLYPH` rather than `GLYPH`, which is the owner's own
+        // distinction: *utility glyphs — search, overflow — 20 to 24, in the
+        // same 48 target.*
+        let mut one_character = [0_u8; 4];
+        let (mark, size) = match place.app() {
+            Some(app) => (app.first_letter(), glyph),
+            None => (
+                &*THE_OVERFLOWS_MARK.encode_utf8(&mut one_character),
+                utility,
+            ),
+        };
         let shaped = crate::painted_text::centred(
             fonts,
-            place.app().first_letter(),
+            mark,
             icon,
             // **`GLYPH`, which is artwork's size and not text's.** The owner's
             // ruling of 2026-10-10 is explicit that a fixed bar height must not
@@ -311,7 +307,7 @@ pub(crate) fn picture(
             // the bar — it takes its size from `DesktopLook::measure`, as every
             // sentence on this machine does. `alo_dock::Room::a_line_at` is
             // what sizes it, and it still takes a `TextScale`.
-            Metrics::new(glyph as f32, glyph as f32),
+            Metrics::new(size as f32, size as f32),
             palette.dock,
             palette.ink,
         );
@@ -330,6 +326,7 @@ pub(crate) fn picture(
         accent,
         solids,
         inked,
+        over,
     })
 }
 
@@ -378,77 +375,15 @@ mod tests {
 
     use super::*;
     use crate::desktop_testing::{an_appearance, noon_look};
+    use crate::where_the_dock_is::the_band_on;
     use alo_appearance::{Accent, TextScale};
+    use alo_dock::measures::{FLOATING_ABOVE_THE_EDGE, MARGIN};
+    use alo_dock::{Room, Screen};
     use alo_strings::Direction;
 
     /// Whether `inner` lies wholly inside `outer`.
     fn inside(inner: Rectangle<i32, Physical>, outer: Rectangle<i32, Physical>) -> bool {
         outer.intersection(inner) == Some(inner)
-    }
-
-    /// **The bar is placed on all four edges, and only the bottom is ever drawn.**
-    ///
-    /// `Dock::shipped` is on the bottom and nothing can change it, by the owner's
-    /// order of work — so a test that went through `picture` could only ever
-    /// exercise one of the four placements, and the other three would be reached
-    /// for the first time by whoever turns the setting on.
-    ///
-    /// So this asks the placement directly. **It is the half of *all four edges
-    /// work* that a drawing test cannot reach**, and the three untried branches are
-    /// exactly where a wrong sign or a swapped axis would sit unnoticed.
-    #[test]
-    fn the_bar_sits_on_whichever_edge_it_was_laid_along() {
-        use alo_dock::Edge;
-        let size = (1920, 1080);
-        let (along, thick, floating) = (600, 70, 8);
-
-        for edge in Edge::EVERY {
-            let band = the_band_on(edge, size, along, thick, floating);
-
-            // The extent follows the orientation: long way along its edge.
-            let (expect_w, expect_h) = if edge.runs_across() {
-                (along, thick)
-            } else {
-                (thick, along)
-            };
-            assert_eq!(
-                (band.size.w, band.size.h),
-                (expect_w, expect_h),
-                "{edge:?} is laid out across the wrong axis"
-            );
-
-            // Inset from its own edge by the floating gap, never flush to it.
-            let gap = match edge {
-                Edge::Bottom => 1080 - (band.loc.y + band.size.h),
-                Edge::Top => band.loc.y,
-                Edge::Left => band.loc.x,
-                Edge::Right => 1920 - (band.loc.x + band.size.w),
-            };
-            assert_eq!(gap, floating, "{edge:?} is not floating clear of its edge");
-
-            // Centred along the edge it runs down, to within a pixel.
-            let (before, after) = if edge.runs_across() {
-                (band.loc.x, 1920 - (band.loc.x + band.size.w))
-            } else {
-                (band.loc.y, 1080 - (band.loc.y + band.size.h))
-            };
-            assert!(
-                (before - after).abs() <= 1,
-                "{edge:?} is not centred: {before} before, {after} after"
-            );
-
-            // And wholly on the screen, which the arithmetic above could satisfy
-            // while putting a negative origin somewhere.
-            assert!(
-                band.loc.x >= 0 && band.loc.y >= 0,
-                "{edge:?} starts off the screen at {:?}",
-                band.loc
-            );
-            assert!(
-                band.loc.x + band.size.w <= 1920 && band.loc.y + band.size.h <= 1080,
-                "{edge:?} runs off the screen"
-            );
-        }
     }
 
     /// **The accent lies on the band's inside edge, on all four edges.**
@@ -581,26 +516,6 @@ mod tests {
         assert_eq!(seen.len(), 4);
     }
 
-    /// **No two edges put the bar in the same place.**
-    ///
-    /// Four placements that each pass the checks above could still be two
-    /// placements written twice — a copied arm with its edge not changed is the
-    /// likeliest way this goes wrong, and every assertion above would hold.
-    #[test]
-    fn the_four_edges_are_four_different_places() {
-        use alo_dock::Edge;
-        let mut seen: Vec<Rectangle<i32, Physical>> = Vec::new();
-        for edge in Edge::EVERY {
-            let band = the_band_on(edge, (1920, 1080), 600, 70, 8);
-            assert!(
-                !seen.contains(&band),
-                "{edge:?} lands exactly where an earlier edge does: {band:?}"
-            );
-            seen.push(band);
-        }
-        assert_eq!(seen.len(), 4);
-    }
-
     /// **The dock is a bar: centred, clear of the bottom edge, and as wide as
     /// what it holds** — the same bar whichever way the person reads.
     #[test]
@@ -672,24 +587,179 @@ mod tests {
         }
     }
 
-    /// **A bar too wide for the screen is clamped rather than drawn off it**,
-    /// and what did not fit went into the overflow before it reached this file.
+    /// **Two hundred applications stay on the screen, and every one of them
+    /// stays reachable.**
+    ///
+    /// This was `a_bar_wider_than_the_screen_is_clamped_to_it`, and its doc
+    /// comment said *what did not fit went into the overflow before it reached
+    /// this file*. Nothing did: `alo_dock::fit` had no caller, so two hundred
+    /// applications produced a bar 11 208 pixels wide that was **clamped** to
+    /// the screen — and the clamp is a rectangle, so a hundred and seventy-odd
+    /// icons were drawn past its end, on the canvas or off the display
+    /// altogether, with no way to reach them.
+    ///
+    /// The clamp is still there and is now what the header claims it is: a last
+    /// resort that cannot fire, because the slot count comes from the same
+    /// `widest` the clamp would use.
+    ///
+    /// Four claims, and the fourth is the one that matters to a person: the bar
+    /// is on the screen, it was **not** clamped, every slot drawn is inside it,
+    /// and **nothing was dropped** — what is not on the bar is in `over`, in
+    /// order, behind the control.
     #[test]
-    fn a_bar_wider_than_the_screen_is_clamped_to_it() {
+    fn two_hundred_applications_fit_the_screen_with_none_of_them_lost() {
         let look = noon_look(&an_appearance(), Direction::LeftToRight);
-        let drawn = picture(
-            &Dock::shipped(),
-            look,
-            (1366, 768),
-            &on_the_dock(200),
-            &mut fonts(),
-        )
-        .unwrap();
+        let held = on_the_dock(200);
+        let drawn = picture(&Dock::shipped(), look, (1366, 768), &held, &mut fonts()).unwrap();
         let margin = i32::try_from(MARGIN).unwrap();
+        let widest = 1366 - 2 * margin;
 
-        assert!(drawn.band.size.w <= 1366 - 2 * margin);
+        assert!(drawn.band.size.w <= widest);
         assert!(drawn.band.loc.x >= 0);
         assert!(drawn.band.loc.x + drawn.band.size.w <= 1366);
+
+        // Not clamped: the bar is exactly as wide as what it holds.
+        let slots = drawn.inked.len();
+        assert_eq!(
+            drawn.band.size.w,
+            i32::try_from(Room::a_bar_holding(slots).as_pixels()).unwrap(),
+            "the bar was clamped, so it is not as wide as the {slots} slots it drew"
+        );
+
+        // Every letter inside the band, which the clamp never guaranteed.
+        for letter in &drawn.inked {
+            assert!(
+                letter.area.loc.x + letter.area.size.w <= drawn.band.loc.x + drawn.band.size.w,
+                "a slot is drawn past the end of the bar at {:?}",
+                letter.area
+            );
+        }
+
+        // **Nothing lost.** The slots are the applications on the bar plus the
+        // one control, and the rest are behind it.
+        assert!(!drawn.over.is_empty(), "nothing went into the overflow");
+        assert_eq!(
+            slots - 1 + drawn.over.len(),
+            held.len(),
+            "{} on the bar, {} over, and {} were held",
+            slots - 1,
+            drawn.over.len(),
+            held.len()
+        );
+    }
+
+    /// **The overflow works on all four edges**, and each edge's answer is its
+    /// own.
+    ///
+    /// The owner's ruling of 2026-10-10 asks for the control to *use the same
+    /// slot spacing as neighbouring applications on all four edges*, and the
+    /// edges genuinely differ: a bar along the bottom of a 1366 × 768 display
+    /// runs 1366 and one down the side runs 768, so a side dock overflows
+    /// sooner and holds fewer. A test on one edge would say nothing about that.
+    ///
+    /// **Three claims per edge and one across them.** Per edge: the bar stays
+    /// within the edge it runs along, something went into the overflow, and
+    /// nothing was lost. Across them: the two orientations hold **different**
+    /// numbers, so this cannot pass by the length being taken off the same axis
+    /// four times — which is exactly the fault the accent had.
+    #[test]
+    fn the_overflow_holds_what_will_not_fit_on_every_edge() {
+        use alo_dock::Edge;
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let held = on_the_dock(200);
+        let size = (1366, 768);
+        let margin = i32::try_from(MARGIN).unwrap();
+        let mut on_the_bar: Vec<(Edge, usize)> = Vec::new();
+
+        for edge in Edge::EVERY {
+            let mut dock = Dock::shipped();
+            dock.set_edge(edge);
+            let drawn = picture(&dock, look, size, &held, &mut fonts()).unwrap();
+
+            // Within the edge it runs along, less the room either side.
+            let (ran, edge_length) = if edge.runs_across() {
+                (drawn.band.size.w, size.0)
+            } else {
+                (drawn.band.size.h, size.1)
+            };
+            assert!(
+                ran <= edge_length - 2 * margin,
+                "{edge:?}: the bar runs {ran} along an edge {edge_length} long"
+            );
+            assert!(
+                drawn.band.loc.x >= 0
+                    && drawn.band.loc.y >= 0
+                    && drawn.band.loc.x + drawn.band.size.w <= size.0
+                    && drawn.band.loc.y + drawn.band.size.h <= size.1,
+                "{edge:?}: the bar leaves the screen at {:?}",
+                drawn.band
+            );
+
+            let slots = drawn.inked.len();
+            assert!(
+                !drawn.over.is_empty(),
+                "{edge:?}: two hundred applications and nothing in the overflow"
+            );
+            assert_eq!(
+                slots - 1 + drawn.over.len(),
+                held.len(),
+                "{edge:?}: {} on the bar and {} over, of {}",
+                slots - 1,
+                drawn.over.len(),
+                held.len()
+            );
+            on_the_bar.push((edge, slots));
+        }
+
+        // **The two orientations hold different numbers.** 1366 along the
+        // bottom and 768 down a side is not the same bar, and a length taken
+        // off the wrong axis would make all four agree.
+        let across: Vec<usize> = on_the_bar
+            .iter()
+            .filter(|(edge, _)| edge.runs_across())
+            .map(|(_, slots)| *slots)
+            .collect();
+        let down: Vec<usize> = on_the_bar
+            .iter()
+            .filter(|(edge, _)| !edge.runs_across())
+            .map(|(_, slots)| *slots)
+            .collect();
+        assert_eq!(across.len(), 2, "the premise");
+        assert_eq!(down.len(), 2, "the premise");
+        assert!(
+            across.iter().all(|holds| Some(holds) == across.first()),
+            "the bottom and top edges of one display hold different numbers: {on_the_bar:?}"
+        );
+        assert!(
+            down.iter().all(|holds| Some(holds) == down.first()),
+            "the left and right edges of one display hold different numbers: {on_the_bar:?}"
+        );
+        assert!(
+            across.first() > down.first(),
+            "a bar along the 1366 edge does not hold more than one down the 768 edge, so the \
+             length is being taken off the same axis for both: {on_the_bar:?}"
+        );
+    }
+
+    /// **A bar with room for everything has no control and nothing over.**
+    ///
+    /// The companion to the test above, and the premise that keeps it honest: if
+    /// `fit` put something aside at four applications on a 1920 screen, that test
+    /// would pass for the wrong reason.
+    #[test]
+    fn a_dock_that_fits_puts_nothing_aside() {
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let held = on_the_dock(4);
+        let drawn = picture(&Dock::shipped(), look, (1920, 1080), &held, &mut fonts()).unwrap();
+        assert!(
+            drawn.over.is_empty(),
+            "a Dock of four overflowed on a 1920 screen"
+        );
+        assert_eq!(
+            drawn.inked.len(),
+            held.len(),
+            "a control was drawn for an empty overflow"
+        );
     }
 
     /// **Per display.** The same dock on a laptop and on a large screen beside

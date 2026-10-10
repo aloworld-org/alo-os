@@ -135,12 +135,63 @@ pub const GLYPH: u32 = 32;
 // standard. The Mac lane found this on the day a second surface was about to
 // produce a second copy of the same 24 under a different name.
 
+/// The side of a utility symbol drawn inside [`ICON`] — search, overflow.
+///
+/// **Not [`GLYPH`], and the owner said so when they gave both.** Their table of
+/// 2026-10-09 lists *application icon 32 × 32* and, on its own row, *utility
+/// glyphs — search, overflow — 20 to 24, in the same 48 target*. A magnifying
+/// glass is not an application: it is a mark that means an action, and it reads
+/// at a smaller size than artwork meant to be recognised across a room.
+///
+/// **Twenty-four, the top of the range they gave**, because this is a target a
+/// hand aims at as much as a mark an eye finds, and the larger end of a range
+/// given for legibility is the end to take when nothing argues for the other.
+/// The range is recorded here rather than the choice alone so that a later
+/// change knows what it is moving inside.
+pub const A_UTILITY_GLYPH: u32 = 24;
+
 /// The room between an icon and its name, and between one dock item and the
 /// next.
 pub const GAP: u32 = 8;
 
 /// The room between what the dock holds and each of the dock's two faces.
 pub const MARGIN: u32 = 8;
+
+/// How wide the list the overflow control opens is.
+///
+/// **Measured, and the same on all four edges** — which is what keeps it a
+/// number rather than a proportion. `docs/design/figma-snapshot/70-28.xml` names
+/// it `More apps / opens inward` beside a left dock, a right dock and a top
+/// dock, and `Open applications overflow` beside the bottom one, and all four
+/// are **248 × 313**.
+///
+/// The 313 is not here, and that is the owner's ruling of 2026-10-10: it was six
+/// rows at a 39 pitch, and 39 is below the 44 every control in alo OS is built
+/// to. *Let the panel grow beyond 313px when space permits, then scroll its list
+/// within the available screen space.* So the height follows the contents and
+/// the room, and only the width is a measurement.
+pub const AN_OVERFLOW_PANEL_IS_WIDE: u32 = 248;
+
+/// The room above and below the overflow list's heading.
+///
+/// Measured: the heading sits at y 12 in a panel whose divider is at y 44, so
+/// there are twelve above it and about ten below. Twelve is taken for both,
+/// because two paddings that differ by two pixels are a drawing's slack rather
+/// than a decision, and a reader asked to keep them apart would have nothing to
+/// go on.
+pub const AROUND_THE_OVERFLOWS_HEADING: u32 = 12;
+
+/// The room either side of a name in the overflow list.
+///
+/// Measured: the rows sit at x 18 and the divider at x 17, in a panel 248 wide.
+/// Eighteen for both sides, symmetrised for the same reason as
+/// [`AROUND_THE_OVERFLOWS_HEADING`] — the file's own two numbers differ by one.
+pub const BESIDE_A_NAME_IN_THE_OVERFLOW: u32 = 18;
+
+/// How thick the rule under the overflow list's heading is.
+///
+/// Measured: `Divider`, 214 × **1**.
+pub const A_DIVIDER: u32 = 1;
 
 /// How big the shell's text is at 100%, which is the size it was drawn at.
 pub const TEXT_AT_ORDINARY: u32 = 15;
@@ -263,6 +314,16 @@ const _: () = assert!(
 const _: () = assert!(
     MARGIN + ICON + MARGIN == 64,
     "the Dock is no longer 64 logical pixels thick"
+);
+
+/// A utility symbol is inside the owner's range and inside the target.
+///
+/// Twenty to twenty-four, *in the same 48 target* — so it is smaller than the
+/// artwork an application gets and smaller still than the slot both sit in.
+const _: () = assert!(
+    A_UTILITY_GLYPH >= 20 && A_UTILITY_GLYPH <= 24 && A_UTILITY_GLYPH < GLYPH,
+    "a utility symbol is outside the 20-to-24 the owner gave, or is no longer smaller than an \
+     application's artwork"
 );
 
 /// The target is at or above the standard's enhanced floor.

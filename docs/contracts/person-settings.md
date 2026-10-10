@@ -939,14 +939,65 @@ spelling:
 
 `alo_dock::ThePins` is that distinction as a type — `NeverSet` against
 `Chosen(..)`, where `Chosen(vec![])` is a choice — and
-`ThePins::or_the_defaults` answers both the pins and whether they have just been
-initialised, so a caller knows it has something new to persist.
+`ThePins::what_to_pin` answers with `alo_dock::pinning::WhatToPin`, which carries
+*what to draw* and *whether to write it down* as two facts rather than one list.
 
 **Three things the owner's ruling forbids, which fall out of the above rather
 than needing their own keys:** an update must not re-run the defaults, a failed
 read must not re-run them, and an application omitted at first run must not pin
 itself when installed later. All three are *the defaults apply once*, which is
 `NeverSet` being a one-way door.
+
+### Where the four applications come from, and the one empty list that must not be stored
+
+**The owner's ruling of 2026-10-10**, which settles both the seam and the case
+that goes wrong at it:
+
+> The host's application-discovery integration supplies the role mapping. The
+> Dock consumes installed application identities; it does not scan desktop
+> entries or guess from display names. Keep Linux-specific discovery outside the
+> platform-independent `alo-applications` model.
+>
+> The desktop integration lane owns connecting this discovery to the Dock. Use
+> the person's configured application for a role where one exists; otherwise use
+> an explicit default supplied by the alo image. The image lane owns declaring
+> those defaults, and the persistence lane owns saving the resulting initial
+> pins.
+>
+> Unresolved roles remain absent. Never substitute an arbitrary application or
+> create a placeholder. However, an unfinished scan or discovery failure is not
+> proof that an application is absent: do not permanently initialise an empty pin
+> list from either. Initialise once discovery has successfully completed, then
+> preserve the person's saved choices.
+
+So there are **four owners** and this contract is where three of them meet:
+
+| who | what |
+|---|---|
+| the **image** lane | declares the explicit default application for each role |
+| the **desktop integration** lane | reads what is installed on this Linux machine and connects it to the Dock as `alo_dock::pinning::Discovery` |
+| the **Dock**'s lane | `ARole`, the order, the omission rule, and `ThePins::what_to_pin` |
+| the **persistence** lane | stores the result, under the shape in the table above |
+
+**`Discovery` has three states and the third is the ruling.** `Completed(..)`,
+`StillLooking`, `Failed`. A caller handed `StillLooking` or `Failed` gets
+`WhatToPin::NotYet`, which draws nothing **and cannot be written down** —
+`should_be_written_down` is false for it, so there is no way to reach the
+persistence layer with an empty list that came from a scan rather than from a
+person.
+
+**The two empty Docks are not the same fact**, and this is the thing a reader of
+this section has to keep hold of:
+
+| what happened | what is drawn | what is stored |
+|---|---|---|
+| discovery completed and found none of the four | nothing | **an empty list** — a real answer about a real machine |
+| discovery has not finished, or failed | nothing | **nothing**: ask again next time |
+| the person emptied their Dock | nothing | an empty list — already stored, nothing new to write |
+
+Reading the second row as the first is the fault the ruling names: a person whose
+disk was slow the morning they first signed in would find their Dock empty, and
+every later boot would read that stored emptiness back as a choice they made.
 
 ### `format`
 

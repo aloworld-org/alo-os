@@ -192,6 +192,107 @@ aim once and click.*
 and whether it hides when a window needs the room**. Until then it is fixed,
 which is a number nobody has been offered rather than a choice withdrawn.
 
+### The overflow, and the three measurements it supersedes
+
+**The owner's ruling of 2026-10-10**, asked for because the design file gives
+three different sizes for one control and a row pitch below the floor every
+other control in alo OS is held to:
+
+> 1. Overflow occupies one application slot: 48 × 48 logical pixels. Centre the
+>    overflow glyph inside it and use the same slot spacing as neighbouring
+>    applications on all four edges. This supersedes the conflicting 72 × 44
+>    annotation and 44 × 44 component measurement. Keep its accessible name and
+>    tooltip: "Show more open apps."
+> 2. Overflow rows have a minimum 44px hit-target height. Remove the 39px pitch;
+>    do not create an exception. Allow rows to grow for larger text. Let the
+>    panel grow beyond 313px when space permits, then scroll its list within the
+>    available screen space. Keyboard focus must scroll the focused row into
+>    view.
+
+#### What was measured, and why none of it could be built as drawn
+
+Taken off `docs/design/figma-snapshot/70-28.xml` on 2026-10-10, so that the next
+reader does not repeat the search:
+
+| node | measured | what it is |
+|---|---|---|
+| `Show more open apps` | 72 × 44 | an annotation, in `Dock 01 · Resting` only — the bottom edge |
+| `Dock edges / Button / More` | **44 × 44** | the component, in the same family as every application button |
+| `Browser · focus hit area` | 52 × 48 | an annotation of an application's region, in the same frame as the first |
+| `More apps / opens inward` | 248 × 313 | the panel, identical on all four edges |
+| its rows | 6 names, pitch **39** | text 210 × 22.1, from y 54 at 39 apart |
+| `Choose Browser in overflow` | 248 × **46** | a row's target, annotated — 7 more than the pitch, so the drawn targets overlap |
+
+Three facts make the first row unbuildable as drawn. It is **44 tall where an
+application's annotation in the same frame is 48**, so taking it literally makes
+the overflow control shorter than the icons beside it. It is **72 wide in a bar
+whose slot pitch is 56**, so it cannot sit in the row without its own
+arithmetic. And it exists **only for the bottom edge**, while the component set
+— where the More button is 44 × 44, exactly like Docs, Browser and Files — is
+what the side and top docks are built from.
+
+The row pitch fails on its own terms: **39 is below
+`alo_appearance::targets::ENHANCED_TARGET`**, the 44 that WCAG 2.5.5 names and
+that every control in this product is built to, and the design file's own
+implementation contract says *targets remain 44 × 44* three lines away.
+
+#### What is built
+
+- The control is **one slot**: `alo_dock::places::WhatIsHere::TheOverflow`, laid
+  out by the same loop and the same `MARGIN`, `ICON` and `GAP` as an
+  application, on all four edges. There is nothing special to assert about it,
+  which is the point.
+- It is **last, and only when there is something behind it.** `alo_dock::fit`
+  keeps one slot back when it has to put anything aside, so a bar that overflows
+  shows one application fewer than one that just fits; a bar with room for
+  everything has no control at all rather than a hidden one.
+- Its mark is **U+2026**, at `measures::A_UTILITY_GLYPH` — 24, the top of the
+  owner's *20 to 24* — centred in the 48 slot. A mark rather than a word,
+  because a word would be a different width in every language inside a slot that
+  is one size everywhere.
+- Its **name** is `alo_dock::words::SHOW_MORE_OPEN_APPS`, translated, and is both
+  what a screen reader speaks and what the tooltip shows. One string, because
+  they answer the same question.
+
+**The 313 is not a height any more.** It was six rows at a pitch that is gone;
+the panel is as tall as its contents, up to the room on the screen, and scrolls
+beyond that. Its **width**, 248, is measured and is the same on every edge, so it
+stays a number.
+
+#### The list itself
+
+`alo_dock::overflow` is the layout, and every number in it is either the owner's
+rule or a measurement with its provenance:
+
+| | |
+|---|---|
+| a row's height | `max(44, a line of text + 8 either side)` — the floor is `alo_appearance::targets::ENHANCED_TARGET`, not a 44 written again |
+| the panel's width | **248**, measured, the same on all four edges |
+| above the first row | 12, the heading's line of text, 12, and a 1-pixel rule |
+| the panel's height | the heading and as many rows as the room allows — no ceiling of its own |
+| when the room runs out | the list scrolls, **by whole rows** |
+
+**A row is the larger of the floor and what the text needs, never a choice
+between them.** A row pinned at 44 loses its name at 200%, the size EN 301 549
+requires a layout to survive; a row that only followed the text is 37 at 100% and
+below the floor. The maximum of the two is both clauses at once.
+
+**It scrolls by whole rows because *keyboard focus must scroll the focused row
+into view* has to be exact.** A list scrolled by pixels can leave a focused row
+half off the top, which is the same fault as a target below 44: the person who
+most needs the keyboard is the one who cannot see where they are. And the scroll
+is **the least it can be**, so arrowing one past the bottom moves the list by one
+rather than jumping the focused row to the top and losing a person their place.
+
+**What is not built: nothing presses the Dock.** Measured 2026-10-10 across the
+2531 `.rs` files outside `alo-dock`: `alo_dock::clicking` has **no caller**,
+`alo_dock::menu` has none, and `alo_dock::Places` is named twice, both in
+`dock_raster` and both for drawing — so `Places::at`, the hit test this crate
+exists for, is never called. The Dock is drawn and is not pressable at all: not
+the overflow control, not an application's icon, not the menu. That is a gap
+under every Dock interaction rather than under the overflow alone, and it is the
+next thing.
+
 ### An application with no artwork shows its first letter
 
 **The owner's ruling of 2026-10-10**, asked for because this file said what an

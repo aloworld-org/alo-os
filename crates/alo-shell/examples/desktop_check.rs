@@ -203,6 +203,32 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     // Their names are ordinary ones a person would recognise, and their first
     // letters differ — which is what makes the picture show three icons rather
     // than one repeated.
+    // **More applications than any edge of this display can hold**, so the
+    // overflow control is on the bar and something is behind it. Thirty is past
+    // what a 1366-wide bottom bar holds (23 slots) and well past what a 768-tall
+    // side bar does (13), so one list serves all four edges.
+    //
+    // Their names start with different letters as far as the alphabet goes, for
+    // the reason `a_few_applications` gives: a picture of thirty identical
+    // letters would not show that the slots hold their own applications.
+    let a_crowded_dock = {
+        let patch = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1)
+            .map_err(|error| format!("{error:?}"))?;
+        let mut windows = alo_dock::Windows::none();
+        for number in 0..30_u64 {
+            let letter = char::from(b'a' + u8::try_from(number % 26).unwrap_or(0));
+            let named = format!("{letter}{number}");
+            windows.opened(alo_dock::Window::of(
+                alo_dock::WindowId::numbered(number),
+                Some(alo_dock::AppId::named(&named).map_err(|error| format!("{error:?}"))?),
+                &named,
+                patch,
+                alo_dock::HowItSits::OnTheCanvas,
+            ));
+        }
+        alo_dock::Holding::nothing().showing(&windows)
+    };
+
     let a_few_applications = {
         let patch = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1)
             .map_err(|error| format!("{error:?}"))?;
@@ -222,6 +248,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut submitted = 0;
     let mut draw = |what: &str,
                     dock: &Dock,
+                    on_the_dock: &[alo_dock::OnTheDock],
                     egress: &EgressStatus,
                     running: &RunningWindow,
                     filling: &FillingWindow,
@@ -274,7 +301,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 // emptiness. Which is the whole point of this
                                 // fixture: *it needs eyes, and eyes need
                                 // pictures.*
-                                on_the_dock: &a_few_applications,
+                                on_the_dock,
                                 dock,
                                 look: DesktopLook::of(
                                     &appearance,
@@ -370,15 +397,36 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         draw(
             &format!("the dock alone on the {} edge", an_edges_name(edge)),
             &dock,
+            &a_few_applications,
             &quiet,
             &closed_running,
             &closed_filling,
             &mut nested,
         )?;
     }
+    // **The overflow, on each of the four edges.** The owner's ruling of
+    // 2026-10-10 asks for it to be verified on all four, and the edges really
+    // differ: a 1366-wide bottom bar holds more than a 768-tall side one, so
+    // the number of slots drawn before the control is not the same picture
+    // four times.
+    for edge in alo_dock::Edge::EVERY {
+        let mut dock = Dock::shipped();
+        dock.set_edge(edge);
+        draw(
+            &format!("the dock overflowing on the {} edge", an_edges_name(edge)),
+            &dock,
+            &a_crowded_dock,
+            &quiet,
+            &closed_running,
+            &closed_filling,
+            &mut nested,
+        )?;
+    }
+
     draw(
         "the dock with a question leaving",
         &shipped,
+        &a_few_applications,
         &lit,
         &closed_running,
         &closed_filling,
@@ -393,6 +441,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     draw(
         "what is running",
         &shipped,
+        &a_few_applications,
         &quiet,
         &running,
         &closed_filling,
@@ -404,6 +453,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     draw(
         "what is running, read again",
         &shipped,
+        &a_few_applications,
         &lit,
         &running,
         &closed_filling,
@@ -415,6 +465,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     draw(
         "what is filling a folder",
         &shipped,
+        &a_few_applications,
         &quiet,
         &closed_running,
         &filling,
@@ -425,6 +476,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     draw(
         "a folder opened",
         &shipped,
+        &a_few_applications,
         &quiet,
         &closed_running,
         &filling,
@@ -433,6 +485,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     draw(
         "both windows",
         &shipped,
+        &a_few_applications,
         &lit,
         &running,
         &filling,
@@ -444,6 +497,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     draw(
         "a folder that is gone",
         &shipped,
+        &a_few_applications,
         &quiet,
         &running,
         &filling,
