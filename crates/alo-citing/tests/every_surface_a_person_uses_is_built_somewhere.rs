@@ -35,6 +35,34 @@
 //! directions: a surface that is still unreachable keeps its entry, and one
 //! that somebody wires in **fails this test** until its entry is removed. Debt
 //! cannot be paid silently and cannot grow silently.
+//!
+//! # What this check does not read, measured 2026-10-10
+//!
+//! **[`what_a_machine_runs`] cuts a file at its *first* `#[cfg(test)]`, and
+//! that is not always the test module.** Its own note says the habit is a test
+//! module last, which holds widely and not everywhere: a
+//! `#[cfg(test)] mod something_testing;` sitting among a crate's module
+//! declarations cuts the rest of the file away. `alo-shell/src/lib.rs` has one
+//! at line 93 and is over 500 lines long, so **every `pub use` in this
+//! workspace's largest crate is invisible to the cut**.
+//!
+//! Counted across the workspace: **62 files hide more than forty lines each**
+//! from it, the widest being `alo-agentd/src/questions.rs` at 694 and
+//! `alo-files/src/opening.rs` at 441.
+//!
+//! **The direction is safe and the size is not.** Hidden text can only make a
+//! surface look *less* reached, so this check errs toward *nothing builds one*
+//! — loud and wrong — rather than toward a false green. But a check that reads
+//! two thirds of some files is making a narrower claim than its name, and *a
+//! scope that lives in the method and not in the sentence is a scope the reader
+//! cannot check*. So it is written here.
+//!
+//! **Not fixed in the change that found it.** The fix is to cut at a test
+//! *module* rather than at any `#[cfg(test)]`, which changes how much
+//! production text every one of these answers is computed from — a property of
+//! the whole instrument rather than of these seven entries, and its own change.
+//! [`the_crates_that_offer_it`] departs from the cut for one narrow reason and
+//! says so at the line where it does.
 
 #![expect(
     clippy::expect_used,
@@ -62,7 +90,7 @@ enum Reach {
 /// types. A sweep reports error types reached through `?`, which never name
 /// themselves — noise that would make this check unreadable and therefore
 /// unread. These are things `docs/features.md` promises a person can *do*.
-const EVERY_SURFACE_A_PERSON_USES: [(&str, Reach); 7] = [
+const EVERY_SURFACE_A_PERSON_USES: [(&str, &str, Reach); 7] = [
     // **Paid, 2026-10-10**, and the entry it replaces called itself *the one
     // entry here that must not be 'fixed'*. It was right on 2026-10-05 and its
     // reason had gone stale twice over by the time the draw reached it:
@@ -107,7 +135,7 @@ const EVERY_SURFACE_A_PERSON_USES: [(&str, Reach); 7] = [
     // genuinely ambiguous and the entry would have to carry a crate to stop
     // being so. Left as it is, because adding a path to one entry while six
     // others are bare would make the list look more precise than it is.
-    ("Edge", Reach::AMachineCan),
+    ("alo_dock", "Edge", Reach::AMachineCan),
     // **Paid, 2026-10-05.** This branch was written while it read
     // `OnlyATestDoes`, with the reason *Super+I is shipped, declared, routed and
     // dispatched, and settings_command.rs takes the window as a parameter —
@@ -118,8 +146,9 @@ const EVERY_SURFACE_A_PERSON_USES: [(&str, Reach); 7] = [
     // The list is what said so. The entry failed the moment production built
     // one, which is this check working in the direction that matters — debt
     // cannot be paid silently any more than it can grow silently.
-    ("SettingsWindow", Reach::AMachineCan),
+    ("alo_shell", "SettingsWindow", Reach::AMachineCan),
     (
+        "alo_capturing",
         "Screenshot",
         Reach::OnlyATestDoes {
             why: "capture-and-the-room-plan.md is 7 of 7 and ROADMAP.md ticks \
@@ -128,6 +157,7 @@ const EVERY_SURFACE_A_PERSON_USES: [(&str, Reach); 7] = [
         },
     ),
     (
+        "alo_capturing",
         "Recording",
         Reach::OnlyATestDoes {
             why: "the other half of the same tick: Recording::of appears in \
@@ -141,12 +171,12 @@ const EVERY_SURFACE_A_PERSON_USES: [(&str, Reach); 7] = [
     // one. The entry failed the moment it did — this check refuses in both
     // directions, and it is the only proof that production reaches this rather
     // than that it could.
-    ("NightLight", Reach::AMachineCan),
+    ("alo_displays", "NightLight", Reach::AMachineCan),
     // The two below are the check's own control. If this instrument ever stops
     // seeing a production caller that is plainly there, it has broken, and
     // these fail rather than the list above quietly growing.
-    ("Moved", Reach::AMachineCan),
-    ("ThisMachine", Reach::AMachineCan),
+    ("alo_displays", "Moved", Reach::AMachineCan),
+    ("alo_opening", "ThisMachine", Reach::AMachineCan),
 ];
 
 /// This repository's crates.
@@ -207,31 +237,192 @@ fn every_source(at: &Path, into: &mut Vec<(PathBuf, String)>) {
     }
 }
 
-/// Where a type is defined, and whether anything outside it and outside every
-/// test writes `Type::`.
-fn reached(name: &str, sources: &[(PathBuf, String)]) -> (Option<PathBuf>, Vec<String>) {
-    let defined = format!("pub struct {name}");
-    let other = format!("pub enum {name}");
-    let home = sources
-        .iter()
-        .find(|(path, text)| {
-            !is_a_test(path)
-                && what_a_machine_runs(text).lines().any(|l| {
-                    l.trim_start().starts_with(&defined) || l.trim_start().starts_with(&other)
-                })
-        })
-        .map(|(path, _)| path.clone());
+/// The directory a crate's sources live in, from the name Rust calls it by.
+///
+/// `alo_dock` is `crates/alo-dock`. Every crate here is `alo-something`, so the
+/// one substitution is the whole rule.
+fn where_a_crate_lives(crate_name: &str) -> String {
+    crate_name.replace('_', "-")
+}
 
+/// Whether this path is inside that crate.
+fn inside(crate_name: &str, path: &Path) -> bool {
+    let said = path.to_string_lossy().replace('\\', "/");
+    said.contains(&format!("/crates/{}/", where_a_crate_lives(crate_name)))
+}
+
+/// Whether this line declares the named type, **as a whole name**.
+///
+/// **The third version of this file's oldest fault, on the side nobody had
+/// looked at.** `names_it_whole` gave *uses* a boundary after `Edge::` matched
+/// `FrameEdge::Top`; the declaration check went on asking
+/// `starts_with("pub struct Edge")`, which `pub struct EdgePicture` satisfies.
+/// So a type could be declared by another type whose name merely began with
+/// its own, and `Edge` was reported with three homes the day a sibling crate
+/// grew an `EdgeControl` and an `EdgePicture`.
+///
+/// Note the boundary needed here is the **opposite** one: `names_it_whole`
+/// checks the character *before* a match, and this checks the character
+/// *after*. A generic's `<` ends a name, so `pub struct Edge<T>` is `Edge`.
+///
+/// Found by the third PC on 2026-10-10 while trying crate-qualified keys, and
+/// handed over rather than fixed from there because this file was in flight.
+fn declares(line: &str, name: &str) -> bool {
+    let line = line.trim_start();
+    ["pub struct ", "pub enum "].iter().any(|keyword| {
+        line.strip_prefix(&format!("{keyword}{name}"))
+            .is_some_and(|rest| {
+                rest.chars()
+                    .next()
+                    .is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+            })
+    })
+}
+
+/// Which crate a path is in, as Rust names it.
+fn which_crate(path: &Path) -> Option<String> {
+    let said = path.to_string_lossy().replace('\\', "/");
+    let after = said.split("/crates/").nth(1)?;
+    Some(after.split('/').next()?.replace('-', "_"))
+}
+
+/// Every crate name a caller may legitimately write to reach this type.
+///
+/// The one that defines it, **and any that re-exports it** — which is a road
+/// this check did not know and which cost it a false answer the first time the
+/// crate-scoped rule ran: `alo_displays::NightLight` was reported as reachable
+/// by nothing, because its only production caller is
+/// `alo-desktop/src/main.rs`'s `alo_shell::NightLight::as_shipped()`, and
+/// `alo-shell` re-exports the type. Nothing was wrong with that caller; the
+/// rule had three roads and there are four.
+///
+/// **One hop, deliberately.** A re-export of a re-export would be missed, and
+/// that is the safe direction — a missed road reports *nothing builds one*,
+/// loud and wrong, rather than *one does* when none can. Measured 2026-10-10:
+/// exactly one of the seven entries is reached this way, and `alo_dock::Edge`
+/// is re-exported by nothing, so following re-exports does not undo the
+/// separation this scoping exists for.
+fn the_crates_that_offer_it(
+    crate_name: &str,
+    name: &str,
+    sources: &[(PathBuf, String)],
+) -> Vec<String> {
+    let mut offering = vec![crate_name.to_owned()];
+    let opening = format!("pub use {crate_name}::");
+    for (path, text) in sources {
+        if is_a_test(path) {
+            continue;
+        }
+        // **The whole file, not `what_a_machine_runs`, and this is the one
+        // place that departs from it.** That function cuts at the *first*
+        // `#[cfg(test)]`, and `alo-shell/src/lib.rs` has one at line 93 — a
+        // `#[cfg(test)] mod approval_testing;` among the module list — so every
+        // `pub use` in that crate, 463 lines of them, is invisible to the cut.
+        // A re-export read through it would be a road that exists and cannot be
+        // seen, which is exactly the false answer this function was added to
+        // stop.
+        //
+        // **What it risks, named:** a `#[cfg(test)] pub use` would widen the
+        // set of crate names a caller may write, and that is the unsafe
+        // direction. It is a re-export declared for tests only, which this
+        // repository has none of; a `use` is a declaration rather than a
+        // construction, so nothing is counted as *building* one because of it.
+        //
+        // **The cut's blind spot is wider than this and is not fixed here**: 62
+        // files hide more than forty lines each from it. See this change's
+        // commit message — it is a property of the whole instrument, not of
+        // these seven entries, and it belongs to its own change.
+        let mut rest = text.as_str();
+        while let Some(at) = rest.find(&opening) {
+            let after = rest.get(at..).unwrap_or("");
+            let span = after.split_once(';').map_or(after, |(head, _)| head);
+            if span.lines().any(|line| names_it_whole(line, name))
+                && let Some(which) = which_crate(path)
+                && !offering.contains(&which)
+            {
+                offering.push(which);
+            }
+            rest = rest.get(at + opening.len()..).unwrap_or("");
+        }
+    }
+    offering
+}
+
+/// Whether this file could mean **that crate's** type when it writes the name.
+///
+/// **Two crates may call two different things by one name, and until now this
+/// check could not tell.** `alo_dock::Edge` and the external window edge's own
+/// `Edge` were one subject to it: the same test failed on two pull requests
+/// within an hour, for two unrelated types, and one line cleared both. Worse,
+/// the two entries this file calls *the check's own control* —
+/// [`EVERY_SURFACE_A_PERSON_USES`]'s `Moved` and `ThisMachine` — each have a
+/// second home in another crate, so a control could have stayed green on the
+/// wrong crate's evidence. A control that can pass for somebody else's reason
+/// is not a control.
+///
+/// So a file counts only if it is **in** that crate, imports the name **from**
+/// it, or writes the crate-qualified path. The import scan joins continuation
+/// lines, because rustfmt splits a long `use alo_dock::{..}` across several and
+/// a line-at-a-time reader would stop seeing the ones it split.
+///
+/// **This errs toward unreachable**, which is this file's safe direction: a
+/// file that reaches the type by some road not listed here is missed, and the
+/// check then says *nothing builds one* — loud and wrong — rather than *one
+/// does* when none can.
+fn could_mean(offering: &[String], name: &str, path: &Path, production: &str) -> bool {
+    offering.iter().any(|crate_name| {
+        if inside(crate_name, path) {
+            return true;
+        }
+        let qualified = format!("{crate_name}::{name}");
+        if production
+            .lines()
+            .any(|line| names_it_whole(line, &qualified))
+        {
+            return true;
+        }
+        // `use alo_dock::…;` — read to the `;`, however many lines that takes.
+        let opening = format!("use {crate_name}::");
+        let mut rest = production;
+        while let Some(at) = rest.find(&opening) {
+            let after = rest.get(at..).unwrap_or("");
+            let span = after.split_once(';').map_or(after, |(head, _)| head);
+            if span.lines().any(|line| names_it_whole(line, name)) {
+                return true;
+            }
+            rest = rest.get(at + opening.len()..).unwrap_or("");
+        }
+        false
+    })
+}
+
+/// Where that crate defines the type, and which production files build one.
+///
+/// Both answers are scoped to the crate the list names, which is what makes the
+/// two controls controls again. Every home inside the crate is collected rather
+/// than the first, so a name with two homes in one crate is a failure somebody
+/// reads instead of a coin toss between them.
+fn reached(
+    crate_name: &str,
+    name: &str,
+    sources: &[(PathBuf, String)],
+) -> (Vec<PathBuf>, Vec<String>) {
+    let offering = the_crates_that_offer_it(crate_name, name, sources);
+    let mut homes = Vec::new();
     let mut callers = Vec::new();
     for (path, text) in sources {
         if is_a_test(path) {
             continue;
         }
-        if builds_one(name, &what_a_machine_runs(text)) {
+        let production = what_a_machine_runs(text);
+        if inside(crate_name, path) && production.lines().any(|line| declares(line, name)) {
+            homes.push(path.clone());
+        }
+        if could_mean(&offering, name, path, &production) && builds_one(name, &production) {
             callers.push(path.to_string_lossy().replace('\\', "/"));
         }
     }
-    (home, callers)
+    (homes, callers)
 }
 
 /// Whether some text builds one of these, either way Rust offers it.
@@ -346,23 +537,37 @@ fn every_surface_a_person_uses_is_built_somewhere_a_machine_can_reach() {
     );
 
     let mut wrong = Vec::new();
-    for (name, expected) in EVERY_SURFACE_A_PERSON_USES {
-        let (home, callers) = reached(name, &sources);
+    for (crate_name, name, expected) in EVERY_SURFACE_A_PERSON_USES {
+        let (homes, callers) = reached(crate_name, name, &sources);
         assert!(
-            home.is_some(),
-            "{name} is named here as a surface a person uses and no crate \
-             defines it. Either it was renamed — in which case rename it here — \
-             or this list is describing a repository that no longer exists"
+            !homes.is_empty(),
+            "{crate_name}::{name} is named here as a surface a person uses and \
+             that crate does not define it. Either it was renamed — in which \
+             case rename it here — or it moved crate, or this list is describing \
+             a repository that no longer exists"
+        );
+        // **Two homes in one crate is a failure, not a choice between them.**
+        // The previous version took the first match and could not notice; it
+        // was `.find()`. Nothing in this repository has two today, so this is a
+        // guard rather than a report — and a guard that cannot fire is a
+        // comment, so if it ever does, the names below are what to read.
+        assert!(
+            homes.len() == 1,
+            "{crate_name} declares {name} in {} places: {homes:?}. The list's key \
+             names a crate and a type, and a type with two homes in one crate \
+             makes the key ambiguous again inside it",
+            homes.len()
         );
         match (expected, callers.is_empty()) {
             (Reach::AMachineCan, true) => wrong.push(format!(
-                "{name} is listed as reachable and nothing outside a test builds one. \
+                "{crate_name}::{name} is listed as reachable and nothing outside a test \
+                 builds one. \
                  Either a caller was removed — which is a person losing a feature \
                  while every test still passes — or this check has broken and is \
                  no longer seeing callers that are there."
             )),
             (Reach::OnlyATestDoes { .. }, false) => wrong.push(format!(
-                "{name} is listed as unreachable and {} now builds one: {}. \
+                "{crate_name}::{name} is listed as unreachable and {} now builds one: {}. \
                  That is somebody paying the debt, so REMOVE ITS ENTRY from \
                  EVERY_SURFACE_A_PERSON_USES and set it to Reach::AMachineCan.",
                 callers.len(),
@@ -386,16 +591,17 @@ fn every_surface_a_person_uses_is_built_somewhere_a_machine_can_reach() {
 /// how the thing it records becomes permanent.
 #[test]
 fn every_surface_a_machine_cannot_reach_says_why() {
-    for (name, reach) in EVERY_SURFACE_A_PERSON_USES {
+    for (crate_name, name, reach) in EVERY_SURFACE_A_PERSON_USES {
         if let Reach::OnlyATestDoes { why } = reach {
             assert!(
                 why.len() > 60,
-                "{name} is listed as unreachable with too little reason to act on: {why:?}"
+                "{crate_name}::{name} is listed as unreachable with too little reason to act \
+                 on: {why:?}"
             );
             assert!(
                 why.contains("2026-"),
-                "{name}'s reason carries no date, so nobody can tell whether it \
-                 was measured today or last month: {why:?}"
+                "{crate_name}::{name}'s reason carries no date, so nobody can tell \
+                 whether it was measured today or last month: {why:?}"
             );
         }
     }
