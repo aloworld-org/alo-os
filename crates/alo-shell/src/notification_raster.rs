@@ -183,6 +183,14 @@ pub(crate) fn picture(
                 at_y = Stacked::Upwards(y - tall - measure.px(8));
                 y - tall
             }
+            // **The mirror, for a dock along the top.** The first row's *top* is
+            // the anchor rather than its bottom, and the next goes below it — so
+            // nothing already on the screen moves when another arrives, which is
+            // the same promise the arm above keeps in the other direction.
+            Stacked::Downwards(y) => {
+                at_y = Stacked::Downwards(y + tall + measure.px(8));
+                y
+            }
         };
         used += tall + measure.px(8);
 

@@ -130,8 +130,14 @@
 //! discouraged* is real, and it is why the restoration is being done in the order
 //! the owner set on 2026-10-04 — structure first, and **nonfunctional edge
 //! choices are not exposed as finished settings**. So [`Edge`] exists with all
-//! four, `Layout::along` lays out two of them and **refuses the other two by
-//! name**, and nothing here offers a person a choice that does not yet work. What
+//! four, and [`Layout::along`] lays out every one of them — it refused two by
+//! name until 2026-10-10, when the owner supplied the measurement that was the
+//! whole obstacle ([`measures::A_NAME_BESIDE_AN_ICON`], a name beside a side
+//! dock's icon rather than under it). **The structure is finished and the
+//! setting is still withheld**, which is the order the owner set: [`Edge`] sits
+//! on [`Shipped`] and deliberately not on [`changes::Changes`], and
+//! [`words`] declares no name for an edge, so nothing here offers a person a
+//! choice at all — working or otherwise. What
 //! the old paragraph got right is that a choice in the code and not on the screen
 //! is a cost; what it got wrong is that the answer to that is to delete the
 //! choice rather than to finish it.

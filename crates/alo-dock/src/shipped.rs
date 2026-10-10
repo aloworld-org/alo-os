@@ -15,6 +15,7 @@
 //! release rather than in the settings file, so a release can move this and
 //! reach every machine that never touched it.
 
+use crate::edge::Edge;
 use crate::hiding::Hiding;
 
 /// What the dock is before anybody changes it.
@@ -22,6 +23,19 @@ use crate::hiding::Hiding;
 pub struct Shipped {
     /// Whether it gives way when a window needs the room.
     hiding: Hiding,
+    /// Which edge of the screen it is on.
+    ///
+    /// **Here and not in `crate::Changes`, deliberately.** The owner restored the
+    /// four-edge choice on 2026-09-30 and set the order of work on 2026-10-04:
+    /// *nonfunctional edge choices are not exposed as finished settings.* A field
+    /// on `Changes` **is** that exposure — it is the type a person's settings file
+    /// is read into and written from.
+    ///
+    /// So the edge is a fact about the dock this release ships, which the draw can
+    /// ask for and nobody can yet change. It is [`Edge::Bottom`] in every shipped
+    /// configuration, and it stops being so on the day a `Changes` variant and its
+    /// four words arrive together.
+    edge: Edge,
 }
 
 impl Shipped {
@@ -30,14 +44,28 @@ impl Shipped {
     pub const fn of_the_image() -> Self {
         Self {
             hiding: Hiding::Never,
+            edge: Edge::Bottom,
         }
     }
 
     /// A different default — a release being tried out against a person's
     /// changes, or a test of what a new default would do to them.
     #[must_use]
+    /// The edge is not a parameter here, and that is this release's shape rather
+    /// than an omission: nothing ships a dock on another edge, because nothing can
+    /// yet draw a person's choice of one. It gains a parameter on the day
+    /// `crate::Changes` gains an edge, and the compiler will ask at every call.
     pub const fn of(hiding: Hiding) -> Self {
-        Self { hiding }
+        Self {
+            hiding,
+            edge: Edge::Bottom,
+        }
+    }
+
+    /// Which edge of the screen this dock is on.
+    #[must_use]
+    pub const fn edge(self) -> Edge {
+        self.edge
     }
 
     /// Whether the dock gives way when a window needs the room.

@@ -17,11 +17,15 @@
 //!
 //! # What this type is not, yet
 //!
-//! **An `Edge` a `Layout` can be laid out along is not the same set as an `Edge`
-//! this enum has.** All four are here because the person's choice is all four;
-//! two of them can be laid out today. `crate::layout::NotLaidOut` is the
-//! difference, and it is a type rather than a comment so that a caller handling
-//! only the edges that work cannot forget the ones that do not.
+//! **All four edges lay out, and none of them is a setting.** Until 2026-10-10
+//! this section said the opposite of its first half: *two of them can be laid
+//! out today*, with `crate::layout::NotLaidOut` holding the difference as a type
+//! so a caller could not forget it. The obstacle was one missing measurement —
+//! how wide a name needs to be down a side — and the owner's ruling of
+//! 2026-10-10 supplied it as [`crate::measures::A_NAME_BESIDE_AN_ICON`]: a side
+//! dock names an icon in a tooltip **beside** it. `NotLaidOut` was deleted in
+//! the change that followed, so this paragraph pointed at a type nobody could
+//! build for as long as it stood.
 //!
 //! **This is also not a setting yet.** The owner's authorisation of 2026-10-04 is
 //! explicit that the structural work comes first and that nonfunctional edge
@@ -78,8 +82,13 @@ impl Edge {
     /// False down a side, and **not because there is no room** — a side dock has
     /// height to spare. It is that a name under an icon is constrained by the
     /// dock's *thickness*, which down a side is its width, so the question
-    /// becomes how wide a name needs to be. That is a measurement this crate does
-    /// not have; see `crate::layout::NotLaidOut`.
+    /// becomes how wide a name needs to be — and the answer is that it is not
+    /// asked down a side at all. [`crate::measures::A_NAME_BESIDE_AN_ICON`] is
+    /// the owner's ruling of 2026-10-10: a side dock puts the name in a tooltip
+    /// beside the icon, opening toward the canvas, and **a name never widens the
+    /// dock**. So this stays false, for a better reason than the one it had: not
+    /// *we cannot measure it* but *nothing under an icon is what a side dock
+    /// draws*.
     #[must_use]
     pub const fn a_name_fits_under_an_icon(self) -> bool {
         self.runs_across()

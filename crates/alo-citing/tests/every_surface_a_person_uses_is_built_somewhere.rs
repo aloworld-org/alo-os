@@ -63,21 +63,51 @@ enum Reach {
 /// themselves — noise that would make this check unreadable and therefore
 /// unread. These are things `docs/features.md` promises a person can *do*.
 const EVERY_SURFACE_A_PERSON_USES: [(&str, Reach); 7] = [
-    (
-        "Edge",
-        Reach::OnlyATestDoes {
-            why: "DELIBERATE, and the one entry here that must not be 'fixed'. \
-                  crates/alo-dock/src/edge.rs carries the owner's authorisation \
-                  of 2026-10-04: the structural work comes first and \
-                  nonfunctional edge choices are not to be exposed as finished \
-                  settings. All four edges exist because the person's choice is \
-                  all four; two of them can be laid out today, and \
-                  crate::layout::NotLaidOut is that difference as a type rather \
-                  than a comment. Wiring this would offer a person two edges \
-                  that do not lay out. Found by the Mac reading the header \
-                  before wiring it, 2026-10-05",
-        },
-    ),
+    // **Paid, 2026-10-10**, and the entry it replaces called itself *the one
+    // entry here that must not be 'fixed'*. It was right on 2026-10-05 and its
+    // reason had gone stale twice over by the time the draw reached it:
+    //
+    // - *two of them can be laid out today* — all four lay out now. The owner
+    //   ruled on 2026-10-10 that a side dock names an icon in a tooltip beside
+    //   it rather than under it, so `A_NAME_BESIDE_AN_ICON` is the measurement
+    //   whose absence was the whole obstacle, and the difference the old entry
+    //   described stopped existing.
+    // - *crate::layout::NotLaidOut is that difference as a type* — that type is
+    //   gone, deleted in the same change that gave the four edges a layout. An
+    //   entry here citing a type nobody can build is a reason that reads as
+    //   current and cannot be checked.
+    //
+    // **And what it feared is not what wiring this did.** *Wiring this would
+    // offer a person two edges that do not lay out* guarded a promise, and the
+    // edge still reaches no promise: it lives on `Shipped` and deliberately not
+    // on `Changes`, so there is no setting and nobody is offered anything. The
+    // production path that builds one is the draw — `dock_raster` placing the
+    // bar on the edge it is given, and `egress_status_place` reserving a side
+    // dock's lane and stacking away from it. That is *making an existing
+    // promise true*, which is the half of the scope rule that needs no asking.
+    //
+    // The owner's authorisation of 2026-10-04 is unchanged and still binding;
+    // it is the setting it withholds, not the type.
+    //
+    // **And this entry now answers for two different types, which is a
+    // weakness of the instrument rather than of the entry.** `builds_one`
+    // matches a bare name with identifier boundaries, across every crate, so
+    // `alo_dock::Edge` and `alo_shell::window_edge::Edge` — added by the
+    // external window edge, a wholly unrelated type — are indistinguishable
+    // to it. Measured 2026-10-10: this same test failed on **both** pull
+    // requests 603 and 607 in the same hour, for two different `Edge`s, and
+    // one change to this line cleared both.
+    //
+    // The consequence to know about: if the Dock's edge were ever unwired,
+    // this would go on reading `AMachineCan` because the window edge builds
+    // one. This file's own note above records two earlier versions of exactly
+    // this fault — `Edge::` matching `FrameEdge::Top`, then a lost leading
+    // `::` — and both were about *one* type matched wrongly. This is two
+    // types matched as one, which no boundary rule can fix: the name is
+    // genuinely ambiguous and the entry would have to carry a crate to stop
+    // being so. Left as it is, because adding a path to one entry while six
+    // others are bare would make the list look more precise than it is.
+    ("Edge", Reach::AMachineCan),
     // **Paid, 2026-10-05.** This branch was written while it read
     // `OnlyATestDoes`, with the reason *Super+I is shipped, declared, routed and
     // dispatched, and settings_command.rs takes the window as a parameter —

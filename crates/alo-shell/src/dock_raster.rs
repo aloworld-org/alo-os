@@ -81,6 +81,40 @@ pub(crate) struct DockPicture {
     pub(crate) solids: Vec<Solid>,
 }
 
+/// Where the bar sits on this edge: `along` units down its edge, `thickness`
+/// across, lifted `floating` clear of the screen's own edge.
+///
+/// **One function for four edges rather than four placements.** The bar is the
+/// same rectangle each time — as long as what it holds, as thick as its lane — and
+/// only two things vary: which axis the length runs along, and which end of the
+/// other axis it is lifted from. Written as four `if`s in the caller, the two that
+/// are never drawn in this release would be the two nobody notices going wrong.
+///
+/// **`floating` is the gap, not the position.** The bar is inset from its edge
+/// rather than flush to it, which is the design file's rule for every edge and the
+/// reason the egress corner has to subtract it too.
+fn the_band_on(
+    edge: alo_dock::Edge,
+    size: (i32, i32),
+    along: i32,
+    thickness: i32,
+    floating: i32,
+) -> Rectangle<i32, Physical> {
+    let (width, height) = size;
+    let origin = match edge {
+        alo_dock::Edge::Bottom => ((width - along) / 2, height - thickness - floating),
+        alo_dock::Edge::Top => ((width - along) / 2, floating),
+        alo_dock::Edge::Left => (floating, (height - along) / 2),
+        alo_dock::Edge::Right => (width - thickness - floating, (height - along) / 2),
+    };
+    let extent = if edge.runs_across() {
+        (along, thickness)
+    } else {
+        (thickness, along)
+    };
+    Rectangle::new(origin.into(), extent.into())
+}
+
 /// Lay `dock` out on a display of `size` and rasterise it.
 ///
 /// # Errors
@@ -118,14 +152,21 @@ pub(crate) fn picture(
     let floating = i32::try_from(FLOATING_ABOVE_THE_EDGE).unwrap_or(i32::MAX);
     let wanted = i32::try_from(Room::a_bar_holding(holding).as_pixels())
         .map_err(|_| RenderError::DesktopScene)?;
-    let widest = (width - 2 * margin).max(1);
+    // **The edge the bar runs along, not always the width.** A dock down a side is
+    // as long as the screen is tall, and clamping it to the width would make a
+    // portrait screen's side dock short for a reason that has nothing to do with
+    // where it is — which is the mistake `alo_dock::layout`'s own header warns
+    // about one level up, for thickness.
+    let along = if layout.edge().runs_across() {
+        width
+    } else {
+        height
+    };
+    let widest = (along - 2 * margin).max(1);
     let bar_width = wanted.clamp(1, widest);
 
-    // Centred across, and lifted clear of the bottom edge.
-    let band = Rectangle::new(
-        ((width - bar_width) / 2, height - thickness - floating).into(),
-        (bar_width, thickness).into(),
-    );
+    // Centred along its edge, and lifted clear of it.
+    let band = the_band_on(layout.edge(), size, bar_width, thickness, floating);
     let accent = Rectangle::new(band.loc, (bar_width, rule).into());
 
     let solids = vec![
@@ -161,6 +202,91 @@ mod tests {
     /// Whether `inner` lies wholly inside `outer`.
     fn inside(inner: Rectangle<i32, Physical>, outer: Rectangle<i32, Physical>) -> bool {
         outer.intersection(inner) == Some(inner)
+    }
+
+    /// **The bar is placed on all four edges, and only the bottom is ever drawn.**
+    ///
+    /// `Dock::shipped` is on the bottom and nothing can change it, by the owner's
+    /// order of work — so a test that went through `picture` could only ever
+    /// exercise one of the four placements, and the other three would be reached
+    /// for the first time by whoever turns the setting on.
+    ///
+    /// So this asks the placement directly. **It is the half of *all four edges
+    /// work* that a drawing test cannot reach**, and the three untried branches are
+    /// exactly where a wrong sign or a swapped axis would sit unnoticed.
+    #[test]
+    fn the_bar_sits_on_whichever_edge_it_was_laid_along() {
+        use alo_dock::Edge;
+        let size = (1920, 1080);
+        let (along, thick, floating) = (600, 70, 8);
+
+        for edge in Edge::EVERY {
+            let band = the_band_on(edge, size, along, thick, floating);
+
+            // The extent follows the orientation: long way along its edge.
+            let (expect_w, expect_h) = if edge.runs_across() {
+                (along, thick)
+            } else {
+                (thick, along)
+            };
+            assert_eq!(
+                (band.size.w, band.size.h),
+                (expect_w, expect_h),
+                "{edge:?} is laid out across the wrong axis"
+            );
+
+            // Inset from its own edge by the floating gap, never flush to it.
+            let gap = match edge {
+                Edge::Bottom => 1080 - (band.loc.y + band.size.h),
+                Edge::Top => band.loc.y,
+                Edge::Left => band.loc.x,
+                Edge::Right => 1920 - (band.loc.x + band.size.w),
+            };
+            assert_eq!(gap, floating, "{edge:?} is not floating clear of its edge");
+
+            // Centred along the edge it runs down, to within a pixel.
+            let (before, after) = if edge.runs_across() {
+                (band.loc.x, 1920 - (band.loc.x + band.size.w))
+            } else {
+                (band.loc.y, 1080 - (band.loc.y + band.size.h))
+            };
+            assert!(
+                (before - after).abs() <= 1,
+                "{edge:?} is not centred: {before} before, {after} after"
+            );
+
+            // And wholly on the screen, which the arithmetic above could satisfy
+            // while putting a negative origin somewhere.
+            assert!(
+                band.loc.x >= 0 && band.loc.y >= 0,
+                "{edge:?} starts off the screen at {:?}",
+                band.loc
+            );
+            assert!(
+                band.loc.x + band.size.w <= 1920 && band.loc.y + band.size.h <= 1080,
+                "{edge:?} runs off the screen"
+            );
+        }
+    }
+
+    /// **No two edges put the bar in the same place.**
+    ///
+    /// Four placements that each pass the checks above could still be two
+    /// placements written twice — a copied arm with its edge not changed is the
+    /// likeliest way this goes wrong, and every assertion above would hold.
+    #[test]
+    fn the_four_edges_are_four_different_places() {
+        use alo_dock::Edge;
+        let mut seen: Vec<Rectangle<i32, Physical>> = Vec::new();
+        for edge in Edge::EVERY {
+            let band = the_band_on(edge, (1920, 1080), 600, 70, 8);
+            assert!(
+                !seen.contains(&band),
+                "{edge:?} lands exactly where an earlier edge does: {band:?}"
+            );
+            seen.push(band);
+        }
+        assert_eq!(seen.len(), 4);
     }
 
     /// **The dock is a bar: centred, clear of the bottom edge, and as wide as

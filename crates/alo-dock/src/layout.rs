@@ -56,6 +56,15 @@ pub struct Layout {
     length: Room,
     /// What became of the names.
     labels: Labels,
+    /// Which edge it was laid out along.
+    ///
+    /// **Carried rather than re-derived, because the draw must not guess.** A
+    /// thickness and a length do not say which edge they came from — 70 × 960 is a
+    /// left dock and a right dock equally — so a raster handed only those would
+    /// have to be told the edge a second time, by a caller that might disagree with
+    /// the one that laid it out. That is the *two answers to one question* shape
+    /// this repository has found under several names.
+    edge: Edge,
 }
 
 impl Layout {
@@ -71,7 +80,7 @@ impl Layout {
     /// put a `match` at thirty call sites to describe a case that does not exist.
     #[must_use]
     pub fn of(screen: Screen, text: TextScale) -> Self {
-        Self::running_across(screen, text)
+        Self::running_across(Edge::Bottom, screen, text)
     }
 
     /// A dock along this edge of this screen, with the text at this size.
@@ -91,9 +100,9 @@ impl Layout {
             // of the height they sit at is an origin, and this crate does not
             // place the dock on a screen — `alo_shell` does. So there is one body
             // for both.
-            return Self::running_across(screen, text);
+            return Self::running_across(edge, screen, text);
         }
-        Self::running_down(screen)
+        Self::running_down(edge, screen)
     }
 
     /// A dock down a side: thickness out of the width, running the height.
@@ -109,7 +118,7 @@ impl Layout {
     /// thickness carries a line of text and the names *do* give way when the
     /// ceiling is reached. Two placements, two arithmetics, and the second one is
     /// shorter because the owner took the names out of the bar.
-    fn running_down(screen: Screen) -> Self {
+    fn running_down(edge: Edge, screen: Screen) -> Self {
         Self {
             // **The measured lane, not `a_dock_of_icons`.** That sum is 64 and the
             // design file's frames say 70 — see `Room::a_side_docks_lane`, which
@@ -117,11 +126,12 @@ impl Layout {
             thickness: Room::a_side_docks_lane(),
             length: screen.height(),
             labels: Labels::Beside,
+            edge,
         }
     }
 
     /// A dock across the screen: thickness out of the height, running the width.
-    fn running_across(screen: Screen, text: TextScale) -> Self {
+    fn running_across(edge: Edge, screen: Screen, text: TextScale) -> Self {
         let ceiling = Room::the_most_a_dock_may_take(screen.height());
         let with_names = Room::a_dock_with_names_under(text);
         let (thickness, labels) = if with_names.fits_in(ceiling) {
@@ -133,6 +143,7 @@ impl Layout {
             thickness,
             length: screen.width(),
             labels,
+            edge,
         }
     }
 
@@ -152,6 +163,12 @@ impl Layout {
     #[must_use]
     pub const fn length(self) -> Room {
         self.length
+    }
+
+    /// Which edge of the screen this dock was laid out along.
+    #[must_use]
+    pub const fn edge(self) -> Edge {
+        self.edge
     }
 
     /// What became of the names.

@@ -114,7 +114,19 @@ impl Dock {
     /// size.
     #[must_use]
     pub fn layout_on(&self, screen: Screen, text: TextScale) -> Layout {
-        Layout::of(screen, text)
+        Layout::along(self.edge(), screen, text)
+    }
+
+    /// Which edge of the screen this dock is on.
+    ///
+    /// The shipped edge, because nothing can change it yet — `crate::Changes`
+    /// carries no edge, by the owner's order of work of 2026-10-04. When a person
+    /// can choose one, this is the method that starts consulting the change and
+    /// **every caller already asks the right question**, which is the reason it
+    /// exists now rather than then.
+    #[must_use]
+    pub const fn edge(&self) -> crate::Edge {
+        self.shipped.edge()
     }
 }
 
