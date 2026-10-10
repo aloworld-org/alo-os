@@ -1,0 +1,17 @@
+[package]
+name = "alo-installed"
+version = "0.0.1"
+description = "What applications this machine has, read from its desktop entries."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The shape of the answer. This crate is the reading `alo-applications` says it
+# holds no opinion about — see this crate's own header for why that boundary is
+# honoured by a separate crate rather than bent inside that one.
+alo-applications = { path = "../alo-applications" }
+
+[lints]
+workspace = true

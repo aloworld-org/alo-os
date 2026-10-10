@@ -3,7 +3,7 @@
 use crate::{InputError, Server};
 use smithay::{
     reexports::wayland_server::protocol::wl_surface::WlSurface,
-    utils::{Logical, Point},
+    utils::{Logical, Point, Rectangle, Size},
     wayland::compositor::with_states,
 };
 use std::sync::Mutex;
@@ -48,6 +48,37 @@ pub fn window_buffer_origin(surface: &WlSurface) -> Point<f64, Logical> {
 /// Placement belongs to one mapping lifetime, not the reusable protocol object.
 pub(crate) fn reset(surface: &WlSurface) {
     set(surface, None);
+}
+
+/// Where a window visibly is: its committed window geometry, placed.
+///
+/// **Not the surface, and the difference is a window's shadow.** A client that
+/// draws its own decorations — most GTK applications — makes its surface
+/// larger than its window and puts the shadow in the margin. Its buffer
+/// therefore starts above and to the left of anything a person would call the
+/// window's corner, and [`window_buffer_origin`] returns that buffer's origin
+/// because that is what the renderer needs.
+///
+/// Anything placing something **on** a window wants this instead. Measured on
+/// 2026-10-09: GNOME Calculator's controls, placed from the buffer, drew about
+/// fifty pixels above the window's visible top edge and looked detached from
+/// it, which is how the difference was found.
+///
+/// It is public because two callers outside this crate need it and neither
+/// could have it: a fixture placing the window controls, and the host, which
+/// the owner's placement contract requires to supply *active-window geometry*
+/// to `crate::where_a_window_opens`.
+#[must_use]
+pub fn where_a_window_is(surface: &WlSurface) -> Rectangle<i32, Logical> {
+    let geometry = crate::scene::geometry(surface);
+    let origin = window_buffer_origin(surface) + geometry.loc;
+    Rectangle::new(
+        Point::from((origin.x.round() as i32, origin.y.round() as i32)),
+        Size::from((
+            geometry.size.w.round() as i32,
+            geometry.size.h.round() as i32,
+        )),
+    )
 }
 
 /// Whether this window has been placed at all.

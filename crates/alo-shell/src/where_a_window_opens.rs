@@ -80,12 +80,58 @@ const A_REACHABLE_CORNER: (i32, i32) = (44, 24);
 
 /// Where a new window of `wanted` size opens.
 ///
-/// `view` is what the person can currently see, in the same logical space as
-/// `open` and `active`. `open` is every window already on this Place; `active`
-/// is the one being worked in, where there is one.
-///
 /// Always returns a point: rule 5 means there is no case where alo declines to
 /// open a window, only cases where it opens in front of something.
+///
+/// # Every rectangle is on the plane, and that is not free
+///
+/// `view`, `open`, `active` and `fixed` must all be in **plane space** — the
+/// endless canvas a person pans and zooms — because this compares them against
+/// each other.
+///
+/// **`fixed` is the one that is not already there.** A window's position is a
+/// point on the plane; the Dock is fastened to the display's edge and stays
+/// put however far the canvas zooms. So the recorded control bounds are screen
+/// space, and handing them in unconverted is right **only at zoom 1 with the
+/// camera at the origin** — which is every test's default here and exactly why
+/// nothing in this file catches it. Zoomed to half, a person would get windows
+/// avoiding a Dock twice its apparent size, in the wrong part of the plane.
+///
+/// The conversion belongs to the caller, because only the caller has the
+/// camera. It is `crate::scene`'s mapping inverted:
+///
+/// ```text
+/// screen = (plane - camera.at) * zoom
+/// plane  = screen / zoom + camera.at
+/// ```
+///
+/// Found by the host lane on 2026-10-09 while writing the caller, after both
+/// this file's header and a direct question about the parameter had missed it.
+///
+/// # What each argument is, because two of them are easy to fill wrongly
+///
+/// **`view` is what the person can currently see on this display, and it is
+/// not pre-subtracted.** Nothing here removes `fixed` from it: the two are
+/// independent tests, so handing in an area with the Dock already taken out
+/// does two unwanted things. It forbids something the contract allows —
+/// `the-canvas-as-a-workspace.md` §2 has fixed controls *floating directly
+/// over the workspace*, so a window **may** sit partly under the Dock and only
+/// its handle is protected — and it makes `fixed` dead, because nothing would
+/// ever reach the check and the next reader would delete it as unused.
+///
+/// **`open` is every window already on this Place.** What rule 3's *free
+/// space* is measured against, by whole-rectangle overlap.
+///
+/// **`fixed` is the fixed-controls layer and nothing else** — the Dock, the
+/// put-aside panel, the top controls, the status area; §2's second row, the
+/// things that *remain attached to the display viewport*. **Not the name bands
+/// of other windows.** Those are windows and belong in `open`, and putting
+/// them here would break rule 5 outright: the overlap case exists precisely to
+/// land a window in front of another, and a band in `fixed` would refuse the
+/// placement the rule was written to produce.
+///
+/// **`active` is the window being worked in**, where there is one. [`None`] is
+/// rule 6's case and a true answer, not a missing argument.
 #[must_use]
 pub fn where_a_window_opens(
     view: Rectangle<i32, Logical>,
