@@ -387,7 +387,7 @@ pub use window_edge_reading::{the_controls_of, what_a_reader_is_told, what_it_do
 pub use window_edge_title::{AN_ELLIPSIS, FittedTitle, fitted};
 pub use window_edge_tooltip::{
     A_LINE_IS_TALL, AROUND_THE_WORDS, AT_MOST_LINES, AT_MOST_WIDE, BELOW_THE_EDGE, Because,
-    Tooltip, tooltip_of,
+    ShowingTheTitle, Tooltip, tooltip_of,
 };
 pub use window_edge_who_draws::who_draws_a_frame;
 pub use window_full_screen::WindowFullScreenError;
