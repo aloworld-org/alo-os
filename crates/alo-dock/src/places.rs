@@ -35,15 +35,41 @@
 //! the places move with it. That is what lets the same arithmetic serve two
 //! displays of different sizes without being asked twice.
 
-use crate::holding::OnTheDock;
+use crate::holding::{Fitted, OnTheDock};
 use crate::measures::{GAP, ICON, MARGIN};
 use crate::window::AppId;
 
-/// Where one application's icon sits, relative to the bar's own corner.
+/// What sits in one of the bar's slots.
+///
+/// **The overflow control is a slot like any other**, by the owner's ruling of
+/// 2026-10-10: *overflow occupies one application slot: 48 × 48 logical pixels.
+/// Centre the overflow glyph inside it and use the same slot spacing as
+/// neighbouring applications on all four edges. This supersedes the conflicting
+/// 72 × 44 annotation and 44 × 44 component measurement.*
+///
+/// So it is held here rather than as a rectangle the draw works out beside the
+/// places. One arithmetic lays out the bar and one hit test reads it, which is
+/// the whole reason `crate::places` exists: *a drawing that put an icon
+/// somewhere and a click that looked for it somewhere else would be two answers
+/// to one question.* A control laid out separately would be exactly that, for
+/// the one slot a person presses when they have the most open.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum WhatIsHere {
+    /// An application.
+    Application(AppId),
+    /// The control that opens the overflow list.
+    ///
+    /// Last on the bar and only when something is in the overflow —
+    /// [`crate::fit`] decides, and a bar with room for everything has no such
+    /// slot at all rather than a hidden one.
+    TheOverflow,
+}
+
+/// Where one slot sits, relative to the bar's own corner.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct APlace {
-    /// Which application.
-    app: AppId,
+    /// What is here.
+    what: WhatIsHere,
     /// How far from the bar's left edge the icon starts.
     from_the_start: u32,
     /// How far across it is, which is always [`ICON`].
@@ -51,10 +77,30 @@ pub struct APlace {
 }
 
 impl APlace {
-    /// Which application.
+    /// What is here.
     #[must_use]
-    pub const fn app(&self) -> &AppId {
-        &self.app
+    pub const fn what(&self) -> &WhatIsHere {
+        &self.what
+    }
+
+    /// Which application, or [`None`] for the overflow control.
+    ///
+    /// **An `Option` rather than a default**, because the one caller that draws
+    /// a letter must not draw one here: a control that showed the first letter
+    /// of something would read as an application a person could open, and there
+    /// is no application called *more*.
+    #[must_use]
+    pub const fn app(&self) -> Option<&AppId> {
+        match &self.what {
+            WhatIsHere::Application(app) => Some(app),
+            WhatIsHere::TheOverflow => None,
+        }
+    }
+
+    /// Whether this is the control that opens the overflow.
+    #[must_use]
+    pub const fn is_the_overflow(&self) -> bool {
+        matches!(self.what, WhatIsHere::TheOverflow)
     }
 
     /// How far from the bar's left edge the icon starts.
@@ -94,24 +140,53 @@ pub struct Places {
 }
 
 impl Places {
-    /// Where each of these sits, in the order given.
+    /// Where everything on this bar sits, in the order it is drawn.
     ///
     /// The order is [`crate::Holding::showing`]'s — pinned first, then what is
     /// open, in the order it opened — so where an icon sits follows the same
-    /// rule as whether it is there at all.
+    /// rule as whether it is there at all. **The overflow control is last**, in
+    /// the slot after the final application, and only when [`Fitted`] has
+    /// something in it.
+    ///
+    /// It takes a [`Fitted`] rather than a slice because the two questions —
+    /// *what is drawn* and *is there a control* — have one answer, and a
+    /// caller holding them apart could draw a control for an empty overflow or
+    /// an overflow with no way into it. `Fitted` is what [`crate::fit`] returns
+    /// and is the only thing that knows both.
     #[must_use]
-    pub fn of(showing: &[OnTheDock]) -> Self {
+    pub fn of(fitted: &Fitted) -> Self {
         let mut from_the_start = MARGIN;
-        let mut places = Vec::with_capacity(showing.len());
-        for one in showing {
+        let showing = fitted.on_the_dock();
+        let mut places = Vec::with_capacity(showing.len() + 1);
+        let mut put = |what: WhatIsHere, at: &mut u32| {
             places.push(APlace {
-                app: one.app().clone(),
-                from_the_start,
+                what,
+                from_the_start: *at,
                 across: ICON,
             });
-            from_the_start = from_the_start.saturating_add(ICON).saturating_add(GAP);
+            *at = at.saturating_add(ICON).saturating_add(GAP);
+        };
+        for one in showing {
+            put(
+                WhatIsHere::Application(one.app().clone()),
+                &mut from_the_start,
+            );
+        }
+        if fitted.anything_over() {
+            put(WhatIsHere::TheOverflow, &mut from_the_start);
         }
         Self { places }
+    }
+
+    /// Where these sit on a bar with nothing in the overflow.
+    ///
+    /// The shorthand for the case every test and every bar that fits is in, so
+    /// that asking for places does not oblige a caller to build a [`Fitted`] it
+    /// has no use for. It cannot produce an overflow slot, which is why it is
+    /// separate rather than a default argument.
+    #[must_use]
+    pub fn of_all_of(showing: &[OnTheDock]) -> Self {
+        Self::of(&crate::fit(showing.to_vec(), showing.len()))
     }
 
     /// Every place, in drawing order.
@@ -181,7 +256,7 @@ mod tests {
     /// is an icon and a gap further along.
     #[test]
     fn the_icons_are_laid_out_from_the_margin_with_a_gap_between() {
-        let places = Places::of(&showing(&["Docs", "Browser", "Blender"]));
+        let places = Places::of_all_of(&showing(&["Docs", "Browser", "Blender"]));
         assert_eq!(places.how_many(), 3);
 
         assert_eq!(place(&places, 0).from_the_start(), measures::MARGIN);
@@ -199,7 +274,7 @@ mod tests {
     /// and pressing is not easier for the application that happens to be first.
     #[test]
     fn every_icon_is_the_same_size_and_big_enough_to_press() {
-        let places = Places::of(&showing(&["Docs", "Browser", "Blender", "Ptyxis"]));
+        let places = Places::of_all_of(&showing(&["Docs", "Browser", "Blender", "Ptyxis"]));
         for one in places.each() {
             assert_eq!(one.across(), measures::ICON);
             assert!(
@@ -217,7 +292,7 @@ mod tests {
         for how_many in [1_usize, 2, 5, 9] {
             let names: Vec<String> = (0..how_many).map(|n| format!("App {n}")).collect();
             let borrowed: Vec<&str> = names.iter().map(String::as_str).collect();
-            let places = Places::of(&showing(&borrowed));
+            let places = Places::of_all_of(&showing(&borrowed));
 
             let last = place(&places, how_many - 1);
             let wanted = Room::a_bar_holding(how_many).as_pixels();
@@ -233,14 +308,14 @@ mod tests {
     /// icon finds that icon and no other.
     #[test]
     fn a_press_in_the_middle_of_an_icon_finds_that_application() {
-        let places = Places::of(&showing(&["Docs", "Browser", "Blender"]));
+        let places = Places::of_all_of(&showing(&["Docs", "Browser", "Blender"]));
         for one in places.each() {
             let middle = one.from_the_start() + one.across() / 2;
             assert_eq!(
                 places.at(middle).map(APlace::app),
                 Some(one.app()),
-                "the middle of {} found something else",
-                one.app().name()
+                "the middle of {:?} found something else",
+                one.what()
             );
         }
     }
@@ -250,7 +325,7 @@ mod tests {
     /// twice — so a press on the boundary is not a race.
     #[test]
     fn two_icons_never_both_claim_a_position() {
-        let places = Places::of(&showing(&["Docs", "Browser", "Blender"]));
+        let places = Places::of_all_of(&showing(&["Docs", "Browser", "Blender"]));
         let first = place(&places, 0);
         let second = place(&places, 1);
 
@@ -271,7 +346,7 @@ mod tests {
     /// one of them.
     #[test]
     fn pressing_the_gap_between_two_icons_finds_nothing() {
-        let places = Places::of(&showing(&["Docs", "Browser"]));
+        let places = Places::of_all_of(&showing(&["Docs", "Browser"]));
         let first = place(&places, 0);
         for along in first.past_its_end()..place(&places, 1).from_the_start() {
             assert!(places.at(along).is_none(), "the gap at {along} was claimed");
@@ -281,7 +356,7 @@ mod tests {
     /// **The room at either end belongs to nobody**, for the same reason.
     #[test]
     fn the_room_at_the_ends_belongs_to_nobody() {
-        let places = Places::of(&showing(&["Docs", "Browser"]));
+        let places = Places::of_all_of(&showing(&["Docs", "Browser"]));
         for along in 0..measures::MARGIN {
             assert!(places.at(along).is_none(), "the start at {along}");
         }
@@ -294,7 +369,7 @@ mod tests {
     /// A Dock holding nothing has no places, and nothing can be pressed on it.
     #[test]
     fn a_dock_holding_nothing_has_nowhere_to_press() {
-        let places = Places::of(&[]);
+        let places = Places::of_all_of(&[]);
         assert!(places.are_none());
         assert_eq!(places.how_many(), 0);
         for along in 0..64 {
@@ -302,13 +377,119 @@ mod tests {
         }
     }
 
+    /// **The overflow control is the last slot, laid out like any other.**
+    ///
+    /// The owner's ruling of 2026-10-10: *overflow occupies one application
+    /// slot: 48 × 48 logical pixels … use the same slot spacing as neighbouring
+    /// applications on all four edges.* So there is nothing to assert about a
+    /// special size or a special gap — what is asserted is that there is
+    /// **nothing special**: it is where the next application would have been,
+    /// and it is the same width.
+    #[test]
+    fn the_overflow_control_takes_the_slot_after_the_last_application() {
+        let everything = showing(&["Docs", "Browser", "Blender", "Mail"]);
+        let fitted = crate::fit(everything, 3);
+        assert!(fitted.anything_over(), "the premise: something overflowed");
+        assert_eq!(
+            fitted.on_the_dock().len(),
+            2,
+            "the premise: `fit` kept one slot back for the control"
+        );
+
+        let places = Places::of(&fitted);
+        assert_eq!(places.how_many(), 3, "two applications and one control");
+
+        let control = place(&places, 2);
+        assert!(control.is_the_overflow());
+        assert_eq!(control.app(), None, "the control is not an application");
+        assert_eq!(
+            control.across(),
+            measures::ICON,
+            "the control is not an application's width"
+        );
+        assert_eq!(
+            control.from_the_start(),
+            measures::MARGIN + 2 * (measures::ICON + measures::GAP),
+            "the control is not in the slot the third application would have had"
+        );
+
+        // And the two before it really are the applications, so this cannot
+        // pass by everything being a control.
+        assert_eq!(place(&places, 0).app().map(AppId::name), Some("Docs"));
+        assert_eq!(place(&places, 1).app().map(AppId::name), Some("Browser"));
+    }
+
+    /// **A bar with room for everything has no control at all**, rather than a
+    /// hidden one or a slot drawn with nothing in it.
+    ///
+    /// The thing this forbids is a Dock that keeps a place back for a control
+    /// nobody needs — which §8 of the Dock's specification already forbids under
+    /// another name: *it must not reserve a large empty bar.*
+    #[test]
+    fn a_bar_with_room_for_everything_has_no_overflow_slot() {
+        let everything = showing(&["Docs", "Browser", "Blender"]);
+        let fitted = crate::fit(everything.clone(), 3);
+        assert!(!fitted.anything_over(), "the premise");
+
+        let places = Places::of(&fitted);
+        assert_eq!(places.how_many(), everything.len());
+        assert!(
+            places.each().iter().all(|place| !place.is_the_overflow()),
+            "a bar that fits drew a control for an empty overflow"
+        );
+        assert_eq!(
+            places,
+            Places::of_all_of(&everything),
+            "`of_all_of` is not the same answer as `fit` with room for everything"
+        );
+    }
+
+    /// **Pressing the control finds the control**, and the application beside it
+    /// finds the application.
+    ///
+    /// The hit test is the reason this file exists, and the control is the slot
+    /// where getting it wrong costs most: a person reaches for it exactly when
+    /// they have the most open and the thing they want is behind it.
+    #[test]
+    fn a_press_on_the_control_is_not_a_press_on_the_last_application() {
+        let fitted = crate::fit(showing(&["Docs", "Browser", "Blender", "Mail"]), 3);
+        let places = Places::of(&fitted);
+
+        let last_application = place(&places, 1);
+        let control = place(&places, 2);
+
+        let on_the_control = control.from_the_start() + control.across() / 2;
+        assert_eq!(
+            places.at(on_the_control).map(APlace::what),
+            Some(&WhatIsHere::TheOverflow),
+            "the middle of the control did not find the control"
+        );
+
+        let on_the_application = last_application.from_the_start() + last_application.across() / 2;
+        assert_eq!(
+            places.at(on_the_application).and_then(APlace::app),
+            Some(&app("Browser")),
+            "the middle of the last application found something else"
+        );
+
+        // And the gap between them belongs to neither, like every other gap.
+        assert!(
+            places.at(last_application.past_its_end()).is_none(),
+            "the gap before the control reaches one of them"
+        );
+    }
+
     /// **The order is the Dock's order**, not an order this file invents:
     /// pinned first, in the order they were pinned.
     #[test]
     fn the_order_is_the_order_the_dock_shows() {
         let names = ["Docs", "Browser", "Blender"];
-        let places = Places::of(&showing(&names));
-        let laid_out: Vec<&str> = places.each().iter().map(|p| p.app().name()).collect();
+        let places = Places::of_all_of(&showing(&names));
+        let laid_out: Vec<&str> = places
+            .each()
+            .iter()
+            .filter_map(|p| p.app().map(AppId::name))
+            .collect();
         assert_eq!(laid_out, names);
     }
 }

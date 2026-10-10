@@ -143,6 +143,34 @@ impl Room {
         )
     }
 
+    /// How many slots fit in a bar this long: the inverse of
+    /// [`Self::a_bar_holding`].
+    ///
+    /// **The question `alo_dock::fit` has needed a caller for.** `fit` takes
+    /// *room for `at_most` icons* and nothing worked that number out, so nothing
+    /// called it and nothing ever went into an overflow. This is where the
+    /// number comes from: the edge the bar runs along, less the room the layout
+    /// keeps at its ends.
+    ///
+    /// A **slot**, not an icon, because the overflow control takes one — the
+    /// owner's ruling of 2026-10-10: *overflow occupies one application slot:
+    /// 48 × 48 logical pixels … use the same slot spacing as neighbouring
+    /// applications on all four edges.* So this counts places and `fit` decides
+    /// what goes in them.
+    ///
+    /// Exact rather than approximate, and asserted against `a_bar_holding` over
+    /// the whole range in this file's tests: `how_many_fit(a_bar_holding(n))` is
+    /// `n` for every `n`, and one pixel less is one slot less at every step.
+    #[must_use]
+    pub const fn how_many_fit(self) -> usize {
+        // `MARGIN + n*ICON + (n-1)*GAP <= along`, solved for the largest whole
+        // `n`. Written with the `+ GAP` on the left so the division is the
+        // whole of the rounding: `n*(ICON + GAP) <= along - 2*MARGIN + GAP`.
+        let ends = MARGIN.saturating_mul(2);
+        let usable = self.pixels.saturating_sub(ends).saturating_add(GAP);
+        (usable / ICON.saturating_add(GAP)) as usize
+    }
+
     /// The shortest a screen's side may be and still be laid out for.
     ///
     /// **Stated, not worked out.** It was the dock's thickness times a share of
@@ -319,6 +347,50 @@ mod tests {
             "the bar takes more than half the shortest side this crate accepts, which leaves a \
              person less of their screen than the dock"
         );
+    }
+
+    /// **`how_many_fit` is exactly the inverse of `a_bar_holding`**, over the
+    /// whole range rather than at a size somebody thought to try.
+    ///
+    /// Two claims, and the second is the one that would catch an off-by-one that
+    /// the first alone would let through: a bar exactly wide enough for `n`
+    /// holds `n`, and **one pixel narrower holds `n - 1`**. A rounding that went
+    /// the other way would satisfy the first at every `n` and overflow the bar
+    /// by a gap.
+    #[test]
+    fn how_many_fit_is_the_inverse_of_how_wide_a_bar_is() {
+        for how_many in 0..60_usize {
+            let exactly = Room::a_bar_holding(how_many);
+            assert_eq!(
+                exactly.how_many_fit(),
+                how_many,
+                "a bar {} wide was built to hold {how_many}",
+                exactly.as_pixels()
+            );
+            // One pixel short of holding `how_many` holds one fewer. At zero
+            // there is nothing to take away: `a_bar_holding(0)` is the two
+            // margins and a bar narrower than those still holds none.
+            let a_pixel_short = Room::pixels(exactly.as_pixels().saturating_sub(1));
+            assert_eq!(
+                a_pixel_short.how_many_fit(),
+                how_many.saturating_sub(1),
+                "a bar one pixel short of holding {how_many} does not hold one fewer"
+            );
+        }
+    }
+
+    /// **A bar too small for one slot holds none**, rather than one it cannot
+    /// draw or a count that wrapped.
+    #[test]
+    fn a_bar_with_no_room_holds_nothing_and_does_not_wrap() {
+        for pixels in 0..=Room::a_bar_holding(1).as_pixels() {
+            let fits = Room::pixels(pixels).how_many_fit();
+            let expected = usize::from(pixels >= Room::a_bar_holding(1).as_pixels());
+            assert_eq!(fits, expected, "a bar {pixels} wide said it holds {fits}");
+        }
+        // And a silly size from a driver gives a silly answer rather than zero
+        // or a panic, which is this file's rule everywhere else.
+        assert!(Room::pixels(u32::MAX).how_many_fit() > 1000);
     }
 
     /// Room adds without wrapping, because a screen reported wrongly by a driver

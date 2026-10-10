@@ -570,6 +570,8 @@ dock.kept.not-understood-at	your dock settings at {path} stop making sense at li
 dock.kept.not-written	your dock settings at {path} could not be written, so nothing about the dock has been changed
 dock.kept.unknown-key	your dock settings at {path} say {key}, which is not something alo OS can change about the dock, so nothing in the file has been used
 dock.labels.beside	each icon shows its name beside it when you point at it or reach it by keyboard
+dock.overflow.heading	More open apps
+dock.overflow.show	Show more open apps
 dock.screen.not-a-screen	a screen has a width and a height — {width} by {height} is not one
 dock.screen.too-small	{width} by {height} is smaller than alo OS lays out for — a screen needs at least {least} each way, or the dock would take the screen rather than sit on it
 egress.destination.nameless	say where this is going — an egress with nowhere named cannot be shown to anybody

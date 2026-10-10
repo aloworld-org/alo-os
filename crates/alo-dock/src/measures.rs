@@ -135,6 +135,21 @@ pub const GLYPH: u32 = 32;
 // standard. The Mac lane found this on the day a second surface was about to
 // produce a second copy of the same 24 under a different name.
 
+/// The side of a utility symbol drawn inside [`ICON`] — search, overflow.
+///
+/// **Not [`GLYPH`], and the owner said so when they gave both.** Their table of
+/// 2026-10-09 lists *application icon 32 × 32* and, on its own row, *utility
+/// glyphs — search, overflow — 20 to 24, in the same 48 target*. A magnifying
+/// glass is not an application: it is a mark that means an action, and it reads
+/// at a smaller size than artwork meant to be recognised across a room.
+///
+/// **Twenty-four, the top of the range they gave**, because this is a target a
+/// hand aims at as much as a mark an eye finds, and the larger end of a range
+/// given for legibility is the end to take when nothing argues for the other.
+/// The range is recorded here rather than the choice alone so that a later
+/// change knows what it is moving inside.
+pub const A_UTILITY_GLYPH: u32 = 24;
+
 /// The room between an icon and its name, and between one dock item and the
 /// next.
 pub const GAP: u32 = 8;
@@ -263,6 +278,16 @@ const _: () = assert!(
 const _: () = assert!(
     MARGIN + ICON + MARGIN == 64,
     "the Dock is no longer 64 logical pixels thick"
+);
+
+/// A utility symbol is inside the owner's range and inside the target.
+///
+/// Twenty to twenty-four, *in the same 48 target* — so it is smaller than the
+/// artwork an application gets and smaller still than the slot both sit in.
+const _: () = assert!(
+    A_UTILITY_GLYPH >= 20 && A_UTILITY_GLYPH <= 24 && A_UTILITY_GLYPH < GLYPH,
+    "a utility symbol is outside the 20-to-24 the owner gave, or is no longer smaller than an \
+     application's artwork"
 );
 
 /// The target is at or above the standard's enhanced floor.

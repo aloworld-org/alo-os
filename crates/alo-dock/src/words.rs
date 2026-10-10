@@ -323,6 +323,32 @@ pub const WHERE_THE_DOCK_GOES: Word = Word::saying("dock.edge", "Where the dock 
      the dock go?*",
 );
 
+/// The control that opens the overflow list: its name for a screen reader, and
+/// the tooltip a person sees on hover and on keyboard focus.
+///
+/// **One string for both**, by the owner's ruling of 2026-10-10: *keep its
+/// accessible name and tooltip: "Show more open apps".* They are the same
+/// sentence because they answer the same question, and two strings would drift.
+pub const SHOW_MORE_OPEN_APPS: Word = Word::saying("dock.overflow.show", "Show more open apps")
+    .noting(
+        "The name of the one control at the end of the dock, which opens a list of the \
+         applications there was no room for. **Open**, not installed: it is about windows a \
+         person has right now, not about everything on the machine. It is an instruction a \
+         person acts on — a screen reader reads it and a tooltip shows it — so keep it short \
+         enough to sit in a tooltip beside an icon.",
+    );
+
+/// The heading over the overflow list.
+///
+/// What the list is, rather than what pressing the control does. A person has
+/// already pressed it by the time they read this.
+pub const MORE_OPEN_APPS: Word = Word::saying("dock.overflow.heading", "More open apps").noting(
+    "The heading at the top of the list that opens when somebody presses the dock's last \
+     control. **A label and not an instruction** — the companion to `dock.overflow.show`, which \
+     is the instruction, and the two must stay distinguishable in translation: one names a thing \
+     and the other says what to do.",
+);
+
 /// Keys this crate used to declare and never will again.
 ///
 /// **The owner's ruling of 2026-10-10**, on removing the row of names from the
@@ -351,7 +377,7 @@ pub const RETIRED: [&str; 2] = ["dock.labels.under", "dock.labels.gave-way"];
 /// beside the other settings' words because this list's order is the order a
 /// translator meets them in, and a translator who has already done this file
 /// should find the new ones together rather than hunting a diff.
-pub const EVERY_WORD: [Word; 23] = [
+pub const EVERY_WORD: [Word; 25] = [
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
     NAMES_BESIDE,
@@ -375,6 +401,8 @@ pub const EVERY_WORD: [Word; 23] = [
     DOWN_THE_LEFT,
     DOWN_THE_RIGHT,
     ALONG_THE_TOP,
+    SHOW_MORE_OPEN_APPS,
+    MORE_OPEN_APPS,
 ];
 
 /// Why this crate's own words could not be declared.
