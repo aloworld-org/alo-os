@@ -24,8 +24,35 @@ path.*
 | 4 | the appearance — every colour an existing role, nothing drawn behind a control at rest |
 | 5 | the title — Manrope bundled and drawing, grapheme-aware truncation, the whole title kept for a reader |
 | 6 | the picture — logical units to output pixels once, refusing an edge that would fall off the output |
-| 7 | **drawn on real applications**, on the real compositor |
+| 7 | **drawn on real applications** — real Wayland clients, real compositing, in `examples/a_real_application.rs` and not in any shipped unit |
 | 8 | both design documents carry the 84px overlay-envelope ruling |
+
+### What *drawn* means here, because the phrase was doing too much work
+
+Row 7 said *on the real compositor* until 2026-10-10, which reads as *on a
+machine you boot*. It is not that, and the distance is worth stating once rather
+than leaving in a word.
+
+`foot` and `gnome-calculator` really ran, really connected over Wayland, and the
+edge was really composited over their surfaces — by `a_real_application.rs`,
+which stands up a nested compositor. **On a booted machine nothing draws the
+edge, because nothing draws anything after sign-in.** Measured:
+
+| | |
+|---|---|
+| `ExecStart=` lines under `image/usr/lib/systemd/` | **8**, and **0** of them name `alo-desktop` |
+| `alo-desktop` in the image | built and installed, `image/Containerfile:277` and `:302` |
+| `alo-compositor` after somebody signs in | prints *this process has nothing yet to draw in it* and returns `SUCCESS` (`bin/alo-compositor.rs:149`) |
+
+The Mac measured this on 2026-10-10 while looking for the Dock's overflow; the
+counts above were re-run here rather than taken on trust, with `wc -l` rather
+than a piped list, which is the method correction that came with it.
+
+**So the edge is built, tested, painted and demonstrated, and no part of that is
+the same claim as *it works on the machine*.** What stands between them is not
+this edge's work: it is whether the desktop is a second process the session
+starts or a mode of the compositor, which is the owner's decision and is
+scheduled.
 
 **Measured, and it changes the shape of the removal:** no production binary
 draws the old controls at all. Searched `alo-desktop`, the compositor binary,
