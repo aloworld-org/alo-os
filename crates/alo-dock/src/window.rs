@@ -24,6 +24,8 @@
 //! lay out a desk of nine windows without a display, which is the whole reason
 //! the decision in [`crate::clicking`] can be tested at all.
 
+use unicode_segmentation::UnicodeSegmentation;
+
 use crate::on_the_canvas::Patch;
 
 /// Which window, as the compositor numbers them.
@@ -90,6 +92,53 @@ impl AppId {
     #[must_use]
     pub fn name(&self) -> &str {
         &self.0
+    }
+
+    /// The letter a Dock icon shows when this application has no artwork.
+    ///
+    /// **The owner's ruling of 2026-10-10**, recorded in
+    /// `docs/design/the-alo-dock.md`: *the fallback should be on the first
+    /// letter of the application.* It is not a rare case — measured the same
+    /// day, `alo-applications` names an icon in none of its seventeen files, so
+    /// today it is every case.
+    ///
+    /// **The first *grapheme*, not the first `char`**, and this is the whole
+    /// reason the method exists rather than a caller writing
+    /// `name().chars().next()`. A grapheme is what a reader calls a letter; a
+    /// `char` is a Unicode scalar, and for most of the world's scripts those
+    /// are not the same thing:
+    ///
+    /// | name begins | `chars().next()` | this |
+    /// |---|---|---|
+    /// | `नमस्ते` | `न` without its vowel sign | `न` with it |
+    /// | `é` written as `e` + a combining accent | `e` | `é` |
+    /// | a flag emoji | half a regional indicator pair | the flag |
+    ///
+    /// **This is the i18n law reaching somewhere that is not a translated
+    /// string.** The text is the application's own and never goes through
+    /// `alo-strings`, so no vocabulary protects it — and cutting it wrongly
+    /// breaks it for exactly the scripts with the least software in them
+    /// already, which is the harm the law names.
+    ///
+    /// **It is not uppercased.** Case is locale-dependent — Turkish `i`
+    /// uppercases to `İ`, not `I` — and Georgian, Devanagari, Thai, Hebrew and
+    /// Arabic have no upper case at all. Raising it would be this shell making
+    /// a typographic decision about somebody else's alphabet, in a place where
+    /// getting it wrong is the first thing a person sees.
+    ///
+    /// Never empty: [`Self::named`] refuses a name that is blank or only
+    /// space, so there is always a first letter to return.
+    #[must_use]
+    pub fn first_letter(&self) -> &str {
+        // **`unwrap_or` and not `expect`**, though the `None` is unreachable:
+        // `named` refuses an empty name, so a non-empty string always has a
+        // first grapheme. `clippy::expect_used` is denied in this workspace and
+        // a panic here would be a Dock that would not draw — so the unreachable
+        // branch answers with the whole name, which for a name of one grapheme
+        // is the same answer anyway.
+        UnicodeSegmentation::graphemes(self.0.as_str(), true)
+            .next()
+            .unwrap_or(&self.0)
     }
 }
 
@@ -306,5 +355,117 @@ mod tests {
             a_patch(),
             "it still has a place to come back to"
         );
+    }
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected Err is the failure being reported"
+)]
+mod the_letter_an_icon_shows {
+    use super::AppId;
+
+    /// **The first letter of a Latin name is its first letter**, which is the
+    /// case everybody checks and the only one that would pass with
+    /// `chars().next()`.
+    #[test]
+    fn a_latin_name_shows_its_first_letter() {
+        assert_eq!(AppId::named("Blender").unwrap().first_letter(), "B");
+        assert_eq!(
+            AppId::named("gnome-calculator").unwrap().first_letter(),
+            "g"
+        );
+    }
+
+    /// **A letter is what a reader calls a letter, not what Unicode calls a
+    /// scalar.** Each of these has a first `char` that is not a letter anybody
+    /// would recognise, and each is a script with less software in it than
+    /// Latin — which is the harm the i18n law names.
+    ///
+    /// The assertions are written as *what a person sees*, and each is checked
+    /// against `chars().next()` giving something **different**, so this cannot
+    /// pass on a platform where the two happen to agree.
+    #[test]
+    fn a_letter_is_a_grapheme_and_not_a_char() {
+        for (name, letter) in [
+            // Devanagari: the consonant carries a vowel sign that is its own
+            // scalar, so `chars().next()` is the bare consonant — a fragment
+            // that reads as a different letter.
+            //
+            // **The first name tried here was नमस्ते and it proved nothing**:
+            // its first grapheme *is* just न, because the vowel signs fall on
+            // later consonants. The premise assertion below caught that, which
+            // is what it is for.
+            ("किताब", "कि"),
+            // A decomposed acute: `e` followed by a combining accent.
+            ("e\u{0301}cole", "e\u{0301}"),
+            // Thai: the tone mark is its own scalar and belongs to the letter
+            // before it. Precomposed Hangul was tried here and dropped for
+            // नमस्ते's reason — 한 is one scalar already.
+            ("ก่อน", "ก่"),
+        ] {
+            let app = AppId::named(name).unwrap();
+            assert_eq!(app.first_letter(), letter, "{name}");
+            // **The premise.** If these ever agreed, the test above would pass
+            // with the fault present and prove nothing.
+            let first_char: String = name.chars().take(1).collect();
+            assert_ne!(
+                app.first_letter(),
+                first_char,
+                "{name}: a char and a grapheme agree here, so this case no longer tests anything"
+            );
+        }
+    }
+
+    /// **An emoji is one letter**, including the ones built from several
+    /// scalars. A flag is a pair of regional indicators and a family is several
+    /// people joined by zero-width joiners; half of either is not a picture.
+    #[test]
+    fn an_emoji_is_one_letter_however_many_scalars_it_is() {
+        for name in ["🇬🇧 Weather", "👩‍👩‍👧 Family Album"] {
+            let app = AppId::named(name).unwrap();
+            let letter = app.first_letter();
+            assert!(
+                letter.chars().count() > 1,
+                "{name}: took one scalar of a multi-scalar emoji, which draws as half a picture"
+            );
+            assert!(name.starts_with(letter), "{name}");
+        }
+    }
+
+    /// **Not uppercased**, which is a decision and not an omission.
+    ///
+    /// Turkish `i` uppercases to `İ` and not `I`, so a shell that raised the
+    /// letter would show a Turkish person the wrong one; and Georgian has no
+    /// upper case to raise it to. The owner's ruling is the first letter, and
+    /// this is it.
+    #[test]
+    fn the_letter_is_shown_as_the_application_wrote_it() {
+        assert_eq!(AppId::named("inkscape").unwrap().first_letter(), "i");
+        assert_ne!(AppId::named("inkscape").unwrap().first_letter(), "I");
+        // Georgian, which has no upper case at all.
+        assert_eq!(AppId::named("ქართული").unwrap().first_letter(), "ქ");
+    }
+
+    /// **There is always a letter**, because a nameless application is refused
+    /// before it can become an `AppId` at all.
+    #[test]
+    fn every_application_that_exists_has_a_letter() {
+        assert!(
+            AppId::named("   ").is_err(),
+            "the premise: blank is refused"
+        );
+        assert!(AppId::named("").is_err());
+        for name in ["x", "  padded  ", "7-zip"] {
+            let app = AppId::named(name).unwrap();
+            assert!(
+                !app.first_letter().is_empty(),
+                "{name} has an empty letter, so its icon would draw nothing"
+            );
+        }
+        // `named` trims, so the letter is the first letter of the name and not
+        // a space.
+        assert_eq!(AppId::named("  padded  ").unwrap().first_letter(), "p");
     }
 }
