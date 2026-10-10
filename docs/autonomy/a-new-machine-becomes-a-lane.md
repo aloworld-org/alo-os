@@ -142,9 +142,9 @@ a row and told the owner something false.
 | `putting-a-window-aside.md` | **the third PC, with the development PC in it** — eight landed changes on `task/panel/…`, which is the third PC, and five on `task/dev-pc/…`, which is the development PC: `#406`, `#420` and `#426` are the agent-crossing work. **This cell read *one machine under two branch prefixes* until 2026-10-03** and that conclusion was wrong — see *A method that cannot reach the conclusion it was used for* below | `alo-put-aside`, and `alo-shell`'s panel files — see *shared ground* below |
 | `applications-people-already-use.md` | **the development PC** — six of its seven landed changes | `alo-software`, `alo-convertd`, and the application-facing half of `alo-portals` |
 | `kernel-enforcement-plan.md` | **the development PC** — stated in the plan: *who can take it — the development PC, inside a KVM guest with a real login* | `alo-bounding`, `alo-boundaryd`, `alo-agentd`'s enforcement path. **Also `tools/kernel-loop`'s default plan** — `plan.rs`'s `THE_PLAN` names this file |
-| `accounts-and-session-entry-plan.md` | **this PC, lane B** — the plan says *this is lane B's*, and it was named `v0.01, lane B — accounts and session entry` until #396 | `alo-accounts`, `alo-entering`, `alo-greeting` |
-| `providers-and-models-plan.md` | **this PC, lane B** — named `v0.5, lane B — providers and models` until #396. **Thin: one landed change.** Its task 4's successor *belongs to whichever loop takes it*, by the plan's own words | `alo-hosted`, and the provider half of `alo-choosing` |
-| `the-machine-measured-plan.md` | **this PC, lane B** — its crates are named as lane B's where the Mac lane is told not to edit them. **Thin: two landed changes, and no statement of ownership in the plan itself.** Worth confirming before a lane relies on it | `alo-measuring`, `alo-finding`, `alo-files`' measuring path |
+| `accounts-and-session-entry-plan.md` | **the development PC** — *lane B closed 2026-10-10*, see below. The plan still says *this is lane B's* and was named `v0.01, lane B — accounts and session entry` until #396; both are the retired name for this machine | `alo-accounts`, `alo-entering`, `alo-greeting` |
+| `providers-and-models-plan.md` | **the development PC** — *lane B closed 2026-10-10*. Named `v0.5, lane B — providers and models` until #396. **Thin: one landed change.** Its task 4's successor *belongs to whichever loop takes it*, by the plan's own words | `alo-hosted`, and the provider half of `alo-choosing` |
+| `the-machine-measured-plan.md` | **the development PC** — *lane B closed 2026-10-10*. Its crates are named as lane B's where the Mac lane is told not to edit them, and **that instruction stands** — the name retired, not the boundary. **Thin: two landed changes, and no statement of ownership in the plan itself.** Worth confirming before a lane relies on it | `alo-measuring`, `alo-finding`, `alo-files`' measuring path |
 | `the-executable-plan.md` | **every machine, per task** — this is the one plan with no single owner by design: it is `tools/kernel-loop`'s input through `ALO_LOOP_PLAN`, and **its tasks carry their own owners** in their own lines (*Owner: Claude, while the desktop worker is away*; *lane B's*). A machine named here would be wrong for most of its tasks | none of its own; its tasks name the crates they touch |
 | `the-local-network-plan.md` | the development PC | `alo-nearby`, parts of `alo-agentd`/`alo-turn`/`alo-egress`/`alo-bounding*` for pairing |
 | `the-installer-plan.md` | **third PC, first loop, from 2026-09-16** — it needs 50 GB free for the three virtual-machine tasks, which the development PC has not | `alo-installer`, `alo-installing`, `image/`, `alo-image`, `.github/workflows/` **except `gate.yml`** — see the exception below |
@@ -617,6 +617,45 @@ as many checkouts as the work needs, and a plan belongs to the machine rather
 than to whichever directory the work last happened in. The dates and reasons
 in those cells are kept exactly as they were: *when* a machine took a plan and
 *why* is history, and only the identity was wrong.
+
+### Lane B is closed, 2026-10-10
+
+**The owner closed it in these words: *lane B is closed, it was for the old
+session*.** So the name was never a machine and is now not even a working name:
+it belonged to a session that has ended.
+
+The entry above had already found half of this — *there is no lane A and no lane
+B* — and then left three cells saying `this PC, lane B` anyway, because it was
+careful to rename nothing while branches were in flight. Those three now name the
+machine:
+
+| Plan | Was | Is |
+|---|---|---|
+| `accounts-and-session-entry-plan.md` | this PC, lane B | the development PC |
+| `providers-and-models-plan.md` | this PC, lane B | the development PC |
+| `the-machine-measured-plan.md` | this PC, lane B | the development PC |
+
+**The boundary is unchanged and that is the point of saying so.** `alo-accounts`,
+`alo-entering`, `alo-greeting`, `alo-hosted`, `alo-measuring`, `alo-finding` and
+`alo-files`' measuring path are still not the Mac lane's to edit. A closed lane
+does not release its crates into common ownership; it hands them to the machine
+that was always holding them. The instruction telling the Mac lane not to edit
+them **stands**, and the only thing that changed is which word identifies who may.
+
+**Why this is worth an entry rather than a quiet fix.** The plans themselves still
+say *this is lane B's* in their own text, and they are not edited here — a plan is
+another lane's document and this file is the ownership record, so correcting one
+from the other would be this lane writing in a machine's plan to make a table come
+out right. A reader who meets *lane B* inside a plan should find it retired here,
+which is what this entry is for.
+
+**And it changed an answer this lane gave an hour before it.** `alo-accounts` was
+reported to two machines as *lane B's crate*, which made a blocker look like it
+needed a third correspondent who no longer exists. It did not; see
+[ADR 0100](../decisions/0100-a-pending-action-carries-a-ticket-the-owner-looks-up.md),
+which dissolves that blocker without touching the crate at all. **The shape was
+chosen before the lane closed and would have been right either way** — but the
+reason given for it named a lane, and the reason is now the machine.
 
 **Nothing is renamed by this entry.** A dozen scripts hardcode a checkout path
 and branches were in the merge queue when it was written; renaming three
