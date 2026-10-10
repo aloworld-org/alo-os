@@ -27,6 +27,9 @@ pub(crate) const THE_AGENTS_UNIT: &str = "usr/lib/systemd/system/alo-agentd.serv
 /// The opener's unit, beneath the image's root.
 pub(crate) const THE_OPENERS_UNIT: &str = "usr/lib/systemd/system/alo-sessiond.service";
 
+/// The unit that stands the person's own desktop up, beneath the image.
+pub(crate) const THE_DESKTOPS_UNIT: &str = "usr/lib/systemd/system/alo-desktop.service";
+
 /// The model service's unit, beneath the image's root.
 pub(crate) const THE_SERVERS_UNIT: &str = "usr/lib/systemd/system/alo-modeld.service";
 

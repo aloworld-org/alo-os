@@ -1,0 +1,46 @@
+# The desktop's own PAM stack, and the only reason it has one.
+#
+# **The same reason the greeter beside this file has one, for the other half of
+# a machine's morning.** `libseat` asks `logind` which session a process
+# belongs to, and a system service belongs to none — so a desktop started by a
+# unit is handed no seat and cannot take a card, however correct its drawing is.
+#
+# `image/usr/lib/pam.d/alo-compositor` records the measurement that found this:
+# `After=systemd-logind.service` is ordering and not membership, and the unit
+# that waited for logind still got `display session connect failed: Function not
+# implemented` — ENOSYS, which from libseat means *no backend at all*. This
+# image ships no `seatd` and nothing installs one.
+#
+# **This authenticates nobody either, and for a different reason from the
+# greeter's.** The greeter authenticates nobody because nobody is there yet;
+# this authenticates nobody because they already have. `alo-accounts` checked
+# the password and `alo-sessiond` opened the session (ADR 0024), and this unit
+# only runs at all because that session exists — `BindsTo=user@1000.service`.
+# A stack that asked for a password here would ask a person who had just given
+# one for it again.
+#
+# Modelled on `alo-compositor`'s, which is modelled on the base's own
+# `systemd-run0`. Kept deliberately identical to the greeter's rather than
+# shortened further: the two processes need the same one thing from PAM, and two
+# stacks that differ invite a reader to look for a reason they do.
+
+# Nobody is authenticated here; `alo-sessiond` already did, or this unit would
+# not be running.
+auth       required    pam_permit.so
+account    required    pam_permit.so
+
+# SELinux first and last, as every stack in this base does: `close` before the
+# session is set up and `open` after, so the process is relabelled into the
+# context its unit was given rather than inheriting PID 1's.
+session    required    pam_selinux.so close
+session    required    pam_selinux.so open
+
+# The audit login uid, so what the desktop does is attributable to the person
+# whose desktop it is.
+session    required    pam_loginuid.so
+
+# **The line this file exists for.** `required` and not `optional`: a desktop
+# without a seat cannot take a card, and a machine that signed somebody in and
+# then showed them nothing is the failure this stack is here to end. Named here
+# rather than re-emerging two layers down as an errno.
+session    required    pam_systemd.so

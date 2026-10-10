@@ -77,6 +77,43 @@ pub enum Wrong {
         /// What the unit bounds it to.
         held: Vec<String>,
     },
+    /// The desktop's service is not the person's.
+    ///
+    /// **The inverse of [`Self::TheScreenHoldsSomething`]'s case, and the
+    /// larger surface.** The greeter runs as `root` because it exists before
+    /// anybody is signed in and so cannot be anybody. A desktop is somebody's:
+    /// it holds their keyboard, their clipboard and their windows for the whole
+    /// day. One running as root would be a machine where the thing a person
+    /// types into is not them, and `alo-desktop`'s own header says the uid is
+    /// not a variable it reads - *whose session this is, is whose session this
+    /// is* - which makes the unit's `User=` line the only place it is decided.
+    #[error(
+        "the desktop's unit {desktop} runs as {runs}, and a desktop is the person's: the greeter          is root because nobody is there yet and this is the other half of that morning"
+    )]
+    TheDesktopIsNotThePersons {
+        /// The desktop's unit.
+        desktop: String,
+        /// What the unit says it runs as, or that it says nothing.
+        runs: String,
+    },
+    /// The desktop's service is not tied to the person's session.
+    ///
+    /// **Both directions, because one is not enough.** `WantedBy=` without
+    /// `BindsTo=` is a desktop that starts with a session and outlives it -
+    /// drawn over the sign-in screen of the account that replaced it.
+    /// `BindsTo=` without `WantedBy=` is a desktop nothing ever starts, which
+    /// is the state this unit was written to end.
+    #[error(
+        "the desktop's unit {desktop} is not bound to a person's session in both directions:          bound to {bound:?}, wanted by {wanted:?}"
+    )]
+    TheDesktopOutlivesItsSession {
+        /// The desktop's unit.
+        desktop: String,
+        /// What it says it is bound to.
+        bound: Vec<String>,
+        /// What it says wants it.
+        wanted: Vec<String>,
+    },
     /// The screen's service holds a capability.
     ///
     /// **It runs as `root` and it is the only one of the five that does**, so
