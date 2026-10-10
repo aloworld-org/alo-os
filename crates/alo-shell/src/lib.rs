@@ -155,6 +155,7 @@ mod display_resources;
 mod division_raster;
 mod dock_raster;
 mod dock_room;
+mod dock_windows;
 mod drawing;
 mod drm_events;
 mod drm_inventory;
