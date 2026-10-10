@@ -125,16 +125,16 @@ const NOT_READ_BY_A_PERSON: &[(&str, &str, &str, &str)] = &[
     (
         "alo-dock",
         "measures.rs",
-        "the owner's sizes no longer agree",
+        "the Dock is no longer 64 logical pixels thick",
         "the message of a `const` assertion, which is the strongest case on this list: a const assertion that fires stops the compiler, so no binary exists and the sentence cannot reach a running machine at all \
-         — only the developer whose build it broke. This one names which of ICON, GLYPH, MARGIN and GAP was changed out of agreement",
+         — only the developer whose build it broke. This one names the owner's own figure for the Dock's thickness, held beside the three it is built from",
     ),
     (
         "alo-dock",
         "measures.rs",
-        "the Dock is no longer 64 logical pixels thick",
+        "the artwork no longer sits centred inside its target",
         "the message of a `const` assertion, which is the strongest case on this list: a const assertion that fires stops the compiler, so no binary exists and the sentence cannot reach a running machine at all \
-         — only the developer whose build it broke. This one names the owner's own figure for the Dock's thickness, held beside the three it is built from",
+         — only the developer whose build it broke. This one names ADR 0101's relationship between the target a hand hits and the artwork an eye reads, which replaced a coincidence",
     ),
     (
         "alo-dock",
