@@ -293,10 +293,57 @@ pub const ANNOUNCED_WHERE: Word = Word::saying(
      not distances from the person.",
 );
 
+/// Where the dock goes: the bottom edge of the screen.
+pub const ON_THE_BOTTOM: Word = Word::saying("dock.edge.bottom", "Along the bottom").noting(
+    "One of four rows a person picks from, for which edge of the screen the dock sits on. **The \
+     one a fresh machine uses**, so this is the row that will already be chosen when somebody \
+     first opens the setting. A direction rather than a place: in a language written \
+     right-to-left the dock is still along the bottom, and nothing about this row mirrors.",
+);
+
+/// Where the dock goes: down the left side of the screen.
+pub const DOWN_THE_LEFT: Word = Word::saying("dock.edge.left", "Down the left side").noting(
+    "One of four rows a person picks from, for which edge of the screen the dock sits on. **Left \
+     is the physical side of the screen and does not mirror with the reading direction** — a \
+     person reading right-to-left who picks this gets the dock on their left, which is what they \
+     asked for. Translate it as the side, never as *the leading side* or *the start*.",
+);
+
+/// Where the dock goes: down the right side of the screen.
+pub const DOWN_THE_RIGHT: Word = Word::saying("dock.edge.right", "Down the right side").noting(
+    "One of four rows a person picks from, for which edge of the screen the dock sits on. The \
+     same rule as the left row: **the physical side, which does not mirror with the reading \
+     direction.**",
+);
+
+/// Where the dock goes: along the top edge of the screen.
+pub const ALONG_THE_TOP: Word = Word::saying("dock.edge.top", "Along the top").noting(
+    "One of four rows a person picks from, for which edge of the screen the dock sits on. \
+     Distinguish it from the bottom row in languages where *top* and *above* are one word: this \
+     is the edge the dock sits on, not something being above something else.",
+);
+
+/// What the four rows above are a choice about.
+///
+/// The setting's own name, for the heading of the list rather than a row in it.
+/// A person reads *Where the dock goes* and then four places.
+pub const WHERE_THE_DOCK_GOES: Word = Word::saying("dock.edge", "Where the dock goes").noting(
+    "The heading over the four rows that name an edge of the screen. **Not a question** — alo's \
+     settings name what a thing is rather than asking, so this is a label and not *Where should \
+     the dock go?*",
+);
+
 /// Every string this crate can say, in the order a translator meets them: the
-/// two answers about whether it gives way, what the dock did with its names, the
-/// two refusals, and then what is said about the person's own file.
-pub const EVERY_WORD: [Word; 20] = [
+/// two answers about whether it gives way, what the dock did with its names,
+/// the two refusals, what is said about the person's own file, what a reader is
+/// told about an icon, and then where the dock goes.
+///
+/// **The last five arrived on 2026-10-10** with the setting that offers them.
+/// They are at the end rather than beside the other settings' words because
+/// this list's order is the order a translator meets them in, and a translator
+/// who has already done this file should find the new ones together rather than
+/// hunting a diff.
+pub const EVERY_WORD: [Word; 25] = [
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
     NAMES_UNDER,
@@ -317,6 +364,11 @@ pub const EVERY_WORD: [Word; 20] = [
     ANNOUNCED_SOME_PUT_ASIDE,
     ANNOUNCED_FOCUSED,
     ANNOUNCED_WHERE,
+    WHERE_THE_DOCK_GOES,
+    ON_THE_BOTTOM,
+    DOWN_THE_LEFT,
+    DOWN_THE_RIGHT,
+    ALONG_THE_TOP,
 ];
 
 /// Why this crate's own words could not be declared.

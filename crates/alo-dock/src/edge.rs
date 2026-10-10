@@ -33,11 +33,17 @@
 //! `crate::changes` offers this, and `crate::words` declares no name for an edge
 //! until a person can pick one and have it work.
 
+use alo_strings::{Filling, Said, Strings};
+
+use crate::words::{self, Word};
+
 /// Which edge of the screen the dock sits on.
 ///
 /// **Four, and the order is reading order rather than preference.** Bottom first
 /// because it is the default; the rest as a person would say them.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Default, serde::Serialize, serde::Deserialize,
+)]
 pub enum Edge {
     /// Along the bottom, which is where a fresh machine puts it.
     #[default]
@@ -57,6 +63,35 @@ impl Edge {
     /// fifth edge — would be a deliberate act and the tests that walk this array
     /// would have to be read again.
     pub const EVERY: [Self; 4] = [Self::Bottom, Self::Left, Self::Right, Self::Top];
+
+    /// The string this crate declares for this edge.
+    ///
+    /// `crate::Hiding::word`'s shape, for the list a person picks an edge from.
+    #[must_use]
+    pub const fn word(self) -> Word {
+        match self {
+            Self::Bottom => words::ON_THE_BOTTOM,
+            Self::Left => words::DOWN_THE_LEFT,
+            Self::Right => words::DOWN_THE_RIGHT,
+            Self::Top => words::ALONG_THE_TOP,
+        }
+    }
+
+    /// What this says, in the language the person reads. Never fails and never
+    /// panics.
+    ///
+    /// **Left and right are the screen's sides, not the reading direction's.**
+    /// Nothing here consults `alo_strings::Direction`, and that is the decision
+    /// rather than an omission: a person reading right-to-left who asks for the
+    /// dock down the left gets it down the left. Mirroring the *words* would
+    /// mean the row labelled left put the dock on the right, which is the one
+    /// outcome nobody asks for. What mirrors in a right-to-left layout is the
+    /// order icons run in along the dock, which `alo_shell` decides from the
+    /// same `Direction` and which is a different question.
+    #[must_use]
+    pub fn said(self, strings: &Strings) -> Said {
+        strings.say(&self.word().key(), &Filling::nothing())
+    }
 
     /// Whether the dock runs across the screen rather than down it.
     ///

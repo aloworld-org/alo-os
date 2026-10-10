@@ -261,41 +261,77 @@ fn what_nobody_has_translated_yet_is_visible_rather_than_silently_english() {
 /// A key that nothing declares is a mistake in this repository and says so,
 /// rather than showing an empty row where a setting should be.
 ///
-/// **`dock.edge.middle` is the permanent example; the other two are temporary and
-/// this note is the only thing that says so.** No `dock.edge.*` key is declared
-/// today, so a shell still asking for one — an old panel, a stale translation
-/// file — gets a sentence saying it is a bug rather than a blank row where an edge
-/// picker used to be.
+/// **`dock.edge.middle` is the permanent example, and it is the only one left.**
+/// It names an edge that does not exist, so a shell asking for it — an old
+/// panel, a stale translation file, a typo in a theme — gets a sentence saying
+/// it is a bug rather than a blank row where a picker should be.
 ///
-/// **The reason is no longer ADR 0076, and that matters to whoever edits this
-/// next.** That record's bottom-only ruling was reversed by the owner on
-/// 2026-09-30 — *bottom should be the default; the person can choose bottom,
-/// left, right, or top* — so the keys are not absent because the choice was
-/// withdrawn. They are absent because of the **order of work** the owner set on
-/// 2026-10-04: the structure comes first, and *nonfunctional edge choices are not
-/// exposed as finished settings*. A declared `dock.edge.left` with no working left
-/// dock behind it is exactly that exposure, in the one file a translator reads.
+/// **`dock.edge.bottom` left this list on 2026-10-10**, exactly as the note it
+/// replaced said it would: *so `dock.edge.bottom` leaves this list when a
+/// person can choose an edge, and the list is not evidence that it should stay
+/// gone.* Four keys are declared now — bottom, left, right and top — with a
+/// fifth for the heading over them, and a dock that lays out and draws on each.
 ///
-/// So `dock.edge.bottom` **leaves this list** when a person can choose an edge, and
-/// the list is not evidence that it should stay gone. `dock.edge.middle` names an
-/// edge that does not exist and stays forever.
+/// That note also recorded why they had been absent, and it is worth keeping
+/// because it is the one thing a reader gets wrong here: **not ADR 0076.** That
+/// record's bottom-only ruling was reversed by the owner on 2026-09-30 —
+/// *bottom should be the default; the person can choose bottom, left, right, or
+/// top*. The keys were absent because of the **order of work** set on
+/// 2026-10-04: the structure comes first, and *nonfunctional edge choices are
+/// not exposed as finished settings*. A declared `dock.edge.left` with no
+/// working left dock behind it was exactly that exposure, in the one file a
+/// translator reads.
 ///
-/// **`dock.labels.beside` left on 2026-10-04**, exactly as the note above said it
-/// would: the owner gave the side placement its measurement — 200 logical pixels
-/// of usable text width in a tooltip — so a dock down a side lays out, its names
-/// have a placement, and the key is declared again in `crate::words`. One member
-/// of this list has now been both wrong to declare and right to declare, eighteen
-/// hours apart, which is why the note rather than the list is the thing to read.
+/// **`dock.labels.beside` left on 2026-10-04 and the four edges on 2026-10-10**,
+/// for the same reason in two steps: the owner gave a side dock's names their
+/// measurement — 200 logical pixels in a tooltip beside the icon — which made
+/// all four edges lay out, and the draw then took an edge. Three members of this
+/// list have now been both wrong to declare and right to declare, which is why
+/// **the note rather than the list is the thing to read**.
 #[test]
 fn a_key_nobody_declared_says_it_is_a_bug() {
     let strings = in_english();
-    for named in ["dock.edge.middle", "dock.edge.bottom"] {
-        let key = alo_strings::Key::named(named).unwrap();
-        let said = strings.say(&key, &Filling::nothing());
-        assert!(said.is_a_bug(), "{named}");
-        assert_eq!(said.came_from(), &CameFrom::NoPhrase, "{named}");
-        assert_eq!(said.text(), format!("«{named}»"));
+    // **One name, so no loop.** It was a list of two until `dock.edge.bottom`
+    // was declared; clippy refuses a `for` over a single element, and spelling
+    // it out once is clearer than a one-element array pretending there are more
+    // to come. If a second permanently-undeclared key ever arrives, this goes
+    // back to a loop and the note above says which ones left and why.
+    let named = "dock.edge.middle";
+    let key = alo_strings::Key::named(named).unwrap();
+    let said = strings.say(&key, &Filling::nothing());
+    assert!(said.is_a_bug(), "{named}");
+    assert_eq!(said.came_from(), &CameFrom::NoPhrase, "{named}");
+    assert_eq!(said.text(), format!("«{named}»"));
+
+    // **And the four that are declared are not bugs**, which is the other half
+    // of the same claim and the half this test could not make until today: a
+    // list of undeclared keys proves nothing about the declared ones.
+    for edge in alo_dock::Edge::EVERY {
+        let said = edge.said(&strings);
+        assert!(
+            !said.is_a_bug(),
+            "{:?} has no phrase, so a person picking an edge would read «{}»",
+            edge,
+            said.text()
+        );
+        assert!(!said.text().is_empty(), "{edge:?} says nothing");
     }
+
+    // **And no two of them say the same thing.** Four rows a person picks from,
+    // and two reading alike is a list nobody can use — which a per-row check
+    // cannot see.
+    let mut saying: Vec<String> = alo_dock::Edge::EVERY
+        .into_iter()
+        .map(|edge| edge.said(&strings).text().to_owned())
+        .collect();
+    saying.sort();
+    let before = saying.len();
+    saying.dedup();
+    assert_eq!(
+        saying.len(),
+        before,
+        "two edges read the same in this language: {saying:?}"
+    );
 }
 
 /// A machine with no translations at all is the machine this repository ships

@@ -117,16 +117,23 @@ impl Dock {
         Layout::along(self.edge(), screen, text)
     }
 
-    /// Which edge of the screen this dock is on.
+    /// Which edge of the screen this dock is on: the person's choice if they
+    /// made one, and what the release ships otherwise.
     ///
-    /// The shipped edge, because nothing can change it yet — `crate::Changes`
-    /// carries no edge, by the owner's order of work of 2026-10-04. When a person
-    /// can choose one, this is the method that starts consulting the change and
-    /// **every caller already asks the right question**, which is the reason it
-    /// exists now rather than then.
+    /// `Self::hiding`'s shape, which this note promised: *when a person can
+    /// choose one, this is the method that starts consulting the change, and
+    /// every caller already asks the right question.* Nothing that calls it
+    /// changed — the draw, the layout and the reveal regions were all asking
+    /// `dock.edge()` already, which is why a person's choice reaches a screen
+    /// through this one line.
     #[must_use]
-    pub const fn edge(&self) -> crate::Edge {
-        self.shipped.edge()
+    pub fn edge(&self) -> crate::Edge {
+        self.changes.edge().unwrap_or_else(|| self.shipped.edge())
+    }
+
+    /// Say which edge of the screen the dock is on.
+    pub const fn set_edge(&mut self, edge: crate::Edge) {
+        self.changes.set_edge(edge);
     }
 }
 
@@ -156,17 +163,110 @@ mod tests {
         assert!(dock.changes().is_untouched());
     }
 
+    /// **The edge is release-coupled exactly as hiding is**, which is the whole
+    /// point of putting it on `Changes` rather than leaving it on `Shipped`.
+    ///
+    /// Held separately from the test below rather than folded into it: the two
+    /// settings share a shape and not an implementation, and a single test over
+    /// both would pass while one of them read the other's field.
+    #[test]
+    fn a_new_default_edge_reaches_the_untouched_machine_and_not_the_touched_one() {
+        let shipped = Shipped::of(Hiding::Never, crate::Edge::Left);
+        let untouched = Dock::over(shipped);
+        assert_eq!(
+            untouched.edge(),
+            crate::Edge::Left,
+            "a machine that never chose follows the release"
+        );
+
+        let mut chosen = Changes::untouched();
+        chosen.set_edge(crate::Edge::Top);
+        let theirs = Dock::over(shipped).with(chosen);
+        assert_eq!(
+            theirs.edge(),
+            crate::Edge::Top,
+            "their choice survives a release that ships a different edge"
+        );
+
+        // **And the bottom is a choice, not an absence.** A person who picks the
+        // bottom on purpose keeps it when a release moves the default away,
+        // which is the case an `Option` exists for and a bare `Edge` could not
+        // express.
+        let mut deliberate = Changes::untouched();
+        deliberate.set_edge(crate::Edge::Bottom);
+        assert_eq!(
+            Dock::over(shipped).with(deliberate).edge(),
+            crate::Edge::Bottom,
+            "choosing the bottom read as never having chosen"
+        );
+    }
+
+    /// **Putting the edge back follows the release again.**
+    #[test]
+    fn putting_the_edge_back_returns_to_what_the_release_ships() {
+        let shipped = Shipped::of(Hiding::Never, crate::Edge::Bottom);
+        let mut dock = Dock::over(shipped);
+        dock.set_edge(crate::Edge::Right);
+        assert_eq!(dock.edge(), crate::Edge::Right);
+
+        assert!(
+            dock.put_back(Setting::WhereItGoes),
+            "there was a choice to put back"
+        );
+        assert_eq!(dock.edge(), crate::Edge::Bottom);
+        assert!(
+            !dock.put_back(Setting::WhereItGoes),
+            "and it is not there to put back twice"
+        );
+    }
+
+    /// **Putting one setting back leaves the other alone.**
+    ///
+    /// Two settings on one `Changes` is the first time this could go wrong, and
+    /// `forget` is a `match` that could name the wrong field in either arm
+    /// while every single-setting test passed.
+    #[test]
+    fn putting_one_setting_back_does_not_disturb_the_other() {
+        let mut dock = Dock::over(Shipped::of(Hiding::Never, crate::Edge::Bottom));
+        dock.set_edge(crate::Edge::Top);
+        dock.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
+
+        assert!(dock.put_back(Setting::WhereItGoes));
+        assert_eq!(
+            dock.hiding(),
+            Hiding::WhenAWindowNeedsTheRoom,
+            "putting the edge back forgot what they chose about hiding"
+        );
+        assert_eq!(dock.edge(), crate::Edge::Bottom);
+
+        dock.set_edge(crate::Edge::Left);
+        assert!(dock.put_back(Setting::Hiding));
+        assert_eq!(
+            dock.edge(),
+            crate::Edge::Left,
+            "putting hiding back forgot which edge they chose"
+        );
+        assert_eq!(dock.hiding(), Hiding::Never);
+    }
+
     /// **A release can move the default and reach every machine that never
     /// touched it, and no machine that did.** That is the whole reason only the
     /// difference is stored, and this is the test that says it works.
     #[test]
     fn a_new_default_reaches_the_untouched_machine_and_not_the_touched_one() {
-        let untouched = Dock::over(Shipped::of(Hiding::WhenAWindowNeedsTheRoom));
+        let untouched = Dock::over(Shipped::of(
+            Hiding::WhenAWindowNeedsTheRoom,
+            crate::Edge::Bottom,
+        ));
         assert_eq!(untouched.hiding(), Hiding::WhenAWindowNeedsTheRoom);
 
         let mut chosen = Changes::untouched();
         chosen.set_hiding(Hiding::Never);
-        let theirs = Dock::over(Shipped::of(Hiding::WhenAWindowNeedsTheRoom)).with(chosen);
+        let theirs = Dock::over(Shipped::of(
+            Hiding::WhenAWindowNeedsTheRoom,
+            crate::Edge::Bottom,
+        ))
+        .with(chosen);
         assert_eq!(
             theirs.hiding(),
             Hiding::Never,

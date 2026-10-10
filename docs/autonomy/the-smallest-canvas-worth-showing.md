@@ -940,14 +940,31 @@ orientations rather than being a horizontal bar someone turned sideways**.
 withdrew that promise on 2026-09-29 and the owner reversed the withdrawal within
 a day; bottom is now the default rather than the only.
 
-**Measured before it was written, and it is a removal rather than a gap.**
-`alo-dock` has no edge at all. `crates/alo-dock/src/changes.rs` says in its own
+**Measured before it was written, and it was a removal rather than a gap.**
+`alo-dock` had no edge at all. `crates/alo-dock/src/changes.rs` said in its own
 words that *there is no `edge` field and no `displays` field*, and two of its
-tests assert that a `dock.toml` naming an edge loads with the edge **ignored**
-rather than refused, so a file from an earlier release still reads. `along.rs`,
-which held the two orientations, is deleted. **So a reader checking whether this
-is built finds tests passing, and they pass because it is not** — those two
-tests are what changes when this is done.
+tests asserted that a `dock.toml` naming an edge loads with the edge **ignored**
+rather than refused. `along.rs`, which held the two orientations, was deleted.
+**So a reader checking whether this was built found tests passing, and they
+passed because it was not** — those two tests were named here as what changes
+when this is done.
+
+**Both changed on 2026-10-10, which is the marker this paragraph set.**
+`a_file_naming_an_edge_reads_and_the_edge_is_ignored` is now
+`a_file_naming_an_edge_is_honoured`, and
+`a_file_from_before_the_dock_was_fixed_reads_and_the_edge_is_ignored` is now
+`a_file_from_before_the_dock_was_fixed_puts_the_dock_back_where_they_had_it`. A
+third test went the same way without being listed here:
+`a_key_nobody_declared_says_it_is_a_bug` held `dock.edge.bottom` as a key
+nothing declares, and its own note had said *so `dock.edge.bottom` leaves this
+list when a person can choose an edge*.
+
+**What is still open in this task**, so it is not read as closed: the overflow
+area at every edge, which waits on the Dock being told what is open; the alo Bar
+on a side edge; the activation regions and travel corridors; and the shared-edge
+rule where the Dock and the put-aside panel would claim one edge. The **setting
+is reachable by a machine and has no row on a screen** — nothing in the shell
+draws a list of four edges yet, which is the settings panel's own task.
 
 - **Acceptance:** a person may put the Dock on the bottom, top, left or right,
   and it is laid out **for** that edge rather than rotated into it — a vertical

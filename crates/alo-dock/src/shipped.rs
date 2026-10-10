@@ -23,18 +23,19 @@ use crate::hiding::Hiding;
 pub struct Shipped {
     /// Whether it gives way when a window needs the room.
     hiding: Hiding,
-    /// Which edge of the screen it is on.
+    /// Which edge of the screen it is on **before anybody chooses**.
     ///
-    /// **Here and not in `crate::Changes`, deliberately.** The owner restored the
-    /// four-edge choice on 2026-09-30 and set the order of work on 2026-10-04:
-    /// *nonfunctional edge choices are not exposed as finished settings.* A field
-    /// on `Changes` **is** that exposure — it is the type a person's settings file
-    /// is read into and written from.
+    /// **Here *and* in `crate::Changes` now**, which is the release-coupling
+    /// shape every other setting in this crate has: this is what the image
+    /// ships, that is the person's difference from it, and `crate::Dock::edge`
+    /// prefers theirs. This field's own note used to say the opposite — that a
+    /// field on `Changes` would be exposing a nonfunctional choice, which was
+    /// true while two of the four edges could not be laid out and stopped being
+    /// true on 2026-10-10.
     ///
-    /// So the edge is a fact about the dock this release ships, which the draw can
-    /// ask for and nobody can yet change. It is [`Edge::Bottom`] in every shipped
-    /// configuration, and it stops being so on the day a `Changes` variant and its
-    /// four words arrive together.
+    /// [`Edge::Bottom`] in the shipped image, which is `docs/features.md`'s
+    /// promise: *the bottom edge by default, and the person may choose bottom,
+    /// left, right or top.*
     edge: Edge,
 }
 
@@ -50,16 +51,14 @@ impl Shipped {
 
     /// A different default — a release being tried out against a person's
     /// changes, or a test of what a new default would do to them.
+    ///
+    /// **The edge is a parameter now**, which this function's own note asked for:
+    /// *it gains a parameter on the day `crate::Changes` gains an edge, and the
+    /// compiler will ask at every call.* That day is 2026-10-10 and the compiler
+    /// did.
     #[must_use]
-    /// The edge is not a parameter here, and that is this release's shape rather
-    /// than an omission: nothing ships a dock on another edge, because nothing can
-    /// yet draw a person's choice of one. It gains a parameter on the day
-    /// `crate::Changes` gains an edge, and the compiler will ask at every call.
-    pub const fn of(hiding: Hiding) -> Self {
-        Self {
-            hiding,
-            edge: Edge::Bottom,
-        }
+    pub const fn of(hiding: Hiding, edge: Edge) -> Self {
+        Self { hiding, edge }
     }
 
     /// Which edge of the screen this dock is on.
@@ -92,6 +91,16 @@ mod tests {
     fn the_shipped_dock_does_not_give_way() {
         let shipped = Shipped::of_the_image();
         assert_eq!(shipped.hiding(), Hiding::Never);
+        assert_eq!(
+            shipped.edge(),
+            Edge::Bottom,
+            "docs/features.md promises the bottom edge by default"
+        );
+        assert_eq!(
+            shipped.edge(),
+            Edge::default(),
+            "two files agreeing, not one deciding"
+        );
         assert_eq!(shipped.hiding(), Hiding::default());
         assert_eq!(shipped, Shipped::default());
     }
@@ -99,8 +108,13 @@ mod tests {
     /// A release trying out a different default is an ordinary thing to build.
     #[test]
     fn a_different_release_can_ship_a_different_answer() {
-        let other = Shipped::of(Hiding::WhenAWindowNeedsTheRoom);
+        let other = Shipped::of(Hiding::WhenAWindowNeedsTheRoom, Edge::Top);
         assert_ne!(other, Shipped::of_the_image());
         assert_eq!(other.hiding(), Hiding::WhenAWindowNeedsTheRoom);
+        assert_eq!(
+            other.edge(),
+            Edge::Top,
+            "the edge is a parameter now, so a release can try a different one"
+        );
     }
 }

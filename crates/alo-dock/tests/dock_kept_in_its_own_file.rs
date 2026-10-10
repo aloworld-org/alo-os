@@ -76,37 +76,82 @@ fn a_change_written_to_a_real_file_reads_back_as_itself() {
     assert_eq!(keeping::read(&at).unwrap(), Changes::untouched());
 }
 
-/// **A file an earlier release wrote still reads, and the dock is at the
-/// bottom.** Every release before ADR 0076 wrote `edge` for anybody who moved
-/// their dock, and `displays` for anybody who singled a screen out. A person's
-/// own file is not rewritten behind them, so it has to load — and it loads as a
-/// machine that changed nothing, because neither is a thing that can be changed
-/// any more.
+/// **A file an earlier release wrote reads, and the dock goes back where that
+/// person put it.** This test asserted the edge was *ignored* until 2026-10-10,
+/// and task 11 of `docs/autonomy/the-smallest-canvas-worth-showing.md` named it
+/// as one of the two that change when the setting is honoured.
 ///
-/// The one that would have bitten: `edge` is still on `keeping`'s list of keys
-/// the file may have. Taken off it, the reader would refuse the whole file over a
-/// key this project itself wrote last release, and the person would be told their
+/// Every release before ADR 0076 wrote `edge` for anybody who moved their dock,
+/// and `displays` for anybody who singled a screen out. A person's own file is
+/// not rewritten behind them, so those choices sat in their folder meaning
+/// nothing for eleven days — and the dock now follows the one of them that is a
+/// promise again. `displays` still means nothing: per-display placement is
+/// **[v0.5]** in `docs/features.md`.
+///
+/// The one that would still bite: `edge` and `displays` are both on `keeping`'s
+/// list of keys the file may have. Take either off and the reader refuses the
+/// whole file over a key this project itself wrote, and the person is told their
 /// settings are not settings.
 #[test]
-fn a_file_from_before_the_dock_was_fixed_reads_and_the_edge_is_ignored() {
+fn a_file_from_before_the_dock_was_fixed_puts_the_dock_back_where_they_had_it() {
     let folder = a_folder_of_our_own("an-older-release");
     let at = the_file_in(&folder);
     std::fs::create_dir_all(at.parent().unwrap()).unwrap();
 
-    for text in [
-        "format = 1\nedge = \"Left\"\n",
-        "format = 1\nedge = \"Top\"\ndisplays = [[\"DP-3 Dell U2720Q\", \"Left\"]]\n",
-        // The value is not validated either. "Middle" was refused while there
-        // were four edges to be one of; refusing it now would be refusing a
-        // person's file over a word nothing reads.
-        "format = 1\nedge = \"Middle\"\n",
+    for (text, wanted) in [
+        ("format = 1\nedge = \"Left\"\n", alo_dock::Edge::Left),
+        (
+            "format = 1\nedge = \"Top\"\ndisplays = [[\"DP-3 Dell U2720Q\", \"Left\"]]\n",
+            alo_dock::Edge::Top,
+        ),
     ] {
         std::fs::write(&at, text).unwrap();
         let (drawn, refused) = keeping::at_sign_in(&at);
         assert_eq!(refused, None, "{text:?} was refused");
-        assert_eq!(drawn, Dock::shipped(), "{text:?}");
-        assert!(drawn.changes().is_untouched(), "{text:?}");
+        assert_eq!(drawn.edge(), wanted, "{text:?}");
+        assert_ne!(
+            drawn,
+            Dock::shipped(),
+            "{text:?} read as a machine nobody had touched"
+        );
+        assert!(!drawn.changes().is_untouched(), "{text:?}");
     }
+
+    // **`displays` alone is still nothing**, and the dock is where the release
+    // ships it.
+    std::fs::write(&at, "format = 1\ndisplays = [[\"DP-3\", \"Left\"]]\n").unwrap();
+    let (drawn, refused) = keeping::at_sign_in(&at);
+    assert_eq!(refused, None);
+    assert_eq!(drawn, Dock::shipped());
+    assert!(drawn.changes().is_untouched());
+}
+
+/// **An edge that is not one is refused, and the person is told rather than
+/// guessed at.**
+///
+/// `"Middle"` was tolerated while nothing read the key — refusing a file over a
+/// word nothing reads would have been refusing it for nothing. Now the key
+/// means something and a value that is not an edge is treated exactly as a
+/// `hiding` that is not a hiding: the file does not read, and the person is told
+/// so. **No release ever wrote anything but the four names**, so this changes
+/// what happens to a typo and to nothing else.
+#[test]
+fn an_edge_that_is_not_one_is_refused_and_said() {
+    let folder = a_folder_of_our_own("an-edge-that-is-not-one");
+    let at = the_file_in(&folder);
+    std::fs::create_dir_all(at.parent().unwrap()).unwrap();
+    std::fs::write(&at, "format = 1\nedge = \"Middle\"\n").unwrap();
+
+    let (drawn, refused) = keeping::at_sign_in(&at);
+    assert!(
+        refused.is_some(),
+        "a file naming an edge that does not exist was read as something"
+    );
+    assert_eq!(
+        drawn,
+        Dock::shipped(),
+        "a refused file leaves the dock as the release ships it, rather than half-read"
+    );
 }
 
 /// **The half of such a file that still means something survives it.** Somebody
