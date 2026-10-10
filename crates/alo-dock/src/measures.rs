@@ -81,33 +81,48 @@ pub const ABOVE_AND_BELOW_AN_ICON: u32 = 14;
 
 /// The side of the artwork drawn inside [`ICON`].
 ///
-/// **Thirty-two inside forty-eight, settled by the owner on 2026-10-09**:
-/// *I recommend 32px icons inside 48px clickable areas, with no automatic
-/// shrinking or hover enlargement.*
+/// **Twenty-eight inside forty-eight, by [ADR
+/// 0101](../../../docs/decisions/0101-one-dock-component-family-and-the-renderer-that-can-draw-it.md)**:
+/// *application artwork: 28 × 28, centred. This supersedes the earlier 32px
+/// artwork proposal.*
 ///
-/// # Why this is a second number and not a smaller [`ICON`]
+/// It was 32 from 2026-10-09, which the owner gave as a **proposal** and said
+/// so. The canonical design file draws 28 in every `Dock edges / Button / *`,
+/// and the edge family is the baseline the same ruling chose.
 ///
-/// [`ICON`] is the **clickable area** — what a hand has to hit — and this is
-/// the **artwork** inside it. Keeping them apart is what lets the target stay
-/// 48 while the drawing is 32, with eight logical pixels of quiet on every
-/// side. Collapsing them into one number is the mistake this file has already
-/// watched twice in one afternoon: a drawn extent compared against a hit
-/// target, and a glyph compared against a cell, each nearly published as a
-/// contradiction that was not there.
+/// # Four numbers, and the ruling says not to confuse them
+///
+/// The owner's sentence, which is the one most likely to be lost:
+///
+/// > The 52 × 48 bottom measurement may include spacing around a target;
+/// > distinguish that from the target itself. Do not silently treat all these
+/// > measurements as interchangeable.
+///
+/// So there are four, and this file keeps them apart by name:
+///
+/// | | | |
+/// |---|---|---|
+/// | the **target** | what a hand must hit | [`ICON`], 48 |
+/// | the **artwork** | what an eye reads | this, 28 |
+/// | the **quiet** | what is left over, each side | [`AROUND_THE_ARTWORK`], 10 |
+/// | the **pitch** | one target to the next | [`ICON`] + [`GAP`] |
+///
+/// A fifth — the 52 in the bottom Dock's `52 × 48` slot — is spacing a layout
+/// put around a target and is **not** any of these. This repository has already
+/// published one contradiction by comparing two of the four; the cure is that
+/// each has a name and none is derived from another by coincidence.
 ///
 /// # No shrinking, and the owner's reason is the whole of it
 ///
 /// The Figma implementation contract said *icons may reduce from 32 to 28*.
-/// **The owner revised their own earlier suggestion**, in these words:
-/// *smaller artwork alone does not create more usable space*. So when the Dock
-/// runs out of edge it uses overflow rather than shaving the artwork, because
-/// a 28-pixel glyph in a 48-pixel target buys four pixels of room and costs
-/// legibility for the person who could least spare it.
+/// **The owner revised that**, in these words: *smaller artwork alone does not
+/// create more usable space*. So when the Dock runs out of edge it uses
+/// overflow rather than shaving the artwork — and 28 is now the **one** size
+/// rather than the bottom of a range.
 ///
 /// **And no hover enlargement**, by the same decision. §10 of the Dock's
 /// specification already forbids magnification that pushes neighbours sideways
-/// — *the person should be able to aim once and click* — and a fixed size is
-/// how that is kept rather than tuned.
+/// — *the person should be able to aim once and click.*
 ///
 /// # What a person may change, and when
 ///
@@ -115,11 +130,63 @@ pub const ABOVE_AND_BELOW_AN_ICON: u32 = 14;
 /// that belongs with **`[v0.5]` The dock's size, and whether it hides when a
 /// window needs the room** in `docs/features.md`. Until then this is fixed,
 /// which is a number nobody has been offered rather than a choice withdrawn.
+pub const GLYPH: u32 = 28;
+
+/// What is left over around the artwork, on each side of it.
 ///
-/// Utility symbols — search, overflow — are 20 to 24 by the same decision, in
-/// the same 48 target. They are not this constant: a magnifying glass is not
-/// an application.
-pub const GLYPH: u32 = 32;
+/// **Derived, and named rather than left implicit**, because the three numbers
+/// it sits between are each fixed by something different: the target by the
+/// standard a hand is held to, the artwork by the design file, and this by
+/// arithmetic. It was eight — the spacing unit — while the artwork was 32, and
+/// that coincidence is what let a reader believe the three were one system.
+/// They are not, and ADR 0101 says so.
+pub const AROUND_THE_ARTWORK: u32 = (ICON - GLYPH) / 2;
+
+/// The radius of the Dock's own corners.
+///
+/// `radius/lg` in the design file, measured on `Edge=Top, State=Overflow`
+/// (`348:23874`) and ruled for every edge by ADR 0101. The bottom Dock's older
+/// component draws 16; the ruling normalises both to this.
+pub const THE_DOCKS_CORNER: u32 = 18;
+
+/// How thick the hairline around the Dock is.
+///
+/// One logical pixel, in `border/default`. A *measure*, not a colour: which
+/// colour it is belongs to `alo_appearance`, like every other colour this
+/// product draws.
+pub const THE_DOCKS_EDGE: u32 = 1;
+
+/// How far the Dock's shadow is offset, and how far it spreads.
+///
+/// `Overlay / Glass` in the design file: `0 8px 24px rgba(7,19,31,0.08)`. Held
+/// as two measures and a share rather than a string, because a shadow is drawn
+/// and not written — and because the opacity is not this crate's to hold, for
+/// the reason [`THE_DOCKS_EDGE`] gives about colour.
+pub const THE_SHADOW_FALLS: u32 = 8;
+
+/// How far the Dock's shadow spreads from its edge.
+pub const THE_SHADOW_SPREADS: u32 = 24;
+
+/// How much the canvas behind the Dock is blurred.
+///
+/// Eighteen, by ADR 0101 — and **with a designed opaque alternative when a
+/// person has asked for reduced transparency.** That alternative is not a
+/// fallback for a hard problem: it is a state the owner named, and it ships
+/// whatever the blur costs.
+pub const BEHIND_THE_DOCK_IS_BLURRED: u32 = 18;
+
+/// How wide the composer — *Find, open, or ask…* — is at the reference size.
+///
+/// Measured at **344 × 48** on both Dock families (`349:25790` and
+/// `I321:17430;74:53`), which is the one thing they already agreed on, and
+/// preserved by ADR 0101.
+pub const THE_COMPOSER_IS_WIDE: u32 = 344;
+
+/// How tall the composer is: the same as a target, so it sits on their line.
+pub const THE_COMPOSER_IS_TALL: u32 = ICON;
+
+/// The radius of the composer's own corners — `radius/md` in the design file.
+pub const THE_COMPOSERS_CORNER: u32 = 12;
 
 // **The standards' target floors left this file on 2026-09-30.**
 // `SMALLEST_TARGET` was here because a dock icon was the first thing that
@@ -297,17 +364,24 @@ pub const AROUND_A_NAME_BESIDE_AN_ICON: u32 = 12;
 // instead, so a spacing unit cannot be changed into an inconsistent set and
 // land anywhere.
 
-/// The artwork fits inside the target with one spacing unit on every side.
+/// The artwork fits inside the target, centred, with the quiet it leaves.
 ///
-/// Eight logical pixels, which is also [`MARGIN`] and [`GAP`]: one unit, used
-/// three ways. If somebody changes any of the four, this names which.
+/// **This asserted `(ICON - GLYPH) / 2 == MARGIN && == GAP` until ADR 0101**,
+/// which was true while the artwork was 32 and was a **coincidence** rather
+/// than a system: one spacing unit happened to be what 48 less 32, halved,
+/// came to. The owner's ruling moved the artwork to 28 and the coincidence
+/// broke, which is the right way for a false relationship to be found.
+///
+/// What is held now is what is actually true: the artwork is smaller than the
+/// target, it is centred in it, and the quiet is even. The quiet's **value** is
+/// `AROUND_THE_ARTWORK`'s own business and is deliberately not compared to a
+/// spacing unit here.
 const _: () = assert!(
-    GLYPH < ICON && (ICON - GLYPH) / 2 == MARGIN && (ICON - GLYPH) / 2 == GAP,
-    "the owner's sizes no longer agree: the artwork must sit inside its target \
-     with one spacing unit of quiet on each side"
+    GLYPH < ICON && (ICON - GLYPH).is_multiple_of(2) && AROUND_THE_ARTWORK * 2 + GLYPH == ICON,
+    "the artwork no longer sits centred inside its target with even quiet on each side"
 );
 
-/// A Dock holding one application is 64 logical pixels thick.
+/// A Dock holding one application is 64 logical pixels thick./// A Dock holding one application is 64 logical pixels thick.
 ///
 /// The owner gave 64 as its own figure as well as the three it is built from,
 /// so both are held here and a change to a spacing unit says what it costs.
