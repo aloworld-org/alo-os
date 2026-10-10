@@ -158,6 +158,34 @@ cannot demonstrate.
 
 ## Standing rules
 
+- **Read the promise whole, then ask, then build.** Before building
+  anything, find what this repository already promises about it — in
+  `docs/features.md`, in `docs/design/`, in the design file, in an ADR —
+  and **read the sentence to its end**. Where the promise could be read
+  more than one way, **put the reading to the owner before writing
+  code**, not after. Added by the owner's direction on 2026-10-09:
+  *always first understand the promise, discuss it with me and then
+  build, because otherwise this is not good to build without
+  understanding fully the rules.*
+
+  **The qualifier is usually the rule.** `docs/features.md` promises
+  *nothing is stacked — no window is buried behind another **where the
+  person cannot find it***. Read to the dash, it forbids one window
+  overlapping another; read to the full stop, it forbids alo losing
+  one. On 2026-10-09 this lane had designed the first and was about to
+  build it, which would have stopped a person putting one window behind
+  another on their own machine — **a change that takes a choice away
+  from the person, which law 5 calls a bug whatever the reason given for
+  it.** The owner caught it by asking whether it was really meant.
+
+  **And code is not the authority on what exists.** Twice on 2026-10-08
+  two lanes reported a thing missing after reading only the code — the
+  Dock's contents and the window frame — and both were designed in full,
+  one of them a component used 1,814 times. A thing absent from the code
+  is a thing **not yet built**, and which of those two it is cannot be
+  read off the code at all. Look for the design before reporting an
+  absence, and say which you looked at.
+
 - **Task branches, one merge coordinator.** Follow
   `docs/autonomy/SHARED_MAIN.md`: branch checkpoint pushes may precede full
   gates; only an exact, fully gated combined tree may be squash-merged through

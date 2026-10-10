@@ -8,6 +8,7 @@ members = [
   "crates/alo-access",
   "crates/alo-arranging",
   "crates/alo-playing",
+  "crates/alo-installed",
   "crates/alo-adapters",
   "crates/alo-accounts",
   "crates/alo-adapting",

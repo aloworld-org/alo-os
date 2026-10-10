@@ -80,6 +80,38 @@ impl crate::Server {
             .or_else(|| said(app_id).map(FrameName::ItsClass))
             .unwrap_or(FrameName::AnApplication)
     }
+
+    /// Which application this frame belongs to, where it said.
+    ///
+    /// **Not [`Self::the_name_of`], and the difference is the whole point.**
+    /// That answers *what is this window called* and prefers the title, which
+    /// is right for the handle a person grabs and wrong for a dock: two
+    /// windows of one application have two titles and one application, and a
+    /// dock that grouped by title would show the same program twice.
+    ///
+    /// So this reads `xdg_toplevel.set_app_id` **and nothing else**, and never
+    /// falls back to the title.
+    ///
+    /// [`None`] where the application set no class, or set a blank one. That
+    /// is an answer rather than a gap: `alo_dock::Window` holds its
+    /// application as an [`Option`] by the owner's direction — *a missing
+    /// application identity must not prevent minimization*, and *do not
+    /// substitute a fabricated app identity*. An absence cannot be overridden
+    /// wrongly and a chosen default can.
+    ///
+    /// Reads committed state and sends nothing. Safe to ask every frame.
+    #[must_use]
+    pub fn the_application_of(&self, frame: &WlSurface) -> Option<alo_dock::AppId> {
+        let said = with_states(frame, |states| {
+            let data = states.data_map.get::<XdgToplevelSurfaceData>();
+            data.and_then(|data| data.lock().ok())
+                .and_then(|state| state.app_id.clone())
+        })?;
+        // `AppId::named` refuses a name that is empty or only blank space, and
+        // that refusal is this function's `None`: an application that set its
+        // class to spaces has not named itself.
+        alo_dock::AppId::named(&said).ok()
+    }
 }
 
 impl crate::Server {

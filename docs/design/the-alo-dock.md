@@ -159,6 +159,49 @@ rule on the morning a person most relies on it. That belongs to whoever owns
 `leaving.toml`, not to a crate about a dock. `crates/alo-dock/src/windows.rs`
 says so at the place it would go.
 
+## The sizes, decided where the file disagreed with itself
+
+**Settled by the owner on 2026-10-09**, and recorded here because
+`CLAUDE.md` gives this directory *what the owner decided where it is silent or
+disagrees with itself* — and it disagreed: `Dock 01 · Resting` draws a **24**
+glyph while the side docks' implementation contract says *icons may reduce from
+32 to 28*.
+
+| | |
+|---|---|
+| application icon | **32 × 32** |
+| clickable area | **48 × 48** |
+| gap between clickable areas | **8** |
+| the Dock's outer padding | **8** |
+| horizontal Dock height, vertical Dock width | **64** |
+| utility glyphs — search, overflow | 20 to 24, in the same 48 target |
+
+**The owner gave these as proposed dimensions rather than as measurements of the
+Figma file**, and said so, which is why they are written here as a decision and
+not as a reading.
+
+**No automatic shrinking, and no hover enlargement.** This revises the
+contract's *may reduce from 32 to 28*, in the owner's words: *smaller artwork
+alone does not create more usable space.* When the Dock runs out of edge it uses
+overflow. A 28-pixel glyph in a 48-pixel target buys four pixels and costs
+legibility for the person who can least spare it, and §10 already forbids
+magnification that pushes neighbours sideways — *the person should be able to
+aim once and click.*
+
+**Icon size becomes a person's setting later**, with **`[v0.5]` The dock's size,
+and whether it hides when a window needs the room**. Until then it is fixed,
+which is a number nobody has been offered rather than a choice withdrawn.
+
+**Four of the six were already the code's numbers**, written by somebody who had
+not seen this list: `ICON = 48` was always the *clickable area*, with `GAP = 8`,
+`MARGIN = 8` and `Room::a_dock_of_icons()` asserting **64**. What was missing was
+the artwork's own size, now `measures::GLYPH`.
+
+**They are held at compile time.** `measures.rs` carries `const` assertions
+rather than tests, because these are relationships between constants: setting
+the glyph back to 28 fails the **build**, naming the decision. Measured by doing
+it.
+
 ## Not settled
 
 - **A window on another display.** The canvas travels to a window; if the window
