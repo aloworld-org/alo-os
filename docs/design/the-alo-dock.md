@@ -98,6 +98,22 @@ window marks that window, names alo, and offers Stop. **Neither becomes a
 permanent button in the Dock**, and the Dock does not become a dashboard for the
 agent.
 
+## What this file does not carry
+
+**It carries behaviour and the owner's geometry rulings. It does not carry what
+the Dock looks like** — the surface, its corner radius, its border, its shadow,
+the running indicators, the artwork in a slot, or how the overflow list is
+styled. Those are measured in
+[the Dock's visual specification](the-docks-visual-specification.md), node by
+node, from the canonical Figma.
+
+The split was made on 2026-10-10 after this lane showed a working overflow and
+treated it as evidence the design was finished. The owner:
+
+> The agreed 76px horizontal height and 48×48 targets establish geometry; they do
+> not replace the rest of the visual design. Likewise, the overflow row minimum is
+> not a complete panel specification.
+
 ## Full screen, pinning, and too many applications
 
 True full screen covers the Dock. Moving to the bottom edge reveals it over the
