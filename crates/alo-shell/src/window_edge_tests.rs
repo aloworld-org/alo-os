@@ -233,3 +233,30 @@ fn the_edge_moves_with_its_window() {
     assert_eq!(edge.region.loc, Point::from((300, 200)));
     assert_eq!(edge.controls[0].target.loc.x, 300 + 456);
 }
+
+/// **The hovered control's highlight is smaller than its target.**
+///
+/// `402:26315`, a *Hover surface* of 32 × 28 at `left 6, top 14` inside the
+/// 44 × 44. Filling the whole target would be visibly wrong, and is what the
+/// contract's *subtle highlight only on the hovered control* rules out. The
+/// target still answers the press — these are two rectangles for two jobs.
+#[test]
+fn the_hover_highlight_is_a_pill_inside_the_target() {
+    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let close = edge
+        .controls
+        .last()
+        .expect("the shell's three controls end with Close");
+    assert_eq!(close.does, OnTheEdge::Close);
+    assert_eq!(close.highlight.size, Size::from((32, 28)));
+    assert_eq!(close.highlight.loc.x - close.target.loc.x, 6);
+    assert_eq!(close.highlight.loc.y - close.target.loc.y, 14);
+    assert!(
+        close.target.intersection(close.highlight) == Some(close.highlight),
+        "the highlight must sit wholly inside the target it belongs to"
+    );
+    assert_ne!(
+        close.highlight.size, close.target.size,
+        "the highlight is not the target"
+    );
+}

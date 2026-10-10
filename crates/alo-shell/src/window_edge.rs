@@ -68,6 +68,18 @@ pub const A_TARGET_IS: i32 = 44;
 /// How wide and tall the artwork inside a control is.
 pub const ARTWORK_IS: i32 = 14;
 
+/// The highlight drawn behind a hovered control: its size, and its offset
+/// inside the 44 x 44 target.
+///
+/// **Smaller than the target, measured from `402:26315`** — 32 x 28 at
+/// `left 6, top 14`, `bg/cool`. The target is what answers a press; this is
+/// what is drawn. Filling the whole 44 would be visibly wrong and is what the
+/// contract's *subtle highlight only on the hovered control* rules out.
+pub const A_HIGHLIGHT_IS: (i32, i32) = (32, 28);
+
+/// Where that highlight sits inside its target.
+const THE_HIGHLIGHT_SITS_AT: (i32, i32) = (6, 14);
+
 /// The gap between control targets, and between the last and the trailing
 /// edge.
 ///
@@ -150,6 +162,9 @@ pub struct Control {
     /// in the target — which is why its top is 9 below the strip's and not 15
     /// below the target's.
     pub artwork: Rectangle<i32, Logical>,
+    /// What is filled behind this control while it is hovered: 32 × 28 inside
+    /// the 44 × 44, never the whole target.
+    pub highlight: Rectangle<i32, Logical>,
 }
 
 /// The whole edge of one window.
@@ -248,6 +263,13 @@ pub fn edge_of(window: Rectangle<i32, Logical>, decorations: Decorations, reveal
                 does,
                 target,
                 artwork: artwork_in(target, region),
+                highlight: Rectangle::new(
+                    Point::from((
+                        target.loc.x + THE_HIGHLIGHT_SITS_AT.0,
+                        target.loc.y + THE_HIGHLIGHT_SITS_AT.1,
+                    )),
+                    Size::from(A_HIGHLIGHT_IS),
+                ),
             }
         })
         .collect();
