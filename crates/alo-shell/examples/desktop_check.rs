@@ -69,6 +69,25 @@
 mod saving_frames;
 
 /// Main-thread graphics initialisation is required by winit.
+/// Which edge, as a word for a picture's file name.
+///
+/// **Not `alo_dock::words`, and that is deliberate.** Those are the four
+/// sentences a *person* reads in a settings panel — *Along the bottom*, *Down the
+/// left side* — and they are translated. A file name on a developer's disk is not
+/// a sentence a person reads, and putting a translated phrase into one would make
+/// the name of a picture depend on the language the machine happens to be set to.
+///
+/// Matched exhaustively rather than through a default arm, so a fifth edge is a
+/// compile error here and not a picture called *the dock alone on the  edge*.
+fn an_edges_name(edge: alo_dock::Edge) -> &'static str {
+    match edge {
+        alo_dock::Edge::Bottom => "bottom",
+        alo_dock::Edge::Left => "left",
+        alo_dock::Edge::Right => "right",
+        alo_dock::Edge::Top => "top",
+    }
+}
+
 fn main() -> std::process::ExitCode {
     match run() {
         Ok(()) => std::process::ExitCode::SUCCESS,
@@ -175,8 +194,34 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Err(refused.said(&strings).into_text().into());
     }
 
+    // **Three applications for the Dock to hold**, built the way `alo-dock`
+    // would hand them over rather than assembled by hand: `OnTheDock` has no
+    // public constructor and should not gain one for a fixture, because a
+    // picture of a Dock showing something the Dock would never show is worse
+    // than no picture.
+    //
+    // Their names are ordinary ones a person would recognise, and their first
+    // letters differ — which is what makes the picture show three icons rather
+    // than one repeated.
+    let a_few_applications = {
+        let patch = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1)
+            .map_err(|error| format!("{error:?}"))?;
+        let mut windows = alo_dock::Windows::none();
+        for (number, named) in ["Files", "Mail", "Browser"].into_iter().enumerate() {
+            windows.opened(alo_dock::Window::of(
+                alo_dock::WindowId::numbered(number as u64),
+                Some(alo_dock::AppId::named(named).map_err(|error| format!("{error:?}"))?),
+                named,
+                patch,
+                alo_dock::HowItSits::OnTheCanvas,
+            ));
+        }
+        alo_dock::Holding::nothing().showing(&windows)
+    };
+
     let mut submitted = 0;
     let mut draw = |what: &str,
+                    dock: &Dock,
                     egress: &EgressStatus,
                     running: &RunningWindow,
                     filling: &FillingWindow,
@@ -190,7 +235,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             alo_dividing::area::Size::of(1920, 1080),
         )?);
         {
-            let dock = Dock::shipped();
+            // **The Dock is the caller's, not this closure's.** It built
+            // `Dock::shipped()` here until 2026-10-10, which is the bottom edge
+            // and nothing else — so the four-edge promise in `docs/features.md`
+            // had no picture of three of its four answers, and the one thing a
+            // fixture is for is eyes.
             for (scheme, now) in times {
                 for (which_way, reading) in [
                     ("read left to right", Direction::LeftToRight),
@@ -207,14 +256,26 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             &mut labels,
                             DesktopFrame {
                                 display_scale: 100,
-                                // Nothing is pinned or open in this fixture,
-                                // so the band is the width of a Dock holding
-                                // nothing. **Deliberately not raised to show a
-                                // wider bar**: §8 of the Dock specification says
-                                // it must not reserve a large empty bar, and an
-                                // icon-less wide band is exactly that.
-                                dock_holds: 0,
-                                dock: &dock,
+                                // **Three applications, so there is a Dock to
+                                // look at.** This held nothing until
+                                // 2026-10-10, with the note *deliberately not
+                                // raised to show a wider bar — §8 says it must
+                                // not reserve a large empty bar, and an
+                                // icon-less wide band is exactly that.* That
+                                // reasoning was right and it was about an
+                                // **empty** bar: nothing drew an icon, so a
+                                // wider band would have been reserved room with
+                                // nothing in it.
+                                //
+                                // Icons are drawn now — an application with no
+                                // artwork shows its first letter, by the
+                                // owner's ruling of that day — so a bar holding
+                                // three is three icons wide and not a reserved
+                                // emptiness. Which is the whole point of this
+                                // fixture: *it needs eyes, and eyes need
+                                // pictures.*
+                                on_the_dock: &a_few_applications,
+                                dock,
                                 look: DesktopLook::of(
                                     &appearance,
                                     &TurnedOn::nothing(),
@@ -288,15 +349,36 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     let closed_running = RunningWindow::closed();
     let closed_filling = FillingWindow::closed();
-    draw(
-        "the dock alone",
-        &quiet,
-        &closed_running,
-        &closed_filling,
-        &mut nested,
-    )?;
+    let shipped = Dock::shipped();
+
+    // **The dock alone, on each of the four edges a person may choose.**
+    //
+    // `docs/features.md`'s *Where the Dock goes* promises bottom, left, right
+    // and top, and until 2026-10-10 this fixture drew only the one the release
+    // ships on. Three of the four placements had no picture — and
+    // `dock_raster`'s own test for them calls `the_band_on` directly for the
+    // reason it gives: a drawing test that goes through `Dock::shipped` can only
+    // ever exercise one. So the edge is set here, which is the one place a
+    // *picture* of the other three can come from.
+    //
+    // The edge is named in the picture's own name, because four files called
+    // *the dock alone* differing only in where the bar sits is four files nobody
+    // can tell apart.
+    for edge in alo_dock::Edge::EVERY {
+        let mut dock = Dock::shipped();
+        dock.set_edge(edge);
+        draw(
+            &format!("the dock alone on the {} edge", an_edges_name(edge)),
+            &dock,
+            &quiet,
+            &closed_running,
+            &closed_filling,
+            &mut nested,
+        )?;
+    }
     draw(
         "the dock with a question leaving",
+        &shipped,
         &lit,
         &closed_running,
         &closed_filling,
@@ -310,6 +392,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     running.opened(earlier, Reading::now(), taken.elapsed());
     draw(
         "what is running",
+        &shipped,
         &quiet,
         &running,
         &closed_filling,
@@ -320,6 +403,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     running.read_again(Reading::now(), again.elapsed());
     draw(
         "what is running, read again",
+        &shipped,
         &lit,
         &running,
         &closed_filling,
@@ -330,6 +414,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     filling.opened(&documents);
     draw(
         "what is filling a folder",
+        &shipped,
         &quiet,
         &closed_running,
         &filling,
@@ -339,17 +424,26 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     filling.pressed(FillingKey::Open);
     draw(
         "a folder opened",
+        &shipped,
         &quiet,
         &closed_running,
         &filling,
         &mut nested,
     )?;
-    draw("both windows", &lit, &running, &filling, &mut nested)?;
+    draw(
+        "both windows",
+        &shipped,
+        &lit,
+        &running,
+        &filling,
+        &mut nested,
+    )?;
 
     std::fs::remove_dir_all(&documents)?;
     filling.pressed(FillingKey::CountAgain);
     draw(
         "a folder that is gone",
+        &shipped,
         &quiet,
         &running,
         &filling,

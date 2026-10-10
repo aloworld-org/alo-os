@@ -21,14 +21,24 @@
 //! a file whose header describes it correctly on the day it is written and is
 //! quietly outgrown by the second thing that needs what it holds.
 //!
-//! [`A_DOCK_MAY_TAKE_ONE_PART_IN`] is not taste at all. It is fixed by a
-//! requirement: **text reaches 200% without losing content** (EN 301 549, by way
-//! of WCAG 1.4.4), on the smallest screen alo OS lays out for
-//! ([`crate::Screen::the_smallest`]). It is as generous as that requirement
-//! allows and no more, and `crate::layout`'s tests are what says so — loosen it
-//! and a dock on a 1366×768 screen takes more of it than the person's work;
-//! tighten it and the names go at exactly the size the standard says they must
-//! survive.
+//! **`A_DOCK_MAY_TAKE_ONE_PART_IN` was the example this paragraph was written
+//! about, and it is gone.** It was not taste: it was fixed by a requirement —
+//! *text reaches 200% without losing content* (EN 301 549, by way of
+//! WCAG 1.4.4) — because one part tighter and the row of names under the icons
+//! would have gone at exactly the size the standard says they must survive.
+//!
+//! The owner removed that row on 2026-10-10, so nothing was left for the share
+//! to be tight against; and because the shortest side a screen may have was
+//! computed from it, the share had quietly become the thing that decided
+//! **which displays this product supports**. Measuring the bar at 76 moved the
+//! floor from 384 to 456 and dropped a band of displays nobody had decided to
+//! drop. The ruling that followed separated the two, and
+//! [`THE_LEAST_A_SIDE_CAN_BE`] is a stated number now.
+//!
+//! **The lesson the paragraph was making is intact and is worth more than the
+//! example was**: a number fixed by a requirement is not taste, and a number
+//! that quietly acquires a second job — here, deciding display eligibility —
+//! has stopped being fixed by the requirement that justified it.
 //!
 //! **`LABEL_EMS` was the second such number** — how much width a name needed
 //! beside an icon on a dock down the side of the screen. ADR 0076 fixed the dock
@@ -50,6 +60,24 @@
 /// same answer as a person who needs a bigger dock: it is a setting that does
 /// not exist yet, rather than one this crate guesses at.
 pub const ICON: u32 = 48;
+
+/// How much of a horizontal dock's thickness sits above and below the icon.
+///
+/// **Measured off the design, and it is not [`MARGIN`].** The snapshot's
+/// `Dock + alo Bar` is **76** tall with the `Browser · focus hit area` 48 tall
+/// inside it — 14 above and 14 below. `MARGIN` is 8 and is the room at the
+/// bar's *ends*, along the edge it runs on; this is the room across it. The two
+/// were one number while the thickness was `MARGIN + ICON + MARGIN` = 64, and
+/// that is what made 64 look measured when it was proposed.
+///
+/// **The owner's ruling of 2026-10-10**, after this file's own table and the
+/// Figma and the code gave three different heights:
+///
+/// > Remove the unused label row and use the measured 76px horizontal Dock. My
+/// > earlier 64px proposal is superseded by this decision. … Dock height: 76
+/// > logical pixels, with the measured 48px application target centred
+/// > vertically: 14px above and below.
+pub const ABOVE_AND_BELOW_AN_ICON: u32 = 14;
 
 /// The side of the artwork drawn inside [`ICON`].
 ///
@@ -124,11 +152,33 @@ pub const LINE_IN_FIFTHS: u32 = 7;
 
 /// The most of a screen's side a dock may take: one part in this many.
 ///
-/// **A dock is on the screen all day**, so what it takes it takes from
-/// everything else. One part in six is what leaves room for a name at the size
-/// EN 301 549 requires the layout to survive, on the smallest screen alo OS
-/// lays out for, and nothing beyond that.
-pub const A_DOCK_MAY_TAKE_ONE_PART_IN: u32 = 6;
+/// The shortest a screen's side may be and still be laid out for.
+///
+/// **A stated floor, not a derived one, and that is the whole point of it.** It
+/// was `A_DOCK_MAY_TAKE_ONE_PART_IN * a_dock_of_icons()` — one part in six of
+/// the screen, times the dock's thickness — which quietly made *how thick the
+/// Dock is* decide *which displays this product supports*. Measuring the bar at
+/// 76 instead of 64 on 2026-10-10 therefore moved the floor from 384 to 456 and
+/// dropped a band of displays nobody had decided to drop.
+///
+/// The owner's ruling of that day:
+///
+/// > Separate Dock sizing from display eligibility. Keep the measured 76px
+/// > horizontal bar, but do not reject a previously supported display simply
+/// > because its height is less than six times the Dock's thickness. Remove
+/// > that coupling and retain coverage for the previously accepted smaller
+/// > displays.
+///
+/// **384 is what was accepted before**, kept so that no display this product
+/// has laid out for stops being one. It is a compatibility floor rather than an
+/// arithmetic result: raising the bar's thickness must never move it again, and
+/// a change to *this* number is a decision about which machines alo OS runs on.
+///
+/// The ratio it replaced is gone. Its own note justified it as *what leaves
+/// room for a name at the size EN 301 549 requires the layout to survive* — and
+/// the row of names it left room for was removed the same day, so nothing
+/// documented was left for it to serve.
+pub const THE_LEAST_A_SIDE_CAN_BE: u32 = 384;
 
 /// How far the bar floats above the bottom edge of the screen.
 ///

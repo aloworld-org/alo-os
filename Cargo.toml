@@ -137,6 +137,15 @@ toml = "0.9"
 thiserror = "2"
 ureq = { version = "3", default-features = false, features = ["rustls", "json"] }
 serde_json = "1"
+# Where one letter ends and the next begins, for the letter a Dock icon shows
+# when an application has no artwork (the owner's ruling of 2026-10-10). The
+# standard library has no spelling for it: `chars().next()` on a name beginning
+# in Devanagari, Thai, Hangul or an emoji returns half a letter, and the half is
+# different in each script. **Already in `Cargo.lock` under cosmic-text**, so
+# nothing new enters the tree; this only makes it a dependency somebody declared
+# rather than one inherited by accident. Reached by `alo-dock`, from
+# `window.rs`, and by nothing else.
+unicode-segmentation = "1.13"
 # SHA-256, for tests that hold a published fixture to the digest its provenance
 # records. Already in `Cargo.lock` under the D-Bus stack, so nothing new enters
 # the tree, and it is taken as a dev-dependency only — no daemon reaches it.

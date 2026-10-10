@@ -494,4 +494,112 @@ mod tests {
             assert_eq!(fitted.over().len(), 2, "{at_most}");
         }
     }
+
+    /// **A pinned application that is running keeps its place and gains an
+    /// indicator — it does not gain a second icon.**
+    ///
+    /// The owner's ruling of 2026-10-10: *a running pinned application stays in
+    /// its existing position when launched, with a running indicator rather
+    /// than a duplicate icon.* `showing` already did this — the second pass
+    /// skips what `is_pinned` answers for — and it is the kind of promise a
+    /// refactor breaks silently, because a Dock with two Browsers looks like a
+    /// Dock that is working until somebody counts.
+    #[test]
+    fn launching_a_pinned_application_moves_nothing_and_duplicates_nothing() {
+        let mut holding = Holding::nothing();
+        holding.pin(app("files"));
+        holding.pin(app("browser"));
+        holding.pin(app("settings"));
+
+        let closed = Windows::none();
+        assert_eq!(
+            names(&holding.showing(&closed)),
+            ["files", "browser", "settings"],
+            "the premise: three pinned applications, none of them running"
+        );
+
+        // The middle one starts, with two windows.
+        let mut windows = Windows::none();
+        windows.opened(window(1, "browser", HowItSits::OnTheCanvas));
+        windows.opened(window(2, "browser", HowItSits::OnTheCanvas));
+        let shown = holding.showing(&windows);
+
+        assert_eq!(
+            names(&shown),
+            ["files", "browser", "settings"],
+            "launching a pinned application moved an icon or added one"
+        );
+        assert_eq!(
+            shown
+                .iter()
+                .filter(|one| one.app() == &app("browser"))
+                .count(),
+            1,
+            "the running pinned application has two icons"
+        );
+
+        let browser = row(&shown, 1);
+        assert_eq!(browser.pinned(), Pinned::ByThePerson);
+        assert!(
+            browser.is_open(),
+            "it is running, which is what a running indicator is drawn from"
+        );
+        assert_eq!(browser.how_many_windows(), 2);
+
+        // And the two that are not running say so, in the same list.
+        assert!(!row(&shown, 0).is_open());
+        assert!(!row(&shown, 2).is_open());
+    }
+
+    /// **Pinned and running are two answers, and a drawing needs both.**
+    ///
+    /// The owner's wording is *a running indicator rather than a duplicate
+    /// icon*, which is only drawable if the two facts arrive separately. They
+    /// do, and this is what says a later change cannot collapse them into one
+    /// *state* — which would make *pinned* and *running* mutually exclusive and
+    /// leave a running pinned application describable only as one or the other.
+    #[test]
+    fn a_row_says_whether_it_is_pinned_and_whether_it_is_running_separately() {
+        let mut holding = Holding::nothing();
+        holding.pin(app("files"));
+        let mut windows = Windows::none();
+        windows.opened(window(1, "files", HowItSits::OnTheCanvas));
+        windows.opened(window(2, "mail", HowItSits::OnTheCanvas));
+
+        let shown = holding.showing(&windows);
+        let four = [
+            (row(&shown, 0).pinned(), row(&shown, 0).is_open()),
+            (row(&shown, 1).pinned(), row(&shown, 1).is_open()),
+        ];
+        assert_eq!(
+            four,
+            [(Pinned::ByThePerson, true), (Pinned::No, true)],
+            "a pinned running application and an unpinned running one must be told apart"
+        );
+
+        // The fourth combination, which only a closed pinned application gives.
+        let shown = holding.showing(&Windows::none());
+        assert_eq!(
+            (row(&shown, 0).pinned(), row(&shown, 0).is_open()),
+            (Pinned::ByThePerson, false)
+        );
+    }
+
+    /// **An application that is only running disappears when it closes; a
+    /// pinned one does not.** The owner's clause in its other direction.
+    #[test]
+    fn an_unpinned_application_leaves_the_dock_when_its_last_window_closes() {
+        let mut holding = Holding::nothing();
+        holding.pin(app("files"));
+        let mut windows = Windows::none();
+        windows.opened(window(1, "mail", HowItSits::OnTheCanvas));
+        assert_eq!(names(&holding.showing(&windows)), ["files", "mail"]);
+
+        assert_eq!(
+            names(&holding.showing(&Windows::none())),
+            ["files"],
+            "the unpinned application stayed on the Dock after its last window closed, or the \
+             pinned one left with it"
+        );
+    }
 }

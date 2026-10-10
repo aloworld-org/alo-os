@@ -48,7 +48,7 @@ impl DesktopPicture {
         // reach for, which is the point of the `Option`: a painter cannot
         // draw a hidden dock by forgetting to check a flag.
         if let Some(dock) = self.dock.as_ref() {
-            crate::painted::paint(frame, &dock.solids, &[])?;
+            crate::painted::paint(frame, &dock.solids, &dock.inked)?;
         }
         // The panel is furniture beside the dock rather than on top of it: two
         // surfaces at two edges, neither drawn over the other, which is why

@@ -192,7 +192,7 @@ fn what_is_drawn_on_two_desktops_carries_the_indicator_and_the_question() {
                     panel_is_revealed: true,
                     filling_the_screen: false,
                     display_scale: 100,
-                    dock_holds: 0,
+                    on_the_dock: &[],
                 },
                 None,
                 Some(ApprovalFrame {

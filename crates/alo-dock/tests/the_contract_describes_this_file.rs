@@ -160,12 +160,21 @@ fn read_from_a_file(what: &str, text: &str) -> (PathBuf, Result<Changes, FileNot
 /// is a key that guard cannot see. `displays` was in exactly that position: the
 /// crate writes it, the contract did not list it, and nothing failed.
 ///
-/// Since ADR 0076 there is one setting to change, so this sets one thing. The
-/// guard is unchanged and so is the reason for it — the next setting to arrive
-/// belongs here in the same change that adds it.
+/// **The next setting arrived on 2026-10-10 and this is it set.** That sentence
+/// used to read *since ADR 0076 there is one setting to change, so this sets
+/// one thing… the next setting to arrive belongs here in the same change that
+/// adds it.* The edge came back, this was not updated in that change, and the
+/// guard caught it — which is the note having been right about both halves.
 fn everything_changed() -> Changes {
     let mut changes = Changes::untouched();
     changes.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
+    // **Every setting, not one.** The contract's key list is compared against
+    // what this writes, so a setting missing here reads as a key the contract
+    // lists and the crate does not write — which is how the edge showed up as
+    // a discrepancy the moment it was added back on 2026-10-10. The same
+    // failure `crate::keeping`'s own test is written to catch, caught from the
+    // other side.
+    changes.set_edge(alo_dock::Edge::Left);
     changes
 }
 

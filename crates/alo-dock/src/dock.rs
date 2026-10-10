@@ -22,8 +22,6 @@
 //!
 //! [`Dock::layout_on`] takes a screen and answers about its size.
 
-use alo_appearance::TextScale;
-
 use crate::changes::{Changes, Setting};
 use crate::hiding::{Hiding, Showing, TheRoom};
 use crate::layout::Layout;
@@ -110,23 +108,34 @@ impl Dock {
         self.changes.forget_everything();
     }
 
-    /// The dock laid out along the bottom of this screen, with the text at this
-    /// size.
+    /// The dock laid out along this person's chosen edge of this screen.
+    ///
+    /// **It took a text size until 2026-10-10** and no longer does: the only
+    /// thing a dock's thickness ever read it for was the row of names under the
+    /// icons, and the owner removed that row. A name is shown on hover and on
+    /// keyboard focus, outside the bar, and never changes its height.
     #[must_use]
-    pub fn layout_on(&self, screen: Screen, text: TextScale) -> Layout {
-        Layout::along(self.edge(), screen, text)
+    pub fn layout_on(&self, screen: Screen) -> Layout {
+        Layout::along(self.edge(), screen)
     }
 
-    /// Which edge of the screen this dock is on.
+    /// Which edge of the screen this dock is on: the person's choice if they
+    /// made one, and what the release ships otherwise.
     ///
-    /// The shipped edge, because nothing can change it yet — `crate::Changes`
-    /// carries no edge, by the owner's order of work of 2026-10-04. When a person
-    /// can choose one, this is the method that starts consulting the change and
-    /// **every caller already asks the right question**, which is the reason it
-    /// exists now rather than then.
+    /// `Self::hiding`'s shape, which this note promised: *when a person can
+    /// choose one, this is the method that starts consulting the change, and
+    /// every caller already asks the right question.* Nothing that calls it
+    /// changed — the draw, the layout and the reveal regions were all asking
+    /// `dock.edge()` already, which is why a person's choice reaches a screen
+    /// through this one line.
     #[must_use]
-    pub const fn edge(&self) -> crate::Edge {
-        self.shipped.edge()
+    pub fn edge(&self) -> crate::Edge {
+        self.changes.edge().unwrap_or_else(|| self.shipped.edge())
+    }
+
+    /// Say which edge of the screen the dock is on.
+    pub const fn set_edge(&mut self, edge: crate::Edge) {
+        self.changes.set_edge(edge);
     }
 }
 
@@ -137,6 +146,7 @@ impl Dock {
 )]
 mod tests {
     use super::*;
+    use crate::Room;
     use crate::labels::Labels;
 
     /// A machine nobody has touched has the dock the release ships, and the one
@@ -156,17 +166,110 @@ mod tests {
         assert!(dock.changes().is_untouched());
     }
 
+    /// **The edge is release-coupled exactly as hiding is**, which is the whole
+    /// point of putting it on `Changes` rather than leaving it on `Shipped`.
+    ///
+    /// Held separately from the test below rather than folded into it: the two
+    /// settings share a shape and not an implementation, and a single test over
+    /// both would pass while one of them read the other's field.
+    #[test]
+    fn a_new_default_edge_reaches_the_untouched_machine_and_not_the_touched_one() {
+        let shipped = Shipped::of(Hiding::Never, crate::Edge::Left);
+        let untouched = Dock::over(shipped);
+        assert_eq!(
+            untouched.edge(),
+            crate::Edge::Left,
+            "a machine that never chose follows the release"
+        );
+
+        let mut chosen = Changes::untouched();
+        chosen.set_edge(crate::Edge::Top);
+        let theirs = Dock::over(shipped).with(chosen);
+        assert_eq!(
+            theirs.edge(),
+            crate::Edge::Top,
+            "their choice survives a release that ships a different edge"
+        );
+
+        // **And the bottom is a choice, not an absence.** A person who picks the
+        // bottom on purpose keeps it when a release moves the default away,
+        // which is the case an `Option` exists for and a bare `Edge` could not
+        // express.
+        let mut deliberate = Changes::untouched();
+        deliberate.set_edge(crate::Edge::Bottom);
+        assert_eq!(
+            Dock::over(shipped).with(deliberate).edge(),
+            crate::Edge::Bottom,
+            "choosing the bottom read as never having chosen"
+        );
+    }
+
+    /// **Putting the edge back follows the release again.**
+    #[test]
+    fn putting_the_edge_back_returns_to_what_the_release_ships() {
+        let shipped = Shipped::of(Hiding::Never, crate::Edge::Bottom);
+        let mut dock = Dock::over(shipped);
+        dock.set_edge(crate::Edge::Right);
+        assert_eq!(dock.edge(), crate::Edge::Right);
+
+        assert!(
+            dock.put_back(Setting::WhereItGoes),
+            "there was a choice to put back"
+        );
+        assert_eq!(dock.edge(), crate::Edge::Bottom);
+        assert!(
+            !dock.put_back(Setting::WhereItGoes),
+            "and it is not there to put back twice"
+        );
+    }
+
+    /// **Putting one setting back leaves the other alone.**
+    ///
+    /// Two settings on one `Changes` is the first time this could go wrong, and
+    /// `forget` is a `match` that could name the wrong field in either arm
+    /// while every single-setting test passed.
+    #[test]
+    fn putting_one_setting_back_does_not_disturb_the_other() {
+        let mut dock = Dock::over(Shipped::of(Hiding::Never, crate::Edge::Bottom));
+        dock.set_edge(crate::Edge::Top);
+        dock.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
+
+        assert!(dock.put_back(Setting::WhereItGoes));
+        assert_eq!(
+            dock.hiding(),
+            Hiding::WhenAWindowNeedsTheRoom,
+            "putting the edge back forgot what they chose about hiding"
+        );
+        assert_eq!(dock.edge(), crate::Edge::Bottom);
+
+        dock.set_edge(crate::Edge::Left);
+        assert!(dock.put_back(Setting::Hiding));
+        assert_eq!(
+            dock.edge(),
+            crate::Edge::Left,
+            "putting hiding back forgot which edge they chose"
+        );
+        assert_eq!(dock.hiding(), Hiding::Never);
+    }
+
     /// **A release can move the default and reach every machine that never
     /// touched it, and no machine that did.** That is the whole reason only the
     /// difference is stored, and this is the test that says it works.
     #[test]
     fn a_new_default_reaches_the_untouched_machine_and_not_the_touched_one() {
-        let untouched = Dock::over(Shipped::of(Hiding::WhenAWindowNeedsTheRoom));
+        let untouched = Dock::over(Shipped::of(
+            Hiding::WhenAWindowNeedsTheRoom,
+            crate::Edge::Bottom,
+        ));
         assert_eq!(untouched.hiding(), Hiding::WhenAWindowNeedsTheRoom);
 
         let mut chosen = Changes::untouched();
         chosen.set_hiding(Hiding::Never);
-        let theirs = Dock::over(Shipped::of(Hiding::WhenAWindowNeedsTheRoom)).with(chosen);
+        let theirs = Dock::over(Shipped::of(
+            Hiding::WhenAWindowNeedsTheRoom,
+            crate::Edge::Bottom,
+        ))
+        .with(chosen);
         assert_eq!(
             theirs.hiding(),
             Hiding::Never,
@@ -188,36 +291,66 @@ mod tests {
     }
 
     /// **Nothing is worked out at load time.** The same dock answers about two
-    /// screens and two text sizes without being rebuilt, so a panel previewing a
-    /// change asks the question the compositor asks.
+    /// screens without being rebuilt, so a panel previewing a change asks the
+    /// question the compositor asks.
+    ///
+    /// **This asserted that names gave way on a small screen at 300% text, and
+    /// that is behaviour the owner removed on 2026-10-10.** There is no row of
+    /// names in the bar to give way: a name is shown on hover and on keyboard
+    /// focus, outside the bar. So the thing to hold is the opposite one — that
+    /// the dock is the same on both screens — and it is held below rather than
+    /// deleted.
     #[test]
     fn one_dock_answers_about_whichever_screen_it_is_drawn_on() {
         let dock = Dock::shipped();
         let laptop = Screen::the_smallest();
         let desk = Screen::of(3840, 2160).unwrap();
-        let large = TextScale::percent(300).unwrap();
 
-        assert!(!dock.layout_on(laptop, large).labels().are_shown());
-        assert!(
-            dock.layout_on(desk, large).labels().are_shown(),
-            "the same dock, the same text, a bigger screen"
-        );
         assert_eq!(
-            dock.layout_on(laptop, TextScale::ordinary()).labels(),
-            Labels::Under
+            dock.layout_on(laptop).thickness(),
+            dock.layout_on(desk).thickness(),
+            "the same dock is the same thickness on a small screen and a large one"
+        );
+        assert_eq!(dock.layout_on(laptop).labels(), Labels::Beside);
+        assert!(
+            dock.layout_on(laptop).length() < dock.layout_on(desk).length(),
+            "the premise: these two screens really are different sizes, so the equality above \
+             is about the dock and not about two identical inputs"
         );
     }
 
-    /// **Every screen gets the same dock.** There is no per-display exception to
-    /// be had, which is the point of ADR 0076 rather than a gap in this file: two
-    /// screens laid out at the same size answer identically.
+    /// **A dock's thickness does not move with the text size**, which is the
+    /// ruling of 2026-10-10 held as a test rather than as a comment.
+    ///
+    /// It used to: `a_dock_with_names_under` added a line of text and made the
+    /// bar **85** where the design measures 76. `layout_on` no longer takes a
+    /// text size at all, so this test can only be written one way — and that is
+    /// the point, because a parameter that is not there cannot be read by a
+    /// later change.
+    #[test]
+    fn the_text_size_cannot_reach_the_docks_thickness() {
+        let dock = Dock::shipped();
+        let screen = Screen::of(1920, 1080).unwrap();
+        assert_eq!(
+            dock.layout_on(screen).thickness(),
+            Room::a_dock_of_icons(),
+            "the thickness is the icon and its two faces, and nothing else"
+        );
+        assert_eq!(
+            Room::a_dock_of_icons().as_pixels(),
+            76,
+            "the measured height of `Dock + alo Bar`: 14 above a 48 target and 14 below"
+        );
+    }
+
+    /// **Every screen gets the same dock.** Two screens laid out at the same
+    /// size answer identically.
     #[test]
     fn two_screens_of_a_size_are_one_layout() {
         let dock = Dock::shipped();
-        let text = TextScale::ordinary();
         let one = Screen::of(1920, 1080).unwrap();
         let other = Screen::of(1920, 1080).unwrap();
-        assert_eq!(dock.layout_on(one, text), dock.layout_on(other, text));
+        assert_eq!(dock.layout_on(one), dock.layout_on(other));
     }
 
     /// Putting everything back is one call, and it leaves the machine as though

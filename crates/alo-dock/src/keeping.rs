@@ -41,22 +41,27 @@ pub const FORMAT: i64 = 1;
 
 /// Every key the file may have besides `format`.
 ///
-/// **This is no longer the same list as the keys a change writes.** `edge` and
-/// `displays` were how a person's dock position and their per-display exceptions
-/// were kept before [ADR
+/// **One of these is dead, and it is no longer `edge`.** Both `edge` and
+/// `displays` were dead between [ADR
 /// 0076](../../../docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
-/// fixed the dock to the bottom edge. Nothing writes them now and nothing reads
-/// what they hold.
+/// fixing the dock to the bottom edge on 2026-09-29 and the setting being
+/// offered again on 2026-10-10. **`edge` is live**: a `Changes` carries one, a
+/// person's choice is written under it and read back from it.
 ///
-/// **They stay on this list because a key that is not on it is refused.** A file
-/// with an unrecognised key in it does not read at all — that is
-/// `dock.kept.unknown-key`, which is the right answer for a typo and the wrong
-/// one for a file this project itself wrote last release. So such a file reads,
-/// the edge is ignored, and the dock is along the bottom. They leave a person's
-/// folder on the next write, because a write replaces the file whole.
+/// `displays` is still dead. It held per-display exceptions, which
+/// `docs/features.md` keeps at **[v0.5]** — *per display, so the dock can sit
+/// along the bottom of the laptop and down the side of the external screen*.
+///
+/// **A dead key stays on this list because a key that is not on it is
+/// refused.** A file with an unrecognised key in it does not read at all — that
+/// is `dock.kept.unknown-key`, which is the right answer for a typo and the
+/// wrong one for a file this project itself wrote last release. So such a file
+/// reads and its `displays` is ignored. It leaves a person's folder on the next
+/// write, because a write replaces the file whole.
 ///
 /// Until ADR 0076 this was one list with the keys a change writes, and a test
-/// asserted they were equal; it now asserts the live half of it.
+/// asserted they were equal; it now asserts the live half of it, which is
+/// everything here but `displays`.
 ///
 /// **It held one of three until 2026-09-29.** `displays` was written by
 /// `Changes` and missing here, so `keep` wrote the file, read it back, refused
@@ -75,7 +80,7 @@ const KEYS: &[&str] = &["hiding", "edge", "displays"];
 /// *the list is complete* stays a testable statement now that it is no longer an
 /// equality.
 #[cfg(test)]
-const ONCE_WRITTEN: &[&str] = &["edge", "displays"];
+const ONCE_WRITTEN: &[&str] = &["displays"];
 
 impl Kept for Changes {
     const FILE: &'static str = THE_FILE;
@@ -190,6 +195,12 @@ mod tests {
     fn every_key_a_change_writes_is_on_the_list() {
         let mut changes = Changes::untouched();
         changes.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
+        // **Every setting, not one.** This test's own note says anything added
+        // to `Changes` must be set here or it stops being able to see the key —
+        // and that is not hypothetical: it is how `displays` came to be written
+        // and missing from `KEYS`. The edge arrived on 2026-10-10 and this is
+        // the line that keeps it in view.
+        changes.set_edge(crate::Edge::Left);
 
         let mut live: Vec<String> = KEYS
             .iter()
@@ -208,6 +219,12 @@ mod tests {
     fn nothing_still_written_is_also_declared_dead() {
         let mut changes = Changes::untouched();
         changes.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
+        // **Every setting, not one.** This test's own note says anything added
+        // to `Changes` must be set here or it stops being able to see the key —
+        // and that is not hypothetical: it is how `displays` came to be written
+        // and missing from `KEYS`. The edge arrived on 2026-10-10 and this is
+        // the line that keeps it in view.
+        changes.set_edge(crate::Edge::Left);
         for key in keys_written(&changes) {
             assert!(
                 !ONCE_WRITTEN.contains(&key.as_str()),

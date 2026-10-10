@@ -554,6 +554,11 @@ dock.announced.focused	focused
 dock.announced.open	{app}, {windows} open
 dock.announced.some-put-aside	{app}, {windows} open, {aside} minimised
 dock.announced.where	on the canvas, {across} across and {down} down
+dock.edge	Where the dock goes
+dock.edge.bottom	Along the bottom
+dock.edge.left	Down the left side
+dock.edge.right	Down the right side
+dock.edge.top	Along the top
 dock.hiding.never	Always shown
 dock.hiding.when-a-window-needs-the-room	Gives way when a window needs the room
 dock.kept.another-format	your dock settings at {path} were written for a different alo OS than this one, so nothing in the file has been used and the dock is where alo OS puts it
@@ -565,8 +570,6 @@ dock.kept.not-understood-at	your dock settings at {path} stop making sense at li
 dock.kept.not-written	your dock settings at {path} could not be written, so nothing about the dock has been changed
 dock.kept.unknown-key	your dock settings at {path} say {key}, which is not something alo OS can change about the dock, so nothing in the file has been used
 dock.labels.beside	each icon shows its name beside it when you point at it or reach it by keyboard
-dock.labels.gave-way	there is no room for names at {percent}% text, so the dock shows icons — resting on one still gives its name, and a screen reader still reads it
-dock.labels.under	each icon has its name under it
 dock.screen.not-a-screen	a screen has a width and a height — {width} by {height} is not one
 dock.screen.too-small	{width} by {height} is smaller than alo OS lays out for — a screen needs at least {least} each way, or the dock would take the screen rather than sit on it
 egress.destination.nameless	say where this is going — an egress with nowhere named cannot be shown to anybody

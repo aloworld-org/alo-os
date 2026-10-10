@@ -607,7 +607,7 @@ mod running {
                 // then `Holding::showing`. The literal now sits where the answer
                 // can be known rather than in the crate that draws, which is the
                 // whole of why this field exists.
-                dock_holds: 0,
+                on_the_dock: &[],
                 look: self.look,
                 strings: &self.strings,
                 egress: &self.egress,

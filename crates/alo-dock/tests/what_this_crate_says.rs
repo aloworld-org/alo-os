@@ -27,7 +27,6 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-use alo_appearance::TextScale;
 use alo_dock::words::{self, EVERY_WORD};
 use alo_dock::{Dock, Hiding, Labels, Screen, Word, dock_words};
 use alo_strings::{CameFrom, Filling, Language, Phrase, Showing, Strings, Vocabulary};
@@ -59,7 +58,7 @@ fn reading(tag: &str, words: &[(Word, &str)]) -> Strings {
 
 /// How many of this crate's words `das_dock` translates, named once so the test
 /// that counts what is left does not carry the number twice.
-const TRANSLATED_INTO_GERMAN: usize = 4;
+const TRANSLATED_INTO_GERMAN: usize = 3;
 
 /// The two rows of the panel and the two things that can become of the names, in
 /// German.
@@ -72,12 +71,14 @@ fn das_dock() -> Strings {
                 words::GIVES_WAY_TO_A_WINDOW,
                 "Weicht zurück, wenn ein Fenster den Platz braucht",
             ),
-            (words::NAMES_UNDER, "jedes Symbol hat seinen Namen darunter"),
+            // **The placement a dock has.** This fixture translated
+            // `NAMES_UNDER` and `NAMES_GAVE_WAY` until 2026-10-10, when the
+            // owner removed the row of names from the bar and both states
+            // became unreachable. One placement is left and it is the tooltip.
             (
-                words::NAMES_GAVE_WAY,
-                "bei {percent} % Textgröße ist kein Platz für Namen — das Dock zeigt Symbole; wer \
-                 auf einem verweilt, bekommt weiterhin seinen Namen, und ein Screenreader liest \
-                 ihn weiterhin vor",
+                words::NAMES_BESIDE,
+                "jedes Symbol zeigt seinen Namen daneben, wenn Sie darauf zeigen oder es mit der \
+                 Tastatur erreichen",
             ),
         ],
     )
@@ -119,7 +120,6 @@ fn everything_this_crate_says_joins_one_vocabulary_beside_another_crate() {
 fn the_whole_panel_is_read_in_the_language_the_person_reads() {
     let strings = das_dock();
     let laptop = Screen::the_smallest();
-    let ordinary = TextScale::ordinary();
 
     let picker: Vec<String> = Hiding::ALL
         .iter()
@@ -137,33 +137,41 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
     }
 
     let dock = Dock::shipped();
-    let line = |text| dock.layout_on(laptop, text).labels().said(&strings);
+    let line = dock.layout_on(laptop).labels().said(&strings);
 
+    // **The placement a dock has, in German.** This read *jedes Symbol hat
+    // seinen Namen darunter* — the name under the icon — until 2026-10-10, when
+    // the owner removed that row. There is one placement now and it is the
+    // tooltip.
     assert_eq!(
-        line(ordinary).text(),
-        "jedes Symbol hat seinen Namen darunter"
+        line.text(),
+        "jedes Symbol zeigt seinen Namen daneben, wenn Sie darauf zeigen oder es mit der \
+         Tastatur erreichen"
     );
-    assert!(line(ordinary).is_translated());
+    assert!(line.is_translated());
 }
 
-/// **The sentence somebody reads when their names disappear is read in their
-/// own language, and the percent sign is where their language puts it.** German
-/// writes *300 %* with a space; the number arrives bare, so it can.
+/// **The sentence a person reads about where the names are is read in their own
+/// language.**
 ///
-/// The half that matters survives the round trip: the name is still announced.
+/// This test was about names *disappearing*: a dock on the smallest screen at
+/// 300% text gave its labels up, and the sentence said so with the percentage
+/// placed where German puts it — *300 %*, with a space. The owner removed that
+/// state on 2026-10-10, so there is no disappearance to describe.
+///
+/// **What it was really protecting survives and is asserted here**: the whole
+/// sentence is the translator's, nothing is assembled from parts, and a
+/// translated string comes back translated with no gap left unfilled.
 #[test]
-fn the_sentence_about_names_disappearing_survives_being_translated() {
+fn the_sentence_about_where_the_names_are_survives_being_translated() {
     let strings = das_dock();
-    let large = TextScale::percent(300).unwrap();
 
-    let labels = Dock::shipped()
-        .layout_on(Screen::the_smallest(), large)
-        .labels();
-    assert_eq!(labels, Labels::GaveWay(300));
+    let labels = Dock::shipped().layout_on(Screen::the_smallest()).labels();
+    assert_eq!(labels, Labels::Beside);
 
     let said = labels.said(&strings);
-    assert!(said.text().starts_with("bei 300 % Textgröße"), "{said}");
-    assert!(said.text().contains("Screenreader"), "{said}");
+    assert!(said.text().starts_with("jedes Symbol"), "{said}");
+    assert!(said.text().contains("Tastatur"), "{said}");
     assert!(said.is_translated());
     assert!(said.unfilled().is_empty());
 }
@@ -218,6 +226,12 @@ fn what_came_off_the_machine_is_not_translated() {
     );
     let said = Screen::of(320, 240).unwrap_err().said(&strings);
     assert!(said.text().contains("320 × 240"), "{said}");
+    // **384, and it is back to 384 deliberately.** Measuring the bar at 76 on
+    // 2026-10-10 moved this to 456, because the floor was the dock's thickness
+    // times a share of the screen. The owner ruled the same day that the bar's
+    // size must not decide which displays are supported, so the floor is now
+    // stated rather than derived and every display this product accepted still
+    // is one.
     assert!(said.text().contains("384"), "{said}");
     assert!(
         said.text().contains("alo OS"),
@@ -261,41 +275,77 @@ fn what_nobody_has_translated_yet_is_visible_rather_than_silently_english() {
 /// A key that nothing declares is a mistake in this repository and says so,
 /// rather than showing an empty row where a setting should be.
 ///
-/// **`dock.edge.middle` is the permanent example; the other two are temporary and
-/// this note is the only thing that says so.** No `dock.edge.*` key is declared
-/// today, so a shell still asking for one — an old panel, a stale translation
-/// file — gets a sentence saying it is a bug rather than a blank row where an edge
-/// picker used to be.
+/// **`dock.edge.middle` is the permanent example, and it is the only one left.**
+/// It names an edge that does not exist, so a shell asking for it — an old
+/// panel, a stale translation file, a typo in a theme — gets a sentence saying
+/// it is a bug rather than a blank row where a picker should be.
 ///
-/// **The reason is no longer ADR 0076, and that matters to whoever edits this
-/// next.** That record's bottom-only ruling was reversed by the owner on
-/// 2026-09-30 — *bottom should be the default; the person can choose bottom,
-/// left, right, or top* — so the keys are not absent because the choice was
-/// withdrawn. They are absent because of the **order of work** the owner set on
-/// 2026-10-04: the structure comes first, and *nonfunctional edge choices are not
-/// exposed as finished settings*. A declared `dock.edge.left` with no working left
-/// dock behind it is exactly that exposure, in the one file a translator reads.
+/// **`dock.edge.bottom` left this list on 2026-10-10**, exactly as the note it
+/// replaced said it would: *so `dock.edge.bottom` leaves this list when a
+/// person can choose an edge, and the list is not evidence that it should stay
+/// gone.* Four keys are declared now — bottom, left, right and top — with a
+/// fifth for the heading over them, and a dock that lays out and draws on each.
 ///
-/// So `dock.edge.bottom` **leaves this list** when a person can choose an edge, and
-/// the list is not evidence that it should stay gone. `dock.edge.middle` names an
-/// edge that does not exist and stays forever.
+/// That note also recorded why they had been absent, and it is worth keeping
+/// because it is the one thing a reader gets wrong here: **not ADR 0076.** That
+/// record's bottom-only ruling was reversed by the owner on 2026-09-30 —
+/// *bottom should be the default; the person can choose bottom, left, right, or
+/// top*. The keys were absent because of the **order of work** set on
+/// 2026-10-04: the structure comes first, and *nonfunctional edge choices are
+/// not exposed as finished settings*. A declared `dock.edge.left` with no
+/// working left dock behind it was exactly that exposure, in the one file a
+/// translator reads.
 ///
-/// **`dock.labels.beside` left on 2026-10-04**, exactly as the note above said it
-/// would: the owner gave the side placement its measurement — 200 logical pixels
-/// of usable text width in a tooltip — so a dock down a side lays out, its names
-/// have a placement, and the key is declared again in `crate::words`. One member
-/// of this list has now been both wrong to declare and right to declare, eighteen
-/// hours apart, which is why the note rather than the list is the thing to read.
+/// **`dock.labels.beside` left on 2026-10-04 and the four edges on 2026-10-10**,
+/// for the same reason in two steps: the owner gave a side dock's names their
+/// measurement — 200 logical pixels in a tooltip beside the icon — which made
+/// all four edges lay out, and the draw then took an edge. Three members of this
+/// list have now been both wrong to declare and right to declare, which is why
+/// **the note rather than the list is the thing to read**.
 #[test]
 fn a_key_nobody_declared_says_it_is_a_bug() {
     let strings = in_english();
-    for named in ["dock.edge.middle", "dock.edge.bottom"] {
-        let key = alo_strings::Key::named(named).unwrap();
-        let said = strings.say(&key, &Filling::nothing());
-        assert!(said.is_a_bug(), "{named}");
-        assert_eq!(said.came_from(), &CameFrom::NoPhrase, "{named}");
-        assert_eq!(said.text(), format!("«{named}»"));
+    // **One name, so no loop.** It was a list of two until `dock.edge.bottom`
+    // was declared; clippy refuses a `for` over a single element, and spelling
+    // it out once is clearer than a one-element array pretending there are more
+    // to come. If a second permanently-undeclared key ever arrives, this goes
+    // back to a loop and the note above says which ones left and why.
+    let named = "dock.edge.middle";
+    let key = alo_strings::Key::named(named).unwrap();
+    let said = strings.say(&key, &Filling::nothing());
+    assert!(said.is_a_bug(), "{named}");
+    assert_eq!(said.came_from(), &CameFrom::NoPhrase, "{named}");
+    assert_eq!(said.text(), format!("«{named}»"));
+
+    // **And the four that are declared are not bugs**, which is the other half
+    // of the same claim and the half this test could not make until today: a
+    // list of undeclared keys proves nothing about the declared ones.
+    for edge in alo_dock::Edge::EVERY {
+        let said = edge.said(&strings);
+        assert!(
+            !said.is_a_bug(),
+            "{:?} has no phrase, so a person picking an edge would read «{}»",
+            edge,
+            said.text()
+        );
+        assert!(!said.text().is_empty(), "{edge:?} says nothing");
     }
+
+    // **And no two of them say the same thing.** Four rows a person picks from,
+    // and two reading alike is a list nobody can use — which a per-row check
+    // cannot see.
+    let mut saying: Vec<String> = alo_dock::Edge::EVERY
+        .into_iter()
+        .map(|edge| edge.said(&strings).text().to_owned())
+        .collect();
+    saying.sort();
+    let before = saying.len();
+    saying.dedup();
+    assert_eq!(
+        saying.len(),
+        before,
+        "two edges read the same in this language: {saying:?}"
+    );
 }
 
 /// A machine with no translations at all is the machine this repository ships

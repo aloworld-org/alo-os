@@ -345,7 +345,6 @@ impl Place {
 )]
 mod tests {
     use super::*;
-    use alo_appearance::TextScale;
     use alo_dock::{Dock, Screen};
 
     /// A 1920×1080 output with this column reserved on it, if any.
@@ -367,7 +366,7 @@ mod tests {
 
     /// The dock on a 1920×1080 screen.
     fn laid_out() -> Layout {
-        Dock::shipped().layout_on(Screen::of(1920, 1080).unwrap(), TextScale::ordinary())
+        Dock::shipped().layout_on(Screen::of(1920, 1080).unwrap())
     }
 
     /// A dock laid out along this edge of a 1920×1080 screen.
@@ -377,7 +376,7 @@ mod tests {
     /// order of work, which keeps the setting shut until the edges work. A test
     /// that went through a `Dock` could only ever ask about one of the four.
     fn laid_along(edge: alo_dock::Edge) -> Layout {
-        Layout::along(edge, Screen::of(1920, 1080).unwrap(), TextScale::ordinary())
+        Layout::along(edge, Screen::of(1920, 1080).unwrap())
     }
 
     /// **A Dock down a side is a column the corner stops before.**

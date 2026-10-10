@@ -160,15 +160,20 @@ pub struct DesktopFrame<'a> {
     /// return to where you last used it*, and it is session state this crate
     /// does not hold.
     ///
-    /// So the desktop counts and hands over a number, exactly as it hands over
-    /// `display_scale` and the four readings.
+    /// So the desktop builds the list and hands it over, exactly as it hands
+    /// over `display_scale` and the four readings.
     ///
-    /// The figure the design expects, for whoever draws the glyphs: the Dock's
-    /// implementation contract at Figma node `348:28451` gives a 32-pixel glyph
-    /// in a 44 target, pitched 56 — which is `ICON 48 + GAP 8`, the pitch
-    /// `alo-dock` already uses. See
+    /// **It was a count until 2026-10-10**, and the count was a projection of
+    /// this: `Server::how_many_the_dock_holds` built the list, took its length
+    /// and threw the rest away. That was the right shape while nothing drew an
+    /// icon — the bar's width is all a count can give — and it stopped being
+    /// right the day an application with no artwork gained a letter to show.
+    ///
+    /// The figure the design expects: the Dock's implementation contract at
+    /// Figma node `348:28451` gives a 32-pixel glyph in a 44 target, pitched 56
+    /// — which is `ICON 48 + GAP 8`, the pitch `alo-dock` already uses. See
     /// `docs/autonomy/updates/the-dock-has-an-implementation-contract.md`.
-    pub dock_holds: usize,
+    pub on_the_dock: &'a [alo_dock::OnTheDock],
 }
 
 impl Nested {
@@ -344,7 +349,7 @@ pub(crate) fn frame_pictures(
             panel_is_revealed: desktop.panel_is_revealed,
             filling_the_screen: desktop.filling_the_screen,
             display_scale: desktop.display_scale,
-            dock_holds: desktop.dock_holds,
+            on_the_dock: desktop.on_the_dock,
         },
         &mut labels.fonts,
         size,

@@ -13,7 +13,7 @@ const THE_SERVERS_HALF: [&str; 4] = [
     "windows",
     "filling_the_screen",
     "display_scale",
-    "dock_holds",
+    "on_the_dock",
 ];
 
 /// `direct_desktop.rs`, as text.
@@ -56,15 +56,15 @@ fn the_servers_half_of_a_frame_is_set_in_one_place() {
     }
 }
 
-/// **The Dock's count is one of the fields**, which is the whole reason this
+/// **What the Dock holds is one of the fields**, which is the whole reason this
 /// change exists.
 ///
-/// `dock_holds` was absent from `direct_desktop` entirely while its three
-/// neighbours were each filled from the server, so the Dock drew a bar sized
-/// for nothing however many applications were open. A test naming it is what
-/// stops it being dropped again by somebody tidying.
+/// It was absent from `direct_desktop` entirely while its three neighbours were
+/// each filled from the server, so the Dock drew a bar sized for nothing
+/// however many applications were open. A test naming it is what stops it being
+/// dropped again by somebody tidying.
 #[test]
-fn the_dock_is_told_how_many_it_holds() {
+fn the_dock_is_told_what_it_holds() {
     let at = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("src/what_the_server_tells_a_frame.rs");
     let text = std::fs::read_to_string(&at).expect("this file is where it says");
@@ -78,8 +78,33 @@ fn the_dock_is_told_how_many_it_holds() {
             "`{field}` is the server's half and this function does not set it"
         );
     }
+}
+
+/// **And the list is the server's own answer, asked where it is now asked.**
+///
+/// This assertion read `body.contains("how_many_the_dock_holds")` until
+/// 2026-10-10, when the field became the entries rather than a count: the list
+/// has to outlive the frame that borrows it, so it is built by the caller and
+/// passed in, and the function above no longer names the server for it.
+///
+/// **So the claim moves rather than weakens.** What it always meant is *this
+/// comes from the server and not from arithmetic somebody did here*, and that
+/// is now a fact about `direct_desktop` — which is where it is asserted.
+/// Dropping it instead would have left the one field with no guard, which is
+/// the state that produced this file.
+#[test]
+fn the_list_is_built_from_the_server_by_the_caller() {
+    let at = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/direct_desktop.rs");
+    let text = std::fs::read_to_string(&at).expect("this file is where it says");
+    let built = text.matches("server.what_the_dock_holds(").count();
     assert!(
-        body.contains("how_many_the_dock_holds"),
-        "the count comes from the server's own answer, not from arithmetic here"
+        built >= 1,
+        "`direct_desktop` builds the Dock's list nowhere, so whatever reaches the frame is not \
+         the server's answer"
+    );
+    assert!(
+        !text.contains("frame.on_the_dock ="),
+        "`direct_desktop` sets the field itself. That is the server's half and
+         `what_only_the_server_knows` is the one place it is set"
     );
 }

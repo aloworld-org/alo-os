@@ -112,7 +112,7 @@ with what the release ships and the refusal beside it — naming the file, and t
 key when a key was what was wrong. Nothing watches these files: a hand edit is
 read at the next sign-in. Each section below —
 [`appearance.toml`](#appearancetoml--how-this-persons-machine-looks),
-[`dock.toml`](#docktoml--which-edge-the-dock-is-on),
+[`dock.toml`](#docktoml--where-the-dock-goes-and-whether-it-gives-way),
 [`shortcuts.toml`](#shortcutstoml--the-shortcuts-this-person-changed),
 [`what-opens-what.toml`](#what-opens-whattoml--which-application-opens-each-kind-of-file),
 [`sleeping.toml`](#sleepingtoml--what-closing-the-lid-does-and-what-keeps-this-machine-awake),
@@ -872,16 +872,18 @@ back before it counts — so afterwards the file reads as a person who has
 changed nothing. It is the person's deliberate act in Settings; nothing else,
 and nothing an agent can reach, writes over a file that did not read.
 
-## `dock.toml` — whether the dock gives way
+## `dock.toml` — where the dock goes and whether it gives way
 
 Kept by `alo_dock::keeping`, beside `appearance.toml`, at the path the crate is
 handed. It holds `alo_dock::Changes`.
 
-**The dock is along the bottom edge of the screen and that is not a setting.**
-[ADR
+**Where the dock goes is a setting again, since 2026-10-10.** [ADR
 0076](../decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
-fixed it there, so this file no longer holds where the dock is or a per-display
-exception to it. What is left is the one question a person answers about it.
+fixed it to the bottom edge on 2026-09-29 and the owner reversed that within a
+day; their order of work held the setting back while two of the four edges could
+not be laid out, and it was offered once all four could. `docs/features.md`
+promises it at **[v0.01]**: *the bottom edge by default, and the person may
+choose bottom, left, right or top.*
 
 ### Keys
 
@@ -889,24 +891,62 @@ Besides `format`, and optional:
 
 | Key | Meaning |
 |---|---|
+| `edge` | Which edge of the screen the dock is on: `"Bottom"`, `"Left"`, `"Right"` or `"Top"`. Absent means *whatever this release ships*, which is `"Bottom"` — and `"Bottom"` written down is a person having chosen it, which is not the same fact. A value that is not one of the four **refuses the file**, exactly as a `hiding` that is not a hiding does. |
 | `hiding` | Whether the dock gives way to a window that needs the room it is in: `"Never"`, or `"WhenAWindowNeedsTheRoom"`. Absent means `"Never"` — a machine nobody has told otherwise keeps its dock on the screen. There is no per-display exception for it. |
+
+**A file written before ADR 0076 therefore puts the dock back where that person
+had it.** Those files were read with the edge dropped for eleven days; nothing
+rewrites a person's file behind them, so the choice was still there.
 
 ### Keys an earlier release wrote
 
-`edge` and `displays` were how the dock's position, and per-display exceptions to
-it, were kept before ADR 0076.
+`displays` was how per-display exceptions were kept. *Per display, so the dock
+can sit along the bottom of the laptop and down the side of the external screen*
+is **[v0.5]** in `docs/features.md`, so nothing writes it and nothing reads what
+it holds.
 
-**A file that has either one reads, and it is ignored.** Nothing writes them and
-nothing reads what they hold; the dock is along the bottom whatever they say, and
-the value is not checked either — a file saying `edge = "Middle"` reads, where it
-was once refused. They are still *recognised* keys, which is the point: an
-unrecognised key is refused whole (`dock.kept.unknown-key`), and refusing a
-person's file over a key this project itself wrote last release would tell them
-their settings are broken when they are not.
+**A file that has it reads, and it is ignored.** It is still a *recognised* key,
+which is the point: an unrecognised key is refused whole
+(`dock.kept.unknown-key`), and refusing a person's file over a key this project
+itself wrote last release would tell them their settings are broken when they
+are not.
 
-**They leave on the next write.** A write replaces the file whole, so the first
-change a person makes after this release drops the dead line. Nothing goes hunting
-for them, and nothing rewrites a person's file behind them.
+**It leaves on the next write.** A write replaces the file whole, so the first
+change a person makes after this release drops the dead line. Nothing goes
+hunting for it, and nothing rewrites a person's file behind them.
+
+`edge` was on this list between 2026-09-29 and 2026-10-10 and has left it: it is
+read and honoured again.
+
+### What the dock still needs kept, and whose it is to specify
+
+**A person's pinned applications are not in this file yet, and that is a
+dependency rather than an omission.** The owner ruled on 2026-10-10 that a fresh
+machine pins Files, Browser, Apps and Settings once, and that a person's order,
+additions and **removals** survive restarts and updates — and that the persisted
+representation belongs to the owner of `alo-kept` and
+`where-a-persons-settings-are-kept-plan.md`, with the Dock's lane owning
+behaviour, rendering and integration against whatever this contract says.
+
+So `alo-dock` has built the behaviour and is **not** writing the key.
+`alo_dock::pinning` is what it needs stored, and the shape matters more than the
+spelling:
+
+| what must be stored | why a simpler shape will not do |
+|---|---|
+| **whether the pins have ever been set**, apart from what they are | *An intentionally empty pinned section must stay empty.* An empty list alone cannot tell *a person emptied their Dock* from *nobody has chosen yet*, and a reader that confused them would refill the Dock of the person who most clearly did not want one |
+| **the applications, in the person's order** | the order is what they see; it is not alphabetical and not the order anything was installed |
+
+`alo_dock::ThePins` is that distinction as a type — `NeverSet` against
+`Chosen(..)`, where `Chosen(vec![])` is a choice — and
+`ThePins::or_the_defaults` answers both the pins and whether they have just been
+initialised, so a caller knows it has something new to persist.
+
+**Three things the owner's ruling forbids, which fall out of the above rather
+than needing their own keys:** an update must not re-run the defaults, a failed
+read must not re-run them, and an application omitted at first run must not pin
+itself when installed later. All three are *the defaults apply once*, which is
+`NeverSet` being a one-way door.
 
 ### `format`
 
@@ -922,6 +962,7 @@ would mean the old files do not read, which is the opposite of what happens.
 ```toml
 format = 1
 
+edge = "Left"
 hiding = "WhenAWindowNeedsTheRoom"
 ```
 

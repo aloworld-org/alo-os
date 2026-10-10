@@ -192,6 +192,39 @@ aim once and click.*
 and whether it hides when a window needs the room**. Until then it is fixed,
 which is a number nobody has been offered rather than a choice withdrawn.
 
+### An application with no artwork shows its first letter
+
+**The owner's ruling of 2026-10-10**, asked for because this file said what an
+icon *is* — 32 × 32 inside a 48 target — and nowhere what is drawn when there is
+no artwork to put there:
+
+> The fallback should be on the first letter of the application.
+
+**It is not a hypothetical case; today it is every case.** Measured the same
+day: `alo-applications` names an icon in **none of its seventeen files**, so
+there is no artwork for any application on this machine. A Dock that drew only
+real icons would draw nothing, which is the band a person sees now.
+
+**Three things follow, and they are decisions rather than readings:**
+
+- **The letter is the application's**, from `alo_dock::AppId`, not the window's
+  title. Two windows of one application are one icon, so an icon that took its
+  letter from a title would change when a person switched tabs.
+- **The first letter is the first *grapheme*, not the first `char`.** A name
+  beginning in Devanagari, Thai, Hangul or an emoji has a first `char` that is
+  half a letter, and `"नमस्ते".chars().next()` is a fragment no reader
+  recognises. This is the i18n law reaching a place that is not a translated
+  string: the text is the application's own, and cutting it wrongly breaks it
+  for exactly the languages with the least software already.
+- **It is not uppercased.** Case is locale-dependent — Turkish `i` uppercases to
+  `İ`, and a lowercase script like Georgian or Devanagari has no upper case at
+  all — so raising it would be this shell making a typographic decision about
+  somebody else's alphabet. The letter is shown as the application wrote it.
+
+**What this does not decide**: what replaces the letter when artwork arrives, and
+whether a person may choose an icon themselves. Both are later and neither is
+promised.
+
 **Four of the six were already the code's numbers**, written by somebody who had
 not seen this list: `ICON = 48` was always the *clickable area*, with `GAP = 8`,
 `MARGIN = 8` and `Room::a_dock_of_icons()` asserting **64**. What was missing was

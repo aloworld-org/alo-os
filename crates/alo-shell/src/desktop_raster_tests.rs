@@ -63,7 +63,7 @@ fn drawn_with(
             panel_is_revealed: true,
             filling_the_screen: false,
             display_scale: 100,
-            dock_holds: 0,
+            on_the_dock: &[],
         },
         &mut labels.fonts,
         size,
@@ -100,7 +100,7 @@ fn drawn_at(
             panel_is_revealed: true,
             filling_the_screen: false,
             display_scale,
-            dock_holds: 0,
+            on_the_dock: &[],
         },
         &mut labels.fonts,
         size,
@@ -367,8 +367,15 @@ fn a_desktop_that_cannot_be_drawn_whole_is_refused() {
         drawn(&Dock::shipped(), look, &running, &filling, (100, 100)),
         Err(RenderError::DesktopScene)
     ));
+    // **520 × 480, not 520 × 400.** The shortest side a screen may have moved
+    // from 384 to 456 on 2026-10-10, when the dock's measured 76 replaced the
+    // proposed 64: the floor is the dock's share times its thickness, so a
+    // thicker bar asks for a taller screen. At 400 this pair would now be
+    // refused for being too small rather than for the reason this test is
+    // about, and the case below would be refused with it — which is the whole
+    // distinction the test draws.
     assert!(matches!(
-        drawn(&Dock::shipped(), look, &running, &filling, (520, 400)),
+        drawn(&Dock::shipped(), look, &running, &filling, (520, 480)),
         Err(RenderError::DesktopScene)
     ));
     let closed_running = RunningWindow::closed();
@@ -378,7 +385,7 @@ fn a_desktop_that_cannot_be_drawn_whole_is_refused() {
         look,
         &closed_running,
         &closed_filling,
-        (520, 400),
+        (520, 480),
     )
     .unwrap();
     assert!(bare.running.is_empty() && bare.filling.is_empty());
@@ -497,7 +504,7 @@ fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
                 panel_is_revealed: revealed,
                 filling_the_screen: false,
                 display_scale: 100,
-                dock_holds: 0,
+                on_the_dock: &[],
             },
             &mut labels.fonts,
             (1920, 1080),

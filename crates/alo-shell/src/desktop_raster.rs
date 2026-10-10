@@ -25,7 +25,7 @@
 //! The egress indicator did not go with them. It has a corner of its own
 //! (`crate::egress_status_place`) and sits exactly where it sat.
 
-use alo_dock::{Dock, Showing};
+use alo_dock::{Dock, OnTheDock, Showing};
 use alo_put_aside::the_region_the_panel_claims::WhichEdge;
 use alo_strings::{Direction, Strings};
 use cosmic_text::FontSystem;
@@ -140,13 +140,19 @@ pub(crate) struct Shown<'a> {
     /// [`crate::nested_desktop::DesktopFrame::display_scale`] for what was wrong and in
     /// which direction it failed.
     pub(crate) display_scale: u16,
-    /// How many applications the Dock is holding.
+    /// The applications the Dock is holding, in the order it shows them.
     ///
-    /// Carried from [`crate::nested_desktop::DesktopFrame::dock_holds`], whose
-    /// note says why the desktop counts and this crate does not — and why a
-    /// literal `0` stood here until 2026-10-09 and was the right number for the
-    /// wrong reason.
-    pub(crate) dock_holds: usize,
+    /// Carried from [`crate::nested_desktop::DesktopFrame::on_the_dock`], whose
+    /// note says why the desktop builds this list and this crate does not — and
+    /// why a literal `0` stood here until 2026-10-09 and was the right number
+    /// for the wrong reason.
+    ///
+    /// **It was a count until 2026-10-10.** The count is `.len()`, and the Dock
+    /// needs the entries themselves to draw an icon for each — so the field
+    /// carrying only the count was a projection of the answer standing in for
+    /// it, and `Server::how_many_the_dock_holds` built the list and threw it
+    /// away on the way here.
+    pub(crate) on_the_dock: &'a [OnTheDock],
 }
 
 /// What the running window shows, as a panel.
@@ -206,16 +212,16 @@ pub(crate) fn picture(
         filling_the_screen,
         panel_is_revealed,
         display_scale,
-        dock_holds,
+        on_the_dock,
     } = shown;
     // **The count the desktop handed over, not a constant.** This passed a
     // literal `0` until 2026-10-09, with a comment saying a bar holding nothing
     // is narrow and that this is true rather than a placeholder — which it was.
     // What it could not do was become anything else once something started
-    // populating an `alo_dock::Holding`. `DesktopFrame::dock_holds` carries the
+    // populating an `alo_dock::Holding`. `DesktopFrame::on_the_dock` carries the
     // number and its own note says why the desktop counts and this crate does
     // not.
-    let dock_picture = crate::dock_raster::picture(dock, look, size, dock_holds)?;
+    let dock_picture = crate::dock_raster::picture(dock, look, size, on_the_dock, fonts)?;
 
     // **Laid out first, shown or not.** The band has to exist before anything
     // can ask whether a window is over it, and `room_beside` below uses it

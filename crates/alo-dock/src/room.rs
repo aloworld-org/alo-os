@@ -17,8 +17,8 @@
 use alo_appearance::TextScale;
 
 use crate::measures::{
-    A_DOCK_MAY_TAKE_ONE_PART_IN, A_SIDE_DOCKS_LANE, GAP, ICON, LINE_IN_FIFTHS, MARGIN,
-    TEXT_AT_ORDINARY,
+    A_SIDE_DOCKS_LANE, ABOVE_AND_BELOW_AN_ICON, GAP, ICON, LINE_IN_FIFTHS, MARGIN,
+    TEXT_AT_ORDINARY, THE_LEAST_A_SIDE_CAN_BE,
 };
 
 /// How much room something takes, in logical pixels.
@@ -98,20 +98,26 @@ impl Room {
         Self::pixels(A_SIDE_DOCKS_LANE)
     }
 
-    /// How thick a dock of icons alone is: the icon, and the dock's two faces.
+    /// How thick a dock of icons is: the icon, and the dock's two faces.
+    ///
+    /// **Seventy-six, measured off the design** — `Dock + alo Bar` is 76 tall
+    /// with a 48 hit area inside it, 14 above and 14 below. It was
+    /// `MARGIN + ICON + MARGIN` = 64 until 2026-10-10, which read as a
+    /// measurement and was a proposal; the owner superseded it with the
+    /// measured number on that day.
+    ///
+    /// **It does not vary with the text size, and that is the same ruling.**
+    /// There is no name in the bar to leave room for: a name is shown on hover
+    /// and on keyboard focus, outside the bar, and never changes its height. So
+    /// this is one number for every text size, which is what
+    /// `a_dock_with_names_under` existed to deny.
     #[must_use]
     pub const fn a_dock_of_icons() -> Self {
-        Self::pixels(MARGIN.saturating_add(ICON).saturating_add(MARGIN))
-    }
-
-    /// How thick the dock is with a name under each icon, which is the only
-    /// placement there is: ADR 0076 fixed the dock along the bottom, and
-    /// `a_dock_with_names_beside` left with the orientation that needed it.
-    #[must_use]
-    pub fn a_dock_with_names_under(text: TextScale) -> Self {
-        Self::a_dock_of_icons()
-            .and(Self::pixels(GAP))
-            .and(Self::a_line_at(text))
+        Self::pixels(
+            ABOVE_AND_BELOW_AN_ICON
+                .saturating_add(ICON)
+                .saturating_add(ABOVE_AND_BELOW_AN_ICON),
+        )
     }
 
     /// How wide a bar holding this many icons is: the room inside it, the
@@ -137,29 +143,20 @@ impl Room {
         )
     }
 
-    /// The most a dock may take out of the side of the screen it sits on.
+    /// The shortest a screen's side may be and still be laid out for.
     ///
-    /// This is the ceiling the whole *labels give way* decision turns on:
-    /// [`crate::Layout`] shows names when a dock that has them fits under it,
-    /// and gives way to icons when it does not.
-    #[must_use]
-    pub const fn the_most_a_dock_may_take(side: Self) -> Self {
-        Self::pixels(side.pixels.saturating_div(A_DOCK_MAY_TAKE_ONE_PART_IN))
-    }
-
-    /// The shortest a screen's side may be and still hold a dock at all.
+    /// **Stated, not worked out.** It was the dock's thickness times a share of
+    /// the screen, which made the bar's height decide which displays this
+    /// product supports — so measuring the bar at 76 moved the floor and
+    /// dropped displays nobody had decided to drop.
+    /// [`crate::measures::THE_LEAST_A_SIDE_CAN_BE`] carries the owner's ruling
+    /// and why 384 is the number.
     ///
-    /// Worked out rather than picked: a dock of icons alone must fit under the
-    /// ceiling, so the side must be [`A_DOCK_MAY_TAKE_ONE_PART_IN`] times it.
     /// [`crate::Screen`] refuses anything below this, which is what lets
     /// [`crate::Layout`] be a question with an answer rather than a `Result`.
     #[must_use]
     pub const fn the_least_a_side_can_be() -> Self {
-        Self::pixels(
-            Self::a_dock_of_icons()
-                .pixels
-                .saturating_mul(A_DOCK_MAY_TAKE_ONE_PART_IN),
-        )
+        Self::pixels(THE_LEAST_A_SIDE_CAN_BE)
     }
 }
 
@@ -170,7 +167,6 @@ impl Room {
 )]
 mod tests {
     use super::*;
-    use crate::screen::Screen;
     use alo_appearance::targets::{ENHANCED_TARGET, SMALLEST_TARGET};
 
     /// A size the tests name often enough to be worth a word.
@@ -205,26 +201,24 @@ mod tests {
         );
     }
 
-    /// **The dock leaves most of the screen to the person's work.** A dock
-    /// entitled to half a screen is not a dock, and this holds on every side of
-    /// every screen rather than only on the one the thresholds were chosen
-    /// against.
+    /// **Every accepted screen can hold the bar**, which is what the floor is
+    /// for now that it is stated rather than derived.
+    ///
+    /// This walked the ceiling — a share of each side — which the owner removed
+    /// on 2026-10-10 along with the coupling that let it decide which displays
+    /// are supported.
     #[test]
-    fn a_dock_may_never_take_half_of_anything() {
-        for side in [
-            Screen::the_smallest().width(),
-            Screen::the_smallest().height(),
-            Room::the_least_a_side_can_be(),
-            Room::pixels(3840),
-        ] {
-            let ceiling = Room::the_most_a_dock_may_take(side);
-            assert!(
-                ceiling.as_pixels().saturating_mul(2) < side.as_pixels(),
-                "a dock could take {} of a side of {}",
-                ceiling.as_pixels(),
-                side.as_pixels()
-            );
-        }
+    fn the_bar_fits_on_the_shortest_side_this_crate_accepts() {
+        let least = Room::the_least_a_side_can_be();
+        assert!(
+            Room::a_dock_of_icons().fits_in(least),
+            "the bar does not fit on the shortest side this crate accepts, so a display it \
+             says yes to cannot hold a dock"
+        );
+        assert!(
+            Room::a_side_docks_lane().fits_in(least),
+            "and the same for a dock down a side"
+        );
     }
 
     /// Text grows with the setting, and 100% is the size the shell was drawn
@@ -238,57 +232,92 @@ mod tests {
         assert!(Room::text_at(text(75)) < Room::text_at(text(100)));
     }
 
-    /// A line is taller than the text in it, and a dock with names on it is
-    /// thicker than one without — which is what makes the ceiling a question
-    /// worth asking at all.
+    /// A line is taller than the text in it.
+    ///
+    /// **The second half of this went with `a_dock_with_names_under` on
+    /// 2026-10-10.** It asserted that a dock with names was thicker than one
+    /// without — true, and the cost is exactly what the owner removed: the
+    /// verified design has no names in the bar, so there is no thicker dock to
+    /// compare against. `a_line_at` is still used for text elsewhere, so the
+    /// half that is about a line stays.
     #[test]
-    fn a_line_is_taller_than_its_text_and_names_cost_room() {
+    fn a_line_is_taller_than_its_text() {
         for percent in [75, 100, 125, 200, 300] {
             let size = text(percent);
             assert!(
                 Room::a_line_at(size) > Room::text_at(size),
                 "at {percent}% a line is not taller than its text"
             );
-            assert!(
-                Room::a_dock_with_names_under(size) > Room::a_dock_of_icons(),
-                "at {percent}% the names cost nothing"
-            );
         }
     }
 
-    /// **Every measurement grows with the text, and none of them shrinks.** A
-    /// person who makes the text bigger and gets a thinner dock has found a
-    /// layout that will surprise them somewhere else too.
+    /// **Every measurement that depends on the text grows with it, and none of
+    /// them shrinks.** A person who makes the text bigger and gets a smaller
+    /// measurement has found a layout that will surprise them somewhere else
+    /// too.
+    ///
+    /// This walked `a_dock_with_names_under` until 2026-10-10. The dock's
+    /// thickness does not depend on the text any more — which is a stronger
+    /// statement than *it grows* and is held in `crate::layout` — so what is
+    /// walked here is the measurement that still does.
     #[test]
     fn nothing_gets_smaller_as_the_text_gets_bigger() {
         let (smallest, largest) = TextScale::range();
         let mut previous = Room::pixels(0);
         for percent in smallest..=largest {
-            let now = Room::a_dock_with_names_under(text(percent));
+            let now = Room::a_line_at(text(percent));
             assert!(now >= previous, "at {percent}%");
             previous = now;
         }
+        assert!(
+            previous > Room::a_line_at(text(smallest)),
+            "the premise: a line really does grow across this range, so the walk above is not \
+             comparing a constant with itself"
+        );
     }
 
     /// A dock of icons alone does not depend on the text at all, which is what
     /// makes it the thing a dock falls back to.
     #[test]
     fn a_dock_of_icons_is_the_same_at_every_text_size() {
-        assert_eq!(Room::a_dock_of_icons().as_pixels(), MARGIN + ICON + MARGIN);
+        assert_eq!(
+            Room::a_dock_of_icons().as_pixels(),
+            ABOVE_AND_BELOW_AN_ICON + ICON + ABOVE_AND_BELOW_AN_ICON
+        );
+        assert_eq!(
+            Room::a_dock_of_icons().as_pixels(),
+            76,
+            "the measured height of `Dock + alo Bar`, which superseded the proposed 64 on \
+             2026-10-10"
+        );
         assert!(Room::a_dock_of_icons() > Room::an_icon());
     }
 
-    /// **The floor under a screen is worked out, not chosen.** A side exactly at
-    /// the floor has room for a dock of icons and nothing more, which is the
-    /// guarantee [`crate::Layout`] leans on when it answers without a `Result`.
+    /// **The floor under a screen is chosen, not worked out** — which is the
+    /// reverse of what this test said, and the reversal is the point.
+    ///
+    /// It asserted the floor was *the tightest one that works*: a side exactly
+    /// at it had room for a dock of icons and not a pixel more. That made the
+    /// floor an arithmetic result, so measuring the bar at 76 instead of 64 on
+    /// 2026-10-10 moved it from 384 to 456 and silently dropped every display
+    /// between. The owner's ruling that day separated the two.
+    ///
+    /// So the floor is now **384 because that is what this product accepted**,
+    /// and the bar fits inside it with room to spare. *With room to spare* is
+    /// the thing to hold: it is what tightness used to guarantee and what
+    /// nothing else now does.
     #[test]
-    fn the_shortest_side_is_exactly_enough_for_a_dock_of_icons() {
+    fn the_shortest_side_has_room_for_a_dock_and_more() {
         let least = Room::the_least_a_side_can_be();
-        assert!(Room::a_dock_of_icons().fits_in(Room::the_most_a_dock_may_take(least)));
-        let one_less = Room::pixels(least.as_pixels().saturating_sub(1));
+        assert_eq!(least.as_pixels(), 384);
         assert!(
-            !Room::a_dock_of_icons().fits_in(Room::the_most_a_dock_may_take(one_less)),
-            "the floor is the tightest one that works, not a round number above it"
+            Room::a_dock_of_icons().fits_in(least),
+            "a side at the floor cannot hold the bar"
+        );
+        assert!(
+            Room::a_dock_of_icons().as_pixels() * 2 < least.as_pixels(),
+            "the bar takes more than half the shortest side this crate accepts, which leaves a \
+             person less of their screen than the dock"
         );
     }
 

@@ -233,6 +233,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 )
             })
             .collect();
+        // **A local, because the frame borrows it.** Built inside the frame's
+        // own expression it would not outlive the call that takes the frame —
+        // the same reason `direct_desktop` holds `windows` and `on_the_dock` on
+        // their own lines.
+        let on_the_dock = server.what_the_dock_holds(&alo_dock::Holding::nothing());
         drawn += nested
             .submit_with_desktop(
                 &roots,
@@ -251,14 +256,17 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     // lanes built today.** `Server::the_windows_the_dock_sees`
                     // turns the mapped surfaces into what `alo-dock`
                     // understands, `Holding::showing` groups them by
-                    // application, and `dock_holds` carries the count to the
-                    // drawing - which was handed a literal `0` until 2026-10-09.
+                    // application, and this carries them to the drawing — which
+                    // was handed a literal `0` until 2026-10-09 and a bare count
+                    // until 2026-10-10, when an application with no artwork
+                    // gained a first letter to show and the count stopped being
+                    // enough.
                     //
                     // `Holding::nothing()` because nothing stores what a person
-                    // pinned yet, so this counts the applications that have a
+                    // pinned yet, so this lists the applications that have a
                     // window open. True, and a Dock of what is running is what
                     // a machine with no saved pins should show.
-                    dock_holds: server.how_many_the_dock_holds(&alo_dock::Holding::nothing()),
+                    on_the_dock: &on_the_dock,
                     display_scale: 100,
                     dock: &dock,
                     look: DesktopLook::of(

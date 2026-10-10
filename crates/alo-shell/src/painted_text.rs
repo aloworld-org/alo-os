@@ -126,6 +126,111 @@ pub(crate) fn how_wide(fonts: &mut FontSystem, text: &str, metrics: Metrics) -> 
     widest
 }
 
+/// One short string, inked **centred** in a box `width` across.
+///
+/// For the letter a Dock icon shows when an application has no artwork — the
+/// owner's ruling of 2026-10-10, and today that is every application, because
+/// `alo-applications` names an icon in none of its files.
+///
+/// **It exists rather than a caller centring for itself**, because centring is
+/// the one thing a caller cannot do after the fact: [`sentence`] inks into a box
+/// of the width it was given, and a caller holding that box can only move the
+/// whole box, ground and all, which drags the Dock's own colour over whatever is
+/// beside it. The shift belongs inside the ink, which is what [`inked`]'s
+/// `shift` is for and what this passes.
+///
+/// A single grapheme does not wrap, so the box is one line tall and the caller
+/// centres it down its own axis from [`Shaped::height`].
+pub(crate) fn centred(
+    fonts: &mut FontSystem,
+    text: &str,
+    width: i32,
+    metrics: Metrics,
+    ground: [u8; 3],
+    ink: [u8; 3],
+) -> Shaped {
+    let mut buffer = Buffer::new(fonts, metrics);
+    // **No wrapping.** One letter cannot be broken across lines, and allowing it
+    // would let a wide glyph — a flag emoji is two cells — become two rows half
+    // an icon each.
+    buffer.set_wrap(fonts, Wrap::None);
+    buffer.set_size(fonts, Some(width as f32), None);
+    // **alo's own face**, the same one every other surface on this machine is
+    // drawn in, rather than whatever the system calls sans-serif.
+    buffer.set_text(fonts, text, &alos_own_text(), Shaping::Advanced);
+    buffer.shape_until_scroll(fonts, false);
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a shaped run's width and height in whole pixels is what a layout measures in"
+    )]
+    let (height, drawn) = {
+        let height = buffer
+            .layout_runs()
+            .map(|run| run.line_top + run.line_height)
+            .fold(0.0, f32::max)
+            .ceil() as i32;
+        let drawn = buffer
+            .layout_runs()
+            .map(|run| run.line_w)
+            .fold(0.0, f32::max)
+            .ceil() as i32;
+        (height, drawn)
+    };
+    // Half the room left over, and never negative: a glyph wider than its box
+    // starts at the box's own edge rather than before it, which keeps it inside
+    // the icon even when it does not fit.
+    let shift = ((width - drawn) / 2).max(0);
+    let mut shaped = inked(fonts, &buffer, (width, height.max(1)), shift, ground, ink);
+    shaped.width = drawn.clamp(0, width);
+    trimmed_to_its_ink(shaped, ground)
+}
+
+/// The same box with its blank rows cut off the top and the bottom.
+///
+/// **So that centring the box centres the letter.** A line box is not a letter:
+/// it holds the ascent, the descent and the leading of whatever the font would
+/// need for `Áyg`, and a capital occupies the upper part of it. Centre the box
+/// and the letter rides high — visibly so, which is what the Dock's first
+/// drawing showed.
+///
+/// Trimming is better than asking the font for its cap height because it is
+/// **exact for the glyph actually drawn**: a Devanagari letter with a matra
+/// above it, an emoji that fills the line, and a Latin capital all have
+/// different ink, and this centres what each of them really is rather than what
+/// a Latin capital would be.
+///
+/// A box with no ink in it comes back unchanged. There is nothing to centre and
+/// a height of zero would place nothing at all.
+fn trimmed_to_its_ink(shaped: Shaped, ground: [u8; 3]) -> Shaped {
+    let across = shaped.width_of_box;
+    if across <= 0 {
+        return shaped;
+    }
+    let inked_rows: Vec<usize> = shaped
+        .pixels
+        .chunks(across as usize)
+        .enumerate()
+        .filter(|(_, row)| row.iter().any(|pixel| *pixel != ground))
+        .map(|(which, _)| which)
+        .collect();
+    let (Some(first), Some(last)) = (inked_rows.first(), inked_rows.last()) else {
+        return shaped;
+    };
+    let from = first.saturating_mul(across as usize);
+    let to = last.saturating_add(1).saturating_mul(across as usize);
+    let Some(kept) = shaped.pixels.get(from..to.min(shaped.pixels.len())) else {
+        return shaped;
+    };
+    let height =
+        i32::try_from(last.saturating_sub(*first).saturating_add(1)).unwrap_or(shaped.height);
+    Shaped {
+        width_of_box: across,
+        width: shaped.width,
+        height,
+        pixels: kept.to_vec(),
+    }
+}
+
 /// Ink a shaped buffer into a box of `size`, moved `shift` pixels across.
 pub(crate) fn inked(
     fonts: &mut FontSystem,
@@ -168,5 +273,110 @@ pub(crate) fn inked(
         width,
         height,
         pixels,
+    }
+}
+
+#[cfg(test)]
+mod the_letter_is_centred_on_its_ink {
+    use super::{Metrics, centred};
+
+    /// The bundled face, as the shell loads it.
+    fn fonts() -> cosmic_text::FontSystem {
+        let mut fonts = cosmic_text::FontSystem::new();
+        fonts
+            .db_mut()
+            .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+        fonts
+    }
+
+    /// Which rows of a shaped box have any ink in them.
+    fn inked_rows(shaped: &super::Shaped, ground: [u8; 3]) -> Vec<usize> {
+        shaped
+            .pixels
+            .chunks(shaped.width_of_box as usize)
+            .enumerate()
+            .filter(|(_, row)| row.iter().any(|pixel| *pixel != ground))
+            .map(|(which, _)| which)
+            .collect()
+    }
+
+    /// **The box is the letter, with no blank rows above or below it.**
+    ///
+    /// A line box holds the ascent, descent and leading a font would need for
+    /// `Áyg`, and a capital sits in the upper part of it — so centring the box
+    /// puts the letter high, which is exactly what the Dock's first drawing
+    /// showed. Trimming makes *centre the box* and *centre the letter* the same
+    /// act.
+    #[test]
+    fn a_letters_box_begins_and_ends_with_its_ink() {
+        let ground = [255, 255, 255];
+        let ink = [0, 0, 0];
+        for letter in ["F", "M", "B", "g", "कि"] {
+            let shaped = centred(
+                &mut fonts(),
+                letter,
+                48,
+                Metrics::new(32.0, 32.0),
+                ground,
+                ink,
+            );
+            let rows = inked_rows(&shaped, ground);
+            assert!(!rows.is_empty(), "{letter}: nothing was inked at all");
+            assert_eq!(
+                rows.first().copied(),
+                Some(0),
+                "{letter}: the box starts with {} blank rows above the letter, so centring it \
+                 would ride high",
+                rows.first().copied().unwrap_or_default()
+            );
+            assert_eq!(
+                rows.last().copied(),
+                Some(shaped.pixels.len() / shaped.width_of_box as usize - 1),
+                "{letter}: the box ends with blank rows below the letter"
+            );
+        }
+    }
+
+    /// **A letter with a descender is taller than one without**, which is the
+    /// check that the trim follows each glyph rather than cutting to a constant.
+    #[test]
+    fn the_box_follows_the_glyph_rather_than_a_fixed_height() {
+        let ground = [255, 255, 255];
+        let ink = [0, 0, 0];
+        let mut fonts = fonts();
+        let capital = centred(&mut fonts, "F", 48, Metrics::new(32.0, 32.0), ground, ink);
+        let full_stop = centred(&mut fonts, ".", 48, Metrics::new(32.0, 32.0), ground, ink);
+        // **`F` against `.`, not `F` against `g`.** The first pair tried here
+        // was `F` and `g`, and they trim to the **same** height — a capital's
+        // cap height and a descender's x-height-plus-tail are close enough at
+        // 32 pixels to coincide. That was this test's assumption being wrong
+        // rather than the trim, and a full stop cannot coincide with anything.
+        assert!(
+            full_stop.height < capital.height,
+            "a full stop ({}) trimmed no shorter than a capital ({}), so the trim is cutting to \
+             a fixed height rather than reading each glyph's ink",
+            full_stop.height,
+            capital.height
+        );
+    }
+
+    /// **A box with no ink comes back whole**, because there is nothing to
+    /// centre and a height of zero would place nothing at all.
+    #[test]
+    fn a_blank_box_is_left_alone() {
+        let ground = [12, 34, 56];
+        let shaped = centred(
+            &mut fonts(),
+            " ",
+            48,
+            Metrics::new(32.0, 32.0),
+            ground,
+            ground,
+        );
+        assert!(
+            shaped.height >= 1,
+            "a blank box was trimmed out of existence"
+        );
+        assert!(!shaped.pixels.is_empty());
     }
 }
