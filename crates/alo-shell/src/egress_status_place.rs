@@ -120,18 +120,55 @@ impl TheRoom {
 /// width, and the whole output is the room. That is the same treatment
 /// `crate::top_controls_region::reserved` gives it, for the same reason — a rectangle
 /// of no extent claims no point while still reading as a surface.
-fn the_span_across(width: i32, panel: Option<Rectangle<i32, Physical>>) -> (i32, i32) {
-    let Some(panel) = panel.filter(|column| column.size.w > 0 && column.size.h > 0) else {
-        return (0, width);
-    };
-    let left = panel.loc.x;
-    let right = left.saturating_add(panel.size.w);
-    if left <= 0 {
-        // Against the left edge, so the room is everything to the right of it.
-        (right.clamp(0, width), width)
-    } else {
-        (0, left.clamp(0, width))
+fn the_span_across(width: i32, reserved: &[Rectangle<i32, Physical>]) -> (i32, i32) {
+    reserved
+        .iter()
+        .copied()
+        .filter(|column| column.size.w > 0 && column.size.h > 0)
+        .fold((0, width), |(from, to), column| {
+            let left = column.loc.x;
+            let right = left.saturating_add(column.size.w);
+            if left <= from {
+                // Against the near end, so the room is everything beyond it.
+                (right.clamp(from, to), to)
+            } else {
+                (from, left.clamp(from, to))
+            }
+        })
+}
+
+/// Every column a corner surface must stop before, on this output.
+///
+/// **Two of them since 2026-10-10, and the second is the Dock.** The put-aside
+/// panel's column was the only one while the Dock was fixed to the bottom; a Dock
+/// down the left or the right reserves a lane of its own, and a corner laid out
+/// without it is the same overlap the panel produced — 104 pixels, found on a real
+/// draw — arriving from the other side of the screen.
+///
+/// **Nothing draws a side Dock in this release**, so this corrects nothing on a
+/// screen today. It is written now because the alternative is for the first person
+/// who picks *left* to be the one who finds it, and because the lane is already
+/// known here: `Layout` carries its edge and its thickness.
+fn the_columns_reserved(
+    layout: Layout,
+    room: TheRoom,
+    width: i32,
+) -> Vec<Rectangle<i32, Physical>> {
+    let mut columns: Vec<Rectangle<i32, Physical>> = room.panel.into_iter().collect();
+    let thickness = i32::try_from(layout.thickness().as_pixels()).unwrap_or(i32::MAX);
+    let floating = i32::try_from(alo_dock::measures::FLOATING_ABOVE_THE_EDGE).unwrap_or(i32::MAX);
+    // The lane plus the gap it floats in: a row ending flush against the Dock's
+    // outer face would still be inside the space the Dock is inset from.
+    let lane = thickness.saturating_add(floating);
+    let (height, start) = (room.size.1, width.saturating_sub(lane));
+    match layout.edge() {
+        Edge::Left => columns.push(Rectangle::new((0, 0).into(), (lane, height).into())),
+        Edge::Right => columns.push(Rectangle::new((start, 0).into(), (lane, height).into())),
+        // A Dock across the screen takes height, not width, and the rows clear it
+        // by where they start rather than by how far they run — see `Stacked`.
+        Edge::Bottom | Edge::Top => {}
     }
+    columns
 }
 
 /// Which way a row is aligned across the output.
@@ -227,7 +264,7 @@ impl Place {
         // session this end is away from the panel and the two are the same number;
         // in a mirrored one it is the end the column is at, which is the case that
         // would have been wrong silently.
-        let (from, to) = the_span_across(width, room.panel);
+        let (from, to) = the_span_across(width, &the_columns_reserved(layout, room, width));
         Self {
             across: match corner.across {
                 Across::FromLeft(_) => Across::FromRight(to - margin),
@@ -272,7 +309,7 @@ impl Place {
         // room is not the same as narrowing the screen: the Dock lays out on the
         // output it is on, and handing it a width short by the panel's column would
         // change how many icons it fits. Only the across-numbers below move.
-        let (from, to) = the_span_across(width, room.panel);
+        let (from, to) = the_span_across(width, &the_columns_reserved(layout, room, width));
         let across = match reading {
             Direction::RightToLeft => Across::FromLeft(from + margin),
             Direction::LeftToRight => Across::FromRight(to - margin),
@@ -331,6 +368,74 @@ mod tests {
     /// The dock on a 1920×1080 screen.
     fn laid_out() -> Layout {
         Dock::shipped().layout_on(Screen::of(1920, 1080).unwrap(), TextScale::ordinary())
+    }
+
+    /// A dock laid out along this edge of a 1920×1080 screen.
+    ///
+    /// Through `Layout::along` rather than through a `Dock`, because
+    /// `Dock::shipped` is on the bottom and nothing can change it — by the owner's
+    /// order of work, which keeps the setting shut until the edges work. A test
+    /// that went through a `Dock` could only ever ask about one of the four.
+    fn laid_along(edge: alo_dock::Edge) -> Layout {
+        Layout::along(edge, Screen::of(1920, 1080).unwrap(), TextScale::ordinary())
+    }
+
+    /// **A Dock down a side is a column the corner stops before.**
+    ///
+    /// The panel's column was the only one while the Dock was fixed to the bottom.
+    /// A Dock on the left and an indicator at the bottom-left are the **same
+    /// overlap the panel produced** — 104 pixels on a real draw — arriving from the
+    /// other side of the screen.
+    ///
+    /// **Nothing draws a side Dock in this release**, so this guards a case no
+    /// person can reach yet. That is the point of writing it now: the alternative
+    /// is for whoever first picks *left* to be the one who finds it.
+    #[test]
+    fn a_side_dock_is_a_column_the_corner_stops_before() {
+        use alo_dock::Edge;
+        let margin = 8;
+        let floating = i32::try_from(alo_dock::measures::FLOATING_ABOVE_THE_EDGE).unwrap();
+
+        for (edge, reading) in [
+            // The dangerous pair in each case: the rows run toward the Dock.
+            (Edge::Left, Direction::RightToLeft),
+            (Edge::Right, Direction::LeftToRight),
+        ] {
+            let layout = laid_along(edge);
+            let lane = i32::try_from(layout.thickness().as_pixels()).unwrap() + floating;
+            let place = Place::of(layout, small(None), margin, reading);
+
+            // Asserted as one equality rather than a match with a catch-all: the
+            // alignment and the number are the same claim, so a row aligned from
+            // the wrong end fails here too rather than falling to an arm. It also
+            // keeps `clippy::panic` satisfied, which this crate denies.
+            let expected = match edge {
+                Edge::Left => Across::FromLeft(lane + margin),
+                _ => Across::FromRight(1280 - lane - margin),
+            };
+            assert_eq!(
+                place.across, expected,
+                "{edge:?}: a row runs into the Dock's own lane"
+            );
+        }
+    }
+
+    /// **A Dock across the screen reserves no width**, which is the other half of
+    /// the same rule and the one a wrong fix would break.
+    ///
+    /// Narrowing the span for every edge would make a bottom Dock shorten the
+    /// indicator's rows for no reason — and it would pass the test above.
+    #[test]
+    fn a_dock_across_the_screen_leaves_the_rows_their_whole_width() {
+        use alo_dock::Edge;
+        for edge in [Edge::Bottom, Edge::Top] {
+            let place = Place::of(laid_along(edge), small(None), 8, Direction::LeftToRight);
+            assert_eq!(
+                place.across,
+                Across::FromRight(1280 - 8),
+                "{edge:?} narrowed the rows, and it takes height rather than width"
+            );
+        }
     }
 
     /// **The far end of the dock is the corner a person reads last**, and the
