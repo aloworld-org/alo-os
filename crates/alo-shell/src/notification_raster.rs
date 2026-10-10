@@ -131,12 +131,7 @@ pub(crate) fn picture(
     )
     .map_err(|_| RenderError::NotificationScene)?;
     let measure = Measure::of(look.scale);
-    let place = Place::of_the_other_end(
-        dock.layout_on(screen, look.scale),
-        room,
-        measure.px(8),
-        look.reading,
-    );
+    let place = Place::of_the_other_end(dock.layout_on(screen), room, measure.px(8), look.reading);
     let ground = look.contrast.ground(look.scheme);
     let ink = look.contrast.ink(look.scheme);
 

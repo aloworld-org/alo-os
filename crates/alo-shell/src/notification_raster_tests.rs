@@ -172,7 +172,7 @@ fn a_card_is_drawn_at_the_other_end_from_what_is_leaving() {
     let size = (1920, 1080);
     let dock = Dock::shipped();
     let measure = Measure::of(TextScale::ordinary());
-    let layout = dock.layout_on(Screen::of(1920, 1080).unwrap(), TextScale::ordinary());
+    let layout = dock.layout_on(Screen::of(1920, 1080).unwrap());
     // **Asked with a panel column as well as without one.** The two ends are
     // different numbers on an output nobody has put a window aside on, and the
     // reserved column moves the end it is at — so a version that forgot the column

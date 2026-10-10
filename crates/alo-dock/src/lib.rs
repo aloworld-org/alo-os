@@ -38,8 +38,7 @@
 //! | [`unkept`] | What a person is told when that file did not read, or was not written |
 //!
 //! ```
-//! use alo_appearance::TextScale;
-//! use alo_dock::{Dock, Hiding, Labels, Screen, Showing, TheRoom, dock_words};
+//! use alo_dock::{Dock, Edge, Hiding, Labels, Screen, Showing, TheRoom, dock_words};
 //! use alo_strings::Strings;
 //!
 //! // What this machine reads. Nothing is translated here, so every answer
@@ -48,23 +47,27 @@
 //!
 //! let mut dock = Dock::shipped();
 //!
-//! // The smallest screen alo OS lays out for, with the text at the size
-//! // EN 301 549 requires a layout to survive.
+//! // The smallest screen alo OS lays out for.
 //! let laptop = Screen::the_smallest();
-//! let standard = TextScale::percent(200).expect("200% is the standard's floor");
 //!
-//! // It still has room for its names at that size.
-//! assert_eq!(dock.layout_on(laptop, standard).labels(), Labels::Under);
+//! // The bar is the measured 76 — 14 above a 48 target and 14 below — and it
+//! // is that at every text size, because a name is never in it. This took a
+//! // `TextScale` until 2026-10-10 and the thickness moved with it.
+//! assert_eq!(dock.layout_on(laptop).thickness().as_pixels(), 76);
 //!
-//! // Above it, on that screen, they give way — and the sentence a person is
-//! // shown says where the names went, not only that they are gone.
-//! let large = TextScale::percent(300).expect("300% is a size this shell draws");
-//! let crowded = dock.layout_on(laptop, large);
-//! assert!(!crowded.labels().are_shown());
-//! assert!(crowded.labels().said(&strings).text().contains("screen reader"));
+//! // A name is shown when somebody points at an icon or reaches it by
+//! // keyboard, outside the bar, on whichever edge the dock is on.
+//! assert_eq!(dock.layout_on(laptop).labels(), Labels::Beside);
+//! assert!(dock.layout_on(laptop).labels().are_shown());
+//! assert!(
+//!     dock.layout_on(laptop).labels().said(&strings).text().contains("keyboard")
+//! );
 //!
-//! // A fresh dock stays on the screen whatever the windows want, and the one
-//! // thing a person can change about it is that.
+//! // Where it goes is the person's, and all four edges lay out.
+//! dock.set_edge(Edge::Left);
+//! assert_eq!(dock.edge(), Edge::Left);
+//!
+//! // A fresh dock stays on the screen whatever the windows want.
 //! assert_eq!(dock.showing(TheRoom::AWindowNeedsIt), Showing::Shown);
 //! dock.set_hiding(Hiding::WhenAWindowNeedsTheRoom);
 //! assert_eq!(dock.showing(TheRoom::AWindowNeedsIt), Showing::Hidden);
@@ -85,9 +88,17 @@
 //! - a dock may take **one part in six** of the height of the screen it sits on,
 //!   because it is on the screen all day and what it takes it takes from the
 //!   person's work;
-//! - a name under an icon needs a **line of text**;
-//! - names are drawn when a dock with them fits under the ceiling, and give way
-//!   when it does not.
+//! - the bar is the design's measured **76** — 14 above a 48 target and 14
+//!   below — on every edge that runs across, and the side lane's measured
+//!   **70** down either side;
+//! - **neither moves with the text size**, because a name is never in the bar:
+//!   it is shown on hover and on keyboard focus, outside it.
+//!
+//! **The clause this paragraph was written for is gone.** *Where the short edge
+//! demands it* described names under icons giving way as the text grew, and the
+//! owner removed that row on 2026-10-10 — the verified design has no names in
+//! the bar. The share above is no longer pinned by it either; `crate::layout`
+//! says so where the number is tested.
 //!
 //! That share is not taste. It is as generous as EN 301 549's requirement that
 //! text reach **200% without loss of content** allows, on the smallest screen alo

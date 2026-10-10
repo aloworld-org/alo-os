@@ -418,7 +418,7 @@ fn it_is_drawn_at_the_far_end_of_the_dock_wherever_the_dock_is() {
         {
             let dock = Dock::shipped();
             let thick = i32::try_from(
-                dock.layout_on(Screen::of(1920, 1080).unwrap(), TextScale::ordinary())
+                dock.layout_on(Screen::of(1920, 1080).unwrap())
                     .thickness()
                     .as_pixels(),
             )

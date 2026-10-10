@@ -179,14 +179,8 @@ mod tests {
         let evening = a_cold_evening();
 
         let dock = alo_dock::Dock::shipped();
-        let on_the_laptop = dock.layout_on(
-            alo_dock::Screen::of(1366, 768).unwrap(),
-            alo_appearance::TextScale::ordinary(),
-        );
-        let on_the_monitor = dock.layout_on(
-            alo_dock::Screen::of(1366, 768).unwrap(),
-            alo_appearance::TextScale::ordinary(),
-        );
+        let on_the_laptop = dock.layout_on(alo_dock::Screen::of(1366, 768).unwrap());
+        let on_the_monitor = dock.layout_on(alo_dock::Screen::of(1366, 768).unwrap());
         assert_eq!(
             on_the_laptop, on_the_monitor,
             "two screens of a size lay the dock out identically"

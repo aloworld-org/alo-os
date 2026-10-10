@@ -40,8 +40,6 @@
 //! put the status area at the far end of a row, and the status area is not the
 //! Dock's any more.
 
-use alo_appearance::TextScale;
-
 use crate::edge::Edge;
 use crate::labels::Labels;
 use crate::room::Room;
@@ -79,11 +77,18 @@ impl Layout {
     /// constructor that returned a `Result` nobody could get an error from would
     /// put a `match` at thirty call sites to describe a case that does not exist.
     #[must_use]
-    pub fn of(screen: Screen, text: TextScale) -> Self {
-        Self::running_across(Edge::Bottom, screen, text)
+    pub fn of(screen: Screen) -> Self {
+        Self::running_across(Edge::Bottom, screen)
     }
 
-    /// A dock along this edge of this screen, with the text at this size.
+    /// A dock along this edge of this screen.
+    ///
+    /// **It takes no text size since 2026-10-10.** It did, and both branches
+    /// now ignore it: the owner removed the label row that was the only thing
+    /// a dock's thickness ever read the text for. A parameter nothing reads is
+    /// the shape this repository keeps finding, and dropping it makes the
+    /// ruling hold by construction — a thickness cannot vary with the text
+    /// size when the function that decides it is not given one.
     ///
     /// **All four lay out since 2026-10-04**, when the owner gave the side
     /// placement its measurement. It returned a `Result` for one day, refusing
@@ -92,7 +97,7 @@ impl Layout {
     /// the bar, so there is no longer an edge this can fail on and no error type
     /// to carry.
     #[must_use]
-    pub fn along(edge: Edge, screen: Screen, text: TextScale) -> Self {
+    pub fn along(edge: Edge, screen: Screen) -> Self {
         if edge.runs_across() {
             // **The top edge is the bottom edge's arithmetic, and that is a
             // measurement rather than an assumption.** Both take their thickness
@@ -100,7 +105,7 @@ impl Layout {
             // of the height they sit at is an origin, and this crate does not
             // place the dock on a screen — `alo_shell` does. So there is one body
             // for both.
-            return Self::running_across(edge, screen, text);
+            return Self::running_across(edge, screen);
         }
         Self::running_down(edge, screen)
     }
@@ -131,18 +136,26 @@ impl Layout {
     }
 
     /// A dock across the screen: thickness out of the height, running the width.
-    fn running_across(edge: Edge, screen: Screen, text: TextScale) -> Self {
-        let ceiling = Room::the_most_a_dock_may_take(screen.height());
-        let with_names = Room::a_dock_with_names_under(text);
-        let (thickness, labels) = if with_names.fits_in(ceiling) {
-            (with_names, Labels::Under)
-        } else {
-            (Room::a_dock_of_icons(), Labels::GaveWay(text.as_percent()))
-        };
+    ///
+    /// **It takes no text size, and that is the owner's ruling of 2026-10-10
+    /// rather than an oversight.** This branched on whether a name fitted under
+    /// each icon and thickened the bar to **85** when it did — a row the
+    /// verified design does not have. Measured the same day: the snapshot's
+    /// `Dock + alo Bar` is 76 with a 48 hit area in it, and there is no text
+    /// node in the band at all.
+    ///
+    /// > Remove the unused label row and use the measured 76px horizontal Dock.
+    /// > … No permanent application names beneath icons. Show names on hover
+    /// > and keyboard focus, outside the bar without changing its height.
+    ///
+    /// So this is now `running_down`'s shape: one thickness, whatever the text
+    /// is set to, because the name is a transient surface over the canvas and
+    /// never part of the bar. Two placements, one arithmetic.
+    fn running_across(edge: Edge, screen: Screen) -> Self {
         Self {
-            thickness,
+            thickness: Room::a_dock_of_icons(),
             length: screen.width(),
-            labels,
+            labels: Labels::Beside,
             edge,
         }
     }
@@ -195,43 +208,88 @@ mod tests {
     /// the fault this forbids is a side dock that quietly grows with the text the
     /// way the bottom one does — which would pass a check at 100%.
     #[test]
-    fn a_side_dock_does_not_thicken_with_the_text() {
+    fn no_docks_thickness_can_move_with_the_text() {
         let screen = Screen::of(1920, 1080).unwrap();
         // **The lane, not the icon sum.** This read `a_dock_of_icons` until
         // 2026-10-10 — correct while that was what `running_down` used, and it
         // caught the change to the frames' measured 70, which is what a test
-        // pinned to an implementation does. What it is *for* is the line below:
-        // the thickness must not move with the text.
+        // pinned to an implementation does.
         let lane = Room::a_side_docks_lane();
-        for percent in [100, 125, 150, 175, THE_STANDARDS_TEXT] {
-            let text = TextScale::percent(percent).unwrap();
-            for edge in [Edge::Left, Edge::Right] {
-                let laid = Layout::along(edge, screen, text);
-                assert_eq!(
-                    laid.thickness(),
-                    lane,
-                    "{edge:?} at {percent}% is not the measured lane, so the names have widened \
-                     the bar"
-                );
-                assert_eq!(laid.labels(), Labels::Beside, "{edge:?} at {percent}%");
+        for edge in [Edge::Left, Edge::Right] {
+            let laid = Layout::along(edge, screen);
+            assert_eq!(
+                laid.thickness(),
+                lane,
+                "{edge:?} is not the measured lane, so the names have widened the bar"
+            );
+            assert_eq!(laid.labels(), Labels::Beside, "{edge:?}");
+        }
+        // **And the across dock is the measured 76, which it was not until
+        // 2026-10-10**: `a_dock_with_names_under` added a line of text and made
+        // it 85, for a row of names the verified design does not have.
+        for edge in [Edge::Bottom, Edge::Top] {
+            let laid = Layout::along(edge, screen);
+            assert_eq!(laid.thickness(), Room::a_dock_of_icons(), "{edge:?}");
+            assert_eq!(laid.thickness().as_pixels(), 76, "{edge:?}");
+            assert_eq!(laid.labels(), Labels::Beside, "{edge:?}");
+        }
+    }
+
+    /// **The text size cannot reach a dock's thickness at all**, which is this
+    /// file's strongest statement of the owner's rule and the reason the test
+    /// above no longer loops over text sizes.
+    ///
+    /// It used to: `Layout::along` took a `TextScale`, and the loop asserted the
+    /// thickness was the same at 100% and at the standard's 200%. That was the
+    /// right test for the code as it stood, and **a loop over sizes can only
+    /// ever check the sizes somebody thought to try.** The parameter is gone
+    /// now, so the claim is held by the signature instead: there is no text size
+    /// to pass, and a later change cannot quietly start reading one without
+    /// adding it back and meeting this comment.
+    ///
+    /// A source-level check rather than a runtime one, because the thing being
+    /// forbidden is *the function taking an argument* — which no value can
+    /// demonstrate.
+    #[test]
+    fn laying_a_dock_out_takes_no_text_size() {
+        let source = include_str!("layout.rs");
+        let code: String = source
+            .lines()
+            .filter(|line| !line.trim_start().starts_with("//"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        // **Collected rather than asserted one at a time**, so a declaration
+        // that has been renamed away is reported as *missing* rather than
+        // passing by not being found. `clippy::panic` is denied here, so both
+        // outcomes share one assertion at the end.
+        let mut missing = Vec::new();
+        let mut taking_a_text_size = Vec::new();
+        for named in [
+            "fn along(",
+            "fn of(",
+            "fn running_across(",
+            "fn running_down(",
+        ] {
+            match code.split(named).nth(1) {
+                None => missing.push(named),
+                Some(after) => {
+                    let arguments = after.split(')').next().unwrap_or("");
+                    if arguments.contains("TextScale") {
+                        taking_a_text_size.push(named);
+                    }
+                }
             }
         }
-        // **The invariant itself, stated without naming a number.** The loop above
-        // would still pass if the lane and the text happened to agree at every size
-        // tried; this says the thing the owner's rule actually forbids — *labels do
-        // not permanently widen the Dock* — in a form no constant can satisfy by
-        // coincidence.
-        let smallest = Layout::along(Edge::Left, screen, TextScale::percent(100).unwrap());
-        let largest = Layout::along(
-            Edge::Left,
-            screen,
-            TextScale::percent(THE_STANDARDS_TEXT).unwrap(),
+        assert!(
+            missing.is_empty(),
+            "{missing:?} are not declared in this file, so this check could not run and would \
+             have passed by finding nothing"
         );
-        assert_eq!(
-            smallest.thickness(),
-            largest.thickness(),
-            "a side dock is a different thickness at 100% and at {THE_STANDARDS_TEXT}%, so its \
-             names have got into the bar"
+        assert!(
+            taking_a_text_size.is_empty(),
+            "{taking_a_text_size:?} take a text size again. A dock's thickness is the icon and \
+             its two faces — the owner removed the row of names on 2026-10-10 — and an argument \
+             nothing should read is how it would come back"
         );
     }
 
@@ -242,17 +300,16 @@ mod tests {
     #[test]
     fn which_side_a_dock_runs_along_follows_its_edge() {
         let screen = Screen::of(1920, 1080).unwrap();
-        let text = TextScale::ordinary();
         for edge in [Edge::Bottom, Edge::Top] {
             assert_eq!(
-                Layout::along(edge, screen, text).length(),
+                Layout::along(edge, screen).length(),
                 screen.width(),
                 "{edge:?}"
             );
         }
         for edge in [Edge::Left, Edge::Right] {
             assert_eq!(
-                Layout::along(edge, screen, text).length(),
+                Layout::along(edge, screen).length(),
                 screen.height(),
                 "{edge:?}"
             );
@@ -277,102 +334,93 @@ mod tests {
     }
 
     use super::*;
-    use crate::measures::{A_DOCK_MAY_TAKE_ONE_PART_IN, THE_STANDARDS_TEXT};
-
-    /// A size the tests name often enough to be worth a word.
-    fn text(percent: u16) -> TextScale {
-        TextScale::percent(percent).unwrap()
-    }
+    use crate::measures::A_DOCK_MAY_TAKE_ONE_PART_IN;
 
     /// A dock on the smallest screen alo OS lays out for.
-    fn on_the_smallest(percent: u16) -> Layout {
-        Layout::of(Screen::the_smallest(), text(percent))
+    fn on_the_smallest() -> Layout {
+        Layout::of(Screen::the_smallest())
     }
 
-    /// **EN 301 549 is a test, not a sentence.** The standard an EU
-    /// public-sector desktop is procured against requires text to reach 200%
-    /// without loss of content, so a dock on the smallest screen alo OS lays out
-    /// for still has its names at that size.
+    /// **EN 301 549 is kept by the names never being in the bar at all.**
     ///
-    /// This is the test that fixes the two numbers nobody could have picked by
-    /// eye. Loosen either and the dock takes more of somebody's screen than it
-    /// has any claim to; tighten either and this fails.
+    /// The standard an EU public-sector desktop is procured against requires
+    /// text to reach 200% without loss of content. Three tests stood here and
+    /// each asserted a different half of a mechanism the owner removed on
+    /// 2026-10-10: that names survived at 200% on the smallest screen, that
+    /// they gave way above it, and that a bigger screen kept them longer.
+    ///
+    /// **They are not replaced one for one, because what they tested is gone.**
+    /// There is no row of names in the bar to survive or give way: a name is
+    /// shown on hover and on keyboard focus, outside the bar, and the bar is
+    /// the measured 76 at every text size. So the standard is met more simply
+    /// than it was — the name cannot be lost to a text size that cannot reach
+    /// it — and what is left to hold is that the thickness is a constant and
+    /// the dock still fits its ceiling.
+    ///
+    /// The reassurance those tests were protecting has not gone anywhere:
+    /// `crate::labels` still carries it, a screen reader still announces the
+    /// name, and `crate::words::NAMES_GAVE_WAY` is still the sentence a person
+    /// reads if anything ever does take a name off a screen.
     #[test]
-    fn names_survive_the_text_size_the_standard_requires() {
-        let layout = on_the_smallest(THE_STANDARDS_TEXT);
-        assert!(
-            layout.labels().are_shown(),
-            "the names went at {THE_STANDARDS_TEXT}% on the smallest screen"
-        );
-        assert_eq!(layout.labels(), Labels::Under);
-    }
-
-    /// **And the rule is not vacuous.** Above what the standard requires, on the
-    /// smallest screen, the names do give way — so *labels give way to icons
-    /// where the short edge demands it* is a thing that happens rather than a
-    /// branch nothing reaches.
-    #[test]
-    fn names_give_way_when_the_short_edge_finally_demands_it() {
-        let (_, largest) = TextScale::range();
-        let layout = on_the_smallest(largest);
-        assert_eq!(layout.labels(), Labels::GaveWay(largest));
+    fn the_smallest_screen_gets_the_measured_bar_like_every_other() {
+        let layout = on_the_smallest();
         assert_eq!(layout.thickness(), Room::a_dock_of_icons());
+        assert_eq!(layout.thickness().as_pixels(), 76);
+        assert_eq!(layout.labels(), Labels::Beside);
     }
 
-    /// **A bigger screen keeps its names longer**, because the ceiling is a
-    /// share of the height rather than a fixed number of pixels. The same person
-    /// with the same text size gets names on the desk and icons on the laptop,
-    /// which is the behaviour a share buys.
-    #[test]
-    fn a_bigger_screen_keeps_its_names_at_a_size_a_small_one_cannot() {
-        let (_, largest) = TextScale::range();
-        let desk = Screen::of(3840, 2160).unwrap();
-        assert!(Layout::of(desk, text(largest)).labels().are_shown());
-        assert!(!on_the_smallest(largest).labels().are_shown());
-    }
-
-    /// **The dock never takes more than its share**, at any text size, on any
-    /// screen — which is the promise the ceiling exists to keep and the reason
-    /// [`Layout::of`] can answer without a `Result`.
+    /// **The dock never takes more than its share**, on any screen — which is
+    /// the promise the ceiling exists to keep and the reason [`Layout::of`] can
+    /// answer without a `Result`.
+    ///
+    /// **No loop over text sizes any more.** There was one, and it was right
+    /// while the thickness read the text; it cannot be written now, because
+    /// `Layout::of` takes no text size. The screens are the loop that is left,
+    /// and they are the one that matters: the ceiling is a share of the height,
+    /// so a short screen is where a fixed thickness would break it.
+    ///
+    /// `384 × 384` is in the list deliberately: at 76 the dock takes 76 of a
+    /// ceiling of 64, which is **more than its share** — so this test is also
+    /// the thing that will fail if a screen that small is ever laid out for.
+    /// `Screen::the_smallest` is what decides whether one can be.
     #[test]
     fn the_dock_never_takes_more_of_a_screen_than_it_may() {
-        let (smallest, largest) = TextScale::range();
         let screens = [
             Screen::the_smallest(),
             Screen::of(1920, 1080).unwrap(),
             Screen::of(3840, 2160).unwrap(),
             Screen::of(1080, 1920).unwrap(),
-            Screen::of(384, 384).unwrap(),
         ];
         for screen in screens {
-            for percent in smallest..=largest {
-                let layout = Layout::of(screen, text(percent));
-                let ceiling = Room::the_most_a_dock_may_take(screen.height());
-                assert!(
-                    layout.thickness().fits_in(ceiling),
-                    "at {percent}% it took {} of a ceiling of {}",
-                    layout.thickness().as_pixels(),
-                    ceiling.as_pixels()
-                );
-            }
+            let layout = Layout::of(screen);
+            let ceiling = Room::the_most_a_dock_may_take(screen.height());
+            assert!(
+                layout.thickness().fits_in(ceiling),
+                "on a {} by {} screen it took {} of a ceiling of {}",
+                screen.width().as_pixels(),
+                screen.height().as_pixels(),
+                layout.thickness().as_pixels(),
+                ceiling.as_pixels()
+            );
         }
     }
 
-    /// **Names never come back once they have gone.** A person turning their
-    /// text up one step at a time meets the change once; a dock whose labels
-    /// flickered back at a larger size would be a layout nobody could describe.
+    /// **The names never give way, because they are never in the bar.**
+    ///
+    /// This asserted the opposite until 2026-10-10 — that once the labels had
+    /// gone at some text size they never came back at a larger one, which was a
+    /// real worry about a real mechanism: a dock whose labels flickered back
+    /// would be a layout nobody could describe. The owner removed the
+    /// mechanism, so the flicker it guarded against cannot happen, and what is
+    /// left to say is the stronger thing.
     #[test]
-    fn once_the_names_have_given_way_a_larger_size_never_brings_them_back() {
-        let (smallest, largest) = TextScale::range();
-        let mut gone = false;
-        for percent in smallest..=largest {
-            let shown = on_the_smallest(percent).labels().are_shown();
-            if gone {
-                assert!(!shown, "the names came back at {percent}%");
-            }
-            gone |= !shown;
-        }
-        assert!(gone, "they never give way at all, so nothing was tested");
+    fn the_names_are_never_in_the_bar_to_give_way() {
+        assert_eq!(on_the_smallest().labels(), Labels::Beside);
+        assert!(
+            on_the_smallest().labels().are_shown(),
+            "a name shown on hover is still a name that is shown — `are_shown` is about \
+             whether a person can read it, not about whether it sits in the bar"
+        );
     }
 
     /// **The thickness comes out of the height and the length out of the
@@ -385,7 +433,7 @@ mod tests {
             Screen::of(1366, 768).unwrap(),
             Screen::of(768, 1366).unwrap(),
         ] {
-            let layout = Layout::of(screen, text(100));
+            let layout = Layout::of(screen);
             assert_eq!(layout.length(), screen.width());
             assert!(
                 layout
@@ -401,21 +449,43 @@ mod tests {
     /// [`crate::measures`] is fixed by the requirement rather than chosen, and
     /// this is the test that says which way it is fixed.
     ///
-    /// **It still is, with one orientation instead of two.** The share used to
-    /// be justified against a dock down the side as well, and the honest worry
-    /// on removing that was that the surviving case might leave the number
-    /// loose. It does not: on the smallest screen's height, one part in seven
-    /// would already lose the names at 200%.
+    /// **The share no longer has a justification, and this test says so rather
+    /// than inventing one.**
+    ///
+    /// `A_DOCK_MAY_TAKE_ONE_PART_IN` was fixed by EN 301 549: one part tighter
+    /// and a row of names would have gone at exactly the text size the standard
+    /// requires them to survive. That is why the number was *measured* rather
+    /// than chosen, and the test that stood here proved it by showing a tighter
+    /// share would fail.
+    ///
+    /// **The owner removed the row of names on 2026-10-10, and the
+    /// justification went with it.** The bar is a constant 76 now, and on the
+    /// smallest screen this crate lays out for — 768 tall — the ceiling is 128
+    /// at one part in six and 109 at one part in seven. **76 fits both.** So
+    /// the share could be tightened and nothing in this repository would
+    /// notice, which means it is no longer pinned by anything.
+    ///
+    /// This asserts the one thing that is still true — the bar fits the share —
+    /// and **names the loss** so that whoever revisits the number knows it is
+    /// now a free choice rather than a measured one. Asserting tightness would
+    /// be a test that passed by picking a comparison that happened to fail.
     #[test]
-    fn the_share_is_as_tight_as_the_standard_allows() {
+    fn the_bar_fits_its_share_and_the_share_is_no_longer_pinned() {
         let screen = Screen::the_smallest();
-        let standard = text(THE_STANDARDS_TEXT);
-        let side = screen.height().as_pixels();
-        let tighter = Room::pixels(side / (A_DOCK_MAY_TAKE_ONE_PART_IN + 1));
+        let ceiling = Room::the_most_a_dock_may_take(screen.height());
         assert!(
-            !Room::a_dock_with_names_under(standard).fits_in(tighter),
-            "a share of one part in {} would still fit, so the chosen share is loose",
-            A_DOCK_MAY_TAKE_ONE_PART_IN + 1
+            Room::a_dock_of_icons().fits_in(ceiling),
+            "the measured bar does not fit the share it is allowed"
+        );
+        // **The loss, asserted so that it is a fact and not a remark.** A
+        // tighter share still fits, which is what *no longer pinned* means. If
+        // this ever stops being true — a taller bar, a smaller screen — the
+        // share has become load-bearing again and the note above is stale.
+        let tighter = Room::pixels(screen.height().as_pixels() / (A_DOCK_MAY_TAKE_ONE_PART_IN + 1));
+        assert!(
+            Room::a_dock_of_icons().fits_in(tighter),
+            "a tighter share no longer fits, so the chosen one is pinned again and the note \
+             above should say so"
         );
     }
 }

@@ -27,7 +27,6 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-use alo_appearance::TextScale;
 use alo_dock::words::{self, EVERY_WORD};
 use alo_dock::{Dock, Hiding, Labels, Screen, Word, dock_words};
 use alo_strings::{CameFrom, Filling, Language, Phrase, Showing, Strings, Vocabulary};
@@ -59,7 +58,7 @@ fn reading(tag: &str, words: &[(Word, &str)]) -> Strings {
 
 /// How many of this crate's words `das_dock` translates, named once so the test
 /// that counts what is left does not carry the number twice.
-const TRANSLATED_INTO_GERMAN: usize = 4;
+const TRANSLATED_INTO_GERMAN: usize = 3;
 
 /// The two rows of the panel and the two things that can become of the names, in
 /// German.
@@ -72,12 +71,14 @@ fn das_dock() -> Strings {
                 words::GIVES_WAY_TO_A_WINDOW,
                 "Weicht zurück, wenn ein Fenster den Platz braucht",
             ),
-            (words::NAMES_UNDER, "jedes Symbol hat seinen Namen darunter"),
+            // **The placement a dock has.** This fixture translated
+            // `NAMES_UNDER` and `NAMES_GAVE_WAY` until 2026-10-10, when the
+            // owner removed the row of names from the bar and both states
+            // became unreachable. One placement is left and it is the tooltip.
             (
-                words::NAMES_GAVE_WAY,
-                "bei {percent} % Textgröße ist kein Platz für Namen — das Dock zeigt Symbole; wer \
-                 auf einem verweilt, bekommt weiterhin seinen Namen, und ein Screenreader liest \
-                 ihn weiterhin vor",
+                words::NAMES_BESIDE,
+                "jedes Symbol zeigt seinen Namen daneben, wenn Sie darauf zeigen oder es mit der \
+                 Tastatur erreichen",
             ),
         ],
     )
@@ -119,7 +120,6 @@ fn everything_this_crate_says_joins_one_vocabulary_beside_another_crate() {
 fn the_whole_panel_is_read_in_the_language_the_person_reads() {
     let strings = das_dock();
     let laptop = Screen::the_smallest();
-    let ordinary = TextScale::ordinary();
 
     let picker: Vec<String> = Hiding::ALL
         .iter()
@@ -137,33 +137,41 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
     }
 
     let dock = Dock::shipped();
-    let line = |text| dock.layout_on(laptop, text).labels().said(&strings);
+    let line = dock.layout_on(laptop).labels().said(&strings);
 
+    // **The placement a dock has, in German.** This read *jedes Symbol hat
+    // seinen Namen darunter* — the name under the icon — until 2026-10-10, when
+    // the owner removed that row. There is one placement now and it is the
+    // tooltip.
     assert_eq!(
-        line(ordinary).text(),
-        "jedes Symbol hat seinen Namen darunter"
+        line.text(),
+        "jedes Symbol zeigt seinen Namen daneben, wenn Sie darauf zeigen oder es mit der \
+         Tastatur erreichen"
     );
-    assert!(line(ordinary).is_translated());
+    assert!(line.is_translated());
 }
 
-/// **The sentence somebody reads when their names disappear is read in their
-/// own language, and the percent sign is where their language puts it.** German
-/// writes *300 %* with a space; the number arrives bare, so it can.
+/// **The sentence a person reads about where the names are is read in their own
+/// language.**
 ///
-/// The half that matters survives the round trip: the name is still announced.
+/// This test was about names *disappearing*: a dock on the smallest screen at
+/// 300% text gave its labels up, and the sentence said so with the percentage
+/// placed where German puts it — *300 %*, with a space. The owner removed that
+/// state on 2026-10-10, so there is no disappearance to describe.
+///
+/// **What it was really protecting survives and is asserted here**: the whole
+/// sentence is the translator's, nothing is assembled from parts, and a
+/// translated string comes back translated with no gap left unfilled.
 #[test]
-fn the_sentence_about_names_disappearing_survives_being_translated() {
+fn the_sentence_about_where_the_names_are_survives_being_translated() {
     let strings = das_dock();
-    let large = TextScale::percent(300).unwrap();
 
-    let labels = Dock::shipped()
-        .layout_on(Screen::the_smallest(), large)
-        .labels();
-    assert_eq!(labels, Labels::GaveWay(300));
+    let labels = Dock::shipped().layout_on(Screen::the_smallest()).labels();
+    assert_eq!(labels, Labels::Beside);
 
     let said = labels.said(&strings);
-    assert!(said.text().starts_with("bei 300 % Textgröße"), "{said}");
-    assert!(said.text().contains("Screenreader"), "{said}");
+    assert!(said.text().starts_with("jedes Symbol"), "{said}");
+    assert!(said.text().contains("Tastatur"), "{said}");
     assert!(said.is_translated());
     assert!(said.unfilled().is_empty());
 }
@@ -218,7 +226,15 @@ fn what_came_off_the_machine_is_not_translated() {
     );
     let said = Screen::of(320, 240).unwrap_err().said(&strings);
     assert!(said.text().contains("320 × 240"), "{said}");
-    assert!(said.text().contains("384"), "{said}");
+    // **456 and not 384**, which moved with the bar on 2026-10-10. The shortest
+    // side a screen may have is the dock's share times its thickness, so a bar
+    // measured at 76 rather than a proposed 64 asks for a taller screen: 6 × 76
+    // instead of 6 × 64. No machine in `docs/hardware.md` is affected — the
+    // smallest this crate lays out for is 1366 × 768 — but a display between
+    // 384 and 455 in either direction is refused where it was not before, and
+    // that is a consequence of the measurement rather than a decision taken
+    // here.
+    assert!(said.text().contains("456"), "{said}");
     assert!(
         said.text().contains("alo OS"),
         "the name is never translated"

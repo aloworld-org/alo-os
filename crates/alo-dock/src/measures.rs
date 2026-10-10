@@ -51,6 +51,24 @@
 /// not exist yet, rather than one this crate guesses at.
 pub const ICON: u32 = 48;
 
+/// How much of a horizontal dock's thickness sits above and below the icon.
+///
+/// **Measured off the design, and it is not [`MARGIN`].** The snapshot's
+/// `Dock + alo Bar` is **76** tall with the `Browser · focus hit area` 48 tall
+/// inside it — 14 above and 14 below. `MARGIN` is 8 and is the room at the
+/// bar's *ends*, along the edge it runs on; this is the room across it. The two
+/// were one number while the thickness was `MARGIN + ICON + MARGIN` = 64, and
+/// that is what made 64 look measured when it was proposed.
+///
+/// **The owner's ruling of 2026-10-10**, after this file's own table and the
+/// Figma and the code gave three different heights:
+///
+/// > Remove the unused label row and use the measured 76px horizontal Dock. My
+/// > earlier 64px proposal is superseded by this decision. … Dock height: 76
+/// > logical pixels, with the measured 48px application target centred
+/// > vertically: 14px above and below.
+pub const ABOVE_AND_BELOW_AN_ICON: u32 = 14;
+
 /// The side of the artwork drawn inside [`ICON`].
 ///
 /// **Thirty-two inside forty-eight, settled by the owner on 2026-10-09**:

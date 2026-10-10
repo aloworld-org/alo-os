@@ -22,8 +22,6 @@
 //!
 //! [`Dock::layout_on`] takes a screen and answers about its size.
 
-use alo_appearance::TextScale;
-
 use crate::changes::{Changes, Setting};
 use crate::hiding::{Hiding, Showing, TheRoom};
 use crate::layout::Layout;
@@ -110,11 +108,15 @@ impl Dock {
         self.changes.forget_everything();
     }
 
-    /// The dock laid out along the bottom of this screen, with the text at this
-    /// size.
+    /// The dock laid out along this person's chosen edge of this screen.
+    ///
+    /// **It took a text size until 2026-10-10** and no longer does: the only
+    /// thing a dock's thickness ever read it for was the row of names under the
+    /// icons, and the owner removed that row. A name is shown on hover and on
+    /// keyboard focus, outside the bar, and never changes its height.
     #[must_use]
-    pub fn layout_on(&self, screen: Screen, text: TextScale) -> Layout {
-        Layout::along(self.edge(), screen, text)
+    pub fn layout_on(&self, screen: Screen) -> Layout {
+        Layout::along(self.edge(), screen)
     }
 
     /// Which edge of the screen this dock is on: the person's choice if they
@@ -144,6 +146,7 @@ impl Dock {
 )]
 mod tests {
     use super::*;
+    use crate::Room;
     use crate::labels::Labels;
 
     /// A machine nobody has touched has the dock the release ships, and the one
@@ -288,36 +291,66 @@ mod tests {
     }
 
     /// **Nothing is worked out at load time.** The same dock answers about two
-    /// screens and two text sizes without being rebuilt, so a panel previewing a
-    /// change asks the question the compositor asks.
+    /// screens without being rebuilt, so a panel previewing a change asks the
+    /// question the compositor asks.
+    ///
+    /// **This asserted that names gave way on a small screen at 300% text, and
+    /// that is behaviour the owner removed on 2026-10-10.** There is no row of
+    /// names in the bar to give way: a name is shown on hover and on keyboard
+    /// focus, outside the bar. So the thing to hold is the opposite one — that
+    /// the dock is the same on both screens — and it is held below rather than
+    /// deleted.
     #[test]
     fn one_dock_answers_about_whichever_screen_it_is_drawn_on() {
         let dock = Dock::shipped();
         let laptop = Screen::the_smallest();
         let desk = Screen::of(3840, 2160).unwrap();
-        let large = TextScale::percent(300).unwrap();
 
-        assert!(!dock.layout_on(laptop, large).labels().are_shown());
-        assert!(
-            dock.layout_on(desk, large).labels().are_shown(),
-            "the same dock, the same text, a bigger screen"
-        );
         assert_eq!(
-            dock.layout_on(laptop, TextScale::ordinary()).labels(),
-            Labels::Under
+            dock.layout_on(laptop).thickness(),
+            dock.layout_on(desk).thickness(),
+            "the same dock is the same thickness on a small screen and a large one"
+        );
+        assert_eq!(dock.layout_on(laptop).labels(), Labels::Beside);
+        assert!(
+            dock.layout_on(laptop).length() < dock.layout_on(desk).length(),
+            "the premise: these two screens really are different sizes, so the equality above \
+             is about the dock and not about two identical inputs"
         );
     }
 
-    /// **Every screen gets the same dock.** There is no per-display exception to
-    /// be had, which is the point of ADR 0076 rather than a gap in this file: two
-    /// screens laid out at the same size answer identically.
+    /// **A dock's thickness does not move with the text size**, which is the
+    /// ruling of 2026-10-10 held as a test rather than as a comment.
+    ///
+    /// It used to: `a_dock_with_names_under` added a line of text and made the
+    /// bar **85** where the design measures 76. `layout_on` no longer takes a
+    /// text size at all, so this test can only be written one way — and that is
+    /// the point, because a parameter that is not there cannot be read by a
+    /// later change.
+    #[test]
+    fn the_text_size_cannot_reach_the_docks_thickness() {
+        let dock = Dock::shipped();
+        let screen = Screen::of(1920, 1080).unwrap();
+        assert_eq!(
+            dock.layout_on(screen).thickness(),
+            Room::a_dock_of_icons(),
+            "the thickness is the icon and its two faces, and nothing else"
+        );
+        assert_eq!(
+            Room::a_dock_of_icons().as_pixels(),
+            76,
+            "the measured height of `Dock + alo Bar`: 14 above a 48 target and 14 below"
+        );
+    }
+
+    /// **Every screen gets the same dock.** Two screens laid out at the same
+    /// size answer identically.
     #[test]
     fn two_screens_of_a_size_are_one_layout() {
         let dock = Dock::shipped();
-        let text = TextScale::ordinary();
         let one = Screen::of(1920, 1080).unwrap();
         let other = Screen::of(1920, 1080).unwrap();
-        assert_eq!(dock.layout_on(one, text), dock.layout_on(other, text));
+        assert_eq!(dock.layout_on(one), dock.layout_on(other));
     }
 
     /// Putting everything back is one call, and it leaves the machine as though

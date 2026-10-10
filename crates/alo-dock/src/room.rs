@@ -17,8 +17,8 @@
 use alo_appearance::TextScale;
 
 use crate::measures::{
-    A_DOCK_MAY_TAKE_ONE_PART_IN, A_SIDE_DOCKS_LANE, GAP, ICON, LINE_IN_FIFTHS, MARGIN,
-    TEXT_AT_ORDINARY,
+    A_DOCK_MAY_TAKE_ONE_PART_IN, A_SIDE_DOCKS_LANE, ABOVE_AND_BELOW_AN_ICON, GAP, ICON,
+    LINE_IN_FIFTHS, MARGIN, TEXT_AT_ORDINARY,
 };
 
 /// How much room something takes, in logical pixels.
@@ -98,20 +98,26 @@ impl Room {
         Self::pixels(A_SIDE_DOCKS_LANE)
     }
 
-    /// How thick a dock of icons alone is: the icon, and the dock's two faces.
+    /// How thick a dock of icons is: the icon, and the dock's two faces.
+    ///
+    /// **Seventy-six, measured off the design** — `Dock + alo Bar` is 76 tall
+    /// with a 48 hit area inside it, 14 above and 14 below. It was
+    /// `MARGIN + ICON + MARGIN` = 64 until 2026-10-10, which read as a
+    /// measurement and was a proposal; the owner superseded it with the
+    /// measured number on that day.
+    ///
+    /// **It does not vary with the text size, and that is the same ruling.**
+    /// There is no name in the bar to leave room for: a name is shown on hover
+    /// and on keyboard focus, outside the bar, and never changes its height. So
+    /// this is one number for every text size, which is what
+    /// `a_dock_with_names_under` existed to deny.
     #[must_use]
     pub const fn a_dock_of_icons() -> Self {
-        Self::pixels(MARGIN.saturating_add(ICON).saturating_add(MARGIN))
-    }
-
-    /// How thick the dock is with a name under each icon, which is the only
-    /// placement there is: ADR 0076 fixed the dock along the bottom, and
-    /// `a_dock_with_names_beside` left with the orientation that needed it.
-    #[must_use]
-    pub fn a_dock_with_names_under(text: TextScale) -> Self {
-        Self::a_dock_of_icons()
-            .and(Self::pixels(GAP))
-            .and(Self::a_line_at(text))
+        Self::pixels(
+            ABOVE_AND_BELOW_AN_ICON
+                .saturating_add(ICON)
+                .saturating_add(ABOVE_AND_BELOW_AN_ICON),
+        )
     }
 
     /// How wide a bar holding this many icons is: the room inside it, the
@@ -238,43 +244,64 @@ mod tests {
         assert!(Room::text_at(text(75)) < Room::text_at(text(100)));
     }
 
-    /// A line is taller than the text in it, and a dock with names on it is
-    /// thicker than one without — which is what makes the ceiling a question
-    /// worth asking at all.
+    /// A line is taller than the text in it.
+    ///
+    /// **The second half of this went with `a_dock_with_names_under` on
+    /// 2026-10-10.** It asserted that a dock with names was thicker than one
+    /// without — true, and the cost is exactly what the owner removed: the
+    /// verified design has no names in the bar, so there is no thicker dock to
+    /// compare against. `a_line_at` is still used for text elsewhere, so the
+    /// half that is about a line stays.
     #[test]
-    fn a_line_is_taller_than_its_text_and_names_cost_room() {
+    fn a_line_is_taller_than_its_text() {
         for percent in [75, 100, 125, 200, 300] {
             let size = text(percent);
             assert!(
                 Room::a_line_at(size) > Room::text_at(size),
                 "at {percent}% a line is not taller than its text"
             );
-            assert!(
-                Room::a_dock_with_names_under(size) > Room::a_dock_of_icons(),
-                "at {percent}% the names cost nothing"
-            );
         }
     }
 
-    /// **Every measurement grows with the text, and none of them shrinks.** A
-    /// person who makes the text bigger and gets a thinner dock has found a
-    /// layout that will surprise them somewhere else too.
+    /// **Every measurement that depends on the text grows with it, and none of
+    /// them shrinks.** A person who makes the text bigger and gets a smaller
+    /// measurement has found a layout that will surprise them somewhere else
+    /// too.
+    ///
+    /// This walked `a_dock_with_names_under` until 2026-10-10. The dock's
+    /// thickness does not depend on the text any more — which is a stronger
+    /// statement than *it grows* and is held in `crate::layout` — so what is
+    /// walked here is the measurement that still does.
     #[test]
     fn nothing_gets_smaller_as_the_text_gets_bigger() {
         let (smallest, largest) = TextScale::range();
         let mut previous = Room::pixels(0);
         for percent in smallest..=largest {
-            let now = Room::a_dock_with_names_under(text(percent));
+            let now = Room::a_line_at(text(percent));
             assert!(now >= previous, "at {percent}%");
             previous = now;
         }
+        assert!(
+            previous > Room::a_line_at(text(smallest)),
+            "the premise: a line really does grow across this range, so the walk above is not \
+             comparing a constant with itself"
+        );
     }
 
     /// A dock of icons alone does not depend on the text at all, which is what
     /// makes it the thing a dock falls back to.
     #[test]
     fn a_dock_of_icons_is_the_same_at_every_text_size() {
-        assert_eq!(Room::a_dock_of_icons().as_pixels(), MARGIN + ICON + MARGIN);
+        assert_eq!(
+            Room::a_dock_of_icons().as_pixels(),
+            ABOVE_AND_BELOW_AN_ICON + ICON + ABOVE_AND_BELOW_AN_ICON
+        );
+        assert_eq!(
+            Room::a_dock_of_icons().as_pixels(),
+            76,
+            "the measured height of `Dock + alo Bar`, which superseded the proposed 64 on \
+             2026-10-10"
+        );
         assert!(Room::a_dock_of_icons() > Room::an_icon());
     }
 

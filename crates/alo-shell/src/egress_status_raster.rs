@@ -144,13 +144,7 @@ pub(crate) fn picture(
     )
     .map_err(|_| RenderError::EgressStatusScene)?;
     let measure = Measure::of(look.scale);
-    let place = Place::of(
-        dock.layout_on(screen, look.scale),
-        room,
-        measure.px(8),
-        look.reading,
-    )
-    .beyond(beyond);
+    let place = Place::of(dock.layout_on(screen), room, measure.px(8), look.reading).beyond(beyond);
     let fonts = &mut labels.fonts;
     let palette = palette(look.scheme, look.contrast);
 

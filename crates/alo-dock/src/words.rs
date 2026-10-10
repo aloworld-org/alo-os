@@ -19,14 +19,20 @@
 //!
 //! # The one that matters is the one nobody plans for
 //!
-//! [`NAMES_GAVE_WAY`] is read by somebody who has just made their text bigger
-//! for a reason and watched the names in their dock disappear. It is the string
-//! in this crate a bad translation would do the most damage to, because the half
-//! that matters is not *why* — it is **the name is still there**: resting on an
-//! icon still gives it, and a screen reader still reads it. A translation that
-//! kept the reason and dropped the reassurance would leave somebody believing
-//! that making text bigger had cost them the ability to tell their applications
-//! apart. Its note says so outright.
+//! [`NAMES_BESIDE`] is the sentence a person reads when they want to know where
+//! their dock's names are. It says **both** ways of reaching one — resting a
+//! pointer on the icon, and arriving at it with the keyboard — and a
+//! translation that mentioned only the pointer would read, to somebody who does
+//! not use one, as though the names were gone.
+//!
+//! **A harder one stood here until 2026-10-10.** `dock.labels.gave-way` was
+//! read by somebody who had just made their text bigger for a reason and
+//! watched the names in their dock disappear, and the half that mattered was
+//! not *why* but **the name is still there**. The owner removed the row of
+//! names from the bar, so nothing disappears and the sentence has no occasion;
+//! the key is gone from this file. The care it needed has not gone anywhere —
+//! it moved into [`NAMES_BESIDE`], which is now the only thing this crate says
+//! about where a name is.
 //!
 //! # What is deliberately not here
 //!
@@ -71,19 +77,17 @@ pub const GIVES_WAY_TO_A_WINDOW: Word = Word::saying(
 // dock's panel, so that turning the text up shows what it did.
 // ---------------------------------------------------------------------------
 
-/// A dock with room for its names.
-pub const NAMES_UNDER: Word = Word::saying("dock.labels.under", "each icon has its name under it")
-    .noting(
-        "The dock is along the bottom of the screen, so a name sits below the picture it belongs \
-         to. Shown in the dock's settings, so somebody can see what the text size did.",
-    );
-
-/// A dock down a side, whose names sit beside the icons.
+/// Where a dock's names are, on every edge.
 ///
-/// **Restored 2026-10-04 with the measurement that makes it possible.** This key
-/// existed before ADR 0076's bottom-only ruling and left with it; the owner
-/// reversed that ruling on 2026-09-30 and gave the side placement its figure on
-/// 2026-10-04 — 200 logical pixels of usable text width, in a tooltip.
+/// **Restored 2026-10-04 with the measurement that makes it possible**, for a
+/// dock down a side: 200 logical pixels of usable text width, in a tooltip.
+///
+/// **And it is the only placement since 2026-10-10.** `dock.labels.under` and
+/// `dock.labels.gave-way` were declared beside it and are gone: the owner
+/// removed the row of names from a horizontal dock's bar, so a name is a
+/// tooltip whichever edge the dock is on and neither of those sentences can be
+/// said. Two keys therefore left this crate's vocabulary — said here because a
+/// translator who has already worked on them should know they went, and why.
 pub const NAMES_BESIDE: Word = Word::saying(
     "dock.labels.beside",
     "each icon shows its name beside it when you point at it or reach it by keyboard",
@@ -95,20 +99,6 @@ pub const NAMES_BESIDE: Word = Word::saying(
      **Say both ways of reaching it**: resting a pointer on the icon and arriving at it with the \
      keyboard show the same name, and a sentence that mentioned only the pointer would read, to \
      somebody who does not use one, as though the names were gone.",
-);
-
-/// A dock with no room for names at the size the text has been set to.
-pub const NAMES_GAVE_WAY: Word = Word::saying(
-    "dock.labels.gave-way",
-    "there is no room for names at {percent}% text, so the dock shows icons — resting on one \
-     still gives its name, and a screen reader still reads it",
-)
-.noting(
-    "Read by somebody who has just made their text bigger and watched the names in their dock \
-     disappear, so the second half is the half that matters: nothing has been taken away, the \
-     names have moved. Keep it. {percent} is a plain whole number with no sign on it, so the \
-     percent sign is yours to place — put it where your language puts it, with a space before it \
-     if that is how percentages are written.",
 );
 
 // ---------------------------------------------------------------------------
@@ -343,12 +333,10 @@ pub const WHERE_THE_DOCK_GOES: Word = Word::saying("dock.edge", "Where the dock 
 /// this list's order is the order a translator meets them in, and a translator
 /// who has already done this file should find the new ones together rather than
 /// hunting a diff.
-pub const EVERY_WORD: [Word; 25] = [
+pub const EVERY_WORD: [Word; 23] = [
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
-    NAMES_UNDER,
     NAMES_BESIDE,
-    NAMES_GAVE_WAY,
     NOT_A_SCREEN,
     SCREEN_TOO_SMALL,
     KEPT_NOT_READ,
@@ -497,7 +485,6 @@ mod tests {
     #[test]
     fn the_strings_that_are_about_something_have_a_gap_for_it() {
         for (word, gaps) in [
-            (NAMES_GAVE_WAY, &["percent"][..]),
             (NOT_A_SCREEN, &["width", "height"][..]),
             (SCREEN_TOO_SMALL, &["width", "height", "least"][..]),
             (KEPT_NOT_READ, &["path"][..]),
@@ -516,17 +503,21 @@ mod tests {
         }
     }
 
-    /// **The reassurance in [`NAMES_GAVE_WAY`] is part of the string**, not a
-    /// thing a shell adds beside it — so a translator is handed it and a checked
-    /// translation cannot lose it without somebody deciding to.
+    /// **Both ways of reaching a name are in [`NAMES_BESIDE`]'s string**, not
+    /// added beside it by a shell — so a translator is handed them and a
+    /// checked translation cannot lose one without somebody deciding to.
+    ///
+    /// This tested `NAMES_GAVE_WAY`'s reassurance until 2026-10-10, when that
+    /// key left with the row of names it described. The rule it was an example
+    /// of is the same, and this is the string it now applies to.
     #[test]
-    fn the_string_about_names_disappearing_says_the_name_is_still_there() {
-        assert!(NAMES_GAVE_WAY.says().contains("screen reader"));
-        assert!(NAMES_GAVE_WAY.says().contains("still gives its name"));
+    fn the_string_about_names_says_both_ways_of_reaching_one() {
+        assert!(NAMES_BESIDE.says().contains("point at it"));
+        assert!(NAMES_BESIDE.says().contains("keyboard"));
         assert!(
-            NAMES_GAVE_WAY
+            NAMES_BESIDE
                 .note()
-                .is_some_and(|note| note.contains("Keep it")),
+                .is_some_and(|note| note.contains("Say both ways of reaching it")),
             "the note tells a translator which half matters"
         );
     }

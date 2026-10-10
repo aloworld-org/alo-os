@@ -148,7 +148,7 @@ pub(crate) fn picture(
     .map_err(|_| RenderError::DesktopScene)?;
     let palette = look.palette().map_err(|_| RenderError::AccentRefused)?;
     let measure = look.measure();
-    let layout = dock.layout_on(screen, look.scale());
+    let layout = dock.layout_on(screen);
     let thickness = i32::try_from(layout.thickness().as_pixels())
         .map_err(|_| RenderError::DesktopScene)?
         .clamp(1, width.min(height));
@@ -392,7 +392,7 @@ mod tests {
         for reading in [Direction::LeftToRight, Direction::RightToLeft] {
             let look = noon_look(&an_appearance(), reading);
             let drawn = picture(&dock, look, size, &on_the_dock(4), &mut fonts()).unwrap();
-            let layout = dock.layout_on(Screen::of(1920, 1080).unwrap(), look.scale());
+            let layout = dock.layout_on(Screen::of(1920, 1080).unwrap());
             assert_eq!(drawn.layout, layout);
 
             let thick = i32::try_from(layout.thickness().as_pixels()).unwrap();
@@ -474,9 +474,16 @@ mod tests {
     }
 
     /// **Per display.** The same dock on a laptop and on a large screen beside
-    /// it is laid out for each display's own size: at a large text size its
-    /// names give way on the laptop and are kept on the desk, and the two bands
-    /// are as thick as `alo-dock` says for each.
+    /// it is laid out for each display's own size, and each band is as thick as
+    /// `alo-dock` says for it.
+    ///
+    /// **The band is the same thickness on both, and that is the point now
+    /// rather than a weakening.** This asserted that at 300% text the names
+    /// gave way on the laptop and were kept on the desk, so the two bands were
+    /// different heights. The owner removed the row of names on 2026-10-10 —
+    /// the verified design has none — so the bar is the measured 76 on every
+    /// screen at every text size, and what differs between displays is its
+    /// **length** and where it sits.
     #[test]
     fn each_display_gets_the_dock_laid_out_for_its_own_size() {
         let mut appearance = an_appearance();
@@ -487,9 +494,18 @@ mod tests {
         let laptop = picture(&dock, look, (1366, 768), &on_the_dock(4), &mut fonts()).unwrap();
         let desk = picture(&dock, look, (3840, 2160), &on_the_dock(4), &mut fonts()).unwrap();
         let portrait = picture(&dock, look, (1080, 1920), &on_the_dock(4), &mut fonts()).unwrap();
-        assert!(!laptop.layout.labels().are_shown());
+        assert!(laptop.layout.labels().are_shown());
         assert!(desk.layout.labels().are_shown());
-        assert_ne!(laptop.band.size.h, desk.band.size.h);
+        assert_eq!(
+            laptop.band.size.h, desk.band.size.h,
+            "a 300% text size moved one band and not the other, so something still reads the \
+             text to decide a thickness"
+        );
+        assert_ne!(
+            laptop.band.loc.y, desk.band.loc.y,
+            "the premise: these are different displays, so the bands sit at different heights \
+             even though they are equally thick"
+        );
         for drawn in [&laptop, &desk, &portrait] {
             assert_eq!(
                 i64::from(drawn.band.size.h),

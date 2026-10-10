@@ -69,27 +69,41 @@ fn the_side_lane_is_what_the_design_note_recorded() {
     );
 }
 
-/// **The lane is not the icon sum, and the gap is deliberate.**
+/// **Two measured numbers, one per orientation, and neither is derived from the
+/// other.**
 ///
-/// `a_dock_of_icons` is 64 and the frames say 70. If a later change ever makes
-/// those equal it will be because somebody moved `MARGIN` to fit one edge, which is
-/// fitting the measures to a frame and moves the bottom dock with it. The two are
-/// held apart here so that reconciling them is a decision rather than a tidy-up.
+/// This asserted that the side lane (70) was **wider** than a dock of icons,
+/// and that the gap was 6. It was, while the across dock's thickness was the
+/// proposed `MARGIN + ICON + MARGIN` = 64. The owner replaced that with the
+/// frames' own measurement on 2026-10-10 — **76** — so the relationship has
+/// inverted: the side lane is now the *narrower* of the two.
+///
+/// **That is not a fault and nothing needs reconciling.** The design has a
+/// 70-wide side dock and a 76-tall horizontal one; both come off the frames,
+/// and a crate that forced them equal would be fitting one edge's measurement
+/// to the other's. What the original test was protecting — that nobody quietly
+/// moves a measure to make two edges agree — is what is held below, in the
+/// direction that is now true.
 #[test]
-fn the_side_lane_is_not_the_icon_sum_and_says_by_how_much() {
+fn each_orientation_keeps_its_own_measured_thickness() {
     let lane = alo_dock::Room::a_side_docks_lane().as_pixels();
-    let icons = alo_dock::Room::a_dock_of_icons().as_pixels();
-    assert!(
-        lane > icons,
-        "the side lane ({lane}) is no longer wider than a dock of icons ({icons}). The design \
-         file's frames gave 70 against this crate's 64 — if they now agree, either a measure \
-         moved to fit one edge or the design changed, and both want saying out loud."
+    let across = alo_dock::Room::a_dock_of_icons().as_pixels();
+    assert_eq!(lane, 70, "the frames' side dock");
+    assert_eq!(across, 76, "the frames' `Dock + alo Bar`");
+    assert_ne!(
+        lane, across,
+        "the two orientations have been made the same number. The design gives 70 down a side \
+         and 76 across, so if they now agree either a measure moved to fit one edge or the \
+         design changed, and both want saying out loud."
     );
+    // **Still six apart, and that is a coincidence worth naming** so nobody
+    // reads it as a rule: 64 was six below the lane and 76 is six above it.
+    // Neither number was chosen with the other in view.
     assert_eq!(
-        lane - icons,
+        across - lane,
         6,
-        "the six pixels between the frames' lane and this crate's arithmetic have changed size. \
-         They are recorded in {THE_DOCK} as unexplained rather than derived, so a change here \
-         means somebody learned what they are for — which belongs in that note."
+        "the six pixels between the two orientations' measurements have changed size. They are \
+         two readings of {THE_DOCK}'s frames rather than one derived from the other, so a \
+         change here means a frame moved."
     );
 }

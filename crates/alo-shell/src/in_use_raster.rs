@@ -142,12 +142,7 @@ pub(crate) fn picture(
     )
     .map_err(|_| RenderError::InUseScene)?;
     let measure = Measure::of(look.scale);
-    let place = Place::of(
-        dock.layout_on(screen, look.scale),
-        room,
-        measure.px(8),
-        look.reading,
-    );
+    let place = Place::of(dock.layout_on(screen), room, measure.px(8), look.reading);
     let palette = palette(look.scheme, look.contrast);
 
     // The crate's order, and only the crate's: by what is in use, keeping the
