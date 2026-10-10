@@ -3,8 +3,8 @@
 use crate::RenderError;
 use smithay::{
     backend::renderer::{
+        ImportAll, Renderer,
         element::{Element, Kind, surface::WaylandSurfaceRenderElement},
-        gles::GlesRenderer,
         utils::RendererSurfaceStateUserData,
     },
     reexports::wayland_server::protocol::wl_surface::WlSurface,
@@ -13,9 +13,14 @@ use smithay::{
 };
 
 /// Imported elements and their surfaces, in front-to-back tree order.
-pub(crate) struct Drawing {
+///
+/// **Carries its renderer in its type**, because an imported texture belongs to
+/// the renderer that made it and handing one to another is the bug this
+/// parameter makes unspellable. `R` is bounded at each use rather than here, so
+/// the struct can be named in a signature without repeating the bound.
+pub(crate) struct Drawing<R: Renderer> {
     /// Textures retained until after submission.
-    pub(crate) elements: Vec<WaylandSurfaceRenderElement<GlesRenderer>>,
+    pub(crate) elements: Vec<WaylandSurfaceRenderElement<R>>,
     /// Only surfaces intersecting the framebuffer receive callbacks.
     pub(crate) surfaces: Vec<WlSurface>,
 }
@@ -25,13 +30,17 @@ pub(crate) struct Drawing {
 /// `origin` is in screen pixels and `drawn_at` is the scale the surface's own
 /// units are drawn at — `crate::scene::drawn_at` for a frame on the plane, and
 /// `1.0` for anything in the viewport layer, which a zoom does not resize.
-pub(crate) fn import_at(
-    renderer: &mut GlesRenderer,
+pub(crate) fn import_at<R>(
+    renderer: &mut R,
     roots: &[WlSurface],
     bounds: Rectangle<i32, Physical>,
     origin: Point<f64, Physical>,
     drawn_at: f64,
-) -> Result<Drawing, RenderError> {
+) -> Result<Drawing<R>, RenderError>
+where
+    R: Renderer + ImportAll,
+    R::TextureId: Clone + 'static,
+{
     let mut drawing = Drawing {
         elements: Vec::new(),
         surfaces: Vec::new(),

@@ -32,17 +32,42 @@
 //! client offers can be taken by the same safe renderer that draws — see
 //! `importable_formats` and `validate_import` below.
 //!
-//! **What it still cannot do is draw a session.** Importing a buffer and
-//! composing a window from it are different halves, and `paint` refuses every
-//! client surface by name rather than drawing it empty. So the import above is
-//! honest about one thing only: whether this buffer could be taken. A frame
-//! made of client windows is still refused one layer down.
+//! **And it draws a session, from 2026-10-10. This paragraph has now been
+//! wrong twice in the same direction.**
+//!
+//! It first said this painter could not *import*, which was corrected on
+//! 2026-10-02. It then said importing and *composing a window from what was
+//! imported* were different halves and only the first was here — and that
+//! reading made itself true: `paint` refused every frame carrying a client
+//! window before attempting anything, so nothing ever reached the composing to
+//! find out.
+//!
+//! The composing was never missing. `crate::scene_drawing::paint` is what the
+//! nested backend draws real applications through; it named `GlesRenderer` in
+//! its signature and used nothing but traits in its body. Parameterising it
+//! over the renderer is the whole change, and smithay's own trait list is the
+//! evidence this painter qualifies: `ImportMemWl` for a shared-memory buffer,
+//! `ImportDmaWl` and `ImportDma` for a card's, and `Bind<Dmabuf>`.
+//!
+//! **What remains genuinely unsupported is narrower and is a refusal at the
+//! buffer, not at the frame.** A client may hand over a format pixman does not
+//! know, and `validate_import` answers for that one buffer by name. The owner's
+//! direction of 2026-10-10 asks for exactly that shape — *keep software
+//! rendering only where it genuinely supports the required behaviour;
+//! otherwise report the unsupported configuration clearly* — and a refusal
+//! naming one format a client asked for is clear in a way that refusing every
+//! window was not.
+//!
+//! **This is slower than a card and that is the honest cost.** Every pixel of
+//! every window is composited by the processor, so a large display or a video
+//! will show it. It is correct everywhere, which is why it is what a machine
+//! boots to while the card's path is built beside it (owner, 2026-10-10).
 
 use drm::buffer::DrmFourcc;
 use pixman::Image;
 use smithay::{
     backend::renderer::{
-        Bind, Color32F, ExportMem, Frame, Offscreen, Renderer, Texture, TextureMapping,
+        Bind, ExportMem, Offscreen, Texture, TextureMapping,
         pixman::{PixmanRenderer, PixmanTarget},
     },
     reexports::wayland_server::protocol::wl_surface::WlSurface,
@@ -119,23 +144,24 @@ impl crate::direct_target::ScenePainter for SoftwarePainter {
         popups: &[Popup],
         cursor: &Cursor,
         layers: crate::scene_native::NativeLayers<'_>,
-        _camera: alo_canvas::Camera,
+        camera: alo_canvas::Camera,
     ) -> Result<(ScanoutPixels, Vec<WlSurface>), RenderError> {
         crate::offscreen::validate_size(size)?;
-        let carried = ToImport {
-            windows: !roots.is_empty(),
-            menus: !popups.is_empty(),
-            pointer: matches!(cursor, Cursor::Surface { .. }),
-        };
-        if let Some(scene) = refused_layer(carried, layers.scene) {
-            return Err(RenderError::SceneNotOnThisBackend { scene });
-        }
-        if layers.is_empty() {
+        // **A frame with nothing in it is refused rather than drawn black**,
+        // because a black display looks like a crash and a refusal says which
+        // frame was empty.
+        //
+        // **The condition widened on 2026-10-10 and that is the point.** It was
+        // `layers.is_empty()` alone, which was complete while no client could
+        // be drawn: every frame had to carry something of this shell's own or
+        // there was nothing to draw. An application alone on an empty desktop
+        // is now a real frame with no layer of the shell's in it, and refusing
+        // it would be the new capability taken away by the old guard.
+        if layers.is_empty() && roots.is_empty() && popups.is_empty() {
             return Err(RenderError::SceneNotOnThisBackend {
                 scene: "a frame with nothing of this shell's own in it",
             });
         }
-        validate_layers(layers, size)?;
         let mut buffer: Image<'static, 'static> = self
             .0
             .create_buffer(READBACK, (size.w, size.h).into())
@@ -144,161 +170,36 @@ impl crate::direct_target::ScenePainter for SoftwarePainter {
             .0
             .bind(&mut buffer)
             .map_err(|error| RenderError::Submission(format!("bind software frame: {error}")))?;
-        let damage = Rectangle::from_size(size);
-        {
-            let mut frame = self
-                .0
-                .render(&mut target, size, Transform::Normal)
-                .map_err(paint_failed)?;
-            // The same neutral clear the GLES path makes, and for the same
-            // reason: it is not a visual design, it is the absence of one.
-            frame
-                .clear(Color32F::new(0.0, 0.0, 0.0, 1.0), &[damage])
-                .map_err(paint_failed)?;
-            paint_layers(layers, &mut frame)?;
-            // Last, so the arrow stays above the screen it points at. Two masks
-            // asked, one of which is empty: the plain arrow and the double-headed
-            // one over a frame's resize band are the same kind of thing and only
-            // one of them applies at a time.
-            for (pixel, colour) in crate::default_cursor::pixels(cursor, damage)?
-                .into_iter()
-                .chain(crate::resize_cursor::pixels(cursor, damage)?)
-            {
-                frame
-                    .draw_solid(pixel, &[Rectangle::from_size(pixel.size)], colour)
-                    .map_err(paint_failed)?;
-            }
-            // Nothing waits on this: the pixels are already in memory by the
-            // time the frame is finished, because the processor drew them.
-            let _sync = frame.finish().map_err(paint_failed)?;
-        }
-        // Nothing was imported, so no surface was drawn and none may be told a
-        // frame was shown. An empty list is the honest answer, not an omission.
-        Ok((readback(&mut self.0, &target)?, Vec::new()))
+        // **The same painting the card's path does, and the same function.**
+        // This hand-rolled a clear, this shell's own layers and the arrow, and
+        // drew no client at all. `crate::scene_drawing::paint` imports every
+        // mapped tree and the pointer a client drew itself, and is what the
+        // nested fixture draws real applications through.
+        let drawing = crate::scene_drawing::paint(
+            &mut self.0,
+            &mut target,
+            crate::scene_drawing::OnThePlane {
+                roots,
+                popups,
+                camera,
+            },
+            cursor,
+            Transform::Normal,
+            layers,
+        )?;
+        // **The surfaces that were drawn, not an empty list.** This answered
+        // `Vec::new()` under a comment reading *nothing was imported, so no
+        // surface was drawn and none may be told a frame was shown*. That was
+        // true of a painter that refused them. A client told nothing stops
+        // drawing, so an empty answer here would be a desktop that freezes one
+        // frame after it starts.
+        Ok((readback(&mut self.0, &target)?, drawing.surfaces))
     }
-}
-
-/// Refuse a layer this display was not laid out for, before anything is drawn.
-///
-/// Every picture checks its own extent, and each one is asked before the first
-/// pixel: half a frame on a display and a refusal for the other half is a
-/// picture nobody laid out.
-fn validate_layers(
-    layers: crate::scene_native::NativeLayers<'_>,
-    size: Size<i32, Physical>,
-) -> Result<(), RenderError> {
-    if let Some(scene) = layers.scene {
-        scene.validate(size)?;
-    }
-    if let Some(desktop) = layers.desktop {
-        desktop.validate(size)?;
-    }
-    if let Some(record) = layers.record {
-        record.validate(size)?;
-    }
-    if let Some(settings) = layers.settings {
-        settings.validate(size)?;
-    }
-    if let Some(approval) = layers.approval {
-        approval.validate(size)?;
-    }
-    if let Some(status) = layers.status {
-        status.validate(size)?;
-    }
-    if let Some(in_use) = layers.in_use {
-        in_use.validate(size)?;
-    }
-    if let Some(notifications) = layers.notifications {
-        notifications.validate(size)?;
-    }
-    if let Some(capturing) = layers.capturing {
-        capturing.validate(size)?;
-    }
-    Ok(())
-}
-
-/// Paint each layer this frame carries, lowest first.
-///
-/// An empty picture is not painted at all, which is `crate::scene_drawing`'s
-/// own rule: a record with nothing in it, a question nobody asked and an
-/// indicator with nothing leaving are absences rather than empty panels.
-fn paint_layers(
-    layers: crate::scene_native::NativeLayers<'_>,
-    frame: &mut impl Frame,
-) -> Result<(), RenderError> {
-    if let Some(scene) = layers.scene {
-        scene.paint(frame)?;
-    }
-    if let Some(desktop) = layers.desktop {
-        desktop.paint(frame)?;
-    }
-    if let Some(record) = layers.record.filter(|record| !record.is_empty()) {
-        record.paint(frame)?;
-    }
-    if let Some(settings) = layers.settings.filter(|settings| !settings.is_empty()) {
-        settings.paint(frame)?;
-    }
-    if let Some(approval) = layers.approval.filter(|approval| !approval.is_empty()) {
-        approval.paint(frame)?;
-    }
-    if let Some(status) = layers.status.filter(|status| !status.is_empty()) {
-        status.paint(frame)?;
-    }
-    if let Some(in_use) = layers.in_use.filter(|in_use| !in_use.is_empty()) {
-        in_use.paint(frame)?;
-    }
-    // At the other end of the dock, and as high: a window a client maps does
-    // not cover a message that arrived either.
-    if let Some(cards) = layers.notifications.filter(|cards| !cards.is_empty()) {
-        cards.paint(frame)?;
-    }
-    // Above every one of them: a notification arriving while somebody is
-    // choosing what to capture must not land on top of the thing they are
-    // drawing a box around.
-    if let Some(capturing) = layers.capturing.filter(|tools| !tools.is_empty()) {
-        capturing.paint(frame)?;
-    }
-    Ok(())
 }
 
 /// The one format asked for on the way out, in DRM's spelling: four bytes per
 /// pixel, red first in memory, which is what [`crate::readback::convert`] reads.
 const READBACK: DrmFourcc = DrmFourcc::Abgr8888;
-
-/// What a frame carries that only an importing renderer could draw.
-///
-/// Three questions asked of the frame at the one call site, so that what is
-/// refused can be decided — and checked — without a client on the other end of
-/// a socket to mapped a window with.
-#[derive(Clone, Copy)]
-struct ToImport {
-    /// A client mapped a window.
-    windows: bool,
-    /// A client opened a menu.
-    menus: bool,
-    /// A client drew the pointer itself.
-    pointer: bool,
-}
-
-/// Name the first layer this painter would have had to import, if there is one.
-fn refused_layer(
-    carried: ToImport,
-    scene: Option<crate::scene_native::NativeScene<'_>>,
-) -> Option<&'static str> {
-    if carried.windows {
-        return Some("a window a client mapped");
-    }
-    if carried.menus {
-        return Some("a menu a client opened");
-    }
-    if carried.pointer {
-        return Some("the pointer a client drew itself");
-    }
-    // A lock frame is an imported texture even on the GLES path
-    // (`crate::scene_drawing::paint` sends it to `lock_texture`), so it is the
-    // one native scene that is not made of this shell's own rectangles.
-    matches!(scene, Some(crate::scene_native::NativeScene::Lock(_))).then_some("the lock screen")
-}
 
 /// Copy the whole painted frame into owned scanout bytes.
 ///
@@ -334,11 +235,6 @@ fn readback(
         RowOrder::TopToBottom,
         bytes,
     )?)
-}
-
-/// Keep pixman's own words for whatever stage of drawing refused.
-fn paint_failed(error: impl std::fmt::Display) -> RenderError {
-    RenderError::Submission(format!("paint on the processor: {error}"))
 }
 
 #[cfg(test)]

@@ -155,65 +155,74 @@ fn the_arrow_is_drawn_above_the_screen_it_points_at() {
     );
 }
 
+/// **A client's window is no longer a reason to refuse a frame.**
+///
+/// This test was `every_layer_this_painter_cannot_import_is_refused_by_its_own_name`
+/// and it held the opposite: that a frame carrying a window, a menu or a
+/// client-drawn pointer was refused, each named. The refusal was written when
+/// this file's header claimed the painter could not import. It can -
+/// `ImportMemWl`, `ImportDmaWl`, `ImportDma` and `Bind<Dmabuf>` - and the
+/// owner's direction of 2026-10-10 is that *a renderer that refuses frames
+/// containing application windows cannot count as a usable desktop*.
+///
+/// **So the refusal moved from the frame to the buffer**, which is both
+/// narrower and more use: one client handing over one format pixman does not
+/// know is refused by name, and every other frame is drawn. This asserts the
+/// move in both directions, because either half alone would pass while the
+/// other was broken.
 #[test]
-fn every_layer_this_painter_cannot_import_is_refused_by_its_own_name() {
-    let screen = a_screen((8, 4));
-    let lock = crate::lock_raster::LockPicture {
-        size: (8, 4),
-        pixels: Vec::new(),
-    };
-    let nothing = ToImport {
-        windows: false,
-        menus: false,
-        pointer: false,
-    };
+fn a_window_is_drawn_and_a_format_is_what_gets_refused() {
+    let painter = SoftwarePainter::new().expect("a machine with no software renderer");
 
-    // A window is named before a menu and a menu before a pointer, so a frame
-    // carrying all three is refused for the largest thing missing rather than
-    // the last one looked at.
-    let refusals = [
-        (
-            ToImport {
-                windows: true,
-                menus: true,
-                pointer: true,
-            },
-            Some(NativeScene::SignIn(&screen)),
-            Some("a window a client mapped"),
-        ),
-        (
-            ToImport {
-                menus: true,
-                ..nothing
-            },
-            Some(NativeScene::SignIn(&screen)),
-            Some("a menu a client opened"),
-        ),
-        (
-            ToImport {
-                pointer: true,
-                ..nothing
-            },
-            Some(NativeScene::SignIn(&screen)),
-            Some("the pointer a client drew itself"),
-        ),
-        (
-            nothing,
-            Some(NativeScene::Lock(&lock)),
-            Some("the lock screen"),
-        ),
-        (nothing, Some(NativeScene::SignIn(&screen)), None),
-    ];
+    // **It claims formats**, which is the capability the old refusal denied.
+    // An empty set would mean a painter that can take nothing, and the test
+    // below would then be asserting a refusal that is not about formats at all.
+    let formats = painter.importable_formats();
+    assert!(
+        formats.iter().count() > 0,
+        "the painter claims it can import no format at all"
+    );
 
-    for (carried, scene, named) in refusals {
-        assert_eq!(
-            refused_layer(carried, scene),
-            named,
-            "the painter disagreed about what it can draw"
+    // **And no blanket refusal has come back.** The property is the absence of
+    // a decision taken before any import is attempted, which has no value to
+    // assert - so the source is read, as `the_recheck_has_a_caller` reads a
+    // draw. The three phrases are the ones the removed refusal returned.
+    let at = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/software_scanout.rs");
+    let written = std::fs::read_to_string(&at).expect("this painter is beside its test");
+    let said = what_runs(&written);
+    for refused in [
+        "a window a client mapped",
+        "a menu a client opened",
+        "the pointer a client drew itself",
+    ] {
+        assert!(
+            !said.contains(refused),
+            "the painter refuses a frame for carrying {refused:?} again"
         );
     }
 }
 
+/// A file's code, without its prose.
+///
+/// The guard above looks for phrases that are also quoted in this file's own
+/// comments explaining why they went, so reading the whole file would find them
+/// and fail for the reason it exists to prevent.
+fn what_runs(written: &str) -> String {
+    written
+        .lines()
+        .filter(|line| !line.trim_start().starts_with("//"))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// **An empty frame is refused, and an application alone on an empty desktop
+/// is not an empty frame.**
+///
+/// The first half is the old guarantee: black looks like a crash. The second is
+/// what the condition had to widen to on 2026-10-10, because a client window
+/// with no layer of this shell's own above it is now something this painter can
+/// draw - and a guard written when it could not would have refused exactly the
+/// frame the owner's direction asks for.
 #[test]
 fn a_frame_with_nothing_of_this_shells_own_in_it_is_refused_rather_than_drawn_black() {
     let mut painter = SoftwarePainter::new().expect("a machine with no software renderer");

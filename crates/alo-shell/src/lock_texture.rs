@@ -1,19 +1,24 @@
 //! Exclusive opaque lock submission: no client import, no desktop layers, no cursor.
 use crate::{RenderError, drawing::Drawing, lock_raster::LockPicture};
 use smithay::backend::allocator::Fourcc;
-use smithay::backend::renderer::{
-    Frame, ImportMem, Renderer,
-    gles::{GlesRenderer, GlesTarget},
-};
+use smithay::backend::renderer::{Frame, ImportMem, Renderer};
 use smithay::utils::{Rectangle, Transform};
 
 /// Upload and paint the whole opaque frame with no other imported surface.
-pub(crate) fn paint(
-    renderer: &mut GlesRenderer,
-    target: &mut GlesTarget<'_>,
+///
+/// **Any renderer that can take bytes**, which is what the lock screen needs
+/// and all it needs: the frame is one uploaded image and no client surface at
+/// all. `ImportMem` is the bound and both renderers in this crate satisfy it,
+/// so a locked machine draws the same on a card and on the processor.
+pub(crate) fn paint<R>(
+    renderer: &mut R,
+    target: &mut R::Framebuffer<'_>,
     picture: &LockPicture,
     transform: Transform,
-) -> Result<Drawing, RenderError> {
+) -> Result<Drawing<R>, RenderError>
+where
+    R: Renderer + ImportMem,
+{
     let size = picture.size;
     let texture = renderer
         .import_memory(&picture.pixels, Fourcc::Abgr8888, size.into(), false)
@@ -31,8 +36,6 @@ pub(crate) fn paint(
             &[damage],
             Transform::Normal,
             1.0,
-            None,
-            &[],
         )
         .map_err(failed)?;
     let _sync = frame.finish().map_err(failed)?;

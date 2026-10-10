@@ -1,11 +1,24 @@
-//! Shared full-output GLES scene painting for nested submission and scanout preparation.
+//! Shared full-output scene painting for nested submission and scanout
+//! preparation, over any renderer that can take a client's buffer.
+//!
+//! # One path and two renderers, from 2026-10-10
+//!
+//! This named `GlesRenderer` in its signature and nothing else in its body, so
+//! the drawing was already renderer-agnostic and the types did not say so. The
+//! consequence was a second path: `crate::software_scanout` refused every frame
+//! carrying a client window rather than drawing it, and the desktop a machine
+//! boots to goes through that one.
+//!
+//! The owner's direction of 2026-10-10 is *reuse the working client-rendering
+//! path*, and the bound that makes it reusable is smithay's own
+//! [`ImportAll`] - its name for a renderer that can take a client's buffer.
+//! `PixmanRenderer` satisfies it, which is the measurement that made this a
+//! parameter rather than an argument about rewriting a renderer.
 
 use crate::{RenderError, drawing};
 use smithay::{
     backend::renderer::{
-        Color32F, Frame, Renderer, Texture,
-        gles::{GlesRenderer, GlesTarget},
-        utils::draw_render_elements,
+        Color32F, Frame, ImportAll, ImportMem, Renderer, Texture, utils::draw_render_elements,
     },
     reexports::wayland_server::protocol::wl_surface::WlSurface,
     utils::{Rectangle, Transform},
@@ -32,14 +45,18 @@ pub(crate) struct OnThePlane<'a> {
 }
 
 /// Paint without dispatching requests or completing callbacks; callers own submission.
-pub(crate) fn paint(
-    renderer: &mut GlesRenderer,
-    framebuffer: &mut GlesTarget<'_>,
+pub(crate) fn paint<R>(
+    renderer: &mut R,
+    framebuffer: &mut R::Framebuffer<'_>,
     plane: OnThePlane<'_>,
     cursor: &crate::Cursor,
     transform: Transform,
     native: crate::scene_native::NativeLayers<'_>,
-) -> Result<drawing::Drawing, RenderError> {
+) -> Result<drawing::Drawing<R>, RenderError>
+where
+    R: Renderer + ImportAll + ImportMem,
+    R::TextureId: Clone + 'static,
+{
     let (roots, popups, camera) = (plane.roots, plane.popups, plane.camera);
     let extent = framebuffer.size();
     let size: smithay::utils::Size<i32, smithay::utils::Physical> = (extent.w, extent.h).into();
