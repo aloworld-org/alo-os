@@ -40,6 +40,51 @@ is ADR 0004's and is deliberately left open. Before writing the next task,
 
 ## Tasks
 
+### 9. A person's pinned applications are kept
+
+**Status:** **Open, and owed to this plan by another lane's work.** **Owner:**
+this plan's lane — the development PC — for the **persisted representation and
+the storage change**. The Dock's lane owns the behaviour, the drawing and the
+integration against the contract, and has built its half.
+
+**Written 2026-10-10 by the owner's direction**, who ruled on what a fresh
+machine pins and then said where the work divides:
+
+> The existing named owner of `alo-kept` and
+> `where-a-persons-settings-are-kept-plan.md` owns the persisted representation
+> and storage changes. Your lane owns Dock behaviour, rendering and integration
+> with that contract. Agree on the contract and record the responsibilities in
+> the plans. Use the existing settings mechanism; do not create competing
+> settings files.
+
+**What is already built, so this task starts from a shape rather than a
+question.** `alo_dock::pinning` decides which applications a fresh machine pins
+— Files, Browser, Apps, Settings, in that order, omitting any role nothing
+fills — and `alo_dock::ThePins` holds the distinction the ruling turns on.
+`docs/contracts/person-settings.md`'s `dock.toml` section states what must be
+stored and why a simpler shape will not do.
+
+- **Acceptance:** `dock.toml` keeps a person's pins, in their order, and keeps
+  **whether the pins have ever been set** apart from what they are. A person who
+  empties their Dock finds it empty after a restart; a person who removes one
+  pin does not get it back; an update does not re-run the defaults; a settings
+  file that fails to read does not re-run them either. Verified **in a fresh
+  process after restarting**, which is the owner's condition and the only one a
+  single-process test cannot meet.
+- **Constraint:** the existing mechanism — `alo-kept`, one file, refused whole
+  when wrong, written whole or not at all (ADR 0038). **No second settings
+  file.** The key's spelling is this lane's; the *shape* is the contract's, and
+  a representation that cannot tell *never set* from *set to nothing* does not
+  meet it however it is spelled.
+- **Depends on:** nothing. `alo_dock::ThePins` is in `main` and the Dock reads
+  whatever it is handed.
+- **Blocked by:** this lane being offline on 2026-10-10. The owner's words:
+  *their being offline is a delivery dependency, not a reason to invent another
+  storage mechanism or mark persistence complete.* So the Dock's side is
+  finished and says it is waiting, rather than growing a `dock.toml` key of its
+  own.
+
+
 ### 1. What keeping one of these files means
 
 **Status:** **Done, 2026-09-15** — `crates/alo-kept` holds the rule in type and

@@ -198,6 +198,7 @@ pub mod measures;
 pub mod menu;
 pub mod offering;
 pub mod on_the_canvas;
+pub mod pinning;
 pub mod places;
 pub mod previews;
 pub mod revealing;
