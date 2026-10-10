@@ -349,3 +349,132 @@ fn a_frame_with_no_scene_but_a_layer_on_it_is_drawn() {
     // The clear underneath is the neutral one, not a scene nobody asked for.
     assert_eq!(pixel_at(&pixels, (7, 3)), [0, 0, 0]);
 }
+
+/// **Every window's edge is painted, not the first one.**
+///
+/// Until 2026-10-10 the edge travelled in [`crate::scene_native::NativeLayers`]'s
+/// `scene`, a field that holds **one of** the lock screen, the window controls,
+/// the reader, the sign-in screen or the recovery screen. So a machine with
+/// three windows open drew exactly one edge, and the only caller that built them
+/// — `examples/a_real_application.rs` — built every window's and then passed
+/// `edges.first()`. Every line of that was correct for the signature it had.
+///
+/// **This is the assertion that shape could not satisfy.** Two windows at
+/// different heights, each with its own edge, painted together; the second
+/// window's strip must differ from the ground it would be if nothing were drawn
+/// there. A painter that took `edges.first()`, or that broke out of the loop,
+/// leaves that region untouched and fails here.
+///
+/// It reads the scanned-out bytes rather than counting calls, because *painted*
+/// is a claim about pixels a display would receive.
+#[test]
+fn both_windows_edges_reach_the_bytes_a_display_would_scan_out() {
+    use crate::window_edge::{Decorations, edge_of};
+    use crate::window_edge_paint::Pointing;
+    use crate::window_edge_picture::EdgePicture;
+    use smithay::utils::Logical;
+
+    /// Both bundled faces, as the shell loads them and as
+    /// `crate::window_edge_picture`'s own tests do.
+    fn fonts() -> cosmic_text::FontSystem {
+        let mut fonts = cosmic_text::FontSystem::new();
+        fonts
+            .db_mut()
+            .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+        fonts
+            .db_mut()
+            .load_font_data(include_bytes!("../fonts/Inter.ttf").to_vec());
+        fonts
+    }
+
+    let size = (400, 400);
+    let mut faces = fonts();
+    // Two windows, far enough apart that their edges share no row.
+    let upper = Rectangle::new((20, 120).into(), (200, 60).into());
+    let lower = Rectangle::new((20, 300).into(), (200, 60).into());
+    let first = EdgePicture::of(
+        &edge_of(upper, Decorations::TheShellDraws, true),
+        Pointing::default(),
+        None,
+        &mut faces,
+        size,
+        100,
+    )
+    .expect("the upper window's edge fits on this output");
+    let second = EdgePicture::of(
+        &edge_of(lower, Decorations::TheShellDraws, true),
+        Pointing::default(),
+        None,
+        &mut faces,
+        size,
+        100,
+    )
+    .expect("the lower window's edge fits on this output");
+
+    /// Which frame row an edge drew into, so the two cannot be confused.
+    ///
+    /// A `u32` because that is what `pixel_at` reads, and the conversion is
+    /// justified here once instead of at four call sites: both windows below sit
+    /// well below their own edge's height, so the row is positive by
+    /// construction and a negative one would mean this test's fixture had
+    /// changed rather than the painter.
+    fn a_row_inside(window: Rectangle<i32, Logical>) -> u32 {
+        let row = window.loc.y - crate::window_edge::THE_REGION_IS_TALL
+            + crate::window_edge::THE_STRIP_STARTS_AT
+            + 4;
+        u32::try_from(row).expect("both windows in this test sit below their own edge")
+    }
+
+    let mut painter = SoftwarePainter::new().expect("a machine with no software renderer");
+    let paint = |painter: &mut SoftwarePainter, edges: &[EdgePicture]| {
+        painter
+            .paint(
+                extent(size),
+                &[],
+                &[],
+                &Cursor::Default,
+                crate::scene_native::NativeLayers {
+                    edges,
+                    ..crate::scene_native::NativeLayers::nothing()
+                },
+                alo_canvas::Camera::new(),
+            )
+            .expect("a frame carrying window edges was refused")
+            .0
+    };
+
+    let only_the_first = paint(&mut painter, std::slice::from_ref(&first));
+    let both = paint(&mut painter, &[first, second]);
+
+    let upper_row = a_row_inside(upper);
+    let lower_row = a_row_inside(lower);
+    let column = 60_u32;
+
+    // **The premise, asserted rather than assumed.** The first edge really did
+    // draw, so this test cannot pass by nothing ever being painted — which is
+    // how the four-control test and the maximised-geometry test in this crate
+    // both passed vacuously before somebody looked.
+    assert_ne!(
+        pixel_at(&only_the_first, (column, upper_row)),
+        pixel_at(&only_the_first, (column, lower_row)),
+        "painting one edge left the upper and lower rows identical, so nothing was drawn at \
+         all and every comparison below would be between two untouched grounds"
+    );
+
+    // **The claim.** Adding the second window's edge changes its own rows.
+    assert_ne!(
+        pixel_at(&only_the_first, (column, lower_row)),
+        pixel_at(&both, (column, lower_row)),
+        "the second window's edge did not reach the frame. A painter that draws `edges.first()`, \
+         or that returns from the loop after one, leaves this row exactly as it was"
+    );
+
+    // **And it changes nothing of the first's.** Each edge sits on its own
+    // window; a second one that moved the first would be a layer drawn at the
+    // wrong origin.
+    assert_eq!(
+        pixel_at(&only_the_first, (column, upper_row)),
+        pixel_at(&both, (column, upper_row)),
+        "adding a second window's edge moved the first window's"
+    );
+}

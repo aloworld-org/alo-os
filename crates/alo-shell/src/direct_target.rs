@@ -398,7 +398,6 @@ pub(crate) const fn not_wired_yet(
         NativeScene::Lock(_) => Some("the lock screen"),
         NativeScene::Recovery(_) => Some("the recovery screen"),
         NativeScene::Controls(_) => Some("the window controls"),
-        NativeScene::TheWindowEdge(_) => Some("the external window edge"),
         NativeScene::Reader(_) => Some("the reader"),
     }
 }
