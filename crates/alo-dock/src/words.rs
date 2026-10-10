@@ -323,16 +323,34 @@ pub const WHERE_THE_DOCK_GOES: Word = Word::saying("dock.edge", "Where the dock 
      the dock go?*",
 );
 
+/// Keys this crate used to declare and never will again.
+///
+/// **The owner's ruling of 2026-10-10**, on removing the row of names from the
+/// bar: *Removing the unused vocabulary is fine. Retire `dock.labels.under` and
+/// `dock.labels.gave-way` through the normal translation process. Preserve
+/// their history in Git and never reuse those keys for different meanings.*
+///
+/// **Never reuse** is the half a list can hold, so this is that list and the
+/// test below is what makes it true. The danger is not that somebody
+/// resurrects the old sentence — it is that `dock.labels.under` looks like a
+/// free, descriptive name to whoever next needs a key about a label, and a
+/// translator with the old phrase in their memory would be handed a new meaning
+/// under a name they have already answered.
+///
+/// `git log crates/alo-dock/src/words.rs` is where the sentences went; nothing
+/// is lost, and this file is not the place to keep a copy of them.
+pub const RETIRED: [&str; 2] = ["dock.labels.under", "dock.labels.gave-way"];
+
 /// Every string this crate can say, in the order a translator meets them: the
-/// two answers about whether it gives way, what the dock did with its names,
-/// the two refusals, what is said about the person's own file, what a reader is
+/// two answers about whether it gives way, where the dock keeps its names, the
+/// two refusals, what is said about the person's own file, what a reader is
 /// told about an icon, and then where the dock goes.
 ///
-/// **The last five arrived on 2026-10-10** with the setting that offers them.
-/// They are at the end rather than beside the other settings' words because
-/// this list's order is the order a translator meets them in, and a translator
-/// who has already done this file should find the new ones together rather than
-/// hunting a diff.
+/// **The last five arrived on 2026-10-10** with the setting that offers them,
+/// and two left the same day — see [`RETIRED`]. They are at the end rather than
+/// beside the other settings' words because this list's order is the order a
+/// translator meets them in, and a translator who has already done this file
+/// should find the new ones together rather than hunting a diff.
 pub const EVERY_WORD: [Word; 23] = [
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
@@ -528,6 +546,49 @@ mod tests {
     fn every_word_carries_a_note() {
         for word in EVERY_WORD {
             assert!(word.note().is_some(), "{}", word.named());
+        }
+    }
+}
+
+#[cfg(test)]
+mod retired_keys {
+    use super::{EVERY_WORD, RETIRED};
+
+    /// **A retired key is never declared again**, which is the half of the
+    /// owner's ruling a test can hold.
+    ///
+    /// The other half — *preserve their history* — is Git's, and needs nothing
+    /// from this file.
+    #[test]
+    fn nothing_this_crate_says_uses_a_retired_key() {
+        for retired in RETIRED {
+            for word in EVERY_WORD {
+                assert_ne!(
+                    word.key().as_str(),
+                    retired,
+                    "`{retired}` is declared again. It was retired on 2026-10-10 and a \
+                     translator who answered it then would be handed a new meaning under a name \
+                     they have already seen — which is why the owner's ruling says never reuse \
+                     them rather than merely remove them"
+                );
+            }
+        }
+    }
+
+    /// **And a retired key is a key**, so a typo in the list above cannot make
+    /// the check vacuous by naming something no key could ever be.
+    #[test]
+    fn every_retired_key_is_one_this_crate_could_have_said() {
+        for retired in RETIRED {
+            assert!(
+                alo_strings::Key::named(retired).is_ok(),
+                "`{retired}` is not a key this crate could ever have declared, so guarding \
+                 against its reuse guards nothing"
+            );
+            assert!(
+                retired.starts_with("dock."),
+                "`{retired}` is not this crate's to retire"
+            );
         }
     }
 }

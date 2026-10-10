@@ -222,6 +222,20 @@ pub(crate) fn picture(
             fonts,
             place.app().first_letter(),
             icon,
+            // **`GLYPH`, which is artwork's size and not text's.** The owner's
+            // ruling of 2026-10-10 is explicit that a fixed bar height must not
+            // become fixed-size text elsewhere — so this is worth saying
+            // outright: the letter stands in for an application's icon, the
+            // design gives that artwork 32 inside a 48 target, and *icon size
+            // becomes a person's setting* is `[v0.5]` in `docs/features.md`.
+            // It does not scale with the person's text size for the same reason
+            // a company's logo does not.
+            //
+            // **A name is a different thing and must scale.** When the tooltip
+            // that shows one is drawn — on hover and on keyboard focus, outside
+            // the bar — it takes its size from `DesktopLook::measure`, as every
+            // sentence on this machine does. `alo_dock::Room::a_line_at` is
+            // what sizes it, and it still takes a `TextScale`.
             Metrics::new(glyph as f32, glyph as f32),
             palette.dock,
             palette.ink,

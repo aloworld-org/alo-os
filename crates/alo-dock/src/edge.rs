@@ -106,28 +106,6 @@ impl Edge {
     pub const fn runs_across(self) -> bool {
         matches!(self, Self::Bottom | Self::Top)
     }
-
-    /// Whether a name can be drawn **under** an icon on this edge.
-    ///
-    /// True where the dock runs across the screen: the name's line sits below the
-    /// picture and the dock's thickness grows by a line of text, which is
-    /// `crate::Room::a_dock_with_names_under`'s arithmetic and is the same on the
-    /// top edge as on the bottom.
-    ///
-    /// False down a side, and **not because there is no room** — a side dock has
-    /// height to spare. It is that a name under an icon is constrained by the
-    /// dock's *thickness*, which down a side is its width, so the question
-    /// becomes how wide a name needs to be — and the answer is that it is not
-    /// asked down a side at all. [`crate::measures::A_NAME_BESIDE_AN_ICON`] is
-    /// the owner's ruling of 2026-10-10: a side dock puts the name in a tooltip
-    /// beside the icon, opening toward the canvas, and **a name never widens the
-    /// dock**. So this stays false, for a better reason than the one it had: not
-    /// *we cannot measure it* but *nothing under an icon is what a side dock
-    /// draws*.
-    #[must_use]
-    pub const fn a_name_fits_under_an_icon(self) -> bool {
-        self.runs_across()
-    }
 }
 
 #[cfg(test)]
@@ -157,23 +135,5 @@ mod tests {
             .filter(|edge| !edge.runs_across())
             .collect();
         assert_eq!(down, vec![Edge::Left, Edge::Right]);
-    }
-
-    /// **A name goes under an icon on exactly the edges that run across.**
-    ///
-    /// The two questions are the same answer today and are **not** the same
-    /// question: one is about which side of the screen the thickness comes out
-    /// of, the other about whether a line of text fits below a picture. They are
-    /// held together here so that a change to one which should have changed both
-    /// is a failing test rather than a dock with names nobody measured.
-    #[test]
-    fn names_go_under_an_icon_on_the_edges_that_run_across() {
-        for edge in Edge::EVERY {
-            assert_eq!(
-                edge.a_name_fits_under_an_icon(),
-                edge.runs_across(),
-                "{edge:?} disagrees about names and orientation"
-            );
-        }
     }
 }

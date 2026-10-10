@@ -226,15 +226,13 @@ fn what_came_off_the_machine_is_not_translated() {
     );
     let said = Screen::of(320, 240).unwrap_err().said(&strings);
     assert!(said.text().contains("320 × 240"), "{said}");
-    // **456 and not 384**, which moved with the bar on 2026-10-10. The shortest
-    // side a screen may have is the dock's share times its thickness, so a bar
-    // measured at 76 rather than a proposed 64 asks for a taller screen: 6 × 76
-    // instead of 6 × 64. No machine in `docs/hardware.md` is affected — the
-    // smallest this crate lays out for is 1366 × 768 — but a display between
-    // 384 and 455 in either direction is refused where it was not before, and
-    // that is a consequence of the measurement rather than a decision taken
-    // here.
-    assert!(said.text().contains("456"), "{said}");
+    // **384, and it is back to 384 deliberately.** Measuring the bar at 76 on
+    // 2026-10-10 moved this to 456, because the floor was the dock's thickness
+    // times a share of the screen. The owner ruled the same day that the bar's
+    // size must not decide which displays are supported, so the floor is now
+    // stated rather than derived and every display this product accepted still
+    // is one.
+    assert!(said.text().contains("384"), "{said}");
     assert!(
         said.text().contains("alo OS"),
         "the name is never translated"

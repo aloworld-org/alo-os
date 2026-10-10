@@ -17,8 +17,8 @@
 use alo_appearance::TextScale;
 
 use crate::measures::{
-    A_DOCK_MAY_TAKE_ONE_PART_IN, A_SIDE_DOCKS_LANE, ABOVE_AND_BELOW_AN_ICON, GAP, ICON,
-    LINE_IN_FIFTHS, MARGIN, TEXT_AT_ORDINARY,
+    A_SIDE_DOCKS_LANE, ABOVE_AND_BELOW_AN_ICON, GAP, ICON, LINE_IN_FIFTHS, MARGIN,
+    TEXT_AT_ORDINARY, THE_LEAST_A_SIDE_CAN_BE,
 };
 
 /// How much room something takes, in logical pixels.
@@ -143,29 +143,20 @@ impl Room {
         )
     }
 
-    /// The most a dock may take out of the side of the screen it sits on.
+    /// The shortest a screen's side may be and still be laid out for.
     ///
-    /// This is the ceiling the whole *labels give way* decision turns on:
-    /// [`crate::Layout`] shows names when a dock that has them fits under it,
-    /// and gives way to icons when it does not.
-    #[must_use]
-    pub const fn the_most_a_dock_may_take(side: Self) -> Self {
-        Self::pixels(side.pixels.saturating_div(A_DOCK_MAY_TAKE_ONE_PART_IN))
-    }
-
-    /// The shortest a screen's side may be and still hold a dock at all.
+    /// **Stated, not worked out.** It was the dock's thickness times a share of
+    /// the screen, which made the bar's height decide which displays this
+    /// product supports — so measuring the bar at 76 moved the floor and
+    /// dropped displays nobody had decided to drop.
+    /// [`crate::measures::THE_LEAST_A_SIDE_CAN_BE`] carries the owner's ruling
+    /// and why 384 is the number.
     ///
-    /// Worked out rather than picked: a dock of icons alone must fit under the
-    /// ceiling, so the side must be [`A_DOCK_MAY_TAKE_ONE_PART_IN`] times it.
     /// [`crate::Screen`] refuses anything below this, which is what lets
     /// [`crate::Layout`] be a question with an answer rather than a `Result`.
     #[must_use]
     pub const fn the_least_a_side_can_be() -> Self {
-        Self::pixels(
-            Self::a_dock_of_icons()
-                .pixels
-                .saturating_mul(A_DOCK_MAY_TAKE_ONE_PART_IN),
-        )
+        Self::pixels(THE_LEAST_A_SIDE_CAN_BE)
     }
 }
 
@@ -176,7 +167,6 @@ impl Room {
 )]
 mod tests {
     use super::*;
-    use crate::screen::Screen;
     use alo_appearance::targets::{ENHANCED_TARGET, SMALLEST_TARGET};
 
     /// A size the tests name often enough to be worth a word.
@@ -211,26 +201,24 @@ mod tests {
         );
     }
 
-    /// **The dock leaves most of the screen to the person's work.** A dock
-    /// entitled to half a screen is not a dock, and this holds on every side of
-    /// every screen rather than only on the one the thresholds were chosen
-    /// against.
+    /// **Every accepted screen can hold the bar**, which is what the floor is
+    /// for now that it is stated rather than derived.
+    ///
+    /// This walked the ceiling — a share of each side — which the owner removed
+    /// on 2026-10-10 along with the coupling that let it decide which displays
+    /// are supported.
     #[test]
-    fn a_dock_may_never_take_half_of_anything() {
-        for side in [
-            Screen::the_smallest().width(),
-            Screen::the_smallest().height(),
-            Room::the_least_a_side_can_be(),
-            Room::pixels(3840),
-        ] {
-            let ceiling = Room::the_most_a_dock_may_take(side);
-            assert!(
-                ceiling.as_pixels().saturating_mul(2) < side.as_pixels(),
-                "a dock could take {} of a side of {}",
-                ceiling.as_pixels(),
-                side.as_pixels()
-            );
-        }
+    fn the_bar_fits_on_the_shortest_side_this_crate_accepts() {
+        let least = Room::the_least_a_side_can_be();
+        assert!(
+            Room::a_dock_of_icons().fits_in(least),
+            "the bar does not fit on the shortest side this crate accepts, so a display it \
+             says yes to cannot hold a dock"
+        );
+        assert!(
+            Room::a_side_docks_lane().fits_in(least),
+            "and the same for a dock down a side"
+        );
     }
 
     /// Text grows with the setting, and 100% is the size the shell was drawn
@@ -305,17 +293,31 @@ mod tests {
         assert!(Room::a_dock_of_icons() > Room::an_icon());
     }
 
-    /// **The floor under a screen is worked out, not chosen.** A side exactly at
-    /// the floor has room for a dock of icons and nothing more, which is the
-    /// guarantee [`crate::Layout`] leans on when it answers without a `Result`.
+    /// **The floor under a screen is chosen, not worked out** — which is the
+    /// reverse of what this test said, and the reversal is the point.
+    ///
+    /// It asserted the floor was *the tightest one that works*: a side exactly
+    /// at it had room for a dock of icons and not a pixel more. That made the
+    /// floor an arithmetic result, so measuring the bar at 76 instead of 64 on
+    /// 2026-10-10 moved it from 384 to 456 and silently dropped every display
+    /// between. The owner's ruling that day separated the two.
+    ///
+    /// So the floor is now **384 because that is what this product accepted**,
+    /// and the bar fits inside it with room to spare. *With room to spare* is
+    /// the thing to hold: it is what tightness used to guarantee and what
+    /// nothing else now does.
     #[test]
-    fn the_shortest_side_is_exactly_enough_for_a_dock_of_icons() {
+    fn the_shortest_side_has_room_for_a_dock_and_more() {
         let least = Room::the_least_a_side_can_be();
-        assert!(Room::a_dock_of_icons().fits_in(Room::the_most_a_dock_may_take(least)));
-        let one_less = Room::pixels(least.as_pixels().saturating_sub(1));
+        assert_eq!(least.as_pixels(), 384);
         assert!(
-            !Room::a_dock_of_icons().fits_in(Room::the_most_a_dock_may_take(one_less)),
-            "the floor is the tightest one that works, not a round number above it"
+            Room::a_dock_of_icons().fits_in(least),
+            "a side at the floor cannot hold the bar"
+        );
+        assert!(
+            Room::a_dock_of_icons().as_pixels() * 2 < least.as_pixels(),
+            "the bar takes more than half the shortest side this crate accepts, which leaves a \
+             person less of their screen than the dock"
         );
     }
 

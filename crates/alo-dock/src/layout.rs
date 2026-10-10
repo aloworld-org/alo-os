@@ -4,17 +4,21 @@
 //! edge demands it* becomes arithmetic, and the arithmetic is short enough to
 //! read in one sitting:
 //!
-//! 1. The dock is along the bottom ([ADR
-//!    0076](../../../docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)),
-//!    so it takes its thickness out of the screen's **height** and runs the whole
-//!    of its **width**.
-//! 2. The height has a ceiling: the most a dock may take of it
-//!    ([`crate::Room::the_most_a_dock_may_take`]).
-//! 3. A dock with names on it wants a thickness that depends on the text size —
-//!    a line of text under each icon.
-//! 4. If what it wants fits under the ceiling, the names are drawn. If it does
-//!    not, they give way and the dock is icons alone — which always fits,
-//!    because [`crate::Screen`] refuses a screen where it would not.
+//! 1. A dock on an edge that **runs across** takes its thickness out of the
+//!    screen's **height** and runs the whole of its **width**; one down a side
+//!    does the opposite. Which edge is the person's, since 2026-10-10.
+//! 2. The thickness is a constant for each orientation — the design's measured
+//!    **76** across, **70** down a side — and **does not depend on the text
+//!    size**, because no name is ever in the bar.
+//! 3. A name is shown on hover and on keyboard focus, outside the bar
+//!    ([`crate::Labels`]).
+//!
+//! **Steps 2 to 4 were three different steps until 2026-10-10**: a ceiling of
+//! one part in six, a thickness that grew with the text because a line of names
+//! sat under the icons, and a rule about which won. The owner removed the row
+//! of names — the verified design has none — and then removed the ceiling as
+//! well, because it had begun deciding which displays this product supports.
+//! `crate::Screen`'s floor is a stated number now, not an arithmetic result.
 //!
 //! **It takes from the side it sits on, not from the screen's short side.** A
 //! dock along the bottom takes from the height even on a screen that is taller
@@ -334,7 +338,7 @@ mod tests {
     }
 
     use super::*;
-    use crate::measures::A_DOCK_MAY_TAKE_ONE_PART_IN;
+    use crate::measures::FLOATING_ABOVE_THE_EDGE;
 
     /// A dock on the smallest screen alo OS lays out for.
     fn on_the_smallest() -> Layout {
@@ -369,23 +373,24 @@ mod tests {
         assert_eq!(layout.labels(), Labels::Beside);
     }
 
-    /// **The dock never takes more than its share**, on any screen — which is
-    /// the promise the ceiling exists to keep and the reason [`Layout::of`] can
-    /// answer without a `Result`.
+    /// **The dock fits on every screen this crate lays out for, including the
+    /// smallest.**
     ///
-    /// **No loop over text sizes any more.** There was one, and it was right
-    /// while the thickness read the text; it cannot be written now, because
-    /// `Layout::of` takes no text size. The screens are the loop that is left,
-    /// and they are the one that matters: the ceiling is a share of the height,
-    /// so a short screen is where a fixed thickness would break it.
+    /// This asserted *the dock never takes more than its share* — a sixth of
+    /// the height — which was the ceiling the removed label decision turned on.
+    /// The owner removed the share on 2026-10-10 along with the coupling that
+    /// made it decide which displays are supported, so there is no share left
+    /// to exceed.
     ///
-    /// `384 × 384` is in the list deliberately: at 76 the dock takes 76 of a
-    /// ceiling of 64, which is **more than its share** — so this test is also
-    /// the thing that will fail if a screen that small is ever laid out for.
-    /// `Screen::the_smallest` is what decides whether one can be.
+    /// What matters instead, and is what a person would notice: **the bar and
+    /// the gap beneath it fit on the screen, with room left over for the work.**
+    /// On the smallest side this crate accepts — 384 — a 76 bar lifted 8 clear
+    /// leaves 300, which is the claim being made.
     #[test]
-    fn the_dock_never_takes_more_of_a_screen_than_it_may() {
+    fn the_dock_fits_on_every_screen_this_crate_accepts() {
+        let smallest = Room::the_least_a_side_can_be().as_pixels();
         let screens = [
+            Screen::of(smallest, smallest).unwrap(),
             Screen::the_smallest(),
             Screen::of(1920, 1080).unwrap(),
             Screen::of(3840, 2160).unwrap(),
@@ -393,14 +398,23 @@ mod tests {
         ];
         for screen in screens {
             let layout = Layout::of(screen);
-            let ceiling = Room::the_most_a_dock_may_take(screen.height());
+            let taken = layout.thickness().as_pixels() + FLOATING_ABOVE_THE_EDGE;
             assert!(
-                layout.thickness().fits_in(ceiling),
-                "on a {} by {} screen it took {} of a ceiling of {}",
+                taken < screen.height().as_pixels(),
+                "on a {} by {} screen the bar and its gap take {taken} of {}, leaving nothing",
                 screen.width().as_pixels(),
                 screen.height().as_pixels(),
-                layout.thickness().as_pixels(),
-                ceiling.as_pixels()
+                screen.height().as_pixels()
+            );
+            // **And it leaves the greater part of the screen to the person**,
+            // which is what the old share was really protecting. Half is a
+            // bound nobody has to justify against a standard; at 384 the bar
+            // takes 84 of it.
+            assert!(
+                taken * 2 < screen.height().as_pixels(),
+                "the dock takes more than half the height of a {} by {} screen",
+                screen.width().as_pixels(),
+                screen.height().as_pixels()
             );
         }
     }
@@ -436,9 +450,8 @@ mod tests {
             let layout = Layout::of(screen);
             assert_eq!(layout.length(), screen.width());
             assert!(
-                layout
-                    .thickness()
-                    .fits_in(Room::the_most_a_dock_may_take(screen.height()))
+                layout.thickness().as_pixels() < screen.height().as_pixels(),
+                "the bar is taller than the screen it is on"
             );
         }
     }
@@ -449,43 +462,54 @@ mod tests {
     /// [`crate::measures`] is fixed by the requirement rather than chosen, and
     /// this is the test that says which way it is fixed.
     ///
-    /// **The share no longer has a justification, and this test says so rather
-    /// than inventing one.**
+    /// **The floor is a decision, not an arithmetic result.**
     ///
-    /// `A_DOCK_MAY_TAKE_ONE_PART_IN` was fixed by EN 301 549: one part tighter
-    /// and a row of names would have gone at exactly the text size the standard
-    /// requires them to survive. That is why the number was *measured* rather
-    /// than chosen, and the test that stood here proved it by showing a tighter
-    /// share would fail.
+    /// Two tests stood here about `A_DOCK_MAY_TAKE_ONE_PART_IN` — that it was
+    /// as tight as EN 301 549 allowed, and then, when the names went, that it
+    /// was no longer pinned by anything. The owner removed the ratio on
+    /// 2026-10-10 rather than let it keep deciding which displays are
+    /// supported, so there is nothing left to be tight or loose.
     ///
-    /// **The owner removed the row of names on 2026-10-10, and the
-    /// justification went with it.** The bar is a constant 76 now, and on the
-    /// smallest screen this crate lays out for — 768 tall — the ceiling is 128
-    /// at one part in six and 109 at one part in seven. **76 fits both.** So
-    /// the share could be tightened and nothing in this repository would
-    /// notice, which means it is no longer pinned by anything.
-    ///
-    /// This asserts the one thing that is still true — the bar fits the share —
-    /// and **names the loss** so that whoever revisits the number knows it is
-    /// now a free choice rather than a measured one. Asserting tightness would
-    /// be a test that passed by picking a comparison that happened to fail.
+    /// **What replaces them is the thing that went wrong**: the shortest side
+    /// a screen may have must not move when the bar's thickness does. This is a
+    /// source-level check because it is a statement about *what the number is
+    /// computed from* — which no value can demonstrate, since any floor is some
+    /// number.
     #[test]
-    fn the_bar_fits_its_share_and_the_share_is_no_longer_pinned() {
-        let screen = Screen::the_smallest();
-        let ceiling = Room::the_most_a_dock_may_take(screen.height());
+    fn the_shortest_side_is_not_computed_from_the_docks_thickness() {
+        let source = include_str!("room.rs");
+        // **The declaration is found or this check says it could not run.**
+        // `clippy::expect_used` is denied here and `assert!(false, ..)` is a
+        // constant assertion clippy refuses, so the absence is carried into the
+        // assertion rather than handled with either.
+        let declared = source
+            .split("pub const fn the_least_a_side_can_be()")
+            .nth(1);
         assert!(
-            Room::a_dock_of_icons().fits_in(ceiling),
-            "the measured bar does not fit the share it is allowed"
+            declared.is_some(),
+            "`the_least_a_side_can_be` is not declared in room.rs, so this check could not run \
+             and would have passed by finding nothing"
         );
-        // **The loss, asserted so that it is a fact and not a remark.** A
-        // tighter share still fits, which is what *no longer pinned* means. If
-        // this ever stops being true — a taller bar, a smaller screen — the
-        // share has become load-bearing again and the note above is stale.
-        let tighter = Room::pixels(screen.height().as_pixels() / (A_DOCK_MAY_TAKE_ONE_PART_IN + 1));
-        assert!(
-            Room::a_dock_of_icons().fits_in(tighter),
-            "a tighter share no longer fits, so the chosen one is pinned again and the note \
-             above should say so"
+        let body = declared
+            .unwrap_or_default()
+            .split('}')
+            .next()
+            .unwrap_or_default();
+        for named in ["a_dock_of_icons", "ICON", "ABOVE_AND_BELOW", "thickness"] {
+            assert!(
+                !body.contains(named),
+                "the shortest side a screen may have reads `{named}`, so the Dock's size is \
+                 deciding display eligibility again. It did until 2026-10-10, and measuring the \
+                 bar at 76 instead of 64 silently dropped every display between 384 and 455: \
+                 {body:?}"
+            );
+        }
+        assert_eq!(
+            Room::the_least_a_side_can_be().as_pixels(),
+            384,
+            "the floor moved. It is what this product accepted before the Dock was measured, \
+             and moving it is a decision about which machines alo OS runs on rather than a \
+             consequence of a layout"
         );
     }
 }
