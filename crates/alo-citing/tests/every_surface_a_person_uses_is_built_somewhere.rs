@@ -88,6 +88,25 @@ const EVERY_SURFACE_A_PERSON_USES: [(&str, Reach); 7] = [
     //
     // The owner's authorisation of 2026-10-04 is unchanged and still binding;
     // it is the setting it withholds, not the type.
+    //
+    // **And this entry now answers for two different types, which is a
+    // weakness of the instrument rather than of the entry.** `builds_one`
+    // matches a bare name with identifier boundaries, across every crate, so
+    // `alo_dock::Edge` and `alo_shell::window_edge::Edge` — added by the
+    // external window edge, a wholly unrelated type — are indistinguishable
+    // to it. Measured 2026-10-10: this same test failed on **both** pull
+    // requests 603 and 607 in the same hour, for two different `Edge`s, and
+    // one change to this line cleared both.
+    //
+    // The consequence to know about: if the Dock's edge were ever unwired,
+    // this would go on reading `AMachineCan` because the window edge builds
+    // one. This file's own note above records two earlier versions of exactly
+    // this fault — `Edge::` matching `FrameEdge::Top`, then a lost leading
+    // `::` — and both were about *one* type matched wrongly. This is two
+    // types matched as one, which no boundary rule can fix: the name is
+    // genuinely ambiguous and the entry would have to carry a crate to stop
+    // being so. Left as it is, because adding a path to one entry while six
+    // others are bare would make the list look more precise than it is.
     ("Edge", Reach::AMachineCan),
     // **Paid, 2026-10-05.** This branch was written while it read
     // `OnlyATestDoes`, with the reason *Super+I is shipped, declared, routed and
