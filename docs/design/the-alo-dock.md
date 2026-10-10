@@ -259,6 +259,40 @@ the panel is as tall as its contents, up to the room on the screen, and scrolls
 beyond that. Its **width**, 248, is measured and is the same on every edge, so it
 stays a number.
 
+#### The list itself
+
+`alo_dock::overflow` is the layout, and every number in it is either the owner's
+rule or a measurement with its provenance:
+
+| | |
+|---|---|
+| a row's height | `max(44, a line of text + 8 either side)` — the floor is `alo_appearance::targets::ENHANCED_TARGET`, not a 44 written again |
+| the panel's width | **248**, measured, the same on all four edges |
+| above the first row | 12, the heading's line of text, 12, and a 1-pixel rule |
+| the panel's height | the heading and as many rows as the room allows — no ceiling of its own |
+| when the room runs out | the list scrolls, **by whole rows** |
+
+**A row is the larger of the floor and what the text needs, never a choice
+between them.** A row pinned at 44 loses its name at 200%, the size EN 301 549
+requires a layout to survive; a row that only followed the text is 37 at 100% and
+below the floor. The maximum of the two is both clauses at once.
+
+**It scrolls by whole rows because *keyboard focus must scroll the focused row
+into view* has to be exact.** A list scrolled by pixels can leave a focused row
+half off the top, which is the same fault as a target below 44: the person who
+most needs the keyboard is the one who cannot see where they are. And the scroll
+is **the least it can be**, so arrowing one past the bottom moves the list by one
+rather than jumping the focused row to the top and losing a person their place.
+
+**What is not built: nothing presses the Dock.** Measured 2026-10-10 across the
+2531 `.rs` files outside `alo-dock`: `alo_dock::clicking` has **no caller**,
+`alo_dock::menu` has none, and `alo_dock::Places` is named twice, both in
+`dock_raster` and both for drawing — so `Places::at`, the hit test this crate
+exists for, is never called. The Dock is drawn and is not pressable at all: not
+the overflow control, not an application's icon, not the menu. That is a gap
+under every Dock interaction rather than under the overflow alone, and it is the
+next thing.
+
 ### An application with no artwork shows its first letter
 
 **The owner's ruling of 2026-10-10**, asked for because this file said what an

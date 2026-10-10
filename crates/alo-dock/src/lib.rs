@@ -198,6 +198,9 @@ pub mod measures;
 pub mod menu;
 pub mod offering;
 pub mod on_the_canvas;
+/// The list the overflow control opens: how tall a row is, how tall the panel
+/// is, and which rows are on the screen.
+pub mod overflow;
 pub mod pinning;
 pub mod places;
 pub mod previews;

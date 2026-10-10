@@ -157,6 +157,42 @@ pub const GAP: u32 = 8;
 /// The room between what the dock holds and each of the dock's two faces.
 pub const MARGIN: u32 = 8;
 
+/// How wide the list the overflow control opens is.
+///
+/// **Measured, and the same on all four edges** — which is what keeps it a
+/// number rather than a proportion. `docs/design/figma-snapshot/70-28.xml` names
+/// it `More apps / opens inward` beside a left dock, a right dock and a top
+/// dock, and `Open applications overflow` beside the bottom one, and all four
+/// are **248 × 313**.
+///
+/// The 313 is not here, and that is the owner's ruling of 2026-10-10: it was six
+/// rows at a 39 pitch, and 39 is below the 44 every control in alo OS is built
+/// to. *Let the panel grow beyond 313px when space permits, then scroll its list
+/// within the available screen space.* So the height follows the contents and
+/// the room, and only the width is a measurement.
+pub const AN_OVERFLOW_PANEL_IS_WIDE: u32 = 248;
+
+/// The room above and below the overflow list's heading.
+///
+/// Measured: the heading sits at y 12 in a panel whose divider is at y 44, so
+/// there are twelve above it and about ten below. Twelve is taken for both,
+/// because two paddings that differ by two pixels are a drawing's slack rather
+/// than a decision, and a reader asked to keep them apart would have nothing to
+/// go on.
+pub const AROUND_THE_OVERFLOWS_HEADING: u32 = 12;
+
+/// The room either side of a name in the overflow list.
+///
+/// Measured: the rows sit at x 18 and the divider at x 17, in a panel 248 wide.
+/// Eighteen for both sides, symmetrised for the same reason as
+/// [`AROUND_THE_OVERFLOWS_HEADING`] — the file's own two numbers differ by one.
+pub const BESIDE_A_NAME_IN_THE_OVERFLOW: u32 = 18;
+
+/// How thick the rule under the overflow list's heading is.
+///
+/// Measured: `Divider`, 214 × **1**.
+pub const A_DIVIDER: u32 = 1;
+
 /// How big the shell's text is at 100%, which is the size it was drawn at.
 pub const TEXT_AT_ORDINARY: u32 = 15;
 
