@@ -62,6 +62,7 @@ alo-networks = { path = "../alo-networks" }
 alo-dividing = { path = "../alo-dividing" }
 # Where a frame sits on the plane a person pans and zooms, and the one transform
 # that turns that into a screen position. The viewport layer never reads it.
+alo-clipboard = { path = "../alo-clipboard" }
 alo-canvas = { path = "../alo-canvas" }
 alo-desktops = { path = "../alo-desktops" }
 alo-dock = { path = "../alo-dock" }

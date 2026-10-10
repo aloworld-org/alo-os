@@ -342,6 +342,7 @@ mod window_edge_who_draws;
 mod window_full_screen;
 mod window_maximize;
 mod window_menu;
+mod window_menu_open;
 mod window_minimize;
 mod window_mode;
 mod window_mode_plan;
@@ -392,6 +393,10 @@ pub use window_edge_tooltip::{
 pub use window_edge_who_draws::who_draws_a_frame;
 pub use window_full_screen::WindowFullScreenError;
 pub use window_maximize::WindowMaximizeError;
+pub use window_menu::{
+    A_ROW_IS_TALL, A_RULE_IS_TALL, A_TITLE_LINE_IS_TALL, AROUND_THE_RULE, AT_MOST_TITLE_LINES, Row,
+    THE_MENU_IS_WIDE, TitleLine, WITHIN_THE_MENU, WindowMenu, window_menu,
+};
 /// **Who draws a frame's header**, in the one place both the drawing and the
 /// reading ask. Its body is what changes when the toplevel's decoration state
 /// is read per frame; see the file's header.
@@ -407,10 +412,17 @@ pub use window_maximize::WindowMaximizeError;
 /// the only one that always exists: a tooltip is transient and a touch screen
 /// has no hover. Its entries are `alo_menus`' closed list, which had no caller
 /// in this crate before this.
-pub use window_menu::{
-    A_ROW_IS_TALL, A_RULE_IS_TALL, A_TITLE_LINE_IS_TALL, AROUND_THE_RULE, AT_MOST_TITLE_LINES, Row,
-    THE_MENU_IS_WIDE, TitleLine, WITHIN_THE_MENU, WindowMenu, window_menu,
-};
+/// **Opening the window menu, and what a press or a key means in it.**
+///
+/// Held by the host, because a menu that is open outlives a frame. The layout
+/// is `window_menu`; this is the state beside it, in the shape
+/// `alo_dock::Revealing` has for the edge.
+///
+/// **Exported is not called.** The driving belongs in the input path, which is
+/// the lane holding §6 of `docs/design/the-external-window-edge.md`, and until
+/// that lands this is reachable and unreached - which the owner's direction of
+/// 2026-10-10 names as not finished.
+pub use window_menu_open::{OpenedBy, Selection, TheTitleAsText, TheWindowMenu, chosen_from};
 pub use window_minimize::WindowMinimizeError;
 pub use window_mode::WindowModeError;
 

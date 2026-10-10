@@ -1507,6 +1507,7 @@ dependencies = [
  "alo-capturing",
  "alo-changing",
  "alo-choosing",
+ "alo-clipboard",
  "alo-context",
  "alo-desktops",
  "alo-displays",
