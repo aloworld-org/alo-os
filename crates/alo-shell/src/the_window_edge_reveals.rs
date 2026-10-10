@@ -58,7 +58,7 @@ use alo_dock::revealing::{Revealing, ThePointer};
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 use smithay::utils::{Logical, Point, Rectangle};
 
-use crate::window_edge::WindowEdge;
+use crate::window_edge::{OnTheEdge, WindowEdge};
 
 /// What this pointer is to one window edge's reveal machine.
 ///
@@ -71,27 +71,93 @@ use crate::window_edge::WindowEdge;
 /// See this file's header for why the three questions are asked in this order
 /// and why that is safe at rest.
 pub(crate) fn what_the_pointer_is(edge: &WindowEdge, at: Point<i32, Logical>) -> ThePointer {
+    match where_on_the_edge(edge, at) {
+        WhereOnTheEdge::Away => ThePointer::Elsewhere,
+        // The approach: in the region, on nothing in particular. This is the
+        // answer that reveals, and at rest it is the only one available.
+        WhereOnTheEdge::TheRegion => ThePointer::AtTheEdge,
+        // **A concealed edge's drag band is still the approach**, and this arm
+        // is the one the restructure was wrong about until a test caught it.
+        // At rest `edge_of` gives the drag region a shallow band at `y = 28`
+        // spanning the edge — where the grip is drawn and where a press at rest
+        // lands — and that band is *inside* the interaction region. Reading it
+        // as *on the surface* made a pointer arriving directly on it set
+        // `on_the_surface` from `Revealing`'s own current answer, which on a
+        // concealed edge is `false`: the edge refused to reveal from the one
+        // band a person aims at. A concealed edge draws no strip, so
+        // `strip.is_none()` is exactly *not revealed* and needs no argument of
+        // its own.
+        WhereOnTheEdge::TheDrag if edge.strip.is_none() => ThePointer::AtTheEdge,
+        // On a revealed edge's furniture: the strip, the part of it that drags,
+        // or a control. `Revealing` reads *on the surface* as *keep it*, which
+        // each of these is — including the path between them, which that enum's
+        // own note says the caller must classify as one continuous region.
+        WhereOnTheEdge::TheStrip | WhereOnTheEdge::TheDrag | WhereOnTheEdge::AControl(_) => {
+            ThePointer::OnTheSurface
+        }
+    }
+}
+
+/// Where on one window's edge a point is, in as much detail as anything needs.
+///
+/// **One calculation with two readers.** [`crate::window_edge`]'s header sets
+/// that rule for the geometry — *a second calculation anywhere* is a second
+/// answer — and it applies as much to asking about it. §5 needs only *is this
+/// the edge*; §6 needs *which control*. So the reveal and the press read one
+/// function rather than each hit-testing the same rectangles and drifting.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WhereOnTheEdge {
+    /// Not on this window's edge at all.
+    Away,
+    /// Inside the interaction region, on nothing more specific. The approach.
+    TheRegion,
+    /// On the strip that is drawn, away from the part that drags.
+    TheStrip,
+    /// On the movement region, where a press drags the window.
+    TheDrag,
+    /// On one control's target, which is what a press there reaches.
+    AControl(OnTheEdge),
+}
+
+/// Where a point is on this edge, most specific answer first.
+///
+/// **The order is the correctness.** These rectangles nest: a control's target
+/// and the drag region both lie inside the region, and the revealed drag takes
+/// the region's whole height. So the most specific has to win, or a press on
+/// Close would read as a drag and a pointer on a control would read as merely
+/// approaching.
+///
+/// Controls before the drag is belt and braces rather than load-bearing:
+/// `edge_of` ends the revealed drag region one gap **before** the first
+/// control, so the two do not overlap today. Asking in this order means they
+/// could without this answering wrongly — and it is the clause *buttons and
+/// menus do not start a drag* held by the shape rather than by a caller
+/// remembering.
+pub(crate) fn where_on_the_edge(edge: &WindowEdge, at: Point<i32, Logical>) -> WhereOnTheEdge {
     // **`target`, never `highlight`.** The 44 × 44 is what answers; the 32 × 28
     // is only what is filled behind it while hovered. Hit-testing the highlight
-    // would shrink every control by six pixels each side and four top and
-    // bottom, which is the specification's one hard floor — *44 × 44,
+    // would shrink every control by six pixels each side and fourteen at the
+    // top, which is the specification's one hard floor — *44 × 44,
     // non-overlapping* — quietly undone by reading the wrong field of the right
     // struct. The compiler cannot tell these apart: both are
     // `Rectangle<i32, Logical>` on the same value.
-    if edge
+    if let Some(control) = edge
         .controls
         .iter()
-        .any(|control| holds(control.target, at))
+        .find(|control| holds(control.target, at))
     {
-        return ThePointer::OnTheSurface;
+        return WhereOnTheEdge::AControl(control.does);
+    }
+    if holds(edge.drag, at) {
+        return WhereOnTheEdge::TheDrag;
     }
     if edge.strip.is_some_and(|strip| holds(strip, at)) {
-        return ThePointer::OnTheSurface;
+        return WhereOnTheEdge::TheStrip;
     }
     if holds(edge.region, at) {
-        return ThePointer::AtTheEdge;
+        return WhereOnTheEdge::TheRegion;
     }
-    ThePointer::Elsewhere
+    WhereOnTheEdge::Away
 }
 
 /// Whether a rectangle contains a point, half-open, with no area containing
@@ -189,6 +255,51 @@ impl crate::Server {
             .iter()
             .find(|(it, _)| it == surface)
             .is_some_and(|(_, machine)| machine.is_revealed())
+    }
+}
+
+/// What a press on one window's edge does.
+///
+/// §6 of `docs/design/the-external-window-edge.md`. Read off the same
+/// classification the reveal reads, so a control that highlights under the
+/// pointer is the control a press there reaches.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WhatAPressDoes {
+    /// Nothing. The press is not this edge's, or it landed on edge that has no
+    /// action — the rows above the strip, or the sliver of strip past the last
+    /// control.
+    Nothing,
+    /// Moves the window, which is what the movement region is for.
+    MovesTheWindow,
+    /// One of the edge's own actions, through the mechanism that already does
+    /// it.
+    This(OnTheEdge),
+}
+
+/// What a press at this point on this edge does.
+///
+/// **The clause this function exists to make unbreakable is *buttons and menus
+/// do not start a drag*.** It is not enforced by remembering to check the
+/// controls first; it is enforced by there being one classification, whose most
+/// specific answer is the control. A press cannot be both, because
+/// [`where_on_the_edge`] returns one value.
+///
+/// **A concealed edge is still movable**, which is the clause *borderless
+/// applications stay movable and recoverable*: at rest the drag region is the
+/// shallow band the grip is drawn in, and a press there moves the window
+/// without the edge having to be revealed first. Nothing here asks whether it
+/// is revealed.
+pub(crate) fn what_a_press_does(edge: &WindowEdge, at: Point<i32, Logical>) -> WhatAPressDoes {
+    match where_on_the_edge(edge, at) {
+        WhereOnTheEdge::AControl(does) => WhatAPressDoes::This(does),
+        WhereOnTheEdge::TheDrag => WhatAPressDoes::MovesTheWindow,
+        // **Not a drag.** The movement region is `edge.drag` and nothing else:
+        // the rows above the strip are the approach, and the strip past the
+        // last control is the trailing margin. A press on either is the
+        // window's own business, not the edge's.
+        WhereOnTheEdge::TheStrip | WhereOnTheEdge::TheRegion | WhereOnTheEdge::Away => {
+            WhatAPressDoes::Nothing
+        }
     }
 }
 
