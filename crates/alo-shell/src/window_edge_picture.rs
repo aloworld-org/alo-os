@@ -28,9 +28,9 @@ use smithay::{
 };
 
 use crate::painted::{self, Inked, Solid};
-use crate::window_edge::Edge;
+use crate::window_edge::WindowEdge;
 use crate::window_edge_paint::Pointing;
-use crate::window_edge_title::Fitted;
+use crate::window_edge_title::FittedTitle;
 use crate::{RenderError, painted_text};
 
 /// A window's edge, in output pixels.
@@ -54,7 +54,7 @@ impl EdgePicture {
     /// Returns [`None`] when the edge would not be wholly on the output.
     #[must_use]
     pub fn of(
-        edge: &Edge,
+        edge: &WindowEdge,
         pointing: Pointing,
         title: Option<&str>,
         fonts: &mut cosmic_text::FontSystem,
@@ -83,7 +83,7 @@ impl EdgePicture {
         if let (Some(title), Some(at)) = (title, edge.title) {
             let room = edge.drag.size.w - crate::window_edge::THE_GRIP_IS.0;
             let metrics = cosmic_text::Metrics::new(THE_LABEL_IS, THE_LINE_IS);
-            let Fitted {
+            let FittedTitle {
                 shown, whole: all, ..
             } = crate::window_edge_title::fitted(fonts, title, room, metrics);
             whole = all;

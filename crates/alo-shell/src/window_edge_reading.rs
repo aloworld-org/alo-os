@@ -30,7 +30,7 @@
 //!
 //! That clause is the one a mouse-shaped implementation fails quietly, and
 //! this file failed it on the first attempt: [`what_a_reader_is_told`] read
-//! the drawn controls off an [`Edge`], and a concealed edge has none —
+//! the drawn controls off an [`WindowEdge`], and a concealed edge has none —
 //! correctly, because nothing is drawn at rest. A keyboard user would have
 //! been unable to reach a control until a pointer had been near it.
 //!
@@ -69,7 +69,7 @@ pub fn what_it_does(control: OnTheEdge) -> Option<Action> {
 ///
 /// **Takes no geometry, deliberately.** Where a control sits is a drawing
 /// question; whether it exists is not. An earlier version read the drawn
-/// controls off an `Edge` and returned nothing for a concealed one, which is
+/// controls off an `WindowEdge` and returned nothing for a concealed one, which is
 /// the *without first hovering* clause failing — see this file's header.
 #[must_use]
 pub fn what_a_reader_is_told(decorations: Decorations) -> Vec<Control> {
@@ -83,7 +83,7 @@ pub fn what_a_reader_is_told(decorations: Decorations) -> Vec<Control> {
 /// Which controls a window with these decorations has at all.
 ///
 /// The same answer `crate::window_edge` lays out when the edge is revealed,
-/// and the reason it is here rather than read off an `Edge`: a concealed edge
+/// and the reason it is here rather than read off an `WindowEdge`: a concealed edge
 /// draws none of them and a person can still reach every one.
 #[must_use]
 pub fn the_controls_of(decorations: Decorations) -> Vec<OnTheEdge> {

@@ -13,7 +13,7 @@
 //! > Truncate long titles with an ellipsis before the controls; **preserve the
 //! > full title for accessibility.**
 //!
-//! So [`Fitted`] carries both. A reader is told the whole title however little
+//! So [`FittedTitle`] carries both. A reader is told the whole title however little
 //! of it is drawn, which is the difference between a window somebody can find
 //! by name and one they cannot. Anything that read the drawn string and
 //! announced it would quietly make long-titled windows unfindable.
@@ -57,7 +57,7 @@ pub const AN_ELLIPSIS: &str = "…";
 
 /// A title fitted to the room its edge has.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Fitted {
+pub struct FittedTitle {
     /// What is drawn — the whole title, or as much as fits with an ellipsis.
     pub shown: String,
     /// The whole title, always, for whoever says it aloud.
@@ -76,17 +76,17 @@ pub struct Fitted {
 /// Returns the whole title untouched when it fits, which is the ordinary case
 /// and costs one measurement.
 #[must_use]
-pub fn fitted(fonts: &mut FontSystem, title: &str, room: i32, metrics: Metrics) -> Fitted {
+pub fn fitted(fonts: &mut FontSystem, title: &str, room: i32, metrics: Metrics) -> FittedTitle {
     let whole = title.to_owned();
     if room <= 0 {
-        return Fitted {
+        return FittedTitle {
             shown: String::new(),
             whole,
             cut: !title.is_empty(),
         };
     }
     if crate::painted_text::how_wide(fonts, title, metrics) <= room {
-        return Fitted {
+        return FittedTitle {
             shown: whole.clone(),
             whole,
             cut: false,
@@ -126,7 +126,7 @@ pub fn fitted(fonts: &mut FontSystem, title: &str, room: i32, metrics: Metrics) 
         .and_then(|end| title.get(..*end))
         .map(|prefix| format!("{prefix}{AN_ELLIPSIS}"))
         .unwrap_or_default();
-    Fitted {
+    FittedTitle {
         shown,
         whole,
         cut: true,

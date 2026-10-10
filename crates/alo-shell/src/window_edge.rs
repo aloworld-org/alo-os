@@ -41,7 +41,7 @@
 //! **The zoom at which controls stop being usable.** The contract says that at
 //! overview scales the canvas selection interaction takes over *rather than
 //! pretending tiny controls remain usable* — and names no threshold. One is
-//! not invented here; [`Edge::how_big_a_target_looks`] gives the apparent size
+//! not invented here; [`WindowEdge::how_big_a_target_looks`] gives the apparent size
 //! so a host can apply a rule when the owner has set one.
 
 use smithay::utils::{Logical, Point, Rectangle, Size};
@@ -153,7 +153,7 @@ pub enum OnTheEdge {
 
 /// One control: where it answers, and where its artwork draws.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Control {
+pub struct EdgeControl {
     /// What pressing it does.
     pub does: OnTheEdge,
     /// The 44 × 44 it answers in. Non-overlapping with every other.
@@ -169,7 +169,7 @@ pub struct Control {
 
 /// The whole edge of one window.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Edge {
+pub struct WindowEdge {
     /// The continuous region a pointer reveals the edge from, and stays
     /// revealed within. Always present, revealed or not.
     pub region: Rectangle<i32, Logical>,
@@ -183,10 +183,10 @@ pub struct Edge {
     /// is revealed.
     pub title: Option<Point<i32, Logical>>,
     /// The controls, in the order they are drawn, left to right.
-    pub controls: Vec<Control>,
+    pub controls: Vec<EdgeControl>,
 }
 
-impl Edge {
+impl WindowEdge {
     /// How large one control's target appears at this zoom, in thousandths.
     ///
     /// For the contract's *at overview scales where targets become too small,
@@ -212,7 +212,11 @@ impl Edge {
 ///
 /// `revealed` is the host's answer, from pointer, focus, menu and drag.
 #[must_use]
-pub fn edge_of(window: Rectangle<i32, Logical>, decorations: Decorations, revealed: bool) -> Edge {
+pub fn edge_of(
+    window: Rectangle<i32, Logical>,
+    decorations: Decorations,
+    revealed: bool,
+) -> WindowEdge {
     let region = Rectangle::new(
         Point::from((window.loc.x, window.loc.y - THE_REGION_IS_TALL)),
         Size::from((window.size.w, THE_REGION_IS_TALL)),
@@ -259,7 +263,7 @@ pub fn edge_of(window: Rectangle<i32, Logical>, decorations: Decorations, reveal
                 Point::from((at, region.loc.y)),
                 Size::from((A_TARGET_IS, A_TARGET_IS)),
             );
-            Control {
+            EdgeControl {
                 does,
                 target,
                 artwork: artwork_in(target, region),
@@ -331,7 +335,7 @@ pub fn edge_of(window: Rectangle<i32, Logical>, decorations: Decorations, reveal
         ))
     });
 
-    Edge {
+    WindowEdge {
         region,
         strip,
         drag,

@@ -364,9 +364,9 @@ pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_dividing::NotDivided;
 pub use window_edge::{
-    A_TARGET_IS, ARTWORK_IS, BETWEEN_TARGETS, Control, Decorations, Edge, OnTheEdge,
+    A_TARGET_IS, ARTWORK_IS, BETWEEN_TARGETS, Decorations, EdgeControl, OnTheEdge,
     THE_DRAG_STARTS_AT, THE_GRIP_IS, THE_REGION_IS_TALL, THE_STRIP_IS_TALL, THE_STRIP_STARTS_AT,
-    edge_of,
+    WindowEdge, edge_of,
 };
 /// What the external window edge is drawn out of: rectangles and roles.
 ///
@@ -381,7 +381,7 @@ pub use window_edge_picture::EdgePicture;
 /// questions. `crate::access_nodes` hangs these under each open window.
 pub use window_edge_reading::{the_controls_of, what_a_reader_is_told, what_it_does};
 /// A window's title on its edge: what is shown, and what is still said aloud.
-pub use window_edge_title::{AN_ELLIPSIS, Fitted, fitted};
+pub use window_edge_title::{AN_ELLIPSIS, FittedTitle, fitted};
 /// **Who draws a frame's header**, in the one place both the drawing and the
 /// reading ask. Its body is what changes when the toplevel's decoration state
 /// is read per frame; see the file's header.

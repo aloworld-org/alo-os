@@ -41,7 +41,7 @@
 //!
 //! **The title's text.** Drawing a string needs the font machinery
 //! `crate::window_control_label` owns, and a glyph run is a different
-//! responsibility from a rectangle. [`Edge::title`](crate::Edge::title) is
+//! responsibility from a rectangle. [`WindowEdge::title`](crate::WindowEdge::title) is
 //! where it goes and a caller with fonts puts it there.
 //!
 //! **Corner radii.** The design rounds the strip at 8 and the region at 12,
@@ -51,7 +51,7 @@
 use alo_appearance::{Colour, Role};
 use smithay::utils::{Logical, Rectangle};
 
-use crate::window_edge::{Control, Edge, OnTheEdge};
+use crate::window_edge::{EdgeControl, OnTheEdge, WindowEdge};
 
 /// One rectangle to fill, and what to fill it with.
 pub type Solid = (Rectangle<i32, Logical>, Colour);
@@ -75,7 +75,7 @@ pub struct Pointing {
 /// Back to front: the strip, then each control's highlight, then its artwork,
 /// then any focus outline. A caller fills them in order and gets the design.
 #[must_use]
-pub fn solids(edge: &Edge, pointing: Pointing) -> Vec<Solid> {
+pub fn solids(edge: &WindowEdge, pointing: Pointing) -> Vec<Solid> {
     let mut solids = Vec::new();
 
     if let Some(strip) = edge.strip {
@@ -113,7 +113,7 @@ pub fn solids(edge: &Edge, pointing: Pointing) -> Vec<Solid> {
 }
 
 /// The grip, drawn as the design draws it in each state.
-fn grip_of(edge: &Edge) -> Vec<Solid> {
+fn grip_of(edge: &WindowEdge) -> Vec<Solid> {
     let quiet = Role::TextMuted.colour();
     if edge.strip.is_none() {
         // At rest it is the whole mark: a 24 × 2 bar.
@@ -143,7 +143,7 @@ fn grip_of(edge: &Edge) -> Vec<Solid> {
 /// marks would be a renderer nobody asked for. **The shapes are the design's
 /// and the fidelity is this renderer's**, which is a limitation worth naming
 /// rather than a choice worth defending.
-fn artwork_of(control: &Control, ink: Role) -> Vec<Solid> {
+fn artwork_of(control: &EdgeControl, ink: Role) -> Vec<Solid> {
     let colour = ink.colour();
     let at = control.artwork.loc;
     let size = control.artwork.size.w;
