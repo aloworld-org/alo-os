@@ -63,7 +63,7 @@
 //! exactly the same reason, and **neither is in `FixedControlsDrawn`'s set**, so
 //! nothing in this repository could have measured either.
 
-use alo_dock::Layout;
+use alo_dock::{Edge, Layout};
 use alo_strings::Direction;
 use smithay::utils::{Physical, Rectangle};
 
@@ -145,15 +145,22 @@ pub(crate) enum Across {
 
 /// Which way rows are stacked down the output.
 ///
-/// **One way, since ADR 0076.** `Downwards` was for a dock along the top of the
-/// screen, and there is no such dock. It stays an enum rather than becoming a
-/// bare `i32` because *which way do these stack* is still the question the type
-/// answers, and a second answer is what a surface somewhere other than the
-/// bottom would need.
+/// **Two ways again, since 2026-10-10.** This said *one way, since ADR 0076 —
+/// `Downwards` was for a dock along the top of the screen, and there is no such
+/// dock*, and it kept the enum anyway because *a second answer is what a surface
+/// somewhere other than the bottom would need*. The owner reversed that ruling on
+/// 2026-09-30 and the dock reached the top of the screen today, so the second
+/// answer is needed and the type was right to wait for it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Stacked {
     /// The first row's bottom is at this y, and the next is above it.
     Upwards(i32),
+    /// The first row's top is at this y, and the next is below it.
+    ///
+    /// For a dock along the **top**: the indicator sits under it, and a new line
+    /// is added below the last so that nothing already on the screen moves — which
+    /// is the same promise [`Self::Upwards`] keeps in the other direction.
+    Downwards(i32),
 }
 
 /// The corner the indicator grows from, and how much room it has.
@@ -188,6 +195,11 @@ impl Place {
         Self {
             stacked: match self.stacked {
                 Stacked::Upwards(y) => Stacked::Upwards(y - taken),
+                // **Along, not up.** `beyond` means *this much of the corner is
+                // already used*, and which way that moves the origin follows the
+                // way the rows grow — so a top dock's stack starts further down by
+                // exactly what the in-use indicator took.
+                Stacked::Downwards(y) => Stacked::Downwards(y + taken),
             },
             room_down: (self.room_down - taken).max(0),
             ..self
@@ -223,6 +235,10 @@ impl Place {
             },
             stacked: match corner.stacked {
                 Stacked::Upwards(y) => Stacked::Upwards(y.min(height - margin)),
+                // The same clamp from the other end: a row stacking down may not
+                // start above the margin, as one stacking up may not start below
+                // the far one.
+                Stacked::Downwards(y) => Stacked::Downwards(y.max(margin)),
             },
             ..corner
         }
@@ -266,9 +282,19 @@ impl Place {
         // above the bar itself.
         let floating =
             i32::try_from(alo_dock::measures::FLOATING_ABOVE_THE_EDGE).unwrap_or(i32::MAX);
+        // **Where the rows start, which is the whole of what the edge changes
+        // here.** A dock along the bottom is cleared by stacking up from above it;
+        // along the top, by stacking down from under it. Down a side it takes no
+        // height at all, so the rows start where they would with no dock — and what
+        // it takes instead is *width*, which `the_span_across` is the place for.
+        let stacked = match layout.edge() {
+            Edge::Bottom => Stacked::Upwards(height - thickness - floating - margin),
+            Edge::Top => Stacked::Downwards(thickness + floating + margin),
+            Edge::Left | Edge::Right => Stacked::Upwards(height - margin),
+        };
         Self {
             across,
-            stacked: Stacked::Upwards(height - thickness - floating - margin),
+            stacked,
             room_across: (to - from - 2 * margin).max(0),
             room_down: height - thickness - floating - 2 * margin,
         }
