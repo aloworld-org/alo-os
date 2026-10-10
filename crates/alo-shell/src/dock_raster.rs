@@ -141,6 +141,46 @@ fn the_band_on(
     Rectangle::new(origin.into(), extent.into())
 }
 
+/// The accent along the band's **inside** edge: the one facing the canvas.
+///
+/// **A picture found this and three tests did not.** The accent was
+/// `(bar_width, rule)` at the band's own corner for every edge — right for the
+/// bottom, and for the other three a line of the wrong length on the wrong side:
+/// on the left edge it ran **176 pixels out across the canvas** above a bar 70
+/// wide, because the length was taken along the screen's width while the bar runs
+/// down its height. Measured off a drawn frame on 2026-10-10, where it is
+/// impossible to miss and where a reader of the code had missed it.
+///
+/// `the_bar_sits_on_whichever_edge_it_was_laid_along` asks `the_band_on` about
+/// all four edges and never looks at the accent;
+/// `the_dock_is_a_centred_bar_clear_of_the_bottom_edge` checks the accent and
+/// only ever on the bottom. Each was right about its own subject, and the gap
+/// between them was the whole of the defect.
+///
+/// **Inside means facing the canvas**, which is the opposite end of the thickness
+/// from the screen edge the bar is lifted off. So it is the band's top for a dock
+/// along the bottom and the band's bottom for one along the top — not the same
+/// corner twice.
+fn the_accent_on(
+    edge: alo_dock::Edge,
+    band: Rectangle<i32, Physical>,
+    rule: i32,
+) -> Rectangle<i32, Physical> {
+    let (origin, extent) = match edge {
+        alo_dock::Edge::Bottom => ((band.loc.x, band.loc.y), (band.size.w, rule)),
+        alo_dock::Edge::Top => (
+            (band.loc.x, band.loc.y + band.size.h - rule),
+            (band.size.w, rule),
+        ),
+        alo_dock::Edge::Left => (
+            (band.loc.x + band.size.w - rule, band.loc.y),
+            (rule, band.size.h),
+        ),
+        alo_dock::Edge::Right => ((band.loc.x, band.loc.y), (rule, band.size.h)),
+    };
+    Rectangle::new(origin.into(), extent.into())
+}
+
 /// Lay `dock` out on a display of `size` and rasterise it.
 ///
 /// # Errors
@@ -194,7 +234,7 @@ pub(crate) fn picture(
 
     // Centred along its edge, and lifted clear of it.
     let band = the_band_on(layout.edge(), size, bar_width, thickness, floating);
-    let accent = Rectangle::new(band.loc, (bar_width, rule).into());
+    let accent = the_accent_on(layout.edge(), band, rule);
 
     let solids = vec![
         Solid {
@@ -409,6 +449,136 @@ mod tests {
                 "{edge:?} runs off the screen"
             );
         }
+    }
+
+    /// **The accent lies on the band's inside edge, on all four edges.**
+    ///
+    /// It did not. It was the band's corner plus `(bar_width, rule)` whatever the
+    /// edge, so on a dock down the left of the screen it drew a line 176 pixels
+    /// long across the canvas beside a bar 70 wide, and on a dock along the top it
+    /// drew on the band's outer edge rather than the one facing the canvas.
+    ///
+    /// **Found in a drawn frame rather than here**, which is the point worth
+    /// keeping: two tests already covered the two halves — one asked
+    /// `the_band_on` about four edges and never looked at the accent, the other
+    /// looked at the accent on one edge — and the defect lived in the gap between
+    /// their subjects. Each was correct.
+    ///
+    /// Four claims, because each catches a different way of being wrong: the
+    /// accent is **inside** the band (length and axis), it is `rule` across and
+    /// the band's **whole length** along (not a shorter or longer line), and it is
+    /// flush with the **inside** face (not the outer one, which `inside` alone
+    /// would allow).
+    #[test]
+    fn the_accent_lies_along_the_bands_inside_face_on_every_edge() {
+        use alo_dock::Edge;
+        let rule = 2;
+        let band_for = |edge| the_band_on(edge, (1920, 1080), 600, 70, 8);
+
+        for edge in Edge::EVERY {
+            let band = band_for(edge);
+            let accent = the_accent_on(edge, band, rule);
+
+            assert!(
+                inside(accent, band),
+                "{edge:?}: the accent at {accent:?} leaves the band at {band:?}, so it draws on                  the canvas"
+            );
+
+            // `rule` across the thickness, the band's whole length along it.
+            let (across, along, band_along) = if edge.runs_across() {
+                (accent.size.h, accent.size.w, band.size.w)
+            } else {
+                (accent.size.w, accent.size.h, band.size.h)
+            };
+            assert_eq!(across, rule, "{edge:?}: the accent is not {rule} across");
+            assert_eq!(
+                along, band_along,
+                "{edge:?}: the accent runs {along} along a band that runs {band_along}"
+            );
+
+            // Flush with the face that looks at the canvas, which is the far end
+            // of the thickness from the screen edge the bar is lifted off.
+            let (accent_edge, band_inside) = match edge {
+                Edge::Bottom => (accent.loc.y, band.loc.y),
+                Edge::Top => (accent.loc.y + accent.size.h, band.loc.y + band.size.h),
+                Edge::Left => (accent.loc.x + accent.size.w, band.loc.x + band.size.w),
+                Edge::Right => (accent.loc.x, band.loc.x),
+            };
+            assert_eq!(
+                accent_edge, band_inside,
+                "{edge:?}: the accent is not on the face that looks at the canvas"
+            );
+        }
+    }
+
+    /// **And the drawn picture's accent is that one**, which is the claim the two
+    /// tests above cannot make.
+    ///
+    /// They ask `the_accent_on` directly, so they say *this helper is right*.
+    /// Mutation-tested on 2026-10-10 by putting the original fault back in
+    /// `picture` — `Rectangle::new(band.loc, (bar_width, rule).into())` — and
+    /// **all fourteen tests passed**, the two new ones included. A correct helper
+    /// nothing calls is the fault class `CLAUDE.md` names first: *a check that
+    /// stands in for the thing is not the thing.*
+    ///
+    /// So this one draws, on all four edges, and asks the picture.
+    #[test]
+    fn the_drawn_accent_is_the_one_the_edge_asks_for() {
+        use alo_dock::Edge;
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let held = on_the_dock(4);
+        let size = (1920, 1080);
+
+        for edge in Edge::EVERY {
+            let mut dock = Dock::shipped();
+            dock.set_edge(edge);
+            let drawn = picture(&dock, look, size, &held, &mut fonts()).unwrap();
+
+            assert_eq!(
+                drawn.accent,
+                the_accent_on(
+                    edge,
+                    drawn.band,
+                    drawn.accent.size.w.min(drawn.accent.size.h)
+                ),
+                "{edge:?}: the picture's accent is not the one this edge asks for"
+            );
+            assert!(
+                inside(drawn.accent, drawn.band),
+                "{edge:?}: the drawn accent at {:?} leaves the band at {:?} and draws on the \
+                 canvas — which is what it did on the left edge until 2026-10-10, a line 176 \
+                 long beside a bar 70 wide",
+                drawn.accent,
+                drawn.band
+            );
+            // And it is painted, not merely computed: the solid a person sees.
+            assert!(
+                drawn.solids.iter().any(|solid| solid.area == drawn.accent),
+                "{edge:?}: nothing is painted at the accent's place"
+            );
+        }
+    }
+
+    /// **No two edges put the accent in the same place either.**
+    ///
+    /// The companion to `the_four_edges_are_four_different_places`, and for the
+    /// same reason: four arms that each satisfy the checks above could be two arms
+    /// written twice, and a copied arm with its edge not changed is how that
+    /// happens.
+    #[test]
+    fn the_four_edges_are_four_different_accents() {
+        use alo_dock::Edge;
+        let mut seen: Vec<Rectangle<i32, Physical>> = Vec::new();
+        for edge in Edge::EVERY {
+            let band = the_band_on(edge, (1920, 1080), 600, 70, 8);
+            let accent = the_accent_on(edge, band, 2);
+            assert!(
+                !seen.contains(&accent),
+                "{edge:?} puts the accent exactly where an earlier edge does: {accent:?}"
+            );
+            seen.push(accent);
+        }
+        assert_eq!(seen.len(), 4);
     }
 
     /// **No two edges put the bar in the same place.**
