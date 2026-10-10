@@ -142,6 +142,14 @@ controls.
 A shared window component should provide consistent title bands, focus
 treatment, resize behaviour and controls across applications.
 
+**That component exists and it is the external window edge** —
+[`the-external-window-edge.md`](the-external-window-edge.md), laid out by
+`alo_shell::edge_of`. Anything needing a title band, a drag region or window
+controls asks that one function rather than drawing its own, which is what
+makes *consistent across applications* a property of the code rather than a
+thing reviewers have to notice. It replaced a three-tile strip and an internal
+48-pixel band, and `docs/contracts/native-window-controls.md` is superseded.
+
 ## 6. Focus and selection are different
 
 **Focus** identifies where keyboard input goes. **Selection** identifies which
@@ -181,7 +189,9 @@ Selected windows can move together while preserving their relative positions.
 
 There must also be a keyboard operation for moving a selected window. It needs
 clear entry, movement, confirmation and cancellation behaviour, without
-requiring the person to reach the title band.
+requiring the person to reach the title band — and the band being an overlay
+that reveals on approach makes that requirement stronger, not weaker: a person
+who cannot bring the pointer to it must still be able to move the window.
 
 Moving a window to another Place preserves its identity and application state.
 
@@ -196,7 +206,10 @@ Resizing should:
 
 - Keep the opposite edge or corner stable.
 - Update the application's layout.
-- Preserve a usable title band and controls.
+- Preserve a usable title band and controls. The edge is laid out from the
+  window's own rectangle, so it follows a resize without being told to; what
+  this asks of a resize is that it never leave the edge off the output, which
+  `EdgePicture::of` refuses rather than drawing wrongly.
 - Provide accessible pointer targets.
 - Support cancellation and a keyboard equivalent.
 

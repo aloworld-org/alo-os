@@ -125,12 +125,31 @@ are not one job:
 carrying across: non-overlapping targets, clipping at the viewport, nothing
 drawn over client pixels, and the accessible names.
 
-### D. The last documents — **this lane**
+### D. The last documents — **done 2026-10-10**
 
 The owner: *update documentation and design references so nobody builds the
-retired controls again.* `the-regions-a-pointer-can-be-in.md` and
-`the-external-window-edge.md` are done. What is left is anything still
-describing the old tiles as current.
+retired controls again.*
+
+| | |
+|---|---|
+| `the-regions-a-pointer-can-be-in.md` | the 84px overlay-envelope ruling |
+| `the-external-window-edge.md` | the contract itself, and *Return to canvas* staying |
+| `contracts/native-window-controls.md` | **superseded**, with a notice at the top saying by what |
+| `design/the-canvas-as-a-workspace.md` | *a shared window component* now names the component |
+
+**The contract was deprecated rather than rewritten or deleted**, because
+`docs/contracts/` is a public surface and CLAUDE.md's rule is that it changes
+additively and a break requires versioning and deprecation. Deleting the page
+would make every link to it dead and tell nobody why. Its labelling rule —
+ADR 0089, one string rather than two that agree — is **not** superseded; the new
+edge reuses it unchanged.
+
+**Deliberately left alone:** `docs/autonomy/updates/*` are task reports and
+record what was true when they were written; rewriting history to agree with the
+present is how a repository stops being evidence of anything. `QUEUE.md` and
+`STATE.md` have one writer, who is not this lane. And
+`contracts/native-window-dividing.md`'s *nothing here reserves a title bar or a
+dock* was already right and is more right now.
 
 ## What would prove it finished
 
