@@ -11,7 +11,18 @@ pub(crate) enum NativeScene<'a> {
     /// An exclusive opaque lock texture; no other layer may be imported.
     Lock(&'a crate::lock_raster::LockPicture),
     /// Existing strip with an optional complete label.
+    ///
+    /// **Superseded.** `docs/design/the-external-window-edge.md` replaces this
+    /// with [`Self::TheWindowEdge`] for ordinary shell-decorated windows, by
+    /// the owner's ruling of 2026-10-09. It remains only while the reader and
+    /// label paths that share its layout are moved across.
     Controls(crate::WindowControlScene<'a>),
+    /// alo's external window edge: the strip above a window carrying its
+    /// movement, its title and its controls.
+    ///
+    /// Outside the application's content, so revealing it moves nothing the
+    /// application drew.
+    TheWindowEdge(&'a crate::window_edge_picture::EdgePicture),
     /// Complete paged reader and its original strip.
     Reader(&'a WindowControlReaderScene<'a>),
     /// The sign-in screen, which is the whole output.
@@ -97,6 +108,12 @@ impl NativeScene<'_> {
                 }
             }
             Self::Controls(scene) => scene.validate(size),
+            // **Nothing to refuse.** The others carry pixels laid out for one
+            // output extent and are wrong on any other, so they check. An
+            // edge is laid out against its window and already declined to
+            // exist if it would fall off the output — `EdgePicture::of`
+            // returns `None` rather than a picture nobody could reach.
+            Self::TheWindowEdge(_) => Ok(()),
             Self::Reader(scene) => scene.validate(size),
             Self::SignIn(picture) => picture.validate(size),
             Self::Recovery(picture) => picture.validate(size),
@@ -117,6 +134,7 @@ impl NativeScene<'_> {
                 }
                 Ok(())
             }
+            Self::TheWindowEdge(edge) => edge.paint(frame),
         }
     }
 }

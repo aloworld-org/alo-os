@@ -333,6 +333,7 @@ mod window_controls;
 mod window_dividing;
 mod window_edge;
 mod window_edge_paint;
+mod window_edge_picture;
 mod window_edge_title;
 mod window_full_screen;
 mod window_maximize;
@@ -370,6 +371,8 @@ pub use window_edge::{
 /// Separate from the geometry because they are two reasons to change - the
 /// design moving a control, and the design recolouring one.
 pub use window_edge_paint::{Pointing, Solid, solids};
+/// One window edge, laid out in owned pixels and ready for a frame.
+pub use window_edge_picture::EdgePicture;
 /// A window's title on its edge: what is shown, and what is still said aloud.
 pub use window_edge_title::{AN_ELLIPSIS, Fitted, fitted};
 pub use window_full_screen::WindowFullScreenError;
