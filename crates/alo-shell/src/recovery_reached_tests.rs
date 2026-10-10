@@ -44,7 +44,7 @@ fn a_desktop_that_will_not_start<'a>(
         panel_is_revealed: true,
         filling_the_screen: false,
         display_scale: 100,
-        dock_holds: 0,
+        on_the_dock: &[],
         dock,
         look: noon_look(&an_appearance(), Direction::LeftToRight),
         strings,

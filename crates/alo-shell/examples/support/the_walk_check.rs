@@ -582,7 +582,7 @@ impl<'a> TheDesk<'a> {
             panel_is_revealed: true,
             filling_the_screen: false,
             display_scale: 100,
-            dock_holds: 0,
+            on_the_dock: &[],
         }
     }
 }

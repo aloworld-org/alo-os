@@ -55,13 +55,15 @@
 //! dock is a band of the person's colours with the accent along its inside
 //! edge. `tests/desktop_source.rs` reads these files to hold that.
 
-use alo_dock::measures::{FLOATING_ABOVE_THE_EDGE, MARGIN};
-use alo_dock::{Dock, Layout, Room, Screen};
+use alo_dock::measures::{FLOATING_ABOVE_THE_EDGE, GLYPH, ICON, MARGIN};
+use alo_dock::places::Places;
+use alo_dock::{Dock, Layout, OnTheDock, Room, Screen};
+use cosmic_text::{FontSystem, Metrics};
 use smithay::utils::{Physical, Rectangle};
 
 use crate::RenderError;
 use crate::desktop_look::DesktopLook;
-use crate::painted::Solid;
+use crate::painted::{Inked, Solid};
 
 /// The largest display side, in pixels, the dock is laid out for.
 const LARGEST_SIDE: i32 = 16_384;
@@ -79,6 +81,12 @@ pub(crate) struct DockPicture {
     pub(crate) accent: Rectangle<i32, Physical>,
     /// Flat shapes, in painting order.
     pub(crate) solids: Vec<Solid>,
+    /// One letter per application on the Dock, inked into its icon's box.
+    ///
+    /// Empty when the Dock holds nothing, which is a Dock a person sees as a
+    /// bare band — and is what every machine showed until 2026-10-10, because
+    /// nothing drew an icon at all.
+    pub(crate) inked: Vec<Inked>,
 }
 
 /// Where the bar sits on this edge: `along` units down its edge, `thickness`
@@ -126,7 +134,8 @@ pub(crate) fn picture(
     dock: &Dock,
     look: DesktopLook,
     size: (i32, i32),
-    holding: usize,
+    on_the_dock: &[OnTheDock],
+    fonts: &mut FontSystem,
 ) -> Result<DockPicture, RenderError> {
     let (width, height) = size;
     if width > LARGEST_SIDE || height > LARGEST_SIDE {
@@ -150,7 +159,7 @@ pub(crate) fn picture(
     // and the list decided cannot disagree.
     let margin = i32::try_from(MARGIN).unwrap_or(i32::MAX);
     let floating = i32::try_from(FLOATING_ABOVE_THE_EDGE).unwrap_or(i32::MAX);
-    let wanted = i32::try_from(Room::a_bar_holding(holding).as_pixels())
+    let wanted = i32::try_from(Room::a_bar_holding(on_the_dock.len()).as_pixels())
         .map_err(|_| RenderError::DesktopScene)?;
     // **The edge the bar runs along, not always the width.** A dock down a side is
     // as long as the screen is tall, and clamping it to the width would make a
@@ -179,21 +188,105 @@ pub(crate) fn picture(
             colour: palette.accent,
         },
     ];
+
+    // **One letter per application, which is what a Dock icon is today.** The
+    // owner ruled on 2026-10-10 that an application with no artwork shows its
+    // first letter, and `alo-applications` names an icon in none of its files —
+    // so this is every application rather than a fallback anybody will see
+    // rarely. `docs/design/the-alo-dock.md` carries the ruling and the three
+    // decisions inside it.
+    //
+    // **`alo_dock::Places` says where they go and this says nothing about it.**
+    // That crate lays the icons out along the bar without knowing which edge the
+    // bar is on — `from_the_start` is a distance **along**, not an `x` — so the
+    // one thing left here is which axis *along* is, which is the same question
+    // `the_band_on` above already answers for the band.
+    let places = Places::of(on_the_dock);
+    let icon = i32::try_from(ICON).unwrap_or(i32::MAX);
+    let glyph = i32::try_from(GLYPH).unwrap_or(i32::MAX);
+    let mut inked = Vec::new();
+    for place in places.each() {
+        let along_the_bar = i32::try_from(place.from_the_start()).unwrap_or(i32::MAX);
+        // The icon's own box, `ICON` square, inset from the bar's leading edge
+        // by the margin the layout already reserved.
+        let (left, top) = if layout.edge().runs_across() {
+            (band.loc.x + along_the_bar, band.loc.y + margin)
+        } else {
+            (band.loc.x + margin, band.loc.y + along_the_bar)
+        };
+        // **The letter is inked on the dock's own colour**, so the box it
+        // arrives in disappears into the band rather than drawing a tile the
+        // design does not ask for. `docs/design/the-alo-dock.md`: a control at
+        // rest contributes artwork and nothing else.
+        let shaped = crate::painted_text::centred(
+            fonts,
+            place.app().first_letter(),
+            icon,
+            Metrics::new(glyph as f32, glyph as f32),
+            palette.dock,
+            palette.ink,
+        );
+        // Centred down the icon as well as across it. `centred` does the one
+        // axis it can know about; this is the other.
+        let down = top + ((icon - shaped.height) / 2).max(0);
+        if let Some(letter) = shaped.placed(left, down, height) {
+            inked.push(letter);
+        }
+    }
+
     Ok(DockPicture {
         size,
         layout,
         band,
         accent,
         solids,
+        inked,
     })
 }
 
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
+    clippy::expect_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 mod tests {
+    /// `how_many` applications on the Dock, one window each.
+    ///
+    /// Built through `Holding::showing` rather than by hand, because
+    /// `OnTheDock` has no public constructor and should not gain one for a
+    /// test: the list a person sees is the one `alo-dock` decides, and a
+    /// fixture that assembled its own would be drawing something the Dock would
+    /// never show.
+    fn on_the_dock(how_many: usize) -> Vec<alo_dock::OnTheDock> {
+        let patch =
+            alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1).expect("one by one is a patch");
+        let mut windows = alo_dock::Windows::none();
+        for number in 0..how_many {
+            let named = format!("app-{number}");
+            windows.opened(alo_dock::Window::of(
+                alo_dock::WindowId::numbered(number as u64),
+                Some(alo_dock::AppId::named(&named).expect("a named application")),
+                "",
+                patch,
+                alo_dock::HowItSits::OnTheCanvas,
+            ));
+        }
+        alo_dock::Holding::nothing().showing(&windows)
+    }
+
+    /// The bundled faces, as the shell loads them.
+    fn fonts() -> cosmic_text::FontSystem {
+        let mut fonts = cosmic_text::FontSystem::new();
+        fonts
+            .db_mut()
+            .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+        fonts
+            .db_mut()
+            .load_font_data(include_bytes!("../fonts/Inter.ttf").to_vec());
+        fonts
+    }
+
     use super::*;
     use crate::desktop_testing::{an_appearance, noon_look};
     use alo_appearance::{Accent, TextScale};
@@ -298,7 +391,7 @@ mod tests {
         let mut whichever_way_read: Option<Rectangle<i32, Physical>> = None;
         for reading in [Direction::LeftToRight, Direction::RightToLeft] {
             let look = noon_look(&an_appearance(), reading);
-            let drawn = picture(&dock, look, size, 4).unwrap();
+            let drawn = picture(&dock, look, size, &on_the_dock(4), &mut fonts()).unwrap();
             let layout = dock.layout_on(Screen::of(1920, 1080).unwrap(), look.scale());
             assert_eq!(drawn.layout, layout);
 
@@ -344,7 +437,14 @@ mod tests {
         let dock = Dock::shipped();
         let mut last = 0;
         for holding in [0_usize, 1, 4, 9] {
-            let drawn = picture(&dock, look, (1920, 1080), holding).unwrap();
+            let drawn = picture(
+                &dock,
+                look,
+                (1920, 1080),
+                &on_the_dock(holding),
+                &mut fonts(),
+            )
+            .unwrap();
             assert!(
                 drawn.band.size.w > last,
                 "holding {holding} was not wider than the one before"
@@ -358,7 +458,14 @@ mod tests {
     #[test]
     fn a_bar_wider_than_the_screen_is_clamped_to_it() {
         let look = noon_look(&an_appearance(), Direction::LeftToRight);
-        let drawn = picture(&Dock::shipped(), look, (1366, 768), 200).unwrap();
+        let drawn = picture(
+            &Dock::shipped(),
+            look,
+            (1366, 768),
+            &on_the_dock(200),
+            &mut fonts(),
+        )
+        .unwrap();
         let margin = i32::try_from(MARGIN).unwrap();
 
         assert!(drawn.band.size.w <= 1366 - 2 * margin);
@@ -377,9 +484,9 @@ mod tests {
         let look = noon_look(&appearance, Direction::LeftToRight);
         let dock = Dock::shipped();
 
-        let laptop = picture(&dock, look, (1366, 768), 4).unwrap();
-        let desk = picture(&dock, look, (3840, 2160), 4).unwrap();
-        let portrait = picture(&dock, look, (1080, 1920), 4).unwrap();
+        let laptop = picture(&dock, look, (1366, 768), &on_the_dock(4), &mut fonts()).unwrap();
+        let desk = picture(&dock, look, (3840, 2160), &on_the_dock(4), &mut fonts()).unwrap();
+        let portrait = picture(&dock, look, (1080, 1920), &on_the_dock(4), &mut fonts()).unwrap();
         assert!(!laptop.layout.labels().are_shown());
         assert!(desk.layout.labels().are_shown());
         assert_ne!(laptop.band.size.h, desk.band.size.h);
@@ -405,7 +512,14 @@ mod tests {
             let mut appearance = an_appearance();
             appearance.set_accent(accent);
             let look = noon_look(&appearance, Direction::LeftToRight);
-            let drawn = picture(&Dock::shipped(), look, (1920, 1080), 4).unwrap();
+            let drawn = picture(
+                &Dock::shipped(),
+                look,
+                (1920, 1080),
+                &on_the_dock(4),
+                &mut fonts(),
+            )
+            .unwrap();
             let rule = drawn
                 .solids
                 .iter()
@@ -427,10 +541,102 @@ mod tests {
         for size in [(0, 0), (100, 100), (-5, 800), (20_000, 1080)] {
             assert!(
                 matches!(
-                    picture(&Dock::shipped(), look, size, 4),
+                    picture(&Dock::shipped(), look, size, &on_the_dock(4), &mut fonts()),
                     Err(RenderError::DesktopScene)
                 ),
                 "{size:?}"
+            );
+        }
+    }
+    /// **One letter per application, inside the band.**
+    ///
+    /// The Dock drew a coloured band and nothing else until 2026-10-10 — no
+    /// file in this crate asked `alo_dock::places` where an icon goes, and
+    /// `alo-applications` names an icon in none of its seventeen files, so
+    /// there was no artwork to put in one either. The owner's ruling gave every
+    /// application a letter, and this is the test that it reaches the picture.
+    #[test]
+    fn every_application_on_the_dock_gets_a_letter_inside_the_band() {
+        let dock = Dock::shipped();
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let held = on_the_dock(3);
+        let drawn = picture(&dock, look, (1920, 1080), &held, &mut fonts()).unwrap();
+
+        assert_eq!(
+            drawn.inked.len(),
+            held.len(),
+            "three applications on the Dock and {} letters drawn",
+            drawn.inked.len()
+        );
+        for letter in &drawn.inked {
+            assert!(
+                !letter.pixels.is_empty(),
+                "a letter with no pixels is a letter nobody sees"
+            );
+            let inside = letter.area.loc.x >= drawn.band.loc.x
+                && letter.area.loc.y >= drawn.band.loc.y
+                && letter.area.loc.x + letter.area.size.w <= drawn.band.loc.x + drawn.band.size.w
+                && letter.area.loc.y + letter.area.size.h <= drawn.band.loc.y + drawn.band.size.h;
+            assert!(
+                inside,
+                "a letter at {:?} falls outside the band at {:?}, so it draws on the canvas",
+                letter.area, drawn.band
+            );
+        }
+    }
+
+    /// **No application, no letter**, which is what every machine showed before
+    /// the ruling and what a fresh one still shows.
+    #[test]
+    fn a_dock_holding_nothing_draws_no_letters() {
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let drawn = picture(&Dock::shipped(), look, (1920, 1080), &[], &mut fonts()).unwrap();
+        assert!(drawn.inked.is_empty());
+        assert!(
+            !drawn.solids.is_empty(),
+            "the premise: the band is still drawn, so an empty `inked` is about letters and \
+             not about nothing being drawn at all"
+        );
+    }
+
+    /// **The letters are a person's applications and not one letter repeated.**
+    ///
+    /// `on_the_dock` names its applications `app-0`, `app-1`, `app-2`, so their
+    /// first letters are all `a` — which is exactly the case that would let a
+    /// draw ignoring `APlace::app` pass the test above. So this one asks that
+    /// three *different* applications produce three *different* inks.
+    #[test]
+    fn each_icon_shows_its_own_applications_letter() {
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let patch =
+            alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1).expect("one by one is a patch");
+        let mut windows = alo_dock::Windows::none();
+        for (number, named) in ["alpha", "beta", "gamma"].into_iter().enumerate() {
+            windows.opened(alo_dock::Window::of(
+                alo_dock::WindowId::numbered(number as u64),
+                Some(alo_dock::AppId::named(named).expect("a named application")),
+                "",
+                patch,
+                alo_dock::HowItSits::OnTheCanvas,
+            ));
+        }
+        let held = alo_dock::Holding::nothing().showing(&windows);
+        let drawn = picture(&Dock::shipped(), look, (1920, 1080), &held, &mut fonts()).unwrap();
+
+        assert_eq!(drawn.inked.len(), 3);
+        // **No indexing**, which this workspace denies: consecutive pairs
+        // instead, which is the same claim and says which pair differed.
+        let inks: Vec<&Vec<[u8; 3]>> = drawn.inked.iter().map(|it| &it.pixels).collect();
+        for (which, pair) in inks.windows(2).enumerate() {
+            let [before, after] = pair else {
+                unreachable!("windows(2) yields pairs")
+            };
+            assert_ne!(
+                before,
+                after,
+                "letters {which} and {} inked identically, so the draw is not reading each \
+                 place's own application",
+                which + 1
             );
         }
     }

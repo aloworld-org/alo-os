@@ -42,13 +42,16 @@ use crate::nested_desktop::DesktopFrame;
 
 /// Fill the fields of `frame` that only `server` can answer.
 ///
-/// `windows` is the server's own `window_areas()`, taken by the caller because
-/// it has to outlive the frame that borrows it. `named` is this display's name,
-/// which is what its scale is looked up by.
+/// `windows` is the server's own `window_areas()` and `on_the_dock` is its
+/// `what_the_dock_holds`, **both taken by the caller** because both have to
+/// outlive the frame that borrows them — built here, they would die at this
+/// function's end. `named` is this display's name, which is what its scale is
+/// looked up by.
 pub(crate) fn what_only_the_server_knows<'a>(
     frame: &mut DesktopFrame<'a>,
     server: &crate::Server,
     windows: &'a [Rectangle<i32, Physical>],
+    on_the_dock: &'a [alo_dock::OnTheDock],
     named: &str,
 ) {
     frame.windows = windows;
@@ -63,15 +66,18 @@ pub(crate) fn what_only_the_server_knows<'a>(
     // scale.* The number is the person's, held in their arrangement;
     // `Server::the_scale_of_display` only looks it up.
     frame.display_scale = server.the_scale_of_display(named);
-    // **How many the Dock holds**, which nothing set before 2026-10-10.
+    // **What the Dock holds**, which nothing set before 2026-10-10 and which
+    // was a count until the same day an application with no artwork gained a
+    // letter to show.
     //
-    // `Holding::nothing()` is the honest argument and not a placeholder:
-    // `alo_dock::Holding` is the pinned list, no file in this shell reads or
-    // writes one, and `how_many_the_dock_holds` documents that every caller
-    // passes it today. What it then counts is the applications with a window
-    // open — a true count, and a Dock drawn from it is a Dock of what is
-    // running, which is what a machine with no saved pins should show.
-    frame.dock_holds = server.how_many_the_dock_holds(&alo_dock::Holding::nothing());
+    // The caller builds it with `Holding::nothing()`, which is the honest
+    // argument and not a placeholder: `alo_dock::Holding` is the pinned list,
+    // no file in this shell reads or writes one, and `what_the_dock_holds`
+    // documents that every caller passes it today. What it then lists is the
+    // applications with a window open — true, and a Dock drawn from it is a
+    // Dock of what is running, which is what a machine with no saved pins
+    // should show.
+    frame.on_the_dock = on_the_dock;
 }
 
 #[cfg(test)]

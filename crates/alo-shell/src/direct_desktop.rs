@@ -590,9 +590,13 @@ impl LoopInput for Desk<'_> {
         // windows are; the server cannot say what the person chose about the
         // dock. The dock's question needs both, and they meet here.
         let windows = server.window_areas();
+        // **A local, for `windows`' reason exactly.** The frame borrows it, so
+        // it has to outlive the frame; built inside `what_only_the_server_knows`
+        // it would die at that function's end.
+        let on_the_dock = server.what_the_dock_holds(&alo_dock::Holding::nothing());
         let mut frame = self.desktop.now();
         let named = FrameTarget::metadata(target)?.name;
-        what_only_the_server_knows(&mut frame, server, &windows, &named);
+        what_only_the_server_knows(&mut frame, server, &windows, &on_the_dock, &named);
         let pictures = crate::nested_desktop::frame_pictures(
             frame,
             None,
@@ -636,7 +640,7 @@ impl LoopInput for Desk<'_> {
             let named = FrameTarget::metadata(other)?.name;
             let size = FrameTarget::size(other);
             let mut frame = self.desktop.now();
-            what_only_the_server_knows(&mut frame, server, &windows, &named);
+            what_only_the_server_knows(&mut frame, server, &windows, &on_the_dock, &named);
             // **This binding's name is load-bearing**, and was `laid_out`
             // until 2026-10-08. `the_recheck_has_a_caller`'s guard reads the
             // draw's text and asks that every control handed to the rule is

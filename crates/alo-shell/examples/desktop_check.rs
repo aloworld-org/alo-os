@@ -213,7 +213,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 // wider bar**: §8 of the Dock specification says
                                 // it must not reserve a large empty bar, and an
                                 // icon-less wide band is exactly that.
-                                dock_holds: 0,
+                                on_the_dock: &[],
                                 dock: &dock,
                                 look: DesktopLook::of(
                                     &appearance,

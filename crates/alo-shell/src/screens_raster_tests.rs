@@ -29,6 +29,17 @@ fn two_backgrounds() -> Appearance {
 }
 
 /// The two screens drawn, with night light as `tonight`.
+/// The bundled faces, as the shell loads them. A screen's own picture draws no
+/// icons — it knows a display and not what is open — so these are the face a
+/// dock would be drawn in if it had anything in it.
+fn fonts() -> cosmic_text::FontSystem {
+    let mut fonts = cosmic_text::FontSystem::new();
+    fonts
+        .db_mut()
+        .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+    fonts
+}
+
 fn the_desk(tonight: &alo_displays::Tonight) -> Vec<ScreenPicture> {
     let appearance = two_backgrounds();
     let dock = Dock::shipped();
@@ -42,6 +53,7 @@ fn the_desk(tonight: &alo_displays::Tonight) -> Vec<ScreenPicture> {
         &screens,
         &dock,
         noon_look(&appearance, Direction::LeftToRight),
+        &mut fonts(),
     )
     .unwrap()
 }
@@ -191,9 +203,15 @@ fn with_night_light_off_the_dock_is_drawn_exactly_as_it_was_decided() {
         &a_cold_evening(),
     );
 
-    for picture in desk(&screens, &dock, look).unwrap() {
-        let undimmed =
-            crate::dock_raster::picture(&dock, look, picture.size.across_and_along(), 0).unwrap();
+    for picture in desk(&screens, &dock, look, &mut fonts()).unwrap() {
+        let undimmed = crate::dock_raster::picture(
+            &dock,
+            look,
+            picture.size.across_and_along(),
+            &[],
+            &mut fonts(),
+        )
+        .unwrap();
         assert_eq!(picture.dock, undimmed, "{:?}", picture.name);
     }
 }

@@ -27,6 +27,8 @@
 //! At neutral warmth — which is a machine with night light off — that is the
 //! identity, and a screen is drawn exactly as it was.
 
+use cosmic_text::FontSystem;
+
 use alo_appearance::{Colour, DisplayId};
 use alo_displays::{Position, Warming};
 use alo_dock::Dock;
@@ -93,6 +95,7 @@ pub(crate) fn picture(
     place: &ScreenPlace,
     dock: &Dock,
     look: DesktopLook,
+    fonts: &mut FontSystem,
 ) -> Result<ScreenPicture, RenderError> {
     // One dock, drawn for this screen's own size. It used to be cloned and
     // moved to this screen's edge first; ADR 0076 fixed the dock to the bottom
@@ -100,7 +103,14 @@ pub(crate) fn picture(
     // `across_and_along` rather than a silent conversion: `dock_raster` still
     // takes a pair, and this is the point at which the value stops saying what
     // it is. Three such points exist in this function and each says so.
-    let mut drawn = crate::dock_raster::picture(dock, look, place.room().across_and_along(), 0)?;
+    // **No applications on a screen's own picture, and that is this picture's
+    // subject rather than an omission.** A `ScreenPlace` knows a display's size,
+    // scale and where it sits on the desk; it does not know what is open, and a
+    // preview of *which screen is which* answers where the dock is rather than
+    // what is in it. The empty slice draws the band alone, which is what this
+    // drew when the argument was a count of `0`.
+    let mut drawn =
+        crate::dock_raster::picture(dock, look, place.room().across_and_along(), &[], fonts)?;
     let warming = place.warming();
     for solid in &mut drawn.solids {
         solid.colour = warm(solid.colour, warming);
@@ -126,10 +136,11 @@ pub fn desk(
     screens: &Screens,
     dock: &Dock,
     look: DesktopLook,
+    fonts: &mut FontSystem,
 ) -> Result<Vec<ScreenPicture>, RenderError> {
     screens
         .each()
-        .map(|place| picture(place, dock, look))
+        .map(|place| picture(place, dock, look, fonts))
         .collect()
 }
 

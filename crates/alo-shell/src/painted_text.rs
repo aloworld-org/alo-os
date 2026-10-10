@@ -126,6 +126,65 @@ pub(crate) fn how_wide(fonts: &mut FontSystem, text: &str, metrics: Metrics) -> 
     widest
 }
 
+/// One short string, inked **centred** in a box `width` across.
+///
+/// For the letter a Dock icon shows when an application has no artwork — the
+/// owner's ruling of 2026-10-10, and today that is every application, because
+/// `alo-applications` names an icon in none of its files.
+///
+/// **It exists rather than a caller centring for itself**, because centring is
+/// the one thing a caller cannot do after the fact: [`sentence`] inks into a box
+/// of the width it was given, and a caller holding that box can only move the
+/// whole box, ground and all, which drags the Dock's own colour over whatever is
+/// beside it. The shift belongs inside the ink, which is what [`inked`]'s
+/// `shift` is for and what this passes.
+///
+/// A single grapheme does not wrap, so the box is one line tall and the caller
+/// centres it down its own axis from [`Shaped::height`].
+pub(crate) fn centred(
+    fonts: &mut FontSystem,
+    text: &str,
+    width: i32,
+    metrics: Metrics,
+    ground: [u8; 3],
+    ink: [u8; 3],
+) -> Shaped {
+    let mut buffer = Buffer::new(fonts, metrics);
+    // **No wrapping.** One letter cannot be broken across lines, and allowing it
+    // would let a wide glyph — a flag emoji is two cells — become two rows half
+    // an icon each.
+    buffer.set_wrap(fonts, Wrap::None);
+    buffer.set_size(fonts, Some(width as f32), None);
+    // **alo's own face**, the same one every other surface on this machine is
+    // drawn in, rather than whatever the system calls sans-serif.
+    buffer.set_text(fonts, text, &alos_own_text(), Shaping::Advanced);
+    buffer.shape_until_scroll(fonts, false);
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a shaped run's width and height in whole pixels is what a layout measures in"
+    )]
+    let (height, drawn) = {
+        let height = buffer
+            .layout_runs()
+            .map(|run| run.line_top + run.line_height)
+            .fold(0.0, f32::max)
+            .ceil() as i32;
+        let drawn = buffer
+            .layout_runs()
+            .map(|run| run.line_w)
+            .fold(0.0, f32::max)
+            .ceil() as i32;
+        (height, drawn)
+    };
+    // Half the room left over, and never negative: a glyph wider than its box
+    // starts at the box's own edge rather than before it, which keeps it inside
+    // the icon even when it does not fit.
+    let shift = ((width - drawn) / 2).max(0);
+    let mut shaped = inked(fonts, &buffer, (width, height.max(1)), shift, ground, ink);
+    shaped.width = drawn.clamp(0, width);
+    shaped
+}
+
 /// Ink a shaped buffer into a box of `size`, moved `shift` pixels across.
 pub(crate) fn inked(
     fonts: &mut FontSystem,

@@ -115,15 +115,19 @@ impl crate::Server {
         windows
     }
 
-    /// How many entries the Dock would show, for the bar's own width.
+    /// The entries the Dock shows, in the order it shows them.
     ///
-    /// `dock_raster::picture` is given a count rather than the entries, because
-    /// all it decides is how wide the bar is — `Room::a_bar_holding` turns the
-    /// count into pixels. This is that count, and it exists so that **every
-    /// caller takes it from one place.** Two call sites holding two literal
-    /// zeros is how `desktop_raster` and `screens_raster` came to agree with
-    /// each other and with nothing else; two call sites each doing their own
-    /// arithmetic would be the same fault wearing more code.
+    /// **It answered only *how many* until 2026-10-10**, because the bar's
+    /// width was all a count could give and nothing drew an icon. It gives the
+    /// list now: an application with no artwork shows its first letter, by the
+    /// owner's ruling of that day, so the Dock needs the applications
+    /// themselves. The count is `.len()` and `dock_raster` takes it that way.
+    ///
+    /// It exists so that **every caller takes this from one place.** Two call
+    /// sites holding two literal zeros is how `desktop_raster` and
+    /// `screens_raster` came to agree with each other and with nothing else;
+    /// two call sites each doing their own arithmetic would be the same fault
+    /// wearing more code.
     ///
     /// `pinned` is what the person has pinned. **Nothing in this shell stores
     /// that yet** — `alo_dock::Holding` is the pinned list and no file reads or
@@ -132,8 +136,8 @@ impl crate::Server {
     /// and the Dock drawn from it is a Dock of what is running, which is what
     /// a machine with no saved pins should show anyway.
     #[must_use]
-    pub fn how_many_the_dock_holds(&self, pinned: &alo_dock::Holding) -> usize {
-        pinned.showing(&self.the_windows_the_dock_sees()).len()
+    pub fn what_the_dock_holds(&self, pinned: &alo_dock::Holding) -> Vec<alo_dock::OnTheDock> {
+        pinned.showing(&self.the_windows_the_dock_sees())
     }
 }
 
