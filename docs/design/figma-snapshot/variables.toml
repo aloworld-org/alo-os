@@ -6,8 +6,15 @@
 # which day, and by which method. `a_palette_with_one_source.rs` compares the two
 # and names any disagreement.
 #
-# It exists because the development PC and the Mac have **no Figma access at
+# It exists because the development PC and the Mac had **no Figma access at
 # all** — a check only one machine can run is a check nobody can verify.
+#
+# **The Mac has access as of 2026-10-10** and this sentence is corrected rather
+# than deleted, because the reason the file exists has not changed: a value
+# measured through a live service is a value nobody without that service can
+# check, and this file is the evidence that lets them. What changed is only who
+# can take a measurement. `docs/design/the-docks-visual-specification.md` was
+# measured that day from the Mac, through the same MCP server.
 #
 # # Provenance
 #
