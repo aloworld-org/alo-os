@@ -294,6 +294,7 @@ mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;
 mod their_displays;
 mod top_controls_region;
+mod where_a_window_opens;
 mod which_display_a_window_is_on;
 pub mod which_preview_the_pointer_is_on;
 mod which_surface_claims_a_point;
@@ -336,6 +337,7 @@ mod window_minimize;
 mod window_mode;
 mod window_mode_plan;
 mod window_move;
+mod window_name_band;
 mod window_number;
 mod window_placement;
 mod window_raise;
@@ -346,6 +348,12 @@ mod window_switch;
 pub use peeking_at_a_put_aside_window::{ThePeek, what_a_classification_does_to_a_peek};
 pub use putting_a_window_aside::NotAside;
 pub use status_items::StatusItems;
+/// Where alo puts a window when alo is the one choosing.
+///
+/// `docs/design/where-a-new-window-opens.md` is the contract. Public because
+/// its caller must hold the view and the person's reading direction, and
+/// `Surfaces` holds neither — see the file's header for where it belongs.
+pub use where_a_window_opens::{A_DELIBERATE_OFFSET, A_SMALL_GAP, where_a_window_opens};
 pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_dividing::NotDivided;
@@ -353,7 +361,18 @@ pub use window_full_screen::WindowFullScreenError;
 pub use window_maximize::WindowMaximizeError;
 pub use window_minimize::WindowMinimizeError;
 pub use window_mode::WindowModeError;
-pub use window_placement::{WindowPlacementError, window_buffer_origin};
+
+/// Where a frame's name band is, for a host that has decided to reveal one.
+///
+/// Public for the same reason  is: the promise at
+///   is that a frame's name *appears when they
+/// point at it, select it or zoom out*, so **when** is the host's and this
+/// crate answers only **where**.
+pub use window_name_band::{BAND_IS_TALL, band_of, is_reachable};
+pub use window_placement::{
+    WindowPlacementError, has_been_placed, place_unless_already_placed, where_a_window_is,
+    window_buffer_origin,
+};
 pub use window_raise::WindowRaiseError;
 pub use window_resize::{ResizeEdge, ResizeGeometry, ResizeGeometryError};
 pub use window_size::WindowSizeError;

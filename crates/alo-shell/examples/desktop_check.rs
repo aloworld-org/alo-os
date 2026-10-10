@@ -207,6 +207,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             &mut labels,
                             DesktopFrame {
                                 display_scale: 100,
+                                // Nothing is pinned or open in this fixture,
+                                // so the band is the width of a Dock holding
+                                // nothing. **Deliberately not raised to show a
+                                // wider bar**: §8 of the Dock specification says
+                                // it must not reserve a large empty bar, and an
+                                // icon-less wide band is exactly that.
+                                dock_holds: 0,
                                 dock: &dock,
                                 look: DesktopLook::of(
                                     &appearance,

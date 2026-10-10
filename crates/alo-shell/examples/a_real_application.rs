@@ -82,7 +82,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     use alo_indicator::{Drew, Indicating};
     use alo_shell::{
         Cursor, DesktopFrame, DesktopLook, EgressStatus, FillingWindow, Nested, RunningWindow,
-        Server, WindowControlLabels,
+        Server, WindowControlLabels, WindowControlLayout, WindowControlScene,
     };
     use alo_strings::{Direction, Strings};
     use std::{
@@ -94,7 +94,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let asked = what_was_asked()?;
     let mut saving = asked.saving;
 
-    let mut nested = Nested::new("alo OS, with a real application", (1366, 768))?;
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "THE_OUTPUT_IS is a positive extent this fixture chose"
+    )]
+    let wanted = (THE_OUTPUT_IS.0 as u32, THE_OUTPUT_IS.1 as u32);
+    let mut nested = Nested::new("alo OS, with a real application", wanted)?;
     if saving.is_some() {
         nested.keep_each_frame(true);
     }
@@ -178,28 +183,50 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     while Instant::now() < deadline {
         nested.pump_seat(&mut server)?;
         server.dispatch()?;
-        // **The application on the desktop, not on bare black.**
+        // **The application on the desktop, with its own controls on it.**
         //
-        // This drew through `Server::render` and `render_window_controls`
-        // until 2026-10-08, and both go to `submit_native_layers` with no
-        // desktop. `crate::scene_drawing` then clears to opaque black on
-        // purpose — *black stays where there is no desktop*, because a surface
-        // colour belongs to a person's session and a sign-in screen has none.
+        // Two things had to be true at once and each arrived on its own
+        // branch. Drawing through `Server::render` hands `scene_drawing` no
+        // desktop, and it clears to opaque black on purpose where there is
+        // none — so a fixture asking *what does an application look like on
+        // alo OS* was drawing it on the colour alo OS uses when there is no
+        // alo OS. And the controls were passed a hardcoded origin, so they
+        // drew at the screen's corner while the application sat elsewhere.
         //
-        // So this fixture was asking *what does an application look like on
-        // alo OS* and drawing it on the colour alo OS uses when there is no
-        // alo OS. The desktop is what carries the plane's own surface, the
-        // dock and the status area, and a person looking at an application is
-        // looking at all of it. It is handed one now.
+        // `submit_with_desktop` takes the controls, so neither has to be
+        // given up: the desktop carries the surface, the dock and the status
+        // area, and the controls go on the window.
         let roots: Vec<_> = server.mapped_surfaces().cloned().collect();
+        let controls = roots.first().and_then(|surface| {
+            let at = where_the_controls_go(surface);
+            WindowControlLayout::new(THE_OUTPUT_IS, at, [true, true, true], false).ok()
+        });
         drawn += nested
             .submit_with_desktop(
                 &roots,
                 &[],
                 &Cursor::Default,
-                None,
+                controls.as_ref().map(|layout| WindowControlScene {
+                    layout,
+                    label: None,
+                    // Light: the question this fixture asks is what an
+                    // application looks like, and the design is drawn light.
+                    scheme: alo_appearance::Scheme::Light,
+                }),
                 &mut labels,
                 DesktopFrame {
+                    // **The Dock is told what is open, which is the chain two
+                    // lanes built today.** `Server::the_windows_the_dock_sees`
+                    // turns the mapped surfaces into what `alo-dock`
+                    // understands, `Holding::showing` groups them by
+                    // application, and `dock_holds` carries the count to the
+                    // drawing - which was handed a literal `0` until 2026-10-09.
+                    //
+                    // `Holding::nothing()` because nothing stores what a person
+                    // pinned yet, so this counts the applications that have a
+                    // window open. True, and a Dock of what is running is what
+                    // a machine with no saved pins should show.
+                    dock_holds: server.how_many_the_dock_holds(&alo_dock::Holding::nothing()),
                     display_scale: 100,
                     dock: &dock,
                     look: DesktopLook::of(
@@ -333,4 +360,52 @@ fn what_was_asked() -> Result<Asked, Box<dyn std::error::Error>> {
 fn nothing_put_aside() -> &'static alo_put_aside::Panel {
     static EMPTY: std::sync::OnceLock<alo_put_aside::Panel> = std::sync::OnceLock::new();
     EMPTY.get_or_init(alo_put_aside::Panel::new)
+}
+
+/// The extent this fixture opens its nested output at.
+///
+/// Named once because two things need it and a second literal is how they
+/// come to disagree: `Nested::new` is told it, and `WindowControlLayout`
+/// validates its origin against it.
+#[cfg(target_os = "linux")]
+const THE_OUTPUT_IS: (i32, i32) = (1366, 768);
+
+/// How wide the shell's three window controls are together.
+///
+/// `window_controls.rs` lays them out at offsets 0, 36 and 72, each 32 wide,
+/// so the strip spans 0..104. **Read off that file rather than guessed**, and
+/// it is not the design's 140 — the design's controls are 44 wide where the
+/// code's are 32, which `crates/alo-dock`'s own measurement settles as a 32
+/// glyph inside a 48 target rather than a disagreement.
+#[cfg(target_os = "linux")]
+const THE_STRIP_IS_WIDE: i32 = 104;
+
+/// The design's inset of the controls from the window's top and right edges.
+#[cfg(target_os = "linux")]
+const INSET: i32 = 8;
+
+/// Where this window's controls belong: its own top right, inset.
+///
+/// **This arithmetic should not be a fixture's.** Where the controls sit on a
+/// window is the design's answer and the shell's to apply, and every caller
+/// doing it again is every caller getting a chance to do it differently. It is
+/// here because `alo-shell` exports `window_buffer_origin` and **nothing
+/// public for a window's width** — so no caller outside the crate can place
+/// them to the design without reaching past the API, which is what this does.
+///
+/// Recorded as a gap rather than left as a trick.
+#[cfg(target_os = "linux")]
+fn where_the_controls_go(
+    surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
+) -> (i32, i32) {
+    // **The window, not the surface.** A client drawing its own decorations
+    // puts its shadow in the surface's margin, so the buffer starts above and
+    // left of anything a person calls the window's corner. Measured here on
+    // 2026-10-09: placed from the buffer, these drew about fifty pixels above
+    // the calculator's visible top edge and read as belonging to the screen.
+    let window = alo_shell::where_a_window_is(surface);
+    // A window narrower than its own controls keeps them at its left edge
+    // rather than hanging them off its side.
+    let inset = (window.size.w - THE_STRIP_IS_WIDE - INSET).max(0);
+    (window.loc.x + inset, window.loc.y + INSET)
 }
