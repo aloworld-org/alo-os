@@ -572,6 +572,14 @@ mod running {
 
         fn now(&self) -> DesktopFrame<'_> {
             DesktopFrame {
+                // **The lane fills both of these before it draws.** A
+                // desktop's own state cannot know whether a person has opened
+                // the overflow list — a press turns it over and presses reach
+                // the `Server` — and the heading is a sentence, which the
+                // drawing path may not word. `what_only_the_server_knows` sets
+                // both, at the one site that builds a frame.
+                the_overflow_is_open: false,
+                the_overflows_heading: "",
                 dock: &self.dock,
                 put_aside: &self.put_aside,
                 // **The machine's own answer**, asked once a frame. `Revealing` decides this

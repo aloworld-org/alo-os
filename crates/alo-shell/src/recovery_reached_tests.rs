@@ -32,6 +32,8 @@ fn a_desktop_that_will_not_start<'a>(
     filling: &'a FillingWindow,
 ) -> DesktopFrame<'a> {
     DesktopFrame {
+        the_overflow_is_open: false,
+        the_overflows_heading: "",
         in_use: &[],
         notifications: &[],
         capturing: None,

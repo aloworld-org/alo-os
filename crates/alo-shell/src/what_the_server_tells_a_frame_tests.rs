@@ -9,11 +9,12 @@
 /// Named here rather than derived, because the question is whether anything
 /// sets one of them *somewhere else* — which a list of names can ask and the
 /// compiler cannot.
-const THE_SERVERS_HALF: [&str; 4] = [
+const THE_SERVERS_HALF: [&str; 5] = [
     "windows",
     "filling_the_screen",
     "display_scale",
     "on_the_dock",
+    "the_overflow_is_open",
 ];
 
 /// `direct_desktop.rs`, as text.

@@ -594,9 +594,29 @@ impl LoopInput for Desk<'_> {
         // it has to outlive the frame; built inside `what_only_the_server_knows`
         // it would die at that function's end.
         let on_the_dock = server.what_the_dock_holds(&alo_dock::Holding::nothing());
+        // **Said here because the drawing path may not word a sentence**, and a
+        // local for `windows`' reason exactly: the frame borrows it.
+        // `tests/desktop_source.rs` holds that no `desktop_*` or `dock_*` file
+        // names `Word::` or `.say(` — every sentence a person meets comes from
+        // `alo-saying`, and a raster that looked one up would be a second place
+        // deciding what a person reads.
+        let the_overflows_heading = self
+            .strings
+            .say(
+                &alo_dock::words::MORE_OPEN_APPS.key(),
+                &alo_strings::Filling::nothing(),
+            )
+            .into_text();
         let mut frame = self.desktop.now();
         let named = FrameTarget::metadata(target)?.name;
-        what_only_the_server_knows(&mut frame, server, &windows, &on_the_dock, &named);
+        what_only_the_server_knows(
+            &mut frame,
+            server,
+            &windows,
+            &on_the_dock,
+            &the_overflows_heading,
+            &named,
+        );
         let pictures = crate::nested_desktop::frame_pictures(
             frame,
             None,
@@ -640,7 +660,14 @@ impl LoopInput for Desk<'_> {
             let named = FrameTarget::metadata(other)?.name;
             let size = FrameTarget::size(other);
             let mut frame = self.desktop.now();
-            what_only_the_server_knows(&mut frame, server, &windows, &on_the_dock, &named);
+            what_only_the_server_knows(
+                &mut frame,
+                server,
+                &windows,
+                &on_the_dock,
+                &the_overflows_heading,
+                &named,
+            );
             // **This binding's name is load-bearing**, and was `laid_out`
             // until 2026-10-08. `the_recheck_has_a_caller`'s guard reads the
             // draw's text and asks that every control handed to the rule is
@@ -684,6 +711,14 @@ impl LoopInput for Desk<'_> {
             let Ok(its) = FrameTarget::metadata(*other) else {
                 continue;
             };
+            // **Where this display's Dock is, for the press that asks later.**
+            // Beside the fixed controls and for the same reason: the slots are
+            // computed in the draw and nowhere else, so outside a frame they do
+            // not exist. Every display, because a person may have a Dock on each
+            // and the pointer's location is global.
+            if let Some(dock) = its_pictures.desktop.dock.as_ref() {
+                server.the_docks_slots_were_drawn(&its.name, dock.standing.clone());
+            }
             server.the_fixed_controls_were_drawn(
                 &its.name,
                 crate::canvas_fixed_controls::FixedControlsDrawn {
@@ -694,6 +729,9 @@ impl LoopInput for Desk<'_> {
                 },
                 self.desktop.now().look.scale(),
             );
+        }
+        if let Some(dock) = pictures.desktop.dock.as_ref() {
+            server.the_docks_slots_were_drawn(&named, dock.standing.clone());
         }
         server.the_fixed_controls_were_drawn(
             &named,

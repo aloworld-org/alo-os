@@ -52,6 +52,8 @@ fn drawn_with(
         dock,
         look,
         crate::desktop_raster::Shown {
+            the_overflow_is_open: false,
+            the_overflows_heading: "",
             running: &running_shows(running, &strings),
             filling: &filling_shows(filling, &strings),
             division: crate::desktop_testing::an_undivided_display(),
@@ -89,6 +91,8 @@ fn drawn_at(
         dock,
         look,
         crate::desktop_raster::Shown {
+            the_overflow_is_open: false,
+            the_overflows_heading: "",
             running: &running_shows(running, &strings),
             filling: &filling_shows(filling, &strings),
             division: crate::desktop_testing::a_display_two_windows_share(),
@@ -495,6 +499,8 @@ fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
             &Dock::shipped(),
             look,
             crate::desktop_raster::Shown {
+                the_overflow_is_open: false,
+                the_overflows_heading: "",
                 running: &running_shows(&running, &strings),
                 filling: &filling_shows(&filling, &strings),
                 division: crate::desktop_testing::an_undivided_display(),

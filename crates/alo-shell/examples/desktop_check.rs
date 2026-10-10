@@ -245,10 +245,21 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         alo_dock::Holding::nothing().showing(&windows)
     };
 
+    // **Said once, because the drawing path may not word a sentence.** The same
+    // rule `direct_desktop` follows: `tests/desktop_source.rs` holds that no
+    // `desktop_*` or `dock_*` file names `Word::` or `.say(`.
+    let the_overflows_heading = strings
+        .say(
+            &alo_dock::words::MORE_OPEN_APPS.key(),
+            &alo_strings::Filling::nothing(),
+        )
+        .into_text();
+
     let mut submitted = 0;
     let mut draw = |what: &str,
                     dock: &Dock,
                     on_the_dock: &[alo_dock::OnTheDock],
+                    the_overflow_is_open: bool,
                     egress: &EgressStatus,
                     running: &RunningWindow,
                     filling: &FillingWindow,
@@ -302,6 +313,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 // fixture: *it needs eyes, and eyes need
                                 // pictures.*
                                 on_the_dock,
+                                the_overflow_is_open,
+                                the_overflows_heading: &the_overflows_heading,
                                 dock,
                                 look: DesktopLook::of(
                                     &appearance,
@@ -398,6 +411,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             &format!("the dock alone on the {} edge", an_edges_name(edge)),
             &dock,
             &a_few_applications,
+            false,
             &quiet,
             &closed_running,
             &closed_filling,
@@ -416,6 +430,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             &format!("the dock overflowing on the {} edge", an_edges_name(edge)),
             &dock,
             &a_crowded_dock,
+            true,
             &quiet,
             &closed_running,
             &closed_filling,
@@ -427,6 +442,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "the dock with a question leaving",
         &shipped,
         &a_few_applications,
+        false,
         &lit,
         &closed_running,
         &closed_filling,
@@ -442,6 +458,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "what is running",
         &shipped,
         &a_few_applications,
+        false,
         &quiet,
         &running,
         &closed_filling,
@@ -454,6 +471,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "what is running, read again",
         &shipped,
         &a_few_applications,
+        false,
         &lit,
         &running,
         &closed_filling,
@@ -466,6 +484,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "what is filling a folder",
         &shipped,
         &a_few_applications,
+        false,
         &quiet,
         &closed_running,
         &filling,
@@ -477,6 +496,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "a folder opened",
         &shipped,
         &a_few_applications,
+        false,
         &quiet,
         &closed_running,
         &filling,
@@ -486,6 +506,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "both windows",
         &shipped,
         &a_few_applications,
+        false,
         &lit,
         &running,
         &filling,
@@ -498,6 +519,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "a folder that is gone",
         &shipped,
         &a_few_applications,
+        false,
         &quiet,
         &running,
         &filling,

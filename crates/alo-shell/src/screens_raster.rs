@@ -109,8 +109,18 @@ pub(crate) fn picture(
     // preview of *which screen is which* answers where the dock is rather than
     // what is in it. The empty slice draws the band alone, which is what this
     // drew when the argument was a count of `0`.
-    let mut drawn =
-        crate::dock_raster::picture(dock, look, place.room().across_and_along(), &[], fonts)?;
+    let mut drawn = crate::dock_raster::picture(
+        dock,
+        look,
+        place.room().across_and_along(),
+        &[],
+        // **A preview of an arrangement, where nothing is open and so
+        // nothing can have overflowed.** Not a placeholder: a Dock holding
+        // nothing has no control to open a list with, and `picture` draws
+        // none for an empty overflow whatever this says.
+        (false, ""),
+        fonts,
+    )?;
     let warming = place.warming();
     for solid in &mut drawn.solids {
         solid.colour = warm(solid.colour, warming);

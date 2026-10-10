@@ -99,6 +99,26 @@ pub struct DesktopFrame<'a> {
     /// knows which display these windows are on. A Server answers it with
     /// a_window_is_filling_the_screen.
     pub filling_the_screen: bool,
+    /// What the overflow list's heading says, already said.
+    ///
+    /// **Handed in rather than looked up, because the drawing path may not word
+    /// a sentence.** `tests/desktop_source.rs` holds that no file named
+    /// `desktop_*` or `dock_*` names `Word::`, `.say(` or `Filling::` — every
+    /// sentence a person meets comes from `alo-saying`, and a raster that looked
+    /// one up would be a second place that decides what a person reads. So the
+    /// lane says `alo_dock::words::MORE_OPEN_APPS` once a frame and hands over
+    /// the result, exactly as it does for a window's control labels.
+    pub the_overflows_heading: &'a str,
+    /// Whether the list of applications the Dock had no room for is open.
+    ///
+    /// Handed in for the reason the rest are: a person opened it with a press,
+    /// presses reach the `Server`, and a desktop's own state cannot know. The
+    /// `Server` answers it with `the_overflow_is_open`.
+    ///
+    /// **False is the ordinary frame.** A Dock with room for everything has no
+    /// control to open one with, so this is only ever true on a Dock that has
+    /// something behind it.
+    pub the_overflow_is_open: bool,
     /// **How many physical pixels this display draws for one logical one**, in
     /// hundredths: 100 is one to one, 200 is a dense screen.
     ///
@@ -340,6 +360,8 @@ pub(crate) fn frame_pictures(
         desktop.dock,
         desktop.look,
         crate::desktop_raster::Shown {
+            the_overflow_is_open: desktop.the_overflow_is_open,
+            the_overflows_heading: desktop.the_overflows_heading,
             running: &running,
             filling: &filling,
             division: desktop.division,
