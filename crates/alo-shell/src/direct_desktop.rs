@@ -597,6 +597,12 @@ impl LoopInput for Desk<'_> {
         let mut frame = self.desktop.now();
         let named = FrameTarget::metadata(target)?.name;
         what_only_the_server_knows(&mut frame, server, &windows, &on_the_dock, &named);
+        // **Read back from the frame rather than asked again.** The scale the
+        // edges are drawn at has to be the scale everything else on this
+        // display is drawn at; asking `the_scale_of_display` a second time
+        // would be a second answer to one question, and the two could differ
+        // for one frame after a person changes it.
+        let this_display = (frame.display_scale, (size.w, size.h));
         let pictures = crate::nested_desktop::frame_pictures(
             frame,
             None,
@@ -604,6 +610,16 @@ impl LoopInput for Desk<'_> {
             self.labels,
             (size.w, size.h),
         )?;
+        // **Every open window's edge, which nothing on a machine drew until
+        // now.** Built after the pictures because both want the font system
+        // mutably and neither outlives this frame. See
+        // `crate::every_windows_edge` for why it is per display.
+        let edges = crate::every_windows_edge::every_windows_edge(
+            server,
+            self.labels,
+            this_display.1,
+            u32::from(this_display.0),
+        );
         // **Where the fixed controls ended up, handed to the drag that has to
         // avoid them.** The draw is the only place that knows: these are laid
         // out here and nowhere else. Without this line
@@ -641,6 +657,9 @@ impl LoopInput for Desk<'_> {
             let size = FrameTarget::size(other);
             let mut frame = self.desktop.now();
             what_only_the_server_knows(&mut frame, server, &windows, &on_the_dock, &named);
+            // Read off the frame before it is given away, for the reason the
+            // first display's own note gives: one answer to one question.
+            let its_scale = frame.display_scale;
             // **This binding's name is load-bearing**, and was `laid_out`
             // until 2026-10-08. `the_recheck_has_a_caller`'s guard reads the
             // draw's text and asks that every control handed to the rule is
@@ -657,7 +676,17 @@ impl LoopInput for Desk<'_> {
                 self.labels,
                 (size.w, size.h),
             )?;
-            theirs.push((other, its_pictures));
+            // **This display's own edges**, at this display's own scale. One
+            // list shared with the display above would be right for whichever
+            // it was built against and silently wrong here — an edge is pixels
+            // and `EdgePicture::of` converts to them once, against one output.
+            let its_edges = crate::every_windows_edge::every_windows_edge(
+                server,
+                self.labels,
+                (size.w, size.h),
+                u32::from(its_scale),
+            );
+            theirs.push((other, its_pictures, its_edges));
         }
         // **Every display's controls, from the one list that also draws
         // them.** `more-than-one-display-plan.md` task 9.
@@ -680,7 +709,7 @@ impl LoopInput for Desk<'_> {
         // `bring_back_frames_the_moved_controls_hide` below, which until now
         // asked its question with only the first display's bounds recorded —
         // so a frame hidden by the second display's dock was not found.
-        for (other, its_pictures) in &theirs {
+        for (other, its_pictures, _its_edges) in &theirs {
             let Ok(its) = FrameTarget::metadata(*other) else {
                 continue;
             };
@@ -859,6 +888,7 @@ impl LoopInput for Desk<'_> {
                 desktop: Some(&pictures.desktop),
                 status: Some(&pictures.status),
                 settings: Some(&settings),
+                edges: &edges,
                 ..NativeLayers::nothing()
             },
         };
@@ -867,11 +897,12 @@ impl LoopInput for Desk<'_> {
         // and because a refusal on a later one must not delay it.
         let mut painted: Vec<Layered<'_>> = theirs
             .iter_mut()
-            .map(|(other, its_pictures)| Layered {
+            .map(|(other, its_pictures, its_edges)| Layered {
                 target: *other,
                 layers: NativeLayers {
                     desktop: Some(&its_pictures.desktop),
                     status: Some(&its_pictures.status),
+                    edges: its_edges,
                     ..NativeLayers::nothing()
                 },
             })
