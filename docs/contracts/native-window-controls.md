@@ -1,6 +1,38 @@
 # Native window control view
 
-Status: additive trusted Rust view API, 2026-09-08. ADRs 0002 and 0010;
+> ## Superseded, 2026-10-10 — do not build against this
+>
+> **The external window edge replaces everything described below.** The owner's
+> decoration ruling of 2026-10-09 moved minimise, maximise and close out of this
+> three-tile strip and onto a 44-tall region attached to each window's top edge,
+> and it retired the internal 48-pixel title band with them. The contract that
+> governs that edge is
+> [`docs/design/the-external-window-edge.md`](../design/the-external-window-edge.md),
+> and the geometry is one function, `alo_shell::edge_of`.
+>
+> **This file stays until the removal lands, and then it is versioned out rather
+> than deleted.** `docs/contracts/` is a public surface — third parties build
+> adapters against ours — so it changes additively and a break requires
+> versioning and deprecation. Removing the page would make every link to it a
+> dead one and tell nobody why.
+>
+> **What is already true and worth knowing before anybody reads further:** no
+> production binary ever drew these tiles. Searched `alo-desktop`, the
+> compositor binary, `direct_desktop` and `booting` with a positive control on
+> 2026-10-09 — nothing. The strip existed, was tested, and was drawn only by
+> fixtures and examples. **No shipped window has ever had chrome**, which is why
+> *never ship with duplicate controls* is satisfied by construction rather than
+> by sequencing.
+>
+> **Still live, and not superseded by any of this:** the labelling rule. A
+> control is named by what it does, `Action::said` is the only label path, and
+> there is one string rather than two that must agree
+> ([ADR 0089](../decisions/0089-what-a-control-is-called.md)). The new edge
+> reuses it unchanged, through `alo_access::Control::for_action`.
+
+Status: **superseded 2026-10-10** by the external window edge; retained for
+reference and for its labelling rule, which the replacement keeps. Originally:
+additive trusted Rust view API, 2026-09-08. ADRs 0002 and 0010;
 v0.01 window management. No protocol, agent capability or stored format changes.
 
 `WindowControlLayout::new(viewport, origin, enabled, restoring)` constructs an

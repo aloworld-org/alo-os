@@ -159,8 +159,9 @@ corroborated_by = ["the-palette-foundations-states.md", "the-canvas-in-numbers.m
 [light."bg/cool"]
 hex = "#EEF2F4"
 confirmed_from = "8:2"
-corroborated_by = ["the-palette-foundations-states.md"]
-note = "not seen from a pure-light node here; the owner stated this value on 2026-09-27"
+also_seen_in = ["398:26260"]
+corroborated_by = ["the-palette-foundations-states.md", "the-external-window-edge.md"]
+note = """the owner stated this value on 2026-09-27 when no light node here had shown it. On 2026-10-09 the external window edge's Close-hover variant, 398:26260, resolved it directly - so this is now measured rather than stated, and that variant is the only one of the seven that resolves it, which is the evidence for a highlight on the hovered control alone."""
 
 [light."border/default"]
 hex = "#E7EBEF"
@@ -196,8 +197,9 @@ note = "not seen from a pure-light node here; the owner stated this value on 202
 [light."status/danger"]
 hex = "#B42318"
 confirmed_from = "8:2"
-corroborated_by = ["the-palette-foundations-states.md"]
-note = "not seen from a pure-light node here; the owner stated this value on 2026-09-27"
+also_seen_in = ["398:26260"]
+corroborated_by = ["the-palette-foundations-states.md", "the-external-window-edge.md"]
+note = """the owner stated this value on 2026-09-27 when no light node here had shown it. On 2026-10-09 the external window edge's Close-hover variant, 398:26260, resolved it directly - so this is now measured rather than stated. It is the only one of that component's seven variants to resolve it, which is the evidence that Close turns danger-coloured on hover and nothing else does."""
 
 # ---------------------------------------------------------------------------
 # The dark theme — observed, and deliberately not adopted

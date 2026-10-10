@@ -5,9 +5,39 @@
 //! this machine. What the sentence says is never decided here: it arrives as
 //! text a crate that owns the words already answered.
 
-use cosmic_text::{Attrs, Buffer, Color, Family, FontSystem, Metrics, Shaping, SwashCache, Wrap};
+use cosmic_text::{
+    Attrs, Buffer, Color, Family, FontSystem, Metrics, Shaping, SwashCache, Weight, Wrap,
+};
 
 use crate::painted::Inked;
+
+/// What alo's own surfaces are drawn in.
+///
+/// **Manrope, because it is what the design is drawn in.** Every `Label/*` in
+/// the design file is Manrope, and until 2026-10-09 this crate bundled only
+/// Inter and asked for `Family::SansSerif` — so nothing in this product drew
+/// the typeface its own design uses. `fonts/README.md` carries the licence,
+/// the upstream revision and the hash.
+///
+/// **This is the shell's text and never an application's.** An application
+/// keeps its own typography; what this governs is what alo says in its own
+/// voice — a window's title on its edge, a sentence on the sign-in screen.
+///
+/// A script Manrope does not cover falls through to the rest of the font
+/// database, which is why Inter stays loaded. Narrowing that would mean a
+/// person's language stops rendering.
+pub(crate) const ALOS_OWN_FACE: &str = "Manrope";
+
+/// The weight the design draws its labels at: `Label/Medium` is SemiBold.
+pub(crate) const ALOS_OWN_WEIGHT: Weight = Weight(600);
+
+/// How alo asks for its own text, in one place so a measurement and a drawing
+/// cannot disagree about the face they meant.
+pub(crate) fn alos_own_text<'a>() -> Attrs<'a> {
+    Attrs::new()
+        .family(Family::Name(ALOS_OWN_FACE))
+        .weight(ALOS_OWN_WEIGHT)
+}
 
 /// Text shaped and inked into its own box, not yet placed.
 pub(crate) struct Shaped {
@@ -50,12 +80,7 @@ pub(crate) fn sentence(
     let mut buffer = Buffer::new(fonts, metrics);
     buffer.set_wrap(fonts, Wrap::WordOrGlyph);
     buffer.set_size(fonts, Some(width as f32), None);
-    buffer.set_text(
-        fonts,
-        text,
-        &Attrs::new().family(Family::SansSerif),
-        Shaping::Advanced,
-    );
+    buffer.set_text(fonts, text, &alos_own_text(), Shaping::Advanced);
     buffer.shape_until_scroll(fonts, false);
     let height = buffer
         .layout_runs()
@@ -70,6 +95,35 @@ pub(crate) fn sentence(
         .ceil() as i32;
     shaped.width = shaped.width.clamp(0, width);
     shaped
+}
+
+/// How wide this text wants to be, shaped and unwrapped.
+///
+/// **The question [`sentence`] cannot answer.** That one wraps, and clamps
+/// its reported width to the box it was given, so text too wide to fit comes
+/// back the same width as text that just fits. Anything deciding whether to
+/// truncate needs the width the text actually wants.
+///
+/// Shaped with the same attributes and the same `Shaping::Advanced` as every
+/// other sentence on this machine, so a measurement and a drawing cannot
+/// disagree about the same string.
+pub(crate) fn how_wide(fonts: &mut FontSystem, text: &str, metrics: Metrics) -> i32 {
+    let mut buffer = Buffer::new(fonts, metrics);
+    // No wrapping and no width: the natural run, however long.
+    buffer.set_wrap(fonts, Wrap::None);
+    buffer.set_size(fonts, None, None);
+    buffer.set_text(fonts, text, &alos_own_text(), Shaping::Advanced);
+    buffer.shape_until_scroll(fonts, false);
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a shaped run's width in whole pixels is what a layout measures in"
+    )]
+    let widest = buffer
+        .layout_runs()
+        .map(|run| run.line_w)
+        .fold(0.0, f32::max)
+        .ceil() as i32;
+    widest
 }
 
 /// Ink a shaped buffer into a box of `size`, moved `shift` pixels across.

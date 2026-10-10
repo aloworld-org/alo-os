@@ -141,6 +141,7 @@ impl crate::Server {
             .mapped_surfaces()
             .map(|frame| self.the_name_of(frame))
             .collect();
-        crate::ReadAloudTree::of(strings, showing, turned_on).with_the_frames_open(strings, &frames)
+        crate::ReadAloudTree::of(strings, showing, turned_on)
+            .with_the_frames_open(strings, &frames, turned_on)
     }
 }

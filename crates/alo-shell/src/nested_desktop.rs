@@ -260,7 +260,7 @@ impl Nested {
         roots: &[WlSurface],
         popups: &[crate::Popup],
         cursor: &crate::Cursor,
-        controls: Option<crate::WindowControlScene<'_>>,
+        edge: Option<&crate::EdgePicture>,
         labels: &mut WindowControlLabels,
         desktop: DesktopFrame<'_>,
         record: Option<RecordFrame<'_>>,
@@ -273,7 +273,7 @@ impl Nested {
             popups,
             cursor,
             NativeLayers {
-                scene: controls.map(NativeScene::Controls),
+                scene: edge.map(NativeScene::TheWindowEdge),
                 desktop: Some(&pictures.desktop),
                 record: pictures.record.as_ref(),
                 settings: None,

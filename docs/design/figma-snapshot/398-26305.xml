@@ -1,0 +1,140 @@
+<!--
+  Canvas / External window edge — read from the live file on 2026-10-09.
+
+  WHY THIS IS A FILE OF ITS OWN AND NOT INSIDE 70-28.xml
+
+  It belongs to page 70:28, and 70-28.xml does not contain it: a search of
+  that file for "External window edge" returns nothing, against 7,344 frames
+  that it does contain. A full re-export of the page is 2.6 MB, which is how
+  MANIFEST.md records the last one being made - the harness persisted the
+  tool's own bytes and a script wrote the file. That road was not available
+  here, so this captures the one subtree being implemented against rather than
+  leaving the record silent about it.
+
+  **70-28.xml is stale for this component and this file is authoritative for
+  it.** The page export is still the record for everything else.
+
+  THIS IS AFTER THE COMPACT-SIZE UPDATE, AND NOT BECAUSE OF ITS NODE IDS
+
+  The owner warned that ids do not establish freshness: existing 398:* nodes
+  were edited in place, and the new visual elements were added under 402:*.
+  So "398 is higher than 394" proves nothing about this capture.
+
+  Two things do.
+
+  First, it was read from the LIVE FILE on 2026-10-09, node by node, with
+  get_metadata. It is not derived from any earlier export, so it is current as
+  of that read by construction.
+
+  Second, and checkable by anybody reading this file: the 402:* elements are
+  HERE. 402:26312, 402:26313 and 402:26318 each appear below, each named
+  "32px visible edge / 44px interaction", each 32 high at y 12 of a 44 region.
+  Those nodes ARE the compact-size update. A capture made before it could not
+  contain them.
+
+  WHAT IS AND IS NOT HERE
+
+  Every node of the component, with its own ids, names and geometry, read with
+  get_metadata. Geometry is what that tool returns: id, name, x, y, width,
+  height.
+
+  Fills, strokes, radii and effects are NOT node metadata and are not here.
+  The variables each variant resolves were read separately with
+  get_variable_defs and are recorded in variables.toml - bg/cool and
+  status/danger carry 398:26260 in their also_seen_in, and that reading is what
+  moved both from "the owner stated this value" to measured. The rest
+  (bg/surface, border/default, text/primary, text/muted, radius/sm, radius/md)
+  were already recorded from Foundations and are unchanged by this reading.
+
+  An earlier version of this header said the variables were "under this
+  component's heading" in variables.toml. There was no such heading and nothing
+  had been written there; it was a false statement in a committed file and is
+  corrected here rather than quietly deleted.
+
+  Coordinates are local to each parent, as the tool reports them.
+-->
+<frame id="398:26305" name="Canvas / External window edge" x="40" y="1700" width="1900" height="340">
+
+  <!-- At rest the edge is concealed: no visible strip, only a quiet grip.
+       App and Shell are geometrically identical here - what an application
+       owns changes what appears on reveal, not what rests. -->
+  <symbol id="398:26228" name="Owner=App, State=Rest" x="16" y="16" width="600" height="44">
+    <frame id="398:26229" name="External edge / continuous pointer region" x="0" y="0" width="600" height="44">
+      <frame id="398:26230" name="Move window / drag region" x="8" y="28" width="588" height="12">
+        <rounded-rectangle id="398:26231" name="Quiet edge grip" x="282" y="5" width="24" height="2" />
+      </frame>
+    </frame>
+  </symbol>
+
+  <symbol id="398:26241" name="Owner=Shell, State=Rest" x="1264" y="16" width="600" height="44">
+    <frame id="398:26242" name="External edge / continuous pointer region" x="0" y="0" width="600" height="44">
+      <frame id="398:26243" name="Move window / drag region" x="8" y="28" width="588" height="12">
+        <rounded-rectangle id="398:26244" name="Quiet edge grip" x="282" y="5" width="24" height="2" />
+      </frame>
+    </frame>
+  </symbol>
+
+  <!-- Revealed, application-owned decorations: a menu and nothing else.
+       No minimise, maximise or close, because the application has its own. -->
+  <symbol id="398:26232" name="Owner=App, State=Reveal" x="640" y="16" width="600" height="44">
+    <frame id="398:26233" name="External edge / continuous pointer region" x="0" y="0" width="600" height="44">
+      <rounded-rectangle id="402:26312" name="32px visible edge / 44px interaction" x="0" y="12" width="600" height="32" />
+      <frame id="398:26234" name="Move window / drag region" x="8" y="0" width="540" height="44">
+        <frame id="398:26235" name="Grip" x="8" y="21" width="14" height="14" />
+        <text id="398:26237" name="Calculator" x="30" y="19" width="66" height="18" />
+      </frame>
+      <frame id="398:26238" name="Menu / 44px target" x="552" y="0" width="44" height="44">
+        <frame id="398:26239" name="Menu" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+  </symbol>
+
+  <!-- Revealed, shell-owned decorations: the three controls. -->
+  <symbol id="398:26245" name="Owner=Shell, State=Reveal" x="16" y="112" width="600" height="44">
+    <frame id="398:26246" name="External edge / continuous pointer region" x="0" y="0" width="600" height="44">
+      <rounded-rectangle id="402:26313" name="32px visible edge / 44px interaction" x="0" y="12" width="600" height="32" />
+      <frame id="398:26247" name="Move window / drag region" x="8" y="0" width="444" height="44">
+        <frame id="398:26248" name="Grip" x="8" y="21" width="14" height="14" />
+        <text id="398:26250" name="Launch strategy" x="30" y="19" width="103" height="18" />
+      </frame>
+      <frame id="398:26251" name="Minimise / 44px target" x="456" y="0" width="44" height="44">
+        <frame id="398:26252" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="398:26254" name="Maximise / 44px target" x="504" y="0" width="44" height="44">
+        <frame id="398:26255" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="398:26257" name="Close / 44px target" x="552" y="0" width="44" height="44">
+        <frame id="398:26258" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+  </symbol>
+
+  <!-- Close hovered. Geometry is Reveal's; what changes is colour, and the
+       variables say so: this variant resolves status/danger #b42318 and
+       bg/cool #eef2f4, which no other variant does. -->
+  <symbol id="398:26260" name="Owner=Shell, State=Close hover" x="640" y="112" width="600" height="44" />
+
+  <!-- Keyboard focus. Resolves no variable the Reveal state does not, so the
+       navy outline is text/primary rather than a colour of its own. -->
+  <symbol id="398:26275" name="Owner=Shell, State=Keyboard focus" x="1264" y="112" width="600" height="44" />
+
+  <!-- Dragging. Geometry identical to Reveal, node for node. -->
+  <symbol id="398:26290" name="Owner=Shell, State=Dragging" x="16" y="208" width="600" height="44">
+    <frame id="398:26291" name="External edge / continuous pointer region" x="0" y="0" width="600" height="44">
+      <rounded-rectangle id="402:26318" name="32px visible edge / 44px interaction" x="0" y="12" width="600" height="32" />
+      <frame id="398:26292" name="Move window / drag region" x="8" y="0" width="444" height="44">
+        <frame id="398:26293" name="Grip" x="8" y="21" width="14" height="14" />
+        <text id="398:26295" name="Launch strategy" x="30" y="19" width="103" height="18" />
+      </frame>
+      <frame id="398:26296" name="Minimise / 44px target" x="456" y="0" width="44" height="44">
+        <frame id="398:26297" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="398:26299" name="Maximise / 44px target" x="504" y="0" width="44" height="44">
+        <frame id="398:26300" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="398:26302" name="Close / 44px target" x="552" y="0" width="44" height="44">
+        <frame id="398:26303" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+  </symbol>
+</frame>

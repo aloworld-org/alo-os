@@ -331,6 +331,12 @@ mod window_control_scene;
 mod window_control_snapshot;
 mod window_controls;
 mod window_dividing;
+mod window_edge;
+mod window_edge_paint;
+mod window_edge_picture;
+mod window_edge_reading;
+mod window_edge_title;
+mod window_edge_who_draws;
 mod window_full_screen;
 mod window_maximize;
 mod window_minimize;
@@ -357,6 +363,29 @@ pub use where_a_window_opens::{A_DELIBERATE_OFFSET, A_SMALL_GAP, where_a_window_
 pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_dividing::NotDivided;
+pub use window_edge::{
+    A_TARGET_IS, ARTWORK_IS, BETWEEN_TARGETS, Decorations, EdgeControl, OnTheEdge,
+    THE_DRAG_STARTS_AT, THE_GRIP_IS, THE_REGION_IS_TALL, THE_STRIP_IS_TALL, THE_STRIP_STARTS_AT,
+    WindowEdge, edge_of,
+};
+/// What the external window edge is drawn out of: rectangles and roles.
+///
+/// Separate from the geometry because they are two reasons to change - the
+/// design moving a control, and the design recolouring one.
+pub use window_edge_paint::{Pointing, Solid, solids};
+/// One window edge, laid out in owned pixels and ready for a frame.
+pub use window_edge_picture::EdgePicture;
+/// **What a reader is told about a window's edge**, which is what a window
+/// *has* rather than what is currently drawn: the owner's *without first
+/// hovering* clause of 2026-10-09 is only true if those are different
+/// questions. `crate::access_nodes` hangs these under each open window.
+pub use window_edge_reading::{the_controls_of, what_a_reader_is_told, what_it_does};
+/// A window's title on its edge: what is shown, and what is still said aloud.
+pub use window_edge_title::{AN_ELLIPSIS, FittedTitle, fitted};
+/// **Who draws a frame's header**, in the one place both the drawing and the
+/// reading ask. Its body is what changes when the toplevel's decoration state
+/// is read per frame; see the file's header.
+pub use window_edge_who_draws::who_draws_a_frame;
 pub use window_full_screen::WindowFullScreenError;
 pub use window_maximize::WindowMaximizeError;
 pub use window_minimize::WindowMinimizeError;

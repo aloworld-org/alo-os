@@ -82,7 +82,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     use alo_indicator::{Drew, Indicating};
     use alo_shell::{
         Cursor, DesktopFrame, DesktopLook, EgressStatus, FillingWindow, Nested, RunningWindow,
-        Server, WindowControlLabels, WindowControlLayout, WindowControlScene,
+        Server, WindowControlLabels,
     };
     use alo_strings::{Direction, Strings};
     use std::{
@@ -139,6 +139,15 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Err(refused.said(&strings).into_text().into());
     }
     let mut labels = WindowControlLabels::new()?;
+    // The shell's own faces: Manrope for what alo says, Inter behind it so a
+    // script Manrope does not cover still draws.
+    let mut faces = cosmic_text::FontSystem::new();
+    faces
+        .db_mut()
+        .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+    faces
+        .db_mut()
+        .load_font_data(include_bytes!("../fonts/Inter.ttf").to_vec());
     let division = alo_dividing::Division::of(alo_dividing::Area::of(
         alo_dividing::area::Point::at(0, 0),
         alo_dividing::area::Size::of(1366, 768),
@@ -183,36 +192,43 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     while Instant::now() < deadline {
         nested.pump_seat(&mut server)?;
         server.dispatch()?;
-        // **The application on the desktop, with its own controls on it.**
+        // **alo's external window edge, which replaces the old tiles.**
         //
-        // Two things had to be true at once and each arrived on its own
-        // branch. Drawing through `Server::render` hands `scene_drawing` no
-        // desktop, and it clears to opaque black on purpose where there is
-        // none — so a fixture asking *what does an application look like on
-        // alo OS* was drawing it on the colour alo OS uses when there is no
-        // alo OS. And the controls were passed a hardcoded origin, so they
-        // drew at the screen's corner while the application sat elsewhere.
+        // This drew `WindowControlLayout` until 2026-10-09 — 32 by 32 boxes
+        // with borders, inside the window. The owner looked at a terminal
+        // wearing them and said they are not the controls we discussed, and
+        // `docs/design/the-external-window-edge.md` forbids them by name:
+        // *no permanent square button tiles*.
         //
-        // `submit_with_desktop` takes the controls, so neither has to be
-        // given up: the desktop carries the surface, the dock and the status
-        // area, and the controls go on the window.
+        // The edge is above the window and outside its content, so nothing of
+        // alo's covers anything the application drew.
         let roots: Vec<_> = server.mapped_surfaces().cloned().collect();
-        let controls = roots.first().and_then(|surface| {
-            let at = where_the_controls_go(surface);
-            WindowControlLayout::new(THE_OUTPUT_IS, at, [true, true, true], false).ok()
-        });
+        let edges: Vec<_> = roots
+            .iter()
+            .filter_map(|surface| {
+                let window = alo_shell::where_a_window_is(surface);
+                // **Revealed, because a fixture has no pointer to reveal it
+                // with.** Which is the host's answer from pointer, focus,
+                // menu and drag, and a photograph of a concealed edge would
+                // show a two-pixel grip and prove nothing.
+                let edge = alo_shell::edge_of(window, asked.decorations, true);
+                let title = server.the_name_of(surface);
+                alo_shell::EdgePicture::of(
+                    &edge,
+                    alo_shell::Pointing::default(),
+                    title.its_own_words(),
+                    &mut faces,
+                    (THE_OUTPUT_IS.0, THE_OUTPUT_IS.1),
+                    100,
+                )
+            })
+            .collect();
         drawn += nested
             .submit_with_desktop(
                 &roots,
                 &[],
                 &Cursor::Default,
-                controls.as_ref().map(|layout| WindowControlScene {
-                    layout,
-                    label: None,
-                    // Light: the question this fixture asks is what an
-                    // application looks like, and the design is drawn light.
-                    scheme: alo_appearance::Scheme::Light,
-                }),
+                edges.first(),
                 &mut labels,
                 DesktopFrame {
                     // **The Dock is told what is open, which is the chain two
@@ -314,6 +330,14 @@ struct Asked {
     programs: Vec<String>,
     /// How long to keep drawing for.
     seconds: u64,
+    /// Who draws the window's header.
+    ///
+    /// **An input, because the contract forbids guessing it** from a
+    /// screenshot, an application's name or how its title bar looks. A
+    /// fixture cannot read protocol state for a client it has not configured,
+    /// so it is named on the command line with `--app-draws-its-own` and the
+    /// production host reads it properly.
+    decorations: alo_shell::Decorations,
     /// Where the pictures go, if anywhere.
     saving: Option<saving_frames::SaveTo>,
 }
@@ -326,11 +350,13 @@ struct Asked {
 fn what_was_asked() -> Result<Asked, Box<dyn std::error::Error>> {
     let mut programs = Vec::new();
     let mut seconds = 10;
+    let mut decorations = alo_shell::Decorations::TheShellDraws;
     let mut rest = Vec::new();
     let mut arguments = std::env::args().skip(1);
     while let Some(argument) = arguments.next() {
         match argument.as_str() {
             "--run" => programs.push(arguments.next().ok_or("--run needs a program after it")?),
+            "--app-draws-its-own" => decorations = alo_shell::Decorations::TheApplicationDraws,
             "--seconds" => {
                 seconds = arguments
                     .next()
@@ -348,6 +374,7 @@ fn what_was_asked() -> Result<Asked, Box<dyn std::error::Error>> {
     Ok(Asked {
         programs,
         seconds,
+        decorations,
         saving: saving_frames::SaveTo::from_these(rest)?,
     })
 }
@@ -369,43 +396,3 @@ fn nothing_put_aside() -> &'static alo_put_aside::Panel {
 /// validates its origin against it.
 #[cfg(target_os = "linux")]
 const THE_OUTPUT_IS: (i32, i32) = (1366, 768);
-
-/// How wide the shell's three window controls are together.
-///
-/// `window_controls.rs` lays them out at offsets 0, 36 and 72, each 32 wide,
-/// so the strip spans 0..104. **Read off that file rather than guessed**, and
-/// it is not the design's 140 — the design's controls are 44 wide where the
-/// code's are 32, which `crates/alo-dock`'s own measurement settles as a 32
-/// glyph inside a 48 target rather than a disagreement.
-#[cfg(target_os = "linux")]
-const THE_STRIP_IS_WIDE: i32 = 104;
-
-/// The design's inset of the controls from the window's top and right edges.
-#[cfg(target_os = "linux")]
-const INSET: i32 = 8;
-
-/// Where this window's controls belong: its own top right, inset.
-///
-/// **This arithmetic should not be a fixture's.** Where the controls sit on a
-/// window is the design's answer and the shell's to apply, and every caller
-/// doing it again is every caller getting a chance to do it differently. It is
-/// here because `alo-shell` exports `window_buffer_origin` and **nothing
-/// public for a window's width** — so no caller outside the crate can place
-/// them to the design without reaching past the API, which is what this does.
-///
-/// Recorded as a gap rather than left as a trick.
-#[cfg(target_os = "linux")]
-fn where_the_controls_go(
-    surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
-) -> (i32, i32) {
-    // **The window, not the surface.** A client drawing its own decorations
-    // puts its shadow in the surface's margin, so the buffer starts above and
-    // left of anything a person calls the window's corner. Measured here on
-    // 2026-10-09: placed from the buffer, these drew about fifty pixels above
-    // the calculator's visible top edge and read as belonging to the screen.
-    let window = alo_shell::where_a_window_is(surface);
-    // A window narrower than its own controls keeps them at its left edge
-    // rather than hanging them off its side.
-    let inset = (window.size.w - THE_STRIP_IS_WIDE - INSET).max(0);
-    (window.loc.x + inset, window.loc.y + INSET)
-}
