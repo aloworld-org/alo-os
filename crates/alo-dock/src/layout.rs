@@ -111,7 +111,10 @@ impl Layout {
     /// shorter because the owner took the names out of the bar.
     fn running_down(screen: Screen) -> Self {
         Self {
-            thickness: Room::a_dock_of_icons(),
+            // **The measured lane, not `a_dock_of_icons`.** That sum is 64 and the
+            // design file's frames say 70 — see `Room::a_side_docks_lane`, which
+            // carries why the difference is recorded rather than reconciled.
+            thickness: Room::a_side_docks_lane(),
             length: screen.height(),
             labels: Labels::Beside,
         }
@@ -177,19 +180,42 @@ mod tests {
     #[test]
     fn a_side_dock_does_not_thicken_with_the_text() {
         let screen = Screen::of(1920, 1080).unwrap();
-        let icons = Room::a_dock_of_icons();
+        // **The lane, not the icon sum.** This read `a_dock_of_icons` until
+        // 2026-10-10 — correct while that was what `running_down` used, and it
+        // caught the change to the frames' measured 70, which is what a test
+        // pinned to an implementation does. What it is *for* is the line below:
+        // the thickness must not move with the text.
+        let lane = Room::a_side_docks_lane();
         for percent in [100, 125, 150, 175, THE_STANDARDS_TEXT] {
             let text = TextScale::percent(percent).unwrap();
             for edge in [Edge::Left, Edge::Right] {
                 let laid = Layout::along(edge, screen, text);
                 assert_eq!(
                     laid.thickness(),
-                    icons,
-                    "{edge:?} at {percent}% is not icon-thick, so the names have widened the bar"
+                    lane,
+                    "{edge:?} at {percent}% is not the measured lane, so the names have widened \
+                     the bar"
                 );
                 assert_eq!(laid.labels(), Labels::Beside, "{edge:?} at {percent}%");
             }
         }
+        // **The invariant itself, stated without naming a number.** The loop above
+        // would still pass if the lane and the text happened to agree at every size
+        // tried; this says the thing the owner's rule actually forbids — *labels do
+        // not permanently widen the Dock* — in a form no constant can satisfy by
+        // coincidence.
+        let smallest = Layout::along(Edge::Left, screen, TextScale::percent(100).unwrap());
+        let largest = Layout::along(
+            Edge::Left,
+            screen,
+            TextScale::percent(THE_STANDARDS_TEXT).unwrap(),
+        );
+        assert_eq!(
+            smallest.thickness(),
+            largest.thickness(),
+            "a side dock is a different thickness at 100% and at {THE_STANDARDS_TEXT}%, so its \
+             names have got into the bar"
+        );
     }
 
     /// **A side dock runs the height, an across dock runs the width.**

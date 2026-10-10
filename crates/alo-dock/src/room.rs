@@ -17,7 +17,8 @@
 use alo_appearance::TextScale;
 
 use crate::measures::{
-    A_DOCK_MAY_TAKE_ONE_PART_IN, GAP, ICON, LINE_IN_FIFTHS, MARGIN, TEXT_AT_ORDINARY,
+    A_DOCK_MAY_TAKE_ONE_PART_IN, A_SIDE_DOCKS_LANE, GAP, ICON, LINE_IN_FIFTHS, MARGIN,
+    TEXT_AT_ORDINARY,
 };
 
 /// How much room something takes, in logical pixels.
@@ -84,6 +85,17 @@ impl Room {
     #[must_use]
     pub const fn an_icon() -> Self {
         Self::pixels(ICON)
+    }
+
+    /// How wide the lane a dock down either side of the screen occupies.
+    ///
+    /// [`crate::measures::A_SIDE_DOCKS_LANE`], measured off the design file's
+    /// frames — and deliberately **not** [`Self::a_dock_of_icons`], which is six
+    /// pixels narrower. That constant's own note carries why the two are kept apart
+    /// rather than reconciled.
+    #[must_use]
+    pub const fn a_side_docks_lane() -> Self {
+        Self::pixels(A_SIDE_DOCKS_LANE)
     }
 
     /// How thick a dock of icons alone is: the icon, and the dock's two faces.

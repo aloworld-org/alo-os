@@ -157,6 +157,25 @@ pub const THE_STANDARDS_TEXT: u16 = 200;
 /// unit the owner gave and the unit everything else here is in.
 pub const A_NAME_BESIDE_AN_ICON: u32 = 200;
 
+/// How wide the lane is that a dock down either side of the screen occupies.
+///
+/// **Measured off the design file's frames on 2026-10-10**, not off its prose:
+/// `Dock / Left` is `x=24` and **70** wide, `Dock / Right` is `x=1346` and 70 wide,
+/// and 1416 is 1440 − 24 — so the 24 is a margin from the screen's edge and this is
+/// the lane itself. `docs/design/the-alo-dock.md` carries the reading.
+///
+/// **It is not [`MARGIN`] + [`ICON`] + [`MARGIN`], and that is the point of it
+/// being here.** That sum is 64; the frames say 70, six pixels and three a side,
+/// and nothing in this file accounts for them. Deriving 70 out of the other three
+/// would mean moving `MARGIN` for every edge so that one edge came out right, which
+/// is fitting the measures to a frame — and the bottom dock's thickness is held to
+/// this same design file elsewhere and would move with it.
+///
+/// So it is a measured figure with its provenance rather than an arithmetic one,
+/// and what the six pixels are *for* is written down as an open question rather
+/// than guessed at.
+pub const A_SIDE_DOCKS_LANE: u32 = 70;
+
 /// The padding on each side of a name shown beside an icon.
 ///
 /// So the tooltip is [`A_NAME_BESIDE_AN_ICON`] + twice this = **224** logical

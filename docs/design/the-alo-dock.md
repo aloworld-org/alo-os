@@ -213,3 +213,55 @@ it.
   is this note's reading rather than a decision.
 - **What is announced after a click** — the window that took focus, and whether
   the travel itself is worth saying.
+
+## The four edges, measured off the frames on 2026-10-10
+
+The owner restored the edge choice on 2026-09-30 and the design for it arrived as
+**Dock edges · v0.01 specification** (`node-id=351-25693`). These are read off the
+**frames**, not off the captions, because `CLAUDE.md` says so in as many words — *a
+screenshot is not a specification; take the numbers off the frames and record them*
+— and because on this page the two disagree.
+
+| What | Frame | Measured |
+|---|---|---|
+| Side Dock lane, left | `Dock / Left` | `x=24`, **70** wide → x24–94 |
+| Side Dock lane, right | `Dock / Right` | `x=1346`, **70** wide → x1346–1416 |
+| Top Dock row | `Dock / Top` | `y=16`, **74** tall → y16–90 |
+| Expanded shelf, inward lane | `Shelf / Shared edge · inward lane` | **244** × 604, at x116 left / x1072 right |
+| Shelf's upper edge handle | `Shelf / Upper edge handle` | **64 × 64** at y96, x24 left / x1352 right |
+| Shared edge, the split | — | shelf owns y84–180; Dock owns y192–960 |
+
+The side lane is **symmetric**: 1416 is 1440 − 24, and both lanes are 70, so the 24
+is a margin from the screen's edge and the 70 is the lane itself.
+
+### Where the page disagrees with itself, so nobody re-derives it
+
+Three figures appear twice on this page and differ. The frames are taken as the
+answer in each case; the prose is recorded so a reader meeting it knows it was seen
+and not missed.
+
+| | Frames | Build contract (`348:28451`) | Section caption |
+|---|---|---|---|
+| side lane | **70** | x24–94 → 70 ✓ | x24–92 → 68 ✗ |
+| right lane | **70** | x1346–1416 → 70 ✓ | x1348–1416 → 68 ✗ |
+| top row | **74** | y16–92 → 76 ✗ | — |
+
+The caption is two pixels narrow on both side lanes and the contract is two tall on
+the top row — a consistent two, in opposite directions, which reads like a stroke
+counted in one place and not the other. **It is not resolved here**, because two
+pixels is exactly the size of a thing worth asking about rather than guessing: a
+reader who needs it exact should ask the owner, and a reader who needs it buildable
+should use the frame.
+
+### The lane is not what this crate derives, and that is the finding
+
+`alo_dock::Room::a_dock_of_icons` is `MARGIN + ICON + MARGIN` — 8 + 48 + 8 = **64**.
+The frames say **70**. Six pixels, three a side, and nothing in `measures` accounts
+for them.
+
+**So the lane is recorded as its own measured figure rather than reconciled.**
+Deriving 70 out of the existing three would mean changing `MARGIN` for every edge to
+make one edge come out right, which is fitting the measures to a frame — and the
+bottom Dock's own numbers are held to this file elsewhere and would move with it.
+What the six pixels are *for* is a question for the owner or for a closer reading of
+the frame's contents; what they are is 70.
