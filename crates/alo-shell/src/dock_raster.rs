@@ -1,15 +1,21 @@
-//! The dock on one display: a floating bar, centred, above the bottom edge.
+//! The dock on one display: a floating bar, centred, clear of its own edge.
 //!
 //! # Whose decisions these are
 //!
-//! How thick it is and how wide it needs to be are `alo-dock`'s answers for this
-//! display's own size, the person's text size and how many icons there are. That
-//! it is along the **bottom** is [ADR
-//! 0076](../../../docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md),
-//! not a value asked for per display. This file turns those answers into pixels
-//! and decides none of them. Asked once per display, so a laptop and the screen
-//! beside it each get the dock laid out for their own size — and a dock that
-//! gives its names way on the small one keeps them on the large one.
+//! How thick it is and how long it needs to be are `alo-dock`'s answers for this
+//! display's own size and how many icons there are. **Which edge it is on is the
+//! person's**, since 2026-10-10: `Dock::edge` is their choice if they made one
+//! and what the release ships otherwise, and [ADR
+//! 0076](../../../docs/decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md)
+//! made the bottom the default rather than the only. This file turns those
+//! answers into pixels and decides none of them. Asked once per display, so a
+//! laptop and the screen beside it each get the dock laid out for their own size.
+//!
+//! **The text size reaches nothing here.** It did, through a row of names under
+//! the icons that the owner removed on 2026-10-10 — the thickness is the measured
+//! 76 across and 70 down a side at every text size. A *name* still scales, because
+//! a name is a sentence: it is shown on hover and on keyboard focus, outside the
+//! bar, at `DesktopLook::measure`'s size.
 //!
 //! # A bar, not a band
 //!
@@ -23,17 +29,29 @@
 //! `alo_dock::measures::FLOATING_ABOVE_THE_EDGE`.
 //!
 //! **What it holds is passed in.** This file does not count icons: how many
-//! there are is `alo_dock::Holding`'s answer and how many *fit* is
-//! `alo_dock::fit`'s, so a bar drawn here cannot disagree with the list the Dock
-//! decided to show.
+//! there are is `alo_dock::Holding`'s answer, so a bar drawn here cannot
+//! disagree with the list the Dock decided to show.
 //!
-//! # When it will not fit
+//! # When it will not fit, which is not yet handled
 //!
-//! A bar wider than the screen is clamped to the screen's width less its
-//! margins, and what does not fit went into the overflow before it ever reached
-//! this file. Clamping is the last resort rather than the mechanism: shrinking
-//! icons to fit more is how a dock becomes unusable exactly when somebody has
-//! the most open, which `alo_dock::fit` refuses on the way in.
+//! A bar longer than the edge it runs along is **clamped** to that edge less its
+//! margins, and the icons past the clamp are drawn outside the band or not at
+//! all. That is the whole of what happens today.
+//!
+//! **This section said otherwise and was wrong**: *what does not fit went into
+//! the overflow before it ever reached this file*, and *how many fit is
+//! `alo_dock::fit`'s*. `alo_dock::fit` exists, is complete and is tested — and
+//! **has no caller outside its own tests**, so nothing has ever put anything into
+//! an overflow. Measured 2026-10-10: three calls in `alo-dock`'s own test module,
+//! none anywhere else in the workspace. The sentence described the design and
+//! read as a description of the code, which is the fault class `CLAUDE.md` names
+//! as *declared place versus actual place*.
+//!
+//! What is right about it is the direction, and it stands as the rule for the
+//! change that wires `fit` up: clamping is the last resort rather than the
+//! mechanism, because shrinking icons to fit more is how a dock becomes unusable
+//! exactly when somebody has the most open. `docs/features.md`'s **Where the Dock
+//! goes** names the overflow as the part of that promise still owed.
 //!
 //! # The status area is not drawn here any more
 //!
@@ -204,15 +222,32 @@ pub(crate) fn picture(
     let places = Places::of(on_the_dock);
     let icon = i32::try_from(ICON).unwrap_or(i32::MAX);
     let glyph = i32::try_from(GLYPH).unwrap_or(i32::MAX);
+    // **Centred across the bar, which is a rule rather than a number.** This read
+    // `MARGIN` — 8 — until 2026-10-10, and the bar is 76 thick with a 48 icon in
+    // it, so every letter sat six logical pixels above where the design puts it.
+    // The owner's ruling that day says where it goes: *the measured 48px
+    // application target centred vertically: 14px above and below.*
+    //
+    // Written as the half of what is left over rather than as 14, because the two
+    // orientations have different thicknesses — the measured 76 across, the
+    // measured 70 down a side, where the same rule gives 11 — and a constant
+    // taken off one frame would be wrong on the other. `CLAUDE.md` names this as
+    // one of the three honest kinds of number: a rule that was never a number.
+    //
+    // `MARGIN` stays where it belongs, which is the room at the bar's **ends**:
+    // `alo_dock::Places` has already put it into `from_the_start`. The two were
+    // one number while the thickness was `MARGIN + ICON + MARGIN`, and that is
+    // what let this line look derived for as long as it did.
+    let across = ((thickness - icon) / 2).max(0);
     let mut inked = Vec::new();
     for place in places.each() {
         let along_the_bar = i32::try_from(place.from_the_start()).unwrap_or(i32::MAX);
-        // The icon's own box, `ICON` square, inset from the bar's leading edge
-        // by the margin the layout already reserved.
+        // The icon's own box, `ICON` square: `from_the_start` along the bar's
+        // edge, and centred across its thickness.
         let (left, top) = if layout.edge().runs_across() {
-            (band.loc.x + along_the_bar, band.loc.y + margin)
+            (band.loc.x + along_the_bar, band.loc.y + across)
         } else {
-            (band.loc.x + margin, band.loc.y + along_the_bar)
+            (band.loc.x + across, band.loc.y + along_the_bar)
         };
         // **The letter is inked on the dock's own colour**, so the box it
         // arrives in disappears into the band rather than drawing a tile the
@@ -612,6 +647,78 @@ mod tests {
                 "a letter at {:?} falls outside the band at {:?}, so it draws on the canvas",
                 letter.area, drawn.band
             );
+        }
+    }
+
+    /// **Every letter sits on the bar's centre line, on all four edges.**
+    ///
+    /// The icon's box was inset across the bar by `MARGIN` — 8 — until
+    /// 2026-10-10. The bar is the measured 76 thick with a 48 icon in it, so the
+    /// right inset is 14 and every letter on every machine sat **six logical
+    /// pixels high**. The owner's ruling says so outright: *the measured 48px
+    /// application target centred vertically: 14px above and below.*
+    ///
+    /// # Why the test that existed could not see it
+    ///
+    /// `every_application_on_the_dock_gets_a_letter_inside_the_band` asks that a
+    /// letter is **inside** the band, and a letter six pixels high is inside it.
+    /// *Inside* is the weakest claim a placement can make and it is the one that
+    /// is easy to write; where a thing **is** takes a second number to compare
+    /// against, and the second number here is the band's own centre.
+    ///
+    /// # Asserted as centred rather than as 14
+    ///
+    /// Fourteen is the bottom and top edges' answer; a dock down a side is the
+    /// measured 70 wide and its answer is 11. Writing 14 would pass on two edges
+    /// and fail on two, and writing both would be two constants where the design
+    /// has one rule. So this asserts the rule — *centred across the thickness* —
+    /// and then checks that the rule and `MARGIN` really do disagree, because a
+    /// bar whose thickness happened to be `MARGIN + ICON + MARGIN` would make
+    /// the fault invisible again. It was, until the bar was measured.
+    #[test]
+    fn a_letter_sits_on_the_bars_centre_line_on_every_edge() {
+        use alo_dock::Edge;
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let held = on_the_dock(3);
+        let size = (1920, 1080);
+
+        for edge in Edge::EVERY {
+            let mut dock = Dock::shipped();
+            dock.set_edge(edge);
+            let drawn = picture(&dock, look, size, &held, &mut fonts()).unwrap();
+            assert_eq!(drawn.inked.len(), held.len(), "{edge:?}");
+
+            // The band's centre across its thickness, and each letter's.
+            let thickness = i32::try_from(drawn.layout.thickness().as_pixels()).unwrap();
+            let inset = (thickness - i32::try_from(ICON).unwrap()) / 2;
+            // **The premise**: the rule and `MARGIN` give different answers on
+            // this edge, so a draw still reading `MARGIN` would fail below. If
+            // they ever agree this assertion says so rather than passing
+            // vacuously.
+            assert_ne!(
+                inset,
+                i32::try_from(MARGIN).unwrap(),
+                "{edge:?} is {thickness} thick, where centring an icon and insetting it by                  MARGIN give the same answer — so this test cannot tell the two apart and the                  fault it was written for would be invisible"
+            );
+
+            for letter in &drawn.inked {
+                let (band_middle, letter_middle) = if edge.runs_across() {
+                    (
+                        drawn.band.loc.y + drawn.band.size.h / 2,
+                        letter.area.loc.y + letter.area.size.h / 2,
+                    )
+                } else {
+                    (
+                        drawn.band.loc.x + drawn.band.size.w / 2,
+                        letter.area.loc.x + letter.area.size.w / 2,
+                    )
+                };
+                assert!(
+                    (band_middle - letter_middle).abs() <= 1,
+                    "on the {edge:?} edge a letter's middle is {letter_middle} and the bar's is                      {band_middle}, {} away. The icon is inset {inset} across a bar {thickness}                      thick; MARGIN is {MARGIN} and was what this read until 2026-10-10",
+                    (band_middle - letter_middle).abs()
+                );
+            }
         }
     }
 
