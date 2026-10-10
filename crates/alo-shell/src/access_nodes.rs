@@ -27,6 +27,8 @@ use alo_strings::{Filling, Strings};
 
 use crate::access_roles::{self, APPLICATION, FILLER};
 use crate::frame_name::FrameName;
+use crate::window_edge_reading::what_a_reader_is_told;
+use crate::window_edge_who_draws::who_draws_a_frame;
 
 /// Where every application's tree starts, as at-spi2 fixes it.
 pub(crate) const ROOT: &str = "/org/a11y/atspi/accessible/root";
@@ -176,6 +178,16 @@ impl ReadAloudTree {
     /// `alo_access::words::AN_APPLICATION`, which is the phrase this tree
     /// already uses for a window nobody named.
     ///
+    /// # Each window carries what can be done to it
+    ///
+    /// The owner's direction of 2026-10-09: *screen-reader and keyboard users
+    /// must reach the new edge without first hovering*. So every window's
+    /// controls hang under it here, where the tree is built from what is open
+    /// rather than from where a pointer is. `turned_on` is carried for the
+    /// same reason [`Self::of`] carries it - a control's node says which way
+    /// its setting is set, and a window control sets nothing, so it is passed
+    /// through rather than consulted.
+    ///
     /// # Order is the caller's
     ///
     /// They are listed in the order given, which is `Server::mapped_surfaces`'
@@ -183,7 +195,12 @@ impl ReadAloudTree {
     /// different order from the one the keyboard moves in would be a second
     /// interface, which is the constraint task 7 carries.
     #[must_use]
-    pub fn with_the_frames_open(mut self, strings: &Strings, frames: &[FrameName]) -> Self {
+    pub fn with_the_frames_open(
+        mut self,
+        strings: &Strings,
+        frames: &[FrameName],
+        turned_on: &TurnedOn,
+    ) -> Self {
         let Some(list) = self.the_windows_open() else {
             return self;
         };
@@ -192,7 +209,7 @@ impl ReadAloudTree {
                 || said(strings, alo_access::words::AN_APPLICATION),
                 str::to_owned,
             );
-            self.push(
+            let frame = self.push(
                 list,
                 Node {
                     path: String::new(),
@@ -204,6 +221,18 @@ impl ReadAloudTree {
                     children: Vec::new(),
                 },
             );
+            // **What can be done to this window, under the window itself.**
+            // Until now the list held names and nothing else: a reader was
+            // told a window was open and never that anything could be done to
+            // it. The controls are the ones `crate::window_edge` draws, asked
+            // of the same `who_draws_a_frame`, so what a person hears and what
+            // is drawn cannot disagree - and they are here whether or not the
+            // edge is revealed, because revealing is what a person sees and is
+            // never what a person can reach.
+            for control in what_a_reader_is_told(who_draws_a_frame()) {
+                let node = of_control(strings, control, turned_on);
+                self.push(frame, node);
+            }
         }
         self
     }

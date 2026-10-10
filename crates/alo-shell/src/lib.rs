@@ -334,7 +334,9 @@ mod window_dividing;
 mod window_edge;
 mod window_edge_paint;
 mod window_edge_picture;
+mod window_edge_reading;
 mod window_edge_title;
+mod window_edge_who_draws;
 mod window_full_screen;
 mod window_maximize;
 mod window_minimize;
@@ -373,8 +375,17 @@ pub use window_edge::{
 pub use window_edge_paint::{Pointing, Solid, solids};
 /// One window edge, laid out in owned pixels and ready for a frame.
 pub use window_edge_picture::EdgePicture;
+/// **What a reader is told about a window's edge**, which is what a window
+/// *has* rather than what is currently drawn: the owner's *without first
+/// hovering* clause of 2026-10-09 is only true if those are different
+/// questions. `crate::access_nodes` hangs these under each open window.
+pub use window_edge_reading::{the_controls_of, what_a_reader_is_told, what_it_does};
 /// A window's title on its edge: what is shown, and what is still said aloud.
 pub use window_edge_title::{AN_ELLIPSIS, Fitted, fitted};
+/// **Who draws a frame's header**, in the one place both the drawing and the
+/// reading ask. Its body is what changes when the toplevel's decoration state
+/// is read per frame; see the file's header.
+pub use window_edge_who_draws::who_draws_a_frame;
 pub use window_full_screen::WindowFullScreenError;
 pub use window_maximize::WindowMaximizeError;
 pub use window_minimize::WindowMinimizeError;

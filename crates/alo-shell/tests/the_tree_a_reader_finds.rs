@@ -458,6 +458,52 @@ fn names_under_the_windows_open(session: &ASession, answers_as: &str) -> Vec<Str
         .unwrap_or_default()
 }
 
+/// What a reader finds under each open window, read off the live bus.
+///
+/// Keyed by the window's own name, because the order of two windows is
+/// `mapped_surfaces`' and asserting a position here would be asserting that
+/// ring rather than this. Empty for a window the bus carries with nothing
+/// under it, which is the state this was written to catch.
+fn controls_under_each_window(session: &ASession, answers_as: &str) -> Vec<(String, Vec<String>)> {
+    let strings = words();
+    let list = Surface::Desktop
+        .read_aloud()
+        .into_iter()
+        .find(|control| control.role == alo_access::Role::List)
+        .map(|control| said(&strings, &control))
+        .expect("the desktop is read as a list of the windows open");
+    let reader = session.reader();
+    let ours = waiting_for(
+        "this machine's own tree being listed by the registry",
+        || {
+            reader
+                .applications()
+                .ok()?
+                .into_iter()
+                .find(|running| running.at.holder == answers_as)
+        },
+    );
+    everything(&reader, &ours.at)
+        .into_iter()
+        .find(|(_, facts)| facts.name == list)
+        .map(|(_, facts)| {
+            facts
+                .children
+                .iter()
+                .filter_map(|child| reader.facts(child).ok())
+                .map(|window| {
+                    let under = window
+                        .children
+                        .iter()
+                        .filter_map(|under| reader.facts(under).ok().map(|facts| facts.name))
+                        .collect();
+                    (window.name, under)
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 /// **The served tree follows what is open**, which is the half nothing held.
 ///
 /// `ReadAloudBus::now_showing` replaces the objects on a live connection rather
@@ -492,6 +538,7 @@ fn the_served_tree_follows_the_windows_that_open() {
             FrameName::Given("Ledger for March".to_owned()),
             FrameName::AnApplication,
         ],
+        &TurnedOn::nothing(),
     );
     bus.now_showing(&opened)
         .expect("the windows reached the bus");
@@ -503,9 +550,37 @@ fn the_served_tree_follows_the_windows_that_open() {
         "a reader on the bus did not hear the windows that opened"
     );
 
+    // **And under each window, what can be done to it** - the owner's clause
+    // of 2026-10-09 that a reader reaches the edge *without first hovering*.
+    // Read back off the bus rather than off the tree, because a tree that is
+    // right and a bus nobody can hear is the exact gap this file exists for.
+    let wanted: Vec<String> = alo_shell::what_a_reader_is_told(alo_shell::who_draws_a_frame())
+        .into_iter()
+        .map(|control| said(&strings, &control))
+        .collect();
+    assert_eq!(wanted.len(), 3, "{wanted:?}");
+    let found = controls_under_each_window(&session, bus.answers_as());
+    // **The count before the contents.** Everything below is inside a loop, so
+    // a bus that carried no list at all would come back empty and assert
+    // nothing - a pass that means the opposite of what it reads like.
+    assert_eq!(
+        found.len(),
+        2,
+        "the bus did not carry two windows: {found:?}"
+    );
+    for (window, under) in found {
+        assert_eq!(
+            under, wanted,
+            "a reader found {window} on the bus with nothing it could do to it"
+        );
+    }
+
     // And a window closing takes its path off rather than leaving it answering.
-    let closed = ReadAloudTree::of(&strings, &showing, &TurnedOn::nothing())
-        .with_the_frames_open(&strings, &[FrameName::Given("Ledger for March".to_owned())]);
+    let closed = ReadAloudTree::of(&strings, &showing, &TurnedOn::nothing()).with_the_frames_open(
+        &strings,
+        &[FrameName::Given("Ledger for March".to_owned())],
+        &TurnedOn::nothing(),
+    );
     bus.now_showing(&closed)
         .expect("the closing reached the bus");
     assert_eq!(

@@ -231,18 +231,18 @@ pub fn edge_of(window: Rectangle<i32, Logical>, decorations: Decorations, reveal
     // fixed window width*.
     // At rest nothing is drawn to press, so nothing answers: the rest
     // variants hold no control node at all.
-    let does = if !revealed {
-        Vec::new()
+    //
+    // **Which controls a window has is asked of `window_edge_reading`**, which
+    // is one list rather than two that could drift. It lives there because
+    // whether a control exists is an accessibility question before it is a
+    // drawing one - a reader reaches every one of them while this edge is
+    // concealed and draws none - and that file includes the owner's ruling
+    // that an application with its own header keeps its buttons, so alo adds
+    // only movement and the menu.
+    let does = if revealed {
+        crate::window_edge_reading::the_controls_of(decorations)
     } else {
-        match decorations {
-            Decorations::TheShellDraws => {
-                vec![OnTheEdge::Minimise, OnTheEdge::Maximise, OnTheEdge::Close]
-            }
-            // **No duplicate window buttons**, by the owner's ruling: an
-            // application with its own header keeps it, and alo adds only movement
-            // and the menu.
-            Decorations::TheApplicationDraws => vec![OnTheEdge::Menu],
-        }
+        Vec::new()
     };
     let how_many = i32::try_from(does.len()).unwrap_or(0);
     let controls_take = how_many * (A_TARGET_IS + BETWEEN_TARGETS);

@@ -9,6 +9,7 @@
 use alo_access::{Control, Surface};
 
 use crate::window_controls::{WindowControl, WindowControlLayout};
+use crate::window_edge_reading::the_controls_of;
 
 use super::*;
 use crate::approval_testing::words;
@@ -274,4 +275,70 @@ fn a_buttons_spoken_name_is_the_label_drawn_on_it() {
             "{action:?} is read aloud as something other than its label"
         );
     }
+}
+
+/// **Each open window carries what can be done to it**, which is the owner's
+/// *without first hovering* clause of 2026-10-09 as a test.
+///
+/// Before this, the list of windows held names and nothing under them: a reader
+/// was told a window was open and never that it could be closed. The tree is
+/// built from what is open and never from where a pointer is, so there is no
+/// state in which a person can hear one of these and not reach it.
+#[test]
+fn every_open_window_carries_the_controls_of_its_edge() {
+    let strings = words();
+    let tree = ReadAloudTree::of(&strings, &Surface::ALL, &TurnedOn::nothing())
+        .with_the_frames_open(
+            &strings,
+            &[
+                FrameName::Given("Ledger for March".to_owned()),
+                FrameName::AnApplication,
+            ],
+            &TurnedOn::nothing(),
+        );
+
+    let expected: Vec<String> = what_a_reader_is_told(who_draws_a_frame())
+        .into_iter()
+        .map(|control| said(&strings, control.name))
+        .collect();
+    assert_eq!(expected.len(), 3, "{expected:?}");
+
+    let list = tree
+        .the_windows_open()
+        .expect("the desktop has a list of windows");
+    let windows = &tree.nodes()[list].children;
+    assert_eq!(windows.len(), 2, "two windows opened");
+    for at in windows {
+        let window = &tree.nodes()[*at];
+        let under: Vec<String> = window
+            .children
+            .iter()
+            .map(|child| tree.nodes()[*child].name.clone())
+            .collect();
+        assert_eq!(
+            under, expected,
+            "{} was told to a reader with nothing that could be done to it",
+            window.name
+        );
+    }
+}
+
+/// **A window's controls are the ones its edge draws**, asked of the one
+/// function both sides ask.
+///
+/// Two answers to *which controls does this window have* is the drift this
+/// guards: a reader naming a control nobody drew, or a control drawn that no
+/// reader can name, are the same bug read from two ends.
+#[test]
+fn what_a_reader_is_told_is_what_the_edge_lays_out() {
+    let window = smithay::utils::Rectangle::new(
+        smithay::utils::Point::from((40, 100)),
+        smithay::utils::Size::from((600, 400)),
+    );
+    let drawn: Vec<_> = crate::window_edge::edge_of(window, who_draws_a_frame(), true)
+        .controls
+        .into_iter()
+        .map(|control| control.does)
+        .collect();
+    assert_eq!(drawn, the_controls_of(who_draws_a_frame()));
 }
