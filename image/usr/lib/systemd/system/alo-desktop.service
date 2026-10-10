@@ -1,0 +1,107 @@
+[Unit]
+# **The screen a person arrives at, and the unit task 39 was owed.**
+#
+# `alo-compositor` is the machine's half of the morning: the sign-in screen,
+# standing in front of somebody who has not signed in, ending when a session
+# opens. This is the person's half. They are two programs because they belong to
+# two different people, which is `the-executable-plan.md` task 39's own
+# wording — *a second program rather than a mode of the greeter*.
+#
+# **Until this file existed, a booted machine signed somebody in and showed them
+# nothing.** `alo-desktop` was built by `image/Containerfile:374` and installed
+# by `:302`, and no unit started it: 8 `ExecStart=` lines in this directory and
+# none naming it. The greeter printed *this process has nothing yet to draw in
+# it* and returned success, which is honest and is not a desktop.
+Description=alo OS desktop: the dock, the status area and what is leaving
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0024-what-a-person-signs-in-at.md
+
+# **Bound to the person's session, which is `alo-agentd.service`'s shape and for
+# the same reasons.** `logind` starts `user@1000.service` on their first session
+# whatever its seat, so this starts when they sign in; `BindsTo=` takes it down
+# when they sign out, which is how signing out ends a desktop rather than
+# leaving one drawn over a sign-in screen.
+BindsTo=user@1000.service
+After=user@1000.service
+
+# **Ordering only, and the race is named rather than claimed solved.** The
+# greeter holds the card from `seat0` until its process ends, and it ends by
+# returning success once a session opens — the same event that starts
+# `user@1000.service`. So the two are sequential in intent and this line states
+# the intent, but `After=` on a unit that stops itself is not a guarantee that
+# it already has. If the seat refuses the card with *Device or resource busy*,
+# this is the line that was not enough, and the answer is `Conflicts=` or a
+# handover rather than a longer `RestartSec=`. Owed a measurement on a machine.
+After=alo-compositor.service
+
+[Service]
+# It stays, and the desktop stays with it. A oneshot would draw one frame.
+Type=exec
+
+# **The person, not root.** The greeter is the machine's and runs as root
+# because a seat lends a card to a privileged caller before anybody is there;
+# this is the person's own desktop and runs as them. `alo-desktop`'s own header
+# is explicit that the uid is not a variable it reads — *whose session this is,
+# is whose session this is* — and this line is what makes that true.
+User=alo
+
+# **The seat, which is the whole reason this unit has a PAM stack.**
+# `image/usr/lib/pam.d/alo-desktop` records why at length: `libseat` asks
+# `logind` which session the calling process belongs to, a service belongs to
+# none, and this image ships no `seatd`. `pam_systemd.so` registers the process
+# with logind and the seat follows.
+#
+# `TTYPath=` is not cosmetic and the greeter's unit has the measurement:
+# `pam_systemd` reads `PAM_TTY`, which systemd fills from this line, and a
+# session with no TTY is given **no seat** — `logind` answered `seat= vtnr=0`.
+# With it, the same machine answered `seat=seat0 vtnr=1`.
+TTYPath=/dev/tty1
+PAMName=alo-desktop
+
+# **Which card, and this line is wrong on most machines.** Said plainly because
+# it is about to cost somebody an afternoon otherwise.
+#
+# `alo-desktop` requires `ALO_DISPLAY` and refuses to start without it. The
+# greeter required it too until 2026-10-05, when a written disk answered *No
+# such file or directory*: firmware that hands over a framebuffer gives
+# `simpledrm` minor 0, so the real GPU is minor 1, and `logind` had put `card1`
+# on `seat0` while the unit asked for `card0`. **Most UEFI machines hand over a
+# framebuffer, so most machines fail this way.**
+#
+# The greeter's fix was to stop setting it and ask the seat for the device udev
+# marks as the boot VGA. `alo-desktop` has not had that fix — it is
+# `crates/alo-desktop`, which is another lane's, and the change is theirs to
+# make with the greeter's code in front of them. Until then this line is what
+# lets the unit start at all, and it is correct only where there is one card:
+# a virtual machine with `virtio-gpu`, which is where this unit is first
+# measured, and a machine whose firmware hands over nothing.
+Environment=ALO_DISPLAY=/dev/dri/card0
+Environment=ALO_KEYBOARD=gb
+
+# The socket this person's clients connect to goes in a directory systemd makes
+# and takes away. 0700: a desktop whose socket a second account could reach is
+# a desktop that is not this person's.
+RuntimeDirectory=alo-desktop
+RuntimeDirectoryMode=0700
+
+# **No capability at all.** The greeter's unit makes the same claim for the same
+# reason: this process needs a seat and a socket, and saying so here is what
+# makes it a fact rather than a sentence. A desktop is the largest surface on
+# the machine and the one a person spends the day in front of; it holds nothing.
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+
+ExecStart=/usr/bin/alo-desktop
+
+# **`on-failure`, and not `always`.** A desktop that died should come back. One
+# that ended because the person signed out must not, and `BindsTo=` above is
+# what ends it then — restarting after that would draw a desktop over a sign-in
+# screen for an account that is no longer signed in.
+Restart=on-failure
+RestartSec=2
+
+[Install]
+# The person's session, not `multi-user.target`: a desktop wanted by the machine
+# would be started before anybody was there, and `BindsTo=` above would then
+# take it straight down again. One lifetime, named in both directions.
+WantedBy=user@1000.service

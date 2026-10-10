@@ -57,6 +57,17 @@ pub const THE_SERVER: &str = "alo-modeld.service";
 /// screen exists before anybody is signed in and so cannot be anybody.
 pub const THE_COMPOSITOR: &str = "alo-compositor.service";
 
+/// The service that stands the person's own desktop up.
+///
+/// The other half of a machine's morning, and the unit
+/// `the-executable-plan.md` task 39 was owed: `alo-desktop` was built and
+/// installed by the recipe and **no unit started it**, so a booted machine
+/// signed somebody in and showed them nothing.
+///
+/// Unlike [`THE_COMPOSITOR`] it runs as the person. The greeter is root
+/// because nobody is there yet; a desktop is somebody's.
+pub const THE_DESKTOP: &str = "alo-desktop.service";
+
 /// Where a unit file goes, beneath the image's root.
 const UNITS: &str = "usr/lib/systemd/system";
 
@@ -103,6 +114,8 @@ pub struct Image {
     server: Service,
     /// The service that stands the sign-in screen up.
     screen: Service,
+    /// The service that stands the person's own desktop up.
+    desktop: Service,
     /// The directories made at boot.
     made: Vec<Made>,
     /// The logins and groups made at boot.
@@ -152,6 +165,7 @@ impl Image {
         let opener = service(root, THE_OPENER)?;
         let server = service(root, THE_SERVER)?;
         let screen = service(root, THE_COMPOSITOR)?;
+        let desktop = service(root, THE_DESKTOP)?;
 
         let at = root.join(TMPFILES);
         let made = crate::making::everything_made(&text(&at)?)
@@ -205,6 +219,7 @@ impl Image {
             opener,
             server,
             screen,
+            desktop,
             made,
             declared,
             asserted,
@@ -245,6 +260,12 @@ impl Image {
     #[must_use]
     pub const fn server(&self) -> &Service {
         &self.server
+    }
+
+    /// The service that stands the person's own desktop up.
+    #[must_use]
+    pub const fn desktop(&self) -> &Service {
+        &self.desktop
     }
 
     /// The service that stands the sign-in screen up.

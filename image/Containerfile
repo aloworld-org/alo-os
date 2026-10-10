@@ -622,9 +622,11 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/systemd/system/alo-convertd.socket \
                /usr/lib/systemd/system/alo-convertd.service \
                /usr/lib/systemd/system/alo-compositor.service \
+               /usr/lib/systemd/system/alo-desktop.service \
                /usr/lib/systemd/system/alo-portald.service \
                /usr/lib/systemd/system/alo-shipping.service \
                /usr/lib/pam.d/alo-compositor \
+               /usr/lib/pam.d/alo-desktop \
                /usr/lib/sysusers.d/alo.conf \
                /usr/lib/os-release \
                /usr/lib/tmpfiles.d/alo.conf \
@@ -633,7 +635,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
  && systemctl enable alo-boundaryd.service alo-agentd.service alo-sessiond.service \
                      alo-modeld.service alo-convertd.socket \
                      alo-compositor.service alo-portald.service \
-                     alo-shipping.service \
+                     alo-shipping.service alo-desktop.service \
  && bootc container lint
 
 # The logins, made here rather than only at boot — and then checked, which is

@@ -134,6 +134,8 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_opener_can_be_knocked_on_by_the_greeter_alone(image, &mut wrong);
     the_agent_holds_nothing(image, &mut wrong);
     the_screen_holds_nothing(image, &mut wrong);
+    the_desktop_is_the_persons(image, &mut wrong);
+    the_desktop_lives_and_dies_with_its_session(image, &mut wrong);
     the_logins_are_the_ones_this_image_makes(image, &mut wrong);
     the_build_holds_every_login_to_its_number(image, &mut wrong);
     the_directories_are_made(image, &mut wrong);
@@ -847,6 +849,50 @@ fn the_screen_holds_nothing(image: &Image, wrong: &mut Vec<Wrong>) {
     }
 }
 
+/// **A desktop is the person's, and the greeter is the machine's.**
+///
+/// `the_screen_holds_nothing` above says the compositor *is* root and is the
+/// only one of the five that is, because it stands in front of somebody who has
+/// not signed in. This is the other half of that morning and the opposite rule:
+/// a desktop holds a person's keyboard, their clipboard and their windows for a
+/// whole day, and one running as root would be a machine where the thing being
+/// typed into is not them.
+///
+/// `alo-desktop`'s own header is why this is checked here rather than in the
+/// process: *whose session this is, is whose session this is*, and it refuses to
+/// read a uid from a variable. So the unit's `User=` line is the only place the
+/// answer exists, and a unit is a file somebody edits.
+fn the_desktop_is_the_persons(image: &Image, wrong: &mut Vec<Wrong>) {
+    let runs = image.desktop().as_login();
+    if runs.is_none_or(|who| who == "root") {
+        wrong.push(Wrong::TheDesktopIsNotThePersons {
+            desktop: image.desktop().called().to_owned(),
+            runs: runs.unwrap_or("nothing it says").to_owned(),
+        });
+    }
+}
+
+/// **A desktop starts with a session and ends with it, and both are checked.**
+///
+/// One direction is not enough and the two fail differently. `WantedBy=` with no
+/// `BindsTo=` is a desktop that outlives the session that started it — still
+/// drawn after the person signs out, over the sign-in screen of whoever comes
+/// next. `BindsTo=` with no `WantedBy=` is a desktop nothing ever starts, which
+/// is exactly the state this unit was written to end: `alo-desktop` was built
+/// and installed and no unit named it.
+fn the_desktop_lives_and_dies_with_its_session(image: &Image, wrong: &mut Vec<Wrong>) {
+    let a_persons_session = |named: &&str| named.starts_with("user@");
+    let bound = image.desktop().bound_to();
+    let wanted = image.desktop().wanted_by();
+    if !bound.iter().any(a_persons_session) || !wanted.iter().any(a_persons_session) {
+        wrong.push(Wrong::TheDesktopOutlivesItsSession {
+            desktop: image.desktop().called().to_owned(),
+            bound: bound.into_iter().map(str::to_owned).collect(),
+            wanted: wanted.into_iter().map(str::to_owned).collect(),
+        });
+    }
+}
+
 /// ADR 0001 §2 and ADR 0018: the service that talks to the agent holds nothing,
 /// and says so.
 fn the_agent_holds_nothing(image: &Image, wrong: &mut Vec<Wrong>) {
@@ -1090,8 +1136,8 @@ mod tests {
     use super::*;
     use crate::testing::{
         THE_AGENTS_UNIT, THE_BOOTING_DOCUMENT, THE_CONTAINERFILE, THE_DESCRIPTION_FILE,
-        THE_LOADERS_UNIT, THE_OPENERS_UNIT, THE_SERVERS_UNIT, THE_SYSUSERS, THE_TMPFILES,
-        a_copy_of_the_image, edited, image_at, the_release_line, the_store_file,
+        THE_DESKTOPS_UNIT, THE_LOADERS_UNIT, THE_OPENERS_UNIT, THE_SERVERS_UNIT, THE_SYSUSERS,
+        THE_TMPFILES, a_copy_of_the_image, edited, image_at, the_release_line, the_store_file,
     };
 
     /// **The image this repository ships says one thing.** Everything below
@@ -1123,6 +1169,115 @@ mod tests {
              It runs as root, which is the one of the five where this matters most.",
             screen.bounded_to(),
             screen.given()
+        );
+    }
+
+    /// **A desktop running as root is caught.**
+    ///
+    /// The inverse of the screen's case and the larger surface: a greeter is
+    /// root because nobody is there yet, and a desktop holds a person's
+    /// keyboard, clipboard and windows for the whole day. `alo-desktop` refuses
+    /// to read a uid from a variable - *whose session this is, is whose session
+    /// this is* - so the unit's `User=` line is the only place it is decided,
+    /// and a unit is a file somebody edits.
+    #[test]
+    fn a_desktop_that_would_run_as_root_is_caught() {
+        let root = a_copy_of_the_image("desktop-as-root");
+        edited(&root, THE_DESKTOPS_UNIT, "User=alo", "User=root");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheDesktopIsNotThePersons { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A desktop that would outlive the session that started it is caught.**
+    ///
+    /// Without `BindsTo=`, signing out leaves the desktop drawn - over the
+    /// sign-in screen of whoever comes next. Checked by removing the line
+    /// rather than by reading it, because the failure is what a person would
+    /// see and not what the file says.
+    #[test]
+    fn a_desktop_that_would_outlive_its_session_is_caught() {
+        let root = a_copy_of_the_image("desktop-outlives");
+        edited(&root, THE_DESKTOPS_UNIT, "BindsTo=user@1000.service", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheDesktopOutlivesItsSession { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And a desktop nothing starts is caught by the same check**, which is
+    /// the state this unit was written to end.
+    ///
+    /// `alo-desktop` was built by the recipe and installed to `/usr/bin` and no
+    /// unit named it: 8 `ExecStart=` lines in that directory and none its own.
+    /// A machine signed somebody in and showed them nothing. Removing
+    /// `WantedBy=` is that state in one line, and the check refuses it from the
+    /// other direction than the test above.
+    #[test]
+    fn a_desktop_nothing_would_start_is_caught() {
+        let root = a_copy_of_the_image("desktop-unstarted");
+        edited(&root, THE_DESKTOPS_UNIT, "WantedBy=user@1000.service", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheDesktopOutlivesItsSession { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **The shipped desktop unit is the person's, asked of the real file.**
+    ///
+    /// The three tests above prove the checks can refuse. This proves the thing
+    /// the task was about: that the unit a built machine actually starts after
+    /// sign-in passes them. A check that only ever meets a fixture is a check
+    /// about a fixture.
+    #[test]
+    fn the_desktop_this_repository_ships_is_the_persons_and_lives_with_their_session() {
+        let at = "../../image/usr/lib/systemd/system/alo-desktop.service";
+        let Ok(unit) = std::fs::read_to_string(at) else {
+            unreachable!("the shipped desktop unit is in this repository, at {at}")
+        };
+        let Ok(parsed) = crate::unit::Unit::read(&unit) else {
+            unreachable!("the shipped desktop unit parses as a unit")
+        };
+        let Ok(desktop) = crate::service::Service::of("alo-desktop.service", parsed) else {
+            unreachable!("the shipped desktop unit is a service")
+        };
+
+        assert_eq!(
+            desktop.as_login(),
+            Some("alo"),
+            "the desktop a person arrives at does not run as them"
+        );
+        assert!(
+            desktop.holds_nothing(),
+            "the largest surface on the machine holds capabilities: bounded to {:?}, given {:?}",
+            desktop.bounded_to(),
+            desktop.given()
+        );
+        assert!(
+            desktop.bound_to().iter().any(|it| it.starts_with("user@")),
+            "signing out would leave this desktop drawn: bound to {:?}",
+            desktop.bound_to()
+        );
+        assert!(
+            desktop.wanted_by().iter().any(|it| it.starts_with("user@")),
+            "nothing starts this desktop: wanted by {:?}",
+            desktop.wanted_by()
         );
     }
 
