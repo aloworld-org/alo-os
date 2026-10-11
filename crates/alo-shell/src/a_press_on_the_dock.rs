@@ -183,8 +183,20 @@ impl crate::Server {
 
     /// Whether the list of applications the bar had no room for is open.
     #[must_use]
-    pub(crate) const fn what_the_dock_has_open(&self) -> &crate::WhatTheDockHasOpen {
-        &self.the_dock_has_open
+    pub(crate) fn what_the_dock_has_open(&self) -> crate::WhatTheDockHasOpen {
+        // **Worked out now, from the windows there are now**, rather than
+        // remembered from when the list was opened. The person chose an
+        // application; which windows it has is a fact about this moment, and
+        // one that changes while its list is up.
+        crate::what_the_dock_has_open::what_that_means_now(
+            &self.the_dock_was_asked_for,
+            &self.the_windows_the_dock_sees(),
+            alo_appearance::TextScale::default(),
+            // **The room is not decided here.** How much of the display a list
+            // may take is the draw's, which knows where the bar is; this is the
+            // widest bound there is, so the draw's own is the one that binds.
+            alo_dock::Room::pixels(u32::MAX),
+        )
     }
 
     /// Let the Dock answer this press, and say whether it did.
@@ -207,11 +219,16 @@ impl crate::Server {
         match answer {
             None | Some(WhatAPressOnTheDockDoes::Nothing) => false,
             Some(WhatAPressOnTheDockDoes::TurnTheOverflowOver) => {
-                self.the_dock_has_open = if self.the_dock_has_open.is_more_apps() {
-                    crate::WhatTheDockHasOpen::Nothing
-                } else {
-                    crate::WhatTheDockHasOpen::MoreApps
-                };
+                use crate::what_the_dock_has_open::WhatTheDockWasAskedFor as Asked;
+                self.the_dock_was_asked_for =
+                    if matches!(self.the_dock_was_asked_for, Asked::MoreApps) {
+                        Asked::Nothing
+                    } else {
+                        // **Opening the overview closes a window list**, which
+                        // is what one field rather than two guarantees: there
+                        // is no state in which both are open.
+                        Asked::MoreApps
+                    };
                 true
             }
             Some(WhatAPressOnTheDockDoes::GoTo(app)) => {
@@ -256,13 +273,29 @@ impl crate::Server {
     fn go_to_this_application(&mut self, app: &alo_dock::AppId) {
         let windows = self.the_windows_the_dock_sees();
         let (id, back) = match what_a_press_on_an_icon_does(&windows, app) {
-            // `OpenThePicker` and `Launch`, both named above.
-            WhatAnIconDoes::Nothing | WhatAnIconDoes::OpenThePicker | WhatAnIconDoes::Launch => {
+            // **Several windows: open the list and let the person say which.**
+            // The rows are not built here — `Self::what_the_dock_has_open`
+            // works them out at every draw from the windows there are then, so
+            // a window that closes while the list is open leaves it.
+            WhatAnIconDoes::OpenThePicker => {
+                self.the_dock_was_asked_for =
+                    crate::what_the_dock_has_open::WhatTheDockWasAskedFor::TheWindowsOf(
+                        app.clone(),
+                    );
                 return;
             }
+            // `Launch` is named above: nothing here can start an application.
+            // `Nothing` is a press that found no window, which happens when the
+            // icon's application closed between the draw and the press.
+            WhatAnIconDoes::Nothing | WhatAnIconDoes::Launch => return,
             WhatAnIconDoes::Focus(id) => (id, BringItBack::No),
             WhatAnIconDoes::BringItBackThenFocus(id) => (id, BringItBack::Yes),
         };
+        // **Going to a window closes whatever the Dock had open**, which is the
+        // owner's *dismisses on … completed selection*. Done before the window
+        // is reached rather than after, so a refusal below does not leave a
+        // list open over the application a person just asked for.
+        self.the_overflow_closes();
         // **Looked up now, not remembered from the draw.** Ids are the window
         // list's own indices and a window closing renumbers the rest, so a
         // surface kept since the frame could be a different window by the time
@@ -289,7 +322,8 @@ impl crate::Server {
     /// every list on this machine and what `docs/design/the-alo-dock.md` says of
     /// the Dock's surfaces: *Escape closes whatever Dock surface is open.*
     pub(crate) fn the_overflow_closes(&mut self) {
-        self.the_dock_has_open = crate::WhatTheDockHasOpen::Nothing;
+        self.the_dock_was_asked_for =
+            crate::what_the_dock_has_open::WhatTheDockWasAskedFor::Nothing;
     }
 }
 

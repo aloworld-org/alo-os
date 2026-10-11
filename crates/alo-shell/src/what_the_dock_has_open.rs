@@ -46,11 +46,35 @@ pub enum WhatTheDockHasOpen {
     MoreApps,
     /// The windows of one application, opened from its icon.
     ///
-    /// Carries **which** application, because a picker that did not know would
-    /// be a list of nothing — and because the windows are re-read at every
-    /// frame from the application rather than remembered, so a window that
-    /// closes while the list is open leaves the list rather than leaving a row
-    /// that names nothing.
+    /// Carries the **rows**, not the application. A drawing needs each window's
+    /// name and whether it was put aside, and neither is on the Dock's own
+    /// list — `OnTheDock` is one entry per application and counts its windows
+    /// rather than naming them.
+    ///
+    /// **Built fresh every frame**, by `Server::what_the_dock_has_open`, from
+    /// the windows the Dock can see at that moment. So a window that closes
+    /// while the list is open leaves the list, rather than leaving a row that
+    /// names nothing — and there is no cache here that somebody has to remember
+    /// to refresh.
+    TheWindowsOf(alo_dock::picking::ThePicker),
+}
+
+/// Which surface the person asked for, which is all the `Server` keeps.
+///
+/// **Separate from [`WhatTheDockHasOpen`] because they are different facts.**
+/// This is a choice and it lasts until the person makes another; that is a
+/// frame's worth of rows and is worked out again every time anything is drawn.
+/// Keeping the rows here instead would be a cache of what the windows were when
+/// the list was opened, and the fault that follows is a row naming a window
+/// that has closed.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) enum WhatTheDockWasAskedFor {
+    /// Neither.
+    #[default]
+    Nothing,
+    /// The overview.
+    MoreApps,
+    /// The windows of this application.
     TheWindowsOf(alo_dock::AppId),
 }
 
@@ -61,12 +85,12 @@ impl WhatTheDockHasOpen {
         matches!(self, Self::MoreApps)
     }
 
-    /// Which application's windows are open, if any are.
+    /// The window list that is open, if one is.
     #[must_use]
-    pub const fn the_windows_of(&self) -> Option<&alo_dock::AppId> {
+    pub const fn the_windows_of(&self) -> Option<&alo_dock::picking::ThePicker> {
         match self {
             Self::Nothing | Self::MoreApps => None,
-            Self::TheWindowsOf(app) => Some(app),
+            Self::TheWindowsOf(picker) => Some(picker),
         }
     }
 
@@ -78,6 +102,51 @@ impl WhatTheDockHasOpen {
     #[must_use]
     pub const fn is_anything(&self) -> bool {
         !matches!(self, Self::Nothing)
+    }
+}
+
+/// Work out what to draw from what the person asked for and what is open now.
+///
+/// **Separate from `Server::what_the_dock_has_open` so it can be tested.** The
+/// server's version needs a compositor to get its windows from; this needs a
+/// list, and the thing worth checking is the conversion rather than where the
+/// windows came from. The same split `crate::which_card_the_seat_holds` uses,
+/// and for the same reason.
+///
+/// `room` is how far the list may grow before it scrolls. The caller that knows
+/// is the draw, which knows where the bar is; this is handed whatever it is
+/// given and does not decide.
+pub(crate) fn what_that_means_now(
+    asked: &WhatTheDockWasAskedFor,
+    windows: &alo_dock::Windows,
+    text: alo_appearance::TextScale,
+    room: alo_dock::Room,
+) -> WhatTheDockHasOpen {
+    match asked {
+        WhatTheDockWasAskedFor::Nothing => WhatTheDockHasOpen::Nothing,
+        WhatTheDockWasAskedFor::MoreApps => WhatTheDockHasOpen::MoreApps,
+        WhatTheDockWasAskedFor::TheWindowsOf(app) => {
+            let picker = alo_dock::picking::ThePicker::of(
+                alo_dock::previews::Previews::of(
+                    windows,
+                    app,
+                    alo_dock::previews::Opened::ByPressingTheIcon,
+                ),
+                text,
+                room,
+            );
+            // **A list that is not worth showing is not open.** The windows of
+            // the application a person chose can close while its list is up,
+            // and one window left is a list with nothing to choose between —
+            // `alo_dock::clicking` would not have opened it for one. Closing is
+            // the honest answer and it costs the person nothing: the window
+            // they are left with is the one a plain press would now go to.
+            if picker.is_worth_showing() {
+                WhatTheDockHasOpen::TheWindowsOf(picker)
+            } else {
+                WhatTheDockHasOpen::Nothing
+            }
+        }
     }
 }
 

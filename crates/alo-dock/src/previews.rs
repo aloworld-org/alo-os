@@ -71,6 +71,20 @@ pub enum Opened {
     ByKeyboardFocus,
     /// The icon was held down.
     ByHolding,
+    /// The icon was pressed, and the application has more than one window.
+    ///
+    /// **The fourth door, and the newest.** `docs/design/the-alo-dock.md` has
+    /// said *hovering an icon shows the application's name, then named previews
+    /// of its windows … keyboard focus opens the same list; so does a long
+    /// press. One list, three doors* since it was written, and ADR 0103 made a
+    /// plain press a fourth: a click on an application with several windows
+    /// opens its picker rather than guessing at the one used last.
+    ///
+    /// It is a variant rather than being folded into [`Self::ByHolding`]
+    /// because the two are different things a person did, and an accessible
+    /// name that said *held* of a click would be telling them something untrue
+    /// about their own hand.
+    ByPressingTheIcon,
 }
 
 impl Opened {

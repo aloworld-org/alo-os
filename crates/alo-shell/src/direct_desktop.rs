@@ -601,7 +601,7 @@ impl LoopInput for Desk<'_> {
         // which of the Dock's surfaces is open, and the borrow must not be of
         // the `Server` — this lane calls `&mut server` again further down, to
         // record where the Dock and the fixed controls were drawn.
-        let the_dock_has_open = server.what_the_dock_has_open().clone();
+        let the_dock_has_open = server.what_the_dock_has_open();
         // **Said here because the drawing path may not word a sentence**, and a
         // local for `windows`' reason exactly: the frame borrows it.
         // `tests/desktop_source.rs` holds that no `desktop_*` or `dock_*` file
