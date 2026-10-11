@@ -51,7 +51,55 @@ pub const NOT_THIS_MACHINES_PERSON: Word = Word::saying(
 );
 
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 2] = [NOT_SIGNED_IN, NOT_THIS_MACHINES_PERSON];
+/// A name that is not the shape an account's name can be.
+pub const NOT_A_NAME: Word = Word::saying(
+    "accounts.not-a-name",
+    "that is not a name an account can go under — use lowercase letters, digits, `-` and `_`, starting with a letter, up to 32 characters",
+)
+.noting(
+    "Said when somebody making the first account on a machine types a name that cannot be a Unix login. The rule is the shape, not a policy, so keep the translation concrete about what is allowed rather than saying the name is invalid.",
+);
+
+/// A name somebody already has an account under.
+pub const NAME_IS_TAKEN: Word = Word::saying(
+    "accounts.name-is-taken",
+    "somebody already has an account under that name on this machine — choose another",
+)
+.noting(
+    "Said when making an account, never at sign-in. Telling somebody a name is taken while they are making the first account on their own machine reveals nothing; saying the same at a sign-in prompt would, which is why `accounts.not-signed-in` stays silent about it.",
+);
+
+/// An account asked for with no password.
+pub const AN_ACCOUNT_NEEDS_A_PASSWORD: Word = Word::saying(
+    "accounts.needs-a-password",
+    "an account needs a password, and an empty one is not one",
+)
+.noting(
+    "Said when somebody making an account leaves the password empty. Not a strength rule - this machine sets none - but the difference between a password and no password.",
+);
+
+/// An account the machine itself could not make.
+///
+/// The four faults a person cannot act on, in one sentence for the reason
+/// [`NOT_THIS_MACHINES_PERSON`] gives: whoever is standing at the screen is not
+/// who can fix it.
+pub const THE_ACCOUNT_WAS_NOT_MADE: Word = Word::saying(
+    "accounts.not-made",
+    "this machine could not make the account, and the fault is in how it was set up rather than in what you typed — whoever installed it has to put that right",
+)
+.noting(
+    "Said for uid 0, uid 4294967295, a number already belonging to somebody, and a password the machine could not hash. One sentence for four, because a person at a greeter can act on none of them. The detail stays in the refusal value for whoever reads the log.",
+);
+
+/// Every word this crate declares.
+pub const EVERY_WORD: [Word; 6] = [
+    NOT_SIGNED_IN,
+    NOT_THIS_MACHINES_PERSON,
+    NOT_A_NAME,
+    NAME_IS_TAKEN,
+    AN_ACCOUNT_NEEDS_A_PASSWORD,
+    THE_ACCOUNT_WAS_NOT_MADE,
+];
 
 /// Why this crate's own list could not be declared.
 ///

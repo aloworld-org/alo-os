@@ -239,6 +239,42 @@ pub enum NotSignedIn {
     },
 }
 
+impl NotCreated {
+    /// The string this crate declares for this refusal.
+    ///
+    /// **Three sentences for the person and one for the machine.** A name of
+    /// the wrong shape, a name already taken and a missing password are things
+    /// whoever is typing can fix, and each says what to do. The other four are
+    /// faults in how the machine was set up - root, nobody at all, a number
+    /// already belonging to somebody, a password the machine could not hash -
+    /// and a person standing at a greeter can act on none of them, so they say
+    /// so together. The detail stays in the value for whoever reads the log.
+    #[must_use]
+    pub const fn word(&self) -> words::Word {
+        match self {
+            Self::NotAName => words::NOT_A_NAME,
+            Self::TakenName { .. } => words::NAME_IS_TAKEN,
+            Self::NoPassword => words::AN_ACCOUNT_NEEDS_A_PASSWORD,
+            Self::TakenNumber { .. } | Self::Root | Self::NobodyAtAll | Self::CouldNotHash(_) => {
+                words::THE_ACCOUNT_WAS_NOT_MADE
+            }
+        }
+    }
+
+    /// What a person is told, in the language they read.
+    ///
+    /// Never fails and never panics, for [`NotSignedIn::said`]'s reason: a
+    /// `Strings` that was never given this crate's words answers with the key,
+    /// marked as the bug it is, and no account was made either way.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        // No gap in any of the four, and `TakenName` is the one that tempts
+        // one: a sentence with the name in it is a sentence carrying text
+        // somebody typed. The name is in the value for the log and not here.
+        strings.say(&self.word().key(), &Filling::nothing())
+    }
+}
+
 impl NotSignedIn {
     /// The string this crate declares for this refusal.
     #[must_use]

@@ -109,16 +109,39 @@ fn nothing_here_verifies_a_password_itself() {
         }
     }
 
-    // And what a person typed leaves this crate exactly once, on the line that
-    // hands it to the one authenticator this machine has.
-    let handed_on: usize = every_file()
-        .iter()
-        .map(|(_, code)| code.matches("signs_in(name, password)").count())
-        .sum();
-    assert_eq!(
-        handed_on, 1,
-        "what somebody typed is handed somewhere other than to alo-accounts"
+    // And what a person typed is handed on only to the one authenticator this
+    // machine has.
+    //
+    // **This counted one line until 2026-10-10**, when `makes_an_account` gave
+    // this crate a second reason to hold a password: making the first account
+    // hands it to `Accounts::created` and then signs that person in. A count
+    // of one would simply have been raised to two, and a number that moves
+    // whenever the code does is not a rule - so every line allowed to carry a
+    // password is named instead, and a new one fails here whatever the total.
+    let mut handed_on = Vec::new();
+    for (at, code) in every_file() {
+        for line in code.lines() {
+            let line = line.trim();
+            if line.starts_with("//") || line.contains("fn ") {
+                continue;
+            }
+            if line.contains("password)") {
+                handed_on.push(format!("{}: {line}", at.display()));
+            }
+        }
+    }
+    assert!(
+        !handed_on.is_empty(),
+        "no line carrying a password was found at all, so nothing below was checked"
     );
+    for one in &handed_on {
+        assert!(
+            one.contains("self.accounts.signs_in(name, password)")
+                || one.contains("self.accounts.created(name, person, password)")
+                || one.contains("self.signs_in(name, password)"),
+            "what somebody typed is handed somewhere other than to alo-accounts: {one}"
+        );
+    }
 }
 
 /// **It cannot open a session; it can only ask.** `alo-sessiond` is the

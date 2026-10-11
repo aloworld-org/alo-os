@@ -51,6 +51,19 @@ pub struct Greeting<K: Knocking> {
     person: u32,
     /// Where a session is asked for.
     door: K,
+    /// The store this greeting was read from, when it was read from one.
+    ///
+    /// **Held rather than taken as an argument**, so an account can only ever
+    /// be written where this greeter reads. A caller handing a path to
+    /// [`Greeting::makes_an_account`] could write the first account to a file
+    /// the next boot does not open, and the person would meet *make an
+    /// account* a second time with nothing to say what happened.
+    ///
+    /// [`Greeting::of`] has none: a greeting assembled from accounts in hand
+    /// is the test and fixture shape, and it cannot make an account because
+    /// there is nowhere to keep one. It says so rather than keeping one in
+    /// memory that a restart loses.
+    store: Option<std::path::PathBuf>,
 }
 
 impl<K: Knocking> std::fmt::Debug for Greeting<K> {
@@ -78,6 +91,7 @@ impl<K: Knocking> Greeting<K> {
             accounts,
             person,
             door,
+            store: None,
         }
     }
 
@@ -98,13 +112,13 @@ impl<K: Knocking> Greeting<K> {
     #[cfg(unix)]
     pub fn at(store: &std::path::Path, person: u32, door: K) -> Result<Self, crate::NotReadable> {
         match alo_accounts::found(store) {
-            Ok(accounts) => Ok(Self::of(accounts, person, door)),
+            Ok(accounts) => Ok(Self::of(accounts, person, door).kept_at(store)),
             Err(alo_accounts::NotKept::NotThere { .. }) => {
                 let nobody = Accounts::none().map_err(|why| crate::NotReadable {
                     at: store.display().to_string(),
                     why: why.to_string(),
                 })?;
-                Ok(Self::of(nobody, person, door))
+                Ok(Self::of(nobody, person, door).kept_at(store))
             }
             Err(why) => Err(crate::NotReadable {
                 at: store.display().to_string(),
@@ -133,6 +147,81 @@ impl<K: Knocking> Greeting<K> {
     #[must_use]
     pub const fn door(&self) -> &K {
         &self.door
+    }
+
+    /// The store this greeting writes to, for the constructor that read one.
+    ///
+    /// Private and consuming, so the only way a greeting gets a store is the
+    /// constructor that read its accounts from that same store.
+    #[cfg(unix)]
+    fn kept_at(mut self, store: &std::path::Path) -> Self {
+        self.store = Some(store.to_path_buf());
+        self
+    }
+
+    /// The first account on this machine, as somebody typed it.
+    ///
+    /// **The road past [`Standing::MakeAnAccount`]**, which a machine has
+    /// stood at with nowhere to go since the greeter was built: `Standing`
+    /// derives that state from `how_many() == 0`, the sentence renders, and
+    /// until this existed nothing could act on it. A boot on 2026-10-10
+    /// settled there - three identical frames - because there was no door.
+    ///
+    /// It ends in a [`Greeted`] exactly as [`Self::signs_in`] does, and for
+    /// the same reason: somebody who typed a name and a password into the
+    /// first screen of their machine is owed a session or a sentence, never
+    /// a screen that appears to do nothing.
+    ///
+    /// # Made, kept, and only then signed in
+    ///
+    /// The account is written to the disk **before** anybody is signed in,
+    /// because an account that signed somebody in and was not kept is an
+    /// account they cannot use tomorrow, and they would have no way to know.
+    /// If keeping fails the refusal says the account was not made, which is
+    /// what is true after this returns: nothing was written, and the store in
+    /// memory is not one a later sign-in reads.
+    ///
+    /// The signing-in half is [`Self::signs_in`] **called and not copied**.
+    /// A second road to a knock is the one thing this file's shape exists to
+    /// prevent, and making an account would be a tempting place to open one.
+    #[cfg(unix)]
+    pub fn makes_an_account(&mut self, name: &str, password: &str) -> Greeted {
+        // **Refused here rather than trusted to the screen.** The surface
+        // offers this only at `MakeAnAccount`, and a door that believed the
+        // surface would be a door that creates a second account the day a
+        // surface forgets to ask.
+        if self.accounts.how_many() != 0 {
+            return Greeted::Refused(crate::words::ALREADY_HAS_AN_ACCOUNT.key());
+        }
+        let Some(store) = self.store.clone() else {
+            return Greeted::Refused(crate::words::THE_ACCOUNT_WAS_NOT_KEPT.key());
+        };
+
+        // **This machine's person, not a number from the surface.** The uid is
+        // the one `/etc/alo/agentd.toml` names, which is the same number
+        // `Session::opened` will insist on below; a surface that could choose
+        // it could make an account that authenticates and can never sign in.
+        let person = self.person;
+        if let Err(why) = self.accounts.created(name, person, password) {
+            return Greeted::Refused(why.word().key());
+        }
+        if let Err(why) = alo_accounts::kept(&store, &self.accounts) {
+            // What is on the disk is what counts, so the store in memory is
+            // put back to what the disk still holds rather than left carrying
+            // an account no restart would find.
+            let _unkept = why;
+            self.accounts = match alo_accounts::found(&store) {
+                Ok(accounts) => accounts,
+                Err(_) => match Accounts::none() {
+                    Ok(empty) => empty,
+                    Err(_) => {
+                        return Greeted::Refused(crate::words::THE_ACCOUNT_WAS_NOT_KEPT.key());
+                    }
+                },
+            };
+            return Greeted::Refused(crate::words::THE_ACCOUNT_WAS_NOT_KEPT.key());
+        }
+        self.signs_in(name, password)
     }
 
     /// A name and a password, as somebody typed them.

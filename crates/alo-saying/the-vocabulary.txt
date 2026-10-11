@@ -48,6 +48,10 @@ access.what-is-running	the version of this machine you are running
 access.what-it-replaced	the version it replaced
 access.what-the-turn-wrote	what will happen if you approve
 access.who-is-signing-in	who is signing in
+accounts.name-is-taken	somebody already has an account under that name on this machine — choose another
+accounts.needs-a-password	an account needs a password, and an empty one is not one
+accounts.not-a-name	that is not a name an account can go under — use lowercase letters, digits, `-` and `_`, starting with a letter, up to 32 characters
+accounts.not-made	this machine could not make the account, and the fault is in how it was set up rather than in what you typed — whoever installed it has to put that right
 accounts.not-signed-in	that name and password do not sign anyone in on this machine — check both and try again
 accounts.not-this-machines-person	this machine is set up for a different account, so you were not signed in — its description and its accounts disagree, and whoever installed it has to put that right
 adapters.fallback.activate-control.application	the application the control is in
@@ -730,7 +734,9 @@ granted.already-gone	That grant is no longer held: it has expired or was already
 granted.nothing-granted	Nothing is granted right now. No agent and no application has been granted anything on this machine, and there is nothing here to revoke
 granted.one-grant	{who} has been granted {what}
 granted.revoked	The grant was revoked. It has already stopped: the next thing asked under it is refused, with nothing to wait for
+greeting.account-not-kept	This machine could not keep the account it just made, so it was not made — whoever installed it has to put that right
 greeting.accounts-unreadable	Nobody can sign in here: this machine's list of accounts is there and cannot be trusted to be read. Whoever installed this machine has to put that right
+greeting.already-has-an-account	This machine already has an account, so sign in with it instead of making another
 greeting.make-an-account	Nobody has an account on this machine yet. Make one to sign in — the account you make here is this machine's own, and it is not sent anywhere
 greeting.nothing-listening	Signing in did not finish: the part of this machine that starts a session is not running. Nothing you typed was wrong
 greeting.nothing-said	Signing in did not finish: the part of this machine that starts a session was reached and did not answer. Nothing you typed was wrong

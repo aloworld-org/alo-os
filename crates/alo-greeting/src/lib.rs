@@ -82,6 +82,6 @@ pub use knocking::Knocking;
 pub use refusing::{NotAnswered, NotReadable};
 pub use standing::Standing;
 pub use words::{
-    ACCOUNTS_UNREADABLE, EVERY_WORD, MAKE_AN_ACCOUNT, NOTHING_LISTENING, NOTHING_SAID, Word,
-    WordsError, declare_into, greeting_words,
+    ACCOUNTS_UNREADABLE, ALREADY_HAS_AN_ACCOUNT, EVERY_WORD, MAKE_AN_ACCOUNT, NOTHING_LISTENING,
+    NOTHING_SAID, THE_ACCOUNT_WAS_NOT_KEPT, Word, WordsError, declare_into, greeting_words,
 };
