@@ -66,7 +66,8 @@ pub use refusing::{CannotHash, NotCreated, NotKept, NotSignedIn};
 pub use session::{Session, SignedIn};
 pub use store::Accounts;
 pub use words::{
-    EVERY_WORD, NOT_SIGNED_IN, NOT_THIS_MACHINES_PERSON, Word, WordsError, accounts_words,
+    AN_ACCOUNT_NEEDS_A_PASSWORD, EVERY_WORD, NAME_IS_TAKEN, NOT_A_NAME, NOT_SIGNED_IN,
+    NOT_THIS_MACHINES_PERSON, THE_ACCOUNT_WAS_NOT_MADE, Word, WordsError, accounts_words,
     declare_into,
 };
 pub use written::THE_FORMAT;

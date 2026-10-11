@@ -148,13 +148,29 @@ fn names_it(line: &str) -> bool {
     false
 }
 
-/// **The password appears in this crate's code exactly twice**: once as the
-/// parameter of the one method that takes one, and once on the line that hands
-/// it to the one thing on this machine that verifies passwords. There is
-/// nowhere else for it to be, which is what makes *nothing here holds it* a
-/// property rather than a promise.
+/// **The password appears in this crate's code in five places and no others**,
+/// each named below: two parameters of the two methods that take one, and the
+/// three lines that hand it on — twice to the one thing on this machine that
+/// verifies passwords, and once from one of those methods to the other.
+///
+/// **It was two until 2026-10-10**, when `makes_an_account` gave this crate a
+/// second reason to hold a password. The count was not simply raised: a number
+/// that moves whenever the code does says nothing, so each allowed line is
+/// written out, and one that is not on the list fails whatever the total.
 #[test]
 fn the_password_is_a_parameter_and_an_argument_and_nothing_else() {
+    /// Every line allowed to name a password, as it is written.
+    const WHERE_IT_MAY_BE: [&str; 5] = [
+        // The two doors that take one from a surface.
+        "pub fn signs_in(&self, name: &str, password: &str) -> Greeted {",
+        "pub fn makes_an_account(&mut self, name: &str, password: &str) -> Greeted {",
+        // Handed to the one authenticator, to verify and to make.
+        "let who = match self.accounts.signs_in(name, password) {",
+        "if let Err(why) = self.accounts.created(name, person, password) {",
+        // And one door to the other, so there is one road to a knock.
+        "self.signs_in(name, password)",
+    ];
+
     let mut found = Vec::new();
     for (at, written) in every_file() {
         for (which, line) in the_code_of(&written) {
@@ -164,28 +180,28 @@ fn the_password_is_a_parameter_and_an_argument_and_nothing_else() {
         }
     }
 
-    assert_eq!(
-        found.len(),
-        2,
-        "the password is named in this crate's code somewhere new: {found:#?}"
+    assert!(
+        !found.is_empty(),
+        "no line naming a password was read at all, so nothing below was checked"
     );
-    for (at, _, line) in &found {
+    for (at, which, line) in &found {
         assert!(
             at.ends_with("greeting.rs"),
             "the password reached {}: {line}",
             at.display()
         );
+        assert!(
+            WHERE_IT_MAY_BE.contains(&line.as_str()),
+            "{}:{which} names the password somewhere new: {line}",
+            at.display()
+        );
     }
-    let (_, _, parameter) = found.first().unwrap();
-    assert!(
-        parameter.contains("fn signs_in(") && parameter.contains("password: &str"),
-        "the first mention is not the parameter of the one method that takes one: {parameter}"
-    );
-    let (_, _, handed_on) = found.get(1).unwrap();
-    assert!(
-        handed_on.contains("self.accounts.signs_in(name, password)"),
-        "the second mention is not the line that hands it to alo-accounts: {handed_on}"
-    );
+    for allowed in WHERE_IT_MAY_BE {
+        assert!(
+            found.iter().any(|(_, _, line)| line == allowed),
+            "`{allowed}` is on the list and not in the code — the list has outlived its subject"
+        );
+    }
 }
 
 /// **Nothing here copies it, keeps it or writes it down.** The shapes that
@@ -210,9 +226,14 @@ fn nothing_on_those_two_lines_keeps_or_prints_anything() {
                 "dbg!",
                 "self.",
             ] {
-                // `self.accounts.signs_in(name, password)` is the one `self.`
-                // there is, and it is the handing on rather than the keeping.
-                if shape == "self." && line.contains("self.accounts.signs_in(") {
+                // Three lines carry a `self.`, and each is a handing on rather
+                // than a keeping: to the authenticator to verify, to it to
+                // make an account, and from one door to the other.
+                if shape == "self."
+                    && (line.contains("self.accounts.signs_in(")
+                        || line.contains("self.accounts.created(")
+                        || line.contains("self.signs_in(name, password)"))
+                {
                     continue;
                 }
                 assert!(
@@ -236,10 +257,13 @@ fn nothing_on_those_two_lines_keeps_or_prints_anything() {
 #[test]
 fn every_field_this_crate_has_is_one_somebody_named() {
     /// What the greeter is made of, and the whole of it.
-    const WHAT_IT_HOLDS: [&str; 5] = [
-        // `Greeting`: the accounts, the described number, the door.
-        "accounts", "person", "door", // `TheOpenersDoor`: where the door is.
-        "at",   // Every refusal: what the machine said about it.
+    const WHAT_IT_HOLDS: [&str; 6] = [
+        // `Greeting`: the accounts, the described number, the door, and the
+        // store it was read from — a path, held so an account made here can
+        // only be written where this greeter reads. Nothing a person typed.
+        "accounts", "person", "door", "store",
+        // `TheOpenersDoor`: where the door is.
+        "at", // Every refusal: what the machine said about it.
         "why",
     ];
 

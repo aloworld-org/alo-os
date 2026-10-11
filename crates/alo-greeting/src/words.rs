@@ -93,8 +93,28 @@ pub const NOTHING_SAID: Word = Word::saying(
      have forgotten their password.",
 );
 
+/// A machine somebody already has an account on.
+pub const ALREADY_HAS_AN_ACCOUNT: Word = Word::saying(
+    "greeting.already-has-an-account",
+    "This machine already has an account, so sign in with it instead of making another",
+)
+.noting(
+    "Said if an account is asked for on a machine that has one. A person normally never reads it, because the screen offers making an account only when there are none - it is here because the door refuses on its own rather than trusting the screen to have asked.",
+);
+
+/// An account that was made and could not be written down.
+pub const THE_ACCOUNT_WAS_NOT_KEPT: Word = Word::saying(
+    "greeting.account-not-kept",
+    "This machine could not keep the account it just made, so it was not made — whoever installed it has to put that right",
+)
+.noting(
+    "Said when the accounts store cannot be written, or when this greeter was built with no store to write to. The sentence says the account was not made, because that is what the person needs to know: one they could not sign in with next time would be worse than none.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 4] = [
+pub const EVERY_WORD: [Word; 6] = [
+    ALREADY_HAS_AN_ACCOUNT,
+    THE_ACCOUNT_WAS_NOT_KEPT,
     MAKE_AN_ACCOUNT,
     ACCOUNTS_UNREADABLE,
     NOTHING_LISTENING,
