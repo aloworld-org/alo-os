@@ -1401,7 +1401,9 @@ display. A window that was put aside comes back and is then focused; an
 application with several windows opens the window list rather than guessing,
 which is ADR 0103 replacing *focus the one used last*.
 
-**Still owed:** two halves, and they are different sizes.
+**Still owed:** one half, and it is somebody else's. A press inside *More apps*
+and inside a window list was the other, and it was built on 2026-10-12 — see
+*More apps* below.
 
 **Launching is owed and is somebody else's.** *Nothing open → launch* needs
 something that can start an application and nothing in this workspace can, so a
@@ -1439,11 +1441,26 @@ rather than searches, which is the slower half of the promise and the one the
 owner named first. Where the work is: **task 5 of
 `docs/autonomy/the-dock-more-apps-and-the-minimised-panel.md`**.
 
-**And neither surface takes a pointer press.** `TheDocksPlaces` is the Dock's
-hit test and it covers the band, not the popover above it, so a cell in *More
-apps* does nothing when clicked and the keyboard is today the only way to choose
-from it. Found 2026-10-11 while building the keyboard and written down as
-**task 9 of the same plan** rather than fixed in passing.
+**Both surfaces now take a pointer press**, which they did not on 2026-10-11:
+`TheDocksPlaces` covers the band and nothing covered the popover above it, so
+the keyboard was briefly the only way to choose from either. Found while
+building the keyboard, written down as task 9 of the plan rather than fixed in
+passing, and built on 2026-10-12.
+
+A point becomes an item in `alo-dock` — `TheOverview::which_cell_is_at` and
+`ThePickersPanel::which_row_is_at`, both taking viewport coordinates and adding
+their own scroll, so a caller cannot forget it. The draw records the popover,
+the list's viewport and the face's **layout**, not a list of rectangles: the
+layout already answers which item is at a point and answers it at the scroll it
+was drawn at. Enter and a press call the same
+`Server::choose_from_the_open_surface`, because migrating one way in and not the
+other is how `window_control_input` came to have a working keyboard and a broken
+button at once.
+
+Held by round trips rather than tables of points: every cell and row is fed back
+the position the layout drew it at and must answer its own index, walked the way
+the draw walks it, with the unscrolled surface as a control so that a scroll of
+zero cannot be mistaken for a scroll that was read.
 
 ### Minimising is about one window
 

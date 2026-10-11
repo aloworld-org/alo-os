@@ -1,7 +1,9 @@
 //! What the picker answers, and the one question it exists for.
 #![expect(
     clippy::unwrap_used,
-    reason = "in a test, a panic on an unexpected None is the failure being reported"
+    clippy::panic,
+    reason = "in a test, a panic on an unexpected value is the failure being reported, and a \
+              formatted panic names which of many cases it was"
 )]
 
 use super::*;
@@ -210,4 +212,85 @@ fn the_rows_sit_where_the_design_draws_them() {
         .collect();
     assert_eq!(at, vec![0, 114, 228], "a row is 106 tall with 8 between");
     assert_eq!(picker.where_a_row_sits(3), None, "one past the last");
+}
+
+/// **Every row the panel places is found again at the point it was placed.**
+///
+/// `TheOverview`'s own round trip says why at length, and it is the same risk:
+/// the draw places rows with `where_a_row_sits` and a press is classified with
+/// `which_row_is_at`, so the two disagreeing is a list whose rows restore their
+/// neighbours.
+#[test]
+fn every_row_is_found_again_where_the_panel_put_it() {
+    use crate::measures::A_WINDOW_ROW_IS_TALL;
+    for how_many in [1_usize, 2, 3, 7, 20, 60] {
+        let panel = crate::picking::the_pickers_panel(how_many, crate::Room::pixels(768));
+        for which in 0..how_many {
+            let scrolled = panel.showing(which);
+            let sits = scrolled
+                .where_a_row_sits(which)
+                .unwrap_or_else(|| panic!("row {which} of {how_many} was not placed"));
+            let in_the_viewport = sits
+                .as_pixels()
+                .checked_sub(scrolled.scrolled().as_pixels())
+                .unwrap_or_else(|| panic!("row {which} of {how_many} sits above its viewport"));
+            assert_eq!(
+                scrolled.which_row_is_at(crate::Room::pixels(in_the_viewport)),
+                Some(which),
+                "the top of row {which} of {how_many} found something else"
+            );
+            // And its middle, which a wrong stride misses where a corner does not.
+            assert_eq!(
+                scrolled.which_row_is_at(crate::Room::pixels(
+                    in_the_viewport + A_WINDOW_ROW_IS_TALL / 2
+                )),
+                Some(which),
+                "the middle of row {which} of {how_many} found something else"
+            );
+        }
+    }
+}
+
+/// **A press in the gap between two rows, or below the list, finds nothing.**
+#[test]
+fn the_gap_between_rows_and_the_room_below_the_list_find_nothing() {
+    use crate::measures::{A_WINDOW_ROW_IS_TALL, BETWEEN_APP_CELLS};
+    let panel = crate::picking::the_pickers_panel(3, crate::Room::pixels(768));
+    assert_eq!(
+        panel.which_row_is_at(crate::Room::pixels(
+            A_WINDOW_ROW_IS_TALL + BETWEEN_APP_CELLS / 2
+        )),
+        None,
+        "a press in the gap between two rows found a window"
+    );
+    assert_eq!(
+        panel.which_row_is_at(panel.the_list_is_tall()),
+        None,
+        "a press below the list's viewport found a window"
+    );
+}
+
+/// **A scrolled list is read where its rows now are.**
+///
+/// The same load-bearing check `TheOverview`'s has: the unscrolled panel must
+/// answer differently, or the scroll is not being read at all.
+#[test]
+fn a_scrolled_list_reads_the_point_where_the_row_now_is() {
+    let panel = crate::picking::the_pickers_panel(20, crate::Room::pixels(768));
+    let scrolled = panel.showing(19);
+    assert!(
+        scrolled.scrolled().as_pixels() > 0,
+        "the premise: reaching the twentieth scrolled the list"
+    );
+    let sits = scrolled.where_a_row_sits(19).unwrap();
+    let in_the_viewport = sits.as_pixels() - scrolled.scrolled().as_pixels();
+    assert_eq!(
+        scrolled.which_row_is_at(crate::Room::pixels(in_the_viewport)),
+        Some(19)
+    );
+    assert_ne!(
+        panel.which_row_is_at(crate::Room::pixels(in_the_viewport)),
+        Some(19),
+        "the unscrolled panel answered the same, so the scroll is not being read"
+    );
 }

@@ -78,6 +78,23 @@ impl Server {
         let Some(which) = self.the_dock_was_asked_for.focused() else {
             return;
         };
+        self.choose_from_the_open_surface(which);
+    }
+
+    /// Do to the `which`th item of whichever surface is open what choosing it
+    /// means.
+    ///
+    /// **One performer for the keyboard and the pointer.** Enter and a press on
+    /// a row are the same act and this is the only place that carries it out.
+    /// `crate::window_control_input` records what the other choice costs: when
+    /// only the keyboard was migrated to a new mechanism, the button stayed
+    /// broken while a keyboard test passed — *a fix down the path nobody uses*.
+    ///
+    /// `which` indexes the whole open list, counting the overview's pinned
+    /// group first. Out of range does nothing, which is an ordinary race: an
+    /// application can close between the draw a person aimed at and the press
+    /// or key that arrives.
+    pub(crate) fn choose_from_the_open_surface(&mut self, which: usize) {
         match self.what_the_dock_has_open() {
             crate::WhatTheDockHasOpen::Nothing => {}
             crate::WhatTheDockHasOpen::MoreApps { .. } => {

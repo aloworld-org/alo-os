@@ -181,6 +181,72 @@ impl crate::Server {
         self.dock_as_drawn.insert(display.to_owned(), drawn);
     }
 
+    /// Where this display's open surface was drawn, or that none was.
+    ///
+    /// **[`None`] removes the entry rather than leaving the last one**, which is
+    /// what keeps this from going stale: the frame that closes a popover is the
+    /// frame that forgets where it was. An entry kept would be a press taken by
+    /// a surface no longer on the screen — and taken is the worst of the three
+    /// answers, because the press would not reach the canvas either.
+    pub(crate) fn the_docks_surface_was_drawn(
+        &mut self,
+        display: &str,
+        drawn: Option<crate::where_the_docks_surface_is::TheSurfaceAsDrawn>,
+    ) {
+        match drawn {
+            Some(drawn) => {
+                self.the_docks_surface_as_drawn
+                    .insert(display.to_owned(), drawn);
+            }
+            None => {
+                self.the_docks_surface_as_drawn.remove(display);
+            }
+        }
+    }
+
+    /// Let the open surface answer this press, and say whether it did.
+    ///
+    /// **Asked before the band**, because the surface is drawn in front of it
+    /// and a popover that opens over the bar must take a press that lands on
+    /// both. `Dismiss` answers `false`, which is the right answer and not a
+    /// gap: a press outside an open surface closes it **and** does the thing it
+    /// landed on, which is what every list on this machine does.
+    /// `crate::pointer` carries out the closing, on any press the Dock does not
+    /// take, and did so before this surface could be pressed at all — so this
+    /// returns the press rather than closing anything itself.
+    ///
+    /// `false` when nothing is open.
+    fn the_open_surface_takes_this_press(
+        &mut self,
+        at: smithay::utils::Point<i32, smithay::utils::Physical>,
+    ) -> bool {
+        use crate::where_the_docks_surface_is::WhatAPressOnTheSurfaceDoes as Does;
+        // Every display's surface is asked, for `the_dock_takes_this_press`'s
+        // reason: the pointer's location is global. Only one can be open at a
+        // time today, because one field holds what the Dock was asked for — but
+        // reading them all costs nothing and does not assume that.
+        let answer = self
+            .the_docks_surface_as_drawn
+            .values()
+            .map(|drawn| {
+                crate::where_the_docks_surface_is::what_a_press_on_the_surface_does(drawn, at)
+            })
+            .find(|answer| *answer != Does::Dismiss);
+        match answer {
+            // Nothing open, or outside every open surface. **Not closed here**,
+            // although this is the dismissal case: `crate::pointer` already
+            // closes whatever is open when the Dock does not take a press.
+            // Closing it here as well would be one rule in two places, and the
+            // second copy is the one that gets it wrong when the first changes.
+            None | Some(Does::Dismiss) => false,
+            Some(Does::TakenAndNothingDone) => true,
+            Some(Does::Choose(which)) => {
+                self.choose_from_the_open_surface(which);
+                true
+            }
+        }
+    }
+
     /// Whether the list of applications the bar had no room for is open.
     #[must_use]
     pub(crate) fn what_the_dock_has_open(&self) -> crate::WhatTheDockHasOpen {
@@ -211,6 +277,12 @@ impl crate::Server {
         &mut self,
         at: smithay::utils::Point<i32, smithay::utils::Physical>,
     ) -> bool {
+        // **The open surface first**, because it is drawn in front of the bar.
+        // A press on a cell of *More apps* that also lands over the band must
+        // open that application rather than whatever slot is underneath.
+        if self.the_open_surface_takes_this_press(at) {
+            return true;
+        }
         let answer = self
             .dock_as_drawn
             .values()

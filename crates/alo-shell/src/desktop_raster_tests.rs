@@ -684,7 +684,11 @@ fn the_overflow_list_opens_clear_of_the_put_aside_panels_column() {
                 dock.overflow_list.is_some(),
                 "{edge:?}, {reading:?}: the premise: the list was drawn"
             );
-            let list = dock.overflow_list.unwrap();
+            // **The popover's own rectangle.** `overflow_list` carries where a
+            // press is classified against as well now — the popover, the list's
+            // viewport inside it, and which face — and this test is about where
+            // the surface sits against the panel's column.
+            let list = dock.overflow_list.unwrap().popover;
             let column = drawn.panel.reserved;
             let apart = list.loc.x + list.size.w <= column.loc.x
                 || column.loc.x + column.size.w <= list.loc.x
@@ -746,7 +750,7 @@ fn the_overflow_list_is_a_bounded_popover_anchored_to_the_bar() {
             dock.overflow_list.is_some(),
             "{edge:?}: the premise: the list was drawn"
         );
-        let list = dock.overflow_list.unwrap();
+        let list = dock.overflow_list.unwrap().popover;
         assert!(
             list.size.w < width && list.size.h < height,
             "{edge:?}: the list is {:?} on a {width}x{height} display, which is not bounded",
@@ -832,7 +836,7 @@ fn sixty_applications_on_a_768_output_stop_at_the_caps() {
         dock.overflow_list.is_some(),
         "the premise: More apps was drawn"
     );
-    let list = dock.overflow_list.unwrap();
+    let list = dock.overflow_list.unwrap().popover;
 
     assert_eq!(
         list.size.h,
@@ -867,6 +871,7 @@ fn sixty_applications_on_a_768_output_stop_at_the_caps() {
     let shorter = four
         .dock
         .and_then(|it| it.overflow_list)
+        .map(|surface| surface.popover)
         .map(|it| it.size.h);
     assert!(
         shorter.is_some_and(|tall| tall < list.size.h),
@@ -917,7 +922,7 @@ fn an_open_application_in_more_apps_has_a_mark_in_the_raster() {
         dock.overflow_list.is_some(),
         "the premise: More apps was drawn"
     );
-    let list = dock.overflow_list.unwrap();
+    let list = dock.overflow_list.unwrap().popover;
 
     // The ink colour the marks are drawn in, taken from the look rather than
     // written down: a test naming a colour would pass against the wrong one.

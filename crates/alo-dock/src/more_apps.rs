@@ -346,6 +346,88 @@ impl TheOverview {
         Some((Room::pixels(across), Room::pixels(down)))
     }
 
+    /// Which application's cell a point in the **list's viewport** lands on.
+    ///
+    /// `across` and `down` are measured from the viewport's own top-left
+    /// corner, and `down` is taken **before** the scroll is undone — this adds
+    /// [`Self::scrolled`] itself. That is deliberate and it is
+    /// `ThePicker::which_window`'s reason: a caller that had to add the scroll
+    /// could forget to, and the fault would be silent and only for somebody
+    /// with enough applications to scroll.
+    ///
+    /// [`None`] for a point that is not on a cell, which includes **the gaps
+    /// between cells, the group headings, and anything past the last
+    /// application.** `alo_dock::places` already settled why a gap must answer
+    /// nothing: *a gap that reached its nearest neighbour would mean a person
+    /// aiming at the space between two applications opening one of them.* The
+    /// same holds here, and a heading is not a control.
+    #[must_use]
+    pub fn which_cell_is_at(self, across: Room, down: Room) -> Option<usize> {
+        if across.as_pixels() >= Self::width().as_pixels() {
+            return None;
+        }
+        // A point below the viewport is not in the list at all, whatever the
+        // content underneath it would be.
+        if down.as_pixels() >= self.viewport {
+            return None;
+        }
+        let into_the_content = down.as_pixels().saturating_add(self.scrolled);
+
+        // **Which column, and refuse the gap after it.** The grid's stride is a
+        // cell plus a gap; a point in the gap is past the cell's own width.
+        let stride = AN_APP_CELL_IS_WIDE.saturating_add(BETWEEN_APP_CELLS);
+        let column = across.as_pixels().checked_div(stride)?;
+        if across
+            .as_pixels()
+            .saturating_sub(column.saturating_mul(stride))
+            >= AN_APP_CELL_IS_WIDE
+        {
+            return None;
+        }
+        let column = usize::try_from(column).ok()?;
+        if column >= self.columns {
+            return None;
+        }
+
+        // **Which group**, by asking each in turn rather than by arithmetic
+        // across both: the second group's offset already accounts for the
+        // first being empty, and re-deriving that here would be a second copy
+        // of the rule `Self::of` applies.
+        for (group, before) in [(self.pinned, 0), (self.others, self.pinned.how_many)] {
+            if group.how_many == 0 {
+                continue;
+            }
+            // Past the heading and the gap under it is where the rows start.
+            let rows_at = group
+                .at
+                .saturating_add(AN_APP_GROUP_HEADING_IS_TALL)
+                .saturating_add(BETWEEN_APP_CELLS);
+            if into_the_content < rows_at {
+                continue;
+            }
+            let into_the_rows = into_the_content.saturating_sub(rows_at);
+            if into_the_rows >= group.tall.saturating_sub(rows_at.saturating_sub(group.at)) {
+                continue;
+            }
+            // The rows' stride is a cell plus a gap, like the columns'.
+            let stride = AN_APP_CELL_IS_TALL.saturating_add(BETWEEN_APP_CELLS);
+            let row = into_the_rows.checked_div(stride)?;
+            if into_the_rows.saturating_sub(row.saturating_mul(stride)) >= AN_APP_CELL_IS_TALL {
+                return None;
+            }
+            let row = usize::try_from(row).ok()?;
+            let inside = row.checked_mul(self.columns)?.checked_add(column)?;
+            if inside >= group.how_many {
+                // **A short last row answers nothing**, rather than the first
+                // cell of the next group. The point is in this group's rows and
+                // this group has nothing there.
+                return None;
+            }
+            return before.checked_add(inside);
+        }
+        None
+    }
+
     /// Whether the `which`th application is at least partly in view.
     #[must_use]
     pub fn is_shown(self, which: usize) -> bool {
