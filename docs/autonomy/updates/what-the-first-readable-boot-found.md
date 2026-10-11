@@ -115,7 +115,9 @@ run.
 
 The gain from #623 was real and was not that — 89 KB where there had been
 3.8 KB, the whole kernel ring buffer and the whole audit trail, against a log
-that used to stop at *Booting `alo OS 0.0.6 (ostree:0)'*.
+that used to stop at GRUB's last line, which on image 0.0.6 reads *Booting
+`alo OS 0.0.6 (ostree:0)'* and is the deployment GRUB names rather than a
+milestone.
 
 The reason is `console.toml`'s own other decision. `forward_to_console` writes
 to the **primary** console; that file deliberately puts `tty0` last so the
