@@ -32,6 +32,27 @@
 # rendering. An incomplete log read as an absence is the fault this whole file
 # was written to stop.
 #
+# # And `forward_to_console` alone did not do it — measured 2026-10-11
+#
+# **This file claimed that line put the journal on the serial port. It did
+# not, and the first boot carrying it proved so:** of 856 lines captured from
+# `ttyS0`, **856 carried a kernel timestamp prefix and none came from the
+# journal.** The gain over the 3.8 KB that came before was real — the kernel
+# ring buffer and the whole audit trail, 89 KB of it, where there had been
+# nothing after GRUB's last line — and it was not the journal.
+#
+# The reason is this file's own other decision. `forward_to_console` writes to
+# the **primary** console, and the paragraph above deliberately puts `tty0`
+# last so that the primary console is the screen a person is watching. Both
+# choices are right and together they send the journal to the screen, which is
+# the one place a reader of a serial port cannot see. Two correct decisions
+# that contradict each other is a worse fault than one wrong one, because
+# neither looks wrong on its own.
+#
+# So `systemd.journald.tty_path=/dev/ttyS0` names where the forwarding goes,
+# which is the option journald has for exactly this. The screen stays primary
+# and the reader gets the journal.
+#
 # # What this costs, said plainly — corrected 2026-10-11
 #
 # **This said the cost was that kernel messages become readable by somebody

@@ -21,6 +21,7 @@ use crate::converter::{THE_CONVERTER, THE_CONVERTERS_SOCKET, TheConverter};
 use crate::description::Description;
 use crate::disk::TheDisk;
 use crate::installing::{THE_ENVIRONMENT, TheEnvironment};
+use crate::journald::TheJournalSettings;
 use crate::kernel_arguments::TheKernelArguments;
 use crate::logins::Declared;
 use crate::making::Made;
@@ -72,6 +73,16 @@ const SYSUSERS: &str = "usr/lib/sysusers.d/alo.conf";
 /// `bootc` reads every `*.toml` in that directory; this image writes one, and
 /// `crate::checking` asks it whether a boot can be read or only watched.
 const THE_KERNEL_ARGUMENTS: &str = "usr/lib/bootc/kargs.d/console.toml";
+
+/// Where this image tells journald to write a forwarded journal.
+///
+/// A second file rather than a second key in the one above, because the two
+/// are two mechanisms: forwarding is a kernel argument journald reads, and
+/// the destination is not. `systemd.journald.tty_path` was tried as a kernel
+/// argument on 2026-10-11 and journald does not know it - the drop-in it does
+/// read says so at length.
+const THE_JOURNAL_DROP_IN: &str =
+    "usr/lib/systemd/journald.conf.d/20-the-journal-goes-to-the-reader.conf";
 
 /// The recipe the image is built from, beneath the image's directory.
 ///
@@ -144,6 +155,8 @@ pub struct Image {
     converter: TheConverter,
     /// The kernel arguments every deployment of this image boots with.
     kernel_arguments: TheKernelArguments,
+    /// Where this image tells journald to write a forwarded journal.
+    journal: TheJournalSettings,
     /// The recipe this image is built from, for the decisions it carries.
     recipe: String,
 }
@@ -236,6 +249,13 @@ impl Image {
             // can read* - rather than a directory that is no image.
             kernel_arguments: TheKernelArguments::read(
                 &text(&root.join(THE_KERNEL_ARGUMENTS)).unwrap_or_default(),
+            ),
+            // Read the same lenient way, and for the same reason: an image
+            // with no drop-in forwards the journal to the screen, which is a
+            // fault `crate::checking` has a sentence about rather than a
+            // directory that is no image.
+            journal: TheJournalSettings::read(
+                &text(&root.join(THE_JOURNAL_DROP_IN)).unwrap_or_default(),
             ),
             recipe,
         })
@@ -410,6 +430,12 @@ impl Image {
     #[must_use]
     pub const fn kernel_arguments(&self) -> &TheKernelArguments {
         &self.kernel_arguments
+    }
+
+    /// Where this image tells journald to write a forwarded journal.
+    #[must_use]
+    pub const fn journal(&self) -> &TheJournalSettings {
+        &self.journal
     }
 
     /// Whether the recipe says this, anywhere in it.

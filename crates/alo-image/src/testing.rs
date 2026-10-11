@@ -39,6 +39,10 @@ pub(crate) const THE_SYSUSERS: &str = "usr/lib/sysusers.d/alo.conf";
 /// The kernel arguments each deployment boots with, beneath the image's root.
 pub(crate) const THE_KERNEL_ARGUMENTS: &str = "usr/lib/bootc/kargs.d/console.toml";
 
+/// The drop-in that says where a forwarded journal is written.
+pub(crate) const THE_JOURNAL_DROP_IN: &str =
+    "usr/lib/systemd/journald.conf.d/20-the-journal-goes-to-the-reader.conf";
+
 /// What the machine says about itself, beneath the image's root.
 pub(crate) const THE_DESCRIPTION_FILE: &str = "etc/alo/agentd.toml";
 
