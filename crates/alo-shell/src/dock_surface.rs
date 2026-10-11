@@ -102,16 +102,25 @@ pub(crate) struct ADocksSurface<'a> {
     /// **Drawn here and not as rectangles**, for the reason the panel itself is
     /// here: a circle is partial coverage at every pixel of its edge.
     pub(crate) badges: &'a [Rectangle<i32, Physical>],
+    /// Rounded bars drawn on the panel: running and focused marks.
+    pub(crate) marks: &'a [Rectangle<i32, Physical>],
+    /// What colour they are.
+    pub(crate) mark: [u8; 3],
     /// The ground of a fallback badge.
     pub(crate) badge: [u8; 3],
-    /// Where the composer's field goes, if this Dock has one.
+    /// Rounded wells drawn on the panel.
     ///
-    /// **A rounded rectangle, so it is here rather than a `Solid`** — the same
-    /// reason the panel is. `radius/md` = `THE_COMPOSERS_CORNER` = 12, measured
-    /// on both Dock families.
-    pub(crate) composer: Option<Rectangle<i32, Physical>>,
-    /// The composer's own ground, which is cooler than the Dock's.
-    pub(crate) composer_is: [u8; 3],
+    /// **One shape with three uses**: the composer's field on the Dock, the
+    /// search field at the top of *More apps*, and every row of a window list.
+    /// They were two things — a `composer` and a `well` — until 2026-10-11,
+    /// and the only difference was how many there could be.
+    ///
+    /// **Rounded, so they are here rather than `Solid`s** — the same reason the
+    /// panel is. `radius/md` = `THE_COMPOSERS_CORNER` = 12, measured on both
+    /// Dock families.
+    pub(crate) wells: &'a [Rectangle<i32, Physical>],
+    /// Their ground, which is cooler than the Dock's.
+    pub(crate) well_is: [u8; 3],
     /// The display, so the raster can be kept on it.
     ///
     /// **The shadow's reach puts the raster past the screen's edge** — the Dock
@@ -203,18 +212,38 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
             // One pass over however many there are: a Dock holds a few dozen
             // slots at most, and a per-pixel loop over them is cheaper to read
             // than an index and is run once per layout rather than per frame.
-            // The composer's field: a rounded rectangle inside the panel, by
-            // the same distance function the panel itself is drawn with.
-            let field = of.composer.map_or(0.0, |field| {
-                let (fx, fy) = (
-                    (field.loc.x - area.loc.x) as f32,
-                    (field.loc.y - area.loc.y) as f32,
-                );
-                let (w, h) = (field.size.w as f32 / 2.0, field.size.h as f32 / 2.0);
-                let r = (THE_COMPOSERS_CORNER as f32).min(w).min(h);
-                let d = rounded(px, py, fx + w, fy + h, w, h, r);
-                (0.5 - d).clamp(0.0, 1.0)
-            }) * inside;
+            // A rounded bar: the panel's own distance function with the radius
+            // set to half the short side, which makes both ends semicircles.
+            let mark = of
+                .marks
+                .iter()
+                .map(|at| {
+                    let (mx, my) = (
+                        (at.loc.x - area.loc.x) as f32,
+                        (at.loc.y - area.loc.y) as f32,
+                    );
+                    let (w, h) = (at.size.w as f32 / 2.0, at.size.h as f32 / 2.0);
+                    let d = rounded(px, py, mx + w, my + h, w, h, w.min(h));
+                    (0.5 - d).clamp(0.0, 1.0)
+                })
+                .fold(0.0_f32, f32::max)
+                * inside;
+            // Every well, by the same rounded form the composer's field uses.
+            let well = of
+                .wells
+                .iter()
+                .map(|at| {
+                    let (wx, wy) = (
+                        (at.loc.x - area.loc.x) as f32,
+                        (at.loc.y - area.loc.y) as f32,
+                    );
+                    let (w, h) = (at.size.w as f32 / 2.0, at.size.h as f32 / 2.0);
+                    let r = (THE_COMPOSERS_CORNER as f32).min(w).min(h);
+                    let d = rounded(px, py, wx + w, wy + h, w, h, r);
+                    (0.5 - d).clamp(0.0, 1.0)
+                })
+                .fold(0.0_f32, f32::max)
+                * inside;
             let badge = of
                 .badges
                 .iter()
@@ -238,8 +267,13 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
                 (within, of.fill),
                 (hairline, of.edge),
                 (accent, of.accent),
+                // **The wells under the badges**, so a circle drawn on a row
+                // sits on it rather than under it.
+                (well, of.well_is),
                 (badge, of.badge),
-                (field, of.composer_is),
+                // **The mark after the badge**, so a running dot sits on the
+                // circle rather than under it.
+                (mark, of.mark),
             ] {
                 if over <= 0.0 {
                     continue;
@@ -284,6 +318,7 @@ pub(crate) fn a_panel(
     fill: [u8; 3],
     edge: [u8; 3],
     room: (i32, i32),
+    on_it: APanelsShapes<'_>,
 ) -> Option<Washed> {
     surface(ADocksSurface {
         panel,
@@ -295,11 +330,51 @@ pub(crate) fn a_panel(
         against: alo_dock::Edge::Bottom,
         accent_is: 0,
         room,
-        badges: &[],
-        badge: fill,
-        composer: None,
-        composer_is: fill,
+        badges: on_it.circles,
+        badge: on_it.circle,
+        marks: on_it.marks,
+        mark: on_it.mark,
+        wells: on_it.wells,
+        well_is: on_it.well_is,
     })
+}
+
+/// The rounded shapes drawn **on** a panel, in its own raster.
+///
+/// **Not separate rectangles pushed into `solids`.** A circle and a rounded
+/// well are partial coverage at their edges, and a `Solid` is one opaque colour
+/// over an axis-aligned rectangle — which is why the Dock's own band stopped
+/// being two `Solid`s. The popover drew its badges as squares and its search
+/// field with square corners for exactly that reason until 2026-10-11, and the
+/// fix is not a second rasteriser: it is handing these to the one that already
+/// draws the Dock's.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct APanelsShapes<'a> {
+    /// Circles, each drawn inside the square it is given.
+    pub(crate) circles: &'a [Rectangle<i32, Physical>],
+    /// What colour they are.
+    pub(crate) circle: [u8; 3],
+    /// Running and focused marks: rounded bars, each fully round at its ends.
+    ///
+    /// **In the raster and not in `solids`, for two reasons.** A 4-by-3 bar
+    /// with a 1.5 radius is round at both ends, which is partial coverage a
+    /// rectangle cannot express. And `crate::desktop_paint` paints every flat
+    /// shape *before* any panel, so a mark pushed into `solids` is painted and
+    /// then covered by the panel it belongs to — which is exactly what happened
+    /// on 2026-10-11: the marks were drawn, the code was right, and a pixel
+    /// sample under every badge found nothing at all.
+    pub(crate) marks: &'a [Rectangle<i32, Physical>],
+    /// What colour they are.
+    pub(crate) mark: [u8; 3],
+    /// Rounded wells: the search field, or every row of a window list.
+    ///
+    /// **A list and not one.** It was one, which was right while the only well
+    /// was the search field. A window list is a column of them, and drawing
+    /// only the first is the kind of fault that looks like a layout problem —
+    /// one row with a surface and the rest without.
+    pub(crate) wells: &'a [Rectangle<i32, Physical>],
+    /// What colour it is.
+    pub(crate) well_is: [u8; 3],
 }
 
 /// The signed distance from a point to a rounded rectangle: negative inside,

@@ -204,6 +204,18 @@ pub(crate) struct DesktopPalette {
     /// behalf. A badge says *this application has no artwork*, which is not alo
     /// doing anything.
     pub(crate) badge: [u8; 3],
+    /// Ink for words that stand in for something a person has not typed.
+    ///
+    /// The search field's invitation, and nothing else yet. **Quieter than
+    /// [`DesktopPalette::ink`] on purpose**: it is not a label, it is a space
+    /// waiting to be filled, and a placeholder as dark as real text reads as
+    /// text somebody already entered.
+    ///
+    /// `TextMuted` where the design is drawn, and the ink itself at high
+    /// contrast — the same substitution [`DesktopPalette::edge`] makes, and for
+    /// the same reason: a person who asked for high contrast is asking for this
+    /// to be legible, not for it to stay decorative.
+    pub(crate) ink_quiet: [u8; 3],
     /// The initial drawn inside that badge.
     ///
     /// `Role::TextPrimary` light — `#102A43`, the owner's value — and `#F7F9FA`
@@ -265,6 +277,16 @@ impl DesktopPalette {
                 Contrast::High => contrast.ink(scheme),
                 Contrast::AsDesigned => {
                     let it = alo_appearance::Role::BorderDefault.colour();
+                    [it.red(), it.green(), it.blue()]
+                }
+            },
+            ink_quiet: match contrast {
+                // **The ink itself at high contrast**, for `edge`'s reason: a
+                // person who asked for high contrast is asking for the words in
+                // an empty field to be legible, not for them to stay quiet.
+                Contrast::High => contrast.ink(scheme),
+                Contrast::AsDesigned => {
+                    let it = alo_appearance::Role::TextMuted.colour();
                     [it.red(), it.green(), it.blue()]
                 }
             },

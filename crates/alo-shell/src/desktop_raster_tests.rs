@@ -82,12 +82,13 @@ fn drawn_with_an_open_list(
     size: (i32, i32),
     edge: alo_dock::Edge,
     reading: Direction,
+    how_many: u64,
 ) -> Result<DesktopPicture, RenderError> {
     let strings = words();
     let mut labels = WindowControlLabels::new().unwrap();
     let patch = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1).unwrap();
     let mut windows = alo_dock::Windows::none();
-    for number in 0..60_u64 {
+    for number in 0..how_many {
         let named = format!("app-{number}");
         windows.opened(alo_dock::Window::of(
             alo_dock::WindowId::numbered(number),
@@ -621,9 +622,13 @@ fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
 fn every_panel_the_dock_drew_reaches_the_painter() {
     use crate::desktop_raster::DesktopPicture;
 
-    let drawn: DesktopPicture =
-        drawn_with_an_open_list((1366, 768), alo_dock::Edge::Bottom, Direction::LeftToRight)
-            .unwrap();
+    let drawn: DesktopPicture = drawn_with_an_open_list(
+        (1366, 768),
+        alo_dock::Edge::Bottom,
+        Direction::LeftToRight,
+        60,
+    )
+    .unwrap();
 
     assert!(drawn.dock.is_some(), "the premise: a Dock was drawn");
     let dock = drawn.dock.as_ref().unwrap();
@@ -669,7 +674,7 @@ fn the_overflow_list_opens_clear_of_the_put_aside_panels_column() {
         // Both directions, because the panel mirrors to the left when a person
         // reads right to left and the list has to follow it.
         for reading in [Direction::LeftToRight, Direction::RightToLeft] {
-            let drawn = drawn_with_an_open_list((1366, 768), edge, reading).unwrap();
+            let drawn = drawn_with_an_open_list((1366, 768), edge, reading, 60).unwrap();
             assert!(
                 drawn.dock.is_some(),
                 "{edge:?}, {reading:?}: the premise: a Dock was drawn"
@@ -694,7 +699,7 @@ fn the_overflow_list_opens_clear_of_the_put_aside_panels_column() {
             // surfaces read as two. The shadow is allowed to fall across the
             // column — it is soft and belongs to the list — which is why this
             // asks about the surface rather than about `panels[0].area`.
-            let gap = i32::try_from(alo_dock::measures::GAP).unwrap_or(0);
+            let gap = i32::try_from(alo_dock::measures::BESIDE_THE_DOCK).unwrap_or(0);
             let between = if column.loc.x <= 0 {
                 list.loc.x - (column.loc.x + column.size.w)
             } else {
@@ -730,7 +735,8 @@ fn the_overflow_list_is_a_bounded_popover_anchored_to_the_bar() {
         alo_dock::Edge::Left,
         alo_dock::Edge::Right,
     ] {
-        let drawn = drawn_with_an_open_list((width, height), edge, Direction::LeftToRight).unwrap();
+        let drawn =
+            drawn_with_an_open_list((width, height), edge, Direction::LeftToRight, 60).unwrap();
         assert!(
             drawn.dock.is_some(),
             "{edge:?}: the premise: a Dock was drawn"
@@ -747,10 +753,16 @@ fn the_overflow_list_is_a_bounded_popover_anchored_to_the_bar() {
             list.size
         );
         // **Anchored to the control, not merely on the screen.** The gap
-        // between the list and the band is the Dock's own `GAP` on an edge the
-        // list hangs off, so the two are a measured distance apart rather than
+        // between the list and the band is a measured distance rather than
         // wherever clamping left them.
-        let gap = i32::try_from(alo_dock::measures::GAP).unwrap_or(0);
+        //
+        // It was `GAP`, which is 8, and is `BESIDE_THE_DOCK`, which is 12,
+        // since 2026-10-11. The two were the same number by accident: `GAP` is
+        // the room between things *inside* one surface, and this is the room
+        // between two surfaces. The popover's own frame measures it — the
+        // popover's lower edge at 848 against a Dock beginning at 860 — and the
+        // owner states it in words as well.
+        let gap = i32::try_from(alo_dock::measures::BESIDE_THE_DOCK).unwrap_or(0);
         let band = dock.band;
         let touching = match edge {
             alo_dock::Edge::Bottom => band.loc.y - (list.loc.y + list.size.h),
@@ -788,4 +800,188 @@ fn the_overflow_list_is_a_bounded_popover_anchored_to_the_bar() {
             );
         }
     }
+}
+
+/// **Sixty applications on a 768-high output, measured through the draw.**
+///
+/// The owner asked for this one by name: *verify the production result with 60
+/// applications on a 768-logical-pixel-high output. Include the measured outer
+/// height and list-viewport height.* This is that measurement, taken from the
+/// rectangle the production raster produced rather than from a layout type
+/// asked the same question separately — the two could agree while the drawing
+/// used neither.
+///
+/// It is a test and not a line printed by the probe, because a probe's number
+/// is a measurement somebody took once and a test is one that runs again.
+///
+/// The numbers are asserted absolutely. A relative check — *not taller than the
+/// cap* — would pass against a popover of one pixel, and the fault being
+/// guarded is a popover that is the wrong size rather than one that is absent.
+#[test]
+fn sixty_applications_on_a_768_output_stop_at_the_caps() {
+    let drawn = drawn_with_an_open_list(
+        (1366, 768),
+        alo_dock::Edge::Bottom,
+        Direction::LeftToRight,
+        60,
+    )
+    .unwrap();
+    assert!(drawn.dock.is_some(), "the premise: a Dock was drawn");
+    let dock = drawn.dock.as_ref().unwrap();
+    assert!(
+        dock.overflow_list.is_some(),
+        "the premise: More apps was drawn"
+    );
+    let list = dock.overflow_list.unwrap();
+
+    assert_eq!(
+        list.size.h,
+        i32::try_from(alo_dock::measures::MORE_APPS_IS_AT_MOST_TALL).unwrap(),
+        "the outer height is not the owner's cap: {:?}",
+        list.size
+    );
+    assert_eq!(list.size.h, 536, "and the cap is 536");
+    assert_eq!(
+        list.size.w,
+        i32::try_from(alo_dock::measures::MORE_APPS_IS_WIDE).unwrap(),
+        "the width is not the design's",
+    );
+    assert_eq!(list.size.w, 448, "and the width is 448");
+
+    // **It really is sixty**, or the whole measurement is about something else.
+    // The fixture is handed the number, so this says it rather than deriving it
+    // from a list that could change underneath: `dock.over` is the overflow
+    // tail and would be the wrong one to count, because the overview is not the
+    // overflow and does not depend on how many fitted on the bar.
+    //
+    // A smaller Dock is drawn beside it as the control. Fewer applications must
+    // give a shorter popover, or the cap is never being reached and this test
+    // proves nothing about it.
+    let four = drawn_with_an_open_list(
+        (1366, 768),
+        alo_dock::Edge::Bottom,
+        Direction::LeftToRight,
+        4,
+    )
+    .unwrap();
+    let shorter = four
+        .dock
+        .and_then(|it| it.overflow_list)
+        .map(|it| it.size.h);
+    assert!(
+        shorter.is_some_and(|tall| tall < list.size.h),
+        "four applications gave {shorter:?} against sixty's {}, so the cap was never reached",
+        list.size.h
+    );
+
+    // And it clears the Dock by the measured gap rather than touching it.
+    let gap = dock.band.loc.y - (list.loc.y + list.size.h);
+    assert_eq!(
+        gap,
+        i32::try_from(alo_dock::measures::BESIDE_THE_DOCK).unwrap(),
+        "the gap to the Dock is not the measured one"
+    );
+    assert_eq!(gap, 12, "and that gap is 12");
+}
+
+/// **An open application in *More apps* carries a visible running mark.**
+///
+/// Not *a mark was pushed somewhere* — a mark that **reaches the pixels**. The
+/// fault this guards is one the code read as correct: the marks were built,
+/// the loop was right, and they went into `solids`, which
+/// `crate::desktop_paint` paints **before** any panel. So every one of them was
+/// drawn and then covered by the popover it belonged to, and a pixel sample
+/// under every badge on 2026-10-11 found nothing at all.
+///
+/// It is asked of the popover's raster rather than of a list, because a list
+/// cannot tell the difference between a shape that is drawn and a shape that is
+/// drawn and hidden.
+#[test]
+fn an_open_application_in_more_apps_has_a_mark_in_the_raster() {
+    let drawn = drawn_with_an_open_list(
+        (1366, 768),
+        alo_dock::Edge::Bottom,
+        Direction::LeftToRight,
+        60,
+    )
+    .unwrap();
+    assert!(drawn.dock.is_some(), "the premise: a Dock was drawn");
+    let dock = drawn.dock.as_ref().unwrap();
+    assert_eq!(
+        dock.panels.len(),
+        1,
+        "the premise: one panel was rasterised"
+    );
+    let panel = dock.panels.first().unwrap();
+    assert!(
+        dock.overflow_list.is_some(),
+        "the premise: More apps was drawn"
+    );
+    let list = dock.overflow_list.unwrap();
+
+    // The ink colour the marks are drawn in, taken from the look rather than
+    // written down: a test naming a colour would pass against the wrong one.
+    let look = noon_look(&an_appearance(), Direction::LeftToRight);
+    let ink = look.palette().unwrap().ink;
+
+    // Count the pixels of that colour inside the popover's raster. A mark is
+    // 4 by 3, so one application gives about twelve; sixty give far more. The
+    // text is a different colour — `badge_ink` on the badges and `ink` for the
+    // names — so this is deliberately a floor rather than an exact count, and
+    // the control below is what makes the floor mean something.
+    let of_that_colour = |raster: &crate::painted::Washed| {
+        raster
+            .pixels
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .filter(|px| px[0] == ink[0] && px[1] == ink[1] && px[2] == ink[2] && px[3] > 200)
+            .count()
+    };
+    let marks = of_that_colour(panel);
+    assert!(
+        marks > 0,
+        "no pixel in the popover's raster is the mark's colour, so every running \
+         mark was drawn and covered — {} by {} raster",
+        panel.area.size.w,
+        panel.area.size.h
+    );
+
+    // **The control.** A Dock whose applications have no windows draws no
+    // marks, so the count above has to fall. Without this, a popover whose
+    // whole surface happened to be that colour would pass.
+    let closed = drawn_with_an_open_list(
+        (1366, 768),
+        alo_dock::Edge::Bottom,
+        Direction::LeftToRight,
+        0,
+    );
+    if let Ok(closed) = closed
+        && let Some(none) = closed.dock.as_ref().and_then(|it| it.panels.first())
+    {
+        assert!(
+            of_that_colour(none) < marks,
+            "a Dock with nothing open has as many mark-coloured pixels as one \
+             with sixty, so the count is measuring something else: {} against {marks}",
+            of_that_colour(none)
+        );
+    }
+
+    // And the raster really is the popover's, not some other panel's.
+    //
+    // **The shadow reaches `SPREADS + FALLS`, not `SPREADS`.** It is drawn
+    // against a rectangle pushed down by `THE_SHADOW_FALLS` and faded across
+    // `THE_SHADOW_SPREADS`, so the furthest it can touch is the two together —
+    // and the raster is inflated by that on every side rather than by the fade
+    // alone. Measured here rather than assumed: the first form of this
+    // assertion used `SPREADS` and was 16 short in each direction.
+    let reach = i32::try_from(
+        alo_dock::measures::THE_SHADOW_SPREADS + alo_dock::measures::THE_SHADOW_FALLS,
+    )
+    .unwrap();
+    assert_eq!(
+        (panel.area.size.w, panel.area.size.h),
+        (list.size.w + 2 * reach, list.size.h + 2 * reach),
+        "the raster is not the popover's surface plus its shadow's reach"
+    );
 }

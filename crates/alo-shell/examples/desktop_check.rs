@@ -215,7 +215,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         let patch = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1)
             .map_err(|error| format!("{error:?}"))?;
         let mut windows = alo_dock::Windows::none();
-        for number in 0..30_u64 {
+        // **Sixty, which is the number the owner asks this to be checked at.**
+        // *Sixty applications must scroll inside the same bounded viewport*,
+        // and thirty did not reach the cap on a 768-high output, so a picture
+        // of thirty could not show whether the cap held.
+        for number in 0..60_u64 {
             let letter = char::from(b'a' + u8::try_from(number % 26).unwrap_or(0));
             let named = format!("{letter}{number}");
             windows.opened(alo_dock::Window::of(
@@ -226,7 +230,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 alo_dock::HowItSits::OnTheCanvas,
             ));
         }
-        alo_dock::Holding::nothing().showing(&windows)
+        // **Four pinned, so both of the design's groups are drawn.** With none
+        // pinned the popover shows one heading and a picture of it could not
+        // show that the groups are laid out at all.
+        let mut holding = alo_dock::Holding::nothing();
+        for named in ["Files", "Browser", "Apps", "Settings"] {
+            holding.pin(alo_dock::AppId::named(named).map_err(|error| format!("{error:?}"))?);
+        }
+        holding.showing(&windows)
     };
 
     let a_few_applications = {
@@ -248,7 +259,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     // **Said once, because the drawing path may not word a sentence.** The same
     // rule `direct_desktop` follows: `tests/desktop_source.rs` holds that no
     // `desktop_*` or `dock_*` file names `Word::` or `.say(`.
-    let the_docks_words = alo_shell::the_docks_words::TheDocksWords::said(&strings);
+    // **Nothing open**, which is what every standing in this probe draws except
+    // the one that opens *More apps* — and that one is an overview, whose words
+    // are the fixed ones. A window picker is a per-frame sentence and the probe
+    // does not yet draw a standing for it.
+    let the_docks_words =
+        alo_shell::the_docks_words::TheDocksWords::said(&strings, &alo_shell::NOTHING);
 
     let mut submitted = 0;
     let mut draw = |what: &str,

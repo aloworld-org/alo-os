@@ -608,7 +608,11 @@ impl LoopInput for Desk<'_> {
         // names `Word::` or `.say(` — every sentence a person meets comes from
         // `alo-saying`, and a raster that looked one up would be a second place
         // deciding what a person reads.
-        let the_docks_words = crate::the_docks_words::TheDocksWords::said(self.strings);
+        // **Said after the Dock's state is worked out**, because what the
+        // picker says depends on which application is open and how many windows
+        // it has — a bundle said before that would have to be said again.
+        let the_docks_words =
+            crate::the_docks_words::TheDocksWords::said(self.strings, &the_dock_has_open);
         let mut frame = self.desktop.now();
         let named = FrameTarget::metadata(target)?.name;
         what_only_the_server_knows(

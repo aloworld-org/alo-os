@@ -137,3 +137,77 @@ fn a_picker_of_one_window_or_none_is_not_worth_showing() {
     assert!(!picker_of(0, 1_000).is_worth_showing(), "no windows");
     assert!(picker_of(2, 1_000).is_worth_showing(), "two windows");
 }
+
+/// **The picker's panel stops at the same cap as the overview.**
+///
+/// The owner's 536 is about the popover and not about what is in it, so a
+/// window list obeys it exactly as a grid of applications does. Both ends,
+/// because a cap that is never reached is not being tested.
+#[test]
+fn the_pickers_panel_stops_at_the_cap() {
+    use crate::measures::MORE_APPS_IS_AT_MOST_TALL;
+    let room = Room::pixels(768 - 76 - 12 - 12);
+
+    let two = the_pickers_panel(2, room);
+    let many = the_pickers_panel(40, room);
+
+    assert_eq!(
+        many.height().as_pixels(),
+        MORE_APPS_IS_AT_MOST_TALL,
+        "forty windows did not stop at the cap"
+    );
+    assert!(many.scrolls(), "forty windows fitted without scrolling");
+    assert!(
+        two.height().as_pixels() < many.height().as_pixels(),
+        "two windows are already at the cap, so this proves nothing: {} and {}",
+        two.height().as_pixels(),
+        many.height().as_pixels()
+    );
+    assert!(!two.scrolls(), "two windows should not need to scroll");
+}
+
+/// **Its list is shorter than the overview's**, because its heading is taller.
+///
+/// 320 against 336: the picker's heading is 48 and holds a back control, the
+/// overview's is 32 and holds a line of text. Asserted as the difference rather
+/// than as two numbers, so that moving either heading is caught by one test.
+#[test]
+fn the_pickers_list_is_shorter_by_exactly_the_taller_heading() {
+    use crate::measures::{THE_MORE_APPS_HEADING_IS_TALL, THE_PICKERS_HEADING_IS_TALL};
+    let room = Room::pixels(768 - 76 - 12 - 12);
+    let overview = crate::more_apps::TheOverview::of(4, 56, room);
+    let picker = the_pickers_panel(40, room);
+
+    assert_eq!(
+        overview.the_list_is_tall().as_pixels() - picker.the_list_is_tall().as_pixels(),
+        THE_PICKERS_HEADING_IS_TALL - THE_MORE_APPS_HEADING_IS_TALL,
+        "the two lists differ by something other than their headings: {} and {}",
+        overview.the_list_is_tall().as_pixels(),
+        picker.the_list_is_tall().as_pixels()
+    );
+}
+
+/// **A short output shrinks the list and not the fixed parts.**
+#[test]
+fn a_short_output_shrinks_the_pickers_list() {
+    use crate::measures::MORE_APPS_IS_AT_MOST_TALL;
+    for room in [800_u32, 600, 400, 300, 200, 100, 0] {
+        let it = the_pickers_panel(40, Room::pixels(room));
+        assert!(
+            it.height().as_pixels() <= MORE_APPS_IS_AT_MOST_TALL,
+            "in {room} of room it was {} tall",
+            it.height().as_pixels()
+        );
+    }
+}
+
+/// **Rows are where the design draws them**, and there is none past the last.
+#[test]
+fn the_rows_sit_where_the_design_draws_them() {
+    let picker = the_pickers_panel(3, Room::pixels(1_000));
+    let at: Vec<u32> = (0..3)
+        .map(|which| picker.where_a_row_sits(which).unwrap().as_pixels())
+        .collect();
+    assert_eq!(at, vec![0, 114, 228], "a row is 106 tall with 8 between");
+    assert_eq!(picker.where_a_row_sits(3), None, "one past the last");
+}

@@ -323,6 +323,18 @@ pub const MORE_APPS_IS_AT_MOST_TALL: u32 = 536;
 /// so that the rest still fits.
 pub const THE_APP_LIST_IS_AT_MOST_TALL: u32 = 336;
 
+/// Between a list the Dock opens and the bar it opens from.
+///
+/// Measured off `01 · More apps / Bottom · With minimised windows`
+/// (`408:28177`): the popover sits at y 312 and is 536 tall, so its lower edge
+/// is at 848; `Dock / Bottom` begins at 860. **Twelve between them**, which is
+/// also what the owner states in words — *keep a 12px gap from the Dock*.
+///
+/// It is not [`GAP`]. That is 8 and is the room between things **inside** one
+/// surface; this is the room between two surfaces, and they were the same
+/// number by accident until the popover was measured.
+pub const BESIDE_THE_DOCK: u32 = 12;
+
 /// The room inside *More apps*, on every side.
 ///
 /// Measured: the first child sits at 25 in a panel with a 1-wide border, so the
@@ -358,6 +370,22 @@ pub const THE_SEARCH_FIELD_IS_TALL: u32 = 48;
 /// the owner's cap is 536, and a reader checking the sum would find it 6 short
 /// with every individual number right.
 pub const THE_MORE_APPS_FOOTER_IS_TALL: u32 = 22;
+
+/// How tall a window's row in the picker is.
+///
+/// Measured: `Window / Launch website`, 400 × **106**, with 8 between rows.
+pub const A_WINDOW_ROW_IS_TALL: u32 = 106;
+
+/// How tall the picker's heading is, which is taller than the overview's.
+///
+/// Measured: `Heading`, 400 × **48** — it holds a 48 × 48 back control beside
+/// the title, where the overview's holds only a line of text.
+pub const THE_PICKERS_HEADING_IS_TALL: u32 = 48;
+
+/// How tall the line saying how many windows there are is.
+///
+/// Measured: `Window count and selection instruction`, 400 × **48**.
+pub const THE_WINDOW_COUNT_IS_TALL: u32 = 48;
 
 /// How wide one application's cell in the grid is.
 ///

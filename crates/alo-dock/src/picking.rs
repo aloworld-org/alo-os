@@ -74,6 +74,15 @@ impl ThePicker {
         self.previews.rows()
     }
 
+    /// Which application's windows these are.
+    ///
+    /// The heading names it, and the heading is a sentence somebody says — so
+    /// this is here for the lane that says it, not for the drawing.
+    #[must_use]
+    pub const fn app(&self) -> &crate::window::AppId {
+        self.previews.app()
+    }
+
     /// Whether there is anything to choose between.
     ///
     /// **A picker of one window is a picker that should not have opened.**
@@ -135,3 +144,94 @@ impl ThePicker {
 #[cfg(test)]
 #[path = "picking_tests.rs"]
 mod tests;
+
+/// How big the picker's panel is, and where its rows sit.
+///
+/// The same 448 × 536 popover as the overview, with a taller heading — it holds
+/// a back control — and a line saying how many windows there are. Measured off
+/// `State=Windows` in `docs/design/figma-snapshot/406-26881.xml`:
+///
+/// ```text
+/// heading  25 ..  73   (48)   a 48x48 back control, then the title at 56
+/// count    89 .. 137   (48)   "2 windows · Choose one to return"
+/// list    153 .. 473  (320)   16 shorter than the overview's, for the heading
+/// footer  489 .. 505   (16)
+/// ```
+#[must_use]
+pub fn the_pickers_panel(how_many: usize, room: Room) -> ThePickersPanel {
+    use crate::measures::{
+        A_WINDOW_ROW_IS_TALL, BETWEEN_APP_CELLS, DOWN_MORE_APPS, INSIDE_MORE_APPS,
+        MORE_APPS_IS_AT_MOST_TALL, THE_DOCKS_EDGE, THE_MORE_APPS_FOOTER_IS_TALL,
+        THE_PICKERS_HEADING_IS_TALL, THE_WINDOW_COUNT_IS_TALL,
+    };
+    let fixed = THE_DOCKS_EDGE * 2
+        + INSIDE_MORE_APPS * 2
+        + THE_PICKERS_HEADING_IS_TALL
+        + THE_WINDOW_COUNT_IS_TALL
+        + THE_MORE_APPS_FOOTER_IS_TALL
+        + DOWN_MORE_APPS * 3;
+    let how_many = u32::try_from(how_many).unwrap_or(u32::MAX);
+    let whole = how_many
+        .saturating_mul(A_WINDOW_ROW_IS_TALL)
+        .saturating_add(how_many.saturating_sub(1).saturating_mul(BETWEEN_APP_CELLS));
+    // **The same cap as the overview**, and for the same reason: the owner's
+    // 536 is about the popover and not about what is in it. The viewport is
+    // what gives way, here as there.
+    let viewport = MORE_APPS_IS_AT_MOST_TALL
+        .saturating_sub(fixed)
+        .min(room.as_pixels().saturating_sub(fixed))
+        .min(whole);
+    ThePickersPanel {
+        how_many,
+        viewport,
+        tall: fixed.saturating_add(viewport),
+        whole,
+    }
+}
+
+/// The picker's panel, laid out.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ThePickersPanel {
+    /// How many windows are in it.
+    how_many: u32,
+    /// How tall the scrolling list is.
+    viewport: u32,
+    /// How tall the whole popover is.
+    tall: u32,
+    /// How tall every row together is, scrolled or not.
+    whole: u32,
+}
+
+impl ThePickersPanel {
+    /// How tall the whole popover is. **Never more than the owner's cap.**
+    #[must_use]
+    pub const fn height(self) -> Room {
+        Room::pixels(self.tall)
+    }
+
+    /// How tall the scrolling list inside it is.
+    #[must_use]
+    pub const fn the_list_is_tall(self) -> Room {
+        Room::pixels(self.viewport)
+    }
+
+    /// Whether there is more than the viewport can hold.
+    #[must_use]
+    pub const fn scrolls(self) -> bool {
+        self.whole > self.viewport
+    }
+
+    /// Where the `which`th row sits inside the list's content.
+    ///
+    /// [`None`] past the last window.
+    #[must_use]
+    pub fn where_a_row_sits(self, which: usize) -> Option<Room> {
+        let which = u32::try_from(which).ok()?;
+        if which >= self.how_many {
+            return None;
+        }
+        Some(Room::pixels(which.saturating_mul(
+            crate::measures::A_WINDOW_ROW_IS_TALL + crate::measures::BETWEEN_APP_CELLS,
+        )))
+    }
+}

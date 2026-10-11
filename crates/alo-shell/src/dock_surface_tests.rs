@@ -20,6 +20,8 @@ use super::{ADocksSurface, surface};
 /// A Dock's surface at the ordinary scale, with colours a test can tell apart.
 fn a_surface(against: Edge) -> super::Washed {
     surface(ADocksSurface {
+        marks: &[],
+        mark: [0, 0, 0],
         panel: Rectangle::new((200, 400).into(), (600, 76).into()),
         fill: [255, 255, 255],
         edge: [0xE7, 0xEB, 0xEF],
@@ -29,8 +31,8 @@ fn a_surface(against: Edge) -> super::Washed {
         room: (1920, 1080),
         badges: &[],
         badge: [0xEE, 0xF2, 0xF4],
-        composer: None,
-        composer_is: [0xF5, 0xF6, 0xF7],
+        wells: &[],
+        well_is: [0xF5, 0xF6, 0xF7],
     })
     .expect("a panel with area rasterises")
 }
@@ -219,6 +221,8 @@ fn the_accent_lies_on_the_face_that_looks_at_the_canvas() {
 fn a_panel_with_no_area_draws_nothing() {
     for (w, h) in [(0, 76), (600, 0), (0, 0)] {
         let nothing = surface(ADocksSurface {
+            marks: &[],
+            mark: [0, 0, 0],
             panel: Rectangle::new((200, 400).into(), (w, h).into()),
             fill: [255, 255, 255],
             edge: [0xE7, 0xEB, 0xEF],
@@ -228,8 +232,8 @@ fn a_panel_with_no_area_draws_nothing() {
             room: (1920, 1080),
             badges: &[],
             badge: [0xEE, 0xF2, 0xF4],
-            composer: None,
-            composer_is: [0xF5, 0xF6, 0xF7],
+            wells: &[],
+            well_is: [0, 0, 0],
         });
         assert!(nothing.is_none(), "a {w} by {h} panel rasterised something");
     }
@@ -251,6 +255,8 @@ fn a_panel_with_no_area_draws_nothing() {
 fn nothing_in_the_surface_scales_on_its_own() {
     let of = |panel: Rectangle<i32, smithay::utils::Physical>| {
         surface(ADocksSurface {
+            marks: &[],
+            mark: [0, 0, 0],
             panel,
             fill: [255, 255, 255],
             edge: [0xE7, 0xEB, 0xEF],
@@ -260,8 +266,8 @@ fn nothing_in_the_surface_scales_on_its_own() {
             room: (1920, 1080),
             badges: &[],
             badge: [0xEE, 0xF2, 0xF4],
-            composer: None,
-            composer_is: [0xF5, 0xF6, 0xF7],
+            wells: &[],
+            well_is: [0, 0, 0],
         })
         .expect("a panel with area rasterises")
     };

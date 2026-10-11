@@ -25,8 +25,16 @@ use alo_strings::{Filling, Strings};
 /// What the Dock says, already said.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TheDocksWords {
-    /// The heading over the list the overflow control opens.
+    /// The heading over *More apps*.
     pub heading: String,
+    /// What the search field at the top of *More apps* invites.
+    pub search: String,
+    /// The heading over the applications a person pinned.
+    pub pinned: String,
+    /// The heading over everything else that is open.
+    pub others: String,
+    /// The line under the list, which says what is on it and how to leave.
+    pub footer: String,
     /// What the composer invites a person to do.
     pub prompt: String,
     /// The key that opens the composer, shown at its end.
@@ -35,24 +43,89 @@ pub struct TheDocksWords {
     pub show_all: String,
     /// The control that opens what a person did before.
     pub history: String,
+    /// What one application's window list says, when one is open.
+    ///
+    /// [`None`] when no picker is open, which is almost every frame. **Not
+    /// empty strings**: a heading of nothing drawn over a list that is not
+    /// there is a different bug from no list at all, and only one of them
+    /// should be possible.
+    pub picker: Option<ThePickersWords>,
+}
+
+/// What one application's window list says, already said.
+///
+/// **Said per frame, because every line of it is about this moment**: the
+/// heading carries the application's name, the count carries how many windows
+/// it has, and a row carries the Place its window is on. None of them can be
+/// said once at sign-in the way the Dock's fixed labels are.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ThePickersWords {
+    /// The heading — the application's name and the word *windows*.
+    pub heading: String,
+    /// How many there are and what choosing one does.
+    pub count: String,
+    /// The line underneath, which says Escape goes back rather than out.
+    pub footer: String,
+    /// What each row says about its window's state, in the rows' own order.
+    ///
+    /// **One per row and in the same order**, so a drawing takes the `n`th of
+    /// these for the `n`th row rather than deciding again which state a window
+    /// is in. Two places deciding that is two places that can disagree about
+    /// whether a window is put aside.
+    pub states: Vec<String>,
 }
 
 impl TheDocksWords {
     /// Say all of them, in this person's language.
     ///
-    /// **All five or none**, which is the whole reason this is a type: a frame
+    /// **All nine or none**, which is the whole reason this is a type: a frame
     /// with four of them set and one blank draws a control with no label on it
     /// and refuses nothing.
     #[must_use]
-    pub fn said(strings: &Strings) -> Self {
+    pub fn said(strings: &Strings, open: &crate::WhatTheDockHasOpen) -> Self {
         let say =
             |word: &alo_strings::Word| strings.say(&word.key(), &Filling::nothing()).into_text();
+        let fill =
+            |word: &alo_strings::Word, with: Filling| strings.say(&word.key(), &with).into_text();
         Self {
             heading: say(&alo_dock::words::MORE_OPEN_APPS),
+            search: say(&alo_dock::words::SEARCH_APPS),
+            pinned: say(&alo_dock::words::PINNED),
+            others: say(&alo_dock::words::OTHER_OPEN_APPS),
+            footer: say(&alo_dock::words::PINNED_AND_OPEN_ESCAPE_CLOSES),
             prompt: say(&alo_dock::words::FIND_OPEN_OR_ASK),
             key: say(&alo_dock::words::THE_COMPOSERS_KEY),
             show_all: say(&alo_dock::words::SHOW_ALL),
             history: say(&alo_dock::words::HISTORY),
+            picker: open.the_windows_of().map(|picker| {
+                let rows = picker.rows();
+                ThePickersWords {
+                    heading: fill(
+                        &alo_dock::words::WINDOWS_OF,
+                        Filling::of("app", picker.app().name().to_owned()),
+                    ),
+                    count: fill(
+                        &alo_dock::words::CHOOSE_ONE_TO_RETURN,
+                        Filling::of("windows", rows.len().to_string()),
+                    ),
+                    footer: say(&alo_dock::words::CHOOSE_A_WINDOW_ESCAPE_RETURNS),
+                    states: rows
+                        .iter()
+                        .map(|row| {
+                            let word = if row.sits().was_put_aside() {
+                                &alo_dock::words::A_WINDOW_IS_PUT_ASIDE
+                            } else {
+                                &alo_dock::words::A_WINDOW_IS_OPEN
+                            };
+                            // The Place a window is on. `Patch` knows where it
+                            // sits on the plane and not which Place that is, so
+                            // this is the one thing the picker cannot say yet —
+                            // named rather than left as an empty fill.
+                            fill(word, Filling::of("place", String::new()))
+                        })
+                        .collect(),
+                }
+            }),
         }
     }
 }
