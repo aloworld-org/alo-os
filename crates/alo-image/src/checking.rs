@@ -42,6 +42,10 @@ const THE_DOORS_MODE: u32 = 0o755;
 /// crate knows the string: [`THE_DOOR`] is absolute and that setting is not.
 const THE_RUN: &str = "/run";
 
+/// What the recipe has to say, so the port that makes a boot readable does not
+/// also offer a way in.
+const THE_SERIAL_GETTY_IS_MASKED: &str = "systemctl mask serial-getty@ttyS0.service";
+
 /// The mode the person's own door is made with, as a unit spells it: the
 /// person, the agent's group, and nobody else (ADR 0017, and
 /// `alo-agentd`'s `place.rs`, which sets the same mode again at every start).
@@ -213,6 +217,18 @@ fn a_boot_can_be_read_and_the_screen_is_the_one_watched(image: &Image, wrong: &m
     {
         wrong.push(Wrong::TheScreenIsNotTheConsoleAPersonWatches {
             primary: primary.to_owned(),
+        });
+    }
+    if !arguments.the_whole_journal_is_forwarded() {
+        wrong.push(Wrong::OnlyTheFirstMinuteOfTheBootIsReadable);
+    }
+    // **A serial console brings a getty, and that was not asked for.** Asked
+    // only where there is a serial console: an image with none has no port to
+    // offer a login on, and telling it to mask something nothing instantiates
+    // would be a sentence about nothing.
+    if !image.recipe_says(THE_SERIAL_GETTY_IS_MASKED) {
+        wrong.push(Wrong::TheSerialPortOffersALogin {
+            unit: "serial-getty@ttyS0.service".to_owned(),
         });
     }
 }
@@ -1186,8 +1202,8 @@ mod tests {
         edited(
             &root,
             THE_KERNEL_ARGUMENTS,
-            "kargs = [\"console=ttyS0,115200\", \"console=tty0\"]",
-            "kargs = [\"console=tty0\"]",
+            "    \"console=ttyS0,115200\",\n",
+            "",
         );
 
         let wrong = everything_wrong_with(&image_at(&root));
@@ -1205,12 +1221,9 @@ mod tests {
     #[test]
     fn an_image_that_names_no_kernel_arguments_is_caught() {
         let root = a_copy_of_the_image("no-kargs");
-        edited(
-            &root,
-            THE_KERNEL_ARGUMENTS,
-            "kargs = [\"console=ttyS0,115200\", \"console=tty0\"]",
-            "",
-        );
+        // The key renamed is a file `bootc` reads and takes nothing from,
+        // which is what an image with no `kargs.d` entry amounts to.
+        edited(&root, THE_KERNEL_ARGUMENTS, "kargs = [", "nothing = [");
 
         let wrong = everything_wrong_with(&image_at(&root));
 
@@ -1232,8 +1245,8 @@ mod tests {
         edited(
             &root,
             THE_KERNEL_ARGUMENTS,
-            "kargs = [\"console=ttyS0,115200\", \"console=tty0\"]",
-            "kargs = [\"console=tty0\", \"console=ttyS0,115200\"]",
+            "    \"console=ttyS0,115200\",\n    \"console=tty0\",\n",
+            "    \"console=tty0\",\n    \"console=ttyS0,115200\",\n",
         );
 
         let wrong = everything_wrong_with(&image_at(&root));
@@ -1246,8 +1259,58 @@ mod tests {
         );
     }
 
-    /// **And the image this repository ships has neither fault.** The half
-    /// that says the two above are about something real.
+    /// **A console that hears only early boot is caught.**
+    ///
+    /// The state the first serial-console boot was actually in: systemd stops
+    /// writing unit messages to the console once `systemd-journald` takes
+    /// over, and everything this machine exists to draw starts after that.
+    #[test]
+    fn a_console_that_hears_only_early_boot_is_caught() {
+        let root = a_copy_of_the_image("no-forward");
+        edited(
+            &root,
+            THE_KERNEL_ARGUMENTS,
+            "    \"systemd.journald.forward_to_console=1\",",
+            "",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::OnlyTheFirstMinuteOfTheBootIsReadable)),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A serial port that also offers a login is caught.**
+    ///
+    /// `console=ttyS0` makes systemd instantiate `serial-getty@ttyS0`, which
+    /// the audit trail of the first such boot recorded starting. A diagnostic
+    /// facility that quietly adds a way in is the fault here.
+    #[test]
+    fn a_serial_port_that_offers_a_login_is_caught() {
+        let root = a_copy_of_the_image("serial-login");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "systemctl mask serial-getty@ttyS0.service",
+            "true",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheSerialPortOffersALogin { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And the image this repository ships has none of these faults.** The
+    /// half that says the four above are about something real.
     #[test]
     fn the_shipped_image_can_be_read_and_keeps_the_screen() {
         let image = image_at(Path::new(crate::THE_IMAGE));
@@ -1257,6 +1320,8 @@ mod tests {
             image.kernel_arguments().the_one_a_person_watches(),
             Some("tty0")
         );
+        assert!(image.kernel_arguments().the_whole_journal_is_forwarded());
+        assert!(image.recipe_says(THE_SERIAL_GETTY_IS_MASKED));
     }
 
     /// **An agent service that does not wait for the boundary is caught.** ADR

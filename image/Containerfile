@@ -616,6 +616,16 @@ COPY --chmod=0644 image/signing/alo-os.pub /etc/containers/alo-os.pub
 # The description in particular is checked by `alo-agentd` before it is parsed:
 # a group-writable one is a description the group writes this machine with, and
 # the service refuses to start rather than believe it.
+#
+# **`serial-getty@ttyS0` is masked, and the serial console is why.**
+# `console=ttyS0` in `usr/lib/bootc/kargs.d/console.toml` makes a boot readable,
+# and it also makes systemd instantiate a getty on that port — measured on the
+# first boot that carried it, where audit recorded the unit starting. The
+# console output is the whole point and an interactive login on a physical port
+# is not: a diagnostic facility that quietly adds a way in is a worse bargain
+# than no diagnostics. **Masked rather than disabled**, for the reason
+# `getty@.service` is: a template is instantiated on demand, and a disabled
+# instance starts again for anything that asks for that port.
 RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/libexec/alo-convertd /usr/libexec/alo-portald \
                /usr/libexec/alo-shipping \
@@ -635,6 +645,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/tmpfiles.d/alo.conf \
                /etc/alo/agentd.toml \
  && chown root:root /etc/alo/agentd.toml \
+ && systemctl mask serial-getty@ttyS0.service \
  && systemctl enable alo-boundaryd.service alo-agentd.service alo-sessiond.service \
                      alo-modeld.service alo-convertd.socket \
                      alo-compositor.service alo-portald.service \

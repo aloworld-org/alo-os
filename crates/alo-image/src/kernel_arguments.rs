@@ -84,6 +84,23 @@ impl TheKernelArguments {
     pub fn the_one_a_person_watches(&self) -> Option<&str> {
         self.consoles().last().copied()
     }
+
+    /// Whether the whole journal reaches the console, or only early boot.
+    ///
+    /// **A serial console alone is half the answer**, which the first boot
+    /// carrying one measured: systemd writes unit messages to the console
+    /// until `systemd-journald` takes over, and after that - 95 seconds in,
+    /// on that machine - the console hears nothing about any unit. The
+    /// greeter, the desktop, the portal and the application install all start
+    /// after it, so a log without this carries the kernel and the first
+    /// minute and a half, and nothing about the surfaces this machine exists
+    /// to draw.
+    #[must_use]
+    pub fn the_whole_journal_is_forwarded(&self) -> bool {
+        self.arguments
+            .iter()
+            .any(|one| one == "systemd.journald.forward_to_console=1")
+    }
 }
 
 #[cfg(test)]

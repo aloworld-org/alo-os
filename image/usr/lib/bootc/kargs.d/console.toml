@@ -18,17 +18,40 @@
 # makes primary, and that must be the screen a person is actually watching. The
 # serial line is the second one, for whoever is reading.
 #
-# # What this costs, said plainly
+# # The journal, and not only the first ninety seconds of it
 #
-# On a machine with a real serial port, kernel messages are readable by
-# somebody holding that port. That is a smaller door than it sounds — anybody
-# at the port is already at the machine — and it is the same trade the
-# installer's boot environment already makes. The certified laptop (ADR 0033)
-# has no serial port at all, so on the machine alo OS is sold for this costs
-# nothing and buys the ability to say what went wrong.
+# `systemd.journald.forward_to_console=1` is the second half, and the first
+# boot with a serial console is what found it needed. systemd writes unit
+# messages to the console only until `systemd-journald` takes over: measured on
+# 2026-10-11, the last one was at **95 seconds** and the greeter starts after
+# that. The log had the kernel ring buffer, the audit trail and early boot, and
+# not one line about the surfaces this machine exists to draw.
+#
+# It was nearly read as *the greeter never started*, because the audit trail
+# names 48 units and the compositor is not among them. The screenshot showed it
+# rendering. An incomplete log read as an absence is the fault this whole file
+# was written to stop.
+#
+# # What this costs, said plainly — corrected 2026-10-11
+#
+# **This said the cost was that kernel messages become readable by somebody
+# holding the port. That understated it, and the first boot proved so:
+# `console=ttyS0` makes systemd start `serial-getty@ttyS0`, which is an
+# interactive login prompt on that port.** Audit recorded it starting. A
+# diagnostic facility had quietly added a way in.
+#
+# So the recipe masks `serial-getty@ttyS0.service`, the same answer and for the
+# same reason as `getty@tty1.service`: the console output is wanted and the
+# login prompt is not. What remains is the true cost — somebody at a physical
+# serial port can read the journal, and anybody at that port is already at the
+# machine. The certified laptop (ADR 0033) has no serial port at all.
 #
 # It is written here rather than in the recipe so that `bootc` owns it: kernel
 # arguments belong to the deployment, and a `RUN` line editing GRUB would be a
 # second place that decides how this machine boots.
 
-kargs = ["console=ttyS0,115200", "console=tty0"]
+kargs = [
+    "console=ttyS0,115200",
+    "console=tty0",
+    "systemd.journald.forward_to_console=1",
+]

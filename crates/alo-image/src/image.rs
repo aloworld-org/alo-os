@@ -144,6 +144,8 @@ pub struct Image {
     converter: TheConverter,
     /// The kernel arguments every deployment of this image boots with.
     kernel_arguments: TheKernelArguments,
+    /// The recipe this image is built from, for the decisions it carries.
+    recipe: String,
 }
 
 impl Image {
@@ -235,6 +237,7 @@ impl Image {
             kernel_arguments: TheKernelArguments::read(
                 &text(&root.join(THE_KERNEL_ARGUMENTS)).unwrap_or_default(),
             ),
+            recipe,
         })
     }
 
@@ -407,6 +410,17 @@ impl Image {
     #[must_use]
     pub const fn kernel_arguments(&self) -> &TheKernelArguments {
         &self.kernel_arguments
+    }
+
+    /// Whether the recipe says this, anywhere in it.
+    ///
+    /// **A question and not the text**, so a caller asks about one decision
+    /// rather than being handed a build file to search. The recipe is read
+    /// leniently elsewhere in this crate for the same reason it is here: a
+    /// machine's build is a long document and most of it is not a promise.
+    #[must_use]
+    pub fn recipe_says(&self, what: &str) -> bool {
+        self.recipe.contains(what)
     }
 }
 

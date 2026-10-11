@@ -1290,6 +1290,35 @@ pub enum Wrong {
         /// The console the kernel would make primary.
         primary: String,
     },
+    /// A console that hears early boot and nothing after it.
+    ///
+    /// **Measured on the first boot that carried a serial console.** systemd
+    /// writes unit messages to the console only until `systemd-journald` takes
+    /// over — at 95 seconds on that machine — and the greeter, the desktop,
+    /// the portal and the application install all start later. The log held
+    /// the kernel, the audit trail and the first minute and a half.
+    #[error(
+        "this image's deployments have a console and do not forward the journal to it, so a boot \
+         log holds the kernel and early systemd and nothing about any unit that starts after \
+         `systemd-journald` — add `systemd.journald.forward_to_console=1`"
+    )]
+    OnlyTheFirstMinuteOfTheBootIsReadable,
+    /// A serial console that also brings an interactive login.
+    ///
+    /// **Found by reading the audit trail of the first boot that carried a
+    /// serial console**, which recorded `serial-getty@ttyS0` starting. The
+    /// console output is the reason the console exists; a login prompt on a
+    /// physical port is a way in that nobody asked for, added by a change
+    /// whose own note claimed it cost nothing.
+    #[error(
+        "this image gives a serial console and does not mask {unit}, so the port that makes a \
+         boot readable also offers an interactive login — a diagnostic facility that quietly \
+         adds a way in is a worse bargain than no diagnostics"
+    )]
+    TheSerialPortOffersALogin {
+        /// The getty that would take the port.
+        unit: String,
+    },
 }
 
 #[cfg(test)]
