@@ -1303,6 +1303,23 @@ pub enum Wrong {
          `systemd-journald` — add `systemd.journald.forward_to_console=1`"
     )]
     OnlyTheFirstMinuteOfTheBootIsReadable,
+    /// The journal is forwarded, and to the screen rather than to the reader.
+    ///
+    /// **Measured on the first boot that forwarded it.** Of 856 lines that
+    /// boot wrote to `ttyS0`, 856 carried a kernel timestamp prefix and not
+    /// one came from the journal — so a boot was 89 KB instead of 3.8 KB and
+    /// still said nothing about any unit.
+    ///
+    /// `forward_to_console` writes to the **primary** console, and this image
+    /// deliberately makes the primary one the screen so that a person watching
+    /// it sees the most. Both of those are right. Together they send the
+    /// journal to the one place a reader of a serial port cannot see, which is
+    /// a worse fault than one wrong decision because neither looks wrong on
+    /// its own.
+    #[error(
+        "this image's deployments forward the journal to the primary console, which is the          screen, so a reader at the serial port gets the kernel and the audit trail and nothing          from the journal — name the port with `systemd.journald.tty_path=/dev/<port>`"
+    )]
+    TheJournalGoesToTheScreenAndNotTheReader,
     /// A serial console that also brings an interactive login.
     ///
     /// **Found by reading the audit trail of the first boot that carried a

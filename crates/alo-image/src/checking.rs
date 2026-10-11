@@ -222,6 +222,28 @@ fn a_boot_can_be_read_and_the_screen_is_the_one_watched(image: &Image, wrong: &m
     }
     if !arguments.the_whole_journal_is_forwarded() {
         wrong.push(Wrong::OnlyTheFirstMinuteOfTheBootIsReadable);
+    } else if !image.journal().goes_to_one_of(&arguments.serial_lines()) {
+        // **Asked only when forwarding is on**, because an image that does
+        // not forward at all has one fault and not two, which is the reason
+        // the serial-console check returns early above.
+        //
+        // **This is the third question, and the first two both passing is
+        // what hid it.** The image built from main on 2026-10-11 had a serial
+        // console and had forwarding on, and of the 856 lines it wrote to
+        // `ttyS0` not one came from the journal: `forward_to_console` writes
+        // to the primary console, and this image makes the primary one the
+        // screen on purpose. Two checks that pass and a boot that still
+        // cannot be read is exactly the gap a third check is for.
+        //
+        // **Asked of the journald drop-in and not of a kernel argument**, and
+        // this check is why that distinction is worth a file of its own. The
+        // first attempt at the fix put `systemd.journald.tty_path` in the
+        // kernel arguments and asked this question of them; it passed, and
+        // the boot that followed wrote 854 lines to the port with none from
+        // the journal, because journald accepts ten `systemd.journald.*`
+        // arguments and that is not one of them. A check asking the wrong
+        // file would have certified the wrong fix - which it briefly did.
+        wrong.push(Wrong::TheJournalGoesToTheScreenAndNotTheReader);
     }
     // **A serial console brings a getty, and that was not asked for.** One
     // per line, derived from what the file names rather than from one port
@@ -1161,8 +1183,9 @@ mod tests {
     use super::*;
     use crate::testing::{
         THE_AGENTS_UNIT, THE_BOOTING_DOCUMENT, THE_CONTAINERFILE, THE_DESCRIPTION_FILE,
-        THE_KERNEL_ARGUMENTS, THE_LOADERS_UNIT, THE_OPENERS_UNIT, THE_SERVERS_UNIT, THE_SYSUSERS,
-        THE_TMPFILES, a_copy_of_the_image, edited, image_at, the_release_line, the_store_file,
+        THE_JOURNAL_DROP_IN, THE_KERNEL_ARGUMENTS, THE_LOADERS_UNIT, THE_OPENERS_UNIT,
+        THE_SERVERS_UNIT, THE_SYSUSERS, THE_TMPFILES, a_copy_of_the_image, edited, image_at,
+        the_release_line, the_store_file,
     };
 
     /// **The image this repository ships says one thing.** Everything below
@@ -1386,7 +1409,53 @@ mod tests {
             Some("tty0")
         );
         assert!(image.kernel_arguments().the_whole_journal_is_forwarded());
+        // **And forwarded where a reader can see it.** The two assertions
+        // above were both true of the image built on 2026-10-11, whose boot
+        // wrote 856 lines to `ttyS0` and not one of them from the journal.
+        assert!(
+            image
+                .journal()
+                .goes_to_one_of(&image.kernel_arguments().serial_lines())
+        );
         assert!(image.recipe_says(THE_SERIAL_GETTY_IS_MASKED));
+    }
+
+    /// **The journal forwarded to the screen is caught**, which is the state
+    /// the shipped file was in for the few hours between #623 landing and the
+    /// first boot that carried it.
+    ///
+    /// Broken by taking the path out of the journald drop-in rather than by
+    /// writing a wrong one, because taking it out is what the fault actually
+    /// was: an image that names no path forwards to journald's own default of
+    /// `/dev/console`, which is whichever console is primary, which this
+    /// image makes the screen on purpose.
+    #[test]
+    fn a_journal_forwarded_to_the_screen_is_caught() {
+        let root = a_copy_of_the_image("journal-to-the-screen");
+        edited(&root, THE_JOURNAL_DROP_IN, "TTYPath=/dev/ttyS0", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheJournalGoesToTheScreenAndNotTheReader)),
+            "{wrong:?}"
+        );
+        // **And not the other two**, which is what makes this its own check
+        // rather than a second spelling of one that already existed.
+        assert!(
+            !wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::OnlyTheFirstMinuteOfTheBootIsReadable)),
+            "{wrong:?}"
+        );
+        assert!(
+            !wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::ABootNobodyCanRead { .. })),
+            "{wrong:?}"
+        );
     }
 
     /// **An agent service that does not wait for the boundary is caught.** ADR

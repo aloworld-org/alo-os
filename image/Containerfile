@@ -575,6 +575,13 @@ COPY image/usr/lib/pam.d/ /usr/lib/pam.d/
 # too many. Today it is the serial console that makes a boot readable; the file
 # itself says what that costs.
 COPY image/usr/lib/bootc/kargs.d/ /usr/lib/bootc/kargs.d/
+# And where a forwarded journal is written, which the kernel arguments cannot
+# say. `systemd.journald.tty_path` was put in them on 2026-10-11 and journald
+# does not know it: it accepts ten `systemd.journald.*` arguments and that is
+# not one, so the file read right, the gate passed, and the boot wrote 854
+# lines to the port with none from the journal. `TTYPath` is a key journald
+# reads, and this is where it reads it.
+COPY image/usr/lib/systemd/journald.conf.d/ /usr/lib/systemd/journald.conf.d/
 COPY image/etc/alo/ /etc/alo/
 
 # **What this machine says it is.** The base's own file calls it Fedora Linux
