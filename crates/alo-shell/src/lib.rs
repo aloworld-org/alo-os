@@ -299,6 +299,7 @@ mod surfaces;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;
+mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
 mod their_displays;
 mod top_controls_region;
@@ -344,6 +345,7 @@ mod window_dividing;
 mod window_edge;
 mod window_edge_paint;
 mod window_edge_picture;
+mod window_edge_pointing;
 mod window_edge_reading;
 mod window_edge_title;
 mod window_edge_who_draws;
@@ -385,6 +387,11 @@ pub use window_edge::{
 pub use window_edge_paint::{Pointing, Solid, solids};
 /// One window edge, laid out in owned pixels and ready for a frame.
 pub use window_edge_picture::EdgePicture;
+/// **What a pointer is on, when it is on a window's edge** - the step
+/// between a position and the control a press acts on. Nothing asked it
+/// until 2026-10-11, which is why every edge drew correctly, announced
+/// itself correctly to a reader, and could not be clicked.
+pub use window_edge_pointing::{UnderThePointer, pointing_at, what_is_under};
 /// **What a reader is told about a window's edge**, which is what a window
 /// *has* rather than what is currently drawn: the owner's *without first
 /// hovering* clause of 2026-10-09 is only true if those are different

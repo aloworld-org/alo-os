@@ -223,9 +223,22 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 let revealed = server.is_this_windows_edge_revealed(surface);
                 let edge = alo_shell::edge_of(window, asked.decorations, revealed);
                 let title = server.the_name_of(surface);
+                // **Where the pointer is, not a default.** This passed
+                // `Pointing::default()` until 2026-10-11, so no control on any
+                // window ever showed a highlight - the hover the design asks
+                // for was built, tested and unreachable, because the pointer
+                // is read inside the shell and nothing handed it over. The
+                // server adds it: `what_this_edge_is_pointing_at` takes the
+                // edge this frame is about to be painted from, so the
+                // highlight is measured against the layout being drawn and
+                // not a second one.
+                //
+                // `None` for focus because nothing can focus a control yet -
+                // §6 is where keyboard navigation into the edge gets built,
+                // and this argument is what it will fill.
                 alo_shell::EdgePicture::of(
                     &edge,
-                    alo_shell::Pointing::default(),
+                    server.what_this_edge_is_pointing_at(&edge, None),
                     title.its_own_words(),
                     &mut faces,
                     (THE_OUTPUT_IS.0, THE_OUTPUT_IS.1),
