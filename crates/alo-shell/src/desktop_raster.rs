@@ -112,8 +112,8 @@ pub(crate) struct Shown<'a> {
     /// reason: a person opened it with a press, presses reach the `Server`, and
     /// this crate's drawing half has no way to know.
     pub(crate) the_overflow_is_open: bool,
-    /// What the overflow list's heading says, already said by the lane.
-    pub(crate) the_overflows_heading: &'a str,
+    /// Everything on the Dock that a person reads, already said by the lane.
+    pub(crate) the_docks_words: &'a crate::the_docks_words::TheDocksWords,
     /// The windows a person put aside, which the panel at the edge shows.
     ///
     /// Handed in like the rest: `alo-put-aside` decides what is in the panel
@@ -222,7 +222,7 @@ pub(crate) fn picture(
         display_scale,
         on_the_dock,
         the_overflow_is_open,
-        the_overflows_heading,
+        the_docks_words,
     } = shown;
     // **The count the desktop handed over, not a constant.** This passed a
     // literal `0` until 2026-10-09, with a comment saying a bar holding nothing
@@ -236,7 +236,7 @@ pub(crate) fn picture(
         look,
         size,
         on_the_dock,
-        (the_overflow_is_open, the_overflows_heading),
+        (the_overflow_is_open, the_docks_words),
         fonts,
     )?;
 

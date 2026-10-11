@@ -253,7 +253,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 &mut labels,
                 DesktopFrame {
                     the_overflow_is_open: false,
-                    the_overflows_heading: "",
+                    the_docks_words: no_words(),
                     // **The Dock is told what is open, which is the chain two
                     // lanes built today.** `Server::the_windows_the_dock_sees`
                     // turns the mapped surfaces into what `alo-dock`
@@ -422,3 +422,14 @@ fn nothing_put_aside() -> &'static alo_put_aside::Panel {
 /// validates its origin against it.
 #[cfg(target_os = "linux")]
 const THE_OUTPUT_IS: (i32, i32) = (1366, 768);
+
+/// A Dock whose words nobody has said, for a fixture that is not about them.
+///
+/// **A static rather than a temporary**, because the frame borrows it: a
+/// `&TheDocksWords::default()` in a struct literal is a reference to a value
+/// that dies on the next line.
+fn no_words() -> &'static alo_shell::the_docks_words::TheDocksWords {
+    static IT: std::sync::OnceLock<alo_shell::the_docks_words::TheDocksWords> =
+        std::sync::OnceLock::new();
+    IT.get_or_init(alo_shell::the_docks_words::TheDocksWords::default)
+}

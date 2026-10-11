@@ -349,6 +349,45 @@ pub const MORE_OPEN_APPS: Word = Word::saying("dock.overflow.heading", "More ope
      and the other says what to do.",
 );
 
+/// What the composer invites a person to do.
+///
+/// Measured on both Dock families — `I321:17430;74:54` and `349:25791` — as
+/// *Find, open, or ask…*, which is the one string the two agreed on before ADR
+/// 0101 reconciled them.
+pub const FIND_OPEN_OR_ASK: Word =
+    Word::saying("dock.composer.prompt", "Find, open, or ask\u{2026}").noting(
+        "The grey field in the middle of the dock, before anybody has typed in it. **Three \
+         things a person can do, in one line**: find something, open something, or ask alo. \
+         Keep all three — a translation that shortens it to *Search* loses the two that make \
+         this not a search box. It ends in an ellipsis because the sentence is unfinished until \
+         they type.",
+    );
+
+/// The key that opens the composer, shown at its end.
+///
+/// **Not translated in the ordinary way**: it is the product's name, which a
+/// person types. It is declared so that a translator sees it and knows to leave
+/// it alone rather than finding it absent and wondering.
+pub const THE_COMPOSERS_KEY: Word = Word::saying("dock.composer.key", "alo").noting(
+    "The shortcut shown at the right-hand end of the dock's field. **This is the product's \
+     name and is not translated** — it is what a person presses. It is declared here so that it \
+     is visibly a decision rather than an omission.",
+);
+
+/// The control that shows every open window at once.
+pub const SHOW_ALL: Word = Word::saying("dock.show-all", "Show all").noting(
+    "A control at the end of the dock that lays every open window out at once so a person can \
+     pick one. **All the windows, not all the applications** — it is about what is open now. \
+     Short enough to sit in an 88-wide button beside the field.",
+);
+
+/// The control that opens what a person did before.
+pub const HISTORY: Word = Word::saying("dock.history", "History").noting(
+    "A control at the end of the dock that opens what the person did before — documents they \
+     had open, places they were. **Theirs and on this machine**: nothing about it reaches a \
+     network. One word, in a 44-wide button.",
+);
+
 /// Keys this crate used to declare and never will again.
 ///
 /// **The owner's ruling of 2026-10-10**, on removing the row of names from the
@@ -377,7 +416,7 @@ pub const RETIRED: [&str; 2] = ["dock.labels.under", "dock.labels.gave-way"];
 /// beside the other settings' words because this list's order is the order a
 /// translator meets them in, and a translator who has already done this file
 /// should find the new ones together rather than hunting a diff.
-pub const EVERY_WORD: [Word; 25] = [
+pub const EVERY_WORD: [Word; 29] = [
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
     NAMES_BESIDE,
@@ -403,6 +442,10 @@ pub const EVERY_WORD: [Word; 25] = [
     ALONG_THE_TOP,
     SHOW_MORE_OPEN_APPS,
     MORE_OPEN_APPS,
+    FIND_OPEN_OR_ASK,
+    THE_COMPOSERS_KEY,
+    SHOW_ALL,
+    HISTORY,
 ];
 
 /// Why this crate's own words could not be declared.

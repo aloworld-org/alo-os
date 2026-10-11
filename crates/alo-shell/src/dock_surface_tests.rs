@@ -29,6 +29,8 @@ fn a_surface(against: Edge) -> super::Washed {
         room: (1920, 1080),
         badges: &[],
         badge: [0xEE, 0xF2, 0xF4],
+        composer: None,
+        composer_is: [0xF5, 0xF6, 0xF7],
     })
     .expect("a panel with area rasterises")
 }
@@ -226,6 +228,8 @@ fn a_panel_with_no_area_draws_nothing() {
             room: (1920, 1080),
             badges: &[],
             badge: [0xEE, 0xF2, 0xF4],
+            composer: None,
+            composer_is: [0xF5, 0xF6, 0xF7],
         });
         assert!(nothing.is_none(), "a {w} by {h} panel rasterised something");
     }
@@ -256,6 +260,8 @@ fn nothing_in_the_surface_scales_on_its_own() {
             room: (1920, 1080),
             badges: &[],
             badge: [0xEE, 0xF2, 0xF4],
+            composer: None,
+            composer_is: [0xF5, 0xF6, 0xF7],
         })
         .expect("a panel with area rasterises")
     };

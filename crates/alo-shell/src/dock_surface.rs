@@ -40,7 +40,9 @@
 //! faded across the blur's width. A true Gaussian would cost a convolution for
 //! a difference nobody can see at this radius and this opacity.
 
-use alo_dock::measures::{THE_DOCKS_CORNER, THE_DOCKS_EDGE, THE_SHADOW_FALLS, THE_SHADOW_SPREADS};
+use alo_dock::measures::{
+    THE_COMPOSERS_CORNER, THE_DOCKS_CORNER, THE_DOCKS_EDGE, THE_SHADOW_FALLS, THE_SHADOW_SPREADS,
+};
 use smithay::utils::{Physical, Rectangle};
 
 use crate::painted::Washed;
@@ -102,6 +104,14 @@ pub(crate) struct ADocksSurface<'a> {
     pub(crate) badges: &'a [Rectangle<i32, Physical>],
     /// The ground of a fallback badge.
     pub(crate) badge: [u8; 3],
+    /// Where the composer's field goes, if this Dock has one.
+    ///
+    /// **A rounded rectangle, so it is here rather than a `Solid`** — the same
+    /// reason the panel is. `radius/md` = `THE_COMPOSERS_CORNER` = 12, measured
+    /// on both Dock families.
+    pub(crate) composer: Option<Rectangle<i32, Physical>>,
+    /// The composer's own ground, which is cooler than the Dock's.
+    pub(crate) composer_is: [u8; 3],
     /// The display, so the raster can be kept on it.
     ///
     /// **The shadow's reach puts the raster past the screen's edge** — the Dock
@@ -193,6 +203,18 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
             // One pass over however many there are: a Dock holds a few dozen
             // slots at most, and a per-pixel loop over them is cheaper to read
             // than an index and is run once per layout rather than per frame.
+            // The composer's field: a rounded rectangle inside the panel, by
+            // the same distance function the panel itself is drawn with.
+            let field = of.composer.map_or(0.0, |field| {
+                let (fx, fy) = (
+                    (field.loc.x - area.loc.x) as f32,
+                    (field.loc.y - area.loc.y) as f32,
+                );
+                let (w, h) = (field.size.w as f32 / 2.0, field.size.h as f32 / 2.0);
+                let r = (THE_COMPOSERS_CORNER as f32).min(w).min(h);
+                let d = rounded(px, py, fx + w, fy + h, w, h, r);
+                (0.5 - d).clamp(0.0, 1.0)
+            }) * inside;
             let badge = of
                 .badges
                 .iter()
@@ -217,6 +239,7 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
                 (hairline, of.edge),
                 (accent, of.accent),
                 (badge, of.badge),
+                (field, of.composer_is),
             ] {
                 if over <= 0.0 {
                     continue;

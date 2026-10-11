@@ -33,7 +33,7 @@ fn a_desktop_that_will_not_start<'a>(
 ) -> DesktopFrame<'a> {
     DesktopFrame {
         the_overflow_is_open: false,
-        the_overflows_heading: "",
+        the_docks_words: crate::desktop_testing::no_words(),
         in_use: &[],
         notifications: &[],
         capturing: None,

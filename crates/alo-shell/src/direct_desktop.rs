@@ -600,13 +600,7 @@ impl LoopInput for Desk<'_> {
         // names `Word::` or `.say(` — every sentence a person meets comes from
         // `alo-saying`, and a raster that looked one up would be a second place
         // deciding what a person reads.
-        let the_overflows_heading = self
-            .strings
-            .say(
-                &alo_dock::words::MORE_OPEN_APPS.key(),
-                &alo_strings::Filling::nothing(),
-            )
-            .into_text();
+        let the_docks_words = crate::the_docks_words::TheDocksWords::said(self.strings);
         let mut frame = self.desktop.now();
         let named = FrameTarget::metadata(target)?.name;
         what_only_the_server_knows(
@@ -614,7 +608,7 @@ impl LoopInput for Desk<'_> {
             server,
             &windows,
             &on_the_dock,
-            &the_overflows_heading,
+            &the_docks_words,
             &named,
         );
         // **Read back from the frame rather than asked again.** The scale the
@@ -681,7 +675,7 @@ impl LoopInput for Desk<'_> {
                 server,
                 &windows,
                 &on_the_dock,
-                &the_overflows_heading,
+                &the_docks_words,
                 &named,
             );
             // Read off the frame before it is given away, for the reason the

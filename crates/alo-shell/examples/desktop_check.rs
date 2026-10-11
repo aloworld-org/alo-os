@@ -248,12 +248,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     // **Said once, because the drawing path may not word a sentence.** The same
     // rule `direct_desktop` follows: `tests/desktop_source.rs` holds that no
     // `desktop_*` or `dock_*` file names `Word::` or `.say(`.
-    let the_overflows_heading = strings
-        .say(
-            &alo_dock::words::MORE_OPEN_APPS.key(),
-            &alo_strings::Filling::nothing(),
-        )
-        .into_text();
+    let the_docks_words = alo_shell::the_docks_words::TheDocksWords::said(&strings);
 
     let mut submitted = 0;
     let mut draw = |what: &str,
@@ -314,7 +309,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 // pictures.*
                                 on_the_dock,
                                 the_overflow_is_open,
-                                the_overflows_heading: &the_overflows_heading,
+                                the_docks_words: &the_docks_words,
                                 dock,
                                 look: DesktopLook::of(
                                     &appearance,

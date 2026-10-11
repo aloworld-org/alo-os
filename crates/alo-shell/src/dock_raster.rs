@@ -352,7 +352,7 @@ pub(crate) fn picture(
     look: DesktopLook,
     size: (i32, i32),
     on_the_dock: &[OnTheDock],
-    the_overflow: (bool, &str),
+    the_overflow: (bool, &crate::the_docks_words::TheDocksWords),
     fonts: &mut FontSystem,
 ) -> Result<DockPicture, RenderError> {
     let (width, height) = size;
@@ -407,10 +407,61 @@ pub(crate) fn picture(
         })
         .collect();
 
+    // Where the composer's field is, if this Dock has one, and the rule before
+    // the commands — both in the surface's raster, because one is rounded and
+    // the other is a hairline's worth of the same token.
+    let slot_of = |what: &alo_dock::places::WhatIsHere| {
+        places
+            .each()
+            .iter()
+            .find(|place| place.what() == what)
+            .map(|place| {
+                let along = i32::try_from(place.from_the_start()).unwrap_or(i32::MAX);
+                let across = i32::try_from(place.across()).unwrap_or(icon);
+                let (left, top) = a_slot_at(band, layout.edge(), along, icon);
+                let long =
+                    i32::try_from(alo_dock::measures::THE_COMMANDS_DIVIDER_IS_LONG).unwrap_or(28);
+                if layout.edge().runs_across() {
+                    Rectangle::new((left, top).into(), (across, icon).into())
+                } else {
+                    // Down a side the slot's long axis is the bar's, so a field
+                    // 344 along is 344 **tall** — which is what the left Dock's
+                    // own `Open alo Bar` is not, and is the open question this
+                    // names rather than guesses at.
+                    let _ = long;
+                    Rectangle::new((left, top).into(), (icon, across).into())
+                }
+            })
+    };
+    let composer = slot_of(&alo_dock::places::WhatIsHere::TheComposer);
+    let divider = slot_of(&alo_dock::places::WhatIsHere::TheDivider);
+
     let mut solids: Vec<Solid> = Vec::new();
+    // **The rule between the applications and the commands.** Measured at 1 × 28
+    // on the top Dock and 28 × 1 on the left one — the same line turned to suit
+    // the bar — so its long side runs **across** the bar's thickness and its
+    // short side along it. A `Solid`, because a hairline has no curve in it.
+    if let Some(at) = divider {
+        let long = i32::try_from(alo_dock::measures::THE_COMMANDS_DIVIDER_IS_LONG).unwrap_or(28);
+        let thin = i32::try_from(alo_dock::measures::THE_DOCKS_EDGE).unwrap_or(1);
+        let (size, offset) = if layout.edge().runs_across() {
+            ((thin, long), ((at.size.w - thin) / 2, (icon - long) / 2))
+        } else {
+            ((long, thin), ((icon - long) / 2, (at.size.h - thin) / 2))
+        };
+        solids.push(Solid {
+            area: Rectangle::new(
+                (at.loc.x + offset.0, at.loc.y + offset.1).into(),
+                size.into(),
+            ),
+            colour: palette.edge,
+        });
+    }
     let surface = crate::dock_surface::surface(crate::dock_surface::ADocksSurface {
         badges: &badges,
         badge: palette.badge,
+        composer,
+        composer_is: palette.badge,
         panel: band,
         fill: palette.dock,
         edge: palette.edge,
@@ -436,6 +487,7 @@ pub(crate) fn picture(
     // one thing left here is which axis *along* is, which is the same question
     // `the_band_on` above already answers for the band.
     let icon = i32::try_from(ICON).unwrap_or(i32::MAX);
+    let (the_overflow_is_open, words) = the_overflow;
     let initial = i32::try_from(alo_dock::measures::AN_INITIAL_IS).unwrap_or(i32::MAX);
     let utility = i32::try_from(A_UTILITY_GLYPH).unwrap_or(i32::MAX);
     let mut inked: Vec<Inked> = Vec::new();
@@ -444,6 +496,10 @@ pub(crate) fn picture(
         // The icon's own box, `ICON` square: `from_the_start` along the bar's
         // edge, and centred across its thickness.
         let (left, top) = a_slot_at(band, layout.edge(), along_the_bar, icon);
+        // **Its own width**, which is a target's for an application and a
+        // command, and the composer's for the field. `APlace::across` has
+        // always been a field rather than a constant and this is why.
+        let its_width = i32::try_from(place.across()).unwrap_or(icon);
         // **An application's initial on its badge, or the control's mark on the
         // bar.** The slot is the same size either way — ADR 0101 makes the
         // overflow one application slot — and what is in it is not: a letter
@@ -465,24 +521,39 @@ pub(crate) fn picture(
         // The sizes are the owner's two: `AN_INITIAL_IS` — fourteen, half its
         // badge — and `A_UTILITY_GLYPH` for a mark that is not artwork.
         let mut one_character = [0_u8; 4];
-        let (mark, size, ground, ink) = match place.app() {
-            Some(app) => (
+        let label = i32::try_from(alo_dock::measures::A_LABEL_IS).unwrap_or(13);
+        let (mark, size, ground, ink) = match place.what() {
+            alo_dock::places::WhatIsHere::Application(app) => (
                 app.first_letter(),
                 initial,
                 palette.badge,
                 palette.badge_ink,
             ),
-            None => (
+            alo_dock::places::WhatIsHere::TheOverflow => (
                 &*THE_OVERFLOWS_MARK.encode_utf8(&mut one_character),
                 utility,
                 palette.dock,
                 palette.ink,
             ),
+            // **The composer's own two strings are drawn below**, where its
+            // field is: a prompt at its left and the key at its right, neither
+            // of them centred in a slot.
+            alo_dock::places::WhatIsHere::TheComposer
+            | alo_dock::places::WhatIsHere::TheDivider => continue,
+            alo_dock::places::WhatIsHere::ShowAll => {
+                (words.show_all.as_str(), label, palette.dock, palette.ink)
+            }
+            alo_dock::places::WhatIsHere::History => {
+                (words.history.as_str(), label, palette.dock, palette.ink)
+            }
         };
         let shaped = crate::painted_text::centred(
             fonts,
             mark,
-            icon,
+            // **The slot's own width, not an icon's.** `Show all` is 88 wide and
+            // was being shaped into a 48-wide buffer, which clipped it to
+            // *Show al* — visible in the first drawing that had it.
+            its_width,
             // **`GLYPH`, which is artwork's size and not text's.** The owner's
             // ruling of 2026-10-10 is explicit that a fixed bar height must not
             // become fixed-size text elsewhere — so this is worth saying
@@ -544,10 +615,45 @@ pub(crate) fn picture(
         // and each one's own ink is the only thing that says where its middle
         // is. Centring the *text box* instead put every letter where a Latin
         // capital with a full descender would have been.
-        let across_by = ((icon - shaped.width_of_box) / 2).max(0);
+        let across_by = ((its_width - shaped.width_of_box) / 2).max(0);
         let down_by = ((icon - shaped.height) / 2).max(0);
         if let Some(letter) = shaped.placed(left + across_by, top + down_by, height) {
             inked.push(letter);
+        }
+    }
+
+    // **The composer's own two strings**, which the slot loop above skips: they
+    // are not centred in a slot. Measured on both Dock families — the prompt at
+    // the field's left behind its padding, the key at its right behind the same
+    // — so each is placed from its own end rather than centred.
+    if let Some(field) = composer {
+        let pad = i32::try_from(alo_dock::measures::AROUND_THE_OVERFLOWS_HEADING).unwrap_or(12);
+        let body = i32::try_from(alo_dock::measures::TEXT_AT_ORDINARY).unwrap_or(15);
+        let small = i32::try_from(alo_dock::measures::A_SMALL_LABEL_IS).unwrap_or(11);
+        for (what, size, from_the_left) in [
+            (words.prompt.as_str(), body, true),
+            (words.key.as_str(), small, false),
+        ] {
+            if what.is_empty() {
+                continue;
+            }
+            let shaped = crate::painted_text::centred(
+                fonts,
+                what,
+                field.size.w,
+                Metrics::new(size as f32, size as f32),
+                palette.badge,
+                palette.ink,
+            );
+            let x = if from_the_left {
+                field.loc.x + pad
+            } else {
+                field.loc.x + field.size.w - pad - shaped.width_of_box
+            };
+            let y = field.loc.y + ((field.size.h - shaped.height) / 2).max(0);
+            if let Some(drawn) = shaped.placed(x, y, height) {
+                inked.push(drawn);
+            }
         }
     }
 
@@ -558,7 +664,6 @@ pub(crate) fn picture(
     // the layout — rows at the floor every control is held to, growing with the
     // text, scrolling when the room runs out — and this is the only thing that
     // turns it into pixels.
-    let (the_overflow_is_open, heading) = the_overflow;
     if the_overflow_is_open && !over.is_empty() {
         the_overflow_list(
             &mut solids,
@@ -569,7 +674,7 @@ pub(crate) fn picture(
                 edge: layout.edge(),
                 room: (width, height),
                 text: look.scale(),
-                heading,
+                heading: &words.heading,
                 palette,
             },
             fonts,
@@ -634,14 +739,55 @@ mod tests {
     use super::*;
     use crate::desktop_testing::{an_appearance, noon_look};
     use alo_appearance::TextScale;
+    use alo_dock::Screen;
     use alo_dock::measures::{FLOATING_ABOVE_THE_EDGE, MARGIN};
-    use alo_dock::{Room, Screen};
     use alo_strings::Direction;
+
+    /// How many applications this Dock drew.
+    ///
+    /// **The bar holds more than applications since 2026-10-11** — the composer
+    /// and one or two commands — so `inked.len()` is no longer the number of
+    /// letters on it, and every test below that compared the two was asking
+    /// about a bar that no longer exists.
+    fn applications(drawn: &DockPicture) -> usize {
+        drawn
+            .standing
+            .places
+            .each()
+            .iter()
+            .filter(|place| place.app().is_some())
+            .count()
+    }
+
+    /// How many things this Dock inks: every slot but the composer and the rule.
+    ///
+    /// The composer's two strings are drawn beside its field rather than
+    /// centred in a slot, and a rule has nothing to say.
+    fn inks(drawn: &DockPicture) -> usize {
+        use alo_dock::places::WhatIsHere;
+        drawn
+            .standing
+            .places
+            .each()
+            .iter()
+            .filter(|place| {
+                !matches!(
+                    place.what(),
+                    WhatIsHere::TheComposer | WhatIsHere::TheDivider
+                )
+            })
+            .count()
+    }
 
     /// A Dock whose overflow list a person has not opened, which is every frame
     /// but the one after they press the control.
-    const fn closed() -> (bool, &'static str) {
-        (false, "")
+    fn closed() -> (bool, &'static crate::the_docks_words::TheDocksWords) {
+        (false, crate::desktop_testing::no_words())
+    }
+
+    /// The same Dock with its overflow list open.
+    fn opened() -> (bool, &'static crate::the_docks_words::TheDocksWords) {
+        (true, crate::desktop_testing::no_words())
     }
 
     /// **The dock is a bar: centred, clear of the bottom edge, and as wide as
@@ -670,7 +816,10 @@ mod tests {
             assert_eq!(drawn.band.size.h, thick, "{reading:?}");
 
             // As wide as what it holds, and nothing like the whole screen.
-            let wanted = i32::try_from(Room::a_bar_holding(4).as_pixels()).unwrap();
+            // **What it holds, which is no longer only icons.** The bar carries
+            // the composer and the commands since 2026-10-11, so its width is
+            // `Places::how_far_across` rather than a count of slots one size.
+            let wanted = i32::try_from(drawn.standing.places.how_far_across().as_pixels()).unwrap();
             assert_eq!(drawn.band.size.w, wanted, "{reading:?}");
             assert!(drawn.band.size.w < 1920, "{reading:?}: it spans the screen");
 
@@ -754,11 +903,11 @@ mod tests {
         assert!(drawn.band.loc.x + drawn.band.size.w <= 1366);
 
         // Not clamped: the bar is exactly as wide as what it holds.
-        let slots = drawn.inked.len();
+        let slots = applications(&drawn);
         assert_eq!(
             drawn.band.size.w,
-            i32::try_from(Room::a_bar_holding(slots).as_pixels()).unwrap(),
-            "the bar was clamped, so it is not as wide as the {slots} slots it drew"
+            i32::try_from(drawn.standing.places.how_far_across().as_pixels()).unwrap(),
+            "the bar was clamped, so it is not as wide as what it holds"
         );
 
         // Every letter inside the band, which the clamp never guaranteed.
@@ -774,10 +923,9 @@ mod tests {
         // one control, and the rest are behind it.
         assert!(!drawn.over.is_empty(), "nothing went into the overflow");
         assert_eq!(
-            slots - 1 + drawn.over.len(),
+            slots + drawn.over.len(),
             held.len(),
-            "{} on the bar, {} over, and {} were held",
-            slots - 1,
+            "{slots} on the bar, {} over, and {} were held",
             drawn.over.len(),
             held.len()
         );
@@ -830,50 +978,55 @@ mod tests {
                 drawn.band
             );
 
-            let slots = drawn.inked.len();
+            let slots = applications(&drawn);
             assert!(
                 !drawn.over.is_empty(),
                 "{edge:?}: two hundred applications and nothing in the overflow"
             );
             assert_eq!(
-                slots - 1 + drawn.over.len(),
+                slots + drawn.over.len(),
                 held.len(),
-                "{edge:?}: {} on the bar and {} over, of {}",
-                slots - 1,
+                "{edge:?}: {slots} on the bar and {} over, of {}",
                 drawn.over.len(),
                 held.len()
             );
             on_the_bar.push((edge, slots));
         }
 
-        // **The two orientations hold different numbers.** 1366 along the
-        // bottom and 768 down a side is not the same bar, and a length taken
-        // off the wrong axis would make all four agree.
-        let across: Vec<usize> = on_the_bar
-            .iter()
-            .filter(|(edge, _)| edge.runs_across())
-            .map(|(_, slots)| *slots)
-            .collect();
         let down: Vec<usize> = on_the_bar
             .iter()
             .filter(|(edge, _)| !edge.runs_across())
-            .map(|(_, slots)| *slots)
+            .map(|(_, holds)| *holds)
             .collect();
-        assert_eq!(across.len(), 2, "the premise");
-        assert_eq!(down.len(), 2, "the premise");
-        assert!(
-            across.iter().all(|holds| Some(holds) == across.first()),
-            "the bottom and top edges of one display hold different numbers: {on_the_bar:?}"
+        assert_eq!(down.len(), 2, "the premise: two side edges");
+
+        // **The two orientations hold different numbers**, which is the claim
+        // that catches a length taken off the wrong axis: 1366 along the bottom
+        // and 768 down a side is not the same bar.
+        //
+        // **The bottom and the top do not agree with each other**, and that is
+        // ADR 0101 rather than a fault: *keep the distinct edge layouts.* The
+        // bottom's trailing group is the composer and *Show all*, 88 wide; the
+        // edges' is a rule, the composer and History, 48 wide. Different room
+        // left over, different number of applications — measured here as
+        // Bottom 14 and Top 15, and asserted as *each holds more than a side*
+        // rather than as *the two agree*, which they have no reason to.
+        let down_holds = down.first().copied().unwrap_or_default();
+        assert_eq!(
+            down.first(),
+            down.last(),
+            "the left and right edges have the same layout and hold different numbers: \
+             {on_the_bar:?}"
         );
-        assert!(
-            down.iter().all(|holds| Some(holds) == down.first()),
-            "the left and right edges of one display hold different numbers: {on_the_bar:?}"
-        );
-        assert!(
-            across.first() > down.first(),
-            "a bar along the 1366 edge does not hold more than one down the 768 edge, so the \
-             length is being taken off the same axis for both: {on_the_bar:?}"
-        );
+        for (edge, holds) in &on_the_bar {
+            if edge.runs_across() {
+                assert!(
+                    *holds > down_holds,
+                    "{edge:?} holds {holds} and a side holds {down_holds}, so the length is \
+                     being taken off the same axis for both: {on_the_bar:?}"
+                );
+            }
+        }
     }
 
     /// **The list is drawn when a person opens it, and not before.**
@@ -890,7 +1043,7 @@ mod tests {
     fn the_list_is_drawn_only_when_it_is_open_and_has_something_in_it() {
         let look = noon_look(&an_appearance(), Direction::LeftToRight);
         let crowded = on_the_dock(200);
-        let open = (true, "More open apps");
+        let open = opened();
 
         let shut = picture(
             &Dock::shipped(),
@@ -970,15 +1123,7 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn = picture(
-                &dock,
-                look,
-                size,
-                &crowded,
-                (true, "More open apps"),
-                &mut fonts(),
-            )
-            .unwrap();
+            let drawn = picture(&dock, look, size, &crowded, opened(), &mut fonts()).unwrap();
 
             for solid in &drawn.solids {
                 assert!(
@@ -1060,8 +1205,8 @@ mod tests {
 
             // **The premise**: both Docks drew the same three slots, so the
             // difference above is the mark and not the Dock being empty.
-            assert_eq!(open.inked.len(), shut.inked.len(), "{edge:?}");
-            assert_eq!(open.inked.len(), 3, "{edge:?}");
+            assert_eq!(applications(&open), applications(&shut), "{edge:?}");
+            assert_eq!(applications(&open), 3, "{edge:?}");
         }
     }
 
@@ -1094,7 +1239,14 @@ mod tests {
             .collect();
         assert_eq!(marks.len(), 3, "the premise");
 
-        for (which, place) in drawn.standing.places.each().iter().enumerate() {
+        for (which, place) in drawn
+            .standing
+            .places
+            .each()
+            .iter()
+            .filter(|place| place.app().is_some())
+            .enumerate()
+        {
             let along = i32::try_from(place.from_the_start()).unwrap();
             let (left, top) = if drawn.layout.edge().runs_across() {
                 (
@@ -1252,7 +1404,7 @@ mod tests {
             "a Dock of four overflowed on a 1920 screen"
         );
         assert_eq!(
-            drawn.inked.len(),
+            applications(&drawn),
             held.len(),
             "a control was drawn for an empty overflow"
         );
@@ -1366,10 +1518,15 @@ mod tests {
         let drawn = picture(&dock, look, (1920, 1080), &held, closed(), &mut fonts()).unwrap();
 
         assert_eq!(
-            drawn.inked.len(),
+            applications(&drawn),
             held.len(),
-            "three applications on the Dock and {} letters drawn",
-            drawn.inked.len()
+            "three applications on the Dock and {} laid out",
+            applications(&drawn)
+        );
+        assert_eq!(
+            drawn.inked.len(),
+            inks(&drawn),
+            "something other than a slot inked, or a slot did not"
         );
         for letter in &drawn.inked {
             assert!(
@@ -1424,7 +1581,7 @@ mod tests {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
             let drawn = picture(&dock, look, size, &held, closed(), &mut fonts()).unwrap();
-            assert_eq!(drawn.inked.len(), held.len(), "{edge:?}");
+            assert_eq!(applications(&drawn), held.len(), "{edge:?}");
 
             // The band's centre across its thickness, and each letter's.
             let thickness = i32::try_from(drawn.layout.thickness().as_pixels()).unwrap();
@@ -1474,7 +1631,11 @@ mod tests {
             &mut fonts(),
         )
         .unwrap();
-        assert!(drawn.inked.is_empty());
+        assert_eq!(
+            applications(&drawn),
+            0,
+            "a Dock holding nothing laid out an application"
+        );
         assert!(
             drawn.surface.is_some(),
             "the premise: the Dock's surface is still drawn, so an empty `inked` is about \
@@ -1514,7 +1675,9 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(drawn.inked.len(), 3);
+        assert_eq!(applications(&drawn), 3);
+        let inks: Vec<&Inked> = drawn.inked.iter().take(3).collect();
+        let _ = &inks;
         // **No indexing**, which this workspace denies: consecutive pairs
         // instead, which is the same claim and says which pair differed.
         let inks: Vec<&Vec<[u8; 3]>> = drawn.inked.iter().map(|it| &it.pixels).collect();

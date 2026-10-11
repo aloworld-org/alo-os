@@ -397,3 +397,14 @@ pub(crate) fn the_docks_ground(dock: &crate::dock_raster::DockPicture) -> Option
     out.copy_from_slice(bytes);
     Some(out)
 }
+
+/// A Dock whose words nobody has said, for a test that is not about them.
+///
+/// **Empty rather than invented.** A test that does not care what the composer
+/// says should not have to pick a sentence, and a blank is honest: the lane
+/// says the real ones, and `crate::the_docks_words` is where that happens.
+pub(crate) fn no_words() -> &'static crate::the_docks_words::TheDocksWords {
+    static IT: std::sync::OnceLock<crate::the_docks_words::TheDocksWords> =
+        std::sync::OnceLock::new();
+    IT.get_or_init(crate::the_docks_words::TheDocksWords::default)
+}

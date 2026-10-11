@@ -59,10 +59,56 @@ pub enum WhatIsHere {
     Application(AppId),
     /// The control that opens the overflow list.
     ///
-    /// Last on the bar and only when something is in the overflow —
-    /// [`crate::fit`] decides, and a bar with room for everything has no such
-    /// slot at all rather than a hidden one.
+    /// Only when something is in the overflow — [`crate::fit`] decides, and a
+    /// bar with room for everything has no such slot at all rather than a
+    /// hidden one.
     TheOverflow,
+    /// The rule between the applications and the commands after them.
+    ///
+    /// **A line, not a control**: nothing presses it, and `Places::at` answers
+    /// it so that a press on it reaches nothing rather than the control beside
+    /// it. Measured on the edge Docks as `Apps / commands divider`.
+    TheDivider,
+    /// The field: *Find, open, or ask…*
+    ///
+    /// **The *alo Bar* half of *Dock + alo Bar*.** Three hundred and forty-four
+    /// across on both Dock families, which is the one measurement they agreed
+    /// on before ADR 0101 reconciled them.
+    TheComposer,
+    /// The control that lays every open window out at once.
+    ///
+    /// **The bottom Dock's**, by ADR 0101: *preserve the bottom Dock's composer
+    /// and system actions.* The edge Docks put History here instead, which is
+    /// the *keep the distinct edge layouts* half of the same ruling.
+    ShowAll,
+    /// The control that opens what a person did before.
+    ///
+    /// The edge Docks', for the reason [`Self::ShowAll`] gives.
+    History,
+}
+
+impl WhatIsHere {
+    /// How far across the bar this takes.
+    ///
+    /// **Four widths and not one**, which is why [`APlace::across`] has always
+    /// been a field rather than a constant: an application's target, the
+    /// composer, the word *Show all* and a hairline are four different things
+    /// and only one of them is a square.
+    #[must_use]
+    pub const fn across(&self) -> u32 {
+        match self {
+            Self::Application(_) | Self::TheOverflow | Self::History => ICON,
+            Self::TheComposer => crate::measures::THE_COMPOSER_IS_WIDE,
+            Self::ShowAll => crate::measures::SHOW_ALL_IS_WIDE,
+            Self::TheDivider => crate::measures::THE_DOCKS_EDGE,
+        }
+    }
+
+    /// Whether a press on this reaches anything.
+    #[must_use]
+    pub const fn can_be_pressed(&self) -> bool {
+        !matches!(self, Self::TheDivider)
+    }
 }
 
 /// Where one slot sits, relative to the bar's own corner.
@@ -93,7 +139,11 @@ impl APlace {
     pub const fn app(&self) -> Option<&AppId> {
         match &self.what {
             WhatIsHere::Application(app) => Some(app),
-            WhatIsHere::TheOverflow => None,
+            WhatIsHere::TheOverflow
+            | WhatIsHere::TheDivider
+            | WhatIsHere::TheComposer
+            | WhatIsHere::ShowAll
+            | WhatIsHere::History => None,
         }
     }
 
@@ -154,17 +204,18 @@ impl Places {
     /// an overflow with no way into it. `Fitted` is what [`crate::fit`] returns
     /// and is the only thing that knows both.
     #[must_use]
-    pub fn of(fitted: &Fitted) -> Self {
+    pub fn of(fitted: &Fitted, edge: crate::Edge) -> Self {
         let mut from_the_start = MARGIN;
         let showing = fitted.on_the_dock();
-        let mut places = Vec::with_capacity(showing.len() + 1);
+        let mut places = Vec::with_capacity(showing.len() + 5);
         let mut put = |what: WhatIsHere, at: &mut u32| {
+            let across = what.across();
             places.push(APlace {
                 what,
                 from_the_start: *at,
-                across: ICON,
+                across,
             });
-            *at = at.saturating_add(ICON).saturating_add(GAP);
+            *at = at.saturating_add(across).saturating_add(GAP);
         };
         for one in showing {
             put(
@@ -175,7 +226,36 @@ impl Places {
         if fitted.anything_over() {
             put(WhatIsHere::TheOverflow, &mut from_the_start);
         }
+        // **Then the rule, the field and the commands.** Measured in this order
+        // on `348:23874`: the applications, `Apps / commands divider`, the
+        // composer, History, More. The bottom Dock has no rule and puts *Show
+        // all* where History is — ADR 0101's *keep the distinct edge layouts*,
+        // with its *preserve the bottom Dock's composer and system actions*.
+        if edge == crate::Edge::Bottom {
+            put(WhatIsHere::TheComposer, &mut from_the_start);
+            put(WhatIsHere::ShowAll, &mut from_the_start);
+        } else {
+            put(WhatIsHere::TheDivider, &mut from_the_start);
+            put(WhatIsHere::TheComposer, &mut from_the_start);
+            put(WhatIsHere::History, &mut from_the_start);
+        }
         Self { places }
+    }
+
+    /// How far across the bar everything on it reaches, including the room at
+    /// both ends.
+    ///
+    /// **The bar's width is what it holds**, and what it holds is no longer only
+    /// icons: `crate::Room::a_bar_holding` counts slots of one size and cannot
+    /// answer this. Taken from the last place rather than summed, so a change to
+    /// the order or the contents cannot make the two disagree.
+    #[must_use]
+    pub fn how_far_across(&self) -> crate::Room {
+        let past = self
+            .places
+            .last()
+            .map_or(MARGIN, |last| last.past_its_end());
+        crate::Room::pixels(past.saturating_add(MARGIN))
     }
 
     /// Where these sit on a bar with nothing in the overflow.
@@ -185,8 +265,8 @@ impl Places {
     /// has no use for. It cannot produce an overflow slot, which is why it is
     /// separate rather than a default argument.
     #[must_use]
-    pub fn of_all_of(showing: &[OnTheDock]) -> Self {
-        Self::of(&crate::fit(showing.to_vec(), showing.len()))
+    pub fn of_all_of(showing: &[OnTheDock], edge: crate::Edge) -> Self {
+        Self::of(&crate::fit(showing.to_vec(), showing.len()), edge)
     }
 
     /// Every place, in drawing order.
@@ -216,7 +296,9 @@ impl Places {
     /// between two applications opening one of them.
     #[must_use]
     pub fn at(&self, along: u32) -> Option<&APlace> {
-        self.places.iter().find(|place| place.holds(along))
+        self.places
+            .iter()
+            .find(|place| place.holds(along) && place.what.can_be_pressed())
     }
 }
 
@@ -228,6 +310,7 @@ impl Places {
 )]
 mod tests {
     use super::*;
+    use crate::edge::Edge;
     use crate::holding::Holding;
     use crate::windows::Windows;
     use crate::{Room, measures};
@@ -245,6 +328,21 @@ mod tests {
         holding.showing(&Windows::none())
     }
 
+    /// Only the application slots, which is what every test below 2026-10-11
+    /// was written about.
+    ///
+    /// **The bar holds more than applications now** — a rule, the composer and
+    /// one or two commands — so a test that walked every place and asserted it
+    /// was an icon's size was asking about a bar that no longer exists. Each of
+    /// them still has its question; this is how they ask it.
+    fn applications(places: &Places) -> Vec<&APlace> {
+        places
+            .each()
+            .iter()
+            .filter(|place| place.app().is_some())
+            .collect()
+    }
+
     fn place(places: &Places, at: usize) -> &APlace {
         places
             .each()
@@ -256,8 +354,8 @@ mod tests {
     /// is an icon and a gap further along.
     #[test]
     fn the_icons_are_laid_out_from_the_margin_with_a_gap_between() {
-        let places = Places::of_all_of(&showing(&["Docs", "Browser", "Blender"]));
-        assert_eq!(places.how_many(), 3);
+        let places = Places::of_all_of(&showing(&["Docs", "Browser", "Blender"]), Edge::Bottom);
+        assert_eq!(applications(&places).len(), 3);
 
         assert_eq!(place(&places, 0).from_the_start(), measures::MARGIN);
         assert_eq!(
@@ -274,8 +372,11 @@ mod tests {
     /// and pressing is not easier for the application that happens to be first.
     #[test]
     fn every_icon_is_the_same_size_and_big_enough_to_press() {
-        let places = Places::of_all_of(&showing(&["Docs", "Browser", "Blender", "Ptyxis"]));
-        for one in places.each() {
+        let places = Places::of_all_of(
+            &showing(&["Docs", "Browser", "Blender", "Ptyxis"]),
+            Edge::Bottom,
+        );
+        for one in applications(&places) {
             assert_eq!(one.across(), measures::ICON);
             assert!(
                 one.across() >= alo_appearance::targets::ENHANCED_TARGET,
@@ -292,7 +393,7 @@ mod tests {
         for how_many in [1_usize, 2, 5, 9] {
             let names: Vec<String> = (0..how_many).map(|n| format!("App {n}")).collect();
             let borrowed: Vec<&str> = names.iter().map(String::as_str).collect();
-            let places = Places::of_all_of(&showing(&borrowed));
+            let places = Places::of_all_of(&showing(&borrowed), Edge::Bottom);
 
             let last = place(&places, how_many - 1);
             let wanted = Room::a_bar_holding(how_many).as_pixels();
@@ -308,8 +409,8 @@ mod tests {
     /// icon finds that icon and no other.
     #[test]
     fn a_press_in_the_middle_of_an_icon_finds_that_application() {
-        let places = Places::of_all_of(&showing(&["Docs", "Browser", "Blender"]));
-        for one in places.each() {
+        let places = Places::of_all_of(&showing(&["Docs", "Browser", "Blender"]), Edge::Bottom);
+        for one in applications(&places) {
             let middle = one.from_the_start() + one.across() / 2;
             assert_eq!(
                 places.at(middle).map(APlace::app),
@@ -325,7 +426,7 @@ mod tests {
     /// twice — so a press on the boundary is not a race.
     #[test]
     fn two_icons_never_both_claim_a_position() {
-        let places = Places::of_all_of(&showing(&["Docs", "Browser", "Blender"]));
+        let places = Places::of_all_of(&showing(&["Docs", "Browser", "Blender"]), Edge::Bottom);
         let first = place(&places, 0);
         let second = place(&places, 1);
 
@@ -346,7 +447,7 @@ mod tests {
     /// one of them.
     #[test]
     fn pressing_the_gap_between_two_icons_finds_nothing() {
-        let places = Places::of_all_of(&showing(&["Docs", "Browser"]));
+        let places = Places::of_all_of(&showing(&["Docs", "Browser"]), Edge::Bottom);
         let first = place(&places, 0);
         for along in first.past_its_end()..place(&places, 1).from_the_start() {
             assert!(places.at(along).is_none(), "the gap at {along} was claimed");
@@ -356,7 +457,7 @@ mod tests {
     /// **The room at either end belongs to nobody**, for the same reason.
     #[test]
     fn the_room_at_the_ends_belongs_to_nobody() {
-        let places = Places::of_all_of(&showing(&["Docs", "Browser"]));
+        let places = Places::of_all_of(&showing(&["Docs", "Browser"]), Edge::Bottom);
         for along in 0..measures::MARGIN {
             assert!(places.at(along).is_none(), "the start at {along}");
         }
@@ -369,11 +470,21 @@ mod tests {
     /// A Dock holding nothing has no places, and nothing can be pressed on it.
     #[test]
     fn a_dock_holding_nothing_has_nowhere_to_press() {
-        let places = Places::of_all_of(&[]);
-        assert!(places.are_none());
-        assert_eq!(places.how_many(), 0);
-        for along in 0..64 {
-            assert!(places.at(along).is_none());
+        let places = Places::of_all_of(&[], Edge::Bottom);
+        assert!(
+            applications(&places).is_empty(),
+            "a Dock holding nothing laid out an application"
+        );
+        // **The bar is not empty, and that is the design.** It still carries
+        // the composer and the commands after it, which is what a person types
+        // into on a machine with nothing open. What a Dock holding nothing has
+        // none of is *applications*.
+        assert!(
+            places.each().iter().all(|place| place.app().is_none()),
+            "something on an empty Dock claims to be an application"
+        );
+        for along in 0..MARGIN {
+            assert!(places.at(along).is_none(), "the room at the start");
         }
     }
 
@@ -396,9 +507,11 @@ mod tests {
             "the premise: `fit` kept one slot back for the control"
         );
 
-        let places = Places::of(&fitted);
-        assert_eq!(places.how_many(), 3, "two applications and one control");
-
+        let places = Places::of(&fitted, Edge::Bottom);
+        // Two applications, then the control. The composer and *Show all*
+        // follow, which is what makes this a count of applications rather than
+        // of places.
+        assert_eq!(applications(&places).len(), 2);
         let control = place(&places, 2);
         assert!(control.is_the_overflow());
         assert_eq!(control.app(), None, "the control is not an application");
@@ -431,15 +544,15 @@ mod tests {
         let fitted = crate::fit(everything.clone(), 3);
         assert!(!fitted.anything_over(), "the premise");
 
-        let places = Places::of(&fitted);
-        assert_eq!(places.how_many(), everything.len());
+        let places = Places::of(&fitted, Edge::Bottom);
+        assert_eq!(applications(&places).len(), everything.len());
         assert!(
             places.each().iter().all(|place| !place.is_the_overflow()),
             "a bar that fits drew a control for an empty overflow"
         );
         assert_eq!(
             places,
-            Places::of_all_of(&everything),
+            Places::of_all_of(&everything, Edge::Bottom),
             "`of_all_of` is not the same answer as `fit` with room for everything"
         );
     }
@@ -453,7 +566,7 @@ mod tests {
     #[test]
     fn a_press_on_the_control_is_not_a_press_on_the_last_application() {
         let fitted = crate::fit(showing(&["Docs", "Browser", "Blender", "Mail"]), 3);
-        let places = Places::of(&fitted);
+        let places = Places::of(&fitted, Edge::Bottom);
 
         let last_application = place(&places, 1);
         let control = place(&places, 2);
@@ -484,7 +597,7 @@ mod tests {
     #[test]
     fn the_order_is_the_order_the_dock_shows() {
         let names = ["Docs", "Browser", "Blender"];
-        let places = Places::of_all_of(&showing(&names));
+        let places = Places::of_all_of(&showing(&names), Edge::Bottom);
         let laid_out: Vec<&str> = places
             .each()
             .iter()

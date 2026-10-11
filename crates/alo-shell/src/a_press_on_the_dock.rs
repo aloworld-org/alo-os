@@ -71,6 +71,22 @@ pub(crate) fn what_a_press_on_the_dock_does(
         None => WhatAPressOnTheDockDoes::Nothing,
         Some(WhatIsHere::TheOverflow) => WhatAPressOnTheDockDoes::TurnTheOverflowOver,
         Some(WhatIsHere::Application(app)) => WhatAPressOnTheDockDoes::GoTo(app.clone()),
+        // **Taken and not yet acted on**, like `GoTo` above and for the same
+        // reason: each is a surface somebody has to build — the composer opens
+        // a field a person types into, *Show all* lays every window out, and
+        // History opens what they did before. Returning *taken* is still right:
+        // a press that fell through to the canvas would move the view when a
+        // person aimed at a control.
+        //
+        // `TheDivider` cannot arrive here at all — `Places::at` refuses it, so
+        // a press on the rule between the applications and the commands reaches
+        // nothing, which is what a line a person cannot press should do.
+        Some(
+            WhatIsHere::TheComposer
+            | WhatIsHere::ShowAll
+            | WhatIsHere::History
+            | WhatIsHere::TheDivider,
+        ) => WhatAPressOnTheDockDoes::Nothing,
     }
 }
 

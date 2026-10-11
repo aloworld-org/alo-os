@@ -579,7 +579,7 @@ mod running {
                 // drawing path may not word. `what_only_the_server_knows` sets
                 // both, at the one site that builds a frame.
                 the_overflow_is_open: false,
-                the_overflows_heading: "",
+                the_docks_words: crate::no_words(),
                 dock: &self.dock,
                 put_aside: &self.put_aside,
                 // **The machine's own answer**, asked once a frame. `Revealing` decides this
@@ -746,4 +746,15 @@ fn main() -> std::process::ExitCode {
          supervisor that somebody has a desktop on this machine"
     );
     std::process::ExitCode::FAILURE
+}
+
+/// A Dock whose words nobody has said, for a fixture that is not about them.
+///
+/// **A static rather than a temporary**, because the frame borrows it: a
+/// `&TheDocksWords::default()` in a struct literal is a reference to a value
+/// that dies on the next line.
+fn no_words() -> &'static alo_shell::the_docks_words::TheDocksWords {
+    static IT: std::sync::OnceLock<alo_shell::the_docks_words::TheDocksWords> =
+        std::sync::OnceLock::new();
+    IT.get_or_init(alo_shell::the_docks_words::TheDocksWords::default)
 }

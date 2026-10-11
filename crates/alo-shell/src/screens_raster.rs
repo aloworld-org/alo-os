@@ -118,7 +118,11 @@ pub(crate) fn picture(
         // nothing can have overflowed.** Not a placeholder: a Dock holding
         // nothing has no control to open a list with, and `picture` draws
         // none for an empty overflow whatever this says.
-        (false, ""),
+        // **A preview of an arrangement says nothing.** It is a small picture of
+        // several screens, drawn to show where they are relative to each other;
+        // the words on a Dock are for the Dock a person uses, and this is not
+        // it. Empty rather than invented, for `crate::the_docks_words`' reason.
+        (false, &crate::the_docks_words::TheDocksWords::default()),
         fonts,
     )?;
     let warming = place.warming();

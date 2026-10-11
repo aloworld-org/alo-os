@@ -133,10 +133,27 @@ pub(crate) fn where_the_dock_is(
     // called here and nowhere above: `alo-dock` knows how wide a bar holding `n`
     // is and refuses to know about a screen, and the caller knows about windows
     // and not about edges.
-    let at_most = Room::pixels(u32::try_from(widest).unwrap_or(u32::MAX)).how_many_fit();
+    // **The room the composer and the commands take comes off first.** The bar
+    // is not only icons: since 2026-10-11 it carries the field a person types
+    // into and the one or two controls after it, measured on the design file's
+    // own Docks. So what is left for applications is the edge less that group,
+    // and `how_many_fit` is asked about the remainder.
+    let commands = i32::try_from(
+        Places::of(&alo_dock::fit(Vec::new(), 0), layout.edge())
+            .how_far_across()
+            .as_pixels(),
+    )
+    .map_err(|_| RenderError::DesktopScene)?;
+    // `commands` carries both of the bar's own margins and the gap *before* the
+    // composer is not in it, so both come back: `how_many_fit` adds the margins
+    // itself, and the gap between the last application and the composer is the
+    // one piece neither of them accounts for.
+    let gap = i32::try_from(alo_dock::measures::GAP).unwrap_or(8);
+    let for_applications = (widest - commands + 2 * margin - gap).max(1);
+    let at_most = Room::pixels(u32::try_from(for_applications).unwrap_or(u32::MAX)).how_many_fit();
     let fitted = alo_dock::fit(on_the_dock.to_vec(), at_most);
-    let places = Places::of(&fitted);
-    let wanted = i32::try_from(Room::a_bar_holding(places.how_many()).as_pixels())
+    let places = Places::of(&fitted, layout.edge());
+    let wanted = i32::try_from(places.how_far_across().as_pixels())
         .map_err(|_| RenderError::DesktopScene)?;
     // Clamped as a last resort that cannot fire: `at_most` came from `widest`,
     // so `wanted` cannot exceed it except on a display too small for one slot,

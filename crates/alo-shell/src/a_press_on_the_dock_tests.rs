@@ -63,7 +63,13 @@ fn at(dock: &TheDocksPlaces, along: u32) -> smithay::utils::Point<i32, smithay::
 fn a_press_on_an_icon_names_the_application_it_is() {
     for edge in Edge::EVERY {
         let dock = on_the_edge(edge, 5);
-        for (which, place) in dock.places.each().iter().enumerate() {
+        for (which, place) in dock
+            .places
+            .each()
+            .iter()
+            .filter(|place| place.app().is_some())
+            .enumerate()
+        {
             let middle = place.from_the_start() + place.across() / 2;
             let named = place
                 .app()
@@ -90,7 +96,8 @@ fn a_press_on_the_control_turns_the_overflow_over_on_every_edge() {
         let dock = on_the_edge(edge, 200);
         let slots = dock.places.each();
         let control = slots
-            .last()
+            .iter()
+            .find(|place| place.is_the_overflow())
             .unwrap_or_else(|| panic!("{edge:?}: no slots at all"));
         assert!(control.is_the_overflow(), "{edge:?}: the premise");
 
@@ -110,9 +117,13 @@ fn a_press_on_the_control_turns_the_overflow_over_on_every_edge() {
 
         // And the application before it is still that application, so the
         // control has not swallowed its neighbour's slot.
+        // **The last application, not the slot before the control's index.**
+        // The composer and the commands sit after the control since
+        // 2026-10-11, so counting back two from the end reaches one of them.
         let before = slots
-            .get(slots.len().saturating_sub(2))
-            .unwrap_or_else(|| panic!("{edge:?}: no slot before the control"));
+            .iter()
+            .rfind(|place| place.app().is_some())
+            .unwrap_or_else(|| panic!("{edge:?}: no application before the control"));
         let answer = what_a_press_on_the_dock_does(&dock, at(&dock, before.from_the_start() + 1));
         assert!(
             matches!(answer, WhatAPressOnTheDockDoes::GoTo(_)),

@@ -53,7 +53,7 @@ fn drawn_with(
         look,
         crate::desktop_raster::Shown {
             the_overflow_is_open: false,
-            the_overflows_heading: "",
+            the_docks_words: crate::desktop_testing::no_words(),
             running: &running_shows(running, &strings),
             filling: &filling_shows(filling, &strings),
             division: crate::desktop_testing::an_undivided_display(),
@@ -92,7 +92,7 @@ fn drawn_at(
         look,
         crate::desktop_raster::Shown {
             the_overflow_is_open: false,
-            the_overflows_heading: "",
+            the_docks_words: crate::desktop_testing::no_words(),
             running: &running_shows(running, &strings),
             filling: &filling_shows(filling, &strings),
             division: crate::desktop_testing::a_display_two_windows_share(),
@@ -317,8 +317,12 @@ fn the_whole_desktop_turns_dark_when_alo_appearance_says_so() {
         // where neither the corner nor the hairline reaches.
         let dock = picture.dock.as_ref().unwrap();
         let surface = dock.surface.as_ref().unwrap();
+        // **Just inside the bar's own margin, not its middle.** The middle of a
+        // Dock is a badge since 2026-10-11, and a badge is a different colour
+        // on purpose — so sampling there read `bg/cool` and called it the
+        // Dock's ground.
         let middle = (
-            dock.band.loc.x + dock.band.size.w / 2 - surface.area.loc.x,
+            dock.band.loc.x + 3 - surface.area.loc.x,
             dock.band.loc.y + dock.band.size.h / 2 - surface.area.loc.y,
         );
         let at = ((middle.1 as usize) * (surface.area.size.w as usize) + (middle.0 as usize)) * 4;
@@ -509,7 +513,7 @@ fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
             look,
             crate::desktop_raster::Shown {
                 the_overflow_is_open: false,
-                the_overflows_heading: "",
+                the_docks_words: crate::desktop_testing::no_words(),
                 running: &running_shows(&running, &strings),
                 filling: &filling_shows(&filling, &strings),
                 division: crate::desktop_testing::an_undivided_display(),

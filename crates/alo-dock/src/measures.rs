@@ -206,6 +206,35 @@ pub const THE_COMPOSER_IS_WIDE: u32 = 344;
 /// How tall the composer is: the same as a target, so it sits on their line.
 pub const THE_COMPOSER_IS_TALL: u32 = ICON;
 
+/// How big the key shown at the composer's end is drawn.
+///
+/// `Label/Small` in the design file: **Manrope SemiBold 11**, letter-spacing
+/// 0.3 — measured on `Bar shortcut` (`I321:17430;74:55`) and `349:25792`.
+pub const A_SMALL_LABEL_IS: u32 = 11;
+
+/// How big a command's label is drawn.
+///
+/// `Label/Medium` in the design file: **Manrope SemiBold 13**, letter-spacing
+/// 0.1 — measured on `Canvas zoom menu` and `Canvas options menu`. The face and
+/// the weight are `crate::painted_text`'s already; this is the size.
+pub const A_LABEL_IS: u32 = 13;
+
+/// How wide the *Show all* control on the bottom Dock is.
+///
+/// Measured at **88 × 44** on `Canvas zoom menu` (`I321:17430;100:3008`). Its
+/// height is a target's, by ADR 0101's normalisation; only its width is its
+/// own, because it holds a word rather than a mark.
+pub const SHOW_ALL_IS_WIDE: u32 = 88;
+
+/// How long the rule between the applications and the commands is.
+///
+/// Measured at **1 × 28** on the top Dock's `Apps / commands divider`
+/// (`348:23930`) and **28 × 1** on the left one's (`348:23730`) — the same rule
+/// turned to suit the bar. So this is its **long** side; its short side is
+/// [`THE_DOCKS_EDGE`], because a divider and a hairline are one line's worth of
+/// the same token.
+pub const THE_COMMANDS_DIVIDER_IS_LONG: u32 = 28;
+
 /// The radius of the composer's own corners — `radius/md` in the design file.
 pub const THE_COMPOSERS_CORNER: u32 = 12;
 

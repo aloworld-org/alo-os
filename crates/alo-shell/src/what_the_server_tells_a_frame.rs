@@ -52,7 +52,7 @@ pub(crate) fn what_only_the_server_knows<'a>(
     server: &crate::Server,
     windows: &'a [Rectangle<i32, Physical>],
     on_the_dock: &'a [alo_dock::OnTheDock],
-    the_overflows_heading: &'a str,
+    the_docks_words: &'a crate::the_docks_words::TheDocksWords,
     named: &str,
 ) {
     frame.windows = windows;
@@ -86,7 +86,7 @@ pub(crate) fn what_only_the_server_knows<'a>(
     // This is the lane's answer and not the server's, and it is set here for the
     // reason the other five are: `direct_desktop` builds a frame at two sites,
     // and a field set at each of them is a field that drifts between them.
-    frame.the_overflows_heading = the_overflows_heading;
+    frame.the_docks_words = the_docks_words;
 }
 
 #[cfg(test)]
