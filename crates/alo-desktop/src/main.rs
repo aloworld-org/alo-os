@@ -616,6 +616,10 @@ mod running {
                 // can be known rather than in the crate that draws, which is the
                 // whole of why this field exists.
                 on_the_dock: &[],
+                // **And the longer list *More apps* shows.** Empty here for
+                // `on_the_dock`'s reason exactly, and overridden on the way to
+                // the frame by `what_only_the_server_knows`.
+                in_more_apps: &[],
                 look: self.look,
                 strings: &self.strings,
                 egress: &self.egress,

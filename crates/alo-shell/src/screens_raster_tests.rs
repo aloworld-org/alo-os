@@ -211,6 +211,10 @@ fn with_night_light_off_the_dock_is_drawn_exactly_as_it_was_decided() {
             look,
             picture.size.across_and_along(),
             &[],
+            // Nothing on the Dock and nothing in *More apps*: this picture is
+            // about where the screens are, which is what the call it is
+            // compared against passes too.
+            &[],
             (false, &crate::the_docks_words::TheDocksWords::default()),
             &mut fonts(),
         )

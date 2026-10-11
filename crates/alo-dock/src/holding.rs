@@ -189,22 +189,61 @@ impl Holding {
     /// advantage for a marginal one.
     #[must_use]
     pub fn showing(&self, windows: &Windows) -> Vec<OnTheDock> {
+        let mut shown = self.in_the_overview(windows);
+
+        // **An unpinned application whose windows are all minimised is not
+        // here**, and its windows are each in the panel at the edge.
+        // [`OnTheDock::belongs_on_the_dock`] carries the rule and the reasons.
+        //
+        // Applied to **every** row, not to the unpinned ones alone. Measured
+        // 2026-10-11: with the filter on the unpinned rows only, deleting the
+        // pinned clause from `belongs_on_the_dock` left all 219 tests passing —
+        // the clause was correct, documented, and dead. A rule stated in one
+        // place and applied to half its subjects survives every test written
+        // against the behaviour, because the behaviour is what it gets right.
+        //
+        // Order is untouched: a filter keeps what it keeps where it was, so the
+        // pinned section and the opening order both survive it.
+        shown.retain(OnTheDock::belongs_on_the_dock);
+        shown
+    }
+
+    /// **Everything *More apps* shows**: every pinned application in its saved
+    /// order, then every other application with a window, in opening order.
+    ///
+    /// The owner's ruling of 2026-10-11, ADR 0103: *pinned applications first,
+    /// in their saved order; other currently open applications after them,
+    /// **including applications whose windows are all minimised**; each
+    /// application exactly once.*
+    ///
+    /// # It is the Dock before the membership rule, and that is the point
+    ///
+    /// [`Self::showing`] is this list with
+    /// [`OnTheDock::belongs_on_the_dock`] applied. Written as two walks they
+    /// would be two answers to *which applications does this person have*, and
+    /// the one place they are guaranteed to differ — an unpinned application
+    /// whose windows are all minimised — is the exact case the ruling says must
+    /// appear here and not there. A second walk would get that right on the day
+    /// and drift afterwards.
+    ///
+    /// So the relationship is a line of code rather than a convention: **More
+    /// apps is everything; the Dock is everything that belongs on it.**
+    ///
+    /// # What is not here
+    ///
+    /// Applications that are merely installed. The ruling is explicit —
+    /// *installed applications that are neither pinned nor open do not belong
+    /// in this grid; they remain available through Apps or the alo Bar* — and
+    /// this type could not list them anyway: it is handed what is pinned and
+    /// what is open and has never seen an installed-application list. **Absent
+    /// by construction rather than by a filter somebody has to remember.**
+    #[must_use]
+    pub fn in_the_overview(&self, windows: &Windows) -> Vec<OnTheDock> {
         let mut shown: Vec<OnTheDock> = self
             .pinned
             .iter()
             .map(|app| self.one(app, Pinned::ByThePerson, windows))
             .collect();
-        // Pinned rows go through the same filter as the rest, below. **Not
-        // because any of them can fail it** — `belongs_on_the_dock` is
-        // unconditionally true for a pinned application — but because the
-        // alternative is a rule whose pinned half no caller can reach.
-        //
-        // Measured 2026-10-11: with the filter applied to the unpinned rows
-        // only, deleting the pinned clause from `belongs_on_the_dock` left all
-        // 219 tests passing. The clause was correct, documented, and dead. A
-        // rule stated in one place and applied to half its subjects is the
-        // shape of fault that survives every test written against the behaviour,
-        // because the behaviour is what it gets right.
 
         // The rest of what is open, in the order it opened — never the order it
         // was used, or an icon would move under the hand of somebody who merely
@@ -234,17 +273,6 @@ impl Holding {
             rest.into_iter()
                 .map(|app| self.one(app, Pinned::No, windows)),
         );
-
-        // **An unpinned application whose windows are all minimised is not
-        // here**, and its windows are each in the panel at the edge.
-        // [`OnTheDock::belongs_on_the_dock`] carries the rule and the reasons.
-        //
-        // Applied **after** every row is built rather than while the windows are
-        // walked, because the question is about an application's whole set of
-        // windows and a walk sees one at a time. Order is untouched: a filter
-        // keeps what it keeps where it was, so the pinned section and the
-        // opening order both survive it.
-        shown.retain(OnTheDock::belongs_on_the_dock);
         shown
     }
 

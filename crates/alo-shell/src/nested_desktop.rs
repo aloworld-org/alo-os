@@ -195,6 +195,19 @@ pub struct DesktopFrame<'a> {
     /// — which is `ICON 48 + GAP 8`, the pitch `alo-dock` already uses. See
     /// `docs/autonomy/updates/the-dock-has-an-implementation-contract.md`.
     pub on_the_dock: &'a [alo_dock::OnTheDock],
+    /// What *More apps* lists: every pinned application, then every other one
+    /// with a window — **including those whose windows are all minimised and
+    /// which are therefore not in [`Self::on_the_dock`] at all.**
+    ///
+    /// `alo_dock::Holding::in_the_overview`, which is `on_the_dock` before the
+    /// membership rule. A separate field rather than something derived here,
+    /// because the difference between the two lists is exactly the applications
+    /// this one has and that one does not, so it cannot be recovered from that
+    /// one.
+    ///
+    /// The owner's ruling of 2026-10-11, ADR 0103: *More apps is now an
+    /// application overview, not merely a list of icons that overflowed.*
+    pub in_more_apps: &'a [alo_dock::OnTheDock],
 }
 
 impl Nested {
@@ -373,6 +386,7 @@ pub(crate) fn frame_pictures(
             filling_the_screen: desktop.filling_the_screen,
             display_scale: desktop.display_scale,
             on_the_dock: desktop.on_the_dock,
+            in_more_apps: desktop.in_more_apps,
         },
         &mut labels.fonts,
         size,

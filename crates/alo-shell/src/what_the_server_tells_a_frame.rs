@@ -52,6 +52,7 @@ pub(crate) fn what_only_the_server_knows<'a>(
     server: &crate::Server,
     windows: &'a [Rectangle<i32, Physical>],
     on_the_dock: &'a [alo_dock::OnTheDock],
+    in_more_apps: &'a [alo_dock::OnTheDock],
     the_docks_words: &'a crate::the_docks_words::TheDocksWords,
     named: &str,
 ) {
@@ -79,6 +80,12 @@ pub(crate) fn what_only_the_server_knows<'a>(
     // Dock of what is running, which is what a machine with no saved pins
     // should show.
     frame.on_the_dock = on_the_dock;
+    // **And what *More apps* lists**, which is a longer list than the Dock's
+    // and not derivable from it: an application whose windows are all minimised
+    // is in one and not the other, by the owner's ruling of 2026-10-11.
+    // `Holding::in_the_overview` is `what_the_dock_holds` before the membership
+    // rule, so the two cannot drift.
+    frame.in_more_apps = in_more_apps;
     // **Whether the overflow list is open**, which a desktop's own state cannot
     // know: it is turned over by a press, and presses reach the `Server`.
     frame.the_overflow_is_open = server.the_overflow_is_open();

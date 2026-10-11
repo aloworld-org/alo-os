@@ -161,6 +161,9 @@ pub(crate) struct Shown<'a> {
     /// it, and `Server::how_many_the_dock_holds` built the list and threw it
     /// away on the way here.
     pub(crate) on_the_dock: &'a [OnTheDock],
+    /// What *More apps* lists, from
+    /// [`crate::nested_desktop::DesktopFrame::in_more_apps`].
+    pub(crate) in_more_apps: &'a [OnTheDock],
 }
 
 /// What the running window shows, as a panel.
@@ -221,6 +224,7 @@ pub(crate) fn picture(
         panel_is_revealed,
         display_scale,
         on_the_dock,
+        in_more_apps,
         the_overflow_is_open,
         the_docks_words,
     } = shown;
@@ -236,6 +240,7 @@ pub(crate) fn picture(
         look,
         size,
         on_the_dock,
+        in_more_apps,
         (the_overflow_is_open, the_docks_words),
         fonts,
     )?;

@@ -594,6 +594,9 @@ impl LoopInput for Desk<'_> {
         // it has to outlive the frame; built inside `what_only_the_server_knows`
         // it would die at that function's end.
         let on_the_dock = server.what_the_dock_holds(&alo_dock::Holding::nothing());
+        // **And the longer list *More apps* shows**, for `on_the_dock`'s reason
+        // exactly: the frame borrows it, so it has to outlive the frame.
+        let in_more_apps = server.what_more_apps_holds(&alo_dock::Holding::nothing());
         // **Said here because the drawing path may not word a sentence**, and a
         // local for `windows`' reason exactly: the frame borrows it.
         // `tests/desktop_source.rs` holds that no `desktop_*` or `dock_*` file
@@ -608,6 +611,7 @@ impl LoopInput for Desk<'_> {
             server,
             &windows,
             &on_the_dock,
+            &in_more_apps,
             &the_docks_words,
             &named,
         );
@@ -675,6 +679,7 @@ impl LoopInput for Desk<'_> {
                 server,
                 &windows,
                 &on_the_dock,
+                &in_more_apps,
                 &the_docks_words,
                 &named,
             );

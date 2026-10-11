@@ -238,6 +238,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         // the same reason `direct_desktop` holds `windows` and `on_the_dock` on
         // their own lines.
         let on_the_dock = server.what_the_dock_holds(&alo_dock::Holding::nothing());
+        // **And the longer list *More apps* shows**, for `on_the_dock`'s reason
+        // exactly: the frame borrows it. Not the same slice — an application
+        // whose windows are all minimised is in this one and not that one,
+        // which is the whole point of there being two.
+        let in_more_apps = server.what_more_apps_holds(&alo_dock::Holding::nothing());
         drawn += nested
             .submit_with_desktop(
                 &roots,
@@ -269,6 +274,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     // window open. True, and a Dock of what is running is what
                     // a machine with no saved pins should show.
                     on_the_dock: &on_the_dock,
+                    in_more_apps: &in_more_apps,
                     display_scale: 100,
                     dock: &dock,
                     look: DesktopLook::of(
@@ -417,18 +423,31 @@ fn the_dock_follows_windows_being_put_aside(
             .iter()
             .find(|on| on.app() == &app)
             .map_or(0, alo_dock::OnTheDock::how_many_put_aside);
-        (is_here(&free), is_here(&held), aside)
+        // **And whether *More apps* still lists it**, which is the half the
+        // Dock cannot show. The owner's words: *including minimised-only
+        // applications here provides another route to them; it does not put
+        // them back in the Dock.* Asked at every step beside the Dock's answer,
+        // because either alone is satisfied by a surface that lists everything
+        // or by one that lists nothing — and it must say yes at **every** step,
+        // which is what makes the Dock's answer changing underneath it the
+        // interesting fact rather than two lists moving together.
+        let in_more_apps = server
+            .what_more_apps_holds(&unpinned)
+            .iter()
+            .any(|on| on.app() == &app);
+        (is_here(&free), is_here(&held), aside, in_more_apps)
     };
 
     let mut said = Vec::new();
     let mut step =
         |server: &alo_shell::Server, what: &str, free: bool, held: bool, aside: usize| {
-            let (is_free, is_held, is_aside) = look(server);
-            let agrees = is_free == free && is_held == held && is_aside == aside;
+            let (is_free, is_held, is_aside, in_more_apps) = look(server);
+            let agrees = is_free == free && is_held == held && is_aside == aside && in_more_apps;
             said.push(format!(
-                "{what}: unpinned {}, pinned {} with {is_aside} put aside{}",
+                "{what}: unpinned {}, pinned {} with {is_aside} put aside, More apps {}{}",
                 if is_free { "on the Dock" } else { "gone" },
                 if is_held { "on the Dock" } else { "gone" },
+                if in_more_apps { "lists it" } else { "LOST IT" },
                 if agrees {
                     ""
                 } else {

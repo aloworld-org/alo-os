@@ -114,6 +114,11 @@ pub(crate) fn picture(
         look,
         place.room().across_and_along(),
         &[],
+        // **And nothing in *More apps* either**, for the same reason: this
+        // picture's subject is where the screens are, not what is on them. The
+        // list is closed below in any case, so an overview here would be built
+        // and thrown away.
+        &[],
         // **A preview of an arrangement, where nothing is open and so
         // nothing can have overflowed.** Not a placeholder: a Dock holding
         // nothing has no control to open a list with, and `picture` draws

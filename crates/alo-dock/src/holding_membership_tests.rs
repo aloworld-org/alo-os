@@ -262,3 +262,97 @@ fn focusing_an_application_does_not_move_its_icon() {
         "focusing the last application moved its icon; the Dock was {before:?}"
     );
 }
+
+/// **An application the Dock does not show is still in *More apps*.**
+///
+/// The one case the two lists are guaranteed to differ on, and the reason
+/// `in_the_overview` exists rather than *More apps* walking its own list: an
+/// unpinned application whose windows are all minimised is gone from the bar
+/// by the membership rule and is, by the owner's ruling, *another route to
+/// them* in the overview.
+///
+/// Asserted on both lists from one state, because *the Dock is right* and *the
+/// overview is right* are only interesting together.
+#[test]
+fn an_application_with_only_minimised_windows_leaves_the_dock_and_stays_in_more_apps() {
+    let holding = Holding::nothing();
+    let mut windows = Windows::none();
+    windows.opened(window(1, "Notes", HowItSits::PutAside));
+    windows.opened(window(2, "Notes", HowItSits::PutAside));
+
+    assert!(
+        names(&holding.showing(&windows)).is_empty(),
+        "it should have left the Dock"
+    );
+    assert_eq!(
+        names(&holding.in_the_overview(&windows)),
+        vec!["Notes".to_owned()],
+        "and More apps should still offer a route to it"
+    );
+}
+
+/// **The Dock is the overview with the membership rule applied**, which is the
+/// relationship the two functions are written to guarantee.
+///
+/// Over a spread of states rather than one, because the claim is about the two
+/// lists as a whole: same order, same rows, minus exactly what does not belong.
+/// A second walk that happened to agree on a pinned application and an open one
+/// would pass a single-case test.
+#[test]
+fn the_dock_is_the_overview_minus_what_does_not_belong() {
+    let mut holding = Holding::nothing();
+    holding.pin(app("Files"));
+    holding.pin(app("Browser"));
+
+    let mut windows = Windows::none();
+    windows.opened(window(1, "Browser", HowItSits::PutAside));
+    windows.opened(window(2, "Notes", HowItSits::OnTheCanvas));
+    windows.opened(window(3, "Player", HowItSits::PutAside));
+    windows.opened(window(4, "Notes", HowItSits::PutAside));
+    windows.opened(window(5, "Reader", HowItSits::FillingTheScreen));
+
+    let overview = holding.in_the_overview(&windows);
+    let expected: Vec<String> = overview
+        .iter()
+        .filter(|on| on.belongs_on_the_dock())
+        .map(|on| on.app().name().to_owned())
+        .collect();
+
+    assert_eq!(names(&holding.showing(&windows)), expected);
+
+    // And the premise: the two are not the same list, or this proves nothing.
+    assert_eq!(
+        names(&overview),
+        vec![
+            "Files".to_owned(),
+            "Browser".to_owned(),
+            "Notes".to_owned(),
+            "Player".to_owned(),
+            "Reader".to_owned(),
+        ],
+        "the overview is not pinned-then-opening-order"
+    );
+    assert_eq!(
+        names(&holding.showing(&windows)),
+        vec![
+            "Files".to_owned(),
+            "Browser".to_owned(),
+            "Notes".to_owned(),
+            "Reader".to_owned(),
+        ],
+        "Player had only a minimised window and should have left the Dock"
+    );
+}
+
+/// **A pinned application with nothing open is in the overview**, which is the
+/// other direction: the overview is not *what is open*.
+#[test]
+fn a_pinned_application_with_nothing_open_is_in_the_overview() {
+    let mut holding = Holding::nothing();
+    holding.pin(app("Files"));
+
+    assert_eq!(
+        names(&holding.in_the_overview(&Windows::none())),
+        vec!["Files".to_owned()]
+    );
+}

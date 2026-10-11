@@ -585,6 +585,7 @@ impl<'a> TheDesk<'a> {
             filling_the_screen: false,
             display_scale: 100,
             on_the_dock: &[],
+            in_more_apps: &[],
         }
     }
 }

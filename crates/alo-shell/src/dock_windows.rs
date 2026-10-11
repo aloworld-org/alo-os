@@ -234,6 +234,22 @@ impl crate::Server {
     pub fn what_the_dock_holds(&self, pinned: &alo_dock::Holding) -> Vec<alo_dock::OnTheDock> {
         pinned.showing(&self.the_windows_the_dock_sees())
     }
+
+    /// The entries *More apps* shows, in the order it shows them.
+    ///
+    /// **A longer list than [`Self::what_the_dock_holds`], and not derivable
+    /// from it.** An unpinned application whose windows are all minimised is in
+    /// this one and not that one — the owner's ruling of 2026-10-11, ADR 0103 —
+    /// so the applications that differ are precisely the ones the Dock's list
+    /// does not contain.
+    ///
+    /// `alo_dock::Holding::in_the_overview` is that list, and
+    /// [`Self::what_the_dock_holds`] is it with the membership rule applied, so
+    /// the two are one walk and cannot come to disagree.
+    #[must_use]
+    pub fn what_more_apps_holds(&self, pinned: &alo_dock::Holding) -> Vec<alo_dock::OnTheDock> {
+        pinned.in_the_overview(&self.the_windows_the_dock_sees())
+    }
 }
 
 #[cfg(test)]

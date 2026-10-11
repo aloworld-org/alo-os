@@ -182,7 +182,14 @@ pub(crate) struct DockPicture {
 /// A struct rather than eight arguments, because every one of them is a
 /// different type of number and a caller that swapped two would compile.
 struct TheOverflowIsDrawn<'a> {
-    /// The applications the bar had no room for, in order.
+    /// Everything *More apps* lists, in order.
+    ///
+    /// **Not the applications that overflowed.** It was those until
+    /// 2026-10-11, when the owner ruled that this surface is *an application
+    /// overview, not merely a list of icons that overflowed* — so it carries
+    /// every pinned application and every open one, whether or not the bar had
+    /// room, and including those whose windows are all minimised and which are
+    /// therefore not on the bar at all.
     over: &'a [OnTheDock],
     /// The Dock's band, which the list opens inward from.
     at: Rectangle<i32, Physical>,
@@ -414,6 +421,7 @@ pub(crate) fn picture(
     look: DesktopLook,
     size: (i32, i32),
     on_the_dock: &[OnTheDock],
+    in_more_apps: &[OnTheDock],
     the_overflow: (bool, &crate::the_docks_words::TheDocksWords),
     fonts: &mut FontSystem,
 ) -> Result<DockPicture, RenderError> {
@@ -727,13 +735,18 @@ pub(crate) fn picture(
     // the layout — rows at the floor every control is held to, growing with the
     // text, scrolling when the room runs out — and this is the only thing that
     // turns it into pixels.
-    let overflow_list = if the_overflow_is_open && !over.is_empty() {
+    // **Opened whether or not anything overflowed.** `over` is no longer the
+    // tail that did not fit: the ruling keeps the control available *so the
+    // person has a predictable route to the overview, even when all eligible
+    // icons fit in the Dock*. The old condition tested the overflow tail, which
+    // made this surface appear and vanish with the width of a display.
+    let overflow_list = if the_overflow_is_open && !in_more_apps.is_empty() {
         Some(the_overflow_list(
             &mut panels,
             &mut solids,
             &mut inked,
             TheOverflowIsDrawn {
-                over: &over,
+                over: in_more_apps,
                 at: band,
                 edge: layout.edge(),
                 room: (width, height),
@@ -885,8 +898,16 @@ mod tests {
         let mut whichever_way_read: Option<Rectangle<i32, Physical>> = None;
         for reading in [Direction::LeftToRight, Direction::RightToLeft] {
             let look = noon_look(&an_appearance(), reading);
-            let drawn =
-                picture(&dock, look, size, &on_the_dock(4), closed(), &mut fonts()).unwrap();
+            let drawn = picture(
+                &dock,
+                look,
+                size,
+                &on_the_dock(4),
+                &on_the_dock(4),
+                closed(),
+                &mut fonts(),
+            )
+            .unwrap();
             let layout = dock.layout_on(Screen::of(1920, 1080).unwrap());
             assert_eq!(drawn.layout, layout);
 
@@ -937,6 +958,7 @@ mod tests {
                 look,
                 (1920, 1080),
                 &on_the_dock(holding),
+                &on_the_dock(holding),
                 closed(),
                 &mut fonts(),
             )
@@ -976,6 +998,7 @@ mod tests {
             &Dock::shipped(),
             look,
             (1366, 768),
+            &held,
             &held,
             closed(),
             &mut fonts(),
@@ -1043,7 +1066,7 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn = picture(&dock, look, size, &held, closed(), &mut fonts()).unwrap();
+            let drawn = picture(&dock, look, size, &held, &held, closed(), &mut fonts()).unwrap();
 
             // Within the edge it runs along, less the room either side.
             let (ran, edge_length) = if edge.runs_across() {
@@ -1131,6 +1154,7 @@ mod tests {
                 look,
                 (1366, 768),
                 &crowded,
+                &crowded,
                 how,
                 &mut fonts(),
             )
@@ -1178,6 +1202,7 @@ mod tests {
             look,
             (1366, 768),
             &crowded,
+            &crowded,
             closed(),
             &mut fonts(),
         )
@@ -1186,6 +1211,7 @@ mod tests {
             &Dock::shipped(),
             look,
             (1366, 768),
+            &crowded,
             &crowded,
             open,
             &mut fonts(),
@@ -1206,12 +1232,22 @@ mod tests {
             shut.inked.len()
         );
 
-        // Open, on a Dock with room for everything: the flag says open and
-        // there is nothing to show.
+        // **Open on a Dock with room for everything: it is still drawn.**
+        //
+        // This asserted the opposite until 2026-10-11 — *the flag says open and
+        // there is nothing to show* — because the surface was the overflow and
+        // a Dock with room has no overflow. ADR 0103 made it an overview whose
+        // control is present *even when all eligible icons fit in the Dock*, so
+        // four applications that all fit are four rows in it.
+        //
+        // Measured here rather than argued: `over` is empty and the list is
+        // drawn anyway, which is exactly the pair the old rule said could not
+        // happen.
         let roomy = picture(
             &Dock::shipped(),
             look,
             (1920, 1080),
+            &on_the_dock(4),
             &on_the_dock(4),
             open,
             &mut fonts(),
@@ -1222,15 +1258,41 @@ mod tests {
             look,
             (1920, 1080),
             &on_the_dock(4),
+            &on_the_dock(4),
             closed(),
             &mut fonts(),
         )
         .unwrap();
-        assert!(roomy.over.is_empty(), "the premise");
-        assert_eq!(
-            (roomy.solids.len(), roomy.inked.len()),
-            (roomy_shut.solids.len(), roomy_shut.inked.len()),
-            "an empty list was drawn over the canvas"
+        assert!(roomy.over.is_empty(), "the premise: nothing overflowed");
+        assert!(
+            roomy.overflow_list.is_some(),
+            "nothing overflowed, so the overview did not open — which is the \
+             rule ADR 0103 replaced"
+        );
+        assert!(
+            roomy.inked.len() > roomy_shut.inked.len(),
+            "the overview opened and inked no names: {} against {}",
+            roomy.inked.len(),
+            roomy_shut.inked.len()
+        );
+
+        // **And nothing to show really does draw nothing.** The other half, and
+        // the one the clause above could otherwise be satisfied by a list that
+        // always opens: a Dock whose overview is empty draws no list even with
+        // the flag set.
+        let empty = picture(
+            &Dock::shipped(),
+            look,
+            (1920, 1080),
+            &[],
+            &[],
+            open,
+            &mut fonts(),
+        )
+        .unwrap();
+        assert!(
+            empty.overflow_list.is_none(),
+            "an empty overview was drawn over the canvas"
         );
     }
 
@@ -1251,7 +1313,16 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn = picture(&dock, look, size, &crowded, opened(), &mut fonts()).unwrap();
+            let drawn = picture(
+                &dock,
+                look,
+                size,
+                &crowded,
+                &crowded,
+                opened(),
+                &mut fonts(),
+            )
+            .unwrap();
 
             for solid in &drawn.solids {
                 assert!(
@@ -1300,14 +1371,24 @@ mod tests {
             dock.set_edge(edge);
 
             // Three with windows open.
-            let open = picture(&dock, look, size, &on_the_dock(3), closed(), &mut fonts()).unwrap();
+            let open = picture(
+                &dock,
+                look,
+                size,
+                &on_the_dock(3),
+                &on_the_dock(3),
+                closed(),
+                &mut fonts(),
+            )
+            .unwrap();
             // The same three, pinned and closed.
             let mut holding = alo_dock::Holding::nothing();
             for number in 0..3 {
                 holding.pin(alo_dock::AppId::named(&format!("app-{number}")).unwrap());
             }
             let pinned = holding.showing(&alo_dock::Windows::none());
-            let shut = picture(&dock, look, size, &pinned, closed(), &mut fonts()).unwrap();
+            let shut =
+                picture(&dock, look, size, &pinned, &pinned, closed(), &mut fonts()).unwrap();
 
             let wide = i32::try_from(alo_dock::measures::AN_OPEN_MARK_IS_WIDE).unwrap();
             let tall = i32::try_from(alo_dock::measures::A_RUNNING_MARK_IS_TALL).unwrap();
@@ -1351,6 +1432,7 @@ mod tests {
             &Dock::shipped(),
             look,
             (1920, 1080),
+            &on_the_dock(3),
             &on_the_dock(3),
             closed(),
             &mut fonts(),
@@ -1431,6 +1513,7 @@ mod tests {
                 &Dock::shipped(),
                 look,
                 (1920, 1080),
+                &on_the_dock(3),
                 &on_the_dock(3),
                 closed(),
                 &mut fonts(),
@@ -1523,6 +1606,7 @@ mod tests {
             look,
             (1920, 1080),
             &held,
+            &held,
             closed(),
             &mut fonts(),
         )
@@ -1561,6 +1645,7 @@ mod tests {
             look,
             (1366, 768),
             &on_the_dock(4),
+            &on_the_dock(4),
             closed(),
             &mut fonts(),
         )
@@ -1570,6 +1655,7 @@ mod tests {
             look,
             (3840, 2160),
             &on_the_dock(4),
+            &on_the_dock(4),
             closed(),
             &mut fonts(),
         )
@@ -1578,6 +1664,7 @@ mod tests {
             &dock,
             look,
             (1080, 1920),
+            &on_the_dock(4),
             &on_the_dock(4),
             closed(),
             &mut fonts(),
@@ -1622,6 +1709,7 @@ mod tests {
                         look,
                         size,
                         &on_the_dock(4),
+                        &on_the_dock(4),
                         closed(),
                         &mut fonts()
                     ),
@@ -1643,7 +1731,16 @@ mod tests {
         let dock = Dock::shipped();
         let look = noon_look(&an_appearance(), Direction::LeftToRight);
         let held = on_the_dock(3);
-        let drawn = picture(&dock, look, (1920, 1080), &held, closed(), &mut fonts()).unwrap();
+        let drawn = picture(
+            &dock,
+            look,
+            (1920, 1080),
+            &held,
+            &held,
+            closed(),
+            &mut fonts(),
+        )
+        .unwrap();
 
         assert_eq!(
             applications(&drawn),
@@ -1708,7 +1805,7 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn = picture(&dock, look, size, &held, closed(), &mut fonts()).unwrap();
+            let drawn = picture(&dock, look, size, &held, &held, closed(), &mut fonts()).unwrap();
             assert_eq!(applications(&drawn), held.len(), "{edge:?}");
 
             // The band's centre across its thickness, and each letter's.
@@ -1755,6 +1852,7 @@ mod tests {
             look,
             (1920, 1080),
             &[],
+            &[],
             closed(),
             &mut fonts(),
         )
@@ -1797,6 +1895,7 @@ mod tests {
             &Dock::shipped(),
             look,
             (1920, 1080),
+            &held,
             &held,
             closed(),
             &mut fonts(),

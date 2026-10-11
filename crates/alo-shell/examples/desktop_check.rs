@@ -254,6 +254,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut draw = |what: &str,
                     dock: &Dock,
                     on_the_dock: &[alo_dock::OnTheDock],
+                    in_more_apps: &[alo_dock::OnTheDock],
                     the_overflow_is_open: bool,
                     put_aside: &alo_put_aside::Panel,
                     egress: &EgressStatus,
@@ -309,6 +310,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 // fixture: *it needs eyes, and eyes need
                                 // pictures.*
                                 on_the_dock,
+                                // **The overview, which this fixture's windows
+                                // make the same list.** Every one of them is on
+                                // the canvas, so nothing is excluded from the
+                                // Dock and the two lists coincide — which is
+                                // why the caller passes one slice for both.
+                                in_more_apps,
                                 the_overflow_is_open,
                                 the_docks_words: &the_docks_words,
                                 dock,
@@ -407,6 +414,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             &format!("the dock alone on the {} edge", an_edges_name(edge)),
             &dock,
             &a_few_applications,
+            &a_few_applications,
             false,
             nothing_put_aside(),
             &quiet,
@@ -426,6 +434,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         draw(
             &format!("the dock overflowing on the {} edge", an_edges_name(edge)),
             &dock,
+            &a_crowded_dock,
             &a_crowded_dock,
             true,
             nothing_put_aside(),
@@ -455,6 +464,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "the overflow list beside two minimised windows of one application",
         &shipped,
         &a_crowded_dock,
+        &a_crowded_dock,
         true,
         two_windows_of_one_application(),
         &quiet,
@@ -466,6 +476,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     draw(
         "the dock with a question leaving",
         &shipped,
+        &a_few_applications,
         &a_few_applications,
         false,
         nothing_put_aside(),
@@ -484,6 +495,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "what is running",
         &shipped,
         &a_few_applications,
+        &a_few_applications,
         false,
         nothing_put_aside(),
         &quiet,
@@ -497,6 +509,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     draw(
         "what is running, read again",
         &shipped,
+        &a_few_applications,
         &a_few_applications,
         false,
         nothing_put_aside(),
@@ -512,6 +525,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "what is filling a folder",
         &shipped,
         &a_few_applications,
+        &a_few_applications,
         false,
         nothing_put_aside(),
         &quiet,
@@ -525,6 +539,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "a folder opened",
         &shipped,
         &a_few_applications,
+        &a_few_applications,
         false,
         nothing_put_aside(),
         &quiet,
@@ -535,6 +550,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     draw(
         "both windows",
         &shipped,
+        &a_few_applications,
         &a_few_applications,
         false,
         nothing_put_aside(),
@@ -549,6 +565,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     draw(
         "a folder that is gone",
         &shipped,
+        &a_few_applications,
         &a_few_applications,
         false,
         nothing_put_aside(),
