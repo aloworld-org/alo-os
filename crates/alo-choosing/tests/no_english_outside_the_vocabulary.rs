@@ -61,6 +61,16 @@ const THE_FIVE: [&str; 5] = [
 /// why)`.
 const NOT_READ_BY_A_PERSON: &[(&str, &str, &str, &str)] = &[
     (
+        "alo-dock",
+        "more_apps.rs",
+        "the measured parts and the owner's cap do not agree",
+        "the message of a `const _: () = assert!(..)` that holds the popover's measured \
+         parts against the owner's 536 cap. It cannot reach a screen, and not because it is \
+         unlikely to: a const assertion that fails is a **compile** error, so if this string \
+         is ever produced there is no program for a person to read it in. It is addressed to \
+         whoever's build just stopped",
+    ),
+    (
         "alo-appearance",
         "verbs.rs",
         "how a machine looks is not a file",
