@@ -8,6 +8,58 @@ that prose was 55 top-level frames behind without anything saying so.
 **Approved by the owner on 2026-10-04**, with the size explicitly accepted: *an untraceable
 design change is the larger problem.*
 
+## The compact edge and the window menu, 2026-10-11
+
+**`414-27564.xml` is authoritative for the window edge's sizing, its
+breakpoints and its window menu, and supersedes `398-26305.xml` for those.**
+`398-26305.xml` remains the record of the normal edge's own anatomy — the
+strip, the grip, the title placement and the control artwork — which the new
+section does not redraw.
+
+**One file covers both nodes the owner gave**, because
+`414:27668` *Compact window edge / Design review* is a child of the section
+`414:27564`. Captured in one read rather than two, so they cannot disagree.
+
+Read from the live file node by node on 2026-10-11, not derived from any
+export, and freshness is not claimed from node ids — the direction of
+2026-10-09 still holds. What evidences it instead: the section contains the
+`State=Full controls` master at **196** wide and four compact masters at
+**148**, and those two numbers are the breakpoints this capture exists to
+record. A capture made before the compact design was drawn could not hold
+them, and `70-28.xml` does not contain the section at all.
+
+**The build contract is sixteen layer names**, not prose written about the
+design. `get_metadata` returns text content only as layer names, so each
+sentence of the contract is recorded exactly as the export gives it —
+including the places where a number runs into the preceding word
+(`width148`, `Menu264px wide`). Those are the export, not transcription
+errors, and they are left alone so a diff against a later capture is
+meaningful.
+
+**Three subtrees were expanded by separate calls** and are inlined in place of
+the `<symbol/>` stubs the section-level call returned: `414:27580`
+(*State=Reveal*), `414:27623` (*State=Full controls*) and `414:27639`
+(*Window=Normal*, the menu). The section-level response gives a symbol's box
+and not its contents, so a capture without these would record that the
+component exists and nothing about where its targets are.
+
+**The colours are the five this project already has**, which is the finding
+worth stating: `bg/surface`, `border/default`, `text/primary`,
+`text/muted` and `bg/cool`, resolving light from `414:27638` and dark from
+`414:27787`. The design's own note says so — *existing semantic colours; same
+geometry* — so the compact edge and the menu need no new role in
+`alo-appearance`. Read per node because the connector is mode-incoherent
+within one response; both sets are in `variables.toml`.
+
+**Unexpanded, and recorded as unexpanded:** `414:27566` (*State=Rest*),
+`414:27594` (*State=Menu open*), `414:27609` (*State=Keyboard focus*) and
+`414:27653` (*Window=Maximised*). Each is a 148 × 44 or 264 × 344 box here
+with no contents captured. Rest and reveal are stated by the contract to share
+geometry, and the menu-open and keyboard-focus states differ from reveal in
+colour rather than in layout, so the geometry this snapshot does hold is the
+geometry being implemented against — but **the focus ring's own measurements
+are not in this capture** and must be read live before they are drawn.
+
 ## Stale for one component, 2026-10-09
 
 **`70-28.xml` is stale for `Canvas / External window edge` and

@@ -220,6 +220,31 @@ note = """the owner stated this value on 2026-09-27 when no light node here had 
 "bg/subtle" = "#183B56"
 "navy/950" = "#07131F"
 white = "#FFFFFF"
+# Three more, from `414:27787` *Dark appearance* on 2026-10-11 — the compact
+# window edge's own dark frame, and the first node observed to resolve a
+# **coherent** dark set rather than dark values mixed with light ones. That
+# matters because `258:16061` above did mix them.
+#
+# **And two of the eight above were corroborated by the same read**, which is
+# the more useful result: `text/primary` returned `#FFFCF8` and
+# `border/default` returned `#274C68`, both exactly as recorded, from a
+# different node a week later. Two independent nodes agreeing is what this file
+# asks for elsewhere and the dark table did not have.
+"bg/surface" = "#102A43"
+"text/muted" = "#A4B4C2"
+"bg/cool" = "#183B56"
+# `bg/cool` and `bg/subtle` resolve the **same** dark hex. Recorded as a
+# question and not reconciled: either the inversion collapses a distinction the
+# light theme makes (`#EEF2F4` against `#F2F4F6`, which
+# `the-palette-foundations-states.md` already flagged as needing a decision),
+# or one of the two is wrong in the file. `bg/subtle` is not among the twelve
+# approved roles, so choosing an answer here would be adopting it.
+#
+# Still adopted by nothing, per the direction of 2026-10-04: dark-theme parity
+# needs its own measured evidence before being marked complete, and five roles
+# measured on one frame is not that. What it is enough for is the compact
+# window edge, whose design note reads *existing semantic colours; same
+# geometry* — so that component needs no new role in `alo-appearance`.
 
 # ---------------------------------------------------------------------------
 # Measured and not adopted
@@ -234,6 +259,10 @@ white = "#FFFFFF"
 # extra colours were seen once each and have no role assigned.
 
 [unadopted.spacing]
+# `space/1` added 2026-10-11 from 414:27638 and 414:27787, which agree. It is
+# the compact edge's padding and the gap between its targets, so it is the one
+# spacing variable a window edge needs.
+"space/1" = 4
 "space/2" = 8
 "space/3" = 12
 "space/4" = 16
