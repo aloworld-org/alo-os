@@ -435,6 +435,15 @@ impl crate::DirectSession {
                         Desk {
                             input,
                             others,
+                            device: fd,
+                            // Asked of the same device the displays were just
+                            // discovered on, so the first frame compares like
+                            // with like.
+                            plugged_in: crate::a_screen_arrives_or_leaves::asked_of(
+                                &crate::drm_inventory::Inventory(fd),
+                            )
+                            .map(crate::a_screen_arrives_or_leaves::WhatIsPluggedIn::these)
+                            .unwrap_or_default(),
                             desktop,
                             labels,
                             strings,
@@ -516,6 +525,21 @@ struct Desk<'a> {
     /// is told only when they differ, which also makes *meaningful* a thing the
     /// code decides rather than a word in a document.
     told: alo_arranging::Arrangement,
+    /// The device every display on this desk is on.
+    ///
+    /// Held so that a display arriving mid-session can be discovered and
+    /// painted. `Inventory` is a borrow of this one descriptor, so N displays
+    /// are N painters and N borrows rather than N descriptors —
+    /// `more-than-one-display-plan.md` task 13.
+    device: std::os::fd::BorrowedFd<'a>,
+    /// The displays plugged in as of the last frame.
+    ///
+    /// Seeded from the device as the session starts, so the **first** frame
+    /// sees no change. Seeded empty it would report every display as an
+    /// arrival and run one discovery nobody needed, which is a session that
+    /// saw a change where there was none — the thing task 13's constraint
+    /// forbids.
+    plugged_in: crate::a_screen_arrives_or_leaves::WhatIsPluggedIn,
     /// The tree on the accessibility bus, where there is one to serve it on.
     ///
     /// `None` on a machine with no accessibility bus, which is the ordinary case
@@ -800,6 +824,78 @@ impl LoopInput for Desk<'_> {
         // would be a second answer to one question, and the two could differ
         // for one frame after a person changes it.
         let this_display = (frame.display_scale, (size.w, size.h));
+        // **And whether the desk itself changed since the last frame.**
+        // `more-than-one-display-plan.md` task 13. Until this line
+        // `discover_every_atomic_output` was asked **once**, as the session
+        // started: plugging a monitor in left it dark until the next sign-in,
+        // and unplugging one left the session drawing to a screen that was no
+        // longer there.
+        // **Here, before the pictures are made**, so a display that has just
+        // arrived gets this frame's desktop, this frame's fixed controls and
+        // this frame's render rather than waiting for the next one — and so a
+        // display that has gone is out of `others` before anything tries to
+        // draw to it. The arrangement is then asked again by the block near
+        // the end of this function, because a presented display changes what
+        // `the_displays_as_reported` answers and that block already acts on a
+        // change. Nothing new decides when an arrangement is made.
+        // **Two questions rather than one, and that is the design.**
+        // `asked_of` is one cheap query of the connectors and is allowed to be
+        // over-eager; `the_desk_is_reconciled` runs the real discovery and is
+        // authoritative. A port that appears and wins no CRTC costs one
+        // discovery and changes nothing, which is the right way round: the
+        // alternative is two answers to *what is plugged in* that can
+        // disagree.
+        // A device that will not answer leaves the desk exactly as it was. An
+        // empty answer and a failed question are not the same thing — read as
+        // *no displays*, one refusal would retire every screen the person is
+        // looking at.
+        let plugged_in = crate::a_screen_arrives_or_leaves::asked_of(
+            &crate::drm_inventory::Inventory(self.device),
+        );
+        if let Ok(plugged_in) = plugged_in
+            && matches!(
+                self.plugged_in.compared_with(plugged_in),
+                crate::a_screen_arrives_or_leaves::TheDesk::Changed { .. }
+            )
+        {
+            // The refusals are carried on the result rather than returned: a
+            // display that could not be painted is a display this machine does
+            // not have, and it must not take the session down with it.
+            let desk = crate::the_desk_is_reconciled::the_desk_is_reconciled(
+                server,
+                self.device,
+                &named,
+                others,
+            );
+            // **Said rather than dropped**, and once per change rather than
+            // once per frame — this whole block only runs when the desk really
+            // changed, which is what makes reporting here cheap.
+            //
+            // It was `let _desk = …` while this branch was parked. A result
+            // carrying refusals that nothing reads is a display that vanishes
+            // with no account of why, which is the one thing the comment above
+            // does not license: *it must not take the session down* is an
+            // argument for carrying on, not for silence.
+            //
+            // A screen arriving is also something a **person** should be told
+            // about once — `docs/features.md` promises *alo OS says which desk
+            // it thinks you are at, once*, and `alo_displays::notes` holds
+            // those sentences. This is not that: it is the machine's own log,
+            // for whoever is reading one, and the person's half is that
+            // promise's to keep.
+            for presented in &desk.presented {
+                eprintln!("alo-shell: {presented} arrived and is being drawn to");
+            }
+            for retired in &desk.retired {
+                eprintln!("alo-shell: {retired} is gone and has been withdrawn");
+            }
+            for refused in &desk.refusals {
+                eprintln!(
+                    "alo-shell: {refused} is reported by this machine and could not be drawn \
+                     to, so it has been left out and the screens already drawn to are unchanged"
+                );
+            }
+        }
         let pictures = crate::nested_desktop::frame_pictures(
             frame,
             None,
