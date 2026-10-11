@@ -44,6 +44,7 @@ const THE_RUN: &str = "/run";
 
 /// What the recipe has to say, so the port that makes a boot readable does not
 /// also offer a way in.
+#[cfg(test)]
 const THE_SERIAL_GETTY_IS_MASKED: &str = "systemctl mask serial-getty@ttyS0.service";
 
 /// The mode the person's own door is made with, as a unit spells it: the
@@ -222,14 +223,24 @@ fn a_boot_can_be_read_and_the_screen_is_the_one_watched(image: &Image, wrong: &m
     if !arguments.the_whole_journal_is_forwarded() {
         wrong.push(Wrong::OnlyTheFirstMinuteOfTheBootIsReadable);
     }
-    // **A serial console brings a getty, and that was not asked for.** Asked
-    // only where there is a serial console: an image with none has no port to
-    // offer a login on, and telling it to mask something nothing instantiates
-    // would be a sentence about nothing.
-    if !image.recipe_says(THE_SERIAL_GETTY_IS_MASKED) {
-        wrong.push(Wrong::TheSerialPortOffersALogin {
-            unit: "serial-getty@ttyS0.service".to_owned(),
-        });
+    // **A serial console brings a getty, and that was not asked for.** One
+    // per line, derived from what the file names rather than from one port
+    // written here.
+    //
+    // **It named `ttyS0` and only `ttyS0` until the Mac lane ran it.** A file
+    // saying `console=ttyS1` starts `serial-getty@ttyS1` by the same
+    // mechanism, the recipe masked the other one, and the check reported an
+    // image with a login prompt on a physical port as having nothing wrong —
+    // the exact fault this check exists to close, surviving a change of
+    // instance name. Confirmed with a control, so it was a hole and not a
+    // check that never fires.
+    for port in arguments.serial_lines() {
+        let masked = format!("systemctl mask serial-getty@{port}.service");
+        if !image.recipe_says(&masked) {
+            wrong.push(Wrong::TheSerialPortOffersALogin {
+                unit: format!("serial-getty@{port}.service"),
+            });
+        }
     }
 }
 
@@ -1280,6 +1291,60 @@ mod tests {
             wrong
                 .iter()
                 .any(|it| matches!(it, Wrong::OnlyTheFirstMinuteOfTheBootIsReadable)),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A login on a port that is not `ttyS0` is caught too.**
+    ///
+    /// Found by the Mac lane, running the check rather than reading it: an
+    /// image naming `console=ttyS1` starts `serial-getty@ttyS1` by the same
+    /// mechanism, the recipe masks the other port, and this reported nothing
+    /// wrong. The fault the check exists to close, surviving a change of
+    /// instance name.
+    #[test]
+    fn a_login_on_a_port_that_is_not_the_first_is_caught() {
+        let root = a_copy_of_the_image("ttys1");
+        edited(
+            &root,
+            THE_KERNEL_ARGUMENTS,
+            "    \"console=ttyS0,115200\",",
+            "    \"console=ttyS1,115200\",",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheSerialPortOffersALogin { unit } if unit.contains("ttyS1")
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A console that is a virtual terminal is no boot anybody can keep.**
+    ///
+    /// The other half of the same root cause: the predicate asked whether a
+    /// console was *not* `tty0`, so `tty1` answered yes and an image with no
+    /// serial line at all passed. `tty1` is a screen somebody has to be
+    /// standing in front of, which is what a boot log exists to avoid.
+    #[test]
+    fn a_second_virtual_terminal_is_not_a_boot_anybody_can_keep() {
+        let root = a_copy_of_the_image("tty1");
+        edited(
+            &root,
+            THE_KERNEL_ARGUMENTS,
+            "    \"console=ttyS0,115200\",",
+            "    \"console=tty1\",",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::ABootNobodyCanRead { .. })),
             "{wrong:?}"
         );
     }

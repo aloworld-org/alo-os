@@ -23,6 +23,17 @@
 
 use serde::Deserialize;
 
+/// Whether this console name is a port of that family: the family's letters
+/// and then a number, and nothing else.
+///
+/// **The digits are checked rather than the prefix alone.** `ttyS` by itself
+/// is not a port, and a prefix test would also take `ttySomething` — which is
+/// the shape of the mistake this whole function exists to correct.
+fn a_port_of(port: &str, family: &str) -> bool {
+    port.strip_prefix(family)
+        .is_some_and(|number| !number.is_empty() && number.bytes().all(|it| it.is_ascii_digit()))
+}
+
 /// What `bootc` is told to put on the kernel command line.
 #[derive(Debug, Default, Deserialize)]
 struct Written {
@@ -70,13 +81,40 @@ impl TheKernelArguments {
             .collect()
     }
 
-    /// Whether anything but the screen is given the kernel's messages.
+    /// The serial lines named, as port names — `ttyS0` from
+    /// `console=ttyS0,115200`.
     ///
-    /// A serial console is the one a reader can keep. `tty0` is the screen and
-    /// `ttyS0` is a line; this asks for at least one that is not the screen.
+    /// **Derived rather than listed**, so whatever is built on this scales
+    /// with what the file says instead of with what it said the day it was
+    /// written. The three families are the ones Linux puts a console on: the
+    /// 8250-style ports, USB adapters, and the PL011 the ARM boards use.
+    #[must_use]
+    pub fn serial_lines(&self) -> Vec<&str> {
+        self.consoles()
+            .into_iter()
+            .map(|one| one.split(',').next().unwrap_or(one))
+            .filter(|port| {
+                ["ttyS", "ttyUSB", "ttyAMA"]
+                    .iter()
+                    .any(|family| a_port_of(port, family))
+            })
+            .collect()
+    }
+
+    /// Whether any console is a serial line, so a boot leaves a record.
+    ///
+    /// **This asked whether any console was *not* `tty0`**, which is a
+    /// different question wearing the same words: `tty1`, `tty2` and
+    /// `ttyUSB0` all answered yes and only the last is a line anybody can
+    /// read a boot off.
+    ///
+    /// Found by the Mac lane running the check against
+    /// `console=tty1 console=tty0` with a control beside it — an image with
+    /// no serial console whatever, reported as having nothing wrong, which is
+    /// the entire purpose of this file missed by one predicate.
     #[must_use]
     pub fn a_reader_can_keep_the_boot(&self) -> bool {
-        self.consoles().iter().any(|one| !one.starts_with("tty0"))
+        !self.serial_lines().is_empty()
     }
 
     /// The console the kernel makes primary, which is the last one named.
@@ -125,6 +163,45 @@ mod tests {
         let read = TheKernelArguments::read("kargs = [\"console=tty0\"]\n");
 
         assert!(!read.a_reader_can_keep_the_boot());
+    }
+
+    /// **A virtual terminal is not a serial line**, however high its number.
+    ///
+    /// The predicate this replaced asked whether a console was *not* `tty0`,
+    /// so every name in the first list answered yes and an image with no
+    /// serial line at all passed every check. The second list is here so the
+    /// test shows the two apart rather than merely rejecting everything.
+    #[test]
+    fn a_virtual_terminal_is_not_a_line_a_boot_can_be_read_off() {
+        for named in ["tty1", "tty2", "tty12", "ttyNotAPort", "ttyS"] {
+            let read = TheKernelArguments::read(&format!("kargs = [\"console={named}\"]\n"));
+
+            assert!(
+                !read.a_reader_can_keep_the_boot(),
+                "{named} was taken for a serial line"
+            );
+        }
+
+        for named in ["ttyS0", "ttyS1,115200", "ttyUSB0", "ttyAMA0,115200"] {
+            let read = TheKernelArguments::read(&format!("kargs = [\"console={named}\"]\n"));
+
+            assert!(
+                read.a_reader_can_keep_the_boot(),
+                "{named} is a serial line and was not taken for one"
+            );
+        }
+    }
+
+    /// **A line is named by its port, with the speed cut off**, because that
+    /// is what a getty's instance is called: `console=ttyS0,115200` brings
+    /// `serial-getty@ttyS0.service`, not `serial-getty@ttyS0,115200`.
+    #[test]
+    fn a_line_is_named_by_its_port_and_not_its_speed() {
+        let read = TheKernelArguments::read(
+            "kargs = [\"console=ttyS0,115200\", \"console=ttyUSB2\", \"console=tty0\"]\n",
+        );
+
+        assert_eq!(read.serial_lines(), vec!["ttyS0", "ttyUSB2"]);
     }
 
     /// **No arguments at all is the same answer**, and is what an image with
