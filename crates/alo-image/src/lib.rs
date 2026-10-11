@@ -98,6 +98,7 @@ mod filesystem;
 mod image;
 mod installing;
 mod installs;
+mod kernel_arguments;
 mod logins;
 mod making;
 mod notes;
@@ -131,6 +132,7 @@ pub use image::{Image, THE_AGENT, THE_LOADER, THE_OPENER, THE_SERVER};
 pub use installing::{
     ABOARD, SHARED, THE_CHECKER_ABOARD, THE_ENVIRONMENT, THE_PIN_ABOARD, TheEnvironment,
 };
+pub use kernel_arguments::TheKernelArguments;
 pub use logins::{Declared, every_login};
 pub use making::{A_DIRECTORY, ADJUSTED, Made, everything_made};
 pub use notes::{THE_NOTES, THE_SECURE_BOOT, TheNotes};

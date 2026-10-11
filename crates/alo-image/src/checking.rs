@@ -42,6 +42,11 @@ const THE_DOORS_MODE: u32 = 0o755;
 /// crate knows the string: [`THE_DOOR`] is absolute and that setting is not.
 const THE_RUN: &str = "/run";
 
+/// What the recipe has to say, so the port that makes a boot readable does not
+/// also offer a way in.
+#[cfg(test)]
+const THE_SERIAL_GETTY_IS_MASKED: &str = "systemctl mask serial-getty@ttyS0.service";
+
 /// The mode the person's own door is made with, as a unit spells it: the
 /// person, the agent's group, and nobody else (ADR 0017, and
 /// `alo-agentd`'s `place.rs`, which sets the same mode again at every start).
@@ -149,6 +154,7 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_image_becomes_a_disk(image, &mut wrong);
     the_document_says_what_the_recipe_does(image, &mut wrong);
     the_image_names_the_release_it_is(image, &mut wrong);
+    a_boot_can_be_read_and_the_screen_is_the_one_watched(image, &mut wrong);
     crate::publishing::everything_wrong_with_the_publish(image, &mut wrong);
     crate::installs::everything_wrong_with_the_environment(image, &mut wrong);
     crate::released::everything_wrong_with_the_notes(image, &mut wrong);
@@ -170,6 +176,71 @@ fn the_image_names_the_release_it_is(image: &Image, wrong: &mut Vec<Wrong>) {
         wrong.push(Wrong::TheImageDoesNotNameItsRelease {
             stated: version.everything_stated(),
         });
+    }
+}
+
+/// **A boot leaves a record, and the screen is the console a person watches.**
+///
+/// Two things, because they are two mistakes and only one of them is the
+/// obvious one.
+///
+/// **A record at all.** GRUB writes to a serial line of its own accord, so a
+/// boot log from a machine with no serial console ends at the entry it is
+/// about to start, and everything Linux does afterwards reaches the screen
+/// alone. Two boots were diagnosed from screenshots on 2026-10-10 and
+/// 2026-10-11 because screenshots were all there was, and a report of a
+/// crash-looping service had to be written as *asserted from memory* rather
+/// than shown.
+///
+/// **And the right one primary.** The kernel makes the last `console=` its
+/// primary one. A pair written the other way round is a machine that boots
+/// perfectly, logs perfectly, and shows a person watching the screen less than
+/// it shows a serial line nobody is reading — which is worse than the fault it
+/// was meant to fix, and is why this is asked separately rather than folded
+/// into *is there a serial console*.
+fn a_boot_can_be_read_and_the_screen_is_the_one_watched(image: &Image, wrong: &mut Vec<Wrong>) {
+    let arguments = image.kernel_arguments();
+    let consoles = arguments.consoles();
+    if !arguments.a_reader_can_keep_the_boot() {
+        wrong.push(Wrong::ABootNobodyCanRead {
+            consoles: if consoles.is_empty() {
+                "nothing".to_owned()
+            } else {
+                consoles.join(", ")
+            },
+        });
+        // One fault, not two: a boot with no serial console has nothing to say
+        // about which console is primary that the sentence above does not.
+        return;
+    }
+    if let Some(primary) = arguments.the_one_a_person_watches()
+        && !primary.starts_with("tty0")
+    {
+        wrong.push(Wrong::TheScreenIsNotTheConsoleAPersonWatches {
+            primary: primary.to_owned(),
+        });
+    }
+    if !arguments.the_whole_journal_is_forwarded() {
+        wrong.push(Wrong::OnlyTheFirstMinuteOfTheBootIsReadable);
+    }
+    // **A serial console brings a getty, and that was not asked for.** One
+    // per line, derived from what the file names rather than from one port
+    // written here.
+    //
+    // **It named `ttyS0` and only `ttyS0` until the Mac lane ran it.** A file
+    // saying `console=ttyS1` starts `serial-getty@ttyS1` by the same
+    // mechanism, the recipe masked the other one, and the check reported an
+    // image with a login prompt on a physical port as having nothing wrong —
+    // the exact fault this check exists to close, surviving a change of
+    // instance name. Confirmed with a control, so it was a hole and not a
+    // check that never fires.
+    for port in arguments.serial_lines() {
+        let masked = format!("systemctl mask serial-getty@{port}.service");
+        if !image.recipe_says(&masked) {
+            wrong.push(Wrong::TheSerialPortOffersALogin {
+                unit: format!("serial-getty@{port}.service"),
+            });
+        }
     }
 }
 
@@ -1090,8 +1161,8 @@ mod tests {
     use super::*;
     use crate::testing::{
         THE_AGENTS_UNIT, THE_BOOTING_DOCUMENT, THE_CONTAINERFILE, THE_DESCRIPTION_FILE,
-        THE_LOADERS_UNIT, THE_OPENERS_UNIT, THE_SERVERS_UNIT, THE_SYSUSERS, THE_TMPFILES,
-        a_copy_of_the_image, edited, image_at, the_release_line, the_store_file,
+        THE_KERNEL_ARGUMENTS, THE_LOADERS_UNIT, THE_OPENERS_UNIT, THE_SERVERS_UNIT, THE_SYSUSERS,
+        THE_TMPFILES, a_copy_of_the_image, edited, image_at, the_release_line, the_store_file,
     };
 
     /// **The image this repository ships says one thing.** Everything below
@@ -1130,6 +1201,192 @@ mod tests {
     fn the_image_this_repository_ships_agrees_with_itself() {
         let wrong = everything_wrong_with(&image_at(Path::new(crate::THE_IMAGE)));
         assert!(wrong.is_empty(), "{wrong:?}");
+    }
+
+    /// **A boot that reaches only the screen is caught.**
+    ///
+    /// The state every alo OS deployment was in until 2026-10-11, and the
+    /// reason two faults had to be diagnosed from photographs.
+    #[test]
+    fn a_boot_that_only_reaches_the_screen_is_caught() {
+        let root = a_copy_of_the_image("no-serial");
+        edited(
+            &root,
+            THE_KERNEL_ARGUMENTS,
+            "    \"console=ttyS0,115200\",\n",
+            "",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::ABootNobodyCanRead { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And an image that names no kernel arguments at all is caught by the
+    /// same sentence**, because it is the same machine from a person's side.
+    #[test]
+    fn an_image_that_names_no_kernel_arguments_is_caught() {
+        let root = a_copy_of_the_image("no-kargs");
+        // The key renamed is a file `bootc` reads and takes nothing from,
+        // which is what an image with no `kargs.d` entry amounts to.
+        edited(&root, THE_KERNEL_ARGUMENTS, "kargs = [", "nothing = [");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::ABootNobodyCanRead { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **The pair written the wrong way round is caught**, which is the fault
+    /// that would otherwise pass every test and still be wrong: the machine
+    /// logs beautifully to a line nobody is reading and shows less to the
+    /// person in front of it.
+    #[test]
+    fn a_serial_console_put_last_takes_the_screen_from_the_person_watching() {
+        let root = a_copy_of_the_image("wrong-order");
+        edited(
+            &root,
+            THE_KERNEL_ARGUMENTS,
+            "    \"console=ttyS0,115200\",\n    \"console=tty0\",\n",
+            "    \"console=tty0\",\n    \"console=ttyS0,115200\",\n",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheScreenIsNotTheConsoleAPersonWatches { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A console that hears only early boot is caught.**
+    ///
+    /// The state the first serial-console boot was actually in: systemd stops
+    /// writing unit messages to the console once `systemd-journald` takes
+    /// over, and everything this machine exists to draw starts after that.
+    #[test]
+    fn a_console_that_hears_only_early_boot_is_caught() {
+        let root = a_copy_of_the_image("no-forward");
+        edited(
+            &root,
+            THE_KERNEL_ARGUMENTS,
+            "    \"systemd.journald.forward_to_console=1\",",
+            "",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::OnlyTheFirstMinuteOfTheBootIsReadable)),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A login on a port that is not `ttyS0` is caught too.**
+    ///
+    /// Found by the Mac lane, running the check rather than reading it: an
+    /// image naming `console=ttyS1` starts `serial-getty@ttyS1` by the same
+    /// mechanism, the recipe masks the other port, and this reported nothing
+    /// wrong. The fault the check exists to close, surviving a change of
+    /// instance name.
+    #[test]
+    fn a_login_on_a_port_that_is_not_the_first_is_caught() {
+        let root = a_copy_of_the_image("ttys1");
+        edited(
+            &root,
+            THE_KERNEL_ARGUMENTS,
+            "    \"console=ttyS0,115200\",",
+            "    \"console=ttyS1,115200\",",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheSerialPortOffersALogin { unit } if unit.contains("ttyS1")
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A console that is a virtual terminal is no boot anybody can keep.**
+    ///
+    /// The other half of the same root cause: the predicate asked whether a
+    /// console was *not* `tty0`, so `tty1` answered yes and an image with no
+    /// serial line at all passed. `tty1` is a screen somebody has to be
+    /// standing in front of, which is what a boot log exists to avoid.
+    #[test]
+    fn a_second_virtual_terminal_is_not_a_boot_anybody_can_keep() {
+        let root = a_copy_of_the_image("tty1");
+        edited(
+            &root,
+            THE_KERNEL_ARGUMENTS,
+            "    \"console=ttyS0,115200\",",
+            "    \"console=tty1\",",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::ABootNobodyCanRead { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A serial port that also offers a login is caught.**
+    ///
+    /// `console=ttyS0` makes systemd instantiate `serial-getty@ttyS0`, which
+    /// the audit trail of the first such boot recorded starting. A diagnostic
+    /// facility that quietly adds a way in is the fault here.
+    #[test]
+    fn a_serial_port_that_offers_a_login_is_caught() {
+        let root = a_copy_of_the_image("serial-login");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "systemctl mask serial-getty@ttyS0.service",
+            "true",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheSerialPortOffersALogin { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And the image this repository ships has none of these faults.** The
+    /// half that says the four above are about something real.
+    #[test]
+    fn the_shipped_image_can_be_read_and_keeps_the_screen() {
+        let image = image_at(Path::new(crate::THE_IMAGE));
+
+        assert!(image.kernel_arguments().a_reader_can_keep_the_boot());
+        assert_eq!(
+            image.kernel_arguments().the_one_a_person_watches(),
+            Some("tty0")
+        );
+        assert!(image.kernel_arguments().the_whole_journal_is_forwarded());
+        assert!(image.recipe_says(THE_SERIAL_GETTY_IS_MASKED));
     }
 
     /// **An agent service that does not wait for the boundary is caught.** ADR

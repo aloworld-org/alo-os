@@ -1259,6 +1259,66 @@ pub enum Wrong {
         /// The version the recipe names, or `-`.
         version: String,
     },
+    /// A boot that reaches the screen and nothing a reader can keep.
+    ///
+    /// **Found by booting on 2026-10-10 and 2026-10-11.** GRUB writes to a
+    /// serial line of its own accord, so a boot log ends at the entry it is
+    /// about to start and everything Linux does afterwards — every unit that
+    /// started, every one that failed, the journal entire — goes to the screen
+    /// alone. Two faults were diagnosed from photographs because photographs
+    /// were all there was.
+    #[error(
+        "this image's deployments boot with {consoles} and nothing a reader can keep: a machine \
+         whose journal reaches only the screen is one whose faults are found by looking at \
+         pixels. `usr/lib/bootc/kargs.d` is where a serial console is added"
+    )]
+    ABootNobodyCanRead {
+        /// The consoles named, or `nothing` where none are.
+        consoles: String,
+    },
+    /// A boot whose primary console is not the screen.
+    ///
+    /// The kernel makes the **last** `console=` its primary one. Put the
+    /// serial line last and the screen becomes the copy, which is the opposite
+    /// of what somebody standing in front of the machine needs.
+    #[error(
+        "this image's deployments make `{primary}` their primary console, so the screen a person \
+         is watching is the copy — the last `console=` is the one the kernel makes primary, and \
+         that has to be the screen"
+    )]
+    TheScreenIsNotTheConsoleAPersonWatches {
+        /// The console the kernel would make primary.
+        primary: String,
+    },
+    /// A console that hears early boot and nothing after it.
+    ///
+    /// **Measured on the first boot that carried a serial console.** systemd
+    /// writes unit messages to the console only until `systemd-journald` takes
+    /// over — at 95 seconds on that machine — and the greeter, the desktop,
+    /// the portal and the application install all start later. The log held
+    /// the kernel, the audit trail and the first minute and a half.
+    #[error(
+        "this image's deployments have a console and do not forward the journal to it, so a boot \
+         log holds the kernel and early systemd and nothing about any unit that starts after \
+         `systemd-journald` — add `systemd.journald.forward_to_console=1`"
+    )]
+    OnlyTheFirstMinuteOfTheBootIsReadable,
+    /// A serial console that also brings an interactive login.
+    ///
+    /// **Found by reading the audit trail of the first boot that carried a
+    /// serial console**, which recorded `serial-getty@ttyS0` starting. The
+    /// console output is the reason the console exists; a login prompt on a
+    /// physical port is a way in that nobody asked for, added by a change
+    /// whose own note claimed it cost nothing.
+    #[error(
+        "this image gives a serial console and does not mask {unit}, so the port that makes a \
+         boot readable also offers an interactive login — a diagnostic facility that quietly \
+         adds a way in is a worse bargain than no diagnostics"
+    )]
+    TheSerialPortOffersALogin {
+        /// The getty that would take the port.
+        unit: String,
+    },
 }
 
 #[cfg(test)]
