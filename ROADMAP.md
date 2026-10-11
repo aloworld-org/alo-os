@@ -2660,11 +2660,31 @@ sorted the same way v0.01 now is.
         is true that nothing installs it — and reporting that as the pin being
         absent, which is a different thing and is the machine half below*
   - [ ] **On the machine.**
-        **installed, and then open.** `image/Containerfile` installs no browser:
-        the fresh machine's applications are to be named to the image from
-        `shipped.toml` by the installer plan, and that has not been done. Then the
-        browser open on the certified machine, opening an address handed to it by
-        another application
+        **installed, and then open.** The installing half is **done**, and the
+        opening half is not.
+        *This half read **`image/Containerfile` installs no browser: the fresh
+        machine's applications are to be named to the image from `shipped.toml`
+        by the installer plan, and that has not been done** until 2026-10-12.
+        Both clauses had stopped being true. `shipped.toml` is compiled into
+        `alo-shipping` with `include_str!` — the Containerfile says so at line
+        332 — and `alo-shipping.service` runs it on a fresh machine, so the
+        applications are named to the image from that file and not from the
+        installer plan. #628 made the unit actually fire on 2026-10-11, and all
+        seven including Firefox were watched arriving on a booted disk. **The
+        claim was read by the alo browser team as evidence that no browser is on
+        a fresh alo OS machine, which is the sort of cost a stale roadmap has.**
+        It was true when written: until #628 every machine written with `bootc
+        install to-disk` shipped with none of its applications, because
+        `ConditionFirstBoot=yes` could never be satisfied on an ostree
+        deployment — so the sentence was wrong about the mechanism and right
+        about the outcome, for three releases*
+        What is still owed is the second half and only the second half: the
+        browser **open** on the certified machine, opening an address handed to
+        it by another application. The decision for that is made — the
+        handover is `org.freedesktop.portal.OpenURI`, judged by
+        `alo_software::opening_the_web` — and nothing calls it: `opened` has no
+        caller outside its own crate, because the acting half needs a running
+        session
 - [ ] **System verbs** through the privileged broker
   - [x] **The code.**
         `alo-broker` — a **closed, typed list of thirteen** and nothing else:
