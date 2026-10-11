@@ -158,6 +158,24 @@ pub(crate) fn paint(
     if let Some(controls) = native.scene {
         controls.paint(&mut frame)?;
     }
+    // **Every open window's edge, above the window it frames.**
+    //
+    // After `draw_render_elements`, because an edge drawn under its own client
+    // is an edge nobody sees; before the desktop, for the reason the next
+    // block gives. It is the order `crate::software_scanout`'s `paint_layers`
+    // already paints these in, and the two orders being one order is the
+    // point.
+    //
+    // **This path did not paint them at all until 2026-10-11.** The edges
+    // became a layer in #613 and only the software painter was taught to draw
+    // that layer; this file named `edges` zero times. Since this is the
+    // function the card's road ends in — `direct_target` through
+    // `offscreen::render_native_scanout` — a machine with a graphics card drew
+    // no window edge whatever, while the pixman path drew them correctly and
+    // every test passed.
+    for edge in native.edges {
+        edge.paint(&mut frame)?;
+    }
     // Above every client and control: the dock is furniture no window covers,
     // and the desktop windows are above it; below the record, the question and
     // the indicator.
