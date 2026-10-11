@@ -191,23 +191,32 @@ fn a_press_that_is_not_on_a_slot_does_nothing() {
     }
 }
 
-/// **A bar with room for everything has no control to press.**
+/// **The control is pressable whether or not anything has overflowed.**
 ///
-/// The control exists only when something is behind it, so on an ordinary Dock
-/// every press is an application or nothing — and a press cannot turn over a
-/// list that is not there.
+/// **This asserted the opposite until 2026-10-11**, which was a rule this lane
+/// invented: the design's resting Dock has `More apps and canvas options` on it
+/// with nothing in the overflow at all. So the control is always there and
+/// always answers; what changes is whether the list it opens has anything in
+/// it, and `dock_raster` already refuses to draw an empty one.
 #[test]
-fn a_dock_that_fits_has_no_control_to_press() {
+fn the_control_answers_whether_or_not_anything_overflowed() {
     for edge in Edge::EVERY {
         let dock = on_the_edge(edge, 4);
-        assert!(dock.over.is_empty(), "{edge:?}: the premise");
-        for place in dock.places.each() {
-            let answer = what_a_press_on_the_dock_does(&dock, at(&dock, place.from_the_start()));
-            assert_ne!(
-                answer,
-                WhatAPressOnTheDockDoes::TurnTheOverflowOver,
-                "{edge:?}: a Dock with room for everything offered a control"
-            );
-        }
+        assert!(dock.over.is_empty(), "{edge:?}: the premise, nothing over");
+
+        let control = dock
+            .places
+            .each()
+            .last()
+            .unwrap_or_else(|| panic!("{edge:?}: no slots at all"));
+        assert!(
+            control.is_the_overflow(),
+            "{edge:?}: the last slot is not the control"
+        );
+        assert_eq!(
+            what_a_press_on_the_dock_does(&dock, at(&dock, control.from_the_start() + 1)),
+            WhatAPressOnTheDockDoes::TurnTheOverflowOver,
+            "{edge:?}: a Dock that fits has no control to press"
+        );
     }
 }

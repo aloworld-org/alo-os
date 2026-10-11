@@ -57,11 +57,23 @@ use crate::window::AppId;
 pub enum WhatIsHere {
     /// An application.
     Application(AppId),
-    /// The control that opens the overflow list.
+    /// The control that opens the list of applications there was no room for.
     ///
-    /// Only when something is in the overflow — [`crate::fit`] decides, and a
-    /// bar with room for everything has no such slot at all rather than a
-    /// hidden one.
+    /// **Always on the bar, and last**, which is a correction of 2026-10-11.
+    /// This was placed right after the applications and only when something had
+    /// overflowed — a control invented by this lane rather than measured.
+    ///
+    /// The design file settles both halves at once: `Edge=Top, State=Rest`
+    /// (`348:23840`) has **no overflow at all** and still ends
+    /// `… divider, composer, History, More apps and canvas options`, at x 634 of
+    /// 691. `Edge=Top, State=Overflow` (`348:23874`) has the same trailing group
+    /// after a longer row of applications. The bottom Dock is the same shape:
+    /// `Canvas options menu` is the last child of `Dock + alo Bar`.
+    ///
+    /// **Its name says it has a second job**: *More apps **and canvas
+    /// options***. What those options are is not specified anywhere this lane
+    /// can find, so this opens the applications and nothing else, and the gap
+    /// is named here rather than guessed at.
     TheOverflow,
     /// The rule between the applications and the commands after them.
     ///
@@ -223,14 +235,14 @@ impl Places {
                 &mut from_the_start,
             );
         }
-        if fitted.anything_over() {
-            put(WhatIsHere::TheOverflow, &mut from_the_start);
-        }
-        // **Then the rule, the field and the commands.** Measured in this order
-        // on `348:23874`: the applications, `Apps / commands divider`, the
-        // composer, History, More. The bottom Dock has no rule and puts *Show
-        // all* where History is — ADR 0101's *keep the distinct edge layouts*,
-        // with its *preserve the bottom Dock's composer and system actions*.
+        // **Then the rule, the field and the commands, in the measured order.**
+        // `348:23840` and `348:23874` both end: `Apps / commands divider`, the
+        // composer, `Open History`, `More apps and canvas options`. The bottom
+        // Dock has no rule and puts *Show all* where History is — ADR 0101's
+        // *keep the distinct edge layouts*, with its *preserve the bottom
+        // Dock's composer and system actions*.
+        //
+        // **`More` is last and always there**, in both states of both families.
         if edge == crate::Edge::Bottom {
             put(WhatIsHere::TheComposer, &mut from_the_start);
             put(WhatIsHere::ShowAll, &mut from_the_start);
@@ -239,6 +251,7 @@ impl Places {
             put(WhatIsHere::TheComposer, &mut from_the_start);
             put(WhatIsHere::History, &mut from_the_start);
         }
+        put(WhatIsHere::TheOverflow, &mut from_the_start);
         Self { places }
     }
 
@@ -488,7 +501,8 @@ mod tests {
         }
     }
 
-    /// **The overflow control is the last slot, laid out like any other.**
+    /// **The overflow control is the last slot on the bar, laid out like any
+    /// other.**
     ///
     /// The owner's ruling of 2026-10-10: *overflow occupies one application
     /// slot: 48 × 48 logical pixels … use the same slot spacing as neighbouring
@@ -497,7 +511,7 @@ mod tests {
     /// **nothing special**: it is where the next application would have been,
     /// and it is the same width.
     #[test]
-    fn the_overflow_control_takes_the_slot_after_the_last_application() {
+    fn the_overflow_control_is_the_last_slot_on_the_bar() {
         let everything = showing(&["Docs", "Browser", "Blender", "Mail"]);
         let fitted = crate::fit(everything, 3);
         assert!(fitted.anything_over(), "the premise: something overflowed");
@@ -508,11 +522,10 @@ mod tests {
         );
 
         let places = Places::of(&fitted, Edge::Bottom);
-        // Two applications, then the control. The composer and *Show all*
-        // follow, which is what makes this a count of applications rather than
-        // of places.
         assert_eq!(applications(&places).len(), 2);
-        let control = place(&places, 2);
+        // **Last on the bar**, after the composer and *Show all* — measured in
+        // both states of both Dock families on 2026-10-11.
+        let control = place(&places, places.how_many() - 1);
         assert!(control.is_the_overflow());
         assert_eq!(control.app(), None, "the control is not an application");
         assert_eq!(
@@ -520,10 +533,14 @@ mod tests {
             measures::ICON,
             "the control is not an application's width"
         );
+        // **After everything else, not where the next application would have
+        // been.** It was that until 2026-10-11, which put it between the
+        // applications and the composer; the design has it last.
+        let before_it = place(&places, places.how_many() - 2);
         assert_eq!(
             control.from_the_start(),
-            measures::MARGIN + 2 * (measures::ICON + measures::GAP),
-            "the control is not in the slot the third application would have had"
+            before_it.past_its_end() + measures::GAP,
+            "the control is not one gap after the slot before it"
         );
 
         // And the two before it really are the applications, so this cannot
@@ -532,23 +549,28 @@ mod tests {
         assert_eq!(place(&places, 1).app().map(AppId::name), Some("Browser"));
     }
 
-    /// **A bar with room for everything has no control at all**, rather than a
-    /// hidden one or a slot drawn with nothing in it.
+    /// **The control is there whether or not anything has overflowed.**
     ///
-    /// The thing this forbids is a Dock that keeps a place back for a control
-    /// nobody needs — which §8 of the Dock's specification already forbids under
-    /// another name: *it must not reserve a large empty bar.*
+    /// **This asserted the opposite until 2026-10-11** — that a bar with room
+    /// for everything had no control — and it was a rule this lane invented
+    /// rather than measured. `Edge=Top, State=Rest` (`348:23840`) has no
+    /// overflow at all and still ends with `More apps and canvas options`, and
+    /// the bottom Dock's `Canvas options menu` is its last child in the resting
+    /// frame too.
+    ///
+    /// So what is asserted now is permanence, and that a bar that fits is the
+    /// same bar either way.
     #[test]
-    fn a_bar_with_room_for_everything_has_no_overflow_slot() {
+    fn the_control_is_on_the_bar_whether_or_not_anything_overflowed() {
         let everything = showing(&["Docs", "Browser", "Blender"]);
         let fitted = crate::fit(everything.clone(), 3);
-        assert!(!fitted.anything_over(), "the premise");
+        assert!(!fitted.anything_over(), "the premise: nothing overflowed");
 
         let places = Places::of(&fitted, Edge::Bottom);
         assert_eq!(applications(&places).len(), everything.len());
         assert!(
-            places.each().iter().all(|place| !place.is_the_overflow()),
-            "a bar that fits drew a control for an empty overflow"
+            places.each().iter().any(|place| place.is_the_overflow()),
+            "a bar with room for everything has no control to open more with"
         );
         assert_eq!(
             places,
@@ -569,7 +591,7 @@ mod tests {
         let places = Places::of(&fitted, Edge::Bottom);
 
         let last_application = place(&places, 1);
-        let control = place(&places, 2);
+        let control = place(&places, places.how_many() - 1);
 
         let on_the_control = control.from_the_start() + control.across() / 2;
         assert_eq!(

@@ -89,6 +89,27 @@ Nothing here is a differentiator. All of it is required.
   top-right corner is the panel's**, by the owner's ruling in that note — the
   top controls' region stops before it, and two surfaces claiming one corner was
   the fault that ruling settled.*
+- [v0.01] **More applications than the Dock has room for** — the bar shows a
+  **"…"** control, and activating it opens a **compact, bounded popover anchored
+  to that control**, listing the applications that did not fit. It opens inward
+  from the bar and **clear of the panel of put-aside windows**, and it
+  **dismisses on Escape, on an interaction outside it, or once a selection is
+  made**. It is never a persistent right-hand column, and it **never holds
+  windows** — the panel at the edge holds windows a person minimised, one item
+  per window, and the two surfaces never exchange contents.
+  *Added 2026-10-11 by the owner's ruling, recorded in
+  [ADR 0102](decisions/0102-the-minimised-window-panel-and-the-docks-overflow-are-two-surfaces.md),
+  into the current release. The overflow had been named only in passing — the
+  Dock's edge line above says it "waits on the Dock being told what is open" —
+  and the behaviours here were listed nowhere, which is why a popover that
+  opened over the panel's column had nothing to be checked against. The tier is
+  set here for the parts not yet built, because `CLAUDE.md` binds building to
+  this file. **Built on 2026-10-11**: the control, the list, its surface, its
+  placement clear of the panel, and dismissal by an outside press. **Not built,
+  and named here rather than discovered later**: Escape, which needs the key
+  taken at the seat without stealing it from every client; and selecting a row,
+  which is the same missing piece as pressing an application on the bar — see
+  ADR 0102.*
 - [v0.5] The dock's size, and whether it hides when a window needs the room
 
 **Restored, not withdrawn.** *The person decides where it goes — bottom, left, right or top, chosen in Settings* was withdrawn by [ADR 0076](decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md) on 2026-09-29 and **the owner reversed that within a day**. It is a promise again, at **[v0.01]**, in the list above. Its **[v0.5]** descendant — *per display, so the dock can sit along the bottom of the laptop and down the side of the external screen* — keeps the tier it had; the reversal moved the edge choice and left per-display placement where it was.

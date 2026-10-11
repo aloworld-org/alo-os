@@ -72,6 +72,59 @@ fn drawn_with(
     )
 }
 
+/// A desktop whose Dock holds more than its edge does, with its list open.
+///
+/// A separate helper for the same reason `drawn_at` is one: every other caller
+/// means *a Dock that fits with its list closed*, and giving them all two more
+/// arguments would be noise in a hundred call sites to serve one test.
+fn drawn_with_an_open_list(
+    size: (i32, i32),
+    edge: alo_dock::Edge,
+    reading: Direction,
+) -> Result<DesktopPicture, RenderError> {
+    let strings = words();
+    let mut labels = WindowControlLabels::new().unwrap();
+    let patch = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1).unwrap();
+    let mut windows = alo_dock::Windows::none();
+    for number in 0..60_u64 {
+        let named = format!("app-{number}");
+        windows.opened(alo_dock::Window::of(
+            alo_dock::WindowId::numbered(number),
+            Some(alo_dock::AppId::named(&named).unwrap()),
+            &named,
+            patch,
+            alo_dock::HowItSits::OnTheCanvas,
+        ));
+    }
+    let crowded = alo_dock::Holding::nothing().showing(&windows);
+    let mut dock = Dock::shipped();
+    dock.set_edge(edge);
+    picture(
+        &dock,
+        noon_look(&an_appearance(), reading),
+        crate::desktop_raster::Shown {
+            the_overflow_is_open: true,
+            the_docks_words: crate::desktop_testing::no_words(),
+            running: &running_shows(&RunningWindow::closed(), &strings),
+            filling: &filling_shows(&FillingWindow::closed(), &strings),
+            division: crate::desktop_testing::an_undivided_display(),
+            offer: crate::desktop_testing::nothing_offered(),
+            windows: &[],
+            // **Windows a person minimised, so the panel has a rail.** Three
+            // of one application, which is the shape the owner's ruling of
+            // 2026-10-11 separates the two surfaces on: three items here and
+            // one icon on the Dock.
+            put_aside: crate::desktop_testing::three_windows_put_aside(),
+            panel_is_revealed: true,
+            filling_the_screen: false,
+            display_scale: 100,
+            on_the_dock: &crowded,
+        },
+        &mut labels.fonts,
+        size,
+    )
+}
+
 /// The same, on a display of `display_scale` hundredths.
 ///
 /// A separate helper rather than a sixth argument on [`drawn_with`], because
@@ -547,4 +600,188 @@ fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
         hidden.panel.reserved, shown.panel.reserved,
         "the desktop gave up the panel's column when it concealed"
     );
+}
+
+/// **Every rounded panel the Dock drew reaches the painter.**
+///
+/// `DockPicture::panels` is where a rasterised panel is put and
+/// `DesktopPicture::washed` is the only thing that carries one to a renderer —
+/// so a panel in the first and not the second is a panel nobody sees.
+///
+/// **That is exactly what happened on 2026-10-11.** The overflow list gained a
+/// rounded surface, a test asserted it was in `panels` and rounded, and it
+/// passed — while `washed` still yielded the Dock's own surface alone and the
+/// list drew as bare rows on the canvas. A test about the picture stood in for
+/// a test about the painter.
+#[test]
+fn every_panel_the_dock_drew_reaches_the_painter() {
+    use crate::desktop_raster::DesktopPicture;
+
+    let drawn: DesktopPicture =
+        drawn_with_an_open_list((1366, 768), alo_dock::Edge::Bottom, Direction::LeftToRight)
+            .unwrap();
+
+    assert!(drawn.dock.is_some(), "the premise: a Dock was drawn");
+    let dock = drawn.dock.as_ref().unwrap();
+    let wanted = usize::from(dock.surface.is_some()) + dock.panels.len();
+    assert!(!dock.panels.is_empty(), "the premise: a panel was drawn");
+    assert_eq!(
+        drawn.washed().count(),
+        wanted,
+        "{} rasters were drawn and {} reach the painter",
+        wanted,
+        drawn.washed().count()
+    );
+}
+
+/// **The Dock's overflow list and the put-aside panel are two surfaces, and
+/// the list opens clear of the panel's column.**
+///
+/// The owner's ruling of 2026-10-11 separates them: the right-hand panel holds
+/// *windows a person minimised*, one item per window with its own title and
+/// preview, and it *never receives applications merely because the Dock is
+/// full*; the Dock's overflow is *a compact, bounded popover anchored to that
+/// control, opening inward and clear of the minimised-window panel*, and *must
+/// not become a persistent right-hand column*.
+///
+/// **What was wrong was arithmetic, not either surface's contents.** The list
+/// hangs off the bar's far end and is pulled back onto the display; a bottom
+/// Dock wide enough to overflow has its far end near the display's right-hand
+/// end, which is exactly where the panel's column is. So the popover opened
+/// over the panel and the two read as one right-hand column — while the data
+/// behind each was correct and separate the whole time.
+///
+/// Asked of the rectangles **this frame drew**, not of a recomputed column: the
+/// panel's own `reserved` is what a pointer is classified against, so a popover
+/// that misses a column derived twice would still be over the real one.
+#[test]
+fn the_overflow_list_opens_clear_of_the_put_aside_panels_column() {
+    for edge in [
+        alo_dock::Edge::Bottom,
+        alo_dock::Edge::Top,
+        alo_dock::Edge::Left,
+        alo_dock::Edge::Right,
+    ] {
+        // Both directions, because the panel mirrors to the left when a person
+        // reads right to left and the list has to follow it.
+        for reading in [Direction::LeftToRight, Direction::RightToLeft] {
+            let drawn = drawn_with_an_open_list((1366, 768), edge, reading).unwrap();
+            assert!(
+                drawn.dock.is_some(),
+                "{edge:?}, {reading:?}: the premise: a Dock was drawn"
+            );
+            let dock = drawn.dock.as_ref().unwrap();
+            assert!(
+                dock.overflow_list.is_some(),
+                "{edge:?}, {reading:?}: the premise: the list was drawn"
+            );
+            let list = dock.overflow_list.unwrap();
+            let column = drawn.panel.reserved;
+            let apart = list.loc.x + list.size.w <= column.loc.x
+                || column.loc.x + column.size.w <= list.loc.x
+                || list.loc.y + list.size.h <= column.loc.y
+                || column.loc.y + column.size.h <= list.loc.y;
+            assert!(
+                apart,
+                "{edge:?}, {reading:?}: the overflow list at {list:?} runs into the panel's \
+                 column at {column:?}"
+            );
+            // And not merely apart: the Dock's own gap between them, so the two
+            // surfaces read as two. The shadow is allowed to fall across the
+            // column — it is soft and belongs to the list — which is why this
+            // asks about the surface rather than about `panels[0].area`.
+            let gap = i32::try_from(alo_dock::measures::GAP).unwrap_or(0);
+            let between = if column.loc.x <= 0 {
+                list.loc.x - (column.loc.x + column.size.w)
+            } else {
+                column.loc.x - (list.loc.x + list.size.w)
+            };
+            assert!(
+                between >= gap,
+                "{edge:?}, {reading:?}: {between} between the list and the panel's column, and \
+                 the Dock's gap is {gap}"
+            );
+        }
+    }
+}
+
+/// **The list stays a bounded popover rather than a column**, which is the
+/// other half of the same ruling: *must not become a persistent right-hand
+/// column*.
+///
+/// Separate from the test above because they fail for different reasons and a
+/// reader needs to know which. Moving the list clear of the panel could be done
+/// by making it a second full-height column beside the first, and that would
+/// satisfy *clear of the panel* while breaking the thing the clause is for.
+///
+/// So: bounded on both axes — narrower than the display and shorter than it —
+/// and anchored to the bar, meaning it touches the band's line rather than
+/// floating anywhere on the canvas.
+#[test]
+fn the_overflow_list_is_a_bounded_popover_anchored_to_the_bar() {
+    let (width, height) = (1366, 768);
+    for edge in [
+        alo_dock::Edge::Bottom,
+        alo_dock::Edge::Top,
+        alo_dock::Edge::Left,
+        alo_dock::Edge::Right,
+    ] {
+        let drawn = drawn_with_an_open_list((width, height), edge, Direction::LeftToRight).unwrap();
+        assert!(
+            drawn.dock.is_some(),
+            "{edge:?}: the premise: a Dock was drawn"
+        );
+        let dock = drawn.dock.as_ref().unwrap();
+        assert!(
+            dock.overflow_list.is_some(),
+            "{edge:?}: the premise: the list was drawn"
+        );
+        let list = dock.overflow_list.unwrap();
+        assert!(
+            list.size.w < width && list.size.h < height,
+            "{edge:?}: the list is {:?} on a {width}x{height} display, which is not bounded",
+            list.size
+        );
+        // **Anchored to the control, not merely on the screen.** The gap
+        // between the list and the band is the Dock's own `GAP` on an edge the
+        // list hangs off, so the two are a measured distance apart rather than
+        // wherever clamping left them.
+        let gap = i32::try_from(alo_dock::measures::GAP).unwrap_or(0);
+        let band = dock.band;
+        let touching = match edge {
+            alo_dock::Edge::Bottom => band.loc.y - (list.loc.y + list.size.h),
+            alo_dock::Edge::Top => list.loc.y - (band.loc.y + band.size.h),
+            alo_dock::Edge::Left => list.loc.x - (band.loc.x + band.size.w),
+            alo_dock::Edge::Right => band.loc.x - (list.loc.x + list.size.w),
+        };
+        let column = drawn.panel.reserved;
+        // **Where the Dock's own band is inside that column, clearing the panel
+        // wins and the list is as near the control as that allows.**
+        //
+        // Measured 2026-10-11: a right-edge Dock on a left-to-right display
+        // puts its band at x 1290..1366 and the panel reserves 1254..1366, so
+        // the band is *inside* the column. The two are separate fixed surfaces
+        // competing for one edge, which is a question nobody has settled — and
+        // nothing this file does can settle it. What it can do is refuse to
+        // pretend: on such an edge the list cannot be both flush to the bar and
+        // clear of the panel, and *clear of the panel* is the ruling, so the
+        // list stops at the column and this asserts it stopped **there** rather
+        // than somewhere.
+        let band_is_in_the_column =
+            band.loc.x < column.loc.x + column.size.w && column.loc.x < band.loc.x + band.size.w;
+        if band_is_in_the_column {
+            assert_eq!(
+                list.loc.x + list.size.w,
+                column.loc.x - gap,
+                "{edge:?}: the band is inside the panel's column, so the list should stop one \
+                 gap short of the column and instead it is at {list:?}"
+            );
+        } else {
+            assert_eq!(
+                touching, gap,
+                "{edge:?}: the list sits {touching} from the band and the Dock's gap is {gap}, \
+                 so it is not anchored to the control"
+            );
+        }
+    }
 }

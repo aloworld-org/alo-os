@@ -269,6 +269,39 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
     Some(Washed { area, pixels })
 }
 
+/// Rasterise a plain rounded panel: a fill, a hairline and a shadow.
+///
+/// **The Dock's own surface without the things only a Dock has** — no badges,
+/// no composer, no accent. The overflow list is a panel that sits on the canvas
+/// exactly as the Dock does, so it gets the same radius, the same hairline and
+/// the same shadow, and it had none of them until 2026-10-11: it was one
+/// `Solid`, with square corners and nothing under it.
+///
+/// Both go through [`surface`] rather than a second rasteriser, so a change to
+/// the radius or the shadow cannot reach one and miss the other.
+pub(crate) fn a_panel(
+    panel: Rectangle<i32, Physical>,
+    fill: [u8; 3],
+    edge: [u8; 3],
+    room: (i32, i32),
+) -> Option<Washed> {
+    surface(ADocksSurface {
+        panel,
+        fill,
+        edge,
+        // No accent on a list, and nothing to put one on: `accent_is: 0` is what
+        // makes `how_much_accent` return nothing at all.
+        accent: fill,
+        against: alo_dock::Edge::Bottom,
+        accent_is: 0,
+        room,
+        badges: &[],
+        badge: fill,
+        composer: None,
+        composer_is: fill,
+    })
+}
+
 /// The signed distance from a point to a rounded rectangle: negative inside,
 /// positive outside, and the straight-line distance to the nearest edge either
 /// way.

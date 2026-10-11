@@ -146,6 +146,26 @@ pub(crate) struct DockPicture {
     ///
     /// [`None`] only for a panel with no area, which is a Dock that gave way.
     pub(crate) surface: Option<crate::painted::Washed>,
+    /// The overflow list's own rectangle, when it is open and has something in
+    /// it.
+    ///
+    /// **Not [`Self::panels`]'s area, which is the raster's.** A `Washed`
+    /// carries its shadow, so its bounds run `THE_SHADOW_SPREADS` beyond the
+    /// surface on every side — 312 wide for a 248-wide list. That is right for
+    /// a texture and wrong for every question about *where the list is*: on
+    /// 2026-10-11 two tests about the list's position were both written against
+    /// the raster and both failed by exactly the shadow's reach, reading as
+    /// faults in the layout.
+    ///
+    /// So the rectangle the design specifies is recorded separately, and it is
+    /// what a press on a row will be tested against.
+    pub(crate) overflow_list: Option<Rectangle<i32, Physical>>,
+    /// Every other rounded panel this Dock drew — today, the overflow list.
+    ///
+    /// Separate from [`Self::surface`] because they are painted at different
+    /// times: the Dock's own surface goes under its contents, and a list opened
+    /// from it goes over them.
+    pub(crate) panels: Vec<crate::painted::Washed>,
     /// Where this draw put the Dock, for the press that will ask later.
     ///
     /// **The same value the three fields above were taken from**, destructured
@@ -170,6 +190,13 @@ struct TheOverflowIsDrawn<'a> {
     edge: alo_dock::Edge,
     /// The display, so the list can be kept on it.
     room: (i32, i32),
+    /// The column the put-aside panel owns, which the list opens clear of.
+    ///
+    /// `None` on a display too narrow to hold one — see
+    /// `crate::panel_raster::the_column_it_reserves`. **Not the panel's
+    /// contents and not its rail**: the two surfaces are separate and this is
+    /// the only thing one needs to know about the other.
+    clear_of: Option<Rectangle<i32, Physical>>,
     /// The person's text size, which the rows grow with.
     text: alo_appearance::TextScale,
     /// What the heading says, already said: this file may not word a sentence.
@@ -190,16 +217,18 @@ struct TheOverflowIsDrawn<'a> {
 /// the panel growing past the drawn 313 and then scrolling — and this file's job
 /// is to put it where the bar is and ink the names into it.
 fn the_overflow_list(
+    panels: &mut Vec<crate::painted::Washed>,
     solids: &mut Vec<Solid>,
     inked: &mut Vec<Inked>,
     drawn: TheOverflowIsDrawn<'_>,
     fonts: &mut FontSystem,
-) {
+) -> Rectangle<i32, Physical> {
     let TheOverflowIsDrawn {
         over,
         at,
         edge,
         room,
+        clear_of,
         text,
         heading,
         palette,
@@ -236,13 +265,44 @@ fn the_overflow_list(
         alo_dock::Edge::Left => (at.loc.x + at.size.w + gap, at.loc.y + at.size.h - down),
         alo_dock::Edge::Right => (at.loc.x - gap - across, at.loc.y + at.size.h - down),
     };
-    let left = origin.0.clamp(0, (width - across).max(0));
+    // **And clear of the put-aside panel's column.** The two are different
+    // surfaces with different contents: the panel holds windows a person
+    // minimised, this list holds applications the bar had no room for, and
+    // neither ever receives the other's. What made them *look* like one column
+    // on 2026-10-11 was arithmetic — the list hangs off the bar's far end, and
+    // a bar wide enough to overflow has its far end near the display's, which
+    // is exactly where the panel is.
+    //
+    // The bound is the **reserved column**, not the rail: the column already
+    // carries the panel's clearance on both sides, so a list flush against it
+    // is a list that does not touch anything drawn. An empty or concealed panel
+    // keeps its column, so the list does not move about as windows are put
+    // aside and brought back.
+    //
+    // **With the Dock's own gap between them**, not flush. Flush satisfies *not
+    // overlapping* and fails the clause it is there for: a 248-wide list hard
+    // against a 112-wide column reads as one right-hand column, which is the
+    // thing the ruling forbids. The gap is the same `GAP` the list already
+    // keeps from the bar, so the two distances a person sees are one measure.
+    let (from, upto) = match clear_of {
+        None => (0, width),
+        // On the left when a person reads right to left, and the list then has
+        // the room to its right rather than to its left.
+        Some(column) if column.loc.x <= 0 => (column.size.w + gap, width),
+        Some(column) => (0, column.loc.x - gap),
+    };
+    let left = origin.0.clamp(from, (upto - across).max(from));
     let top = origin.1.clamp(0, (height - down).max(0));
 
-    solids.push(Solid {
-        area: Rectangle::new((left, top).into(), (across, down).into()),
-        colour: palette.dock,
-    });
+    // **The list is a panel on the canvas, so it is drawn like one.** It was a
+    // flat `Solid` with square corners and no shadow until 2026-10-11 — the
+    // surface treatment ADR 0101 ruled reached the Dock and stopped there.
+    // `dock_surface::a_panel` is the same rasteriser, so the radius and the
+    // shadow cannot reach one and miss the other.
+    let area = Rectangle::new((left, top).into(), (across, down).into());
+    if let Some(washed) = crate::dock_surface::a_panel(area, palette.dock, palette.edge, room) {
+        panels.push(washed);
+    }
 
     let line = i32::try_from(alo_dock::Room::a_line_at(text).as_pixels()).unwrap_or(1);
     let size = i32::try_from(alo_dock::Room::text_at(text).as_pixels()).unwrap_or(1);
@@ -298,6 +358,8 @@ fn the_overflow_list(
             inked.push(drawn);
         }
     }
+
+    area
 }
 
 /// Where one slot's 48 × 48 target sits on the screen.
@@ -436,6 +498,7 @@ pub(crate) fn picture(
     let composer = slot_of(&alo_dock::places::WhatIsHere::TheComposer);
     let divider = slot_of(&alo_dock::places::WhatIsHere::TheDivider);
 
+    let mut panels: Vec<crate::painted::Washed> = Vec::new();
     let mut solids: Vec<Solid> = Vec::new();
     // **The rule between the applications and the commands.** Measured at 1 × 28
     // on the top Dock and 28 × 1 on the left one — the same line turned to suit
@@ -664,8 +727,9 @@ pub(crate) fn picture(
     // the layout — rows at the floor every control is held to, growing with the
     // text, scrolling when the room runs out — and this is the only thing that
     // turns it into pixels.
-    if the_overflow_is_open && !over.is_empty() {
-        the_overflow_list(
+    let overflow_list = if the_overflow_is_open && !over.is_empty() {
+        Some(the_overflow_list(
+            &mut panels,
             &mut solids,
             &mut inked,
             TheOverflowIsDrawn {
@@ -673,13 +737,33 @@ pub(crate) fn picture(
                 at: band,
                 edge: layout.edge(),
                 room: (width, height),
+                // **The same derivation `crate::desktop_raster` hands the
+                // panel**, and for the owner's reason of 2026-09-30: the
+                // panel's edge is read from the direction a person reads in
+                // rather than stored, so nothing names an edge and the two
+                // cannot disagree. `look` is the one fact needed and this file
+                // already has it.
+                clear_of: crate::panel_raster::the_column_it_reserves(
+                    look,
+                    (width, height),
+                    match look.reading() {
+                        alo_strings::Direction::LeftToRight => {
+                            alo_put_aside::the_region_the_panel_claims::WhichEdge::Right
+                        }
+                        alo_strings::Direction::RightToLeft => {
+                            alo_put_aside::the_region_the_panel_claims::WhichEdge::Left
+                        }
+                    },
+                ),
                 text: look.scale(),
                 heading: &words.heading,
                 palette,
             },
             fonts,
-        );
-    }
+        ))
+    } else {
+        None
+    };
 
     Ok(DockPicture {
         size,
@@ -690,6 +774,8 @@ pub(crate) fn picture(
         over,
         standing,
         surface,
+        overflow_list,
+        panels,
     })
 }
 
@@ -1027,6 +1113,48 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// **The list is drawn as a rounded panel, not a flat rectangle.**
+    ///
+    /// It was one `Solid` with square corners and no shadow until 2026-10-11:
+    /// the surface treatment ADR 0101 ruled reached the Dock and stopped there,
+    /// and the first drawing that had both showed a Dock with a radius beside a
+    /// list without one.
+    #[test]
+    fn the_open_list_is_a_rounded_panel_like_the_dock() {
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let crowded = on_the_dock(200);
+        let of = |how| {
+            picture(
+                &Dock::shipped(),
+                look,
+                (1366, 768),
+                &crowded,
+                how,
+                &mut fonts(),
+            )
+            .unwrap()
+        };
+        let shut = of(closed());
+        let open = of(opened());
+
+        assert!(shut.panels.is_empty(), "a closed list drew a panel");
+        assert_eq!(
+            open.panels.len(),
+            1,
+            "an open list drew {} panels",
+            open.panels.len()
+        );
+
+        // **A rounded panel has transparent corners.** A flat rectangle does
+        // not, and that is the whole of what changed.
+        let panel = open.panels.first().expect("one panel");
+        let corner = panel.pixels.get(3).copied();
+        assert!(
+            corner.is_some_and(|alpha| alpha < 64),
+            "the panel's own corner pixel is {corner:?} — opaque, so it is still a rectangle"
+        );
     }
 
     /// **The list is drawn when a person opens it, and not before.**

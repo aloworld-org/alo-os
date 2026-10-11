@@ -255,6 +255,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     dock: &Dock,
                     on_the_dock: &[alo_dock::OnTheDock],
                     the_overflow_is_open: bool,
+                    put_aside: &alo_put_aside::Panel,
                     egress: &EgressStatus,
                     running: &RunningWindow,
                     filling: &FillingWindow,
@@ -332,7 +333,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 division: &division,
                                 offer: &alo_dividing::Offer::Nothing,
                                 windows: &[],
-                                put_aside: nothing_put_aside(),
+                                put_aside,
                                 // A fixture that is not about revealing draws the panel, so what it lays out is
                                 // the rail rather than an empty column.
                                 panel_is_revealed: true,
@@ -407,6 +408,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             &dock,
             &a_few_applications,
             false,
+            nothing_put_aside(),
             &quiet,
             &closed_running,
             &closed_filling,
@@ -426,6 +428,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             &dock,
             &a_crowded_dock,
             true,
+            nothing_put_aside(),
             &quiet,
             &closed_running,
             &closed_filling,
@@ -433,11 +436,39 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         )?;
     }
 
+    // **Both right-hand surfaces at once**, which is the only way to look at
+    // the thing the owner's ruling of 2026-10-11 separates.
+    //
+    // The right-hand panel holds *windows a person minimised* — one item per
+    // window, so two windows of one application are two items — and the Dock's
+    // overflow holds *applications the bar had no room for*, as a popover
+    // anchored to its control. They had never been drawn in one frame, and
+    // *looking the same* was the fault: the popover hung off the bar's far end,
+    // a bar wide enough to overflow has its far end near the display's, and the
+    // panel is at the display's far end. Nothing was wrong with either
+    // surface's contents.
+    //
+    // So this picture is the check. Two items in the panel from one
+    // application, a crowded Dock with its list open, and a gap between the two
+    // that a person can see.
+    draw(
+        "the overflow list beside two minimised windows of one application",
+        &shipped,
+        &a_crowded_dock,
+        true,
+        two_windows_of_one_application(),
+        &quiet,
+        &closed_running,
+        &closed_filling,
+        &mut nested,
+    )?;
+
     draw(
         "the dock with a question leaving",
         &shipped,
         &a_few_applications,
         false,
+        nothing_put_aside(),
         &lit,
         &closed_running,
         &closed_filling,
@@ -454,6 +485,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         &shipped,
         &a_few_applications,
         false,
+        nothing_put_aside(),
         &quiet,
         &running,
         &closed_filling,
@@ -467,6 +499,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         &shipped,
         &a_few_applications,
         false,
+        nothing_put_aside(),
         &lit,
         &running,
         &closed_filling,
@@ -480,6 +513,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         &shipped,
         &a_few_applications,
         false,
+        nothing_put_aside(),
         &quiet,
         &closed_running,
         &filling,
@@ -492,6 +526,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         &shipped,
         &a_few_applications,
         false,
+        nothing_put_aside(),
         &quiet,
         &closed_running,
         &filling,
@@ -502,6 +537,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         &shipped,
         &a_few_applications,
         false,
+        nothing_put_aside(),
         &lit,
         &running,
         &filling,
@@ -515,6 +551,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         &shipped,
         &a_few_applications,
         false,
+        nothing_put_aside(),
         &quiet,
         &running,
         &filling,
@@ -541,6 +578,44 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     Ok(())
 }
+/// **Two windows of one application, put aside.**
+///
+/// The shape the owner's ruling of 2026-10-11 separates the two right-hand
+/// surfaces on: *several minimised windows from one application remain separate
+/// items* in the panel, while the Dock shows that application once. So this
+/// panel draws two rows and the Dock draws one icon, from the same two windows
+/// — which is what makes a picture of them side by side worth looking at.
+///
+/// Both windows name `Notes`, and they differ in title and id. A fixture with
+/// two *different* applications would draw the same two rows and prove nothing.
+fn two_windows_of_one_application() -> &'static alo_put_aside::Panel {
+    static HOLDING: std::sync::OnceLock<alo_put_aside::Panel> = std::sync::OnceLock::new();
+    HOLDING.get_or_init(|| {
+        let mut panel = alo_put_aside::Panel::new();
+        for (which, titled) in [(1_u64, "Monday"), (2, "Tuesday")] {
+            let Ok(app) = alo_dock::AppId::named("Notes") else {
+                return panel;
+            };
+            let Ok(patch) = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 800, 600) else {
+                return panel;
+            };
+            let _ = panel.put_aside(
+                &alo_dock::Window::of(
+                    alo_dock::WindowId::numbered(which),
+                    Some(app),
+                    titled,
+                    patch,
+                    alo_dock::HowItSits::PutAside,
+                ),
+                alo_canvas::Zoom::LIFE_SIZE,
+                alo_canvas::Place::FIRST,
+                alo_put_aside::whether_it_is_private::Privacy::Ordinary,
+            );
+        }
+        panel
+    })
+}
+
 /// A desk where nothing has been put aside.
 ///
 /// One shared value rather than a temporary at each site, so the borrow does

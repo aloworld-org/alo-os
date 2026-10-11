@@ -152,15 +152,49 @@ opaque pixels drawn as runs of those rectangles. `solid_run` calls
 | the divider | **yes** | — |
 | *Show all* and *···* as text | **yes** | — |
 | the overflow list's surface | **yes** | — |
-| **corner radius** | **no** | alpha, or an aliased stair-step nobody would accept |
-| **the shadow** | **no** | alpha |
+| **corner radius** | **yes**, since 2026-10-11 | `crate::dock_surface` and the `Washed` path |
+| **the shadow** | **yes**, since 2026-10-11 | the same |
 | **the backdrop blur** | **no** | reading back the framebuffer |
-| **the 28 × 28 icons** | **not yet** | an SVG rasteriser — a new dependency, so an ADR |
+| **the 28 × 28 icons** | **not yet** | artwork and an ADR for the format |
 
-The icons are the one in that bottom group with a cheap road: text is already
-rasterised onto a known flat ground and blitted opaque, and an icon on the
-Dock's own white is the same problem. What is missing is only something to turn
-an SVG into pixels.
+**Radius and shadow were one change, and it was the alpha path, as predicted.**
+The sentence that stood here — *alpha is the common blocker for radius and
+shadow, and it is one change in one function rather than three features* — was
+right. What it did not foresee is that the alpha path needed a texture rather
+than a rectangle, which is `crate::painted::Washed` and
+[ADR 0101](../decisions/0101-one-dock-component-family-and-the-renderer-that-can-draw-it.md).
 
-**Alpha is the common blocker for radius and shadow**, and it is one change in
-one function rather than three features. That is the order to do them in.
+The icons row no longer says *an SVG rasteriser — a new dependency, so an ADR*,
+because the premise was wrong: there is no SVG rasteriser in the dependency
+graph **and none is needed.** `image = "=0.25.10"` with `png` is already a
+direct dependency of this workspace, and the design's icons are drawn at 28 × 28
+— so a PNG at 1× and 2× needs no new crate and no argument with
+`unsafe_code = "forbid"`. The ADR that is still owed is about the **format and
+where the artwork lives**, not about a dependency.
+
+## Where the overflow list opens
+
+By the owner's ruling of 2026-10-11 —
+[ADR 0102](../decisions/0102-the-minimised-window-panel-and-the-docks-overflow-are-two-surfaces.md)
+— the list is *a compact, bounded popover anchored to that control, opening
+inward and clear of the minimised-window panel*. Three rules, none of them a
+pixel figure:
+
+| rule | what it means in the draw |
+|---|---|
+| **anchored to the control** | one `GAP` from the band, off the end of the bar the control is on |
+| **opening inward** | away from the Dock's edge: up from a bottom Dock, down from a top one, sideways from a side one |
+| **clear of the panel** | its far side stops one `GAP` short of `panel_raster::the_column_it_reserves` |
+
+The width is the measured `AN_OVERFLOW_PANEL_IS_WIDE` (248, from
+`More apps / opens inward`). The height is **not** a measured figure: it is
+`alo_dock::overflow::ThePanel`, rows at the enhanced target growing with the
+person's text size, and scrolling once the room between the bar and the far side
+of the display runs out.
+
+**And its raster is bigger than it is.** A `Washed` carries its own shadow, so
+`DockPicture::panels[0].area` runs `THE_SHADOW_SPREADS` beyond the surface on
+every side — 312 wide for a 248-wide list. `DockPicture::overflow_list` is the
+surface's own rectangle and is what every question about *where the list is* must
+be asked of. Two tests were first written against the raster and both failed by
+exactly the shadow's reach, reading as faults in the layout.
