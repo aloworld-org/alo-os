@@ -172,13 +172,30 @@ direct dependency of this workspace, and the design's icons are drawn at 28 × 2
 `unsafe_code = "forbid"`. The ADR that is still owed is about the **format and
 where the artwork lives**, not about a dependency.
 
-## Where the overflow list opens
+## Where *More apps* opens, and what it is now
 
-By the owner's ruling of 2026-10-11 —
-[ADR 0102](../decisions/0102-the-minimised-window-panel-and-the-docks-overflow-are-two-surfaces.md)
-— the list is *a compact, bounded popover anchored to that control, opening
-inward and clear of the minimised-window panel*. Three rules, none of them a
-pixel figure:
+**It is an application overview, not an overflow**, by the owner's ruling of
+2026-10-11 later the same day —
+[ADR 0103](../decisions/0103-the-dock-more-apps-and-the-minimised-panel-are-three-connected-surfaces.md),
+which supersedes 0102 on this one point and leaves the rest of it standing. Its
+control is on the bar whether or not anything overflowed, and inside it are a
+**search field** and a **labelled icon grid**: pinned applications first in
+their saved order, then every other currently open application — including those
+whose windows are all minimised and which are therefore *not on the Dock at
+all*. Names sit beneath the icons here, unlike the Dock, where a name appears on
+hover and keyboard focus and there is no permanent label row.
+
+**The grid's own visual layout is not settled and must not be measured off the
+list.** The owner's words: *the existing list-style overflow reference is
+historical input, not the final design for this revised grid. Update the Figma
+design and snapshot before treating the new visual layout as settled.* So
+`348:23874` is where the surface's **placement** was measured and is **not**
+where its contents are. What is drawn today is the list, and it is a staging
+post.
+
+### What does carry over, because it is placement rather than layout
+
+Three rules, none of them a pixel figure:
 
 | rule | what it means in the draw |
 |---|---|
@@ -187,10 +204,24 @@ pixel figure:
 | **clear of the panel** | its far side stops one `GAP` short of `panel_raster::the_column_it_reserves` |
 
 The width is the measured `AN_OVERFLOW_PANEL_IS_WIDE` (248, from
-`More apps / opens inward`). The height is **not** a measured figure: it is
-`alo_dock::overflow::ThePanel`, rows at the enhanced target growing with the
-person's text size, and scrolling once the room between the bar and the far side
-of the display runs out.
+`More apps / opens inward`), and it is a figure for the list rather than for the
+grid, which no frame yet draws.
+
+**The height rule changed and the code has not caught up.** It is
+`alo_dock::overflow::ThePanel` — rows at the enhanced target, growing with the
+person's text size, scrolling once the room between the bar and the far side of
+the display runs out. *Growing until the room runs out* was the earlier ruling
+and is now wrong: ADR 0103 says the popover **grows only to a bounded size and
+then scrolls**, and *must not stretch into a full-height sidebar*. Measured
+2026-10-11 on a 1366×768 display with sixty applications overflowing: the list
+drew **644 pixels tall of 768**, which is the sidebar the ruling forbids. The
+bound itself is a number nobody has set, and setting it is part of the grid's
+design rather than something to invent here.
+
+And **the search field stays still while the grid scrolls**, which the list has
+no equivalent of: its heading scrolls with nothing because nothing scrolls yet —
+`ThePanel::showing` picks a window of rows rather than moving a viewport, and no
+input reaches it.
 
 **And its raster is bigger than it is.** A `Washed` carries its own shadow, so
 `DockPicture::panels[0].area` runs `THE_SHADOW_SPREADS` beyond the surface on

@@ -20,20 +20,63 @@ and [the interaction rules](https://www.figma.com/design/nDxyF5Ho9oC4RObjVzwBNJ?
 Check a proposed behaviour against that sentence. If the answer would surprise
 somebody who believes it, the answer is wrong.
 
+## Which applications are on it — the membership rule
+
+Settled 2026-10-11 by the owner,
+[ADR 0103](../decisions/0103-the-dock-more-apps-and-the-minimised-panel-are-three-connected-surfaces.md).
+It is first because every other section assumes an icon is there.
+
+| the application | on the Dock? |
+|---|---|
+| pinned, nothing open | **yes** |
+| pinned, a window that is not minimised | **yes** |
+| pinned, every window minimised | **yes**, because it is pinned |
+| unpinned, a window that is not minimised | **yes** |
+| unpinned, every window minimised | **no** — the windows are in the panel |
+| unpinned, nothing open | **no** |
+
+**"Not minimised" is not "on screen."** A window on another Place, outside the
+camera's view, or behind another is not minimised and keeps its application
+here. On a canvas that is the easy mistake to make, which is why the rule names
+it rather than leaving it to be worked out.
+
+One icon per application whatever its window count. Pinned applications keep
+their positions when they open; the rest follow in opening order, and
+**focusing one never reorders the bar.**
+
+**This is not built.** `alo_dock::Holding::showing` gives an icon to every
+application with a window and asks nothing about that window's state — the rule
+it supersedes, which was never written down anywhere and so was never a rule
+anybody could check.
+
 ## What one click does
+
+Superseded in its third row on 2026-10-11 by ADR 0103, which replaced *focus the
+one used last* with a **window picker**. The rest stands, and the reason the
+third row changed is worth keeping: focusing the last-used window is a guess,
+and a picker that shows every window — **minimised ones included, marked as
+minimised** — is the same answer with the guess taken out.
 
 | The application | What a click does |
 |---|---|
 | nothing open | open a window near what the person is looking at, and focus it |
 | one window open | focus it; move the view only if it is not already shown |
-| several open | focus the one used last |
-| the one used last was put aside | bring it back where it was, then travel to it |
+| several open | **open its window picker**, every window in it, minimised ones shown as minimised |
+| the one chosen was put aside | bring it back where it was, then travel to it |
 | already in view | bring it forward; the canvas does not move |
 
 **A click never creates a window by surprise**, and clicking again does not cycle,
-does not open another, and is not quietly repurposed as *back*.
+does not open another, and is not quietly repurposed as *back*. Clicking an
+application that is **already focused** does not minimise it either, and *New
+window* stays something a person asks for.
 
-This is built: `crates/alo-dock/src/clicking.rs`.
+**The same behaviour applies in *More apps*** — one rule for both surfaces, so a
+person does not learn two.
+
+The rules are built: `crates/alo-dock/src/clicking.rs`. **Nothing calls them.**
+A press on an icon reaches `WhatAPressOnTheDockDoes::GoTo` and is taken and
+dropped, so none of this table has ever happened on a machine. The picker does
+not exist in any form.
 
 **One case fell out of taking two rules seriously at once** and is in neither the
 specification nor the designs: a window that was put aside *whose place is already
