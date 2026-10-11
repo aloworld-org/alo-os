@@ -1,11 +1,17 @@
-//! Shared full-output GLES scene painting for nested submission and scanout preparation.
+//! Shared full-output scene painting for nested submission and scanout
+//! preparation — **the one painter, on whichever renderer a machine has**.
+//!
+//! It said *GLES* until 2026-10-11 and the signature meant it. A machine
+//! without a card goes down `crate::software_scanout`, which could not call
+//! this and so grew a painter of its own — and two painters is how the window
+//! edge layer came to be drawn on one road and not the other, correctly
+//! tested, for a day. The work is the same work; only the renderer differs,
+//! so only the renderer is a parameter.
 
 use crate::{RenderError, drawing};
 use smithay::{
     backend::renderer::{
-        Color32F, Frame, Renderer, Texture,
-        gles::{GlesRenderer, GlesTarget},
-        utils::draw_render_elements,
+        Color32F, Frame, ImportAll, ImportMem, Renderer, Texture, utils::draw_render_elements,
     },
     reexports::wayland_server::protocol::wl_surface::WlSurface,
     utils::{Rectangle, Transform},
@@ -32,14 +38,18 @@ pub(crate) struct OnThePlane<'a> {
 }
 
 /// Paint without dispatching requests or completing callbacks; callers own submission.
-pub(crate) fn paint(
-    renderer: &mut GlesRenderer,
-    framebuffer: &mut GlesTarget<'_>,
+pub(crate) fn paint<R>(
+    renderer: &mut R,
+    framebuffer: &mut R::Framebuffer<'_>,
     plane: OnThePlane<'_>,
     cursor: &crate::Cursor,
     transform: Transform,
     native: crate::scene_native::NativeLayers<'_>,
-) -> Result<drawing::Drawing, RenderError> {
+) -> Result<drawing::Drawing<R>, RenderError>
+where
+    R: Renderer + ImportAll + ImportMem,
+    R::TextureId: Clone + 'static,
+{
     let (roots, popups, camera) = (plane.roots, plane.popups, plane.camera);
     let extent = framebuffer.size();
     let size: smithay::utils::Size<i32, smithay::utils::Physical> = (extent.w, extent.h).into();

@@ -155,63 +155,43 @@ fn the_arrow_is_drawn_above_the_screen_it_points_at() {
     );
 }
 
+/// **This painter refuses no layer any more, and the test that said it did
+/// has gone with the refusal.**
+///
+/// It read `every_layer_this_painter_cannot_import_is_refused_by_its_own_name`
+/// and held `refused_layer` to naming a window before a menu and a menu
+/// before a pointer. Every line of it was correct for a painter that could
+/// not draw a client, and the whole thing described a limitation rather than
+/// a promise — so when the limitation went, the test went, rather than being
+/// kept passing against something narrower.
+///
+/// What replaced it is not another refusal test. It is
+/// `crate::scene_drawing::paint` being the only painter there is: the layers
+/// this file used to refuse are now drawn by the same function the card's
+/// road uses, and `tests/both_painters_draw_the_same_layers.rs` is what holds
+/// the two roads to one answer. A refusal cannot drift from the drawing when
+/// there is no second drawing to drift from.
 #[test]
-fn every_layer_this_painter_cannot_import_is_refused_by_its_own_name() {
-    let screen = a_screen((8, 4));
-    let lock = crate::lock_raster::LockPicture {
-        size: (8, 4),
-        pixels: Vec::new(),
-    };
-    let nothing = ToImport {
-        windows: false,
-        menus: false,
-        pointer: false,
-    };
+fn nothing_here_refuses_a_layer_any_more() {
+    let source = include_str!("software_scanout.rs");
 
-    // A window is named before a menu and a menu before a pointer, so a frame
-    // carrying all three is refused for the largest thing missing rather than
-    // the last one looked at.
-    let refusals = [
-        (
-            ToImport {
-                windows: true,
-                menus: true,
-                pointer: true,
-            },
-            Some(NativeScene::SignIn(&screen)),
-            Some("a window a client mapped"),
-        ),
-        (
-            ToImport {
-                menus: true,
-                ..nothing
-            },
-            Some(NativeScene::SignIn(&screen)),
-            Some("a menu a client opened"),
-        ),
-        (
-            ToImport {
-                pointer: true,
-                ..nothing
-            },
-            Some(NativeScene::SignIn(&screen)),
-            Some("the pointer a client drew itself"),
-        ),
-        (
-            nothing,
-            Some(NativeScene::Lock(&lock)),
-            Some("the lock screen"),
-        ),
-        (nothing, Some(NativeScene::SignIn(&screen)), None),
-    ];
-
-    for (carried, scene, named) in refusals {
-        assert_eq!(
-            refused_layer(carried, scene),
-            named,
-            "the painter disagreed about what it can draw"
+    for gone in [
+        "struct ToImport",
+        "fn refused_layer",
+        "fn validate_layers",
+        "fn paint_layers",
+    ] {
+        assert!(
+            !source.contains(gone),
+            "`{gone}` is back: this painter has grown a second opinion about what can be drawn, \
+             and the card's road has the first one"
         );
     }
+    assert!(
+        source.contains("crate::scene_drawing::paint("),
+        "this painter no longer calls the shared one, which is the whole of why it has no \
+         refusals of its own"
+    );
 }
 
 #[test]
