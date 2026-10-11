@@ -139,18 +139,60 @@ pointer-region work.
 
 ### C. The removal — **this lane, after A and B**
 
-~30 production files, one call site outside the family. Three parts, and they
-are not one job:
+**Measured 2026-10-11, and it is three to four times what this section said.**
+It read *~30 production files, one call site outside the family*. Both figures
+were wrong in the direction that matters: they made the removal look like an
+afternoon, and a part started on that estimate is a part abandoned halfway.
 
-| | |
+The family itself, counted as files rather than as a glob:
+
+| | files | lines |
+|---|---|---|
+| `alo-shell/src/window_control*` | 35 | 5,514 |
+| examples, including `support/` | 6 | 1,027 |
+| `alo-shell/tests/window_controls/` | 22 | 5,902 |
+| **total** | **63** | **12,443** |
+
+`find` reports 41 entries for `window_control*` across the repository, and
+**one of the 41 is a directory**: `tests/window_controls/` holds 22 of the
+files above. Counting entries rather than files is how 63 reads as 40.
+
+And *one call site outside the family* is **82 files, 405 lines** — every
+non-comment line naming `window_control` or `WindowControl` outside the
+family's own files, with a control token returning 0:
+
+| | files |
 |---|---|
-| the old tile drawing | replaced; removable once nothing imports it |
-| the old input and hit regions | the Mac's replacement must land first |
-| ~1,300 lines of reader chrome and labels | **A must land first** — this is the implementation A ports |
+| `alo-shell/src/`, production | 35 |
+| `alo-shell/src/`, `_tests.rs` | 21 |
+| `alo-shell/examples/` | 18 |
+| `alo-shell/tests/` | 5 |
+| `alo-access/` | 3 |
+
+**The removal is not confined to the files it deletes**, and that is the thing
+this section hid. Deleting 63 files means changing 82 others.
+
+#### The three parts, and they are not one job
+
+| | scope | blocked on |
+|---|---|---|
+| the old tile drawing | the remainder of the 35 | nothing imports it for drawing: `a_real_application` stopped on 2026-10-09 and only comments name it |
+| the old input and hit regions | 4 files — `input`, `routing`, `overlay`, `reader_input` | **#614 must land first** |
+| reader chrome and labels | **22 files, 3,509 lines** — not ~1,300 | A landed 2026-10-10, so unblocked |
+
+**Every part waits on #614 in practice, and the reason is a measurement
+neither lane had taken.** 14 of #614's 22 files are files the removal must
+change, `crates/alo-shell/src/pointer.rs` among them — which is where that
+branch hooks its press. Reader chrome and labels, the one part with no
+behavioural dependency on #614, still shares `lib.rs`, `nested.rs` and
+`scene_native.rs` with it. So the order is #614, then this, rather than the
+two in parallel on a filename check that said they did not overlap.
 
 **Keep and adapt the tests that protect behaviour.** The guarantees worth
 carrying across: non-overlapping targets, clipping at the viewport, nothing
-drawn over client pixels, and the accessible names.
+drawn over client pixels, and the accessible names. Note that 5,902 of the
+12,443 lines are those tests, so *keep and adapt* is the larger half of the
+work and not a footnote to it.
 
 ### D. The last documents — **done 2026-10-10**
 
