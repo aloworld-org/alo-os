@@ -716,9 +716,21 @@ mod running {
     }
 
     /// Read the two things a machine differs by, and systemd's own directory.
+    ///
+    /// **The card is asked for rather than required.**
+    /// `alo_shell::which_card_the_seat_holds` honours `ALO_DISPLAY` where a
+    /// unit sets one and asks the login seat where it does not.
+    ///
+    /// This refused to start without `ALO_DISPLAY` until 2026-10-11, which
+    /// forced `alo-desktop.service` to name a card — and the card it named was
+    /// `/dev/dri/card0`, under a comment of its own beginning *this line is
+    /// wrong on most machines*. Firmware that hands over a framebuffer gives
+    /// `simpledrm` minor 0, so the real GPU is minor 1, and most UEFI machines
+    /// hand over a framebuffer. The greeter had the fix and this did not,
+    /// because the greeter met the fault first.
     fn what_this_machine_is() -> Result<Said, String> {
         Ok(Said {
-            display: PathBuf::from(named("ALO_DISPLAY")?),
+            display: alo_shell::which_card_the_seat_holds()?,
             runtime: PathBuf::from(named("RUNTIME_DIRECTORY")?),
             layout: named("ALO_KEYBOARD")?,
         })

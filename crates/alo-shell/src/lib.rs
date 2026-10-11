@@ -310,6 +310,7 @@ mod top_controls_region;
 mod what_the_server_tells_a_frame;
 mod where_a_window_opens;
 mod where_the_dock_is;
+mod which_card_the_seat_holds;
 mod which_display_a_window_is_on;
 pub mod which_preview_the_pointer_is_on;
 mod which_surface_claims_a_point;
@@ -375,6 +376,7 @@ pub use status_items::StatusItems;
 /// its caller must hold the view and the person's reading direction, and
 /// `Surfaces` holds neither — see the file's header for where it belongs.
 pub use where_a_window_opens::{A_DELIBERATE_OFFSET, A_SMALL_GAP, where_a_window_opens};
+pub use which_card_the_seat_holds::which_card_the_seat_holds;
 pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_dividing::NotDivided;
