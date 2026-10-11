@@ -105,6 +105,45 @@ impl WhatTheDockHasOpen {
     }
 }
 
+impl WhatTheDockWasAskedFor {
+    /// What Escape leaves open, or [`None`] when Escape is not the Dock's.
+    ///
+    /// The owner's ruling of 2026-10-11: *Escape dismisses the current picker
+    /// first, then the parent popover.* So a window list goes back to the
+    /// overview it was opened from, and the overview closes.
+    ///
+    /// **[`None`] is the important answer.** With nothing open, Escape belongs
+    /// to whatever application has the keyboard — and taking it would mean a
+    /// person could not cancel anything in any program while alo OS was
+    /// running. This is the one state in which the Dock must not act, and it is
+    /// the common one.
+    ///
+    /// A `bool` beside a new state would let a caller take the key and change
+    /// nothing, or change the state and forward the key as well. One value
+    /// cannot say both.
+    /// Whether anything is open at all.
+    ///
+    /// On the choice rather than on the drawn state, because the lane asks it
+    /// before a frame is drawn — it decides whether the Dock takes the keys,
+    /// and the answer must not depend on anything a draw worked out.
+    #[must_use]
+    pub(crate) const fn is_anything(&self) -> bool {
+        !matches!(self, Self::Nothing)
+    }
+
+    #[must_use]
+    pub(crate) fn when_escape_is_pressed(&self) -> Option<Self> {
+        match self {
+            // Not the Dock's key.
+            Self::Nothing => None,
+            Self::MoreApps => Some(Self::Nothing),
+            // **Back, not out.** A person who opened a window list from the
+            // overview asked for two things; Escape undoes the second.
+            Self::TheWindowsOf(_) => Some(Self::MoreApps),
+        }
+    }
+}
+
 /// Work out what to draw from what the person asked for and what is open now.
 ///
 /// **Separate from `Server::what_the_dock_has_open` so it can be tested.** The

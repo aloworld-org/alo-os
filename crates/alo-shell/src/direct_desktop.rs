@@ -508,6 +508,21 @@ impl LoopInput for Desk<'_> {
                         server, update, extent, strings,
                     );
                 }
+                // **Escape closes what the Dock has open**, and only then.
+                // Asked after Settings because Settings is in front of the
+                // Dock when both are up: a person pressing Escape at a
+                // Settings window is cancelling that, whatever the Dock is
+                // doing behind it.
+                //
+                // The question is false unless a Dock surface is open, so on
+                // an ordinary frame this costs one `matches!` and the keys go
+                // where they went before this existed.
+                if server.the_dock_is_taking_the_keys() {
+                    return crate::a_key_reaches_the_docks_surfaces::a_key_reaches_the_docks_surfaces(
+                        server, update, extent,
+                    )
+                    .map_err(std::io::Error::other);
+                }
                 server
                     .libinput_update(update, extent)
                     .map_err(std::io::Error::other)

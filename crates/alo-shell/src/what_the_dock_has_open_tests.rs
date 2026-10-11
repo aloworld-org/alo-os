@@ -211,3 +211,53 @@ fn the_rows_follow_the_windows_rather_than_being_remembered() {
         "two of them closed and the list did not notice"
     );
 }
+
+/// **Escape goes back before it goes out**, and is not the Dock's when nothing
+/// is open.
+///
+/// The owner's ruling: *Escape dismisses the current picker first, then the
+/// parent popover.* Walked as a sequence rather than as three separate cases,
+/// because the thing being asserted is the order — a rule that closed
+/// everything at once would pass three independent checks of "it closed".
+#[test]
+fn escape_goes_back_then_out_then_belongs_to_the_application() {
+    use super::WhatTheDockWasAskedFor as Asked;
+
+    let picker = Asked::TheWindowsOf(app());
+    let back = picker
+        .when_escape_is_pressed()
+        .unwrap_or_else(|| panic!("Escape did nothing to an open window list"));
+    assert_eq!(
+        back,
+        Asked::MoreApps,
+        "Escape closed everything instead of going back to the overview"
+    );
+
+    let out = back
+        .when_escape_is_pressed()
+        .unwrap_or_else(|| panic!("Escape did nothing to the overview"));
+    assert_eq!(out, Asked::Nothing);
+
+    assert_eq!(
+        out.when_escape_is_pressed(),
+        None,
+        "the Dock took Escape with nothing open, so no application can be \
+         cancelled while alo OS is running"
+    );
+}
+
+/// **It takes two presses to leave a window list**, which is the whole of the
+/// ruling and is easy to lose to a tidier implementation.
+#[test]
+fn leaving_a_window_list_takes_two_presses() {
+    use super::WhatTheDockWasAskedFor as Asked;
+    let mut open = Asked::TheWindowsOf(app());
+    let mut presses = 0;
+    while let Some(next) = open.when_escape_is_pressed() {
+        open = next;
+        presses += 1;
+        assert!(presses < 5, "Escape never settled");
+    }
+    assert_eq!(open, Asked::Nothing);
+    assert_eq!(presses, 2, "a window list should take back, then out");
+}
