@@ -1,8 +1,7 @@
-# 0102 — The minimised-window panel and the Dock's overflow are two surfaces
+# ADR 0102 — The minimised-window panel and the Dock's overflow are two surfaces
 
-- **Status:** accepted
-- **Date:** 2026-10-11
-- **Decided by:** the owner
+**Status:** **accepted, 2026-10-11**, by the owner.
+
 - **Supersedes:** nothing. Narrows
   [0101](0101-one-dock-component-family-and-the-renderer-that-can-draw-it.md),
   which settled what the Dock looks like and said nothing about what opens from it.

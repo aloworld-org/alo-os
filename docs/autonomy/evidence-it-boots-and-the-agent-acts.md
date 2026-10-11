@@ -1342,6 +1342,133 @@ owner's direction. Where the work is: **task 16 of `docs/autonomy/more-than-one-
 the control, in that order and not the other.
 
 
+### Which applications are on the Dock
+
+**Shown by:** the rule itself, in `OnTheDock::belongs_on_the_dock` — *pinned by
+the person, or more windows than are put aside* — and eleven tests in
+`crates/alo-dock/src/holding_membership_tests.rs`, of which
+`every_row_of_the_membership_table` walks all seven rows of the owner's table
+rather than naming six of them in six test names. The Dock the shell draws is
+`Holding::showing`, which is `in_the_overview` with that rule applied by
+`retain`, so the bar and the overview cannot drift about which applications
+exist.
+
+The rule is live rather than computed and ignored: `crate::dock_windows`
+builds the Dock's window list from `mapped_surfaces` **chained with
+`minimized_surfaces`**, so putting a window aside changes the bar on the next
+frame. That chaining was added on 2026-10-11 after `how_many_put_aside` was
+found to be permanently zero on every machine — the builder read only the
+mapped half, so the minimised side of the rule had never once been exercised
+outside a unit test, and a screen reader was told no window was put aside
+whatever a person had done.
+
+**Still owed:** **the pinned half cannot be exercised on a real machine**,
+because nothing saves a pinned list — every caller passes `Holding::nothing()`,
+which `crate::what_the_server_tells_a_frame` records in its own words. So what
+a machine shows today is *the applications with a window open*, which is a true
+reading of the rule with an empty pin list and not the whole promise. Where the
+work is: **task 4 and task 8 of
+`docs/autonomy/the-dock-more-apps-and-the-minimised-panel.md`**, task 4 blocked
+on the application-discovery lane.
+
+### What a Dock a person has never touched starts with
+
+**Shown by:** nothing yet, and nothing should claim it.
+
+**Still owed:** all of it. The promise is Files, Browser, Apps and Settings,
+resolved to the applications a machine actually has, written once after a
+successful discovery and never re-applied to a list a person has deliberately
+emptied. Every clause of that needs an answer to *which applications are
+installed*, and this repository has no such answer yet: the four names are a
+specification and not a list of identifiers anything can look up.
+
+**This is a dependency on another lane and was named as one on 2026-10-11**
+rather than discovered on the day — see *What is owed to another lane, and from
+when* in the plan. Where the work is: **task 4 of
+`docs/autonomy/the-dock-more-apps-and-the-minimised-panel.md`**, Open and
+blocked.
+
+### Clicking an application
+
+**Shown by:** `crate::a_press_on_the_dock`, which is the first thing in this
+repository to press the Dock at all — measured on 2026-10-10 across the 2531
+`.rs` files outside `alo-dock`, `alo_dock::clicking` had no caller and
+`Places::at`, the hit test that crate exists for, was never called by anything.
+The decision is a pure function over the windows there are, so *which slot a
+press reached* and *what that slot does* are both checkable without a display;
+seven tests in `a_press_on_the_dock_tests.rs` hold the table. A window that was
+put aside comes back and is then focused; an application with several windows
+opens the window list rather than guessing, which is ADR 0103 replacing *focus
+the one used last*.
+
+**Still owed:** two halves, and they are different sizes.
+
+**Launching is owed and is somebody else's.** *Nothing open → launch* needs
+something that can start an application and nothing in this workspace can, so a
+press on an icon with no windows is taken and does nothing. Same dependency as
+the default pins.
+
+**And the canvas does not travel on a click**, deliberately:
+`WhatAClickDoes::travels` says when it should and the press ignores it, because
+`the_windows_the_dock_sees` gives every window a one-by-one patch at the origin
+— it cannot see canvas geometry — so `TheView::already_shows` is comparing
+placeholders. Travelling on that would be motion decided by a placeholder, which
+is worse than not travelling. What is owed is the window's real patch reaching
+that builder.
+
+### More apps
+
+**Shown by:** the overview, drawn from `alo_dock::more_apps::TheOverview` and
+`Holding::in_the_overview`, with fifteen tests in `more_apps_tests.rs`. It is an
+overview of a person's applications and not the overflow tail: it carries every
+pinned application and every open one, including those whose windows are all
+minimised and which are therefore not on the bar — the one case the two lists
+are guaranteed to differ on, which is why `in_the_overview` exists rather than
+*More apps* walking a list of its own.
+
+Its bounds are the owner's and are held by construction rather than by
+agreement: a `const` assertion in `more_apps.rs` ties the fixed parts plus the
+list's cap to the 536 the owner set, so a popover that grew past it would not
+compile. Sixty applications scroll inside the same viewport; keyboard focus
+scrolls a cell into view, and the draw is held to that by a differential pixel
+count rather than by a list of shapes.
+
+**Still owed:** **the search field takes no typing.** It is drawn, it is a well
+with a prompt, and nothing filters. So a person with sixty applications scrolls
+rather than searches, which is the slower half of the promise and the one the
+owner named first. Where the work is: **task 5 of
+`docs/autonomy/the-dock-more-apps-and-the-minimised-panel.md`**.
+
+**And neither surface takes a pointer press.** `TheDocksPlaces` is the Dock's
+hit test and it covers the band, not the popover above it, so a cell in *More
+apps* does nothing when clicked and the keyboard is today the only way to choose
+from it. Found 2026-10-11 while building the keyboard and written down as
+**task 9 of the same plan** rather than fixed in passing.
+
+### Minimising is about one window
+
+**Shown by:** the compositor half, which is contracted and tested, plus the
+link to the Dock that was missing until 2026-10-11. `set_window_minimized` acts
+on one surface; the Dock's own list is rebuilt every frame from
+`mapped_surfaces` chained with `minimized_surfaces`, so minimising one window of
+an application recalculates that application's eligibility without anything
+having to remember to. Seven tests in `dock_windows_tests.rs` hold what the
+builder assumes of `alo-dock`, and
+`the_icon_goes_when_the_last_window_is_minimised_and_returns_when_one_comes_back`
+is the clause itself.
+
+The panel of put-aside windows holds one item per window, so two windows of one
+application stay two items, and selecting one restores that window.
+
+**Still owed:** the four worked examples in §4 of the owner's ruling as a single
+demonstration on a machine with real applications. What exists is the shell's
+own computation, walked by `examples/a_real_application.rs` under a nested
+compositor, which says what the shell computed and is **not** a screen. That
+walk is by hand and not on every build: nothing in the nine gates starts a
+Wayland client, so this is a measurement somebody took rather than a check that
+runs again.
+
+
 ## What this audit found
 
 **The audit in figures: 78 promises, 2 shown whole, 51 shown in part, 25 with no

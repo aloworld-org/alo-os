@@ -375,7 +375,13 @@ fn past_the_item(pieces: &[Piece], from: usize) -> usize {
 }
 
 /// What a source file shipped: its string literals outside `#[cfg(test)]`
-/// items, and the modules those items declare, whose files are not shipped.
+/// items, and **the file names** of the modules those items declare, whose
+/// files are not shipped.
+///
+/// The second half was module *names* until 2026-10-12 and the caller appended
+/// `.rs` to them. Every test module in these crates is declared with
+/// `#[path]`, so the name and the file differ and the exclusion never matched
+/// anything — see the comment inside.
 fn shipped_literals(source: &str) -> (Vec<Literal>, Vec<String>) {
     let pieces = pieces_of(source);
     let mut literals = Vec::new();
@@ -404,7 +410,33 @@ fn shipped_literals(source: &str) -> (Vec<Literal>, Vec<String>) {
             if let [.., "mod", name] = words.as_slice()
                 && declared.trim_end().ends_with(';')
             {
-                test_modules.push((*name).to_owned());
+                // **The file the module is in, which is not always the module's
+                // own name.** A `#[path = "…"]` attribute says where the module
+                // lives, and this repository uses it for every split-out test
+                // module: `holding.rs` declares `mod membership_tests;` from
+                // `holding_membership_tests.rs`, and `picking.rs` declares
+                // `mod tests;` from `picking_tests.rs`.
+                //
+                // Taking the module's name and appending `.rs` therefore named
+                // a file that does not exist, so **nothing was removed** and
+                // every one of those test files was read as shipped source.
+                // Measured 2026-10-12: three such modules across the five
+                // crates and all three mismatched, so the exclusion this
+                // function is named for had never once applied.
+                //
+                // The path is a `Piece::Text`, which is why `declared` above
+                // cannot see it — that filter is what keeps a literal's own
+                // words out of the item's identifiers, and it is right to. So
+                // the path is read from the pieces directly.
+                let named = pieces
+                    .get(past..item_ends)
+                    .unwrap_or_default()
+                    .iter()
+                    .find_map(|piece| match piece {
+                        Piece::Text(text, ..) if text.ends_with(".rs") => Some(text.clone()),
+                        _ => None,
+                    });
+                test_modules.push(named.unwrap_or_else(|| format!("{name}.rs")));
             }
             index = item_ends;
             identifier.clear();
@@ -555,11 +587,14 @@ fn shipped_files_of(member: &str) -> Vec<(String, String)> {
         .iter()
         .flat_map(|(under, text)| {
             let folder = Path::new(under).parent().map(Path::to_path_buf);
-            shipped_literals(text).1.into_iter().map(move |module| {
+            // **A file name now, not a module name.** `shipped_literals`
+            // reads `#[path]` where there is one and falls back to
+            // `<module>.rs`, so the `.rs` is already on it.
+            shipped_literals(text).1.into_iter().map(move |file| {
                 folder
                     .clone()
                     .unwrap_or_default()
-                    .join(format!("{module}.rs"))
+                    .join(file)
                     .to_string_lossy()
                     .replace('\\', "/")
             })
@@ -782,5 +817,38 @@ fn a_test_module_is_skipped_and_what_follows_it_is_not() {
     );
 
     let declared = "#[cfg(test)]\nmod testing;\n\npub mod keeping;\n";
-    assert_eq!(shipped_literals(declared).1, ["testing"]);
+    assert_eq!(shipped_literals(declared).1, ["testing.rs"]);
+}
+
+/// **A `#[path]` test module names the file it is in, not the module.**
+///
+/// This is the whole of what went wrong before 2026-10-12. Every split-out test
+/// module in these five crates is declared with `#[path]`, so the module's name
+/// and its file's name differ — `holding.rs` declares `mod membership_tests;`
+/// from `holding_membership_tests.rs`. The exclusion built `<module>.rs`, named
+/// a file that does not exist, removed nothing, and read all three of those
+/// test files as shipped source. It had never once applied, and the first thing
+/// to notice was a test's own case labels being refused as English on a screen.
+///
+/// Both forms are asserted here, because the fallback still has to work: a
+/// module declared without `#[path]` is in `<module>.rs` and that is the
+/// answer.
+#[test]
+fn a_test_module_declared_with_a_path_names_its_file() {
+    let with_path =
+        "#[cfg(test)]\n#[path = \"holding_membership_tests.rs\"]\nmod membership_tests;\n";
+    assert_eq!(
+        shipped_literals(with_path).1,
+        ["holding_membership_tests.rs"],
+        "a #[path] module must be excluded by its file, or its file is read as shipped"
+    );
+
+    // The same shape this repository uses most: the module is `tests` and the
+    // file is named after its parent.
+    let plainly_named = "#[cfg(test)]\n#[path = \"picking_tests.rs\"]\nmod tests;\n";
+    assert_eq!(shipped_literals(plainly_named).1, ["picking_tests.rs"]);
+
+    // And no `#[path]` at all, which is the fallback.
+    let no_path = "#[cfg(test)]\nmod tests;\n";
+    assert_eq!(shipped_literals(no_path).1, ["tests.rs"]);
 }

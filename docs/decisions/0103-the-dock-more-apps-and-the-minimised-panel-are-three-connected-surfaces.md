@@ -1,8 +1,7 @@
-# 0103 — The Dock, More apps and the minimised panel are three connected surfaces
+# ADR 0103 — The Dock, More apps and the minimised panel are three connected surfaces
 
-- **Status:** accepted
-- **Date:** 2026-10-11
-- **Decided by:** the owner
+**Status:** **accepted, 2026-10-11**, by the owner.
+
 - **Supersedes two rules by name:**
   - that **More apps shows only the applications that overflowed** — stated in
     [0102](0102-the-minimised-window-panel-and-the-docks-overflow-are-two-surfaces.md)
