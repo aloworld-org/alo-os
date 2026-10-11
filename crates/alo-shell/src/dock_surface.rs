@@ -74,7 +74,7 @@ const fn how_far_the_shadow_reaches() -> i32 {
 
 /// What the surface is drawn out of.
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct ADocksSurface {
+pub(crate) struct ADocksSurface<'a> {
     /// Where the panel itself is, in this display's pixels.
     pub(crate) panel: Rectangle<i32, Physical>,
     /// The panel's fill.
@@ -89,6 +89,19 @@ pub(crate) struct ADocksSurface {
     pub(crate) against: alo_dock::Edge,
     /// How thick the accent rule is.
     pub(crate) accent_is: i32,
+    /// Where a fallback badge goes, for each application with no usable icon.
+    ///
+    /// **The owner's ruling of 2026-10-11**: *for applications without a usable
+    /// icon, display the application's first letter inside its own circular
+    /// badge. Do not show bare letters.* Each is a 28 × 28 box in this
+    /// display's pixels, centred in its 48 × 48 target — so a real icon
+    /// replaces one without the slot moving or resizing.
+    ///
+    /// **Drawn here and not as rectangles**, for the reason the panel itself is
+    /// here: a circle is partial coverage at every pixel of its edge.
+    pub(crate) badges: &'a [Rectangle<i32, Physical>],
+    /// The ground of a fallback badge.
+    pub(crate) badge: [u8; 3],
     /// The display, so the raster can be kept on it.
     ///
     /// **The shadow's reach puts the raster past the screen's edge** — the Dock
@@ -97,22 +110,26 @@ pub(crate) struct ADocksSurface {
     /// Found by `the_dock_reaches_the_bytes_a_card_is_handed`, which draws
     /// through the software renderer and got a flat frame.
     pub(crate) room: (i32, i32),
-    /// How many physical pixels this display draws for one logical one, in
-    /// hundredths.
-    ///
-    /// **The radius and the hairline are logical measures** and every other
-    /// figure here is in this display's own pixels, so this is where the one
-    /// becomes the other. A radius that skipped it would be half the size it
-    /// should be on a dense screen, which is the standing rule in `CLAUDE.md`
-    /// about a figure reaching a display without passing through its scale.
-    pub(crate) scale: i32,
+    // **No scale, and that is the correction rather than the omission.**
+    //
+    // This took one and multiplied the radius and the hairline by it, which
+    // made a dense display draw an 18 radius as 36 **on a band still 76 tall**,
+    // because `crate::dock_raster` hands `alo_dock`'s logical measures straight
+    // through as pixels and scales none of them. Scaling one measure of a
+    // geometry that is otherwise unscaled is worse than scaling none: it is the
+    // *applied twice* fault wearing the *applied once* rule's clothes.
+    //
+    // So every figure reaching this file is in the one space the rest of the
+    // Dock is in. When the Dock becomes scale-aware, the band, the slots, the
+    // radius and the hairline move together — and the rule in `CLAUDE.md` is
+    // kept by them sharing a conversion, not by this one having its own.
 }
 
 /// Rasterise the Dock's surface.
 ///
 /// Returns [`None`] for a panel with no area, which is a Dock that gave way
 /// rather than a failure.
-pub(crate) fn surface(of: ADocksSurface) -> Option<Washed> {
+pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
     let panel = of.panel;
     if panel.size.w <= 0 || panel.size.h <= 0 {
         return None;
@@ -131,7 +148,7 @@ pub(crate) fn surface(of: ADocksSurface) -> Option<Washed> {
     }
     let area = Rectangle::new((left, top).into(), (right - left, bottom - top).into());
     let (width, height) = (area.size.w, area.size.h);
-    let at = |logical: u32| -> f32 { (logical as f32) * (of.scale.max(1) as f32) / 100.0 };
+    let at = |logical: u32| -> f32 { logical as f32 };
     // The panel's own geometry, relative to the raster's corner — which is not
     // `reach` any more once the clip above has moved it.
     let (left, top) = (
@@ -172,6 +189,24 @@ pub(crate) fn surface(of: ADocksSurface) -> Option<Washed> {
             // outermost row blended with the fill, which read as the wrong
             // colour to anything sampling it.
             let accent = how_much_accent(&of, px, py, left, top, right, bottom) * inside;
+            // **The badges, clipped to the panel like everything else on it.**
+            // One pass over however many there are: a Dock holds a few dozen
+            // slots at most, and a per-pixel loop over them is cheaper to read
+            // than an index and is run once per layout rather than per frame.
+            let badge = of
+                .badges
+                .iter()
+                .map(|at| {
+                    let (bx, by) = (
+                        (at.loc.x - area.loc.x) as f32 + at.size.w as f32 / 2.0,
+                        (at.loc.y - area.loc.y) as f32 + at.size.h as f32 / 2.0,
+                    );
+                    let radius = at.size.w.min(at.size.h) as f32 / 2.0;
+                    let d = ((px - bx).powi(2) + (py - by).powi(2)).sqrt() - radius;
+                    (0.5 - d).clamp(0.0, 1.0)
+                })
+                .fold(0.0_f32, f32::max)
+                * inside;
 
             // Composited back to front: shadow, fill, hairline, accent.
             let mut colour = [0.0_f32; 3];
@@ -181,6 +216,7 @@ pub(crate) fn surface(of: ADocksSurface) -> Option<Washed> {
                 (within, of.fill),
                 (hairline, of.edge),
                 (accent, of.accent),
+                (badge, of.badge),
             ] {
                 if over <= 0.0 {
                     continue;

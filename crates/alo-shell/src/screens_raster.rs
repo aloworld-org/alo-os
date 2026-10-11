@@ -119,11 +119,6 @@ pub(crate) fn picture(
         // nothing has no control to open a list with, and `picture` draws
         // none for an empty overflow whatever this says.
         (false, ""),
-        // **A preview of an arrangement draws at one to one.** Each screen's own
-        // scale is what the *desktop* is drawn at; this is a small picture of
-        // several screens side by side, already scaled to fit the panel, and
-        // scaling the radius again would compound the two.
-        100,
         fonts,
     )?;
     let warming = place.warming();

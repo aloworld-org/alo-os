@@ -223,6 +223,23 @@ pub const THE_COMPOSERS_CORNER: u32 = 12;
 // standard. The Mac lane found this on the day a second surface was about to
 // produce a second copy of the same 24 under a different name.
 
+/// How big the initial in a fallback badge is drawn.
+///
+/// **The owner's ruling of 2026-10-11**, for an application with no usable
+/// icon: *circle: 28 × 28 logical pixels, centred within the existing 48 × 48
+/// hit target. Initial: Manrope SemiBold, 14px, optically centred.*
+///
+/// The circle is [`GLYPH`] — the badge **is** the artwork box, so a real icon
+/// replaces a fallback without the slot moving or resizing, which is the last
+/// line of that ruling. This is the letter inside it, and it is half the badge
+/// rather than a number of its own: *half* is what makes a single initial read
+/// as a mark rather than as cramped text.
+///
+/// **Manrope SemiBold is not repeated here.** `crate::painted_text`'s
+/// `alos_own_text` is already that face at weight 600, in one place so that a
+/// measurement and a drawing cannot disagree about which face they meant.
+pub const AN_INITIAL_IS: u32 = 14;
+
 /// The side of a utility symbol drawn inside [`ICON`] — search, overflow.
 ///
 /// **Not [`GLYPH`], and the owner said so when they gave both.** Their table of
@@ -409,6 +426,17 @@ const _: () = assert!(
 const _: () = assert!(
     MARGIN + ICON + MARGIN == 64,
     "the Dock is no longer 64 logical pixels thick"
+);
+
+/// The initial is half its badge, and the badge is the artwork box.
+///
+/// Both halves of the owner's ruling of 2026-10-11, held at compile time: a
+/// change to [`GLYPH`] that forgot this would give a badge the initial no
+/// longer suits, and a badge that is not [`GLYPH`] would move the slot when a
+/// real icon arrived.
+const _: () = assert!(
+    AN_INITIAL_IS * 2 == GLYPH,
+    "the initial in a fallback badge is no longer half the badge it sits in"
 );
 
 /// A utility symbol is inside the owner's range and inside the target.

@@ -27,7 +27,8 @@ fn a_surface(against: Edge) -> super::Washed {
         against,
         accent_is: 2,
         room: (1920, 1080),
-        scale: 100,
+        badges: &[],
+        badge: [0xEE, 0xF2, 0xF4],
     })
     .expect("a panel with area rasterises")
 }
@@ -223,48 +224,57 @@ fn a_panel_with_no_area_draws_nothing() {
             against: Edge::Bottom,
             accent_is: 2,
             room: (1920, 1080),
-            scale: 100,
+            badges: &[],
+            badge: [0xEE, 0xF2, 0xF4],
         });
         assert!(nothing.is_none(), "a {w} by {h} panel rasterised something");
     }
 }
 
-/// **The radius and the hairline pass through the display's scale.**
+/// **The surface is drawn in one space, and nothing in it scales on its own.**
 ///
-/// `CLAUDE.md`'s standing rule: no figure reaches a display without passing
-/// through that display's scale. A dense screen draws the same Dock sharper,
-/// not a Dock with a corner half the size — so at 200% the rounded part of the
-/// corner reaches twice as far.
+/// This asserted the opposite until 2026-10-11 — that a dense display got a
+/// larger corner — which was true of the code and **wrong about the product**:
+/// `crate::dock_raster` hands `alo_dock`'s logical measures straight through as
+/// pixels and scales none of them, so scaling the radius alone drew an 18
+/// radius as 36 on a band still 76 tall.
+///
+/// `CLAUDE.md`'s rule is kept by every figure sharing one conversion, not by one
+/// of them having its own. Until the Dock has that conversion, the honest claim
+/// is this one: the same panel rasterises the same way however the display is
+/// described, so nothing here can drift from the band it sits on.
 #[test]
-fn a_dense_display_gets_the_same_corner_drawn_larger() {
-    let of = |scale| {
+fn nothing_in_the_surface_scales_on_its_own() {
+    let of = |panel: Rectangle<i32, smithay::utils::Physical>| {
         surface(ADocksSurface {
-            panel: Rectangle::new((200, 400).into(), (600, 152).into()),
+            panel,
             fill: [255, 255, 255],
             edge: [0xE7, 0xEB, 0xEF],
             accent: [0x11, 0x22, 0x33],
             against: Edge::Bottom,
-            accent_is: 2,
+            accent_is: 0,
             room: (1920, 1080),
-            scale,
+            badges: &[],
+            badge: [0xEE, 0xF2, 0xF4],
         })
         .expect("a panel with area rasterises")
     };
-    let ordinary = of(100);
-    let dense = of(200);
+    let one = of(Rectangle::new((200, 400).into(), (600, 76).into()));
+    let same = of(Rectangle::new((200, 400).into(), (600, 76).into()));
+    assert_eq!(
+        one.pixels, same.pixels,
+        "the same panel rasterised differently"
+    );
 
-    // How far along the top edge the panel first becomes solid, which is the
-    // corner's reach.
-    let reach = |drawn: &super::Washed| {
-        let (left, top) = panel_at(drawn);
-        (0..120)
-            .find(|step| pixel(drawn, left + step, top + 1)[3] == 255)
-            .unwrap_or_else(|| panic!("the top edge never becomes solid"))
-    };
-    let (one, two) = (reach(&ordinary), reach(&dense));
+    // And the corner's reach is the ruled radius in the band's own space: along
+    // the top edge the panel becomes solid at about eighteen in, not at thirty-six.
+    let (left, top) = (200 - one.area.loc.x, 400 - one.area.loc.y);
+    let reach = (0..120)
+        .find(|step| pixel(&one, left + step, top + 1)[3] == 255)
+        .unwrap_or_else(|| panic!("the top edge never becomes solid"));
+    let radius = i32::try_from(alo_dock::measures::THE_DOCKS_CORNER).expect("a radius fits");
     assert!(
-        two > one,
-        "at 200% the corner reaches {two} and at 100% it reaches {one}, so the radius is not \
-         passing through the display's scale"
+        (reach - radius).abs() <= 4,
+        "the corner reaches {reach} where the ruled radius is {radius}"
     );
 }

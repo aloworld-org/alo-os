@@ -192,6 +192,24 @@ pub(crate) struct DesktopPalette {
     pub(crate) ink: [u8; 3],
     /// The person's accent, on this scheme's ground.
     pub(crate) accent: [u8; 3],
+    /// The ground of the badge an application with no usable icon shows.
+    ///
+    /// **The owner's ruling of 2026-10-11**, and semantic rather than a hex at
+    /// a call site: it is `alo_appearance::Role::BgCool` — *a recessed or
+    /// secondary surface* — whose light value `#EEF2F4` is exactly the one they
+    /// gave. The dark value `#243746` is theirs as well; `palette.toml` is the
+    /// light theme only and says so, so this is where the pair meets.
+    ///
+    /// **Never teal**, which ADR 0067 reserves for alo acting on a person's
+    /// behalf. A badge says *this application has no artwork*, which is not alo
+    /// doing anything.
+    pub(crate) badge: [u8; 3],
+    /// The initial drawn inside that badge.
+    ///
+    /// `Role::TextPrimary` light — `#102A43`, the owner's value — and `#F7F9FA`
+    /// dark. **All fallback badges share one neutral treatment**, by the same
+    /// ruling: no border, no shadow, and no colour taken from the application.
+    pub(crate) badge_ink: [u8; 3],
     /// The hairline around a surface that sits on the canvas.
     ///
     /// `alo_appearance::Role::BorderDefault` where the design is drawn, and the
@@ -227,6 +245,22 @@ impl DesktopPalette {
             dock: contrast.dock(scheme),
             ink: contrast.ink(scheme),
             accent: contrast.accent(scheme, accent),
+            badge: match contrast {
+                // At high contrast the badge is the window's own ground, so the
+                // initial on it keeps the full separation that palette is for.
+                Contrast::High => contrast.ground(scheme),
+                Contrast::AsDesigned => match scheme {
+                    Scheme::Light => rgb_of(alo_appearance::Role::BgCool),
+                    Scheme::Dark => A_BADGE_ON_DARK,
+                },
+            },
+            badge_ink: match contrast {
+                Contrast::High => contrast.ink(scheme),
+                Contrast::AsDesigned => match scheme {
+                    Scheme::Light => rgb_of(alo_appearance::Role::TextPrimary),
+                    Scheme::Dark => AN_INITIAL_ON_DARK,
+                },
+            },
             edge: match contrast {
                 Contrast::High => contrast.ink(scheme),
                 Contrast::AsDesigned => {
@@ -239,9 +273,33 @@ impl DesktopPalette {
 
     /// Every colour this palette offers.
     #[cfg(test)]
-    pub(crate) const fn offers(self) -> [[u8; 3]; 5] {
-        [self.ground, self.dock, self.ink, self.accent, self.edge]
+    pub(crate) const fn offers(self) -> [[u8; 3]; 7] {
+        [
+            self.ground,
+            self.dock,
+            self.ink,
+            self.accent,
+            self.edge,
+            self.badge,
+            self.badge_ink,
+        ]
     }
+}
+
+/// The badge's ground on a dark desktop.
+///
+/// **The owner's value of 2026-10-11.** `docs/design/palette.toml` is the light
+/// theme only and says so, so the dark half of a semantic pair lives beside the
+/// code that needs it until that file gains a measured dark mode.
+const A_BADGE_ON_DARK: [u8; 3] = [0x24, 0x37, 0x46];
+
+/// The initial's colour on a dark desktop. The owner's value of the same day.
+const AN_INITIAL_ON_DARK: [u8; 3] = [0xF7, 0xF9, 0xFA];
+
+/// A semantic role as the painter takes it.
+fn rgb_of(role: alo_appearance::Role) -> [u8; 3] {
+    let it = role.colour();
+    [it.red(), it.green(), it.blue()]
 }
 
 /// A colour as the painter takes it.

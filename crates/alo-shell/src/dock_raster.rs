@@ -123,8 +123,6 @@ pub(crate) struct DockPicture {
     pub(crate) layout: Layout,
     /// The whole band, along the bottom.
     pub(crate) band: Rectangle<i32, Physical>,
-    /// The accent along the band's inside — that is, top — edge.
-    pub(crate) accent: Rectangle<i32, Physical>,
     /// Flat shapes, in painting order.
     pub(crate) solids: Vec<Solid>,
     /// One letter per application on the Dock, inked into its icon's box.
@@ -157,46 +155,6 @@ pub(crate) struct DockPicture {
     /// place a press can find out where the slots are: outside a frame they do
     /// not exist.
     pub(crate) standing: TheDocksPlaces,
-}
-
-/// The accent along the band's **inside** edge: the one facing the canvas.
-///
-/// **A picture found this and three tests did not.** The accent was
-/// `(bar_width, rule)` at the band's own corner for every edge — right for the
-/// bottom, and for the other three a line of the wrong length on the wrong side:
-/// on the left edge it ran **176 pixels out across the canvas** above a bar 70
-/// wide, because the length was taken along the screen's width while the bar runs
-/// down its height. Measured off a drawn frame on 2026-10-10, where it is
-/// impossible to miss and where a reader of the code had missed it.
-///
-/// `the_bar_sits_on_whichever_edge_it_was_laid_along` asks `the_band_on` about
-/// all four edges and never looks at the accent;
-/// `the_dock_is_a_centred_bar_clear_of_the_bottom_edge` checks the accent and
-/// only ever on the bottom. Each was right about its own subject, and the gap
-/// between them was the whole of the defect.
-///
-/// **Inside means facing the canvas**, which is the opposite end of the thickness
-/// from the screen edge the bar is lifted off. So it is the band's top for a dock
-/// along the bottom and the band's bottom for one along the top — not the same
-/// corner twice.
-fn the_accent_on(
-    edge: alo_dock::Edge,
-    band: Rectangle<i32, Physical>,
-    rule: i32,
-) -> Rectangle<i32, Physical> {
-    let (origin, extent) = match edge {
-        alo_dock::Edge::Bottom => ((band.loc.x, band.loc.y), (band.size.w, rule)),
-        alo_dock::Edge::Top => (
-            (band.loc.x, band.loc.y + band.size.h - rule),
-            (band.size.w, rule),
-        ),
-        alo_dock::Edge::Left => (
-            (band.loc.x + band.size.w - rule, band.loc.y),
-            (rule, band.size.h),
-        ),
-        alo_dock::Edge::Right => ((band.loc.x, band.loc.y), (rule, band.size.h)),
-    };
-    Rectangle::new(origin.into(), extent.into())
 }
 
 /// What the overflow list needs drawing: everything but the pixels.
@@ -342,7 +300,47 @@ fn the_overflow_list(
     }
 }
 
+/// Where one slot's 48 × 48 target sits on the screen.
+///
+/// **Centred across the bar's thickness, `along` down its edge** — the rule
+/// `a_letter_sits_on_the_bars_centre_line_on_every_edge` holds, written once
+/// now that two things need it: the draw that inks an initial, and the badge
+/// placement that has to agree with it exactly or a letter would sit beside its
+/// own circle.
+fn a_slot_at(
+    band: Rectangle<i32, Physical>,
+    edge: alo_dock::Edge,
+    along: i32,
+    icon: i32,
+) -> (i32, i32) {
+    let across = ((if edge.runs_across() {
+        band.size.h
+    } else {
+        band.size.w
+    }) - icon)
+        / 2;
+    if edge.runs_across() {
+        (band.loc.x + along, band.loc.y + across)
+    } else {
+        (band.loc.x + across, band.loc.y + along)
+    }
+}
+
 /// Lay `dock` out on a display of `size` and rasterise it.
+///
+/// # It takes no display scale, and that is deliberate
+///
+/// Every figure here is `alo_dock`'s logical measure used directly as a pixel:
+/// the band, the slots, the radius, the hairline and the marks are all in one
+/// space, and **none of them is scaled**. This took a `display_scale` for one
+/// commit and passed it to the radius alone, which made a dense display draw an
+/// 18 radius as 36 on a band still 76 tall. Scaling one measure of an otherwise
+/// unscaled geometry is worse than scaling none.
+///
+/// Making the Dock scale-aware is one change that moves all of them together,
+/// and `CLAUDE.md`'s rule — no figure reaches a display without passing through
+/// its scale — is kept by them sharing a conversion rather than by one of them
+/// having its own.
 ///
 /// # Errors
 /// [`RenderError::DesktopScene`] for a display `alo-dock` refuses to lay a dock
@@ -355,7 +353,6 @@ pub(crate) fn picture(
     size: (i32, i32),
     on_the_dock: &[OnTheDock],
     the_overflow: (bool, &str),
-    display_scale: u16,
     fonts: &mut FontSystem,
 ) -> Result<DockPicture, RenderError> {
     let (width, height) = size;
@@ -368,16 +365,12 @@ pub(crate) fn picture(
     let TheDocksPlaces {
         layout,
         band,
-        thickness,
+        thickness: _,
         ref places,
         ref over,
     } = standing;
     let (over, places) = (over.clone(), places.clone());
     let palette = look.palette().map_err(|_| RenderError::AccentRefused)?;
-    let measure = look.measure();
-    let rule = measure.px(2).min(thickness);
-
-    let accent = the_accent_on(layout.edge(), band, rule);
 
     // **The band and the accent are not rectangles any more.** They were two
     // `Solid`s until 2026-10-11, which is why the Dock had square corners and no
@@ -387,20 +380,47 @@ pub(crate) fn picture(
     //
     // `the_accent_on` still decides which face looks at the canvas; the surface
     // is told the edge and draws the rule on that face.
+    let icon = i32::try_from(ICON).unwrap_or(i32::MAX);
+    let badge_is = i32::try_from(GLYPH).unwrap_or(i32::MAX);
+
+    // **Where every fallback badge goes, worked out before the surface** —
+    // because a badge is drawn *into* the surface's raster, which is the only
+    // way a circle gets an edge that is not a staircase.
+    //
+    // Every application gets one today: the owner's ruling of 2026-10-11 keeps
+    // the first letter as the fallback for an application with **no usable
+    // icon**, and `alo-applications` names an icon in none of its files, so
+    // that is still every application. A real icon replaces a badge without the
+    // slot moving, because the badge **is** the artwork box.
+    let badges: Vec<Rectangle<i32, Physical>> = places
+        .each()
+        .iter()
+        .filter(|place| place.app().is_some())
+        .map(|place| {
+            let along = i32::try_from(place.from_the_start()).unwrap_or(i32::MAX);
+            let (left, top) = a_slot_at(band, layout.edge(), along, icon);
+            let inset = (icon - badge_is) / 2;
+            Rectangle::new(
+                (left + inset, top + inset).into(),
+                (badge_is, badge_is).into(),
+            )
+        })
+        .collect();
+
     let mut solids: Vec<Solid> = Vec::new();
     let surface = crate::dock_surface::surface(crate::dock_surface::ADocksSurface {
+        badges: &badges,
+        badge: palette.badge,
         panel: band,
         fill: palette.dock,
         edge: palette.edge,
         accent: palette.accent,
         against: layout.edge(),
-        accent_is: rule,
+        // Nothing: the rule across the bar is gone, and the surface keeps the
+        // parameter so that a focus outline — which *does* follow a target —
+        // has somewhere to arrive when it is built.
+        accent_is: 0,
         room: size,
-        // **The display's own scale, not the person's text size.** A radius
-        // scaled by the text would be half the size it should be on a dense
-        // screen, which `alo_dock::measures`' own header names as the usual way
-        // a figure reaches a display without passing through its scale.
-        scale: i32::from(display_scale),
     });
 
     // **One letter per application, which is what a Dock icon is today.** The
@@ -416,54 +436,47 @@ pub(crate) fn picture(
     // one thing left here is which axis *along* is, which is the same question
     // `the_band_on` above already answers for the band.
     let icon = i32::try_from(ICON).unwrap_or(i32::MAX);
-    let glyph = i32::try_from(GLYPH).unwrap_or(i32::MAX);
+    let initial = i32::try_from(alo_dock::measures::AN_INITIAL_IS).unwrap_or(i32::MAX);
     let utility = i32::try_from(A_UTILITY_GLYPH).unwrap_or(i32::MAX);
-    // **Centred across the bar, which is a rule rather than a number.** This read
-    // `MARGIN` — 8 — until 2026-10-10, and the bar is 76 thick with a 48 icon in
-    // it, so every letter sat six logical pixels above where the design puts it.
-    // The owner's ruling that day says where it goes: *the measured 48px
-    // application target centred vertically: 14px above and below.*
-    //
-    // Written as the half of what is left over rather than as 14, because the two
-    // orientations have different thicknesses — the measured 76 across, the
-    // measured 70 down a side, where the same rule gives 11 — and a constant
-    // taken off one frame would be wrong on the other. `CLAUDE.md` names this as
-    // one of the three honest kinds of number: a rule that was never a number.
-    //
-    // `MARGIN` stays where it belongs, which is the room at the bar's **ends**:
-    // `alo_dock::Places` has already put it into `from_the_start`. The two were
-    // one number while the thickness was `MARGIN + ICON + MARGIN`, and that is
-    // what let this line look derived for as long as it did.
-    let across = ((thickness - icon) / 2).max(0);
     let mut inked: Vec<Inked> = Vec::new();
     for place in places.each() {
         let along_the_bar = i32::try_from(place.from_the_start()).unwrap_or(i32::MAX);
         // The icon's own box, `ICON` square: `from_the_start` along the bar's
         // edge, and centred across its thickness.
-        let (left, top) = if layout.edge().runs_across() {
-            (band.loc.x + along_the_bar, band.loc.y + across)
-        } else {
-            (band.loc.x + across, band.loc.y + along_the_bar)
-        };
-        // **The letter is inked on the dock's own colour**, so the box it
-        // arrives in disappears into the band rather than drawing a tile the
-        // design does not ask for. `docs/design/the-alo-dock.md`: a control at
-        // rest contributes artwork and nothing else.
-        // **An application's letter, or the control's mark.** The slot is the
-        // same size either way — the owner's ruling of 2026-10-10 makes the
-        // overflow one application slot — and what is drawn in it is not: a
-        // letter would read as an application a person could open, and there is
+        let (left, top) = a_slot_at(band, layout.edge(), along_the_bar, icon);
+        // **An application's initial on its badge, or the control's mark on the
+        // bar.** The slot is the same size either way — ADR 0101 makes the
+        // overflow one application slot — and what is in it is not: a letter
+        // there would read as an application a person could open, and there is
         // no application called *more*.
         //
-        // `A_UTILITY_GLYPH` rather than `GLYPH`, which is the owner's own
-        // distinction: *utility glyphs — search, overflow — 20 to 24, in the
-        // same 48 target.*
+        // **The ground each is inked on is the thing that matters here.**
+        // `painted_text::centred` returns an **opaque** box filled with the
+        // ground it is given, so the ground is what the box paints over the
+        // surface. An initial given the Dock's own colour paints a
+        // dock-coloured tile **over its own badge** — which is what happened
+        // for one commit: the circles were in the raster, 210 of their ~1 800
+        // pixels survived as a fringe, and the picture showed bare letters
+        // exactly as the owner said it must not.
+        //
+        // So the initial's ground is the badge's and the control's is the
+        // Dock's, and they are read together rather than defaulted.
+        //
+        // The sizes are the owner's two: `AN_INITIAL_IS` — fourteen, half its
+        // badge — and `A_UTILITY_GLYPH` for a mark that is not artwork.
         let mut one_character = [0_u8; 4];
-        let (mark, size) = match place.app() {
-            Some(app) => (app.first_letter(), glyph),
+        let (mark, size, ground, ink) = match place.app() {
+            Some(app) => (
+                app.first_letter(),
+                initial,
+                palette.badge,
+                palette.badge_ink,
+            ),
             None => (
                 &*THE_OVERFLOWS_MARK.encode_utf8(&mut one_character),
                 utility,
+                palette.dock,
+                palette.ink,
             ),
         };
         let shaped = crate::painted_text::centred(
@@ -485,8 +498,8 @@ pub(crate) fn picture(
             // sentence on this machine does. `alo_dock::Room::a_line_at` is
             // what sizes it, and it still takes a `TextScale`.
             Metrics::new(size as f32, size as f32),
-            palette.dock,
-            palette.ink,
+            ground,
+            ink,
         );
         // **The mark that says this application has a window open.**
         //
@@ -523,10 +536,17 @@ pub(crate) fn picture(
                 colour: palette.ink,
             });
         }
-        // Centred down the icon as well as across it. `centred` does the one
-        // axis it can know about; this is the other.
-        let down = top + ((icon - shaped.height) / 2).max(0);
-        if let Some(letter) = shaped.placed(left, down, height) {
+        // **Centred on the letter's own rendered bounds, both ways.**
+        //
+        // `centred` now hands back a box trimmed to the ink actually in it, so
+        // these two lines are optical centring rather than box centring: `F`,
+        // `M` and `B` are three different widths and three different heights,
+        // and each one's own ink is the only thing that says where its middle
+        // is. Centring the *text box* instead put every letter where a Latin
+        // capital with a full descender would have been.
+        let across_by = ((icon - shaped.width_of_box) / 2).max(0);
+        let down_by = ((icon - shaped.height) / 2).max(0);
+        if let Some(letter) = shaped.placed(left + across_by, top + down_by, height) {
             inked.push(letter);
         }
     }
@@ -560,7 +580,6 @@ pub(crate) fn picture(
         size,
         layout,
         band,
-        accent,
         solids,
         inked,
         over,
@@ -614,187 +633,15 @@ mod tests {
 
     use super::*;
     use crate::desktop_testing::{an_appearance, noon_look};
-    use crate::where_the_dock_is::the_band_on;
-
-    /// The four bytes the Dock's surface drew at this point on the screen.
-    ///
-    /// **The band and the accent stopped being `Solid`s on 2026-10-11.** They
-    /// are partial coverage now — a radius and a shadow — so the questions those
-    /// tests used to ask of a rectangle are asked of the raster instead. This is
-    /// the one place that turns a point on the screen into the pixel the surface
-    /// put there.
-    fn surface_at(drawn: &DockPicture, x: i32, y: i32) -> Option<[u8; 4]> {
-        let surface = drawn.surface.as_ref()?;
-        let (dx, dy) = (x - surface.area.loc.x, y - surface.area.loc.y);
-        if dx < 0 || dy < 0 || dx >= surface.area.size.w || dy >= surface.area.size.h {
-            return None;
-        }
-        let at = ((dy as usize) * (surface.area.size.w as usize) + (dx as usize)) * 4;
-        let bytes = surface.pixels.get(at..at + 4)?;
-        let mut out = [0_u8; 4];
-        out.copy_from_slice(bytes);
-        Some(out)
-    }
-
-    /// A display that draws one physical pixel for each logical one.
-    ///
-    /// Named rather than written as `100` at twenty call sites, because the
-    /// number means *this display's scale* and a bare hundred beside a size and
-    /// a text percentage is three numbers nobody can tell apart.
-    const ONE_TO_ONE: u16 = 100;
+    use alo_appearance::TextScale;
+    use alo_dock::measures::{FLOATING_ABOVE_THE_EDGE, MARGIN};
+    use alo_dock::{Room, Screen};
+    use alo_strings::Direction;
 
     /// A Dock whose overflow list a person has not opened, which is every frame
     /// but the one after they press the control.
     const fn closed() -> (bool, &'static str) {
         (false, "")
-    }
-    use alo_appearance::{Accent, TextScale};
-    use alo_dock::measures::{FLOATING_ABOVE_THE_EDGE, MARGIN};
-    use alo_dock::{Room, Screen};
-    use alo_strings::Direction;
-
-    /// Whether `inner` lies wholly inside `outer`.
-    fn inside(inner: Rectangle<i32, Physical>, outer: Rectangle<i32, Physical>) -> bool {
-        outer.intersection(inner) == Some(inner)
-    }
-
-    /// **The accent lies on the band's inside edge, on all four edges.**
-    ///
-    /// It did not. It was the band's corner plus `(bar_width, rule)` whatever the
-    /// edge, so on a dock down the left of the screen it drew a line 176 pixels
-    /// long across the canvas beside a bar 70 wide, and on a dock along the top it
-    /// drew on the band's outer edge rather than the one facing the canvas.
-    ///
-    /// **Found in a drawn frame rather than here**, which is the point worth
-    /// keeping: two tests already covered the two halves — one asked
-    /// `the_band_on` about four edges and never looked at the accent, the other
-    /// looked at the accent on one edge — and the defect lived in the gap between
-    /// their subjects. Each was correct.
-    ///
-    /// Four claims, because each catches a different way of being wrong: the
-    /// accent is **inside** the band (length and axis), it is `rule` across and
-    /// the band's **whole length** along (not a shorter or longer line), and it is
-    /// flush with the **inside** face (not the outer one, which `inside` alone
-    /// would allow).
-    #[test]
-    fn the_accent_lies_along_the_bands_inside_face_on_every_edge() {
-        use alo_dock::Edge;
-        let rule = 2;
-        let band_for = |edge| the_band_on(edge, (1920, 1080), 600, 70, 8);
-
-        for edge in Edge::EVERY {
-            let band = band_for(edge);
-            let accent = the_accent_on(edge, band, rule);
-
-            assert!(
-                inside(accent, band),
-                "{edge:?}: the accent at {accent:?} leaves the band at {band:?}, so it draws on                  the canvas"
-            );
-
-            // `rule` across the thickness, the band's whole length along it.
-            let (across, along, band_along) = if edge.runs_across() {
-                (accent.size.h, accent.size.w, band.size.w)
-            } else {
-                (accent.size.w, accent.size.h, band.size.h)
-            };
-            assert_eq!(across, rule, "{edge:?}: the accent is not {rule} across");
-            assert_eq!(
-                along, band_along,
-                "{edge:?}: the accent runs {along} along a band that runs {band_along}"
-            );
-
-            // Flush with the face that looks at the canvas, which is the far end
-            // of the thickness from the screen edge the bar is lifted off.
-            let (accent_edge, band_inside) = match edge {
-                Edge::Bottom => (accent.loc.y, band.loc.y),
-                Edge::Top => (accent.loc.y + accent.size.h, band.loc.y + band.size.h),
-                Edge::Left => (accent.loc.x + accent.size.w, band.loc.x + band.size.w),
-                Edge::Right => (accent.loc.x, band.loc.x),
-            };
-            assert_eq!(
-                accent_edge, band_inside,
-                "{edge:?}: the accent is not on the face that looks at the canvas"
-            );
-        }
-    }
-
-    /// **And the drawn picture's accent is that one**, which is the claim the two
-    /// tests above cannot make.
-    ///
-    /// They ask `the_accent_on` directly, so they say *this helper is right*.
-    /// Mutation-tested on 2026-10-10 by putting the original fault back in
-    /// `picture` — `Rectangle::new(band.loc, (bar_width, rule).into())` — and
-    /// **all fourteen tests passed**, the two new ones included. A correct helper
-    /// nothing calls is the fault class `CLAUDE.md` names first: *a check that
-    /// stands in for the thing is not the thing.*
-    ///
-    /// So this one draws, on all four edges, and asks the picture.
-    #[test]
-    fn the_drawn_accent_is_the_one_the_edge_asks_for() {
-        use alo_dock::Edge;
-        let look = noon_look(&an_appearance(), Direction::LeftToRight);
-        let held = on_the_dock(4);
-        let size = (1920, 1080);
-
-        for edge in Edge::EVERY {
-            let mut dock = Dock::shipped();
-            dock.set_edge(edge);
-            let drawn =
-                picture(&dock, look, size, &held, closed(), ONE_TO_ONE, &mut fonts()).unwrap();
-
-            assert_eq!(
-                drawn.accent,
-                the_accent_on(
-                    edge,
-                    drawn.band,
-                    drawn.accent.size.w.min(drawn.accent.size.h)
-                ),
-                "{edge:?}: the picture's accent is not the one this edge asks for"
-            );
-            assert!(
-                inside(drawn.accent, drawn.band),
-                "{edge:?}: the drawn accent at {:?} leaves the band at {:?} and draws on the \
-                 canvas — which is what it did on the left edge until 2026-10-10, a line 176 \
-                 long beside a bar 70 wide",
-                drawn.accent,
-                drawn.band
-            );
-            // And it is painted, not merely computed: the pixel a person sees.
-            let middle = drawn.accent.loc.x + drawn.accent.size.w / 2;
-            let into = drawn.accent.loc.y + drawn.accent.size.h / 2;
-            let found = surface_at(&drawn, middle, into);
-            assert!(
-                found.is_some(),
-                "{edge:?}: the accent's place is outside the surface raster"
-            );
-            assert_eq!(
-                found.map(|[_, _, _, alpha]| alpha),
-                Some(255),
-                "{edge:?}: nothing is drawn at the accent's place"
-            );
-        }
-    }
-
-    /// **No two edges put the accent in the same place either.**
-    ///
-    /// The companion to `the_four_edges_are_four_different_places`, and for the
-    /// same reason: four arms that each satisfy the checks above could be two arms
-    /// written twice, and a copied arm with its edge not changed is how that
-    /// happens.
-    #[test]
-    fn the_four_edges_are_four_different_accents() {
-        use alo_dock::Edge;
-        let mut seen: Vec<Rectangle<i32, Physical>> = Vec::new();
-        for edge in Edge::EVERY {
-            let band = the_band_on(edge, (1920, 1080), 600, 70, 8);
-            let accent = the_accent_on(edge, band, 2);
-            assert!(
-                !seen.contains(&accent),
-                "{edge:?} puts the accent exactly where an earlier edge does: {accent:?}"
-            );
-            seen.push(accent);
-        }
-        assert_eq!(seen.len(), 4);
     }
 
     /// **The dock is a bar: centred, clear of the bottom edge, and as wide as
@@ -806,16 +653,8 @@ mod tests {
         let mut whichever_way_read: Option<Rectangle<i32, Physical>> = None;
         for reading in [Direction::LeftToRight, Direction::RightToLeft] {
             let look = noon_look(&an_appearance(), reading);
-            let drawn = picture(
-                &dock,
-                look,
-                size,
-                &on_the_dock(4),
-                closed(),
-                ONE_TO_ONE,
-                &mut fonts(),
-            )
-            .unwrap();
+            let drawn =
+                picture(&dock, look, size, &on_the_dock(4), closed(), &mut fonts()).unwrap();
             let layout = dock.layout_on(Screen::of(1920, 1080).unwrap());
             assert_eq!(drawn.layout, layout);
 
@@ -839,9 +678,6 @@ mod tests {
             let left = drawn.band.loc.x;
             let right = 1920 - (drawn.band.loc.x + drawn.band.size.w);
             assert!((left - right).abs() <= 1, "{reading:?}: {left} vs {right}");
-
-            assert!(inside(drawn.accent, drawn.band), "{reading:?}");
-            assert_eq!(drawn.accent.loc.y, drawn.band.loc.y, "the inside edge");
 
             match whichever_way_read {
                 None => whichever_way_read = Some(drawn.band),
@@ -867,7 +703,6 @@ mod tests {
                 (1920, 1080),
                 &on_the_dock(holding),
                 closed(),
-                ONE_TO_ONE,
                 &mut fonts(),
             )
             .unwrap();
@@ -908,7 +743,6 @@ mod tests {
             (1366, 768),
             &held,
             closed(),
-            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -975,8 +809,7 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn =
-                picture(&dock, look, size, &held, closed(), ONE_TO_ONE, &mut fonts()).unwrap();
+            let drawn = picture(&dock, look, size, &held, closed(), &mut fonts()).unwrap();
 
             // Within the edge it runs along, less the room either side.
             let (ran, edge_length) = if edge.runs_across() {
@@ -1065,7 +898,6 @@ mod tests {
             (1366, 768),
             &crowded,
             closed(),
-            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1075,7 +907,6 @@ mod tests {
             (1366, 768),
             &crowded,
             open,
-            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1102,7 +933,6 @@ mod tests {
             (1920, 1080),
             &on_the_dock(4),
             open,
-            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1112,7 +942,6 @@ mod tests {
             (1920, 1080),
             &on_the_dock(4),
             closed(),
-            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1147,7 +976,6 @@ mod tests {
                 size,
                 &crowded,
                 (true, "More open apps"),
-                ONE_TO_ONE,
                 &mut fonts(),
             )
             .unwrap();
@@ -1199,32 +1027,14 @@ mod tests {
             dock.set_edge(edge);
 
             // Three with windows open.
-            let open = picture(
-                &dock,
-                look,
-                size,
-                &on_the_dock(3),
-                closed(),
-                ONE_TO_ONE,
-                &mut fonts(),
-            )
-            .unwrap();
+            let open = picture(&dock, look, size, &on_the_dock(3), closed(), &mut fonts()).unwrap();
             // The same three, pinned and closed.
             let mut holding = alo_dock::Holding::nothing();
             for number in 0..3 {
                 holding.pin(alo_dock::AppId::named(&format!("app-{number}")).unwrap());
             }
             let pinned = holding.showing(&alo_dock::Windows::none());
-            let shut = picture(
-                &dock,
-                look,
-                size,
-                &pinned,
-                closed(),
-                ONE_TO_ONE,
-                &mut fonts(),
-            )
-            .unwrap();
+            let shut = picture(&dock, look, size, &pinned, closed(), &mut fonts()).unwrap();
 
             let wide = i32::try_from(alo_dock::measures::AN_OPEN_MARK_IS_WIDE).unwrap();
             let tall = i32::try_from(alo_dock::measures::A_RUNNING_MARK_IS_TALL).unwrap();
@@ -1270,7 +1080,6 @@ mod tests {
             (1920, 1080),
             &on_the_dock(3),
             closed(),
-            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1312,6 +1121,114 @@ mod tests {
         }
     }
 
+    /// **Every initial sits on a complete circle**, in both schemes.
+    ///
+    /// The owner's ruling of 2026-10-11 — *draw a complete circle … render only
+    /// the letter's foreground over the badge, preserving the circle
+    /// underneath* — asked after a drawing in which each badge was two
+    /// crescents, above and below its letter.
+    ///
+    /// **A count is the wrong test for this and was the first one written.** It
+    /// counted badge-coloured pixels and passed on a raster whose circles were
+    /// all there and all about to be covered; tightened to count *after* the
+    /// letters, it still only said *enough pixels*, which a crescent pair also
+    /// satisfies. What the owner asked for is that the circle is **whole**, so
+    /// this walks each badge's circumference and asks every point on it.
+    #[test]
+    fn every_initial_sits_on_a_complete_circle_in_both_schemes() {
+        use alo_appearance::{Following, Scheme};
+        for scheme in [Scheme::Light, Scheme::Dark] {
+            let mut always = an_appearance();
+            always.follow(Following::from(scheme));
+            let look = noon_look(&always, Direction::LeftToRight);
+            assert_eq!(
+                look.scheme(),
+                scheme,
+                "the premise: this look is {scheme:?}"
+            );
+
+            let drawn = picture(
+                &Dock::shipped(),
+                look,
+                (1920, 1080),
+                &on_the_dock(3),
+                closed(),
+                &mut fonts(),
+            )
+            .unwrap();
+            let surface = drawn.surface.as_ref().expect("the Dock has a surface");
+            let wanted = look.palette().unwrap().badge;
+
+            // The surface with every letter drawn over it, as `crate::painted`
+            // composes them — because the fault being forbidden is the letters
+            // covering the circles.
+            let mut composed = surface.pixels.clone();
+            let (width, height) = (surface.area.size.w, surface.area.size.h);
+            for ink in &drawn.inked {
+                for (n, pixel) in ink.pixels.iter().enumerate() {
+                    let wide = ink.area.size.w.max(1);
+                    let x = ink.area.loc.x + (n as i32 % wide) - surface.area.loc.x;
+                    let y = ink.area.loc.y + (n as i32 / wide) - surface.area.loc.y;
+                    if x < 0 || y < 0 || x >= width || y >= height {
+                        continue;
+                    }
+                    let at = ((y as usize) * (width as usize) + (x as usize)) * 4;
+                    if let Some(into) = composed.get_mut(at..at + 3) {
+                        into.copy_from_slice(pixel);
+                    }
+                }
+            }
+            let at = |x: i32, y: i32| -> Option<[u8; 3]> {
+                if x < 0 || y < 0 || x >= width || y >= height {
+                    return None;
+                }
+                let n = ((y as usize) * (width as usize) + (x as usize)) * 4;
+                let bytes = composed.get(n..n + 3)?;
+                let mut out = [0_u8; 3];
+                out.copy_from_slice(bytes);
+                Some(out)
+            };
+
+            // Each badge's own circumference, eight points round it, just
+            // inside the edge so the anti-aliased rim is not what is sampled.
+            let badge_is = i32::try_from(GLYPH).unwrap();
+            let icon = i32::try_from(ICON).unwrap();
+            let mut circles = 0;
+            for place in drawn.standing.places.each() {
+                if place.app().is_none() {
+                    continue;
+                }
+                let along = i32::try_from(place.from_the_start()).unwrap();
+                let (left, top) = a_slot_at(drawn.band, drawn.layout.edge(), along, icon);
+                let inset = (icon - badge_is) / 2;
+                let (cx, cy) = (
+                    left + inset + badge_is / 2 - surface.area.loc.x,
+                    top + inset + badge_is / 2 - surface.area.loc.y,
+                );
+                let r = badge_is / 2 - 3;
+                for (dx, dy) in [
+                    (r, 0),
+                    (-r, 0),
+                    (0, r),
+                    (0, -r),
+                    (r * 7 / 10, r * 7 / 10),
+                    (-r * 7 / 10, r * 7 / 10),
+                    (r * 7 / 10, -r * 7 / 10),
+                    (-r * 7 / 10, -r * 7 / 10),
+                ] {
+                    assert_eq!(
+                        at(cx + dx, cy + dy),
+                        Some(wanted),
+                        "{scheme:?}: the badge at ({cx}, {cy}) is not its own colour {dx} across \
+                         and {dy} down — the circle is not complete there"
+                    );
+                }
+                circles += 1;
+            }
+            assert_eq!(circles, 3, "{scheme:?}: the premise, three badges");
+        }
+    }
+
     /// **A bar with room for everything has no control and nothing over.**
     ///
     /// The companion to the test above, and the premise that keeps it honest: if
@@ -1327,7 +1244,6 @@ mod tests {
             (1920, 1080),
             &held,
             closed(),
-            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1366,7 +1282,6 @@ mod tests {
             (1366, 768),
             &on_the_dock(4),
             closed(),
-            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1376,7 +1291,6 @@ mod tests {
             (3840, 2160),
             &on_the_dock(4),
             closed(),
-            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1386,7 +1300,6 @@ mod tests {
             (1080, 1920),
             &on_the_dock(4),
             closed(),
-            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1415,43 +1328,6 @@ mod tests {
         }
     }
 
-    /// **The accent is `alo-appearance`'s**: the rule along the band's inside
-    /// edge is exactly the accent the person chose, for the scheme on screen,
-    /// and the band is never deep teal.
-    #[test]
-    fn the_dock_carries_the_persons_accent() {
-        for accent in Accent::ALL {
-            let mut appearance = an_appearance();
-            appearance.set_accent(accent);
-            let look = noon_look(&appearance, Direction::LeftToRight);
-            let drawn = picture(
-                &Dock::shipped(),
-                look,
-                (1920, 1080),
-                &on_the_dock(4),
-                closed(),
-                ONE_TO_ONE,
-                &mut fonts(),
-            )
-            .unwrap();
-            // **Read out of the surface's pixels, not found among the
-            // rectangles.** The accent is a rule inside a rounded, shadowed
-            // panel since 2026-10-11, so the question *is the person's colour
-            // on the face that looks at the canvas* is a question about a
-            // pixel.
-            let middle = drawn.accent.loc.x + drawn.accent.size.w / 2;
-            let into = drawn.accent.loc.y + drawn.accent.size.h / 2;
-            let [red, green, blue, alpha] =
-                surface_at(&drawn, middle, into).expect("the accent is inside the surface");
-            assert_eq!(
-                [red, green, blue],
-                crate::desktop_look::rgb(accent.on(look.scheme())),
-                "the face looking at the canvas is not the person's accent"
-            );
-            assert_eq!(alpha, 255, "the accent is drawn through");
-        }
-    }
-
     /// **A display `alo-dock` refuses is refused**, and so is one larger than any
     /// this dock is laid out for, rather than a dock drawn over somebody's whole
     /// screen.
@@ -1467,7 +1343,6 @@ mod tests {
                         size,
                         &on_the_dock(4),
                         closed(),
-                        ONE_TO_ONE,
                         &mut fonts()
                     ),
                     Err(RenderError::DesktopScene)
@@ -1488,16 +1363,7 @@ mod tests {
         let dock = Dock::shipped();
         let look = noon_look(&an_appearance(), Direction::LeftToRight);
         let held = on_the_dock(3);
-        let drawn = picture(
-            &dock,
-            look,
-            (1920, 1080),
-            &held,
-            closed(),
-            ONE_TO_ONE,
-            &mut fonts(),
-        )
-        .unwrap();
+        let drawn = picture(&dock, look, (1920, 1080), &held, closed(), &mut fonts()).unwrap();
 
         assert_eq!(
             drawn.inked.len(),
@@ -1557,8 +1423,7 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn =
-                picture(&dock, look, size, &held, closed(), ONE_TO_ONE, &mut fonts()).unwrap();
+            let drawn = picture(&dock, look, size, &held, closed(), &mut fonts()).unwrap();
             assert_eq!(drawn.inked.len(), held.len(), "{edge:?}");
 
             // The band's centre across its thickness, and each letter's.
@@ -1606,7 +1471,6 @@ mod tests {
             (1920, 1080),
             &[],
             closed(),
-            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1646,7 +1510,6 @@ mod tests {
             (1920, 1080),
             &held,
             closed(),
-            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();

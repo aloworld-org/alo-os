@@ -328,19 +328,13 @@ fn the_whole_desktop_turns_dark_when_alo_appearance_says_so() {
             assert_eq!(window.solids[0].colour, rgb(ink.colour()), "{scheme:?}");
             assert_eq!(window.solids[1].colour, rgb(ground.colour()), "{scheme:?}");
         }
-        // The accent is a rule inside the surface raster now, so this reads the
-        // pixel at its middle rather than finding a rectangle.
-        let drawn = picture.dock.as_ref().unwrap();
-        let surface = drawn.surface.as_ref().unwrap();
-        let x = drawn.accent.loc.x + drawn.accent.size.w / 2 - surface.area.loc.x;
-        let y = drawn.accent.loc.y + drawn.accent.size.h / 2 - surface.area.loc.y;
-        let at = ((y as usize) * (surface.area.size.w as usize) + (x as usize)) * 4;
-        let bytes = surface.pixels.get(at..at + 3).unwrap();
-        assert_eq!(
-            bytes,
-            rgb(appearance.accent_at(now)).as_slice(),
-            "{scheme:?}"
-        );
+        // **No accent on the Dock any more.** The owner removed the rule across
+        // the bar on 2026-10-11 — *running and focused indicators belong to
+        // individual application slots* — so there is nothing here to carry the
+        // person's colour, and the assertion that there was has gone with it.
+        // What each scheme's grounds are is still checked above.
+        let _ = &appearance;
+        let _ = now;
     }
 }
 

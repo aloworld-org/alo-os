@@ -125,6 +125,13 @@ const NOT_READ_BY_A_PERSON: &[(&str, &str, &str, &str)] = &[
     (
         "alo-dock",
         "measures.rs",
+        "the initial in a fallback badge is no longer half the badge",
+        "the message of a `const` assertion, which is the strongest case on this list: a const assertion that fires stops the compiler, so no binary exists and the sentence cannot reach a running machine at all \
+         — only the developer whose build it broke. This one holds the owner's ruling of 2026-10-11 that an initial is 14 inside a 28 badge, and that the badge is the artwork box so a real icon replaces it without the slot moving",
+    ),
+    (
+        "alo-dock",
+        "measures.rs",
         "the Dock is no longer 64 logical pixels thick",
         "the message of a `const` assertion, which is the strongest case on this list: a const assertion that fires stops the compiler, so no binary exists and the sentence cannot reach a running machine at all \
          — only the developer whose build it broke. This one names the owner's own figure for the Dock's thickness, held beside the three it is built from",
