@@ -160,6 +160,27 @@ pub enum Wrong {
         /// What it says wants it.
         wanted: Vec<String>,
     },
+    /// A unit that names which graphics card to open.
+    ///
+    /// **A card number is not a fact about a machine.** Firmware that hands
+    /// over a framebuffer gives `simpledrm` minor 0, so the real GPU lands on
+    /// minor 1 — measured on a written disk on 2026-10-05, where `logind` had
+    /// put `card1` on `seat0` and a unit asking for `card0` was answered *No
+    /// such file or directory*. Most UEFI machines hand over a framebuffer, so
+    /// such a unit is right on the machine somebody measured and wrong on the
+    /// fleet.
+    #[error(
+        "{unit} names the graphics card to open as `{card}`, and a card number is not a fact \
+         about a machine: firmware handing over a framebuffer makes the real GPU minor 1, so \
+         this is right where it was measured and wrong on most machines. Ask the seat — \
+         `alo_shell::the_card_to_open`"
+    )]
+    AUnitNamesACardNumber {
+        /// The unit that names one.
+        unit: String,
+        /// The card it names.
+        card: String,
+    },
     /// The screen's service holds a capability.
     ///
     /// **It runs as `root` and it is the only one of the five that does**, so

@@ -296,6 +296,8 @@ mod software_scanout;
 pub mod status_items;
 mod status_row;
 mod surfaces;
+#[cfg(target_os = "linux")]
+mod the_card_the_seat_holds;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;
@@ -539,6 +541,10 @@ pub use sign_in_password::PASSWORD_BYTES;
 pub use sign_in_raster::SignInLook;
 pub use sign_in_screen::{SignInScreen, SignInShows, Signing};
 pub use socket::SocketError;
+/// Which card to open, asked of the login seat rather than guessed at — the
+/// one answer both the greeter and the desktop use.
+#[cfg(target_os = "linux")]
+pub use the_card_the_seat_holds::{the_card_the_seat_holds, the_card_to_open};
 pub use their_displays::{THE_SIZES_THIS_COMPOSITOR_DRAWS, TheirDisplays};
 pub use top_controls_region::the_top_controls;
 pub use window_command::WindowCommandError;

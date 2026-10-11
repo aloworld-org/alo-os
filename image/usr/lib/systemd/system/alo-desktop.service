@@ -57,24 +57,25 @@ User=alo
 TTYPath=/dev/tty1
 PAMName=alo-desktop
 
-# **Which card, and this line is wrong on most machines.** Said plainly because
-# it is about to cost somebody an afternoon otherwise.
+# **No card is named here, and one used to be.**
 #
-# `alo-desktop` requires `ALO_DISPLAY` and refuses to start without it. The
-# greeter required it too until 2026-10-05, when a written disk answered *No
-# such file or directory*: firmware that hands over a framebuffer gives
-# `simpledrm` minor 0, so the real GPU is minor 1, and `logind` had put `card1`
-# on `seat0` while the unit asked for `card0`. **Most UEFI machines hand over a
-# framebuffer, so most machines fail this way.**
+# This read `Environment=ALO_DISPLAY=/dev/dri/card0` under a comment saying
+# that line is wrong on most machines — firmware that hands over a framebuffer
+# gives `simpledrm` minor 0, so the real GPU is minor 1, and on 2026-10-05 a
+# written disk answered *No such file or directory* when the greeter's unit
+# made the same assumption. **Most UEFI machines hand over a framebuffer.**
 #
-# The greeter's fix was to stop setting it and ask the seat for the device udev
-# marks as the boot VGA. `alo-desktop` has not had that fix — it is
-# `crates/alo-desktop`, which is another lane's, and the change is theirs to
-# make with the greeter's code in front of them. Until then this line is what
-# lets the unit start at all, and it is correct only where there is one card:
-# a virtual machine with `virtio-gpu`, which is where this unit is first
-# measured, and a machine whose firmware hands over nothing.
-Environment=ALO_DISPLAY=/dev/dri/card0
+# It was left in because the fix lived in `crates/alo-desktop`, another lane's
+# crate. That was a default chosen in the knowledge that it is usually wrong,
+# documented rather than fixed — which is not what `docs/quirks.md` is for: a
+# quirk is reality disagreeing with a specification, not a choice we made
+# against the fleet to suit the one machine it was measured on.
+#
+# `alo-desktop` now asks the seat, through `alo_shell::the_card_to_open` —
+# the greeter's own answer, moved into the crate they both already depend on
+# so that there is one of it rather than two. `ALO_DISPLAY` is still honoured
+# where somebody sets it, because it is a public configuration key; nothing in
+# this image sets it.
 Environment=ALO_KEYBOARD=gb
 
 # The socket this person's clients connect to goes in a directory systemd makes

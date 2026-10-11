@@ -151,6 +151,7 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_person_has_a_home_of_their_own(image, &mut wrong);
     nothing_else_takes_the_shells_screen(image, &mut wrong);
     the_desktop_is_the_persons(image, &mut wrong);
+    no_unit_names_a_card_number(image, &mut wrong);
     the_desktop_lives_and_dies_with_its_session(image, &mut wrong);
     the_logins_are_the_ones_this_image_makes(image, &mut wrong);
     the_build_holds_every_login_to_its_number(image, &mut wrong);
@@ -1037,6 +1038,36 @@ fn the_desktop_is_the_persons(image: &Image, wrong: &mut Vec<Wrong>) {
     }
 }
 
+/// **No unit names a card number**, because a card number is not a fact about
+/// a machine.
+///
+/// Firmware that hands over a framebuffer gives `simpledrm` minor 0, so the
+/// real GPU lands on minor 1 — measured on a written disk on 2026-10-05, where
+/// `logind` had put `card1` on `seat0` and a unit asking for `card0` was
+/// answered *No such file or directory*. **Most UEFI machines hand over a
+/// framebuffer**, so a unit that names `card0` is a unit that is wrong on most
+/// of the fleet and right on the one machine somebody measured.
+///
+/// Both units carried such a line at different times, and both were defended
+/// in a comment rather than fixed. The answer is
+/// `alo_shell::the_card_to_open`, which asks the seat for the device udev
+/// marks as the boot VGA; `ALO_DISPLAY` stays a public configuration key that
+/// nothing in this image sets.
+fn no_unit_names_a_card_number(image: &Image, wrong: &mut Vec<Wrong>) {
+    for unit in [image.desktop(), image.screen()] {
+        let named = unit
+            .environment()
+            .into_iter()
+            .find_map(|line| line.strip_prefix("ALO_DISPLAY="));
+        if let Some(card) = named {
+            wrong.push(Wrong::AUnitNamesACardNumber {
+                unit: unit.called().to_owned(),
+                card: card.to_owned(),
+            });
+        }
+    }
+}
+
 /// **A desktop starts with a session and ends with it, and both are checked.**
 ///
 /// One direction is not enough and the two fail differently. `WantedBy=` with no
@@ -1488,6 +1519,51 @@ mod tests {
                 .any(|it| matches!(it, Wrong::ThePersonsHomeIsNotTheirs { .. })),
             "{wrong:?}"
         );
+    }
+
+    /// **A unit naming a card number is caught.**
+    ///
+    /// This unit shipped `ALO_DISPLAY=/dev/dri/card0` for a day, under a
+    /// comment saying the line is wrong on most machines. A default chosen in
+    /// the knowledge that it is usually wrong is a bug, and writing the
+    /// knowledge down beside it does not make it a quirk.
+    #[test]
+    fn a_unit_that_names_which_card_to_open_is_caught() {
+        let root = a_copy_of_the_image("named-card");
+        edited(
+            &root,
+            THE_DESKTOPS_UNIT,
+            "Environment=ALO_KEYBOARD=gb",
+            "Environment=ALO_DISPLAY=/dev/dri/card0\nEnvironment=ALO_KEYBOARD=gb",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::AUnitNamesACardNumber { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And neither shipped unit names one**, which is the half saying the
+    /// check above is about something real. Both are asked, because both open
+    /// a card and the greeter's was wrong first.
+    #[test]
+    fn neither_the_desktop_nor_the_greeter_names_a_card() {
+        let image = image_at(Path::new(crate::THE_IMAGE));
+
+        for unit in [image.desktop(), image.screen()] {
+            assert!(
+                !unit
+                    .environment()
+                    .iter()
+                    .any(|line| line.starts_with("ALO_DISPLAY=")),
+                "{} names a card",
+                unit.called()
+            );
+        }
     }
 
     /// **A getty left to take the shell's screen is caught.**

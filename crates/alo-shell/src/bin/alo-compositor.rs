@@ -183,35 +183,21 @@ mod running {
     /// Read the three things a machine differs by, and systemd's own directory.
     fn what_this_machine_is() -> Result<Said, String> {
         Ok(Said {
-            display: match std::env::var("ALO_DISPLAY") {
-                Ok(set) => PathBuf::from(set),
-                Err(_) => the_card_the_seat_holds()?,
-            },
+            // **The same answer the desktop uses**, which is the point of its
+            // having moved. This held the match and the seat question itself
+            // until 2026-10-11, and `alo-desktop` meanwhile required
+            // `ALO_DISPLAY` and was given a constant that is wrong on most
+            // UEFI machines. One of the two processes that open a card knew
+            // how to find the right one. Now both ask
+            // `alo_shell::the_card_to_open`, and there is one answer to look
+            // at when a machine says there is no screen.
+            display: alo_shell::the_card_to_open()?,
             runtime: PathBuf::from(named("RUNTIME_DIRECTORY")?),
             person: named("ALO_PERSON")?
                 .parse()
                 .map_err(|_| "ALO_PERSON is not a uid".to_owned())?,
             layout: named("ALO_KEYBOARD")?,
         })
-    }
-
-    /// The card this machine's login seat holds.
-    ///
-    /// `primary_gpu` prefers the device whose PCI parent is marked
-    /// `boot_vga`, which is the firmware's own answer to *which screen is this
-    /// machine's*. **That is what excludes `simpledrm`**: a handed-over
-    /// framebuffer is a platform device with no PCI parent and no such mark, so
-    /// it cannot win even though it holds the lower minor number.
-    ///
-    /// The seat is `seat0` because that is the seat a machine boots with and the
-    /// one `logind` puts a card on. A second seat is somebody plugging in a
-    /// second keyboard and screen, which is ADR 0088's question and not this one.
-    fn the_card_the_seat_holds() -> Result<PathBuf, String> {
-        match smithay::backend::udev::primary_gpu("seat0") {
-            Ok(Some(card)) => Ok(card),
-            Ok(None) => Err("this machine's login seat holds no graphics card, so there is no screen to put a sign-in on".to_owned()),
-            Err(why) => Err(format!("this machine's login seat could not be asked what card it holds: {why}")),
-        }
     }
 
     /// One variable the unit file has to set, or the sentence saying it did not.
