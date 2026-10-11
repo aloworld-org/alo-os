@@ -40,22 +40,56 @@ use smithay::utils::{Physical, Rectangle};
 
 use crate::nested_desktop::DesktopFrame;
 
-/// Fill the fields of `frame` that only `server` can answer.
+/// What the lane worked out before the frame, which the frame then borrows.
 ///
-/// `windows` is the server's own `window_areas()` and `on_the_dock` is its
-/// `what_the_dock_holds`, **both taken by the caller** because both have to
-/// outlive the frame that borrows them — built here, they would die at this
-/// function's end. `named` is this display's name, which is what its scale is
-/// looked up by.
+/// **Taken by the caller, every one of them**, because each has to outlive the
+/// frame that borrows it — built inside
+/// [`what_only_the_server_knows`] they would die at that function's end. The
+/// lane holds them on their own lines for exactly that reason and has done
+/// since `windows` was the only one.
+///
+/// # One bundle rather than six arguments
+///
+/// It was six, and clippy's argument count is what said so. The reason is
+/// `crate::the_docks_words::TheDocksWords`' own and it is the better one: six
+/// borrowed slices in a row at two call sites is twelve chances to pass the
+/// wrong one of two that have the same type, and **`on_the_dock` and
+/// `in_more_apps` are both `&[OnTheDock]`**. Swapped, the Dock would draw the
+/// overview and *More apps* would draw the Dock — a frame that renders without
+/// complaint and is wrong in a way only somebody with a minimised-only
+/// application would ever see.
+///
+/// A struct cannot be passed in the wrong order.
+pub(crate) struct WhatTheLaneBuilt<'a> {
+    /// Where each window is, from `Server::window_areas`.
+    pub(crate) windows: &'a [Rectangle<i32, Physical>],
+    /// Who is on the Dock, from `Server::what_the_dock_holds`.
+    pub(crate) on_the_dock: &'a [alo_dock::OnTheDock],
+    /// What *More apps* lists, from `Server::what_more_apps_holds`.
+    pub(crate) in_more_apps: &'a [alo_dock::OnTheDock],
+    /// Which of the Dock's surfaces is open, from
+    /// `Server::what_the_dock_has_open`.
+    pub(crate) the_dock_has_open: &'a crate::WhatTheDockHasOpen,
+    /// What the Dock says, already said in this person's language.
+    pub(crate) the_docks_words: &'a crate::the_docks_words::TheDocksWords,
+}
+
+/// Fill the fields of `frame` that only `server` and the lane can answer.
+///
+/// `named` is this display's name, which is what its scale is looked up by.
 pub(crate) fn what_only_the_server_knows<'a>(
     frame: &mut DesktopFrame<'a>,
     server: &crate::Server,
-    windows: &'a [Rectangle<i32, Physical>],
-    on_the_dock: &'a [alo_dock::OnTheDock],
-    in_more_apps: &'a [alo_dock::OnTheDock],
-    the_docks_words: &'a crate::the_docks_words::TheDocksWords,
+    built: WhatTheLaneBuilt<'a>,
     named: &str,
 ) {
+    let WhatTheLaneBuilt {
+        windows,
+        on_the_dock,
+        in_more_apps,
+        the_dock_has_open,
+        the_docks_words,
+    } = built;
     frame.windows = windows;
     // A desktop's own state cannot know that a window has taken the whole
     // screen, and the Dock gives way to one that has.
@@ -88,7 +122,7 @@ pub(crate) fn what_only_the_server_knows<'a>(
     frame.in_more_apps = in_more_apps;
     // **Whether the overflow list is open**, which a desktop's own state cannot
     // know: it is turned over by a press, and presses reach the `Server`.
-    frame.the_overflow_is_open = server.the_overflow_is_open();
+    frame.the_dock_has_open = the_dock_has_open;
     // **And what its heading says**, said by the lane rather than by the draw.
     // This is the lane's answer and not the server's, and it is set here for the
     // reason the other five are: `direct_desktop` builds a frame at two sites,

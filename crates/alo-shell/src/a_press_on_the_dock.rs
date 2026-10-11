@@ -183,8 +183,8 @@ impl crate::Server {
 
     /// Whether the list of applications the bar had no room for is open.
     #[must_use]
-    pub(crate) const fn the_overflow_is_open(&self) -> bool {
-        self.the_overflow_is_open
+    pub(crate) const fn what_the_dock_has_open(&self) -> &crate::WhatTheDockHasOpen {
+        &self.the_dock_has_open
     }
 
     /// Let the Dock answer this press, and say whether it did.
@@ -207,7 +207,11 @@ impl crate::Server {
         match answer {
             None | Some(WhatAPressOnTheDockDoes::Nothing) => false,
             Some(WhatAPressOnTheDockDoes::TurnTheOverflowOver) => {
-                self.the_overflow_is_open = !self.the_overflow_is_open;
+                self.the_dock_has_open = if self.the_dock_has_open.is_more_apps() {
+                    crate::WhatTheDockHasOpen::Nothing
+                } else {
+                    crate::WhatTheDockHasOpen::MoreApps
+                };
                 true
             }
             Some(WhatAPressOnTheDockDoes::GoTo(app)) => {
@@ -284,8 +288,8 @@ impl crate::Server {
     /// **A press anywhere else closes it**, which is what a person expects of
     /// every list on this machine and what `docs/design/the-alo-dock.md` says of
     /// the Dock's surfaces: *Escape closes whatever Dock surface is open.*
-    pub(crate) const fn the_overflow_closes(&mut self) {
-        self.the_overflow_is_open = false;
+    pub(crate) fn the_overflow_closes(&mut self) {
+        self.the_dock_has_open = crate::WhatTheDockHasOpen::Nothing;
     }
 }
 

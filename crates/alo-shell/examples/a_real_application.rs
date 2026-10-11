@@ -257,7 +257,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 &edges,
                 &mut labels,
                 DesktopFrame {
-                    the_overflow_is_open: false,
+                    the_dock_has_open: &alo_shell::NOTHING,
                     the_docks_words: no_words(),
                     // **The Dock is told what is open, which is the chain two
                     // lanes built today.** `Server::the_windows_the_dock_sees`

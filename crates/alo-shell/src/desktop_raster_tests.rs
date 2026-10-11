@@ -52,7 +52,7 @@ fn drawn_with(
         dock,
         look,
         crate::desktop_raster::Shown {
-            the_overflow_is_open: false,
+            the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
             the_docks_words: crate::desktop_testing::no_words(),
             running: &running_shows(running, &strings),
             filling: &filling_shows(filling, &strings),
@@ -104,7 +104,7 @@ fn drawn_with_an_open_list(
         &dock,
         noon_look(&an_appearance(), reading),
         crate::desktop_raster::Shown {
-            the_overflow_is_open: true,
+            the_dock_has_open: &crate::what_the_dock_has_open::MORE_APPS,
             the_docks_words: crate::desktop_testing::no_words(),
             running: &running_shows(&RunningWindow::closed(), &strings),
             filling: &filling_shows(&FillingWindow::closed(), &strings),
@@ -146,7 +146,7 @@ fn drawn_at(
         dock,
         look,
         crate::desktop_raster::Shown {
-            the_overflow_is_open: false,
+            the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
             the_docks_words: crate::desktop_testing::no_words(),
             running: &running_shows(running, &strings),
             filling: &filling_shows(filling, &strings),
@@ -568,7 +568,7 @@ fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
             &Dock::shipped(),
             look,
             crate::desktop_raster::Shown {
-                the_overflow_is_open: false,
+                the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
                 the_docks_words: crate::desktop_testing::no_words(),
                 running: &running_shows(&running, &strings),
                 filling: &filling_shows(&filling, &strings),

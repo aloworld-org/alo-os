@@ -14,7 +14,7 @@ const THE_SERVERS_HALF: [&str; 6] = [
     "filling_the_screen",
     "display_scale",
     "on_the_dock",
-    "the_overflow_is_open",
+    "the_dock_has_open",
     "the_docks_words",
 ];
 

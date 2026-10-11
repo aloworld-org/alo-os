@@ -53,7 +53,7 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
             {
                 let dock = Dock::shipped();
                 let frame = |egress| DesktopFrame {
-                    the_overflow_is_open: false,
+                    the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
                     the_docks_words: crate::desktop_testing::no_words(),
                     in_use: &[],
                     notifications: &[],
@@ -173,7 +173,7 @@ fn a_desktop_frame_whose_indicator_was_never_told_is_refused_whole() {
     let filling = FillingWindow::closed();
     let never_told = EgressStatus::on_an_output();
     let frame = DesktopFrame {
-        the_overflow_is_open: false,
+        the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
         the_docks_words: crate::desktop_testing::no_words(),
         in_use: &[],
         notifications: &[],
@@ -223,7 +223,7 @@ fn the_record_window_sits_in_the_desktop_frame() {
         RecordOpened::Shown
     );
     let desktop = DesktopFrame {
-        the_overflow_is_open: false,
+        the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
         the_docks_words: crate::desktop_testing::no_words(),
         in_use: &[],
         notifications: &[],
@@ -285,7 +285,7 @@ fn the_frame_carries_whether_the_panel_is_revealed() {
         let mut labels = WindowControlLabels::new().unwrap();
         frame_pictures(
             DesktopFrame {
-                the_overflow_is_open: false,
+                the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
                 the_docks_words: crate::desktop_testing::no_words(),
                 in_use: &[],
                 notifications: &[],

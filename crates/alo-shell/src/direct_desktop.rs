@@ -597,6 +597,11 @@ impl LoopInput for Desk<'_> {
         // **And the longer list *More apps* shows**, for `on_the_dock`'s reason
         // exactly: the frame borrows it, so it has to outlive the frame.
         let in_more_apps = server.what_more_apps_holds(&alo_dock::Holding::nothing());
+        // **A local, for `on_the_dock`'s reason exactly.** The frame borrows
+        // which of the Dock's surfaces is open, and the borrow must not be of
+        // the `Server` — this lane calls `&mut server` again further down, to
+        // record where the Dock and the fixed controls were drawn.
+        let the_dock_has_open = server.what_the_dock_has_open().clone();
         // **Said here because the drawing path may not word a sentence**, and a
         // local for `windows`' reason exactly: the frame borrows it.
         // `tests/desktop_source.rs` holds that no `desktop_*` or `dock_*` file
@@ -609,10 +614,13 @@ impl LoopInput for Desk<'_> {
         what_only_the_server_knows(
             &mut frame,
             server,
-            &windows,
-            &on_the_dock,
-            &in_more_apps,
-            &the_docks_words,
+            crate::what_the_server_tells_a_frame::WhatTheLaneBuilt {
+                windows: &windows,
+                on_the_dock: &on_the_dock,
+                in_more_apps: &in_more_apps,
+                the_dock_has_open: &the_dock_has_open,
+                the_docks_words: &the_docks_words,
+            },
             &named,
         );
         // **Read back from the frame rather than asked again.** The scale the
@@ -677,10 +685,13 @@ impl LoopInput for Desk<'_> {
             what_only_the_server_knows(
                 &mut frame,
                 server,
-                &windows,
-                &on_the_dock,
-                &in_more_apps,
-                &the_docks_words,
+                crate::what_the_server_tells_a_frame::WhatTheLaneBuilt {
+                    windows: &windows,
+                    on_the_dock: &on_the_dock,
+                    in_more_apps: &in_more_apps,
+                    the_dock_has_open: &the_dock_has_open,
+                    the_docks_words: &the_docks_words,
+                },
                 &named,
             );
             // Read off the frame before it is given away, for the reason the

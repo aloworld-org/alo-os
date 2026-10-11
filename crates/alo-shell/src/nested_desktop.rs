@@ -114,12 +114,12 @@ pub struct DesktopFrame<'a> {
     ///
     /// Handed in for the reason the rest are: a person opened it with a press,
     /// presses reach the `Server`, and a desktop's own state cannot know. The
-    /// `Server` answers it with `the_overflow_is_open`.
+    /// `Server` answers it with `Server::what_the_dock_has_open`.
     ///
     /// **False is the ordinary frame.** A Dock with room for everything has no
     /// control to open one with, so this is only ever true on a Dock that has
     /// something behind it.
-    pub the_overflow_is_open: bool,
+    pub the_dock_has_open: &'a crate::WhatTheDockHasOpen,
     /// **How many physical pixels this display draws for one logical one**, in
     /// hundredths: 100 is one to one, 200 is a dense screen.
     ///
@@ -374,7 +374,7 @@ pub(crate) fn frame_pictures(
         desktop.dock,
         desktop.look,
         crate::desktop_raster::Shown {
-            the_overflow_is_open: desktop.the_overflow_is_open,
+            the_dock_has_open: desktop.the_dock_has_open,
             the_docks_words: desktop.the_docks_words,
             running: &running,
             filling: &filling,

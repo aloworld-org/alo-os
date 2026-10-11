@@ -219,7 +219,7 @@ struct TheOverflowIsDrawn<'a> {
 /// a top dock and the bottom one. So the width is a measurement and the side it
 /// opens toward follows the Dock's edge.
 ///
-/// **How tall it is comes from `alo_dock::overflow`**, not from here. That is the
+/// **How tall it is comes from `alo_dock::a_list_the_dock_opens`**, not from here. That is the
 /// owner's ruling of 2026-10-10 — rows at a 44 minimum, growing with the text,
 /// the panel growing past the drawn 313 and then scrolling — and this file's job
 /// is to put it where the bar is and ink the names into it.
@@ -254,7 +254,7 @@ fn the_overflow_list(
     }
     .max(1);
 
-    let panel = alo_dock::overflow::ThePanel::of(
+    let panel = alo_dock::a_list_the_dock_opens::ThePanel::of(
         over.len(),
         text,
         alo_dock::Room::pixels(u32::try_from(headroom).unwrap_or(0)),
@@ -422,7 +422,10 @@ pub(crate) fn picture(
     size: (i32, i32),
     on_the_dock: &[OnTheDock],
     in_more_apps: &[OnTheDock],
-    the_overflow: (bool, &crate::the_docks_words::TheDocksWords),
+    the_overflow: (
+        &crate::WhatTheDockHasOpen,
+        &crate::the_docks_words::TheDocksWords,
+    ),
     fonts: &mut FontSystem,
 ) -> Result<DockPicture, RenderError> {
     let (width, height) = size;
@@ -558,7 +561,7 @@ pub(crate) fn picture(
     // one thing left here is which axis *along* is, which is the same question
     // `the_band_on` above already answers for the band.
     let icon = i32::try_from(ICON).unwrap_or(i32::MAX);
-    let (the_overflow_is_open, words) = the_overflow;
+    let (the_dock_has_open, words) = the_overflow;
     let initial = i32::try_from(alo_dock::measures::AN_INITIAL_IS).unwrap_or(i32::MAX);
     let utility = i32::try_from(A_UTILITY_GLYPH).unwrap_or(i32::MAX);
     let mut inked: Vec<Inked> = Vec::new();
@@ -731,7 +734,7 @@ pub(crate) fn picture(
     // **The list the control opens, when a person has opened it.**
     //
     // Drawn last so it sits over the bar and over the canvas, which is what a
-    // list opened from a control has to do. `alo_dock::overflow::ThePanel` is
+    // list opened from a control has to do. `alo_dock::a_list_the_dock_opens::ThePanel` is
     // the layout — rows at the floor every control is held to, growing with the
     // text, scrolling when the room runs out — and this is the only thing that
     // turns it into pixels.
@@ -740,7 +743,7 @@ pub(crate) fn picture(
     // person has a predictable route to the overview, even when all eligible
     // icons fit in the Dock*. The old condition tested the overflow tail, which
     // made this surface appear and vanish with the width of a display.
-    let overflow_list = if the_overflow_is_open && !in_more_apps.is_empty() {
+    let overflow_list = if the_dock_has_open.is_more_apps() && !in_more_apps.is_empty() {
         Some(the_overflow_list(
             &mut panels,
             &mut solids,
@@ -880,13 +883,25 @@ mod tests {
 
     /// A Dock whose overflow list a person has not opened, which is every frame
     /// but the one after they press the control.
-    fn closed() -> (bool, &'static crate::the_docks_words::TheDocksWords) {
-        (false, crate::desktop_testing::no_words())
+    fn closed() -> (
+        &'static crate::WhatTheDockHasOpen,
+        &'static crate::the_docks_words::TheDocksWords,
+    ) {
+        (
+            &crate::what_the_dock_has_open::NOTHING,
+            crate::desktop_testing::no_words(),
+        )
     }
 
     /// The same Dock with its overflow list open.
-    fn opened() -> (bool, &'static crate::the_docks_words::TheDocksWords) {
-        (true, crate::desktop_testing::no_words())
+    fn opened() -> (
+        &'static crate::WhatTheDockHasOpen,
+        &'static crate::the_docks_words::TheDocksWords,
+    ) {
+        (
+            &crate::what_the_dock_has_open::MORE_APPS,
+            crate::desktop_testing::no_words(),
+        )
     }
 
     /// **The dock is a bar: centred, clear of the bottom edge, and as wide as
@@ -1187,7 +1202,7 @@ mod tests {
     /// closed draws the bar alone, open draws the bar and the list, and open on
     /// a Dock with nothing behind the control draws the bar alone again.
     ///
-    /// The third is the one worth having. `the_overflow_is_open` lives on the
+    /// The third is the one worth having. `WhatTheDockHasOpen` lives on the
     /// `Server` and is not cleared when the Dock stops overflowing — a person
     /// closes a window and the bar fits again — so a draw that trusted the flag
     /// alone would paint an empty list over the canvas.

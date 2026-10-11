@@ -215,7 +215,10 @@ fn with_night_light_off_the_dock_is_drawn_exactly_as_it_was_decided() {
             // about where the screens are, which is what the call it is
             // compared against passes too.
             &[],
-            (false, &crate::the_docks_words::TheDocksWords::default()),
+            (
+                &crate::what_the_dock_has_open::NOTHING,
+                &crate::the_docks_words::TheDocksWords::default(),
+            ),
             &mut fonts(),
         )
         .unwrap();

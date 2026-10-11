@@ -127,7 +127,10 @@ pub(crate) fn picture(
         // several screens, drawn to show where they are relative to each other;
         // the words on a Dock are for the Dock a person uses, and this is not
         // it. Empty rather than invented, for `crate::the_docks_words`' reason.
-        (false, &crate::the_docks_words::TheDocksWords::default()),
+        (
+            &crate::what_the_dock_has_open::NOTHING,
+            &crate::the_docks_words::TheDocksWords::default(),
+        ),
         fonts,
     )?;
     let warming = place.warming();

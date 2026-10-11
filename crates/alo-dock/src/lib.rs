@@ -184,6 +184,16 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+/// A list the Dock opens over the canvas: how tall a row is, how tall the panel
+/// is for a given number of rows, and which of them are on the screen.
+///
+/// **Two surfaces, one geometry.** *More apps* opens a list of applications and
+/// an icon with several windows opens a list of windows. They differ in what a
+/// row says and where the list is anchored, and not at all in how tall a row is
+/// or when the list begins to scroll. This was `overflow` while there was only
+/// the first; the module was renamed rather than the second surface being given
+/// a second copy of the same arithmetic.
+pub mod a_list_the_dock_opens;
 pub mod announcing;
 pub mod changes;
 pub mod clicking;
@@ -198,9 +208,8 @@ pub mod measures;
 pub mod menu;
 pub mod offering;
 pub mod on_the_canvas;
-/// The list the overflow control opens: how tall a row is, how tall the panel
-/// is, and which rows are on the screen.
-pub mod overflow;
+/// The list of windows an icon with several of them opens.
+pub mod picking;
 pub mod pinning;
 pub mod places;
 pub mod previews;

@@ -123,7 +123,7 @@ pub struct Server {
     /// It is **not** per display. The overflow is a list a person opened, not a
     /// property of a screen, and two displays showing two open lists for one
     /// press would be two answers to one question.
-    pub(crate) the_overflow_is_open: bool,
+    pub(crate) the_dock_has_open: crate::WhatTheDockHasOpen,
     /// Windows the **person** has asked to put aside, not yet acted on.
     ///
     /// # Why a request rather than the act
@@ -277,7 +277,7 @@ impl Server {
             // empty picture — see the field's own note.
             panel_as_drawn: None,
             dock_as_drawn: std::collections::BTreeMap::new(),
-            the_overflow_is_open: false,
+            the_dock_has_open: crate::WhatTheDockHasOpen::Nothing,
             // Nobody has asked for anything yet.
             asked_to_put_aside: Vec::new(),
             edges_revealed: Vec::new(),

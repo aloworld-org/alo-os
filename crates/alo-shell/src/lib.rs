@@ -307,6 +307,7 @@ mod the_session_holds_its_screens;
 mod the_window_edge_reveals;
 mod their_displays;
 mod top_controls_region;
+mod what_the_dock_has_open;
 mod what_the_server_tells_a_frame;
 mod where_a_window_opens;
 mod where_the_dock_is;
@@ -375,6 +376,7 @@ pub use status_items::StatusItems;
 /// `docs/design/where-a-new-window-opens.md` is the contract. Public because
 /// its caller must hold the view and the person's reading direction, and
 /// `Surfaces` holds neither — see the file's header for where it belongs.
+pub use what_the_dock_has_open::{MORE_APPS, NOTHING, WhatTheDockHasOpen};
 pub use where_a_window_opens::{A_DELIBERATE_OFFSET, A_SMALL_GAP, where_a_window_opens};
 pub use which_card_the_seat_holds::which_card_the_seat_holds;
 pub use window_activation::WindowActivationError;

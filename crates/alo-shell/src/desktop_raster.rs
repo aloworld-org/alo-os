@@ -111,7 +111,7 @@ pub(crate) struct Shown<'a> {
     /// Handed in like the rest, and for the sharpest version of the same
     /// reason: a person opened it with a press, presses reach the `Server`, and
     /// this crate's drawing half has no way to know.
-    pub(crate) the_overflow_is_open: bool,
+    pub(crate) the_dock_has_open: &'a crate::WhatTheDockHasOpen,
     /// Everything on the Dock that a person reads, already said by the lane.
     pub(crate) the_docks_words: &'a crate::the_docks_words::TheDocksWords,
     /// The windows a person put aside, which the panel at the edge shows.
@@ -225,7 +225,7 @@ pub(crate) fn picture(
         display_scale,
         on_the_dock,
         in_more_apps,
-        the_overflow_is_open,
+        the_dock_has_open,
         the_docks_words,
     } = shown;
     // **The count the desktop handed over, not a constant.** This passed a
@@ -241,7 +241,7 @@ pub(crate) fn picture(
         size,
         on_the_dock,
         in_more_apps,
-        (the_overflow_is_open, the_docks_words),
+        (the_dock_has_open, the_docks_words),
         fonts,
     )?;
 

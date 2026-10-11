@@ -565,7 +565,7 @@ impl<'a> TheDesk<'a> {
         notifications: &'a [alo_notifying::Shown],
     ) -> alo_shell::DesktopFrame<'a> {
         alo_shell::DesktopFrame {
-            the_overflow_is_open: false,
+            the_dock_has_open: &alo_shell::NOTHING,
             the_docks_words: no_words(),
             dock: self.dock,
             look: self.look,
