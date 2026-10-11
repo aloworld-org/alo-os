@@ -371,6 +371,27 @@ pub const THE_SEARCH_FIELD_IS_TALL: u32 = 48;
 /// with every individual number right.
 pub const THE_MORE_APPS_FOOTER_IS_TALL: u32 = 22;
 
+/// How wide the thumb of a scrolling list is.
+///
+/// Measured: `Scrollbar / thumb` in `State=Scroll`, a rounded rectangle **3**
+/// wide at x 397 in a list 400 wide — so it is flush to the list's right edge.
+///
+/// **Its length is not a measurement.** The frame draws it 96 tall in a list
+/// whose content is 564 and whose viewport is 336; a thumb proportional to what
+/// is shown would be about 200. A static mock's thumb says *there is more
+/// below*, not how much, so the drawing takes the proportional rule — the only
+/// one that still says something true at sixty applications — and this note
+/// records that the frame and the rule disagree rather than leaving a reader to
+/// find it.
+pub const A_SCROLL_THUMB_IS_WIDE: u32 = 3;
+
+/// The shortest a scroll thumb may be drawn.
+///
+/// A list long enough makes a proportional thumb a single pixel, which is a
+/// mark nobody can see and nobody can grab. Four times its width is the
+/// smallest thing that still reads as a bar rather than a dot.
+pub const A_SCROLL_THUMB_IS_AT_LEAST: u32 = A_SCROLL_THUMB_IS_WIDE * 4;
+
 /// How tall a window's row in the picker is.
 ///
 /// Measured: `Window / Launch website`, 400 × **106**, with 8 between rows.

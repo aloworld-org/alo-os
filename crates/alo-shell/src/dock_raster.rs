@@ -331,6 +331,10 @@ fn the_overflow_list(
 
     let area = Rectangle::new((left, top).into(), (across, tall).into());
     let inner = across - 2 * pad;
+    // The rounded grounds on this panel: the search field, and the scroll
+    // thumb when the list has one. Declared here because the field is drawn
+    // before the list is.
+    let mut wells: Vec<Rectangle<i32, Physical>> = Vec::new();
     let line = i32::try_from(alo_dock::Room::a_line_at(text).as_pixels()).unwrap_or(1);
     let size = i32::try_from(alo_dock::Room::text_at(text).as_pixels()).unwrap_or(1);
     let metrics = Metrics::new(size as f32, line as f32);
@@ -360,51 +364,6 @@ fn the_overflow_list(
         }
     }
 
-    // The heading.
-    ink(
-        fonts,
-        inked,
-        &words.heading,
-        (left + pad, top + pad),
-        inner,
-        metrics,
-        palette.dock,
-        palette.ink,
-        height,
-    );
-
-    // The search field: a rounded well with its invitation inside it. Drawn as
-    // a `Solid` because it is a filled rectangle with no partial coverage at
-    // its corners that a person can see at this size.
-    let field = Rectangle::new(
-        (
-            left + pad,
-            top + pad
-                + i32::try_from(alo_dock::measures::THE_MORE_APPS_HEADING_IS_TALL).unwrap_or(32)
-                + down,
-        )
-            .into(),
-        (
-            inner,
-            i32::try_from(alo_dock::measures::THE_SEARCH_FIELD_IS_TALL).unwrap_or(48),
-        )
-            .into(),
-    );
-    ink(
-        fonts,
-        inked,
-        &words.search,
-        (field.loc.x + pad, field.loc.y + (field.size.h - line) / 2),
-        inner - 2 * pad,
-        metrics,
-        palette.badge,
-        palette.ink_quiet,
-        height,
-    );
-
-    // **The grid, clipped to its viewport.** Everything below here is inside
-    // the scrolling list, so a cell the overview says is out of view is not
-    // drawn at all rather than drawn and covered: a row past the bottom would
     // otherwise be inked over the footer and over the canvas beneath.
     // **One application's windows instead of every application.** The frame is
     // the same and only what sits between its heading and its footer differs,
@@ -538,6 +497,53 @@ fn the_overflow_list(
         }
         return area;
     }
+
+    // The heading.
+    ink(
+        fonts,
+        inked,
+        &words.heading,
+        (left + pad, top + pad),
+        inner,
+        metrics,
+        palette.dock,
+        palette.ink,
+        height,
+    );
+
+    // The search field: a rounded well with its invitation inside it. Drawn as
+    // a `Solid` because it is a filled rectangle with no partial coverage at
+    // its corners that a person can see at this size.
+    let field = Rectangle::new(
+        (
+            left + pad,
+            top + pad
+                + i32::try_from(alo_dock::measures::THE_MORE_APPS_HEADING_IS_TALL).unwrap_or(32)
+                + down,
+        )
+            .into(),
+        (
+            inner,
+            i32::try_from(alo_dock::measures::THE_SEARCH_FIELD_IS_TALL).unwrap_or(48),
+        )
+            .into(),
+    );
+    wells.push(field);
+    ink(
+        fonts,
+        inked,
+        &words.search,
+        (field.loc.x + pad, field.loc.y + (field.size.h - line) / 2),
+        inner - 2 * pad,
+        metrics,
+        palette.badge,
+        palette.ink_quiet,
+        height,
+    );
+
+    // **The grid, clipped to its viewport.** Everything below here is inside
+    // the scrolling list, so a cell the overview says is out of view is not
+    // drawn at all rather than drawn and covered: a row past the bottom would
 
     let list: Rectangle<i32, Physical> = Rectangle::new(
         (field.loc.x, field.loc.y + field.size.h + down).into(),
@@ -674,11 +680,36 @@ fn the_overflow_list(
         }
     }
 
-    // The line under the list.
+    // **The thumb, when there is more below.** Drawn as a well, which is what
+    // every rounded shape on a panel is: 3 wide makes its radius 1.5, so both
+    // ends are semicircles.
+    if let Some((down_the_track, long)) = alo_dock::more_apps::a_scroll_thumb(
+        overview.the_list_is_tall(),
+        overview.the_whole_list_is_tall(),
+        overview.scrolled(),
+    ) {
+        let thumb = i32::try_from(alo_dock::measures::A_SCROLL_THUMB_IS_WIDE).unwrap_or(3);
+        wells.push(Rectangle::new(
+            (
+                list.loc.x + list.size.w - thumb,
+                list.loc.y + i32::try_from(down_the_track.as_pixels()).unwrap_or(0),
+            )
+                .into(),
+            (thumb, i32::try_from(long.as_pixels()).unwrap_or(0)).into(),
+        ));
+    }
+
+    // **The line under the list, and which of the two it is.** The design
+    // replaces one with the other rather than showing both: the same place,
+    // one sentence at a time.
     ink(
         fonts,
         inked,
-        &words.footer,
+        if overview.scrolls() {
+            &words.scrolling
+        } else {
+            &words.footer
+        },
         (
             left + pad,
             top + tall
@@ -706,7 +737,7 @@ fn the_overflow_list(
             circle: palette.badge,
             marks: &marks,
             mark: palette.ink,
-            wells: &[field],
+            wells: &wells,
             well_is: palette.badge,
         },
     ) {

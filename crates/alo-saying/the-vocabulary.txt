@@ -581,6 +581,7 @@ dock.more-apps.footer	Pinned and open apps · Escape closes
 dock.more-apps.heading	More apps
 dock.more-apps.others	Other open apps
 dock.more-apps.pinned	Pinned
+dock.more-apps.scrolling	Scroll for more · Escape closes
 dock.more-apps.search	Search apps
 dock.more-apps.show	Show more apps
 dock.screen.not-a-screen	a screen has a width and a height — {width} by {height} is not one
@@ -589,8 +590,8 @@ dock.show-all	Show all
 dock.windows.count	{windows} windows · Choose one to return
 dock.windows.footer	Choose a window · Escape returns to apps
 dock.windows.heading	{app} windows
-dock.windows.open	Open · {place}
-dock.windows.put-aside	Minimised · {place}
+dock.windows.open	Open
+dock.windows.put-aside	Minimised
 egress.destination.nameless	say where this is going — an egress with nowhere named cannot be shown to anybody
 egress.destination.not-printable	the address contains a character that cannot be shown — the indicator has to be readable in one line
 egress.destination.nothing-leaves	an answer on this machine goes nowhere — ask whether the source causes egress before making a destination of it

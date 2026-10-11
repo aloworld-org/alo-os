@@ -26,3 +26,12 @@
 #
 # Nothing has been reworded under this rule yet. The first record goes below.
 
+
+key: dock.windows.open
+now: Open
+why: Strictly, no: a correct translation of "Open · {place}" carries a Place that this no longer has, and ADR 0068 would send it to a new key. The rule exists to protect translations that already read the old English, and there are none — this key was added on 2026-10-11, in the same unmerged change that reworded it hours later, and the only language it has ever had is this one. Retiring a key nobody outside this branch has seen would leave a dead entry in every translator's file to protect a translation that was never made. The Place came out because `alo_dock::previews::Preview` does not carry one: it knows a window's patch and not which Place that patch is on, so the fill was always empty and drew "Open ·" with nothing after it.
+
+key: dock.windows.put-aside
+now: Minimised
+why: The same answer as `dock.windows.open` above and for the same reason: added on 2026-10-11, reworded the same day before it reached main, never translated into anything. A correct translation of "Minimised · {place}" would carry a Place this does not have, so under ADR 0068 this would be a new key if the old one had ever been published — and it has not. The Place is still owed and is named in the word's own note, so the next reader looks for a missing fact rather than a missing separator.
+

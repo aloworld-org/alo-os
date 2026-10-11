@@ -355,6 +355,19 @@ pub const MORE_OPEN_APPS: Word = Word::saying("dock.more-apps.heading", "More ap
      and the other says what to do.",
 );
 
+/// What the line under the list says when there is more below it.
+pub const SCROLL_FOR_MORE: Word = Word::saying(
+    "dock.more-apps.scrolling",
+    "Scroll for more · Escape closes",
+)
+.noting(
+    "The line under *More apps* when its list has more in it than fits. It replaces the \
+         ordinary line rather than joining it, which is what the design draws: the same place, \
+         one sentence at a time. **It says what to do and not what is there** — the ordinary \
+         line names what is on the list, and once a person can see there is more, telling them \
+         how to reach it is the more useful half.",
+);
+
 /// The heading over one application's windows.
 ///
 /// Takes the application's name: the design draws *Browser windows*.
@@ -379,21 +392,25 @@ pub const CHOOSE_ONE_TO_RETURN: Word = Word::saying(
 );
 
 /// What a row says about a window that is on the canvas.
-pub const A_WINDOW_IS_OPEN: Word = Word::saying("dock.windows.open", "Open · {place}").noting(
-    "Said on the row of a window that is on the canvas, beside which Place it is on. It \
+pub const A_WINDOW_IS_OPEN: Word = Word::saying("dock.windows.open", "Open").noting(
+    "Said on the row of a window that is on the canvas. **The design shows the window's Place \
+     beside it — *Open · Work* — and this does not, because `alo_dock::previews::Preview` \
+     does not carry one.** It knows the patch a window sits on and not which Place that patch \
+     belongs to, and a separator with nothing after it is worse than no separator: it reads as \
+     a sentence that was cut off. The Place is owed and is named here rather than drawn as an \
+     empty fill. It \
      distinguishes that window from one that was put aside, which is the other word this \
      list uses, and the owner's ruling asks for the two to be **clearly identified**.",
 );
 
 /// What a row says about a window that was put aside.
-pub const A_WINDOW_IS_PUT_ASIDE: Word =
-    Word::saying("dock.windows.put-aside", "Minimised · {place}").noting(
-        "Said on the row of a window a person put aside, beside which Place it is on. **The \
+pub const A_WINDOW_IS_PUT_ASIDE: Word = Word::saying("dock.windows.put-aside", "Minimised").noting(
+    "Said on the row of a window a person put aside, beside which Place it is on. **The \
          word a person meets is *minimised*** even though the rest of alo OS says *put \
          aside*: this is the one place a window's state is named beside the other state it \
          could be in, and *put aside* against *open* reads as a choice somebody is making \
          rather than a fact about where the window is.",
-    );
+);
 
 /// What the line under a window list says.
 pub const CHOOSE_A_WINDOW_ESCAPE_RETURNS: Word = Word::saying(
@@ -508,7 +525,7 @@ pub const RETIRED: [&str; 2] = ["dock.labels.under", "dock.labels.gave-way"];
 /// beside the other settings' words because this list's order is the order a
 /// translator meets them in, and a translator who has already done this file
 /// should find the new ones together rather than hunting a diff.
-pub const EVERY_WORD: [Word; 38] = [
+pub const EVERY_WORD: [Word; 39] = [
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
     NAMES_BESIDE,
@@ -535,6 +552,7 @@ pub const EVERY_WORD: [Word; 38] = [
     SHOW_MORE_OPEN_APPS,
     MORE_OPEN_APPS,
     SEARCH_APPS,
+    SCROLL_FOR_MORE,
     WINDOWS_OF,
     CHOOSE_ONE_TO_RETURN,
     A_WINDOW_IS_OPEN,

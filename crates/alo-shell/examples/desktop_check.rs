@@ -259,12 +259,6 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     // **Said once, because the drawing path may not word a sentence.** The same
     // rule `direct_desktop` follows: `tests/desktop_source.rs` holds that no
     // `desktop_*` or `dock_*` file names `Word::` or `.say(`.
-    // **Nothing open**, which is what every standing in this probe draws except
-    // the one that opens *More apps* — and that one is an overview, whose words
-    // are the fixed ones. A window picker is a per-frame sentence and the probe
-    // does not yet draw a standing for it.
-    let the_docks_words =
-        alo_shell::the_docks_words::TheDocksWords::said(&strings, &alo_shell::NOTHING);
 
     let mut submitted = 0;
     let mut draw = |what: &str,
@@ -278,6 +272,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     filling: &FillingWindow,
                     nested: &mut Nested|
      -> Result<(), Box<dyn std::error::Error>> {
+        // **Said inside the draw, because a window picker's words are about
+        // this frame**: its heading carries the application's name and its rows
+        // carry each window's state. The Dock's own labels do not change and
+        // are said again here only because they travel in one bundle, which
+        // cannot be half-filled.
+        let the_docks_words =
+            alo_shell::the_docks_words::TheDocksWords::said(&strings, the_dock_has_open);
         // A display nobody has divided, which is what this probe's is: the
         // Server holds no division yet and the session that will is a task of
         // its own.
@@ -460,6 +461,56 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             &mut nested,
         )?;
     }
+
+    // **One application's windows**, which is the popover's other face.
+    //
+    // Four windows of one application, two of them put aside, so the picture
+    // shows both of the states a row can be in — *Open* and *Minimised* — which
+    // is the owner's *including its minimised windows with their state clearly
+    // identified*. A standing with every window on the canvas would draw one
+    // state four times and show nothing about the other.
+    let a_browser_with_four_windows = {
+        let patch = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1)
+            .map_err(|error| format!("{error:?}"))?;
+        let mut windows = alo_dock::Windows::none();
+        for (number, called, sits) in [
+            (1_u64, "Launch website", alo_dock::HowItSits::OnTheCanvas),
+            (2, "Travel plans", alo_dock::HowItSits::PutAside),
+            (3, "Research", alo_dock::HowItSits::OnTheCanvas),
+            (4, "Tomorrow's reading", alo_dock::HowItSits::PutAside),
+        ] {
+            windows.opened(alo_dock::Window::of(
+                alo_dock::WindowId::numbered(number),
+                Some(alo_dock::AppId::named("Browser").map_err(|error| format!("{error:?}"))?),
+                called,
+                patch,
+                sits,
+            ));
+        }
+        windows
+    };
+    let the_browsers_windows =
+        alo_shell::WhatTheDockHasOpen::TheWindowsOf(alo_dock::picking::ThePicker::of(
+            alo_dock::previews::Previews::of(
+                &a_browser_with_four_windows,
+                &alo_dock::AppId::named("Browser").map_err(|error| format!("{error:?}"))?,
+                alo_dock::previews::Opened::ByPressingTheIcon,
+            ),
+            alo_appearance::TextScale::default(),
+            alo_dock::Room::pixels(1_000),
+        ));
+    draw(
+        "one application's windows",
+        &shipped,
+        &a_crowded_dock,
+        &a_crowded_dock,
+        &the_browsers_windows,
+        nothing_put_aside(),
+        &quiet,
+        &closed_running,
+        &closed_filling,
+        &mut nested,
+    )?;
 
     // **Both right-hand surfaces at once**, which is the only way to look at
     // the thing the owner's ruling of 2026-10-11 separates.

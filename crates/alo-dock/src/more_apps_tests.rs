@@ -211,3 +211,127 @@ fn a_short_list_does_not_scroll() {
         "eight applications should not need the whole viewport"
     );
 }
+
+/// **A list that fits has no thumb.**
+///
+/// A full-length thumb says there is somewhere to go, and there is not.
+#[test]
+fn a_list_that_fits_has_no_thumb() {
+    assert_eq!(
+        a_scroll_thumb(Room::pixels(336), Room::pixels(200), Room::pixels(0)),
+        None
+    );
+    assert_eq!(
+        a_scroll_thumb(Room::pixels(336), Room::pixels(336), Room::pixels(0)),
+        None,
+        "content exactly as tall as the viewport still fits"
+    );
+}
+
+/// **The thumb's end reaches the track's end exactly when the content's does.**
+///
+/// This is what makes it a position rather than a proportion. Checked at both
+/// ends and in the middle, and the middle is the one a wrong scale still
+/// passes the ends on.
+#[test]
+fn the_thumb_reaches_the_end_when_the_content_does() {
+    let viewport = Room::pixels(336);
+    let content = Room::pixels(1_484);
+    let furthest = 1_484 - 336;
+
+    let (top, long) = a_scroll_thumb(viewport, content, Room::pixels(0)).unwrap();
+    assert_eq!(top.as_pixels(), 0, "unscrolled, it starts at the top");
+
+    let (bottom, also) = a_scroll_thumb(viewport, content, Room::pixels(furthest)).unwrap();
+    assert_eq!(
+        long.as_pixels(),
+        also.as_pixels(),
+        "its length does not change"
+    );
+    assert_eq!(
+        bottom.as_pixels() + also.as_pixels(),
+        viewport.as_pixels(),
+        "scrolled to the end, the thumb's end is the track's end"
+    );
+
+    let (middle, _) = a_scroll_thumb(viewport, content, Room::pixels(furthest / 2)).unwrap();
+    assert!(
+        middle.as_pixels() > 0 && middle.as_pixels() < bottom.as_pixels(),
+        "half way down gave {} against 0 and {}",
+        middle.as_pixels(),
+        bottom.as_pixels()
+    );
+}
+
+/// **A very long list still has a thumb somebody can see.**
+///
+/// Proportional alone makes it a single pixel, which is a mark nobody can grab.
+#[test]
+fn a_very_long_list_still_has_a_visible_thumb() {
+    use crate::measures::A_SCROLL_THUMB_IS_AT_LEAST;
+    let (_, long) =
+        a_scroll_thumb(Room::pixels(336), Room::pixels(1_000_000), Room::pixels(0)).unwrap();
+    assert!(
+        long.as_pixels() >= A_SCROLL_THUMB_IS_AT_LEAST,
+        "a million pixels of content gave a thumb {} long",
+        long.as_pixels()
+    );
+    assert!(
+        long.as_pixels() <= 336,
+        "the thumb is longer than its own track"
+    );
+}
+
+/// **It never runs past the track**, however far it is asked to scroll **and
+/// however short the track is.**
+///
+/// The short tracks are the half this first missed. A thumb is never shorter
+/// than four times its width, and on an output cramped enough the *track* is
+/// shorter than that — so the minimum, which exists to keep the thumb
+/// grabbable, is the thing that would push it past the end. Mutation found it:
+/// deleting the clamp left all fifteen tests passing, because every one of them
+/// used a 336 viewport.
+#[test]
+fn the_thumb_stays_inside_its_track() {
+    for viewport in [336_u32, 100, 40, 12, 8, 4, 1] {
+        let viewport = Room::pixels(viewport);
+        for content in [400_u32, 1_484, 10_000] {
+            for scrolled in [0_u32, 100, 5_000, u32::MAX / 2] {
+                let Some((down, long)) =
+                    a_scroll_thumb(viewport, Room::pixels(content), Room::pixels(scrolled))
+                else {
+                    continue;
+                };
+                assert!(
+                    down.as_pixels() + long.as_pixels() <= viewport.as_pixels(),
+                    "viewport {}, content {content}, scrolled {scrolled}: {} + {} runs past it",
+                    viewport.as_pixels(),
+                    down.as_pixels(),
+                    long.as_pixels()
+                );
+            }
+        }
+    }
+}
+
+/// The original sweep, kept for the ordinary viewport.
+#[test]
+fn the_thumb_stays_inside_an_ordinary_track() {
+    let viewport = Room::pixels(336);
+    for content in [400_u32, 1_484, 10_000] {
+        for scrolled in [0_u32, 100, 5_000, u32::MAX / 2] {
+            let Some((down, long)) =
+                a_scroll_thumb(viewport, Room::pixels(content), Room::pixels(scrolled))
+            else {
+                continue;
+            };
+            assert!(
+                down.as_pixels() + long.as_pixels() <= viewport.as_pixels(),
+                "content {content}, scrolled {scrolled}: {} + {} runs past {}",
+                down.as_pixels(),
+                long.as_pixels(),
+                viewport.as_pixels()
+            );
+        }
+    }
+}

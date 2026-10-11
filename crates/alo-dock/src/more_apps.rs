@@ -346,3 +346,48 @@ impl TheOverview {
 #[cfg(test)]
 #[path = "more_apps_tests.rs"]
 mod tests;
+
+/// Where a scrolling list's thumb sits and how long it is.
+///
+/// **A rule and not a measurement.** The design draws one thumb at one length
+/// in one mock; what a drawing needs is where it goes for any list, and the
+/// only honest generalisation is proportional — the thumb is to the track what
+/// the viewport is to the content, and where it sits is how far down the
+/// content the viewport has reached.
+///
+/// Returned as a pair of distances down the track rather than a rectangle,
+/// because the track's own position is the drawing's and this does not know
+/// where on a screen the list is.
+///
+/// [`None`] when everything fits: a full-length thumb in a list that does not
+/// scroll is a control that says there is somewhere to go and there is not.
+#[must_use]
+pub fn a_scroll_thumb(viewport: Room, content: Room, scrolled: Room) -> Option<(Room, Room)> {
+    use crate::measures::A_SCROLL_THUMB_IS_AT_LEAST;
+    let (viewport, content, scrolled) = (
+        viewport.as_pixels(),
+        content.as_pixels(),
+        scrolled.as_pixels(),
+    );
+    if content <= viewport || viewport == 0 {
+        return None;
+    }
+    // **At least as long as it is wide times four**, or a long enough list
+    // makes it a dot nobody can see and nobody can take hold of.
+    let long = ((viewport.saturating_mul(viewport)) / content).max(A_SCROLL_THUMB_IS_AT_LEAST);
+    let long = long.min(viewport);
+    // How far down the track, scaled so that the thumb's **end** reaches the
+    // track's end exactly when the content's end does — which is what makes it
+    // read as a position rather than as a proportion of something.
+    let travel = viewport.saturating_sub(long);
+    let furthest = content.saturating_sub(viewport);
+    // `checked_div` rather than a guard: `furthest` is zero exactly when the
+    // content fits, which the early return above already refuses — so the
+    // `None` arm is unreachable and says so by answering the top of the track.
+    let down = scrolled
+        .min(furthest)
+        .saturating_mul(travel)
+        .checked_div(furthest)
+        .unwrap_or(0);
+    Some((Room::pixels(down), Room::pixels(long)))
+}

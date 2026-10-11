@@ -35,6 +35,13 @@ pub struct TheDocksWords {
     pub others: String,
     /// The line under the list, which says what is on it and how to leave.
     pub footer: String,
+    /// The line that replaces it when the list has more below.
+    ///
+    /// **Both are said, and the drawing chooses.** Whether a list scrolls is a
+    /// fact about this frame's layout, which only the drawing knows — and the
+    /// drawing may not word a sentence. So the lane says both and hands them
+    /// over, which is the same shape as every other word here.
+    pub scrolling: String,
     /// What the composer invites a person to do.
     pub prompt: String,
     /// The key that opens the composer, shown at its end.
@@ -93,6 +100,7 @@ impl TheDocksWords {
             pinned: say(&alo_dock::words::PINNED),
             others: say(&alo_dock::words::OTHER_OPEN_APPS),
             footer: say(&alo_dock::words::PINNED_AND_OPEN_ESCAPE_CLOSES),
+            scrolling: say(&alo_dock::words::SCROLL_FOR_MORE),
             prompt: say(&alo_dock::words::FIND_OPEN_OR_ASK),
             key: say(&alo_dock::words::THE_COMPOSERS_KEY),
             show_all: say(&alo_dock::words::SHOW_ALL),
