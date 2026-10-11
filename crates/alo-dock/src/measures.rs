@@ -142,6 +142,27 @@ pub const GLYPH: u32 = 28;
 /// They are not, and ADR 0101 says so.
 pub const AROUND_THE_ARTWORK: u32 = (ICON - GLYPH) / 2;
 
+/// How wide the mark under an application that has a window open is.
+///
+/// Measured at **4 × 3** on `Open window indicator` — `348:23886` on the top
+/// Dock and `348:23686` on the left one, identically.
+pub const AN_OPEN_MARK_IS_WIDE: u32 = 4;
+
+/// How wide the mark under the application a person is working in is.
+///
+/// Measured at **12 × 3** on `Active window indicator` — `348:23880` and
+/// `348:23680`.
+///
+/// **Three states told apart by width and not by colour**, which is what
+/// `docs/design/the-alo-dock.md` has promised all along: focused is this, open
+/// is [`AN_OPEN_MARK_IS_WIDE`], and pinned-but-not-open is nothing at all. The
+/// design file's own words for the component: *open indicators distinguish
+/// pinned from open.*
+pub const A_FOCUSED_MARK_IS_WIDE: u32 = 12;
+
+/// How tall either mark is.
+pub const A_RUNNING_MARK_IS_TALL: u32 = 3;
+
 /// The radius of the Dock's own corners.
 ///
 /// `radius/lg` in the design file, measured on `Edge=Top, State=Overflow`

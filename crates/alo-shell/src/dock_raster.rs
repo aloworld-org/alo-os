@@ -488,6 +488,41 @@ pub(crate) fn picture(
             palette.dock,
             palette.ink,
         );
+        // **The mark that says this application has a window open.**
+        //
+        // Measured on the design file's `Open window indicator` — `348:23886`
+        // on the top Dock, `348:23686` on the left one, the same rectangle in
+        // both: 4 × 3, centred across the slot and flush to its bottom. **It
+        // does not rotate with the edge**: a Dock down the left side puts the
+        // mark under each icon exactly as a Dock along the bottom does, which
+        // is a measurement rather than an assumption — both variants were read.
+        //
+        // **Pinned but not open gets nothing**, which is the whole of the
+        // distinction the design calls *open indicators distinguish pinned from
+        // open*, and it is told by **width** rather than by colour.
+        //
+        // **The 12-wide focused mark is not drawn**, and this is where it would
+        // go. `alo_dock::OnTheDock` has no notion of focus — it knows pinned,
+        // open, and how many windows are put aside — and the shell's keyboard
+        // focus is a `WlSurface` that nothing maps back to an application here.
+        // Drawing the open mark for a focused application is the honest subset:
+        // it is never wrong, it is incomplete, and `A_FOCUSED_MARK_IS_WIDE` is
+        // declared and unused until something can answer the question.
+        if place.app().is_some_and(|_| {
+            on_the_dock
+                .iter()
+                .any(|one| Some(one.app()) == place.app() && one.is_open())
+        }) {
+            let wide = i32::try_from(alo_dock::measures::AN_OPEN_MARK_IS_WIDE).unwrap_or(1);
+            let tall = i32::try_from(alo_dock::measures::A_RUNNING_MARK_IS_TALL).unwrap_or(1);
+            solids.push(Solid {
+                area: Rectangle::new(
+                    (left + (icon - wide) / 2, top + icon - tall).into(),
+                    (wide, tall).into(),
+                ),
+                colour: palette.ink,
+            });
+        }
         // Centred down the icon as well as across it. `centred` does the one
         // axis it can know about; this is the other.
         let down = top + ((icon - shaped.height) / 2).max(0);
@@ -1137,6 +1172,143 @@ mod tests {
                     letter.area
                 );
             }
+        }
+    }
+
+    /// **An application with a window open carries a mark; a pinned one does
+    /// not.**
+    ///
+    /// The design file's own sentence for the component — *open indicators
+    /// distinguish pinned from open* — and the distinction is told by **width**
+    /// rather than by colour, which is what `docs/design/the-alo-dock.md`
+    /// promises and had nothing behind it until 2026-10-11.
+    ///
+    /// Asserted on all four edges, because the mark is measured as **not**
+    /// rotating with the edge: a Dock down the left puts it under each icon
+    /// exactly as one along the bottom does. Both variants were read from the
+    /// file — `348:23886` and `348:23686` are the same rectangle — so a draw
+    /// that helpfully turned it sideways would be wrong against a measurement.
+    #[test]
+    fn an_open_application_carries_a_mark_and_a_pinned_one_does_not() {
+        use alo_dock::Edge;
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let size = (1920, 1080);
+
+        for edge in Edge::EVERY {
+            let mut dock = Dock::shipped();
+            dock.set_edge(edge);
+
+            // Three with windows open.
+            let open = picture(
+                &dock,
+                look,
+                size,
+                &on_the_dock(3),
+                closed(),
+                ONE_TO_ONE,
+                &mut fonts(),
+            )
+            .unwrap();
+            // The same three, pinned and closed.
+            let mut holding = alo_dock::Holding::nothing();
+            for number in 0..3 {
+                holding.pin(alo_dock::AppId::named(&format!("app-{number}")).unwrap());
+            }
+            let pinned = holding.showing(&alo_dock::Windows::none());
+            let shut = picture(
+                &dock,
+                look,
+                size,
+                &pinned,
+                closed(),
+                ONE_TO_ONE,
+                &mut fonts(),
+            )
+            .unwrap();
+
+            let wide = i32::try_from(alo_dock::measures::AN_OPEN_MARK_IS_WIDE).unwrap();
+            let tall = i32::try_from(alo_dock::measures::A_RUNNING_MARK_IS_TALL).unwrap();
+            let marks = |drawn: &DockPicture| {
+                drawn
+                    .solids
+                    .iter()
+                    .filter(|solid| solid.area.size == (wide, tall).into())
+                    .count()
+            };
+
+            assert_eq!(
+                marks(&open),
+                3,
+                "{edge:?}: three applications have windows open and {} marks were drawn",
+                marks(&open)
+            );
+            assert_eq!(
+                marks(&shut),
+                0,
+                "{edge:?}: a pinned application that is not open was given a mark"
+            );
+
+            // **The premise**: both Docks drew the same three slots, so the
+            // difference above is the mark and not the Dock being empty.
+            assert_eq!(open.inked.len(), shut.inked.len(), "{edge:?}");
+            assert_eq!(open.inked.len(), 3, "{edge:?}");
+        }
+    }
+
+    /// **The mark sits under its own icon, centred, flush to the slot's
+    /// bottom.**
+    ///
+    /// Where, not whether. Measured at `x: 20, y: 40` in a 44 slot — centred
+    /// across it, and three tall ending at the slot's edge — which normalises
+    /// to centred in a 48 target ending at its bottom.
+    #[test]
+    fn the_mark_sits_centred_under_its_own_icon() {
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let drawn = picture(
+            &Dock::shipped(),
+            look,
+            (1920, 1080),
+            &on_the_dock(3),
+            closed(),
+            ONE_TO_ONE,
+            &mut fonts(),
+        )
+        .unwrap();
+
+        let icon = i32::try_from(alo_dock::measures::ICON).unwrap();
+        let wide = i32::try_from(alo_dock::measures::AN_OPEN_MARK_IS_WIDE).unwrap();
+        let tall = i32::try_from(alo_dock::measures::A_RUNNING_MARK_IS_TALL).unwrap();
+        let marks: Vec<_> = drawn
+            .solids
+            .iter()
+            .filter(|solid| solid.area.size == (wide, tall).into())
+            .collect();
+        assert_eq!(marks.len(), 3, "the premise");
+
+        for (which, place) in drawn.standing.places.each().iter().enumerate() {
+            let along = i32::try_from(place.from_the_start()).unwrap();
+            let (left, top) = if drawn.layout.edge().runs_across() {
+                (
+                    drawn.band.loc.x + along,
+                    drawn.band.loc.y + (drawn.band.size.h - icon) / 2,
+                )
+            } else {
+                (
+                    drawn.band.loc.x + (drawn.band.size.w - icon) / 2,
+                    drawn.band.loc.y + along,
+                )
+            };
+            let wanted = (left + (icon - wide) / 2, top + icon - tall);
+            assert!(
+                marks
+                    .iter()
+                    .any(|mark| (mark.area.loc.x, mark.area.loc.y) == wanted),
+                "no mark at {wanted:?} for slot {which}; marks are at {:?}",
+                marks
+                    .iter()
+                    .map(|mark| (mark.area.loc.x, mark.area.loc.y))
+                    .collect::<Vec<_>>()
+            );
         }
     }
 
