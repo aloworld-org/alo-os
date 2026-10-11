@@ -21,6 +21,7 @@ use crate::converter::{THE_CONVERTER, THE_CONVERTERS_SOCKET, TheConverter};
 use crate::description::Description;
 use crate::disk::TheDisk;
 use crate::installing::{THE_ENVIRONMENT, TheEnvironment};
+use crate::kernel_arguments::TheKernelArguments;
 use crate::logins::Declared;
 use crate::making::Made;
 use crate::notes::{THE_NOTES, TheNotes};
@@ -65,6 +66,12 @@ const TMPFILES: &str = "usr/lib/tmpfiles.d/alo.conf";
 
 /// Where the logins made at boot are declared.
 const SYSUSERS: &str = "usr/lib/sysusers.d/alo.conf";
+
+/// Where the kernel arguments each deployment boots with are declared.
+///
+/// `bootc` reads every `*.toml` in that directory; this image writes one, and
+/// `crate::checking` asks it whether a boot can be read or only watched.
+const THE_KERNEL_ARGUMENTS: &str = "usr/lib/bootc/kargs.d/console.toml";
 
 /// The recipe the image is built from, beneath the image's directory.
 ///
@@ -135,6 +142,8 @@ pub struct Image {
     notes: TheNotes,
     /// What the recipe and the two units say about converting (ADR 0039).
     converter: TheConverter,
+    /// The kernel arguments every deployment of this image boots with.
+    kernel_arguments: TheKernelArguments,
 }
 
 impl Image {
@@ -220,6 +229,12 @@ impl Image {
             environment,
             notes,
             converter,
+            // Read leniently, like the recipe and the notes: no file at all is
+            // an image `crate::checking` has a sentence about - *a boot nobody
+            // can read* - rather than a directory that is no image.
+            kernel_arguments: TheKernelArguments::read(
+                &text(&root.join(THE_KERNEL_ARGUMENTS)).unwrap_or_default(),
+            ),
         })
     }
 
@@ -386,6 +401,12 @@ impl Image {
     #[must_use]
     pub const fn converter(&self) -> &TheConverter {
         &self.converter
+    }
+
+    /// The kernel arguments every deployment of this image boots with.
+    #[must_use]
+    pub const fn kernel_arguments(&self) -> &TheKernelArguments {
+        &self.kernel_arguments
     }
 }
 

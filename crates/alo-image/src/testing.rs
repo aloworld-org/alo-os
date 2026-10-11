@@ -36,6 +36,9 @@ pub(crate) const THE_TMPFILES: &str = "usr/lib/tmpfiles.d/alo.conf";
 /// The logins the image makes, beneath the image's root.
 pub(crate) const THE_SYSUSERS: &str = "usr/lib/sysusers.d/alo.conf";
 
+/// The kernel arguments each deployment boots with, beneath the image's root.
+pub(crate) const THE_KERNEL_ARGUMENTS: &str = "usr/lib/bootc/kargs.d/console.toml";
+
 /// What the machine says about itself, beneath the image's root.
 pub(crate) const THE_DESCRIPTION_FILE: &str = "etc/alo/agentd.toml";
 

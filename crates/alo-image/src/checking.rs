@@ -149,6 +149,7 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_image_becomes_a_disk(image, &mut wrong);
     the_document_says_what_the_recipe_does(image, &mut wrong);
     the_image_names_the_release_it_is(image, &mut wrong);
+    a_boot_can_be_read_and_the_screen_is_the_one_watched(image, &mut wrong);
     crate::publishing::everything_wrong_with_the_publish(image, &mut wrong);
     crate::installs::everything_wrong_with_the_environment(image, &mut wrong);
     crate::released::everything_wrong_with_the_notes(image, &mut wrong);
@@ -169,6 +170,49 @@ fn the_image_names_the_release_it_is(image: &Image, wrong: &mut Vec<Wrong>) {
     if !version.names_one_release() {
         wrong.push(Wrong::TheImageDoesNotNameItsRelease {
             stated: version.everything_stated(),
+        });
+    }
+}
+
+/// **A boot leaves a record, and the screen is the console a person watches.**
+///
+/// Two things, because they are two mistakes and only one of them is the
+/// obvious one.
+///
+/// **A record at all.** GRUB writes to a serial line of its own accord, so a
+/// boot log from a machine with no serial console ends at the entry it is
+/// about to start, and everything Linux does afterwards reaches the screen
+/// alone. Two boots were diagnosed from screenshots on 2026-10-10 and
+/// 2026-10-11 because screenshots were all there was, and a report of a
+/// crash-looping service had to be written as *asserted from memory* rather
+/// than shown.
+///
+/// **And the right one primary.** The kernel makes the last `console=` its
+/// primary one. A pair written the other way round is a machine that boots
+/// perfectly, logs perfectly, and shows a person watching the screen less than
+/// it shows a serial line nobody is reading — which is worse than the fault it
+/// was meant to fix, and is why this is asked separately rather than folded
+/// into *is there a serial console*.
+fn a_boot_can_be_read_and_the_screen_is_the_one_watched(image: &Image, wrong: &mut Vec<Wrong>) {
+    let arguments = image.kernel_arguments();
+    let consoles = arguments.consoles();
+    if !arguments.a_reader_can_keep_the_boot() {
+        wrong.push(Wrong::ABootNobodyCanRead {
+            consoles: if consoles.is_empty() {
+                "nothing".to_owned()
+            } else {
+                consoles.join(", ")
+            },
+        });
+        // One fault, not two: a boot with no serial console has nothing to say
+        // about which console is primary that the sentence above does not.
+        return;
+    }
+    if let Some(primary) = arguments.the_one_a_person_watches()
+        && !primary.starts_with("tty0")
+    {
+        wrong.push(Wrong::TheScreenIsNotTheConsoleAPersonWatches {
+            primary: primary.to_owned(),
         });
     }
 }
@@ -1090,8 +1134,8 @@ mod tests {
     use super::*;
     use crate::testing::{
         THE_AGENTS_UNIT, THE_BOOTING_DOCUMENT, THE_CONTAINERFILE, THE_DESCRIPTION_FILE,
-        THE_LOADERS_UNIT, THE_OPENERS_UNIT, THE_SERVERS_UNIT, THE_SYSUSERS, THE_TMPFILES,
-        a_copy_of_the_image, edited, image_at, the_release_line, the_store_file,
+        THE_KERNEL_ARGUMENTS, THE_LOADERS_UNIT, THE_OPENERS_UNIT, THE_SERVERS_UNIT, THE_SYSUSERS,
+        THE_TMPFILES, a_copy_of_the_image, edited, image_at, the_release_line, the_store_file,
     };
 
     /// **The image this repository ships says one thing.** Everything below
@@ -1130,6 +1174,89 @@ mod tests {
     fn the_image_this_repository_ships_agrees_with_itself() {
         let wrong = everything_wrong_with(&image_at(Path::new(crate::THE_IMAGE)));
         assert!(wrong.is_empty(), "{wrong:?}");
+    }
+
+    /// **A boot that reaches only the screen is caught.**
+    ///
+    /// The state every alo OS deployment was in until 2026-10-11, and the
+    /// reason two faults had to be diagnosed from photographs.
+    #[test]
+    fn a_boot_that_only_reaches_the_screen_is_caught() {
+        let root = a_copy_of_the_image("no-serial");
+        edited(
+            &root,
+            THE_KERNEL_ARGUMENTS,
+            "kargs = [\"console=ttyS0,115200\", \"console=tty0\"]",
+            "kargs = [\"console=tty0\"]",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::ABootNobodyCanRead { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And an image that names no kernel arguments at all is caught by the
+    /// same sentence**, because it is the same machine from a person's side.
+    #[test]
+    fn an_image_that_names_no_kernel_arguments_is_caught() {
+        let root = a_copy_of_the_image("no-kargs");
+        edited(
+            &root,
+            THE_KERNEL_ARGUMENTS,
+            "kargs = [\"console=ttyS0,115200\", \"console=tty0\"]",
+            "",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::ABootNobodyCanRead { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **The pair written the wrong way round is caught**, which is the fault
+    /// that would otherwise pass every test and still be wrong: the machine
+    /// logs beautifully to a line nobody is reading and shows less to the
+    /// person in front of it.
+    #[test]
+    fn a_serial_console_put_last_takes_the_screen_from_the_person_watching() {
+        let root = a_copy_of_the_image("wrong-order");
+        edited(
+            &root,
+            THE_KERNEL_ARGUMENTS,
+            "kargs = [\"console=ttyS0,115200\", \"console=tty0\"]",
+            "kargs = [\"console=tty0\", \"console=ttyS0,115200\"]",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheScreenIsNotTheConsoleAPersonWatches { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And the image this repository ships has neither fault.** The half
+    /// that says the two above are about something real.
+    #[test]
+    fn the_shipped_image_can_be_read_and_keeps_the_screen() {
+        let image = image_at(Path::new(crate::THE_IMAGE));
+
+        assert!(image.kernel_arguments().a_reader_can_keep_the_boot());
+        assert_eq!(
+            image.kernel_arguments().the_one_a_person_watches(),
+            Some("tty0")
+        );
     }
 
     /// **An agent service that does not wait for the boundary is caught.** ADR

@@ -1259,6 +1259,37 @@ pub enum Wrong {
         /// The version the recipe names, or `-`.
         version: String,
     },
+    /// A boot that reaches the screen and nothing a reader can keep.
+    ///
+    /// **Found by booting on 2026-10-10 and 2026-10-11.** GRUB writes to a
+    /// serial line of its own accord, so a boot log ends at the entry it is
+    /// about to start and everything Linux does afterwards — every unit that
+    /// started, every one that failed, the journal entire — goes to the screen
+    /// alone. Two faults were diagnosed from photographs because photographs
+    /// were all there was.
+    #[error(
+        "this image's deployments boot with {consoles} and nothing a reader can keep: a machine \
+         whose journal reaches only the screen is one whose faults are found by looking at \
+         pixels. `usr/lib/bootc/kargs.d` is where a serial console is added"
+    )]
+    ABootNobodyCanRead {
+        /// The consoles named, or `nothing` where none are.
+        consoles: String,
+    },
+    /// A boot whose primary console is not the screen.
+    ///
+    /// The kernel makes the **last** `console=` its primary one. Put the
+    /// serial line last and the screen becomes the copy, which is the opposite
+    /// of what somebody standing in front of the machine needs.
+    #[error(
+        "this image's deployments make `{primary}` their primary console, so the screen a person \
+         is watching is the copy — the last `console=` is the one the kernel makes primary, and \
+         that has to be the screen"
+    )]
+    TheScreenIsNotTheConsoleAPersonWatches {
+        /// The console the kernel would make primary.
+        primary: String,
+    },
 }
 
 #[cfg(test)]

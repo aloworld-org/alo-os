@@ -570,6 +570,11 @@ COPY image/usr/lib/tmpfiles.d/ /usr/lib/tmpfiles.d/
 # `systemd-run0` and `systemd-user` stacks there, `/usr` is what a bootc image
 # ships, and `/etc` is machine state a person may edit.
 COPY image/usr/lib/pam.d/ /usr/lib/pam.d/
+# The kernel arguments this deployment boots with, owned by `bootc` rather than
+# by a `RUN` line editing GRUB — two places deciding how a machine boots is one
+# too many. Today it is the serial console that makes a boot readable; the file
+# itself says what that costs.
+COPY image/usr/lib/bootc/kargs.d/ /usr/lib/bootc/kargs.d/
 COPY image/etc/alo/ /etc/alo/
 
 # **What this machine says it is.** The base's own file calls it Fedora Linux
