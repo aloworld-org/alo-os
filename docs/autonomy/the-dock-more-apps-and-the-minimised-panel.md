@@ -202,6 +202,34 @@ seat must give the key to the Dock only while a Dock surface is open and to the
 client otherwise. `crate::a_key_reaches_settings` is the precedent and says
 plainly which of its lines no test in the crate can drive.
 
+**Done, except the search field — 2026-10-11.** Escape, the four arrows, Enter
+and the number pad's Enter are taken, each by its evdev code, and only while a
+surface is open and only on a press. Focus is held inside the open-surface state
+rather than beside it, so there is no state in which something is focused and
+nothing is open. The focused item is ringed with the measurement
+`docs/design/the-first-start.md` read off the design, and it scrolls into view in
+the grid and in the window list.
+
+Three things this task named are **not** done, and each is written here rather
+than left in the sentence above:
+
+1. **The search field takes no typing.** Task 5's remaining half.
+2. **Dismissing does not return focus to the opener.** The Dock's own slots hold
+   no keyboard focus at all yet, so there is no opener to return it to — this
+   waits on the bar itself becoming keyboard-reachable, which is the design's
+   *everything the Dock shows on hover is reachable by keyboard focus*.
+3. **The menu key does not open the actions.** `alo_dock::menu` is the model and
+   nothing opens it.
+
+**And one gap found while doing it, which is larger than this task.** Neither
+surface takes a **pointer** press: `crate::where_the_dock_is::TheDocksPlaces` is
+the hit test and it covers the band, not the popover above it. So pressing a
+cell in *More apps* or a row in a window list does nothing, and the keyboard is
+today the only way to choose from either. The picker's list also could not
+scroll at all — every row was drawn at its content offset and the rest clipped
+away — which was fixed here because *focus scrolls into view* cannot be true
+without it. The pointer's hit test is the next task on this plan.
+
 ### 7 — Minimising recalculates eligibility
 
 The link from `set_window_minimized` to the Dock. The compositor half is built
@@ -214,6 +242,27 @@ acceptance test for tasks 1 and 7 together.
 
 Pins, their order, and a deliberately empty list, across a restart and an
 update.
+
+### 9 — A press reaches inside the two surfaces
+
+**Added 2026-10-11, while task 6 was being built**, which is why it is last and
+not third: nothing had noticed. `crate::where_the_dock_is::TheDocksPlaces` is
+the Dock's hit test and it classifies a point against the **band** — the slots,
+the overflow control, the divider. Nothing classifies a point against the
+popover the control opens. So a cell in *More apps* and a row in a window list
+are drawn, are the things the owner's §2 and §3 say a person chooses from, and
+do nothing when pressed.
+
+What it needs: the popover's rectangle recorded at the draw, as the band's slots
+already are; a reverse lookup from a point to an index, beside
+`TheOverview::where_a_cell_sits` and `ThePickersPanel::where_a_row_sits` in
+`alo-dock` where both can be tested without a display; and the act, which is
+already written — `Server::the_keyboard_takes_what_is_focused` does exactly what
+a press must do, and a press should call the same thing rather than a second copy
+of it.
+
+**Earns:** the parts of §8's evidence that say *click*. Today every one of them
+would have to be read as *press a key*.
 
 ## What is owed to another lane, and from when
 

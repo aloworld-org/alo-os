@@ -229,6 +229,14 @@ struct TheOverflowIsDrawn<'a> {
     /// this is read before the popover is placed and not only when it is
     /// filled.
     picker: Option<&'a alo_dock::picking::ThePicker>,
+    /// Which item the keyboard is on, counting from the top of whichever face
+    /// is open.
+    ///
+    /// [`None`] until a person presses a key, which is every frame of a session
+    /// driven by a pointer. It does two things and they are one thing: it draws
+    /// the ring, and it decides how far the list is scrolled — because a focus
+    /// that is not on the screen is not a focus a person can act on.
+    focused: Option<usize>,
     /// The person's colours.
     palette: crate::desktop_look::DesktopPalette,
 }
@@ -263,6 +271,7 @@ fn the_overflow_list(
         text,
         words,
         picker,
+        focused,
         palette,
     } = drawn;
     let (width, height) = room;
@@ -291,15 +300,26 @@ fn the_overflow_list(
         over.len().saturating_sub(pinned),
         alo_dock::Room::pixels(u32::try_from(headroom).unwrap_or(0)),
     );
+    // **The focused cell brought into view**, which is the design's *keyboard
+    // focus must scroll the focused row into view*. Done here, before anything
+    // is placed, because `scrolled` is subtracted from every heading and every
+    // cell below — scrolling after the fact would mean two offsets.
+    //
+    // A focus of `None` leaves it at the top, and so does a focus past the end:
+    // `TheOverview::showing` refuses a cell it has no place for rather than
+    // scrolling to nowhere.
+    let overview = focused.map_or(overview, |which| overview.showing(which));
     // **The picker's panel is 16 shorter in its list and the same overall**,
     // because its heading holds a back control. Both are capped at the owner's
     // 536 and both shrink on a short output; only the split between the fixed
     // parts and the list differs.
     let windows = picker.map(|picker| {
-        alo_dock::picking::the_pickers_panel(
+        let panel = alo_dock::picking::the_pickers_panel(
             picker.rows().len(),
             alo_dock::Room::pixels(u32::try_from(headroom).unwrap_or(0)),
-        )
+        );
+        // The focused row brought into view, for the overview's reason exactly.
+        focused.map_or(panel, |which| panel.showing(which))
     });
     let across = i32::try_from(alo_dock::more_apps::TheOverview::width().as_pixels()).unwrap_or(0);
     let tall = i32::try_from(
@@ -343,6 +363,24 @@ fn the_overflow_list(
     // needs them again — so the one that shaped the heading would make the one
     // that shapes a name a borrow error. Passing them in says the same thing
     // and lends them a line at a time.
+    /// The ring that marks keyboard focus on `item`: the item's own rectangle,
+    /// grown by the measured stand-off on every side.
+    ///
+    /// **One function for both faces.** A cell in the grid and a row in a window
+    /// list are different shapes and the ring around them is the same rule, and
+    /// the rule is a measurement — `docs/design/the-first-start.md` read it off
+    /// the design's `Keyboard focus / not selected` node. Written out at each of
+    /// the two sites it would be two chances to get the sign of the offset
+    /// wrong, and a ring four pixels *inside* an item looks like a border the
+    /// item grew rather than a ring around it.
+    fn a_focus_ring(item: Rectangle<i32, Physical>) -> Rectangle<i32, Physical> {
+        let off = i32::try_from(alo_dock::measures::THE_FOCUS_RING_STANDS_OFF).unwrap_or(4);
+        Rectangle::new(
+            (item.loc.x - off, item.loc.y - off).into(),
+            (item.size.w + 2 * off, item.size.h + 2 * off).into(),
+        )
+    }
+
     #[expect(
         clippy::too_many_arguments,
         reason = "two borrows and what one line of text needs; a bundle here would be a type per call site"
@@ -415,7 +453,13 @@ fn the_overflow_list(
 
         let rows_at = top + pad + head + down + count + down;
         let viewport = i32::try_from(panel.the_list_is_tall().as_pixels()).unwrap_or(0);
+        // **Subtracted from every row**, which is what makes the list scroll
+        // rather than merely clip. Without it a person with more windows than
+        // the viewport holds could see the first few and reach none of the
+        // rest, which is what every frame did until 2026-10-11.
+        let scrolled_rows = i32::try_from(panel.scrolled().as_pixels()).unwrap_or(0);
         let mut wells: Vec<Rectangle<i32, Physical>> = Vec::new();
+        let mut rings: Vec<Rectangle<i32, Physical>> = Vec::new();
         for (which, window) in picker
             .map(alo_dock::picking::ThePicker::rows)
             .unwrap_or(&[])
@@ -425,9 +469,18 @@ fn the_overflow_list(
             let Some(sits) = panel.where_a_row_sits(which) else {
                 continue;
             };
-            let y = rows_at + i32::try_from(sits.as_pixels()).unwrap_or(0);
+            let y = rows_at + i32::try_from(sits.as_pixels()).unwrap_or(0) - scrolled_rows;
             if y + row_is <= rows_at || y >= rows_at + viewport {
                 continue;
+            }
+            // **The ring, when this is the row the keyboard is on.** Pushed
+            // before the row's own well so the list reads in one order; which
+            // is drawn on top is the compositor's and it puts rings last.
+            if focused == Some(which) {
+                rings.push(a_focus_ring(Rectangle::new(
+                    (left + pad, y).into(),
+                    (inner, row_is).into(),
+                )));
             }
             // The row's own rounded surface, in the raster beside the circles.
             wells.push(Rectangle::new(
@@ -491,6 +544,8 @@ fn the_overflow_list(
                 // list is a column.
                 wells: &wells,
                 well_is: palette.badge,
+                rings: &rings,
+                ring_is: palette.ink,
             },
         ) {
             panels.push(washed);
@@ -561,7 +616,9 @@ fn the_overflow_list(
     // badges square.
     let mut circles: Vec<Rectangle<i32, Physical>> = Vec::new();
     let mut marks: Vec<Rectangle<i32, Physical>> = Vec::new();
+    let mut rings: Vec<Rectangle<i32, Physical>> = Vec::new();
     let cell = i32::try_from(alo_dock::measures::AN_APP_CELL_IS_WIDE).unwrap_or(94);
+    let cell_is = i32::try_from(alo_dock::measures::AN_APP_CELL_IS_TALL).unwrap_or(88);
     let icon = i32::try_from(alo_dock::measures::ICON).unwrap_or(48);
     let glyph = i32::try_from(alo_dock::measures::GLYPH).unwrap_or(28);
 
@@ -600,6 +657,16 @@ fn the_overflow_list(
             list.loc.x + i32::try_from(x.as_pixels()).unwrap_or(0),
             list.loc.y + i32::try_from(y.as_pixels()).unwrap_or(0) - scrolled,
         );
+        // **The whole cell is ringed, not the artwork.** The cell is what a
+        // person is choosing — it carries the label as well — and a ring around
+        // the 28-pixel glyph inside a 94-wide cell would point at the picture
+        // rather than at the thing Enter will open.
+        if focused == Some(which) {
+            rings.push(a_focus_ring(Rectangle::new(
+                at.into(),
+                (cell, cell_is).into(),
+            )));
+        }
         // **The artwork's box, centred across the cell.** The design's own
         // arrangement: a 48 icon area at the top of a 94-wide cell, with the
         // 28 artwork centred inside that.
@@ -739,6 +806,8 @@ fn the_overflow_list(
             mark: palette.ink,
             wells: &wells,
             well_is: palette.badge,
+            rings: &rings,
+            ring_is: palette.ink,
         },
     ) {
         panels.push(washed);
@@ -914,6 +983,14 @@ pub(crate) fn picture(
     // row in a window list. It is already computed above.
     let wells: Vec<Rectangle<i32, Physical>> = composer.into_iter().collect();
     let surface = crate::dock_surface::surface(crate::dock_surface::ADocksSurface {
+        // **No focus ring on the bar itself, and that is a gap and not a
+        // decision.** The keyboard reaches the two surfaces the bar opens; it
+        // does not yet reach the bar's own slots, so there is nothing here for
+        // a ring to mark. When it does, the rectangle is the slot's and the
+        // rule is `a_focus_ring`'s — the measurement is already in
+        // `alo_dock::measures`.
+        rings: &[],
+        ring_is: [0, 0, 0],
         // **The bar's own marks are still flat**, and visibly so: the Dock's
         // surface is painted before `solids`, so a mark pushed there lands on
         // top of it. That is why the bar's indicators have always been visible
@@ -1171,6 +1248,7 @@ pub(crate) fn picture(
                 text: look.scale(),
                 words,
                 picker: the_dock_has_open.the_windows_of(),
+                focused: the_dock_has_open.focused(),
                 palette,
             },
             fonts,
@@ -1289,6 +1367,238 @@ mod tests {
             &crate::what_the_dock_has_open::NOTHING,
             crate::desktop_testing::no_words(),
         )
+    }
+
+    /// **The keyboard's focus ring is pixels, and it is a ring.**
+    ///
+    /// # Why a differential count and not a shape list
+    ///
+    /// Three faults in this file were a shape that was computed, pushed into a
+    /// list, and then not drawn — the badges as squares, the running marks
+    /// painted under the panel they belonged to. A list of rectangles cannot
+    /// tell a drawn shape from a drawn-and-covered one, so this asks the raster
+    /// instead, and asks it twice: **the same picture with nothing focused is
+    /// the control**, because the popover's marks are ink-coloured too and a
+    /// bare count would be measuring those.
+    ///
+    /// # Why a band and not a floor
+    ///
+    /// The upper bound is the half that earns its keep. A **2-pixel outline**
+    /// around a 94 × 88 cell stood off by 4 covers roughly 780 pixels; the same
+    /// rectangle **filled** covers 9,792. A floor of *more than the control*
+    /// would pass for either, so a focus treatment that quietly became a solid
+    /// plate over the cell — hiding its artwork and its label — would pass. The
+    /// ceiling is what makes this a test that the ring is a ring.
+    #[test]
+    fn the_focus_ring_is_drawn_and_is_an_outline() {
+        let look = noon_look(&an_appearance(), alo_strings::Direction::LeftToRight);
+        let palette = look.palette().expect("a palette at noon");
+        let apps = on_the_dock(8);
+        // The ring colour and the popover's own ground are different, or
+        // nothing below would be measuring anything.
+        assert_ne!(
+            palette.ink, palette.dock,
+            "the premise: the ring's colour is not the panel's ground"
+        );
+
+        let ink_pixels = |focused: Option<usize>| -> usize {
+            let open = crate::WhatTheDockHasOpen::MoreApps { focused };
+            let drawn = picture(
+                &Dock::shipped(),
+                look,
+                (1920, 1080),
+                &apps,
+                &apps,
+                (&open, crate::desktop_testing::no_words()),
+                &mut fonts(),
+            )
+            .expect("a Dock with its overview open");
+            let list = drawn
+                .overflow_list
+                .expect("the overview was asked for and is not empty");
+            let mut ink = 0;
+            for washed in &drawn.panels {
+                // The popover's own raster and not the Dock's: both are panels
+                // and only one of them holds a grid.
+                if !washed.area.overlaps(list) {
+                    continue;
+                }
+                for pixel in washed.pixels.chunks(4) {
+                    let Some([r, g, b, a]) = pixel.first_chunk::<4>() else {
+                        continue;
+                    };
+                    if *a > 200 && [*r, *g, *b] == palette.ink {
+                        ink += 1;
+                    }
+                }
+            }
+            ink
+        };
+
+        let without = ink_pixels(None);
+        let with = ink_pixels(Some(0));
+        let extra = with.saturating_sub(without);
+        // 2 × 2 × (102 + 96) less four rounded corners, so a little under 780.
+        assert!(
+            (400..=1_200).contains(&extra),
+            "a 2px ring around one 94x88 cell should add roughly 780 ink pixels; \
+             nothing focused drew {without} and focusing the first cell drew {with}, \
+             which is {extra} more — a filled cell would be about 9,792"
+        );
+    }
+
+    /// **Focus reaches the scroll, on both faces.**
+    ///
+    /// # The fault this is about
+    ///
+    /// `TheOverview::showing` and `ThePickersPanel::showing` are each tested
+    /// where they live, and both pass with nothing in this file calling them.
+    /// **A fixture is silent about its own wiring**: the sixtieth application
+    /// would simply not be drawn, and *not drawn* is what every cell past the
+    /// viewport looks like — so the frame would be indistinguishable from a
+    /// correct frame of a list scrolled to the top.
+    ///
+    /// So this asks for the one thing that can only be true if the draw
+    /// scrolled: **the ring around the last of sixty is in the raster.** It
+    /// cannot be, at any scroll position but the end.
+    #[test]
+    fn focusing_the_last_of_sixty_scrolls_the_draw_and_not_only_the_layout() {
+        let look = noon_look(&an_appearance(), alo_strings::Direction::LeftToRight);
+        let palette = look.palette().expect("a palette at noon");
+        let apps = on_the_dock(60);
+        assert_eq!(apps.len(), 60, "the premise: sixty applications");
+
+        // A picker face as well as an overview face. `TheDocksWords::default`
+        // leaves `picker` unset, which is how the draw chooses the overview, so
+        // the other face needs words of its own — and the rows' states have to
+        // be as long as the list or the draw takes the wrong one for a row.
+        let picker_words = crate::the_docks_words::TheDocksWords {
+            picker: Some(crate::the_docks_words::ThePickersWords {
+                heading: "Windows".to_owned(),
+                count: "60 windows".to_owned(),
+                footer: "Escape goes back".to_owned(),
+                states: vec!["On the canvas".to_owned(); 60],
+            }),
+            ..crate::the_docks_words::TheDocksWords::default()
+        };
+        let a_browser_with_sixty = {
+            let patch =
+                alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1).expect("one by one is a patch");
+            let app = alo_dock::AppId::named("browser").expect("a named application");
+            let mut windows = alo_dock::Windows::none();
+            for number in 0..60_u64 {
+                windows.opened(alo_dock::Window::of(
+                    alo_dock::WindowId::numbered(number),
+                    Some(app.clone()),
+                    "A window",
+                    patch,
+                    alo_dock::HowItSits::OnTheCanvas,
+                ));
+            }
+            alo_dock::picking::ThePicker::of(
+                alo_dock::previews::Previews::of(
+                    &windows,
+                    &app,
+                    alo_dock::previews::Opened::ByPressingTheIcon,
+                ),
+                alo_appearance::TextScale::default(),
+                alo_dock::Room::pixels(768),
+            )
+        };
+
+        let ink_pixels = |open: &crate::WhatTheDockHasOpen,
+                          words: &crate::the_docks_words::TheDocksWords|
+         -> usize {
+            let drawn = picture(
+                &Dock::shipped(),
+                look,
+                (1366, 768),
+                &apps,
+                &apps,
+                (open, words),
+                &mut fonts(),
+            )
+            .expect("a Dock with a surface open");
+            let list = drawn.overflow_list.expect("the surface is open");
+            let mut ink = 0;
+            for washed in drawn.panels.iter().filter(|it| it.area.overlaps(list)) {
+                for pixel in washed.pixels.chunks(4) {
+                    let Some([r, g, b, a]) = pixel.first_chunk::<4>() else {
+                        continue;
+                    };
+                    if *a > 200 && [*r, *g, *b] == palette.ink {
+                        ink += 1;
+                    }
+                }
+            }
+            ink
+        };
+
+        // The overview: the sixtieth cell, which is far below the viewport.
+        let over_none = crate::WhatTheDockHasOpen::MoreApps { focused: None };
+        let over_last = crate::WhatTheDockHasOpen::MoreApps { focused: Some(59) };
+        let words = crate::the_docks_words::TheDocksWords::default();
+        let overview =
+            ink_pixels(&over_last, &words).saturating_sub(ink_pixels(&over_none, &words));
+        assert!(
+            (400..=1_200).contains(&overview),
+            "focusing the sixtieth application added {overview} ink pixels, so its ring \
+             was not drawn — the grid was not scrolled to it"
+        );
+
+        // And the window list: the sixtieth row.
+        let rows_none = crate::WhatTheDockHasOpen::TheWindowsOf {
+            picker: a_browser_with_sixty.clone(),
+            focused: None,
+        };
+        let rows_last = crate::WhatTheDockHasOpen::TheWindowsOf {
+            picker: a_browser_with_sixty,
+            focused: Some(59),
+        };
+        let rows = ink_pixels(&rows_last, &picker_words)
+            .saturating_sub(ink_pixels(&rows_none, &picker_words));
+        assert!(
+            rows > 400,
+            "focusing the sixtieth window added {rows} ink pixels, so its ring was not \
+             drawn — the list was not scrolled to it"
+        );
+    }
+
+    /// **A focused row far down a long list is on the screen.**
+    ///
+    /// The picker's list had no scroll at all until 2026-10-11: every row was
+    /// drawn at its content offset and whatever fell past the viewport was
+    /// clipped away, so a person with twenty windows could see about three and
+    /// reach none of the others. This asks the thing that proves it moved —
+    /// **the ring is in the raster** — rather than that a number changed.
+    #[test]
+    fn focusing_the_last_row_of_a_long_window_list_scrolls_it_into_view() {
+        let panel = alo_dock::picking::the_pickers_panel(20, alo_dock::Room::pixels(768));
+        assert!(
+            panel.scrolls(),
+            "the premise: twenty rows do not fit in the viewport"
+        );
+        assert!(
+            !panel.is_shown(19),
+            "the premise: the last of twenty is off the bottom before scrolling"
+        );
+        let scrolled = panel.showing(19);
+        assert!(
+            scrolled.is_shown(19),
+            "the row the keyboard moved to is still off the screen"
+        );
+        assert!(
+            !scrolled.is_shown(0),
+            "scrolling to the last row left the first one on the screen too, \
+             which means nothing moved"
+        );
+        // **The least it can**, which is what keeps a person's place: the last
+        // row sits at the bottom of the viewport, not at its top.
+        assert_eq!(
+            scrolled.scrolled(),
+            scrolled.the_furthest_it_scrolls(),
+            "scrolling to the last row of a list should be scrolled to its end"
+        );
     }
 
     /// The same Dock with its overflow list open.

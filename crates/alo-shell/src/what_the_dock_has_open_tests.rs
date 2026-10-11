@@ -49,9 +49,17 @@ fn a_picker() -> alo_dock::picking::ThePicker {
 fn each_state_answers_every_question() {
     let cases = [
         (WhatTheDockHasOpen::Nothing, false, false, false),
-        (WhatTheDockHasOpen::MoreApps, true, false, true),
         (
-            WhatTheDockHasOpen::TheWindowsOf(a_picker()),
+            WhatTheDockHasOpen::MoreApps { focused: None },
+            true,
+            false,
+            true,
+        ),
+        (
+            WhatTheDockHasOpen::TheWindowsOf {
+                picker: a_picker(),
+                focused: None,
+            },
             false,
             true,
             true,
@@ -89,7 +97,10 @@ fn the_default_is_nothing() {
 /// Dock's own list of applications.
 #[test]
 fn a_picker_carries_the_rows_a_drawing_needs() {
-    let open = WhatTheDockHasOpen::TheWindowsOf(a_picker());
+    let open = WhatTheDockHasOpen::TheWindowsOf {
+        picker: a_picker(),
+        focused: None,
+    };
     assert_eq!(
         open.the_windows_of().map(|picker| picker.rows().len()),
         Some(2),
@@ -137,14 +148,23 @@ fn now(asked: &super::WhatTheDockWasAskedFor, how_many: u64) -> WhatTheDockHasOp
 fn nothing_and_more_apps_are_what_they_were_asked_for() {
     use super::WhatTheDockWasAskedFor as Asked;
     assert_eq!(now(&Asked::Nothing, 3), WhatTheDockHasOpen::Nothing);
-    assert_eq!(now(&Asked::MoreApps, 3), WhatTheDockHasOpen::MoreApps);
+    assert_eq!(
+        now(&Asked::MoreApps { focused: None }, 3),
+        WhatTheDockHasOpen::MoreApps { focused: None }
+    );
 }
 
 /// **A chosen application becomes its own windows**, and only its own.
 #[test]
 fn a_chosen_application_becomes_its_windows_and_no_others() {
     use super::WhatTheDockWasAskedFor as Asked;
-    let open = now(&Asked::TheWindowsOf(app()), 3);
+    let open = now(
+        &Asked::TheWindowsOf {
+            app: app(),
+            focused: None,
+        },
+        3,
+    );
     let picker = open
         .the_windows_of()
         .unwrap_or_else(|| panic!("the list did not open: {open:?}"));
@@ -168,7 +188,10 @@ fn a_chosen_application_becomes_its_windows_and_no_others() {
 #[test]
 fn a_list_that_has_nothing_left_to_choose_between_closes() {
     use super::WhatTheDockWasAskedFor as Asked;
-    let asked = Asked::TheWindowsOf(app());
+    let asked = Asked::TheWindowsOf {
+        app: app(),
+        focused: None,
+    };
     assert_eq!(
         now(&asked, 1),
         WhatTheDockHasOpen::Nothing,
@@ -195,7 +218,10 @@ fn a_list_that_has_nothing_left_to_choose_between_closes() {
 #[test]
 fn the_rows_follow_the_windows_rather_than_being_remembered() {
     use super::WhatTheDockWasAskedFor as Asked;
-    let asked = Asked::TheWindowsOf(app());
+    let asked = Asked::TheWindowsOf {
+        app: app(),
+        focused: None,
+    };
 
     let before = now(&asked, 4);
     let after = now(&asked, 2);
@@ -223,13 +249,16 @@ fn the_rows_follow_the_windows_rather_than_being_remembered() {
 fn escape_goes_back_then_out_then_belongs_to_the_application() {
     use super::WhatTheDockWasAskedFor as Asked;
 
-    let picker = Asked::TheWindowsOf(app());
+    let picker = Asked::TheWindowsOf {
+        app: app(),
+        focused: None,
+    };
     let back = picker
         .when_escape_is_pressed()
         .unwrap_or_else(|| panic!("Escape did nothing to an open window list"));
     assert_eq!(
         back,
-        Asked::MoreApps,
+        Asked::MoreApps { focused: None },
         "Escape closed everything instead of going back to the overview"
     );
 
@@ -251,7 +280,10 @@ fn escape_goes_back_then_out_then_belongs_to_the_application() {
 #[test]
 fn leaving_a_window_list_takes_two_presses() {
     use super::WhatTheDockWasAskedFor as Asked;
-    let mut open = Asked::TheWindowsOf(app());
+    let mut open = Asked::TheWindowsOf {
+        app: app(),
+        focused: None,
+    };
     let mut presses = 0;
     while let Some(next) = open.when_escape_is_pressed() {
         open = next;
@@ -260,4 +292,207 @@ fn leaving_a_window_list_takes_two_presses() {
     }
     assert_eq!(open, Asked::Nothing);
     assert_eq!(presses, 2, "a window list should take back, then out");
+}
+
+/// **The first press focuses the first item, whichever key it was.**
+///
+/// All four, because *the first press* is a rule about the state and not about
+/// the direction: a person reaching for the keyboard after opening a popover
+/// with the mouse may press any of them, and three of the four landing nowhere
+/// would be a keyboard that works one time in four.
+#[test]
+fn the_first_press_of_any_arrow_focuses_the_first_item() {
+    use super::AKeyMoves::{Down, Left, Right, Up};
+    for pressed in [Up, Down, Left, Right] {
+        assert_eq!(
+            super::where_focus_goes(None, pressed, 9, 4),
+            Some(0),
+            "{pressed:?} from nothing focused"
+        );
+    }
+}
+
+/// **Nothing to focus returns the key**, so a popover holding no applications
+/// does not swallow a person's arrow keys.
+#[test]
+fn an_empty_surface_returns_every_arrow() {
+    use super::AKeyMoves::{Down, Left, Right, Up};
+    for pressed in [Up, Down, Left, Right] {
+        assert_eq!(
+            super::where_focus_goes(None, pressed, 0, 4),
+            None,
+            "{pressed:?} with nothing listed"
+        );
+        assert_eq!(
+            super::where_focus_goes(Some(0), pressed, 0, 4),
+            None,
+            "{pressed:?} with nothing listed and a stale focus"
+        );
+    }
+}
+
+/// **Every move on a four-across grid of nine, as a table.**
+///
+/// Nine is deliberately not a multiple of four: the bottom row holds one item,
+/// which is the case that separates *stop at the end* from *jump to the last
+/// item*. Down from 5 would be 9 and there is no 9, so it stays at 5 — it does
+/// **not** become 8, which is what a `min(how_many - 1)` would have done and
+/// would have moved the focus sideways on a key that says down.
+#[test]
+fn a_grid_of_nine_four_across_moves_and_stops() {
+    use super::AKeyMoves::{Down, Left, Right, Up};
+    //       from, pressed, to
+    let cases = [
+        (0, Right, 1),
+        (3, Right, 4),
+        (8, Right, 8),
+        (1, Left, 0),
+        (0, Left, 0),
+        (4, Left, 3),
+        (4, Up, 0),
+        (0, Up, 0),
+        (3, Up, 3),
+        (8, Up, 4),
+        (0, Down, 4),
+        (4, Down, 8),
+        (5, Down, 5),
+        (8, Down, 8),
+    ];
+    for (from, pressed, to) in cases {
+        assert_eq!(
+            super::where_focus_goes(Some(from), pressed, 9, 4),
+            Some(to),
+            "{pressed:?} from {from}"
+        );
+    }
+}
+
+/// **A list is a grid one across**, which is what the window picker is.
+#[test]
+fn one_across_is_a_list_and_every_key_moves_by_one() {
+    use super::AKeyMoves::{Down, Left, Right, Up};
+    let cases = [
+        (0, Down, 1),
+        (2, Down, 2),
+        (2, Up, 1),
+        (0, Up, 0),
+        (0, Right, 1),
+        (2, Right, 2),
+        (1, Left, 0),
+    ];
+    for (from, pressed, to) in cases {
+        assert_eq!(
+            super::where_focus_goes(Some(from), pressed, 3, 1),
+            Some(to),
+            "{pressed:?} from {from} of three"
+        );
+    }
+}
+
+/// **A focus past the end is pulled back onto the list**, rather than moving
+/// from where nothing is.
+///
+/// The state can hold one honestly: a person focuses the ninth application and
+/// an application closes, and the next draw has eight. The focus is not the
+/// draw's to correct, so the move is.
+#[test]
+fn a_focus_past_the_end_comes_back_to_the_last_item() {
+    use super::AKeyMoves::{Down, Left, Right, Up};
+    for pressed in [Up, Down, Left, Right] {
+        let to = super::where_focus_goes(Some(99), pressed, 3, 1);
+        assert!(
+            matches!(to, Some(which) if which < 3),
+            "{pressed:?} from a stale 99 of three landed on {to:?}"
+        );
+    }
+}
+
+/// **No row is `across` wide when `across` is zero.** A caller that worked out
+/// zero columns would otherwise move Up and Down by nothing, and the keyboard
+/// would be stuck on a grid it could see.
+#[test]
+fn zero_across_is_treated_as_one() {
+    use super::AKeyMoves::Down;
+    assert_eq!(super::where_focus_goes(Some(0), Down, 3, 0), Some(1));
+}
+
+/// **An arrow with nothing open is not the Dock's key**, whichever direction.
+#[test]
+fn an_arrow_with_nothing_open_is_the_applications() {
+    use super::AKeyMoves::{Down, Left, Right, Up};
+    use super::WhatTheDockWasAskedFor as Asked;
+    for pressed in [Up, Down, Left, Right] {
+        assert_eq!(
+            Asked::Nothing.when_an_arrow_is_pressed(pressed, 9, 4),
+            None,
+            "{pressed:?} with nothing open"
+        );
+    }
+}
+
+/// **Moving in a window list keeps the application it is a list of.**
+///
+/// The id is not re-derived at the next draw — `what_that_means_now` builds the
+/// picker from it — so a move that dropped or changed it would show somebody
+/// else's windows after one key press.
+#[test]
+fn moving_in_a_window_list_keeps_whose_windows_it_is() {
+    use super::AKeyMoves::Down;
+    use super::WhatTheDockWasAskedFor as Asked;
+    let asked = Asked::TheWindowsOf {
+        app: app(),
+        focused: None,
+    };
+    let moved = asked
+        .when_an_arrow_is_pressed(Down, 3, 1)
+        .unwrap_or_else(|| panic!("the arrow was refused: {asked:?}"));
+    match moved {
+        Asked::TheWindowsOf {
+            app: whose,
+            focused,
+        } => {
+            assert_eq!(whose, app(), "the list changed application");
+            assert_eq!(
+                focused,
+                Some(0),
+                "the first press did not focus the first row"
+            );
+        }
+        other => panic!("a move left the window list: {other:?}"),
+    }
+}
+
+/// **Escape out of a focused window list arrives at an unfocused overview.**
+///
+/// Not the focus the overview last had: a person pressing Escape is leaving,
+/// and a ring waiting where they were several presses ago is a ring they have
+/// to find before they can trust an arrow key.
+#[test]
+fn escape_from_a_window_list_leaves_the_overview_unfocused() {
+    use super::WhatTheDockWasAskedFor as Asked;
+    let asked = Asked::TheWindowsOf {
+        app: app(),
+        focused: Some(2),
+    };
+    assert_eq!(
+        asked.when_escape_is_pressed(),
+        Some(Asked::MoreApps { focused: None })
+    );
+}
+
+/// **`focused` agrees with the variant it was built from**, for all three.
+#[test]
+fn what_is_focused_is_what_was_put_there() {
+    use super::WhatTheDockWasAskedFor as Asked;
+    assert_eq!(Asked::Nothing.focused(), None);
+    assert_eq!(Asked::MoreApps { focused: None }.focused(), None);
+    assert_eq!(Asked::MoreApps { focused: Some(7) }.focused(), Some(7));
+    assert_eq!(
+        Asked::TheWindowsOf {
+            app: app(),
+            focused: Some(1),
+        }
+        .focused(),
+        Some(1)
+    );
 }

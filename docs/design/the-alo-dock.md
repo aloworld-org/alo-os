@@ -187,6 +187,61 @@ A screen reader announces the application's name, how many windows it has,
 whether one is focused or was put aside, and where a chosen window sits on the
 canvas — *"Browser, three windows open, one minimised"*.
 
+### What is built, as of 2026-10-11
+
+The sentence above is the promise. This is where the build stands against it,
+written down because *"arrow keys move between applications"* reads as done or
+not done and was neither.
+
+| the promise | built |
+|---|---|
+| Escape closes whatever Dock surface is open | **yes** — and the window list goes back to the overview before the overview closes |
+| arrow keys move between applications and previews | **yes**, in both of the Dock's surfaces |
+| Enter focuses | **yes** — in the overview it does what pressing the icon does, in a window list it brings that window back and focuses it |
+| keyboard focus scrolls the focused row into view | **yes**, in the grid and in the window list |
+| the menu key opens the actions | **no**. `alo_dock::menu` is the model and nothing opens it |
+| everything the Dock shows on hover is reachable by keyboard focus | **no** — the bar's own slots take no keyboard focus yet, only the two surfaces they open |
+
+**The bar's own slots and the popover's contents take no pointer press either**,
+which is a larger gap in the same place: `crate::where_the_dock_is::TheDocksPlaces`
+is the hit test and it covers the band, not the surface above it. So today the
+keyboard is the only way to choose anything inside *More apps* or a window list.
+
+### Which keys, and why by code
+
+Escape, Enter, the number pad's Enter, and the four arrows — taken by their
+**evdev codes**, read from `/usr/include/linux/input-event-codes.h` on
+2026-10-11: `KEY_ESC` 1, `KEY_ENTER` 28, `KEY_KPENTER` 96, `KEY_UP` 103,
+`KEY_LEFT` 105, `KEY_RIGHT` 106, `KEY_DOWN` 108. That was a once-off reading of
+the header and nothing re-reads it on every build.
+
+A code is the right thing to act on for exactly these keys, because each sits in
+the same place on every layout. **Nothing that moves between layouts may be
+added to that list**, and a key nobody listed reaches the person's application
+rather than being swallowed — which is the rule that keeps a shell from being
+one in which no program can be cancelled.
+
+**Both Enters**, because a keyboard has two and taking one would give somebody
+who uses the number pad a popover they can move around and cannot choose from.
+
+### The focus ring is a measurement, carried from another screen
+
+Keyboard focus is **a 2px navy ring standing 4px outside the focused item, with
+a corner radius of the item's plus 4**. That is not a choice made here: it is
+`docs/design/the-first-start.md`'s reading of the design's own
+`Keyboard focus / not selected` node (`384:26478`), where a 600×108 card at
+x 160, y 205 gets a 608×116 ring at x 156, y 201, 2px `#102a43`, radius 16
+against the card's 12.
+
+**Carried to the Dock's surfaces deliberately**, and written here because the
+design file has no focus node of its own for this popover. If one is drawn and
+disagrees, the design wins. The numbers live in
+`alo_dock::measures::THE_FOCUS_RING_IS_THICK` and `THE_FOCUS_RING_STANDS_OFF`.
+
+It is drawn **outside** the item, which is what makes it read as its own element
+rather than a border the item grew — and it is separate from the Dock's running
+mark, which is a bar inside the slot. **Teal never means focused** (ADR 0067).
+
 ## Two things the designs say that the words do not
 
 **The status area is at the top right.** [ADR

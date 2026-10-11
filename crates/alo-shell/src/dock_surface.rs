@@ -41,7 +41,8 @@
 //! a difference nobody can see at this radius and this opacity.
 
 use alo_dock::measures::{
-    THE_COMPOSERS_CORNER, THE_DOCKS_CORNER, THE_DOCKS_EDGE, THE_SHADOW_FALLS, THE_SHADOW_SPREADS,
+    THE_COMPOSERS_CORNER, THE_DOCKS_CORNER, THE_DOCKS_EDGE, THE_FOCUS_RING_IS_THICK,
+    THE_FOCUS_RING_STANDS_OFF, THE_SHADOW_FALLS, THE_SHADOW_SPREADS,
 };
 use smithay::utils::{Physical, Rectangle};
 
@@ -121,6 +122,19 @@ pub(crate) struct ADocksSurface<'a> {
     pub(crate) wells: &'a [Rectangle<i32, Physical>],
     /// Their ground, which is cooler than the Dock's.
     pub(crate) well_is: [u8; 3],
+    /// Keyboard focus rings: the **outer** rectangle of each, already stood off
+    /// from what it surrounds.
+    ///
+    /// Outlines and not fills, which is why they are here and not in `solids`
+    /// twice over: a rectangle cannot say *this edge and not the middle*, and
+    /// the corners are partial coverage like everything else on a panel.
+    ///
+    /// **Drawn last of all**, so nothing on the panel covers the one mark that
+    /// tells a person where their next key press will land.
+    pub(crate) rings: &'a [Rectangle<i32, Physical>],
+    /// What colour they are. Navy in the light appearance; see
+    /// `alo_dock::measures::THE_FOCUS_RING_IS_THICK`.
+    pub(crate) ring_is: [u8; 3],
     /// The display, so the raster can be kept on it.
     ///
     /// **The shadow's reach puts the raster past the screen's edge** — the Dock
@@ -259,6 +273,37 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
                 .fold(0.0_f32, f32::max)
                 * inside;
 
+            // **Each ring, by the hairline's own rule.** Two distances a line
+            // apart and the difference between them is the stroke: the same
+            // arithmetic `within`/`hairline` does for the panel's own edge
+            // twenty lines up, which is why there is no second formulation of
+            // *an outline* in this file.
+            //
+            // The radius is the item's corner plus the stand-off, because the
+            // ring is outside the item by that much on every side and a ring
+            // with the item's own radius would run closer at the corners than
+            // along the flats. The design's node measured 16 against a card of
+            // 12, which is this sum.
+            let ring = of
+                .rings
+                .iter()
+                .map(|at| {
+                    let (rx, ry) = (
+                        (at.loc.x - area.loc.x) as f32,
+                        (at.loc.y - area.loc.y) as f32,
+                    );
+                    let (w, h) = (at.size.w as f32 / 2.0, at.size.h as f32 / 2.0);
+                    let r = ((THE_COMPOSERS_CORNER + THE_FOCUS_RING_STANDS_OFF) as f32)
+                        .min(w)
+                        .min(h);
+                    let d = rounded(px, py, rx + w, ry + h, w, h, r);
+                    let outer = (0.5 - d).clamp(0.0, 1.0);
+                    let inner = (0.5 - (d + THE_FOCUS_RING_IS_THICK as f32)).clamp(0.0, 1.0);
+                    (outer - inner).clamp(0.0, 1.0)
+                })
+                .fold(0.0_f32, f32::max)
+                * inside;
+
             // Composited back to front: shadow, fill, hairline, accent.
             let mut colour = [0.0_f32; 3];
             let mut alpha = 0.0_f32;
@@ -274,6 +319,12 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
                 // **The mark after the badge**, so a running dot sits on the
                 // circle rather than under it.
                 (mark, of.mark),
+                // **And the focus ring after everything.** It stands outside
+                // the item it marks, so it rarely meets anything — but a cell
+                // at the edge of the list has a neighbour four away, and the
+                // ring is the one thing on this panel that must not be the
+                // shape that loses.
+                (ring, of.ring_is),
             ] {
                 if over <= 0.0 {
                     continue;
@@ -336,6 +387,8 @@ pub(crate) fn a_panel(
         mark: on_it.mark,
         wells: on_it.wells,
         well_is: on_it.well_is,
+        rings: on_it.rings,
+        ring_is: on_it.ring_is,
     })
 }
 
@@ -375,6 +428,10 @@ pub(crate) struct APanelsShapes<'a> {
     pub(crate) wells: &'a [Rectangle<i32, Physical>],
     /// What colour it is.
     pub(crate) well_is: [u8; 3],
+    /// Keyboard focus rings, each the outer rectangle of one ring.
+    pub(crate) rings: &'a [Rectangle<i32, Physical>],
+    /// What colour they are.
+    pub(crate) ring_is: [u8; 3],
 }
 
 /// The signed distance from a point to a rounded rectangle: negative inside,

@@ -489,8 +489,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         windows
     };
-    let the_browsers_windows =
-        alo_shell::WhatTheDockHasOpen::TheWindowsOf(alo_dock::picking::ThePicker::of(
+    let the_browsers_windows = alo_shell::WhatTheDockHasOpen::TheWindowsOf {
+        picker: alo_dock::picking::ThePicker::of(
             alo_dock::previews::Previews::of(
                 &a_browser_with_four_windows,
                 &alo_dock::AppId::named("Browser").map_err(|error| format!("{error:?}"))?,
@@ -498,7 +498,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             ),
             alo_appearance::TextScale::default(),
             alo_dock::Room::pixels(1_000),
-        ));
+        ),
+        // **The second row, so the picture shows the ring.** A check that only
+        // ever drew the unfocused list would be a check that passes with no
+        // focus treatment drawn at all — and the ring is the whole of what tells
+        // a person where an arrow key just put them.
+        focused: Some(1),
+    };
     draw(
         "one application's windows",
         &shipped,

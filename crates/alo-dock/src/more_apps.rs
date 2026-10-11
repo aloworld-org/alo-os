@@ -126,6 +126,29 @@ pub struct TheOverview {
 }
 
 impl TheOverview {
+    /// How many applications the grid puts on one row.
+    ///
+    /// **Four columns, and fewer when there is not the width for four.** The
+    /// design's description: *4 columns at this size, fewer on narrow screens.*
+    /// The width is fixed at 448 today, so this is four — it is computed rather
+    /// than written down so that a narrower popover gets the right answer
+    /// without this file being edited again.
+    ///
+    /// It takes no arguments because it depends on nothing a caller has: the
+    /// popover's width is this crate's own measure and the same on every
+    /// display. **It is public so the keyboard can ask it.** An arrow key moves
+    /// focus a whole row, which is this number, and the shell's router works
+    /// that out before any `TheOverview` exists for the frame — given its own
+    /// copy of the arithmetic it would be a second place for *four* to live,
+    /// and a popover narrowed to three columns would move the ring four.
+    #[must_use]
+    pub const fn how_many_across() -> usize {
+        let across = MORE_APPS_IS_WIDE.saturating_sub(INSIDE_MORE_APPS * 2);
+        let columns =
+            ((across + BETWEEN_APP_CELLS) / (AN_APP_CELL_IS_WIDE + BETWEEN_APP_CELLS)) as usize;
+        if columns == 0 { 1 } else { columns }
+    }
+
     /// Lay it out for `pinned` pinned applications and `others` others, in
     /// `room` of vertical space.
     ///
@@ -133,15 +156,7 @@ impl TheOverview {
     /// the caller knows where the bar is and this does not.
     #[must_use]
     pub fn of(pinned: usize, others: usize, room: Room) -> Self {
-        // **Four columns, and fewer when there is not the width for four.**
-        // The design's description: *4 columns at this size, fewer on narrow
-        // screens.* The width is fixed at 448 today, so this is four — it is
-        // computed rather than written down so that a narrower popover gets
-        // the right answer without this file being edited again.
-        let across = MORE_APPS_IS_WIDE.saturating_sub(INSIDE_MORE_APPS * 2);
-        let columns =
-            ((across + BETWEEN_APP_CELLS) / (AN_APP_CELL_IS_WIDE + BETWEEN_APP_CELLS)) as usize;
-        let columns = columns.max(1);
+        let columns = Self::how_many_across();
 
         let group = |how_many: usize, at: u32| {
             let rows = how_many.div_ceil(columns);

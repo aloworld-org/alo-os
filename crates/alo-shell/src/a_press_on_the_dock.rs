@@ -221,13 +221,18 @@ impl crate::Server {
             Some(WhatAPressOnTheDockDoes::TurnTheOverflowOver) => {
                 use crate::what_the_dock_has_open::WhatTheDockWasAskedFor as Asked;
                 self.the_dock_was_asked_for =
-                    if matches!(self.the_dock_was_asked_for, Asked::MoreApps) {
+                    if matches!(self.the_dock_was_asked_for, Asked::MoreApps { .. }) {
                         Asked::Nothing
                     } else {
                         // **Opening the overview closes a window list**, which
                         // is what one field rather than two guarantees: there
                         // is no state in which both are open.
-                        Asked::MoreApps
+                        //
+                        // **Nothing focused**, because a pointer opened it. The
+                        // first arrow key focuses the first application; a ring
+                        // drawn before any key is pressed would say the
+                        // keyboard is somewhere it is not.
+                        Asked::MoreApps { focused: None }
                     };
                 true
             }
@@ -270,7 +275,7 @@ impl crate::Server {
     /// placeholder**, which is worse than not travelling — a view that jumps
     /// somewhere arbitrary is harder to recover from than one that stays put.
     /// What is owed is the window's real patch reaching this builder.
-    fn go_to_this_application(&mut self, app: &alo_dock::AppId) {
+    pub(crate) fn go_to_this_application(&mut self, app: &alo_dock::AppId) {
         let windows = self.the_windows_the_dock_sees();
         let (id, back) = match what_a_press_on_an_icon_does(&windows, app) {
             // **Several windows: open the list and let the person say which.**
@@ -279,9 +284,10 @@ impl crate::Server {
             // a window that closes while the list is open leaves it.
             WhatAnIconDoes::OpenThePicker => {
                 self.the_dock_was_asked_for =
-                    crate::what_the_dock_has_open::WhatTheDockWasAskedFor::TheWindowsOf(
-                        app.clone(),
-                    );
+                    crate::what_the_dock_has_open::WhatTheDockWasAskedFor::TheWindowsOf {
+                        app: app.clone(),
+                        focused: None,
+                    };
                 return;
             }
             // `Launch` is named above: nothing here can start an application.

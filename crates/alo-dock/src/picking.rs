@@ -186,6 +186,7 @@ pub fn the_pickers_panel(how_many: usize, room: Room) -> ThePickersPanel {
         viewport,
         tall: fixed.saturating_add(viewport),
         whole,
+        scrolled: 0,
     }
 }
 
@@ -200,6 +201,16 @@ pub struct ThePickersPanel {
     tall: u32,
     /// How tall every row together is, scrolled or not.
     whole: u32,
+    /// How far down the list has been scrolled.
+    ///
+    /// **This panel had no scroll at all until 2026-10-11**, and the draw drew
+    /// every row at its content offset and clipped away whatever fell past the
+    /// viewport. So a person with more windows than the list could hold could
+    /// see the first few and reach none of the rest — the rows were not hidden
+    /// behind a scroll, they were simply not reachable. The design says
+    /// otherwise in as many words: *keyboard focus must scroll the focused row
+    /// into view.*
+    scrolled: u32,
 }
 
 impl ThePickersPanel {
@@ -221,7 +232,59 @@ impl ThePickersPanel {
         self.whole > self.viewport
     }
 
+    /// How far down the list has been scrolled.
+    #[must_use]
+    pub const fn scrolled(self) -> Room {
+        Room::pixels(self.scrolled)
+    }
+
+    /// The most it can be scrolled, which is everything below the viewport.
+    #[must_use]
+    pub const fn the_furthest_it_scrolls(self) -> Room {
+        Room::pixels(self.whole.saturating_sub(self.viewport))
+    }
+
+    /// Scroll the least it can so that the `which`th row is wholly in view.
+    ///
+    /// **The least it can**, so arrowing one row past the bottom moves the list
+    /// one row and not to that row's own top — `ThePanel::showing_row` says why
+    /// at greater length, and this is deliberately the same rule: a person
+    /// should not lose their place in a list by reaching the end of it.
+    ///
+    /// `which` indexes the whole list. A row past the end leaves the panel
+    /// alone rather than scrolling to nowhere.
+    #[must_use]
+    pub fn showing(mut self, which: usize) -> Self {
+        let Some(top) = self.where_a_row_sits(which).map(Room::as_pixels) else {
+            return self;
+        };
+        let bottom = top.saturating_add(crate::measures::A_WINDOW_ROW_IS_TALL);
+        if top < self.scrolled {
+            self.scrolled = top;
+        } else if bottom > self.scrolled.saturating_add(self.viewport) {
+            self.scrolled = bottom.saturating_sub(self.viewport);
+        }
+        self.scrolled = self
+            .scrolled
+            .min(self.the_furthest_it_scrolls().as_pixels());
+        self
+    }
+
+    /// Whether the `which`th row is at least partly in view.
+    #[must_use]
+    pub fn is_shown(self, which: usize) -> bool {
+        let Some(top) = self.where_a_row_sits(which).map(Room::as_pixels) else {
+            return false;
+        };
+        top.saturating_add(crate::measures::A_WINDOW_ROW_IS_TALL) > self.scrolled
+            && top < self.scrolled.saturating_add(self.viewport)
+    }
+
     /// Where the `which`th row sits inside the list's content.
+    ///
+    /// **Before any scrolling**, like `TheOverview::where_a_cell_sits` — the
+    /// draw subtracts [`Self::scrolled`] once, for the group headings and the
+    /// rows together.
     ///
     /// [`None`] past the last window.
     #[must_use]
