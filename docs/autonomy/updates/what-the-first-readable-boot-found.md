@@ -37,20 +37,30 @@ unmet condition check ConditionFirstBoot=yes
 A machine written this way boots with **none of the seven applications** and
 reports success. The unit is enabled, correct, and skipped.
 
-The cause, measured rather than guessed:
+**The cause, after the first attempt at it was wrong.** This document first
+said `bootc install to-disk` populates `/etc/machine-id` and so consumes the
+first boot. That was inferred from a 33-byte file on a disk that *had already
+booted*, and a later run measured the three states properly:
 
 | | |
 |---|---|
-| `/etc/machine-id` in the image | **0 bytes** — the convention that makes the next boot a first boot |
-| `/etc/machine-id` on the written disk | **33 bytes**, populated, timestamped at the install and not the boot |
-| the recipe | never names `machine-id` at all |
+| `/etc/machine-id` in the container image | **0 bytes** — the convention that makes the next boot a first boot |
+| on a freshly written disk, never booted | **0 bytes** |
+| after one boot | **33 bytes**, with that boot's own mtime |
 
-So `bootc install to-disk` populates it, **which consumes the first boot
-before the machine has ever booted.** `ConditionFirstBoot=yes` can therefore
-never be true on a machine installed this way.
+So the **boot** populates it, not the install, and the recipe never names it.
 
-`first-boot-complete.target` was skipped by the same condition in the same
-boot, which is the control: this is the mechanism and not one unit's bad luck.
+**And the condition was still unmet on that boot.** On a disk that could not
+be fresher, with an empty `machine-id` in the deployment,
+`first-boot-complete.target - First Boot Complete skipped, unmet condition
+check ConditionFirstBoot=yes` at 171 seconds — before anything of this
+project's ran. systemd had already decided it was not a first boot.
+
+Why it decides that is not measured and is not claimed: the likely mechanism
+is that systemd settles first-boot from the `/etc` it sees in the initrd, and
+on an ostree deployment that is not the `/etc` carrying this `machine-id`.
+**What is measured is that it never fires** — on two independently written
+disks, one of them proven fresh — which is all the fix needs to be true.
 
 The unit's own comment reads *ConditionFirstBoot, not a stamp file of our own
 — systemd already knows what a first boot is*. That is true of systemd and

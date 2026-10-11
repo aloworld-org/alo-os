@@ -48,6 +48,13 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+# A root of its own for the mark that says this machine's applications were
+# walked, so that test reads a temporary directory and not /var. The fault it
+# guards against is a `beneath` that threw the root away and passed on any
+# machine that had already run. Nothing this crate ships writes a temporary
+# file.
+tempfile = "3"
+
 # The list a person sees, read before and after an installation to show nothing
 # new arrived on it, and after a removal to show what the application held is
 # gone from it.
