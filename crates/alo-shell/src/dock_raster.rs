@@ -241,8 +241,8 @@ fn the_overflow_list(
         palette,
     } = drawn;
     let (width, height) = room;
-    let beside = i32::try_from(alo_dock::measures::BESIDE_A_NAME_IN_THE_OVERFLOW).unwrap_or(0);
-    let around = i32::try_from(alo_dock::measures::AROUND_THE_OVERFLOWS_HEADING).unwrap_or(0);
+    let beside = i32::try_from(alo_dock::measures::BESIDE_A_NAME_IN_A_LIST).unwrap_or(0);
+    let around = i32::try_from(alo_dock::measures::BESIDE_A_NAME_IN_A_LIST).unwrap_or(0);
     let gap = i32::try_from(alo_dock::measures::GAP).unwrap_or(0);
 
     // **How much room there is between the bar and the far side of the screen**,
@@ -701,7 +701,7 @@ pub(crate) fn picture(
     // the field's left behind its padding, the key at its right behind the same
     // — so each is placed from its own end rather than centred.
     if let Some(field) = composer {
-        let pad = i32::try_from(alo_dock::measures::AROUND_THE_OVERFLOWS_HEADING).unwrap_or(12);
+        let pad = i32::try_from(alo_dock::measures::BESIDE_A_NAME_IN_A_LIST).unwrap_or(12);
         let body = i32::try_from(alo_dock::measures::TEXT_AT_ORDINARY).unwrap_or(15);
         let small = i32::try_from(alo_dock::measures::A_SMALL_LABEL_IS).unwrap_or(11);
         for (what, size, from_the_left) in [

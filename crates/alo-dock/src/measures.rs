@@ -291,38 +291,107 @@ pub const GAP: u32 = 8;
 /// The room between what the dock holds and each of the dock's two faces.
 pub const MARGIN: u32 = 8;
 
-/// How wide the list the overflow control opens is.
+/// How wide *More apps* is.
 ///
-/// **Measured, and the same on all four edges** — which is what keeps it a
-/// number rather than a proportion. `docs/design/figma-snapshot/70-28.xml` names
-/// it `More apps / opens inward` beside a left dock, a right dock and a top
-/// dock, and `Open applications overflow` beside the bottom one, and all four
-/// are **248 × 313**.
+/// Measured off `More apps / Popover` — `406:26881`, read from the live file on
+/// 2026-10-11 and captured in `docs/design/figma-snapshot/406-26881.xml`. Every
+/// one of its six states is 448 wide.
 ///
-/// The 313 is not here, and that is the owner's ruling of 2026-10-10: it was six
-/// rows at a 39 pitch, and 39 is below the 44 every control in alo OS is built
-/// to. *Let the panel grow beyond 313px when space permits, then scroll its list
-/// within the available screen space.* So the height follows the contents and
-/// the room, and only the width is a measurement.
-pub const AN_OVERFLOW_PANEL_IS_WIDE: u32 = 248;
+/// **This replaced 248, which was a different surface.** That figure came from
+/// `More apps / opens inward`: a narrow list of the applications that
+/// overflowed. The owner's ruling of 2026-10-11 (ADR 0103) made this an
+/// overview of every pinned and open application, drawn as a grid with a search
+/// field, and gave it a design of its own. The old frame is not an earlier
+/// version of this one and nothing may be measured off it.
+pub const MORE_APPS_IS_WIDE: u32 = 448;
 
-/// The room above and below the overflow list's heading.
+/// The most *More apps* may be, top to bottom, heading and footer included.
 ///
-/// Measured: the heading sits at y 12 in a panel whose divider is at y 44, so
-/// there are twelve above it and about ten below. Twelve is taken for both,
-/// because two paddings that differ by two pixels are a drawing's slack rather
-/// than a decision, and a reader asked to keep them apart would have nothing to
-/// go on.
-pub const AROUND_THE_OVERFLOWS_HEADING: u32 = 12;
-
-/// The room either side of a name in the overflow list.
+/// **A cap, not a height.** Stated by the owner on 2026-10-11, separately from
+/// the design file: *these are caps, not heights that increase with application
+/// count. Sixty applications must scroll inside the same bounded viewport.*
 ///
-/// Measured: the rows sit at x 18 and the divider at x 17, in a panel 248 wide.
-/// Eighteen for both sides, symmetrised for the same reason as
-/// [`AROUND_THE_OVERFLOWS_HEADING`] — the file's own two numbers differ by one.
-pub const BESIDE_A_NAME_IN_THE_OVERFLOW: u32 = 18;
+/// Every state in the design is drawn at this number, which is exactly why the
+/// file cannot show that it is a maximum — so it is said here instead.
+pub const MORE_APPS_IS_AT_MOST_TALL: u32 = 536;
 
-/// How thick the rule under the overflow list's heading is.
+/// The most the scrolling list of applications inside it may be.
+///
+/// The other half of the same ruling, and the one that does the work: the
+/// heading, the search field and the footer are fixed, and **only this
+/// scrolls**. On an output too short for the whole popover this shrinks further
+/// so that the rest still fits.
+pub const THE_APP_LIST_IS_AT_MOST_TALL: u32 = 336;
+
+/// The room inside *More apps*, on every side.
+///
+/// Measured: the first child sits at 25 in a panel with a 1-wide border, so the
+/// padding inside the border is 24 — which is `space/6` in the design's own
+/// tokens.
+pub const INSIDE_MORE_APPS: u32 = 24;
+
+/// Between the heading, the search field, the list and the footer.
+///
+/// Measured: 73 − 57, 137 − 121 and 489 − 473 are each 16, which is `space/4`.
+pub const DOWN_MORE_APPS: u32 = 16;
+
+/// How tall the heading of *More apps* is.
+///
+/// Measured: `Heading`, 400 × **32**, holding *More apps* at 22/30.
+pub const THE_MORE_APPS_HEADING_IS_TALL: u32 = 32;
+
+/// How tall its search field is.
+///
+/// Measured: `Search pinned and open applications`, 400 × **48** — the same 48
+/// every control on the Dock is built to.
+pub const THE_SEARCH_FIELD_IS_TALL: u32 = 48;
+
+/// How tall the line of words under the list is.
+///
+/// **22, which is its box and not its ink.** The capture reports the text as
+/// 207 × 16 — that is the glyphs at 11/16. The box it sits in is what the
+/// layout uses, and the frame gives it exactly: the footer starts at 489, the
+/// popover is 536, and the bottom border and padding are 25, so 536 − 25 − 489
+/// is 22.
+///
+/// Worth the four lines because taking the 16 makes the whole popover 530 and
+/// the owner's cap is 536, and a reader checking the sum would find it 6 short
+/// with every individual number right.
+pub const THE_MORE_APPS_FOOTER_IS_TALL: u32 = 22;
+
+/// How wide one application's cell in the grid is.
+///
+/// Measured: `More apps / Application`, **94** × 88, and the component's own
+/// description says so — *94×88 grid cell; 48×48 icon area; 28×28 artwork.*
+pub const AN_APP_CELL_IS_WIDE: u32 = 94;
+
+/// How tall one is.
+pub const AN_APP_CELL_IS_TALL: u32 = 88;
+
+/// Between cells, between rows, and between a group's heading and its rows.
+///
+/// Measured: the cells sit at 0, 102, 204 and 306, so 8 between them; the rows
+/// at 26 and 122 under an 18-high heading, so 8 again. One number because the
+/// design uses one — `space/2`.
+pub const BETWEEN_APP_CELLS: u32 = 8;
+
+/// How tall a group's heading is — *Pinned*, *Other open apps*.
+///
+/// Measured: 44 × **18** and 104 × **18**, at 13/18.
+pub const AN_APP_GROUP_HEADING_IS_TALL: u32 = 18;
+
+/// The room either side of a name in a list the Dock opens.
+///
+/// Measured off the old `More apps / opens inward`: the rows sit at x 18 and
+/// the divider at x 17, in a panel 248 wide. Eighteen for both sides,
+/// symmetrised because the file's own two numbers differ by one.
+///
+/// **Still used, and no longer by *More apps*.** The window chooser is a list
+/// of rows and this is its inset; the overview is a grid and uses
+/// [`INSIDE_MORE_APPS`].
+pub const BESIDE_A_NAME_IN_A_LIST: u32 = 18;
+
+/// How thick a rule under a heading is.
 ///
 /// Measured: `Divider`, 214 × **1**.
 pub const A_DIVIDER: u32 = 1;

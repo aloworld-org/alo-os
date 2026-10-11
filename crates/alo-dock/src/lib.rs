@@ -206,6 +206,7 @@ pub mod labels;
 pub mod layout;
 pub mod measures;
 pub mod menu;
+pub mod more_apps;
 pub mod offering;
 pub mod on_the_canvas;
 /// The list of windows an icon with several of them opens.

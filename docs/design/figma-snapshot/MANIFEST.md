@@ -8,6 +8,35 @@ that prose was 55 top-level frames behind without anything saying so.
 **Approved by the owner on 2026-10-04**, with the size explicitly accepted: *an untraceable
 design change is the larger problem.*
 
+## Stale for a second component, 2026-10-11
+
+**`70-28.xml` is stale for `More apps / Popover` and `406-26881.xml` is
+authoritative for it.** Same shape as the 2026-10-09 entry below, and found the
+same way: searched by name against the 7,344 frames the page export holds,
+`More apps / Popover` returns nothing. The only match for *More apps* is
+`More apps / opens inward`, which is the **list** design this component
+replaces.
+
+That replacement is the part a reader must not miss. They are not two versions
+of one design. The owner's ruling of 2026-10-11 —
+[ADR 0103](../decisions/0103-the-dock-more-apps-and-the-minimised-panel-are-three-connected-surfaces.md)
+— changed what the surface *is*, from the applications that overflowed to every
+pinned and open application, and `406:26881` is the design for the new one. So
+`AN_OVERFLOW_PANEL_IS_WIDE = 248`, measured off the old frame, is superseded by
+the 448 in the new one.
+
+**Freshness is not claimed from node ids**, by the owner's standing direction.
+This capture evidences itself two ways instead. It was read from the live file
+on 2026-10-11, node by node, after the owner gave the two links. And it holds
+six states — `Default`, `Search`, `No results`, `Keyboard`, `Scroll` and
+`Windows` — of which `Windows` is the window chooser that ADR 0103 created on
+that day. A capture made before the ruling could not hold it.
+
+The heights in it are **caps and not measurements**: the owner stated 536 for
+the whole popover and 336 for the list viewport separately from the file, and
+every state is drawn at the cap. The file itself cannot show that distinction,
+which is why it is written at the top of `406-26881.xml`.
+
 ## Stale for one component, 2026-10-09
 
 **`70-28.xml` is stale for `Canvas / External window edge` and
