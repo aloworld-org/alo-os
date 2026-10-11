@@ -90,6 +90,86 @@ pub(crate) fn what_a_press_on_the_dock_does(
     }
 }
 
+/// Whether a window that is coming back has to be brought back first.
+///
+/// A named pair rather than a `bool` at the call site, for `alo_dock::Pinned`'s
+/// reason exactly: *restore it* and *focus it* are both yes-or-no facts about
+/// one window and they read alike.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BringItBack {
+    /// It was put aside.
+    Yes,
+    /// It is on the canvas.
+    No,
+}
+
+/// What pressing one application's icon does, as a value.
+///
+/// **This exists so the decision can be tested without a machine.** The press
+/// itself cannot be: `Server::the_docks_slots_were_drawn` is called from
+/// `crate::direct_desktop` and from nowhere else, so the slots a press is
+/// classified against only exist on the lane that needs a login seat and real
+/// devices. The nested lane draws a Dock and cannot press it, because
+/// `submit_with_desktop` is handed no `Server` to record into.
+///
+/// Rather than leave the whole chain unmeasured, the part that is a decision is
+/// a pure function over `alo_dock::Windows` and the part that needs hardware is
+/// three lines underneath it. That is the same split
+/// `crate::a_key_reaches_settings` describes for its own lane, and it names
+/// which half is read and not measured instead of implying both are.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WhatAnIconDoes {
+    /// This application has no windows the Dock knows of.
+    ///
+    /// Not the same as [`Self::Launch`]: it means the press found nothing,
+    /// which happens if the icon's application closed between the draw and the
+    /// press.
+    Nothing,
+    /// One window, on the canvas: focus it.
+    Focus(alo_dock::WindowId),
+    /// One window, put aside: bring it back, then focus it.
+    BringItBackThenFocus(alo_dock::WindowId),
+    /// Several windows: the person chooses. **Not built** — task 3.
+    OpenThePicker,
+    /// Nothing open: start it. **Not built** — nothing here can start an
+    /// application.
+    Launch,
+}
+
+/// Decide what pressing `app`'s icon does, given what is open.
+///
+/// `alo_dock::clicking` is the rule and this is the translation of its answer
+/// into what a compositor can carry out. The two differ in one place and it is
+/// deliberate: **`WhatAClickDoes::travels` is not carried across.**
+///
+/// `Server::the_windows_the_dock_sees` gives every window a one-by-one patch at
+/// the origin because it cannot see canvas geometry, so `TheView::already_shows`
+/// is comparing placeholders and `BringForward` against `TravelTo` is decided by
+/// one. **Travelling on a placeholder would be motion chosen at random**, which
+/// is worse than not travelling: a view that stays put is somewhere a person
+/// already understands. What is owed is each window's real patch reaching that
+/// builder, and until it does this collapses the two into *focus it*.
+pub(crate) fn what_a_press_on_an_icon_does(
+    windows: &alo_dock::Windows,
+    app: &alo_dock::AppId,
+) -> WhatAnIconDoes {
+    // The placeholder view, handed over openly rather than hidden in a default.
+    let Ok(everywhere) = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1) else {
+        return WhatAnIconDoes::Nothing;
+    };
+    let did =
+        alo_dock::clicking::what_a_click_does(windows, app, alo_dock::TheView::showing(everywhere));
+    match did {
+        alo_dock::clicking::WhatAClickDoes::ChooseAWindow => WhatAnIconDoes::OpenThePicker,
+        alo_dock::clicking::WhatAClickDoes::OpenAWindowNearTheView => WhatAnIconDoes::Launch,
+        other => match other.window() {
+            None => WhatAnIconDoes::Nothing,
+            Some(id) if other.brings_one_back() => WhatAnIconDoes::BringItBackThenFocus(id),
+            Some(id) => WhatAnIconDoes::Focus(id),
+        },
+    }
+}
+
 impl crate::Server {
     /// Record where this draw put one display's Dock.
     ///
@@ -130,14 +210,73 @@ impl crate::Server {
                 self.the_overflow_is_open = !self.the_overflow_is_open;
                 true
             }
-            // **Taken, and nothing done with it yet.** `alo_dock::clicking` is
-            // the behaviour — *click an app to return to where you last used
-            // it* — and it needs the windows and the canvas camera. Returning
-            // `true` is still the right answer: the press was on the Dock, and
-            // letting it fall through to the canvas would move the view when a
-            // person aimed at an icon, which is worse than it doing nothing.
-            Some(WhatAPressOnTheDockDoes::GoTo(_)) => true,
+            Some(WhatAPressOnTheDockDoes::GoTo(app)) => {
+                self.go_to_this_application(&app);
+                true
+            }
         }
+    }
+
+    /// Carry out `alo_dock::clicking`'s answer for one application.
+    ///
+    /// **The press was already taken whatever happens here.** A press on an
+    /// icon must not fall through to the canvas, which would move the view when
+    /// a person aimed at a Dock, so this returns nothing and the caller answers
+    /// `true` either way.
+    ///
+    /// # What is done, and what is named rather than done
+    ///
+    /// `what_a_click_does` gives five answers and this acts on three of them:
+    ///
+    /// - **it was put aside** — brought back, then focused. The whole of *click
+    ///   an app to return to where you last used it* for the case a person
+    ///   notices most, because the window is not on the screen at all.
+    /// - **it is open** — focused. `activate_window` raises and focuses; this
+    ///   does not move the window, which the rule forbids.
+    /// - **several windows** — the picker, which does not exist. Task 3 of
+    ///   `docs/autonomy/the-dock-more-apps-and-the-minimised-panel.md`.
+    ///   `alo_dock::Previews` is the model and no surface draws it, so the
+    ///   press is taken and nothing happens — which is better than falling back
+    ///   on *focus the one used last*, the rule ADR 0103 replaced.
+    /// - **nothing open** — launch, which needs something that can start an
+    ///   application. Nothing in this workspace can.
+    ///
+    /// **The canvas does not travel.** `WhatAClickDoes::travels` says when it
+    /// should and this ignores it, deliberately: `the_windows_the_dock_sees`
+    /// gives every window a one-by-one patch at the origin, because it cannot
+    /// see canvas geometry, so `TheView::already_shows` is comparing
+    /// placeholders. **Travelling on that would be motion decided by a
+    /// placeholder**, which is worse than not travelling — a view that jumps
+    /// somewhere arbitrary is harder to recover from than one that stays put.
+    /// What is owed is the window's real patch reaching this builder.
+    fn go_to_this_application(&mut self, app: &alo_dock::AppId) {
+        let windows = self.the_windows_the_dock_sees();
+        let (id, back) = match what_a_press_on_an_icon_does(&windows, app) {
+            // `OpenThePicker` and `Launch`, both named above.
+            WhatAnIconDoes::Nothing | WhatAnIconDoes::OpenThePicker | WhatAnIconDoes::Launch => {
+                return;
+            }
+            WhatAnIconDoes::Focus(id) => (id, BringItBack::No),
+            WhatAnIconDoes::BringItBackThenFocus(id) => (id, BringItBack::Yes),
+        };
+        // **Looked up now, not remembered from the draw.** Ids are the window
+        // list's own indices and a window closing renumbers the rest, so a
+        // surface kept since the frame could be a different window by the time
+        // a finger lands.
+        let Some(surface) = self.the_window_numbered(id).cloned() else {
+            return;
+        };
+        if matches!(back, BringItBack::Yes) {
+            // A window that will not come back is not then focused: focusing a
+            // hidden window would leave a person with the keyboard somewhere
+            // they cannot see.
+            if self.set_window_minimized(&surface, false).is_err() {
+                return;
+            }
+        }
+        // A refusal here is a window that went away between the lookup and now,
+        // which is an ordinary race and not something to end a session over.
+        let _ = self.activate_window(&surface);
     }
 
     /// Close the overflow list, if it is open.

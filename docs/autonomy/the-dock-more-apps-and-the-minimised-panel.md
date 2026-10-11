@@ -33,6 +33,7 @@ Drawing exists and behaviour does not. That asymmetry is the whole plan.
 | `alo_dock::pinning` — what a fresh machine pins | **built, and nothing produces its `Discovery`** |
 | `Holding::showing` — who is on the bar | **built with the new rule**, and reached in production through `Server::what_the_dock_holds` |
 | the Dock seeing minimised windows | **built** — the builder reads `minimized_surfaces` as well as `mapped_surfaces` |
+| pressing an icon | **built** for one window, open or put aside; a picker and a launcher are named variants that do nothing |
 | a window picker, a search field, a grid | **do not exist in any form** |
 | any keyboard route into any of it | **does not exist** |
 | Escape dismissing anything of the Dock's | **does not exist** |
@@ -117,11 +118,42 @@ the right one.
 happens. One window focuses or restores-then-focuses; nothing open launches;
 several open the picker, which task 3 builds.
 
-**Earns:** §2 of the ruling for the one- and none-window cases, and
-*travels to it, never silently relocates*.
+**Done for the cases a compositor can carry out, and each of the rest is a
+named variant rather than a silence.** `what_a_press_on_an_icon_does` turns
+`alo_dock::clicking`'s answer into `WhatAnIconDoes`:
 
-**Blocked on nothing.** The press is already routed and already classified; what
-is missing is the arm that acts.
+| answer | state |
+|---|---|
+| one window on the canvas | **focused** |
+| one window put aside | **brought back, then focused** |
+| several windows | `OpenThePicker` — task 3, nothing drawn |
+| nothing open | `Launch` — nothing in this workspace can start an application |
+
+Three faults were designed out rather than left to a caller. **Bringing a
+window back is part of the answer**, not the applier's idea: focusing a hidden
+window puts the keyboard somewhere a person cannot see, and the variant names
+the order. **The id is looked up at the press**, never remembered from the draw,
+because ids are the window list's own indices and a window closing renumbers the
+rest. And `the_windows_and_what_they_are` is one iteration that both the builder
+and the lookup read, so a lookup cannot come to disagree with the builder and
+focus **somebody else's window**.
+
+**What is deliberately not carried across is `travels`.** The Dock's window
+builder gives every window a one-by-one patch at the origin because it cannot
+see canvas geometry, so `TheView::already_shows` compares placeholders and
+`BringForward` against `TravelTo` is decided by one. Travelling on that would be
+motion chosen at random, which is worse than not travelling. What is owed is
+each window's real patch reaching that builder.
+
+**The press itself is read and not measured, and the split exists to say so.**
+`Server::the_docks_slots_were_drawn` is called from `crate::direct_desktop` and
+nowhere else, so the slots a press is classified against only exist on the lane
+that needs a login seat and real devices; the nested lane draws a Dock and
+cannot press it, because `submit_with_desktop` is handed no `Server` to record
+into. So the decision is a pure function over `alo_dock::Windows`, tested in six
+cases and mutation-tested three ways, and the part that needs a machine is three
+lines underneath it. The same shape `crate::a_key_reaches_settings` describes
+for its own lane.
 
 ### 3 — The window picker
 

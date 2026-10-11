@@ -6,6 +6,7 @@
 #![expect(
     clippy::expect_used,
     clippy::panic,
+    clippy::unwrap_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported, and \
               a formatted panic names the edge it was on"
 )]
@@ -219,4 +220,124 @@ fn the_control_answers_whether_or_not_anything_overflowed() {
             "{edge:?}: a Dock that fits has no control to press"
         );
     }
+}
+
+/// A window of `app`, numbered `number`, sitting however it sits.
+fn a_window(number: u64, app: &str, sits: alo_dock::HowItSits) -> alo_dock::Window {
+    alo_dock::Window::of(
+        alo_dock::WindowId::numbered(number),
+        alo_dock::AppId::named(app).ok(),
+        "",
+        alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1).unwrap(),
+        sits,
+    )
+}
+
+/// **Every answer pressing an icon can give**, in one case list.
+///
+/// The decision half of the press, which is the half a machine is not needed
+/// for. See [`super::what_a_press_on_an_icon_does`] for why it is a separate
+/// function at all: the slots a press is classified against are recorded only
+/// by `crate::direct_desktop`, so the press itself cannot be driven here.
+#[test]
+fn what_pressing_an_icon_decides() {
+    use super::WhatAnIconDoes;
+    use alo_dock::HowItSits::{OnTheCanvas, PutAside};
+
+    let app = alo_dock::AppId::named("an.app").unwrap();
+    let cases: &[(&str, &[alo_dock::HowItSits], WhatAnIconDoes)] = &[
+        ("nothing open", &[], WhatAnIconDoes::Launch),
+        (
+            "one on the canvas",
+            &[OnTheCanvas],
+            WhatAnIconDoes::Focus(alo_dock::WindowId::numbered(0)),
+        ),
+        (
+            "one put aside",
+            &[PutAside],
+            WhatAnIconDoes::BringItBackThenFocus(alo_dock::WindowId::numbered(0)),
+        ),
+        (
+            "two on the canvas",
+            &[OnTheCanvas, OnTheCanvas],
+            WhatAnIconDoes::OpenThePicker,
+        ),
+        (
+            "one of each — a minimised window still counts as one of several",
+            &[OnTheCanvas, PutAside],
+            WhatAnIconDoes::OpenThePicker,
+        ),
+        (
+            "both put aside",
+            &[PutAside, PutAside],
+            WhatAnIconDoes::OpenThePicker,
+        ),
+    ];
+
+    for (what, sits, expected) in cases {
+        let mut windows = alo_dock::Windows::none();
+        for (number, how) in sits.iter().enumerate() {
+            windows.opened(a_window(number as u64, "an.app", *how));
+        }
+        assert_eq!(
+            super::what_a_press_on_an_icon_does(&windows, &app),
+            *expected,
+            "{what}"
+        );
+    }
+}
+
+/// **A window put aside is brought back before it is focused, never after.**
+///
+/// The one thing the decision carries that the rule does not spell out, and the
+/// one a reordering would break silently: focusing a hidden window leaves the
+/// keyboard somewhere a person cannot see, and the window then appearing does
+/// not undo the moment they spent typing into nothing.
+///
+/// Held as a property of the *answer* because the applier that acts on it needs
+/// a compositor — `BringItBackThenFocus` names the order in the variant, so a
+/// caller cannot carry it out the other way round without saying so.
+#[test]
+fn coming_back_is_part_of_the_answer_rather_than_the_callers_idea() {
+    use super::WhatAnIconDoes;
+
+    let app = alo_dock::AppId::named("an.app").unwrap();
+    let mut windows = alo_dock::Windows::none();
+    windows.opened(a_window(0, "an.app", alo_dock::HowItSits::PutAside));
+
+    let did = super::what_a_press_on_an_icon_does(&windows, &app);
+    assert!(
+        matches!(did, WhatAnIconDoes::BringItBackThenFocus(_)),
+        "a window put aside was to be focused without being brought back: {did:?}"
+    );
+    assert!(
+        !matches!(did, WhatAnIconDoes::Focus(_)),
+        "and it is not the plain focus answer"
+    );
+}
+
+/// **Another application's windows decide nothing here.**
+///
+/// `what_a_click_does` filters by application and this passes the whole list,
+/// so a press on a one-window application while six others are open must still
+/// focus that one window rather than open a picker.
+#[test]
+fn another_applications_windows_do_not_change_this_ones_answer() {
+    use super::WhatAnIconDoes;
+
+    let app = alo_dock::AppId::named("an.app").unwrap();
+    let mut windows = alo_dock::Windows::none();
+    windows.opened(a_window(0, "an.app", alo_dock::HowItSits::OnTheCanvas));
+    for number in 1..7 {
+        windows.opened(a_window(
+            number,
+            "another.app",
+            alo_dock::HowItSits::OnTheCanvas,
+        ));
+    }
+
+    assert_eq!(
+        super::what_a_press_on_an_icon_does(&windows, &app),
+        WhatAnIconDoes::Focus(alo_dock::WindowId::numbered(0))
+    );
 }
