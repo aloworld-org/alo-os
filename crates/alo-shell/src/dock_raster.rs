@@ -139,6 +139,15 @@ pub(crate) struct DockPicture {
     /// either: `alo_dock::fit` puts nothing aside until the edge runs out, and
     /// `alo_dock::Places` draws no control for an empty overflow.
     pub(crate) over: Vec<OnTheDock>,
+    /// The Dock's own surface: the rounded panel, its hairline and its shadow.
+    ///
+    /// **Replaces the two flat rectangles this drew until 2026-10-11** — the
+    /// band and the accent rule — because a radius and a shadow are partial
+    /// coverage and a rectangle is all or nothing. ADR 0101 and
+    /// `crate::dock_surface` carry the why.
+    ///
+    /// [`None`] only for a panel with no area, which is a Dock that gave way.
+    pub(crate) surface: Option<crate::painted::Washed>,
     /// Where this draw put the Dock, for the press that will ask later.
     ///
     /// **The same value the three fields above were taken from**, destructured
@@ -346,6 +355,7 @@ pub(crate) fn picture(
     size: (i32, i32),
     on_the_dock: &[OnTheDock],
     the_overflow: (bool, &str),
+    display_scale: u16,
     fonts: &mut FontSystem,
 ) -> Result<DockPicture, RenderError> {
     let (width, height) = size;
@@ -369,16 +379,29 @@ pub(crate) fn picture(
 
     let accent = the_accent_on(layout.edge(), band, rule);
 
-    let mut solids = vec![
-        Solid {
-            area: band,
-            colour: palette.dock,
-        },
-        Solid {
-            area: accent,
-            colour: palette.accent,
-        },
-    ];
+    // **The band and the accent are not rectangles any more.** They were two
+    // `Solid`s until 2026-10-11, which is why the Dock had square corners and no
+    // shadow: both are partial coverage, and a `Solid` is one opaque colour over
+    // a rectangle. `crate::dock_surface` rasterises them together with the
+    // hairline ADR 0101 ruled, and the renderer composites the result.
+    //
+    // `the_accent_on` still decides which face looks at the canvas; the surface
+    // is told the edge and draws the rule on that face.
+    let mut solids: Vec<Solid> = Vec::new();
+    let surface = crate::dock_surface::surface(crate::dock_surface::ADocksSurface {
+        panel: band,
+        fill: palette.dock,
+        edge: palette.edge,
+        accent: palette.accent,
+        against: layout.edge(),
+        accent_is: rule,
+        room: size,
+        // **The display's own scale, not the person's text size.** A radius
+        // scaled by the text would be half the size it should be on a dense
+        // screen, which `alo_dock::measures`' own header names as the usual way
+        // a figure reaches a display without passing through its scale.
+        scale: i32::from(display_scale),
+    });
 
     // **One letter per application, which is what a Dock icon is today.** The
     // owner ruled on 2026-10-10 that an application with no artwork shows its
@@ -507,6 +530,7 @@ pub(crate) fn picture(
         inked,
         over,
         standing,
+        surface,
     })
 }
 
@@ -556,6 +580,33 @@ mod tests {
     use super::*;
     use crate::desktop_testing::{an_appearance, noon_look};
     use crate::where_the_dock_is::the_band_on;
+
+    /// The four bytes the Dock's surface drew at this point on the screen.
+    ///
+    /// **The band and the accent stopped being `Solid`s on 2026-10-11.** They
+    /// are partial coverage now — a radius and a shadow — so the questions those
+    /// tests used to ask of a rectangle are asked of the raster instead. This is
+    /// the one place that turns a point on the screen into the pixel the surface
+    /// put there.
+    fn surface_at(drawn: &DockPicture, x: i32, y: i32) -> Option<[u8; 4]> {
+        let surface = drawn.surface.as_ref()?;
+        let (dx, dy) = (x - surface.area.loc.x, y - surface.area.loc.y);
+        if dx < 0 || dy < 0 || dx >= surface.area.size.w || dy >= surface.area.size.h {
+            return None;
+        }
+        let at = ((dy as usize) * (surface.area.size.w as usize) + (dx as usize)) * 4;
+        let bytes = surface.pixels.get(at..at + 4)?;
+        let mut out = [0_u8; 4];
+        out.copy_from_slice(bytes);
+        Some(out)
+    }
+
+    /// A display that draws one physical pixel for each logical one.
+    ///
+    /// Named rather than written as `100` at twenty call sites, because the
+    /// number means *this display's scale* and a bare hundred beside a size and
+    /// a text percentage is three numbers nobody can tell apart.
+    const ONE_TO_ONE: u16 = 100;
 
     /// A Dock whose overflow list a person has not opened, which is every frame
     /// but the one after they press the control.
@@ -653,7 +704,8 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn = picture(&dock, look, size, &held, closed(), &mut fonts()).unwrap();
+            let drawn =
+                picture(&dock, look, size, &held, closed(), ONE_TO_ONE, &mut fonts()).unwrap();
 
             assert_eq!(
                 drawn.accent,
@@ -672,10 +724,18 @@ mod tests {
                 drawn.accent,
                 drawn.band
             );
-            // And it is painted, not merely computed: the solid a person sees.
+            // And it is painted, not merely computed: the pixel a person sees.
+            let middle = drawn.accent.loc.x + drawn.accent.size.w / 2;
+            let into = drawn.accent.loc.y + drawn.accent.size.h / 2;
+            let found = surface_at(&drawn, middle, into);
             assert!(
-                drawn.solids.iter().any(|solid| solid.area == drawn.accent),
-                "{edge:?}: nothing is painted at the accent's place"
+                found.is_some(),
+                "{edge:?}: the accent's place is outside the surface raster"
+            );
+            assert_eq!(
+                found.map(|[_, _, _, alpha]| alpha),
+                Some(255),
+                "{edge:?}: nothing is drawn at the accent's place"
             );
         }
     }
@@ -711,8 +771,16 @@ mod tests {
         let mut whichever_way_read: Option<Rectangle<i32, Physical>> = None;
         for reading in [Direction::LeftToRight, Direction::RightToLeft] {
             let look = noon_look(&an_appearance(), reading);
-            let drawn =
-                picture(&dock, look, size, &on_the_dock(4), closed(), &mut fonts()).unwrap();
+            let drawn = picture(
+                &dock,
+                look,
+                size,
+                &on_the_dock(4),
+                closed(),
+                ONE_TO_ONE,
+                &mut fonts(),
+            )
+            .unwrap();
             let layout = dock.layout_on(Screen::of(1920, 1080).unwrap());
             assert_eq!(drawn.layout, layout);
 
@@ -764,6 +832,7 @@ mod tests {
                 (1920, 1080),
                 &on_the_dock(holding),
                 closed(),
+                ONE_TO_ONE,
                 &mut fonts(),
             )
             .unwrap();
@@ -804,6 +873,7 @@ mod tests {
             (1366, 768),
             &held,
             closed(),
+            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -870,7 +940,8 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn = picture(&dock, look, size, &held, closed(), &mut fonts()).unwrap();
+            let drawn =
+                picture(&dock, look, size, &held, closed(), ONE_TO_ONE, &mut fonts()).unwrap();
 
             // Within the edge it runs along, less the room either side.
             let (ran, edge_length) = if edge.runs_across() {
@@ -959,6 +1030,7 @@ mod tests {
             (1366, 768),
             &crowded,
             closed(),
+            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -968,6 +1040,7 @@ mod tests {
             (1366, 768),
             &crowded,
             open,
+            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -994,6 +1067,7 @@ mod tests {
             (1920, 1080),
             &on_the_dock(4),
             open,
+            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1003,6 +1077,7 @@ mod tests {
             (1920, 1080),
             &on_the_dock(4),
             closed(),
+            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1037,6 +1112,7 @@ mod tests {
                 size,
                 &crowded,
                 (true, "More open apps"),
+                ONE_TO_ONE,
                 &mut fonts(),
             )
             .unwrap();
@@ -1079,6 +1155,7 @@ mod tests {
             (1920, 1080),
             &held,
             closed(),
+            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1117,6 +1194,7 @@ mod tests {
             (1366, 768),
             &on_the_dock(4),
             closed(),
+            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1126,6 +1204,7 @@ mod tests {
             (3840, 2160),
             &on_the_dock(4),
             closed(),
+            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1135,6 +1214,7 @@ mod tests {
             (1080, 1920),
             &on_the_dock(4),
             closed(),
+            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
@@ -1178,18 +1258,25 @@ mod tests {
                 (1920, 1080),
                 &on_the_dock(4),
                 closed(),
+                ONE_TO_ONE,
                 &mut fonts(),
             )
             .unwrap();
-            let rule = drawn
-                .solids
-                .iter()
-                .find(|solid| solid.area == drawn.accent)
-                .unwrap();
+            // **Read out of the surface's pixels, not found among the
+            // rectangles.** The accent is a rule inside a rounded, shadowed
+            // panel since 2026-10-11, so the question *is the person's colour
+            // on the face that looks at the canvas* is a question about a
+            // pixel.
+            let middle = drawn.accent.loc.x + drawn.accent.size.w / 2;
+            let into = drawn.accent.loc.y + drawn.accent.size.h / 2;
+            let [red, green, blue, alpha] =
+                surface_at(&drawn, middle, into).expect("the accent is inside the surface");
             assert_eq!(
-                rule.colour,
-                crate::desktop_look::rgb(accent.on(look.scheme()))
+                [red, green, blue],
+                crate::desktop_look::rgb(accent.on(look.scheme())),
+                "the face looking at the canvas is not the person's accent"
             );
+            assert_eq!(alpha, 255, "the accent is drawn through");
         }
     }
 
@@ -1208,6 +1295,7 @@ mod tests {
                         size,
                         &on_the_dock(4),
                         closed(),
+                        ONE_TO_ONE,
                         &mut fonts()
                     ),
                     Err(RenderError::DesktopScene)
@@ -1228,7 +1316,16 @@ mod tests {
         let dock = Dock::shipped();
         let look = noon_look(&an_appearance(), Direction::LeftToRight);
         let held = on_the_dock(3);
-        let drawn = picture(&dock, look, (1920, 1080), &held, closed(), &mut fonts()).unwrap();
+        let drawn = picture(
+            &dock,
+            look,
+            (1920, 1080),
+            &held,
+            closed(),
+            ONE_TO_ONE,
+            &mut fonts(),
+        )
+        .unwrap();
 
         assert_eq!(
             drawn.inked.len(),
@@ -1288,7 +1385,8 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn = picture(&dock, look, size, &held, closed(), &mut fonts()).unwrap();
+            let drawn =
+                picture(&dock, look, size, &held, closed(), ONE_TO_ONE, &mut fonts()).unwrap();
             assert_eq!(drawn.inked.len(), held.len(), "{edge:?}");
 
             // The band's centre across its thickness, and each letter's.
@@ -1336,14 +1434,15 @@ mod tests {
             (1920, 1080),
             &[],
             closed(),
+            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();
         assert!(drawn.inked.is_empty());
         assert!(
-            !drawn.solids.is_empty(),
-            "the premise: the band is still drawn, so an empty `inked` is about letters and \
-             not about nothing being drawn at all"
+            drawn.surface.is_some(),
+            "the premise: the Dock's surface is still drawn, so an empty `inked` is about \
+             letters and not about nothing being drawn at all"
         );
     }
 
@@ -1375,6 +1474,7 @@ mod tests {
             (1920, 1080),
             &held,
             closed(),
+            ONE_TO_ONE,
             &mut fonts(),
         )
         .unwrap();

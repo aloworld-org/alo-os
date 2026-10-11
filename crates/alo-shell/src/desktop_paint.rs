@@ -12,6 +12,7 @@ use smithay::{
 
 use crate::RenderError;
 use crate::desktop_raster::DesktopPicture;
+use crate::painted::Washed;
 
 impl DesktopPicture {
     /// Refuse a frame the desktop was not laid out for, before anything is
@@ -40,7 +41,35 @@ impl DesktopPicture {
     /// The status items come after the dock because they sit **on** it: the
     /// band is painted first and the clock, battery, network and volume are
     /// marked into its far end.
-    pub(crate) fn paint(&self, frame: &mut impl Frame) -> Result<(), RenderError> {
+    /// Every raster on this desktop that carries an alpha channel, in painting
+    /// order.
+    ///
+    /// **Separate from [`Self::paint`] because importing a texture needs the
+    /// `Renderer` and painting needs a `Frame`**, and the renderer is borrowed
+    /// by the frame for as long as it is open. So `crate::scene_drawing` asks
+    /// for these first, uploads them, and hands the textures back — the same
+    /// order it already uses for every client surface.
+    pub(crate) fn washed(&self) -> impl Iterator<Item = &Washed> {
+        self.dock
+            .as_ref()
+            .and_then(|dock| dock.surface.as_ref())
+            .into_iter()
+    }
+
+    /// Draw the dock, then the status area inside it, then each open window's
+    /// shapes and words.
+    ///
+    /// `washed` is the textures [`Self::washed`] asked for, already uploaded, in
+    /// the same order. Each is drawn **before** the flat shapes that sit on it,
+    /// because the Dock's surface is what its icons and its words are drawn on.
+    pub(crate) fn paint<F: Frame>(
+        &self,
+        frame: &mut F,
+        washed: &[(F::TextureId, smithay::utils::Rectangle<i32, Physical>)],
+    ) -> Result<(), RenderError> {
+        for (texture, area) in washed {
+            crate::painted::wash(frame, texture, *area)?;
+        }
         // The division first: its rules and the outline a drop would take sit
         // under the dock, which is furniture over the top of everything.
         crate::painted::paint(frame, &self.division.solids, &[])?;

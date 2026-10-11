@@ -192,6 +192,15 @@ pub(crate) struct DesktopPalette {
     pub(crate) ink: [u8; 3],
     /// The person's accent, on this scheme's ground.
     pub(crate) accent: [u8; 3],
+    /// The hairline around a surface that sits on the canvas.
+    ///
+    /// `alo_appearance::Role::BorderDefault` where the design is drawn, and the
+    /// **ink** at high contrast. That is not a substitution for convenience:
+    /// that role's own note says a hairline *may never be the only thing
+    /// conveying structure or state* because it measures 1.12:1, and that *a
+    /// control that needs a visible boundary uses `TextMuted` or darker*. A
+    /// person who asked for high contrast is asking for the boundary to be one.
+    pub(crate) edge: [u8; 3],
 }
 
 impl DesktopPalette {
@@ -218,13 +227,20 @@ impl DesktopPalette {
             dock: contrast.dock(scheme),
             ink: contrast.ink(scheme),
             accent: contrast.accent(scheme, accent),
+            edge: match contrast {
+                Contrast::High => contrast.ink(scheme),
+                Contrast::AsDesigned => {
+                    let it = alo_appearance::Role::BorderDefault.colour();
+                    [it.red(), it.green(), it.blue()]
+                }
+            },
         })
     }
 
     /// Every colour this palette offers.
     #[cfg(test)]
-    pub(crate) const fn offers(self) -> [[u8; 3]; 4] {
-        [self.ground, self.dock, self.ink, self.accent]
+    pub(crate) const fn offers(self) -> [[u8; 3]; 5] {
+        [self.ground, self.dock, self.ink, self.accent, self.edge]
     }
 }
 

@@ -311,21 +311,36 @@ fn the_whole_desktop_turns_dark_when_alo_appearance_says_so() {
             Scheme::Light => (Token::Cream, Token::Porcelain, Token::Navy),
             Scheme::Dark => (Token::Charcoal, Token::Charcoal, Token::Cream),
         };
-        assert_eq!(
-            picture.dock.as_ref().unwrap().solids[0].colour,
-            rgb(dock_ground.colour())
+        // **The Dock's ground is in its surface raster now**, not in a flat
+        // rectangle: since 2026-10-11 the band is drawn with a radius and a
+        // shadow, which no rectangle can be. Read at the middle of the band,
+        // where neither the corner nor the hairline reaches.
+        let dock = picture.dock.as_ref().unwrap();
+        let surface = dock.surface.as_ref().unwrap();
+        let middle = (
+            dock.band.loc.x + dock.band.size.w / 2 - surface.area.loc.x,
+            dock.band.loc.y + dock.band.size.h / 2 - surface.area.loc.y,
         );
+        let at = ((middle.1 as usize) * (surface.area.size.w as usize) + (middle.0 as usize)) * 4;
+        let bytes = surface.pixels.get(at..at + 3).unwrap();
+        assert_eq!(bytes, rgb(dock_ground.colour()).as_slice(), "{scheme:?}");
         for window in [&picture.running, &picture.filling] {
             assert_eq!(window.solids[0].colour, rgb(ink.colour()), "{scheme:?}");
             assert_eq!(window.solids[1].colour, rgb(ground.colour()), "{scheme:?}");
         }
+        // The accent is a rule inside the surface raster now, so this reads the
+        // pixel at its middle rather than finding a rectangle.
         let drawn = picture.dock.as_ref().unwrap();
-        let accent = drawn
-            .solids
-            .iter()
-            .find(|solid| solid.area == drawn.accent)
-            .unwrap();
-        assert_eq!(accent.colour, rgb(appearance.accent_at(now)));
+        let surface = drawn.surface.as_ref().unwrap();
+        let x = drawn.accent.loc.x + drawn.accent.size.w / 2 - surface.area.loc.x;
+        let y = drawn.accent.loc.y + drawn.accent.size.h / 2 - surface.area.loc.y;
+        let at = ((y as usize) * (surface.area.size.w as usize) + (x as usize)) * 4;
+        let bytes = surface.pixels.get(at..at + 3).unwrap();
+        assert_eq!(
+            bytes,
+            rgb(appearance.accent_at(now)).as_slice(),
+            "{scheme:?}"
+        );
     }
 }
 
@@ -394,7 +409,7 @@ fn a_desktop_that_cannot_be_drawn_whole_is_refused() {
     .unwrap();
     assert!(bare.running.is_empty() && bare.filling.is_empty());
     assert!(
-        !bare.dock.as_ref().unwrap().solids.is_empty(),
+        bare.dock.as_ref().unwrap().surface.is_some(),
         "the dock is still drawn"
     );
 }

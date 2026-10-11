@@ -119,11 +119,38 @@ pub(crate) fn picture(
         // nothing has no control to open a list with, and `picture` draws
         // none for an empty overflow whatever this says.
         (false, ""),
+        // **A preview of an arrangement draws at one to one.** Each screen's own
+        // scale is what the *desktop* is drawn at; this is a small picture of
+        // several screens side by side, already scaled to fit the panel, and
+        // scaling the radius again would compound the two.
+        100,
         fonts,
     )?;
     let warming = place.warming();
     for solid in &mut drawn.solids {
         solid.colour = warm(solid.colour, warming);
+    }
+    // **And the surface, which is where the Dock's own colour is since
+    // 2026-10-11.** It was only the solids until then, and the solids were the
+    // band and the accent; now they are neither, so a night light that warmed
+    // only them would warm nothing a person can see. Found by
+    // `night_light_warms_the_background_and_the_dock_on_every_screen`, which
+    // read the Dock's ground as pure white on a warmed screen.
+    //
+    // **The alpha is not touched.** Warming is about the light a screen emits,
+    // and a shadow's transparency is not a colour.
+    if let Some(surface) = drawn.surface.as_mut() {
+        let (pixels, _) = surface.pixels.as_chunks_mut::<4>();
+        for pixel in pixels {
+            let mut was = [0_u8; 3];
+            if let Some(colour) = pixel.get(..3) {
+                was.copy_from_slice(colour);
+            }
+            let now = warm(was, warming);
+            if let Some(into) = pixel.get_mut(..3) {
+                into.copy_from_slice(&now);
+            }
+        }
     }
     let background =
         ScreenBackground::prepare(place.wearing().background(), warming, place.room())?;

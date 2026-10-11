@@ -237,6 +237,7 @@ pub(crate) fn picture(
         size,
         on_the_dock,
         (the_overflow_is_open, the_overflows_heading),
+        display_scale,
         fonts,
     )?;
 

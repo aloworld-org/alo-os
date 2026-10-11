@@ -79,7 +79,7 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                 let pictures =
                     frame_pictures(frame(&quiet), None, None, &mut labels, size).unwrap();
                 assert!(pictures.status.is_empty());
-                assert!(!pictures.desktop.dock.as_ref().unwrap().solids.is_empty());
+                assert!(pictures.desktop.dock.as_ref().unwrap().surface.is_some());
 
                 let pictures = frame_pictures(frame(&lit), None, None, &mut labels, size).unwrap();
                 let dock_drawn = &pictures.desktop.dock;
@@ -251,7 +251,7 @@ fn the_record_window_sits_in_the_desktop_frame() {
     let pictures = frame_pictures(desktop, Some(record), None, &mut labels, (1920, 1080)).unwrap();
     assert!(!pictures.record.as_ref().unwrap().entries.is_empty());
     assert!(pictures.approval.is_none());
-    assert!(!pictures.desktop.dock.as_ref().unwrap().solids.is_empty());
+    assert!(pictures.desktop.dock.as_ref().unwrap().surface.is_some());
 }
 
 /// **A frame carries the panel's reveal state through to the picture**, rather

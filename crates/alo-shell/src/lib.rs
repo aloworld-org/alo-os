@@ -155,6 +155,9 @@ mod display_lifecycle;
 mod display_resources;
 mod division_raster;
 mod dock_raster;
+/// The Dock's own surface: a rounded panel with a hairline and a shadow,
+/// rasterised with alpha because neither is a rectangle.
+mod dock_surface;
 
 /// Where the Dock is on one display: the band on its edge and the slots
 /// inside it, worked out once for the draw and for a press.
