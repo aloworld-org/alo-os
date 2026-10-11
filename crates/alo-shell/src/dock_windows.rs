@@ -65,10 +65,37 @@ impl crate::Server {
     /// *substitute a fabricated app identity*. Such a window has no icon to
     /// appear under, which `Holding::showing` already knows.
     ///
-    /// **Minimised windows are not here**, because `mapped_surfaces` excludes
-    /// them: a window a person put aside is not a window on the canvas. The
-    /// Dock learns about those through `alo-put-aside`, which is a different
-    /// road and not this one.
+    /// **Minimised windows are here, marked as minimised.** `mapped_surfaces`
+    /// excludes them — it is the visible renderer and input list — so
+    /// `minimized_surfaces` is read after it and its windows carry
+    /// [`HowItSits::PutAside`].
+    ///
+    /// This sentence used to say the opposite: *minimised windows are not here,
+    /// because `mapped_surfaces` excludes them … the Dock learns about those
+    /// through `alo-put-aside`, which is a different road and not this one.*
+    /// That was a true description of the code and it made three answers wrong,
+    /// in a way that looked right:
+    ///
+    /// - **`how_many_put_aside` was always zero**, on every entry, on every
+    ///   machine. `alo_dock::announcing` reads it for what a screen reader is
+    ///   told, so a person with three windows put away was told about none of
+    ///   them.
+    /// - **`is_open` was false for an application whose windows were all
+    ///   minimised**, so it drew no running indicator. The owner's ruling of
+    ///   2026-10-11 is explicit that *open, including minimised windows* gets
+    ///   one.
+    /// - **The membership rule could not fire.** An unpinned application with
+    ///   only minimised windows was already absent from the Dock — but by
+    ///   *exclusion*, not by decision, and `OnTheDock::belongs_on_the_dock`
+    ///   never saw it. The right answer for the wrong reason, which stops being
+    ///   the right answer the moment the rule changes.
+    ///
+    /// **The order is unaffected for every application that has an icon.** The
+    /// minimised windows are appended, so an application whose windows are all
+    /// minimised would sort last — and that application is not on the Dock
+    /// unless it is pinned, and a pinned one sits in the pinned section before
+    /// any of this. An application with one window open and one put aside takes
+    /// its place from the open one, which is where it already was.
     ///
     /// See this file's own header for what the resulting order does and does
     /// not mean.
@@ -90,10 +117,32 @@ impl crate::Server {
         let Ok(somewhere) = Patch::of(Spot::at(0, 0), 1, 1) else {
             return windows;
         };
-        for (number, surface) in self.mapped_surfaces().enumerate() {
+        // **Mapped first, then minimised**, which is the order the header
+        // explains and not an accident of two calls. Each carries how it sits,
+        // because that is the one fact the two lists differ by and deriving it
+        // from which iterator a surface came out of further down would put the
+        // answer somewhere a reader has to reconstruct it.
+        let on_the_canvas = self
+            .mapped_surfaces()
+            .map(|surface| (surface, HowItSits::OnTheCanvas));
+        let put_aside = self
+            .minimized_surfaces()
+            .map(|surface| (surface, HowItSits::PutAside));
+        for (number, (surface, sits)) in on_the_canvas.chain(put_aside).enumerate() {
             // This list's own index, not anything a client chose: a `WindowId`
             // only has to tell two windows apart, and a client cannot be
             // trusted to supply one that does.
+            //
+            // **And it is stable only within one frame**, which was already
+            // true and matters more now that there are two lists: minimising a
+            // window moves it from the first to the second and renumbers
+            // everything after it. Nothing today carries an id between frames —
+            // `Holding::showing` groups and counts — so this is correct and
+            // cheap. **The window picker will need an id that outlives a
+            // frame**, because *choose this window* is a sentence about one
+            // window said now and acted on later, and that is task 3 of
+            // `docs/autonomy/the-dock-more-apps-and-the-minimised-panel.md`
+            // rather than something to invent here.
             let Ok(number) = u64::try_from(number) else {
                 break;
             };
@@ -109,7 +158,7 @@ impl crate::Server {
                 // be a translated string in a field that holds client text.
                 called.its_own_words().unwrap_or_default(),
                 somewhere,
-                HowItSits::OnTheCanvas,
+                sits,
             ));
         }
         windows

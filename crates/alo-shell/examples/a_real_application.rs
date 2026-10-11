@@ -319,6 +319,15 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         saved_at.push(saving.frame(&format!("{named} at the end"), frame)?);
     }
 
+    // **What a real application's windows do to the Dock when they are put
+    // aside**, which is the thing no unit test in this workspace can reach:
+    // `the_windows_the_dock_sees` reads mapped and minimised surfaces off a
+    // live compositor, and there is no mapped surface without a client.
+    let put_aside_said = the_dock_follows_windows_being_put_aside(&mut server)?;
+    for line in &put_aside_said {
+        println!("  {line}");
+    }
+
     // Ended rather than left running: this fixture started it, so this fixture
     // is what stops it.
     for mut child in started {
@@ -342,6 +351,121 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "software rendered on a virtual output: what the renderer drew, not what a screen showed"
     );
     Ok(())
+}
+
+/// Put every window of a real application aside, one at a time, and say what
+/// the Dock answered at each step.
+///
+/// **The owner's worked example from ADR 0103, driven against a live
+/// compositor.** An unpinned application keeps its icon while any window is
+/// still on the canvas, loses it when the last goes, and gets it back when one
+/// comes back; a pinned one keeps its icon the whole way through and is still
+/// *open* with every window away.
+///
+/// # Why this is here and not in a unit test
+///
+/// `Server::the_windows_the_dock_sees` reads `mapped_surfaces` and
+/// `minimized_surfaces`, and neither has anything in it without a real client
+/// that completed the XDG mapping handshake. `dock_windows_tests.rs` says so in
+/// its own header and holds the *assumptions* instead. This is the other half:
+/// the builder's two lists, against windows a program really opened.
+///
+/// # What it is not
+///
+/// A nested compositor under a headless parent is not a screen. This says what
+/// the shell computed, which is the claim being made — not what a person saw.
+///
+/// # Errors
+/// Whatever the compositor refuses about minimising a window, and a sentence
+/// naming the step whose answer was wrong.
+#[cfg(target_os = "linux")]
+fn the_dock_follows_windows_being_put_aside(
+    server: &mut alo_shell::Server,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let windows: Vec<_> = server.mapped_surfaces().cloned().collect();
+    let Some(first) = windows.first() else {
+        return Ok(vec![
+            "no window was open, so nothing was put aside".to_owned(),
+        ]);
+    };
+    // The application this walk is about. A window whose client named none is a
+    // real case and not one this walk can follow: it has no icon to watch.
+    let Some(app) = server.the_application_of(first) else {
+        return Ok(vec![
+            "the window named no application, so it has no icon to follow".to_owned(),
+        ]);
+    };
+    let its_windows: Vec<_> = windows
+        .iter()
+        .filter(|surface| server.the_application_of(surface).as_ref() == Some(&app))
+        .cloned()
+        .collect();
+
+    let mut pinned = alo_dock::Holding::nothing();
+    pinned.pin(app.clone());
+    let unpinned = alo_dock::Holding::nothing();
+
+    // Reads the Dock twice at each step — once with the application pinned and
+    // once without — because the two halves of the rule differ only there, and
+    // a walk that read one could not tell *pinned keeps its icon* from *nothing
+    // was put aside at all*.
+    let look = |server: &alo_shell::Server| {
+        let free = server.what_the_dock_holds(&unpinned);
+        let held = server.what_the_dock_holds(&pinned);
+        let is_here = |shown: &[alo_dock::OnTheDock]| shown.iter().any(|on| on.app() == &app);
+        let aside = held
+            .iter()
+            .find(|on| on.app() == &app)
+            .map_or(0, alo_dock::OnTheDock::how_many_put_aside);
+        (is_here(&free), is_here(&held), aside)
+    };
+
+    let mut said = Vec::new();
+    let mut step =
+        |server: &alo_shell::Server, what: &str, free: bool, held: bool, aside: usize| {
+            let (is_free, is_held, is_aside) = look(server);
+            let agrees = is_free == free && is_held == held && is_aside == aside;
+            said.push(format!(
+                "{what}: unpinned {}, pinned {} with {is_aside} put aside{}",
+                if is_free { "on the Dock" } else { "gone" },
+                if is_held { "on the Dock" } else { "gone" },
+                if agrees {
+                    ""
+                } else {
+                    "  <- NOT WHAT THE RULE SAYS"
+                }
+            ));
+            agrees
+        };
+
+    let how_many = its_windows.len();
+    let mut right = step(server, "nothing put aside", true, true, 0);
+
+    for (number, surface) in its_windows.iter().enumerate() {
+        server.set_window_minimized(surface, true)?;
+        let left = how_many - number - 1;
+        // Gone from an unpinned Dock only once the last one is away.
+        right &= step(
+            server,
+            &format!("{} of {how_many} put aside", number + 1),
+            left > 0,
+            true,
+            number + 1,
+        );
+    }
+
+    // And back: one window restored brings the unpinned icon back.
+    server.set_window_minimized(first, false)?;
+    right &= step(server, "one brought back", true, true, how_many - 1);
+
+    if !right {
+        return Err(format!(
+            "the Dock did not follow the windows being put aside:\n  {}",
+            said.join("\n  ")
+        )
+        .into());
+    }
+    Ok(said)
 }
 
 /// What this run was asked for.

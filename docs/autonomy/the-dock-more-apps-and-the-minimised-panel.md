@@ -31,8 +31,8 @@ Drawing exists and behaviour does not. That asymmetry is the whole plan.
 | the panel's three presentations | **built and drawn** |
 | `alo_dock::clicking` — what a click means | **built, and nothing calls it** |
 | `alo_dock::pinning` — what a fresh machine pins | **built, and nothing produces its `Discovery`** |
-| `Holding::showing` — who is on the bar | **built with the new rule**, and every caller of it is a test |
-| anything on a *real* Dock | **nothing** — `alo-desktop` passes `on_the_dock: &[]` |
+| `Holding::showing` — who is on the bar | **built with the new rule**, and reached in production through `Server::what_the_dock_holds` |
+| the Dock seeing minimised windows | **built** — the builder reads `minimized_surfaces` as well as `mapped_surfaces` |
 | a window picker, a search field, a grid | **do not exist in any form** |
 | any keyboard route into any of it | **does not exist** |
 | Escape dismissing anything of the Dock's | **does not exist** |
@@ -69,29 +69,41 @@ data it has: an unpinned application with `windows == put_aside` is not shown.
 about state and never about the camera; one icon per application; pinned
 positions kept on opening; **focusing never reorders**.
 
-**Call site: there is none, and the sentence that stood here said there was.**
+**Call site: `Server::what_the_dock_holds`, and it was already there.**
 
-It read *already there — the shell passes `on_the_dock` from `Holding::showing`.
-This is the one task whose production path exists, which is why it is first.*
-Every word of that was wrong, and it was written in this file four hours before
-it was checked. Measured by grep: **every caller of `Holding::showing` in this
-repository is a test.** `crates/alo-desktop/src/main.rs:618` passes
-`on_the_dock: &[]`, so **no application has ever appeared on a real Dock** — the
-pictures in this repository are all of fixtures.
+Two sentences stood here before this one and both were wrong, in opposite
+directions, which is worth keeping because the second was wrong for a reason
+that costs this repository time repeatedly.
 
-The comment at that literal is honest and names the seam exactly: *an `AppId`
-per mapped surface, then a `Windows` built from them, then `Holding::showing`.*
-All three parts exist — `Server::mapped_surfaces`,
-`Server::minimized_surfaces`, `canvas_remembered::the_app_id_of` — and nothing
-joins them.
+The first said the call site *already existed* — written without checking. The
+second said *every caller of `Holding::showing` in this repository is a test*
+and that *no application has ever appeared on a real Dock*. That was checked,
+and the check was `grep … | head -20`: twenty lines of `alo-dock`'s own tests
+came back and the list was cut before `crates/alo-shell/src/dock_windows.rs:140`
+ever printed. **A truncated search and an empty one look the same.** The
+`on_the_dock: &[]` at `crates/alo-desktop/src/main.rs:618` is real and is
+overridden on the way to the frame by `what_only_the_server_knows`, which is
+exactly what a reader checking only that literal would conclude wrongly.
 
-**So task 1 is two tasks**, and splitting them is the point:
+What *was* true is narrower and is task 1b:
 
-- **1a, the rule** — `belongs_on_the_dock` and `showing` applying it. Done, and
-  mutation-tested four ways.
-- **1b, the caller** — `alo-desktop` building an `alo_dock::Windows` from its
-  mapped and minimised surfaces and calling `showing`. **Not done.** Until it
-  is, every clause in this plan is about a fixture.
+- **1a, the rule** — `belongs_on_the_dock` and `showing` applying it to the
+  whole Dock. Done, mutation-tested four ways.
+- **1b, what the builder could see** — `Server::the_windows_the_dock_sees` read
+  `mapped_surfaces` only, and marked every window `OnTheCanvas`. Its own header
+  said so: *minimised windows are not here … the Dock learns about those through
+  `alo-put-aside`, which is a different road and not this one.* A true
+  description of the code, and it made three answers wrong while looking right:
+  `how_many_put_aside` was permanently zero on every machine, so a screen reader
+  was told about no window a person had put away; an application whose windows
+  were all minimised was not *open*, so it drew no running indicator, which the
+  ruling requires; and the membership rule could not fire, because such an
+  application was already absent **by exclusion rather than by decision** — the
+  right answer for the wrong reason, which stops being the right answer the
+  moment the rule changes. Done: the builder reads `minimized_surfaces` too.
+
+**Both halves are now verified against a real application**, not a fixture —
+see the evidence section below.
 
 **Watch for:** the ordering clause is the easy one to leave untested, because a
 Dock drawn once looks right whatever the order rule is. It needs two draws and a
@@ -178,6 +190,32 @@ update.
 - **The Figma file** — task 5's grid waits on it. The owner's instruction is
   that the revised behaviour *must also be reflected in Figma*, which makes this
   a design task somebody owns rather than a blocker nobody listed.
+
+## What has been earned against a real application, and what has not
+
+`crates/alo-shell/examples/a_real_application.rs` starts real Wayland clients
+against a live compositor and then walks the owner's §4 example. Run 2026-10-11
+with two `weston-flower` windows — two windows of one application, which is the
+case the whole rule turns on:
+
+```
+nothing put aside: unpinned on the Dock, pinned on the Dock with 0 put aside
+1 of 2 put aside:  unpinned on the Dock, pinned on the Dock with 1 put aside
+2 of 2 put aside:  unpinned gone,        pinned on the Dock with 2 put aside
+one brought back:  unpinned on the Dock, pinned on the Dock with 1 put aside
+```
+
+That is items **3, 4, 7 and 8** of the owner's evidence list. The walk fails the
+run with exit 1 and names the step: reverting the builder to report minimised
+surfaces as on the canvas produces `<- NOT WHAT THE RULE SAYS` against three of
+the four lines.
+
+**What it is not.** A nested compositor under a headless parent is not a screen.
+This says what the shell computed. And the run is **by hand, not on every
+build** — nothing in the nine gates starts a Wayland client, so this is a
+measurement somebody took and not a check that runs again. The gate that would
+run it does not exist, and inventing one in passing would be worse than saying
+so.
 
 ## What this plan deliberately does not do
 
