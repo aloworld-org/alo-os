@@ -11,7 +11,6 @@
 //! and every figure below reads directly against the capture.
 #![expect(
     clippy::expect_used,
-    clippy::indexing_slicing,
     reason = "in a test, a panic on an unexpected None or a missing element is the failure being reported"
 )]
 
@@ -26,7 +25,12 @@ fn specimen() -> Rectangle<i32, Logical> {
 /// *32px visible edge / 44px interaction* and is exactly that.
 #[test]
 fn the_region_is_forty_four_and_the_strip_is_thirty_two_at_twelve() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     assert_eq!(
         edge.region,
         Rectangle::new(Point::from((0, 0)), Size::from((600, 44)))
@@ -44,7 +48,12 @@ fn the_region_is_forty_four_and_the_strip_is_thirty_two_at_twelve() {
 /// at 552 — each 44 × 44, each holding 14 × 14 artwork at local x 15, y 21.
 #[test]
 fn the_shells_three_controls_are_where_the_design_drew_them() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     let at: Vec<(OnTheEdge, i32)> = edge
         .controls
         .iter()
@@ -53,6 +62,10 @@ fn the_shells_three_controls_are_where_the_design_drew_them() {
     assert_eq!(
         at,
         vec![
+            // Move joined the list on 2026-10-11 at the leading padding, which
+            // the compact design draws at 4. The three actions are where they
+            // were: 456, 504 and 552 in a 600 specimen, trailing-anchored.
+            (OnTheEdge::Move, 4),
             (OnTheEdge::Minimise, 456),
             (OnTheEdge::Maximise, 504),
             (OnTheEdge::Close, 552),
@@ -84,10 +97,32 @@ fn the_shells_three_controls_are_where_the_design_drew_them() {
 /// duplicate window buttons, measured in the design rather than asserted.
 #[test]
 fn an_application_with_its_own_header_gets_only_a_menu() {
-    let edge = edge_of(specimen(), Decorations::TheApplicationDraws, true);
-    assert_eq!(edge.controls.len(), 1, "{:?}", edge.controls);
-    assert_eq!(edge.controls[0].does, OnTheEdge::Menu);
-    assert_eq!(edge.controls[0].target.loc.x, 552);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheApplicationDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
+    // **Two now: movement and the menu.** The compact design makes Move a
+    // control of its own at the leading padding, so an app-drawn edge carries
+    // it as well. The ruling is untouched — neither of them duplicates a
+    // button the application draws, and the three asserted absent below are
+    // the ones that would.
+    assert_eq!(
+        edge.controls.iter().map(|it| it.does).collect::<Vec<_>>(),
+        vec![OnTheEdge::Move, OnTheEdge::Menu],
+        "{:?}",
+        edge.controls
+    );
+    let menu = edge
+        .controls
+        .iter()
+        .find(|it| it.does == OnTheEdge::Menu)
+        .expect("the menu is laid out");
+    assert_eq!(
+        menu.target.loc.x, 552,
+        "398:26238 puts the lone menu at 552"
+    );
     for control in &edge.controls {
         assert_ne!(control.does, OnTheEdge::Minimise);
         assert_ne!(control.does, OnTheEdge::Maximise);
@@ -99,15 +134,31 @@ fn an_application_with_its_own_header_gets_only_a_menu() {
 /// x 8 width 444 with three controls, `398:26234` is x 8 width 540 with one.
 #[test]
 fn the_drag_region_takes_everything_the_controls_do_not() {
-    let shell = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let shell = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
+    // **x 4 width 448**, where it was x 8 width 444. The leading inset moved
+    // from 8 to 4 with the compact design, and the drag region now begins at
+    // the Move target rather than at bare strip — so it starts 4 units earlier
+    // and is 4 units wider, ending in the same place.
     assert_eq!(
         shell.drag,
-        Rectangle::new(Point::from((8, 0)), Size::from((444, 44)))
+        Rectangle::new(Point::from((4, 0)), Size::from((448, 44)))
     );
-    let app = edge_of(specimen(), Decorations::TheApplicationDraws, true);
+    let app = edge_of(
+        specimen(),
+        Decorations::TheApplicationDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
+    // x 4 width 544, for the same reason: the leading inset is 4 and the drag
+    // now begins at Move. It was x 8 width 540.
     assert_eq!(
         app.drag,
-        Rectangle::new(Point::from((8, 0)), Size::from((540, 44)))
+        Rectangle::new(Point::from((4, 0)), Size::from((544, 44)))
     );
 }
 
@@ -116,12 +167,26 @@ fn the_drag_region_takes_everything_the_controls_do_not() {
 /// 16 of the edge, `398:26250` title at local 30 is 38.
 #[test]
 fn the_grip_and_the_title_are_inside_the_drag_region() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
+    // **19, not 16, and it is now Move's own artwork rather than a second
+    // rectangle.** The compact design draws *Move window / 14px glyph* at
+    // `x = 15` inside a target at `x = 4`. The old 16 was the drag's 8-unit
+    // inset plus the grip's 8; when the inset became 4 those two numbers
+    // disagreed — `grip` said 12 and Move's artwork said 19 — so the grip is
+    // read off the control instead of computed beside it.
     assert_eq!(
         edge.grip,
-        Rectangle::new(Point::from((16, 21)), Size::from((14, 14)))
+        Rectangle::new(Point::from((19, 21)), Size::from((14, 14)))
     );
-    assert_eq!(edge.title, Some(Point::from((38, 19))));
+    // **82, not 38.** The title starts after the Move target now: the drag's
+    // leading edge at 4, plus a 44 target, plus a 4 gap, plus the title's own
+    // 30-unit inset. At 38 it would have been drawn over Move's glyph.
+    assert_eq!(edge.title, Some(Point::from((82, 19))));
 }
 
 /// **At rest there is no strip, no control, and a 24 × 2 grip.**
@@ -132,7 +197,12 @@ fn the_grip_and_the_title_are_inside_the_drag_region() {
 /// by two is exactly what nobody sees and the design does.
 #[test]
 fn at_rest_the_edge_is_a_quiet_grip_and_nothing_else() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, false);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        false,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     assert!(edge.strip.is_none(), "{:?}", edge.strip);
     assert!(edge.controls.is_empty(), "{:?}", edge.controls);
     assert!(edge.title.is_none());
@@ -152,8 +222,18 @@ fn at_rest_the_edge_is_a_quiet_grip_and_nothing_else() {
 fn at_rest_both_owners_are_the_same_edge() {
     let specimen = specimen();
     assert_eq!(
-        edge_of(specimen, Decorations::TheApplicationDraws, false),
-        edge_of(specimen, Decorations::TheShellDraws, false)
+        edge_of(
+            specimen,
+            Decorations::TheApplicationDraws,
+            false,
+            smithay::utils::Size::from((1920, 1080))
+        ),
+        edge_of(
+            specimen,
+            Decorations::TheShellDraws,
+            false,
+            smithay::utils::Size::from((1920, 1080))
+        )
     );
 }
 
@@ -165,8 +245,18 @@ fn at_rest_both_owners_are_the_same_edge() {
 #[test]
 fn revealing_does_not_move_the_application() {
     let window = specimen();
-    let at_rest = edge_of(window, Decorations::TheShellDraws, false);
-    let revealed = edge_of(window, Decorations::TheShellDraws, true);
+    let at_rest = edge_of(
+        window,
+        Decorations::TheShellDraws,
+        false,
+        smithay::utils::Size::from((1920, 1080)),
+    );
+    let revealed = edge_of(
+        window,
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     assert_eq!(at_rest.region, revealed.region);
     assert_eq!(
         at_rest.region.loc.y + at_rest.region.size.h,
@@ -183,7 +273,12 @@ fn revealing_does_not_move_the_application() {
 fn the_edge_fits_whatever_window_it_is_on() {
     for wide in [320, 600, 936, 1920] {
         let window = Rectangle::new(Point::from((0, 44)), Size::from((wide, 400)));
-        let edge = edge_of(window, Decorations::TheShellDraws, true);
+        let edge = edge_of(
+            window,
+            Decorations::TheShellDraws,
+            true,
+            smithay::utils::Size::from((1920, 1080)),
+        );
         assert_eq!(edge.region.size.w, wide);
         let last = edge.controls.last().expect("three controls");
         assert_eq!(
@@ -205,7 +300,12 @@ fn the_edge_fits_whatever_window_it_is_on() {
 fn no_two_controls_ever_overlap() {
     for wide in [320, 600, 936, 1920] {
         let window = Rectangle::new(Point::from((0, 44)), Size::from((wide, 400)));
-        let edge = edge_of(window, Decorations::TheShellDraws, true);
+        let edge = edge_of(
+            window,
+            Decorations::TheShellDraws,
+            true,
+            smithay::utils::Size::from((1920, 1080)),
+        );
         for (which, control) in edge.controls.iter().enumerate() {
             for other in edge.controls.iter().skip(which + 1) {
                 assert!(
@@ -215,11 +315,18 @@ fn no_two_controls_ever_overlap() {
                     other.does
                 );
             }
-            assert!(
-                control.target.intersection(edge.drag).is_none(),
-                "{:?} overlaps the drag region at {wide}",
-                control.does
-            );
+            // **Move is inside the drag region on purpose**, so only the
+            // actions are held apart from it. The compact design makes Move a
+            // 44 × 44 target at the leading end of the drag area: pressing it
+            // *is* beginning a drag, and a target outside the area it drags
+            // would be the inconsistency.
+            if control.does != OnTheEdge::Move {
+                assert!(
+                    control.target.intersection(edge.drag).is_none(),
+                    "{:?} overlaps the drag region at {wide}",
+                    control.does
+                );
+            }
         }
     }
 }
@@ -229,9 +336,28 @@ fn no_two_controls_ever_overlap() {
 #[test]
 fn the_edge_moves_with_its_window() {
     let moved = Rectangle::new(Point::from((300, 244)), Size::from((600, 400)));
-    let edge = edge_of(moved, Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        moved,
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     assert_eq!(edge.region.loc, Point::from((300, 200)));
-    assert_eq!(edge.controls[0].target.loc.x, 300 + 456);
+    // The first *action*, not the first control: Move now holds index 0 at the
+    // leading padding, and Minimise is the one the design places at 456.
+    let minimise = edge
+        .controls
+        .iter()
+        .find(|it| it.does == OnTheEdge::Minimise)
+        .expect("a shell-drawn edge lays out Minimise");
+    assert_eq!(minimise.target.loc.x, 300 + 456);
+    // And Move travels with the window too, which is the thing being tested.
+    let moves = edge
+        .controls
+        .iter()
+        .find(|it| it.does == OnTheEdge::Move)
+        .expect("a shell-drawn edge lays out Move");
+    assert_eq!(moves.target.loc.x, 300 + 4);
 }
 
 /// **The hovered control's highlight is smaller than its target.**
@@ -242,7 +368,12 @@ fn the_edge_moves_with_its_window() {
 /// target still answers the press — these are two rectangles for two jobs.
 #[test]
 fn the_hover_highlight_is_a_pill_inside_the_target() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     let close = edge
         .controls
         .last()

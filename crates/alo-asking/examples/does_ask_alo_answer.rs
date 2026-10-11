@@ -102,13 +102,20 @@ fn main() -> ExitCode {
 
     let text = answer.text();
     println!("\n--- the answer ---\n{text}\n------------------");
-    println!("it came from: {:?}, model {}", answer.source(), answer.model());
+    println!(
+        "it came from: {:?}, model {}",
+        answer.source(),
+        answer.model()
+    );
 
     // **Law 1, measured rather than promised.** A question answered on this
     // machine causes no egress, so the indicator must hold nothing. This is
     // the assertion that makes the whole run worth more than a transcript.
     let quiet = indicator.is_quiet();
-    println!("the egress indicator is quiet: {quiet}  (showing {} things)", indicator.showing().len());
+    println!(
+        "the egress indicator is quiet: {quiet}  (showing {} things)",
+        indicator.showing().len()
+    );
     if !quiet {
         eprintln!("REFUSED: a question answered on this machine caused egress");
         return ExitCode::FAILURE;

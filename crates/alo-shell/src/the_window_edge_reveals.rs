@@ -147,6 +147,19 @@ impl crate::Server {
         };
         let mapped: Vec<WlSurface> = self.mapped_surfaces().cloned().collect();
         let decorations = crate::window_edge_who_draws::who_draws_a_frame();
+        // **The output a narrow window's edge is clamped inside.** The same
+        // extent the draw uses, so the edge this classifies a pointer against
+        // is the edge that was painted — two different clamps would mean a
+        // press landing where no control was drawn.
+        //
+        // No extent yet means nothing has drawn, and an edge clamped into a
+        // zero output would collapse to `x = 0`. So the window's own width is
+        // used as the room, which is what the pre-compact layout did for every
+        // window and leaves the overhang unclamped until the first frame.
+        let room = self.surfaces.popups.output_size.map_or_else(
+            || smithay::utils::Size::from((i32::MAX, i32::MAX)),
+            |pixels| crate::window_edge::the_usable_output(pixels, 100),
+        );
 
         // **Pruned against what is mapped**, so a window that closed takes its
         // reveal state with it. A `WlSurface` is a protocol object at an id the
@@ -165,6 +178,7 @@ impl crate::Server {
                 crate::where_a_window_is(&surface),
                 decorations,
                 was.is_revealed(),
+                room,
             );
             let now = was.the_pointer_is(what_the_pointer_is(&edge, at));
             match self

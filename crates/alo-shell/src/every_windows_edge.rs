@@ -62,6 +62,13 @@ pub(crate) fn every_windows_edge(
                 window,
                 crate::window_edge_who_draws::who_draws_a_frame(),
                 server.is_this_windows_edge_revealed(surface),
+                // The same output this picture is laid out against, in the
+                // units the layout uses. A narrow window's edge is clamped
+                // inside it, so painting and the clamp read one number.
+                crate::window_edge::the_usable_output(
+                    smithay::utils::Size::from((output.0, output.1)),
+                    scale,
+                ),
             );
             let title = server.the_name_of(surface);
             EdgePicture::of(

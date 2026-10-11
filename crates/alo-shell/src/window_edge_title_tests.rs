@@ -223,18 +223,34 @@ fn an_empty_title_is_not_a_truncation() {
 /// holds the two files to each other rather than re-deriving either.
 #[test]
 fn a_fitted_title_never_reaches_the_controls() {
-    use crate::window_edge::{Decorations, THE_GRIP_IS, edge_of};
+    use crate::window_edge::{Decorations, edge_of};
     use smithay::utils::{Point, Rectangle, Size};
 
     let mut fonts = fonts();
     let long = "Launch strategy for the first release, every open question and who owns it";
     for wide in [320, 600, 936, 1920] {
         let window = Rectangle::new(Point::from((0, 44)), Size::from((wide, 400)));
-        let edge = edge_of(window, Decorations::TheShellDraws, true);
-        let first = edge.controls.first().expect("three controls");
+        let edge = edge_of(
+            window,
+            Decorations::TheShellDraws,
+            true,
+            smithay::utils::Size::from((1920, 1080)),
+        );
+        // **The first action, not the first control.** Move sits at the
+        // leading padding, to the *left* of the title, so comparing against it
+        // asked whether the title ended before the edge began — which it
+        // never does. The control the title must not reach is the first one
+        // after it.
+        let first = edge
+            .controls
+            .iter()
+            .find(|it| it.does != crate::window_edge::OnTheEdge::Move)
+            .expect("a shell-drawn edge lays out actions");
 
-        // What the drag region leaves once the grip has taken its place.
-        let room = edge.drag.size.w - THE_GRIP_IS.0;
+        // What the edge says the title has, which is the same number the
+        // picture lays it out with — one derivation, so a test of the fit
+        // cannot pass against a picture that fits it differently.
+        let room = edge.the_room_a_title_has();
         let fitted = fitted(&mut fonts, long, room, label_medium());
         let drawn = crate::painted_text::how_wide(&mut fonts, &fitted.shown, label_medium());
 

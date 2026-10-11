@@ -104,7 +104,13 @@ pub fn solids(edge: &WindowEdge, pointing: Pointing) -> Vec<Solid> {
         } else {
             Role::TextPrimary
         };
-        solids.extend(artwork_of(control, ink));
+        // **Move draws no artwork of its own**, because `grip_of` above already
+        // drew its mark: the design's *Move window / 14px glyph* is the same
+        // 14 × 14 the grip occupies. Two draws of one rectangle would be two
+        // places deciding what that control looks like.
+        if control.does != OnTheEdge::Move {
+            solids.extend(artwork_of(control, ink));
+        }
         if pointing.focused == Some(control.does) {
             solids.extend(outline_of(control.highlight, Role::TextPrimary));
         }
@@ -156,6 +162,11 @@ fn artwork_of(control: &EdgeControl, ink: Role) -> Vec<Solid> {
         ));
     };
     match control.does {
+        // **Move draws nothing here.** Its mark is the grip, which `grip_of` has
+        // already placed, and `solids` skips this call for Move - so the arm
+        // is unreachable in practice and is here because a match must be
+        // total, an `unreachable!` being a panic in a compositor.
+        OnTheEdge::Move => {}
         // A single bar along the bottom.
         OnTheEdge::Minimise => bar(0, size - thick, size, thick),
         // A hollow square.

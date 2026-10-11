@@ -1,6 +1,5 @@
 //! What a reader is told, and the clause a mouse-shaped build fails quietly.
 #![expect(
-    clippy::indexing_slicing,
     clippy::expect_used,
     reason = "in a test, a panic on a control the edge said was there is the failure being reported"
 )]
@@ -26,7 +25,12 @@ fn a_concealed_edge_is_reached_just_as_a_revealed_one_is() {
     // The edge draws nothing at rest, correctly - and a reader is told the
     // same either way, because what a window has does not change with where a
     // pointer is.
-    let concealed = edge_of(window(), Decorations::TheShellDraws, false);
+    let concealed = edge_of(
+        window(),
+        Decorations::TheShellDraws,
+        false,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     assert!(
         concealed.controls.is_empty(),
         "a resting edge draws no control"
@@ -45,7 +49,12 @@ fn a_concealed_edge_is_reached_just_as_a_revealed_one_is() {
 /// what pressing it does.
 #[test]
 fn the_edge_reuses_the_window_actions_that_already_exist() {
-    let edge = edge_of(window(), Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        window(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     let does: Vec<_> = edge
         .controls
         .iter()
@@ -89,9 +98,20 @@ fn every_control_is_a_button_a_person_can_use() {
 /// alo's rather than about something alo cannot name.
 #[test]
 fn an_application_with_its_own_header_gets_no_duplicate_controls() {
-    let edge = edge_of(window(), Decorations::TheApplicationDraws, true);
-    assert_eq!(edge.controls.len(), 1);
-    assert_eq!(edge.controls[0].does, OnTheEdge::Menu);
+    let edge = edge_of(
+        window(),
+        Decorations::TheApplicationDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
+    // **Movement and the menu, and no Close.** The compact design makes Move a
+    // control of its own, so an app-drawn edge carries two rather than one -
+    // and the ruling it is held to is unchanged, because neither of them is a
+    // duplicate of a button the application already draws.
+    assert_eq!(
+        edge.controls.iter().map(|it| it.does).collect::<Vec<_>>(),
+        vec![OnTheEdge::Move, OnTheEdge::Menu]
+    );
     assert!(
         what_a_reader_is_told(Decorations::TheApplicationDraws).is_empty(),
         "alo announced a control over an application that has its own"

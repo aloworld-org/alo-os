@@ -42,7 +42,7 @@
 use alo_access::tree::Control;
 use alo_shortcuts::Action;
 
-use crate::window_edge::{Decorations, OnTheEdge};
+use crate::window_edge::{Decorations, HowItFits, OnTheEdge};
 
 /// What pressing this does, as an action the rest of the machine already has.
 ///
@@ -57,6 +57,19 @@ pub fn what_it_does(control: OnTheEdge) -> Option<Action> {
         OnTheEdge::Maximise => Some(Action::MaximiseWindow),
         OnTheEdge::Close => Some(Action::CloseWindow),
         OnTheEdge::Menu => None,
+        // **Not an action, and for a different reason than Menu's.** Menu has
+        // none yet and should; Move is a *drag*, and a drag is an interaction
+        // rather than one of `alo_shortcuts`' discrete actions. Pressing it
+        // begins something that ends when the pointer is let go.
+        //
+        // The design also forbids inventing one: *do not guess a keyboard
+        // chord: use the project's assigned window-menu action* — and this
+        // project has no window-menu, move-window or resize-window action at
+        // all, measured 2026-10-11 against `alo_shortcuts::Action`. Three of
+        // the menu's five rows therefore have no action behind them yet, which
+        // is recorded in `docs/autonomy/the-external-window-edge-plan.md`
+        // rather than papered over here.
+        OnTheEdge::Move => None,
     }
 }
 
@@ -73,7 +86,27 @@ pub fn what_it_does(control: OnTheEdge) -> Option<Action> {
 /// the *without first hovering* clause failing — see this file's header.
 #[must_use]
 pub fn what_a_reader_is_told(decorations: Decorations) -> Vec<Control> {
-    the_controls_of(decorations)
+    // **Width-independent, and that is the design's answer rather than a
+    // simplification.** `the_controls_of` below takes a `HowItFits` because
+    // which controls are *drawn on the edge* depends on how much room there
+    // is. What a window can *do* does not: the compact layout moves Minimise
+    // and Maximise into the window menu and keeps Close on the edge, so the
+    // contract's *no action is silently dropped* and *pointer, touch, keyboard
+    // and screen-reader users must reach the same actions* both hold at every
+    // width.
+    //
+    // **So a reader hears the same list at 80 pixels as at 800.** This was
+    // argued the other way first - that a reader announcing Close on a narrow
+    // window names something that is not there - and it is the right argument
+    // about the wrong layout: Close is the one control the design guarantees
+    // stays on the edge at every width, and the two that move are reachable
+    // through the menu. Announcing fewer actions on a narrow window would be
+    // the silent drop the contract forbids.
+    //
+    // The caller has no width to pass in any case: `crate::access_nodes`
+    // walks `&[FrameName]`, which carries names and no geometry. That is a
+    // consequence of this being the right answer and not the reason for it.
+    the_controls_of(decorations, HowItFits::Full)
         .into_iter()
         .filter_map(what_it_does)
         .map(Control::for_action)
@@ -86,12 +119,29 @@ pub fn what_a_reader_is_told(decorations: Decorations) -> Vec<Control> {
 /// and the reason it is here rather than read off an `WindowEdge`: a concealed edge
 /// draws none of them and a person can still reach every one.
 #[must_use]
-pub fn the_controls_of(decorations: Decorations) -> Vec<OnTheEdge> {
-    match decorations {
-        Decorations::TheShellDraws => {
-            vec![OnTheEdge::Minimise, OnTheEdge::Maximise, OnTheEdge::Close]
+pub fn the_controls_of(decorations: Decorations, fits: HowItFits) -> Vec<OnTheEdge> {
+    match (decorations, fits) {
+        (Decorations::TheShellDraws, HowItFits::Full) => vec![
+            OnTheEdge::Move,
+            OnTheEdge::Minimise,
+            OnTheEdge::Maximise,
+            OnTheEdge::Close,
+        ],
+        // **Close stays, and the two that leave are not lost.** The contract:
+        // *keep Close directly available whenever the edge's controls are
+        // revealed*, and *put the remaining actions in the window menu*. So a
+        // narrow window has Minimise and Maximise through Menu rather than not
+        // at all, which is why this is a different layout and not a shorter
+        // list of what a window can do.
+        (Decorations::TheShellDraws, HowItFits::Compact) => {
+            vec![OnTheEdge::Move, OnTheEdge::Menu, OnTheEdge::Close]
         }
-        Decorations::TheApplicationDraws => vec![OnTheEdge::Menu],
+        // **No Close, at either width.** The owner's ruling, which the compact
+        // contract repeats: *application-owned title bars retain their own
+        // controls; do not add duplicate Close buttons to them.* alo adds
+        // movement and a menu and nothing else, so the width makes no
+        // difference here — there is nothing to drop.
+        (Decorations::TheApplicationDraws, _) => vec![OnTheEdge::Move, OnTheEdge::Menu],
     }
 }
 

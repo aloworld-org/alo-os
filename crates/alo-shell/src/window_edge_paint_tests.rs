@@ -35,7 +35,12 @@ fn colours(solids: &[Solid]) -> Vec<(u8, u8, u8)> {
 /// exactly one rectangle.
 #[test]
 fn at_rest_the_edge_draws_one_quiet_bar() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, false);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        false,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     let drawn = solids(&edge, Pointing::default());
     assert_eq!(drawn.len(), 1, "{drawn:?}");
     assert_eq!(drawn[0].0.size, Size::from((24, 2)));
@@ -48,7 +53,12 @@ fn at_rest_the_edge_draws_one_quiet_bar() {
 /// is ever filled unless it is hovered — only its artwork is drawn.
 #[test]
 fn an_unpointed_control_draws_only_its_artwork() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     let drawn = solids(&edge, Pointing::default());
     for control in &edge.controls {
         assert!(
@@ -68,7 +78,12 @@ fn an_unpointed_control_draws_only_its_artwork() {
 /// the 32 × 28 pill rather than the target.
 #[test]
 fn only_the_hovered_control_is_highlighted() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     let drawn = solids(
         &edge,
         Pointing {
@@ -96,7 +111,12 @@ fn only_the_hovered_control_is_highlighted() {
 /// other of the seven.
 #[test]
 fn only_close_and_only_hovered_is_danger_coloured() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     const DANGER: (u8, u8, u8) = (0xB4, 0x23, 0x18);
 
     let resting = solids(&edge, Pointing::default());
@@ -137,7 +157,12 @@ fn nothing_on_the_edge_is_ever_teal() {
     let specimen = specimen();
     for decorations in [Decorations::TheShellDraws, Decorations::TheApplicationDraws] {
         for revealed in [true, false] {
-            let edge = edge_of(specimen, decorations, revealed);
+            let edge = edge_of(
+                specimen,
+                decorations,
+                revealed,
+                smithay::utils::Size::from((1920, 1080)),
+            );
             for hovered in [
                 None,
                 Some(OnTheEdge::Minimise),
@@ -166,7 +191,12 @@ fn nothing_on_the_edge_is_ever_teal() {
 /// **The revealed strip is white inside a `border/default` frame.**
 #[test]
 fn the_revealed_strip_is_a_surface_in_a_border() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     let drawn = solids(&edge, Pointing::default());
     let strip = edge.strip.expect("revealed");
     assert_eq!(drawn[0].0, strip);
@@ -182,7 +212,12 @@ fn the_revealed_strip_is_a_surface_in_a_border() {
 fn nothing_is_drawn_over_the_application() {
     let window = specimen();
     for revealed in [true, false] {
-        let edge = edge_of(window, Decorations::TheShellDraws, revealed);
+        let edge = edge_of(
+            window,
+            Decorations::TheShellDraws,
+            revealed,
+            smithay::utils::Size::from((1920, 1080)),
+        );
         let drawn = solids(
             &edge,
             Pointing {
@@ -205,9 +240,17 @@ fn nothing_is_drawn_over_the_application() {
 /// geometry.
 #[test]
 fn no_window_buttons_are_drawn_for_an_application_that_has_its_own() {
-    let edge = edge_of(specimen(), Decorations::TheApplicationDraws, true);
-    assert_eq!(edge.controls.len(), 1);
-    assert_eq!(edge.controls[0].does, OnTheEdge::Menu);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheApplicationDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
+    // Movement and the menu, and no window button of alo's own.
+    assert_eq!(
+        edge.controls.iter().map(|it| it.does).collect::<Vec<_>>(),
+        vec![OnTheEdge::Move, OnTheEdge::Menu]
+    );
     // And hovering what is not there changes nothing.
     let drawn = solids(&edge, Pointing::default());
     let closing = solids(

@@ -221,7 +221,15 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 // reveal, and one that does not sees the grip, which is what a
                 // person with no mouse on that window sees.
                 let revealed = server.is_this_windows_edge_revealed(surface);
-                let edge = alo_shell::edge_of(window, asked.decorations, revealed);
+                // The output this walk draws into, in logical units, so a
+                // window narrower than 148 gets its edge clamped the same way
+                // the shell clamps it.
+                let edge = alo_shell::edge_of(
+                    window,
+                    asked.decorations,
+                    revealed,
+                    alo_shell::the_usable_output((THE_OUTPUT_IS.0, THE_OUTPUT_IS.1).into(), 100),
+                );
                 let title = server.the_name_of(surface);
                 // **Where the pointer is, not a default.** This passed
                 // `Pointing::default()` until 2026-10-11, so no control on any

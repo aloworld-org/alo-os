@@ -376,9 +376,10 @@ pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_dividing::NotDivided;
 pub use window_edge::{
-    A_TARGET_IS, ARTWORK_IS, BETWEEN_TARGETS, Decorations, EdgeControl, OnTheEdge,
-    THE_DRAG_STARTS_AT, THE_GRIP_IS, THE_REGION_IS_TALL, THE_STRIP_IS_TALL, THE_STRIP_STARTS_AT,
-    WindowEdge, edge_of,
+    A_TARGET_IS, ARTWORK_IS, BETWEEN_TARGETS, Decorations, EdgeControl, FULL_CONTROLS_NEED,
+    HowItFits, OnTheEdge, THE_COMPACT_EDGE_IS, THE_DRAG_STARTS_AT, THE_GRIP_IS, THE_PADDING_IS,
+    THE_REGION_IS_TALL, THE_STRIP_IS_TALL, THE_STRIP_STARTS_AT, WindowEdge, edge_of,
+    the_usable_output,
 };
 /// What the external window edge is drawn out of: rectangles and roles.
 ///
