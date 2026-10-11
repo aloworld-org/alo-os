@@ -712,20 +712,9 @@ mod running {
     }
 
     /// Read the two things a machine differs by, and systemd's own directory.
-    ///
-    /// **The card is asked of the seat rather than named**, since 2026-10-11.
-    /// This read `ALO_DISPLAY` and required it, and the unit set it to
-    /// `/dev/dri/card0` under a comment saying that is wrong on most machines:
-    /// firmware handing over a framebuffer gives `simpledrm` minor 0, so the
-    /// real GPU is minor 1. A default chosen in the knowledge that it is
-    /// usually wrong is a bug rather than a quirk.
-    ///
-    /// `alo_shell::the_card_to_open` is the greeter's own answer, moved into
-    /// the crate both of them already share so that there is one of it. The
-    /// variable is still honoured wherever somebody sets it.
     fn what_this_machine_is() -> Result<Said, String> {
         Ok(Said {
-            display: alo_shell::the_card_to_open()?,
+            display: PathBuf::from(named("ALO_DISPLAY")?),
             runtime: PathBuf::from(named("RUNTIME_DIRECTORY")?),
             layout: named("ALO_KEYBOARD")?,
         })
