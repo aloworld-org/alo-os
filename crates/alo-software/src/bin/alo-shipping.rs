@@ -34,7 +34,9 @@ use std::process::ExitCode;
 use std::time::SystemTime;
 
 use alo_egress::Indicator;
-use alo_software::{Bound, Enabled, Shipped, TheRentedTool, install, installing};
+use alo_software::{
+    Bound, Enabled, Shipped, TheApplicationsArrived, TheRentedTool, install, installing,
+};
 
 fn main() -> ExitCode {
     let shipped = match Shipped::decided() {
@@ -87,5 +89,30 @@ fn main() -> ExitCode {
     }
 
     println!("{arrived} of this machine's applications arrived, {owed} still owed");
+
+    // **The walk is recorded here, and it is what stops this running every
+    // boot.** The unit asked `ConditionFirstBoot=yes` until 2026-10-11 and
+    // was skipped on every machine: `bootc install to-disk` populates
+    // `/etc/machine-id`, so the first boot is spent before the machine has
+    // booted and a written machine shipped with none of its applications.
+    //
+    // **After the walk and not after a success**, which is this program's own
+    // rule one line above: incomplete is a state this machine is allowed to
+    // be in, and a machine with no network does not try again for ever (ADR
+    // 0073). The two defect exits above return before reaching here on
+    // purpose - a program that could not read its own list has not walked
+    // anything, and must not be marked as having done so.
+    //
+    // **A mark that cannot be written is said and not fatal.** The
+    // applications really were walked; a machine with a read-only `/var`
+    // walks them again next boot, which is a better failure than reporting a
+    // walk that did not happen.
+    let arrived_before = TheApplicationsArrived::on_this_machine();
+    if let Err(why) = arrived_before.record() {
+        eprintln!(
+            "the applications were walked and it could not be written down at {}: {why} - this              machine will walk them again on its next boot",
+            arrived_before.at().display()
+        );
+    }
     ExitCode::SUCCESS
 }

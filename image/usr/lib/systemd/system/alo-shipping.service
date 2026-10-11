@@ -7,11 +7,44 @@
 # product is being built, and a machine that cannot reach Flathub says so and is
 # still a machine.
 #
-# **ConditionFirstBoot, not a stamp file of our own.** systemd already knows what
-# a first boot is — `/etc/machine-id` unpopulated — and an ostree deployment
-# keeps `/etc`, so this runs once on a fresh machine and never again on an
-# update. Inventing a second answer to a question systemd already answers is how
-# two of them come to disagree.
+# **A mark of our own, because systemd's answer is unusable here — corrected
+# 2026-10-11.** This asked `ConditionFirstBoot=yes`, and said: *systemd already
+# knows what a first boot is — `/etc/machine-id` unpopulated — and inventing a
+# second answer to a question systemd already answers is how two of them come to
+# disagree.* The reasoning is sound and it is wrong about the one install path
+# alo OS uses.
+#
+# This unit was skipped on every machine ever written — *alo-shipping.service -
+# The applications a fresh machine has skipped, unmet condition check
+# ConditionFirstBoot=yes* — so a machine shipped with **none** of its
+# applications and reported success.
+#
+# Measured, and the first attempt at this paragraph got the cause wrong:
+# `/etc/machine-id` is 0 bytes in the container image, **0 bytes on a freshly
+# written disk that has never been booted**, and 33 bytes after one boot with
+# that boot's own mtime. The boot populates it, not the install.
+#
+# **And the condition was unmet on that very boot** — on a disk that could not
+# be fresher, with an empty `machine-id` in the deployment,
+# `first-boot-complete.target` was skipped by the same condition at 171
+# seconds, before anything of ours ran. Why systemd decides that is not
+# load-bearing here and is not claimed; the likely mechanism is that it settles
+# first-boot from the `/etc` it sees in the initrd, which on an ostree
+# deployment is not the one carrying this `machine-id`. What is measured is
+# that it never fires.
+#
+# There are not two answers to disagree: systemd's cannot be true here, and
+# `crates/alo-software/src/the_applications_arrived.rs` holds the only one. The
+# path below is that file's constant, held to it by a test, because a condition
+# reading a file nothing writes is a machine that walks its applications on
+# every boot.
+#
+# **Marked after the walk, not after a success**, which is the program's own
+# rule: incomplete is a state this machine is allowed to be in, so a machine
+# with no network does not try again for ever. But **not after a defect** — the
+# two non-zero exits mean the program could not read its own list or its own
+# sources, and those must be retried after a fix rather than spent.
+# `ConditionFirstBoot` spent the one chance either way.
 #
 # **It does not retry, and that is a decision.** ADR 0073 rejected a unit that
 # retries for ever: a machine that is still trying is a machine that never says
@@ -20,7 +53,7 @@
 [Unit]
 Description=The applications a fresh machine has
 Documentation=file:///usr/share/doc/alo/decisions/0073.md
-ConditionFirstBoot=yes
+ConditionPathExists=!/var/lib/alo-shipping/the-applications-arrived
 
 # The places it installs from are not on this machine. Without the network it
 # will refuse each application in words rather than hang, which is the behaviour
