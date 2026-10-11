@@ -65,6 +65,31 @@ supposed to agree.** A boot is the cheapest way to make a hundred such
 comparisons at once; a second reader is the cheapest way to make the ones a
 boot cannot.
 
+## The gate is not weak everywhere, and the correction is worth more than the finding
+
+Everything above reads as *the gate did not catch these*, which overstates it.
+The Mac lane put the other half of the ledger beside it on the same day,
+clearing a gate on one new file:
+
+- a public item documented with a link to a private one turned out to be a
+  real design question wearing a lint's clothes — a surface widened so a test
+  could reach something, found by `rustdoc -D warnings` and made private
+  again;
+- `unsafe_code = "forbid"` made `std::env::set_var` unavailable in a test,
+  which forced the decision apart from the environment read. That is the
+  better structure and it was not arrived at by thinking. The same lint
+  forced the same split in this lane, on the same afternoon, for the same
+  reason.
+
+**So the cheap mechanical rules caught two design mistakes in one file, and
+the expensive ones caught nothing all day.** The gate is not weak in general —
+it is weak in exactly one place, and that place is *does this work on a
+machine*. A clippy lint is a reviewer that never gets tired; what no lint can
+be is a machine that has been switched on.
+
+That is a narrower claim than the one the five faults suggest on their own,
+and it is the true one.
+
 ## What this is not an argument for
 
 It is not an argument for a weaker gate, a slower gate, or a gate that boots
