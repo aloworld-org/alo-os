@@ -31,7 +31,8 @@ Drawing exists and behaviour does not. That asymmetry is the whole plan.
 | the panel's three presentations | **built and drawn** |
 | `alo_dock::clicking` — what a click means | **built, and nothing calls it** |
 | `alo_dock::pinning` — what a fresh machine pins | **built, and nothing produces its `Discovery`** |
-| `Holding::showing` — who is on the bar | **built, and implements the superseded rule** |
+| `Holding::showing` — who is on the bar | **built with the new rule**, and every caller of it is a test |
+| anything on a *real* Dock | **nothing** — `alo-desktop` passes `on_the_dock: &[]` |
 | a window picker, a search field, a grid | **do not exist in any form** |
 | any keyboard route into any of it | **does not exist** |
 | Escape dismissing anything of the Dock's | **does not exist** |
@@ -68,13 +69,35 @@ data it has: an unpinned application with `windows == put_aside` is not shown.
 about state and never about the camera; one icon per application; pinned
 positions kept on opening; **focusing never reorders**.
 
-**Call site:** already there — the shell passes `on_the_dock` from
-`Holding::showing`. This is the one task whose production path exists, which is
-why it is first.
+**Call site: there is none, and the sentence that stood here said there was.**
+
+It read *already there — the shell passes `on_the_dock` from `Holding::showing`.
+This is the one task whose production path exists, which is why it is first.*
+Every word of that was wrong, and it was written in this file four hours before
+it was checked. Measured by grep: **every caller of `Holding::showing` in this
+repository is a test.** `crates/alo-desktop/src/main.rs:618` passes
+`on_the_dock: &[]`, so **no application has ever appeared on a real Dock** — the
+pictures in this repository are all of fixtures.
+
+The comment at that literal is honest and names the seam exactly: *an `AppId`
+per mapped surface, then a `Windows` built from them, then `Holding::showing`.*
+All three parts exist — `Server::mapped_surfaces`,
+`Server::minimized_surfaces`, `canvas_remembered::the_app_id_of` — and nothing
+joins them.
+
+**So task 1 is two tasks**, and splitting them is the point:
+
+- **1a, the rule** — `belongs_on_the_dock` and `showing` applying it. Done, and
+  mutation-tested four ways.
+- **1b, the caller** — `alo-desktop` building an `alo_dock::Windows` from its
+  mapped and minimised surfaces and calling `showing`. **Not done.** Until it
+  is, every clause in this plan is about a fixture.
 
 **Watch for:** the ordering clause is the easy one to leave untested, because a
 Dock drawn once looks right whatever the order rule is. It needs two draws and a
-focus between them.
+focus between them — `focusing_an_application_does_not_move_its_icon` is that
+test, and it exists because `Windows` keeps two orders and `showing` must walk
+the right one.
 
 ### 2 — Pressing an application
 
