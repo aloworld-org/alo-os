@@ -22,6 +22,7 @@
 pub mod activity;
 pub mod changed;
 pub mod conversation;
+pub mod conversation_layout;
 pub mod layout;
 pub mod measures;
 pub mod permissions;
@@ -33,6 +34,7 @@ pub mod which_model;
 pub use activity::{Act, HowItWent, TheActivity};
 pub use changed::WhatChanged;
 pub use conversation::{TheConversation, Turn, WhoSaidIt};
+pub use conversation_layout::{APlacedBlock, TheBlocks, WhoseBlock};
 pub use layout::{ARow, TheControls, TheRows, TooSmall};
 pub use permissions::{Answered, ThePermissions};
 pub use stopping::Stopping;
