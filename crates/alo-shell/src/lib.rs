@@ -308,6 +308,7 @@ mod sign_in_raster;
 mod sign_in_screen;
 mod sign_in_seat;
 mod sign_in_surface;
+mod sign_in_wallpaper;
 mod socket;
 mod software_scanout;
 pub mod status_items;
