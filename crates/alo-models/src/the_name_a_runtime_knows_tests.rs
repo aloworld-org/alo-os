@@ -136,3 +136,72 @@ fn the_two_refusals_do_not_read_alike() {
         "an unpinned entry must not be reported as missing from the catalogue"
     );
 }
+
+/// **Both refusals reach a person in their own language.**
+///
+/// This is the test the fix of 2026-10-12 exists for. Until then `alo-ask`
+/// printed the `#[error]` string, which is English in code and appeared
+/// nowhere in the published vocabulary — measured by writing
+/// `catalogue = "no-such-model-anywhere"` into a settings file, the way a
+/// person with a typo would, and reading what came back.
+///
+/// **The assertion is that the German is said, not that the English is
+/// absent.** A test asserting absence would pass on a sentence that failed to
+/// resolve at all and returned nothing.
+#[test]
+fn both_refusals_are_said_in_the_persons_own_language() {
+    let german = crate::testing::translated(&[
+        (
+            crate::words::NO_SUCH_MODEL,
+            "dieses Gerät kennt kein Modell namens {model}",
+        ),
+        (
+            crate::words::NO_ARTEFACT_YET,
+            "{model} kennt dieses Gerät, und keine Datei dafür ist gewählt",
+        ),
+    ]);
+
+    let unknown = NotNamed::NoSuchModel("llama-4".to_owned()).said(&german);
+    assert_eq!(
+        unknown.text(),
+        "dieses Gerät kennt kein Modell namens llama-4",
+        "the name a person wrote must survive into the translation"
+    );
+
+    let unpinned = NotNamed::NoArtefact("llama-4".to_owned()).said(&german);
+    assert_eq!(
+        unpinned.text(),
+        "llama-4 kennt dieses Gerät, und keine Datei dafür ist gewählt"
+    );
+
+    // **And they stay two sentences once translated**, which is the point of
+    // there being two: a person is told which of the two happened.
+    assert_ne!(unknown.text(), unpinned.text());
+}
+
+/// **Each refusal is one of this crate's own declared words**, so nothing can
+/// put a sentence in front of a person that no translator will ever see.
+#[test]
+fn each_refusal_is_a_word_this_crate_declares() {
+    for refusal in [
+        NotNamed::NoSuchModel("a".to_owned()),
+        NotNamed::NoArtefact("a".to_owned()),
+    ] {
+        assert!(
+            crate::words::EVERY_WORD
+                .iter()
+                .any(|word| word.key() == refusal.word().key()),
+            "{refusal:?} says a word this crate does not declare"
+        );
+    }
+
+    // The control: the English really resolves to the declared sentence, so
+    // the lookup worked rather than falling back to the key.
+    let english = crate::testing::in_english();
+    assert_eq!(
+        NotNamed::NoSuchModel("llama-4".to_owned())
+            .said(&english)
+            .text(),
+        "this machine has no model called llama-4, so there is nothing to ask for"
+    );
+}

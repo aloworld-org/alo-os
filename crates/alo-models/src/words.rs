@@ -976,11 +976,42 @@ pub const THE_PROCESSOR_THE_MACHINE_WOULD_NOT_SAY: Word = Word::saying(
      checked.",
 );
 
+// ---------------------------------------------------------------------------
+// Which model a setting named, when this catalogue cannot turn it into a name
+// a runtime knows. Both are reachable by an ordinary choice: a person writes a
+// model into their own settings, and a typo or an entry whose file nobody has
+// pinned yet is what they get back. They were English in a `thiserror` string
+// until 2026-10-12, which `alo-ask` had recorded as owed *if this ever becomes
+// reachable by an ordinary choice* — it was, and this is the debt paid.
+// ---------------------------------------------------------------------------
+
+/// A settings file names a model this catalogue does not have.
+pub const NO_SUCH_MODEL: Word = Word::saying(
+    "models.chosen.no-such-model",
+    "this machine has no model called {model}, so there is nothing to ask for",
+)
+.noting(
+    "{model} is the name written in the person's own settings and is never translated - it is \
+     shown back so they can see the spelling they gave. Said when that name matches no entry \
+     in the catalogue this release ships.",
+);
+
+/// A settings file names an entry nobody has pinned a file for yet.
+pub const NO_ARTEFACT_YET: Word = Word::saying(
+    "models.chosen.no-artefact-yet",
+    "{model} is a model this machine knows of, and no file for it has been chosen yet",
+)
+.noting(
+    "{model} is the catalogue's own name for the model and is never translated. Said when the \
+     catalogue holds the entry but nobody has pinned which file it is - *not yet* rather than \
+     *wrong*, and a different thing to tell a person than a name nothing matches.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 65] = [
+pub const EVERY_WORD: [Word; 67] = [
     ON_THIS_MACHINE,
     AT_THIS_MACHINES_ADDRESS,
     ON_A_PAIRED_MACHINE,
@@ -1046,6 +1077,8 @@ pub const EVERY_WORD: [Word; 65] = [
     THE_PROCESSOR_NOT_ENOUGH_ON_THE_CARD,
     THE_PROCESSOR_THE_RUNTIME_LEFT_IT_THERE,
     THE_PROCESSOR_THE_MACHINE_WOULD_NOT_SAY,
+    NO_SUCH_MODEL,
+    NO_ARTEFACT_YET,
 ];
 
 /// Every sentence a person reads about **which road this machine's answers
