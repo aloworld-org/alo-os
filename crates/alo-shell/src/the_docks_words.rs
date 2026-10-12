@@ -117,7 +117,7 @@ impl TheDocksWords {
             key: say(&alo_dock::words::THE_COMPOSERS_KEY),
             show_all: say(&alo_dock::words::SHOW_ALL),
             history: say(&alo_dock::words::HISTORY),
-            settings: say(&alo_dock::words::THE_SETTINGS_ENTRY),
+            settings: say(&alo_dock::words::SETTINGS_ON_THE_DOCK),
             picker: open.the_windows_of().map(|picker| {
                 let rows = picker.rows();
                 ThePickersWords {

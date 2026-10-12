@@ -81,7 +81,7 @@ impl Announced {
         // sentence.
         let Some(app) = on_the_dock.app().map(|app| app.name().to_owned()) else {
             return Self {
-                counts: words::THE_SETTINGS_ENTRY,
+                counts: words::SETTINGS_ON_THE_DOCK,
                 filling: Filling::nothing(),
                 focused: matches!(focused, Focused::OneOfItsWindowsIs),
             };
@@ -246,7 +246,7 @@ mod tests {
     fn a_native_entrys_sentence_is_not_the_closed_one() {
         let native = Announced::of(&the_settings_entry(), Focused::No);
 
-        assert_eq!(native.which().key(), words::THE_SETTINGS_ENTRY.key());
+        assert_eq!(native.which().key(), words::SETTINGS_ON_THE_DOCK.key());
         assert_ne!(
             native.which().key(),
             words::ANNOUNCED_CLOSED.key(),
