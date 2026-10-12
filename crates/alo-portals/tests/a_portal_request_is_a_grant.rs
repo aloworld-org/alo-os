@@ -90,29 +90,35 @@ fn reading(named: &str) -> String {
         .unwrap_or_else(|why| panic!("{} could not be read: {why}", at.display()))
 }
 
-/// The v0.5 portal line of `docs/features.md`, whole.
+/// The portal line of `docs/features.md`, whole.
 ///
 /// Held whole so that a portal added to or taken from the promise fails here,
 /// and sends whoever changed it to [`Portal`] and to ADR 0040's table.
-const THE_PORTALS_PROMISED: &str = "- [v0.5] Portals: file chooser and documents, open-with and \
+///
+/// **It carried `[v0.5]` until 2026-10-12**, when the owner removed the versions
+/// (ADR 0105). Three constants in this file held a features line *including its
+/// tier marker*, so all three stopped matching the moment the markers went — an
+/// exact-line check is the strictest kind and also the kind a reformat breaks.
+const THE_PORTALS_PROMISED: &str = "- Portals: file chooser and documents, open-with and \
                                     default applications, notifications, print, screenshot, \
                                     screen capture, camera, microphone, clipboard, trash, \
                                     wallpaper, settings, inhibit (no sleep mid-presentation), \
                                     network and power-profile monitors";
 
-/// The v0.5 line that promises the Secret portal, on its own.
-const THE_SECRET_PORTAL_PROMISED: &str = "- [v0.5] **Secret storage** — one keyring behind the Secret \
+/// The line that promises the Secret portal, on its own.
+const THE_SECRET_PORTAL_PROMISED: &str = "- **Secret storage** — one keyring behind the Secret \
                                           portal, so applications stop inventing credential storage";
 
 /// The portal line that names what this crate must **not** answer.
 ///
 /// It read `[v1]` until 2026-10-03, when
 /// `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md` moved it into
-/// this release. **What the test holds did not change with the tier.** These four
-/// are promised and unbuilt, so they are still absent from [`Portal::EVERY`] —
-/// a variant that answers *no* is worse than no variant, and a tier says when
-/// something is owed rather than whether it exists.
-const THE_PORTALS_NOT_ANSWERED_YET: &str = "- [v0.5] Portals: USB devices, global shortcuts an \
+/// this release, and carried no tier at all after 2026-10-12. **What the test
+/// holds never changed with the tier.** These four are promised and unbuilt, so
+/// they are still absent from [`Portal::EVERY`] — a variant that answers *no* is
+/// worse than no variant, and a tier said when something was owed rather than
+/// whether it exists.
+const THE_PORTALS_NOT_ANSWERED_YET: &str = "- Portals: USB devices, global shortcuts an \
                                             application registers, dynamic launchers, remote \
                                             desktop";
 
@@ -123,7 +129,7 @@ fn the_portals_are_the_closed_list_the_promise_names() {
     let features = reading("docs/features.md");
     assert!(
         features.lines().any(|line| line == THE_PORTALS_PROMISED),
-        "the v0.5 portal line of docs/features.md is no longer the one Portal was built from"
+        "the portal line of docs/features.md is no longer the one Portal was built from"
     );
     assert!(
         features

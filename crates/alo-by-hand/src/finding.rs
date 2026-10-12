@@ -111,30 +111,6 @@ pub enum Finding {
         promises: usize,
     },
 
-    /// An owed answer that names no release.
-    #[error(
-        "docs/by-hand.md says the plain way to do `{verb}` is owed and does not say by which \
-         release. Name it in brackets first, like `[v0.5]`: a debt with no release on it is a debt \
-         nobody has taken on, and the point of writing it down is that somebody has"
-    )]
-    AnOwedAnswerWithNoRelease {
-        /// The verb's name.
-        verb: String,
-    },
-
-    /// An owed answer naming a release the definition does not use.
-    #[error(
-        "docs/by-hand.md owes the plain way to do `{verb}` at `{named}`, and docs/features.md makes \
-         no promises for a release of that name. The tiers are the definition's; a verb owed at a \
-         release nobody ships is owed at nothing"
-    )]
-    AReleaseNobodyShips {
-        /// The verb's name.
-        verb: String,
-        /// The release the entry named.
-        named: String,
-    },
-
     /// An answer said in a way nobody could act on.
     #[error(
         "docs/by-hand.md answers `{verb}` with `{said}`. That is a shrug rather than an answer: say \

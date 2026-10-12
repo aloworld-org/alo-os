@@ -18,7 +18,7 @@ use crate::owed::Owed;
 const BY_HAND: &str = "**By hand:**";
 
 /// How an entry says the plain way is owed, and by which release.
-const OWED_AT: &str = "**Owed at:**";
+const OWED_AT: &str = "**Owed:**";
 
 /// One verb, and what this machine says about doing the same thing by hand.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -106,7 +106,7 @@ mod tests {
 **By hand:** a person searches in the file manager —
 `Search your own files, without asking anything`.
 
-**Owed at:** [v0.5] the search is v0.5 work and nothing on this machine indexes
+**Owed:** the search is v0.5 work and nothing on this machine indexes
 anything yet.
 ",
         );
@@ -115,7 +115,7 @@ anything yet.
             entry.by_hand().unwrap().naming(),
             ["Search your own files, without asking anything".to_owned()]
         );
-        assert_eq!(entry.owed().unwrap().release(), Some("v0.5"));
+        assert!(entry.owed().unwrap().is_an_answer());
         assert!(entry.says_something());
     }
 
@@ -133,7 +133,7 @@ anything yet.
 
         let owed = Entry::under(
             "archive_folder",
-            "**Owed at:** [v0.5] nothing in the definition promises making an \
+            "**Owed:** nothing in the definition promises making an \
              archive by hand, only opening one.",
         );
         assert!(owed.by_hand().is_none());
@@ -165,7 +165,7 @@ anything yet.
     fn a_quotation_inside_what_is_owed_names_nothing() {
         let entry = Entry::under(
             "archive_folder",
-            "**Owed at:** [v0.5] `A file manager, with trash, and archives that \
+            "**Owed:** `A file manager, with trash, and archives that \
              open` promises opening one and not making one.",
         );
         assert!(
