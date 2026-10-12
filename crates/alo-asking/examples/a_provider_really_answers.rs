@@ -126,7 +126,10 @@ fn main() -> ExitCode {
                 return ExitCode::FAILURE;
             }
         };
-    println!("asking {of} at {host}:{port}, resolved to {} address(es)", to.len());
+    println!(
+        "asking {of} at {host}:{port}, resolved to {} address(es)",
+        to.len()
+    );
 
     let mut indicator = Indicator::default();
     // **Quiet first**, so the assertion after the ask is about this ask.
@@ -138,13 +141,14 @@ fn main() -> ExitCode {
 
     let who = Grantee::named("@the-owner");
     let asking = Asking::by(&who, answering, &[], &policy);
-    let asked_now = match asking.to_a_provider(&question, &hosted, &mut indicator, SystemTime::now(), &to) {
-        Ok(asked_now) => asked_now,
-        Err(not_asked) => {
-            eprintln!("it did not answer: {not_asked:?}");
-            return ExitCode::FAILURE;
-        }
-    };
+    let asked_now =
+        match asking.to_a_provider(&question, &hosted, &mut indicator, SystemTime::now(), &to) {
+            Ok(asked_now) => asked_now,
+            Err(not_asked) => {
+                eprintln!("it did not answer: {not_asked:?}");
+                return ExitCode::FAILURE;
+            }
+        };
 
     // **What left, which is what a record is written from.** Printed without
     // the key: `Departing` describes the egress, never the credential.
@@ -155,9 +159,19 @@ fn main() -> ExitCode {
     println!("the indicator showed {showing} thing(s) while it was in flight");
 
     let answer = asked_now.ended(&mut indicator);
-    println!("\n--- the answer ---\n{}\n------------------", answer.text());
-    println!("it came from: {:?}, model {}", answer.source(), answer.model());
-    println!("the indicator is quiet again afterwards: {}", indicator.is_quiet());
+    println!(
+        "\n--- the answer ---\n{}\n------------------",
+        answer.text()
+    );
+    println!(
+        "it came from: {:?}, model {}",
+        answer.source(),
+        answer.model()
+    );
+    println!(
+        "the indicator is quiet again afterwards: {}",
+        indicator.is_quiet()
+    );
 
     if showing == 0 {
         eprintln!(
