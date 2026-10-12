@@ -353,6 +353,16 @@ impl Measure {
         (at_one * self.percent / 100).max(1)
     }
 
+    /// The person's text size as a factor, for a caller with its own styles.
+    ///
+    /// **`crate::task_text` has five sizes and this crate's other surfaces have
+    /// one**, so it needs the factor rather than a `Metrics` fixed at 16 / 24.
+    /// Exposed rather than letting it read `percent`, so the *never below one
+    /// pixel* rule and the factor stay in one type.
+    pub(crate) fn factor(self) -> f32 {
+        self.percent as f32 / 100.0
+    }
+
     /// The text metrics every line on the desktop uses.
     pub(crate) fn metrics(self) -> Metrics {
         let factor = self.percent as f32 / 100.0;

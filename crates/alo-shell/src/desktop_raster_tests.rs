@@ -995,6 +995,22 @@ fn an_open_application_in_more_apps_has_a_mark_in_the_raster() {
     );
 }
 
+/// What a task window says, for a fixture that is about the seam rather than
+/// the wording.
+fn a_tasks_words() -> crate::task_text::TheWordsInATaskWindow<'static> {
+    crate::task_text::TheWordsInATaskWindow {
+        title: "Prepare the launch presentation",
+        kind: "alo task",
+        status: "alo is working",
+        model: "SmolLM2 1.7B",
+        destination: "On this computer",
+        invitation: "Reply to alo\u{2026}",
+        scope_note: "Permissions and model choices apply to this task.",
+        files: &[],
+        how_many_files: "",
+    }
+}
+
 /// **A task window reaches the frame**, and is painted as its own texture.
 ///
 /// The test the wiring was owed. Every piece of a task window had its own
@@ -1051,6 +1067,8 @@ fn a_task_window_reaches_the_desktop_picture_and_is_painted() {
     let one = [crate::task_raster::ATaskOnTheDisplay {
         at: smithay::utils::Rectangle::new((200, 120).into(), (1040, 800).into()),
         how_many_files: 2,
+        words: a_tasks_words(),
+        said: &[],
     }];
     let with = of(&one);
 
@@ -1092,6 +1110,8 @@ fn a_task_window_too_small_is_left_out_rather_than_refusing_the_frame() {
     let impossible = [crate::task_raster::ATaskOnTheDisplay {
         at: smithay::utils::Rectangle::new((0, 0).into(), (120, 60).into()),
         how_many_files: 0,
+        words: a_tasks_words(),
+        said: &[],
     }];
     let drawn = picture(
         &dock,

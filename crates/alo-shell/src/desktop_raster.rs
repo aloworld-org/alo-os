@@ -102,7 +102,7 @@ pub(crate) struct Shown<'a> {
     /// The window of what is filling the disk.
     pub(crate) filling: &'a ListShows,
     /// The task windows open on this display, already placed.
-    pub(crate) tasks: &'a [crate::task_raster::ATaskOnTheDisplay],
+    pub(crate) tasks: &'a [crate::task_raster::ATaskOnTheDisplay<'a>],
     /// How this display is divided.
     pub(crate) division: &'a alo_dividing::Division,
     /// What letting go of a dragged window would do.
@@ -345,7 +345,17 @@ pub(crate) fn picture(
     // caused it.
     let tasks = tasks
         .iter()
-        .filter_map(|task| crate::task_raster::furniture(task.at, look, task.how_many_files).ok())
+        .filter_map(|task| {
+            crate::task_raster::furniture(
+                task.at,
+                look,
+                task.how_many_files,
+                &task.words,
+                task.said,
+                fonts,
+            )
+            .ok()
+        })
         .collect();
 
     Ok(DesktopPicture {

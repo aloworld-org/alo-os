@@ -322,6 +322,8 @@ mod surfaces;
 mod task_look;
 /// A task window's furniture, rasterised.
 pub mod task_raster;
+/// The type styles a task window is written in.
+mod task_text;
 /// The Dock's composer as a field a person types a request into.
 pub mod the_composer_a_person_types_in;
 /// Everything on the Dock that a person reads, said once a frame.

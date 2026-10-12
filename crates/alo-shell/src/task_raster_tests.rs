@@ -27,12 +27,60 @@ fn a_look() -> DesktopLook {
     )
 }
 
+/// The two shared files a fixture names.
+fn two_files() -> Vec<String> {
+    vec!["Launch brief.pdf".to_owned(), "Product notes.md".to_owned()]
+}
+
+/// Everything a task window says, as the design's own example words.
+///
+/// **Example content, and the component description says so twice.** None of
+/// it is simulated state: these are the words a caller would have said, handed
+/// in exactly as `the_docks_words` hands the Dock's.
+fn the_words(files: &[String]) -> crate::task_text::TheWordsInATaskWindow<'_> {
+    crate::task_text::TheWordsInATaskWindow {
+        title: "Prepare the launch presentation",
+        kind: "alo task \u{b7} Work",
+        status: "alo is working",
+        model: "SmolLM2 1.7B",
+        destination: "On this computer",
+        invitation: "Reply to alo or change the direction\u{2026}",
+        scope_note: "Permissions and model choices apply to this task.",
+        files,
+        how_many_files: "2 files shared with this task",
+    }
+}
+
+/// What was said, as the design's frame draws it.
+fn what_was_said() -> Vec<crate::task_text::WhatWasSaid<'static>> {
+    vec![
+        crate::task_text::WhatWasSaid {
+            whose: alo_tasks::WhoseBlock::ThePersons,
+            words: "Make a six-slide launch presentation from these two files.",
+        },
+        crate::task_text::WhatWasSaid {
+            whose: alo_tasks::WhoseBlock::Alos,
+            words: "I\u{2019}ll read the two files, shape the story, and build a draft.",
+        },
+        crate::task_text::WhatWasSaid {
+            whose: alo_tasks::WhoseBlock::AnAccount,
+            words: "Reading your documents",
+        },
+    ]
+}
+
 /// A window at the size the design was drawn at, with two files shared.
 fn as_drawn() -> TaskPicture {
+    let files = two_files();
+    let said = what_was_said();
+    let mut fonts = cosmic_text::FontSystem::new();
     furniture(
         Rectangle::new((120, 80).into(), (1040, 800).into()),
         a_look(),
         2,
+        &the_words(&files),
+        &said,
+        &mut fonts,
     )
     .expect("the size the design was drawn at")
 }
@@ -164,10 +212,16 @@ fn a_chip_is_drawn_per_shared_file_and_none_without() {
     let across = alo_tasks::measures::BESIDE_A_ROW + alo_tasks::measures::A_CHIP_IS_WIDE / 2;
 
     let sample = |how_many: usize| {
+        let files = two_files();
+        let said = what_was_said();
+        let mut fonts = cosmic_text::FontSystem::new();
         let drawn = furniture(
             Rectangle::new((120, 80).into(), (1040, 800).into()),
             a_look(),
             how_many,
+            &the_words(&files),
+            &said,
+            &mut fonts,
         )
         .expect("the design's size");
         let (x, y) = in_the_raster(
@@ -191,10 +245,16 @@ fn a_chip_is_drawn_per_shared_file_and_none_without() {
 /// **A window too small is refused, and the refusal says what it would need.**
 #[test]
 fn a_window_too_small_is_refused_rather_than_drawn_wrong() {
+    let files = two_files();
+    let said = what_was_said();
+    let mut fonts = cosmic_text::FontSystem::new();
     let refused = furniture(
         Rectangle::new((0, 0).into(), (200, 100).into()),
         a_look(),
         0,
+        &the_words(&files),
+        &said,
+        &mut fonts,
     )
     .expect_err("a 200 by 100 window was rasterised");
 
@@ -210,10 +270,16 @@ fn a_window_too_small_is_refused_rather_than_drawn_wrong() {
 /// chips off the side.
 #[test]
 fn chips_stop_at_the_rows_edge_rather_than_running_off_it() {
+    let files = two_files();
+    let said = what_was_said();
+    let mut fonts = cosmic_text::FontSystem::new();
     let many = furniture(
         Rectangle::new((0, 0).into(), (1040, 800).into()),
         a_look(),
         20,
+        &the_words(&files),
+        &said,
+        &mut fonts,
     )
     .expect("the design's size");
 
@@ -238,5 +304,151 @@ fn chips_stop_at_the_rows_edge_rather_than_running_off_it() {
         [r, g, b],
         palette.surface,
         "a chip was drawn against the window's own edge"
+    );
+}
+
+/// **The words are drawn, and a window told nothing draws none of them.**
+///
+/// The test the rest of this file could not have caught: every assertion above
+/// samples the panel's raster, and text is inked separately — so `inked` could
+/// have been empty and all of them would still pass. A control run with every
+/// string blank is what makes the positive count mean something.
+#[test]
+fn the_words_are_drawn_and_an_empty_window_draws_none() {
+    let files = two_files();
+    let said = what_was_said();
+    let mut fonts = cosmic_text::FontSystem::new();
+    let at = Rectangle::new((120, 80).into(), (1040, 800).into());
+
+    let nothing = crate::task_text::TheWordsInATaskWindow {
+        title: "",
+        kind: "",
+        status: "",
+        model: "",
+        destination: "",
+        invitation: "",
+        scope_note: "",
+        files: &[],
+        how_many_files: "",
+    };
+    let silent = furniture(at, a_look(), 0, &nothing, &[], &mut fonts).expect("the design's size");
+    assert!(
+        silent.inked.is_empty(),
+        "a window with nothing to say drew {} pieces of text",
+        silent.inked.len()
+    );
+
+    let spoken = furniture(at, a_look(), 2, &the_words(&files), &said, &mut fonts)
+        .expect("the design's size");
+
+    // **Derived, not a number.** Seven fixed strings — the title, the kind, the
+    // status, the invitation, the model, the destination and the scope note —
+    // plus a label per chip and one per thing said. Written as the sum because
+    // the first version of this test said *eleven* from a miscount of the
+    // seven, and a magic total cannot say which part of it moved.
+    let fixed = 7;
+    assert_eq!(
+        spoken.inked.len(),
+        fixed + files.len() + said.len(),
+        "the window drew {} pieces and {fixed} + {} + {} were given to it",
+        spoken.inked.len(),
+        files.len(),
+        said.len()
+    );
+    assert!(
+        spoken
+            .inked
+            .iter()
+            .all(|one| one.area.size.w > 0 && one.area.size.h > 0),
+        "a piece of text was drawn with no area"
+    );
+}
+
+/// **Every word is drawn inside the window.**
+///
+/// A long title must not write past the frame, and a block scrolled out of
+/// view must not be drawn above the conversation's own top.
+#[test]
+fn no_word_is_drawn_outside_the_window() {
+    let files = two_files();
+    let said = what_was_said();
+    let mut fonts = cosmic_text::FontSystem::new();
+    let at = Rectangle::new((120, 80).into(), (1040, 800).into());
+
+    let long = crate::task_text::TheWordsInATaskWindow {
+        title: "Prepare the launch presentation and then also summarise every \
+                single one of the attached documents in considerable detail",
+        ..the_words(&files)
+    };
+    let drawn = furniture(at, a_look(), 2, &long, &said, &mut fonts).expect("the design's size");
+
+    for one in &drawn.inked {
+        assert!(
+            one.area.loc.y >= at.loc.y,
+            "text at y {} is above the window's top at {}",
+            one.area.loc.y,
+            at.loc.y
+        );
+        assert!(
+            one.area.loc.y + one.area.size.h <= at.loc.y + at.size.h,
+            "text reaching y {} is below the window's bottom at {}",
+            one.area.loc.y + one.area.size.h,
+            at.loc.y + at.size.h
+        );
+        assert!(
+            one.area.loc.x >= at.loc.x,
+            "text at x {} is left of the window",
+            one.area.loc.x
+        );
+    }
+}
+
+/// **A person's request is drawn further right than alo's reply.**
+///
+/// The mark that tells whose words they are without relying on colour, checked
+/// where it finally becomes pixels rather than only in the layout's own tests.
+///
+/// **Only the conversation is given to the window**, so the inked pieces *are*
+/// the blocks. The first version of this test assumed they were the last three
+/// of eleven and compared alo's reply against the activity block, because the
+/// scope note is written after the conversation — an assertion about positions
+/// in a list nobody promised an order for.
+#[test]
+fn a_persons_words_are_drawn_further_right_than_alos() {
+    let said = what_was_said();
+    let mut fonts = cosmic_text::FontSystem::new();
+    let silent = crate::task_text::TheWordsInATaskWindow {
+        title: "",
+        kind: "",
+        status: "",
+        model: "",
+        destination: "",
+        invitation: "",
+        scope_note: "",
+        files: &[],
+        how_many_files: "",
+    };
+    let drawn = furniture(
+        Rectangle::new((0, 0).into(), (1040, 800).into()),
+        a_look(),
+        0,
+        &silent,
+        &said,
+        &mut fonts,
+    )
+    .expect("the design's size");
+
+    assert_eq!(
+        drawn.inked.len(),
+        said.len(),
+        "with only the conversation given, the inked pieces must be the blocks"
+    );
+    let request = drawn.inked.first().expect("a request").area.loc.x;
+    let reply = drawn.inked.get(1).expect("a reply").area.loc.x;
+
+    assert!(
+        request > reply,
+        "a person's request was drawn at x {request} and alo's reply at x \
+         {reply}, so the side no longer says whose words they are"
     );
 }
