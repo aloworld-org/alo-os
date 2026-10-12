@@ -351,6 +351,7 @@ mod window_edge_title;
 mod window_edge_who_draws;
 mod window_full_screen;
 mod window_maximize;
+mod window_menu;
 mod window_minimize;
 mod window_mode;
 mod window_mode_plan;
@@ -406,6 +407,12 @@ pub use window_edge_title::{AN_ELLIPSIS, FittedTitle, fitted};
 pub use window_edge_who_draws::who_draws_a_frame;
 pub use window_full_screen::WindowFullScreenError;
 pub use window_maximize::WindowMaximizeError;
+/// **The window menu**, which is what makes the compact edge honest: the
+/// actions it moves off the edge are reachable here rather than nowhere.
+pub use window_menu::{
+    A_ROW_IS_TALL, A_ROW_IS_WIDE, BELOW_THE_EDGE, MenuRow, THE_MENU_IS_WIDE,
+    THE_TITLE_BLOCK_IS_TALL, WhatARowDoes, WhatTheWindowAllows, WindowMenu, the_menu_of,
+};
 pub use window_minimize::WindowMinimizeError;
 pub use window_mode::WindowModeError;
 
