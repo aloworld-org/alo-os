@@ -33,6 +33,16 @@
 //! What they were guarding is not lost, it moves: `ROADMAP.md`'s **launch
 //! list** is the one ordering now, and
 //! `every_v0_01_promise_is_reconciled.rs` audits it.
+//!
+//! **A third thing left with them, and it was found by a warning rather than by
+//! reading.** `EVERY_DISAGREEMENT_THAT_STANDS` named the four tier
+//! disagreements that stood, under a long docstring explaining why naming them
+//! all was worth the lines. With no tiers there is nothing for it to name, and
+//! it sat dead — along with five imports — behind a `cargo clippy` that exits
+//! **0 while printing warnings**. The deletion that removed the tests was
+//! correct and incomplete, and the gate would have caught it because the gate
+//! denies warnings. A pre-check that does not is a pre-check that passes work
+//! the gate will refuse.
 
 #![expect(
     clippy::expect_used,
@@ -44,13 +54,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use alo_reconciling::Finding;
 use alo_reconciling::the_gate::{
-    counts_that_drifted, denials_by_task_number, orphaned_boxes, promises_with_no_box,
-    refusals_a_report_contradicts, statuses_their_own_section_contradicts, tiers_that_disagree,
-    withdrawals_left_open,
+    counts_that_drifted, denials_by_task_number, orphaned_boxes, refusals_a_report_contradicts,
+    statuses_their_own_section_contradicts, withdrawals_left_open,
 };
-use alo_reconciling::tier::Tier;
-use alo_reconciling::{Finding, promises_at, reconcile_at};
 
 /// This repository.
 fn the_repository() -> PathBuf {
@@ -160,67 +168,6 @@ fn no_half_is_under_the_wrong_promise() {
         say(&findings)
     );
 }
-
-/// **Every tier disagreement this check reports against the real documents**,
-/// measured on 2026-09-29 rather than recalled.
-///
-/// # Why this list exists
-///
-/// The assertion above named **one** of these — *Camera and microphone* — and that
-/// one was true. What it did not say is that the check reports **six findings
-/// across five promises**, so four promises stood unmentioned in a repository
-/// that runs this test on every gate. A reader of the old assertion would have
-/// concluded the check had one finding and it was known about.
-///
-/// That is not the check failing to work. It is a reader learning less from a
-/// passing test than the test's own function knew, and the remedy is cheap:
-/// name them all.
-///
-/// # What this list is not
-///
-/// **It is not an approval, and it is deliberately not a count.** The test above
-/// says at length why neither of these checks can gate yet, and asserting *and
-/// nothing else* would pin the output of a heuristic — the same fitting-to-the-
-/// documents that docstring refuses. **A new disagreement appearing will not fail
-/// this test**, and that is a stated limit rather than an oversight.
-///
-/// What it does buy: each of the five is held **live**. If the documents are
-/// reconciled, or the matcher drifts, the one that goes quiet is named.
-///
-/// # What each one is, on inspection
-///
-/// Three look like a promise **kept earlier than it was promised**, which is not a
-/// contradiction: *Lock screen, suspend and resume* and *Drag and drop between
-/// applications* are `[v0.5]` in the definition and answered inside v0.01's gate,
-/// and *Serving more than one person from one workstation* is `[v1]` answered in
-/// v0.01's. **Work done ahead of its tier reports the same as work at the wrong
-/// tier**, because the check compares where a promise is answered with where it is
-/// promised and cannot see which direction is a fault.
-///
-/// Three are the kind it was written for — *Camera and microphone*, *Drag and drop
-/// between applications* also answered in v1's gate, and the self-hosted workspace
-/// line: each `[v0.5]` in the definition and answered in v1's gate, which is a
-/// promise the scope gate says is in this release and the roadmap puts in the next.
-///
-/// **Which of those is a fault and which is a stale sentence is the owner's, not
-/// this test's.** It is recorded here so the question exists somewhere other than
-/// in a passing check's silence.
-const EVERY_DISAGREEMENT_THAT_STANDS: [&str; 4] = [
-    // Most likely kept earlier than promised, these two and the next.
-    "Lock screen, suspend and resume",
-    "Serving more than one person from one workstation",
-    // Answered in two gates at once, v0.01's and v1's — its own question, and the
-    // reason five promises produce six findings.
-    "Drag and drop between applications",
-    // *Camera and microphone* stood here until 2026-10-03 and is **reconciled**,
-    // not silenced. It was the kind this check was written for — `[v0.5]` in the
-    // definition and answered in v1's gate — and
-    // `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md` moved the
-    // Devices promise in `ROADMAP.md` to the tier `docs/features.md` already gave
-    // it. The disagreement is gone because the documents agree, which is the only
-    // reason an entry may leave this list.
-    "A self-hosted workspace on the network is **discovered, not configured**",
-];
 
 /// **No box denies work that its own named task says is done.**
 ///
