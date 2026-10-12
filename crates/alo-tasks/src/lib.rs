@@ -25,6 +25,7 @@ pub mod conversation;
 pub mod permissions;
 pub mod stopping;
 pub mod task;
+pub mod the_one_button;
 pub mod which_model;
 
 pub use activity::{Act, HowItWent, TheActivity};
@@ -33,4 +34,5 @@ pub use conversation::{TheConversation, Turn, WhoSaidIt};
 pub use permissions::{Answered, ThePermissions};
 pub use stopping::Stopping;
 pub use task::{ATask, InThePanel};
+pub use the_one_button::TheOneButton;
 pub use which_model::{BeforeItChanges, WhichModel};

@@ -38,6 +38,16 @@ pub struct ATask {
     permissions: ThePermissions,
     /// Whether anybody has asked it to stop.
     stopping: Stopping,
+    /// What the person has typed in the reply box and not yet sent.
+    ///
+    /// **Held by the task, not by the window**, for two reasons the contract
+    /// gives directly. *Preserve the draft* across a Stop: nothing here clears
+    /// it, so it survives by construction rather than by a window remembering
+    /// to carry it. And *minimising preserves the task* — a draft kept by a
+    /// window would be lost the moment somebody put the task aside and brought
+    /// it back, which is the one thing a person does while waiting for work to
+    /// finish.
+    draft: String,
 }
 
 /// What a minimised task shows in the right-hand panel.
@@ -70,6 +80,7 @@ impl ATask {
             model: WhichModel::answering_from(answering),
             permissions: ThePermissions::nothing_yet(),
             stopping: Stopping::nobody_asked(),
+            draft: String::new(),
         }
     }
 
@@ -131,6 +142,32 @@ impl ATask {
     /// [`Stopping`]'s shape.
     pub fn stop(&mut self) {
         self.stopping = self.stopping.clone().asked();
+    }
+
+    /// What the person has typed and not sent.
+    #[must_use]
+    pub fn the_draft(&self) -> &str {
+        &self.draft
+    }
+
+    /// The person typed in the reply box.
+    ///
+    /// **Typing alone does nothing else.** *Typing does not automatically
+    /// submit or interrupt* — the contract — so this changes what the one
+    /// button offers and never starts, continues or cancels any work.
+    pub fn the_person_is_typing(&mut self, draft: impl Into<String>) {
+        self.draft = draft.into();
+    }
+
+    /// The draft was sent, so there is no longer a draft.
+    ///
+    /// **Separate from [`Self::the_person_says`]**, which appends the turn:
+    /// clearing the box and adding what was in it to the conversation are two
+    /// things, and a caller that did only the first would lose what somebody
+    /// typed.
+    #[must_use]
+    pub fn take_the_draft(&mut self) -> String {
+        std::mem::take(&mut self.draft)
     }
 
     /// The work ended, having changed this.
