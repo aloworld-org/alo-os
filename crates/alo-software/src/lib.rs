@@ -160,6 +160,7 @@ pub mod tool;
 pub mod updating;
 pub mod verbs;
 pub mod web_address;
+pub mod what_this_machine_has;
 pub mod whether_it_is_sandboxed;
 pub mod words;
 
