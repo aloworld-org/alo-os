@@ -51,6 +51,9 @@ pub const fn side_for(action: Action) -> Option<Side> {
         | Action::Launcher
         | Action::Settings
         | Action::CloseWindow
+        // Showing a window's options divides nothing: it opens a list beside
+        // that window, and what the person then chooses from it may divide.
+        | Action::WindowOptions
         | Action::MinimiseWindow
         | Action::MaximiseWindow
         | Action::NextWindow

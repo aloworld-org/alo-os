@@ -60,7 +60,11 @@ impl Server {
         };
         if !matches!(
             action,
-            Action::MinimiseWindow | Action::MaximiseWindow | Action::SnapLeft | Action::SnapRight
+            Action::MinimiseWindow
+                | Action::MaximiseWindow
+                | Action::SnapLeft
+                | Action::SnapRight
+                | Action::WindowOptions
         ) {
             return self
                 .dispatch_window_shortcut(shortcuts, chord)
@@ -87,6 +91,19 @@ impl Server {
             // `Panel` is the desktop's; see `Server::asked_to_put_aside`.
             Action::MinimiseWindow => {
                 self.the_person_asked_to_put_aside(&root);
+            }
+            // **Alt+Space opens the window's own menu**, which is where the
+            // whole title can be read and copied and where the actions a
+            // compact edge moves off the strip are reached. It is the
+            // chord every desktop a person arrives from spells it with, and
+            // `docs/features.md` promises the habits people arrive with
+            // still work.
+            //
+            // **The same state a press on the Menu control sets**, so a menu
+            // opened by chord and one opened by pointer are one menu. Press
+            // it again and it closes, as the control does.
+            Action::WindowOptions => {
+                self.the_menu_was_opened_on(&root);
             }
             Action::MaximiseWindow => {
                 let maximize = self.surfaces.requested_window_mode(&root) != Mode::Maximized;

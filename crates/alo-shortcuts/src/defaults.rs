@@ -37,10 +37,15 @@ const ALT_SHIFT: Modifiers = ALT.and(Modifier::Shift);
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 17] = [
+const SHIPPED: [(Action, Chord); 18] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::Settings, Chord::shipped(SUPER, Key::I)),
+    // **Alt+Space, which is not a new habit.** `docs/features.md` promises the
+    // habits people arrive with still work, and every desktop a person arrives
+    // from spells *this window's own menu* as Alt+Space. Super is alo's own
+    // modifier and is already crowded.
+    (Action::WindowOptions, Chord::shipped(ALT, Key::Space)),
     (Action::CloseWindow, Chord::shipped(ALT, Key::F4)),
     (Action::MinimiseWindow, Chord::shipped(SUPER, Key::Down)),
     (Action::MaximiseWindow, Chord::shipped(SUPER, Key::Up)),
@@ -241,6 +246,12 @@ mod tests {
         assert_eq!(said(Action::TheAgent), "Super+A");
         assert_eq!(said(Action::Launcher), "Super+Space");
         assert_eq!(said(Action::Settings), "Super+I");
+        // **Alt+Space, and the clash with Super+Space above is the point.**
+        // The launcher is alo's own thing and takes alo's own modifier; the
+        // window's own menu is a habit every desktop a person arrives from
+        // already spells this way, and `docs/features.md` promises those
+        // habits still work.
+        assert_eq!(said(Action::WindowOptions), "Alt+Space");
     }
 
     /// A set of defaults that binds one action twice is refused: neither entry

@@ -1474,6 +1474,7 @@ shortcuts.action.show-all-on-the-canvas	Show all windows on the canvas
 shortcuts.action.snap-left	Put the window on the left half
 shortcuts.action.snap-right	Put the window on the right half
 shortcuts.action.the-agent	Ask the agent
+shortcuts.action.window-options	Show the window's options
 shortcuts.action.zoom-the-canvas-in	Zoom the canvas in
 shortcuts.action.zoom-the-canvas-out	Zoom the canvas out
 shortcuts.chord.nothing-held	hold Super, Ctrl or Alt as well — a shortcut on {key} by itself would take that key away from everything you type
