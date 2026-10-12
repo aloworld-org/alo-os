@@ -100,7 +100,27 @@ the window edge can answer it: it needs a touch input path, which is work of
 its own and is not in this change. The requirement is recorded as blocked on
 that rather than reported as met.
 
-**`Revealing`'s fourth condition, `a_drag`, is still unfed.** Nothing begins a
+**The menu is not drawn, and a pointer therefore still cannot open it.**
+Measured on 2026-10-12: `the_menu_of` has **no production caller** — the only
+mentions outside its own tests are the re-export in `lib.rs` and two doc
+comments — and there is no painter for it. The edge has `window_edge_paint.rs`
+and `window_edge_picture.rs`; the menu has neither.
+
+So a press on the Menu control still takes `TheRoad::NothingHasOneYet` and
+`direct_desktop` still says so on stderr. **That was left deliberately.**
+Wiring the press to open a menu nothing paints would set a state no person
+could see, which is this change's own named fault in a new place; the keyboard
+road is different only because what it produces — the focus ring and what a
+reader says — is drawn and spoken by things that already exist.
+
+What the painter needs first is a live read of two Figma states. The snapshot's
+own `MANIFEST.md` records `414:27594` (*State=Menu open*) and `414:27609`
+(*State=Keyboard focus*) as captured boxes with no contents, so **the focus
+ring's measurements are not in the capture** and must be read before they are
+drawn. The five colours are already in `variables.toml`.
+
+**`Revealing`'s fourth condition, `a_drag`, is still unfed.**
+ Nothing begins a
 drag of a window from its edge yet. Pressing Move answers with the control and
 the caller decides, and a reporter here that nothing ever called would be the
 unfed half this change exists to remove.
