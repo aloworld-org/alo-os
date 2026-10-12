@@ -101,7 +101,13 @@ impl Nested {
         look: SignInLook,
     ) -> Result<(), RenderError> {
         let size = self.size();
-        let drawn = picture(screen.shows(), labels, (size.w, size.h), look)?;
+        let drawn = picture(
+            screen.shows(),
+            labels,
+            (size.w, size.h),
+            look,
+            crate::sign_in_raster::WhoseScreen::ItsOwn,
+        )?;
         self.submit_native_scene(
             &[],
             &[],

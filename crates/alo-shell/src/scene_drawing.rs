@@ -147,6 +147,27 @@ where
     // It also removes a copy: the pixman road carried thirty-two lines doing
     // exactly this, and a capability written twice is the fault that left the
     // window edge drawn on one road and not the other.
+    // **The scene's own raster, uploaded before the frame opens.** A frame
+    // borrows the renderer, so nothing can upload inside one — the wall
+    // `desktop.washed()` below already answers, and the sign-in screen's
+    // rounded ground meets it too.
+    let scene_washed: Option<(R::TextureId, Rectangle<i32, Physical>)> = match native
+        .scene
+        .and_then(crate::scene_native::NativeScene::washed)
+    {
+        None => None,
+        Some(raster) => Some(
+            renderer
+                .import_memory(
+                    &raster.pixels,
+                    Fourcc::Abgr8888,
+                    (raster.area.size.w, raster.area.size.h).into(),
+                    false,
+                )
+                .map(|texture| (texture, raster.area))
+                .map_err(submission)?,
+        ),
+    };
     let washed: Vec<(R::TextureId, Rectangle<i32, Physical>)> = match native.desktop {
         None => Vec::new(),
         Some(desktop) => desktop
@@ -201,7 +222,7 @@ where
         .map_err(submission)?;
     draw_render_elements(&mut frame, zoom, &drawing.elements, &[damage]).map_err(submission)?;
     if let Some(controls) = native.scene {
-        controls.paint(&mut frame)?;
+        controls.paint(&mut frame, scene_washed.as_ref())?;
     }
     // **Every open window's edge, above the window it frames.**
     //

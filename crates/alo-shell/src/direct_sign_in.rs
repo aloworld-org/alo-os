@@ -16,7 +16,10 @@
 use std::io;
 
 use alo_greeting::Knocking;
+use smithay::backend::input::ButtonState;
+use smithay::utils::Size;
 
+use crate::sign_in_pointer::ThePointerOnTheSignInScreen;
 use crate::{
     Cursor, DirectFrame, DirectLoopError, DirectLoopResult, InputError, InputUpdate, RenderError,
     SeatInput, Server, SessionError, SignInScreen, Signing, WindowControlLabels,
@@ -147,6 +150,22 @@ pub(crate) struct Lane<'a, K: Knocking> {
     labels: &'a mut WindowControlLabels,
     /// Light or dark, the scale, and whether high contrast is on.
     look: SignInLook,
+    /// Where the pointer is, kept here and never in the seat's client-facing
+    /// one. `crate::sign_in_pointer`'s header says why.
+    pointer: ThePointerOnTheSignInScreen,
+    /// The size the last frame was drawn at, or [`None`] before the first one.
+    ///
+    /// **A press is hit-tested against the size that was drawn, not against
+    /// the display's mode.** They are the same number on this machine, and
+    /// keeping one of them is how they stay the same: two layouts mean a press
+    /// landing where no control was painted, which is the fault
+    /// `crate::a_press_in_the_menu` records in its own header.
+    ///
+    /// Nothing before the first draw, which is `crate::direct_desktop`'s rule
+    /// for its panel and true here for the same reason: a pointer moving on a
+    /// machine that has not painted is an ordinary moment, not something to
+    /// invent an answer for.
+    drawn_at: Option<(i32, i32)>,
 }
 
 impl<'a, K: Knocking> Lane<'a, K> {
@@ -160,7 +179,46 @@ impl<'a, K: Knocking> Lane<'a, K> {
             signing,
             labels,
             look,
+            pointer: ThePointerOnTheSignInScreen::default(),
+            drawn_at: None,
         }
+    }
+
+    /// Move the pointer, if a frame has been drawn for it to move across.
+    ///
+    /// # Errors
+    /// [`InputError`] for a malformed event, which the caller reports rather
+    /// than taking the screen away from somebody over.
+    pub(crate) fn pointed(&mut self, event: &crate::DirectPointerEvent) -> Result<(), InputError> {
+        let Some(extent) = self.drawn_at else {
+            return Ok(());
+        };
+        self.pointer.moved(event, extent)?;
+        Ok(())
+    }
+
+    /// Act on a press wherever the pointer is.
+    ///
+    /// Answers whether anything was pressed, which is what lets the caller
+    /// tell a click on a control from one on the screen's ground.
+    pub(crate) fn pressed_by_the_pointer(&mut self) -> bool {
+        let Some(extent) = self.drawn_at else {
+            return false;
+        };
+        let Some(at) = crate::sign_in_layout::sign_in_laid_out(Size::from(extent)) else {
+            return false;
+        };
+        let Some(on) = self.pointer.pressed(&at) else {
+            return false;
+        };
+        // **A control with nothing to do is still a control that was pressed.**
+        // The press is consumed either way: `crate::a_press_on_the_sign_in_screen`
+        // holds the table of which ones act, and the power target is in it
+        // precisely so that it does nothing.
+        if let Some(meant) = crate::a_press_on_the_sign_in_screen::what_a_press_does(on) {
+            self.pressed(meant);
+        }
+        true
     }
 
     /// Hand one key's meaning to the screen, and keep whatever it becomes.
@@ -185,11 +243,25 @@ impl<'a, K: Knocking> Lane<'a, K> {
             return Ok(());
         };
         let size = target.size();
-        let drawn = picture(screen.shows(), self.labels, (size.w, size.h), self.look)?;
+        let drawn = picture(
+            screen.shows(),
+            self.labels,
+            (size.w, size.h),
+            self.look,
+            crate::sign_in_raster::WhoseScreen::ItsOwn,
+        )?;
+        self.drawn_at = Some((size.w, size.h));
+        // **An arrow only once a device has moved**, so a machine with no
+        // mouse draws no cursor rather than one parked in a corner that
+        // nothing can move.
+        let cursor = match self.pointer.where_it_is() {
+            Some(location) => Cursor::Arrow { location },
+            None => Cursor::Default,
+        };
         target.submit_native_layers(
             &[],
             &[],
-            &Cursor::Default,
+            &cursor,
             NativeLayers {
                 scene: Some(NativeScene::SignIn(&drawn)),
                 ..NativeLayers::nothing()
@@ -202,15 +274,39 @@ impl<'a, K: Knocking> Lane<'a, K> {
     pub(crate) fn finished(&self) -> bool {
         !matches!(self.signing, Some(Signing::Still(_)))
     }
+
+    /// A device went away, so the pointer has no position any more.
+    ///
+    /// The same rule the seat applies to a held Shift whose keyboard was
+    /// unplugged: what a removed device said is no longer true. An arrow left
+    /// on the screen after its mouse was pulled out is a target a person can
+    /// see and cannot move, and a press arriving from somewhere else would
+    /// land on whatever it was last over.
+    pub(crate) fn the_pointer_went_away(&mut self) {
+        self.pointer = ThePointerOnTheSignInScreen::default();
+    }
 }
 
 impl<K: Knocking> LoopInput for Greeter<'_, K> {
-    /// Hand every key to the screen, in order, and ignore everything else.
+    /// Hand every key and every press to the screen, in order.
     ///
-    /// A pointer has nowhere to go: no client is mapped and the screen has no
-    /// control a click reaches. A device going away resets the seat, which lets
-    /// go of every key the screen believed held — a Shift still down after its
-    /// keyboard was unplugged would capitalise everything typed on the next one.
+    /// **The pointer reaches the screen and no client.** It did not until
+    /// 2026-10-12, when this comment still said *a pointer has nowhere to go*
+    /// — true while the screen had no control a click could reach, and false
+    /// from the moment the design put a submit arrow inside the entry.
+    /// Motion and presses go through `crate::sign_in_pointer`, which is the
+    /// screen's own pointer: `Server::pointer_motion` is the seat's, and that
+    /// one offers a position to a window move, a resize band and whatever
+    /// surface it hit-tests to, none of which exists before a session.
+    ///
+    /// **Only the left button acts.** A right or middle click on a sign-in
+    /// screen opens nothing, so it is translated, validated and then does
+    /// nothing, rather than being made to mean something.
+    ///
+    /// A device going away resets the seat, which lets go of every key the
+    /// screen believed held — a Shift still down after its keyboard was
+    /// unplugged would capitalise everything typed on the next one — and
+    /// takes the pointer's position with it, for the same reason.
     fn dispatch(
         &mut self,
         server: &mut Server,
@@ -224,21 +320,43 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
                     server.clear_input();
                     return Ok(());
                 };
-                let Some(crate::DirectSeatEvent::Key(key, _)) =
-                    crate::libinput_routing::translate(event).map_err(io::Error::other)?
-                else {
-                    return Ok(());
-                };
-                match server.sign_in_key(key.code, key.state, key.time) {
-                    Ok(Some(meant)) => {
-                        screen.pressed(meant);
+                match crate::libinput_routing::translate(event).map_err(io::Error::other)? {
+                    Some(crate::DirectSeatEvent::Key(key, _)) => {
+                        match server.sign_in_key(key.code, key.state, key.time) {
+                            Ok(Some(meant)) => {
+                                screen.pressed(meant);
+                                Ok(())
+                            }
+                            // A release, a repeat, and a key this keyboard has
+                            // a code for that evdev does not: none of them is a
+                            // reason to take the sign-in screen away from
+                            // somebody.
+                            Ok(None) | Err(InputError::InvalidKey) => Ok(()),
+                            Err(error) => Err(io::Error::other(error)),
+                        }
+                    }
+                    Some(crate::DirectSeatEvent::Pointer(moved)) => {
+                        match screen.pointed(&moved) {
+                            // A device that reported nonsense is refused and
+                            // the arrow stays where it was — the same judgement
+                            // the key path makes above, and for its reason.
+                            Ok(()) | Err(InputError::InvalidPointer) => Ok(()),
+                            Err(error) => Err(io::Error::other(error)),
+                        }
+                    }
+                    Some(crate::DirectSeatEvent::Button { code, state, .. }) => {
+                        // `BTN_LEFT`. Nothing else on this screen means anything.
+                        if code == 0x110 && state == ButtonState::Pressed {
+                            screen.pressed_by_the_pointer();
+                        }
                         Ok(())
                     }
-                    // A release, a repeat, and a key this keyboard has a code
-                    // for that evdev does not: none of them is a reason to take
-                    // the sign-in screen away from somebody.
-                    Ok(None) | Err(InputError::InvalidKey) => Ok(()),
-                    Err(error) => Err(io::Error::other(error)),
+                    Some(crate::DirectSeatEvent::Removed) => {
+                        screen.the_pointer_went_away();
+                        server.clear_input();
+                        Ok(())
+                    }
+                    None => Ok(()),
                 }
             },
         )?;

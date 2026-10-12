@@ -43,8 +43,13 @@ pub(crate) fn picture(
         // Reserve the top and bottom thirds for lock facts. Reuse the complete
         // sign-in raster in the middle third, refusing any clipped refusal text.
         let height = size.1 / 3;
-        let mut form =
-            crate::sign_in_raster::picture(fields, labels, (size.0, height), look.appearance)?;
+        let mut form = crate::sign_in_raster::picture(
+            fields,
+            labels,
+            (size.0, height),
+            look.appearance,
+            crate::sign_in_raster::WhoseScreen::InsideAnother,
+        )?;
         if form
             .inked
             .iter()

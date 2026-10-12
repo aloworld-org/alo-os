@@ -80,6 +80,7 @@ mod a_key_types_into_more_apps;
 mod a_new_window_is_placed;
 mod a_press_in_the_menu;
 mod a_press_on_an_edge;
+mod a_press_on_the_sign_in_screen;
 mod access_bus;
 mod access_contrast;
 mod access_magnifier;
@@ -298,11 +299,15 @@ mod settings_window;
 mod shortcut_dispatch;
 mod sign_in_entry;
 mod sign_in_keys;
+mod sign_in_layout;
 mod sign_in_paint;
 mod sign_in_password;
+mod sign_in_pointer;
+mod sign_in_pointing;
 mod sign_in_raster;
 mod sign_in_screen;
 mod sign_in_seat;
+mod sign_in_surface;
 mod socket;
 mod software_scanout;
 pub mod status_items;
@@ -592,7 +597,20 @@ pub use settings_window::{
 pub use shortcut_dispatch::ShortcutDispatchError;
 pub use sign_in_entry::{NAME_BYTES, SignInField};
 pub use sign_in_keys::SignInKey;
+/// **The sign-in and unlock screen's geometry**, read from `176-10686.xml`.
+pub use sign_in_layout::{
+    SignInLayout, THE_ARROW_IS, THE_BACK_TARGET_IS, THE_ENTRY_CORNER_IS, THE_ENTRY_IS,
+    THE_GROUP_IS_TALL, THE_GROUP_IS_WIDE, THE_MONOGRAM_IS, THE_SMALLEST_SCREEN_IS,
+    THE_SUBMIT_TARGET_IS, sign_in_laid_out,
+};
 pub use sign_in_password::PASSWORD_BYTES;
+// **`OnTheSignInScreen` is deliberately not exported.** It was, until the
+// screen-reader gate in `alo-access` read this list: that test treats every
+// exported name ending in `Screen` as a surface a person meets, and told me a
+// reader would be told nothing about this one. It was right to ask. The answer
+// is not an entry in its exception list — the enum is not a surface, it is what
+// a hit test answers — and nothing outside this crate calls it, so a public
+// name here would be a contract owed forever to no caller.
 pub use sign_in_raster::SignInLook;
 pub use sign_in_screen::{SignInScreen, SignInShows, Signing};
 pub use socket::SocketError;

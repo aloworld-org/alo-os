@@ -23,8 +23,8 @@
 //! face `crate::WindowControlLabels` already loads, never a host font.
 
 use alo_appearance::{Scheme, TextScale};
-use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Wrap};
-use smithay::utils::{Physical, Rectangle};
+use cosmic_text::{Buffer, FontSystem, Metrics, Shaping, Wrap};
+use smithay::utils::{Physical, Rectangle, Scale};
 
 use crate::painted::{Inked, Solid};
 use crate::painted_text::{Shaped, inked, sentence};
@@ -57,6 +57,13 @@ pub(crate) struct SignInPicture {
     pub(crate) solids: Vec<Solid>,
     /// Text, painted after the shapes, in order.
     pub(crate) inked: Vec<Inked>,
+    /// The rounded shapes, as a raster, painted **under** the flats and the
+    /// text.
+    ///
+    /// [`None`] where the screen has no area, and for the sentence a machine
+    /// with no accounts shows - that screen is the owner's separate task and
+    /// keeps the flat ground until it is built.
+    pub(crate) surface: Option<crate::painted::Washed>,
 }
 
 /// The colours of one scheme.
@@ -65,6 +72,13 @@ struct Palette {
     /// The screen's ground.
     ground: [u8; 3],
     /// Inside a field.
+    ///
+    /// **Unread since the sign-in screen was redrawn to its design on
+    /// 2026-10-12**: the entry's inside is now drawn by
+    /// `crate::sign_in_surface`, which takes `bg/surface` from the design's
+    /// own token rather than from a contrast-derived palette. It is kept
+    /// because the sentence screen a machine with no accounts shows still
+    /// uses this palette, and that screen is the owner's separate task.
     field: [u8; 3],
     /// Text, edges and the caret.
     ink: [u8; 3],
@@ -83,6 +97,28 @@ impl Palette {
     }
 }
 
+/// Whether this picture is the whole screen or sits inside another.
+///
+/// **The sign-in screen and the lock screen share this raster**, and they are
+/// not the same shape. `crate::direct_sign_in` and `crate::nested_sign_in`
+/// hand over a whole output; `crate::lock_raster` hands over the middle third
+/// of one, with lock facts above and below it.
+///
+/// The design the owner gave on 2026-10-12 — `176-10686.xml` — is a full-screen
+/// composition: a wallpaper, a centred group and essential actions at the
+/// edges. It has nowhere to put the lock screen's facts, so applying it to an
+/// embedded form would redesign a surface nobody asked about. **A caller says
+/// which it is, and the two roads stay apart until somebody rules on the lock
+/// screen's own composition.**
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WhoseScreen {
+    /// The whole output, drawn to the design.
+    ItsOwn,
+    /// A region inside another screen, drawn as it was before the design
+    /// arrived.
+    InsideAnother,
+}
+
 /// Lay the screen out for an output of `size` and rasterise it.
 ///
 /// # Errors
@@ -93,6 +129,7 @@ pub(crate) fn picture(
     labels: &mut WindowControlLabels,
     size: (i32, i32),
     look: SignInLook,
+    whose: WhoseScreen,
 ) -> Result<SignInPicture, RenderError> {
     let measure = Measure::of(look.scale);
     let (width, height) = size;
@@ -109,6 +146,7 @@ pub(crate) fn picture(
     let left = (width - column) / 2;
     let mut drawn = SignInPicture {
         size,
+        surface: None,
         solids: vec![Solid {
             area: Rectangle::from_size((width, height).into()),
             colour: palette.ground,
@@ -135,91 +173,213 @@ pub(crate) fn picture(
             password_typed,
             field,
             said,
-        } => {
-            let under = said.map(|said| {
-                sentence(
+        } => match whose {
+            // **The design the owner gave on 2026-10-12.** A full-screen
+            // composition: one entry with its submit arrow inside it, the
+            // greeting above, the essential actions at the edges.
+            WhoseScreen::ItsOwn => {
+                let _ = field;
+
+                // **The design's own layout**, in the units this picture is drawn
+                // in. `crate::sign_in_layout` is the only thing that decides where
+                // anything goes, so a test can hold it against `176-10686.xml`
+                // without rendering a pixel.
+                let Some(at) = crate::sign_in_layout::sign_in_laid_out(smithay::utils::Size::<
+                    i32,
+                    smithay::utils::Logical,
+                >::from((
+                    width, height,
+                ))) else {
+                    return Err(RenderError::SignInScene);
+                };
+                let refused = if said.is_some() {
+                    crate::sign_in_surface::TheEntryIs::Refused
+                } else {
+                    crate::sign_in_surface::TheEntryIs::Waiting
+                };
+                // The ground, the monogram and the entry, with their corners. The
+                // flat `Solid` cannot draw an 18-unit radius, which is why this is
+                // a raster — see `crate::sign_in_surface`.
+                drawn.surface =
+                    crate::sign_in_surface::sign_in_surface(&at, refused, Scale::from(1.0));
+
+                // **The initial, in the monogram.** The person's own first letter,
+                // and their casing: `docs` is theirs and `Disan` is theirs, and
+                // upper-casing it here would be this file deciding how somebody's
+                // name looks.
+                if let Some(initial) = name.chars().next() {
+                    let shaped = sentence(
+                        fonts,
+                        &initial.to_string(),
+                        at.monogram.size.w,
+                        measure.metrics(),
+                        palette.ground,
+                        palette.ink,
+                    );
+                    let x = at.monogram.loc.x + (at.monogram.size.w - shaped.width) / 2;
+                    let y = at.monogram.loc.y + (at.monogram.size.h - shaped.height) / 2;
+                    drawn.inked.extend(shaped.placed(x, y, height));
+                }
+
+                // **The greeting, by name.** The name is the person's, never a
+                // literal: `disan` in the design is sample content.
+                let greeting = sentence(
                     fonts,
-                    said.text(),
-                    column,
+                    name,
+                    at.account.size.w,
                     measure.metrics(),
                     palette.ground,
                     palette.ink,
-                )
-            });
-            let under_height = under
-                .as_ref()
-                .map_or(0, |text| measure.px(24) + text.height);
-            let whole = 2 * field_height + gap + under_height;
-            // A refusal must fit whole; clipping can otherwise omit it entirely.
-            if whole + 2 * measure.px(16) > height {
-                return Err(RenderError::SignInScene);
-            }
-            let top = ((height - whole) / 2).max(measure.px(16));
-
-            let name_box = Rectangle::new((left, top).into(), (column, field_height).into());
-            let password_box = Rectangle::new(
-                (left, top + field_height + gap).into(),
-                (column, field_height).into(),
-            );
-            let name_waits = field == SignInField::Name;
-            framed(&mut drawn.solids, name_box, name_waits, &measure, palette);
-            framed(
-                &mut drawn.solids,
-                password_box,
-                !name_waits,
-                &measure,
-                palette,
-            );
-
-            let inside = column - 2 * measure.px(14);
-            let line = measure.px(24);
-            let name_top = top + (field_height - line) / 2;
-            let typed = typed_name(fonts, name, inside, &measure, palette.field, palette.ink);
-            let caret_at = left + measure.px(14) + typed.width.min(inside);
-            drawn
-                .inked
-                .extend(typed.placed(left + measure.px(14), name_top, height));
-            if name_waits {
+                );
+                let greeting_x = at.account.loc.x + (at.account.size.w - greeting.width) / 2;
                 drawn
-                    .solids
-                    .push(caret(caret_at, name_top, line, &measure, palette));
-            }
+                    .inked
+                    .extend(greeting.placed(greeting_x, at.account.loc.y, height));
 
-            let password_top = password_box.loc.y + (field_height - line) / 2;
-            let band_width = inside - measure.px(6);
-            if password_typed {
+                // **What is typed, masked.** A band per nothing: the design shows
+                // four dots and the owner's direction is explicit that they do not
+                // prescribe a length, so what is drawn says *something is typed*
+                // and never how much.
+                if password_typed {
+                    let dot = measure.px(8);
+                    let gap_between = measure.px(8);
+                    for i in 0..4 {
+                        drawn.solids.push(Solid {
+                            area: Rectangle::new(
+                                (
+                                    at.entry.loc.x + measure.px(21) + i * (dot + gap_between),
+                                    at.entry.loc.y + (at.entry.size.h - dot) / 2,
+                                )
+                                    .into(),
+                                (dot, dot).into(),
+                            ),
+                            colour: palette.ink,
+                        });
+                    }
+                }
+
+                // **The submit arrow, inside the entry.** Two bars making a
+                // chevron, which is what the 20 × 20 artwork is at this size.
+                let bar = measure.px(2).max(2);
                 drawn.solids.push(Solid {
                     area: Rectangle::new(
                         (
-                            left + measure.px(14),
-                            password_top + (line - measure.px(8)) / 2,
+                            at.arrow.loc.x,
+                            at.arrow.loc.y + at.arrow.size.h / 2 - bar / 2,
                         )
                             .into(),
-                        (band_width, measure.px(8)).into(),
+                        (at.arrow.size.w, bar).into(),
                     ),
                     colour: palette.ink,
                 });
+
+                // **A refusal, said where the design says it**, between the entry
+                // and the row below it.
+                if let Some(said) = said {
+                    let shaped = sentence(
+                        fonts,
+                        said.text(),
+                        at.feedback.size.w,
+                        measure.metrics(),
+                        palette.ground,
+                        palette.ink,
+                    );
+                    let x = at.feedback.loc.x + (at.feedback.size.w - shaped.width) / 2;
+                    drawn
+                        .inked
+                        .extend(shaped.placed(x, at.feedback.loc.y, height));
+                }
             }
-            if !name_waits {
-                let after = if password_typed {
-                    band_width + measure.px(3)
-                } else {
-                    0
-                };
-                drawn.solids.push(caret(
-                    left + measure.px(14) + after,
-                    password_top,
-                    line,
+            // **As it was drawn before that design arrived.** The lock
+            // screen embeds this form in the middle third of its own
+            // screen, which the design has nowhere to put - so it keeps
+            // the two fields until somebody rules on its composition.
+            WhoseScreen::InsideAnother => {
+                let under = said.map(|said| {
+                    sentence(
+                        fonts,
+                        said.text(),
+                        column,
+                        measure.metrics(),
+                        palette.ground,
+                        palette.ink,
+                    )
+                });
+                let under_height = under
+                    .as_ref()
+                    .map_or(0, |text| measure.px(24) + text.height);
+                let whole = 2 * field_height + gap + under_height;
+                // A refusal must fit whole; clipping can otherwise omit it entirely.
+                if whole + 2 * measure.px(16) > height {
+                    return Err(RenderError::SignInScene);
+                }
+                let top = ((height - whole) / 2).max(measure.px(16));
+
+                let name_box = Rectangle::new((left, top).into(), (column, field_height).into());
+                let password_box = Rectangle::new(
+                    (left, top + field_height + gap).into(),
+                    (column, field_height).into(),
+                );
+                let name_waits = field == SignInField::Name;
+                framed(&mut drawn.solids, name_box, name_waits, &measure, palette);
+                framed(
+                    &mut drawn.solids,
+                    password_box,
+                    !name_waits,
                     &measure,
                     palette,
-                ));
-            }
+                );
 
-            if let Some(text) = under {
-                let below = password_box.loc.y + field_height + measure.px(24);
-                drawn.inked.extend(text.placed(left, below, height));
+                let inside = column - 2 * measure.px(14);
+                let line = measure.px(24);
+                let name_top = top + (field_height - line) / 2;
+                let typed = typed_name(fonts, name, inside, &measure, palette.field, palette.ink);
+                let caret_at = left + measure.px(14) + typed.width.min(inside);
+                drawn
+                    .inked
+                    .extend(typed.placed(left + measure.px(14), name_top, height));
+                if name_waits {
+                    drawn
+                        .solids
+                        .push(caret(caret_at, name_top, line, &measure, palette));
+                }
+
+                let password_top = password_box.loc.y + (field_height - line) / 2;
+                let band_width = inside - measure.px(6);
+                if password_typed {
+                    drawn.solids.push(Solid {
+                        area: Rectangle::new(
+                            (
+                                left + measure.px(14),
+                                password_top + (line - measure.px(8)) / 2,
+                            )
+                                .into(),
+                            (band_width, measure.px(8)).into(),
+                        ),
+                        colour: palette.ink,
+                    });
+                }
+                if !name_waits {
+                    let after = if password_typed {
+                        band_width + measure.px(3)
+                    } else {
+                        0
+                    };
+                    drawn.solids.push(caret(
+                        left + measure.px(14) + after,
+                        password_top,
+                        line,
+                        &measure,
+                        palette,
+                    ));
+                }
+
+                if let Some(text) = under {
+                    let below = password_box.loc.y + field_height + measure.px(24);
+                    drawn.inked.extend(text.placed(left, below, height));
+                }
             }
-        }
+        },
     }
     Ok(drawn)
 }
@@ -302,7 +462,13 @@ fn typed_name(
     buffer.set_text(
         fonts,
         name,
-        &Attrs::new().family(Family::SansSerif),
+        // **alo's own face, as every other surface asks for it.** This said
+        // `Family::SansSerif` until 2026-10-12, so a person's own name was the
+        // one string on the sign-in screen drawn in whatever sans the font
+        // database offered first, beside a greeting in Manrope. One place
+        // decides the face — `painted_text::alos_own_text` — so a measurement
+        // and a drawing cannot disagree about what they meant.
+        &crate::painted_text::alos_own_text(),
         Shaping::Advanced,
     );
     buffer.shape_until_scroll(fonts, false);

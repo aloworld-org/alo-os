@@ -44,14 +44,34 @@ fn shipped() -> Vec<(String, Vec<(usize, String)>)> {
 }
 
 /// The files that make up the sign-in screen.
+///
+/// **Any name holding `sign_in`, not only the ones starting with it.** The
+/// filter was `starts_with("sign_in_")` until 2026-10-12, when
+/// `a_press_on_the_sign_in_screen.rs` was added and walked straight past it:
+/// a file deciding what a press on the password screen does, exempt from the
+/// two promises this file exists to keep. The count below caught the five
+/// files that did match and said nothing about the one that did not, which is
+/// the more dangerous half of the same mistake.
+///
+/// Widening it found a second one that had been exempt all along:
+/// **`direct_sign_in.rs`**, the driver that takes this machine's own keys and
+/// presses and hands them to the screen. It holds no password, and it was
+/// never asked.
 fn the_sign_in_files() -> Vec<(String, Vec<(usize, String)>)> {
     let files: Vec<_> = shipped()
         .into_iter()
-        .filter(|(named, _)| named.starts_with("sign_in_") || named == "nested_sign_in.rs")
+        .filter(|(named, _)| named.contains("sign_in"))
         .collect();
+    // 14 on 2026-10-12: 8 before, the 5 the owner's design added, and
+    // `direct_sign_in.rs`, which the old filter never reached. The five are
+    // `sign_in_layout` placing it, `sign_in_surface` drawing its rounded
+    // shapes, `sign_in_pointing` saying what a press is on, `sign_in_pointer`
+    // holding where the pointer is, and `a_press_on_the_sign_in_screen` saying
+    // what each press does. This number is a tripwire, not a fact: raising it
+    // without reading the new file is the one thing it cannot stop.
     assert_eq!(
         files.len(),
-        8,
+        14,
         "a sign-in file was added or lost: {:?}",
         file_names(&files)
     );

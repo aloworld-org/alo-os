@@ -1,0 +1,97 @@
+<!--
+  The sign-in and unlock screen, read from the live file on 2026-10-12 against
+  the owner's seven links. One capture covers the screen, the component every
+  state instances, and the states themselves, because the states differ only
+  inside that instance and a capture per state would record the same frame
+  seven times.
+
+  What this holds that `70-28.xml` does not: the component `364:25567` expanded,
+  which is where every measurement the implementation needs lives. The page
+  export carries the screen frames with the instance as a stub.
+
+  Reference size 1440 x 960. Every number is a logical pixel.
+
+  Read with `get_metadata`, so: ids, names, x, y, width, height and `hidden`.
+  **Effects and strokes are not in it** - a stroke on a frame is not a child
+  layer, which `MANIFEST.md` records as the blind spot that hid the window
+  edge's focus ring. The error state's red border is one of those and was read
+  from the render instead.
+-->
+<frame id="176:10686" name="13 · Sign in / Unlock" x="1720" y="36500" width="1440" height="960">
+  <frame id="360:25693" name="Authentication / abstract wallpaper — no personal content" x="0" y="0" width="1440" height="960">
+    <frame id="364:25552" name="Wallpaper / folded light — editable vector artwork" x="0" y="0" width="1440" height="960">
+      <vector id="364:25553" name="Vector" x="1016" y="-180" width="584" height="1240" />
+      <vector id="364:25554" name="Vector" x="1140" y="-180" width="460" height="1240" />
+      <vector id="364:25555" name="Vector" x="1302.321533203125" y="-120" width="297.678466796875" height="1120" />
+      <vector id="364:25556" name="Vector" x="-180" y="686.465087890625" width="992" height="413.534912109375" />
+      <vector id="364:25557" name="Vector" x="-180" y="785.3609008789062" width="895" height="314.63909912109375" />
+    </frame>
+  </frame>
+  <frame id="176:10995" name="Lock / essential actions" x="40" y="884" width="1360" height="48">
+    <text id="176:10996" name="Accessibility" x="0" y="2" width="160" height="44" />
+    <frame id="360:25707" name="Account and power" x="1160" y="0" width="200" height="48">
+      <text id="176:10997" name="Switch user and power" x="0" y="2" width="136" height="44" />
+      <instance id="360:25705" name="Power / 48px target" x="152" y="0" width="48" height="48" />
+    </frame>
+  </frame>
+  <text id="176:11006" name="Back to lock" x="32" y="28" width="48" height="48" />
+  <instance id="364:25568" name="Authentication / PIN entry" x="520" y="266" width="400" height="268" />
+</frame>
+
+<symbol id="364:25567" name="Authentication / Entry" x="3320" y="35420" width="400" height="268">
+  <frame id="360:25698" name="Greeting" x="0" y="0" width="400" height="120">
+    <frame id="364:25558" name="Person / monogram" x="168" y="0" width="64" height="64">
+      <text id="364:25559" name="Initial" x="23" y="14" width="18" height="36" />
+    </frame>
+    <text id="176:10998" name="Account" x="122" y="76" width="156" height="44" />
+    <text id="176:10999" name="Instruction" x="0" y="132" width="400" height="22" hidden="true" />
+  </frame>
+  <frame id="360:25699" name="PIN and submit" x="48" y="144" width="304" height="56">
+    <frame id="176:11000" name="Authentication / entry" x="0" y="0" width="304" height="56">
+      <text id="176:11001" name="Entry value" x="21" y="17" width="91" height="22" />
+      <frame id="364:25560" name="Submit / Unlock · 44px target" x="253" y="6" width="44" height="44">
+        <frame id="364:25562" name="Unlock arrow" x="12" y="12" width="20" height="20" />
+      </frame>
+    </frame>
+    <instance id="176:11003" name="Unlock canvas" x="12" y="68" width="280" height="48" hidden="true" />
+  </frame>
+  <frame id="360:25700" name="Alternative authentication methods" x="60" y="224" width="280" height="44" hidden="true">
+    <instance id="360:25701" name="Use password / available method" x="0" y="0" width="136" height="44" />
+    <frame id="360:25708" name="Fingerprint / configured method" x="144" y="0" width="136" height="44">
+      <frame id="360:25709" name="Fingerprint icon" x="2" y="12" width="20" height="20" />
+      <instance id="360:25703" name="Fingerprint / available method" x="26" y="0" width="108" height="44" />
+    </frame>
+  </frame>
+  <frame id="364:25564" name="Other ways to sign in" x="80" y="224" width="240" height="44">
+    <text id="364:25565" name="Other ways label" x="54.5" y="13" width="131" height="18" />
+  </frame>
+  <text id="364:25566" name="Authentication feedback" x="0" y="208" width="400" height="22" hidden="true" />
+</symbol>
+
+<!--
+  The five other states the owner linked are the same frame with the same four
+  children; what differs is inside the instance at (520, 266), which
+  `get_metadata` returns as a stub from the parent. Their ids, so a later
+  capture reads the same nodes:
+
+    367:25424  PIN entered
+    367:25464  Other ways to sign in
+    367:25504  Fingerprint
+    367:25544  Password
+    367:25584  PIN not recognised
+
+  Read from the renders rather than the tree, because the tree does not carry
+  them:
+
+  - **PIN not recognised** shows `364:25566` *Authentication feedback* at
+    (0, 208), in red, reading *PIN not recognised. Try again.*, and strokes the
+    entry field in the same red. Both are a colour change; the geometry is the
+    default state's.
+  - **Alternative methods** at (60, 224) and *Other ways to sign in* at
+    (80, 224) occupy the same row. The component ships with the second visible
+    and the first hidden, so a person sees one line that opens the other.
+  - `176:11003` *Unlock canvas* is **hidden in the shipped component**. It is
+    the separate full-width button an earlier design had, and the owner's
+    direction is explicit that it is not restored: the submit arrow lives
+    inside the entry field at (253, 6).
+-->

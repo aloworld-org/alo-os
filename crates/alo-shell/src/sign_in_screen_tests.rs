@@ -385,3 +385,48 @@ fn every_sentence_the_screen_can_show_is_collected_and_none_is_written_here() {
         );
     }
 }
+
+/// **A second Enter cannot submit the same credentials again.**
+///
+/// The owner's direction of 2026-10-12 asks that duplicate submissions be
+/// prevented while authentication is pending. On this screen they are
+/// prevented structurally rather than by a flag, and this writes that down so
+/// a later change to an asynchronous door cannot quietly lose it.
+///
+/// **A successful attempt leaves no screen at all.** `pressed` takes the
+/// screen by value and hands back a session, so there is nothing to press
+/// again while an attempt is in flight — a person leaning on Enter cannot
+/// knock twice, because the thing they would press has been consumed.
+///
+/// **And a refused one forgets what it sent.** What was typed is cleared
+/// before the answer is handled, so the screen that comes back could not
+/// resubmit the same credentials even if somebody pressed it again.
+#[test]
+fn a_submission_leaves_no_screen_to_submit_again() {
+    let (door, heard) = a_door(Ok(Answered::Opened));
+    let session = handed_over(signs_in(a_screen(PERSON, door), NAME, PASSWORD));
+    assert_eq!(session.uid(), PERSON);
+    assert_eq!(
+        *heard.borrow(),
+        [PERSON],
+        "one submission must be exactly one knock"
+    );
+
+    // And the refused road: the screen comes back with nothing typed, so the
+    // next press is a different attempt rather than the same one again.
+    let (door, heard) = a_door(Ok(Answered::Opened));
+    let screen = still(signs_in(a_screen(PERSON, door), NAME, "not the password"));
+    assert!(
+        heard.borrow().is_empty(),
+        "a refused password knocked on the door: {:?}",
+        heard.borrow()
+    );
+    assert!(matches!(
+        screen.shows(),
+        SignInShows::Fields {
+            name: "",
+            password_typed: false,
+            ..
+        }
+    ));
+}

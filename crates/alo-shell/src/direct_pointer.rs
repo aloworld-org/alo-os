@@ -136,7 +136,7 @@ impl Server {
 }
 
 /// Keep coordinates representable by the existing signed Wayland fixed boundary.
-fn bounds((w, h): (i32, i32)) -> Result<(f64, f64), InputError> {
+pub(crate) fn bounds((w, h): (i32, i32)) -> Result<(f64, f64), InputError> {
     if !(1..=8_388_608).contains(&w) || !(1..=8_388_608).contains(&h) {
         return Err(InputError::InvalidPointer);
     }
@@ -144,7 +144,7 @@ fn bounds((w, h): (i32, i32)) -> Result<(f64, f64), InputError> {
 }
 
 /// Validate both axes before calculating a new seat position.
-fn relative(
+pub(crate) fn relative(
     (x, y): (f64, f64),
     (dx, dy): (f64, f64),
     (max_x, max_y): (f64, f64),
@@ -156,7 +156,10 @@ fn relative(
 }
 
 /// Refuse malformed device normalization instead of turning it into an edge hit.
-fn absolute((x, y): (f64, f64), (max_x, max_y): (f64, f64)) -> Result<(f64, f64), InputError> {
+pub(crate) fn absolute(
+    (x, y): (f64, f64),
+    (max_x, max_y): (f64, f64),
+) -> Result<(f64, f64), InputError> {
     if !(0.0..=1.0).contains(&x) || !(0.0..=1.0).contains(&y) {
         return Err(InputError::InvalidPointer);
     }

@@ -2,7 +2,7 @@
 use crate::{RenderError, WindowControlReaderScene};
 use smithay::{
     backend::renderer::Frame,
-    utils::{Physical, Size},
+    utils::{Physical, Rectangle, Size},
 };
 
 /// Shared painter input keeps the existing complete-label public API additive.
@@ -106,7 +106,7 @@ impl NativeLayers<'_> {
     }
 }
 
-impl NativeScene<'_> {
+impl<'a> NativeScene<'a> {
     /// Refuse mismatched target geometry before importing clients.
     pub(crate) fn validate(self, size: Size<i32, Physical>) -> Result<(), RenderError> {
         match self {
@@ -124,12 +124,32 @@ impl NativeScene<'_> {
         }
     }
 
+    /// The rasters this scene needs uploaded before a frame opens.
+    ///
+    /// **A scene cannot upload one itself**, because painting happens inside a
+    /// frame and the frame borrows the renderer. `crate::desktop_paint` meets
+    /// the same wall and answers it the same way: the caller asks what is
+    /// needed, uploads it, and hands the textures back to `paint`.
+    pub(crate) fn washed(self) -> Option<&'a crate::painted::Washed> {
+        match self {
+            Self::SignIn(picture) => picture.surface.as_ref(),
+            Self::Lock(_) | Self::Controls(_) | Self::Reader(_) | Self::Recovery(_) => None,
+        }
+    }
+
     /// Paint the selected native content between clients and cursors.
-    pub(crate) fn paint(self, frame: &mut impl Frame) -> Result<(), RenderError> {
+    pub(crate) fn paint<F: Frame>(
+        self,
+        frame: &mut F,
+        washed: Option<&(F::TextureId, Rectangle<i32, Physical>)>,
+    ) -> Result<(), RenderError> {
         match self {
             Self::Lock(_) => Err(RenderError::LockScene),
             Self::Reader(scene) => scene.paint(frame),
-            Self::SignIn(picture) => picture.paint(frame),
+            // **The surface first, then the flats and the words on it.** The
+            // same order the Dock's own surface is drawn in, and for the same
+            // reason: it is what they sit on.
+            Self::SignIn(picture) => picture.paint(frame, washed),
             Self::Recovery(picture) => picture.paint(frame),
             Self::Controls(scene) => {
                 scene.layout.paint(frame, scene.scheme)?;

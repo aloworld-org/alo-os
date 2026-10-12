@@ -280,7 +280,11 @@ seen_in = "253:17045"
 [unadopted.radius]
 "radius/sm" = 8
 "radius/md" = 12
-seen_in = "253:17045"
+# Added 2026-10-12 from `364:25567`, the sign-in screen's authentication
+# component, where it is the entry field's corner. The owner's direction
+# names 18 independently, so this is two readings agreeing rather than one.
+"radius/lg" = 18
+seen_in = "253:17045, 364:25567"
 
 # ---------------------------------------------------------------------------
 # Typography, measured and unadopted — and it disagrees with the brief

@@ -208,6 +208,7 @@ fn the_direct_backend_takes_the_sign_in_screen_and_names_what_it_refuses() {
     use crate::scene_native::NativeScene;
 
     let sign_in = crate::sign_in_raster::SignInPicture {
+        surface: None,
         size: (640, 480),
         solids: Vec::new(),
         inked: Vec::new(),
