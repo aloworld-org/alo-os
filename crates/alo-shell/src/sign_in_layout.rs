@@ -211,10 +211,6 @@ pub fn sign_in_laid_out(screen: Size<i32, Logical>) -> Option<SignInLayout> {
             THE_ACTIONS_ROW_IS_TALL,
         )),
     );
-    let accessibility = Rectangle::new(
-        Point::from((actions.loc.x, actions.loc.y + 2)),
-        Size::from((160.min(actions.size.w), 44)),
-    );
     // `360:25707` is 200 wide at the row's right: 136 of name then a 48 target
     // at 152.
     let power = Rectangle::new(
@@ -224,9 +220,23 @@ pub fn sign_in_laid_out(screen: Size<i32, Logical>) -> Option<SignInLayout> {
         )),
         Size::from((THE_BACK_TARGET_IS, THE_BACK_TARGET_IS)),
     );
+    // **Switch person is placed first, because it is anchored to the power
+    // target**, and Accessibility then takes what is left of the row.
+    let switch_person_wide = 136.min((actions.size.w - THE_BACK_TARGET_IS - 16).max(0));
     let switch_person = Rectangle::new(
-        Point::from((power.loc.x - 16 - 136, actions.loc.y + 2)),
-        Size::from((136, 44)),
+        Point::from((power.loc.x - 16 - switch_person_wide, actions.loc.y + 2)),
+        Size::from((switch_person_wide, 44)),
+    );
+    // **Whatever is left, and never a unit more.** Both were fixed widths
+    // until 2026-10-12, and on a 360-wide screen the 160 of Accessibility and
+    // the 136 of Switch person overlapped — two controls claiming one point,
+    // which is *access to every action* broken on exactly the screens that
+    // need it most. The test that asks whether Accessibility answers at its
+    // own middle on the smallest screen found it.
+    let accessibility_wide = 160.min((switch_person.loc.x - 16 - actions.loc.x).max(0));
+    let accessibility = Rectangle::new(
+        Point::from((actions.loc.x, actions.loc.y + 2)),
+        Size::from((accessibility_wide, 44)),
     );
 
     let back = Rectangle::new(

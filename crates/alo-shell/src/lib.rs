@@ -300,6 +300,7 @@ mod sign_in_keys;
 mod sign_in_layout;
 mod sign_in_paint;
 mod sign_in_password;
+mod sign_in_pointing;
 mod sign_in_raster;
 mod sign_in_screen;
 mod sign_in_seat;
@@ -589,6 +590,9 @@ pub use sign_in_layout::{
     THE_SUBMIT_TARGET_IS, sign_in_laid_out,
 };
 pub use sign_in_password::PASSWORD_BYTES;
+/// **What a press on the sign-in screen is on**, so the arrow and the
+/// essential actions can be worked rather than only drawn.
+pub use sign_in_pointing::{OnTheSignInScreen, what_is_under_the_pointer};
 pub use sign_in_raster::SignInLook;
 pub use sign_in_screen::{SignInScreen, SignInShows, Signing};
 pub use socket::SocketError;

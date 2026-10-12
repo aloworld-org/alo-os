@@ -79,10 +79,6 @@ struct Palette {
     /// own token rather than from a contrast-derived palette. It is kept
     /// because the sentence screen a machine with no accounts shows still
     /// uses this palette, and that screen is the owner's separate task.
-    #[expect(
-        dead_code,
-        reason = "the redrawn entry takes its inside from the design's token; this \n                  palette still serves the sentence screen, which is a separate task"
-    )]
     field: [u8; 3],
     /// Text, edges and the caret.
     ink: [u8; 3],

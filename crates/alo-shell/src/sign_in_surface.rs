@@ -29,14 +29,6 @@
 //!
 //! **Not drawn: text.** That is `crate::painted_text`'s, inked over this.
 
-#![cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "This surface is built and tested and nothing composites it yet, which is \n              named here rather than hidden. `scene_native::Native::SignIn` paints inside \n              the frame, and a `Washed` must be uploaded as a texture before the frame \n              opens - the two-phase road `scene_drawing` already gives the desktop. \n              Wiring it is the next change on this branch and this attribute goes with it; \n              a surface nobody draws is the fault this lane keeps meeting, and the only \n              thing worse than having one is having one quietly."
-    )
-)]
-
 use smithay::utils::{Physical, Rectangle, Scale};
 
 use crate::painted::Washed;
