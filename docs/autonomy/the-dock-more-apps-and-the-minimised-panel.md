@@ -58,9 +58,9 @@ Three things, and a task that cannot say all three is not ready to start:
 And each new guard is **mutation-tested**: plant the fault it describes and
 watch it fail with the numbers printed.
 
-## The order
+## Tasks
 
-### 1 — Who is on the Dock
+### 1. Who is on the Dock
 
 `Holding::showing` learns the membership table. It already counts an
 application's windows and how many are put aside, so the rule is readable off
@@ -112,7 +112,7 @@ focus between them — `focusing_an_application_does_not_move_its_icon` is that
 test, and it exists because `Windows` keeps two orders and `showing` must walk
 the right one.
 
-### 2 — Pressing an application
+### 2. Pressing an application
 
 `WhatAPressOnTheDockDoes::GoTo` reaches `alo_dock::clicking` and something
 happens. One window focuses or restores-then-focuses; nothing open launches;
@@ -155,7 +155,7 @@ cases and mutation-tested three ways, and the part that needs a machine is three
 lines underneath it. The same shape `crate::a_key_reaches_settings` describes
 for its own lane.
 
-### 3 — The window picker
+### 3. The window picker
 
 A surface of its own: every window of one application, **minimised ones marked
 as minimised**, choosing one focuses or restores it. Reached from the Dock and,
@@ -164,7 +164,7 @@ by task 5, from *More apps*.
 **Earns:** the third row of the click table, and *usable after the application
 is selected* from inside the popover.
 
-### 4 — The default pins reach a screen
+### 4. The default pins reach a screen
 
 Something produces `alo_dock::pinning::Discovery`. Files, Browser, Apps,
 Settings, resolved against installed applications, written **once** and only
@@ -176,7 +176,7 @@ already distinguishes `Completed`, `StillLooking` and `Failed` and already
 refuses to write anything down for the last two — that half is finished and
 tested.
 
-### 5 — More apps becomes an overview
+### 5. More apps becomes an overview
 
 Contents first, because they are decidable without a pixel: pinned in saved
 order, then every open application **including minimised-only ones**, each once,
@@ -191,7 +191,7 @@ filtering with stable order and a clear empty result; the bounded height that
 scrolls rather than stretching — **the list currently draws 644 of 768 pixels
 tall, which is the sidebar the ruling forbids.**
 
-### 6 — Dismissal and the keyboard
+### 6. Dismissal and the keyboard
 
 Escape dismisses a picker, then the popover. Outside press already works. The
 control closes it. Keyboard reaches the search field and the grid, focus scrolls
@@ -230,7 +230,7 @@ scroll at all — every row was drawn at its content offset and the rest clipped
 away — which was fixed here because *focus scrolls into view* cannot be true
 without it. The pointer's hit test is the next task on this plan.
 
-### 7 — Minimising recalculates eligibility
+### 7. Minimising recalculates eligibility
 
 The link from `set_window_minimized` to the Dock. The compositor half is built
 and contracted; what is missing is that anything recomputes the bar.
@@ -238,12 +238,12 @@ and contracted; what is missing is that anything recomputes the bar.
 **Earns:** the four worked examples in §4 of the ruling, which are the
 acceptance test for tasks 1 and 7 together.
 
-### 8 — It survives a restart
+### 8. It survives a restart
 
 Pins, their order, and a deliberately empty list, across a restart and an
 update.
 
-### 9 — A press reaches inside the two surfaces
+### 9. A press reaches inside the two surfaces
 
 **Added 2026-10-11, while task 6 was being built**, which is why it is last and
 not third: nothing had noticed. `crate::where_the_dock_is::TheDocksPlaces` is

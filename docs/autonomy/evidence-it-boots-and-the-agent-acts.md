@@ -1344,23 +1344,22 @@ the control, in that order and not the other.
 
 ### Which applications are on the Dock
 
-**Shown by:** the rule itself, in `OnTheDock::belongs_on_the_dock` — *pinned by
-the person, or more windows than are put aside* — and eleven tests in
-`crates/alo-dock/src/holding_membership_tests.rs`, of which
-`every_row_of_the_membership_table` walks all seven rows of the owner's table
-rather than naming six of them in six test names. The Dock the shell draws is
-`Holding::showing`, which is `in_the_overview` with that rule applied by
-`retain`, so the bar and the overview cannot drift about which applications
-exist.
+**Shown by:** `crates/alo-dock/src/holding_membership_tests.rs` and
+`crates/alo-shell/src/dock_windows_tests.rs`.
 
-The rule is live rather than computed and ignored: `crate::dock_windows`
-builds the Dock's window list from `mapped_surfaces` **chained with
-`minimized_surfaces`**, so putting a window aside changes the bar on the next
-frame. That chaining was added on 2026-10-11 after `how_many_put_aside` was
-found to be permanently zero on every machine — the builder read only the
-mapped half, so the minimised side of the rule had never once been exercised
-outside a unit test, and a screen reader was told no window was put aside
-whatever a person had done.
+The rule is *pinned by the person, or more windows than are put aside*, and the
+first of those files walks all seven rows of the owner's table in one test
+rather than naming six of them in six test names. The Dock the shell draws is
+the overview with that rule applied, so the bar and the overview cannot drift
+about which applications exist.
+
+The rule is live rather than computed and ignored: the Dock's window list is
+built from the mapped surfaces chained with the minimised ones, so putting a
+window aside changes the bar on the next frame. That chaining was added on
+2026-10-11 after the put-aside count was found to be permanently zero on every
+machine — the builder read only the mapped half, so the minimised side of the
+rule had never once been exercised outside a unit test, and a screen reader was
+told no window was put aside whatever a person had done.
 
 **Still owed:** **the pinned half cannot be exercised on a real machine**,
 because nothing saves a pinned list — every caller passes `Holding::nothing()`,
@@ -1390,16 +1389,17 @@ blocked.
 
 ### Clicking an application
 
-**Shown by:** `crate::a_press_on_the_dock`, which is the first thing in this
-repository to press the Dock at all — measured on 2026-10-10 across the 2531
-`.rs` files outside `alo-dock`, `alo_dock::clicking` had no caller and
-`Places::at`, the hit test that crate exists for, was never called by anything.
-The decision is a pure function over the windows there are, so *which slot a
-press reached* and *what that slot does* are both checkable without a display;
-seven tests in `a_press_on_the_dock_tests.rs` hold the table. A window that was
-put aside comes back and is then focused; an application with several windows
-opens the window list rather than guessing, which is ADR 0103 replacing *focus
-the one used last*.
+**Shown by:** `crates/alo-shell/src/a_press_on_the_dock_tests.rs`.
+
+That file holds the table of what a press does, and the press path is the first
+thing in this repository to press the Dock at all: measured on 2026-10-10 across
+the 2531 Rust files outside the Dock's own crate, its clicking rules had no
+caller and its hit test — the thing that crate exists for — was never called by
+anything. The decision is a pure function over the windows there are, so *which
+slot a press reached* and *what that slot does* are both checkable without a
+display. A window that was put aside comes back and is then focused; an
+application with several windows opens the window list rather than guessing,
+which is ADR 0103 replacing *focus the one used last*.
 
 **Still owed:** two halves, and they are different sizes.
 
@@ -1418,20 +1418,20 @@ that builder.
 
 ### More apps
 
-**Shown by:** the overview, drawn from `alo_dock::more_apps::TheOverview` and
-`Holding::in_the_overview`, with fifteen tests in `more_apps_tests.rs`. It is an
-overview of a person's applications and not the overflow tail: it carries every
-pinned application and every open one, including those whose windows are all
-minimised and which are therefore not on the bar — the one case the two lists
-are guaranteed to differ on, which is why `in_the_overview` exists rather than
-*More apps* walking a list of its own.
+**Shown by:** `crates/alo-dock/src/more_apps_tests.rs`.
+
+It is an overview of a person's applications and not the overflow tail: it
+carries every pinned application and every open one, including those whose
+windows are all minimised and which are therefore not on the bar — the one case
+the two lists are guaranteed to differ on, and the reason the overview is its own
+list rather than *More apps* walking one of its own.
 
 Its bounds are the owner's and are held by construction rather than by
-agreement: a `const` assertion in `more_apps.rs` ties the fixed parts plus the
-list's cap to the 536 the owner set, so a popover that grew past it would not
-compile. Sixty applications scroll inside the same viewport; keyboard focus
-scrolls a cell into view, and the draw is held to that by a differential pixel
-count rather than by a list of shapes.
+agreement: a compile-time assertion ties the fixed parts plus the list's cap to
+the 536 the owner set, so a popover that grew past it would not compile. Sixty
+applications scroll inside the same viewport; keyboard focus scrolls a cell into
+view, and the draw is held to that by a differential pixel count rather than by a
+list of shapes.
 
 **Still owed:** **the search field takes no typing.** It is drawn, it is a well
 with a prompt, and nothing filters. So a person with sixty applications scrolls
@@ -1447,15 +1447,15 @@ from it. Found 2026-10-11 while building the keyboard and written down as
 
 ### Minimising is about one window
 
-**Shown by:** the compositor half, which is contracted and tested, plus the
-link to the Dock that was missing until 2026-10-11. `set_window_minimized` acts
-on one surface; the Dock's own list is rebuilt every frame from
-`mapped_surfaces` chained with `minimized_surfaces`, so minimising one window of
+**Shown by:** `crates/alo-shell/src/dock_windows_tests.rs` and
+`crates/alo-dock/src/holding_membership_tests.rs`.
+
+Minimising acts on one surface; the Dock's own list is rebuilt every frame from
+the mapped surfaces chained with the minimised ones, so minimising one window of
 an application recalculates that application's eligibility without anything
-having to remember to. Seven tests in `dock_windows_tests.rs` hold what the
-builder assumes of `alo-dock`, and
-`the_icon_goes_when_the_last_window_is_minimised_and_returns_when_one_comes_back`
-is the clause itself.
+having to remember to. The second file carries the clause itself as a named
+test: the icon goes when the last window is minimised and returns when one comes
+back.
 
 The panel of put-aside windows holds one item per window, so two windows of one
 application stay two items, and selecting one restores that window.
@@ -1471,7 +1471,7 @@ runs again.
 
 ## What this audit found
 
-**The audit in figures: 78 promises, 2 shown whole, 51 shown in part, 25 with no
+**The audit in figures: 83 promises, 2 shown whole, 55 shown in part, 26 with no
 evidence at all.**
 
 *This line is the ledger's own count of itself and it is checked.*
