@@ -120,8 +120,12 @@ Nothing here is a differentiator. All of it is required.
   restart and an update, and **an empty list is never refilled with the
   defaults** on the grounds that it is empty.
   *Added 2026-10-11 by the owner's ruling, ADR 0103, into the current release.
-  `alo_dock::pinning` answers this and nothing produces the discovery it needs,
-  so no machine has ever drawn it.* **Apps was a fourth default until
+  `alo_dock::pinning` answers this; `alo-desktop`'s `what_this_machine_offers`
+  produces the discovery, and the Settings entry is a native action in the same
+  saved list. **Nothing writes the list down yet**, so the defaults are worked
+  out again on every boot — indistinguishable from correct until removal exists
+  and wrong on the day it does. And **no machine has drawn it**: the producer
+  answers `Failed` on a gate VM, which has no rented tool.* **Apps was a fourth default until
   2026-10-12 and the owner removed it**: it named an application store, nothing
   provides one, and *More apps* is not a substitute — that surface is the
   **pinned-and-open** grid its design specifies (`406-26320`), so an installed
@@ -138,7 +142,12 @@ Nothing here is a differentiator. All of it is required.
   additions, removals, order and a deliberately empty list all survive a
   restart and an update. **Defaults are applied at first setup only**, and an
   update never restores something a person removed.
-  *Added 2026-10-12 by the owner's ruling, into the current release.*
+  *Added 2026-10-12 by the owner's ruling, into the current release.
+  `alo_dock::ADockEntry` is the distinction, the fresh defaults put Settings on
+  the Dock as a native action, and a press or Enter on it opens Settings
+  through the compositor rather than the launch path. **Surviving a restart is
+  not built**: nothing writes the saved list, so none of removal, reordering or
+  a deliberately empty list outlives a boot yet.*
 - [v0.01] ★ **The Dock's own controls can be hidden** — and the way to bring
   them back is not on the Dock. The composer, *Show all*, *History* and *More
   apps* are visible by default and a person may hide any of them, with the

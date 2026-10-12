@@ -341,3 +341,109 @@ fn another_applications_windows_do_not_change_this_ones_answer() {
         WhatAnIconDoes::Focus(alo_dock::WindowId::numbered(0))
     );
 }
+
+/// A Dock holding `how_many` applications and the Settings entry last, which is
+/// the fresh arrangement the owner specified: *Files, Browser, Settings*.
+fn with_settings_last(how_many: usize) -> Vec<alo_dock::OnTheDock> {
+    let patch = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1).expect("one by one is a patch");
+    let mut windows = alo_dock::Windows::none();
+    let mut holding = alo_dock::Holding::nothing();
+    for number in 0..how_many {
+        let named = format!("app-{number}");
+        let app = alo_dock::AppId::named(&named).expect("a named application");
+        windows.opened(alo_dock::Window::of(
+            alo_dock::WindowId::numbered(number as u64),
+            Some(app.clone()),
+            &named,
+            patch,
+            alo_dock::HowItSits::OnTheCanvas,
+        ));
+        holding.pin(app);
+    }
+    holding.pin_entry(alo_dock::ADockEntry::Native(
+        alo_dock::ANativeAction::Settings,
+    ));
+    holding.showing(&windows)
+}
+
+/// **Pressing the Settings entry asks for the action, not for an application.**
+///
+/// The owner's ruling of 2026-10-12: *dispatch each through its appropriate
+/// handler.* `GoTo` reaches the launch path, which asks the bus to start an
+/// application — so a native entry carried as one would send `Activate` to a
+/// bus name nothing answers on, and the failure would read as a bus problem
+/// rather than as the category error it is.
+#[test]
+fn a_press_on_a_native_entry_asks_for_the_action() {
+    for edge in Edge::EVERY {
+        let mut dock = Dock::shipped();
+        dock.set_edge(edge);
+        let shown = with_settings_last(3);
+        let dock = where_the_dock_is(&dock, (1920, 1080), &shown)
+            .unwrap_or_else(|why| panic!("{edge:?} would not lay out: {why:?}"));
+
+        let native: Vec<_> = dock
+            .places
+            .each()
+            .iter()
+            .filter(|place| place.native().is_some())
+            .collect();
+        assert_eq!(
+            native.len(),
+            1,
+            "{edge:?}: the bar laid out {} native slots for one native entry",
+            native.len()
+        );
+        let place = native
+            .first()
+            .unwrap_or_else(|| panic!("{edge:?}: the one native slot is there"));
+        let middle = place.from_the_start() + place.across() / 2;
+
+        assert_eq!(
+            what_a_press_on_the_dock_does(&dock, at(&dock, middle)),
+            WhatAPressOnTheDockDoes::Do(alo_dock::ANativeAction::Settings),
+            "{edge:?}: pressing the Settings entry did not ask for the Settings action"
+        );
+    }
+}
+
+/// **And the applications beside it are still applications.**
+///
+/// Written as its own test because the dangerous failure is the quiet one: a
+/// layout that gave every slot the native kind would pass the test above on its
+/// own, and a person's Dock would open Settings whatever they pressed.
+#[test]
+fn the_applications_beside_a_native_entry_are_still_applications() {
+    for edge in Edge::EVERY {
+        let mut dock = Dock::shipped();
+        dock.set_edge(edge);
+        let shown = with_settings_last(3);
+        let dock = where_the_dock_is(&dock, (1920, 1080), &shown)
+            .unwrap_or_else(|why| panic!("{edge:?} would not lay out: {why:?}"));
+
+        let applications: Vec<_> = dock
+            .places
+            .each()
+            .iter()
+            .filter(|place| place.app().is_some())
+            .collect();
+        assert_eq!(
+            applications.len(),
+            3,
+            "{edge:?}: three applications and the Settings entry laid out {} application slots",
+            applications.len()
+        );
+        for place in applications {
+            let middle = place.from_the_start() + place.across() / 2;
+            let named = place
+                .app()
+                .unwrap_or_else(|| panic!("{edge:?}: an application slot holds no application"))
+                .clone();
+            assert_eq!(
+                what_a_press_on_the_dock_does(&dock, at(&dock, middle)),
+                WhatAPressOnTheDockDoes::GoTo(named),
+                "{edge:?}: an application beside the Settings entry stopped being one"
+            );
+        }
+    }
+}

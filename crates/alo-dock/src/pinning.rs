@@ -39,6 +39,7 @@
 //! `alo-kept` and `where-a-persons-settings-are-kept-plan.md`;
 //! `docs/contracts/person-settings.md` is where the two meet.
 
+use crate::a_dock_entry::{ADockEntry, ANativeAction};
 use crate::holding::Holding;
 use crate::window::AppId;
 
@@ -101,7 +102,10 @@ pub enum ThePins {
     NeverSet,
     /// Set, and this is what to. **Possibly to nothing**, which is a choice and
     /// stays one.
-    Chosen(Vec<AppId>),
+    ///
+    /// Entries rather than applications since 2026-10-12: a person's
+    /// arrangement is one arrangement, and Settings sits where they put it.
+    Chosen(Vec<ADockEntry>),
 }
 
 impl ThePins {
@@ -181,10 +185,10 @@ pub enum Discovery {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WhatToPin {
     /// The person's own pins. Nothing to write down; they are already stored.
-    These(Vec<AppId>),
+    These(Vec<ADockEntry>),
     /// The defaults, just worked out. **Write them down**, or they are worked
     /// out again on the next boot and a pin the person removes comes back.
-    TheseAndWriteThemDown(Vec<AppId>),
+    TheseAndWriteThemDown(Vec<ADockEntry>),
     /// Not knowable yet. Pin nothing **for now**, store nothing, and ask again
     /// when discovery has something to say.
     NotYet(WhyNotYet),
@@ -194,7 +198,7 @@ impl WhatToPin {
     /// The pins to draw now — empty for [`Self::NotYet`], which is *pin nothing
     /// for now* and never *the person pinned nothing*.
     #[must_use]
-    pub fn to_draw(&self) -> &[AppId] {
+    pub fn to_draw(&self) -> &[ADockEntry] {
         match self {
             Self::These(pins) | Self::TheseAndWriteThemDown(pins) => pins,
             Self::NotYet(_) => &[],
@@ -214,8 +218,8 @@ impl WhatToPin {
     #[must_use]
     pub fn holding(&self) -> Holding {
         let mut holding = Holding::nothing();
-        for app in self.to_draw() {
-            holding.pin(app.clone());
+        for entry in self.to_draw() {
+            holding.pin_entry(entry.clone());
         }
         holding
     }
@@ -244,17 +248,30 @@ pub enum WhyNotYet {
 /// unavailable applications; never show placeholders or non-working buttons.* A
 /// Dock of three icons where one opens nothing is worse than a Dock of two.
 ///
+/// # Settings is here and is not in `installed`
+///
+/// It is the one role no scan can answer: it opens the compositor's own
+/// surface, so there is no identifier to find and the owner's ruling of
+/// 2026-10-12 forbids inventing one. It is therefore filled from the role
+/// itself rather than looked up — and it is filled **unconditionally**, because
+/// there is nothing that could be missing. That is the only sense in which it
+/// differs from the other two: it is in the list a fresh machine starts with,
+/// and the ruling's *native describes the implementation; it does not mean
+/// permanent* is kept by [`Holding::unpin_entry`] removing it exactly as it
+/// removes an application.
+///
 /// Not public: a caller reaching this directly has skipped the question
 /// [`ThePins::what_to_pin`] exists to ask, which is whether the defaults apply
 /// at all. It was public until 2026-10-10 and had no caller outside this file.
-fn what_a_fresh_machine_pins(installed: &[(ARole, AppId)]) -> Vec<AppId> {
+fn what_a_fresh_machine_pins(installed: &[(ARole, AppId)]) -> Vec<ADockEntry> {
     ARole::EVERY
         .into_iter()
-        .filter_map(|role| {
-            installed
+        .filter_map(|role| match role {
+            ARole::Settings => Some(ADockEntry::Native(ANativeAction::Settings)),
+            ARole::Files | ARole::Browser => installed
                 .iter()
                 .find(|(filled, _)| *filled == role)
-                .map(|(_, app)| app.clone())
+                .map(|(_, app)| ADockEntry::Application(app.clone())),
         })
         .collect()
 }
@@ -274,21 +291,38 @@ mod tests {
     //! sentence for whoever broke the test — and the cut is how this crate says
     //! so.
 
-    use super::{ARole, Discovery, ThePins, WhatToPin, WhyNotYet, what_a_fresh_machine_pins};
+    use super::{
+        ADockEntry, ANativeAction, ARole, Discovery, ThePins, WhatToPin, WhyNotYet,
+        what_a_fresh_machine_pins,
+    };
     use crate::window::AppId;
 
     fn app(name: &str) -> AppId {
         AppId::named(name).unwrap()
     }
 
-    fn names(apps: &[AppId]) -> Vec<String> {
-        apps.iter().map(|app| app.name().to_owned()).collect()
+    /// What each entry is called, with the native one named by its action.
+    ///
+    /// **A native entry has no identifier**, so this writes the action's own
+    /// name rather than inventing one. A test reading `"Settings"` here is
+    /// reading an enum variant, never a bus name.
+    fn names(entries: &[ADockEntry]) -> Vec<String> {
+        entries
+            .iter()
+            .map(|entry| match entry {
+                ADockEntry::Application(app) => app.name().to_owned(),
+                ADockEntry::Native(ANativeAction::Settings) => "Settings".to_owned(),
+            })
+            .collect()
     }
 
-    /// Everything a machine might have, in an order nothing asked for.
+    /// Everything a **scan** can find, in an order nothing asked for.
+    ///
+    /// **Settings is not here, and that is the ruling.** `Discovery::Completed`
+    /// carries `(ARole, AppId)` and Settings has no `AppId`; a fixture that put
+    /// one in would be testing the invention the owner forbade.
     fn a_full_machine() -> Vec<(ARole, AppId)> {
         vec![
-            (ARole::Settings, app("alo.Settings")),
             (ARole::Files, app("org.gnome.Nautilus")),
             (ARole::Browser, app("org.mozilla.firefox")),
         ]
@@ -301,8 +335,13 @@ mod tests {
         let pinned = what_a_fresh_machine_pins(&a_full_machine());
         assert_eq!(
             names(&pinned),
-            ["org.gnome.Nautilus", "org.mozilla.firefox", "alo.Settings"],
+            ["org.gnome.Nautilus", "org.mozilla.firefox", "Settings"],
             "the Dock a person first sees does not read Files, Browser, Settings"
+        );
+        assert_eq!(
+            pinned.last().and_then(ADockEntry::native),
+            Some(ANativeAction::Settings),
+            "the Settings pin is not a native action, so pressing it would reach the launch path"
         );
     }
 
@@ -313,18 +352,23 @@ mod tests {
     /// than a Dock of three.
     #[test]
     fn a_role_nothing_fills_leaves_no_gap_and_no_placeholder() {
-        let without_a_store: Vec<_> = a_full_machine().into_iter().collect();
-        let pinned = what_a_fresh_machine_pins(&without_a_store);
+        let no_browser = vec![(ARole::Files, app("org.gnome.Nautilus"))];
+        let pinned = what_a_fresh_machine_pins(&no_browser);
         assert_eq!(
             names(&pinned),
-            ["org.gnome.Nautilus", "org.mozilla.firefox", "alo.Settings"],
-            "a machine with no application store pinned something in its place, or left a hole"
+            ["org.gnome.Nautilus", "Settings"],
+            "a machine with no browser pinned something in its place, or left a hole"
         );
-        assert_eq!(pinned.len(), 3);
 
-        // And a machine with nothing at all pins nothing, rather than every
-        // non-working buttons.
-        assert!(what_a_fresh_machine_pins(&[]).is_empty());
+        // **A machine with nothing installed still has Settings**, because
+        // Settings is not installed: it is this compositor's own surface, so
+        // there is nothing that could be missing. A fresh machine before
+        // `alo-shipping` has run is exactly this case.
+        assert_eq!(
+            names(&what_a_fresh_machine_pins(&[])),
+            ["Settings"],
+            "a machine with no applications lost the one entry that needs none"
+        );
     }
 
     /// **An intentionally empty list stays empty.**
@@ -347,6 +391,10 @@ mod tests {
         // cannot pass by the defaults never applying at all.
         let fresh = ThePins::NeverSet.what_to_pin(&found);
         assert_eq!(fresh.to_draw().len(), 3);
+        assert_eq!(
+            names(fresh.to_draw()),
+            ["org.gnome.Nautilus", "org.mozilla.firefox", "Settings"]
+        );
         assert!(fresh.should_be_written_down());
     }
 
@@ -358,7 +406,7 @@ mod tests {
         let found = Discovery::Completed(a_full_machine());
         let first = ThePins::NeverSet.what_to_pin(&found);
         assert!(first.should_be_written_down(), "the premise");
-        let first: Vec<AppId> = first.to_draw().to_vec();
+        let first: Vec<ADockEntry> = first.to_draw().to_vec();
 
         // What a caller stores, and what it reads back next time.
         let second = ThePins::Chosen(first.clone()).what_to_pin(&found);
@@ -370,9 +418,13 @@ mod tests {
 
         // **And a person's removal survives.** This is the update case: they take
         // the browser off, and the next read must not put it back.
-        let without_the_browser: Vec<AppId> = first
+        let without_the_browser: Vec<ADockEntry> = first
             .into_iter()
-            .filter(|app| app.name() != "org.mozilla.firefox")
+            .filter(|entry| {
+                entry
+                    .application()
+                    .is_none_or(|app| app.name() != "org.mozilla.firefox")
+            })
             .collect();
         let kept = ThePins::Chosen(without_the_browser).what_to_pin(&found);
         // Three defaults less the one they took off.
@@ -393,16 +445,16 @@ mod tests {
     /// changes.
     #[test]
     fn installing_an_application_later_does_not_pin_it() {
-        let without_a_store: Vec<_> = a_full_machine().into_iter().collect();
-        let first = ThePins::NeverSet.what_to_pin(&Discovery::Completed(without_a_store));
-        let first: Vec<AppId> = first.to_draw().to_vec();
-        assert_eq!(first.len(), 3, "the premise: the store was not there");
+        let without_a_browser = vec![(ARole::Files, app("org.gnome.Nautilus"))];
+        let first = ThePins::NeverSet.what_to_pin(&Discovery::Completed(without_a_browser));
+        let first: Vec<ADockEntry> = first.to_draw().to_vec();
+        assert_eq!(first.len(), 2, "the premise: the browser was not there");
 
         // The store arrives. The person's pins are what they were.
         let now = ThePins::Chosen(first).what_to_pin(&Discovery::Completed(a_full_machine()));
         assert_eq!(
             now.to_draw().len(),
-            3,
+            2,
             "installing an application pinned it"
         );
         assert!(!now.should_be_written_down());
@@ -455,28 +507,50 @@ mod tests {
     /// **A completed scan that found nothing is a real answer**, and the
     /// opposite of the one above.
     ///
-    /// The same empty list, and this time it is written down: a machine with no
-    /// file manager, no browser, no store and no settings pins nothing, and that
-    /// is a fact rather than an absence of one. If this and the test above ever
-    /// agree, [`Discovery`] has stopped carrying what it exists to carry.
+    /// A machine with no file manager and no browser pins **Settings alone**,
+    /// and that is written down: Settings is not installed, so there is nothing
+    /// about it a scan could fail to find. A fresh machine before
+    /// `alo-shipping` has run is exactly this case.
+    ///
+    /// # The two empties, and why the assertion moved
+    ///
+    /// This read *both draw nothing and only the write differs* until
+    /// 2026-10-12, when Settings became a native entry. The two now differ in
+    /// **what they draw as well**, which is a stronger distinction and not a
+    /// weaker one — so the test asserts both halves rather than dropping the
+    /// one that stopped holding. If this and the test above ever agree on
+    /// either, [`Discovery`] has stopped carrying what it exists to carry.
     #[test]
     fn a_completed_scan_that_found_nothing_is_written_down() {
         let nothing_installed = ThePins::NeverSet.what_to_pin(&Discovery::Completed(Vec::new()));
-        assert!(nothing_installed.to_draw().is_empty());
+        assert_eq!(
+            names(nothing_installed.to_draw()),
+            ["Settings"],
+            "a machine with no applications did not pin the one entry that needs none"
+        );
         assert!(
             nothing_installed.should_be_written_down(),
             "a machine that really has none of the defaults would re-run discovery's defaults on \
              every boot"
         );
 
-        // And it is *not* the same answer as a scan that never finished, which
-        // draws the same nothing.
+        // And it is *not* the same answer as a scan that never finished.
         let never_finished = ThePins::NeverSet.what_to_pin(&Discovery::StillLooking);
-        assert_eq!(never_finished.to_draw(), nothing_installed.to_draw());
+        assert!(
+            never_finished.to_draw().is_empty(),
+            "a scan that had not finished pinned something, so a slow morning would draw a Dock \
+             nobody chose"
+        );
+        assert_ne!(
+            never_finished.to_draw(),
+            nothing_installed.to_draw(),
+            "a Dock nobody has scanned for yet and a machine with nothing installed draw the same \
+             thing"
+        );
         assert_ne!(
             never_finished.should_be_written_down(),
             nothing_installed.should_be_written_down(),
-            "two empty Docks, one chosen and one not yet known, are being stored the same way"
+            "two Docks, one chosen and one not yet known, are being stored the same way"
         );
     }
 
@@ -487,7 +561,13 @@ mod tests {
     /// scan lands — and if a caller persisted it, permanently.
     #[test]
     fn a_stored_dock_survives_a_scan_that_has_not_finished() {
-        let theirs = ThePins::Chosen(vec![app("org.mozilla.firefox"), app("alo.Settings")]);
+        // **A mixed arrangement, which is the usual one.** An application they
+        // kept and the native Settings entry they moved — if either kind could
+        // be lost by a scan, this is where it would show.
+        let theirs = ThePins::Chosen(vec![
+            ADockEntry::Application(app("org.mozilla.firefox")),
+            ADockEntry::Native(ANativeAction::Settings),
+        ]);
         for discovery in [
             Discovery::StillLooking,
             Discovery::Failed,
@@ -496,7 +576,7 @@ mod tests {
             let answer = theirs.what_to_pin(&discovery);
             assert_eq!(
                 names(answer.to_draw()),
-                ["org.mozilla.firefox", "alo.Settings"],
+                ["org.mozilla.firefox", "Settings"],
                 "{discovery:?} changed a Dock the person had already chosen"
             );
             assert!(!answer.should_be_written_down(), "{discovery:?}");
@@ -505,18 +585,27 @@ mod tests {
 
     /// **The pins reach the Dock in their order**, which is the one thing a person
     /// sees of all of this.
+    ///
+    /// Asked of **every** entry rather than of the applications, because the
+    /// order is the person's arrangement and Settings is part of it. Reading
+    /// `each_pinned_application` here would answer *Files, Browser* whatever
+    /// position Settings held, and the test would pass with the native entry
+    /// first, last or missing.
     #[test]
     fn the_pins_become_a_holding_in_the_same_order() {
         let holding = ThePins::NeverSet
             .what_to_pin(&Discovery::Completed(a_full_machine()))
             .holding();
-        let pinned: Vec<String> = holding
-            .each_pinned()
-            .map(|app| app.name().to_owned())
-            .collect();
+
+        let pinned: Vec<ADockEntry> = holding.each_pinned().cloned().collect();
         assert_eq!(
-            pinned,
-            ["org.gnome.Nautilus", "org.mozilla.firefox", "alo.Settings"]
+            names(&pinned),
+            ["org.gnome.Nautilus", "org.mozilla.firefox", "Settings"]
+        );
+        assert_eq!(
+            pinned.last().and_then(ADockEntry::native),
+            Some(ANativeAction::Settings),
+            "the third pin is an application, so an identifier was invented for Settings"
         );
     }
 }

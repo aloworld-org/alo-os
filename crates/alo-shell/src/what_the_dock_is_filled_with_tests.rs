@@ -8,6 +8,7 @@ use std::os::unix::fs::PermissionsExt as _;
 
 use alo_dock::AppId;
 use alo_dock::pinning::{ARole, Discovery, ThePins};
+use alo_dock::{ADockEntry, ANativeAction};
 
 use crate::Server;
 
@@ -47,6 +48,7 @@ fn a_completed_reading_fills_the_dock_with_what_it_found() {
     let pinned: Vec<&str> = server
         .what_the_dock_is_pinned_to()
         .each_pinned()
+        .filter_map(alo_dock::ADockEntry::application)
         .map(AppId::name)
         .collect();
     assert_eq!(
@@ -106,18 +108,27 @@ fn a_reading_still_running_pins_nothing() {
     );
 }
 
-/// **A machine that really has nothing installed gets an empty Dock**, which is
-/// a real answer and not a failure.
+/// **A machine that really has nothing installed gets Settings and nothing
+/// else**, which is a real answer and not a failure.
+///
+/// This asserted an empty Dock until Settings became a native entry. It is not
+/// installed — there is nothing about it a scan could fail to find — so a
+/// machine before `alo-shipping` has run shows the one entry that needs no
+/// application. The fact being tested is unchanged: *completed and found
+/// nothing* is a different state from *has not finished*, and the test below
+/// is its pair.
 #[test]
-fn a_machine_with_nothing_installed_is_pinned_to_nothing() {
+fn a_machine_with_nothing_installed_is_pinned_to_settings_and_nothing_else() {
     let (_directory, mut server) = server("nothing-installed");
 
     server.its_dock_is_filled_from(&Discovery::Completed(Vec::new()));
 
+    let pinned: Vec<&ADockEntry> = server.what_the_dock_is_pinned_to().each_pinned().collect();
     assert_eq!(
-        server.what_the_dock_is_pinned_to().each_pinned().count(),
-        0,
-        "a machine with nothing installed was pinned to something"
+        pinned,
+        vec![&ADockEntry::Native(ANativeAction::Settings)],
+        "a machine with no applications pinned an application, or lost the one entry that needs \
+         none"
     );
 }
 
@@ -144,7 +155,10 @@ fn what_is_pinned_reaches_both_the_draw_and_the_keyboard() {
     )]));
 
     let drawn = server.what_this_persons_dock_holds();
-    let on_the_dock: Vec<&str> = drawn.iter().map(|on| on.app().name()).collect();
+    let on_the_dock: Vec<&str> = drawn
+        .iter()
+        .filter_map(|on| on.app().map(AppId::name))
+        .collect();
     assert_eq!(
         on_the_dock,
         vec!["org.mozilla.firefox"],
@@ -152,7 +166,10 @@ fn what_is_pinned_reaches_both_the_draw_and_the_keyboard() {
     );
 
     let grid = server.what_this_persons_more_apps_holds();
-    let in_more_apps: Vec<&str> = grid.iter().map(|on| on.app().name()).collect();
+    let in_more_apps: Vec<&str> = grid
+        .iter()
+        .filter_map(|on| on.app().map(AppId::name))
+        .collect();
     assert_eq!(
         in_more_apps,
         vec!["org.mozilla.firefox"],
@@ -160,10 +177,21 @@ fn what_is_pinned_reaches_both_the_draw_and_the_keyboard() {
     );
 
     server.the_dock_was_asked_for = Asked::MoreApps { focused: None };
+    // **Against the whole grid, not the applications in it.** `in_more_apps`
+    // above filters to applications so it can name them; the keyboard walks
+    // every row, and a native entry is a row. Comparing against the filtered
+    // list would assert that the arrows skip Settings, which is the opposite of
+    // what this test is for.
     let (how_many, across) = server.what_the_keyboard_moves_through();
     assert_eq!(
-        how_many, 1,
+        how_many,
+        grid.len(),
         "the arrow keys walk a different list from the grid a person is looking at"
+    );
+    assert_eq!(
+        grid.len(),
+        2,
+        "the grid is not the browser and the Settings entry, so the count above proves nothing"
     );
     assert!(across > 0, "a grid of no items wide");
 }

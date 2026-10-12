@@ -95,14 +95,22 @@ impl Server {
         match self.what_the_dock_has_open() {
             crate::WhatTheDockHasOpen::Nothing => {}
             crate::WhatTheDockHasOpen::MoreApps { .. } => {
-                let Some(app) = self
+                // **The row says which kind it is**, so Enter on a native
+                // entry does what a press on it does and not what a press on an
+                // application does. Keyboard and pointer reaching two different
+                // handlers for one row is the fault this whole file exists to
+                // prevent.
+                let Some(chosen) = self
                     .what_this_persons_more_apps_holds()
                     .get(which)
-                    .map(|on| on.app().clone())
+                    .map(|on| on.what().clone())
                 else {
                     return;
                 };
-                self.go_to_this_application(&app);
+                match chosen {
+                    alo_dock::ADockEntry::Application(app) => self.go_to_this_application(&app),
+                    alo_dock::ADockEntry::Native(action) => self.do_this_native_action(action),
+                }
             }
             crate::WhatTheDockHasOpen::TheWindowsOf { picker, .. } => {
                 let Some(row) = picker.rows().get(which) else {

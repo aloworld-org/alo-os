@@ -130,16 +130,30 @@ impl AppId {
     /// space, so there is always a first letter to return.
     #[must_use]
     pub fn first_letter(&self) -> &str {
-        // **`unwrap_or` and not `expect`**, though the `None` is unreachable:
-        // `named` refuses an empty name, so a non-empty string always has a
-        // first grapheme. `clippy::expect_used` is denied in this workspace and
-        // a panic here would be a Dock that would not draw — so the unreachable
-        // branch answers with the whole name, which for a name of one grapheme
-        // is the same answer anyway.
-        UnicodeSegmentation::graphemes(self.0.as_str(), true)
-            .next()
-            .unwrap_or(&self.0)
+        the_first_letter_of(&self.0)
     }
+}
+
+/// The first letter of any name, by the rule [`AppId::first_letter`] states.
+///
+/// **One answer and two callers.** The Dock draws an initial for an
+/// application's own name and for its Settings entry's translated one, and the
+/// comment on `first_letter` says why a second implementation would be wrong:
+/// `chars().next()` splits an accented letter or a combined character, and it
+/// breaks exactly the scripts with the least software in them already. A rule
+/// this careful, written twice, is a rule that will be got right once.
+///
+/// Answers with the whole name for a name with no first grapheme, which for an
+/// empty one is the empty string: a caller drawing a letter then draws nothing,
+/// which is right, and a panic here would be a Dock that would not draw.
+#[must_use]
+pub fn the_first_letter_of(name: &str) -> &str {
+    // **`unwrap_or` and not `expect`.** `clippy::expect_used` is denied in this
+    // workspace, and for a name of one grapheme the fallback is the same answer
+    // anyway.
+    UnicodeSegmentation::graphemes(name, true)
+        .next()
+        .unwrap_or(name)
 }
 
 /// How a window sits at this moment.

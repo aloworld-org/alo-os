@@ -920,13 +920,17 @@ read and honoured again.
 
 ### What the dock still needs kept, and whose it is to specify
 
-**A person's pinned applications are not in this file yet, and that is a
-dependency rather than an omission.** The owner ruled on 2026-10-10 that a fresh
-machine pins Files, Browser, Apps and Settings once, and that a person's order,
-additions and **removals** survive restarts and updates — and that the persisted
-representation belongs to the owner of `alo-kept` and
-`where-a-persons-settings-are-kept-plan.md`, with the Dock's lane owning
-behaviour, rendering and integration against whatever this contract says.
+**A person's Dock entries are not in this file yet, and that is a dependency
+rather than an omission.** The owner ruled on 2026-10-10 that a fresh machine
+pins its defaults once, and that a person's order, additions and **removals**
+survive restarts and updates — and that the persisted representation belongs to
+the owner of `alo-kept` and `where-a-persons-settings-are-kept-plan.md`, with
+the Dock's lane owning behaviour, rendering and integration against whatever
+this contract says.
+
+**The defaults are Files, Browser and Settings, since 2026-10-12.** *Apps* was a
+fourth until the owner removed it: it named an application store and nothing
+provides one.
 
 So `alo-dock` has built the behaviour and is **not** writing the key.
 `alo_dock::pinning` is what it needs stored, and the shape matters more than the
@@ -935,7 +939,18 @@ spelling:
 | what must be stored | why a simpler shape will not do |
 |---|---|
 | **whether the pins have ever been set**, apart from what they are | *An intentionally empty pinned section must stay empty.* An empty list alone cannot tell *a person emptied their Dock* from *nobody has chosen yet*, and a reader that confused them would refill the Dock of the person who most clearly did not want one |
-| **the applications, in the person's order** | the order is what they see; it is not alphabetical and not the order anything was installed |
+| **the entries, in the person's order** | the order is what they see; it is not alphabetical and not the order anything was installed |
+| **which kind each entry is** | the owner's ruling of 2026-10-12: an **application entry** carries an identifier and a **native-action entry** carries one of alo's own actions. Settings is the first of the second kind and has **no identifier and no bus endpoint** — none is invented for it — so a list of identifiers has nowhere to put it. `alo_dock::ADockEntry` is the distinction as a type |
+
+**One list and not two.** A person's arrangement is one arrangement: Settings
+sits third because they put it third, and a separate section for native entries
+would make an entry's position a property of its kind. The ruling says the
+opposite — *native describes the implementation; it does not mean permanent* —
+and a second section is how *permanent* gets built without anybody deciding to.
+
+**A native entry is removed and reordered exactly as an application is**, and a
+reader that treated the kind as a reason to keep one would be taking a choice
+away, which law 5 forbids whatever the reason given for it.
 
 `alo_dock::ThePins` is that distinction as a type — `NeverSet` against
 `Chosen(..)`, where `Chosen(vec![])` is a choice — and
@@ -948,7 +963,7 @@ read must not re-run them, and an application omitted at first run must not pin
 itself when installed later. All three are *the defaults apply once*, which is
 `NeverSet` being a one-way door.
 
-### Where the four applications come from, and the one empty list that must not be stored
+### Where the applications come from, and the one empty list that must not be stored
 
 **The owner's ruling of 2026-10-10**, which settles both the seam and the case
 that goes wrong at it:

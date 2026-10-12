@@ -28,7 +28,10 @@ fn window(number: u64, of: &str, sits: HowItSits) -> Window {
 }
 
 fn names(shown: &[OnTheDock]) -> Vec<String> {
-    shown.iter().map(|on| on.app().name().to_owned()).collect()
+    shown
+        .iter()
+        .filter_map(|on| on.app().map(|app| app.name().to_owned()))
+        .collect()
 }
 
 /// **Every row of the owner's table, in one test**, so a reader comparing the
@@ -85,7 +88,9 @@ fn every_row_of_the_membership_table() {
         }
         let shown = holding.showing(&windows);
         assert_eq!(
-            shown.iter().any(|on| on.app().name() == "Notes"),
+            shown
+                .iter()
+                .any(|on| on.app().is_some_and(|app| app.name() == "Notes")),
             *belongs,
             "{what}: the Dock showed {:?}",
             names(&shown)
@@ -315,7 +320,7 @@ fn the_dock_is_the_overview_minus_what_does_not_belong() {
     let expected: Vec<String> = overview
         .iter()
         .filter(|on| on.belongs_on_the_dock())
-        .map(|on| on.app().name().to_owned())
+        .filter_map(|on| on.app().map(|app| app.name().to_owned()))
         .collect();
 
     assert_eq!(names(&holding.showing(&windows)), expected);

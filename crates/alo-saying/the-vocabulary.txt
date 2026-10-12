@@ -568,6 +568,7 @@ dock.edge.bottom	Along the bottom
 dock.edge.left	Down the left side
 dock.edge.right	Down the right side
 dock.edge.top	Along the top
+dock.entry.settings	Settings
 dock.hiding.never	Always shown
 dock.hiding.when-a-window-needs-the-room	Gives way when a window needs the room
 dock.history	History

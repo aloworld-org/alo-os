@@ -469,10 +469,10 @@ fn the_dock_follows_windows_being_put_aside(
     let look = |server: &alo_shell::Server| {
         let free = server.what_the_dock_holds(&unpinned);
         let held = server.what_the_dock_holds(&pinned);
-        let is_here = |shown: &[alo_dock::OnTheDock]| shown.iter().any(|on| on.app() == &app);
+        let is_here = |shown: &[alo_dock::OnTheDock]| shown.iter().any(|on| on.app() == Some(&app));
         let aside = held
             .iter()
-            .find(|on| on.app() == &app)
+            .find(|on| on.app() == Some(&app))
             .map_or(0, alo_dock::OnTheDock::how_many_put_aside);
         // **And whether *More apps* still lists it**, which is the half the
         // Dock cannot show. The owner's words: *including minimised-only
@@ -485,7 +485,7 @@ fn the_dock_follows_windows_being_put_aside(
         let in_more_apps = server
             .what_more_apps_holds(&unpinned)
             .iter()
-            .any(|on| on.app() == &app);
+            .any(|on| on.app() == Some(&app));
         (is_here(&free), is_here(&held), aside, in_more_apps)
     };
 

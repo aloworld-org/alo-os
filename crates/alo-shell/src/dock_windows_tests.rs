@@ -107,7 +107,7 @@ fn several_windows_of_one_application_are_one_entry() {
     assert_eq!(showing.len(), 2, "{showing:?}");
     let terminal = showing
         .iter()
-        .find(|entry| entry.app().name() == "a.terminal")
+        .find(|entry| entry.app().is_some_and(|app| app.name() == "a.terminal"))
         .expect("the terminal is on the Dock");
     assert_eq!(terminal.how_many_windows(), 2);
 }

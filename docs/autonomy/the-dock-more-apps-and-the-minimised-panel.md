@@ -411,16 +411,20 @@ cannot find one quickly.
 
 ### 10. The Dock holds two kinds of thing
 
-**Status: open, not started — 2026-10-12.** The owner's ruling: the saved list
-distinguishes an **application entry** from a **native-action entry**, and each
-is carried out by its own handler. Settings is the first of the second kind, and
-it is removable and reorderable exactly as an application is.
+**Status: the distinction is built; surviving a restart is not — 2026-10-12.**
+`alo_dock::ADockEntry` is the two kinds, `Holding` holds them in one ordered
+list, and `OnTheDock::app` answers `Option` so that every caller that draws,
+announces or dispatches has to say what a native row means to it. The fresh
+defaults put Settings on the Dock as `ANativeAction::Settings`; a press on it
+reaches `WhatAPressOnTheDockDoes::Do` and Enter on it reaches the same
+performer, so the pointer and the keyboard cannot dispatch one row two ways.
+Its name is the one translated label on the bar — `dock.entry.settings` —
+because there is no vendor name behind it.
 
-What exists is the intention and not the distinction. The stored list carries
-application identifiers and only those, so there is nowhere for a native action
-to live and no way for a reader to tell the two apart.
-`alo_dock::pinning::ARole::Settings` names the role; nothing stores what fills
-it.
+**Removal and reordering exist as operations and do not survive a boot**, which
+is task 8 and is the honest state: `Holding::unpin_entry` removes either kind
+and nothing writes the result down. So *native describes how it runs, not how
+long it stays* is true of the model and not yet of a machine.
 
 **The clause a naive implementation breaks:** *native describes how it runs, not
 how long it stays.* The easy way to make Settings always work is to make it

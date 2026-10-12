@@ -43,6 +43,7 @@
 
 use alo_dock::pinning::{ARole, Discovery, ThePins, WhatToPin, WhyNotYet};
 use alo_dock::window::AppId;
+use alo_dock::{ADockEntry, ANativeAction};
 
 /// An application identifier.
 fn app(named: &str) -> AppId {
@@ -50,16 +51,29 @@ fn app(named: &str) -> AppId {
 }
 
 /// The names of these pins, in order.
-fn names(pins: &[AppId]) -> Vec<String> {
-    pins.iter().map(|app| app.name().to_owned()).collect()
+///
+/// **A native entry has no identifier**, so it is named by its action. A test
+/// reading `"Settings"` below is reading an enum variant and never a bus name —
+/// the owner's ruling of 2026-10-12 forbids inventing one.
+fn names(pins: &[ADockEntry]) -> Vec<String> {
+    pins.iter()
+        .map(|entry| match entry {
+            ADockEntry::Application(app) => app.name().to_owned(),
+            ADockEntry::Native(ANativeAction::Settings) => "Settings".to_owned(),
+        })
+        .collect()
 }
 
 /// What this machine has, **in an order nothing asked for** — which is the
 /// point: a discovery that happened to answer in the agreed order would make
 /// the ordering assertions below pass without the ordering working.
+///
+/// **Settings is not here**, and that is the ruling rather than an omission:
+/// `Discovery::Completed` carries `(ARole, AppId)` and Settings has no `AppId`.
+/// It joins the pins as a native entry, which is why the agreed order below has
+/// three names and this has two.
 fn what_is_installed() -> Vec<(ARole, AppId)> {
     vec![
-        (ARole::Settings, app("alo.Settings")),
         (ARole::Browser, app("org.mozilla.firefox")),
         (ARole::Files, app("org.gnome.Nautilus")),
     ]
@@ -70,7 +84,7 @@ fn what_is_installed() -> Vec<(ARole, AppId)> {
 /// It was four until 2026-10-12, when the owner removed `Apps`: it named an
 /// application store, nothing provides one, and *More apps* is the
 /// pinned-and-open grid rather than a substitute for it.
-const THE_AGREED_ORDER: [&str; 3] = ["org.gnome.Nautilus", "org.mozilla.firefox", "alo.Settings"];
+const THE_AGREED_ORDER: [&str; 3] = ["org.gnome.Nautilus", "org.mozilla.firefox", "Settings"];
 
 /// Where the pins are kept between sessions.
 ///
@@ -82,7 +96,12 @@ const THE_AGREED_ORDER: [&str; 3] = ["org.gnome.Nautilus", "org.mozilla.firefox"
 #[derive(Debug, Default, Clone)]
 struct TheStore {
     /// `None` until something has been written: never set.
-    kept: Option<Vec<AppId>>,
+    ///
+    /// **Entries and not identifiers**, which is what the contract now requires
+    /// of whatever really stores them: a list of identifiers has nowhere to put
+    /// a native action. A stand-in that held `Vec<AppId>` would make every test
+    /// below pass while the product lost a person's Settings pin on every boot.
+    kept: Option<Vec<ADockEntry>>,
     /// How many times anything has been written, so a test can assert that a
     /// later session wrote **nothing**.
     writes: usize,
@@ -171,7 +190,15 @@ fn a_removal_and_a_reordering_both_survive_a_restart() {
     store.a_session(&found);
 
     // The person removes the browser and moves Settings to the front.
-    let theirs = vec![app("alo.Settings"), app("org.gnome.Nautilus")];
+    //
+    // **Moving the native entry is the point of doing it this way round.** Its
+    // position is theirs, not a property of its kind, so a store that kept
+    // native entries apart from applications — or put them back where the
+    // defaults had them — would fail here and nowhere else.
+    let theirs = vec![
+        ADockEntry::Native(ANativeAction::Settings),
+        ADockEntry::Application(app("org.gnome.Nautilus")),
+    ];
     store.kept = Some(theirs.clone());
     let writes_before = store.writes;
 
@@ -232,22 +259,35 @@ fn a_first_session_with_no_discovery_leaves_the_machine_uninitialised() {
     }
 }
 
-/// **A machine that genuinely has none of the four is initialised and stays
+/// **A machine that genuinely has no applications is initialised and stays
 /// initialised**, which is the opposite answer to the test above from the same
-/// empty list.
+/// empty discovery.
 ///
 /// If these two ever agree, `Discovery` has stopped carrying what it exists to
 /// carry and the whole distinction has collapsed.
+///
+/// # It pins Settings, and that is not a weakening of the test
+///
+/// This asserted *nothing is drawn* until 2026-10-12. Settings is a native
+/// entry now — it is not installed, so an empty discovery has found nothing
+/// about it to miss — and a machine before `alo-shipping` has run is exactly
+/// this case: no file manager, no browser, and a Dock with the one entry that
+/// needs neither. What the test is for is unchanged and is asserted below: the
+/// **write**, and that a later installation does not pin itself.
 #[test]
-fn a_machine_with_none_of_the_four_is_still_a_machine_that_has_been_asked() {
+fn a_machine_with_no_applications_is_still_a_machine_that_has_been_asked() {
     let mut store = TheStore::default();
     let found_nothing = Discovery::Completed(Vec::new());
 
     let first = store.a_session(&found_nothing);
-    assert!(first.to_draw().is_empty());
+    assert_eq!(
+        names(first.to_draw()),
+        ["Settings"],
+        "a machine with no applications lost the one entry that needs none"
+    );
     assert_eq!(
         store.writes, 1,
-        "a machine with none of the four was left uninitialised, so it will re-run discovery's \
+        "a machine with no applications was left uninitialised, so it will re-run discovery's \
          defaults on every boot"
     );
 
@@ -255,8 +295,9 @@ fn a_machine_with_none_of_the_four_is_still_a_machine_that_has_been_asked() {
     // owner's *an application omitted at first run must not automatically become
     // pinned if installed later.*
     let later = store.a_session(&Discovery::Completed(what_is_installed()));
-    assert!(
-        later.to_draw().is_empty(),
+    assert_eq!(
+        names(later.to_draw()),
+        ["Settings"],
         "applications installed after the first run pinned themselves"
     );
     assert!(!later.should_be_written_down());

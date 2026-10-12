@@ -50,6 +50,18 @@ pub struct TheDocksWords {
     pub show_all: String,
     /// The control that opens what a person did before.
     pub history: String,
+    /// The name of the Settings entry, when a person has one on their Dock.
+    ///
+    /// **Said whether or not it is pinned**, unlike the picker below. It is one
+    /// fixed label with nothing about this moment in it, so saying it per frame
+    /// would buy nothing — and a drawing that had to ask whether it was pinned
+    /// before it could have a name is a drawing that can be handed a row it
+    /// cannot label.
+    ///
+    /// **It is translated, which no other Dock icon's name is.** Every other
+    /// label there is an application's own name as its source reports it; this
+    /// one is alo OS's word for its own surface.
+    pub settings: String,
     /// What one application's window list says, when one is open.
     ///
     /// [`None`] when no picker is open, which is almost every frame. **Not
@@ -85,9 +97,9 @@ pub struct ThePickersWords {
 impl TheDocksWords {
     /// Say all of them, in this person's language.
     ///
-    /// **All nine or none**, which is the whole reason this is a type: a frame
-    /// with four of them set and one blank draws a control with no label on it
-    /// and refuses nothing.
+    /// **All of them or none**, which is the whole reason this is a type: a
+    /// frame with four of them set and one blank draws a control with no label
+    /// on it and refuses nothing.
     #[must_use]
     pub fn said(strings: &Strings, open: &crate::WhatTheDockHasOpen) -> Self {
         let say =
@@ -105,6 +117,7 @@ impl TheDocksWords {
             key: say(&alo_dock::words::THE_COMPOSERS_KEY),
             show_all: say(&alo_dock::words::SHOW_ALL),
             history: say(&alo_dock::words::HISTORY),
+            settings: say(&alo_dock::words::SETTINGS_ON_THE_DOCK),
             picker: open.the_windows_of().map(|picker| {
                 let rows = picker.rows();
                 ThePickersWords {

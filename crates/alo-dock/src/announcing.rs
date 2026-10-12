@@ -73,7 +73,19 @@ impl Announced {
     /// What is read out for this icon.
     #[must_use]
     pub fn of(on_the_dock: &OnTheDock, focused: Focused) -> Self {
-        let app = on_the_dock.app().name().to_owned();
+        // **A native entry is its name and nothing else.** The three facts the
+        // sentences below carry — which application, how many windows, what
+        // state they are in — are facts about an application, and the
+        // compositor's own surface is not one. Announcing "Settings, not open"
+        // would be telling a person something false in order to reuse a
+        // sentence.
+        let Some(app) = on_the_dock.app().map(|app| app.name().to_owned()) else {
+            return Self {
+                counts: words::SETTINGS_ON_THE_DOCK,
+                filling: Filling::nothing(),
+                focused: matches!(focused, Focused::OneOfItsWindowsIs),
+            };
+        };
         let windows = on_the_dock.how_many_windows();
         let aside = on_the_dock.how_many_put_aside();
 
@@ -194,6 +206,58 @@ mod tests {
             windows.opened(window(number as u64 + 1, "Browser", sits));
         }
         holding.showing(&windows).into_iter().next().unwrap()
+    }
+
+    /// The Settings entry's row.
+    fn the_settings_entry() -> OnTheDock {
+        let mut holding = Holding::nothing();
+        holding.pin_entry(crate::ADockEntry::Native(crate::ANativeAction::Settings));
+        holding
+            .showing(&Windows::none())
+            .into_iter()
+            .next()
+            .unwrap()
+    }
+
+    /// **A native entry is read out as its name and nothing else.**
+    ///
+    /// The three sentences this file chooses between all carry counts of
+    /// windows, and the compositor's own settings surface is not a window this
+    /// machine counts. *Settings, not open* is the sentence a reuse would
+    /// produce, and it is **false** — it tells a person who cannot see the Dock
+    /// that something is closed which was never a thing that opens.
+    #[test]
+    fn a_native_entry_is_read_out_as_its_name() {
+        let strings = in_english();
+        let said = Announced::of(&the_settings_entry(), Focused::No).said(&strings);
+
+        assert_eq!(said.text(), "Settings");
+        assert!(said.unfilled().is_empty(), "a filling was left unresolved");
+    }
+
+    /// **And it is a different sentence from the closed one**, asked without
+    /// reading English so a translation cannot make the two agree.
+    ///
+    /// The assertion that matters is the inequality: `ANNOUNCED_CLOSED` is what
+    /// a row with no windows gets, and a native row has no windows, so this is
+    /// the one place the wrong sentence would be chosen for the right-looking
+    /// reason.
+    #[test]
+    fn a_native_entrys_sentence_is_not_the_closed_one() {
+        let native = Announced::of(&the_settings_entry(), Focused::No);
+
+        assert_eq!(native.which().key(), words::SETTINGS_ON_THE_DOCK.key());
+        assert_ne!(
+            native.which().key(),
+            words::ANNOUNCED_CLOSED.key(),
+            "a native entry is announced as an application with nothing open"
+        );
+        // And an application with nothing open still gets that sentence, so
+        // this cannot pass by `ANNOUNCED_CLOSED` having stopped being used.
+        assert_eq!(
+            Announced::of(&an_icon(0, 0), Focused::No).which().key(),
+            words::ANNOUNCED_CLOSED.key()
+        );
     }
 
     /// **The owner's example, read out:** *Browser, three windows open, one
