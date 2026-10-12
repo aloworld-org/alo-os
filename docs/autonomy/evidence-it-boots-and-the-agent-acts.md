@@ -1045,9 +1045,41 @@ claim about something a person can see, and nobody has seen it.
 `crates/alo-egress/src/itself.rs`,
 `crates/alo-asking/tests/a_day_that_never_left.rs`
 
-**Still owed:** the policy is an enumerated list of why alo OS itself reaches
-the network, and the promise's proof is a measurement at a network boundary on a
-machine that has run a working day. No machine has.
+**Measured at the network boundary, 2026-10-12** — the first time, and partial.
+The production ask command was run three times against the local model on a
+development machine, with the kernel's own byte counters in /proc/net/dev read
+either side of each ask, on **every** interface:
+
+| reading | loopback | the interface that leaves the machine |
+|---|---|---|
+| ask 1 | rx +16645, tx +16645 | rx +179, **tx +0** |
+| ask 2 | rx +15093, tx +15093 | unchanged |
+| ask 3 | rx +16637, tx +16637 | rx +179, **tx +0** |
+| the control | — | rx +5685, tx +1756 |
+
+**Nothing was transmitted on the only interface that leaves the machine, on any
+of the three.** The question and the answer travelled entirely on loopback,
+which is where the local model listens. The control is what makes the zero mean
+something: a request to a provider over the same counters moved them by 1,756
+bytes out, so the counter was live rather than dead. An idle window of the same
+length as an ask was read first and moved nothing.
+
+**These are kernel counters and not our own indicator**, which is the
+distinction the owner drew on 2026-10-11: a quiet egress indicator establishes
+only that nothing was reported through that indicator. Law 1 asks for the
+boundary, and this is the boundary.
+
+**Still owed:** the gap is named rather than rounded off. The policy is an
+enumerated list of why alo OS itself reaches the network, and the reading above
+is **three asks over seconds on a development machine**, not a working day on a
+PC. The interface it reads is a WSL interface translated by a Windows host — the
+boundary of a Linux environment rather than a physical card. So *zero inference
+egress over a working day, measured at the network boundary* now has its method
+and its control, and does not yet have its machine or its day.
+
+**The method is recorded so the next reading is the same reading:** every
+interface, an idle window of the same length as the run, and a control that must
+egress. A zero with no control is not a measurement.
 
 ### Boots on one certified machine, firmware to sign-in
 
