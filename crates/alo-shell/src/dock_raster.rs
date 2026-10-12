@@ -171,7 +171,7 @@ pub(crate) struct DockPicture {
     ///
     /// So the rectangle the design specifies is recorded separately, and it is
     /// what a press on a row will be tested against.
-    pub(crate) overflow_list: Option<Rectangle<i32, Physical>>,
+    pub(crate) overflow_list: Option<crate::where_the_docks_surface_is::TheSurfaceAsDrawn>,
     /// Every other rounded panel this Dock drew — today, the overflow list.
     ///
     /// Separate from [`Self::surface`] because they are painted at different
@@ -261,7 +261,7 @@ fn the_overflow_list(
     inked: &mut Vec<Inked>,
     drawn: TheOverflowIsDrawn<'_>,
     fonts: &mut FontSystem,
-) -> Rectangle<i32, Physical> {
+) -> crate::where_the_docks_surface_is::TheSurfaceAsDrawn {
     let TheOverflowIsDrawn {
         over,
         at,
@@ -550,7 +550,16 @@ fn the_overflow_list(
         ) {
             panels.push(washed);
         }
-        return area;
+        // **What a press needs, recorded from the same values that drew it.**
+        // The rows' own origin and the viewport's height, not a second
+        // derivation: a hit test with arithmetic of its own is the fault
+        // `crate::where_the_dock_is` exists to prevent for the bar, and a
+        // scrolled list would be where the two first disagreed.
+        return crate::where_the_docks_surface_is::TheSurfaceAsDrawn {
+            popover: area,
+            viewport: Rectangle::new((left + pad, rows_at).into(), (inner, viewport).into()),
+            face: crate::where_the_docks_surface_is::WhichFace::TheWindowsOf(panel),
+        };
     }
 
     // The heading.
@@ -813,7 +822,13 @@ fn the_overflow_list(
         panels.push(washed);
     }
 
-    area
+    // The same recording for the other face: `list` is the viewport the grid
+    // was clipped to, and `overview` carries the scroll it was drawn at.
+    crate::where_the_docks_surface_is::TheSurfaceAsDrawn {
+        popover: area,
+        viewport: list,
+        face: crate::where_the_docks_surface_is::WhichFace::TheOverview(overview),
+    }
 }
 
 /// Where one slot's 48 × 48 target sits on the screen.
@@ -1415,7 +1430,8 @@ mod tests {
             .expect("a Dock with its overview open");
             let list = drawn
                 .overflow_list
-                .expect("the overview was asked for and is not empty");
+                .expect("the overview was asked for and is not empty")
+                .popover;
             let mut ink = 0;
             for washed in &drawn.panels {
                 // The popover's own raster and not the Dock's: both are panels
@@ -1519,7 +1535,7 @@ mod tests {
                 &mut fonts(),
             )
             .expect("a Dock with a surface open");
-            let list = drawn.overflow_list.expect("the surface is open");
+            let list = drawn.overflow_list.expect("the surface is open").popover;
             let mut ink = 0;
             for washed in drawn.panels.iter().filter(|it| it.area.overlaps(list)) {
                 for pixel in washed.pixels.chunks(4) {

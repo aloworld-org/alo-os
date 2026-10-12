@@ -264,6 +264,54 @@ of it.
 **Earns:** the parts of §8's evidence that say *click*. Today every one of them
 would have to be read as *press a key*.
 
+**Written 2026-10-12, not yet built.** All three parts exist and none has
+compiled: the machine runs one Cargo operation at a time and another branch's
+gate has held the slot since this was written. So this is a statement about what
+is in the tree and not a claim that it works.
+
+What it does, and the one decision in it worth disagreeing with:
+
+- **`alo-dock` answers the point.** `TheOverview::which_cell_is_at` and
+  `ThePickersPanel::which_row_is_at`, both taking **viewport** coordinates and
+  adding their own scroll. That last part is deliberate and is
+  `ThePicker::which_window`'s own reason: a caller that had to add the scroll
+  could forget to, and the fault would be silent and only for somebody with
+  enough applications to scroll. Both refuse the gaps between items, the group
+  headings and the empty end of a short row — `alo_dock::places`' rule for the
+  bar, held for the surface: *a gap that reached its nearest neighbour would
+  mean a person aiming at the space between two applications opening one of
+  them.*
+- **The draw records what a press needs**, in
+  `crate::where_the_docks_surface_is::TheSurfaceAsDrawn`: the popover, the
+  list's viewport inside it, and which face with its layout. The **layout** and
+  not a list of rectangles, because the layout already answers *which item is at
+  this point* and answers it at the scroll it was drawn at; a list recorded here
+  would be a second answer that could disagree about a scrolled list.
+- **One performer for both ways in.** Enter and a press both call
+  `Server::choose_from_the_open_surface`. `crate::window_control_input` records
+  what the other choice costs: migrating only the keyboard once left the button
+  broken while a keyboard test passed — *a fix down the path nobody uses*.
+- **The surface is asked before the band**, because it is drawn in front of it.
+  A press on a cell that also lands over the bar must open that application
+  rather than whatever slot is underneath.
+- **Dismissal is not decided here.** A press outside answers *not mine*, and
+  `crate::pointer` closes whatever is open on any press the Dock does not take —
+  as it has since before this surface could be pressed. The first draft of this
+  closed it here too, which was one rule in two places.
+
+The tests are **round trips**: every cell and row is fed back the point the
+layout drew it at and must answer its own index, walked exactly as the draw
+walks it — content offset less the scroll — because an asymmetry between the two
+directions is the fault a round trip exists to find. Plus the gaps, the
+headings, the short last row, all four sides and both diagonals of *outside*,
+and a scrolled surface with the **unscrolled one as a control**, so a test that
+passed because the scroll happened to be zero cannot look like a test that
+passed because the scroll was read.
+
+**What it still does not do:** the search field takes no typing, which is task
+5's remaining half and is now the only way a person with sixty applications
+cannot find one quickly.
+
 ## What is owed to another lane, and from when
 
 - **Application discovery** — task 4 cannot start without it. Named here on

@@ -270,6 +270,34 @@ impl ThePickersPanel {
         self
     }
 
+    /// Which row a point in the **list's viewport** lands on.
+    ///
+    /// `down` is measured from the viewport's own top edge, before the scroll
+    /// is undone — this adds [`Self::scrolled`] itself, for
+    /// `TheOverview::which_cell_is_at`'s reason exactly.
+    ///
+    /// [`None`] in the gap between two rows and past the last window. A list is
+    /// one column, so there is no across to check.
+    #[must_use]
+    pub fn which_row_is_at(self, down: Room) -> Option<usize> {
+        if down.as_pixels() >= self.viewport {
+            return None;
+        }
+        let into_the_content = down.as_pixels().saturating_add(self.scrolled);
+        let stride = crate::measures::A_WINDOW_ROW_IS_TALL
+            .saturating_add(crate::measures::BETWEEN_APP_CELLS);
+        let row = into_the_content.checked_div(stride)?;
+        if into_the_content.saturating_sub(row.saturating_mul(stride))
+            >= crate::measures::A_WINDOW_ROW_IS_TALL
+        {
+            return None;
+        }
+        if row >= self.how_many {
+            return None;
+        }
+        usize::try_from(row).ok()
+    }
+
     /// Whether the `which`th row is at least partly in view.
     #[must_use]
     pub fn is_shown(self, which: usize) -> bool {

@@ -798,6 +798,19 @@ impl LoopInput for Desk<'_> {
             if let Some(dock) = its_pictures.desktop.dock.as_ref() {
                 server.the_docks_slots_were_drawn(&its.name, dock.standing.clone());
             }
+            // **And where its open surface was, or that there was none.**
+            // Outside the `if let` above deliberately: the two cases that must
+            // clear the record are *no Dock on this display* and *a Dock with
+            // nothing open*, and a call inside that block would miss the first
+            // and leave a press being taken by a popover that is gone.
+            server.the_docks_surface_was_drawn(
+                &its.name,
+                its_pictures
+                    .desktop
+                    .dock
+                    .as_ref()
+                    .and_then(|dock| dock.overflow_list),
+            );
             server.the_fixed_controls_were_drawn(
                 &its.name,
                 crate::canvas_fixed_controls::FixedControlsDrawn {
@@ -812,6 +825,16 @@ impl LoopInput for Desk<'_> {
         if let Some(dock) = pictures.desktop.dock.as_ref() {
             server.the_docks_slots_were_drawn(&named, dock.standing.clone());
         }
+        // The same for this display, and outside the `if let` for the same
+        // reason the one above is.
+        server.the_docks_surface_was_drawn(
+            &named,
+            pictures
+                .desktop
+                .dock
+                .as_ref()
+                .and_then(|dock| dock.overflow_list),
+        );
         server.the_fixed_controls_were_drawn(
             &named,
             crate::canvas_fixed_controls::FixedControlsDrawn {

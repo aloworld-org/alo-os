@@ -1,7 +1,9 @@
 //! That the caps hold, whatever is in the list and whatever output it is on.
 #![expect(
     clippy::unwrap_used,
-    reason = "in a test, a panic on an unexpected None is the failure being reported"
+    clippy::panic,
+    reason = "in a test, a panic on an unexpected value is the failure being reported, and a \
+              formatted panic names which of many cases it was"
 )]
 
 use super::*;
@@ -334,4 +336,188 @@ fn the_thumb_stays_inside_an_ordinary_track() {
             );
         }
     }
+}
+
+/// **Every cell the layout places is found again at the point it was placed.**
+///
+/// # Why a round trip and not a table of points
+///
+/// A table says what one author believed on one day. A round trip says the two
+/// halves agree — and the two halves are the whole risk here: `where_a_cell_sits`
+/// is what a frame draws with, `which_cell_is_at` is what a press is classified
+/// against, and **a drawing at one set of offsets and a press reading another is
+/// a Dock whose icons open their neighbours.** `ThePicker` says the same of its
+/// own pair in as many words.
+///
+/// It walks the point **exactly as the draw does** — add the cell's content
+/// offset, subtract the scroll — because an asymmetry between the two
+/// directions is precisely the fault a round trip exists to find.
+#[test]
+fn every_cell_is_found_again_where_the_layout_put_it() {
+    for (pinned, others) in [
+        (0, 1),
+        (1, 0),
+        (4, 0),
+        (0, 7),
+        (4, 56),
+        (3, 3),
+        (1, 9),
+        (9, 1),
+    ] {
+        let overview = TheOverview::of(pinned, others, Room::pixels(ON_A_768_OUTPUT));
+        let how_many = pinned + others;
+        let mut found = 0;
+        for which in 0..how_many {
+            let scrolled = overview.showing(which);
+            let (across, down) = scrolled.where_a_cell_sits(which).unwrap();
+            assert!(
+                scrolled.is_shown(which),
+                "{which} of {how_many} is not in view after scrolling to it"
+            );
+            // The draw's own arithmetic: content offset less the scroll.
+            let in_the_viewport = down
+                .as_pixels()
+                .checked_sub(scrolled.scrolled().as_pixels())
+                .unwrap_or_else(|| {
+                    panic!("cell {which} of {how_many} sits above its own viewport")
+                });
+            assert_eq!(
+                scrolled.which_cell_is_at(across, Room::pixels(in_the_viewport)),
+                Some(which),
+                "cell {which} of {how_many} ({pinned} pinned) was placed at \
+                 across {} down {} and a press there found something else",
+                across.as_pixels(),
+                in_the_viewport
+            );
+            found += 1;
+        }
+        assert_eq!(
+            found, how_many,
+            "the premise: every one of {how_many} was tried"
+        );
+    }
+}
+
+/// **A press in the middle of a cell lands on it, not only on its corner.**
+///
+/// The round trip above tests the top-left pixel of each cell, which is the one
+/// point a wrong-by-one lookup is most likely to get right. This takes the
+/// centre, which a wrong stride misses.
+#[test]
+fn a_press_in_the_middle_of_a_cell_finds_that_cell() {
+    use crate::measures::{AN_APP_CELL_IS_TALL, AN_APP_CELL_IS_WIDE};
+    let overview = TheOverview::of(4, 8, Room::pixels(ON_A_768_OUTPUT));
+    for which in 0..12 {
+        let (across, down) = overview.where_a_cell_sits(which).unwrap();
+        let middle_across = across.as_pixels() + AN_APP_CELL_IS_WIDE / 2;
+        let middle_down = down.as_pixels() + AN_APP_CELL_IS_TALL / 2;
+        assert_eq!(
+            overview.which_cell_is_at(Room::pixels(middle_across), Room::pixels(middle_down)),
+            Some(which),
+            "the centre of cell {which} found something else"
+        );
+    }
+}
+
+/// **A press in a gap, on a heading, or past the end finds nothing.**
+///
+/// `crate::places` settled the rule for the bar and it is the same rule here: a
+/// gap that reached its nearest neighbour would mean a person aiming at the
+/// space between two applications opening one of them. A heading is not a
+/// control either, and neither is the empty part of a short last row.
+#[test]
+fn a_gap_a_heading_and_the_empty_end_of_a_row_find_nothing() {
+    use crate::measures::{
+        AN_APP_CELL_IS_TALL, AN_APP_CELL_IS_WIDE, AN_APP_GROUP_HEADING_IS_TALL, BETWEEN_APP_CELLS,
+    };
+    // Five others and no pinned, so the second row holds one of four columns.
+    let overview = TheOverview::of(0, 5, Room::pixels(ON_A_768_OUTPUT));
+    assert_eq!(overview.columns(), 4, "the premise: four columns");
+    let (first_across, first_down) = overview.where_a_cell_sits(0).unwrap();
+
+    // The heading, which sits above the first row.
+    assert!(
+        first_down.as_pixels() >= AN_APP_GROUP_HEADING_IS_TALL,
+        "the premise: there is a heading above the first cell"
+    );
+    assert_eq!(
+        overview.which_cell_is_at(first_across, Room::pixels(0)),
+        None,
+        "a press on the group's heading found an application"
+    );
+
+    // The gap between the first and second columns.
+    assert_eq!(
+        overview.which_cell_is_at(
+            Room::pixels(AN_APP_CELL_IS_WIDE + BETWEEN_APP_CELLS / 2),
+            first_down
+        ),
+        None,
+        "a press in the gap between two columns found an application"
+    );
+
+    // The gap between the first and second rows.
+    assert_eq!(
+        overview.which_cell_is_at(
+            first_across,
+            Room::pixels(first_down.as_pixels() + AN_APP_CELL_IS_TALL + BETWEEN_APP_CELLS / 2)
+        ),
+        None,
+        "a press in the gap between two rows found an application"
+    );
+
+    // The second row's second column, where there is no fifth application.
+    let (_, second_row) = overview.where_a_cell_sits(4).unwrap();
+    assert_eq!(
+        overview.which_cell_is_at(
+            Room::pixels(AN_APP_CELL_IS_WIDE + BETWEEN_APP_CELLS),
+            second_row
+        ),
+        None,
+        "a press past the last application in a short row found one"
+    );
+
+    // Outside the popover's width, and below its viewport.
+    assert_eq!(
+        overview.which_cell_is_at(Room::pixels(MORE_APPS_IS_WIDE), first_down),
+        None,
+        "a press beyond the popover's own width found an application"
+    );
+    assert_eq!(
+        overview.which_cell_is_at(first_across, overview.the_list_is_tall()),
+        None,
+        "a press below the list's viewport found an application"
+    );
+}
+
+/// **A scrolled list is read at its scrolled position, not its unscrolled one.**
+///
+/// The fault this forbids: a press classified against the content's offsets
+/// while the draw had scrolled. Everything would work until somebody had enough
+/// applications to scroll, and then every press would open the wrong one — by a
+/// whole screenful, so not even plausibly.
+#[test]
+fn a_scrolled_grid_reads_the_point_where_the_cell_now_is() {
+    let overview = TheOverview::of(4, 56, Room::pixels(ON_A_768_OUTPUT));
+    let scrolled = overview.showing(59);
+    assert!(
+        scrolled.scrolled().as_pixels() > 0,
+        "the premise: reaching the sixtieth scrolled the list"
+    );
+    let (across, down) = scrolled.where_a_cell_sits(59).unwrap();
+    let in_the_viewport = down.as_pixels() - scrolled.scrolled().as_pixels();
+
+    // At its scrolled position: the sixtieth.
+    assert_eq!(
+        scrolled.which_cell_is_at(across, Room::pixels(in_the_viewport)),
+        Some(59)
+    );
+    // The same point read against the *unscrolled* grid is something else
+    // entirely, which is what makes the scroll load-bearing rather than tidy.
+    assert_ne!(
+        overview.which_cell_is_at(across, Room::pixels(in_the_viewport)),
+        Some(59),
+        "the unscrolled grid answered the same as the scrolled one, so the \
+         scroll is not being read and this test proves nothing"
+    );
 }

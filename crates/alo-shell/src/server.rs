@@ -114,6 +114,18 @@ pub struct Server {
     /// a band that has not been measured on this display.
     pub(crate) dock_as_drawn:
         std::collections::BTreeMap<String, crate::where_the_dock_is::TheDocksPlaces>,
+    /// Where each display's **open surface** was drawn, when one was.
+    ///
+    /// Beside `dock_as_drawn` and not inside it, because the two have different
+    /// lifetimes: a band is drawn on every frame and a popover only while it is
+    /// open. A field inside the band's record would have to carry an `Option`
+    /// that every reader checked anyway, and an entry left behind by a surface
+    /// that has closed is a press taken by something no longer on the screen.
+    ///
+    /// **Cleared by a draw with nothing open**, which is how it cannot go
+    /// stale: the draw that closes a surface is the draw that removes this.
+    pub(crate) the_docks_surface_as_drawn:
+        std::collections::BTreeMap<String, crate::where_the_docks_surface_is::TheSurfaceAsDrawn>,
     /// Whether the list of applications the bar had no room for is open.
     ///
     /// **One home, and it is here rather than on the desktop**, because the
@@ -291,6 +303,7 @@ impl Server {
             // empty picture — see the field's own note.
             panel_as_drawn: None,
             dock_as_drawn: std::collections::BTreeMap::new(),
+            the_docks_surface_as_drawn: std::collections::BTreeMap::new(),
             the_dock_was_asked_for: crate::what_the_dock_has_open::WhatTheDockWasAskedFor::Nothing,
             // Nobody has asked for anything yet.
             asked_to_put_aside: Vec::new(),

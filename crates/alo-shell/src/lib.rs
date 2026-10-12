@@ -161,6 +161,7 @@ mod dock_raster;
 /// rasterised with alpha because neither is a rectangle.
 mod dock_surface;
 mod the_keyboard_on_the_docks_surfaces;
+mod where_the_docks_surface_is;
 
 /// Where the Dock is on one display: the band on its edge and the slots
 /// inside it, worked out once for the draw and for a press.
