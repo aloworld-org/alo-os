@@ -74,6 +74,40 @@ and that is a decision rather than a line of code. The screen is being built
 without it, on the right ground colour, and this file is what it will be drawn
 from when that decision is made.
 
+## The Ask alo task window, 2026-10-12
+
+**`417-27657.xml` is the section *Ask alo · Task conversation*** — eight state
+frames, an interaction-contract frame, and 118 nodes. Read live from the
+canonical file on 2026-10-12, at the owner's instruction, which named the nine
+nodes and the words *refresh these nodes in the committed snapshot before
+implementation*. That is the refresh rule being overridden by whoever set it,
+as on 2026-10-07, rather than a lane reaching for the file key.
+
+**Transcribed, not written by a script.** Like `0-1.xml`, the response was
+small enough to return inline and so did not pass through step 3 of *How to
+reproduce it*. It is what the tool returned.
+
+**This file is geometry and layer names only, and that is not enough to build
+from.** `get_metadata` carries no fill, stroke, typography, token name or
+component description, and the task window's entire appearance is in those. The
+measured appearance is in **`docs/design/the-ask-alo-task-window.md`**, from a
+second call — `get_design_context`, same section, same day — and that page also
+names what neither call returned.
+
+**Two further things this tree does not show, recorded here so the gap is not
+rediscovered:**
+
+- **The seven state interiors are not in it.** A section read expands only the
+  selected instance, so seven of the eight frames appear as bare
+  1040 × 800 `<instance/>` boxes. Their interiors came from the component set
+  `417:28422`, which is on another root and is **not** part of this file.
+- **There is no `Stopping` variant anywhere in the design.** Frame
+  `418:28135` is named *Ask alo / 08 · Stopping* and the contract frame
+  specifies the state in detail, but the component set has seven variants and
+  `Stopping` is not among them. A later capture that adds one is a design
+  change, not a correction to this export.
+
+
 ## The compact edge and the window menu, 2026-10-11
 
 **`414-27564.xml` is authoritative for the window edge's sizing, its
@@ -257,6 +291,7 @@ from `get_design_context` and are written down separately, which is what
 |---|---|---|
 | `70-28.xml` | `70:28` | page *03 — alo OS · Living canvas* — 2,350,573 bytes, 26,421 lines, 21,072 nodes |
 | `0-1.xml` | `0:1` | page *00 — Cover* |
+| `417-27657.xml` | `417:27657` | section *Ask alo · Task conversation* — 118 nodes; appearance is **not** in it, see the 2026-10-12 section |
 | `ROOTS.md` | — | every root id known to exist, exported or not, because the interface will not list them |
 
 ```text

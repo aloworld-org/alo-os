@@ -1,0 +1,168 @@
+<section id="417:27657" name="Ask alo · Task conversation" x="55400" y="400" width="4480" height="3700">
+  <frame id="417:27713" name="Ask alo / 01 · Working" x="40" y="120" width="1440" height="1040">
+    <text id="417:27714" name="Ask alo · Working" x="200" y="40" width="105" height="18" />
+    <frame id="417:27715" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="418:28051" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="418:28052" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="418:28053" name="alo · Launch presentation" x="0" y="19" width="159" height="18" />
+      </frame>
+      <frame id="418:28054" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="418:28055" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28057" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="418:28058" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28060" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="418:28061" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <instance id="417:27719" name="alo / Task conversation" x="200" y="124" width="1040" height="800" />
+  </frame>
+  <frame id="417:27817" name="Ask alo / 02 · Needs permission" x="1520" y="120" width="1440" height="1040">
+    <text id="417:27818" name="Ask alo · Needs permission" x="200" y="40" width="166" height="18" />
+    <frame id="417:27819" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="418:28063" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="418:28064" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="418:28065" name="alo · Launch presentation" x="0" y="19" width="159" height="18" />
+      </frame>
+      <frame id="418:28066" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="418:28067" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28069" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="418:28070" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28072" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="418:28073" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <instance id="417:27823" name="alo / Task conversation" x="200" y="124" width="1040" height="800" />
+  </frame>
+  <frame id="417:27932" name="Ask alo / 03 · Model picker" x="3000" y="120" width="1440" height="1040">
+    <text id="417:27933" name="Ask alo · Model picker" x="200" y="40" width="134" height="18" />
+    <frame id="417:27934" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="418:28075" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="418:28076" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="418:28077" name="alo · Launch presentation" x="0" y="19" width="159" height="18" />
+      </frame>
+      <frame id="418:28078" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="418:28079" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28081" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="418:28082" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28084" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="418:28085" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <instance id="417:27938" name="alo / Task conversation" x="200" y="124" width="1040" height="800" />
+  </frame>
+  <frame id="417:28053" name="Ask alo / 04 · Permissions" x="40" y="1200" width="1440" height="1040">
+    <text id="417:28054" name="Ask alo · Permissions" x="200" y="40" width="131" height="18" />
+    <frame id="417:28055" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="418:28087" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="418:28088" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="418:28089" name="alo · Launch presentation" x="0" y="19" width="159" height="18" />
+      </frame>
+      <frame id="418:28090" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="418:28091" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28093" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="418:28094" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28096" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="418:28097" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <instance id="417:28059" name="alo / Task conversation" x="200" y="124" width="1040" height="800" />
+  </frame>
+  <frame id="417:28163" name="Ask alo / 05 · Stopped" x="1520" y="1200" width="1440" height="1040">
+    <text id="417:28164" name="Ask alo · Stopped" x="200" y="40" width="107" height="18" />
+    <frame id="417:28165" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="418:28099" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="418:28100" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="418:28101" name="alo · Launch presentation" x="0" y="19" width="159" height="18" />
+      </frame>
+      <frame id="418:28102" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="418:28103" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28105" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="418:28106" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28108" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="418:28109" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <instance id="417:28169" name="alo / Task conversation" x="200" y="124" width="1040" height="800" />
+  </frame>
+  <frame id="417:28266" name="Ask alo / 06 · Complete" x="3000" y="1200" width="1440" height="1040">
+    <text id="417:28267" name="Ask alo · Complete" x="200" y="40" width="115" height="18" />
+    <frame id="417:28268" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="418:28111" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="418:28112" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="418:28113" name="alo · Launch presentation" x="0" y="19" width="159" height="18" />
+      </frame>
+      <frame id="418:28114" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="418:28115" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28117" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="418:28118" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28120" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="418:28121" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <instance id="417:28272" name="alo / Task conversation" x="200" y="124" width="1040" height="800" />
+  </frame>
+  <frame id="417:28369" name="Ask alo / 07 · Dark" x="40" y="2280" width="1440" height="1040">
+    <text id="417:28370" name="Ask alo · Dark appearance" x="200" y="40" width="159" height="18" />
+    <frame id="417:28371" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="418:28123" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="418:28124" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="418:28125" name="alo · Launch presentation" x="0" y="19" width="159" height="18" />
+      </frame>
+      <frame id="418:28126" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="418:28127" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28129" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="418:28130" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28132" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="418:28133" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <instance id="417:28375" name="alo / Task conversation" x="200" y="124" width="1040" height="800" />
+  </frame>
+  <text id="417:28423" name="Ask alo · A conversation with controls" x="40" y="28" width="606" height="44" />
+  <frame id="418:28135" name="Ask alo / 08 · Stopping" x="1520" y="2280" width="1440" height="1040">
+    <text id="418:28136" name="Ask alo · Working" x="200" y="40" width="105" height="18" />
+    <frame id="418:28137" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="418:28138" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="418:28139" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="418:28140" name="alo · Launch presentation" x="0" y="19" width="159" height="18" />
+      </frame>
+      <frame id="418:28141" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="418:28142" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28144" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="418:28145" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="418:28147" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="418:28148" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <instance id="418:28150" name="alo / Task conversation" x="200" y="124" width="1040" height="800" />
+  </frame>
+  <frame id="418:28202" name="Ask alo / Interaction contract" x="3000" y="2280" width="1440" height="1040">
+    <text id="418:28203" name="Ask alo · Interaction contract" x="40" y="40" width="1360" height="36" />
+    <text id="418:28204" name="Each new request opens a task window. Follow-ups stay in that window. This is chat plus readable activity, not a terminal log. Example content is illustrative; never simulate completed actions in production." x="40" y="100" width="1360" height="50" />
+    <text id="418:28205" name="One shared 48px circular composer action: Send arrow when idle; solid Stop square while alo is working. Never display separate Send and Stop controls. Stop requests cancellation: show Stopping until acknowledged, then return to Send. Preserve the draft; typing does not automatically submit or interrupt. Disable empty-draft Send and repeated cancellation. Accessible names and tooltips follow the current action. Announce status changes. All controls remain inside the composer. Model and permission popovers open upward; model changes apply to the next request, without silent provider switching. Keep model name and processing destination visible." x="40" y="174" width="1360" height="100" />
+    <text id="418:28206" name="Permissions belong to this task. Show exact shared resources and granted scopes. New access is explicit; revoke blocks future access without claiming to undo completed work or recall transmitted data." x="40" y="298" width="1360" height="50" />
+    <text id="418:28207" name="Approval cards name the action, destination and effect. Allow once and Deny are equally reachable. Denying must not be interpreted as permission to try another route." x="40" y="372" width="1360" height="25" />
+    <text id="418:28208" name="Stop requests cancellation immediately. Show Stopping until the runtime confirms. Then report what finished, what changed and what did not. Continue is deliberate and requires revalidation of permissions." x="40" y="421" width="1360" height="50" />
+    <text id="418:28209" name="Conversation accepts user replies while work runs; explain whether a reply is queued or redirects at the next safe step. Never imply an in-flight action was changed immediately. Enter sends; Shift+Enter adds a line." x="40" y="495" width="1360" height="50" />
+    <text id="418:28210" name="Activity details contain actions, outcomes and errors—not hidden reasoning, credentials or private model traces. Open result files through real application paths." x="40" y="569" width="1360" height="25" />
+    <text id="418:28211" name="Minimising preserves the task and shows activity plus Stop in the minimised-window panel. Closing a running task requires an explicit Stop-and-close or Keep-running choice; do not silently kill or orphan it." x="40" y="618" width="1360" height="50" />
+    <text id="418:28212" name="Use Manrope and semantic tokens. Teal identifies alo activity; human controls and focus use navy. Support keyboard, screen readers, translation and increased text size. Show resource removal as a named action." x="40" y="692" width="1360" height="50" />
+    <text id="418:28213" name="Prototype: Working model and permissions controls open their panels; click the same control to return. Stop demonstrates Stopping only; runtime confirmation is not simulated by a timer." x="40" y="766" width="1360" height="22" />
+  </frame>
+</section>
