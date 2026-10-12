@@ -151,6 +151,18 @@ impl Server {
         let Some(shortcuts) = self.shortcuts.take() else {
             return;
         };
+        // **The keyboard's own two, answered before anything else.** They move
+        // where the keyboard *is* rather than doing something to a window, a
+        // canvas or a setting, so nothing below them has an opinion about them
+        // — and a person pressing F6 while Settings is open means the same
+        // thing they mean anywhere else.
+        //
+        // Put back before returning, like the shortcuts below: this road has
+        // one exit for the value it borrowed.
+        if self.a_chord_moves_the_keyboard_between_areas(&shortcuts, chord) {
+            self.shortcuts = Some(shortcuts);
+            return;
+        }
         // **The one clock read on this road, and it is read here.** A chord is
         // a thing that happened at a moment, and one action — putting a Place
         // back as it was — holds the state being left under that moment. Every

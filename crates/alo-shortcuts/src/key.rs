@@ -100,6 +100,39 @@ macro_rules! keys {
                 }
             }
 
+            /// Whether this is a function key — F1 to F12.
+            ///
+            /// **The one question `Chord::checked` asks that is about the key
+            /// rather than what is held**, and it is asked because that rule's
+            /// own words give its reason: *a shortcut on this key by itself
+            /// would take that key away from everything you type*, and *Shift
+            /// only changes which character it prints*. **A function key prints
+            /// nothing**, so neither reason reaches it — the rule was broader
+            /// than its justification.
+            ///
+            /// Written as a match over every key rather than a range or a name
+            /// test, so a key added to the list is a compile error here until
+            /// somebody says which side it is on. `F6` arriving as a string
+            /// from a settings file would otherwise be the thing that decides.
+            #[must_use]
+            pub const fn is_a_function_key(self) -> bool {
+                matches!(
+                    self,
+                    Self::F1
+                        | Self::F2
+                        | Self::F3
+                        | Self::F4
+                        | Self::F5
+                        | Self::F6
+                        | Self::F7
+                        | Self::F8
+                        | Self::F9
+                        | Self::F10
+                        | Self::F11
+                        | Self::F12
+                )
+            }
+
             /// What a person is shown for this key, in the language they read.
             ///
             /// A `String` rather than a `Said` because half the answers are not

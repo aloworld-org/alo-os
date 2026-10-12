@@ -71,6 +71,7 @@
 
 #![cfg(target_os = "linux")]
 
+mod a_chord_moves_the_keyboard_between_areas;
 mod a_chord_reaches_its_action;
 mod a_click_brings_a_window_back;
 mod a_frame_per_display;
@@ -329,6 +330,7 @@ mod what_the_dock_has_open;
 mod what_the_server_tells_a_frame;
 mod where_a_window_opens;
 mod where_the_dock_is;
+pub mod which_area_has_the_keyboard;
 mod which_card_the_seat_holds;
 mod which_display_a_window_is_on;
 pub mod which_preview_the_pointer_is_on;

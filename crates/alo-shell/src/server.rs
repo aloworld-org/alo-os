@@ -241,6 +241,21 @@ pub struct Server {
     /// and is the one write that must not be skipped on the grounds that there
     /// is nothing in it.
     pub(crate) pins_owed_to_the_disk: Option<Vec<alo_dock::ADockEntry>>,
+    /// Which part of the screen the keyboard is in.
+    ///
+    /// [`None`] is the canvas, which is where it is when the shell has not
+    /// taken it — see `crate::which_area_has_the_keyboard` for why the canvas
+    /// is an absence rather than a variant.
+    pub(crate) which_area_has_the_keyboard: crate::which_area_has_the_keyboard::TheFocusedArea,
+    /// Which slot on the bar the keyboard is on, while the Dock is the focused
+    /// area.
+    ///
+    /// **Separate from the surfaces' own focus**, which lives inside
+    /// `WhatTheDockWasAskedFor`. A person tabbing along the bar has focused a
+    /// slot and opened nothing; a person in *More apps* has a surface open and
+    /// a cell focused in it. One field for both would make *which thing does
+    /// Enter act on* a question with two answers.
+    pub(crate) which_slot_on_the_bar: Option<usize>,
     /// What the Settings entry is called, in this person's language.
     ///
     /// **Kept because a search has to match what is drawn.** A native entry has
@@ -410,6 +425,10 @@ impl Server {
             what_the_dock_is_pinned_to: alo_dock::Holding::nothing(),
             what_was_typed_into_more_apps: alo_dock::WhatTheyTyped::nothing(),
             pins_owed_to_the_disk: None,
+            // The keyboard starts with the work, which is where a person's
+            // hands already are.
+            which_area_has_the_keyboard: None,
+            which_slot_on_the_bar: None,
             the_settings_entry_is_called: String::new(),
             edges_revealed: Vec::new(),
             keyboard_on_edges: Vec::new(),

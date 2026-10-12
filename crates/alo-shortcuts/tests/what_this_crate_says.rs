@@ -110,6 +110,18 @@ fn auf_deutsch() -> Strings {
                 words::GO_BACK_ON_THIS_PLACE,
                 "Diese Fläche wiederherstellen, wie sie war",
             ),
+            // **Bildschirmbereich, not *Landmarke*.** A screen reader's German
+            // documentation says *Bereich*, and this row is read by somebody
+            // using one: the word they already know beats a loan word that is
+            // more literally the English.
+            (
+                words::THE_NEXT_AREA,
+                "Tastatur in den nächsten Bildschirmbereich bewegen",
+            ),
+            (
+                words::THE_PREVIOUS_AREA,
+                "Tastatur in den vorherigen Bildschirmbereich bewegen",
+            ),
             // Super and Alt are written the same way in German, and they are
             // here for that reason rather than in spite of it. Item 15 made a
             // sentence only as translated as the pieces put into it, and the
@@ -249,6 +261,14 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
             (
                 "Diese Fläche wiederherstellen, wie sie war".to_owned(),
                 "Super+Umschalt+Z".to_owned(),
+            ),
+            (
+                "Tastatur in den nächsten Bildschirmbereich bewegen".to_owned(),
+                "F6".to_owned(),
+            ),
+            (
+                "Tastatur in den vorherigen Bildschirmbereich bewegen".to_owned(),
+                "Umschalt+F6".to_owned(),
             ),
         ]
     );

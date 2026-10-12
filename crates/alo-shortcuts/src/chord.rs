@@ -67,11 +67,26 @@ impl Chord {
     /// [`ChordError`], which says what to press instead — in the language the
     /// person reads, through `ChordError::said`.
     pub fn checked(modifiers: Modifiers, key: Key) -> Result<Self, ChordError> {
-        if modifiers.is_empty() {
-            return Err(ChordError::NothingHeld(key));
-        }
-        if !modifiers.enough() {
-            return Err(ChordError::ShiftIsNotEnough(key));
+        // **A function key may stand alone, and this is the rule matching its
+        // own reason rather than a hole in it.** `NOTHING_HELD` says *a
+        // shortcut on this key by itself would take that key away from
+        // everything you type*, and `SHIFT_IS_NOT_ENOUGH` says *Shift only
+        // changes which character it prints*. **F1 to F12 print nothing**, so
+        // neither sentence is true of them — the rule was wider than what it
+        // was written to prevent.
+        //
+        // This is additive: every chord that was allowed still is, and two
+        // dozen that a person would reasonably expect to be able to set now
+        // are. `docs/design/the-shortcuts-and-the-edges.md` needs it for F6,
+        // which is the landmark cycle on every system somebody may be arriving
+        // from.
+        if !key.is_a_function_key() {
+            if modifiers.is_empty() {
+                return Err(ChordError::NothingHeld(key));
+            }
+            if !modifiers.enough() {
+                return Err(ChordError::ShiftIsNotEnough(key));
+            }
         }
         if let Some(clipboard) = the_clipboard(modifiers, key) {
             return Err(ChordError::TheClipboardNeedsIt(clipboard));
