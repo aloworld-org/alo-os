@@ -7666,3 +7666,42 @@ read such a machine. The testing NUC after a `powercfg /h off` would settle it,
 and no program of this installer may name `powercfg`, so it is a measurement for
 a person rather than for the installer.
 **Date:** 2026-10-08.
+
+## The contract asks for touch and no touch event reaches any surface
+
+**The specification:** the window edge's contract requires that *touch access
+must not depend on hover*, and that *every action must be reachable by pointer,
+touch, keyboard and assistive technology*. The compact edge moves Minimise,
+Maximise/Restore, Move and Resize into a window menu, so a narrow window's
+actions live behind a target that a touch must be able to open.
+
+**What reality is.** Nothing in this repository can receive a touch. Measured
+on 2026-10-12 across every crate's sources, with two controls so that a zero is
+a reading rather than a broken query:
+
+| what was searched for | files |
+|---|---|
+| `PointerHandler`, `pointer_motion`, `add_pointer` | 9 |
+| `add_keyboard`, `KeyboardHandler`, `keyboard_key` | 11 |
+| `wl_touch`, `WlTouch` | **0** |
+| `add_touch`, `TouchHandler`, `delegate_touch`, `TouchTarget` | **0** |
+| `InputEvent::Touch` | **0** |
+
+The first two rows are the controls: the same search shape finds the other two
+input devices in nine and eleven files. The seat never announces a touch
+capability, so no touch event reaches any surface on a machine running this
+shell.
+
+**Why it is here rather than in a task report alone.** It is not a defect in
+the window edge and no change to the edge can answer it. A reader of
+`window_edge_keys` or `window_menu_keys` would reasonably assume that the
+pointer road implies a touch road, because on most systems it does — a touch
+arrives as an emulated pointer. It does not here, because nothing arrives at
+all.
+
+**What is claimed and what is not.** The keyboard road is built and tested; the
+pointer road is built and tested. **Touch is neither met nor refused — it is
+unreachable**, and the work it needs is a touch input path with its own seat
+capability, which is work of its own and is not in the change that found this.
+
+**Date:** 2026-10-12.

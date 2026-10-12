@@ -412,6 +412,36 @@ pub fn the_approval_in_reading_order() -> Vec<Control> {
 /// [`EVERY_NAME_A_READER_SAYS_IN_ANOTHER_CRATES_WORDS`] is the other.
 pub const EVERY_NAME_A_READER_SAYS: usize = 36;
 
+/// How many of this crate's words are said by **another crate's** surface.
+///
+/// Three, all `alo-shell`'s and all about one window's edge and its menu:
+/// `MOVE_THE_WINDOW` and `RESIZE_THE_WINDOW`, which
+/// `window_edge_reading::what_a_reader_is_told` puts into the tree, and
+/// `THE_WINDOW_MENU`, which `window_menu_reading` says on entering the panel.
+/// Nothing here says any of the three.
+///
+/// **A third count, because there is a third case.** The two above it cover a
+/// word of ours said by our own tree, and somebody else's word said by our
+/// tree. These are ours, said elsewhere — and the three have different failure
+/// modes, which is the whole reason they are counted apart:
+///
+/// | | what a mismatch means |
+/// |---|---|
+/// | [`EVERY_NAME_A_READER_SAYS`] | a word of ours that nothing says, which is a word to retire |
+/// | [`EVERY_NAME_A_READER_SAYS_IN_ANOTHER_CRATES_WORDS`] | a name of somebody else's that nothing draws, which is ADR 0089's own fault |
+/// | this | a word of ours that only another surface says, which is the one that looks like the first and is not |
+///
+/// Without it, adding a word here for another crate's surface to say would
+/// fail [`EVERY_NAME_A_READER_SAYS`] and the obvious repair would be to move
+/// the word into that crate — where `alo-saying` does not collect it, so a
+/// person could see a string no translator could reach. The count exists to
+/// stop that repair looking right.
+///
+/// They are in this crate rather than in `alo-shell` for exactly that reason:
+/// `alo-saying`'s `EVERY_LIST` holds seventy crates and `alo-shell` is not one
+/// of them.
+pub const EVERY_WORD_ANOTHER_CRATES_SURFACE_SAYS: usize = 3;
+
 /// How many names a reader says come from another crate's vocabulary.
 ///
 /// The three buttons a window is drawn with, and the two answers on the

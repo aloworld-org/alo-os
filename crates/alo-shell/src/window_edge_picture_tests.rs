@@ -35,7 +35,12 @@ fn window() -> Rectangle<i32, Logical> {
 fn an_edge_that_would_fall_off_the_output_is_not_drawn() {
     let mut fonts = fonts();
     let at_the_very_top = Rectangle::new(Point::from((40, 10)), Size::from((600, 400)));
-    let edge = edge_of(at_the_very_top, Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        at_the_very_top,
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     assert!(
         EdgePicture::of(
             &edge,
@@ -55,7 +60,12 @@ fn an_edge_that_would_fall_off_the_output_is_not_drawn() {
 #[test]
 fn the_scale_is_applied_once_and_only_once() {
     let mut fonts = fonts();
-    let edge = edge_of(window(), Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        window(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     let ordinary = EdgePicture::of(
         &edge,
         Pointing::default(),
@@ -92,7 +102,12 @@ fn the_scale_is_applied_once_and_only_once() {
 fn the_whole_title_survives_a_window_too_narrow_to_show_it() {
     let mut fonts = fonts();
     let narrow = Rectangle::new(Point::from((0, 100)), Size::from((200, 400)));
-    let edge = edge_of(narrow, Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        narrow,
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     let picture = EdgePicture::of(
         &edge,
         Pointing::default(),
@@ -113,7 +128,12 @@ fn the_whole_title_survives_a_window_too_narrow_to_show_it() {
 #[test]
 fn no_title_is_inked_for_an_application_that_has_its_own_header() {
     let mut fonts = fonts();
-    let edge = edge_of(window(), Decorations::TheApplicationDraws, true);
+    let edge = edge_of(
+        window(),
+        Decorations::TheApplicationDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     let picture = EdgePicture::of(
         &edge,
         Pointing::default(),
@@ -136,7 +156,12 @@ fn nothing_is_drawn_over_the_application_at_any_scale() {
     let mut fonts = fonts();
     let window = window();
     for scale in [100, 150, 200] {
-        let edge = edge_of(window, Decorations::TheShellDraws, true);
+        let edge = edge_of(
+            window,
+            Decorations::TheShellDraws,
+            true,
+            smithay::utils::Size::from((1920, 1080)),
+        );
         let picture = EdgePicture::of(
             &edge,
             Pointing {

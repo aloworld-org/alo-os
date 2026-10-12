@@ -229,6 +229,18 @@ pub struct Server {
     /// takes its reveal state with it rather than leaving one for whatever
     /// surface is allocated at that address next.
     pub(crate) edges_revealed: Vec<(WlSurface, alo_dock::revealing::Revealing)>,
+    /// Where the keyboard is on each window's edge.
+    ///
+    /// §6 of `docs/design/the-external-window-edge.md`, and the sibling of
+    /// `edges_revealed` above in every respect: per window for that field's
+    /// reason, a list for that field's reason, and pruned on the same walk of
+    /// the mapped surfaces. `crate::the_edge_takes_the_keyboard` is the only
+    /// thing that reads or writes it.
+    ///
+    /// **Only windows the keyboard has reached are in it.** A missing entry
+    /// already means `Nowhere`, so storing that would grow the list for every
+    /// window a key was pressed near and change no answer.
+    pub(crate) keyboard_on_edges: Vec<(WlSurface, crate::window_edge_keys::TheKeyboardOnTheEdge)>,
     /// Where the **person** clicked the panel, not yet acted on.
     ///
     /// The point of the press, rather than the pointer read again later. A peek asks where the
@@ -355,6 +367,7 @@ impl Server {
             asked_to_start: Vec::new(),
             asks_an_application_to_start: None,
             edges_revealed: Vec::new(),
+            keyboard_on_edges: Vec::new(),
             asked_to_bring_back: Vec::new(),
             clicks_the_panel_took: std::collections::HashSet::new(),
             gestures: Default::default(),

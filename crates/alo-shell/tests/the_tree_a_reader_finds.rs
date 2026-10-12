@@ -558,7 +558,10 @@ fn the_served_tree_follows_the_windows_that_open() {
         .into_iter()
         .map(|control| said(&strings, &control))
         .collect();
-    assert_eq!(wanted.len(), 3, "{wanted:?}");
+    // Five since the window menu landed: the three the edge draws, and moving
+    // and resizing, which only the menu offers and which a reader was told
+    // nothing about before it existed.
+    assert_eq!(wanted.len(), 5, "{wanted:?}");
     let found = controls_under_each_window(&session, bus.answers_as());
     // **The count before the contents.** Everything below is inside a loop, so
     // a bus that carried no list at all would come back empty and assert

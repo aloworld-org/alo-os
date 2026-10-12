@@ -81,7 +81,11 @@ impl EdgePicture {
         let mut inked = Vec::new();
         let mut whole = String::new();
         if let (Some(title), Some(at)) = (title, edge.title) {
-            let room = edge.drag.size.w - crate::window_edge::THE_GRIP_IS.0;
+            // Asked of the edge rather than recomputed: the title no longer
+            // begins at the drag region's leading edge, so the old
+            // `drag.size.w - THE_GRIP_IS.0` over-estimated it by the Move
+            // target and let a long title reach the controls.
+            let room = edge.the_room_a_title_has();
             let metrics = cosmic_text::Metrics::new(THE_LABEL_IS, THE_LINE_IS);
             let FittedTitle {
                 shown, whole: all, ..

@@ -21,8 +21,10 @@ access.go-back-now	go back now, restarting this machine
 access.high-contrast	use strong colours that are easier to read
 access.larger-text	make all text larger
 access.magnifier	magnify what is under the pointer
+access.move-the-window	Move the window
 access.one-thing-that-happened	one thing that happened
 access.reduced-motion	stop things sliding and fading
+access.resize-the-window	Resize the window
 access.screen-reader	read the screen aloud
 access.settings	settings
 access.settings-here	settings for seeing, hearing and typing
@@ -41,6 +43,7 @@ access.the-password	password
 access.the-record	the record
 access.the-recovery-screen	getting this machine started again
 access.the-status-area	what this machine is doing
+access.the-window-menu	Window menu
 access.the-windows-open	the windows that are open
 access.what-can-be-changed	what can be changed
 access.what-happened	what has happened

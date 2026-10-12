@@ -44,7 +44,7 @@
 //! not invented here; [`WindowEdge::how_big_a_target_looks`] gives the apparent size
 //! so a host can apply a rule when the owner has set one.
 
-use smithay::utils::{Logical, Point, Rectangle, Size};
+use smithay::utils::{Logical, Physical, Point, Rectangle, Size};
 
 /// How tall the region a pointer must be in for the edge to reveal.
 ///
@@ -79,6 +79,34 @@ pub const A_HIGHLIGHT_IS: (i32, i32) = (32, 28);
 
 /// Where that highlight sits inside its target.
 const THE_HIGHLIGHT_SITS_AT: (i32, i32) = (6, 14);
+
+/// How much the edge insets its outermost targets, measured `414:27583` and
+/// `414:27626`: both put the leading target at `x = 4`, and `space/1` is 4.
+///
+/// **This is 4 and `THE_DRAG_STARTS_AT` below is 8**, which is not a
+/// contradiction but a design change: the older capture `398:26243` put the
+/// drag region's leading inset at 8 when nothing was drawn there. The compact
+/// section of 2026-10-11 puts a 44 × 44 *Move* target at 4, and that target is
+/// now what the leading inset is measured to.
+pub const THE_PADDING_IS: i32 = 4;
+
+/// The narrowest edge that holds all three window actions and a drag target.
+///
+/// Measured from the design's own arithmetic, which it states: *44 drag +
+/// 3×44 actions + 3×4 gaps + 2×4 padding* — 44 + 132 + 12 + 8 = **196**. The
+/// `State=Full controls` master is 196 wide, which is the same number drawn.
+///
+/// **Not 144.** This lane found controls laid out outside the region below 144
+/// and the design answers it in as many words: *the previous 144px fault is a
+/// reproduction boundary, not evidence that all full controls fit at 144.*
+pub const FULL_CONTROLS_NEED: i32 = 196;
+
+/// The narrowest edge there is, below which the edge stops shrinking.
+///
+/// Three 44 targets, two 4 gaps and 4 padding at each end: 132 + 8 + 8 =
+/// **148**, and the four compact masters are each 148 wide. An edge is never
+/// narrower than this; a *window* may be, and then the edge overhangs it.
+pub const THE_COMPACT_EDGE_IS: i32 = 148;
 
 /// The gap between control targets, and between the last and the trailing
 /// edge.
@@ -117,10 +145,6 @@ const THE_TITLE_STARTS_AT: i32 = 30;
 /// Where the title's box starts down the region, measured from `398:26250`.
 const THE_TITLE_SITS_AT: i32 = 19;
 
-/// Where the revealed grip sits **inside the drag region**, measured from
-/// `398:26248`: `x = 8` of a drag region starting at 8, so 16 of the edge.
-const THE_GRIP_STARTS_AT: i32 = 8;
-
 /// Who draws a window's header.
 ///
 /// **Read from the application's protocol state and handed in**, never guessed
@@ -139,6 +163,17 @@ pub enum Decorations {
 /// What one control on the edge does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OnTheEdge {
+    /// Take hold of the window and move it.
+    ///
+    /// **A control rather than a bare region**, which the compact design
+    /// settled: `414:27583` and `414:27626` both draw *Move window / 44×44*
+    /// with a 14px glyph, at the leading end of the edge. It is the same
+    /// affordance the grip was, given a target so that a pointer, a finger and
+    /// a keyboard can all find it in the same place.
+    ///
+    /// Its drawn mark is `crate::window_edge::WindowEdge::grip` and not an
+    /// artwork of its own, so that one rectangle is drawn once.
+    Move,
     /// Put the window aside, through the mechanism that already does it.
     Minimise,
     /// Maximise or restore. **Not full screen** — `docs/features.md` separates
@@ -187,6 +222,36 @@ pub struct WindowEdge {
 }
 
 impl WindowEdge {
+    /// How much width the title has, from where it starts to the first action.
+    ///
+    /// **Derived here rather than computed by each caller.** It used to be
+    /// `drag.size.w - THE_GRIP_IS.0` wherever it was needed, which was right
+    /// while the title began at the drag region's leading edge. The compact
+    /// design puts a 44 × 44 Move target there and the title starts after it,
+    /// so that expression became an over-estimate — measured on a 320-wide
+    /// window, where it let a title run to 225 against a first action at 176.
+    ///
+    /// Zero when there is no title, and zero rather than negative when the
+    /// controls leave nothing: a narrow window has no room for a title at all,
+    /// and a negative width would be a subtraction nobody checked.
+    #[must_use]
+    pub fn the_room_a_title_has(&self) -> i32 {
+        let Some(title) = self.title else {
+            return 0;
+        };
+        let first = self
+            .controls
+            .iter()
+            .filter(|it| it.does != OnTheEdge::Move)
+            .map(|it| it.target.loc.x)
+            .min();
+        let until = first.map_or_else(
+            || self.region.loc.x + self.region.size.w - THE_PADDING_IS,
+            |at| at - BETWEEN_TARGETS,
+        );
+        (until - title.x).max(0)
+    }
+
     /// How large one control's target appears at this zoom, in thousandths.
     ///
     /// For the contract's *at overview scales where targets become too small,
@@ -203,6 +268,102 @@ impl WindowEdge {
     }
 }
 
+/// The output the edge is clamped inside, in the units the edge is laid out
+/// in.
+///
+/// **One conversion, in one place.** The edge is laid out in logical units and
+/// every backend knows its framebuffer in physical pixels, so without this
+/// each caller would divide by the scale itself and they would disagree the
+/// first time one of them was wrong.
+///
+/// `scale` is in hundredths, as `EdgePicture::of` takes it — 100 is
+/// one-to-one, 200 is a doubled display. **Today every caller passes 100**,
+/// and that is a known gap rather than a simplification here: the real
+/// per-display scale has no source yet, which `crate::the_pointer_in_pixels`
+/// records at length for the panel's sake. When it arrives this function is
+/// where it lands.
+///
+/// A scale below one-to-one is read as one-to-one: 0 would divide by zero, and
+/// a display reporting a scale under 100 hundredths is not a thing this
+/// project has. Refusing here would mean an edge that cannot be laid out at
+/// all, which is worse than treating an impossible scale as the ordinary one.
+#[must_use]
+pub fn the_usable_output(pixels: Size<i32, Physical>, scale_hundredths: u32) -> Size<i32, Logical> {
+    // **100 and not 1.** A scale of nothing means one-to-one, and one-to-one
+    // is a hundred hundredths - `max(1)` guarded the division and multiplied
+    // every dimension by a hundred, which the scale test caught.
+    let hundredths = i64::from(scale_hundredths.max(100));
+    let logical = |it: i32| i32::try_from(i64::from(it) * 100 / hundredths).unwrap_or(i32::MAX);
+    Size::from((logical(pixels.w), logical(pixels.h)))
+}
+
+/// Which layout a window of this width gets.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HowItFits {
+    /// Minimise, Maximise and Close, each its own target, from
+    /// [`FULL_CONTROLS_NEED`] upward.
+    Full,
+    /// Move, Menu and Close, below that. The actions Full shows directly are
+    /// reached through the menu, so **nothing is dropped** — which is the
+    /// whole reason this layout exists rather than a shorter list of controls.
+    Compact,
+}
+
+impl HowItFits {
+    /// Which layout a content width of `wide` gets.
+    #[must_use]
+    pub const fn at(wide: i32) -> Self {
+        if wide >= FULL_CONTROLS_NEED {
+            Self::Full
+        } else {
+            Self::Compact
+        }
+    }
+}
+
+/// Where the edge's own rectangle is, which is **not** the window's.
+///
+/// Three cases, and the third is the one the design was redrawn for:
+///
+/// | content width | the edge |
+/// |---|---|
+/// | [`THE_COMPACT_EDGE_IS`] or wider | exactly the window's width and position |
+/// | narrower | [`THE_COMPACT_EDGE_IS`] wide, centred over the window, then clamped into the output |
+///
+/// **The application's content is never moved or resized to make the edge
+/// fit**, which the contract says in as many words. So below 148 the edge is
+/// wider than the window it belongs to and hangs over on both sides, and that
+/// overhang is part of the edge: `crate::window_edge_pointing` bounds a press
+/// by this rectangle, so a press on the overhang reaches the control it looks
+/// like it should.
+///
+/// **Clamped last, after centring**, so an edge over a window at the very left
+/// of a display slides right rather than off. When the output itself is
+/// narrower than 148 there is nowhere to clamp to and the edge starts at 0,
+/// overhanging the right — recorded rather than refused, because a display
+/// narrower than 148 logical units is not a case this project has.
+fn where_the_edge_goes(
+    window: Rectangle<i32, Logical>,
+    output: Size<i32, Logical>,
+) -> Rectangle<i32, Logical> {
+    let wide = window.size.w.max(THE_COMPACT_EDGE_IS);
+    let at = if window.size.w >= THE_COMPACT_EDGE_IS {
+        window.loc.x
+    } else {
+        // Centred over the window: half the difference to the left of it.
+        // Integer division truncates toward zero, which puts the odd unit on
+        // the trailing side — stated because a reader checking 143 against the
+        // design will find 2 on the left and 3 on the right.
+        let centred = window.loc.x - (THE_COMPACT_EDGE_IS - window.size.w) / 2;
+        let furthest = (output.w - THE_COMPACT_EDGE_IS).max(0);
+        centred.clamp(0, furthest)
+    };
+    Rectangle::new(
+        Point::from((at, window.loc.y - THE_REGION_IS_TALL)),
+        Size::from((wide, THE_REGION_IS_TALL)),
+    )
+}
+
 /// The edge of this window: where everything on it is.
 ///
 /// `window` is the application's own rectangle — what
@@ -216,11 +377,9 @@ pub fn edge_of(
     window: Rectangle<i32, Logical>,
     decorations: Decorations,
     revealed: bool,
+    output: Size<i32, Logical>,
 ) -> WindowEdge {
-    let region = Rectangle::new(
-        Point::from((window.loc.x, window.loc.y - THE_REGION_IS_TALL)),
-        Size::from((window.size.w, THE_REGION_IS_TALL)),
-    );
+    let region = where_the_edge_goes(window, output);
     let strip = revealed.then(|| {
         Rectangle::new(
             Point::from((region.loc.x, region.loc.y + THE_STRIP_STARTS_AT)),
@@ -243,22 +402,43 @@ pub fn edge_of(
     // concealed and draws none - and that file includes the owner's ruling
     // that an application with its own header keeps its buttons, so alo adds
     // only movement and the menu.
+    let fits = HowItFits::at(window.size.w);
     let does = if revealed {
-        crate::window_edge_reading::the_controls_of(decorations)
+        crate::window_edge_reading::the_controls_of(decorations, fits)
     } else {
         Vec::new()
     };
-    let how_many = i32::try_from(does.len()).unwrap_or(0);
-    let controls_take = how_many * (A_TARGET_IS + BETWEEN_TARGETS);
-    let first_target_at =
-        region.loc.x + region.size.w - BETWEEN_TARGETS - controls_take + BETWEEN_TARGETS;
 
-    let controls = does
+    // **The actions are anchored to the trailing edge and Move to the leading
+    // one**, which is what both masters draw. At 196 and at 148 — each the
+    // exact minimum for its layout — the two anchors meet: the trailing walk
+    // lands the first action one gap after a 44 target at `x = 4`, and that
+    // target is Move. Above the minimum the two pull apart and the slack
+    // between them is drag.
+    //
+    // Derived from the trailing edge rather than from absolute positions, as
+    // before, because *600 is a specimen width, not a fixed window width* —
+    // and now neither is 196.
+    let actions = does
+        .len()
+        .saturating_sub(usize::from(does.contains(&OnTheEdge::Move)));
+    let how_many = i32::try_from(actions).unwrap_or(0);
+    let last_target_at = region.loc.x + region.size.w - THE_PADDING_IS - A_TARGET_IS;
+    let first_target_at = last_target_at - (how_many - 1).max(0) * (A_TARGET_IS + BETWEEN_TARGETS);
+
+    let mut action = 0_i32;
+    let controls: Vec<EdgeControl> = does
         .into_iter()
-        .enumerate()
-        .map(|(which, does)| {
-            let at = first_target_at
-                + i32::try_from(which).unwrap_or(0) * (A_TARGET_IS + BETWEEN_TARGETS);
+        .map(|does| {
+            // Move sits at the leading padding and takes no place in the
+            // trailing walk; every other control steps along it in order.
+            let at = if does == OnTheEdge::Move {
+                region.loc.x + THE_PADDING_IS
+            } else {
+                let at = first_target_at + action * (A_TARGET_IS + BETWEEN_TARGETS);
+                action += 1;
+                at
+            };
             let target = Rectangle::new(
                 Point::from((at, region.loc.y)),
                 Size::from((A_TARGET_IS, A_TARGET_IS)),
@@ -278,19 +458,28 @@ pub fn edge_of(
         })
         .collect();
 
-    let drag_from = region.loc.x + THE_DRAG_STARTS_AT;
     let drag = if revealed {
-        // Revealed, dragging runs from the leading inset to one gap before the
-        // first control, and takes the region's whole height so a pointer
-        // travelling along it never leaves the reveal.
+        // **Dragging begins at the Move target and runs to one gap before the
+        // first action**, so the drag area is never smaller than that target:
+        // 44 × 44 at the minimum width, which is the contract's *the available
+        // drag area is at least 44×44*, and wider as the window is.
+        //
+        // From `THE_PADDING_IS` and not `THE_DRAG_STARTS_AT`: the leading
+        // inset is 4 in the compact section, where a target is drawn, and was
+        // 8 in the older capture where nothing was.
+        //
+        // The region's whole height, so a pointer travelling along it never
+        // leaves the reveal.
+        let from = region.loc.x + THE_PADDING_IS;
         Rectangle::new(
-            Point::from((drag_from, region.loc.y)),
+            Point::from((from, region.loc.y)),
             Size::from((
-                (first_target_at - BETWEEN_TARGETS - drag_from).max(0),
+                (first_target_at - BETWEEN_TARGETS - from).max(A_TARGET_IS),
                 THE_REGION_IS_TALL,
             )),
         )
     } else {
+        let drag_from = region.loc.x + THE_DRAG_STARTS_AT;
         // **At rest the whole edge drags**, because no control is shown to
         // take any of it — `398:26243` is 588 of a 600 edge, which is the
         // leading 8 and the trailing 4 and nothing else. A shallow band, where
@@ -305,15 +494,29 @@ pub fn edge_of(
     };
 
     let grip = if revealed {
-        // The 14 × 14 mark, inside the drag region, centred in the strip like
-        // every other piece of artwork.
-        Rectangle::new(
-            Point::from((
-                drag.loc.x + THE_GRIP_STARTS_AT,
-                region.loc.y + THE_STRIP_STARTS_AT + (THE_STRIP_IS_TALL - ARTWORK_IS) / 2,
-            )),
-            Size::from((ARTWORK_IS, ARTWORK_IS)),
-        )
+        // **Move's own artwork, not a second computation of it.** This read
+        // `drag.loc.x + THE_GRIP_STARTS_AT` and gave 12 where Move's artwork
+        // gave 19, because the drag's leading inset moved from 8 to 4 and the
+        // grip's offset was measured against the old one. Two rectangles for
+        // one mark is how they come to disagree, and they did.
+        //
+        // The design draws exactly one: *Move window / 14px glyph* at `x = 15`
+        // inside a 44 target at `x = 4`, which is where `artwork_in` puts it.
+        controls
+            .iter()
+            .find(|it| it.does == OnTheEdge::Move)
+            .map_or_else(
+                || {
+                    // No Move laid out means no mark. Reachable only if the
+                    // control list ever stops carrying it, which every width
+                    // test asserts it does not.
+                    Rectangle::new(
+                        Point::from((drag.loc.x, region.loc.y + THE_STRIP_STARTS_AT)),
+                        Size::from((0, 0)),
+                    )
+                },
+                |it| it.artwork,
+            )
     } else {
         // **Centred in the drag region, not in the edge.** Those differ by two
         // units, because the insets are 8 and 4 — and being wrong by two is
@@ -327,10 +530,18 @@ pub fn edge_of(
         )
     };
 
-    // Inside the drag region, like the grip.
+    // **After the Move target, not at the drag region's left edge.** The title
+    // used to start at the drag's leading inset, which had nothing in it. The
+    // compact design puts a 44 × 44 Move target there, so a title starting at
+    // the same place would be drawn over its glyph — found by
+    // `a_fitted_title_never_reaches_the_controls`, which reported the title
+    // ending at 177 and *the first control* starting at 4.
+    //
+    // Only where the shell draws the decorations, as before: an application
+    // with its own header has its own title.
     let title = (revealed && decorations == Decorations::TheShellDraws).then(|| {
         Point::from((
-            drag.loc.x + THE_TITLE_STARTS_AT,
+            drag.loc.x + A_TARGET_IS + BETWEEN_TARGETS + THE_TITLE_STARTS_AT,
             region.loc.y + THE_TITLE_SITS_AT,
         ))
     });
@@ -363,3 +574,7 @@ fn artwork_in(
 #[cfg(test)]
 #[path = "window_edge_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "window_edge_breakpoints_tests.rs"]
+mod breakpoints_tests;

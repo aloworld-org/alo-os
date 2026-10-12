@@ -1,0 +1,139 @@
+<!-- Canvas / Window edge · Compact controls — section 414:27564
+     Read from the live file node by node on 2026-10-11, not derived from the
+     page export. 70-28.xml does not contain this section and 398-26305.xml is
+     the earlier capture of the window edge; this supersedes it for the compact
+     layout, the breakpoints and the window menu.
+
+     Provenance and limits, per docs/design/figma-snapshot/MANIFEST.md:
+       - Text content arrives only as layer names. Every sentence of the build
+         contract below is a layer name, which is why the numbers inside them
+         sometimes run together ("width148"): that is the export, not a typo.
+       - Geometry is x/y/w/h from get_metadata, relative to each parent.
+       - Variables were read per node because the connector is mode-incoherent
+         within one response. The light values come from 414:27638 and the dark
+         from 414:27787; both are recorded in variables.toml.
+       - Subtrees for 414:27580, 414:27623 and 414:27639 were expanded by
+         separate calls and are inlined here in place of the <symbol/> stubs
+         the section-level call returned.
+-->
+<section id="414:27564" name="Window edge · Compact controls" x="51800" y="400" width="3000" height="2360">
+  <frame id="414:27565" name="Compact edge / Component masters" x="1560" y="40" width="1400" height="2200">
+    <frame id="414:27638" name="Canvas / External window edge / Compact" x="0" y="0" width="1240" height="100">
+      <symbol id="414:27566" name="State=Rest" x="16" y="20" width="148" height="44" />
+      <symbol id="414:27580" name="State=Reveal" x="256" y="20" width="148" height="44">
+        <rounded-rectangle id="414:27581" name="32px visible edge / 44px interaction" x="0" y="12" width="148" height="32" />
+        <frame id="414:27582" name="Continuous input region" x="0" y="0" width="148" height="44">
+          <frame id="414:27583" name="Move window / 44×44" x="4" y="0" width="44" height="44">
+            <frame id="414:27584" name="Move window / 14px glyph" x="15" y="21" width="14" height="14" />
+          </frame>
+          <frame id="414:27586" name="Window menu / 44×44" x="52" y="0" width="44" height="44">
+            <frame id="414:27587" name="Window menu / 14px glyph" x="15" y="21" width="14" height="14" />
+          </frame>
+          <frame id="414:27591" name="Close / 44×44" x="100" y="0" width="44" height="44">
+            <frame id="414:27592" name="Close / 14px glyph" x="15" y="21" width="14" height="14" />
+          </frame>
+        </frame>
+      </symbol>
+      <symbol id="414:27594" name="State=Menu open" x="496" y="20" width="148" height="44" />
+      <symbol id="414:27609" name="State=Keyboard focus" x="736" y="20" width="148" height="44" />
+      <symbol id="414:27623" name="State=Full controls" x="976" y="20" width="196" height="44">
+        <rounded-rectangle id="414:27624" name="32px visible edge / 44px interaction" x="0" y="12" width="196" height="32" />
+        <frame id="414:27625" name="Continuous input region" x="0" y="0" width="196" height="44">
+          <frame id="414:27626" name="Move window / 44×44" x="4" y="0" width="44" height="44">
+            <frame id="414:27627" name="Move window / 14px glyph" x="15" y="21" width="14" height="14" />
+          </frame>
+          <frame id="414:27629" name="Minimise / 44×44" x="52" y="0" width="44" height="44">
+            <frame id="414:27630" name="Minimise / 14px glyph" x="15" y="21" width="14" height="14" />
+          </frame>
+          <frame id="414:27632" name="Maximise / 44×44" x="100" y="0" width="44" height="44">
+            <frame id="414:27633" name="Maximise / 14px glyph" x="15" y="21" width="14" height="14" />
+          </frame>
+          <frame id="414:27635" name="Close / 44×44" x="148" y="0" width="44" height="44">
+            <frame id="414:27636" name="Close / 14px glyph" x="15" y="21" width="14" height="14" />
+          </frame>
+        </frame>
+      </symbol>
+    </frame>
+    <frame id="414:27667" name="Canvas / Window menu / Compact edge" x="0" y="160" width="600" height="400">
+      <symbol id="414:27639" name="Window=Normal" x="16" y="16" width="264" height="344">
+        <frame id="414:27640" name="Full selectable title" x="9" y="13" width="248" height="56">
+          <text id="414:27641" name="Clock" x="12" y="0" width="36" height="18" />
+          <text id="414:27642" name="Window controls" x="12" y="18" width="93" height="16" />
+        </frame>
+        <frame id="414:27643" name="Minimise / action" x="9" y="69" width="248" height="48">
+          <text id="414:27644" name="Minimise" x="14" y="13" width="58" height="22" />
+        </frame>
+        <frame id="414:27645" name="Maximise / action" x="9" y="117" width="248" height="48">
+          <text id="414:27646" name="Maximise" x="12" y="13" width="61" height="22" />
+        </frame>
+        <frame id="414:27647" name="Move window / action" x="9" y="165" width="248" height="48">
+          <text id="414:27648" name="Move window" x="12" y="13" width="87" height="22" />
+        </frame>
+        <frame id="414:27649" name="Resize window / action" x="9" y="213" width="248" height="48">
+          <text id="414:27650" name="Resize window" x="12" y="13" width="95" height="22" />
+        </frame>
+        <frame id="414:27651" name="Close / action" x="9" y="261" width="248" height="48">
+          <text id="414:27652" name="Close" x="12" y="13" width="38" height="22" />
+        </frame>
+      </symbol>
+      <symbol id="414:27653" name="Window=Maximised" x="306" y="16" width="264" height="344" />
+    </frame>
+  </frame>
+  <frame id="414:27668" name="Compact window edge / Design review" x="40" y="40" width="1440" height="1160">
+    <text id="414:27669" name="Small windows. Every control." x="48" y="40" width="483" height="44" />
+    <text id="414:27670" name="Close stays reachable. Other actions move into the menu. Application content keeps its size." x="48" y="98" width="677" height="25" />
+    <frame id="414:27671" name="Normal · 196px" x="48" y="156" width="420" height="380">
+      <text id="414:27672" name="Normal · 196px" x="22" y="20" width="376" height="30" />
+      <text id="414:27673" name="All three buttons and a 44px drag area." x="22" y="54" width="376" height="22" />
+      <instance id="414:27674" name="Canvas / External window edge / Compact" x="112" y="120" width="196" height="44" />
+      <frame id="414:27689" name="Application content / 196px" x="112" y="164" width="196" height="156" />
+    </frame>
+    <frame id="414:27692" name="Compact · 144px" x="510" y="156" width="420" height="380">
+      <text id="414:27693" name="Compact · 144px" x="22" y="20" width="376" height="30" />
+      <text id="414:27694" name="Menu and Close. Edge extends 2px each side." x="22" y="54" width="376" height="22" />
+      <instance id="414:27695" name="Canvas / External window edge / Compact" x="136" y="120" width="148" height="44" />
+      <frame id="414:27709" name="Application content / 144px" x="138" y="164" width="144" height="156" />
+    </frame>
+    <frame id="414:27712" name="Tiny · 80px" x="972" y="156" width="420" height="380">
+      <text id="414:27713" name="Tiny · 80px" x="22" y="20" width="376" height="30" />
+      <text id="414:27714" name="148px external edge; content remains 80px." x="22" y="54" width="376" height="22" />
+      <instance id="414:27715" name="Canvas / External window edge / Compact" x="136" y="120" width="148" height="44" />
+      <frame id="414:27729" name="Application content / 80px" x="170" y="164" width="80" height="156" />
+    </frame>
+    <frame id="414:27732" name="Window menu" x="48" y="570" width="420" height="550">
+      <text id="414:27733" name="Window menu" x="22" y="20" width="376" height="30" />
+      <text id="414:27734" name="Opens clear of the edge and its targets." x="22" y="54" width="376" height="22" />
+      <instance id="414:27735" name="Canvas / External window edge / Compact" x="26" y="120" width="148" height="44" />
+      <frame id="414:27750" name="Application content / 144px" x="28" y="164" width="144" height="156" />
+      <instance id="414:27753" name="Canvas / Window menu / Compact edge" x="144" y="172" width="264" height="344" />
+    </frame>
+    <frame id="414:27767" name="Keyboard focus" x="510" y="570" width="420" height="380">
+      <text id="414:27768" name="Keyboard focus" x="22" y="20" width="376" height="30" />
+      <text id="414:27769" name="Visible focus; same targets and actions." x="22" y="54" width="376" height="22" />
+      <instance id="414:27770" name="Canvas / External window edge / Compact" x="136" y="120" width="148" height="44" />
+      <frame id="414:27784" name="Application content / 144px" x="138" y="164" width="144" height="156" />
+    </frame>
+    <frame id="414:27787" name="Dark appearance" x="972" y="570" width="420" height="380">
+      <text id="414:27788" name="Dark appearance" x="22" y="20" width="376" height="30" />
+      <text id="414:27789" name="Existing semantic colours; same geometry." x="22" y="54" width="376" height="22" />
+      <instance id="414:27790" name="Canvas / External window edge / Compact" x="136" y="120" width="148" height="44" />
+      <frame id="414:27804" name="Application content / 144px" x="138" y="164" width="144" height="156" />
+    </frame>
+  </frame>
+  <frame id="414:27807" name="Compact edge / Build contract" x="40" y="1240" width="1440" height="1040">
+    <text id="414:27808" name="Sizing and behaviour contract" x="32" y="32" width="388" height="36" />
+    <text id="414:27809" name="Shell-owned decorations only. Application-owned title bars retain their own controls; do not add duplicate Close buttons to them." x="32" y="84" width="1360" height="22" />
+    <text id="414:27810" name="Full controls fit from 196 logical pixels: 44 drag + 3×44 actions + 3×4 gaps + 2×4 padding. Use the full layout only if all targets and a usable drag area fit." x="32" y="122" width="1360" height="22" />
+    <text id="414:27811" name="Below 196px, use compact: Move / Menu / Close. Minimum external edge width148. At content widths143,144,145 the edge remains148. At148 through195 it follows the content width; extra space belongs to dragging." x="32" y="160" width="1360" height="44" />
+    <text id="414:27812" name="At content widths below148, preserve application content width. Centre the external148px edge above it, then clamp the edge inside the usable output. Do not resize or relocate application content merely to make chrome fit." x="32" y="220" width="1360" height="44" />
+    <text id="414:27813" name="The complete 44px-high edge envelope is registered for input, including lateral overhang. Drawing bounds and pointer/touch bounds use the same transformed geometry; no clipping to the application content rectangle." x="32" y="280" width="1360" height="44" />
+    <text id="414:27814" name="Visible strip32px within44px envelope; controls44×44, glyphs14px. Adjacent hit areas never overlap. The available drag area is at least44×44. Do not steal control hits for dragging." x="32" y="340" width="1360" height="22" />
+    <text id="414:27815" name="Rest/reveal geometry is stable. Hover or keyboard access reveals controls; keep revealed during keyboard focus, drag, and while its menu is open. Provide touch access without requiring hover." x="32" y="378" width="1360" height="22" />
+    <text id="414:27816" name="Menu264px wide, 48px action rows. Open8px below the edge, anchor to Menu, clamp inside usable output and away from other windows’ controls. Flip above when needed if the edge remains reachable." x="32" y="416" width="1360" height="22" />
+    <text id="414:27817" name="Menu actions: Minimise, Maximise / Restore size, Move window, Resize window, Close. Respect application capabilities; explain unavailable actions accessibly. Close follows the ordinary close request and app unsaved-work flow." x="32" y="454" width="1360" height="44" />
+    <text id="414:27818" name="The full title lives in the menu and remains selectable/copyable. Long titles wrap and the menu grows only within available height; overflow scrolls. Arrow keys navigate, Enter activates, Escape dismisses and restores focus." x="32" y="514" width="1360" height="44" />
+    <text id="414:27819" name="Do not guess a keyboard chord: use the project’s assigned window-menu action. Pointer, touch, keyboard and screen-reader users must reach the same actions. Announce window title and each action." x="32" y="574" width="1360" height="22" />
+    <text id="414:27820" name="Verify widths80,143,144,145,148,195,196; output edges; light/dark;125%,150%,200% scaling; dragging overhang; menu focus return. No action is silently dropped." x="32" y="612" width="1360" height="22" />
+    <text id="414:27821" name="The previous144px fault is a reproduction boundary, not evidence that all full controls fit at144. This design specifies196 full /148 compact from the existing44px targets." x="32" y="650" width="1360" height="22" />
+  </frame>
+</section>

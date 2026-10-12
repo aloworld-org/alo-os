@@ -301,7 +301,8 @@ fn every_open_window_carries_the_controls_of_its_edge() {
         .into_iter()
         .map(|control| said(&strings, control.name))
         .collect();
-    assert_eq!(expected.len(), 3, "{expected:?}");
+    // five since the window menu landed: the three the edge draws, and moving and resizing, which only the menu offers and which a reader was never told about.
+    assert_eq!(expected.len(), 5, "{expected:?}");
 
     let list = tree
         .the_windows_open()
@@ -335,10 +336,18 @@ fn what_a_reader_is_told_is_what_the_edge_lays_out() {
         smithay::utils::Point::from((40, 100)),
         smithay::utils::Size::from((600, 400)),
     );
-    let drawn: Vec<_> = crate::window_edge::edge_of(window, who_draws_a_frame(), true)
-        .controls
-        .into_iter()
-        .map(|control| control.does)
-        .collect();
-    assert_eq!(drawn, the_controls_of(who_draws_a_frame()));
+    let drawn: Vec<_> = crate::window_edge::edge_of(
+        window,
+        who_draws_a_frame(),
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    )
+    .controls
+    .into_iter()
+    .map(|control| control.does)
+    .collect();
+    assert_eq!(
+        drawn,
+        the_controls_of(who_draws_a_frame(), crate::window_edge::HowItFits::Full)
+    );
 }

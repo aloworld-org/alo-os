@@ -33,7 +33,12 @@ fn an_edge_over_the_origin() -> crate::window_edge::WindowEdge {
         Point::from((0, crate::window_edge::THE_REGION_IS_TALL)),
         Size::from((600, 400)),
     );
-    edge_of(window, Decorations::TheShellDraws, true)
+    edge_of(
+        window,
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    )
 }
 
 /// A server bound in a directory of its own, with no pointing device.
@@ -107,7 +112,12 @@ fn a_concealed_edge_lights_nothing_either() {
         Point::from((0, crate::window_edge::THE_REGION_IS_TALL)),
         Size::from((600, 400)),
     );
-    let edge = edge_of(window, Decorations::TheShellDraws, false);
+    let edge = edge_of(
+        window,
+        Decorations::TheShellDraws,
+        false,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     assert!(
         edge.controls.is_empty(),
         "a concealed edge draws no control"

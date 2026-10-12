@@ -373,7 +373,12 @@ fn both_windows_edges_reach_the_bytes_a_display_would_scan_out() {
     let upper = Rectangle::new((20, 120).into(), (200, 60).into());
     let lower = Rectangle::new((20, 300).into(), (200, 60).into());
     let first = EdgePicture::of(
-        &edge_of(upper, Decorations::TheShellDraws, true),
+        &edge_of(
+            upper,
+            Decorations::TheShellDraws,
+            true,
+            smithay::utils::Size::from((1920, 1080)),
+        ),
         Pointing::default(),
         None,
         &mut faces,
@@ -382,7 +387,12 @@ fn both_windows_edges_reach_the_bytes_a_display_would_scan_out() {
     )
     .expect("the upper window's edge fits on this output");
     let second = EdgePicture::of(
-        &edge_of(lower, Decorations::TheShellDraws, true),
+        &edge_of(
+            lower,
+            Decorations::TheShellDraws,
+            true,
+            smithay::utils::Size::from((1920, 1080)),
+        ),
         Pointing::default(),
         None,
         &mut faces,

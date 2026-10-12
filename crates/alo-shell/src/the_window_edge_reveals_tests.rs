@@ -35,7 +35,12 @@ fn at(x: i32, y: i32) -> Point<i32, Logical> {
 /// is checked across the whole height rather than at one point.
 #[test]
 fn a_concealed_edge_is_all_region_and_every_point_of_it_asks() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, false);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        false,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     assert!(
         edge.strip.is_none(),
         "a concealed edge draws no strip; this test's premise is that there is nothing more \
@@ -63,7 +68,12 @@ fn a_concealed_edge_is_all_region_and_every_point_of_it_asks() {
 /// **Every control answers on its own target**, asked at each one's centre.
 #[test]
 fn a_pointer_on_any_control_is_on_the_surface() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     assert!(
         !edge.controls.is_empty(),
         "a revealed shell-drawn edge has controls; without this the loop below proves nothing"
@@ -104,7 +114,12 @@ fn a_pointer_on_any_control_is_on_the_surface() {
 /// shrink on every control and reported eleven of eleven.
 #[test]
 fn the_target_answers_and_not_the_highlight_drawn_inside_it() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     let control = edge.controls.first().expect("a revealed edge has controls");
 
     let corner = at(control.target.loc.x, control.target.loc.y);
@@ -132,14 +147,27 @@ fn the_target_answers_and_not_the_highlight_drawn_inside_it() {
 /// and the drag region are and where a person's pointer spends most of its time.
 #[test]
 fn the_strip_away_from_every_control_is_on_the_surface() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
-    let strip = edge.strip.expect("a revealed edge draws a strip");
-    let left = at(strip.loc.x + 4, strip.loc.y + THE_STRIP_IS_TALL / 2);
-    assert!(
-        edge.controls.iter().all(|it| !holds(it.target, left)),
-        "the premise: the strip's left end is on no control's target"
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
     );
-    assert_eq!(what_the_pointer_is(&edge, left), ThePointer::OnTheSurface);
+    let strip = edge.strip.expect("a revealed edge draws a strip");
+    // **Picked from the drag slack, not from the strip's left end.** The
+    // compact design puts a 44 × 44 Move target at `x = 4`, so the point this
+    // used to take is now on a control and the premise below would fail for a
+    // reason that has nothing to do with what is being tested. Halfway along
+    // the drag region is strip that no control claims at any width.
+    let bare = at(
+        edge.drag.loc.x + edge.drag.size.w / 2,
+        strip.loc.y + THE_STRIP_IS_TALL / 2,
+    );
+    assert!(
+        edge.controls.iter().all(|it| !holds(it.target, bare)),
+        "the premise: this point is on no control's target"
+    );
+    assert_eq!(what_the_pointer_is(&edge, bare), ThePointer::OnTheSurface);
 }
 
 /// **The application's own content is not the edge**, revealed or not.
@@ -150,7 +178,12 @@ fn the_strip_away_from_every_control_is_on_the_surface() {
 #[test]
 fn a_pointer_in_the_application_is_elsewhere_in_both_states() {
     for revealed in [false, true] {
-        let edge = edge_of(specimen(), Decorations::TheShellDraws, revealed);
+        let edge = edge_of(
+            specimen(),
+            Decorations::TheShellDraws,
+            revealed,
+            smithay::utils::Size::from((1920, 1080)),
+        );
         // One below the region's last row, which is the application's first.
         let inside = at(300, THE_REGION_IS_TALL);
         assert_eq!(
@@ -170,7 +203,12 @@ fn a_pointer_in_the_application_is_elsewhere_in_both_states() {
 /// **Half-open, so a region and whatever abuts it never both claim a point.**
 #[test]
 fn the_region_does_not_claim_the_column_past_its_end() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, false);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        false,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     assert_eq!(
         what_the_pointer_is(&edge, at(599, 0)),
         ThePointer::AtTheEdge
@@ -191,16 +229,36 @@ fn the_region_does_not_claim_the_column_past_its_end() {
 #[test]
 fn an_edge_of_no_extent_claims_no_point() {
     let flat = Rectangle::new(Point::from((0, THE_REGION_IS_TALL)), Size::from((0, 400)));
-    let edge = edge_of(flat, Decorations::TheShellDraws, true);
-    for x in [-1, 0, 1] {
-        for y in [-1, 0, 1] {
-            assert_eq!(
-                what_the_pointer_is(&edge, at(x, y)),
-                ThePointer::Elsewhere,
-                "({x}, {y}) against an edge of no width"
-            );
-        }
+    let edge = edge_of(
+        flat,
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
+    // **A window of no width still gets an edge**, which is the compact
+    // design's own rule: the edge stops shrinking at 148 and overhangs
+    // whatever it decorates. So the points this used to call `Elsewhere` are
+    // now at the edge, and that is correct rather than a regression — a window
+    // too narrow to hold its own controls is exactly the case the overhang
+    // exists for.
+    //
+    // What still holds is that the edge is finite. Asked well beyond it.
+    assert_eq!(edge.region.size.w, crate::window_edge::THE_COMPACT_EDGE_IS);
+    for x in [-400, -200, 900, 2000] {
+        assert_eq!(
+            what_the_pointer_is(&edge, at(x, 0)),
+            ThePointer::Elsewhere,
+            "({x}, 0) is well outside a 148-wide edge"
+        );
     }
+    // And the control: a point inside it is not Elsewhere, so the four above
+    // are about being outside and not about the classifier refusing
+    // everything.
+    assert_ne!(
+        what_the_pointer_is(&edge, at(edge.region.loc.x + 70, 0)),
+        ThePointer::Elsewhere,
+        "the premise: the middle of the edge is on the edge"
+    );
 }
 
 /// **A continuous pointer path, and no timed grace period** — the specification's
@@ -225,6 +283,7 @@ fn a_pointer_walking_to_the_furthest_control_never_loses_the_edge() {
         specimen(),
         Decorations::TheShellDraws,
         machine.is_revealed(),
+        smithay::utils::Size::from((1920, 1080)),
     );
     machine = machine.the_pointer_is(what_the_pointer_is(&first, at(0, 0)));
     assert!(
@@ -242,6 +301,7 @@ fn a_pointer_walking_to_the_furthest_control_never_loses_the_edge() {
             specimen(),
             Decorations::TheShellDraws,
             machine.is_revealed(),
+            smithay::utils::Size::from((1920, 1080)),
         );
         let was = what_the_pointer_is(&edge, at(x, 0));
         assert_ne!(
@@ -265,6 +325,7 @@ fn a_pointer_walking_to_the_furthest_control_never_loses_the_edge() {
         specimen(),
         Decorations::TheShellDraws,
         machine.is_revealed(),
+        smithay::utils::Size::from((1920, 1080)),
     );
     let last = edge.controls.last().expect("a revealed edge has controls");
     assert_eq!(
@@ -277,11 +338,21 @@ fn a_pointer_walking_to_the_furthest_control_never_loses_the_edge() {
 #[test]
 fn a_pointer_leaving_conceals_the_edge_at_once() {
     let mut machine = Revealing::covered();
-    let concealed = edge_of(specimen(), Decorations::TheShellDraws, false);
+    let concealed = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        false,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     machine = machine.the_pointer_is(what_the_pointer_is(&concealed, at(10, 10)));
     assert!(machine.is_revealed());
 
-    let revealed = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let revealed = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     let away = what_the_pointer_is(&revealed, at(300, 300));
     assert_eq!(away, ThePointer::Elsewhere);
     machine = machine.the_pointer_is(away);
@@ -299,7 +370,12 @@ fn a_pointer_leaving_conceals_the_edge_at_once() {
 /// which is the clause *borderless applications stay movable and recoverable*.
 #[test]
 fn an_application_drawn_edge_classifies_the_same_way() {
-    let edge = edge_of(specimen(), Decorations::TheApplicationDraws, true);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheApplicationDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     assert_eq!(what_the_pointer_is(&edge, at(0, 0)), ThePointer::AtTheEdge);
     assert!(
         !edge.controls.is_empty(),
@@ -320,7 +396,12 @@ fn an_application_drawn_edge_classifies_the_same_way() {
 /// approach, and a person crossing them has not reached the strip yet.
 #[test]
 fn the_rows_above_the_strip_are_the_approach_and_not_nothing() {
-    let edge = edge_of(specimen(), Decorations::TheShellDraws, true);
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     let strip = edge.strip.expect("a revealed edge draws a strip");
     // **The premise, read off the edge rather than off the constants.** Two
     // `const`s compared is an assertion clippy rejects as constant-valued, and
@@ -332,7 +413,10 @@ fn the_rows_above_the_strip_are_the_approach_and_not_nothing() {
         edge.region
     );
     // Left of every control, above the strip.
-    let approach = at(4, strip.loc.y - 1);
+    // Taken from the drag slack for the reason the sibling test gives: `x = 4`
+    // is Move's target now, and a target is the region's full height, so the
+    // rows above the strip there are on a control.
+    let approach = at(edge.drag.loc.x + edge.drag.size.w / 2, strip.loc.y - 1);
     assert!(
         !holds(strip, approach),
         "the premise: this point is above the strip"

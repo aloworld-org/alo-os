@@ -307,6 +307,7 @@ mod status_row;
 mod surfaces;
 /// Everything on the Dock that a person reads, said once a frame.
 pub mod the_docks_words;
+mod the_edge_takes_the_keyboard;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;
@@ -356,6 +357,7 @@ mod window_control_snapshot;
 mod window_controls;
 mod window_dividing;
 mod window_edge;
+mod window_edge_keys;
 mod window_edge_paint;
 mod window_edge_picture;
 mod window_edge_pointing;
@@ -364,6 +366,9 @@ mod window_edge_title;
 mod window_edge_who_draws;
 mod window_full_screen;
 mod window_maximize;
+mod window_menu;
+mod window_menu_keys;
+mod window_menu_reading;
 mod window_minimize;
 mod window_mode;
 mod window_mode_plan;
@@ -391,14 +396,18 @@ pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_dividing::NotDivided;
 pub use window_edge::{
-    A_TARGET_IS, ARTWORK_IS, BETWEEN_TARGETS, Decorations, EdgeControl, OnTheEdge,
-    THE_DRAG_STARTS_AT, THE_GRIP_IS, THE_REGION_IS_TALL, THE_STRIP_IS_TALL, THE_STRIP_STARTS_AT,
-    WindowEdge, edge_of,
+    A_TARGET_IS, ARTWORK_IS, BETWEEN_TARGETS, Decorations, EdgeControl, FULL_CONTROLS_NEED,
+    HowItFits, OnTheEdge, THE_COMPACT_EDGE_IS, THE_DRAG_STARTS_AT, THE_GRIP_IS, THE_PADDING_IS,
+    THE_REGION_IS_TALL, THE_STRIP_IS_TALL, THE_STRIP_STARTS_AT, WindowEdge, edge_of,
+    the_usable_output,
 };
 /// What the external window edge is drawn out of: rectangles and roles.
 ///
 /// Separate from the geometry because they are two reasons to change - the
 /// design moving a control, and the design recolouring one.
+/// **The keyboard's road onto the edge itself**, which is what opens the menu
+/// and what holds the edge revealed while a person is using it.
+pub use window_edge_keys::{AnEdgeKey, TheKeyboardOnTheEdge, WhatTheEdgeKeyDid};
 pub use window_edge_paint::{Pointing, Solid, solids};
 /// One window edge, laid out in owned pixels and ready for a frame.
 pub use window_edge_picture::EdgePicture;
@@ -420,6 +429,21 @@ pub use window_edge_title::{AN_ELLIPSIS, FittedTitle, fitted};
 pub use window_edge_who_draws::who_draws_a_frame;
 pub use window_full_screen::WindowFullScreenError;
 pub use window_maximize::WindowMaximizeError;
+/// **The window menu**, which is what makes the compact edge honest: the
+/// actions it moves off the edge are reachable here rather than nowhere.
+pub use window_menu::{
+    A_ROW_IS_TALL, A_ROW_IS_WIDE, BELOW_THE_EDGE, MenuRow, THE_MENU_IS_WIDE,
+    THE_TITLE_BLOCK_IS_TALL, WhatARowDoes, WhatTheWindowAllows, WindowMenu, the_menu_of,
+};
+/// **The keyboard's road to those same actions**, and the control focus goes
+/// back to when the menu closes.
+pub use window_menu_keys::{
+    AMenuKey, TheKeyboardInTheMenu, WhatTheKeyDid, the_edge_stays_revealed,
+};
+/// **And what a reader is told about it**: the panel's own name, and its rows.
+pub use window_menu_reading::{
+    WhatAReaderMeetsInTheMenu, every_word_this_surface_says, what_a_reader_meets,
+};
 pub use window_minimize::WindowMinimizeError;
 pub use window_mode::WindowModeError;
 

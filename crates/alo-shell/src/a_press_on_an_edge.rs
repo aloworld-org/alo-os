@@ -73,6 +73,15 @@ pub(crate) enum TheRoad {
     /// `Server::request_window_close` — the application's own close request,
     /// with its own unsaved-work handling.
     AskItToClose,
+    /// **Already taken, during the press itself.**
+    ///
+    /// A window move is grabbed while the button is down or not at all, so
+    /// `a_press_on_an_edge` returns on it and nothing reaches
+    /// `meet_what_was_pressed_on_an_edge` carrying this. It exists so that
+    /// match stays exhaustive with no catch-all — the property that made the
+    /// compiler stop when `OnTheEdge::Move` was added, which is the whole
+    /// point of writing it without one.
+    TakenWhileTheButtonIsDown,
     /// **Nothing on this machine does it.** Not a default and not a catch-all:
     /// the one control in this state is the window menu, which the owner's
     /// ruling of 2026-10-09 put on the edge and which nothing in this crate
@@ -88,6 +97,11 @@ pub(crate) enum TheRoad {
 /// than falling into whichever arm a catch-all pointed at.
 pub(crate) const fn the_road_an_edge_press_takes(does: OnTheEdge) -> TheRoad {
     match does {
+        // **Taken while the button is down**, not queued for the next
+        // frame. A move must be grabbed during the press, which is what
+        // the `Drag` arm of `a_press_on_an_edge` already does and why the
+        // grip joins it there rather than here.
+        OnTheEdge::Move => TheRoad::TakenWhileTheButtonIsDown,
         OnTheEdge::Minimise => TheRoad::PutItAside,
         OnTheEdge::Maximise => TheRoad::MaximiseOrRestore,
         OnTheEdge::Close => TheRoad::AskItToClose,
@@ -121,10 +135,16 @@ impl crate::Server {
         let decorations = crate::window_edge_who_draws::who_draws_a_frame();
         let mapped: Vec<WlSurface> = self.mapped_surfaces().cloned().collect();
         for surface in mapped {
+            // **The same room the draw clamps into**, so a press lands where a
+            // control was drawn. `edge_of` gained this argument when the
+            // compact layout did: a window narrower than 148 has an edge that
+            // overhangs it and is clamped inside the usable output, and a press
+            // tested against an unclamped layout would miss by the overhang.
             let edge = edge_of(
                 crate::where_a_window_is(&surface),
                 decorations,
                 self.is_this_windows_edge_revealed(&surface),
+                self.the_room_an_edge_is_clamped_in(),
             );
             match what_is_under(&edge, at) {
                 // **Not on this edge, or on it and on nothing that answers a
@@ -139,6 +159,13 @@ impl crate::Server {
                     // **Taken hold of now, not recorded.** It answers `false`
                     // where another gesture or a menu already owns the pointer,
                     // and then this press is not the edge's after all.
+                    return self.surfaces.start_move_from_the_name(&surface, button);
+                }
+                // **The grip is a drag handle**, so it is taken hold of here
+                // and not queued: the same call the `Drag` arm above makes,
+                // for the same reason, and it answers `false` where another
+                // gesture already owns the pointer.
+                Some(UnderThePointer::Control(OnTheEdge::Move)) => {
                     return self.surfaces.start_move_from_the_name(&surface, button);
                 }
                 Some(UnderThePointer::Control(does)) => {
@@ -188,6 +215,9 @@ impl crate::Server {
                     // unsaved-work handling runs. Nothing here closes a window.
                     let _ = self.request_window_close(&surface);
                 }
+                // Nothing arrives carrying this: the press returned on it.
+                // Written out because this match has no catch-all either.
+                TheRoad::TakenWhileTheButtonIsDown => {}
                 TheRoad::NothingHasOneYet => for_the_caller.push((surface, does)),
             }
         }

@@ -113,6 +113,27 @@ fn holds(rectangle: Rectangle<i32, Logical>, at: Point<i32, Logical>) -> bool {
 }
 
 impl crate::Server {
+    /// **The output a narrow window's edge is clamped inside.**
+    ///
+    /// The same extent the draw uses, so the edge a pointer is classified
+    /// against is the edge that was painted — two different clamps would mean
+    /// a press landing where no control was drawn.
+    ///
+    /// No extent yet means nothing has drawn, and an edge clamped into a zero
+    /// output would collapse to `x = 0`. So the window's own width is used as
+    /// the room, which is what the pre-compact layout did for every window and
+    /// leaves the overhang unclamped until the first frame.
+    ///
+    /// `pub(crate)` because `crate::the_edge_takes_the_keyboard` needs the
+    /// same answer, and two callers of one calculation is the arrangement this
+    /// file's own comment asks for.
+    pub(crate) fn the_room_an_edge_is_clamped_in(&self) -> smithay::utils::Size<i32, Logical> {
+        self.surfaces.popups.output_size.map_or_else(
+            || smithay::utils::Size::from((i32::MAX, i32::MAX)),
+            |pixels| crate::window_edge::the_usable_output(pixels, 100),
+        )
+    }
+
     /// Read the pointer once and tell every mapped window's edge about it.
     ///
     /// **Called once a frame, by the draw**, which is the only place that knows
@@ -129,14 +150,24 @@ impl crate::Server {
     /// it would mean a pointer in the strip's rows kept an edge that nothing had
     /// revealed.
     ///
-    /// **Three of §5's four conditions are not fed here, and that is deliberate
-    /// rather than missing.** Keyboard focus inside the edge, an open window
-    /// menu and a drag in progress are all things §6's interactions *create* —
-    /// there is no keyboard navigation into the edge, no menu and no drag to
-    /// report yet. `Revealing` already carries all three
-    /// (`the_keyboard`, `a_menu`, `a_drag`), tested in `alo-dock`, so §6 calls
-    /// them and nothing here changes. Nothing unfed was added to this crate for
-    /// them.
+    /// **Three of §5's four conditions are fed here, and the fourth is not.**
+    /// This paragraph said that three were *not* fed, which was true while
+    /// nothing could focus a control or open a menu. §6 built both, so two of
+    /// them arrive from `crate::the_edge_takes_the_keyboard`, which holds one
+    /// keyboard state per window beside `edges_revealed` and is pruned on the
+    /// same walk:
+    ///
+    /// | condition | fed from |
+    /// |---|---|
+    /// | the pointer | this file, once a frame |
+    /// | keyboard focus | `TheKeyboardOnTheEdge::whether_the_keyboard_holds_it` |
+    /// | an open menu | `TheKeyboardOnTheEdge::whether_a_menu_holds_it` |
+    /// | a drag | **nothing** — no drag of a window begins from the edge yet |
+    ///
+    /// The fourth is left unfed rather than reported as `IsNot` by something
+    /// that cannot know: `Revealing::a_drag` defaults to not dragging, so an
+    /// absent reporter and a reporter saying no are the same answer today, and
+    /// only one of them is a claim.
     pub fn the_edges_were_told_where_the_pointer_is(&mut self) {
         let Some(at) = self.where_the_pointer_is_in_logical_pixels() else {
             // **No pointer is not the origin**, for the reason the sibling
@@ -147,6 +178,7 @@ impl crate::Server {
         };
         let mapped: Vec<WlSurface> = self.mapped_surfaces().cloned().collect();
         let decorations = crate::window_edge_who_draws::who_draws_a_frame();
+        let room = self.the_room_an_edge_is_clamped_in();
 
         // **Pruned against what is mapped**, so a window that closed takes its
         // reveal state with it. A `WlSurface` is a protocol object at an id the
@@ -154,6 +186,10 @@ impl crate::Server {
         // edge somebody else revealed.
         self.edges_revealed
             .retain(|(surface, _)| mapped.contains(surface));
+        // And the keyboard's own state, on the same walk and for the same
+        // reason: an id the server reuses must not hand the next window at it
+        // a focus ring somebody else put there.
+        self.only_the_edges_still_open(&mapped);
 
         for surface in mapped {
             let was = self
@@ -165,8 +201,20 @@ impl crate::Server {
                 crate::where_a_window_is(&surface),
                 decorations,
                 was.is_revealed(),
+                room,
             );
-            let now = was.the_pointer_is(what_the_pointer_is(&edge, at));
+            // **Two of §5's four conditions, fed from §6.** Read before the
+            // mutable borrow below, which is why it is a local rather than a
+            // call inside the expression.
+            //
+            // The keyboard and the menu are asked of
+            // `crate::the_edge_takes_the_keyboard`, which holds one state per
+            // window beside this one and is pruned on the same walk.
+            let keyboard = self.where_the_keyboard_is_on_this_windows_edge(&surface);
+            let now = was
+                .the_pointer_is(what_the_pointer_is(&edge, at))
+                .the_keyboard(keyboard.whether_the_keyboard_holds_it())
+                .a_menu(keyboard.whether_a_menu_holds_it());
             match self
                 .edges_revealed
                 .iter_mut()

@@ -221,7 +221,15 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 // reveal, and one that does not sees the grip, which is what a
                 // person with no mouse on that window sees.
                 let revealed = server.is_this_windows_edge_revealed(surface);
-                let edge = alo_shell::edge_of(window, asked.decorations, revealed);
+                // The output this walk draws into, in logical units, so a
+                // window narrower than 148 gets its edge clamped the same way
+                // the shell clamps it.
+                let edge = alo_shell::edge_of(
+                    window,
+                    asked.decorations,
+                    revealed,
+                    alo_shell::the_usable_output((THE_OUTPUT_IS.0, THE_OUTPUT_IS.1).into(), 100),
+                );
                 let title = server.the_name_of(surface);
                 // **Where the pointer is, not a default.** This passed
                 // `Pointing::default()` until 2026-10-11, so no control on any
@@ -233,12 +241,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 // highlight is measured against the layout being drawn and
                 // not a second one.
                 //
-                // `None` for focus because nothing can focus a control yet -
-                // §6 is where keyboard navigation into the edge gets built,
-                // and this argument is what it will fill.
+                // **And which control has the keyboard**, which passed `None`
+                // until 2026-10-12 under a comment saying nothing could focus
+                // a control yet. §6 built that: the server now holds one
+                // keyboard state per window, and this is the caller the
+                // comment said would fill the argument. A walk that tabs to an
+                // edge sees a focus ring; one that does not sees none.
+                let focused = server
+                    .where_the_keyboard_is_on_this_windows_edge(surface)
+                    .what_the_painter_shows();
                 alo_shell::EdgePicture::of(
                     &edge,
-                    server.what_this_edge_is_pointing_at(&edge, None),
+                    server.what_this_edge_is_pointing_at(&edge, focused),
                     title.its_own_words(),
                     &mut faces,
                     (THE_OUTPUT_IS.0, THE_OUTPUT_IS.1),

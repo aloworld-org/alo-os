@@ -10,7 +10,7 @@ use smithay::utils::{Logical, Point, Rectangle, Size};
 
 use super::{UnderThePointer, pointing_at, what_is_under};
 use crate::window_edge::{
-    A_HIGHLIGHT_IS, A_TARGET_IS, BETWEEN_TARGETS, Decorations, OnTheEdge, THE_DRAG_STARTS_AT,
+    A_HIGHLIGHT_IS, A_TARGET_IS, BETWEEN_TARGETS, Decorations, OnTheEdge, THE_PADDING_IS,
     WindowEdge, edge_of,
 };
 
@@ -21,7 +21,12 @@ fn a_window() -> Rectangle<i32, Logical> {
 }
 
 fn revealed() -> WindowEdge {
-    edge_of(a_window(), Decorations::TheShellDraws, true)
+    edge_of(
+        a_window(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    )
 }
 
 fn middle_of(area: Rectangle<i32, Logical>) -> Point<i32, Logical> {
@@ -94,7 +99,16 @@ fn the_gap_between_two_targets_belongs_to_nobody() {
         edge.controls.len() >= 2,
         "a gap needs two controls either side of it"
     );
-    for pair in edge.controls.windows(2) {
+    // **The actions, not every control.** Move sits at the leading padding and
+    // the gap between it and the first action is the drag area, which is as
+    // wide as the window allows rather than one `BETWEEN_TARGETS`.
+    let actions: Vec<_> = edge
+        .controls
+        .iter()
+        .filter(|it| it.does != OnTheEdge::Move)
+        .copied()
+        .collect();
+    for pair in actions.windows(2) {
         let (left, right) = (pair[0], pair[1]);
         let gap = left.target.loc.x + A_TARGET_IS;
         assert_eq!(
@@ -140,21 +154,39 @@ fn a_target_ends_where_it_says_it_ends() {
     );
 }
 
-/// The drag region moves the window, and no control sits inside it.
+/// No **action** sits inside the drag region — and Move deliberately does.
 ///
-/// `WindowEdge::drag` carries the sentence *never under a control*. This is
-/// that sentence as a test, which is what makes the order inside
+/// `WindowEdge::drag` carried the sentence *never under a control* and that
+/// stopped being the whole truth on 2026-10-11: the compact design makes Move
+/// a 44 × 44 control at the leading end of the drag area, so one control is
+/// now inside it on purpose. Pressing Move *is* beginning a drag.
+///
+/// What still must hold, and is what this guards, is that no control a press
+/// would **act** on — Minimise, Maximise, Close, Menu — is reachable by a
+/// pointer that thinks it is dragging. That is what makes the order inside
 /// `what_is_under` a guard rather than a tiebreak.
 #[test]
-fn a_control_is_never_also_the_drag() {
+fn no_action_is_ever_also_the_drag() {
     let edge = revealed();
-    for control in &edge.controls {
+    for control in edge.controls.iter().filter(|it| it.does != OnTheEdge::Move) {
         assert!(
             edge.drag.intersection(control.target).is_none(),
             "the target of {:?} overlaps the drag region",
             control.does
         );
     }
+    // The control on this test: Move is inside it, so the filter above is
+    // excluding something real rather than excluding nothing.
+    let moves = edge
+        .controls
+        .iter()
+        .find(|it| it.does == OnTheEdge::Move)
+        .expect("a revealed edge lays out Move");
+    assert_eq!(
+        edge.drag.intersection(moves.target),
+        Some(moves.target),
+        "Move is meant to be wholly inside the drag region"
+    );
     assert_eq!(
         what_is_under(&edge, middle_of(edge.drag)),
         Some(UnderThePointer::Drag)
@@ -166,14 +198,24 @@ fn a_control_is_never_also_the_drag() {
 #[test]
 fn the_leading_edge_is_on_the_edge_and_presses_nothing() {
     let edge = revealed();
+    // **Four units, not eight.** The compact design puts the leading padding
+    // at 4 and a Move target immediately after it, where the older capture had
+    // an 8-unit inset with nothing in it. So the band that presses nothing is
+    // narrower than it was, and it is still there.
     let y = middle_of(edge.drag).y;
-    for x in edge.region.loc.x..edge.region.loc.x + THE_DRAG_STARTS_AT {
+    for x in edge.region.loc.x..edge.region.loc.x + THE_PADDING_IS {
         assert_eq!(
             what_is_under(&edge, Point::from((x, y))),
             Some(UnderThePointer::TheEdgeAndNothingOnIt),
-            "x = {x} is before the drag region and should press nothing"
+            "x = {x} is before the first target and should press nothing"
         );
     }
+    // And the unit after it is Move, so the loop above stops in the right
+    // place rather than merely stopping.
+    assert_eq!(
+        what_is_under(&edge, Point::from((edge.region.loc.x + THE_PADDING_IS, y))),
+        Some(UnderThePointer::Control(OnTheEdge::Move))
+    );
 }
 
 /// Off the region is [`None`], which is what a host conceals on.
@@ -202,7 +244,12 @@ fn away_from_the_edge_is_not_on_the_edge() {
 /// region still answers, because that is what reveals the edge.
 #[test]
 fn an_edge_at_rest_has_nothing_to_press_and_is_still_there() {
-    let edge = edge_of(a_window(), Decorations::TheShellDraws, false);
+    let edge = edge_of(
+        a_window(),
+        Decorations::TheShellDraws,
+        false,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     assert!(
         edge.controls.is_empty(),
         "a concealed edge draws no control"
@@ -228,13 +275,22 @@ fn an_edge_at_rest_has_nothing_to_press_and_is_still_there() {
 /// and the menu is reachable.
 #[test]
 fn the_menu_is_reachable_on_an_application_that_draws_its_own_header() {
-    let edge = edge_of(a_window(), Decorations::TheApplicationDraws, true);
+    let edge = edge_of(
+        a_window(),
+        Decorations::TheApplicationDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
     assert_eq!(
         edge.controls.iter().map(|one| one.does).collect::<Vec<_>>(),
-        vec![OnTheEdge::Menu],
-        "the owner's ruling: no duplicate window buttons, the menu only"
+        vec![OnTheEdge::Move, OnTheEdge::Menu],
+        "the owner's ruling: no duplicate window buttons, so movement and the menu and no Close"
     );
-    let menu = edge.controls[0];
+    let menu = *edge
+        .controls
+        .iter()
+        .find(|it| it.does == OnTheEdge::Menu)
+        .expect("an app-drawn edge lays out the menu");
     assert_eq!(
         what_is_under(&edge, middle_of(menu.target)),
         Some(UnderThePointer::Control(OnTheEdge::Menu))
