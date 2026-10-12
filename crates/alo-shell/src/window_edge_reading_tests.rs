@@ -1,8 +1,4 @@
 //! What a reader is told, and the clause a mouse-shaped build fails quietly.
-#![expect(
-    clippy::expect_used,
-    reason = "in a test, a panic on a control the edge said was there is the failure being reported"
-)]
 
 use super::*;
 use crate::window_edge::{Decorations, edge_of};
@@ -36,7 +32,8 @@ fn a_concealed_edge_is_reached_just_as_a_revealed_one_is() {
         "a resting edge draws no control"
     );
     let told = what_a_reader_is_told(Decorations::TheShellDraws);
-    assert_eq!(told.len(), 3, "{told:?}");
+    // five since the window menu landed: the three the edge draws, and moving and resizing, which only the menu offers and which a reader was never told about.
+    assert_eq!(told.len(), 5, "{told:?}");
     assert!(
         told.iter().all(|control| control.can_be_used()),
         "a person could hear a control they could not reach"
@@ -75,20 +72,52 @@ fn the_edge_reuses_the_window_actions_that_already_exist() {
 #[test]
 fn every_control_is_a_button_a_person_can_use() {
     let told = what_a_reader_is_told(Decorations::TheShellDraws);
-    assert_eq!(told.len(), 3, "{told:?}");
+    // Five since the window menu landed: the three the edge draws, and moving
+    // and resizing, which only the menu offers.
+    assert_eq!(told.len(), 5, "{told:?}");
     for control in &told {
         assert!(
             control.can_be_used(),
             "a reader was told about something nobody can press: {control:?}"
         );
         assert_eq!(control.role, alo_access::tree::Role::Button);
-        let does = control.does.expect("a window control does something");
-        assert_eq!(
-            control.name,
-            does.word(),
-            "the name is not the action's word"
-        );
+        match control.does {
+            // **Named by the action's own word**, which is ADR 0089 and the
+            // reason this test exists: a second string that has to agree is a
+            // second string that will stop agreeing.
+            Some(does) => assert_eq!(
+                control.name,
+                does.word(),
+                "the name is not the action's word"
+            ),
+            // **And the two with no action are named by a word somebody
+            // declares.** Moving and resizing are not in
+            // `alo_shortcuts::Action` and the design forbids inventing a chord
+            // for one, so ADR 0089's rule - name a control by what it does -
+            // is kept by naming them from `alo-access`' own vocabulary rather
+            // than by leaving them unnamed. A name invented here instead would
+            // be the second string the rule is about.
+            None => assert!(
+                alo_access::words::EVERY_WORD
+                    .iter()
+                    .any(|word| word.key() == control.name.key()),
+                "{control:?} performs nothing and is named by a word nobody declares"
+            ),
+        }
     }
+
+    // **Three of the five have an action and two do not**, asserted so that
+    // this loop cannot pass by every control taking the same branch.
+    assert_eq!(
+        told.iter().filter(|it| it.does.is_some()).count(),
+        3,
+        "{told:?}"
+    );
+    assert_eq!(
+        told.iter().filter(|it| it.does.is_none()).count(),
+        2,
+        "{told:?}"
+    );
 }
 
 /// **An application with its own header is not announced twice.**

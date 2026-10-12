@@ -143,36 +143,60 @@ impl WhatARowDoes {
 
     /// What a person reads, and what a reader speaks.
     ///
-    /// Three of the five already have a sentence, and each already carries a
-    /// note saying it has two homes — a row in the list of shortcuts, and the
-    /// name a reader speaks for a button drawn on every window (ADR 0089).
-    /// The menu is a third home and they read naturally spoken in it, so they
-    /// are reused rather than restated.
+    /// Three of the five reuse a sentence that already exists, and each of
+    /// those already carries a note saying it has two homes — a row in the
+    /// list of shortcuts, and the name a reader speaks for a button drawn on
+    /// every window (ADR 0089). The menu is a third home and they read
+    /// naturally spoken in it.
     ///
-    /// **[`None`] for Move and Resize, and that is a gap rather than a
-    /// decision.** Writing words for them is not the hard part; the hard part
-    /// is that `alo-access`' vocabulary holds an identity — every word it
-    /// declares is a name the accessibility tree says — so a word for a row
-    /// the tree does not yet announce would fail that test, correctly. The two
-    /// land together with the tree saying them, which is the same change that
-    /// makes *announce window title and each action* true.
+    /// **Move and Resize are named from `alo_access`' own words**, not from an
+    /// action's, because neither is an action: `alo_shortcuts` has no action
+    /// for either and the design forbids inventing a chord. ADR 0089 names a
+    /// control by what it does, and what these do has a sentence without
+    /// having an action.
     ///
-    /// They are also not `alo_shortcuts`' to declare: that crate's words are
-    /// what its actions say, and neither Move nor Resize is an action there.
+    /// They are in `alo-access` rather than here because that crate's
+    /// vocabulary is collected into the one this machine can say, and
+    /// `alo-shell`'s is not — a word declared here would be a string a person
+    /// can see and no translator can reach. The same crate holds an identity
+    /// between the words it declares and the names the tree says, so these two
+    /// landed with `crate::window_edge_reading::what_a_reader_is_told`
+    /// announcing them.
     ///
     /// **Maximise and Restore share one word on purpose.** It says *Maximise
     /// the window, or put it back* — one sentence covering both directions,
-    /// which is right for a shortcut and is the honest thing to speak here
-    /// until a second one exists. The design draws two labels and this is the
-    /// nearer of the two truths: one action, one sentence, and the label a
-    /// person reads is drawn from the state.
+    /// which is one action's worth of meaning. The label a person reads is
+    /// drawn from the window's state; what a reader speaks is the capability.
     #[must_use]
-    pub const fn its_own_word(self) -> Option<Word> {
+    pub const fn its_own_word(self) -> Word {
         match self {
-            Self::Minimise => Some(alo_shortcuts::words::MINIMISE_WINDOW),
-            Self::Maximise | Self::Restore => Some(alo_shortcuts::words::MAXIMISE_WINDOW),
-            Self::Close => Some(alo_shortcuts::words::CLOSE_WINDOW),
-            Self::Move | Self::Resize => None,
+            Self::Minimise => alo_shortcuts::words::MINIMISE_WINDOW,
+            Self::Maximise | Self::Restore => alo_shortcuts::words::MAXIMISE_WINDOW,
+            Self::Close => alo_shortcuts::words::CLOSE_WINDOW,
+            Self::Move => alo_access::words::MOVE_THE_WINDOW,
+            Self::Resize => alo_access::words::RESIZE_THE_WINDOW,
+        }
+    }
+
+    /// What a reader is told it can do with this row.
+    ///
+    /// [`State::CanBeUsed`](alo_access::State::CanBeUsed) when the window
+    /// allows it, and [`State::ReadOnly`](alo_access::State::ReadOnly) when it
+    /// does not — *read and nothing more*, which is the true thing to say
+    /// about a row that is there and will not act.
+    ///
+    /// **That is the contract's *explain unavailable actions accessibly*, and
+    /// only half of it.** A reader is told the row cannot be used; it is not
+    /// told *why* — that a window with one size cannot be resized. The reason
+    /// would need a sentence of its own and is recorded here as owed rather
+    /// than invented, because a reason given in English only would be worse
+    /// than a state said in the person's own language.
+    #[must_use]
+    pub const fn how_a_reader_finds_it(available: bool) -> alo_access::State {
+        if available {
+            alo_access::State::CanBeUsed
+        } else {
+            alo_access::State::ReadOnly
         }
     }
 }

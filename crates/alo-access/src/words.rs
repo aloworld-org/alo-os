@@ -278,8 +278,41 @@ pub const GO_BACK_NOW: Word = Word::saying(
      away from under them.",
 );
 
+/// Moving a window, which a reader was never told a window could do.
+///
+/// **Not an action's word, because there is no action.** The three window
+/// buttons are named by `alo_shortcuts::Action::word` under ADR 0089, and
+/// `alo_shortcuts` has no action for moving a window interactively — moving is
+/// something a person begins and ends rather than one thing the machine does.
+/// So the name lives here, with the other names this crate gives, and moves to
+/// the action's vocabulary on the day there is an action.
+///
+/// It is said because the window menu offers it and the edge does not. Until
+/// the menu existed a reader was told three things a window could do; this is
+/// the fourth and `RESIZE_THE_WINDOW` the fifth.
+pub const MOVE_THE_WINDOW: Word = Word::saying("access.move-the-window", "Move the window").noting(
+    "A row in the window menu, and the name a screen reader speaks for it. Beginning it lets \
+         a person move the window with the pointer or the arrow keys, so it is an interaction \
+         rather than one of the shortcut actions - there is no key bound to it and the design \
+         says not to invent one. Has to read naturally spoken on its own.",
+);
+
+/// Resizing a window, the same way and for the same reason.
+///
+/// **The one most often unavailable**: a window whose smallest and largest
+/// size are the same cannot be resized, and the menu keeps the row and marks
+/// it [`crate::tree::State::ReadOnly`] rather than removing it — a row that
+/// vanished would move every row below it between one window and the next.
+pub const RESIZE_THE_WINDOW: Word = Word::saying("access.resize-the-window", "Resize the window")
+    .noting(
+        "A row in the window menu, and the name a screen reader speaks for it. Beginning it lets \
+         a person change the window's size, so it is an interaction rather than one of the \
+         shortcut actions. Unavailable on a window that has one size, where the row is still \
+         announced and read-only. Has to read naturally spoken on its own.",
+    );
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 36] = [
+pub const EVERY_WORD: [Word; 38] = [
     SCREEN_READER,
     MAGNIFIER,
     HIGH_CONTRAST,
@@ -316,6 +349,8 @@ pub const EVERY_WORD: [Word; 36] = [
     THE_CHOICES,
     GO_BACK_AT_THE_NEXT_RESTART,
     GO_BACK_NOW,
+    MOVE_THE_WINDOW,
+    RESIZE_THE_WINDOW,
 ];
 
 /// Why this crate's own list could not be declared.
@@ -374,10 +409,19 @@ mod tests {
         // `alo_shortcuts::Action::word` and counted by
         // `EVERY_NAME_A_READER_SAYS_IN_ANOTHER_CRATES_WORDS`. A word of ours
         // that nothing says still fails here.
+        // **A sum of two now.** Every word here is said somewhere - most by
+        // this crate's own tree, and two by another crate's surface, which is
+        // what `EVERY_WORD_ANOTHER_CRATES_SURFACE_SAYS` counts. A word
+        // declared and said by nothing still fails, which is the claim worth
+        // keeping; what no longer fails is a word of ours that another crate
+        // says, and that case had to be told apart from the first or the
+        // obvious repair would be to move the word somewhere `alo-saying`
+        // cannot collect it.
         assert_eq!(
             EVERY_WORD.len(),
-            crate::tree::EVERY_NAME_A_READER_SAYS,
-            "a word was added to this crate and the tree never says it"
+            crate::tree::EVERY_NAME_A_READER_SAYS
+                + crate::tree::EVERY_WORD_ANOTHER_CRATES_SURFACE_SAYS,
+            "a word was added to this crate and nothing says it"
         );
         for setting in Setting::ALL {
             let word = setting.word();

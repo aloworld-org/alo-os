@@ -388,17 +388,33 @@ fn a_press_lands_on_the_row_it_looks_like() {
     );
 }
 
-/// **The two rows with no action say so**, which is the honest half of this
-/// menu and the thing a reader of the code should find without digging.
+/// **Every row has a name a reader can speak, and two have no action.**
+///
+/// The honest half of this menu, and the thing a reader of the code should
+/// find without digging. Move and Resize are named — `alo_access` declares
+/// them and `what_a_reader_is_told` announces them — and neither is an
+/// action, because `alo_shortcuts` has none and the design forbids inventing
+/// a chord for one.
 #[test]
-fn move_and_resize_name_no_action_and_no_word_yet() {
+fn every_row_is_named_and_two_name_no_action() {
+    for does in [
+        WhatARowDoes::Minimise,
+        WhatARowDoes::Maximise,
+        WhatARowDoes::Restore,
+        WhatARowDoes::Move,
+        WhatARowDoes::Resize,
+        WhatARowDoes::Close,
+    ] {
+        assert!(
+            !does.its_own_word().says().is_empty(),
+            "{does:?} has no sentence a reader could speak"
+        );
+    }
+
     assert_eq!(WhatARowDoes::Move.what_it_does(), None);
     assert_eq!(WhatARowDoes::Resize.what_it_does(), None);
-    assert!(WhatARowDoes::Move.its_own_word().is_none());
-    assert!(WhatARowDoes::Resize.its_own_word().is_none());
-
-    // The control: the other three have both, so the Nones above are about
-    // those two rows and not about the methods.
+    // The control: the other three do have an action, so the Nones above are
+    // about those two rows and not about the method.
     for does in [
         WhatARowDoes::Minimise,
         WhatARowDoes::Maximise,
@@ -406,7 +422,91 @@ fn move_and_resize_name_no_action_and_no_word_yet() {
         WhatARowDoes::Close,
     ] {
         assert!(does.what_it_does().is_some(), "{does:?} has no action");
-        assert!(does.its_own_word().is_some(), "{does:?} has no word");
+    }
+}
+
+/// **No two rows share a sentence**, except the one pair that shares an action.
+///
+/// Maximise and Restore are two states of one row and say one thing; any other
+/// collision would be two rows a reader cannot tell apart.
+#[test]
+fn no_two_rows_say_the_same_thing_except_the_pair_that_shares_an_action() {
+    let every = [
+        WhatARowDoes::Minimise,
+        WhatARowDoes::Maximise,
+        WhatARowDoes::Move,
+        WhatARowDoes::Resize,
+        WhatARowDoes::Close,
+    ];
+    let mut keys: Vec<&str> = every.iter().map(|it| it.its_own_word().named()).collect();
+    keys.sort_unstable();
+    let before = keys.len();
+    keys.dedup();
+    assert_eq!(
+        keys.len(),
+        before,
+        "two rows of one menu say the same sentence"
+    );
+
+    // And the pair that does share one, asserted rather than left implicit.
+    assert_eq!(
+        WhatARowDoes::Maximise.its_own_word().named(),
+        WhatARowDoes::Restore.its_own_word().named()
+    );
+}
+
+/// **An unavailable row is read-only to a reader, not absent and not usable.**
+///
+/// *Explain unavailable actions accessibly.* `State::ReadOnly` is *read and
+/// nothing more*, which is the true thing to say about a row that is there and
+/// will not act. What a reader is **not** told is why — that is owed and is
+/// recorded on the method rather than invented in English.
+#[test]
+fn a_reader_finds_an_unavailable_row_read_only() {
+    assert_eq!(
+        WhatARowDoes::how_a_reader_finds_it(true),
+        alo_access::State::CanBeUsed
+    );
+    assert_eq!(
+        WhatARowDoes::how_a_reader_finds_it(false),
+        alo_access::State::ReadOnly
+    );
+}
+
+/// **A reader is told all five things a window can do**, which it was not
+/// before the menu existed.
+///
+/// Three were named by their action and two by nothing: moving and resizing
+/// were reachable by dragging a border and by nothing a reader could find.
+#[test]
+fn a_reader_is_told_about_moving_and_resizing_too() {
+    let told = crate::window_edge_reading::what_a_reader_is_told(Decorations::TheShellDraws);
+    let names: Vec<&str> = told.iter().map(|it| it.name.named()).collect();
+
+    assert!(
+        names.contains(&alo_access::words::MOVE_THE_WINDOW.named()),
+        "a reader is not told a window can be moved: {names:?}"
+    );
+    assert!(
+        names.contains(&alo_access::words::RESIZE_THE_WINDOW.named()),
+        "a reader is not told a window can be resized: {names:?}"
+    );
+    assert_eq!(told.len(), 5, "five things a window can do: {names:?}");
+
+    // **Every menu row is among them.** The invariant that makes the menu
+    // announced rather than merely drawn: a row a reader is never told about
+    // is a row only a sighted person has.
+    for does in [
+        WhatARowDoes::Minimise,
+        WhatARowDoes::Maximise,
+        WhatARowDoes::Move,
+        WhatARowDoes::Resize,
+        WhatARowDoes::Close,
+    ] {
+        assert!(
+            names.contains(&does.its_own_word().named()),
+            "{does:?} is a menu row a reader is never told about"
+        );
     }
 }
 
@@ -419,8 +519,8 @@ fn maximise_and_restore_are_one_action() {
         WhatARowDoes::Restore.what_it_does()
     );
     assert_eq!(
-        WhatARowDoes::Maximise.its_own_word().map(|it| it.named()),
-        WhatARowDoes::Restore.its_own_word().map(|it| it.named()),
+        WhatARowDoes::Maximise.its_own_word().named(),
+        WhatARowDoes::Restore.its_own_word().named(),
     );
 }
 

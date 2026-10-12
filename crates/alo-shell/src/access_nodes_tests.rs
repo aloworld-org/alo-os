@@ -301,7 +301,8 @@ fn every_open_window_carries_the_controls_of_its_edge() {
         .into_iter()
         .map(|control| said(&strings, control.name))
         .collect();
-    assert_eq!(expected.len(), 3, "{expected:?}");
+    // five since the window menu landed: the three the edge draws, and moving and resizing, which only the menu offers and which a reader was never told about.
+    assert_eq!(expected.len(), 5, "{expected:?}");
 
     let list = tree
         .the_windows_open()

@@ -106,13 +106,53 @@ pub fn what_a_reader_is_told(decorations: Decorations) -> Vec<Control> {
     // The caller has no width to pass in any case: `crate::access_nodes`
     // walks `&[FrameName]`, which carries names and no geometry. That is a
     // consequence of this being the right answer and not the reason for it.
-    the_controls_of(decorations, HowItFits::Full)
+    let mut told: Vec<Control> = the_controls_of(decorations, HowItFits::Full)
         .into_iter()
         .filter_map(what_it_does)
         .map(Control::for_action)
-        .collect()
-}
+        .collect();
 
+    // **The two the window menu offers and the edge never did.** Until the
+    // menu existed a reader was told three things a window could do, and a
+    // window could do five — moving and resizing were reachable by dragging a
+    // border and by nothing a reader could find.
+    //
+    // Named from `alo_access`' own words rather than from an action's, because
+    // there is no action: `alo_shortcuts` has neither, and the design forbids
+    // inventing a chord for one. `Control::for_action` is therefore not the
+    // road, and these are built with their name directly.
+    //
+    // **Appended rather than interleaved**, so the three a person can press on
+    // the edge come first in the order they are drawn and the two that are only
+    // in the menu follow. One order, as this file's header says, and this is
+    // still it: what the edge draws, then what the menu adds.
+    // **Only where the shell draws the decorations.** An application with its
+    // own header gets movement and a menu from alo and keeps its own buttons,
+    // and what that menu holds is a question the compact design does not
+    // answer: it draws one menu, with five rows, beside a shell-drawn edge.
+    // Announcing Move and Resize over an app-drawn window would be deciding
+    // that its menu offers them, which is the owner's to decide and not
+    // mine - so this leaves that case exactly as it was, announcing nothing,
+    // and the question is recorded rather than answered.
+    let also = if decorations == Decorations::TheShellDraws {
+        &[
+            alo_access::words::MOVE_THE_WINDOW,
+            alo_access::words::RESIZE_THE_WINDOW,
+        ][..]
+    } else {
+        &[][..]
+    };
+    for name in also.iter().copied() {
+        told.push(Control {
+            role: alo_access::Role::Button,
+            name,
+            state: alo_access::State::CanBeUsed,
+            setting: None,
+            does: None,
+        });
+    }
+    told
+}
 /// Which controls a window with these decorations has at all.
 ///
 /// The same answer `crate::window_edge` lays out when the edge is revealed,
