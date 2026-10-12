@@ -333,6 +333,20 @@ Named explicitly, so none of it is mistaken for measured:
    `Working` only in node ids. The tokens are semantic and resolve per
    appearance, and this export flattened them to one mode. **No dark value for
    any token was returned, and none may be inferred from this capture.**
+
+   **The owner's decision, 2026-10-12: build light first.** This takes nothing
+   away, and the reason is worth being exact about, because law 5 turns on it.
+   *Light and dark, following the time of day if a person wants* is promised in
+   `docs/features.md`, and **no surface in this repository honours it yet** —
+   `crates/alo-appearance/src/role.rs` says so in its own words: the design
+   binds the twelve role names to different values in a dark mode and *none of
+   that is here, because dark-theme parity needs its own measured* work. So a
+   light-only task window is not this window withdrawing a choice; it is this
+   window being consistent with every other surface, and dark remains a promise
+   nobody has built. **Never offering is not taking away. Withdrawing is.**
+
+   It is also the only thing this capture could have supported: there are no
+   dark values in it to build from.
 3. **Hover, pressed, disabled and focus are words, not geometry.** *Hover uses
    `bg/cool`* and *focus uses a visible navy outline* are component
    descriptions; no stroke width, offset or colour came back for either.
