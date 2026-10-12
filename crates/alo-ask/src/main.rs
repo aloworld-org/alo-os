@@ -57,7 +57,10 @@ use alo_ask::{the_only_one, the_persons_model, what_it_can_say};
 use alo_asking::{Asking, NotAQuestion, NotAnswered, Question};
 use alo_capability::Grantee;
 use alo_choosing::{Settings, the_persons_folder};
-use alo_models::{Catalogue, InferenceSource, ModelRuntime, SourcePolicy, ollama::Ollama};
+use alo_models::{
+    Catalogue, InferenceSource, ModelRuntime, SourcePolicy, ollama::Ollama,
+    the_name_a_runtime_knows,
+};
 use alo_strings::Strings;
 
 /// What this machine is set to permit, as this command holds it.
@@ -151,13 +154,49 @@ fn main() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+    // **The name the person chose is resolved before the catalogue is moved
+    // into the runtime**, which is the one place in this process that holds
+    // both. A person chooses a catalogue *entry*; the runtime answers to an
+    // *artefact*; the two are different strings and nothing converted between
+    // them until 2026-10-11.
+    //
+    // Measured that day: a question put with the catalogue id came back
+    // `NoModelThere` from a runtime that was listening, with the weights on
+    // the disk — because ollama had never heard of `smollm2-1.7b-instruct`,
+    // only of `smollm2:1.7b-instruct-q4_K_M`. The refusal was true of the
+    // name sent and false of the machine, so a person would have gone looking
+    // for a download they already had.
+    //
+    // **Only the chosen path needs it.** `the_only_one` reads the runtime's
+    // own `installed()` list, whose ids are artefacts already
+    // (`Ollama::catalogue_id` strips `:latest` and nothing else), so
+    // resolving that would refuse a perfectly good name as an unknown id. Two
+    // kinds of name in one variable is what made this possible; they are
+    // converted at their own source now.
+    let theirs = match the_persons_model(settings.chosen()) {
+        Some(chosen) => match the_name_a_runtime_knows(&catalogue, chosen) {
+            Ok(artefact) => Some(artefact.to_owned()),
+            // English, and for the same audience as the catalogue refusal
+            // above: a person can only have chosen an entry this catalogue
+            // offered, so an id it does not hold is a fault in what wrote the
+            // setting rather than a condition a person is in. **If this ever
+            // becomes reachable by an ordinary choice it needs words in the
+            // vocabulary**, and it is recorded here rather than given
+            // invented English that reads as though it were translated.
+            Err(not_named) => {
+                eprintln!("alo-ask: {not_named}");
+                return ExitCode::FAILURE;
+            }
+        },
+        None => None,
+    };
     let runtime = Ollama::new(catalogue);
 
     // Which model answers: the one they chose, or the only one installed. The
     // runtime is asked only in the second case, so a person who has chosen has
     // one round trip rather than two.
-    let of_model = match the_persons_model(settings.chosen()) {
-        Some(theirs) => theirs.to_owned(),
+    let of_model = match theirs {
+        Some(artefact) => artefact,
         None => match runtime.installed() {
             Ok(installed) => the_only_one(&installed).unwrap_or_default().to_owned(),
             Err(why) => {

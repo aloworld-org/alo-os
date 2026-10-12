@@ -88,6 +88,53 @@ mod tests {
         }
     }
 
+    /// **What a person chose is a catalogue id, and the runtime does not know
+    /// it.** The composition this command depends on, asserted end to end
+    /// against the shipped catalogue.
+    ///
+    /// `Which::Catalogue` is the variant's own name: a person picks an entry.
+    /// `Installed::id` from the runtime is an artefact. Until 2026-10-11 both
+    /// went into one variable and straight to `Question::asked`, so the
+    /// chosen path asked a runtime for a name it had never heard — measured as
+    /// `NoModelThere` with the weights on the disk.
+    #[test]
+    fn a_persons_catalogue_choice_becomes_the_artefact_the_runtime_knows() {
+        let catalogue = alo_models::Catalogue::built_in().expect("the built-in catalogue reads");
+        let chosen = Picked::OnThisMachine(
+            Chosen::of(Which::Catalogue, "smollm2-1.7b-instruct").expect("a model they picked"),
+        );
+
+        let theirs = the_persons_model(Some(&chosen)).expect("they chose a model here");
+        assert_eq!(theirs, "smollm2-1.7b-instruct", "a person chooses an id");
+
+        let for_the_runtime = alo_models::the_name_a_runtime_knows(&catalogue, theirs)
+            .expect("the shipped catalogue names an artefact for it");
+        assert_eq!(for_the_runtime, "smollm2:1.7b-instruct-q4_K_M");
+
+        // The control, and the whole reason the conversion exists: the name a
+        // person chose is **not** the name the runtime answers to. If these
+        // were ever equal this test would pass while proving nothing.
+        assert_ne!(theirs, for_the_runtime);
+    }
+
+    /// **The installed-only path must not be resolved.** Its names come from
+    /// the runtime and are artefacts already, so putting one through the
+    /// catalogue would refuse a working name as an unknown id — which is the
+    /// mistake the other direction makes and is worth a test of its own.
+    #[test]
+    fn a_runtimes_own_name_is_not_a_catalogue_id() {
+        let catalogue = alo_models::Catalogue::built_in().expect("the built-in catalogue reads");
+        let from_the_runtime = installed("smollm2:1.7b-instruct-q4_K_M");
+        let only = the_only_one(std::slice::from_ref(&from_the_runtime))
+            .expect("one installed model is the one");
+
+        assert_eq!(only, "smollm2:1.7b-instruct-q4_K_M");
+        assert!(
+            alo_models::the_name_a_runtime_knows(&catalogue, only).is_err(),
+            "an artefact resolved as though it were an id, which would hide the distinction"
+        );
+    }
+
     #[test]
     fn the_model_a_person_chose_on_this_machine_is_the_one() {
         let chosen = Picked::OnThisMachine(
