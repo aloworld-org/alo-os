@@ -297,6 +297,7 @@ mod settings_window;
 mod shortcut_dispatch;
 mod sign_in_entry;
 mod sign_in_keys;
+mod sign_in_layout;
 mod sign_in_paint;
 mod sign_in_password;
 mod sign_in_raster;
@@ -578,6 +579,12 @@ pub use settings_window::{
     SettingsWindow,
 };
 pub use shortcut_dispatch::ShortcutDispatchError;
+/// **The sign-in and unlock screen's geometry**, read from `176-10686.xml`.
+pub use sign_in_layout::{
+    SignInLayout, THE_ARROW_IS, THE_BACK_TARGET_IS, THE_ENTRY_CORNER_IS, THE_ENTRY_IS,
+    THE_GROUP_IS_TALL, THE_GROUP_IS_WIDE, THE_MONOGRAM_IS, THE_SMALLEST_SCREEN_IS,
+    THE_SUBMIT_TARGET_IS, sign_in_laid_out,
+};
 pub use sign_in_entry::{NAME_BYTES, SignInField};
 pub use sign_in_keys::SignInKey;
 pub use sign_in_password::PASSWORD_BYTES;
