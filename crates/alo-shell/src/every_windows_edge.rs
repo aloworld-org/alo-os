@@ -71,9 +71,41 @@ pub(crate) fn every_windows_edge(
                 ),
             );
             let title = server.the_name_of(surface);
+            // **Where the pointer and the keyboard are, not a default.** This
+            // passed `Pointing::default()` until 2026-10-12, so no control on
+            // any window on a real machine ever showed a highlight or a focus
+            // ring: both were built, tested, and fed only by the example.
+            let keyboard = server.where_the_keyboard_is_on_this_windows_edge(surface);
+            let pointing =
+                server.what_this_edge_is_pointing_at(&edge, keyboard.what_the_painter_shows());
+            // **And this window's menu, where it has one open.** Laid out from
+            // the same edge the picture is drawn from, so what a person sees
+            // and what `a_press_in_the_menu` hit-tests are one layout.
+            let menu = keyboard.the_menu().and_then(|in_the_menu| {
+                crate::window_menu::the_menu_of(
+                    &edge,
+                    crate::window_menu::WhatTheWindowAllows::everything(),
+                    server.surfaces.has_window_mode(surface),
+                    crate::window_menu::THE_TITLE_BLOCK_IS_TALL,
+                    crate::window_edge::the_usable_output(
+                        smithay::utils::Size::from((output.0, output.1)),
+                        scale,
+                    ),
+                )
+                .map(|menu| (menu, in_the_menu.on()))
+            });
             EdgePicture::of(
                 &edge,
-                crate::window_edge_paint::Pointing::default(),
+                pointing,
+                menu.as_ref().map(|(menu, on)| {
+                    (
+                        menu,
+                        crate::window_menu_paint::PointingAtTheMenu {
+                            hovered: None,
+                            focused: *on,
+                        },
+                    )
+                }),
                 title.its_own_words(),
                 &mut labels.fonts,
                 output,

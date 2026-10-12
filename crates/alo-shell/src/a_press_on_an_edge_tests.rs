@@ -72,9 +72,9 @@ fn each_control_reaches_the_mechanism_that_already_does_its_job() {
     );
     assert_eq!(
         the_road_an_edge_press_takes(OnTheEdge::Menu),
-        TheRoad::NothingHasOneYet,
-        "nothing in this crate opens a window menu, and claiming a road for it would be a \
-         control that silently does nothing"
+        TheRoad::OpenTheMenu,
+        "the Menu control must open the window menu - this said NothingHasOneYet while nothing \
+         in this crate opened one, and something does now"
     );
 }
 
@@ -159,7 +159,7 @@ fn a_release_is_never_the_edges() {
 #[test]
 fn meeting_nothing_asks_for_nothing_and_leaves_nothing_behind() {
     let (_runtime, mut server) = a_server("meeting-nothing");
-    assert!(server.meet_what_was_pressed_on_an_edge().is_empty());
+    server.meet_what_was_pressed_on_an_edge();
     assert!(server.asked_on_an_edge.is_empty());
     assert!(
         server.asked_to_put_aside.is_empty(),

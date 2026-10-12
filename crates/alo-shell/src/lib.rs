@@ -77,6 +77,7 @@ mod a_frame_per_display;
 mod a_key_reaches_settings;
 mod a_key_reaches_the_docks_surfaces;
 mod a_new_window_is_placed;
+mod a_press_in_the_menu;
 mod a_press_on_an_edge;
 mod access_bus;
 mod access_contrast;
@@ -368,6 +369,7 @@ mod window_full_screen;
 mod window_maximize;
 mod window_menu;
 mod window_menu_keys;
+mod window_menu_paint;
 mod window_menu_reading;
 mod window_minimize;
 mod window_mode;
@@ -440,6 +442,9 @@ pub use window_menu::{
 pub use window_menu_keys::{
     AMenuKey, TheKeyboardInTheMenu, WhatTheKeyDid, the_edge_stays_revealed,
 };
+/// **And what it draws**, which is what makes it a menu rather than a list of
+/// rectangles nobody can see.
+pub use window_menu_paint::{PointingAtTheMenu, solids as menu_solids};
 /// **And what a reader is told about it**: the panel's own name, and its rows.
 pub use window_menu_reading::{
     WhatAReaderMeetsInTheMenu, every_word_this_surface_says, what_a_reader_meets,

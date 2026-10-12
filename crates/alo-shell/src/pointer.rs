@@ -256,6 +256,15 @@ impl Server {
         // because it has controls on it. Where the edge says the press is not
         // its own, the name band below still answers, so a window whose edge
         // declined to exist is still movable.
+        // **The open menu is asked before the edge, because it is in front of
+        // it.** It opens eight units below the edge and overlaps the
+        // application, so a press inside it was never a press on either. The
+        // same rule the bands above follow: the more specific surface answers
+        // first, and while a menu is open it is the most specific thing on
+        // the screen.
+        if state == ButtonState::Pressed && self.a_press_in_the_menu(state) {
+            return Ok(false);
+        }
         if state == ButtonState::Pressed && self.a_press_on_an_edge(button, state) {
             return Ok(false);
         }

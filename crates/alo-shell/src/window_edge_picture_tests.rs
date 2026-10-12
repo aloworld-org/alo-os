@@ -46,6 +46,7 @@ fn an_edge_that_would_fall_off_the_output_is_not_drawn() {
             &edge,
             Pointing::default(),
             None,
+            None,
             &mut fonts,
             (1366, 768),
             100
@@ -70,6 +71,7 @@ fn the_scale_is_applied_once_and_only_once() {
         &edge,
         Pointing::default(),
         None,
+        None,
         &mut fonts,
         (2732, 1536),
         100,
@@ -78,6 +80,7 @@ fn the_scale_is_applied_once_and_only_once() {
     let dense = EdgePicture::of(
         &edge,
         Pointing::default(),
+        None,
         None,
         &mut fonts,
         (2732, 1536),
@@ -111,6 +114,7 @@ fn the_whole_title_survives_a_window_too_narrow_to_show_it() {
     let picture = EdgePicture::of(
         &edge,
         Pointing::default(),
+        None,
         Some("Launch strategy for the first release"),
         &mut fonts,
         (1366, 768),
@@ -137,6 +141,7 @@ fn no_title_is_inked_for_an_application_that_has_its_own_header() {
     let picture = EdgePicture::of(
         &edge,
         Pointing::default(),
+        None,
         Some("Calculator"),
         &mut fonts,
         (1366, 768),
@@ -168,6 +173,7 @@ fn nothing_is_drawn_over_the_application_at_any_scale() {
                 hovered: Some(crate::window_edge::OnTheEdge::Close),
                 focused: None,
             },
+            None,
             Some("Launch strategy"),
             &mut fonts,
             (2732, 1536),
