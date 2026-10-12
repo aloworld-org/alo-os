@@ -352,6 +352,7 @@ mod window_edge_who_draws;
 mod window_full_screen;
 mod window_maximize;
 mod window_menu;
+mod window_menu_keys;
 mod window_minimize;
 mod window_mode;
 mod window_mode_plan;
@@ -412,6 +413,11 @@ pub use window_maximize::WindowMaximizeError;
 pub use window_menu::{
     A_ROW_IS_TALL, A_ROW_IS_WIDE, BELOW_THE_EDGE, MenuRow, THE_MENU_IS_WIDE,
     THE_TITLE_BLOCK_IS_TALL, WhatARowDoes, WhatTheWindowAllows, WindowMenu, the_menu_of,
+};
+/// **The keyboard's road to those same actions**, and the control focus goes
+/// back to when the menu closes.
+pub use window_menu_keys::{
+    AMenuKey, TheKeyboardInTheMenu, WhatTheKeyDid, the_edge_stays_revealed,
 };
 pub use window_minimize::WindowMinimizeError;
 pub use window_mode::WindowModeError;
