@@ -564,6 +564,27 @@ impl LoopInput for Desk<'_> {
                  mechanism for it yet"
             );
         }
+        // **And the applications a person asked to start**, met here for
+        // `asked_to_put_aside`'s reason and one of its own: sending `Activate`
+        // waits for the bus to start an application, and the press that asked
+        // for it was in the input loop. See `Server::asked_to_start`.
+        for not_started in server.start_what_was_asked_for_now() {
+            // **Said rather than dropped**, the same rule the edge's menu
+            // follows two blocks up: a press that reached here and vanished is
+            // what a person reports as *the icon does nothing*, so the machine
+            // says so. Once per press, because the list is drained.
+            //
+            // The two causes read alike here and are different: this machine
+            // was never given a way to start anything, or the application is
+            // not one the bus can start. `Server::asks_an_application_to_start`
+            // is where the first is decided, and both end as a refusal rather
+            // than as a fallback — `alo_portals::opening` refuses to read an
+            // `Exec` line and so does this.
+            eprintln!(
+                "alo-shell: {} was asked to start and this machine could not start it",
+                not_started.name()
+            );
+        }
         server.put_aside_what_was_asked_for(self.desktop.the_panel());
         // **And the other direction, met in the same place and for the same reason.** A click
         // on a preview was claimed where input happens, because whether the panel owns a click

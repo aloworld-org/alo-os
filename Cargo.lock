@@ -608,6 +608,7 @@ dependencies = [
  "alo-formats",
  "alo-indicator",
  "alo-networks",
+ "alo-portals",
  "alo-power",
  "alo-put-aside",
  "alo-remembering",
@@ -617,6 +618,7 @@ dependencies = [
  "alo-sound",
  "alo-strings",
  "jiff",
+ "zbus",
 ]
 
 [[package]]

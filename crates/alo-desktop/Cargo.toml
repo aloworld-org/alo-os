@@ -17,6 +17,15 @@ publish = false
 # boundary said. So the reading lives here, beside the process it is for, and
 # `alo-shell` keeps taking its readings as data.
 [target.'cfg(target_os = "linux")'.dependencies]
+# **How this binary starts an application, and why it is wired here.**
+#
+# `alo_portals::activated` sends `Activate` to an application's own bus name —
+# D-Bus activation, the same call `Open` is. `alo-shell` deliberately does not
+# depend on `alo-portals` for real: the compositor has no business reaching
+# portal *policy*, which is what that crate holds. So the shell carries the ask
+# and this binary carries the sending, which is what a binary is for.
+alo-portals = { path = "../alo-portals" }
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
 # Everything a desktop is drawn from, and the loop that draws it.
 alo-shell = { path = "../alo-shell" }
 # The four readings a status area shows, each from the entry point the crate

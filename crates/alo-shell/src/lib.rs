@@ -167,6 +167,8 @@ mod where_the_docks_surface_is;
 /// inside it, worked out once for the draw and for a press.
 /// What a press on the Dock does: the decision, with no act in it.
 mod a_press_on_the_dock;
+mod an_application_is_started;
+pub use an_application_is_started::{AWayToStartApplications, AsksAnApplicationToStart};
 mod dock_room;
 mod dock_windows;
 mod drawing;

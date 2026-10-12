@@ -362,10 +362,21 @@ impl crate::Server {
                     };
                 return;
             }
-            // `Launch` is named above: nothing here can start an application.
-            // `Nothing` is a press that found no window, which happens when the
-            // icon's application closed between the draw and the press.
-            WhatAnIconDoes::Nothing | WhatAnIconDoes::Launch => return,
+            // **Nothing open: it starts.** Recorded rather than done, because
+            // `alo_portals::activated` waits for the bus to start the
+            // application and this is the compositor's input loop —
+            // `Server::asked_to_start` carries the whole reason.
+            WhatAnIconDoes::Launch => {
+                self.asked_to_start.push(app.clone());
+                // **And the surfaces close**, as they do for a window: a person
+                // who chose an application from the overview has finished with
+                // the overview, whether or not the application answers.
+                self.the_overflow_closes();
+                return;
+            }
+            // A press that found no window, which happens when the icon's
+            // application closed between the draw and the press.
+            WhatAnIconDoes::Nothing => return,
             WhatAnIconDoes::Focus(id) => (id, BringItBack::No),
             WhatAnIconDoes::BringItBackThenFocus(id) => (id, BringItBack::Yes),
         };

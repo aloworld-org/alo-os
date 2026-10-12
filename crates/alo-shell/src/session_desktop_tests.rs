@@ -37,6 +37,9 @@ fn a_session_with_no_seat_refuses_by_naming_the_seat() {
         },
         &mut NoDesktop,
         || DirectFrame::Stop,
+        // No way to start an application: this test is about a session that
+        // never stands up, so nothing reaches the asks at all.
+        None,
     )
     .err()
     .unwrap();
