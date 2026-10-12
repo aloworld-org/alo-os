@@ -1,4 +1,11 @@
-//! The Dock's own surface: a rounded white panel with a hairline and a shadow.
+//! A rounded panel with a hairline and a shadow — the Dock's own surface, and
+//! any other.
+//!
+//! **The name is owed a change.** [`a_panel`] already made this general, and the
+//! Ask alo task window is a second caller that is not a Dock. The file is left
+//! named for the Dock in this change because renaming it touches every caller
+//! and the signature change here has to land with the three it already breaks;
+//! `CLAUDE.md`'s law 4 is the reason to do it next rather than later.
 //!
 //! **[ADR 0101](../../../docs/decisions/0101-one-dock-component-family-and-the-renderer-that-can-draw-it.md)**,
 //! normalised from the design file's newer edge family:
@@ -75,6 +82,29 @@ const fn how_far_the_shadow_reaches() -> i32 {
     (THE_SHADOW_SPREADS + THE_SHADOW_FALLS) as i32
 }
 
+/// One rounded well, with the corner it is drawn at.
+///
+/// **The radius is per well, not per surface.** It was one constant —
+/// `THE_COMPOSERS_CORNER`, 12 — which was right while every well was a Dock
+/// field or a window-list row. The Ask alo task window needs three radii on one
+/// panel: `radius/sm` 8 for a shared-file chip, `radius/md` 12 for a message
+/// bubble and a composer control, and 18 for the reply field. A single constant
+/// cannot draw them, and drawing them all at 12 would be the design
+/// approximated rather than followed.
+///
+/// **Not a second list of wells-with-radii.** This file records that a
+/// `composer` and a `well` were two fields differing only in how many there
+/// could be, and that collapsing them was the fix; adding a parallel list now
+/// would rebuild that fault with the radius as the excuse.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct AWell {
+    /// Where it goes.
+    pub(crate) at: Rectangle<i32, Physical>,
+    /// Its corner radius, clamped to half its shorter side when it is drawn, so
+    /// a radius larger than the shape becomes a capsule rather than nothing.
+    pub(crate) corner: u32,
+}
+
 /// What the surface is drawn out of.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct ADocksSurface<'a> {
@@ -119,7 +149,7 @@ pub(crate) struct ADocksSurface<'a> {
     /// **Rounded, so they are here rather than `Solid`s** — the same reason the
     /// panel is. `radius/md` = `THE_COMPOSERS_CORNER` = 12, measured on both
     /// Dock families.
-    pub(crate) wells: &'a [Rectangle<i32, Physical>],
+    pub(crate) wells: &'a [AWell],
     /// Their ground, which is cooler than the Dock's.
     pub(crate) well_is: [u8; 3],
     /// Keyboard focus rings: the **outer** rectangle of each, already stood off
@@ -246,13 +276,16 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
             let well = of
                 .wells
                 .iter()
-                .map(|at| {
+                .map(|well| {
+                    let at = well.at;
                     let (wx, wy) = (
                         (at.loc.x - area.loc.x) as f32,
                         (at.loc.y - area.loc.y) as f32,
                     );
                     let (w, h) = (at.size.w as f32 / 2.0, at.size.h as f32 / 2.0);
-                    let r = (THE_COMPOSERS_CORNER as f32).min(w).min(h);
+                    // Clamped to half the shorter side, so a radius larger than
+                    // the shape draws a capsule rather than collapsing.
+                    let r = (well.corner as f32).min(w).min(h);
                     let d = rounded(px, py, wx + w, wy + h, w, h, r);
                     (0.5 - d).clamp(0.0, 1.0)
                 })
@@ -425,7 +458,7 @@ pub(crate) struct APanelsShapes<'a> {
     /// was the search field. A window list is a column of them, and drawing
     /// only the first is the kind of fault that looks like a layout problem —
     /// one row with a surface and the rest without.
-    pub(crate) wells: &'a [Rectangle<i32, Physical>],
+    pub(crate) wells: &'a [AWell],
     /// What colour it is.
     pub(crate) well_is: [u8; 3],
     /// Keyboard focus rings, each the outer rectangle of one ring.
