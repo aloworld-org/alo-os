@@ -62,6 +62,17 @@ watch it fail with the numbers printed.
 
 ### 1. Who is on the Dock
 
+**Status: done, 2026-10-11.** The rule is `OnTheDock::belongs_on_the_dock` —
+pinned by the person, or more windows than are put aside — and eleven tests in
+`holding_membership_tests.rs` walk all seven rows of the owner's table in one
+test rather than naming six of them in six names. `Holding::showing` is
+`in_the_overview` with the rule applied by `retain`, so the bar and the overview
+cannot drift about which applications exist. The shell draws from it.
+
+**What has never run:** the pinned half. Every caller passes `Holding::nothing()`
+and no file in this repository saves a pinned list, so the clause *pinned by the
+person* has been exercised only in unit tests. It becomes true with task 4.
+
 `Holding::showing` learns the membership table. It already counts an
 application's windows and how many are put aside, so the rule is readable off
 data it has: an unpinned application with `windows == put_aside` is not shown.
@@ -114,6 +125,26 @@ the right one.
 
 ### 2. Pressing an application
 
+**Status: done, 2026-10-12.** A press focuses one window, brings a put-aside one
+back and then focuses it, or opens the window list where there are several.
+Seven tests in `a_press_on_the_dock_tests.rs` hold the table, and the decision
+is a pure function so *which slot a press reached* and *what that slot does* are
+both checkable without a display.
+
+**Launching landed on 2026-10-12** (#635). A press on an idle icon records an
+ask, and `an_application_is_started` sends it off the input path: the bus starts
+the application, so nothing in this repository reads an `Exec` line or runs a
+command. A machine with no session bus reports every ask as not started rather
+than claiming one worked. **What is still owed is a machine**: no application
+has been started on real hardware, because that needs a session bus and a
+D-Bus-activatable application and the gate VM has neither.
+
+**One thing is still not done, and it is not a guess.** The canvas does not
+travel: `the_windows_the_dock_sees` gives every window a one-by-one patch at the
+origin, so `TheView::already_shows` compares placeholders, and travelling on
+that would be motion decided by a placeholder. What is owed is the window's real
+patch reaching that builder.
+
 `WhatAPressOnTheDockDoes::GoTo` reaches `alo_dock::clicking` and something
 happens. One window focuses or restores-then-focuses; nothing open launches;
 several open the picker, which task 3 builds.
@@ -157,6 +188,15 @@ for its own lane.
 
 ### 3. The window picker
 
+**Status: done, 2026-10-11.** `alo_dock::picking::ThePicker` is the model,
+the popover draws it, minimised rows are marked as minimised, and choosing one
+restores and focuses that exact window. Reached from an icon with several windows
+and from the overview, and Escape goes back to the overview rather than out.
+
+The list scrolls, which it did not until 2026-10-11: every row was drawn at its
+content offset and the remainder clipped away, so twenty windows showed about
+three and the rest were unreachable.
+
 A surface of its own: every window of one application, **minimised ones marked
 as minimised**, choosing one focuses or restores it. Reached from the Dock and,
 by task 5, from *More apps*.
@@ -165,6 +205,16 @@ by task 5, from *More apps*.
 is selected* from inside the popover.
 
 ### 4. The default pins reach a screen
+
+**Status: open, not started — blocked on another lane.** Nothing in this
+repository can answer *which applications are installed*, so Files, Browser, Apps
+and Settings are a specification and not a list of identifiers anything can look
+up. Named as a dependency on 2026-10-11 rather than discovered on the day — see
+*What is owed to another lane, and from when*.
+
+**It is the most expensive block on this plan.** Task 8 depends on it, the pinned
+half of task 1 has never run because of it, and task 2's launching needs the same
+answer.
 
 Something produces `alo_dock::pinning::Discovery`. Files, Browser, Apps,
 Settings, resolved against installed applications, written **once** and only
@@ -177,6 +227,18 @@ refuses to write anything down for the last two — that half is finished and
 tested.
 
 ### 5. More apps becomes an overview
+
+**Status: done, except the search field — 2026-10-11.** The overview carries
+every pinned application and every open one, including those whose windows are
+all minimised and which are therefore not on the bar — the one case the two lists
+are guaranteed to differ on. Fifteen tests in `more_apps_tests.rs`. Its bounds are
+the owner's and hold by construction: a compile-time assertion ties the fixed
+parts plus the list's cap to 536, so a popover that grew past it would not
+compile. Sixty applications scroll inside the same viewport.
+
+**The search field takes no typing.** It is drawn, it is a well with a prompt, and
+nothing filters. So a person with sixty applications scrolls rather than searches,
+which is the slower half of the promise and the half the owner named first.
 
 Contents first, because they are decidable without a pixel: pinned in saved
 order, then every open application **including minimised-only ones**, each once,
@@ -192,6 +254,19 @@ scrolls rather than stretching — **the list currently draws 644 of 768 pixels
 tall, which is the sidebar the ruling forbids.**
 
 ### 6. Dismissal and the keyboard
+
+**Status: done, except three things — 2026-10-11.** Escape, the four arrows,
+Enter and the number pad's Enter are taken, each by its evdev code, and only while
+a surface is open and only on a press. Focus lives inside the open-surface state,
+so there is no value in which something is focused and nothing is open. The
+focused item is ringed with the measurement `the-first-start.md` read off the
+design, and it scrolls into view in the grid and in the window list.
+
+**Not done, and each named rather than left in the sentence above:** the search
+field takes no typing (task 5's half); dismissing does not return focus to the
+opener, because the bar's own slots hold no keyboard focus for it to return to;
+and the menu key does not open the actions, because `alo_dock::menu` is a model
+nothing opens.
 
 Escape dismisses a picker, then the popover. Outside press already works. The
 control closes it. Keyboard reaches the search field and the grid, focus scrolls
@@ -232,6 +307,16 @@ without it. The pointer's hit test is the next task on this plan.
 
 ### 7. Minimising recalculates eligibility
 
+**Status: done, 2026-10-11.** `crate::dock_windows` builds the Dock's window
+list from `mapped_surfaces` **chained with** `minimized_surfaces`, so minimising
+one window of an application recalculates that application's eligibility on the
+next frame without anything having to remember to.
+
+That chaining is the whole task, and it was missing: until 2026-10-11 the builder
+read only the mapped half, so `how_many_put_aside` was permanently zero on every
+machine and a screen reader was told no window was put aside whatever a person
+had done.
+
 The link from `set_window_minimized` to the Dock. The compositor half is built
 and contracted; what is missing is that anything recomputes the bar.
 
@@ -240,10 +325,22 @@ acceptance test for tasks 1 and 7 together.
 
 ### 8. It survives a restart
 
+**Status: open, not started — depends on task 4.** There is no pinned list to
+persist. When one exists, what has to survive is the pins, their order, and a
+list a person deliberately emptied — that last one being the clause a naive
+implementation breaks, because an empty list and no list look alike on disk.
+
 Pins, their order, and a deliberately empty list, across a restart and an
 update.
 
 ### 9. A press reaches inside the two surfaces
+
+**Status: green, not landed — 2026-10-12.** Nine of nine on
+`25d760615e78bd84df5a4d7eda4ab8b41ff33eb7`, awaiting the merge queue. Both
+surfaces take a
+pointer press, which neither did on 2026-10-11: `TheDocksPlaces` covers the band
+and nothing covered the popover above it, so for one day the keyboard was the only
+way to choose from either.
 
 **Added 2026-10-11, while task 6 was being built**, which is why it is last and
 not third: nothing had noticed. `crate::where_the_dock_is::TheDocksPlaces` is
