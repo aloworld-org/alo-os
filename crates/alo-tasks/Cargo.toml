@@ -24,3 +24,9 @@ thiserror = { workspace = true }
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+# The machine's whole vocabulary, to ask whether this crate's words reached it.
+# Never a dependency of the crate itself: `alo-saying` depends on this one, and
+# the arrow may only point that way.
+alo-saying = { path = "../alo-saying" }

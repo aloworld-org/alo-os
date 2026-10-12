@@ -30,6 +30,7 @@ pub mod stopping;
 pub mod task;
 pub mod the_one_button;
 pub mod which_model;
+pub mod words;
 
 pub use activity::{Act, HowItWent, TheActivity};
 pub use changed::WhatChanged;
@@ -41,3 +42,4 @@ pub use stopping::Stopping;
 pub use task::{ATask, InThePanel};
 pub use the_one_button::TheOneButton;
 pub use which_model::{BeforeItChanges, WhichModel};
+pub use words::{WordsError, declare_into, task_words};

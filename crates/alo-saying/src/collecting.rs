@@ -146,6 +146,7 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-software",
     "alo-sound",
     "alo-starting",
+    "alo-tasks",
     "alo-telling",
     "alo-turn",
 ];
@@ -382,6 +383,7 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
     declare(&mut vocabulary, "alo-software", alo_software::declare_into)?;
     declare(&mut vocabulary, "alo-sound", alo_sound::declare_into)?;
     declare(&mut vocabulary, "alo-starting", alo_starting::declare_into)?;
+    declare(&mut vocabulary, "alo-tasks", alo_tasks::declare_into)?;
     declare(&mut vocabulary, "alo-telling", alo_telling::declare_into)?;
     declare(&mut vocabulary, "alo-turn", alo_turn::declare_into)?;
     Ok(vocabulary)
@@ -494,6 +496,7 @@ mod tests {
         ("alo-software", "software.refused.signature-not-shown"),
         ("alo-sound", "sound.muted"),
         ("alo-starting", "starting.windows-next"),
+        ("alo-tasks", "tasks.status.working"),
         ("alo-telling", "telling.carry-on"),
         ("alo-turn", "turn.closed"),
     ];
@@ -614,6 +617,7 @@ mod tests {
             alo_software::software_words().unwrap().how_many(),
             alo_sound::words::sound_words().unwrap().how_many(),
             alo_starting::starting_words().unwrap().how_many(),
+            alo_tasks::task_words().unwrap().how_many(),
             alo_telling::telling_words().unwrap().how_many(),
             alo_turn::turn_words().unwrap().how_many(),
         ];

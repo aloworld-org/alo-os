@@ -1451,6 +1451,7 @@ dependencies = [
  "alo-sound",
  "alo-starting",
  "alo-strings",
+ "alo-tasks",
  "alo-telling",
  "alo-turn",
  "serde",
@@ -1666,6 +1667,7 @@ name = "alo-tasks"
 version = "0.0.1"
 dependencies = [
  "alo-models",
+ "alo-saying",
  "alo-strings",
  "thiserror 2.0.20",
 ]
