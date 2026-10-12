@@ -20,12 +20,14 @@
 //! surface, its border, and the border in the failure colour when a person has
 //! just been refused.
 //!
-//! **Not drawn: the wallpaper.** `docs/design/figma-snapshot/176-10686-wallpaper.svg`
-//! is five cubic paths with linear gradients, which a rounded-rectangle
-//! distance field cannot express. It needs a path rasteriser or a render baked
-//! at build time, which is a decision rather than a line of code — recorded in
-//! `MANIFEST.md` and left undrawn rather than approximated into something that
-//! looks like the design and is not it.
+//! The ground is **the wallpaper**, which `crate::sign_in_wallpaper` draws:
+//! five cubic paths with linear gradients, from
+//! `docs/design/figma-snapshot/176-10686-wallpaper.svg`. This file said *not
+//! drawn: the wallpaper* until 2026-10-12, and the screen was flat `#FAF7F2`
+//! behind the group — recognisably not the design, and the first thing an eye
+//! went to in a photograph of a running machine. A rounded-rectangle distance
+//! field cannot express a cubic, so that file is a scanline rasteriser rather
+//! than more of this one.
 //!
 //! **Not drawn: text.** That is `crate::painted_text`'s, inked over this.
 
@@ -99,6 +101,12 @@ pub(crate) fn sign_in_surface(
         TheEntryIs::Refused => THE_REFUSED_BORDER_IS,
     };
 
+    // **The design's own ground**, which is the five folds of light on
+    // `THE_GROUND_IS` rather than the flat colour this drew until the
+    // wallpaper existed. One raster for the whole screen, made once, read
+    // below as each pixel's starting colour.
+    let behind = crate::sign_in_wallpaper::the_wallpaper(w, h, THE_GROUND_IS);
+
     let mut pixels = Vec::with_capacity((w as usize) * (h as usize) * 4);
     for y in 0..h {
         for x in 0..w {
@@ -106,7 +114,13 @@ pub(crate) fn sign_in_surface(
             let px = f64::from(x) + 0.5;
             let py = f64::from(y) + 0.5;
 
-            let mut colour = THE_GROUND_IS;
+            // The wallpaper under this pixel. A screen it could not draw for
+            // falls back to the flat ground rather than to nothing, so the
+            // screen is never a hole.
+            let mut colour = behind
+                .get(((y * w + x) as usize).min(behind.len().saturating_sub(1)))
+                .copied()
+                .unwrap_or(THE_GROUND_IS);
 
             // The monogram's square, under everything else it overlaps with
             // nothing — it is above the ground and below no other shape.

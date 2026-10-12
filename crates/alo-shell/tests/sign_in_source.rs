@@ -62,16 +62,19 @@ fn the_sign_in_files() -> Vec<(String, Vec<(usize, String)>)> {
         .into_iter()
         .filter(|(named, _)| named.contains("sign_in"))
         .collect();
-    // 14 on 2026-10-12: 8 before, the 5 the owner's design added, and
-    // `direct_sign_in.rs`, which the old filter never reached. The five are
+    // 15 on 2026-10-12: 8 before, the 6 the owner's design added, and
+    // `direct_sign_in.rs`, which the old filter never reached. The six are
     // `sign_in_layout` placing it, `sign_in_surface` drawing its rounded
-    // shapes, `sign_in_pointing` saying what a press is on, `sign_in_pointer`
-    // holding where the pointer is, and `a_press_on_the_sign_in_screen` saying
-    // what each press does. This number is a tripwire, not a fact: raising it
-    // without reading the new file is the one thing it cannot stop.
+    // shapes, `sign_in_wallpaper` drawing the folded light behind it,
+    // `sign_in_pointing` saying what a press is on, `sign_in_pointer` holding
+    // where the pointer is, and `a_press_on_the_sign_in_screen` saying what
+    // each press does. This number is a tripwire, not a fact: raising it
+    // without reading the new file is the one thing it cannot stop. It fired
+    // on `sign_in_wallpaper.rs` the hour after it was widened, which is the
+    // only evidence worth having that it works.
     assert_eq!(
         files.len(),
-        14,
+        15,
         "a sign-in file was added or lost: {:?}",
         file_names(&files)
     );
