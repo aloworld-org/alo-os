@@ -548,22 +548,11 @@ impl LoopInput for Desk<'_> {
         // which the next line is what performs — so this has to run first or a
         // person's press would wait a whole frame for no reason. §6 of
         // `docs/design/the-external-window-edge.md`.
-        for (_, does) in server.meet_what_was_pressed_on_an_edge() {
-            // **Said rather than dropped.** The one action on the edge with no
-            // mechanism behind it is the window menu: `OnTheEdge::Menu` is
-            // there because an application that draws its own header keeps
-            // movement and the menu, and nothing in this crate opens one. A
-            // press that reached here and vanished is what a person reports as
-            // *the button does nothing*, so the machine says so.
-            //
-            // Once per press and not once per frame, because
-            // `meet_what_was_pressed_on_an_edge` drains its list — a person has
-            // to press it again to see this again.
-            eprintln!(
-                "alo-shell: {does:?} was pressed on a window's edge and this machine has no \
-                 mechanism for it yet"
-            );
-        }
+        // **Every control on the edge reaches a mechanism now.** This used to
+        // loop over what came back and say on stderr that the machine had no
+        // mechanism for it, which was true of exactly one control: the window
+        // menu. It opens, so nothing comes back and there is nothing to say.
+        server.meet_what_was_pressed_on_an_edge();
         // **And the applications a person asked to start**, met here for
         // `asked_to_put_aside`'s reason and one of its own: sending `Activate`
         // waits for the bus to start an application, and the press that asked

@@ -82,12 +82,15 @@ pub(crate) enum TheRoad {
     /// compiler stop when `OnTheEdge::Move` was added, which is the whole
     /// point of writing it without one.
     TakenWhileTheButtonIsDown,
-    /// **Nothing on this machine does it.** Not a default and not a catch-all:
-    /// the one control in this state is the window menu, which the owner's
-    /// ruling of 2026-10-09 put on the edge and which nothing in this crate
-    /// opens. A press that reached a silent arm is what a person reports as
-    /// *the button does nothing*, so this is returned to a caller that says so.
-    NothingHasOneYet,
+    /// Open this window's menu.
+    ///
+    /// **This was `NothingHasOneYet` until 2026-10-12**, under a note saying
+    /// the window menu was the one control on the edge that nothing in this
+    /// crate opened — and `direct_desktop` printed *this machine has no
+    /// mechanism for it yet* when a person pressed it. The menu was laid
+    /// out, hit-tested, walked by the keyboard and read aloud, and no road
+    /// led into it from a pointer. This is that road.
+    OpenTheMenu,
 }
 
 /// Which road one of the edge's controls takes.
@@ -105,7 +108,7 @@ pub(crate) const fn the_road_an_edge_press_takes(does: OnTheEdge) -> TheRoad {
         OnTheEdge::Minimise => TheRoad::PutItAside,
         OnTheEdge::Maximise => TheRoad::MaximiseOrRestore,
         OnTheEdge::Close => TheRoad::AskItToClose,
-        OnTheEdge::Menu => TheRoad::NothingHasOneYet,
+        OnTheEdge::Menu => TheRoad::OpenTheMenu,
     }
 }
 
@@ -188,9 +191,14 @@ impl crate::Server {
     /// that failed is not retried next frame: a person pressed Close once and a
     /// refusal is an answer, while an ask that stayed on the list would be a
     /// close request sent sixty times a second.
-    pub(crate) fn meet_what_was_pressed_on_an_edge(&mut self) -> Vec<(WlSurface, OnTheEdge)> {
+    /// **Nothing is returned any more.** This handed back the presses it had
+    /// no mechanism for, and `direct_desktop` printed *this machine has no
+    /// mechanism for it yet* on each. The window menu was the only control
+    /// that took that road and it now opens, so there is nothing left to hand
+    /// back - and a return value nobody can ever fill is a shape that invites
+    /// the next control to be left unhandled quietly.
+    pub(crate) fn meet_what_was_pressed_on_an_edge(&mut self) {
         let asked = std::mem::take(&mut self.asked_on_an_edge);
-        let mut for_the_caller = Vec::new();
         for (surface, does) in asked {
             match the_road_an_edge_press_takes(does) {
                 // **The existing road, not a second one.** `asked_to_put_aside`
@@ -218,10 +226,13 @@ impl crate::Server {
                 // Nothing arrives carrying this: the press returned on it.
                 // Written out because this match has no catch-all either.
                 TheRoad::TakenWhileTheButtonIsDown => {}
-                TheRoad::NothingHasOneYet => for_the_caller.push((surface, does)),
+                // **Opened here rather than queued**, because opening needs no
+                // panel and a person expects a menu on the press. The state is
+                // the same one the keyboard road sets, so a menu opened by
+                // pointer and one opened by Enter are one menu and not two.
+                TheRoad::OpenTheMenu => self.the_menu_was_opened_on(&surface),
             }
         }
-        for_the_caller
     }
 }
 

@@ -36,9 +36,10 @@
 
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 
-use crate::window_edge::WindowEdge;
+use crate::window_edge::{OnTheEdge, WindowEdge};
 use crate::window_edge_keys::{AnEdgeKey, TheKeyboardOnTheEdge, WhatTheEdgeKeyDid};
-use crate::window_menu::WindowMenu;
+use crate::window_menu::{MenuRow, WhatARowDoes, WindowMenu};
+use crate::window_menu_keys::TheKeyboardInTheMenu;
 
 impl crate::Server {
     /// Where the keyboard is on this window's edge.
@@ -116,6 +117,45 @@ impl crate::Server {
         let did = where_it_is.told(key, edge, menu);
         self.remember(surface, where_it_is);
         did
+    }
+
+    /// A person pressed the Menu control with a pointer: open the menu.
+    ///
+    /// **The same state the keyboard road sets**, so a menu opened by pointer
+    /// and one opened by Enter on the Menu control are one menu rather than
+    /// two that have to be kept in step. The trigger is recorded as
+    /// [`OnTheEdge::Menu`] either way, which is what a dismissal gives focus
+    /// back to.
+    ///
+    /// **Pressing it again closes it**, which is what every menu a person has
+    /// used does and what a person will try first when they opened one by
+    /// mistake. Without it the only way out by pointer would be a key.
+    pub(crate) fn the_menu_was_opened_on(&mut self, surface: &WlSurface) {
+        let now = match self.where_the_keyboard_is_on_this_windows_edge(surface) {
+            TheKeyboardOnTheEdge::InTheMenu(_) => TheKeyboardOnTheEdge::OnAControl(OnTheEdge::Menu),
+            TheKeyboardOnTheEdge::Nowhere | TheKeyboardOnTheEdge::OnAControl(_) => {
+                TheKeyboardOnTheEdge::InTheMenu(TheKeyboardInTheMenu::opened_from(OnTheEdge::Menu))
+            }
+        };
+        self.remember(surface, now);
+    }
+
+    /// A person pressed a row of the open menu: it acts, and the menu closes.
+    ///
+    /// Answers what the row does, for a caller that performs it, and [`None`]
+    /// where the press was on a row this window will not allow — which is a
+    /// refusal rather than nothing happening, and the menu stays open so the
+    /// person can see that the row they pressed is the muted one.
+    pub(crate) fn a_row_of_the_menu_was_pressed(
+        &mut self,
+        surface: &WlSurface,
+        row: MenuRow,
+    ) -> Option<WhatARowDoes> {
+        if !row.available {
+            return None;
+        }
+        self.remember(surface, TheKeyboardOnTheEdge::OnAControl(OnTheEdge::Menu));
+        Some(row.does)
     }
 
     /// Keep only the windows still open.

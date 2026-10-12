@@ -53,9 +53,18 @@ impl EdgePicture {
     ///
     /// Returns [`None`] when the edge would not be wholly on the output.
     #[must_use]
+    /// `menu` is this window's menu where one is open, and nothing where
+    /// none is. **It belongs to this picture rather than to one of its
+    /// own**: it is this window's menu, it is drawn over this window's
+    /// edge, and two pictures would be two things a caller had to keep in
+    /// the same order to get the stacking right.
     pub fn of(
         edge: &WindowEdge,
         pointing: Pointing,
+        menu: Option<(
+            &crate::window_menu::WindowMenu,
+            crate::window_menu_paint::PointingAtTheMenu,
+        )>,
         title: Option<&str>,
         fonts: &mut cosmic_text::FontSystem,
         output: (i32, i32),
@@ -67,8 +76,14 @@ impl EdgePicture {
             return None;
         }
 
+        // **The menu after the edge**, because it is drawn over it: these
+        // are filled in order and the last one wins where they overlap.
         let solids = crate::window_edge_paint::solids(edge, pointing)
             .into_iter()
+            .chain(
+                menu.into_iter()
+                    .flat_map(|(menu, at)| crate::window_menu_paint::solids(menu, at)),
+            )
             .map(|(area, colour)| Solid {
                 area: into_pixels(area, scale),
                 colour: [colour.red(), colour.green(), colour.blue()],

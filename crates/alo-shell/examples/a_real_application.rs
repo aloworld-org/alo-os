@@ -247,12 +247,36 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 // keyboard state per window, and this is the caller the
                 // comment said would fill the argument. A walk that tabs to an
                 // edge sees a focus ring; one that does not sees none.
-                let focused = server
-                    .where_the_keyboard_is_on_this_windows_edge(surface)
-                    .what_the_painter_shows();
+                let keyboard = server.where_the_keyboard_is_on_this_windows_edge(surface);
+                let focused = keyboard.what_the_painter_shows();
+                // **And this window's menu where one is open.** A walk that
+                // presses the Menu control now photographs a menu rather than
+                // the edge it opened from.
+                let menu = keyboard.the_menu().and_then(|in_the_menu| {
+                    alo_shell::the_menu_of(
+                        &edge,
+                        alo_shell::WhatTheWindowAllows::everything(),
+                        false,
+                        alo_shell::THE_TITLE_BLOCK_IS_TALL,
+                        alo_shell::the_usable_output(
+                            (THE_OUTPUT_IS.0, THE_OUTPUT_IS.1).into(),
+                            100,
+                        ),
+                    )
+                    .map(|menu| (menu, in_the_menu.on()))
+                });
                 alo_shell::EdgePicture::of(
                     &edge,
                     server.what_this_edge_is_pointing_at(&edge, focused),
+                    menu.as_ref().map(|(menu, on)| {
+                        (
+                            menu,
+                            alo_shell::PointingAtTheMenu {
+                                hovered: None,
+                                focused: *on,
+                            },
+                        )
+                    }),
                     title.its_own_words(),
                     &mut faces,
                     (THE_OUTPUT_IS.0, THE_OUTPUT_IS.1),
