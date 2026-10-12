@@ -6,6 +6,7 @@
 #![expect(
     clippy::expect_used,
     clippy::panic,
+    clippy::unwrap_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported, and \
               a formatted panic names the edge it was on"
 )]
@@ -63,7 +64,13 @@ fn at(dock: &TheDocksPlaces, along: u32) -> smithay::utils::Point<i32, smithay::
 fn a_press_on_an_icon_names_the_application_it_is() {
     for edge in Edge::EVERY {
         let dock = on_the_edge(edge, 5);
-        for (which, place) in dock.places.each().iter().enumerate() {
+        for (which, place) in dock
+            .places
+            .each()
+            .iter()
+            .filter(|place| place.app().is_some())
+            .enumerate()
+        {
             let middle = place.from_the_start() + place.across() / 2;
             let named = place
                 .app()
@@ -90,7 +97,8 @@ fn a_press_on_the_control_turns_the_overflow_over_on_every_edge() {
         let dock = on_the_edge(edge, 200);
         let slots = dock.places.each();
         let control = slots
-            .last()
+            .iter()
+            .find(|place| place.is_the_overflow())
             .unwrap_or_else(|| panic!("{edge:?}: no slots at all"));
         assert!(control.is_the_overflow(), "{edge:?}: the premise");
 
@@ -110,9 +118,13 @@ fn a_press_on_the_control_turns_the_overflow_over_on_every_edge() {
 
         // And the application before it is still that application, so the
         // control has not swallowed its neighbour's slot.
+        // **The last application, not the slot before the control's index.**
+        // The composer and the commands sit after the control since
+        // 2026-10-11, so counting back two from the end reaches one of them.
         let before = slots
-            .get(slots.len().saturating_sub(2))
-            .unwrap_or_else(|| panic!("{edge:?}: no slot before the control"));
+            .iter()
+            .rfind(|place| place.app().is_some())
+            .unwrap_or_else(|| panic!("{edge:?}: no application before the control"));
         let answer = what_a_press_on_the_dock_does(&dock, at(&dock, before.from_the_start() + 1));
         assert!(
             matches!(answer, WhatAPressOnTheDockDoes::GoTo(_)),
@@ -180,23 +192,152 @@ fn a_press_that_is_not_on_a_slot_does_nothing() {
     }
 }
 
-/// **A bar with room for everything has no control to press.**
+/// **The control is pressable whether or not anything has overflowed.**
 ///
-/// The control exists only when something is behind it, so on an ordinary Dock
-/// every press is an application or nothing — and a press cannot turn over a
-/// list that is not there.
+/// **This asserted the opposite until 2026-10-11**, which was a rule this lane
+/// invented: the design's resting Dock has `More apps and canvas options` on it
+/// with nothing in the overflow at all. So the control is always there and
+/// always answers; what changes is whether the list it opens has anything in
+/// it, and `dock_raster` already refuses to draw an empty one.
 #[test]
-fn a_dock_that_fits_has_no_control_to_press() {
+fn the_control_answers_whether_or_not_anything_overflowed() {
     for edge in Edge::EVERY {
         let dock = on_the_edge(edge, 4);
-        assert!(dock.over.is_empty(), "{edge:?}: the premise");
-        for place in dock.places.each() {
-            let answer = what_a_press_on_the_dock_does(&dock, at(&dock, place.from_the_start()));
-            assert_ne!(
-                answer,
-                WhatAPressOnTheDockDoes::TurnTheOverflowOver,
-                "{edge:?}: a Dock with room for everything offered a control"
-            );
-        }
+        assert!(dock.over.is_empty(), "{edge:?}: the premise, nothing over");
+
+        let control = dock
+            .places
+            .each()
+            .last()
+            .unwrap_or_else(|| panic!("{edge:?}: no slots at all"));
+        assert!(
+            control.is_the_overflow(),
+            "{edge:?}: the last slot is not the control"
+        );
+        assert_eq!(
+            what_a_press_on_the_dock_does(&dock, at(&dock, control.from_the_start() + 1)),
+            WhatAPressOnTheDockDoes::TurnTheOverflowOver,
+            "{edge:?}: a Dock that fits has no control to press"
+        );
     }
+}
+
+/// A window of `app`, numbered `number`, sitting however it sits.
+fn a_window(number: u64, app: &str, sits: alo_dock::HowItSits) -> alo_dock::Window {
+    alo_dock::Window::of(
+        alo_dock::WindowId::numbered(number),
+        alo_dock::AppId::named(app).ok(),
+        "",
+        alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1).unwrap(),
+        sits,
+    )
+}
+
+/// **Every answer pressing an icon can give**, in one case list.
+///
+/// The decision half of the press, which is the half a machine is not needed
+/// for. See [`super::what_a_press_on_an_icon_does`] for why it is a separate
+/// function at all: the slots a press is classified against are recorded only
+/// by `crate::direct_desktop`, so the press itself cannot be driven here.
+#[test]
+fn what_pressing_an_icon_decides() {
+    use super::WhatAnIconDoes;
+    use alo_dock::HowItSits::{OnTheCanvas, PutAside};
+
+    let app = alo_dock::AppId::named("an.app").unwrap();
+    let cases: &[(&str, &[alo_dock::HowItSits], WhatAnIconDoes)] = &[
+        ("nothing open", &[], WhatAnIconDoes::Launch),
+        (
+            "one on the canvas",
+            &[OnTheCanvas],
+            WhatAnIconDoes::Focus(alo_dock::WindowId::numbered(0)),
+        ),
+        (
+            "one put aside",
+            &[PutAside],
+            WhatAnIconDoes::BringItBackThenFocus(alo_dock::WindowId::numbered(0)),
+        ),
+        (
+            "two on the canvas",
+            &[OnTheCanvas, OnTheCanvas],
+            WhatAnIconDoes::OpenThePicker,
+        ),
+        (
+            "one of each — a minimised window still counts as one of several",
+            &[OnTheCanvas, PutAside],
+            WhatAnIconDoes::OpenThePicker,
+        ),
+        (
+            "both put aside",
+            &[PutAside, PutAside],
+            WhatAnIconDoes::OpenThePicker,
+        ),
+    ];
+
+    for (what, sits, expected) in cases {
+        let mut windows = alo_dock::Windows::none();
+        for (number, how) in sits.iter().enumerate() {
+            windows.opened(a_window(number as u64, "an.app", *how));
+        }
+        assert_eq!(
+            super::what_a_press_on_an_icon_does(&windows, &app),
+            *expected,
+            "{what}"
+        );
+    }
+}
+
+/// **A window put aside is brought back before it is focused, never after.**
+///
+/// The one thing the decision carries that the rule does not spell out, and the
+/// one a reordering would break silently: focusing a hidden window leaves the
+/// keyboard somewhere a person cannot see, and the window then appearing does
+/// not undo the moment they spent typing into nothing.
+///
+/// Held as a property of the *answer* because the applier that acts on it needs
+/// a compositor — `BringItBackThenFocus` names the order in the variant, so a
+/// caller cannot carry it out the other way round without saying so.
+#[test]
+fn coming_back_is_part_of_the_answer_rather_than_the_callers_idea() {
+    use super::WhatAnIconDoes;
+
+    let app = alo_dock::AppId::named("an.app").unwrap();
+    let mut windows = alo_dock::Windows::none();
+    windows.opened(a_window(0, "an.app", alo_dock::HowItSits::PutAside));
+
+    let did = super::what_a_press_on_an_icon_does(&windows, &app);
+    assert!(
+        matches!(did, WhatAnIconDoes::BringItBackThenFocus(_)),
+        "a window put aside was to be focused without being brought back: {did:?}"
+    );
+    assert!(
+        !matches!(did, WhatAnIconDoes::Focus(_)),
+        "and it is not the plain focus answer"
+    );
+}
+
+/// **Another application's windows decide nothing here.**
+///
+/// `what_a_click_does` filters by application and this passes the whole list,
+/// so a press on a one-window application while six others are open must still
+/// focus that one window rather than open a picker.
+#[test]
+fn another_applications_windows_do_not_change_this_ones_answer() {
+    use super::WhatAnIconDoes;
+
+    let app = alo_dock::AppId::named("an.app").unwrap();
+    let mut windows = alo_dock::Windows::none();
+    windows.opened(a_window(0, "an.app", alo_dock::HowItSits::OnTheCanvas));
+    for number in 1..7 {
+        windows.opened(a_window(
+            number,
+            "another.app",
+            alo_dock::HowItSits::OnTheCanvas,
+        ));
+    }
+
+    assert_eq!(
+        super::what_a_press_on_an_icon_does(&windows, &app),
+        WhatAnIconDoes::Focus(alo_dock::WindowId::numbered(0))
+    );
 }

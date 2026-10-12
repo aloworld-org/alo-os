@@ -23,9 +23,20 @@
 //!
 //! **Marked, not merely first.** A person who cannot see the order — reading
 //! with a screen reader, or glancing at a list of eight — needs the fact that
-//! this is where a plain click would have gone, and position alone does not
-//! carry it. [`Preview::is_where_a_click_would_go`] is that fact, and it is on
-//! exactly one preview.
+//! this is the one they were in last, and position alone does not carry it.
+//! [`Preview::is_the_one_used_last`] is that fact, and it is on exactly one
+//! preview.
+//!
+//! **It was called `is_the_one_used_last` until 2026-10-11**, and the
+//! rename is the whole of what ADR 0103 cost this file. A click on the icon of
+//! an application with several windows now opens *this list* rather than going
+//! to a window, so *where a click would go* stopped being true of any row here
+//! — while the thing the field computes, the window used last, did not change
+//! at all. The name was the only wrong part, and a name that is wrong about a
+//! mark a screen reader reads out is worse than one that is merely dated.
+//!
+//! What it is for now is the picker's **default**: the row a person lands on
+//! when the list opens, which is still the one they were in last.
 //!
 //! # Windows put aside are on this list
 //!
@@ -60,6 +71,20 @@ pub enum Opened {
     ByKeyboardFocus,
     /// The icon was held down.
     ByHolding,
+    /// The icon was pressed, and the application has more than one window.
+    ///
+    /// **The fourth door, and the newest.** `docs/design/the-alo-dock.md` has
+    /// said *hovering an icon shows the application's name, then named previews
+    /// of its windows … keyboard focus opens the same list; so does a long
+    /// press. One list, three doors* since it was written, and ADR 0103 made a
+    /// plain press a fourth: a click on an application with several windows
+    /// opens its picker rather than guessing at the one used last.
+    ///
+    /// It is a variant rather than being folded into [`Self::ByHolding`]
+    /// because the two are different things a person did, and an accessible
+    /// name that said *held* of a click would be telling them something untrue
+    /// about their own hand.
+    ByPressingTheIcon,
 }
 
 impl Opened {
@@ -80,7 +105,7 @@ pub struct Preview {
     /// How it sits, so a row can say *put aside* without guessing.
     sits: HowItSits,
     /// Whether a plain click on the icon would have gone here.
-    would_a_click_go_here: bool,
+    is_the_one_used_last: bool,
 }
 
 impl Preview {
@@ -108,14 +133,17 @@ impl Preview {
         self.sits
     }
 
-    /// **Whether a plain click on the icon would have come here.**
+    /// **Whether this is the window the person used last.**
     ///
     /// True on exactly one preview in a list that has any. Marked rather than
     /// left to position, because somebody reading the list one row at a time
     /// never sees the position.
+    ///
+    /// See this module's header for why it is no longer called
+    /// `is_the_one_used_last`.
     #[must_use]
-    pub const fn is_where_a_click_would_go(&self) -> bool {
-        self.would_a_click_go_here
+    pub const fn is_the_one_used_last(&self) -> bool {
+        self.is_the_one_used_last
     }
 }
 
@@ -147,7 +175,7 @@ impl Previews {
                 sits: window.sits(),
                 // The first is the one the use-order puts first, which is by
                 // definition where `crate::clicking` would have gone.
-                would_a_click_go_here: place == 0,
+                is_the_one_used_last: place == 0,
             })
             .collect();
         Self {
@@ -191,10 +219,11 @@ impl Previews {
         self.rows.is_empty()
     }
 
-    /// The row a plain click would have gone to.
+    /// The row for the window the person used last, which is where the picker
+    /// opens.
     #[must_use]
-    pub fn where_a_click_would_go(&self) -> Option<&Preview> {
-        self.rows.iter().find(|row| row.is_where_a_click_would_go())
+    pub fn the_one_used_last(&self) -> Option<&Preview> {
+        self.rows.iter().find(|row| row.is_the_one_used_last())
     }
 }
 
@@ -287,39 +316,68 @@ mod tests {
     /// **The one a click would go to is marked**, not merely first — because
     /// somebody reading one row at a time never sees the position.
     #[test]
-    fn the_row_a_click_would_go_to_is_marked_and_there_is_one_of_it() {
+    fn the_row_for_the_window_used_last_is_marked_and_there_is_one_of_it() {
         let previews = Previews::of(&a_browser(), &app("Browser"), Opened::ByKeyboardFocus);
 
         let marked: Vec<&str> = previews
             .rows()
             .iter()
-            .filter(|row| row.is_where_a_click_would_go())
+            .filter(|row| row.is_the_one_used_last())
             .map(Preview::called)
             .collect();
         assert_eq!(marked, ["Preview"], "exactly one, and it is the first");
-        assert_eq!(
-            previews.where_a_click_would_go().unwrap().called(),
-            "Preview"
-        );
+        assert_eq!(previews.the_one_used_last().unwrap().called(), "Preview");
     }
 
-    /// **And the mark is the same window the click rule would choose.** The two
-    /// halves of the owner's sentence are asked of one order, so they cannot
-    /// come to disagree about which window is *where you last used it*.
+    /// **The mark follows the order, and the click rule no longer names a
+    /// window to compare it against.**
+    ///
+    /// This test asked the two halves of the owner's sentence of one order so
+    /// they could not disagree about which window is *where you last used it*,
+    /// and it compared the mark with `what_a_click_does(..).window()`. ADR 0103
+    /// made a click on a multi-window application open **this list**, so that
+    /// call now answers `ChooseAWindow` and names no window — and this list is
+    /// exactly the application for which there is no longer anything to
+    /// compare.
+    ///
+    /// What is left to hold is the half that is still a fact: **the mark is the
+    /// window used last**, which is where the picker opens. Asked of
+    /// `Windows::most_recent_of`, which is the same source the click rule reads
+    /// for the single-window case, so the two still cannot drift apart.
+    ///
+    /// And the pairing is checked where it still means something: a
+    /// single-window application, where a click does go to a window and that
+    /// window must be the marked one.
     #[test]
-    fn the_marked_row_is_the_window_the_click_rule_chooses() {
+    fn the_marked_row_is_the_window_used_last() {
         let mut windows = a_browser();
-        let view = TheView::showing(Patch::of(Spot::at(0, 0), 1_920, 1_080).unwrap());
 
         for used in [1_u64, 3, 2] {
             windows.used(WindowId::numbered(used));
             let previews = Previews::of(&windows, &app("Browser"), Opened::ByHovering);
-            let marked = previews.where_a_click_would_go().unwrap().id();
-            let clicked = what_a_click_does(&windows, &app("Browser"), view)
-                .window()
-                .unwrap();
-            assert_eq!(marked, clicked, "after using {used}");
+            let marked = previews.the_one_used_last().unwrap().id();
+            let recent = windows.most_recent_of(&app("Browser")).unwrap().id();
+            assert_eq!(marked, recent, "after using {used}");
         }
+    }
+
+    /// **Where a click still names a window, it is the marked one.**
+    ///
+    /// The other half of the test above, kept alive on the case it survives:
+    /// one window, so `what_a_click_does` answers about that window rather than
+    /// opening a picker.
+    #[test]
+    fn with_one_window_the_click_goes_to_the_marked_row() {
+        let mut windows = Windows::none();
+        windows.opened(window(1, "Browser", "Preview", HowItSits::OnTheCanvas));
+        let view = TheView::showing(Patch::of(Spot::at(0, 0), 1_920, 1_080).unwrap());
+
+        let previews = Previews::of(&windows, &app("Browser"), Opened::ByHovering);
+        let marked = previews.the_one_used_last().unwrap().id();
+        let clicked = what_a_click_does(&windows, &app("Browser"), view)
+            .window()
+            .unwrap();
+        assert_eq!(marked, clicked);
     }
 
     /// **A window put aside is on the list**, or an application's third window
@@ -339,7 +397,7 @@ mod tests {
             .find(|row| row.called() == "Research")
             .unwrap();
         assert!(research.sits().was_put_aside());
-        assert!(!research.is_where_a_click_would_go());
+        assert!(!research.is_the_one_used_last());
     }
 
     /// **Putting one aside does not reorder the list**, because putting a window
@@ -357,7 +415,7 @@ mod tests {
         assert_eq!(before, after);
         assert_eq!(
             Previews::of(&windows, &app("Browser"), Opened::ByHovering)
-                .where_a_click_would_go()
+                .the_one_used_last()
                 .unwrap()
                 .called(),
             "Preview",
@@ -373,7 +431,7 @@ mod tests {
         for row in previews.rows() {
             assert_eq!(row.at().wide(), 800);
         }
-        let first = previews.where_a_click_would_go().unwrap();
+        let first = previews.the_one_used_last().unwrap();
         assert_eq!(first.at().corner().x(), 3_000, "the third window's place");
     }
 
@@ -385,7 +443,7 @@ mod tests {
         let blender = Previews::of(&windows, &app("Blender"), Opened::ByHovering);
         assert_eq!(titles(&blender), ["Opening scene"]);
         assert!(
-            blender.where_a_click_would_go().is_some(),
+            blender.the_one_used_last().is_some(),
             "a list of one still marks its row"
         );
     }
@@ -398,6 +456,6 @@ mod tests {
         let previews = Previews::of(&a_browser(), &app("Docs"), Opened::ByKeyboardFocus);
         assert!(previews.is_empty());
         assert_eq!(previews.how_many(), 0);
-        assert_eq!(previews.where_a_click_would_go(), None);
+        assert_eq!(previews.the_one_used_last(), None);
     }
 }

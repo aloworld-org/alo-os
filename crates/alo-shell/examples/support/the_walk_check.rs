@@ -565,8 +565,8 @@ impl<'a> TheDesk<'a> {
         notifications: &'a [alo_notifying::Shown],
     ) -> alo_shell::DesktopFrame<'a> {
         alo_shell::DesktopFrame {
-            the_overflow_is_open: false,
-            the_overflows_heading: "",
+            the_dock_has_open: &alo_shell::NOTHING,
+            the_docks_words: no_words(),
             dock: self.dock,
             look: self.look,
             strings: self.strings,
@@ -585,6 +585,7 @@ impl<'a> TheDesk<'a> {
             filling_the_screen: false,
             display_scale: 100,
             on_the_dock: &[],
+            in_more_apps: &[],
         }
     }
 }
@@ -816,4 +817,15 @@ fn divide_between_two_windows(
 fn nothing_put_aside() -> &'static alo_put_aside::Panel {
     static EMPTY: std::sync::OnceLock<alo_put_aside::Panel> = std::sync::OnceLock::new();
     EMPTY.get_or_init(alo_put_aside::Panel::new)
+}
+
+/// A Dock whose words nobody has said, for a fixture that is not about them.
+///
+/// **A static rather than a temporary**, because the frame borrows it: a
+/// `&TheDocksWords::default()` in a struct literal is a reference to a value
+/// that dies on the next line.
+fn no_words() -> &'static alo_shell::the_docks_words::TheDocksWords {
+    static IT: std::sync::OnceLock<alo_shell::the_docks_words::TheDocksWords> =
+        std::sync::OnceLock::new();
+    IT.get_or_init(alo_shell::the_docks_words::TheDocksWords::default)
 }

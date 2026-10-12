@@ -139,9 +139,24 @@ fn on_the_edge(edge: Edge, how_many: usize) -> TheDocksPlaces {
 fn a_press_in_the_middle_of_a_slot_reaches_that_slot_on_every_edge() {
     for edge in Edge::EVERY {
         let dock = on_the_edge(edge, 5);
-        assert_eq!(dock.places.how_many(), 5, "{edge:?}");
+        // Five applications, then the composer and the commands after them.
+        assert_eq!(
+            dock.places
+                .each()
+                .iter()
+                .filter(|place| place.app().is_some())
+                .count(),
+            5,
+            "{edge:?}"
+        );
 
-        for (which, place) in dock.places.each().iter().enumerate() {
+        for (which, place) in dock
+            .places
+            .each()
+            .iter()
+            .filter(|place| place.app().is_some())
+            .enumerate()
+        {
             let middle = i32::try_from(place.from_the_start() + place.across() / 2)
                 .expect("a place on a bar fits in an i32");
             let at = if edge.runs_across() {
@@ -223,7 +238,8 @@ fn the_overflow_control_can_be_pressed_on_every_edge() {
         let control = dock
             .places
             .each()
-            .last()
+            .iter()
+            .find(|place| place.is_the_overflow())
             .unwrap_or_else(|| panic!("{edge:?}: no slots at all"));
         assert!(
             control.is_the_overflow(),

@@ -20,20 +20,63 @@ and [the interaction rules](https://www.figma.com/design/nDxyF5Ho9oC4RObjVzwBNJ?
 Check a proposed behaviour against that sentence. If the answer would surprise
 somebody who believes it, the answer is wrong.
 
+## Which applications are on it — the membership rule
+
+Settled 2026-10-11 by the owner,
+[ADR 0103](../decisions/0103-the-dock-more-apps-and-the-minimised-panel-are-three-connected-surfaces.md).
+It is first because every other section assumes an icon is there.
+
+| the application | on the Dock? |
+|---|---|
+| pinned, nothing open | **yes** |
+| pinned, a window that is not minimised | **yes** |
+| pinned, every window minimised | **yes**, because it is pinned |
+| unpinned, a window that is not minimised | **yes** |
+| unpinned, every window minimised | **no** — the windows are in the panel |
+| unpinned, nothing open | **no** |
+
+**"Not minimised" is not "on screen."** A window on another Place, outside the
+camera's view, or behind another is not minimised and keeps its application
+here. On a canvas that is the easy mistake to make, which is why the rule names
+it rather than leaving it to be worked out.
+
+One icon per application whatever its window count. Pinned applications keep
+their positions when they open; the rest follow in opening order, and
+**focusing one never reorders the bar.**
+
+**This is not built.** `alo_dock::Holding::showing` gives an icon to every
+application with a window and asks nothing about that window's state — the rule
+it supersedes, which was never written down anywhere and so was never a rule
+anybody could check.
+
 ## What one click does
+
+Superseded in its third row on 2026-10-11 by ADR 0103, which replaced *focus the
+one used last* with a **window picker**. The rest stands, and the reason the
+third row changed is worth keeping: focusing the last-used window is a guess,
+and a picker that shows every window — **minimised ones included, marked as
+minimised** — is the same answer with the guess taken out.
 
 | The application | What a click does |
 |---|---|
 | nothing open | open a window near what the person is looking at, and focus it |
 | one window open | focus it; move the view only if it is not already shown |
-| several open | focus the one used last |
-| the one used last was put aside | bring it back where it was, then travel to it |
+| several open | **open its window picker**, every window in it, minimised ones shown as minimised |
+| the one chosen was put aside | bring it back where it was, then travel to it |
 | already in view | bring it forward; the canvas does not move |
 
 **A click never creates a window by surprise**, and clicking again does not cycle,
-does not open another, and is not quietly repurposed as *back*.
+does not open another, and is not quietly repurposed as *back*. Clicking an
+application that is **already focused** does not minimise it either, and *New
+window* stays something a person asks for.
 
-This is built: `crates/alo-dock/src/clicking.rs`.
+**The same behaviour applies in *More apps*** — one rule for both surfaces, so a
+person does not learn two.
+
+The rules are built: `crates/alo-dock/src/clicking.rs`. **Nothing calls them.**
+A press on an icon reaches `WhatAPressOnTheDockDoes::GoTo` and is taken and
+dropped, so none of this table has ever happened on a machine. The picker does
+not exist in any form.
 
 **One case fell out of taking two rules seriously at once** and is in neither the
 specification nor the designs: a window that was put aside *whose place is already
@@ -98,6 +141,22 @@ window marks that window, names alo, and offers Stop. **Neither becomes a
 permanent button in the Dock**, and the Dock does not become a dashboard for the
 agent.
 
+## What this file does not carry
+
+**It carries behaviour and the owner's geometry rulings. It does not carry what
+the Dock looks like** — the surface, its corner radius, its border, its shadow,
+the running indicators, the artwork in a slot, or how the overflow list is
+styled. Those are measured in
+[the Dock's visual specification](the-docks-visual-specification.md), node by
+node, from the canonical Figma.
+
+The split was made on 2026-10-10 after this lane showed a working overflow and
+treated it as evidence the design was finished. The owner:
+
+> The agreed 76px horizontal height and 48×48 targets establish geometry; they do
+> not replace the rest of the visual design. Likewise, the overflow row minimum is
+> not a complete panel specification.
+
 ## Full screen, pinning, and too many applications
 
 True full screen covers the Dock. Moving to the bottom edge reveals it over the
@@ -127,6 +186,61 @@ Dock shows on hover is reachable by keyboard focus.
 A screen reader announces the application's name, how many windows it has,
 whether one is focused or was put aside, and where a chosen window sits on the
 canvas — *"Browser, three windows open, one minimised"*.
+
+### What is built, as of 2026-10-11
+
+The sentence above is the promise. This is where the build stands against it,
+written down because *"arrow keys move between applications"* reads as done or
+not done and was neither.
+
+| the promise | built |
+|---|---|
+| Escape closes whatever Dock surface is open | **yes** — and the window list goes back to the overview before the overview closes |
+| arrow keys move between applications and previews | **yes**, in both of the Dock's surfaces |
+| Enter focuses | **yes** — in the overview it does what pressing the icon does, in a window list it brings that window back and focuses it |
+| keyboard focus scrolls the focused row into view | **yes**, in the grid and in the window list |
+| the menu key opens the actions | **no**. `alo_dock::menu` is the model and nothing opens it |
+| everything the Dock shows on hover is reachable by keyboard focus | **no** — the bar's own slots take no keyboard focus yet, only the two surfaces they open |
+
+**The bar's own slots and the popover's contents take no pointer press either**,
+which is a larger gap in the same place: `crate::where_the_dock_is::TheDocksPlaces`
+is the hit test and it covers the band, not the surface above it. So today the
+keyboard is the only way to choose anything inside *More apps* or a window list.
+
+### Which keys, and why by code
+
+Escape, Enter, the number pad's Enter, and the four arrows — taken by their
+**evdev codes**, read from `/usr/include/linux/input-event-codes.h` on
+2026-10-11: `KEY_ESC` 1, `KEY_ENTER` 28, `KEY_KPENTER` 96, `KEY_UP` 103,
+`KEY_LEFT` 105, `KEY_RIGHT` 106, `KEY_DOWN` 108. That was a once-off reading of
+the header and nothing re-reads it on every build.
+
+A code is the right thing to act on for exactly these keys, because each sits in
+the same place on every layout. **Nothing that moves between layouts may be
+added to that list**, and a key nobody listed reaches the person's application
+rather than being swallowed — which is the rule that keeps a shell from being
+one in which no program can be cancelled.
+
+**Both Enters**, because a keyboard has two and taking one would give somebody
+who uses the number pad a popover they can move around and cannot choose from.
+
+### The focus ring is a measurement, carried from another screen
+
+Keyboard focus is **a 2px navy ring standing 4px outside the focused item, with
+a corner radius of the item's plus 4**. That is not a choice made here: it is
+`docs/design/the-first-start.md`'s reading of the design's own
+`Keyboard focus / not selected` node (`384:26478`), where a 600×108 card at
+x 160, y 205 gets a 608×116 ring at x 156, y 201, 2px `#102a43`, radius 16
+against the card's 12.
+
+**Carried to the Dock's surfaces deliberately**, and written here because the
+design file has no focus node of its own for this popover. If one is drawn and
+disagrees, the design wins. The numbers live in
+`alo_dock::measures::THE_FOCUS_RING_IS_THICK` and `THE_FOCUS_RING_STANDS_OFF`.
+
+It is drawn **outside** the item, which is what makes it read as its own element
+rather than a border the item grew — and it is separate from the Dock's running
+mark, which is a bar inside the slot. **Teal never means focused** (ADR 0067).
 
 ## Two things the designs say that the words do not
 

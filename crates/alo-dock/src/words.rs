@@ -329,24 +329,172 @@ pub const WHERE_THE_DOCK_GOES: Word = Word::saying("dock.edge", "Where the dock 
 /// **One string for both**, by the owner's ruling of 2026-10-10: *keep its
 /// accessible name and tooltip: "Show more open apps".* They are the same
 /// sentence because they answer the same question, and two strings would drift.
-pub const SHOW_MORE_OPEN_APPS: Word = Word::saying("dock.overflow.show", "Show more open apps")
-    .noting(
-        "The name of the one control at the end of the dock, which opens a list of the \
+pub const SHOW_MORE_OPEN_APPS: Word = Word::saying("dock.more-apps.show", "Show more apps").noting(
+    "The name of the one control at the end of the dock, which opens a list of the \
          applications there was no room for. **Open**, not installed: it is about windows a \
          person has right now, not about everything on the machine. It is an instruction a \
          person acts on — a screen reader reads it and a tooltip shows it — so keep it short \
          enough to sit in a tooltip beside an icon.",
-    );
+);
 
 /// The heading over the overflow list.
 ///
 /// What the list is, rather than what pressing the control does. A person has
 /// already pressed it by the time they read this.
-pub const MORE_OPEN_APPS: Word = Word::saying("dock.overflow.heading", "More open apps").noting(
-    "The heading at the top of the list that opens when somebody presses the dock's last \
+pub const MORE_OPEN_APPS: Word = Word::saying("dock.more-apps.heading", "More apps").noting(
+    "The heading at the top of *More apps*. **The key moved from `dock.overflow.heading` on \
+     2026-10-11 and the old one is retired, under ADR 0068.** The question that rule asks is \
+     whether a correct translation of the old English would still be correct for the new, and \
+     here it would not: the old said *More open apps* of a list of the applications that \
+     overflowed, and this names a list that also holds pinned applications with nothing open \
+     at all. A translation carried over on the old key would go on reading perfectly while \
+     saying something this product no longer says.\n\n\
+     The heading at the top of the list that opens when somebody presses the dock's last \
      control. **A label and not an instruction** — the companion to `dock.overflow.show`, which \
      is the instruction, and the two must stay distinguishable in translation: one names a thing \
      and the other says what to do.",
+);
+
+/// What the line under the list says when there is more below it.
+pub const SCROLL_FOR_MORE: Word = Word::saying(
+    "dock.more-apps.scrolling",
+    "Scroll for more · Escape closes",
+)
+.noting(
+    "The line under *More apps* when its list has more in it than fits. It replaces the \
+         ordinary line rather than joining it, which is what the design draws: the same place, \
+         one sentence at a time. **It says what to do and not what is there** — the ordinary \
+         line names what is on the list, and once a person can see there is more, telling them \
+         how to reach it is the more useful half.",
+);
+
+/// The heading over one application's windows.
+///
+/// Takes the application's name: the design draws *Browser windows*.
+pub const WINDOWS_OF: Word = Word::saying("dock.windows.heading", "{app} windows").noting(
+    "The heading over the list of one application's windows, which opens when somebody \
+     presses an application that has more than one. `{app}` is the application's own name and \
+     is **not** translated — it is what the application calls itself. A language that puts a \
+     possessive or a different word order on this should write the whole sentence that way; \
+     the English order is not part of the meaning.",
+);
+
+/// How many windows there are, and what to do.
+pub const CHOOSE_ONE_TO_RETURN: Word = Word::saying(
+    "dock.windows.count",
+    "{windows} windows · Choose one to return",
+)
+.noting(
+    "Under the heading of one application's window list: how many there are, and what \
+     choosing one does. **Return**, not *open* — every window on this list already exists, \
+     and some of them are only put aside. The separator is a middle dot with a space either \
+     side.",
+);
+
+/// What a row says about a window that is on the canvas.
+pub const A_WINDOW_IS_OPEN: Word = Word::saying("dock.windows.open", "Open").noting(
+    "Said on the row of a window that is on the canvas. **The design shows the window's Place \
+     beside it — *Open · Work* — and this does not, because `alo_dock::previews::Preview` \
+     does not carry one.** It knows the patch a window sits on and not which Place that patch \
+     belongs to, and a separator with nothing after it is worse than no separator: it reads as \
+     a sentence that was cut off. The Place is owed and is named here rather than drawn as an \
+     empty fill. It \
+     distinguishes that window from one that was put aside, which is the other word this \
+     list uses, and the owner's ruling asks for the two to be **clearly identified**.",
+);
+
+/// What a row says about a window that was put aside.
+pub const A_WINDOW_IS_PUT_ASIDE: Word = Word::saying("dock.windows.put-aside", "Minimised").noting(
+    "Said on the row of a window a person put aside, beside which Place it is on. **The \
+         word a person meets is *minimised*** even though the rest of alo OS says *put \
+         aside*: this is the one place a window's state is named beside the other state it \
+         could be in, and *put aside* against *open* reads as a choice somebody is making \
+         rather than a fact about where the window is.",
+);
+
+/// What the line under a window list says.
+pub const CHOOSE_A_WINDOW_ESCAPE_RETURNS: Word = Word::saying(
+    "dock.windows.footer",
+    "Choose a window · Escape returns to apps",
+)
+.noting(
+    "The line under one application's window list. **Escape returns rather than closes**, \
+     which is the difference from the line under *More apps*: this list opened from that one \
+     and Escape goes back to it. The owner's ruling: *Escape dismisses the current picker \
+     first, then the parent popover.* Escape is the key's name and is not translated.",
+);
+
+/// What the search field invites a person to do.
+pub const SEARCH_APPS: Word = Word::saying("dock.more-apps.search", "Search apps").noting(
+    "The words standing in an empty search field at the top of *More apps*. It filters what \
+     is already on that list — the person's pinned and open applications — and never searches \
+     the machine for something to install. A translation that promised the second would be \
+     promising a different surface.",
+);
+
+/// The heading over the applications a person pinned.
+pub const PINNED: Word = Word::saying("dock.more-apps.pinned", "Pinned").noting(
+    "A heading over the first group in *More apps*: the applications the person put on the \
+     Dock themselves. **One word, and it is the state and not the act** — these are pinned, \
+     rather than an instruction to pin something.",
+);
+
+/// The heading over everything else that is open.
+pub const OTHER_OPEN_APPS: Word = Word::saying("dock.more-apps.others", "Other open apps").noting(
+    "A heading over the second group in *More apps*: the applications that are open and were \
+     not pinned. **Other** is doing real work — it means *besides the pinned ones above*, \
+     and a translation that dropped it would read as though the pinned ones were not open.",
+);
+
+/// What the line under the list says.
+pub const PINNED_AND_OPEN_ESCAPE_CLOSES: Word = Word::saying(
+    "dock.more-apps.footer",
+    "Pinned and open apps · Escape closes",
+)
+.noting(
+    "The line under the list in *More apps*, which says two things at once: what is on this \
+     list, and how to leave it. The separator is a middle dot with a space either side. \
+     **Escape is the key's name and is not translated** — it is what is printed on the key, \
+     and a person looking for it on their keyboard will not find a translated word there.",
+);
+
+/// What the composer invites a person to do.
+///
+/// Measured on both Dock families — `I321:17430;74:54` and `349:25791` — as
+/// *Find, open, or ask…*, which is the one string the two agreed on before ADR
+/// 0101 reconciled them.
+pub const FIND_OPEN_OR_ASK: Word =
+    Word::saying("dock.composer.prompt", "Find, open, or ask\u{2026}").noting(
+        "The grey field in the middle of the dock, before anybody has typed in it. **Three \
+         things a person can do, in one line**: find something, open something, or ask alo. \
+         Keep all three — a translation that shortens it to *Search* loses the two that make \
+         this not a search box. It ends in an ellipsis because the sentence is unfinished until \
+         they type.",
+    );
+
+/// The key that opens the composer, shown at its end.
+///
+/// **Not translated in the ordinary way**: it is the product's name, which a
+/// person types. It is declared so that a translator sees it and knows to leave
+/// it alone rather than finding it absent and wondering.
+pub const THE_COMPOSERS_KEY: Word = Word::saying("dock.composer.key", "alo").noting(
+    "The shortcut shown at the right-hand end of the dock's field. **This is the product's \
+     name and is not translated** — it is what a person presses. It is declared here so that it \
+     is visibly a decision rather than an omission.",
+);
+
+/// The control that shows every open window at once.
+pub const SHOW_ALL: Word = Word::saying("dock.show-all", "Show all").noting(
+    "A control at the end of the dock that lays every open window out at once so a person can \
+     pick one. **All the windows, not all the applications** — it is about what is open now. \
+     Short enough to sit in an 88-wide button beside the field.",
+);
+
+/// The control that opens what a person did before.
+pub const HISTORY: Word = Word::saying("dock.history", "History").noting(
+    "A control at the end of the dock that opens what the person did before — documents they \
+     had open, places they were. **Theirs and on this machine**: nothing about it reaches a \
+     network. One word, in a 44-wide button.",
 );
 
 /// Keys this crate used to declare and never will again.
@@ -377,7 +525,7 @@ pub const RETIRED: [&str; 2] = ["dock.labels.under", "dock.labels.gave-way"];
 /// beside the other settings' words because this list's order is the order a
 /// translator meets them in, and a translator who has already done this file
 /// should find the new ones together rather than hunting a diff.
-pub const EVERY_WORD: [Word; 25] = [
+pub const EVERY_WORD: [Word; 39] = [
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
     NAMES_BESIDE,
@@ -403,6 +551,20 @@ pub const EVERY_WORD: [Word; 25] = [
     ALONG_THE_TOP,
     SHOW_MORE_OPEN_APPS,
     MORE_OPEN_APPS,
+    SEARCH_APPS,
+    SCROLL_FOR_MORE,
+    WINDOWS_OF,
+    CHOOSE_ONE_TO_RETURN,
+    A_WINDOW_IS_OPEN,
+    A_WINDOW_IS_PUT_ASIDE,
+    CHOOSE_A_WINDOW_ESCAPE_RETURNS,
+    PINNED,
+    OTHER_OPEN_APPS,
+    PINNED_AND_OPEN_ESCAPE_CLOSES,
+    FIND_OPEN_OR_ASK,
+    THE_COMPOSERS_KEY,
+    SHOW_ALL,
+    HISTORY,
 ];
 
 /// Why this crate's own words could not be declared.

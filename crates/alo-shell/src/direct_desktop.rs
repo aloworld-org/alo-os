@@ -508,6 +508,21 @@ impl LoopInput for Desk<'_> {
                         server, update, extent, strings,
                     );
                 }
+                // **Escape closes what the Dock has open**, and only then.
+                // Asked after Settings because Settings is in front of the
+                // Dock when both are up: a person pressing Escape at a
+                // Settings window is cancelling that, whatever the Dock is
+                // doing behind it.
+                //
+                // The question is false unless a Dock surface is open, so on
+                // an ordinary frame this costs one `matches!` and the keys go
+                // where they went before this existed.
+                if server.the_dock_is_taking_the_keys() {
+                    return crate::a_key_reaches_the_docks_surfaces::a_key_reaches_the_docks_surfaces(
+                        server, update, extent,
+                    )
+                    .map_err(std::io::Error::other);
+                }
                 server
                     .libinput_update(update, extent)
                     .map_err(std::io::Error::other)
@@ -615,27 +630,37 @@ impl LoopInput for Desk<'_> {
         // it has to outlive the frame; built inside `what_only_the_server_knows`
         // it would die at that function's end.
         let on_the_dock = server.what_the_dock_holds(&alo_dock::Holding::nothing());
+        // **And the longer list *More apps* shows**, for `on_the_dock`'s reason
+        // exactly: the frame borrows it, so it has to outlive the frame.
+        let in_more_apps = server.what_more_apps_holds(&alo_dock::Holding::nothing());
+        // **A local, for `on_the_dock`'s reason exactly.** The frame borrows
+        // which of the Dock's surfaces is open, and the borrow must not be of
+        // the `Server` — this lane calls `&mut server` again further down, to
+        // record where the Dock and the fixed controls were drawn.
+        let the_dock_has_open = server.what_the_dock_has_open();
         // **Said here because the drawing path may not word a sentence**, and a
         // local for `windows`' reason exactly: the frame borrows it.
         // `tests/desktop_source.rs` holds that no `desktop_*` or `dock_*` file
         // names `Word::` or `.say(` — every sentence a person meets comes from
         // `alo-saying`, and a raster that looked one up would be a second place
         // deciding what a person reads.
-        let the_overflows_heading = self
-            .strings
-            .say(
-                &alo_dock::words::MORE_OPEN_APPS.key(),
-                &alo_strings::Filling::nothing(),
-            )
-            .into_text();
+        // **Said after the Dock's state is worked out**, because what the
+        // picker says depends on which application is open and how many windows
+        // it has — a bundle said before that would have to be said again.
+        let the_docks_words =
+            crate::the_docks_words::TheDocksWords::said(self.strings, &the_dock_has_open);
         let mut frame = self.desktop.now();
         let named = FrameTarget::metadata(target)?.name;
         what_only_the_server_knows(
             &mut frame,
             server,
-            &windows,
-            &on_the_dock,
-            &the_overflows_heading,
+            crate::what_the_server_tells_a_frame::WhatTheLaneBuilt {
+                windows: &windows,
+                on_the_dock: &on_the_dock,
+                in_more_apps: &in_more_apps,
+                the_dock_has_open: &the_dock_has_open,
+                the_docks_words: &the_docks_words,
+            },
             &named,
         );
         // **Read back from the frame rather than asked again.** The scale the
@@ -700,9 +725,13 @@ impl LoopInput for Desk<'_> {
             what_only_the_server_knows(
                 &mut frame,
                 server,
-                &windows,
-                &on_the_dock,
-                &the_overflows_heading,
+                crate::what_the_server_tells_a_frame::WhatTheLaneBuilt {
+                    windows: &windows,
+                    on_the_dock: &on_the_dock,
+                    in_more_apps: &in_more_apps,
+                    the_dock_has_open: &the_dock_has_open,
+                    the_docks_words: &the_docks_words,
+                },
                 &named,
             );
             // Read off the frame before it is given away, for the reason the

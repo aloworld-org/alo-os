@@ -10,11 +10,12 @@
 
 use crate::{RenderError, drawing};
 use smithay::{
+    backend::allocator::Fourcc,
     backend::renderer::{
         Color32F, Frame, ImportAll, ImportMem, Renderer, Texture, utils::draw_render_elements,
     },
     reexports::wayland_server::protocol::wl_surface::WlSurface,
-    utils::{Rectangle, Transform},
+    utils::{Physical, Rectangle, Transform},
 };
 
 /// What is on the plane, and where it is being looked at from.
@@ -129,6 +130,40 @@ where
     } else {
         None
     };
+    // **Uploaded before the frame opens, because the frame borrows the
+    // renderer.** The same order every client surface already goes through —
+    // `drawing::import_at` above — and the reason the Dock's rounded surface
+    // could not simply be drawn where its flat band was.
+    //
+    // The textures are held in this `Vec` for as long as the frame is, which is
+    // what keeps them alive to be drawn from.
+    // **`R::TextureId`, so both roads get it.** This named `GlesTexture` until
+    // 2026-10-11, when this painter became the only one — the card's road and
+    // the processor's both end here now, and a texture type naming one of the
+    // two renderers would compile for that one and refuse the other. `R` is
+    // already bound by `ImportMem` for the clients' sake, which is the same
+    // trait this needs.
+    //
+    // It also removes a copy: the pixman road carried thirty-two lines doing
+    // exactly this, and a capability written twice is the fault that left the
+    // window edge drawn on one road and not the other.
+    let washed: Vec<(R::TextureId, Rectangle<i32, Physical>)> = match native.desktop {
+        None => Vec::new(),
+        Some(desktop) => desktop
+            .washed()
+            .map(|raster| {
+                renderer
+                    .import_memory(
+                        &raster.pixels,
+                        Fourcc::Abgr8888,
+                        (raster.area.size.w, raster.area.size.h).into(),
+                        false,
+                    )
+                    .map(|texture| (texture, raster.area))
+                    .map_err(submission)
+            })
+            .collect::<Result<_, _>>()?,
+    };
     let mut frame = renderer
         .render(framebuffer, size, transform)
         .map_err(submission)?;
@@ -190,7 +225,7 @@ where
     // and the desktop windows are above it; below the record, the question and
     // the indicator.
     if let Some(desktop) = native.desktop {
-        desktop.paint(&mut frame)?;
+        desktop.paint(&mut frame, &washed)?;
     }
     // Above every client and control, so no window covers what the machine
     // did; below the question and the indicator.

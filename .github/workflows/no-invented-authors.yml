@@ -1,0 +1,121 @@
+# **No commit invents an author.**
+#
+# `CLAUDE.md` forbids a `Co-Authored-By` trailer in as many words:
+#
+# > **No agent adds a `Co-Authored-By` trailer either.** … The owner asked for
+# > the work to stand as theirs, and the history was rewritten to match: 119
+# > commits, not one byte of any tree changed. **What an agent did belongs in
+# > the commit body**, which is where it was always the more use to a reader.
+#
+# That rewrite happened on 2026-09-04, and the trailer came back. Measured on
+# 2026-10-11 by the third PC: **131 of 1291 commits on `main` carry one**, a
+# dozen of them in the most recent run, across more than one lane. Nobody
+# decided to bring it back. Each lane added it once, in good faith, because a
+# tool told it to — and nothing in the landing path ever said no.
+#
+# A rule that is written down and not checked is a rule that decays at exactly
+# this rate. This is the check.
+#
+# # It looks at the commits a change adds, and not at `main`
+#
+# Rewriting `main` is not on the table — 1291 commits, every one of them
+# somebody's checkout. So this asks only about the commits a pull request
+# brings, which is the set whose author still has the chance to fix them. The
+# 131 already there stay, and this stops them becoming 132.
+#
+# # It proves it looked
+#
+# A grep that matches nothing and a grep that could not have run look the same,
+# and this repository has paid for that confusion more than once. So the step
+# prints three numbers every time: how many commits it examined, how many
+# matched the forbidden pattern, and how many matched a word that is in
+# practically every message. If the last is zero the check itself is broken,
+# and it says so and fails rather than passing quietly.
+#
+# The same mistake is worth naming because it was made while measuring this very
+# thing: `git log -60 --grep=X` limits *matches returned*, not commits walked,
+# so a count taken that way says 60 of 60 whatever the truth is.
+
+name: no invented authors
+
+on:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: no-invented-authors-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  authors:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      # The whole history, because the range this examines is computed from a
+      # merge base and a shallow clone has no merge base to compute.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: no commit this change adds carries a Co-Authored-By trailer
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+
+          # On a pull request the base sha is given. On a queue branch it is
+          # not, so the range is this commit's first parent — the queue builds
+          # one commit at a time on top of what it has already accepted.
+          if [ -n "${BASE:-}" ]; then
+            range="$BASE..HEAD"
+          else
+            range="HEAD^..HEAD"
+          fi
+
+          examined=$(git rev-list --count "$range")
+          # `-i` because the trailer has been written three ways in this
+          # repository already: `Co-Authored-By`, `Co-authored-by`, `co-authored-by`.
+          offending=$(git log "$range" --grep='^Co-authored-by:' -i --format='%H' | wc -l | tr -d ' ')
+          # The control. `e` is in every English commit message this repository
+          # has; a zero here means the filter cannot match anything and the
+          # count above is meaningless rather than reassuring.
+          control=$(git log "$range" --grep='e' -i --format='%H' | wc -l | tr -d ' ')
+
+          echo "range     $range"
+          echo "examined  $examined"
+          echo "offending $offending"
+          echo "control   $control  (commits whose message contains 'e')"
+
+          if [ "$examined" -eq 0 ]; then
+            echo
+            echo "This change adds no commits, so there is nothing to check."
+            exit 0
+          fi
+
+          if [ "$control" -eq 0 ]; then
+            echo
+            echo "FAILED: the control found no commit containing the letter 'e'"
+            echo "in $examined commits. The search is broken, so the count of"
+            echo "offending commits is not evidence of anything."
+            exit 1
+          fi
+
+          if [ "$offending" -ne 0 ]; then
+            echo
+            echo "FAILED: $offending of $examined commits carry a Co-Authored-By"
+            echo "trailer, which CLAUDE.md forbids:"
+            echo
+            git log "$range" --grep='^Co-authored-by:' -i --format='  %h %s'
+            echo
+            echo "What an agent did belongs in the commit body, where a reader a"
+            echo "year from now will get some use from it. Rewrite the messages"
+            echo "and force-push this branch; no tree needs to change."
+            exit 1
+          fi
+
+          echo
+          echo "None of the $examined commits invents an author."

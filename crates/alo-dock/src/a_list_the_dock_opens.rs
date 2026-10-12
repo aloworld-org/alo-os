@@ -34,7 +34,7 @@
 use alo_appearance::TextScale;
 use alo_appearance::targets::ENHANCED_TARGET;
 
-use crate::measures::{A_DIVIDER, AN_OVERFLOW_PANEL_IS_WIDE, AROUND_THE_OVERFLOWS_HEADING, GAP};
+use crate::measures::{A_DIVIDER, BESIDE_A_NAME_IN_A_LIST, GAP, MORE_APPS_IS_WIDE};
 use crate::room::Room;
 
 /// How tall one row of the overflow list is at this text size.
@@ -60,9 +60,9 @@ pub fn a_row_at(text: TextScale) -> Room {
 #[must_use]
 pub fn above_the_rows_at(text: TextScale) -> Room {
     Room::pixels(
-        AROUND_THE_OVERFLOWS_HEADING
+        BESIDE_A_NAME_IN_A_LIST
             .saturating_add(Room::a_line_at(text).as_pixels())
-            .saturating_add(AROUND_THE_OVERFLOWS_HEADING)
+            .saturating_add(BESIDE_A_NAME_IN_A_LIST)
             .saturating_add(A_DIVIDER),
     )
 }
@@ -118,11 +118,11 @@ impl ThePanel {
         }
     }
 
-    /// How wide the panel is: [`AN_OVERFLOW_PANEL_IS_WIDE`], measured, and the
+    /// How wide the panel is: [`MORE_APPS_IS_WIDE`], measured, and the
     /// same on all four edges.
     #[must_use]
     pub const fn width(self) -> Room {
-        Room::pixels(AN_OVERFLOW_PANEL_IS_WIDE)
+        Room::pixels(MORE_APPS_IS_WIDE)
     }
 
     /// How tall the panel is: the heading, and the rows that are on the screen.
@@ -446,16 +446,26 @@ mod tests {
 
     /// **The width is the measured one and does not move with the text.**
     ///
-    /// 248 on all four edges, which is what keeps it a number rather than a
-    /// proportion. A name that is too long for it is wrapped or trimmed by
-    /// whoever can measure a font; it does not widen the panel, or the list
-    /// would be a different width on every machine.
+    /// The number was 248 until 2026-10-11 and is 448 now, and the change is
+    /// not a redesign of this list: 248 was `More apps / opens inward`, the
+    /// narrow list of names that *More apps* used to be, and the owner's
+    /// ruling of that day replaced that surface with a 448-wide popover. This
+    /// geometry is still what the **window chooser** inside that popover uses,
+    /// and the chooser is 448 wide because the popover is.
+    ///
+    /// What the test is about has not changed: a name too long for the width is
+    /// wrapped or trimmed by whoever can measure a font, and does not widen the
+    /// panel — or the list would be a different width on every machine.
+    ///
+    /// Both the name and the number are asserted, which is what caught the
+    /// change rather than letting it through: a test that read only
+    /// `MORE_APPS_IS_WIDE` would have passed against any value at all.
     #[test]
     fn the_panel_is_the_measured_width_at_every_text_size() {
         for percent in [75, 100, 200, 300] {
             let panel = ThePanel::of(6, text(percent), plenty());
-            assert_eq!(panel.width().as_pixels(), AN_OVERFLOW_PANEL_IS_WIDE);
-            assert_eq!(panel.width().as_pixels(), 248);
+            assert_eq!(panel.width().as_pixels(), MORE_APPS_IS_WIDE);
+            assert_eq!(panel.width().as_pixels(), 448);
         }
     }
 }

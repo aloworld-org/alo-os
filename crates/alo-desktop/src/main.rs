@@ -578,8 +578,8 @@ mod running {
                 // the `Server` — and the heading is a sentence, which the
                 // drawing path may not word. `what_only_the_server_knows` sets
                 // both, at the one site that builds a frame.
-                the_overflow_is_open: false,
-                the_overflows_heading: "",
+                the_dock_has_open: &alo_shell::NOTHING,
+                the_docks_words: crate::no_words(),
                 dock: &self.dock,
                 put_aside: &self.put_aside,
                 // **The machine's own answer**, asked once a frame. `Revealing` decides this
@@ -616,6 +616,10 @@ mod running {
                 // can be known rather than in the crate that draws, which is the
                 // whole of why this field exists.
                 on_the_dock: &[],
+                // **And the longer list *More apps* shows.** Empty here for
+                // `on_the_dock`'s reason exactly, and overridden on the way to
+                // the frame by `what_only_the_server_knows`.
+                in_more_apps: &[],
                 look: self.look,
                 strings: &self.strings,
                 egress: &self.egress,
@@ -712,9 +716,21 @@ mod running {
     }
 
     /// Read the two things a machine differs by, and systemd's own directory.
+    ///
+    /// **The card is asked for rather than required.**
+    /// `alo_shell::which_card_the_seat_holds` honours `ALO_DISPLAY` where a
+    /// unit sets one and asks the login seat where it does not.
+    ///
+    /// This refused to start without `ALO_DISPLAY` until 2026-10-11, which
+    /// forced `alo-desktop.service` to name a card — and the card it named was
+    /// `/dev/dri/card0`, under a comment of its own beginning *this line is
+    /// wrong on most machines*. Firmware that hands over a framebuffer gives
+    /// `simpledrm` minor 0, so the real GPU is minor 1, and most UEFI machines
+    /// hand over a framebuffer. The greeter had the fix and this did not,
+    /// because the greeter met the fault first.
     fn what_this_machine_is() -> Result<Said, String> {
         Ok(Said {
-            display: PathBuf::from(named("ALO_DISPLAY")?),
+            display: alo_shell::which_card_the_seat_holds()?,
             runtime: PathBuf::from(named("RUNTIME_DIRECTORY")?),
             layout: named("ALO_KEYBOARD")?,
         })
@@ -746,4 +762,15 @@ fn main() -> std::process::ExitCode {
          supervisor that somebody has a desktop on this machine"
     );
     std::process::ExitCode::FAILURE
+}
+
+/// A Dock whose words nobody has said, for a fixture that is not about them.
+///
+/// **A static rather than a temporary**, because the frame borrows it: a
+/// `&TheDocksWords::default()` in a struct literal is a reference to a value
+/// that dies on the next line.
+fn no_words() -> &'static alo_shell::the_docks_words::TheDocksWords {
+    static IT: std::sync::OnceLock<alo_shell::the_docks_words::TheDocksWords> =
+        std::sync::OnceLock::new();
+    IT.get_or_init(alo_shell::the_docks_words::TheDocksWords::default)
 }

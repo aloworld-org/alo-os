@@ -108,7 +108,7 @@ fn two_screens_are_two_pictures_each_with_its_own_background_and_dock() {
             assert_eq!(picture.size, place.room());
             assert_eq!(picture.at, place.at());
             assert_eq!(picture.dock.size, picture.size.across_and_along());
-            assert!(!picture.dock.solids.is_empty());
+            assert!(picture.dock.surface.is_some());
             let band = picture.dock.band;
             assert!(
                 band.size.w < picture.size.across_and_along().0,
@@ -172,18 +172,20 @@ fn night_light_warms_the_background_and_the_dock_on_every_screen() {
         );
         assert!(red_after <= red_before && green_after <= green_before);
 
-        let dock_before: Vec<[u8; 3]> = before.dock.solids.iter().map(|s| s.colour).collect();
-        let dock_after: Vec<[u8; 3]> = after.dock.solids.iter().map(|s| s.colour).collect();
-        assert_eq!(dock_before.len(), dock_after.len());
+        // **Read out of the surface, because the band is not a rectangle any
+        // more.** Same question, one layer down: the Dock's ground is a pixel
+        // in its raster since 2026-10-11.
+        let dock_before = crate::desktop_testing::the_docks_ground(&before.dock)
+            .expect("the cold screen's Dock has a surface");
+        let dock_after = crate::desktop_testing::the_docks_ground(&after.dock)
+            .expect("the warm screen's Dock has a surface");
         assert_ne!(
             dock_before, dock_after,
             "{:?}: the dock was not warmed with the screen",
             after.name
         );
         for (was, now) in dock_before.iter().zip(dock_after.iter()) {
-            for (was, now) in was.iter().zip(now.iter()) {
-                assert!(now <= was, "warming a screen never adds light");
-            }
+            assert!(now <= was, "warming a screen never adds light");
         }
     }
 }
@@ -209,7 +211,14 @@ fn with_night_light_off_the_dock_is_drawn_exactly_as_it_was_decided() {
             look,
             picture.size.across_and_along(),
             &[],
-            (false, ""),
+            // Nothing on the Dock and nothing in *More apps*: this picture is
+            // about where the screens are, which is what the call it is
+            // compared against passes too.
+            &[],
+            (
+                &crate::what_the_dock_has_open::NOTHING,
+                &crate::the_docks_words::TheDocksWords::default(),
+            ),
             &mut fonts(),
         )
         .unwrap();

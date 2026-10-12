@@ -89,6 +89,90 @@ Nothing here is a differentiator. All of it is required.
   top-right corner is the panel's**, by the owner's ruling in that note — the
   top controls' region stops before it, and two surfaces claiming one corner was
   the fault that ruling settled.*
+- [v0.01] **Which applications are on the Dock** — a pinned application is there
+  whether or not it is open, and **stays there when every one of its windows is
+  minimised, because it is pinned.** An unpinned application is there while it
+  has at least one window that is not minimised, and **leaves the Dock when its
+  last one is minimised** — its windows are still in the panel at the edge, each
+  on its own. Each application appears **once**, however many windows it has.
+  **"Not minimised" is not "on screen":** a window on another Place, outside the
+  camera's view, or behind another one still counts. Pinned applications keep
+  their chosen positions when they open; the rest follow in the order they were
+  opened, and **focusing one never reorders the Dock.**
+  *Added 2026-10-11 by the owner's ruling —
+  [ADR 0103](decisions/0103-the-dock-more-apps-and-the-minimised-panel-are-three-connected-surfaces.md).
+  It supersedes a rule that was never written down and was therefore never
+  checkable: `alo_dock::Holding::showing` gives an icon to every application
+  that has a window and asks nothing about that window's state, so an unpinned
+  application whose windows were all put aside stayed on the bar. The tier is
+  set here before any of it is built, because `CLAUDE.md` binds building to this
+  file.*
+- [v0.01] **What a Dock a person has never touched starts with** — **Files,
+  Browser, Apps and Settings, in that order**, resolved to applications that are
+  actually installed. **An application that is not there is left out rather than
+  drawn as a button that does nothing.** The pins are written once, and only
+  **after application discovery has succeeded** — an unfinished scan and a
+  failed one are not evidence that an application is absent. After that the
+  person owns the list: additions, removals, reordering and **a list they
+  deliberately emptied** all survive a restart and an update, and **an empty
+  list is never refilled with the defaults** on the grounds that it is empty.
+  *Added 2026-10-11 by the owner's ruling, ADR 0103, into the current release.
+  `alo_dock::pinning` answers this and nothing produces the discovery it needs,
+  so no machine has ever drawn it.*
+- [v0.01] **Clicking an application** — the same wherever its icon is. **Nothing
+  open:** it starts. **One window:** that window is focused, and restored first
+  if it was minimised. **Several:** its own window picker opens, **minimised
+  windows included and shown as minimised**, and choosing one focuses or
+  restores that window. Focusing a window somewhere else **travels to it**, to
+  the Place and position it already has — it is never silently moved. Clicking
+  an application that is already focused **does not minimise it and does not
+  open a second window**; *New window* stays a thing a person asks for.
+  *Added 2026-10-11 by the owner's ruling, ADR 0103, into the current release.
+  `alo_dock::clicking` decides this and no production caller reaches it: a press
+  on an icon is taken and nothing is done with it.*
+- [v0.01] **More apps** — an **overview of a person's applications**, not a
+  spillover. Its control is **always on the bar**, so the route to it does not
+  appear and vanish with the width of a display. It opens a **compact,
+  non-modal popover anchored to that control** — above a bottom Dock, below a
+  top one, inward from a side one — **inside the display and clear of the panel
+  of minimised windows and the other fixed controls.** It never moves the panel
+  to make room, and it never blurs or disables the canvas behind it. Inside: a
+  **search field** and a **labelled icon grid** — pinned applications first in
+  their saved order, then every other **currently open** application
+  **including those whose windows are all minimised**, each application exactly
+  once. Applications that are merely installed are **not** here; they are
+  reached through Apps or the alo Bar. Search filters across both groups,
+  keeps their order, and says plainly when nothing matches. The popover **grows
+  to a bounded size and then scrolls its grid**, with the search field staying
+  still — it never becomes a full-height sidebar. **Escape dismisses a window
+  picker first and then the popover**, a press outside dismisses it, and the
+  control itself closes it. A person using a keyboard can reach the search
+  field, move through the grid and open an application, with the focused item
+  scrolled into view; dismissing without choosing puts focus back on the
+  control. Names and states reach assistive technology.
+  *Added 2026-10-11 by the owner's ruling, ADR 0103, into the current release.
+  It supersedes the line that stood here for five hours, which said this surface
+  lists **the applications that did not fit** — written the same day, from
+  [ADR 0102](decisions/0102-the-minimised-window-panel-and-the-docks-overflow-are-two-surfaces.md).
+  That made the surface's existence depend on arithmetic. **Built**: the
+  control, a list-shaped popover, its surface, its placement clear of the panel,
+  and dismissal by an outside press. **Not built**: the grid, the search field,
+  the window picker, every keyboard route, and Escape. The owner's note that
+  **the list-style reference is historical input rather than the final design**
+  is why the visual layout is not settled and the Figma file is owed an update.*
+- [v0.01] **Minimising is about one window** — it takes that window off the
+  canvas, **keeps its Place, its position, its size and what is needed to bring
+  it back**, puts an item in the panel at the edge, and **works out again
+  whether its application still belongs on the Dock.** It never closes a window
+  or throws away its work, and it is **not** *Compact*: a compacted window is
+  still on the canvas. So an unpinned application with two windows keeps its
+  icon when one is minimised and loses it when the second is, both windows stay
+  separately in the panel, restoring either brings the icon back, and a pinned
+  application keeps its icon the whole way through.
+  *Added 2026-10-11 by the owner's ruling, ADR 0103, into the current release.
+  The compositor half is built and contracted in
+  [native-window-minimize](contracts/native-window-minimize.md); what is new
+  here is the link to the Dock, which nothing computes.*
 - [v0.5] The dock's size, and whether it hides when a window needs the room
 
 **Restored, not withdrawn.** *The person decides where it goes — bottom, left, right or top, chosen in Settings* was withdrawn by [ADR 0076](decisions/0076-the-dock-is-fixed-to-the-bottom-edge-and-answers-one-question.md) on 2026-09-29 and **the owner reversed that within a day**. It is a promise again, at **[v0.01]**, in the list above. Its **[v0.5]** descendant — *per display, so the dock can sit along the bottom of the laptop and down the side of the external screen* — keeps the tier it had; the reversal moved the edge choice and left per-display placement where it was.

@@ -75,6 +75,7 @@ mod a_chord_reaches_its_action;
 mod a_click_brings_a_window_back;
 mod a_frame_per_display;
 mod a_key_reaches_settings;
+mod a_key_reaches_the_docks_surfaces;
 mod a_new_window_is_placed;
 mod a_press_on_an_edge;
 mod access_bus;
@@ -156,6 +157,10 @@ mod display_lifecycle;
 mod display_resources;
 mod division_raster;
 mod dock_raster;
+/// The Dock's own surface: a rounded panel with a hairline and a shadow,
+/// rasterised with alpha because neither is a rectangle.
+mod dock_surface;
+mod the_keyboard_on_the_docks_surfaces;
 
 /// Where the Dock is on one display: the band on its edge and the slots
 /// inside it, worked out once for the draw and for a press.
@@ -297,6 +302,8 @@ mod software_scanout;
 pub mod status_items;
 mod status_row;
 mod surfaces;
+/// Everything on the Dock that a person reads, said once a frame.
+pub mod the_docks_words;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;
@@ -304,9 +311,11 @@ mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
 mod their_displays;
 mod top_controls_region;
+mod what_the_dock_has_open;
 mod what_the_server_tells_a_frame;
 mod where_a_window_opens;
 mod where_the_dock_is;
+mod which_card_the_seat_holds;
 mod which_display_a_window_is_on;
 pub mod which_preview_the_pointer_is_on;
 mod which_surface_claims_a_point;
@@ -372,7 +381,9 @@ pub use status_items::StatusItems;
 /// `docs/design/where-a-new-window-opens.md` is the contract. Public because
 /// its caller must hold the view and the person's reading direction, and
 /// `Surfaces` holds neither — see the file's header for where it belongs.
+pub use what_the_dock_has_open::{MORE_APPS, NOTHING, WhatTheDockHasOpen};
 pub use where_a_window_opens::{A_DELIBERATE_OFFSET, A_SMALL_GAP, where_a_window_opens};
+pub use which_card_the_seat_holds::which_card_the_seat_holds;
 pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_dividing::NotDivided;

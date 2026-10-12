@@ -32,8 +32,8 @@ fn a_desktop_that_will_not_start<'a>(
     filling: &'a FillingWindow,
 ) -> DesktopFrame<'a> {
     DesktopFrame {
-        the_overflow_is_open: false,
-        the_overflows_heading: "",
+        the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
+        the_docks_words: crate::desktop_testing::no_words(),
         in_use: &[],
         notifications: &[],
         capturing: None,
@@ -47,6 +47,7 @@ fn a_desktop_that_will_not_start<'a>(
         filling_the_screen: false,
         display_scale: 100,
         on_the_dock: &[],
+        in_more_apps: &[],
         dock,
         look: noon_look(&an_appearance(), Direction::LeftToRight),
         strings,

@@ -99,26 +99,27 @@ pub struct DesktopFrame<'a> {
     /// knows which display these windows are on. A Server answers it with
     /// a_window_is_filling_the_screen.
     pub filling_the_screen: bool,
-    /// What the overflow list's heading says, already said.
+    /// Everything on the Dock that a person reads, already said.
     ///
     /// **Handed in rather than looked up, because the drawing path may not word
     /// a sentence.** `tests/desktop_source.rs` holds that no file named
-    /// `desktop_*` or `dock_*` names `Word::`, `.say(` or `Filling::` — every
-    /// sentence a person meets comes from `alo-saying`, and a raster that looked
-    /// one up would be a second place that decides what a person reads. So the
-    /// lane says `alo_dock::words::MORE_OPEN_APPS` once a frame and hands over
-    /// the result, exactly as it does for a window's control labels.
-    pub the_overflows_heading: &'a str,
+    /// `desktop_*` or `dock_*` names `Word::` or `.say(`. The lane says them
+    /// once a frame and hands the results over, exactly as it does for a
+    /// window's control labels.
+    ///
+    /// **One bundle rather than five fields**, so that a frame cannot be built
+    /// with four of them set: see `crate::the_docks_words`.
+    pub the_docks_words: &'a crate::the_docks_words::TheDocksWords,
     /// Whether the list of applications the Dock had no room for is open.
     ///
     /// Handed in for the reason the rest are: a person opened it with a press,
     /// presses reach the `Server`, and a desktop's own state cannot know. The
-    /// `Server` answers it with `the_overflow_is_open`.
+    /// `Server` answers it with `Server::what_the_dock_has_open`.
     ///
     /// **False is the ordinary frame.** A Dock with room for everything has no
     /// control to open one with, so this is only ever true on a Dock that has
     /// something behind it.
-    pub the_overflow_is_open: bool,
+    pub the_dock_has_open: &'a crate::WhatTheDockHasOpen,
     /// **How many physical pixels this display draws for one logical one**, in
     /// hundredths: 100 is one to one, 200 is a dense screen.
     ///
@@ -194,6 +195,19 @@ pub struct DesktopFrame<'a> {
     /// — which is `ICON 48 + GAP 8`, the pitch `alo-dock` already uses. See
     /// `docs/autonomy/updates/the-dock-has-an-implementation-contract.md`.
     pub on_the_dock: &'a [alo_dock::OnTheDock],
+    /// What *More apps* lists: every pinned application, then every other one
+    /// with a window — **including those whose windows are all minimised and
+    /// which are therefore not in [`Self::on_the_dock`] at all.**
+    ///
+    /// `alo_dock::Holding::in_the_overview`, which is `on_the_dock` before the
+    /// membership rule. A separate field rather than something derived here,
+    /// because the difference between the two lists is exactly the applications
+    /// this one has and that one does not, so it cannot be recovered from that
+    /// one.
+    ///
+    /// The owner's ruling of 2026-10-11, ADR 0103: *More apps is now an
+    /// application overview, not merely a list of icons that overflowed.*
+    pub in_more_apps: &'a [alo_dock::OnTheDock],
 }
 
 impl Nested {
@@ -360,8 +374,8 @@ pub(crate) fn frame_pictures(
         desktop.dock,
         desktop.look,
         crate::desktop_raster::Shown {
-            the_overflow_is_open: desktop.the_overflow_is_open,
-            the_overflows_heading: desktop.the_overflows_heading,
+            the_dock_has_open: desktop.the_dock_has_open,
+            the_docks_words: desktop.the_docks_words,
             running: &running,
             filling: &filling,
             division: desktop.division,
@@ -372,6 +386,7 @@ pub(crate) fn frame_pictures(
             filling_the_screen: desktop.filling_the_screen,
             display_scale: desktop.display_scale,
             on_the_dock: desktop.on_the_dock,
+            in_more_apps: desktop.in_more_apps,
         },
         &mut labels.fonts,
         size,
