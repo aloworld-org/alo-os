@@ -41,11 +41,17 @@ const SHIPPED: [(Action, Chord); 18] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::Settings, Chord::shipped(SUPER, Key::I)),
-    // **Alt+Space, which is not a new habit.** `docs/features.md` promises the
-    // habits people arrive with still work, and every desktop a person arrives
-    // from spells *this window's own menu* as Alt+Space. Super is alo's own
-    // modifier and is already crowded.
-    (Action::WindowOptions, Chord::shipped(ALT, Key::Space)),
+    // **Alt+F3, beside Alt+F4 which closes.** `docs/features.md` promises the
+    // habits people arrive with still work, and KDE spells *the window's own
+    // operations menu* exactly this way.
+    //
+    // **It was Alt+Space, and that was wrong on this machine.** That is the
+    // chord most desktops use and the rescued work of 2026-10-10 chose it —
+    // but `alo_keyboards::switching::the_chord` is Alt+Space here, and
+    // `nothing_the_release_binds_is_on_the_switchs_chord` holds that nothing
+    // the release ships may shadow it. Four tests in another crate said so,
+    // which is a collision invisible from inside this one.
+    (Action::WindowOptions, Chord::shipped(ALT, Key::F3)),
     (Action::CloseWindow, Chord::shipped(ALT, Key::F4)),
     (Action::MinimiseWindow, Chord::shipped(SUPER, Key::Down)),
     (Action::MaximiseWindow, Chord::shipped(SUPER, Key::Up)),
@@ -246,12 +252,11 @@ mod tests {
         assert_eq!(said(Action::TheAgent), "Super+A");
         assert_eq!(said(Action::Launcher), "Super+Space");
         assert_eq!(said(Action::Settings), "Super+I");
-        // **Alt+Space, and the clash with Super+Space above is the point.**
-        // The launcher is alo's own thing and takes alo's own modifier; the
-        // window's own menu is a habit every desktop a person arrives from
-        // already spells this way, and `docs/features.md` promises those
-        // habits still work.
-        assert_eq!(said(Action::WindowOptions), "Alt+Space");
+        // **Alt+F3, beside Alt+F4 which closes.** KDE spells the window's own
+        // operations menu this way. It is not Alt+Space, which most desktops
+        // use: `alo_keyboards::switching` reserves that chord on this machine
+        // and its own test holds that nothing the release ships may shadow it.
+        assert_eq!(said(Action::WindowOptions), "Alt+F3");
     }
 
     /// A set of defaults that binds one action twice is refused: neither entry
