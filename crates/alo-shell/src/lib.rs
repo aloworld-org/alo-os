@@ -318,6 +318,10 @@ mod software_scanout;
 pub mod status_items;
 mod status_row;
 mod surfaces;
+/// The colours a task window draws in, mapped from the design's tokens.
+mod task_look;
+/// A task window's furniture, rasterised.
+pub mod task_raster;
 /// The Dock's composer as a field a person types a request into.
 pub mod the_composer_a_person_types_in;
 /// Everything on the Dock that a person reads, said once a frame.

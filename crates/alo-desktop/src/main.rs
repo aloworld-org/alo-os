@@ -689,6 +689,7 @@ mod running {
 
         fn now(&self) -> DesktopFrame<'_> {
             DesktopFrame {
+                tasks: &[],
                 // **The lane fills both of these before it draws.** A
                 // desktop's own state cannot know whether a person has opened
                 // the overflow list — a press turns it over and presses reach

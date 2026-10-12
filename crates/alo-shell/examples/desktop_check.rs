@@ -307,6 +307,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             &[],
                             &mut labels,
                             DesktopFrame {
+                                tasks: &[],
                                 display_scale: 100,
                                 // **Three applications, so there is a Dock to
                                 // look at.** This held nothing until

@@ -34,6 +34,14 @@ use crate::{
 pub struct DesktopFrame<'a> {
     /// The person's dock, which decides the edge and the status area.
     pub dock: &'a alo_dock::Dock,
+    /// The task windows open on this display, each with the rectangle somebody
+    /// already placed it at.
+    ///
+    /// **An empty slice is the true answer on a machine nobody has asked
+    /// anything**, not a placeholder — the same seam `windows` takes, and for
+    /// the same reason: only the caller knows which display's windows these
+    /// are.
+    pub tasks: &'a [crate::task_raster::ATaskOnTheDisplay],
     /// The person's appearance at this moment, and the way they read.
     pub look: DesktopLook,
     /// The vocabulary the person reads.
@@ -387,6 +395,7 @@ pub(crate) fn frame_pictures(
             display_scale: desktop.display_scale,
             on_the_dock: desktop.on_the_dock,
             in_more_apps: desktop.in_more_apps,
+            tasks: desktop.tasks,
         },
         &mut labels.fonts,
         size,
