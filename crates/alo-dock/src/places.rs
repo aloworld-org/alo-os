@@ -35,6 +35,7 @@
 //! the places move with it. That is what lets the same arithmetic serve two
 //! displays of different sizes without being asked twice.
 
+use crate::a_dock_entry::ANativeAction;
 use crate::holding::{Fitted, OnTheDock};
 use crate::measures::{GAP, ICON, MARGIN};
 use crate::window::AppId;
@@ -57,6 +58,14 @@ use crate::window::AppId;
 pub enum WhatIsHere {
     /// An application.
     Application(AppId),
+    /// Something the compositor itself does, pinned here by the person.
+    ///
+    /// **A slot like an application's**, and the same size, because that is
+    /// what it is to a person: a thing on their Dock in a position they chose.
+    /// What differs is who carries the press out, which is the owner's ruling
+    /// of 2026-10-12 — *dispatch each through its appropriate handler* — and
+    /// nothing else about it.
+    ANativeAction(ANativeAction),
     /// The control that opens the list of applications there was no room for.
     ///
     /// **Always on the bar, and last**, which is a correction of 2026-10-11.
@@ -109,7 +118,9 @@ impl WhatIsHere {
     #[must_use]
     pub const fn across(&self) -> u32 {
         match self {
-            Self::Application(_) | Self::TheOverflow | Self::History => ICON,
+            Self::Application(_) | Self::ANativeAction(_) | Self::TheOverflow | Self::History => {
+                ICON
+            }
             Self::TheComposer => crate::measures::THE_COMPOSER_IS_WIDE,
             Self::ShowAll => crate::measures::SHOW_ALL_IS_WIDE,
             Self::TheDivider => crate::measures::THE_DOCKS_EDGE,
@@ -151,7 +162,22 @@ impl APlace {
     pub const fn app(&self) -> Option<&AppId> {
         match &self.what {
             WhatIsHere::Application(app) => Some(app),
-            WhatIsHere::TheOverflow
+            WhatIsHere::ANativeAction(_)
+            | WhatIsHere::TheOverflow
+            | WhatIsHere::TheDivider
+            | WhatIsHere::TheComposer
+            | WhatIsHere::ShowAll
+            | WhatIsHere::History => None,
+        }
+    }
+
+    /// The compositor action here, if this slot is one.
+    #[must_use]
+    pub const fn native(&self) -> Option<ANativeAction> {
+        match &self.what {
+            WhatIsHere::ANativeAction(action) => Some(*action),
+            WhatIsHere::Application(_)
+            | WhatIsHere::TheOverflow
             | WhatIsHere::TheDivider
             | WhatIsHere::TheComposer
             | WhatIsHere::ShowAll
@@ -230,8 +256,23 @@ impl Places {
             *at = at.saturating_add(across).saturating_add(GAP);
         };
         for one in showing {
+            // **The row says which kind it is and this follows it.** Working
+            // the kind out here from anything else — a name, a position, a flag
+            // — would be a second answer to a question `OnTheDock` already
+            // answers, and the two would differ on the day somebody reorders.
             put(
-                WhatIsHere::Application(one.app().clone()),
+                match one.native() {
+                    Some(action) => WhatIsHere::ANativeAction(action),
+                    None => match one.app() {
+                        Some(app) => WhatIsHere::Application(app.clone()),
+                        // Unreachable while `ADockEntry` has two kinds, and
+                        // written as a skip rather than a panic: a Dock that
+                        // refused to lay itself out because one row was a kind
+                        // this build did not know would take the whole desktop
+                        // with it.
+                        None => continue,
+                    },
+                },
                 &mut from_the_start,
             );
         }

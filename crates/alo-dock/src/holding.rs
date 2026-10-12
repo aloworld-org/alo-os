@@ -40,14 +40,20 @@
 //! **What overflows is chosen from the end**, so that a pinned application a
 //! person put there on purpose does not disappear because something else opened.
 
+use crate::a_dock_entry::{ADockEntry, ANativeAction};
 use crate::window::AppId;
 use crate::windows::Windows;
 
-/// One application on the Dock.
+/// One thing on the Dock.
+///
+/// **An application or a native action**, since the owner's ruling of
+/// 2026-10-12. A native row has no windows and never will, so every count below
+/// answers zero for it — which is true rather than a special case, and is why
+/// the membership rule needs no arm for it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OnTheDock {
-    /// Which application.
-    app: AppId,
+    /// Which thing.
+    what: ADockEntry,
     /// Whether it stays here when it has no windows.
     pinned: Pinned,
     /// How many windows it has open, which may be none.
@@ -70,10 +76,28 @@ pub enum Pinned {
 }
 
 impl OnTheDock {
-    /// Which application.
+    /// Which application, if this row is one.
+    ///
+    /// **[`Option`] since 2026-10-12**, and the change is the point rather than
+    /// a cost of it: a native row has no identifier, and answering with one
+    /// would be the invented name `ADockEntry`'s header refuses. Every caller
+    /// that draws an icon, announces a row or dispatches a press now has to say
+    /// what a native row means to it.
     #[must_use]
-    pub const fn app(&self) -> &AppId {
-        &self.app
+    pub const fn app(&self) -> Option<&AppId> {
+        self.what.application()
+    }
+
+    /// Which thing this row is.
+    #[must_use]
+    pub const fn what(&self) -> &ADockEntry {
+        &self.what
+    }
+
+    /// The compositor action this row is, if it is one.
+    #[must_use]
+    pub const fn native(&self) -> Option<ANativeAction> {
+        self.what.native()
     }
 
     /// Whether it stays when it is closed.
@@ -133,11 +157,18 @@ impl OnTheDock {
     }
 }
 
-/// The Dock's applications, in the order they are drawn.
+/// The Dock's entries, in the order they are drawn.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Holding {
     /// Pinned, in the order they were pinned. These come first and stay put.
-    pinned: Vec<AppId>,
+    ///
+    /// **Applications and native actions in one list**, because the person's
+    /// arrangement is one arrangement: Settings sits third because they put it
+    /// third, and a separate list for native entries would make its position a
+    /// property of its kind. The owner's ruling says the opposite — *native
+    /// describes the implementation; it does not mean permanent* — and a
+    /// second list is how *permanent* gets built without anybody deciding to.
+    pinned: Vec<ADockEntry>,
 }
 
 impl Holding {
@@ -153,27 +184,60 @@ impl Holding {
     /// an icon that jumped because somebody pinned it twice would be the
     /// instability this file exists to prevent.
     pub fn pin(&mut self, app: AppId) {
-        if !self.pinned.contains(&app) {
-            self.pinned.push(app);
+        self.pin_entry(ADockEntry::Application(app));
+    }
+
+    /// Pin this entry, at the end of what is already pinned.
+    ///
+    /// [`Self::pin`]'s rule, for either kind: pinning something already pinned
+    /// changes nothing and does not move it.
+    pub fn pin_entry(&mut self, entry: ADockEntry) {
+        if !self.pinned.contains(&entry) {
+            self.pinned.push(entry);
         }
     }
 
     /// Stop pinning this application. Says whether it was pinned.
     pub fn unpin(&mut self, app: &AppId) -> bool {
+        self.unpin_entry(&ADockEntry::Application(app.clone()))
+    }
+
+    /// Stop pinning this entry. Says whether it was pinned.
+    ///
+    /// **A native entry is removed by this and by nothing else**, which is the
+    /// ruling's *it does not mean permanent* made into code: there is one
+    /// removal and both kinds go through it.
+    pub fn unpin_entry(&mut self, entry: &ADockEntry) -> bool {
         let before = self.pinned.len();
-        self.pinned.retain(|held| held != app);
+        self.pinned.retain(|held| held != entry);
         self.pinned.len() != before
     }
 
     /// Whether this application is pinned.
     #[must_use]
     pub fn is_pinned(&self, app: &AppId) -> bool {
-        self.pinned.contains(app)
+        self.is_entry_pinned(&ADockEntry::Application(app.clone()))
     }
 
-    /// Every application pinned, in the order they were pinned.
-    pub fn each_pinned(&self) -> impl Iterator<Item = &AppId> {
+    /// Whether this entry is pinned.
+    #[must_use]
+    pub fn is_entry_pinned(&self, entry: &ADockEntry) -> bool {
+        self.pinned.contains(entry)
+    }
+
+    /// Every entry pinned, in the order they were pinned.
+    pub fn each_pinned(&self) -> impl Iterator<Item = &ADockEntry> {
         self.pinned.iter()
+    }
+
+    /// Every pinned **application**, in the order they were pinned, skipping
+    /// the native entries.
+    ///
+    /// For callers that genuinely mean applications — matching a window to its
+    /// icon, say. A caller that means *the person's arrangement* wants
+    /// [`Self::each_pinned`], and the two are different questions.
+    pub fn each_pinned_application(&self) -> impl Iterator<Item = &AppId> {
+        self.pinned.iter().filter_map(ADockEntry::application)
     }
 
     /// What the Dock shows: pinned first, then every **other application with a
@@ -242,7 +306,10 @@ impl Holding {
         let mut shown: Vec<OnTheDock> = self
             .pinned
             .iter()
-            .map(|app| self.one(app, Pinned::ByThePerson, windows))
+            .map(|entry| match entry {
+                ADockEntry::Application(app) => self.one(app, Pinned::ByThePerson, windows),
+                ADockEntry::Native(action) => Self::a_native_one(*action),
+            })
             .collect();
 
         // The rest of what is open, in the order it opened — never the order it
@@ -279,10 +346,26 @@ impl Holding {
     /// One application's row.
     fn one(&self, app: &AppId, pinned: Pinned, windows: &Windows) -> OnTheDock {
         OnTheDock {
-            app: app.clone(),
+            what: ADockEntry::Application(app.clone()),
             pinned,
             windows: windows.how_many_of(app),
             put_aside: windows.how_many_of_them_put_aside(app),
+        }
+    }
+
+    /// A native entry's row.
+    ///
+    /// **Always `ByThePerson` and always no windows.** It is on the Dock only
+    /// because somebody put it there, which is what `Pinned::ByThePerson`
+    /// means; and the compositor's own surface is not a window this type can
+    /// see, so the counts are zero. `belongs_on_the_dock` then keeps it for the
+    /// pinned clause alone, which is the correct reason.
+    const fn a_native_one(action: ANativeAction) -> OnTheDock {
+        OnTheDock {
+            what: ADockEntry::Native(action),
+            pinned: Pinned::ByThePerson,
+            windows: 0,
+            put_aside: 0,
         }
     }
 }
@@ -386,7 +469,7 @@ mod tests {
     fn names(shown: &[OnTheDock]) -> Vec<String> {
         shown
             .iter()
-            .map(|one| one.app().name().to_owned())
+            .filter_map(|one| one.app().map(|app| app.name().to_owned()))
             .collect()
     }
 
@@ -497,6 +580,101 @@ mod tests {
         assert!(!holding.unpin(&app("Docs")), "and only once");
     }
 
+    /// **A native entry is removed exactly as an application is.**
+    ///
+    /// The owner's ruling of 2026-10-12: *native describes the implementation;
+    /// it does not mean permanent.* Law 5 is what gives that teeth — **a change
+    /// that takes a choice away from the person is a bug, whatever the reason
+    /// given for it** — and the reason that would be given here is a good one:
+    /// Settings always works if Settings is always there.
+    ///
+    /// So this is asserted beside an application's removal, in one test, rather
+    /// than in a test of its own. Two tests would let the native one be deleted
+    /// as redundant by somebody who had only read the other.
+    #[test]
+    fn either_kind_can_be_removed_and_a_removal_sticks() {
+        let settings = ADockEntry::Native(ANativeAction::Settings);
+        let mut holding = Holding::nothing();
+        holding.pin(app("Docs"));
+        holding.pin_entry(settings.clone());
+        holding.pin(app("Browser"));
+        assert_eq!(holding.each_pinned().count(), 3, "the premise");
+
+        assert!(
+            holding.unpin_entry(&settings),
+            "a native entry refused to be removed, so it is permanent and law 5 is broken"
+        );
+        assert!(
+            !holding.is_entry_pinned(&settings),
+            "a native entry was removed and is still on the Dock"
+        );
+        assert!(
+            !holding.unpin_entry(&settings),
+            "and only once, as for an application"
+        );
+
+        // **And the arrangement around it is undisturbed**, which is what makes
+        // the order the person's rather than a consequence of the kinds: Docs
+        // and Browser were either side of it and are now neighbours.
+        let left: Vec<&str> = holding.each_pinned_application().map(AppId::name).collect();
+        assert_eq!(left, ["Docs", "Browser"]);
+
+        // The person puts it back, which is the other half of *removable*: at
+        // the end, because that is where pinning puts things, and they may move
+        // it from there.
+        holding.pin_entry(settings.clone());
+        assert_eq!(
+            holding.each_pinned().last(),
+            Some(&settings),
+            "a native entry a person restored did not come back"
+        );
+    }
+
+    /// **A native entry is on the Dock with no windows, and keeps its row.**
+    ///
+    /// `belongs_on_the_dock` is *pinned, or more windows than are put aside*.
+    /// A native row has no windows at all, so it survives on the pinned clause
+    /// alone — which is the correct reason and needed no arm of its own. This
+    /// test is what says that was checked rather than assumed: the membership
+    /// rule's unpinned clause is the one that drops rows, and a native row has
+    /// exactly the shape it drops.
+    #[test]
+    fn a_native_entry_with_no_windows_stays_on_the_dock() {
+        let settings = ADockEntry::Native(ANativeAction::Settings);
+        let mut holding = Holding::nothing();
+        holding.pin_entry(settings.clone());
+        let mut windows = Windows::none();
+        windows.opened(window(1, "Browser", HowItSits::OnTheCanvas));
+
+        let shown = holding.showing(&windows);
+
+        assert_eq!(
+            shown.first().map(OnTheDock::what),
+            Some(&settings),
+            "the Settings entry is not the first row, or is not there at all"
+        );
+        let its_row = row(&shown, 0);
+        assert_eq!(
+            its_row.app(),
+            None,
+            "a native row answered with an application"
+        );
+        assert_eq!(its_row.native(), Some(ANativeAction::Settings));
+        assert!(
+            !its_row.is_open(),
+            "a native row claimed to have a window open"
+        );
+        assert_eq!(its_row.how_many_windows(), 0);
+        assert_eq!(its_row.how_many_put_aside(), 0);
+        assert!(
+            its_row.belongs_on_the_dock(),
+            "a native entry the person pinned was dropped by the membership rule"
+        );
+        // And the application beside it is still an ordinary row, so this
+        // cannot pass by every row having become native.
+        assert_eq!(row(&shown, 1).app().map(AppId::name), Some("Browser"));
+    }
+
     /// Pinning twice changes nothing and moves nothing.
     #[test]
     fn pinning_something_twice_does_not_move_it() {
@@ -505,7 +683,7 @@ mod tests {
         holding.pin(app("Browser"));
         holding.pin(app("Docs"));
 
-        let pinned: Vec<&str> = holding.each_pinned().map(AppId::name).collect();
+        let pinned: Vec<&str> = holding.each_pinned_application().map(AppId::name).collect();
         assert_eq!(pinned, ["Docs", "Browser"]);
     }
 
@@ -613,7 +791,7 @@ mod tests {
         assert_eq!(
             shown
                 .iter()
-                .filter(|one| one.app() == &app("browser"))
+                .filter(|one| one.app() == Some(&app("browser")))
                 .count(),
             1,
             "the running pinned application has two icons"

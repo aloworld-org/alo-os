@@ -263,6 +263,18 @@ pub const ANNOUNCED_SOME_PUT_ASIDE: Word = Word::saying(
      it is used here although the rest of alo OS says \"put aside\".",
 );
 
+/// The name of the Settings entry, shown on the Dock and read out for it.
+///
+/// **One word for both jobs**, because they are the same fact: what this entry
+/// is called. A separate spoken form would be two keys a translator has to keep
+/// in step for no difference a person could hear.
+pub const THE_SETTINGS_ENTRY: Word = Word::saying("dock.entry.settings", "Settings").noting(
+    "The name of the dock entry that opens this machine's own settings. It is not an \
+     application, so unlike every other dock icon this name IS translated: there is no vendor \
+     name behind it. Shown beside the icon and read aloud when a reader reaches it. No counts \
+     follow it, because the settings surface is not a window this machine counts.",
+);
+
 /// Said after the application's name when one of its windows has the keyboard.
 pub const ANNOUNCED_FOCUSED: Word = Word::saying("dock.announced.focused", "focused").noting(
     "Added to what is read for an icon when one of that application's windows currently has the \
@@ -525,7 +537,7 @@ pub const RETIRED: [&str; 2] = ["dock.labels.under", "dock.labels.gave-way"];
 /// beside the other settings' words because this list's order is the order a
 /// translator meets them in, and a translator who has already done this file
 /// should find the new ones together rather than hunting a diff.
-pub const EVERY_WORD: [Word; 39] = [
+pub const EVERY_WORD: [Word; 40] = [
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
     NAMES_BESIDE,
@@ -565,6 +577,7 @@ pub const EVERY_WORD: [Word; 39] = [
     THE_COMPOSERS_KEY,
     SHOW_ALL,
     HISTORY,
+    THE_SETTINGS_ENTRY,
 ];
 
 /// Why this crate's own words could not be declared.

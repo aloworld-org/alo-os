@@ -193,6 +193,7 @@
 /// or when the list begins to scroll. This was `overflow` while there was only
 /// the first; the module was renamed rather than the second surface being given
 /// a second copy of the same arithmetic.
+pub mod a_dock_entry;
 pub mod a_list_the_dock_opens;
 pub mod announcing;
 pub mod changes;
@@ -227,6 +228,7 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use a_dock_entry::{ADockEntry, ANativeAction};
 pub use announcing::{Announced, Focused, where_it_sits};
 pub use changes::{Changes, Setting};
 pub use clicking::{WhatAClickDoes, what_a_click_does};

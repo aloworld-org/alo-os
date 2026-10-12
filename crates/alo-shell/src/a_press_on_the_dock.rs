@@ -28,6 +28,7 @@
 //! neighbour would mean a person aiming at the space between two applications
 //! opening one of them.*
 
+use alo_dock::a_dock_entry::ANativeAction;
 use alo_dock::places::WhatIsHere;
 use alo_dock::window::AppId;
 
@@ -53,6 +54,15 @@ pub(crate) enum WhatAPressOnTheDockDoes {
     /// have made a press on an icon indistinguishable from a press on a gap, and
     /// then the hit test would have been written twice.
     GoTo(AppId),
+    /// Do this, which the compositor does itself.
+    ///
+    /// **A separate variant from [`Self::GoTo`]**, which is the owner's ruling
+    /// of 2026-10-12 made into a type: *dispatch each through its appropriate
+    /// handler.* A native entry carried as an application would reach the
+    /// launch path, which would ask the bus to start an application that does
+    /// not exist — and the failure would look like a bus problem rather than a
+    /// category error.
+    Do(ANativeAction),
 }
 
 /// What a press at this point on the screen does.
@@ -71,6 +81,7 @@ pub(crate) fn what_a_press_on_the_dock_does(
         None => WhatAPressOnTheDockDoes::Nothing,
         Some(WhatIsHere::TheOverflow) => WhatAPressOnTheDockDoes::TurnTheOverflowOver,
         Some(WhatIsHere::Application(app)) => WhatAPressOnTheDockDoes::GoTo(app.clone()),
+        Some(WhatIsHere::ANativeAction(action)) => WhatAPressOnTheDockDoes::Do(*action),
         // **Taken and not yet acted on**, like `GoTo` above and for the same
         // reason: each is a surface somebody has to build — the composer opens
         // a field a person types into, *Show all* lays every window out, and
@@ -312,6 +323,10 @@ impl crate::Server {
                 self.go_to_this_application(&app);
                 true
             }
+            Some(WhatAPressOnTheDockDoes::Do(action)) => {
+                self.do_this_native_action(action);
+                true
+            }
         }
     }
 
@@ -403,6 +418,46 @@ impl crate::Server {
         // A refusal here is a window that went away between the lookup and now,
         // which is an ordinary race and not something to end a session over.
         let _ = self.activate_window(&surface);
+    }
+
+    /// Carry out a native entry's action.
+    ///
+    /// **Done here and now, unlike a launch.** `WhatAnIconDoes::Launch` records
+    /// an ask because `alo_portals::activated` waits for the bus to start an
+    /// application and this is the compositor's input loop. Opening Settings
+    /// waits for nothing: it is a window this compositor draws itself, and
+    /// `Server::the_chord_does_what_it_names` already opens it on this same
+    /// road when a person presses `⊞`+I.
+    ///
+    /// **The window and the places are taken out and put back**, for that
+    /// method's reason exactly: `SettingsWindow::opened_by_hand` wants
+    /// `&mut SettingsWindow` and `&SettingsPlaces` while this holds
+    /// `&mut self`. Nothing in the call replaces either, so what is put back is
+    /// what was taken.
+    ///
+    /// **A session nobody has told where settings are kept opens none**, and
+    /// the press is still taken. The sign-in screen, the nested lane and every
+    /// test are in that position, and a press that fell through to the canvas
+    /// would move the view when a person aimed at an icon.
+    pub(crate) fn do_this_native_action(&mut self, action: alo_dock::ANativeAction) {
+        // **The surfaces close first**, as they do for a window and for a
+        // launch: a person who chose something from the overview has finished
+        // with the overview, whether or not this machine can carry it out.
+        self.the_overflow_closes();
+        match action {
+            alo_dock::ANativeAction::Settings => {
+                let Some(places) = self.settings_places.take() else {
+                    return;
+                };
+                let mut window = std::mem::take(&mut self.settings);
+                // `opened_by_hand` is the road a **person** takes, and the only
+                // one this file knows: no agent, no grant, no approval. A press
+                // on one's own Dock is that person.
+                let _opened = window.opened_by_hand(&places, std::time::SystemTime::now());
+                self.settings = window;
+                self.settings_places = Some(places);
+            }
+        }
     }
 
     /// Close the overflow list, if it is open.

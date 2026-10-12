@@ -694,7 +694,16 @@ fn the_overflow_list(
         // thing a person sees and two or more `char`s. Taking `chars().next()`
         // here would have split them, and it would have been a second way of
         // answering a question this workspace had already answered.
-        let initial = application.app().first_letter();
+        //
+        // **A native entry's letter comes from its translated name**, which is
+        // the one Dock label that is translated at all: every other is an
+        // application's own name as its source reports it. `the_first_letter_of`
+        // is the same rule by the same function, rather than a second one here.
+        let shown_name = match application.app() {
+            Some(app) => app.name(),
+            None => words.settings.as_str(),
+        };
+        let initial = alo_dock::window::the_first_letter_of(shown_name);
         // **Shaped into a box the size of the letter, not the size of the
         // circle.** `painted_text` hands back an **opaque** box filled with the
         // ground colour, and the Dock's own initials survive that because the
@@ -740,7 +749,7 @@ fn the_overflow_list(
         // Its name under it, centred across the cell.
         let name = crate::painted_text::sentence(
             fonts,
-            application.app().name(),
+            shown_name,
             cell,
             metrics,
             palette.dock,
@@ -1088,6 +1097,17 @@ pub(crate) fn picture(
                 palette.badge,
                 palette.badge_ink,
             ),
+            // **A badge like an application's, from the translated name.** The
+            // owner's ruling keeps a native entry a thing on the person's Dock
+            // in a position they chose, so it is drawn as one — the same badge
+            // ground and the same initial rule, through
+            // `the_first_letter_of` rather than a second grapheme walk.
+            alo_dock::places::WhatIsHere::ANativeAction(alo_dock::ANativeAction::Settings) => (
+                alo_dock::window::the_first_letter_of(&words.settings),
+                initial,
+                palette.badge,
+                palette.badge_ink,
+            ),
             alo_dock::places::WhatIsHere::TheOverflow => (
                 &*THE_OVERFLOWS_MARK.encode_utf8(&mut one_character),
                 utility,
@@ -1151,10 +1171,15 @@ pub(crate) fn picture(
         // Drawing the open mark for a focused application is the honest subset:
         // it is never wrong, it is incomplete, and `A_FOCUSED_MARK_IS_WIDE` is
         // declared and unused until something can answer the question.
-        if place.app().is_some_and(|_| {
+        // **A native entry never gets one**, and not as a special case: it has
+        // no windows, so `is_open` is false for it and the `any` below finds
+        // nothing. The `place.app()` guard is what keeps the comparison from
+        // matching two `None`s — which would mark every native entry as open
+        // the moment another one existed.
+        if place.app().is_some_and(|here| {
             on_the_dock
                 .iter()
-                .any(|one| Some(one.app()) == place.app() && one.is_open())
+                .any(|one| one.app() == Some(here) && one.is_open())
         }) {
             let wide = i32::try_from(alo_dock::measures::AN_OPEN_MARK_IS_WIDE).unwrap_or(1);
             let tall = i32::try_from(alo_dock::measures::A_RUNNING_MARK_IS_TALL).unwrap_or(1);

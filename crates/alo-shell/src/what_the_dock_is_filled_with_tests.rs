@@ -47,6 +47,7 @@ fn a_completed_reading_fills_the_dock_with_what_it_found() {
     let pinned: Vec<&str> = server
         .what_the_dock_is_pinned_to()
         .each_pinned()
+        .filter_map(alo_dock::ADockEntry::application)
         .map(AppId::name)
         .collect();
     assert_eq!(
@@ -144,7 +145,10 @@ fn what_is_pinned_reaches_both_the_draw_and_the_keyboard() {
     )]));
 
     let drawn = server.what_this_persons_dock_holds();
-    let on_the_dock: Vec<&str> = drawn.iter().map(|on| on.app().name()).collect();
+    let on_the_dock: Vec<&str> = drawn
+        .iter()
+        .filter_map(|on| on.app().map(AppId::name))
+        .collect();
     assert_eq!(
         on_the_dock,
         vec!["org.mozilla.firefox"],
@@ -152,7 +156,10 @@ fn what_is_pinned_reaches_both_the_draw_and_the_keyboard() {
     );
 
     let grid = server.what_this_persons_more_apps_holds();
-    let in_more_apps: Vec<&str> = grid.iter().map(|on| on.app().name()).collect();
+    let in_more_apps: Vec<&str> = grid
+        .iter()
+        .filter_map(|on| on.app().map(AppId::name))
+        .collect();
     assert_eq!(
         in_more_apps,
         vec!["org.mozilla.firefox"],
