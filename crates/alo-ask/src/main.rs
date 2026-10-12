@@ -176,15 +176,21 @@ fn main() -> ExitCode {
     let theirs = match the_persons_model(settings.chosen()) {
         Some(chosen) => match the_name_a_runtime_knows(&catalogue, chosen) {
             Ok(artefact) => Some(artefact.to_owned()),
-            // English, and for the same audience as the catalogue refusal
-            // above: a person can only have chosen an entry this catalogue
-            // offered, so an id it does not hold is a fault in what wrote the
-            // setting rather than a condition a person is in. **If this ever
-            // becomes reachable by an ordinary choice it needs words in the
-            // vocabulary**, and it is recorded here rather than given
-            // invented English that reads as though it were translated.
+            // **In the person's own language**, which this printed in English
+            // until 2026-10-12. The note that stood here said a person could
+            // only have chosen an entry the catalogue offered, so an id it
+            // does not hold was a fault in whatever wrote the setting — and
+            // that if it ever became reachable by an ordinary choice it would
+            // need words in the vocabulary.
+            //
+            // It is reachable by an ordinary choice. Measured by writing
+            // `catalogue = "no-such-model-anywhere"` into a settings file, the
+            // way a person with a typo would, and reading what came back: a
+            // `thiserror` string that appeared nowhere in the published
+            // vocabulary. Settings are a person's to edit, so a name they
+            // mistyped is a condition they are in and not a fault in a tool.
             Err(not_named) => {
-                eprintln!("alo-ask: {not_named}");
+                eprintln!("{}", not_named.said(&strings));
                 return ExitCode::FAILURE;
             }
         },

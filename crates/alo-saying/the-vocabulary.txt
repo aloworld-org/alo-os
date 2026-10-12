@@ -1122,6 +1122,8 @@ models.brought.no-file-there	there is no file at {path}, so nothing has been add
 models.brought.not-a-file	{path} is not a file, so nothing has been added
 models.brought.not-measured	nobody has measured whether these weights can drive the agent's verbs, and alo OS has not guessed — they answer your questions now, and get an agent turn once a measurement says they can
 models.brought.unnamed	say which weights: the name the model runtime on this machine knows them by
+models.chosen.no-artefact-yet	{model} is a model this machine knows of, and no file for it has been chosen yet
+models.chosen.no-such-model	this machine has no model called {model}, so there is nothing to ask for
 models.graded.another-way	not measured the way an agent turn asks: it was measured another way, or not at all, and neither says what this machine would get
 models.graded.as-a-turn-asks	measured the way an agent turn asks: shown the words this machine shows a model, and held to the shape of the request it must answer with
 models.key.blank	paste the key this provider gave you, or leave it out if it does not need one

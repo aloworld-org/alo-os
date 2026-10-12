@@ -47,6 +47,8 @@
 //! quantisation is choosing a different file and says so by reading `also_at`
 //! itself.
 
+use alo_strings::{Filling, Said, Strings, Word};
+
 use crate::catalogue::Catalogue;
 
 /// Why a catalogue id could not be turned into a runtime's name.
@@ -70,6 +72,40 @@ pub enum NotNamed {
     /// tell a person than a missing model.
     #[error("`{0}` is in this catalogue and names no artefact, so no runtime can be asked for it")]
     NoArtefact(String),
+}
+
+impl NotNamed {
+    /// Which sentence this refusal is.
+    #[must_use]
+    pub const fn word(&self) -> Word {
+        match self {
+            Self::NoSuchModel(_) => crate::words::NO_SUCH_MODEL,
+            Self::NoArtefact(_) => crate::words::NO_ARTEFACT_YET,
+        }
+    }
+
+    /// This refusal, in the person's own language.
+    ///
+    /// **The `#[error]` strings above are for a log and this is for a person**
+    /// — the two are different audiences and only one of them reads English
+    /// by assumption. Both of these are reachable by an ordinary choice: a
+    /// person writes a model name into their own `settings.toml`, and a typo
+    /// or an entry whose file nobody has pinned is what comes back.
+    /// `alo-ask` carried a note saying that if this ever became reachable that
+    /// way it would need words in the vocabulary. Measured on 2026-10-12 by
+    /// writing a settings file with a name the catalogue does not hold and
+    /// reading what a person is shown: it was English in a `thiserror`
+    /// string, appearing nowhere in the published vocabulary.
+    ///
+    /// **The model's name goes in as a filling, never as text.** It is the
+    /// spelling the person themselves wrote and is shown back so they can see
+    /// it; a sentence that pasted it in would be a sentence a translator
+    /// could not move it within.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        let (Self::NoSuchModel(model) | Self::NoArtefact(model)) = self;
+        strings.say(&self.word().key(), &Filling::of("model", model.clone()))
+    }
 }
 
 /// The name the runtime knows this catalogue entry by.
