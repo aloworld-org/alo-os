@@ -284,3 +284,117 @@ fn a_scan_that_could_not_answer_owes_nothing() {
         );
     }
 }
+
+/// **Typing narrows the grid, and the keyboard walks what is left.**
+///
+/// The seam this lane has now got wrong once: the draw, the hit test and the
+/// arrow keys all read `what_this_persons_more_apps_holds`, so filtering there
+/// is what keeps them one list. Filtering in the drawing instead left the
+/// arrows walking the unfiltered grid, and **854 of 854 tests passed** with the
+/// two disagreeing.
+///
+/// A pinned application with no window is used for the same reason as in the
+/// test above: it is in the grid only because it was pinned.
+#[test]
+fn typing_narrows_the_grid_and_the_keyboard_walks_what_is_left() {
+    use crate::what_the_dock_has_open::WhatTheDockWasAskedFor as Asked;
+    let (_directory, mut server) = server("typing-narrows");
+    server.its_settings_entry_is_called("Settings".to_owned());
+    server.its_dock_is_filled_from(&Discovery::Completed(vec![
+        (ARole::Files, app("org.kde.dolphin")),
+        (ARole::Browser, app("org.mozilla.firefox")),
+    ]));
+    server.the_dock_was_asked_for = Asked::MoreApps { focused: None };
+    assert_eq!(
+        server.what_this_persons_more_apps_holds().len(),
+        3,
+        "the premise: two applications and the Settings entry"
+    );
+
+    for letter in "fire".chars() {
+        server.what_was_typed_into_more_apps.typed(letter);
+    }
+
+    let left: Vec<String> = server
+        .what_this_persons_more_apps_holds()
+        .iter()
+        .map(|on| server.what_it_is_called(on).to_owned())
+        .collect();
+    assert_eq!(
+        left,
+        vec!["org.mozilla.firefox".to_owned()],
+        "typing did not narrow the grid to what matches"
+    );
+    let (how_many, _) = server.what_the_keyboard_moves_through();
+    assert_eq!(
+        how_many, 1,
+        "the arrow keys walk a different list from the grid a person is looking at"
+    );
+}
+
+/// **The Settings entry is found by the name a person reads.**
+///
+/// It has no identifier, so the label this session was told at sign-in is the
+/// only string it can be matched by. A session that was never told has a
+/// Settings entry no search finds — wrong and visible, which is why the label
+/// is stored rather than defaulted to something that looks like a name.
+#[test]
+fn the_settings_entry_is_searchable_by_its_label() {
+    use crate::what_the_dock_has_open::WhatTheDockWasAskedFor as Asked;
+    let (_directory, mut server) = server("settings-searchable");
+    server.its_settings_entry_is_called("Ustawienia".to_owned());
+    server.its_dock_is_filled_from(&Discovery::Completed(vec![(
+        ARole::Files,
+        app("org.kde.dolphin"),
+    )]));
+    server.the_dock_was_asked_for = Asked::MoreApps { focused: None };
+
+    for letter in "ustaw".chars() {
+        server.what_was_typed_into_more_apps.typed(letter);
+    }
+
+    let left = server.what_this_persons_more_apps_holds();
+    assert_eq!(left.len(), 1, "the Polish label did not find the entry");
+    assert_eq!(
+        left.first().and_then(alo_dock::OnTheDock::native),
+        Some(ANativeAction::Settings),
+        "something other than the Settings entry matched its label"
+    );
+}
+
+/// **Closing the overview ends the search.**
+///
+/// A person who closes it and opens it again has started a new one. Finding it
+/// still narrowed by something they typed a minute ago would be a Dock that has
+/// quietly hidden most of their applications, with the only clue a few letters
+/// in a field they are not looking at.
+#[test]
+fn closing_the_overview_clears_what_was_typed() {
+    use crate::what_the_dock_has_open::WhatTheDockWasAskedFor as Asked;
+    let (_directory, mut server) = server("closing-clears");
+    server.its_settings_entry_is_called("Settings".to_owned());
+    server.its_dock_is_filled_from(&Discovery::Completed(vec![(
+        ARole::Files,
+        app("org.kde.dolphin"),
+    )]));
+    server.the_dock_was_asked_for = Asked::MoreApps { focused: None };
+    for letter in "zzz".chars() {
+        server.what_was_typed_into_more_apps.typed(letter);
+    }
+    assert!(
+        server.what_this_persons_more_apps_holds().is_empty(),
+        "the premise: a search that matches nothing"
+    );
+
+    server.the_overflow_closes();
+
+    assert!(
+        server.what_was_typed_into_more_apps().is_nothing(),
+        "the search survived the surface closing"
+    );
+    assert_eq!(
+        server.what_this_persons_more_apps_holds().len(),
+        2,
+        "the grid is still narrowed after the surface closed and opened again"
+    );
+}

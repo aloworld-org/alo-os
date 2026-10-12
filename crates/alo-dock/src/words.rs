@@ -454,6 +454,19 @@ pub const SEARCH_APPS: Word = Word::saying("dock.more-apps.search", "Search apps
      promising a different surface.",
 );
 
+/// What stands where the grid would be when a search matches nothing.
+pub const NOTHING_MATCHES: Word = Word::saying(
+    "dock.more-apps.nothing-matches",
+    "Nothing here matches {typed}",
+)
+.noting(
+    "Shown in place of the grid in *More apps* when what the person typed matches none of \
+     their pinned and open applications. {typed} is their own text, repeated back so they can \
+     see what was searched for — it is never translated. **It does not say the application is \
+     not installed**, because this surface never looked: it filters the list already on it, \
+     and something a person has but has not opened is simply not here to find.",
+);
+
 /// The heading over the applications a person pinned.
 pub const PINNED: Word = Word::saying("dock.more-apps.pinned", "Pinned").noting(
     "A heading over the first group in *More apps*: the applications the person put on the \
@@ -547,7 +560,7 @@ pub const RETIRED: [&str; 2] = ["dock.labels.under", "dock.labels.gave-way"];
 /// beside the other settings' words because this list's order is the order a
 /// translator meets them in, and a translator who has already done this file
 /// should find the new ones together rather than hunting a diff.
-pub const EVERY_WORD: [Word; 40] = [
+pub const EVERY_WORD: [Word; 41] = [
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
     NAMES_BESIDE,
@@ -574,6 +587,7 @@ pub const EVERY_WORD: [Word; 40] = [
     SHOW_MORE_OPEN_APPS,
     MORE_OPEN_APPS,
     SEARCH_APPS,
+    NOTHING_MATCHES,
     SCROLL_FOR_MORE,
     WINDOWS_OF,
     CHOOSE_ONE_TO_RETURN,

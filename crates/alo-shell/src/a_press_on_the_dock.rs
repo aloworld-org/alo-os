@@ -468,6 +468,15 @@ impl crate::Server {
     pub(crate) fn the_overflow_closes(&mut self) {
         self.the_dock_was_asked_for =
             crate::what_the_dock_has_open::WhatTheDockWasAskedFor::Nothing;
+        // **And the search is over.** A person who closes the overview and
+        // opens it again has started a new search: finding it still narrowed
+        // by something they typed a minute ago would be a Dock that has
+        // quietly hidden most of their applications, with the only clue a few
+        // letters in a field they are not looking at.
+        //
+        // Cleared on close rather than on open, so that there is no moment at
+        // which the surface is open holding text from last time.
+        let _was = self.what_was_typed_into_more_apps.cleared();
     }
 }
 

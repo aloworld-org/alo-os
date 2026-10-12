@@ -141,6 +141,16 @@ pub(crate) fn a_key_reaches_the_docks_surfaces(
         return server.libinput_update(InputUpdate::Event(event), extent);
     }
     let Some(asked) = which_key(key.code) else {
+        // **Not one of the surfaces' own keys, so it may be a letter.** Only
+        // the overview has a field to type into; everywhere else an
+        // unrecognised key is the application's, which is what it has always
+        // been. See `crate::a_key_types_into_more_apps` for why a letter is
+        // read as a symbol here and not as a code above.
+        if server.the_dock_was_asked_for.is_the_overview() {
+            return crate::a_key_types_into_more_apps::a_key_types_into_the_search_field(
+                server, event, extent, key.code,
+            );
+        }
         return server.libinput_update(InputUpdate::Event(event), extent);
     };
     match asked {

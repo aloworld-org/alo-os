@@ -53,6 +53,26 @@ impl Server {
         })
     }
 
+    /// One key from a trusted backend, as *More apps*' search field
+    /// understands it.
+    ///
+    /// **The same road as every other key on this seat**, which is what
+    /// applies this person's layout: a French keyboard's `a` and a British
+    /// keyboard's `q` are one key, and only the seat's XKB state knows it.
+    ///
+    /// # Errors
+    /// As [`Server::running_key`].
+    pub(crate) fn the_docks_search_key(
+        &mut self,
+        code: u32,
+        state: KeyState,
+        time: u32,
+    ) -> Result<Option<crate::a_key_types_into_more_apps::ASearchKey>, InputError> {
+        self.desktop_key(code, state, time, |symbol, held| {
+            crate::a_key_types_into_more_apps::ASearchKey::of(symbol, held)
+        })
+    }
+
     /// One key, intercepted, and what `meaning` makes of its symbol.
     fn desktop_key<K>(
         &mut self,

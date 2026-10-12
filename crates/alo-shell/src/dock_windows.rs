@@ -279,7 +279,49 @@ impl crate::Server {
     /// was written before the bug could happen.
     #[must_use]
     pub fn what_this_persons_more_apps_holds(&self) -> Vec<alo_dock::OnTheDock> {
-        self.what_more_apps_holds(self.what_the_dock_is_pinned_to())
+        let shown = self.what_more_apps_holds(self.what_the_dock_is_pinned_to());
+        let typed = &self.what_was_typed_into_more_apps;
+        if typed.is_nothing() {
+            return shown;
+        }
+        // **Filtered here, where every reader of the grid already is.** The
+        // draw, the hit test and the arrow keys all come through this one
+        // method; filtering in the drawing instead would leave the keyboard
+        // walking the unfiltered list, which is the fault this lane found and
+        // fixed on 2026-10-12 — 854 of 854 tests passed with the two
+        // disagreeing.
+        let names: Vec<&str> = shown.iter().map(|on| self.what_it_is_called(on)).collect();
+        let left = alo_dock::which_are_left(names, typed);
+        left.into_iter()
+            .filter_map(|which| shown.get(which).cloned())
+            .collect()
+    }
+
+    /// What this person has typed into the overview's search field.
+    #[must_use]
+    pub fn what_was_typed_into_more_apps(&self) -> &alo_dock::WhatTheyTyped {
+        &self.what_was_typed_into_more_apps
+    }
+
+    /// Tell this session what its Settings entry is called.
+    ///
+    /// Said once at sign-in: the label does not change for the life of a
+    /// session, and the `Server` has no vocabulary to say it with. See the
+    /// field's own note for why a native entry cannot be searched without it.
+    pub fn its_settings_entry_is_called(&mut self, called: String) {
+        self.the_settings_entry_is_called = called;
+    }
+
+    /// The name this row is drawn and searched by.
+    ///
+    /// **One answer for both**, which is the whole of a search field being
+    /// trustworthy: a row that matched on something a person cannot see is a
+    /// row they cannot explain. An application is its own identifier; the
+    /// Settings entry is the translated label this session was told at
+    /// sign-in.
+    pub(crate) fn what_it_is_called<'a>(&'a self, on: &'a alo_dock::OnTheDock) -> &'a str {
+        on.app()
+            .map_or(self.the_settings_entry_is_called.as_str(), |app| app.name())
     }
 }
 

@@ -222,6 +222,26 @@ pub struct Server {
     /// removal on the frame after it was made. See
     /// `crate::what_the_dock_is_filled_with`.
     pub(crate) what_the_dock_is_pinned_to: alo_dock::Holding,
+    /// What a person has typed into *More apps*' search field.
+    ///
+    /// **Here and not beside the open-surface state**, which is where the
+    /// focused cell lives. A person who closes the overview and opens it again
+    /// has started a new search — and that is a fact about the surface opening,
+    /// so `the_overflow_closes` clears this rather than the type carrying it.
+    pub(crate) what_was_typed_into_more_apps: alo_dock::WhatTheyTyped,
+    /// What the Settings entry is called, in this person's language.
+    ///
+    /// **Kept because a search has to match what is drawn.** A native entry has
+    /// no identifier — the owner's ruling forbids inventing one — so its label
+    /// is the only string it can be found by, and the label is translated. The
+    /// `Server` has no vocabulary, so the one word it needs is handed to it at
+    /// sign-in and kept: it does not change for the life of a session.
+    ///
+    /// **Empty until it is told.** A session that never says has a Settings
+    /// entry that no search matches, which is wrong and visible rather than
+    /// wrong and silent — the alternative, falling back to some identifier,
+    /// would be the invented name again.
+    pub(crate) the_settings_entry_is_called: String,
     /// Whether each window's external edge is revealed, one machine per window.
     ///
     /// §5 of `docs/design/the-external-window-edge.md`. The edge is **per
@@ -376,6 +396,8 @@ impl Server {
             asks_an_application_to_start: None,
             // Nothing has been worked out yet; the stand-up fills it.
             what_the_dock_is_pinned_to: alo_dock::Holding::nothing(),
+            what_was_typed_into_more_apps: alo_dock::WhatTheyTyped::nothing(),
+            the_settings_entry_is_called: String::new(),
             edges_revealed: Vec::new(),
             keyboard_on_edges: Vec::new(),
             asked_to_bring_back: Vec::new(),
