@@ -312,6 +312,54 @@ passed because the scroll was read.
 5's remaining half and is now the only way a person with sixty applications
 cannot find one quickly.
 
+### 10. The Dock holds two kinds of thing
+
+**Status: open, not started — 2026-10-12.** The owner's ruling: the saved list
+distinguishes an **application entry** from a **native-action entry**, and each
+is carried out by its own handler. Settings is the first of the second kind, and
+it is removable and reorderable exactly as an application is.
+
+What exists is the intention and not the distinction. The stored list carries
+application identifiers and only those, so there is nowhere for a native action
+to live and no way for a reader to tell the two apart.
+`alo_dock::pinning::ARole::Settings` names the role; nothing stores what fills
+it.
+
+**The clause a naive implementation breaks:** *native describes how it runs, not
+how long it stays.* The easy way to make Settings always work is to make it
+always present, and that takes a choice away — which law 5 forbids whatever the
+reason given for it.
+
+**Earns:** the fresh defaults becoming *Files, Browser, Settings* rather than two
+applications and a gap. Depends on task 4 for the defaults and task 8 for the
+persistence; this is the shape they have to carry.
+
+### 11. The Dock's own controls can be hidden, and the way back is not on the Dock
+
+**Status: open, blocked on a surface nobody has built — 2026-10-12.** The
+composer, *Show all*, *History* and *More apps* become visible-by-default rather
+than unconditional, a person may hide any of them, and the choice persists. Each
+may sit where its own layout needs rather than pretending to be an application
+pin.
+
+**The order is the owner's and it is the whole of the block.** Before any of them
+can be removed there has to be a discoverable way back that does **not** live on
+the Dock, reachable by pointer, by keyboard and by a screen reader — a canvas
+action or its equal. **A person who empties their Dock must still be able to
+restore it**, and a control whose only route to itself is itself is a control a
+person can lose for good. Offering the removal first would be shipping a trap
+and calling it a setting.
+
+Nothing in this repository opens a canvas action or any other surface that could
+be that route. **So the hiding is not the first task here — the way back is**,
+and until it exists this task cannot honestly start.
+
+The ruling also requires that the design and the persistence contract are
+updated **together** before this is called complete.
+
+**Earns:** nothing on its own. It is the clause that makes every other
+customisation safe to offer.
+
 ## What is owed to another lane, and from when
 
 - **Application discovery** — task 4 cannot start without it. Named here on

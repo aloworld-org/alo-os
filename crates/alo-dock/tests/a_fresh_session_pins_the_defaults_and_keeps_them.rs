@@ -60,19 +60,17 @@ fn names(pins: &[AppId]) -> Vec<String> {
 fn what_is_installed() -> Vec<(ARole, AppId)> {
     vec![
         (ARole::Settings, app("alo.Settings")),
-        (ARole::Apps, app("alo.Apps")),
         (ARole::Browser, app("org.mozilla.firefox")),
         (ARole::Files, app("org.gnome.Nautilus")),
     ]
 }
 
-/// The order the owner gave: Files, Browser, Apps, Settings.
-const THE_AGREED_ORDER: [&str; 4] = [
-    "org.gnome.Nautilus",
-    "org.mozilla.firefox",
-    "alo.Apps",
-    "alo.Settings",
-];
+/// The order the owner gave: Files, Browser, Settings.
+///
+/// It was four until 2026-10-12, when the owner removed `Apps`: it named an
+/// application store, nothing provides one, and *More apps* is the
+/// pinned-and-open grid rather than a substitute for it.
+const THE_AGREED_ORDER: [&str; 3] = ["org.gnome.Nautilus", "org.mozilla.firefox", "alo.Settings"];
 
 /// Where the pins are kept between sessions.
 ///
@@ -122,7 +120,7 @@ impl TheStore {
 /// — because a session that re-derived would undo a person's removals every time
 /// they signed in.
 #[test]
-fn a_fresh_session_pins_the_four_and_the_next_session_keeps_them() {
+fn a_fresh_session_pins_the_defaults_and_the_next_session_keeps_them() {
     let found = Discovery::Completed(what_is_installed());
     let mut store = TheStore::default();
 
@@ -135,7 +133,7 @@ fn a_fresh_session_pins_the_four_and_the_next_session_keeps_them() {
     assert_eq!(
         names(first.to_draw()),
         THE_AGREED_ORDER,
-        "a fresh session did not resolve the installed applications into Files, Browser, Apps, \
+        "a fresh session did not resolve the installed applications into Files, Browser, \
          Settings"
     );
     assert!(
@@ -173,11 +171,7 @@ fn a_removal_and_a_reordering_both_survive_a_restart() {
     store.a_session(&found);
 
     // The person removes the browser and moves Settings to the front.
-    let theirs = vec![
-        app("alo.Settings"),
-        app("org.gnome.Nautilus"),
-        app("alo.Apps"),
-    ];
+    let theirs = vec![app("alo.Settings"), app("org.gnome.Nautilus")];
     store.kept = Some(theirs.clone());
     let writes_before = store.writes;
 

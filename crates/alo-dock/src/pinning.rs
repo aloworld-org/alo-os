@@ -17,7 +17,7 @@
 //! # The distinction is a type, because every other way of holding it decays
 //!
 //! An empty `Vec` cannot tell those two apart, and the difference is the whole
-//! ruling: a machine that reads *no pins* as *not initialised* re-pins four
+//! ruling: a machine that reads *no pins* as *not initialised* re-pins every
 //! applications on the next boot, and a person who deliberately emptied their
 //! Dock gets it filled again by an update. So [`ThePins`] has two states and
 //! the empty one is reachable only through [`ThePins::Chosen`].
@@ -26,7 +26,7 @@
 //! `crate::Changes` is release-coupled: absent means *whatever this release
 //! ships*, so a release that moves a default reaches every machine that never
 //! touched it. That is right for the Dock's edge and wrong for pins, because
-//! the shipped default is four applications — absent would mean *put them
+//! the shipped default is three entries — absent would mean *put them
 //! back*. The difference is deliberate and is the thing to read before changing
 //! either.
 //!
@@ -54,20 +54,38 @@ pub enum ARole {
     Files,
     /// The web.
     Browser,
-    /// The application store.
-    Apps,
     /// This machine's own settings.
+    ///
+    /// **Not an application, and that is the point.** It opens the
+    /// compositor's own Settings surface, so it has no identifier and no bus
+    /// endpoint and none is invented for it — the owner's ruling of
+    /// 2026-10-12. What fills this role is therefore not something a scan of
+    /// installed applications could ever find, which is why
+    /// [`crate::pinning::Discovery`] is about the other two.
     Settings,
 }
 
 impl ARole {
-    /// Every role a fresh machine pins, **in the order they are pinned**.
+    /// Every role a fresh machine starts with, **in the order they are put
+    /// there**.
     ///
     /// The order is the owner's and is part of the ruling rather than a
-    /// consequence of how the enum is written: *Files, Browser, Apps,
-    /// Settings*. A person reads their Dock left to right and this is that
-    /// reading.
-    pub const EVERY: [Self; 4] = [Self::Files, Self::Browser, Self::Apps, Self::Settings];
+    /// consequence of how the enum is written: *Files, Browser, Settings*. A
+    /// person reads their Dock left to right and this is that reading.
+    ///
+    /// # It was four until 2026-10-12
+    ///
+    /// `Apps` was the fourth and the owner removed it. It named *the
+    /// application store*, nothing on this machine provides one, and **the
+    /// substitution a reader reaches for is wrong**: *More apps* is not a
+    /// store. Its design (`406-26320`) specifies the **pinned-and-open** grid,
+    /// so an installed application that is neither pinned nor open does not
+    /// belong in it, and offering it as the answer to *Apps* would have
+    /// widened that surface into an application browser nobody asked for.
+    ///
+    /// Removing the default **neither creates nor cancels** an
+    /// application-store feature. It records that there was no role to fill.
+    pub const EVERY: [Self; 3] = [Self::Files, Self::Browser, Self::Settings];
 }
 
 /// A person's pins, and whether they have ever been set.
@@ -219,12 +237,12 @@ pub enum WhyNotYet {
 ///
 /// **In the roles' order and not the caller's.** `installed` may arrive in any
 /// order — it is a lookup, not a list of pins — and the Dock a person first
-/// sees reads Files, Browser, Apps, Settings whatever order the machine
+/// sees reads Files, Browser, Settings whatever order the machine
 /// discovered them in.
 ///
 /// **A role nothing fills is omitted**, which is the owner's words: *omit
 /// unavailable applications; never show placeholders or non-working buttons.* A
-/// Dock of four icons where one opens nothing is worse than a Dock of three.
+/// Dock of three icons where one opens nothing is worse than a Dock of two.
 ///
 /// Not public: a caller reaching this directly has skipped the question
 /// [`ThePins::what_to_pin`] exists to ask, which is whether the defaults apply
@@ -272,39 +290,30 @@ mod tests {
         vec![
             (ARole::Settings, app("alo.Settings")),
             (ARole::Files, app("org.gnome.Nautilus")),
-            (ARole::Apps, app("alo.Apps")),
             (ARole::Browser, app("org.mozilla.firefox")),
         ]
     }
 
-    /// **Files, Browser, Apps, Settings — in that order, whatever order they were
+    /// **Files, Browser, Settings — in that order, whatever order they were
     /// discovered in.**
     #[test]
-    fn a_fresh_machine_pins_the_four_roles_in_the_owners_order() {
+    fn a_fresh_machine_pins_every_default_role_in_the_owners_order() {
         let pinned = what_a_fresh_machine_pins(&a_full_machine());
         assert_eq!(
             names(&pinned),
-            [
-                "org.gnome.Nautilus",
-                "org.mozilla.firefox",
-                "alo.Apps",
-                "alo.Settings"
-            ],
-            "the Dock a person first sees does not read Files, Browser, Apps, Settings"
+            ["org.gnome.Nautilus", "org.mozilla.firefox", "alo.Settings"],
+            "the Dock a person first sees does not read Files, Browser, Settings"
         );
     }
 
     /// **An unavailable application is omitted, not drawn as a placeholder.**
     ///
     /// The owner: *omit unavailable applications; never show placeholders or
-    /// non-working buttons.* A Dock of four icons where one opens nothing is worse
+    /// non-working buttons.* A Dock of three icons where one opens nothing is worse
     /// than a Dock of three.
     #[test]
     fn a_role_nothing_fills_leaves_no_gap_and_no_placeholder() {
-        let without_a_store: Vec<_> = a_full_machine()
-            .into_iter()
-            .filter(|(role, _)| *role != ARole::Apps)
-            .collect();
+        let without_a_store: Vec<_> = a_full_machine().into_iter().collect();
         let pinned = what_a_fresh_machine_pins(&without_a_store);
         assert_eq!(
             names(&pinned),
@@ -313,7 +322,7 @@ mod tests {
         );
         assert_eq!(pinned.len(), 3);
 
-        // And a machine with nothing at all pins nothing, rather than four
+        // And a machine with nothing at all pins nothing, rather than every
         // non-working buttons.
         assert!(what_a_fresh_machine_pins(&[]).is_empty());
     }
@@ -337,7 +346,7 @@ mod tests {
         // And the other state, on the same machine, does fill it — so this test
         // cannot pass by the defaults never applying at all.
         let fresh = ThePins::NeverSet.what_to_pin(&found);
-        assert_eq!(fresh.to_draw().len(), 4);
+        assert_eq!(fresh.to_draw().len(), 3);
         assert!(fresh.should_be_written_down());
     }
 
@@ -366,7 +375,8 @@ mod tests {
             .filter(|app| app.name() != "org.mozilla.firefox")
             .collect();
         let kept = ThePins::Chosen(without_the_browser).what_to_pin(&found);
-        assert_eq!(kept.to_draw().len(), 3);
+        // Three defaults less the one they took off.
+        assert_eq!(kept.to_draw().len(), 2);
         assert!(
             !names(kept.to_draw()).contains(&"org.mozilla.firefox".to_owned()),
             "an application the person removed was restored by the defaults"
@@ -383,10 +393,7 @@ mod tests {
     /// changes.
     #[test]
     fn installing_an_application_later_does_not_pin_it() {
-        let without_a_store: Vec<_> = a_full_machine()
-            .into_iter()
-            .filter(|(role, _)| *role != ARole::Apps)
-            .collect();
+        let without_a_store: Vec<_> = a_full_machine().into_iter().collect();
         let first = ThePins::NeverSet.what_to_pin(&Discovery::Completed(without_a_store));
         let first: Vec<AppId> = first.to_draw().to_vec();
         assert_eq!(first.len(), 3, "the premise: the store was not there");
@@ -398,7 +405,6 @@ mod tests {
             3,
             "installing an application pinned it"
         );
-        assert!(!names(now.to_draw()).contains(&"alo.Apps".to_owned()));
         assert!(!now.should_be_written_down());
     }
 
@@ -439,10 +445,10 @@ mod tests {
         }
 
         // **The premise**: the same `ThePins` on the same machine *does* get the
-        // four once discovery completes — so this test cannot pass by the
+        // every default once discovery completes — so this test cannot pass by the
         // defaults never applying at all.
         let completed = ThePins::NeverSet.what_to_pin(&Discovery::Completed(a_full_machine()));
-        assert_eq!(completed.to_draw().len(), 4);
+        assert_eq!(completed.to_draw().len(), 3);
         assert!(completed.should_be_written_down());
     }
 
@@ -459,7 +465,7 @@ mod tests {
         assert!(nothing_installed.to_draw().is_empty());
         assert!(
             nothing_installed.should_be_written_down(),
-            "a machine that really has none of the four would re-run discovery's defaults on \
+            "a machine that really has none of the defaults would re-run discovery's defaults on \
              every boot"
         );
 
@@ -510,12 +516,7 @@ mod tests {
             .collect();
         assert_eq!(
             pinned,
-            [
-                "org.gnome.Nautilus",
-                "org.mozilla.firefox",
-                "alo.Apps",
-                "alo.Settings"
-            ]
+            ["org.gnome.Nautilus", "org.mozilla.firefox", "alo.Settings"]
         );
     }
 }

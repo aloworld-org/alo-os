@@ -108,17 +108,51 @@ Nothing here is a differentiator. All of it is required.
   set here before any of it is built, because `CLAUDE.md` binds building to this
   file.*
 - [v0.01] **What a Dock a person has never touched starts with** — **Files,
-  Browser, Apps and Settings, in that order**, resolved to applications that are
-  actually installed. **An application that is not there is left out rather than
-  drawn as a button that does nothing.** The pins are written once, and only
-  **after application discovery has succeeded** — an unfinished scan and a
-  failed one are not evidence that an application is absent. After that the
-  person owns the list: additions, removals, reordering and **a list they
-  deliberately emptied** all survive a restart and an update, and **an empty
-  list is never refilled with the defaults** on the grounds that it is empty.
+  Browser and Settings, in that order.** Files and Browser are resolved to
+  applications that are **actually installed**; Settings opens the compositor's
+  own Settings surface and **is not an application** — it has no identifier and
+  no bus endpoint, and none is invented for it. **An application that is not
+  there is left out rather than drawn as a button that does nothing.** The
+  defaults are written once, and only **after application discovery has
+  succeeded** — an unfinished scan and a failed one are not evidence that an
+  application is absent. After that the person owns the list: additions,
+  removals, reordering and **a list they deliberately emptied** all survive a
+  restart and an update, and **an empty list is never refilled with the
+  defaults** on the grounds that it is empty.
   *Added 2026-10-11 by the owner's ruling, ADR 0103, into the current release.
   `alo_dock::pinning` answers this and nothing produces the discovery it needs,
-  so no machine has ever drawn it.*
+  so no machine has ever drawn it.* **Apps was a fourth default until
+  2026-10-12 and the owner removed it**: it named an application store, nothing
+  provides one, and *More apps* is not a substitute — that surface is the
+  **pinned-and-open** grid its design specifies (`406-26320`), so an installed
+  application that is neither pinned nor open does not belong in it. Removing
+  the default neither creates nor cancels an application-store feature.
+- [v0.01] ★ **The Dock holds two kinds of thing, and the person owns both** —
+  an **application entry**, which starts or focuses an application, and a
+  **native-action entry**, which reaches one of alo's own surfaces. Settings is
+  the first of the second kind. **The saved list says which a thing is** and
+  each is carried out by its own handler, so a native action never has to wear
+  an application's identifier to sit on the bar.
+  **Native describes how it runs, not how long it stays.** A person may remove
+  and reorder a native action exactly as they may an application, and
+  additions, removals, order and a deliberately empty list all survive a
+  restart and an update. **Defaults are applied at first setup only**, and an
+  update never restores something a person removed.
+  *Added 2026-10-12 by the owner's ruling, into the current release.*
+- [v0.01] ★ **The Dock's own controls can be hidden** — and the way to bring
+  them back is not on the Dock. The composer, *Show all*, *History* and *More
+  apps* are visible by default and a person may hide any of them, with the
+  choice persisted. Each may sit where its own layout needs rather than
+  pretending to be an application pin.
+  **Before any of them can be removed there is a discoverable way back that
+  does not live on the Dock** — reachable by pointer, by keyboard and by a
+  screen reader, a canvas action or its equal — because **a person who empties
+  the Dock must still be able to restore it.** A control whose only route to
+  itself is itself is a control a person can lose for good.
+  And hiding a control never removes what it does: everything the Dock's
+  controls reach stays reachable elsewhere. The design and the persistence
+  contract are updated **together** before this is called complete.
+  *Added 2026-10-12 by the owner's ruling, into the current release.*
 - [v0.01] **Clicking an application** — the same wherever its icon is. **Nothing
   open:** it starts. **One window:** that window is focused, and restored first
   if it was minimised. **Several:** its own window picker opens, **minimised

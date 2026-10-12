@@ -1486,9 +1486,57 @@ Wayland client, so this is a measurement somebody took rather than a check that
 runs again.
 
 
+### The Dock holds two kinds of thing, and the person owns both
+
+**Shown by:** nothing yet, and nothing should claim it.
+
+**Still owed:** all of it. The saved Dock list carries application identifiers
+and only those, so there is nowhere for a native-action entry to live and no way
+for a reader to tell the two apart. `alo_dock::pinning::ARole::Settings` names
+the first of the second kind and is a role rather than a stored entry, so what
+exists is the *intention* to distinguish them and not the distinction.
+
+What has to be true: the stored list says which kind each entry is, a press
+dispatches each through its own handler, and a native action is removable and
+reorderable exactly as an application is. **Native describes how it runs, not
+how long it stays** — that is the clause a naive implementation breaks, because
+the easy way to make Settings always work is to make it always present.
+
+**Where the work is:** task 10 of
+`docs/autonomy/the-dock-more-apps-and-the-minimised-panel.md`, which depends on
+task 4 for the defaults and task 8 for the persistence — this is the shape they
+have to carry. Reached this release on 2026-10-12 by the owner's ruling.
+
+### The Dock's own controls can be hidden
+
+**Shown by:** nothing yet, and it must not be offered yet.
+
+**Still owed:** all of it, and **it is deliberately blocked rather than merely
+unstarted.** The composer, *Show all*, *History* and *More apps* are drawn
+unconditionally — `alo_dock::places` lays out whichever the layout asks for and
+nothing reads a person's choice about any of them, because there is nowhere to
+store one.
+
+**The order is the owner's and it is the whole of why this is blocked:** before
+any of them can be removed there has to be a discoverable way back that does
+not live on the Dock, reachable by pointer, by keyboard and by a screen reader.
+A person who empties their Dock must still be able to restore it, and **a
+control whose only route to itself is itself is a control a person can lose for
+good.** Offering removal first would be shipping a trap and calling it a
+setting.
+
+Nothing in this repository opens a canvas action or any other surface that could
+be that route, so the hiding is not the first task here — the way back is.
+
+**Where the work is:** task 11 of
+`docs/autonomy/the-dock-more-apps-and-the-minimised-panel.md`, which cannot
+honestly start until the way back exists. Reached this release on 2026-10-12 by
+the owner's ruling, which also requires that the design and the persistence
+contract are updated together before this is called complete.
+
 ## What this audit found
 
-**The audit in figures: 83 promises, 2 shown whole, 55 shown in part, 26 with no
+**The audit in figures: 85 promises, 2 shown whole, 55 shown in part, 28 with no
 evidence at all.**
 
 *This line is the ledger's own count of itself and it is checked.*
