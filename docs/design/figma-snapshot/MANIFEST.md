@@ -8,6 +8,46 @@ that prose was 55 top-level frames behind without anything saying so.
 **Approved by the owner on 2026-10-04**, with the size explicitly accepted: *an untraceable
 design change is the larger problem.*
 
+## The sign-in and unlock screen, 2026-10-12
+
+**`176-10686.xml` is authoritative for the sign-in and unlock screen**, and
+supersedes `70-28.xml` for it. The page export holds the screen frames with
+their authentication instance as a stub; this holds the component expanded,
+which is where every measurement an implementation needs lives.
+
+**One file for seven links.** The owner gave seven nodes — the screen, the
+component, and five states. The five states are the same frame with the same
+four children, differing only inside one instance, so capturing each would
+record the same frame five times and hide the one thing that differs. The
+component `364:25567` is captured instead, and the states' ids are recorded in
+the file so a later capture reads the same nodes.
+
+**What the tree carries**: the authentication group is 400 × 268 at (520, 266)
+on a 1440 × 960 screen; the monogram 64 × 64 at (168, 0) with its initial at
+(23, 14); the account line at (122, 76); the entry 304 × 56 at (48, 144) with
+the submit target 44 × 44 at (253, 6) **inside it**; *Other ways to sign in* at
+(80, 224). The essential actions are a 1360 × 48 row at (40, 884) — Accessibility
+at its left, Switch person and a 48 × 48 power target at its right — and *Back
+to lock* is 48 × 48 at (32, 28).
+
+**Three things are hidden in the shipped component**, which is a measurement
+rather than an omission: `176:10999` *Instruction*, `176:11003` *Unlock canvas*
+and `360:25700` *Alternative authentication methods*. The second is the
+separate full-width button an earlier design had, and the owner's direction of
+2026-10-12 is explicit that it is not restored.
+
+**And what the tree does not carry.** The error state's red entry stroke and
+its red feedback line are a colour change on the same geometry, and a stroke on
+a frame is not a child layer — the blind spot this file already records for the
+window edge's focus ring. Both were read from the render instead.
+
+**Manrope, stated rather than inferred.** `Heading/Large`, `Display/Medium`,
+`Body/Medium` and `Label/Medium` all resolve to Manrope on this node, and the
+owner's direction names it. `the-typeface-the-design-specifies-is-not-the-one-that-ships`
+is the open question this closes for the design side: the shell compiles Inter,
+and that is now a difference somebody must resolve rather than a question
+nobody had answered.
+
 ## The compact edge and the window menu, 2026-10-11
 
 **`414-27564.xml` is authoritative for the window edge's sizing, its
