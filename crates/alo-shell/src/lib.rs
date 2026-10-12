@@ -592,9 +592,13 @@ pub use sign_in_layout::{
     THE_SUBMIT_TARGET_IS, sign_in_laid_out,
 };
 pub use sign_in_password::PASSWORD_BYTES;
-/// **What a press on the sign-in screen is on**, so the arrow and the
-/// essential actions can be worked rather than only drawn.
-pub use sign_in_pointing::{OnTheSignInScreen, what_is_under_the_pointer};
+// **`OnTheSignInScreen` is deliberately not exported.** It was, until the
+// screen-reader gate in `alo-access` read this list: that test treats every
+// exported name ending in `Screen` as a surface a person meets, and told me a
+// reader would be told nothing about this one. It was right to ask. The answer
+// is not an entry in its exception list — the enum is not a surface, it is what
+// a hit test answers — and nothing outside this crate calls it, so a public
+// name here would be a contract owed forever to no caller.
 pub use sign_in_raster::SignInLook;
 pub use sign_in_screen::{SignInScreen, SignInShows, Signing};
 pub use socket::SocketError;

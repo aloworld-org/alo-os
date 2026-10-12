@@ -27,7 +27,7 @@ use crate::sign_in_layout::SignInLayout;
 
 /// What a press on the sign-in screen landed on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OnTheSignInScreen {
+pub(crate) enum OnTheSignInScreen {
     /// The arrow inside the entry: submit what is typed.
     ///
     /// **The whole 44 × 44 target, not the 20 × 20 arrow drawn in it.** The
@@ -60,7 +60,7 @@ pub enum OnTheSignInScreen {
 /// request to type. The same order `crate::the_window_edge_reveals` takes for
 /// controls before their region, and its header gives the reason.
 #[must_use]
-pub fn what_is_under_the_pointer(
+pub(crate) fn what_is_under_the_pointer(
     at: &SignInLayout,
     point: Point<i32, Logical>,
 ) -> Option<OnTheSignInScreen> {
