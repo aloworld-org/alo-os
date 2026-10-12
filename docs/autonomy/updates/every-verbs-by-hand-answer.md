@@ -226,7 +226,6 @@ to anybody outside this team, that is the sentence they will find.
 - `crates/alo-by-hand/src/holding.rs`
 - `crates/alo-by-hand/src/owed.rs`
 - `crates/alo-by-hand/src/promised.rs`
-- `crates/alo-by-hand/src/release.rs`
 - `crates/alo-by-hand/src/wrapping.rs`
 - `crates/alo-by-hand/tests/every_verb_can_be_done_by_hand.rs`
 - `docs/by-hand.md`
@@ -234,3 +233,15 @@ to anybody outside this team, that is the sentence they will find.
 - `docs/autonomy/evidence-it-boots-and-the-agent-acts.md`
 - `docs/autonomy/the-executable-plan.md`
 - `docs/autonomy/updates/every-verbs-by-hand-answer.md`
+
+*A tenth file was in this list and is **gone**: the `release` module of
+`alo-by-hand`, removed on 2026-10-12 when the owner removed the version tiers
+([ADR 0105](../decisions/0105-there-are-no-versions-until-there-is-a-launch.md)).
+It held the type that parsed `[v0.01]`, `[v0.5]` and `[v1]` off a promise, and
+with no tiers there was nothing for it to parse.*
+
+*The line is taken out rather than left as a dead pointer, and this sentence is
+why: a list that still named it would be a claim that the file is there.
+`alo-citing::every_source_this_repository_points_at_exists` is the test that
+refuses one, and it is what found this — **twice**, because the first version of
+this very note named the file in backticks and was read as a pointer itself.*
