@@ -99,10 +99,9 @@ A single figure cannot be caught being wrong. These can:
   declared width. Agrees.
 - The frame is 1040 and each row is 1038, which is the border on each side.
   Agrees.
-- `Message input` is 974 with px 12, leaving 950 for a 948 row. Agrees, with 2
-  for its own border.
+- `Message input` is 974 with px 12, leaving 950 for a 948 row — see below.
 
-### And one that did not
+### And two that did not
 
 **The five row heights sum to 790, inside an inner height of 798.** Eight
 logical pixels are unaccounted for, and a layout derived from these five
@@ -112,6 +111,18 @@ implementation that picks a row to absorb it has made a decision the design did
 not make. The heading's row has a comparable 18 of horizontal slack after
 680 + 16 + 260, which `justify-end` on the status accounts for; the vertical 8
 has no such explanation in the export.
+
+**And the control row is two narrower than the space it starts in.** The reply
+field is 974 with 12 of padding each side, which leaves 950 — and the drawn row
+is **948**, starting at x 44, which is 32 + 12 and so takes no account of the
+field's own border. The row is therefore inset 12 on its left and 14 on its
+right.
+
+*Found by a test rather than by reading*, when a layout derived from
+974 − 24 put the one button at 946 against the design's 944. Both residues are
+reproduced rather than tidied in `alo_tasks::layout`, because the figure that
+matters is where the button lands; taking the two off the left instead would
+move every control on the row.
 
 ## Tokens
 
