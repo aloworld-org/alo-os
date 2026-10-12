@@ -210,16 +210,20 @@ impl TheKeyboardInTheMenu {
     }
 }
 
-/// Which way the keyboard is walking.
+/// Which way along a short list the keyboard is walking.
+///
+/// `pub(crate)` and shared with `crate::window_edge_keys`, which walks the
+/// edge's controls with the same two answers. One direction type rather than
+/// two private ones, because a second copy is the thing that comes to disagree.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Which {
-    /// Down the list, towards Close.
+pub(crate) enum Which {
+    /// Towards the end of the list.
     Forwards,
-    /// Up the list, towards Minimise.
+    /// Towards the start.
     Backwards,
 }
 
-use Which::{Backwards, Forwards};
+pub(crate) use Which::{Backwards, Forwards};
 
 /// The next usable row in this direction, wrapping, or [`None`] if there are
 /// none.

@@ -343,6 +343,7 @@ mod window_control_snapshot;
 mod window_controls;
 mod window_dividing;
 mod window_edge;
+mod window_edge_keys;
 mod window_edge_paint;
 mod window_edge_picture;
 mod window_edge_pointing;
@@ -388,6 +389,9 @@ pub use window_edge::{
 ///
 /// Separate from the geometry because they are two reasons to change - the
 /// design moving a control, and the design recolouring one.
+/// **The keyboard's road onto the edge itself**, which is what opens the menu
+/// and what holds the edge revealed while a person is using it.
+pub use window_edge_keys::{AnEdgeKey, TheKeyboardOnTheEdge, WhatTheEdgeKeyDid};
 pub use window_edge_paint::{Pointing, Solid, solids};
 /// One window edge, laid out in owned pixels and ready for a frame.
 pub use window_edge_picture::EdgePicture;
