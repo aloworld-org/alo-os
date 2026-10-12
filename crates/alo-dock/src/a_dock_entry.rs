@@ -31,13 +31,16 @@
 //! that law exists to refuse. [`ANativeAction`] has one variant, takes no
 //! arguments, and a host maps it to something it already knew how to do.
 
+use serde::{Deserialize, Serialize};
+
 use crate::window::AppId;
 
 /// One thing on a person's Dock, as the saved list holds it.
 ///
 /// **Order is the list's, not this type's.** Where an entry sits is a fact
 /// about the person's arrangement; what it *is* is this.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(try_from = "Written", into = "Written")]
 pub enum ADockEntry {
     /// An application, by the identifier its source gives it.
     ///
@@ -90,7 +93,8 @@ impl ADockEntry {
 /// capability model's sense: a host matches on it and does something it already
 /// knew how to do. Nothing here carries a command, a path or a name to be
 /// looked up, because that is the escape hatch the second law refuses.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum ANativeAction {
     /// Open this machine's settings.
     ///
@@ -99,6 +103,87 @@ pub enum ANativeAction {
     /// is one way in rather than two — and a person who hides the Dock's entry
     /// still has the keyboard's.
     Settings,
+}
+
+/// One entry as `dock.toml` writes it, which a person types as often as a panel
+/// writes it.
+///
+/// ```toml
+/// [[pins]]
+/// application = "org.kde.dolphin"
+///
+/// [[pins]]
+/// native = "settings"
+/// ```
+///
+/// **A table with one key rather than a tagged enum**, because serde's own
+/// enum shapes are either unreadable in TOML or impossible to hand-write: an
+/// externally tagged variant becomes a nested table, and an untagged one
+/// cannot say which kind an unknown string was meant to be.
+///
+/// **Exactly one of the two**, and both halves are refused:
+/// [`NotAnEntry::Neither`] for a table that names no kind, and
+/// [`NotAnEntry::Both`] for one that names two. Neither can be guessed at —
+/// a row with both would be an arrangement whose author believed one thing and
+/// whose machine did another.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Written {
+    /// An application, by the identifier its source gives it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    application: Option<String>,
+    /// One of alo's own actions.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    native: Option<ANativeAction>,
+}
+
+/// Why a line in a person's pinned list is not an entry.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum NotAnEntry {
+    /// It named neither an application nor an action.
+    #[error("a pin names neither an application nor one of alo's own actions")]
+    Neither,
+    /// It named both.
+    #[error("a pin names an application and one of alo's own actions, and it can only be one")]
+    Both,
+    /// Its application is not a name this machine will take.
+    ///
+    /// **The one validation, not a second one.** `AppId::named` is where a
+    /// name is refused, and deserialising through it is what stops a
+    /// hand-written file putting something on the Dock that the rest of this
+    /// crate would never have accepted.
+    #[error("a pin's application is not a name: {0:?}")]
+    NotAnApplication(crate::window::NotAnApp),
+}
+
+impl TryFrom<Written> for ADockEntry {
+    type Error = NotAnEntry;
+
+    fn try_from(written: Written) -> Result<Self, Self::Error> {
+        match (written.application, written.native) {
+            (Some(_), Some(_)) => Err(NotAnEntry::Both),
+            (None, None) => Err(NotAnEntry::Neither),
+            (Some(named), None) => AppId::named(&named)
+                .map(Self::Application)
+                .map_err(NotAnEntry::NotAnApplication),
+            (None, Some(action)) => Ok(Self::Native(action)),
+        }
+    }
+}
+
+impl From<ADockEntry> for Written {
+    fn from(entry: ADockEntry) -> Self {
+        match entry {
+            ADockEntry::Application(app) => Self {
+                application: Some(app.name().to_owned()),
+                native: None,
+            },
+            ADockEntry::Native(action) => Self {
+                application: None,
+                native: Some(action),
+            },
+        }
+    }
 }
 
 #[cfg(test)]

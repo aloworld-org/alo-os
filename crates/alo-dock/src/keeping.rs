@@ -70,7 +70,7 @@ pub const FORMAT: i64 = 1;
 /// the two together measured a fixture that set only the edge, so it never saw
 /// the key. **Anything added to `Changes` belongs here in the same change**, and
 /// the test below still says so for every key that is written.
-const KEYS: &[&str] = &["hiding", "edge", "displays"];
+const KEYS: &[&str] = &["hiding", "edge", "pins", "displays"];
 
 /// The keys on [`KEYS`] that no change writes, named so the tests below can tell
 /// the two apart.
@@ -201,6 +201,17 @@ mod tests {
         // and missing from `KEYS`. The edge arrived on 2026-10-10 and this is
         // the line that keeps it in view.
         changes.set_edge(crate::Edge::Left);
+        // The pins arrived on 2026-10-12 and this test caught their absence
+        // from here on the first run, which is what it is for.
+        //
+        // **A list with something in it**, because an empty one is written too
+        // — `Some(vec![])` is a person's deliberately empty Dock and the key
+        // must appear for it. Either value would pass this test; a non-empty
+        // one is chosen so that a reader does not take the empty case as the
+        // only one that writes.
+        changes.set_pins(vec![crate::ADockEntry::Native(
+            crate::ANativeAction::Settings,
+        )]);
 
         let mut live: Vec<String> = KEYS
             .iter()

@@ -86,11 +86,21 @@ pub fn stand_the_desktop_up(
     if let Some(ask) = asks_an_application_to_start {
         server.it_can_start_applications_with(ask);
     }
-    // **What this person's Dock is pinned to, worked out once.** A reading of
-    // the machine, so it arrives as data for the same reason the sender above
-    // does: `crates/alo-shell` does not scan. See
-    // `crate::what_the_dock_is_filled_with` for why it is not asked per frame.
-    server.its_dock_is_filled_from(what_this_machine_offers);
+    // **What this person's Dock is pinned to, worked out once.** Two readings
+    // meet here and neither is this crate's to take: what they kept, which is a
+    // file in their folder, and what the machine has, which is a scan. Both
+    // arrive as data for the reason the sender above does.
+    //
+    // **And the write goes straight back out.** `crates/alo-shell` keeps no
+    // settings file of its own (ADR 0038), so the answer to *write this down*
+    // is handed to the desktop that read it — at most once in a session's life,
+    // and never for a scan that failed or has not finished.
+    let kept = desktop.the_pins_they_kept();
+    if let Some(owed) =
+        server.its_dock_is_filled_from_what_they_kept(&kept, what_this_machine_offers)
+    {
+        desktop.keep_these_pins(&owed);
+    }
     let mut labels = WindowControlLabels::new()?;
     // The machine's own sentences, for the names a reader is told. The same
     // bundle the sign-in screen words a refusal from, read the same way.

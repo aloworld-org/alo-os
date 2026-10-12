@@ -238,6 +238,37 @@ pub trait TheDesktop {
     ) -> alo_arranging::Arrangement {
         arrangement
     }
+
+    /// What this person pinned to their Dock, asked for once as the session
+    /// starts.
+    ///
+    /// **The shell asks and does not read**, for `Self::the_layout_they_left`'s
+    /// reason exactly: a file in a person's folder is a reading, and
+    /// `crates/alo-shell/tests/settings_source.rs` refuses any shipped shell
+    /// file that even names where settings are kept.
+    ///
+    /// **The default is `NeverSet`, which is the honest value and not a
+    /// placeholder**: a desktop that keeps nothing has no stored list, so
+    /// *nobody has chosen* is true of it. The defaults then apply at the next
+    /// method, exactly as they do on a machine out of the box.
+    fn the_pins_they_kept(&mut self) -> alo_dock::pinning::ThePins {
+        alo_dock::pinning::ThePins::NeverSet
+    }
+
+    /// Keep these pins, because the defaults were just worked out for the first
+    /// time.
+    ///
+    /// **Called at most once in a session's life**, and only when
+    /// `WhatToPin::should_be_written_down` said so — which is never for a
+    /// person who already has a list, never for a scan that failed, and never
+    /// for one that has not finished. That is the owner's fourth clause made
+    /// into a call: *do not permanently initialise an empty pin list from
+    /// either.*
+    ///
+    /// **A desktop that keeps nothing does nothing here**, and the session is
+    /// correct without it: it draws the defaults and works them out again next
+    /// time. That is the state every test and the sign-in screen are in.
+    fn keep_these_pins(&mut self, _pins: &[alo_dock::ADockEntry]) {}
 }
 
 impl crate::DirectSession {
