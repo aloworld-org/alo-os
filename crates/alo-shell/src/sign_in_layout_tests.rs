@@ -32,7 +32,10 @@ fn the_group_is_where_the_file_puts_it_at_the_reference_size() {
     assert_eq!(at.group.size.w, THE_GROUP_IS_WIDE);
     assert_eq!(at.group.size.h, THE_GROUP_IS_TALL);
     assert_eq!(at.group.loc.x, 520, "centred on 1440 is 520");
-    assert_eq!(at.group.loc.y, 266, "266 of 960, which is the capture's own");
+    assert_eq!(
+        at.group.loc.y, 266,
+        "266 of 960, which is the capture's own"
+    );
 }
 
 /// **The monogram is 64 × 64 and centred over the greeting.**
@@ -41,7 +44,10 @@ fn the_group_is_where_the_file_puts_it_at_the_reference_size() {
 #[test]
 fn the_monogram_is_sixty_four_and_centred() {
     let at = laid_out(the_reference().w, the_reference().h);
-    assert_eq!(at.monogram.size, Size::from((THE_MONOGRAM_IS, THE_MONOGRAM_IS)));
+    assert_eq!(
+        at.monogram.size,
+        Size::from((THE_MONOGRAM_IS, THE_MONOGRAM_IS))
+    );
     assert_eq!(
         at.monogram.loc.x - at.group.loc.x,
         168,

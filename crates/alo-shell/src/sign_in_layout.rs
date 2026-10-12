@@ -205,10 +205,7 @@ pub fn sign_in_laid_out(screen: Size<i32, Logical>) -> Option<SignInLayout> {
     // The essential actions, pinned to the bottom rather than placed at 884.
     let actions_inset = THE_ACTIONS_INSET_IS.min(screen.w / 8);
     let actions = Rectangle::new(
-        Point::from((
-            actions_inset,
-            screen.h - THE_ACTIONS_SIT_ABOVE_THE_EDGE_BY,
-        )),
+        Point::from((actions_inset, screen.h - THE_ACTIONS_SIT_ABOVE_THE_EDGE_BY)),
         Size::from((
             (screen.w - 2 * actions_inset).max(0),
             THE_ACTIONS_ROW_IS_TALL,

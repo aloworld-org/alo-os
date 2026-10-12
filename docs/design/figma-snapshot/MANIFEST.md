@@ -48,6 +48,32 @@ is the open question this closes for the design side: the shell compiles Inter,
 and that is now a difference somebody must resolve rather than a question
 nobody had answered.
 
+## The sign-in wallpaper, as artwork rather than as boxes, 2026-10-12
+
+**`176-10686-wallpaper.svg` is the folded-light wallpaper itself**, exported
+from `364:25552` on 2026-10-12. It is 2,874 bytes: a `#FAF7F2` ground, five
+paths and five linear gradients.
+
+**It is here because bounding boxes are not curves.** `get_metadata` gives each
+vector's box — `364:25553` is 584 × 1240 at (1016, -180) and so on — and a box
+says where a curve passes through, never what shape it is. Drawing from the
+boxes would be inventing an illustration and calling it the design, which is
+the fault this whole folder exists to prevent.
+
+**The ground is `#FAF7F2`**, which the capture's variables do not carry: it is a
+fill on the frame rather than a bound token. Worth stating, because the screen
+that ships today draws white, and warm off-white against white is the kind of
+difference a person feels and cannot name.
+
+**Not yet drawn.** Five cubic paths with gradients are not expressible as the
+flat rectangles the shell paints, and the rounded-rectangle road
+`crate::dock_surface` uses — a signed distance field, antialiased by one
+`0.5 - d` rule — answers corners and not arbitrary curves. Rasterising this
+needs either a path rasteriser as a dependency or a render baked at build time,
+and that is a decision rather than a line of code. The screen is being built
+without it, on the right ground colour, and this file is what it will be drawn
+from when that decision is made.
+
 ## The compact edge and the window menu, 2026-10-11
 
 **`414-27564.xml` is authoritative for the window edge's sizing, its
