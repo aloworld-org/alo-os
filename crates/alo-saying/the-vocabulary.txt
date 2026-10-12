@@ -43,6 +43,7 @@ access.the-password	password
 access.the-record	the record
 access.the-recovery-screen	getting this machine started again
 access.the-status-area	what this machine is doing
+access.the-window-menu	Window menu
 access.the-windows-open	the windows that are open
 access.what-can-be-changed	what can be changed
 access.what-happened	what has happened
