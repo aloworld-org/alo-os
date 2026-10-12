@@ -258,15 +258,38 @@ cannot demonstrate.
   holds a recovery key — and on a managed machine the person is told
   so at first sign-in. There is no silent enrollment, and no
   administrator can watch a screen or act as a person (ADR 0004).
-- **Certified before compatible.** One machine model that works
-  completely beats a compatibility list nobody can honour. "Supports
-  PCs" is not a claim we make.
+- **Measured before claimed.** *"Supports PCs" is not a claim we make* —
+  that half stands. What changed on 2026-10-12 is what finishes a piece
+  of work: **it works on a PC we can put our hands on, and the report
+  says which one** ([ADR
+  0104](docs/decisions/0104-any-pc-that-works-is-done-and-no-gpu-is-required.md)).
+  This read *certified before compatible* and had stopped selecting for
+  completeness: every unmeasured thing on this machine was blocked on a
+  certified machine, and the certified machine was blocked on
+  certification nobody was doing. A list of models is a promise about
+  machines we have not got; a measurement names the one we had.
+  **And no graphics card is required**, which is a constraint rather
+  than a relaxation: the compositor's own software rendering has to be
+  good enough on a machine with nothing else.
 - **Settled decisions live in `docs/decisions/`.** Read the ADR before
   proposing an alternative; relitigating without new facts wastes the
   scarcest resource we have.
-- **Scope is gated.** Nothing gets built that isn't in
-  `docs/features.md` with a tier, inside the current release, and
-  outside Non-goals.
+- **Scope is gated, and the gate is the list rather than a tier.**
+  Nothing gets built that isn't in `docs/features.md` and outside
+  Non-goals. **There are no version tiers**: the owner removed them on
+  2026-10-12 ([ADR
+  0105](docs/decisions/0105-there-are-no-versions-until-there-is-a-launch.md))
+  because they had stopped ordering the work and started blocking it —
+  the thing a person most needed was marked for a release that did not
+  exist, and three separate pieces of this product were refused on that
+  ground in one afternoon.
+  What the gate still does is the part that was earning its keep:
+  **somebody decided this**. A feature nobody wrote down is still not
+  built, and Non-goals still forbid. What it no longer does is tell a
+  lane to wait.
+  **Versions come back when there is something to version.** Until a
+  launch, `ROADMAP.md` carries the one list that matters: what stands
+  between today and a machine somebody outside this team can use.
 - **Work a task needs is part of that task.** If finishing something
   already in scope turns out to require sub-work nobody listed — a
   caller that does not exist, a gesture wired to the wrong mechanism, a

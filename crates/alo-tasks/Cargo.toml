@@ -1,0 +1,26 @@
+[package]
+name = "alo-tasks"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+# **What a task window holds, and none of what it looks like.**
+#
+# The owner specified six areas on 2026-10-12 — conversation, activity, model
+# and location, permissions, stop, reply box — and every rule in them is
+# decidable without a screen: a model change cannot land midway through an
+# action, Stop reports a real stopped state and names what already changed, and
+# an approval covers one action rather than a session. Those are what this
+# crate holds. `alo-shell` draws it.
+[dependencies]
+# Where a question may go, and whether asking causes egress. The Model and
+# location area is a reading of this rather than a second account of it.
+alo-models = { path = "../alo-models" }
+# The sentences a person reads.
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

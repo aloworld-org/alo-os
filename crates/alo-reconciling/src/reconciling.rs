@@ -25,8 +25,19 @@ use crate::{
 /// asked.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Reconciled {
-    /// How many promises the definition makes at v0.01.
+    /// How many promises the definition makes.
     promises: usize,
+
+    /// How many entries the ledger holds about them.
+    ///
+    /// **Counted separately from the promises since the version tiers went.**
+    /// They were the same number when a release's ledger answered a release's
+    /// promises one for one; now the document makes every promise alo OS will
+    /// ever keep and the ledger holds entries for the ones somebody has looked
+    /// at. The three categories below sum to **this**, because they count
+    /// entries — and asserting they summed to the promises was the thing that
+    /// stopped holding.
+    entries: usize,
 
     /// How many are shown by evidence with nothing owed on them.
     wholly_shown: usize,
@@ -39,6 +50,12 @@ pub struct Reconciled {
 }
 
 impl Reconciled {
+    /// How many entries the ledger holds.
+    #[must_use]
+    pub const fn entries(self) -> usize {
+        self.entries
+    }
+
     /// How many promises the definition makes at v0.01.
     #[must_use]
     pub fn promises(&self) -> usize {
@@ -79,7 +96,76 @@ pub fn reconcile(
     ledger: &str,
     reading: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Reconciled, Vec<Finding>> {
-    reconcile_at(features, ledger, crate::tier::Tier::V0_01, reading)
+    reconcile_these(
+        &crate::promise::promises_in(features),
+        ledger,
+        THE_LEDGERS_HEADING,
+        reading,
+    )
+}
+
+/// The heading the ledger gathers its entries under.
+///
+/// **One heading, now that there are no tiers.** It still says *v0.01* because
+/// that is the text in the file and this constant must match it; the file's own
+/// heading changes when somebody renames it, and this is where they will find
+/// out that they must.
+pub const THE_LEDGERS_HEADING: &str = "## Every v0.01 promise, one at a time";
+
+/// The audit, for a set of promises a caller chose.
+///
+/// **The caller says what the subject is**, which is the whole of what changed
+/// when the version tiers went ([ADR
+/// 0105](../../../docs/decisions/0105-there-are-no-versions-until-there-is-a-launch.md)).
+/// It used to be *the promises at tier T*, and a tier was a thing the audit
+/// looked up for itself — so when the markers were removed the audit silently
+/// reconciled the empty set, which passes.
+///
+/// Now a caller hands over the promises it means. `ROADMAP.md`'s launch list is
+/// the set that answers *are we there*; `docs/features.md`'s bullets are the set
+/// that answers *does every entry quote something real*. They are different
+/// questions and they were one function.
+///
+/// # Errors
+/// As [`reconcile`].
+pub fn reconcile_these(
+    promises: &[crate::promise::Promise],
+    ledger: &str,
+    heading: &'static str,
+    reading: &dyn Fn(&str) -> Option<String>,
+) -> Result<Reconciled, Vec<Finding>> {
+    the_audit(
+        promises,
+        promises,
+        &crate::ledger::entries_under(ledger, heading),
+        heading,
+        reading,
+    )
+}
+
+/// The audit with its two questions asked of two sets.
+///
+/// `in_the_document` is every promise the features document makes — an entry
+/// must quote one of these or it is about nothing. `on_the_launch_list` is what
+/// must each **have** an entry. See [`the_audit`] for why they stopped being
+/// one set.
+///
+/// # Errors
+/// As [`reconcile`].
+pub fn reconcile_the_launch(
+    in_the_document: &[crate::promise::Promise],
+    on_the_launch_list: &[crate::promise::Promise],
+    ledger: &str,
+    heading: &'static str,
+    reading: &dyn Fn(&str) -> Option<String>,
+) -> Result<Reconciled, Vec<Finding>> {
+    the_audit(
+        in_the_document,
+        on_the_launch_list,
+        &crate::ledger::entries_under(ledger, heading),
+        heading,
+        reading,
+    )
 }
 
 /// The same audit, for one release's promises against that release's ledger.
@@ -103,52 +189,82 @@ pub fn reconcile_at(
         return Err(vec![Finding::NoLedgerForThisTier { tier: tier.named() }]);
     };
     let promises = crate::promise::promises_at(features, tier);
-    let entries = crate::ledger::entries_under(ledger, heading);
+    the_audit(
+        &promises,
+        &promises,
+        &crate::ledger::entries_under(ledger, heading),
+        heading,
+        reading,
+    )
+}
 
-    if entries.is_empty() && !promises.is_empty() {
-        return Err(vec![Finding::NothingToReconcile {
+/// The audit itself, over promises and entries somebody else chose.
+fn the_audit(
+    promises: &[crate::promise::Promise],
+    covering: &[crate::promise::Promise],
+    entries: &[crate::Entry],
+    heading: &'static str,
+    reading: &dyn Fn(&str) -> Option<String>,
+) -> Result<Reconciled, Vec<Finding>> {
+    {
+        let promises = promises.to_vec();
+        let entries = entries.to_vec();
+
+        if entries.is_empty() && !promises.is_empty() {
+            return Err(vec![Finding::NothingToReconcile {
+                promises: promises.len(),
+                heading,
+            }]);
+        }
+
+        let mut findings = Vec::new();
+        let mut answered = vec![false; promises.len()];
+        let mut reconciled = Reconciled {
             promises: promises.len(),
-            heading,
-        }]);
-    }
-
-    let mut findings = Vec::new();
-    let mut answered = vec![false; promises.len()];
-    let mut reconciled = Reconciled {
-        promises: promises.len(),
-        wholly_shown: 0,
-        partly_owed: 0,
-        wholly_owed: 0,
-    };
-
-    for entry in &entries {
-        let Some(about) = whose_promise(entry, &promises, &mut findings) else {
-            continue;
+            entries: entries.len(),
+            wholly_shown: 0,
+            partly_owed: 0,
+            wholly_owed: 0,
         };
-        match answered.get_mut(about) {
-            Some(already) if *already => {
-                findings.push(Finding::APromiseAnsweredTwice {
-                    promise: entry.promise().to_owned(),
+
+        for entry in &entries {
+            let Some(about) = whose_promise(entry, &promises, &mut findings) else {
+                continue;
+            };
+            match answered.get_mut(about) {
+                Some(already) if *already => {
+                    findings.push(Finding::APromiseAnsweredTwice {
+                        promise: entry.promise().to_owned(),
+                    });
+                }
+                Some(already) => *already = true,
+                None => {}
+            }
+            whether_it_answers(entry, reading, &mut findings, &mut reconciled);
+        }
+
+        // **Coverage is asked of `covering`, not of every promise.** They are the
+        // same set for a caller auditing one document against its own ledger. They
+        // differ for the one that matters since the tiers went: an entry must quote
+        // a promise that exists *anywhere* in the features document, and the
+        // promises that must each **have** an entry are the launch list's.
+        //
+        // Merged, as they were, the audit demanded a ledger entry for all three
+        // hundred things alo OS will ever do — two hundred and five findings, none
+        // of them a fault.
+        for (promise, answered) in promises.iter().zip(&answered) {
+            if !answered && covering.iter().any(|want| want.words() == promise.words()) {
+                findings.push(Finding::APromiseNobodyReconciled {
+                    promise: promise.words().to_owned(),
                 });
             }
-            Some(already) => *already = true,
-            None => {}
         }
-        whether_it_answers(entry, reading, &mut findings, &mut reconciled);
-    }
 
-    for (promise, answered) in promises.iter().zip(&answered) {
-        if !answered {
-            findings.push(Finding::APromiseNobodyReconciled {
-                promise: promise.words().to_owned(),
-            });
+        if findings.is_empty() {
+            Ok(reconciled)
+        } else {
+            Err(findings)
         }
-    }
-
-    if findings.is_empty() {
-        Ok(reconciled)
-    } else {
-        Err(findings)
     }
 }
 

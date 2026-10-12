@@ -26,7 +26,8 @@ use std::{
 };
 
 use alo_reconciling::{
-    Finding, ledger::THE_ENTRIES, promises_in, reconcile, reconciling::Reconciled,
+    Finding, ledger::THE_ENTRIES, promises_in, reconcile, reconcile_the_launch,
+    reconciling::Reconciled, the_launch_list,
 };
 
 /// The only list of what gets built, which is the definition being audited.
@@ -34,6 +35,9 @@ const THE_DEFINITION: &str = "docs/features.md";
 
 /// The other half of it: the evidence for every v0.01 promise, or what is owed.
 const THE_LEDGER: &str = "docs/autonomy/evidence-it-boots-and-the-agent-acts.md";
+
+/// Where the launch list lives — the one ordering left after the tiers went.
+const THE_ROADMAP: &str = "ROADMAP.md";
 
 /// This repository, from the crate this test is in.
 fn the_repository() -> PathBuf {
@@ -58,29 +62,43 @@ fn every_v0_01_promise_is_reconciled_against_evidence_that_runs() {
     let here = the_repository();
     let off_the_disk = move |named: &str| fs::read_to_string(here.join(named)).ok();
 
-    match reconcile(
-        &reading(THE_DEFINITION),
+    // **Two sets, two questions.** An entry must quote a promise the features
+    // document actually makes; the launch list is what must each have an entry.
+    // They were one set until the version tiers went, and merging them then
+    // demanded a ledger entry for all three hundred things alo OS will ever do.
+    let in_the_document = promises_in(&reading(THE_DEFINITION));
+    let on_the_launch_list = the_launch_list(&reading(THE_ROADMAP));
+    assert!(
+        !on_the_launch_list.is_empty(),
+        "{THE_ROADMAP} has no launch list, so this audit would pass over an \
+         empty subject — which is the shape it exists to refuse"
+    );
+
+    match reconcile_the_launch(
+        &in_the_document,
+        &on_the_launch_list,
         &reading(THE_LEDGER),
+        alo_reconciling::THE_LEDGERS_HEADING,
         &off_the_disk,
     ) {
         Ok(reconciled) => {
             assert_eq!(
                 reconciled.promises(),
-                promises_in(&reading(THE_DEFINITION)).len(),
+                in_the_document.len(),
                 "the reconciliation counted a different number of promises than \
                  the definition makes"
             );
             assert!(
                 reconciled.promises() > 0,
-                "there are no v0.01 promises in {THE_DEFINITION} at all, which \
+                "there are no promises in {THE_DEFINITION} at all, which \
                  means this audit passed over a document it never found"
             );
             assert_eq!(
                 reconciled.wholly_shown() + reconciled.partly_owed() + reconciled.wholly_owed(),
-                reconciled.promises(),
-                "a promise was reconciled without being counted as shown, \
-                 partly owed or owed, so the shape of the release does not add \
-                 up to the release"
+                reconciled.entries(),
+                "a ledger entry was read without being counted as showing its \
+                 promise, showing part of it, or owing all of it — so the shape \
+                 of what is known does not add up to what was read"
             );
         }
         Err(findings) => {
@@ -351,8 +369,16 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
     let off_the_disk = move |named: &str| fs::read_to_string(here.join(named)).ok();
     let ledger = reading(THE_LEDGER);
 
-    let reconciled = reconcile(&reading(THE_DEFINITION), &ledger, &off_the_disk)
-        .unwrap_or_else(|findings| panic!("the ledger does not add up: {findings:?}"));
+    // The same two sets as the audit above: an entry must quote a promise the
+    // document makes, and the launch list is what must each have one.
+    let reconciled = reconcile_the_launch(
+        &promises_in(&reading(THE_DEFINITION)),
+        &the_launch_list(&reading(THE_ROADMAP)),
+        &ledger,
+        alo_reconciling::THE_LEDGERS_HEADING,
+        &off_the_disk,
+    )
+    .unwrap_or_else(|findings| panic!("the ledger does not add up: {findings:?}"));
     assert_eq!(
         reconciled.wholly_owed(),
         28,
@@ -433,8 +459,12 @@ fn the_ledgers_own_sentence_about_itself_is_true(ledger: &str, reconciled: &Reco
         .filter_map(|piece| piece.parse().ok())
         .collect();
 
+    // **Entries, not promises, since the version tiers went.** The sentence
+    // counts what the ledger has looked at; the document now makes every
+    // promise alo OS will ever keep, and *290 promises, 2 shown whole* would
+    // be a true sentence about a document and a useless one about this file.
     let expected = vec![
-        reconciled.promises(),
+        reconciled.entries(),
         reconciled.wholly_shown(),
         reconciled.partly_owed(),
         reconciled.wholly_owed(),
@@ -442,7 +472,7 @@ fn the_ledgers_own_sentence_about_itself_is_true(ledger: &str, reconciled: &Reco
     assert_eq!(
         numbers, expected,
         "{THE_LEDGER} says of itself \"{said}\", and the audit computes {expected:?}. \
-         Whoever changes which promises are in this release brings that sentence with it"
+         Whoever changes what this ledger has looked at brings that sentence with it"
     );
 }
 
@@ -519,15 +549,15 @@ fn a_promise_waiting_on_a_task_nobody_wrote_is_refused() {
     );
 }
 
-/// A definition with three promises in it, written the way `docs/features.md`
+/// A definition with four promises in it, written the way `docs/features.md`
 /// writes them.
 const A_DEFINITION: &str = "\
 ## The shell
 
-- [v0.01] ★ **File verbs**: list, read, find, rename, move, archive
-- [v0.5] Lock screen, suspend and resume
-- [v0.01] Copy, cut and paste — text, images and files, across applications
-- [v0.01] ★ **No telemetry.** Not \"anonymised telemetry\". None
+- ★ **File verbs**: list, read, find, rename, move, archive
+- Lock screen, suspend and resume
+- Copy, cut and paste — text, images and files, across applications
+- ★ **No telemetry.** Not \"anonymised telemetry\". None
 ";
 
 /// A ledger about that definition, sound in every way this crate can check.
@@ -544,6 +574,13 @@ fn a_sound_ledger() -> String {
 
 **Still owed:** the verbs have never run on a certified machine, which is the
 half of law 3 only hardware gives.
+
+### Lock screen, suspend and resume
+
+**Still owed:** all of it; task 20 of `docs/autonomy/a-plan.md` is the
+increment. It was `[v0.5]` until the tiers went, so the filter left it out and
+this fixture quietly checked three promises of four — an audit that covered a
+slice now covers the document.
 
 ### Copy, cut and paste
 
@@ -587,19 +624,25 @@ fn auditing(ledger: &str) -> Result<Reconciled, Vec<Finding>> {
     reconcile(A_DEFINITION, ledger, &a_repository)
 }
 
-/// A sound ledger is reconciled, and counted the way the release actually sits:
-/// one shown, one shown-and-owed, one wholly owed.
+/// A sound ledger is reconciled, and counted the way the fixture actually sits:
+/// one shown, one shown-and-owed, two wholly owed.
 ///
 /// It runs first for the reason every refusal below depends on: an audit that
 /// refused everything would pass all of them and mean nothing.
+///
+/// **It read three promises until the version tiers went.** *Lock screen* was
+/// `[v0.5]` and the tier filter left it out, so this fixture quietly checked
+/// three of four — which is the same shape as the thing the tiers were removed
+/// for: a marker deciding what an audit looks at.
 #[test]
 fn a_ledger_that_adds_up_is_reconciled_and_counted() {
     let reconciled = auditing(&a_sound_ledger())
         .unwrap_or_else(|findings| panic!("a sound ledger was refused: {findings:?}"));
-    assert_eq!(reconciled.promises(), 3);
+    assert_eq!(reconciled.promises(), 4);
+    assert_eq!(reconciled.entries(), 4, "every promise here has an entry");
     assert_eq!(reconciled.wholly_shown(), 1);
     assert_eq!(reconciled.partly_owed(), 1);
-    assert_eq!(reconciled.wholly_owed(), 1);
+    assert_eq!(reconciled.wholly_owed(), 2);
 }
 
 /// **A promise nobody reconciled** — the finding this whole crate exists for,
@@ -697,8 +740,8 @@ fn something_that_is_not_evidence_is_refused() {
 #[test]
 fn an_entry_that_fits_two_promises_is_refused() {
     let twice_over = "\
-- [v0.01] ★ **It works well on a CPU and it works well on a GPU**. Neither is the other's fallback
-- [v0.01] ★ **Neither is the other's fallback.** A model on this machine and a provider you added
+- ★ **It works well on a CPU and it works well on a GPU**. Neither is the other's fallback
+- ★ **Neither is the other's fallback.** A model on this machine and a provider you added
 ";
     let one_entry = format!(
         "{THE_ENTRIES}\n\n### Neither is the other's fallback\n\n**Shown by:** \
@@ -759,9 +802,9 @@ fn a_ledger_with_no_entries_is_checking_nothing() {
     assert!(
         findings.iter().any(|finding| matches!(
             finding,
-            Finding::NothingToReconcile { promises, .. } if *promises == 3
+            Finding::NothingToReconcile { promises, .. } if *promises == 4
         )),
-        "a ledger with no entries in it passed as an audit of three promises: \
+        "a ledger with no entries in it passed as an audit of four promises: \
          {findings:?}"
     );
 }

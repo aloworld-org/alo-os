@@ -86,8 +86,10 @@ pub use entry::Entry;
 pub use evidence::Evidence;
 pub use finding::Finding;
 pub use ledger::{entries_in, entries_under};
-pub use promise::{Promise, promises_at, promises_in};
-pub use reconciling::{Reconciled, reconcile, reconcile_at};
+pub use promise::{Promise, promises_at, promises_in, the_launch_list};
+pub use reconciling::{
+    Reconciled, THE_LEDGERS_HEADING, reconcile, reconcile_at, reconcile_the_launch,
+};
 pub use the_gate::{
     Box_, Promised, Section, counts_that_drifted, denials_by_task_number, orphaned_boxes,
     promises_with_no_box, refusals_a_report_contradicts, sections_in,

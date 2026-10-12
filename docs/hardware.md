@@ -1,21 +1,38 @@
 # Hardware
 
-**Certified first, compatible later.** A machine model bought twice and working
-completely — that is the standard. A compatibility list grows outward from
-there.
+**This is a record of machines alo OS has been run on, and what happened.**
 
-Since ADR 0007 that standard is held **twice**: an ordinary business laptop and
-a GPU workstation, with the laptop first. This line said "one machine model"
-until the ADR landed, two paragraphs above the section that already said two.
+It was a certification list until 2026-10-12, when the owner ruled that a thing
+is done when it works on a PC this team can put their hands on — [ADR
+0104](decisions/0104-any-pc-that-works-is-done-and-no-gpu-is-required.md).
+**No model is named in advance and no graphics card is required.**
 
-"Supports PCs" is not a claim anyone can honour, and hardware support is where
-operating system projects die. The discipline of refusing scope here is the only
-mitigation there is; if it slips, that risk is unmitigated.
+"Supports PCs" is still not a claim anyone can honour, and that half of the old
+rule stands: hardware support is where operating system projects die. What
+changed is the direction the list grows. It used to be a promise about machines
+we had not bought; it is now a log of machines we have used, which is the
+smaller claim and the honest one.
+
+**A machine that fails is a bug, not a decertification.** Where reality and a
+specification disagree, `quirks.md` is where it goes.
 
 ## Status
 
-**Nothing is certified yet.** alo OS is pre-v0.01 and this table is the shape
-the answer will take, not an answer.
+**Nothing has been run end to end on a physical PC yet**, and that is the whole
+of what this file has to say today. The gates run in a virtual machine with no
+session bus, no rented tool and no screen — so three things are unmeasured and
+named rather than assumed:
+
+- **no application has ever been started on real hardware**;
+- **the Dock's application discovery has never run anywhere that could answer
+  anything but *failed***;
+- **`alo-desktop.service`'s ordering against the greeter is owed a
+  measurement**, by its own comment, and the race it names — the seat refusing
+  the card with *Device or resource busy* — can only be seen on metal.
+
+The table below was the shape of a certification answer. It is kept as the shape
+of a *record*: one row per machine somebody ran alo OS on, with what worked and
+what did not.
 
 ## What to buy first
 

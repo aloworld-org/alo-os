@@ -21,6 +21,18 @@
 //! the check stays armed for everything new. A list that grows without a reader
 //! noticing is the failure this whole crate exists to prevent, so each list is
 //! short enough to read and each entry says what would remove it.
+//!
+//! **Two tests left this file on 2026-10-12**, when the owner removed the
+//! version tiers — [ADR
+//! 0105](../../../docs/decisions/0105-there-are-no-versions-until-there-is-a-launch.md).
+//! Both audited the **v0.5 gate**: one that every v0.5 promise had a box in it,
+//! one that the v0.5 ledger reconciled. With no `[v0.5]` markers in
+//! `docs/features.md` their subject is the empty set, and an audit of nothing
+//! passes — which is worse than no audit, because it reads as a check.
+//!
+//! What they were guarding is not lost, it moves: `ROADMAP.md`'s **launch
+//! list** is the one ordering now, and
+//! `every_v0_01_promise_is_reconciled.rs` audits it.
 
 #![expect(
     clippy::expect_used,
@@ -147,68 +159,6 @@ fn no_half_is_under_the_wrong_promise() {
         findings.len(),
         say(&findings)
     );
-}
-
-/// **A promise with no box, and a promise answered at the wrong tier, are found
-/// — and neither can gate yet. This test says why, with the numbers.**
-///
-/// Both checks have to decide whether a box *covers* a promise, and the gate
-/// groups: **31 boxes over 92 promises.** *Settings, as one place* is one box over
-/// nine areas; *Making it yours* is one box over six promises about appearance.
-/// So most promises are covered by a box that does not quote them, and coverage is
-/// a judgement the gate expresses in prose.
-///
-/// Two settings were measured against the real documents, and neither is a check:
-///
-/// | how a box is taken to answer a promise | what it reported |
-/// |---|---|
-/// | half the promise's words over two characters appear anywhere in the section | **3** promises with no box — and it missed at least two real ones, because half the words of *Audio in and out, with device switching that works mid-call* are `and`, `out`, `with`, `that` |
-/// | a run of four consecutive words of five characters or more | **69** of the 92, including *Multi-monitor, display scaling, hotplug*, which has a box titled *Multi-monitor, scaling, hotplug* |
-///
-/// **Tuning that number until the answer looks right would be fitting the check to
-/// the documents**, which is the reading it replaces wearing a test's name. The
-/// answer is not a better matcher: **it is for each box in the gate to name the
-/// promises it answers.** Then this is exact — two sets, compared — and no
-/// heuristic is involved. That is a change to the gate's own shape and is written
-/// up in
-/// `docs/autonomy/updates/the-gate-is-a-check-now-and-what-it-cannot-check-yet.md`
-/// for whoever owns `ROADMAP.md`.
-///
-/// Until then both functions are kept, unit-tested against fixtures in
-/// `the_gate`, and run here against the real documents so they cannot rot into
-/// code nobody compiles — asserting only what is reliable: that each **does** find
-/// the thing it was written for.
-#[test]
-fn a_promise_with_no_box_is_found_even_though_it_cannot_gate_yet() {
-    let findings = promises_with_no_box(
-        &document("docs/features.md"),
-        &document("ROADMAP.md"),
-        Tier::V0_5,
-    );
-    let said = say(&findings);
-    for known in [
-        "Input methods for non-Latin scripts",
-        "Bluetooth: pairing, audio, keyboards, mice",
-        "Full-disk encryption, enrolled at install",
-    ] {
-        assert!(
-            said.contains(known),
-            "the check no longer finds `{known}`, which has no box in the v0.5 gate and was found \
-             by hand on 2026-09-27. Either a box was added for it — in which case remove it from \
-             this list — or the check stopped working"
-        );
-    }
-
-    let tiers = tiers_that_disagree(&document("docs/features.md"), &document("ROADMAP.md"));
-    let tiers = say(&tiers);
-    for known in EVERY_DISAGREEMENT_THAT_STANDS {
-        assert!(
-            tiers.contains(known),
-            "the check no longer finds `{known}`, which it reported against the real documents on \
-             2026-09-29. Either the documents were reconciled — in which case take it off that \
-             list and say so — or the check stopped working"
-        );
-    }
 }
 
 /// **Every tier disagreement this check reports against the real documents**,
@@ -408,56 +358,6 @@ fn the_accents_the_code_has() -> usize {
         .and_then(|(_, rest)| rest.split_once(']'))
         .and_then(|(how_many, _)| how_many.trim().parse::<usize>().ok())
         .unwrap_or(0)
-}
-
-/// **Every v0.5 promise names the test or the report that shows it, or is named
-/// as owed** — against this repository, on the disk it is checked out on.
-///
-/// The same audit `every_v0_01_promise_is_reconciled.rs` runs for the first
-/// release, at the second's tier. 92 promises rather than 41, which is why its
-/// ledger groups them with bold lines instead of headings: every `###` under the
-/// one heading is an entry, and a group heading would have taken a section of
-/// entries out of the audit without failing it.
-#[test]
-fn every_v0_5_promise_is_reconciled_against_evidence_that_runs() {
-    let here = the_repository();
-    let off_the_disk = move |named: &str| fs::read_to_string(here.join(named)).ok();
-    let (ledger, _) = Tier::V0_5
-        .ledger()
-        .expect("v0.5 has a ledger, or nothing above is checking anything");
-
-    match reconcile_at(
-        &document("docs/features.md"),
-        &document(ledger),
-        Tier::V0_5,
-        &off_the_disk,
-    ) {
-        Ok(reconciled) => {
-            assert_eq!(
-                reconciled.promises(),
-                promises_at(&document("docs/features.md"), Tier::V0_5).len(),
-                "the reconciliation counted a different number of promises than the definition \
-                 makes"
-            );
-            assert!(
-                reconciled.promises() > 50,
-                "only {} v0.5 promises were read, which means this audit passed over a document \
-                 it never found",
-                reconciled.promises()
-            );
-            assert_eq!(
-                reconciled.wholly_shown() + reconciled.partly_owed() + reconciled.wholly_owed(),
-                reconciled.promises(),
-                "every promise is wholly shown, partly owed or wholly owed, and these do not add \
-                 up to the promises read"
-            );
-        }
-        Err(findings) => panic!(
-            "{} finding(s) between docs/features.md and {ledger}:{}",
-            findings.len(),
-            say(&findings)
-        ),
-    }
 }
 
 /// **No promise this repository withdrew is still open in the roadmap, and this
