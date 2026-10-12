@@ -76,6 +76,20 @@ pub const SETTINGS: Word = Word::saying("shortcuts.action.settings", "Open Setti
 );
 
 /// What [`crate::Action::CloseWindow`] does.
+/// Show what can be done to the window in front.
+pub const WINDOW_OPTIONS: Word = Word::saying(
+    "shortcuts.action.window-options",
+    "Show the window's options",
+)
+.noting(
+    "What the window's own menu is called, which is where the whole title can be read and \
+         copied when it is too long for the window's edge. Named for what it does rather than \
+         for the box it opens: a person meeting this control learns nothing from the word menu. \
+         This string has two homes: a row in the list of shortcuts, and the name a screen reader \
+         speaks for the control at the right of a window's edge.",
+);
+
+/// Close the window in front.
 pub const CLOSE_WINDOW: Word = Word::saying("shortcuts.action.close-window", "Close the window")
     .noting(
         "The window that has the keyboard is closed — one window, not the application, which may \
@@ -472,10 +486,11 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// the shortcuts do, what is held down, the keys that print a word, why a
 /// combination was refused, what one chord wanted twice says, and then what is
 /// said about the person's own file.
-pub const EVERY_WORD: [Word; 52] = [
+pub const EVERY_WORD: [Word; 53] = [
     THE_AGENT,
     LAUNCHER,
     SETTINGS,
+    WINDOW_OPTIONS,
     CLOSE_WINDOW,
     MINIMISE_WINDOW,
     MAXIMISE_WINDOW,

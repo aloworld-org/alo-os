@@ -37,10 +37,21 @@ const ALT_SHIFT: Modifiers = ALT.and(Modifier::Shift);
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 17] = [
+const SHIPPED: [(Action, Chord); 18] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::Settings, Chord::shipped(SUPER, Key::I)),
+    // **Alt+F3, beside Alt+F4 which closes.** `docs/features.md` promises the
+    // habits people arrive with still work, and KDE spells *the window's own
+    // operations menu* exactly this way.
+    //
+    // **It was Alt+Space, and that was wrong on this machine.** That is the
+    // chord most desktops use and the rescued work of 2026-10-10 chose it —
+    // but `alo_keyboards::switching::the_chord` is Alt+Space here, and
+    // `nothing_the_release_binds_is_on_the_switchs_chord` holds that nothing
+    // the release ships may shadow it. Four tests in another crate said so,
+    // which is a collision invisible from inside this one.
+    (Action::WindowOptions, Chord::shipped(ALT, Key::F3)),
     (Action::CloseWindow, Chord::shipped(ALT, Key::F4)),
     (Action::MinimiseWindow, Chord::shipped(SUPER, Key::Down)),
     (Action::MaximiseWindow, Chord::shipped(SUPER, Key::Up)),
@@ -241,6 +252,11 @@ mod tests {
         assert_eq!(said(Action::TheAgent), "Super+A");
         assert_eq!(said(Action::Launcher), "Super+Space");
         assert_eq!(said(Action::Settings), "Super+I");
+        // **Alt+F3, beside Alt+F4 which closes.** KDE spells the window's own
+        // operations menu this way. It is not Alt+Space, which most desktops
+        // use: `alo_keyboards::switching` reserves that chord on this machine
+        // and its own test holds that nothing the release ships may shadow it.
+        assert_eq!(said(Action::WindowOptions), "Alt+F3");
     }
 
     /// A set of defaults that binds one action twice is refused: neither entry
