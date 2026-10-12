@@ -238,16 +238,26 @@ pub const THE_COMMANDS_DIVIDER_IS_LONG: u32 = 28;
 /// The radius of the composer's own corners — `radius/md` in the design file.
 pub const THE_COMPOSERS_CORNER: u32 = 12;
 
-/// How thick the keyboard's focus ring is.
+/// How thick the keyboard's focus ring is **on the Dock's two popover
+/// surfaces**, which are the only things that read it.
 ///
-/// **Measured, not chosen.** `docs/design/the-first-start.md` read the design's
-/// own `Keyboard focus / not selected` node (`384:26478`) on 2026-10-06: a card
-/// of 600×108 at x 160, y 205 gets a ring of 608×116 at x 156, y 201 with a
-/// **2px navy border** and a corner radius of 16 against the card's 12.
+/// **Measured, and the subject is the measurement's.** `docs/design/the-first-start.md`
+/// read the design's own `Keyboard focus / not selected` node (`384:26478`) on
+/// 2026-10-06: a card of 600×108 at x 160, y 205 gets a ring of 608×116 at
+/// x 156, y 201 with a **2px navy border** and a corner radius of 16 against
+/// the card's 12. So all three of these are one measurement read three ways:
+/// the ring is 2 thick, sits [`THE_FOCUS_RING_STANDS_OFF`] outside what it
+/// surrounds on every side, and its radius is the item's plus that stand-off.
 ///
-/// So all three of these are one measurement read three ways: the ring is 2
-/// thick, sits [`THE_FOCUS_RING_STANDS_OFF`] outside what it surrounds on every
-/// side, and its radius is the item's plus that same stand-off.
+/// **That reading is of a first-start screen, and the Dock's own focus nodes
+/// say something else.** Read live on 2026-10-12: `322:19211` and `328:20616`
+/// both ring the bar's open-application slot at **3px**, flat radius 12, with
+/// no stand-off across and 2 above and below — and in deep teal, which ADR 0067
+/// reserves for alo. `docs/design/the-alo-dock.md` carries the table, the three
+/// disagreements and the colour conflict, which is the owner's to settle. This
+/// number is 2 because **the design draws no focus on a *More apps* cell or a
+/// window row at all**, so the nearest reading is the one above, carried
+/// deliberately.
 ///
 /// `docs/features.md` carries the promise this keeps: *keyboard focus stays a
 /// separate mark — an outer ring with its own gap.* Separate from selection,
@@ -257,8 +267,11 @@ pub const THE_FOCUS_RING_IS_THICK: u32 = 2;
 
 /// How far outside the focused item its ring sits, on every side.
 ///
-/// 4, from the same node: 608 − 600 is 8 across two sides, and y 201 against
-/// 205 is 4 above. See [`THE_FOCUS_RING_IS_THICK`].
+/// 4, from the same node and so with the same subject: 608 − 600 is 8 across
+/// two sides, and y 201 against 205 is 4 above. The Dock's own bar rings stand
+/// off 2 above and below and nothing across, around a hit area that has no
+/// drawn box to stand outside of — see [`THE_FOCUS_RING_IS_THICK`] and
+/// `docs/design/the-alo-dock.md`.
 ///
 /// **Outside and not inside**, which is the whole reason the ring reads as its
 /// own element rather than as a border the item grew. A ring drawn inside would

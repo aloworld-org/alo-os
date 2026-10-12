@@ -224,19 +224,76 @@ one in which no program can be cancelled.
 **Both Enters**, because a keyboard has two and taking one would give somebody
 who uses the number pad a popover they can move around and cannot choose from.
 
-### The focus ring is a measurement, carried from another screen
+### The focus ring is a measurement, and the design gives it twice
 
-Keyboard focus is **a 2px navy ring standing 4px outside the focused item, with
-a corner radius of the item's plus 4**. That is not a choice made here: it is
+Keyboard focus on the Dock's **popover surfaces** — *More apps* and the window
+list — is **a 2px navy ring standing 4px outside the focused item, with a corner
+radius of the item's plus 4**. That is not a choice made here: it is
 `docs/design/the-first-start.md`'s reading of the design's own
 `Keyboard focus / not selected` node (`384:26478`), where a 600×108 card at
 x 160, y 205 gets a 608×116 ring at x 156, y 201, 2px `#102a43`, radius 16
-against the card's 12.
+against the card's 12. The numbers live in
+`alo_dock::measures::THE_FOCUS_RING_IS_THICK` and `THE_FOCUS_RING_STANDS_OFF`,
+and **nothing outside the Dock's two surfaces reads either of them** — the
+first-start screen that was measured does not.
 
-**Carried to the Dock's surfaces deliberately**, and written here because the
-design file has no focus node of its own for this popover. If one is drawn and
-disagrees, the design wins. The numbers live in
-`alo_dock::measures::THE_FOCUS_RING_IS_THICK` and `THE_FOCUS_RING_STANDS_OFF`.
+| what | measured | node | constant |
+|---|---|---|---|
+| Popover focus ring, thick | **2** | `384:26478` | `THE_FOCUS_RING_IS_THICK` |
+| Popover focus ring, stand-off | **4** | `384:26478` | `THE_FOCUS_RING_STANDS_OFF` |
+| Bar slot focus ring, thick | **3** | `322:19211` | none — the bar's slots take no focus yet |
+
+`crates/alo-dock/tests/the_focus_ring_is_the_frames_number.rs` holds the first
+two rows to the constants, so the pair cannot drift apart in silence — which is
+the whole risk now that the file offers a second number for the same thing.
+
+**The file does have focus nodes for the Dock, and they are not these.** Read
+live on 2026-10-12, after the Desktop lane found that *a stroke on a frame is
+not a child layer* and so is invisible to `get_metadata`; every row below came
+from `get_design_context`, which is the only way to see a border at all.
+
+| node | frame | ring | stroke | radius |
+|---|---|---|---|---|
+| `322:19211` *Keyboard focus / Browser* | `321:18608` *Dock 10 · Keyboard focus* | 52×52 at x 403, y 870 | **3px `#0f6b72`** | 12 |
+| `328:20616` *Keyboard focus / Browser* | `328:20473` *Dock 22 · Keyboard window actions* | 52×52 at x 403, y 870 | **3px `#0f6b72`** | 12 |
+| `203:11472` *Keyboard focus ring / Focus* | `203:11310` *26 · Window controls / Keyboard focus* | 48×48 at x 1210, y 72 | 3px `#102a43` | 10 |
+| `385:26315` *Keyboard focus / Accessibility* | `385:26281` *12n · Keyboard focus / Accessibility* | 168×56 at x 36, y 872 | 2px `var(--text/primary, #102a43)` | 16 |
+| `384:26512` and its three siblings | the four first-start frames | 608×116 | 2px `#102a43` | 16 |
+
+Both Dock rings sit on the **alo Bar's open-application strip**, not on a
+popover. The thing each one rings is `Browser · focus hit area` — `324:19531`
+and `328:20342`, both 52×48 at x 401, y 872, and both **empty frames with no
+fill and no corner radius at all**. So the ring is the only drawn thing there,
+and there is no item for it to stand outside of.
+
+**Three disagreements, and they are the design's, not the code's.**
+
+1. **Thickness is not one number.** The two shell surfaces — the Dock's bar and
+   the window controls — are both **3**. The two first-start screens are both
+   **2**. `THE_FOCUS_RING_IS_THICK` is 2 because the only reading available when
+   it was written was a first-start one.
+2. **The stand-off is not one number either.** First start: 4 on every side.
+   The Dock's bar: 2 above and below (52 against 48) and **nothing across** (52
+   against 52) — and the ring's x is 403 against the target's 401, which is a
+   2px slip in the mock rather than a measure, because the vertical arithmetic
+   is exact and the horizontal is not.
+3. **The radius rule only holds on one screen.** First start: the item's plus
+   the stand-off, 16 on a 12. The Dock's bar: a flat 12 around a target that has
+   no radius to add to.
+
+**And the colour is a conflict with a settled decision, not a tuning question.**
+`#0F6B72` is deep teal, which [ADR
+0067](../decisions/0067-the-agents-colour-is-deep-teal-and-the-colour-it-vacates-is-given-back.md)
+reserves for alo acting. Every other focus ring in the file is navy `#102a43`,
+including the window controls in the same shell at the same 3px. The two Dock
+rings are the only teal ones. **This repository's code is navy**
+(`dock_raster.rs` passes `palette.ink`), which follows the ADR and the other
+four nodes and departs from these two. *The owner's call, recorded here rather
+than resolved in a diff.*
+
+Until that is settled, the carried-over first-start geometry stands for the
+popovers, which is where the constants are read and where **the design is still
+silent**: neither Dock focus node is on a *More apps* cell or a window row.
 
 It is drawn **outside** the item, which is what makes it read as its own element
 rather than a border the item grew — and it is separate from the Dock's running
