@@ -414,9 +414,11 @@ pub const EVERY_NAME_A_READER_SAYS: usize = 36;
 
 /// How many of this crate's words are said by **another crate's** surface.
 ///
-/// Two: `MOVE_THE_WINDOW` and `RESIZE_THE_WINDOW`, which `alo-shell`'s
-/// `window_edge_reading::what_a_reader_is_told` puts into the tree and nothing
-/// here does.
+/// Three, all `alo-shell`'s and all about one window's edge and its menu:
+/// `MOVE_THE_WINDOW` and `RESIZE_THE_WINDOW`, which
+/// `window_edge_reading::what_a_reader_is_told` puts into the tree, and
+/// `THE_WINDOW_MENU`, which `window_menu_reading` says on entering the panel.
+/// Nothing here says any of the three.
 ///
 /// **A third count, because there is a third case.** The two above it cover a
 /// word of ours said by our own tree, and somebody else's word said by our
@@ -438,7 +440,7 @@ pub const EVERY_NAME_A_READER_SAYS: usize = 36;
 /// They are in this crate rather than in `alo-shell` for exactly that reason:
 /// `alo-saying`'s `EVERY_LIST` holds seventy crates and `alo-shell` is not one
 /// of them.
-pub const EVERY_WORD_ANOTHER_CRATES_SURFACE_SAYS: usize = 2;
+pub const EVERY_WORD_ANOTHER_CRATES_SURFACE_SAYS: usize = 3;
 
 /// How many names a reader says come from another crate's vocabulary.
 ///

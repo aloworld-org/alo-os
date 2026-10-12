@@ -353,6 +353,7 @@ mod window_full_screen;
 mod window_maximize;
 mod window_menu;
 mod window_menu_keys;
+mod window_menu_reading;
 mod window_minimize;
 mod window_mode;
 mod window_mode_plan;
@@ -418,6 +419,10 @@ pub use window_menu::{
 /// back to when the menu closes.
 pub use window_menu_keys::{
     AMenuKey, TheKeyboardInTheMenu, WhatTheKeyDid, the_edge_stays_revealed,
+};
+/// **And what a reader is told about it**: the panel's own name, and its rows.
+pub use window_menu_reading::{
+    WhatAReaderMeetsInTheMenu, every_word_this_surface_says, what_a_reader_meets,
 };
 pub use window_minimize::WindowMinimizeError;
 pub use window_mode::WindowModeError;

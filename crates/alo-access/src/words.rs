@@ -311,8 +311,24 @@ pub const RESIZE_THE_WINDOW: Word = Word::saying("access.resize-the-window", "Re
          announced and read-only. Has to read naturally spoken on its own.",
     );
 
+/// The window menu itself, as the thing a reader arrives in.
+///
+/// **A menu with no name is a list of five things about nothing.** The
+/// contract asks for an accessible name on the menu, and this is it: a reader
+/// entering the panel says *Window menu* and then walks the rows, each of
+/// which is named by what it does.
+///
+/// Named for the panel and not for the window it belongs to, because the
+/// window's own title is already in the menu as selectable text and a reader
+/// meets it there. A name that repeated the title would say it twice.
+pub const THE_WINDOW_MENU: Word = Word::saying("access.the-window-menu", "Window menu").noting(
+    "The name a screen reader speaks on entering a window's menu, before its rows. A short \
+         noun phrase naming the panel, not a sentence and not an instruction - the rows carry \
+         the actions. Has to read naturally spoken on its own.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 38] = [
+pub const EVERY_WORD: [Word; 39] = [
     SCREEN_READER,
     MAGNIFIER,
     HIGH_CONTRAST,
@@ -351,6 +367,7 @@ pub const EVERY_WORD: [Word; 38] = [
     GO_BACK_NOW,
     MOVE_THE_WINDOW,
     RESIZE_THE_WINDOW,
+    THE_WINDOW_MENU,
 ];
 
 /// Why this crate's own list could not be declared.
