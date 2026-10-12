@@ -185,7 +185,13 @@ impl<'a, K: Knocking> Lane<'a, K> {
             return Ok(());
         };
         let size = target.size();
-        let drawn = picture(screen.shows(), self.labels, (size.w, size.h), self.look)?;
+        let drawn = picture(
+            screen.shows(),
+            self.labels,
+            (size.w, size.h),
+            self.look,
+            crate::sign_in_raster::WhoseScreen::ItsOwn,
+        )?;
         target.submit_native_layers(
             &[],
             &[],

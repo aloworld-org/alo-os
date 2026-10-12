@@ -53,7 +53,14 @@ fn typed(name: &str, password: &str) -> SignInScreen<NoDoor> {
 /// The picture of a screen at an ordinary output size.
 fn drawn(screen: &SignInScreen<NoDoor>, look: SignInLook) -> SignInPicture {
     let mut labels = WindowControlLabels::new().unwrap();
-    picture(screen.shows(), &mut labels, (800, 600), look).unwrap()
+    picture(
+        screen.shows(),
+        &mut labels,
+        (800, 600),
+        look,
+        super::WhoseScreen::ItsOwn,
+    )
+    .unwrap()
 }
 
 /// **The password is never drawn**: a screen with one password typed and a
@@ -167,7 +174,13 @@ fn an_output_that_cannot_hold_the_screen_is_refused() {
     for size in [(100, 600), (800, 90), (0, 0), (-5, 600), (20_000, 600)] {
         assert!(
             matches!(
-                picture(screen.shows(), &mut labels, size, light()),
+                picture(
+                    screen.shows(),
+                    &mut labels,
+                    size,
+                    light(),
+                    super::WhoseScreen::ItsOwn,
+                ),
                 Err(RenderError::SignInScene)
             ),
             "{size:?}"
@@ -178,6 +191,13 @@ fn an_output_that_cannot_hold_the_screen_is_refused() {
 /// **The waiting field is told apart by its shape, not by colour alone**:
 /// moving between fields changes the picture while every colour on it stays
 /// one of the same few.
+///
+/// **Asked of the embedded form, which is where two fields still are.** The
+/// sign-in screen was redrawn to `176-10686.xml` on 2026-10-12 and has one
+/// entry, so there is no second field to move to and this property is not
+/// about it. The lock screen still embeds the two, and the guarantee is kept
+/// where it still means something rather than deleted with the design that
+/// used to carry it.
 #[test]
 fn the_waiting_field_is_told_apart_by_shape() {
     let at_password = typed("ada", "");
@@ -186,8 +206,19 @@ fn the_waiting_field_is_told_apart_by_shape() {
         Signing::HandedOver(_) => None,
     }
     .unwrap();
-    let one = drawn(&at_name, light());
-    let other = drawn(&typed("ada", ""), light());
+    let embedded = |screen: &SignInScreen<_>| {
+        let mut labels = WindowControlLabels::new().unwrap();
+        picture(
+            screen.shows(),
+            &mut labels,
+            (800, 600),
+            light(),
+            super::WhoseScreen::InsideAnother,
+        )
+        .unwrap()
+    };
+    let one = embedded(&at_name);
+    let other = embedded(&typed("ada", ""));
     assert_ne!(one, other);
     let colours = |picture: &SignInPicture| {
         let mut colours: Vec<[u8; 3]> = picture.solids.iter().map(|solid| solid.colour).collect();

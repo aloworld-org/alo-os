@@ -35,6 +35,7 @@ fn extent((w, h): (i32, i32)) -> Size<i32, Physical> {
 fn a_screen(size: (i32, i32)) -> SignInPicture {
     SignInPicture {
         size,
+        surface: None,
         solids: vec![Solid {
             area: Rectangle::from_size(size.into()),
             colour: [20, 30, 40],

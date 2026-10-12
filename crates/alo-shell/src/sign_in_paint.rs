@@ -22,8 +22,24 @@ impl SignInPicture {
         }
     }
 
-    /// Draw the shapes, then the text, one run of equal pixels at a time.
-    pub(crate) fn paint(&self, frame: &mut impl Frame) -> Result<(), RenderError> {
+    /// Draw the surface, then the shapes, then the text.
+    ///
+    /// **The surface is under everything**, because it is the ground the rest
+    /// is drawn on: the warm off-white, the monogram's rounded square and the
+    /// entry field with its corners. `washed` is that raster already uploaded
+    /// — a frame borrows the renderer, so nothing can upload inside one, which
+    /// is why the caller is asked for it.
+    ///
+    /// A picture with no surface still paints: the sentence a machine with no
+    /// accounts shows keeps its flat ground until that screen is built.
+    pub(crate) fn paint<F: Frame>(
+        &self,
+        frame: &mut F,
+        washed: Option<&(F::TextureId, smithay::utils::Rectangle<i32, Physical>)>,
+    ) -> Result<(), RenderError> {
+        if let Some((texture, area)) = washed {
+            crate::painted::wash(frame, texture, *area)?;
+        }
         crate::painted::paint(frame, &self.solids, &self.inked)
     }
 }
