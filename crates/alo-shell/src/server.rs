@@ -229,6 +229,18 @@ pub struct Server {
     /// has started a new search — and that is a fact about the surface opening,
     /// so `the_overflow_closes` clears this rather than the type carrying it.
     pub(crate) what_was_typed_into_more_apps: alo_dock::WhatTheyTyped,
+    /// A pinned list a person changed, waiting to be written down.
+    ///
+    /// **Recorded here rather than written**, for `asked_to_start`'s reason
+    /// exactly: this crate keeps no settings file of its own, so the desktop
+    /// that owns the folder takes it out. The draw lane drains it each frame,
+    /// so a change made by a press is on the disk before the next one.
+    ///
+    /// [`None`] is *nothing to write*, which is the ordinary state. It is not
+    /// the same as `Some(vec![])` — that is **a person who emptied their Dock**
+    /// and is the one write that must not be skipped on the grounds that there
+    /// is nothing in it.
+    pub(crate) pins_owed_to_the_disk: Option<Vec<alo_dock::ADockEntry>>,
     /// What the Settings entry is called, in this person's language.
     ///
     /// **Kept because a search has to match what is drawn.** A native entry has
@@ -397,6 +409,7 @@ impl Server {
             // Nothing has been worked out yet; the stand-up fills it.
             what_the_dock_is_pinned_to: alo_dock::Holding::nothing(),
             what_was_typed_into_more_apps: alo_dock::WhatTheyTyped::nothing(),
+            pins_owed_to_the_disk: None,
             the_settings_entry_is_called: String::new(),
             edges_revealed: Vec::new(),
             keyboard_on_edges: Vec::new(),

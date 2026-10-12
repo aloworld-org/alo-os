@@ -588,6 +588,16 @@ impl LoopInput for Desk<'_> {
         // `asked_to_put_aside`'s reason and one of its own: sending `Activate`
         // waits for the bus to start an application, and the press that asked
         // for it was in the input loop. See `Server::asked_to_start`.
+        // **And a pinned list a person changed, written before the next
+        // frame.** Here for the same reason as the asks above: the press that
+        // changed it was in the input loop, and this is where the desktop that
+        // owns the person's folder is reachable.
+        //
+        // **Not at sign-out.** A machine loses power and a session is killed; a
+        // pin somebody made an hour ago should not be the thing that is lost.
+        if let Some(owed) = server.take_the_pins_owed_to_the_disk() {
+            self.desktop.keep_these_pins(&owed);
+        }
         for not_started in server.start_what_was_asked_for_now() {
             // **Said rather than dropped**, the same rule the edge's menu
             // follows two blocks up: a press that reached here and vanished is

@@ -78,6 +78,7 @@ mod a_key_reaches_settings;
 mod a_key_reaches_the_docks_surfaces;
 mod a_key_types_into_more_apps;
 mod a_new_window_is_placed;
+mod a_person_pins_and_unpins;
 mod a_press_in_the_menu;
 mod a_press_on_an_edge;
 mod a_press_on_the_sign_in_screen;

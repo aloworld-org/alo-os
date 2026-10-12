@@ -1518,6 +1518,37 @@ Wayland client, so this is a measurement somebody took rather than a check that
 runs again.
 
 
+### An icon's own menu, holding only what works
+
+**Shown by:** `crates/alo-dock/src/menu.rs` for **what the menu contains** —
+three tests: that what is shown is a subset of an icon's menu holding only what
+can be carried out and in the menu's own order; that pinning is offered whether
+or not the application is open; and that the eight actions with nowhere to go
+are named one by one, so a performer arriving without the menu changing fails.
+
+And `crates/alo-shell/src/a_person_pins_and_unpins_tests.rs` for the three
+actions it offers **doing something and being written down** — nine tests,
+including that a change is owed once and taken once, and that a person who
+empties their Dock is owed the write of the empty list.
+
+Which actions are offered is decided by a match over all eleven variants, so
+one added without deciding whether anything performs it is a compile error
+rather than a silent omission.
+
+**Still owed: the surface.** Nothing opens this menu. The model says what it
+would hold, the three actions work and persist, and **no pointer press, menu
+key or screen-reader route reaches it** — so a person still cannot pin or unpin
+anything on a running machine. What is owed is the opening, the drawing and the
+three routes the promise names, and until they exist this is a menu with no
+door.
+
+**Why it is promised at three items and not eleven.** Measured 2026-10-12: of
+the eleven actions the Dock's menu model names, **zero** had a caller outside
+that file and its tests, and nothing in the product could pin or unpin anything
+— every pinning call outside a test was a fixture, while the features list had
+promised *the person owns the list* since 2026-10-11. A menu of eleven would
+have been eleven buttons that do nothing.
+
 ### The Dock holds two kinds of thing, and the person owns both
 
 **Shown by:** nothing yet, and nothing should claim it.
@@ -1568,7 +1599,7 @@ contract are updated together before this is called complete.
 
 ## What this audit found
 
-**The audit in figures: 85 promises, 2 shown whole, 55 shown in part, 28 with no
+**The audit in figures: 86 promises, 3 shown whole, 55 shown in part, 28 with no
 evidence at all.**
 
 *This line is the ledger's own count of itself and it is checked.*

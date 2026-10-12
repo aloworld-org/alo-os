@@ -69,6 +69,37 @@ impl What {
         &[]
     }
 
+    /// Whether anything in this product carries this out yet.
+    ///
+    /// **A list rather than a flag on each**, so that adding an action without
+    /// deciding this is impossible: a new variant is a compile error here until
+    /// somebody says which side it is on.
+    ///
+    /// The three that can: pinning and unpinning, which
+    /// `alo_shell::Server::this_entry_is_pinned` and `this_entry_is_unpinned`
+    /// do and write down; and showing an application's windows, which is the
+    /// picker the Dock already opens.
+    ///
+    /// **The eight that cannot are not weakness, they are the record.** Opening
+    /// a new window, quitting, full screen, minimising from an icon, recording
+    /// a window and giving one to alo each need a mechanism this product does
+    /// not have — and a menu offering them would be a surface of buttons that
+    /// do nothing, which is worse than a shorter menu.
+    #[must_use]
+    pub const fn can_be_carried_out(self) -> bool {
+        match self {
+            Self::PinToDock | Self::UnpinFromDock | Self::ShowWindows => true,
+            Self::NewWindow
+            | Self::Minimise
+            | Self::FullScreen
+            | Self::Quit
+            | Self::RecordThisWindow
+            | Self::StopRecording
+            | Self::GiveThisWindowToAlo
+            | Self::StopAlo => false,
+        }
+    }
+
     /// Whether this action is about the agent.
     ///
     /// Named so the rule *the Dock never becomes a dashboard for the agent* can
@@ -109,6 +140,33 @@ pub fn for_an_icon(is_pinned: bool, is_open: bool) -> Vec<What> {
         offered.push(What::Quit);
     }
     offered
+}
+
+/// The menu for an icon, **holding only what this machine can carry out**.
+///
+/// `docs/features.md` [v0.01]: *it lists what this machine can actually do and
+/// nothing else. An action with no performer is absent rather than greyed.*
+/// That is the owner's standing rule — *omit unavailable applications; never
+/// show placeholders or non-working buttons* — applied to a menu rather than to
+/// a Dock of icons.
+///
+/// # Why this exists beside [`for_an_icon`] rather than replacing it
+///
+/// [`for_an_icon`] is **what an icon's menu is**, and it is right: a person
+/// should be able to open a new window and quit an application from it. This is
+/// what can be *shown today*, and the two differ by exactly the actions nobody
+/// has built a performer for. Collapsing them would lose the record of what is
+/// owed; a test holds the difference, so an action gaining a performer and not
+/// joining the menu is caught rather than forgotten.
+///
+/// Measured 2026-10-12: of the eleven in [`What`], **zero** had a caller
+/// outside this file and its tests. Three have one now.
+#[must_use]
+pub fn for_an_icon_today(is_pinned: bool, is_open: bool) -> Vec<What> {
+    for_an_icon(is_pinned, is_open)
+        .into_iter()
+        .filter(|what| what.can_be_carried_out())
+        .collect()
 }
 
 /// The menu for one window, chosen from a preview.
@@ -275,6 +333,89 @@ mod tests {
                 offered.iter().filter(|o| **o == what).count(),
                 1,
                 "{what:?}"
+            );
+        }
+    }
+
+    /// **The menu shown today holds only what can be carried out**, and is a
+    /// subset of what an icon's menu is.
+    ///
+    /// Both halves. The subset is what `docs/features.md` promises; that it is
+    /// a **strict** subset is the record of what is owed, and a test asserting
+    /// only the first would pass on the day somebody made every action work and
+    /// stop saying anything.
+    #[test]
+    fn the_menu_shown_today_is_what_works_and_nothing_else() {
+        for (pinned, open) in [(false, false), (false, true), (true, false), (true, true)] {
+            let whole = for_an_icon(pinned, open);
+            let today = for_an_icon_today(pinned, open);
+
+            for what in &today {
+                assert!(
+                    whole.contains(what),
+                    "{what:?} is shown and is not in an icon's menu at all"
+                );
+                assert!(
+                    what.can_be_carried_out(),
+                    "{what:?} is shown and nothing carries it out"
+                );
+            }
+            // Order is the menu's, not the filter's: a person learns where an
+            // item sits.
+            let kept: Vec<What> = whole
+                .iter()
+                .copied()
+                .filter(|what| what.can_be_carried_out())
+                .collect();
+            assert_eq!(today, kept, "the shown menu reordered what it kept");
+        }
+    }
+
+    /// **Pinning is always offered, open or closed**, which is what makes the
+    /// promise reachable at all: an application a person has not opened is one
+    /// they most want to pin.
+    #[test]
+    fn pinning_is_offered_whether_or_not_it_is_open() {
+        for open in [false, true] {
+            assert!(
+                for_an_icon_today(false, open).contains(&What::PinToDock),
+                "an unpinned application offers no way to pin it (open: {open})"
+            );
+            assert!(
+                for_an_icon_today(true, open).contains(&What::UnpinFromDock),
+                "a pinned application offers no way to unpin it (open: {open})"
+            );
+        }
+    }
+
+    /// **Eight actions have no performer, and that is written down rather than
+    /// implied.**
+    ///
+    /// If this number changes, something gained or lost a performer and the
+    /// menu's contents changed with it — which is a thing a reader should be
+    /// told by a failing test rather than discover.
+    #[test]
+    fn how_many_actions_still_have_nowhere_to_go() {
+        let without = [
+            What::NewWindow,
+            What::Minimise,
+            What::FullScreen,
+            What::Quit,
+            What::RecordThisWindow,
+            What::StopRecording,
+            What::GiveThisWindowToAlo,
+            What::StopAlo,
+        ];
+        for what in without {
+            assert!(
+                !what.can_be_carried_out(),
+                "{what:?} gained a performer — add it to the menu in the same change"
+            );
+        }
+        for what in [What::PinToDock, What::UnpinFromDock, What::ShowWindows] {
+            assert!(
+                what.can_be_carried_out(),
+                "{what:?} lost its performer, so the menu offers a button that does nothing"
             );
         }
     }
