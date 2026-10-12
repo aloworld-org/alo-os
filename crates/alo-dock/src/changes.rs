@@ -35,6 +35,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::a_dock_entry::ADockEntry;
+
 use crate::edge::Edge;
 use crate::hiding::Hiding;
 
@@ -58,6 +60,8 @@ pub enum Setting {
     /// `docs/features.md`, and the `displays` key that earlier releases wrote
     /// for it is still read and still means nothing.
     WhereItGoes,
+    /// What the person pinned.
+    WhatIsPinned,
 }
 
 /// Everything a person has changed about their dock.
@@ -75,6 +79,21 @@ pub struct Changes {
     /// having picked the bottom on purpose, which is not the same fact as never
     /// having opened the setting.
     edge: Option<Edge>,
+    /// What they pinned, if they have ever set it.
+    ///
+    /// **Three states in one `Option`, and the third is the one that goes
+    /// wrong.** `None` is *nobody has chosen yet* and the defaults apply once;
+    /// `Some(list)` is their arrangement; and **`Some(vec![])` is a Dock they
+    /// deliberately emptied**, which stays empty. `docs/contracts/person-settings.md`
+    /// requires exactly that distinction and says why: an empty list alone
+    /// cannot tell the first from the third, and a reader that confused them
+    /// would refill the Dock of the person who most clearly did not want one.
+    ///
+    /// So the key is written whenever it is `Some` — **including when it is
+    /// empty** — and omitted only when it is `None`. A `skip_serializing_if`
+    /// that also skipped an empty list would collapse the two on disk, which
+    /// is the whole fault in one line.
+    pins: Option<Vec<ADockEntry>>,
 }
 
 impl Changes {
@@ -94,7 +113,7 @@ impl Changes {
     /// rewriting it behind them.
     #[must_use]
     pub const fn is_untouched(&self) -> bool {
-        self.hiding.is_none() && self.edge.is_none()
+        self.hiding.is_none() && self.edge.is_none() && self.pins.is_none()
     }
 
     /// Say whether the dock gives way when a window needs the room.
@@ -119,14 +138,38 @@ impl Changes {
         self.edge
     }
 
+    /// Say what this person has pinned, in the order they have it.
+    ///
+    /// **An empty list is a choice**, and passing one here is how a person who
+    /// cleared their Dock keeps it cleared. See the field's own note.
+    pub fn set_pins(&mut self, pins: Vec<ADockEntry>) {
+        self.pins = Some(pins);
+    }
+
+    /// What they pinned, if they have ever set it.
+    #[must_use]
+    pub fn pins(&self) -> Option<&[ADockEntry]> {
+        self.pins.as_deref()
+    }
+
     /// Forget that this was ever changed, which puts it back to what the running
     /// release ships.
     ///
     /// Says whether there was anything to forget.
-    pub const fn forget(&mut self, setting: Setting) -> bool {
+    //
+    // **Not `const` since the pins joined it.** A `Vec` has a destructor and a
+    // `const fn` may not run one, so dropping a taken list cannot happen at
+    // compile time. Keeping it `const` would have meant leaving the pins out of
+    // `forget`, which is the setting a person is most likely to want put back.
+    pub fn forget(&mut self, setting: Setting) -> bool {
         match setting {
             Setting::Hiding => self.hiding.take().is_some(),
             Setting::WhereItGoes => self.edge.take().is_some(),
+            // **Forgetting the pins is not emptying them.** It puts the Dock
+            // back to *nobody has chosen*, so the defaults apply again at the
+            // next sign-in — which is what *put it back as alo OS ships it*
+            // means, and is the opposite of `set_pins(vec![])`.
+            Setting::WhatIsPinned => self.pins.take().is_some(),
         }
     }
 
@@ -161,6 +204,11 @@ struct Written {
     /// present and null, for the reason above.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     edge: Option<Edge>,
+    /// What they pinned, if they have ever set it. Absent rather than present
+    /// and empty — **and present-and-empty rather than absent**, which are two
+    /// different files and two different Docks. See `Changes::pins`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pins: Option<Vec<ADockEntry>>,
 }
 
 impl From<Written> for Changes {
@@ -168,6 +216,7 @@ impl From<Written> for Changes {
         Self {
             hiding: written.hiding,
             edge: written.edge,
+            pins: written.pins,
         }
     }
 }
@@ -177,6 +226,7 @@ impl From<Changes> for Written {
         Self {
             hiding: changes.hiding,
             edge: changes.edge,
+            pins: changes.pins,
         }
     }
 }

@@ -99,7 +99,7 @@ impl Dock {
     /// Put one setting back to what this release ships.
     ///
     /// Says whether there was anything to put back.
-    pub const fn put_back(&mut self, setting: Setting) -> bool {
+    pub fn put_back(&mut self, setting: Setting) -> bool {
         self.changes.forget(setting)
     }
 

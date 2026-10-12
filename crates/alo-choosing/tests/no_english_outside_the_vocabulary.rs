@@ -62,6 +62,33 @@ const THE_FIVE: [&str; 5] = [
 const NOT_READ_BY_A_PERSON: &[(&str, &str, &str, &str)] = &[
     (
         "alo-dock",
+        "a_dock_entry.rs",
+        "a pin names neither an application nor one of alo's own actions",
+        "a `thiserror` message on `NotAnEntry`, which a `serde(try_from)` answers a bad \
+         `[[pins]]` table with. **Measured rather than assumed**: a file naming both kinds \
+         produces `alo_kept::Unread::NotItsShape { said }` carrying this text, and \
+         `alo_dock::unkept` maps that variant to `words::KEPT_NOT_UNDERSTOOD` with `{ .. }` \
+         — the field is dropped. So the person is told, in their own language, that their \
+         dock settings are not settings alo OS can read, and this string reaches only a \
+         crate that wants to key on the shape it failed",
+    ),
+    (
+        "alo-dock",
+        "a_dock_entry.rs",
+        "a pin names an application and one of alo's own actions",
+        "the second of the same three. See the entry above for the measurement: the person's \
+         sentence comes from the vocabulary and drops this text",
+    ),
+    (
+        "alo-dock",
+        "a_dock_entry.rs",
+        "a pin's application is not a name",
+        "the third of the same three, and the one that carries `AppId::named`'s refusal \
+         onward so that a hand-written file is validated by the one place that validates a \
+         name. Same path, same drop",
+    ),
+    (
+        "alo-dock",
         "more_apps.rs",
         "the measured parts and the owner's cap do not agree",
         "the message of a `const _: () = assert!(..)` that holds the popover's measured \

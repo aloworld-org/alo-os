@@ -46,12 +46,33 @@ impl Server {
     /// machine. When a stored list exists it is read here and passed instead,
     /// and nothing else on this path changes.
     pub fn its_dock_is_filled_from(&mut self, discovery: &Discovery) {
-        // **`should_be_written_down` is deliberately not consulted.** It
-        // answers `true` here and there is nowhere to write, and a branch on it
-        // that did nothing in either arm would read as though the write had
-        // been considered and declined. See this module's header: it is owed,
-        // not decided against.
-        self.what_the_dock_is_pinned_to = ThePins::NeverSet.what_to_pin(discovery).holding();
+        let _owed = self.its_dock_is_filled_from_what_they_kept(&ThePins::NeverSet, discovery);
+    }
+
+    /// Work out this person's pins from what they kept and what the machine
+    /// offers, keep them, and **say what is owed to the disk**.
+    ///
+    /// [`Some`] is *write exactly this down*, and it is returned rather than
+    /// written because `crates/alo-shell` keeps no file of its own: the binary
+    /// that read the list is the one that writes it, through the crate that
+    /// owns `dock.toml`. [`None`] is *write nothing*, which is the answer for a
+    /// person who already has a list, for a scan that failed and for one that
+    /// has not finished — the owner's fourth clause, carried as a value rather
+    /// than as a caller's judgement.
+    ///
+    /// **The decision is `WhatToPin`'s and not this function's.** A caller
+    /// holding a list has to decide whether to persist it, and the case that
+    /// goes wrong is the empty one; so the type answers and this passes the
+    /// answer on.
+    pub fn its_dock_is_filled_from_what_they_kept(
+        &mut self,
+        kept: &ThePins,
+        discovery: &Discovery,
+    ) -> Option<Vec<alo_dock::ADockEntry>> {
+        let what = kept.what_to_pin(discovery);
+        self.what_the_dock_is_pinned_to = what.holding();
+        what.should_be_written_down()
+            .then(|| what.to_draw().to_vec())
     }
 
     /// What this person's Dock is pinned to.

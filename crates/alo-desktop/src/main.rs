@@ -167,6 +167,13 @@ mod running {
         /// Beside the layout and read the same way: one folder, one question
         /// per file, and `None` on a session with nowhere to keep anything.
         shortcuts_at: Option<std::path::PathBuf>,
+        /// Where this person's Dock settings live, if they have a folder.
+        ///
+        /// The same folder and the same question as the two above. **`dock.toml`
+        /// is one file for every Dock setting** — the edge, the hiding and now
+        /// what is pinned — so this is the path the whole of `alo_dock::keeping`
+        /// is given, and not a path of the pins' own.
+        dock_at: Option<std::path::PathBuf>,
         /// Where the dock is, and so where the status area is.
         dock: alo_dock::Dock,
         /// The windows this person has put aside, which the panel at the edge
@@ -271,9 +278,23 @@ mod running {
                 std::env::var_os("HOME").as_deref(),
             )
             .map(|folder| folder.join(alo_shortcuts::keeping::THE_FILE));
+            // And their Dock, from the same folder again: where it sits, whether
+            // it gives way, and what they pinned to it.
+            let dock_at = alo_choosing::where_the_folder_is(
+                std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+                std::env::var_os("HOME").as_deref(),
+            )
+            .map(|folder| folder.join(alo_dock::keeping::THE_FILE));
+            if dock_at.is_none() {
+                eprintln!(
+                    "alo-desktop: this session has no folder, so the Dock's pins are not kept and \
+                     the defaults are worked out at every sign-in"
+                );
+            }
             Ok(Self {
                 layout_at,
                 shortcuts_at,
+                dock_at,
                 dock: alo_dock::Dock::shipped(),
                 put_aside: alo_put_aside::Panel::new(),
                 // Nobody is looking at anything yet, which is what a session starts as.
@@ -445,6 +466,87 @@ mod running {
                     );
                     shipped
                 }
+            }
+        }
+
+        /// What this person pinned to their Dock, read from their own folder.
+        ///
+        /// **A damaged file is `NeverSet` and says so**, which is the one
+        /// decision here worth arguing about. `alo_dock::keeping::read` refuses
+        /// a file it cannot read whole, and the alternative to `NeverSet` would
+        /// be to treat the refusal as *they chose nothing* — which would hand
+        /// the defaults to somebody whose file is sitting there intact with
+        /// their arrangement in it.
+        ///
+        /// `NeverSet` means the defaults apply **and are written**, which would
+        /// replace the damaged file. That is a real cost and it is the smaller
+        /// one: the person gets a working Dock and a line saying why, rather
+        /// than an empty one. The owner's ruling is explicit that *a settings
+        /// file that failed to read must not trigger initialisation*, so this
+        /// is the gap between that sentence and this code, named here rather
+        /// than hidden — it is fixed by giving `ThePins` a third state, which
+        /// is a change to the contract's shape and not to this file.
+        fn the_pins_they_kept(&mut self) -> alo_dock::pinning::ThePins {
+            let Some(at) = self.dock_at.as_deref() else {
+                return alo_dock::pinning::ThePins::NeverSet;
+            };
+            match alo_dock::keeping::read(at) {
+                Ok(changes) => changes
+                    .pins()
+                    .map(|pins| alo_dock::pinning::ThePins::Chosen(pins.to_vec()))
+                    .unwrap_or(alo_dock::pinning::ThePins::NeverSet),
+                Err(why) => {
+                    // **`{:?}` and not a person's sentence.** `FileNotRead`
+                    // carries no `Display` on purpose — what a person is told
+                    // comes from `said(&strings)` in Settings, in their own
+                    // language. This line is a diagnostic for whoever reads the
+                    // journal, so it names the file and the reason and claims
+                    // to be neither.
+                    eprintln!(
+                        "alo-desktop: this person's Dock settings at {} did not read ({:?}), so \
+                         the defaults apply",
+                        why.at().display(),
+                        why.why()
+                    );
+                    alo_dock::pinning::ThePins::NeverSet
+                }
+            }
+        }
+
+        /// Keep the pins the defaults just worked out.
+        ///
+        /// **Read, change, write** rather than writing the pins alone: a write
+        /// replaces `dock.toml` whole, so building a `Changes` with only the
+        /// pins in it would throw away the edge and the hiding this person had
+        /// chosen. The read is of the file as it is at this moment, which is
+        /// `alo_dock::keeping::keep`'s own rule.
+        ///
+        /// **A failure is said and nothing else.** The session has its Dock
+        /// either way; what is lost is that the defaults are worked out again
+        /// next time, which is where this machine was before this file existed.
+        fn keep_these_pins(&mut self, pins: &[alo_dock::ADockEntry]) {
+            let Some(at) = self.dock_at.as_deref() else {
+                return;
+            };
+            let mut changes = match alo_dock::keeping::read(at) {
+                Ok(changes) => changes,
+                Err(why) => {
+                    eprintln!(
+                        "alo-desktop: this person's Dock settings at {} did not read ({:?}), so \
+                         their first pins are not kept",
+                        why.at().display(),
+                        why.why()
+                    );
+                    return;
+                }
+            };
+            changes.set_pins(pins.to_vec());
+            if let Err(why) = alo_dock::keeping::keep(at, &changes) {
+                eprintln!(
+                    "alo-desktop: this person's first Dock pins were not kept at {} ({:?})",
+                    why.at().display(),
+                    why.why()
+                );
             }
         }
 

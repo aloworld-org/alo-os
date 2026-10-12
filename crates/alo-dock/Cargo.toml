@@ -22,6 +22,10 @@ serde_json = { workspace = true }
 # Reads the text of `dock.toml` in `keeping.rs`'s tests, to hold the list of
 # keys to what a change writes.
 toml = { workspace = true }
+# A private folder per test in `the_pins_survive_a_restart`, which writes and
+# reads a real `dock.toml`: the three states of the pinned list can only be
+# told apart in the bytes, so that test needs a disk rather than a stand-in.
+tempfile = "3"
 
 [lints]
 workspace = true

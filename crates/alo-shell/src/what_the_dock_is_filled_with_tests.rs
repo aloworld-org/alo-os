@@ -195,3 +195,92 @@ fn what_is_pinned_reaches_both_the_draw_and_the_keyboard() {
     );
     assert!(across > 0, "a grid of no items wide");
 }
+
+/// **A person who already has a list is given it, and nothing is owed.**
+///
+/// The seam the whole of task 8 turns on: `its_dock_is_filled_from_what_they_kept`
+/// answers [`None`] for somebody who has chosen, so the binary writes nothing
+/// and the defaults cannot run a second time. A caller that wrote anyway would
+/// undo a removal on every sign-in.
+#[test]
+fn a_person_who_has_chosen_is_given_their_list_and_owes_no_write() {
+    let (_directory, mut server) = server("already-chosen");
+    let theirs = vec![
+        ADockEntry::Native(ANativeAction::Settings),
+        ADockEntry::Application(app("org.kde.dolphin")),
+    ];
+
+    let owed = server.its_dock_is_filled_from_what_they_kept(
+        &ThePins::Chosen(theirs.clone()),
+        // **A discovery that found something else entirely**, so this cannot
+        // pass by the two happening to agree.
+        &Discovery::Completed(vec![(ARole::Browser, app("org.mozilla.firefox"))]),
+    );
+
+    assert_eq!(
+        owed, None,
+        "a person who already has a list was told to write one, so their removals would be undone"
+    );
+    let pinned: Vec<&ADockEntry> = server.what_the_dock_is_pinned_to().each_pinned().collect();
+    assert_eq!(
+        pinned,
+        theirs.iter().collect::<Vec<_>>(),
+        "a person's own arrangement was replaced by what the machine happens to have"
+    );
+}
+
+/// **A fresh machine is owed exactly the list it drew.**
+///
+/// Asserted as an equality between what is owed and what is pinned, rather than
+/// as *something is owed*: a write of some other list would satisfy the weaker
+/// claim and leave the next sign-in drawing something the person never saw.
+#[test]
+fn a_fresh_machine_owes_the_write_it_just_drew() {
+    let (_directory, mut server) = server("fresh-owes");
+
+    let owed = server
+        .its_dock_is_filled_from_what_they_kept(
+            &ThePins::NeverSet,
+            &Discovery::Completed(vec![(ARole::Files, app("org.kde.dolphin"))]),
+        )
+        .expect("a fresh machine owes its defaults to the disk");
+
+    let pinned: Vec<ADockEntry> = server
+        .what_the_dock_is_pinned_to()
+        .each_pinned()
+        .cloned()
+        .collect();
+    assert_eq!(
+        owed, pinned,
+        "what is owed to the disk is not what was drawn, so the next sign-in shows something else"
+    );
+    assert_eq!(
+        owed,
+        vec![
+            ADockEntry::Application(app("org.kde.dolphin")),
+            ADockEntry::Native(ANativeAction::Settings),
+        ],
+        "the fresh defaults are not Files then Settings"
+    );
+}
+
+/// **Nothing is owed when discovery could not answer**, which is the owner's
+/// fourth clause and the one that would empty a Dock for good.
+///
+/// Both refusals, in one test, because they differ in remedy and not in this:
+/// a scan that failed is reported and one that has not finished is waited for,
+/// and **neither may be written down**.
+#[test]
+fn a_scan_that_could_not_answer_owes_nothing() {
+    for discovery in [Discovery::Failed, Discovery::StillLooking] {
+        let (_directory, mut server) = server("owes-nothing");
+
+        let owed = server.its_dock_is_filled_from_what_they_kept(&ThePins::NeverSet, &discovery);
+
+        assert_eq!(
+            owed, None,
+            "{discovery:?} was written down, so a slow or broken morning becomes a Dock that is \
+             empty for good"
+        );
+    }
+}
