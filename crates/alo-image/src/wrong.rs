@@ -77,6 +77,110 @@ pub enum Wrong {
         /// What the unit bounds it to.
         held: Vec<String>,
     },
+    /// The person has no home directory made at boot.
+    ///
+    /// **Found by booting the image on 2026-10-10**, and invisible from the
+    /// source: a `sysusers.d` line declares the home and `systemd-sysusers`
+    /// does not create one - it writes a line in `/etc/passwd` and nothing
+    /// else. On an ordinary distribution an installer makes the directory;
+    /// this image had no step that did.
+    ///
+    /// What a person loses is everything they arrange. The desktop said so in
+    /// its own words on that boot - *the canvas layout was not kept:
+    /// Disk(PermissionDenied)* - and would have said it again every time.
+    #[error(
+        "the person's home {home} is declared and never made, so everything they arrange is \
+         lost: systemd-sysusers writes a passwd line and never a directory"
+    )]
+    ThePersonHasNoHome {
+        /// Where their home was declared to be.
+        home: String,
+    },
+    /// The person's home is made, but not as theirs alone.
+    #[error(
+        "the person's home {home} is made {mode:o} owned by {owner}, and a home anybody can \
+         read is not a home"
+    )]
+    ThePersonsHomeIsNotTheirs {
+        /// Where it is.
+        home: String,
+        /// How it is made.
+        mode: u32,
+        /// Who owns it.
+        owner: String,
+    },
+    /// Something other than this shell owns the screen the shell is on.
+    ///
+    /// **Measured on a booted machine on 2026-10-10.** `getty@tty1` started at
+    /// boot and restarted the instant the greeter exited, drawing a console
+    /// login over a desktop that was running - and taking the keystrokes meant
+    /// for the sign-in fields with it.
+    #[error(
+        "{unit} is not masked, and it takes the same screen as the shell: two things on one \
+         virtual terminal is a login prompt drawn over a desktop"
+    )]
+    SomethingElseOwnsTheScreen {
+        /// The unit that would take it.
+        unit: String,
+    },
+    /// The desktop's service is not the person's.
+    ///
+    /// **The inverse of [`Self::TheScreenHoldsSomething`]'s case, and the
+    /// larger surface.** The greeter runs as `root` because it exists before
+    /// anybody is signed in and so cannot be anybody. A desktop is somebody's:
+    /// it holds their keyboard, their clipboard and their windows for the whole
+    /// day. One running as root would be a machine where the thing a person
+    /// types into is not them, and `alo-desktop`'s own header says the uid is
+    /// not a variable it reads - *whose session this is, is whose session this
+    /// is* - which makes the unit's `User=` line the only place it is decided.
+    #[error(
+        "the desktop's unit {desktop} runs as {runs}, and a desktop is the person's: the greeter          is root because nobody is there yet and this is the other half of that morning"
+    )]
+    TheDesktopIsNotThePersons {
+        /// The desktop's unit.
+        desktop: String,
+        /// What the unit says it runs as, or that it says nothing.
+        runs: String,
+    },
+    /// The desktop's service is not tied to the person's session.
+    ///
+    /// **Both directions, because one is not enough.** `WantedBy=` without
+    /// `BindsTo=` is a desktop that starts with a session and outlives it -
+    /// drawn over the sign-in screen of the account that replaced it.
+    /// `BindsTo=` without `WantedBy=` is a desktop nothing ever starts, which
+    /// is the state this unit was written to end.
+    #[error(
+        "the desktop's unit {desktop} is not bound to a person's session in both directions:          bound to {bound:?}, wanted by {wanted:?}"
+    )]
+    TheDesktopOutlivesItsSession {
+        /// The desktop's unit.
+        desktop: String,
+        /// What it says it is bound to.
+        bound: Vec<String>,
+        /// What it says wants it.
+        wanted: Vec<String>,
+    },
+    /// A unit that names which graphics card to open.
+    ///
+    /// **A card number is not a fact about a machine.** Firmware that hands
+    /// over a framebuffer gives `simpledrm` minor 0, so the real GPU lands on
+    /// minor 1 — measured on a written disk on 2026-10-05, where `logind` had
+    /// put `card1` on `seat0` and a unit asking for `card0` was answered *No
+    /// such file or directory*. Most UEFI machines hand over a framebuffer, so
+    /// such a unit is right on the machine somebody measured and wrong on the
+    /// fleet.
+    #[error(
+        "{unit} names the graphics card to open as `{card}`, and a card number is not a fact \
+         about a machine: firmware handing over a framebuffer makes the real GPU minor 1, so \
+         this is right where it was measured and wrong on most machines. Ask the seat — \
+         `alo_shell::the_card_to_open`"
+    )]
+    AUnitNamesACardNumber {
+        /// The unit that names one.
+        unit: String,
+        /// The card it names.
+        card: String,
+    },
     /// The screen's service holds a capability.
     ///
     /// **It runs as `root` and it is the only one of the five that does**, so

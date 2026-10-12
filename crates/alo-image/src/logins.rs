@@ -28,7 +28,8 @@ pub enum Declared {
         /// Its number.
         id: u32,
     },
-    /// A login, its number, and the group it is in if the line names one.
+    /// A login, its number, the group it is in if the line names one, and
+    /// where it says that login lives.
     Login {
         /// What it is called.
         name: String,
@@ -39,6 +40,15 @@ pub enum Declared {
         /// `None` means systemd makes a group of the same name and number,
         /// which is the ordinary shape for a person's own login.
         group: Option<u32>,
+        /// The home this line declares, when it declares one.
+        ///
+        /// **Read since 2026-10-10, and the note above it was wrong until
+        /// then.** `systemd-sysusers` writes this path into `/etc/passwd` and
+        /// **does not create the directory**. Nothing in this image did either,
+        /// so a person signed in to a home that was not there - and
+        /// `crate::checking` now holds the image to making what this field
+        /// declares.
+        home: Option<String>,
     },
     /// A login put into a group it is not the owner of.
     Member {
@@ -50,6 +60,24 @@ pub enum Declared {
 }
 
 impl Declared {
+    /// Where this line says its login lives, if it is a login that says.
+    #[must_use]
+    pub fn home(&self) -> Option<&str> {
+        match self {
+            Self::Login { home, .. } => home.as_deref(),
+            Self::Group { .. } | Self::Member { .. } => None,
+        }
+    }
+
+    /// What this line calls its login, if it is a login.
+    #[must_use]
+    pub fn login_name(&self) -> Option<&str> {
+        match self {
+            Self::Login { name, .. } => Some(name),
+            Self::Group { .. } | Self::Member { .. } => None,
+        }
+    }
+
     /// The number this line gives a group by this name, if it is that line.
     #[must_use]
     pub fn group_called(&self, wanted: &str) -> Option<u32> {
@@ -111,16 +139,58 @@ pub fn every_login(text: &str) -> Result<Vec<Declared>, NotDeclared> {
                 line: line.to_owned(),
             });
         };
-        declared.push(one(at, kind, name, third)?);
+        // What follows the third field, with the fields themselves cut off:
+        // a quoted description, then a home, then a shell.
+        let rest = line
+            .split_once(third)
+            .map_or("", |(_, after)| after)
+            .trim_start();
+        declared.push(one(at, kind, name, third, rest)?);
     }
     Ok(declared)
 }
 
+/// The home a login line declares, if it declares one.
+///
+/// **The description is quoted and holds spaces**, so the fields cannot simply
+/// be counted: `u alo 1000 "alo OS" /home/alo /bin/bash` splits into seven
+/// words and the home is the sixth of them only by accident of how long the
+/// description is. This takes what follows the closing quote instead, and
+/// falls back to the first word when a line quotes nothing.
+///
+/// A `-` is systemd's own spelling for *no home declared*, and answers
+/// [`None`] rather than a directory called `-`.
+fn a_home_in(rest: &str) -> Option<String> {
+    // **The description is one field either way**, and the fallback read it as
+    // the home until a test said so: an unquoted description is a single word -
+    // very often `-` - so skipping the quotes is not the same as skipping the
+    // field. Both roads end past the description and before the shell.
+    let after = match rest.strip_prefix('"') {
+        Some(quoted) => quoted.split_once('"').map(|(_, after)| after)?,
+        None => rest
+            .split_once(char::is_whitespace)
+            .map(|(_, after)| after)?,
+    };
+    let home = after.split_whitespace().next()?;
+    // systemd's own spelling for *no home declared*, which is not a directory
+    // called `-`.
+    (home != "-").then(|| home.to_owned())
+}
+
 /// One line, once its first three fields are in hand.
 ///
-/// Everything after the third field is a description, a home and a shell, and
-/// nothing alo OS promises depends on any of them.
-fn one(at: usize, kind: &str, name: &str, third: &str) -> Result<Declared, NotDeclared> {
+/// **A home is read and the rest is not.** This said *everything after the
+/// third field is a description, a home and a shell, and nothing alo OS
+/// promises depends on any of them*, and a boot on 2026-10-10 found that the
+/// home is exactly what a promise depends on. The description and the shell
+/// still are not: nothing is decided by either.
+fn one(
+    at: usize,
+    kind: &str,
+    name: &str,
+    third: &str,
+    rest: &str,
+) -> Result<Declared, NotDeclared> {
     match kind {
         "g" => Ok(Declared::Group {
             name: name.to_owned(),
@@ -135,6 +205,7 @@ fn one(at: usize, kind: &str, name: &str, third: &str) -> Result<Declared, NotDe
                 name: name.to_owned(),
                 id,
                 group,
+                home: a_home_in(rest),
             })
         }
         "m" => Ok(Declared::Member {
@@ -206,12 +277,45 @@ m alo alo-agent
             name: "alo-agent".to_owned(),
             id: 60989,
             group: Some(60989),
+            home: Some("/var/lib/alo-agent".to_owned()),
         }));
         assert!(declared.contains(&Declared::Login {
             name: "alo".to_owned(),
             id: 1000,
             group: None,
+            home: Some("/home/alo".to_owned()),
         }));
+    }
+
+    /// **A home is read from past the quoted description.**
+    ///
+    /// The description holds a space, so the fields cannot be counted: `u alo
+    /// 1000 "alo OS" /home/alo /bin/bash` splits into seven words and the home
+    /// is the sixth only by accident of how long the description happens to be.
+    /// A reader that counted would give a person a home called `OS"`.
+    #[test]
+    fn a_home_is_read_from_past_the_description_however_long_it_is() {
+        let declared = every_login(
+            "u one 1000 \"a\" /home/one /bin/bash
+             u two 1001 \"a description with several words in it\" /home/two /bin/bash
+             u three 1002 - /home/three /bin/bash
+             u four 1003 \"nobody lives here\" - /usr/sbin/nologin
+",
+        )
+        .unwrap();
+
+        let homes: Vec<Option<&str>> = declared.iter().map(Declared::home).collect();
+        assert_eq!(
+            homes,
+            vec![
+                Some("/home/one"),
+                Some("/home/two"),
+                Some("/home/three"),
+                // systemd's own spelling for *no home*, which is not a
+                // directory called `-`.
+                None,
+            ]
+        );
     }
 
     /// **A type letter this reader does not know is refused**, not skipped. A

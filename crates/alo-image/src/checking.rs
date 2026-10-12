@@ -38,6 +38,15 @@ pub const THE_DOOR: &str = "/run/alo";
 /// root may put a name in it.
 const THE_DOORS_MODE: u32 = 0o755;
 
+/// The account number this image's one person has.
+const THE_PERSON: u32 = 1000;
+
+/// A home is the person's alone: nobody else on the machine reads it.
+const A_HOMES_MODE: u32 = 0o700;
+
+/// What the recipe has to say, so nothing else takes the shell's screen.
+const THE_GETTY_IS_MASKED: &str = "systemctl mask getty@tty1.service";
+
 /// Where systemd's `RuntimeDirectory=` is relative to, and the only reason this
 /// crate knows the string: [`THE_DOOR`] is absolute and that setting is not.
 const THE_RUN: &str = "/run";
@@ -139,6 +148,11 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_opener_can_be_knocked_on_by_the_greeter_alone(image, &mut wrong);
     the_agent_holds_nothing(image, &mut wrong);
     the_screen_holds_nothing(image, &mut wrong);
+    the_person_has_a_home_of_their_own(image, &mut wrong);
+    nothing_else_takes_the_shells_screen(image, &mut wrong);
+    the_desktop_is_the_persons(image, &mut wrong);
+    no_unit_names_a_card_number(image, &mut wrong);
+    the_desktop_lives_and_dies_with_its_session(image, &mut wrong);
     the_logins_are_the_ones_this_image_makes(image, &mut wrong);
     the_build_holds_every_login_to_its_number(image, &mut wrong);
     the_directories_are_made(image, &mut wrong);
@@ -940,6 +954,141 @@ fn the_screen_holds_nothing(image: &Image, wrong: &mut Vec<Wrong>) {
     }
 }
 
+/// **The person has a home, and it is theirs alone.**
+///
+/// `systemd-sysusers` writes a line in `/etc/passwd` naming a home and does not
+/// create one. Every ordinary distribution has an installer step that does;
+/// this image had none, and a boot on 2026-10-10 found it the way a person
+/// would have - the desktop reporting *the canvas layout was not kept:
+/// Disk(PermissionDenied)*, silently, every time.
+///
+/// **Read from the login line rather than written here**, so a change to where
+/// a person lives cannot leave this checking an address nobody uses. The
+/// directory looked for is `/var/home/...` because this is an ostree
+/// deployment where `/home` is a symlink, and `systemd-tmpfiles` declines to
+/// create a directory through one.
+fn the_person_has_a_home_of_their_own(image: &Image, wrong: &mut Vec<Wrong>) {
+    let Some(person) = image
+        .declares()
+        .iter()
+        .find(|it| it.login_called("alo") == Some(THE_PERSON))
+    else {
+        // No person declared is a different fault, and
+        // `the_logins_are_the_ones_this_image_makes` is where it is named.
+        return;
+    };
+    let Some(home) = person.home() else {
+        return;
+    };
+    let real = home.replacen("/home/", "/var/home/", 1);
+    match image.directory_at(Path::new(&real)) {
+        None => wrong.push(Wrong::ThePersonHasNoHome { home: real }),
+        Some(made) => {
+            let theirs = person.login_name().unwrap_or("alo");
+            if made.mode() != A_HOMES_MODE || made.owner() != theirs {
+                wrong.push(Wrong::ThePersonsHomeIsNotTheirs {
+                    home: real,
+                    mode: made.mode(),
+                    owner: made.owner().to_owned(),
+                });
+            }
+        }
+    }
+}
+
+/// **Nothing else takes the screen the shell is on.**
+///
+/// `alo-compositor.service` and `alo-desktop.service` both carry
+/// `TTYPath=/dev/tty1`, which is what gives each of them a seat. The base also
+/// enables `getty@tty1`, and on a booted machine that getty restarted the
+/// instant the greeter exited and drew a login prompt over a desktop that was
+/// running - then took the keystrokes meant for the sign-in fields.
+///
+/// **Masked and not merely disabled**, because `getty@.service` is a template
+/// instantiated on demand: a disabled instance is started again by anything
+/// that asks for tty1.
+fn nothing_else_takes_the_shells_screen(image: &Image, wrong: &mut Vec<Wrong>) {
+    if !image.recipe_says(THE_GETTY_IS_MASKED) {
+        wrong.push(Wrong::SomethingElseOwnsTheScreen {
+            unit: "getty@tty1.service".to_owned(),
+        });
+    }
+}
+
+/// **A desktop is the person's, and the greeter is the machine's.**
+///
+/// `the_screen_holds_nothing` above says the compositor *is* root and is the
+/// only one of the five that is, because it stands in front of somebody who has
+/// not signed in. This is the other half of that morning and the opposite rule:
+/// a desktop holds a person's keyboard, their clipboard and their windows for a
+/// whole day, and one running as root would be a machine where the thing being
+/// typed into is not them.
+///
+/// `alo-desktop`'s own header is why this is checked here rather than in the
+/// process: *whose session this is, is whose session this is*, and it refuses to
+/// read a uid from a variable. So the unit's `User=` line is the only place the
+/// answer exists, and a unit is a file somebody edits.
+fn the_desktop_is_the_persons(image: &Image, wrong: &mut Vec<Wrong>) {
+    let runs = image.desktop().as_login();
+    if runs.is_none_or(|who| who == "root") {
+        wrong.push(Wrong::TheDesktopIsNotThePersons {
+            desktop: image.desktop().called().to_owned(),
+            runs: runs.unwrap_or("nothing it says").to_owned(),
+        });
+    }
+}
+
+/// **No unit names a card number**, because a card number is not a fact about
+/// a machine.
+///
+/// Firmware that hands over a framebuffer gives `simpledrm` minor 0, so the
+/// real GPU lands on minor 1 — measured on a written disk on 2026-10-05, where
+/// `logind` had put `card1` on `seat0` and a unit asking for `card0` was
+/// answered *No such file or directory*. **Most UEFI machines hand over a
+/// framebuffer**, so a unit that names `card0` is a unit that is wrong on most
+/// of the fleet and right on the one machine somebody measured.
+///
+/// Both units carried such a line at different times, and both were defended
+/// in a comment rather than fixed. The answer is
+/// `alo_shell::the_card_to_open`, which asks the seat for the device udev
+/// marks as the boot VGA; `ALO_DISPLAY` stays a public configuration key that
+/// nothing in this image sets.
+fn no_unit_names_a_card_number(image: &Image, wrong: &mut Vec<Wrong>) {
+    for unit in [image.desktop(), image.screen()] {
+        let named = unit
+            .environment()
+            .into_iter()
+            .find_map(|line| line.strip_prefix("ALO_DISPLAY="));
+        if let Some(card) = named {
+            wrong.push(Wrong::AUnitNamesACardNumber {
+                unit: unit.called().to_owned(),
+                card: card.to_owned(),
+            });
+        }
+    }
+}
+
+/// **A desktop starts with a session and ends with it, and both are checked.**
+///
+/// One direction is not enough and the two fail differently. `WantedBy=` with no
+/// `BindsTo=` is a desktop that outlives the session that started it — still
+/// drawn after the person signs out, over the sign-in screen of whoever comes
+/// next. `BindsTo=` with no `WantedBy=` is a desktop nothing ever starts, which
+/// is exactly the state this unit was written to end: `alo-desktop` was built
+/// and installed and no unit named it.
+fn the_desktop_lives_and_dies_with_its_session(image: &Image, wrong: &mut Vec<Wrong>) {
+    let a_persons_session = |named: &&str| named.starts_with("user@");
+    let bound = image.desktop().bound_to();
+    let wanted = image.desktop().wanted_by();
+    if !bound.iter().any(a_persons_session) || !wanted.iter().any(a_persons_session) {
+        wrong.push(Wrong::TheDesktopOutlivesItsSession {
+            desktop: image.desktop().called().to_owned(),
+            bound: bound.into_iter().map(str::to_owned).collect(),
+            wanted: wanted.into_iter().map(str::to_owned).collect(),
+        });
+    }
+}
+
 /// ADR 0001 §2 and ADR 0018: the service that talks to the agent holds nothing,
 /// and says so.
 fn the_agent_holds_nothing(image: &Image, wrong: &mut Vec<Wrong>) {
@@ -1183,9 +1332,9 @@ mod tests {
     use super::*;
     use crate::testing::{
         THE_AGENTS_UNIT, THE_BOOTING_DOCUMENT, THE_CONTAINERFILE, THE_DESCRIPTION_FILE,
-        THE_JOURNAL_DROP_IN, THE_KERNEL_ARGUMENTS, THE_LOADERS_UNIT, THE_OPENERS_UNIT,
-        THE_SERVERS_UNIT, THE_SYSUSERS, THE_TMPFILES, a_copy_of_the_image, edited, image_at,
-        the_release_line, the_store_file,
+        THE_DESKTOPS_UNIT, THE_JOURNAL_DROP_IN, THE_KERNEL_ARGUMENTS, THE_LOADERS_UNIT,
+        THE_OPENERS_UNIT, THE_SERVERS_UNIT, THE_SYSUSERS, THE_TMPFILES, a_copy_of_the_image,
+        edited, image_at, the_release_line, the_store_file,
     };
 
     /// **The image this repository ships says one thing.** Everything below
@@ -1218,6 +1367,247 @@ mod tests {
             screen.bounded_to(),
             screen.given()
         );
+    }
+
+    /// **A desktop running as root is caught.**
+    ///
+    /// The inverse of the screen's case and the larger surface: a greeter is
+    /// root because nobody is there yet, and a desktop holds a person's
+    /// keyboard, clipboard and windows for the whole day. `alo-desktop` refuses
+    /// to read a uid from a variable - *whose session this is, is whose session
+    /// this is* - so the unit's `User=` line is the only place it is decided,
+    /// and a unit is a file somebody edits.
+    #[test]
+    fn a_desktop_that_would_run_as_root_is_caught() {
+        let root = a_copy_of_the_image("desktop-as-root");
+        edited(&root, THE_DESKTOPS_UNIT, "User=alo", "User=root");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheDesktopIsNotThePersons { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A desktop that would outlive the session that started it is caught.**
+    ///
+    /// Without `BindsTo=`, signing out leaves the desktop drawn - over the
+    /// sign-in screen of whoever comes next. Checked by removing the line
+    /// rather than by reading it, because the failure is what a person would
+    /// see and not what the file says.
+    #[test]
+    fn a_desktop_that_would_outlive_its_session_is_caught() {
+        let root = a_copy_of_the_image("desktop-outlives");
+        edited(&root, THE_DESKTOPS_UNIT, "BindsTo=user@1000.service", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheDesktopOutlivesItsSession { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And a desktop nothing starts is caught by the same check**, which is
+    /// the state this unit was written to end.
+    ///
+    /// `alo-desktop` was built by the recipe and installed to `/usr/bin` and no
+    /// unit named it: 8 `ExecStart=` lines in that directory and none its own.
+    /// A machine signed somebody in and showed them nothing. Removing
+    /// `WantedBy=` is that state in one line, and the check refuses it from the
+    /// other direction than the test above.
+    #[test]
+    fn a_desktop_nothing_would_start_is_caught() {
+        let root = a_copy_of_the_image("desktop-unstarted");
+        edited(&root, THE_DESKTOPS_UNIT, "WantedBy=user@1000.service", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheDesktopOutlivesItsSession { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **The shipped desktop unit is the person's, asked of the real file.**
+    ///
+    /// The three tests above prove the checks can refuse. This proves the thing
+    /// the task was about: that the unit a built machine actually starts after
+    /// sign-in passes them. A check that only ever meets a fixture is a check
+    /// about a fixture.
+    #[test]
+    fn the_desktop_this_repository_ships_is_the_persons_and_lives_with_their_session() {
+        let at = "../../image/usr/lib/systemd/system/alo-desktop.service";
+        let Ok(unit) = std::fs::read_to_string(at) else {
+            unreachable!("the shipped desktop unit is in this repository, at {at}")
+        };
+        let Ok(parsed) = crate::unit::Unit::read(&unit) else {
+            unreachable!("the shipped desktop unit parses as a unit")
+        };
+        let Ok(desktop) = crate::service::Service::of("alo-desktop.service", parsed) else {
+            unreachable!("the shipped desktop unit is a service")
+        };
+
+        assert_eq!(
+            desktop.as_login(),
+            Some("alo"),
+            "the desktop a person arrives at does not run as them"
+        );
+        assert!(
+            desktop.holds_nothing(),
+            "the largest surface on the machine holds capabilities: bounded to {:?}, given {:?}",
+            desktop.bounded_to(),
+            desktop.given()
+        );
+        assert!(
+            desktop.bound_to().iter().any(|it| it.starts_with("user@")),
+            "signing out would leave this desktop drawn: bound to {:?}",
+            desktop.bound_to()
+        );
+        assert!(
+            desktop.wanted_by().iter().any(|it| it.starts_with("user@")),
+            "nothing starts this desktop: wanted by {:?}",
+            desktop.wanted_by()
+        );
+    }
+
+    /// **A person with no home is caught.**
+    ///
+    /// The fault a boot found on 2026-10-10 and nothing else had: the home is
+    /// declared in `sysusers.d`, `systemd-sysusers` writes a passwd line and
+    /// never a directory, and no step in this image made one. The desktop
+    /// reported it in its own words every time - *the canvas layout was not
+    /// kept: Disk(PermissionDenied)* - to nobody.
+    #[test]
+    fn a_person_with_no_home_is_caught() {
+        let root = a_copy_of_the_image("no-home");
+        edited(&root, THE_TMPFILES, "d /var/home/alo 0700 alo alo -", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::ThePersonHasNoHome { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A home anybody can read is caught**, which is not a home.
+    #[test]
+    fn a_home_the_whole_machine_can_read_is_caught() {
+        let root = a_copy_of_the_image("open-home");
+        edited(
+            &root,
+            THE_TMPFILES,
+            "d /var/home/alo 0700 alo alo -",
+            "d /var/home/alo 0755 alo alo -",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::ThePersonsHomeIsNotTheirs { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A unit naming a card number is caught.**
+    ///
+    /// This unit shipped `ALO_DISPLAY=/dev/dri/card0` for a day, under a
+    /// comment saying the line is wrong on most machines. A default chosen in
+    /// the knowledge that it is usually wrong is a bug, and writing the
+    /// knowledge down beside it does not make it a quirk.
+    #[test]
+    fn a_unit_that_names_which_card_to_open_is_caught() {
+        let root = a_copy_of_the_image("named-card");
+        edited(
+            &root,
+            THE_DESKTOPS_UNIT,
+            "Environment=ALO_KEYBOARD=gb",
+            "Environment=ALO_DISPLAY=/dev/dri/card0\nEnvironment=ALO_KEYBOARD=gb",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::AUnitNamesACardNumber { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And neither shipped unit names one**, which is the half saying the
+    /// check above is about something real. Both are asked, because both open
+    /// a card and the greeter's was wrong first.
+    #[test]
+    fn neither_the_desktop_nor_the_greeter_names_a_card() {
+        let image = image_at(Path::new(crate::THE_IMAGE));
+
+        for unit in [image.desktop(), image.screen()] {
+            assert!(
+                !unit
+                    .environment()
+                    .iter()
+                    .any(|line| line.starts_with("ALO_DISPLAY=")),
+                "{} names a card",
+                unit.called()
+            );
+        }
+    }
+
+    /// **A getty left to take the shell's screen is caught.**
+    ///
+    /// Measured on a booted machine: it restarted the instant the greeter
+    /// exited and drew a login prompt over a running desktop, and took the
+    /// keystrokes meant for the sign-in fields.
+    #[test]
+    fn a_getty_that_would_take_the_shells_screen_is_caught() {
+        let root = a_copy_of_the_image("getty-on-tty1");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "systemctl mask getty@tty1.service",
+            "true",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::SomethingElseOwnsTheScreen { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And the image this repository ships has neither fault**, which is the
+    /// half that says the checks above are about something real.
+    #[test]
+    fn the_shipped_image_gives_its_person_a_home_and_keeps_its_screen() {
+        let image = image_at(Path::new(crate::THE_IMAGE));
+        let wrong = everything_wrong_with(&image);
+        for found in &wrong {
+            assert!(
+                !matches!(
+                    found,
+                    Wrong::ThePersonHasNoHome { .. }
+                        | Wrong::ThePersonsHomeIsNotTheirs { .. }
+                        | Wrong::SomethingElseOwnsTheScreen { .. }
+                ),
+                "{found:?}"
+            );
+        }
     }
 
     #[test]
