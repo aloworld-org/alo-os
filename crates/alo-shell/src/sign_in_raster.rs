@@ -23,7 +23,7 @@
 //! face `crate::WindowControlLabels` already loads, never a host font.
 
 use alo_appearance::{Scheme, TextScale};
-use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Wrap};
+use cosmic_text::{Buffer, FontSystem, Metrics, Shaping, Wrap};
 use smithay::utils::{Physical, Rectangle, Scale};
 
 use crate::painted::{Inked, Solid};
@@ -466,7 +466,13 @@ fn typed_name(
     buffer.set_text(
         fonts,
         name,
-        &Attrs::new().family(Family::SansSerif),
+        // **alo's own face, as every other surface asks for it.** This said
+        // `Family::SansSerif` until 2026-10-12, so a person's own name was the
+        // one string on the sign-in screen drawn in whatever sans the font
+        // database offered first, beside a greeting in Manrope. One place
+        // decides the face — `painted_text::alos_own_text` — so a measurement
+        // and a drawing cannot disagree about what they meant.
+        &crate::painted_text::alos_own_text(),
         Shaping::Advanced,
     );
     buffer.shape_until_scroll(fonts, false);
