@@ -41,15 +41,12 @@ impl Server {
         match self.what_the_dock_has_open() {
             crate::WhatTheDockHasOpen::Nothing => (0, 1),
             crate::WhatTheDockHasOpen::MoreApps { .. } => (
-                // **`Holding::nothing()`, which is what the draw passes too.**
-                // `crate::direct_desktop` builds one on each of its two lines
-                // and no file in this shell saves a pinned list yet. When one
-                // does — task 4 of the plan — this becomes wrong in the same
-                // commit as those, and
-                // `the_keyboard_moves_through_what_more_apps_drew` is the test
-                // that says so.
-                self.what_more_apps_holds(&alo_dock::Holding::nothing())
-                    .len(),
+                // **This person's list, which is the one the draw asks for.**
+                // Both read `Server::what_this_persons_more_apps_holds`, so the
+                // arrows cannot come to move through a grid nobody drew. They
+                // each built a `Holding::nothing()` until the pins became real,
+                // and the comment that stood here predicted this commit.
+                self.what_this_persons_more_apps_holds().len(),
                 alo_dock::more_apps::TheOverview::how_many_across(),
             ),
             // **A list, so one across.** Up and Down then move by one and Left
@@ -99,7 +96,7 @@ impl Server {
             crate::WhatTheDockHasOpen::Nothing => {}
             crate::WhatTheDockHasOpen::MoreApps { .. } => {
                 let Some(app) = self
-                    .what_more_apps_holds(&alo_dock::Holding::nothing())
+                    .what_this_persons_more_apps_holds()
                     .get(which)
                     .map(|on| on.app().clone())
                 else {

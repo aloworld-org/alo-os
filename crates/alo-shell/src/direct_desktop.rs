@@ -650,10 +650,10 @@ impl LoopInput for Desk<'_> {
         // **A local, for `windows`' reason exactly.** The frame borrows it, so
         // it has to outlive the frame; built inside `what_only_the_server_knows`
         // it would die at that function's end.
-        let on_the_dock = server.what_the_dock_holds(&alo_dock::Holding::nothing());
+        let on_the_dock = server.what_this_persons_dock_holds();
         // **And the longer list *More apps* shows**, for `on_the_dock`'s reason
         // exactly: the frame borrows it, so it has to outlive the frame.
-        let in_more_apps = server.what_more_apps_holds(&alo_dock::Holding::nothing());
+        let in_more_apps = server.what_this_persons_more_apps_holds();
         // **A local, for `on_the_dock`'s reason exactly.** The frame borrows
         // which of the Dock's surfaces is open, and the borrow must not be of
         // the `Server` — this lane calls `&mut server` again further down, to

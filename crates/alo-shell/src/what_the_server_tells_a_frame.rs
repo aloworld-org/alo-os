@@ -106,13 +106,13 @@ pub(crate) fn what_only_the_server_knows<'a>(
     // was a count until the same day an application with no artwork gained a
     // letter to show.
     //
-    // The caller builds it with `Holding::nothing()`, which is the honest
-    // argument and not a placeholder: `alo_dock::Holding` is the pinned list,
-    // no file in this shell reads or writes one, and `what_the_dock_holds`
-    // documents that every caller passes it today. What it then lists is the
-    // applications with a window open — true, and a Dock drawn from it is a
-    // Dock of what is running, which is what a machine with no saved pins
-    // should show.
+    // The caller builds it with `Server::what_this_persons_dock_holds`, which
+    // asks with the pins this session worked out at stand-up. It built one with
+    // `Holding::nothing()` until the pins became real, and that was honest
+    // while nothing stored them: the list was then the applications with a
+    // window open, which is what a machine with no saved pins should show. It
+    // would be a bug now, and the no-argument method exists so that it cannot
+    // be written by accident.
     frame.on_the_dock = on_the_dock;
     // **And what *More apps* lists**, which is a longer list than the Dock's
     // and not derivable from it: an application whose windows are all minimised

@@ -45,6 +45,9 @@
 #[cfg(target_os = "linux")]
 mod readings;
 
+#[cfg(target_os = "linux")]
+mod what_this_machine_offers;
+
 /// What this process does on the machine alo OS is for.
 #[cfg(target_os = "linux")]
 mod running {
@@ -97,6 +100,12 @@ mod running {
             said.layout
         );
 
+        // **What fills the Dock's default roles on this machine**, asked once
+        // and before the display is taken, so a slow tool delays the desktop's
+        // appearance rather than a frame of it.
+        let offers = crate::what_this_machine_offers::what_this_machine_offers();
+        eprintln!("alo-desktop: the Dock's default roles resolve to {offers:?}");
+
         let started = std::time::Instant::now();
         let mut last = None;
         match alo_shell::stand_the_desktop_up(
@@ -122,6 +131,11 @@ mod running {
                 }
             },
             a_way_to_start_applications(),
+            // **Read before the desktop stands up, not during a frame.** The
+            // rented tool is a process this has to wait for, and waiting for
+            // one on the draw lane would stop every window on the machine. See
+            // `crate::what_this_machine_offers`.
+            &offers,
         ) {
             Ok(stood) => {
                 eprintln!("alo-desktop: the display has ended: {:?}", stood.display);

@@ -250,6 +250,37 @@ impl crate::Server {
     pub fn what_more_apps_holds(&self, pinned: &alo_dock::Holding) -> Vec<alo_dock::OnTheDock> {
         pinned.in_the_overview(&self.the_windows_the_dock_sees())
     }
+
+    /// Who is on **this person's** Dock: [`Self::what_the_dock_holds`] asked
+    /// with the pins this session worked out.
+    ///
+    /// **Every production caller uses this one**, and the reason is a fault
+    /// that was measured rather than feared. While the two methods above were
+    /// the only way in, three call sites across two files each supplied
+    /// `Holding::nothing()` — and when the pins became real, **854 of 854 tests
+    /// passed with the draw still reading the constant.** A seam a caller has
+    /// to remember to connect is a seam that will be found disconnected.
+    ///
+    /// The two methods above stay, because comparing a Dock with and without a
+    /// pin is a real thing to want: `examples/a_real_application` does exactly
+    /// that, and it is how *pinned keeps its icon* is told from *nothing was
+    /// put aside at all*.
+    #[must_use]
+    pub fn what_this_persons_dock_holds(&self) -> Vec<alo_dock::OnTheDock> {
+        self.what_the_dock_holds(self.what_the_dock_is_pinned_to())
+    }
+
+    /// What **this person's** *More apps* lists, for
+    /// [`Self::what_this_persons_dock_holds`]' reason exactly.
+    ///
+    /// The keyboard reads this and so does the draw, which is what keeps the
+    /// arrow keys moving through the grid a person is looking at. They read
+    /// two different lists for one commit's length and the comment saying so
+    /// was written before the bug could happen.
+    #[must_use]
+    pub fn what_this_persons_more_apps_holds(&self) -> Vec<alo_dock::OnTheDock> {
+        self.what_more_apps_holds(self.what_the_dock_is_pinned_to())
+    }
 }
 
 #[cfg(test)]
