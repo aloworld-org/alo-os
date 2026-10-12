@@ -216,6 +216,17 @@ impl WhatTheDockWasAskedFor {
         !matches!(self, Self::Nothing)
     }
 
+    /// Whether the open surface is the overview, which is the one with a
+    /// search field in it.
+    ///
+    /// **A window list has no field**, so a letter pressed over one is the
+    /// application's and goes the road it always went. Asked on the choice
+    /// rather than the drawn state, for [`Self::is_anything`]'s reason.
+    #[must_use]
+    pub(crate) const fn is_the_overview(&self) -> bool {
+        matches!(self, Self::MoreApps { .. })
+    }
+
     /// Which item the keyboard is on, if any, whichever surface is open.
     ///
     /// One accessor for both surfaces because every caller wants the same

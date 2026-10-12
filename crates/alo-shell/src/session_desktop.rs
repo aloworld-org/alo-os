@@ -105,6 +105,21 @@ pub fn stand_the_desktop_up(
     // The machine's own sentences, for the names a reader is told. The same
     // bundle the sign-in screen words a refusal from, read the same way.
     let strings = crate::what_this_machine_can_say()?;
+    // **What the Settings entry is called, told to the server once.** A native
+    // entry has no identifier, so its translated label is the only string a
+    // search can match it by — and the server has no vocabulary of its own.
+    //
+    // **After the strings and not before**, which is why this is here rather
+    // than beside the pins above: the bundle is read from this machine and the
+    // order of these lines is the order each thing becomes knowable.
+    server.its_settings_entry_is_called(
+        strings
+            .say(
+                &alo_dock::words::SETTINGS_ON_THE_DOCK.key(),
+                &alo_strings::Filling::nothing(),
+            )
+            .into_text(),
+    );
     let mut session = DirectSession::new(display.display.to_owned())?;
     let stood = session.desktop(&mut server, desktop, &mut labels, &strings, &mut next)?;
     Ok(StoodUp {

@@ -50,6 +50,23 @@ pub struct TheDocksWords {
     pub show_all: String,
     /// The control that opens what a person did before.
     pub history: String,
+    /// What the person has typed into the search field, or [`None`] when they
+    /// have typed nothing.
+    ///
+    /// **Not a word, and here anyway.** Everything else in this type is said
+    /// from the vocabulary; this is the person's own text, which is never
+    /// translated. It is carried here because the drawing may not reach into
+    /// the `Server` — the same rule that puts every other string in this
+    /// struct — and because *what is in the field* and *what the field says
+    /// when it is empty* are one decision at the point of drawing.
+    pub typed: Option<String>,
+    /// What stands where the grid would be when the search matches nothing.
+    ///
+    /// [`None`] whenever there is a grid to draw, which is every frame but
+    /// one. **An empty field is never this**: it shows everything, and the
+    /// sentence is for a search that found nothing — two states that look
+    /// alike in a list of zero rows.
+    pub nothing_matches: Option<String>,
     /// The name of the Settings entry, when a person has one on their Dock.
     ///
     /// **Said whether or not it is pinned**, unlike the picker below. It is one
@@ -95,6 +112,38 @@ pub struct ThePickersWords {
 }
 
 impl TheDocksWords {
+    /// Add what the person typed, and the sentence for a search that matched
+    /// nothing.
+    ///
+    /// **Both or neither of the second**, which is why this takes the list
+    /// length rather than a `bool`: *nothing matched* is `typed` having text
+    /// in it **and** no rows left, and a caller passing one without the other
+    /// is how a surface comes to say *nothing here matches* over a full grid.
+    #[must_use]
+    pub fn and_what_they_typed(
+        mut self,
+        strings: &Strings,
+        typed: &alo_dock::WhatTheyTyped,
+        how_many_are_left: usize,
+    ) -> Self {
+        if typed.is_nothing() {
+            return self;
+        }
+        let text = typed.as_text().to_owned();
+        if how_many_are_left == 0 {
+            self.nothing_matches = Some(
+                strings
+                    .say(
+                        &alo_dock::words::NOTHING_MATCHES.key(),
+                        &Filling::of("typed", text.clone()),
+                    )
+                    .into_text(),
+            );
+        }
+        self.typed = Some(text);
+        self
+    }
+
     /// Say all of them, in this person's language.
     ///
     /// **All of them or none**, which is the whole reason this is a type: a
@@ -118,6 +167,10 @@ impl TheDocksWords {
             show_all: say(&alo_dock::words::SHOW_ALL),
             history: say(&alo_dock::words::HISTORY),
             settings: say(&alo_dock::words::SETTINGS_ON_THE_DOCK),
+            // Said by the caller, which is the only place that holds both the
+            // text and whether anything matched it.
+            typed: None,
+            nothing_matches: None,
             picker: open.the_windows_of().map(|picker| {
                 let rows = picker.rows();
                 ThePickersWords {

@@ -583,6 +583,7 @@ dock.kept.unknown-key	your dock settings at {path} say {key}, which is not somet
 dock.labels.beside	each icon shows its name beside it when you point at it or reach it by keyboard
 dock.more-apps.footer	Pinned and open apps · Escape closes
 dock.more-apps.heading	More apps
+dock.more-apps.nothing-matches	Nothing here matches {typed}
 dock.more-apps.others	Other open apps
 dock.more-apps.pinned	Pinned
 dock.more-apps.scrolling	Scroll for more · Escape closes

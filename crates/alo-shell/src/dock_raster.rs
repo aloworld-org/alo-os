@@ -593,17 +593,49 @@ fn the_overflow_list(
             .into(),
     );
     wells.push(field);
+    // **What they typed, or the prompt — never both.** The prompt stands *in*
+    // the field rather than above it, so a field with text in it that also
+    // showed the prompt would be two strings in one box. And the typed text is
+    // the Dock's ordinary ink while the prompt is the quiet ink: a person must
+    // be able to tell what they wrote from what the field is suggesting.
+    let (in_the_field, its_ink) = words
+        .typed
+        .as_ref()
+        .map_or((words.search.as_str(), palette.ink_quiet), |typed| {
+            (typed.as_str(), palette.ink)
+        });
     ink(
         fonts,
         inked,
-        &words.search,
+        in_the_field,
         (field.loc.x + pad, field.loc.y + (field.size.h - line) / 2),
         inner - 2 * pad,
         metrics,
         palette.badge,
-        palette.ink_quiet,
+        its_ink,
         height,
     );
+
+    // **A search that matched nothing says so, where the grid would be.** An
+    // empty popover with a field in it is a surface a person cannot tell from
+    // a broken one — and the sentence carries their own text back, so they can
+    // see what was searched for without looking away from it.
+    if let Some(nothing_matches) = words.nothing_matches.as_ref() {
+        ink(
+            fonts,
+            inked,
+            nothing_matches,
+            (
+                field.loc.x + pad,
+                field.loc.y + field.size.h + down + line / 2,
+            ),
+            inner - 2 * pad,
+            metrics,
+            palette.dock,
+            palette.ink_quiet,
+            height,
+        );
+    }
 
     // **The grid, clipped to its viewport.** Everything below here is inside
     // the scrolling list, so a cell the overview says is out of view is not

@@ -688,8 +688,18 @@ impl LoopInput for Desk<'_> {
         // **Said after the Dock's state is worked out**, because what the
         // picker says depends on which application is open and how many windows
         // it has — a bundle said before that would have to be said again.
+        //
+        // **And what they typed, with how many rows are left.** Both from the
+        // one filtered list above: *nothing matched* is a fact about the text
+        // and the rows together, and asking the two in two places is how a
+        // surface comes to say *nothing here matches* over a full grid.
         let the_docks_words =
-            crate::the_docks_words::TheDocksWords::said(self.strings, &the_dock_has_open);
+            crate::the_docks_words::TheDocksWords::said(self.strings, &the_dock_has_open)
+                .and_what_they_typed(
+                    self.strings,
+                    server.what_was_typed_into_more_apps(),
+                    in_more_apps.len(),
+                );
         let mut frame = self.desktop.now();
         let named = FrameTarget::metadata(target)?.name;
         what_only_the_server_knows(
