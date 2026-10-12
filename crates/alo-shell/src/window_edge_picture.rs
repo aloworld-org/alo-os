@@ -33,6 +33,27 @@ use crate::window_edge_paint::Pointing;
 use crate::window_edge_title::FittedTitle;
 use crate::{RenderError, painted_text};
 
+/// What is drawn **over** one window's edge this frame.
+///
+/// Two things that are not the edge and belong to it: the menu it opened, and
+/// the reason the whole title would be shown. They travel together because
+/// they are both *this window, right now* rather than its layout, and because
+/// `EdgePicture::of` had grown more arguments than anybody can read at a call
+/// site — clippy said so, and it was right.
+#[derive(Default)]
+pub struct OverTheEdge<'a> {
+    /// This window's menu, where one is open.
+    pub menu: Option<(
+        &'a crate::window_menu::WindowMenu,
+        crate::window_menu_paint::PointingAtTheMenu,
+    )>,
+    /// Why the whole title would be shown, where there is a reason.
+    ///
+    /// A reason, not an instruction: `window_edge_tooltip::tooltip_of` refuses
+    /// a title that was never cut, because one that fits is already readable.
+    pub showing: Option<crate::window_edge_tooltip::Because>,
+}
+
 /// A window's edge, in output pixels.
 pub struct EdgePicture {
     /// The flat shapes: the strip, the grip, any highlight and focus outline.
@@ -61,10 +82,7 @@ impl EdgePicture {
     pub fn of(
         edge: &WindowEdge,
         pointing: Pointing,
-        menu: Option<(
-            &crate::window_menu::WindowMenu,
-            crate::window_menu_paint::PointingAtTheMenu,
-        )>,
+        over: OverTheEdge<'_>,
         title: Option<&str>,
         fonts: &mut cosmic_text::FontSystem,
         output: (i32, i32),
@@ -78,10 +96,11 @@ impl EdgePicture {
 
         // **The menu after the edge**, because it is drawn over it: these
         // are filled in order and the last one wins where they overlap.
-        let solids = crate::window_edge_paint::solids(edge, pointing)
+        let mut solids: Vec<Solid> = crate::window_edge_paint::solids(edge, pointing)
             .into_iter()
             .chain(
-                menu.into_iter()
+                over.menu
+                    .into_iter()
                     .flat_map(|(menu, at)| crate::window_menu_paint::solids(menu, at)),
             )
             .map(|(area, colour)| Solid {
@@ -102,16 +121,19 @@ impl EdgePicture {
             // target and let a long title reach the controls.
             let room = edge.the_room_a_title_has();
             let metrics = cosmic_text::Metrics::new(THE_LABEL_IS, THE_LINE_IS);
+            let was_fitted = crate::window_edge_title::fitted(fonts, title, room, metrics);
             let FittedTitle {
-                shown, whole: all, ..
-            } = crate::window_edge_title::fitted(fonts, title, room, metrics);
-            whole = all;
+                ref shown,
+                whole: ref all,
+                ..
+            } = was_fitted;
+            whole = all.clone();
             if !shown.is_empty() {
                 let ground = alo_appearance::Role::BgSurface.colour();
                 let ink = alo_appearance::Role::TextPrimary.colour();
                 let shaped = painted_text::sentence(
                     fonts,
-                    &shown,
+                    shown,
                     scaled(room, scale),
                     metrics,
                     [ground.red(), ground.green(), ground.blue()],
@@ -120,6 +142,56 @@ impl EdgePicture {
                 let placed =
                     into_pixels(Rectangle::new(at, (room, THE_LINE_IS as i32).into()), scale);
                 inked.extend(shaped.placed(placed.loc.x, placed.loc.y, output.1));
+            }
+            // **The whole title, for somebody who can see it.** Asked only
+            // where a reason was given and the title was actually cut -
+            // `tooltip_of` answers `None` for a title that fits, because one
+            // that fits is already readable.
+            //
+            // Wired here rather than left exported: `tooltip_of` had no
+            // caller at all until 2026-10-12, which is a tooltip nobody could
+            // ever see.
+            if let Some(because) = over.showing
+                && let Some(shown) = crate::window_edge_tooltip::tooltip_of(
+                    edge,
+                    &was_fitted,
+                    because,
+                    fonts,
+                    output,
+                )
+            {
+                let ground = alo_appearance::Role::BgSurface.colour();
+                let ink = alo_appearance::Role::TextPrimary.colour();
+                let edging = alo_appearance::Role::BorderDefault.colour();
+                solids.push(Solid {
+                    area: into_pixels(shown.panel, scale),
+                    colour: [edging.red(), edging.green(), edging.blue()],
+                });
+                if let Some(inside) = shrunk(shown.panel) {
+                    solids.push(Solid {
+                        area: into_pixels(inside, scale),
+                        colour: [ground.red(), ground.green(), ground.blue()],
+                    });
+                }
+                let metrics = cosmic_text::Metrics::new(THE_LABEL_IS, THE_LINE_IS);
+                for (line, at) in &shown.lines {
+                    let shaped = painted_text::sentence(
+                        fonts,
+                        line,
+                        scaled(crate::window_edge_tooltip::AT_MOST_WIDE, scale),
+                        metrics,
+                        [ground.red(), ground.green(), ground.blue()],
+                        [ink.red(), ink.green(), ink.blue()],
+                    );
+                    let placed = into_pixels(
+                        Rectangle::new(
+                            *at,
+                            (crate::window_edge_tooltip::AT_MOST_WIDE, THE_LINE_IS as i32).into(),
+                        ),
+                        scale,
+                    );
+                    inked.extend(shaped.placed(placed.loc.x, placed.loc.y, output.1));
+                }
             }
         }
         Some(Self {
@@ -172,3 +244,9 @@ fn into_pixels(of: Rectangle<i32, Logical>, scale: u32) -> Rectangle<i32, Physic
 #[cfg(test)]
 #[path = "window_edge_picture_tests.rs"]
 mod tests;
+
+/// A rectangle shrunk by one unit on every side, for a panel's border.
+fn shrunk(of: Rectangle<i32, Logical>) -> Option<Rectangle<i32, Logical>> {
+    let (w, h) = (of.size.w - 2, of.size.h - 2);
+    (w > 0 && h > 0).then(|| Rectangle::new((of.loc.x + 1, of.loc.y + 1).into(), (w, h).into()))
+}

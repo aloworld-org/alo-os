@@ -268,15 +268,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 alo_shell::EdgePicture::of(
                     &edge,
                     server.what_this_edge_is_pointing_at(&edge, focused),
-                    menu.as_ref().map(|(menu, on)| {
-                        (
-                            menu,
-                            alo_shell::PointingAtTheMenu {
-                                hovered: None,
-                                focused: *on,
-                            },
-                        )
-                    }),
+                    alo_shell::OverTheEdge {
+                        menu: menu.as_ref().map(|(menu, on)| {
+                            (
+                                menu,
+                                alo_shell::PointingAtTheMenu {
+                                    hovered: None,
+                                    focused: *on,
+                                },
+                            )
+                        }),
+                        showing: None,
+                    },
                     title.its_own_words(),
                     &mut faces,
                     (THE_OUTPUT_IS.0, THE_OUTPUT_IS.1),

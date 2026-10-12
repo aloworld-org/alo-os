@@ -365,6 +365,7 @@ mod window_edge_picture;
 mod window_edge_pointing;
 mod window_edge_reading;
 mod window_edge_title;
+mod window_edge_tooltip;
 mod window_edge_who_draws;
 mod window_full_screen;
 mod window_maximize;
@@ -413,7 +414,7 @@ pub use window_edge::{
 pub use window_edge_keys::{AnEdgeKey, TheKeyboardOnTheEdge, WhatTheEdgeKeyDid};
 pub use window_edge_paint::{Pointing, Solid, solids};
 /// One window edge, laid out in owned pixels and ready for a frame.
-pub use window_edge_picture::EdgePicture;
+pub use window_edge_picture::{EdgePicture, OverTheEdge};
 /// **What a pointer is on, when it is on a window's edge** - the step
 /// between a position and the control a press acts on. Nothing asked it
 /// until 2026-10-11, which is why every edge drew correctly, announced
@@ -424,8 +425,18 @@ pub use window_edge_pointing::{UnderThePointer, pointing_at, what_is_under};
 /// hovering* clause of 2026-10-09 is only true if those are different
 /// questions. `crate::access_nodes` hangs these under each open window.
 pub use window_edge_reading::{the_controls_of, what_a_reader_is_told, what_it_does};
-/// A window's title on its edge: what is shown, and what is still said aloud.
 pub use window_edge_title::{AN_ELLIPSIS, FittedTitle, fitted};
+/// A window's title on its edge: what is shown, and what is still said aloud.
+/// **The whole title, for somebody who can see and is reading it now.**
+///
+/// One of three roads to the same string: this is the convenient one, the
+/// window menu carries it as selectable text, and the ellipsis says there is
+/// more. A tooltip is transient by nature, so it cannot be read slowly, cannot
+/// be copied, and on a touch screen there is no hover to produce it.
+pub use window_edge_tooltip::{
+    A_LINE_IS_TALL, AROUND_THE_WORDS, AT_MOST_LINES, AT_MOST_WIDE, Because, ShowingTheTitle,
+    Tooltip, tooltip_of,
+};
 /// **Who draws a frame's header**, in the one place both the drawing and the
 /// reading ask. Its body is what changes when the toplevel's decoration state
 /// is read per frame; see the file's header.
