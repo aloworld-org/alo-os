@@ -41,9 +41,10 @@ use crate::windows::Windows;
 
 /// What a click on an application's icon does.
 ///
-/// Every answer names the window it is about, except the one where there is no
-/// window yet — so a caller cannot act on a decision without knowing what it
-/// acts on.
+/// Every answer names the window it is about, except the two that are not about
+/// one: there is no window yet, or there are several and which is the person's
+/// to say. So a caller cannot act on a decision without knowing what it acts
+/// on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WhatAClickDoes {
     /// Nothing of this application is open: open a window near what the person
@@ -68,6 +69,20 @@ pub enum WhatAClickDoes {
     BringItBackWhereItIs(WindowId),
     /// It was put aside somewhere else: bring it back where it was, and travel.
     BringItBackAndTravelTo(WindowId),
+    /// It has **more than one** window: open its window picker, and let the
+    /// person say which.
+    ///
+    /// The owner's ruling of 2026-10-11, ADR 0103, replacing *focus the one
+    /// used last*. The reason is worth keeping: focusing the last-used window
+    /// is a **guess**, and a picker showing every window — minimised ones
+    /// included and marked as minimised — is the same answer with the guess
+    /// taken out. It does not contradict this file's governing sentence either;
+    /// *choose a preview when you want a different window* now has one
+    /// unambiguous way to reach that choice.
+    ///
+    /// **It names no window**, because it is about the application. The window
+    /// is what the person is about to say.
+    ChooseAWindow,
 }
 
 impl WhatAClickDoes {
@@ -75,7 +90,7 @@ impl WhatAClickDoes {
     #[must_use]
     pub const fn window(self) -> Option<WindowId> {
         match self {
-            Self::OpenAWindowNearTheView => None,
+            Self::OpenAWindowNearTheView | Self::ChooseAWindow => None,
             Self::BringForward(id)
             | Self::TravelTo(id)
             | Self::BringItBackWhereItIs(id)
@@ -115,6 +130,17 @@ pub fn what_a_click_does(windows: &Windows, app: &AppId, view: TheView) -> WhatA
     let Some(window) = windows.most_recent_of(app) else {
         return WhatAClickDoes::OpenAWindowNearTheView;
     };
+
+    // **More than one window is a question, not an answer.** Asked before
+    // anything is read off the one window, because every line below is about
+    // *which* window and there is no such thing yet.
+    //
+    // `of_the_app` rather than an `OnTheDock` count: this function is handed
+    // the windows and must not need a second opinion about how many there are.
+    if windows.of_the_app(app).nth(1).is_some() {
+        return WhatAClickDoes::ChooseAWindow;
+    }
+
     let id = window.id();
 
     // A window filling a display is not being shown by the canvas, so there is
@@ -208,10 +234,21 @@ mod tests {
         assert!(!did.brings_one_back());
     }
 
-    /// **With several open, the click goes to the one used last** — not the
-    /// first opened, not the nearest, and not a list.
+    /// **With several open, the click opens the picker** — not the one used
+    /// last, not the first opened, and not the nearest.
+    ///
+    /// This test said the opposite until 2026-10-11 and asserted
+    /// `Some(WindowId::numbered(3))`, which was this crate's behaviour and the
+    /// owner's earlier rule. ADR 0103 replaced it: *several open windows: open
+    /// the application's window picker, including its minimised windows with
+    /// their state clearly identified.*
+    ///
+    /// The old assertion is kept below, inverted, because *the answer is not
+    /// about any one window* is the whole of what changed and a test that only
+    /// checked the new variant would pass against an answer that named a window
+    /// as well.
     #[test]
-    fn with_several_open_the_click_goes_to_the_one_used_last() {
+    fn with_several_open_the_click_opens_the_picker() {
         let mut windows = Windows::none();
         windows.opened(window(
             1,
@@ -236,12 +273,116 @@ mod tests {
         ));
 
         let did = what_a_click_does(&windows, &app("Browser"), looking_here());
-        assert_eq!(did.window(), Some(WindowId::numbered(3)));
+        assert_eq!(did, WhatAClickDoes::ChooseAWindow);
+        assert_eq!(
+            did.window(),
+            None,
+            "the picker named a window, which is the guess it exists to remove"
+        );
+        assert!(!did.travels(), "opening a picker is not travel");
+        assert!(!did.brings_one_back(), "the person has not chosen yet");
 
-        // And it follows the order rather than the numbering.
+        // **And using one does not turn the question back into an answer.**
+        // The old rule read the recency order here; nothing should now.
         windows.used(WindowId::numbered(1));
-        let did = what_a_click_does(&windows, &app("Browser"), looking_here());
-        assert_eq!(did.window(), Some(WindowId::numbered(1)));
+        assert_eq!(
+            what_a_click_does(&windows, &app("Browser"), looking_here()),
+            WhatAClickDoes::ChooseAWindow
+        );
+    }
+
+    /// **Two windows are already several.** The boundary, asserted on its own
+    /// because an off-by-one here is the difference between a picker for every
+    /// application and a picker nobody ever sees.
+    #[test]
+    fn one_window_is_focused_and_two_open_the_picker() {
+        let mut windows = Windows::none();
+        windows.opened(window(
+            1,
+            "Browser",
+            "Launch website",
+            patch(0, 0),
+            HowItSits::OnTheCanvas,
+        ));
+        assert_eq!(
+            what_a_click_does(&windows, &app("Browser"), looking_here()),
+            WhatAClickDoes::BringForward(WindowId::numbered(1)),
+            "one window should be gone to, not chosen between"
+        );
+
+        windows.opened(window(
+            2,
+            "Browser",
+            "Research",
+            patch(0, 0),
+            HowItSits::OnTheCanvas,
+        ));
+        assert_eq!(
+            what_a_click_does(&windows, &app("Browser"), looking_here()),
+            WhatAClickDoes::ChooseAWindow
+        );
+    }
+
+    /// **Another application's windows do not make this one several.**
+    ///
+    /// `of_the_app` filters, and a count taken off the whole list would open a
+    /// picker for a single-window application whenever anything else was open —
+    /// which every test above would still pass, because every test above opens
+    /// one application's windows.
+    #[test]
+    fn another_applications_windows_do_not_open_this_ones_picker() {
+        let mut windows = Windows::none();
+        windows.opened(window(
+            1,
+            "Browser",
+            "Launch website",
+            patch(0, 0),
+            HowItSits::OnTheCanvas,
+        ));
+        for number in 2..6 {
+            windows.opened(window(
+                number,
+                "Notes",
+                "A note",
+                patch(0, 0),
+                HowItSits::OnTheCanvas,
+            ));
+        }
+        assert_eq!(
+            what_a_click_does(&windows, &app("Browser"), looking_here()),
+            WhatAClickDoes::BringForward(WindowId::numbered(1)),
+            "another application's windows opened this one's picker"
+        );
+    }
+
+    /// **A minimised window counts toward *several*.**
+    ///
+    /// The ruling is explicit that the picker includes minimised windows, so an
+    /// application with one on the canvas and one put aside has two and is
+    /// chosen between rather than restored-and-focused. A count that skipped
+    /// put-aside windows would focus the visible one and silently make the
+    /// other unreachable from the Dock.
+    #[test]
+    fn a_window_put_aside_still_counts_toward_several() {
+        let mut windows = Windows::none();
+        windows.opened(window(
+            1,
+            "Browser",
+            "Launch website",
+            patch(0, 0),
+            HowItSits::OnTheCanvas,
+        ));
+        windows.opened(window(
+            2,
+            "Browser",
+            "Research",
+            patch(0, 0),
+            HowItSits::PutAside,
+        ));
+        assert_eq!(
+            what_a_click_does(&windows, &app("Browser"), looking_here()),
+            WhatAClickDoes::ChooseAWindow
+        );
     }
 
     /// **A window put aside comes back where it was, and the view goes to it.**
@@ -290,6 +431,12 @@ mod tests {
 
     /// **Clicking again does nothing a person would notice.** No cycling, no
     /// second window, and not quietly repurposed as going back.
+    ///
+    /// Two windows until 2026-10-11, when two windows became a picker and the
+    /// test stopped being about clicking twice. **One window**, which is the
+    /// case the clause is really about: clicking an application that is already
+    /// focused must not minimise it or make another, and ADR 0103 says so in as
+    /// many words.
     #[test]
     fn clicking_again_leaves_that_window_where_the_first_click_left_it() {
         let mut windows = Windows::none();
@@ -300,24 +447,21 @@ mod tests {
             patch(0, 0),
             HowItSits::OnTheCanvas,
         ));
-        windows.opened(window(
-            2,
-            "Browser",
-            "Research",
-            patch(0, 0),
-            HowItSits::OnTheCanvas,
-        ));
 
         let first = what_a_click_does(&windows, &app("Browser"), looking_here());
-        assert_eq!(first.window(), Some(WindowId::numbered(2)));
+        assert_eq!(first.window(), Some(WindowId::numbered(1)));
 
         // The click focused it, which is a use.
-        windows.used(WindowId::numbered(2));
+        windows.used(WindowId::numbered(1));
 
         let again = what_a_click_does(&windows, &app("Browser"), looking_here());
         assert_eq!(again, first, "the same answer, and no travel in it");
         assert!(!again.travels());
-        assert_eq!(windows.how_many(), 2, "and no window was created");
+        assert!(
+            !again.brings_one_back(),
+            "a second click put the window away and brought it back"
+        );
+        assert_eq!(windows.how_many(), 1, "and no window was created");
     }
 
     /// **A window filling a display is reached as it is.** The canvas is not

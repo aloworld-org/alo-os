@@ -129,3 +129,99 @@ fn a_window_that_named_no_application_adds_no_icon() {
         "a window with no application has nothing to appear under"
     );
 }
+
+/// A window of `app`, numbered `number`, sitting however it sits.
+fn window_sitting(number: u64, app: Option<&str>, sits: HowItSits) -> Window {
+    let patch = Patch::of(Spot::at(0, 0), 1, 1).expect("one by one is a patch");
+    Window::of(
+        WindowId::numbered(number),
+        app.map(|app| AppId::named(app).expect("a named application")),
+        "",
+        patch,
+        sits,
+    )
+}
+
+/// **A minimised window still counts as one of its application's windows.**
+///
+/// The assumption the builder rests on now that it reads `minimized_surfaces`
+/// as well as `mapped_surfaces`. `OnTheDock::is_open` is `windows > 0` and
+/// nothing subtracts the put-aside ones — which is what makes *open, including
+/// minimised windows, gets a running indicator* true rather than hoped for.
+#[test]
+fn an_application_whose_windows_are_all_minimised_is_still_open() {
+    let mut holding = Holding::nothing();
+    holding.pin(AppId::named("an.app").expect("a named application"));
+    let mut windows = Windows::none();
+    windows.opened(window_sitting(0, Some("an.app"), HowItSits::PutAside));
+    windows.opened(window_sitting(1, Some("an.app"), HowItSits::PutAside));
+
+    let shown = holding.showing(&windows);
+    let entry = shown.first().expect("the pinned application is shown");
+    assert!(
+        entry.is_open(),
+        "an application put aside drew no indicator"
+    );
+    assert_eq!(entry.how_many_windows(), 2);
+    assert_eq!(
+        entry.how_many_put_aside(),
+        2,
+        "the put-aside count was zero, which is what it always was before the \
+         builder read the minimised list"
+    );
+}
+
+/// **And that count is what a screen reader is told.**
+///
+/// `alo_dock::announcing` reads `how_many_put_aside`, so the builder feeding it
+/// a permanent zero was a person with three windows put away being told about
+/// none of them. Asserted through `announcing` rather than through the count,
+/// because the count being right is not the thing that was broken.
+#[test]
+fn the_put_aside_count_reaches_what_a_person_is_told() {
+    let mut holding = Holding::nothing();
+    holding.pin(AppId::named("an.app").expect("a named application"));
+    let mut windows = Windows::none();
+    windows.opened(window_sitting(0, Some("an.app"), HowItSits::OnTheCanvas));
+    windows.opened(window_sitting(1, Some("an.app"), HowItSits::PutAside));
+
+    let shown = holding.showing(&windows);
+    let entry = shown.first().expect("the pinned application is shown");
+    let said = alo_dock::announcing::Announced::of(entry, alo_dock::announcing::Focused::No);
+    assert_eq!(
+        said.which().key(),
+        alo_dock::words::ANNOUNCED_SOME_PUT_ASIDE.key(),
+        "a person was told the plain open sentence, which is the one chosen \
+         when nothing is put aside"
+    );
+}
+
+/// **An unpinned application with one window open and one put aside keeps its
+/// icon**, and loses it when the second goes.
+///
+/// The owner's worked example, asserted here rather than only in `alo-dock`
+/// because this is the file that decides which windows the rule ever sees. With
+/// the minimised list unread, the second window simply was not there — the
+/// right answer by exclusion rather than by decision, which stops being the
+/// right answer the moment the rule changes.
+#[test]
+fn the_builders_two_lists_are_what_the_membership_rule_reads() {
+    let holding = Holding::nothing();
+
+    let mut one_of_each = Windows::none();
+    one_of_each.opened(window_sitting(0, Some("an.app"), HowItSits::OnTheCanvas));
+    one_of_each.opened(window_sitting(1, Some("an.app"), HowItSits::PutAside));
+    assert_eq!(
+        holding.showing(&one_of_each).len(),
+        1,
+        "an application with a window still on the canvas left the Dock"
+    );
+
+    let mut both_aside = Windows::none();
+    both_aside.opened(window_sitting(0, Some("an.app"), HowItSits::PutAside));
+    both_aside.opened(window_sitting(1, Some("an.app"), HowItSits::PutAside));
+    assert!(
+        holding.showing(&both_aside).is_empty(),
+        "an unpinned application with every window put aside stayed on the Dock"
+    );
+}

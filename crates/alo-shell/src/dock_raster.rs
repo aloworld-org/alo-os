@@ -114,6 +114,18 @@ use crate::where_the_dock_is::TheDocksPlaces;
 /// would read aloud as three full stops.
 const THE_OVERFLOWS_MARK: char = '\u{2026}';
 
+/// The mark on the control that goes back from a window list to *More apps*.
+///
+/// A single left-pointing angle quotation mark, which is what the design draws
+/// — `‹`, written as its code point for `THE_OVERFLOWS_MARK`'s reason: pasted,
+/// it is indistinguishable from a less-than sign, and the two are different
+/// characters with different widths that a reader reads aloud differently.
+///
+/// **Artwork and not a word**, so it is here and not in `alo-dock`'s
+/// vocabulary. What a person using a screen reader is told about this control
+/// is its accessible name, which is a sentence and is somebody else's to say.
+const BACK_TO_THE_APPS: char = '\u{2039}';
+
 /// The dock for one display, ready to paint.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct DockPicture {
@@ -123,8 +135,6 @@ pub(crate) struct DockPicture {
     pub(crate) layout: Layout,
     /// The whole band, along the bottom.
     pub(crate) band: Rectangle<i32, Physical>,
-    /// The accent along the band's inside — that is, top — edge.
-    pub(crate) accent: Rectangle<i32, Physical>,
     /// Flat shapes, in painting order.
     pub(crate) solids: Vec<Solid>,
     /// One letter per application on the Dock, inked into its icon's box.
@@ -139,6 +149,35 @@ pub(crate) struct DockPicture {
     /// either: `alo_dock::fit` puts nothing aside until the edge runs out, and
     /// `alo_dock::Places` draws no control for an empty overflow.
     pub(crate) over: Vec<OnTheDock>,
+    /// The Dock's own surface: the rounded panel, its hairline and its shadow.
+    ///
+    /// **Replaces the two flat rectangles this drew until 2026-10-11** — the
+    /// band and the accent rule — because a radius and a shadow are partial
+    /// coverage and a rectangle is all or nothing. ADR 0101 and
+    /// `crate::dock_surface` carry the why.
+    ///
+    /// [`None`] only for a panel with no area, which is a Dock that gave way.
+    pub(crate) surface: Option<crate::painted::Washed>,
+    /// The overflow list's own rectangle, when it is open and has something in
+    /// it.
+    ///
+    /// **Not [`Self::panels`]'s area, which is the raster's.** A `Washed`
+    /// carries its shadow, so its bounds run `THE_SHADOW_SPREADS` beyond the
+    /// surface on every side — 312 wide for a 248-wide list. That is right for
+    /// a texture and wrong for every question about *where the list is*: on
+    /// 2026-10-11 two tests about the list's position were both written against
+    /// the raster and both failed by exactly the shadow's reach, reading as
+    /// faults in the layout.
+    ///
+    /// So the rectangle the design specifies is recorded separately, and it is
+    /// what a press on a row will be tested against.
+    pub(crate) overflow_list: Option<crate::where_the_docks_surface_is::TheSurfaceAsDrawn>,
+    /// Every other rounded panel this Dock drew — today, the overflow list.
+    ///
+    /// Separate from [`Self::surface`] because they are painted at different
+    /// times: the Dock's own surface goes under its contents, and a list opened
+    /// from it goes over them.
+    pub(crate) panels: Vec<crate::painted::Washed>,
     /// Where this draw put the Dock, for the press that will ask later.
     ///
     /// **The same value the three fields above were taken from**, destructured
@@ -150,52 +189,19 @@ pub(crate) struct DockPicture {
     pub(crate) standing: TheDocksPlaces,
 }
 
-/// The accent along the band's **inside** edge: the one facing the canvas.
-///
-/// **A picture found this and three tests did not.** The accent was
-/// `(bar_width, rule)` at the band's own corner for every edge — right for the
-/// bottom, and for the other three a line of the wrong length on the wrong side:
-/// on the left edge it ran **176 pixels out across the canvas** above a bar 70
-/// wide, because the length was taken along the screen's width while the bar runs
-/// down its height. Measured off a drawn frame on 2026-10-10, where it is
-/// impossible to miss and where a reader of the code had missed it.
-///
-/// `the_bar_sits_on_whichever_edge_it_was_laid_along` asks `the_band_on` about
-/// all four edges and never looks at the accent;
-/// `the_dock_is_a_centred_bar_clear_of_the_bottom_edge` checks the accent and
-/// only ever on the bottom. Each was right about its own subject, and the gap
-/// between them was the whole of the defect.
-///
-/// **Inside means facing the canvas**, which is the opposite end of the thickness
-/// from the screen edge the bar is lifted off. So it is the band's top for a dock
-/// along the bottom and the band's bottom for one along the top — not the same
-/// corner twice.
-fn the_accent_on(
-    edge: alo_dock::Edge,
-    band: Rectangle<i32, Physical>,
-    rule: i32,
-) -> Rectangle<i32, Physical> {
-    let (origin, extent) = match edge {
-        alo_dock::Edge::Bottom => ((band.loc.x, band.loc.y), (band.size.w, rule)),
-        alo_dock::Edge::Top => (
-            (band.loc.x, band.loc.y + band.size.h - rule),
-            (band.size.w, rule),
-        ),
-        alo_dock::Edge::Left => (
-            (band.loc.x + band.size.w - rule, band.loc.y),
-            (rule, band.size.h),
-        ),
-        alo_dock::Edge::Right => ((band.loc.x, band.loc.y), (rule, band.size.h)),
-    };
-    Rectangle::new(origin.into(), extent.into())
-}
-
 /// What the overflow list needs drawing: everything but the pixels.
 ///
 /// A struct rather than eight arguments, because every one of them is a
 /// different type of number and a caller that swapped two would compile.
 struct TheOverflowIsDrawn<'a> {
-    /// The applications the bar had no room for, in order.
+    /// Everything *More apps* lists, in order.
+    ///
+    /// **Not the applications that overflowed.** It was those until
+    /// 2026-10-11, when the owner ruled that this surface is *an application
+    /// overview, not merely a list of icons that overflowed* — so it carries
+    /// every pinned application and every open one, whether or not the bar had
+    /// room, and including those whose windows are all minimised and which are
+    /// therefore not on the bar at all.
     over: &'a [OnTheDock],
     /// The Dock's band, which the list opens inward from.
     at: Rectangle<i32, Physical>,
@@ -203,47 +209,79 @@ struct TheOverflowIsDrawn<'a> {
     edge: alo_dock::Edge,
     /// The display, so the list can be kept on it.
     room: (i32, i32),
+    /// The column the put-aside panel owns, which the list opens clear of.
+    ///
+    /// `None` on a display too narrow to hold one — see
+    /// `crate::panel_raster::the_column_it_reserves`. **Not the panel's
+    /// contents and not its rail**: the two surfaces are separate and this is
+    /// the only thing one needs to know about the other.
+    clear_of: Option<Rectangle<i32, Physical>>,
     /// The person's text size, which the rows grow with.
     text: alo_appearance::TextScale,
-    /// What the heading says, already said: this file may not word a sentence.
-    heading: &'a str,
+    /// Everything the popover says, already said: this file may not word a
+    /// sentence, and a bundle cannot be half-filled.
+    words: &'a crate::the_docks_words::TheDocksWords,
+    /// One application's windows, when that is the face a person asked for.
+    ///
+    /// [`None`] for the overview, which is almost every frame. The two faces
+    /// share a frame and differ in what sits inside it — and in how tall it is,
+    /// because the picker's heading holds a back control and is 16 taller. So
+    /// this is read before the popover is placed and not only when it is
+    /// filled.
+    picker: Option<&'a alo_dock::picking::ThePicker>,
+    /// Which item the keyboard is on, counting from the top of whichever face
+    /// is open.
+    ///
+    /// [`None`] until a person presses a key, which is every frame of a session
+    /// driven by a pointer. It does two things and they are one thing: it draws
+    /// the ring, and it decides how far the list is scrolled — because a focus
+    /// that is not on the screen is not a focus a person can act on.
+    focused: Option<usize>,
     /// The person's colours.
     palette: crate::desktop_look::DesktopPalette,
 }
 
-/// Draw the list the overflow control opens, into `solids` and `inked`.
+/// Draw *More apps*, into `panels`, `solids` and `inked`.
 ///
-/// **It opens inward from the bar**, which is the design file's own name for the
-/// frame: `More apps / opens inward`, 248 wide beside a left dock, a right dock,
-/// a top dock and the bottom one. So the width is a measurement and the side it
-/// opens toward follows the Dock's edge.
+/// The owner's design of 2026-10-11 — `More apps / Popover`, captured in
+/// `docs/design/figma-snapshot/406-26881.xml`. A 448-wide popover holding a
+/// fixed heading, a fixed search field, a **scrolling grid** of applications
+/// and a fixed line of words.
 ///
-/// **How tall it is comes from `alo_dock::overflow`**, not from here. That is the
-/// owner's ruling of 2026-10-10 — rows at a 44 minimum, growing with the text,
-/// the panel growing past the drawn 313 and then scrolling — and this file's job
-/// is to put it where the bar is and ink the names into it.
+/// **How big it is comes from `alo_dock::more_apps`**, not from here. That
+/// module holds the owner's two caps — 536 for the whole popover and 336 for
+/// the list inside it — and this file's job is to put it where the control is
+/// and ink the words into it.
+///
+/// **It replaced a 248-wide list of names.** That was `More apps / opens
+/// inward`, the surface ADR 0103 retired, and nothing of its geometry is left
+/// here.
 fn the_overflow_list(
-    solids: &mut Vec<Solid>,
+    panels: &mut Vec<crate::painted::Washed>,
     inked: &mut Vec<Inked>,
     drawn: TheOverflowIsDrawn<'_>,
     fonts: &mut FontSystem,
-) {
+) -> crate::where_the_docks_surface_is::TheSurfaceAsDrawn {
     let TheOverflowIsDrawn {
         over,
         at,
         edge,
         room,
+        clear_of,
         text,
-        heading,
+        words,
+        picker,
+        focused,
         palette,
     } = drawn;
     let (width, height) = room;
-    let beside = i32::try_from(alo_dock::measures::BESIDE_A_NAME_IN_THE_OVERFLOW).unwrap_or(0);
-    let around = i32::try_from(alo_dock::measures::AROUND_THE_OVERFLOWS_HEADING).unwrap_or(0);
-    let gap = i32::try_from(alo_dock::measures::GAP).unwrap_or(0);
+    let pad = i32::try_from(alo_dock::measures::INSIDE_MORE_APPS).unwrap_or(24);
+    let down = i32::try_from(alo_dock::measures::DOWN_MORE_APPS).unwrap_or(16);
+    let gap = i32::try_from(alo_dock::measures::BESIDE_THE_DOCK).unwrap_or(12);
 
-    // **How much room there is between the bar and the far side of the screen**,
-    // which is what the list may grow into before it has to scroll.
+    // **How much room there is between the bar and the far side of the
+    // display**, which is what the popover may grow into before its own cap
+    // binds. The cap usually binds first; this matters on a short output.
     let headroom = match edge {
         alo_dock::Edge::Bottom => at.loc.y - gap,
         alo_dock::Edge::Top => height - (at.loc.y + at.size.h) - gap,
@@ -251,89 +289,589 @@ fn the_overflow_list(
     }
     .max(1);
 
-    let panel = alo_dock::overflow::ThePanel::of(
-        over.len(),
-        text,
+    // Pinned first, then everything else that is open — the two groups the
+    // design draws and the order the owner's ruling puts them in.
+    let pinned = over
+        .iter()
+        .filter(|on| matches!(on.pinned(), alo_dock::Pinned::ByThePerson))
+        .count();
+    let overview = alo_dock::more_apps::TheOverview::of(
+        pinned,
+        over.len().saturating_sub(pinned),
         alo_dock::Room::pixels(u32::try_from(headroom).unwrap_or(0)),
     );
-    let across = i32::try_from(panel.width().as_pixels()).unwrap_or(0);
-    let down = i32::try_from(panel.height().as_pixels()).unwrap_or(0);
-
-    // **Inward from the bar, and kept on the screen.** The list hangs off the
-    // control's end of the bar on an edge that runs across, and beside the bar on
-    // one that runs down — then is pulled back onto the display, because a list
-    // half off the screen is a list a person cannot read.
-    let origin = match edge {
-        alo_dock::Edge::Bottom => (at.loc.x + at.size.w - across, at.loc.y - gap - down),
-        alo_dock::Edge::Top => (at.loc.x + at.size.w - across, at.loc.y + at.size.h + gap),
-        alo_dock::Edge::Left => (at.loc.x + at.size.w + gap, at.loc.y + at.size.h - down),
-        alo_dock::Edge::Right => (at.loc.x - gap - across, at.loc.y + at.size.h - down),
-    };
-    let left = origin.0.clamp(0, (width - across).max(0));
-    let top = origin.1.clamp(0, (height - down).max(0));
-
-    solids.push(Solid {
-        area: Rectangle::new((left, top).into(), (across, down).into()),
-        colour: palette.dock,
+    // **The focused cell brought into view**, which is the design's *keyboard
+    // focus must scroll the focused row into view*. Done here, before anything
+    // is placed, because `scrolled` is subtracted from every heading and every
+    // cell below — scrolling after the fact would mean two offsets.
+    //
+    // A focus of `None` leaves it at the top, and so does a focus past the end:
+    // `TheOverview::showing` refuses a cell it has no place for rather than
+    // scrolling to nowhere.
+    let overview = focused.map_or(overview, |which| overview.showing(which));
+    // **The picker's panel is 16 shorter in its list and the same overall**,
+    // because its heading holds a back control. Both are capped at the owner's
+    // 536 and both shrink on a short output; only the split between the fixed
+    // parts and the list differs.
+    let windows = picker.map(|picker| {
+        let panel = alo_dock::picking::the_pickers_panel(
+            picker.rows().len(),
+            alo_dock::Room::pixels(u32::try_from(headroom).unwrap_or(0)),
+        );
+        // The focused row brought into view, for the overview's reason exactly.
+        focused.map_or(panel, |which| panel.showing(which))
     });
+    let across = i32::try_from(alo_dock::more_apps::TheOverview::width().as_pixels()).unwrap_or(0);
+    let tall = i32::try_from(
+        windows
+            .map_or_else(
+                || overview.height(),
+                alo_dock::picking::ThePickersPanel::height,
+            )
+            .as_pixels(),
+    )
+    .unwrap_or(0);
 
+    // **Inward from the bar, and kept on the display and clear of the panel.**
+    // Unchanged from the list this replaces, because the placement was never
+    // what the ruling changed — only what is inside.
+    let origin = match edge {
+        alo_dock::Edge::Bottom => (at.loc.x + at.size.w - across, at.loc.y - gap - tall),
+        alo_dock::Edge::Top => (at.loc.x + at.size.w - across, at.loc.y + at.size.h + gap),
+        alo_dock::Edge::Left => (at.loc.x + at.size.w + gap, at.loc.y + at.size.h - tall),
+        alo_dock::Edge::Right => (at.loc.x - gap - across, at.loc.y + at.size.h - tall),
+    };
+    let (from, upto) = match clear_of {
+        None => (0, width),
+        Some(column) if column.loc.x <= 0 => (column.size.w + gap, width),
+        Some(column) => (0, column.loc.x - gap),
+    };
+    let left = origin.0.clamp(from, (upto - across).max(from));
+    let top = origin.1.clamp(0, (height - tall).max(0));
+
+    let area = Rectangle::new((left, top).into(), (across, tall).into());
+    let inner = across - 2 * pad;
+    // The rounded grounds on this panel: the search field, and the scroll
+    // thumb when the list has one. Declared here because the field is drawn
+    // before the list is.
+    let mut wells: Vec<Rectangle<i32, Physical>> = Vec::new();
     let line = i32::try_from(alo_dock::Room::a_line_at(text).as_pixels()).unwrap_or(1);
     let size = i32::try_from(alo_dock::Room::text_at(text).as_pixels()).unwrap_or(1);
     let metrics = Metrics::new(size as f32, line as f32);
+    // **A function rather than a closure.** A closure capturing `fonts` and
+    // `inked` holds both borrows for as long as it exists, and the grid below
+    // needs them again — so the one that shaped the heading would make the one
+    // that shapes a name a borrow error. Passing them in says the same thing
+    // and lends them a line at a time.
+    /// The ring that marks keyboard focus on `item`: the item's own rectangle,
+    /// grown by the measured stand-off on every side.
+    ///
+    /// **One function for both faces.** A cell in the grid and a row in a window
+    /// list are different shapes and the ring around them is the same rule, and
+    /// the rule is a measurement — `docs/design/the-first-start.md` read it off
+    /// the design's `Keyboard focus / not selected` node. Written out at each of
+    /// the two sites it would be two chances to get the sign of the offset
+    /// wrong, and a ring four pixels *inside* an item looks like a border the
+    /// item grew rather than a ring around it.
+    fn a_focus_ring(item: Rectangle<i32, Physical>) -> Rectangle<i32, Physical> {
+        let off = i32::try_from(alo_dock::measures::THE_FOCUS_RING_STANDS_OFF).unwrap_or(4);
+        Rectangle::new(
+            (item.loc.x - off, item.loc.y - off).into(),
+            (item.size.w + 2 * off, item.size.h + 2 * off).into(),
+        )
+    }
 
-    // The heading, then the rule under it.
-    let said = crate::painted_text::sentence(
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "two borrows and what one line of text needs; a bundle here would be a type per call site"
+    )]
+    fn ink(
+        fonts: &mut FontSystem,
+        inked: &mut Vec<Inked>,
+        what: &str,
+        at: (i32, i32),
+        wide: i32,
+        metrics: Metrics,
+        on: [u8; 3],
+        colour: [u8; 3],
+        height: i32,
+    ) {
+        let said = crate::painted_text::sentence(fonts, what, wide, metrics, on, colour);
+        if let Some(drawn) = said.placed(at.0, at.1, height) {
+            inked.push(drawn);
+        }
+    }
+
+    // otherwise be inked over the footer and over the canvas beneath.
+    // **One application's windows instead of every application.** The frame is
+    // the same and only what sits between its heading and its footer differs,
+    // which is what the design draws: one popover with two faces.
+    if let (Some(said), Some(panel)) = (words.picker.as_ref(), windows) {
+        let head = i32::try_from(alo_dock::measures::THE_PICKERS_HEADING_IS_TALL).unwrap_or(48);
+        let count = i32::try_from(alo_dock::measures::THE_WINDOW_COUNT_IS_TALL).unwrap_or(48);
+        let row_is = i32::try_from(alo_dock::measures::A_WINDOW_ROW_IS_TALL).unwrap_or(106);
+        let between = i32::try_from(alo_dock::measures::BETWEEN_APP_CELLS).unwrap_or(8);
+        let icon = i32::try_from(alo_dock::measures::ICON).unwrap_or(48);
+
+        // **A back control, then the title beside it.** The control is a 48
+        // target like every other on the Dock; `‹` is drawn as its mark.
+        let mut one = [0_u8; 4];
+        ink(
+            fonts,
+            inked,
+            BACK_TO_THE_APPS.encode_utf8(&mut one),
+            (left + pad, top + pad + (head - line) / 2),
+            icon,
+            metrics,
+            palette.dock,
+            palette.ink,
+            height,
+        );
+        ink(
+            fonts,
+            inked,
+            &said.heading,
+            (left + pad + icon + between, top + pad + (head - line) / 2),
+            inner - icon - between,
+            metrics,
+            palette.dock,
+            palette.ink,
+            height,
+        );
+        // How many there are, and what choosing one does.
+        ink(
+            fonts,
+            inked,
+            &said.count,
+            (left + pad, top + pad + head + down + (count - line) / 2),
+            inner,
+            metrics,
+            palette.dock,
+            palette.ink_quiet,
+            height,
+        );
+
+        let rows_at = top + pad + head + down + count + down;
+        let viewport = i32::try_from(panel.the_list_is_tall().as_pixels()).unwrap_or(0);
+        // **Subtracted from every row**, which is what makes the list scroll
+        // rather than merely clip. Without it a person with more windows than
+        // the viewport holds could see the first few and reach none of the
+        // rest, which is what every frame did until 2026-10-11.
+        let scrolled_rows = i32::try_from(panel.scrolled().as_pixels()).unwrap_or(0);
+        let mut wells: Vec<Rectangle<i32, Physical>> = Vec::new();
+        let mut rings: Vec<Rectangle<i32, Physical>> = Vec::new();
+        for (which, window) in picker
+            .map(alo_dock::picking::ThePicker::rows)
+            .unwrap_or(&[])
+            .iter()
+            .enumerate()
+        {
+            let Some(sits) = panel.where_a_row_sits(which) else {
+                continue;
+            };
+            let y = rows_at + i32::try_from(sits.as_pixels()).unwrap_or(0) - scrolled_rows;
+            if y + row_is <= rows_at || y >= rows_at + viewport {
+                continue;
+            }
+            // **The ring, when this is the row the keyboard is on.** Pushed
+            // before the row's own well so the list reads in one order; which
+            // is drawn on top is the compositor's and it puts rings last.
+            if focused == Some(which) {
+                rings.push(a_focus_ring(Rectangle::new(
+                    (left + pad, y).into(),
+                    (inner, row_is).into(),
+                )));
+            }
+            // The row's own rounded surface, in the raster beside the circles.
+            wells.push(Rectangle::new(
+                (left + pad, y).into(),
+                (inner, row_is).into(),
+            ));
+            // Its title, and under it what state it is in and where it sits.
+            ink(
+                fonts,
+                inked,
+                window.called(),
+                (left + pad + pad, y + pad - 8),
+                inner - 2 * pad,
+                metrics,
+                palette.badge,
+                palette.ink,
+                height,
+            );
+            if let Some(state) = said.states.get(which) {
+                ink(
+                    fonts,
+                    inked,
+                    state,
+                    (left + pad + pad, y + pad + line + 1),
+                    inner - 2 * pad,
+                    metrics,
+                    palette.badge,
+                    palette.ink_quiet,
+                    height,
+                );
+            }
+        }
+        ink(
+            fonts,
+            inked,
+            &said.footer,
+            (
+                left + pad,
+                top + tall
+                    - pad
+                    - i32::try_from(alo_dock::measures::THE_MORE_APPS_FOOTER_IS_TALL).unwrap_or(22),
+            ),
+            inner,
+            metrics,
+            palette.dock,
+            palette.ink_quiet,
+            height,
+        );
+        if let Some(washed) = crate::dock_surface::a_panel(
+            area,
+            palette.dock,
+            palette.edge,
+            room,
+            crate::dock_surface::APanelsShapes {
+                circles: &[],
+                circle: palette.badge,
+                marks: &[],
+                mark: palette.ink,
+                // **Every row is a well.** The rasteriser takes a list for
+                // exactly this: a search field is one of them and a window
+                // list is a column.
+                wells: &wells,
+                well_is: palette.badge,
+                rings: &rings,
+                ring_is: palette.ink,
+            },
+        ) {
+            panels.push(washed);
+        }
+        // **What a press needs, recorded from the same values that drew it.**
+        // The rows' own origin and the viewport's height, not a second
+        // derivation: a hit test with arithmetic of its own is the fault
+        // `crate::where_the_dock_is` exists to prevent for the bar, and a
+        // scrolled list would be where the two first disagreed.
+        return crate::where_the_docks_surface_is::TheSurfaceAsDrawn {
+            popover: area,
+            viewport: Rectangle::new((left + pad, rows_at).into(), (inner, viewport).into()),
+            face: crate::where_the_docks_surface_is::WhichFace::TheWindowsOf(panel),
+        };
+    }
+
+    // The heading.
+    ink(
         fonts,
-        heading,
-        across - 2 * beside,
+        inked,
+        &words.heading,
+        (left + pad, top + pad),
+        inner,
         metrics,
         palette.dock,
         palette.ink,
+        height,
     );
-    if let Some(drawn) = said.placed(left + beside, top + around, height) {
-        inked.push(drawn);
-    }
-    solids.push(Solid {
-        area: Rectangle::new(
-            (left + beside, top + around + line + around).into(),
-            (
-                across - 2 * beside,
-                i32::try_from(alo_dock::measures::A_DIVIDER).unwrap_or(1),
-            )
-                .into(),
-        ),
-        colour: palette.accent,
-    });
 
-    // One row per application that is on the screen, its name inked into it.
-    let (first, showing) = panel.showing();
-    for which in first..first.saturating_add(showing) {
-        let Some(application) = over.get(which) else {
-            break;
-        };
-        let Some(sits) = panel.where_a_row_sits(which) else {
+    // The search field: a rounded well with its invitation inside it. Drawn as
+    // a `Solid` because it is a filled rectangle with no partial coverage at
+    // its corners that a person can see at this size.
+    let field = Rectangle::new(
+        (
+            left + pad,
+            top + pad
+                + i32::try_from(alo_dock::measures::THE_MORE_APPS_HEADING_IS_TALL).unwrap_or(32)
+                + down,
+        )
+            .into(),
+        (
+            inner,
+            i32::try_from(alo_dock::measures::THE_SEARCH_FIELD_IS_TALL).unwrap_or(48),
+        )
+            .into(),
+    );
+    wells.push(field);
+    ink(
+        fonts,
+        inked,
+        &words.search,
+        (field.loc.x + pad, field.loc.y + (field.size.h - line) / 2),
+        inner - 2 * pad,
+        metrics,
+        palette.badge,
+        palette.ink_quiet,
+        height,
+    );
+
+    // **The grid, clipped to its viewport.** Everything below here is inside
+    // the scrolling list, so a cell the overview says is out of view is not
+    // drawn at all rather than drawn and covered: a row past the bottom would
+
+    let list: Rectangle<i32, Physical> = Rectangle::new(
+        (field.loc.x, field.loc.y + field.size.h + down).into(),
+        (
+            inner,
+            i32::try_from(overview.the_list_is_tall().as_pixels()).unwrap_or(0),
+        )
+            .into(),
+    );
+    let scrolled = i32::try_from(overview.scrolled().as_pixels()).unwrap_or(0);
+    // **Gathered before the panel is rasterised**, because they are part of it.
+    // A circle and a rounded well are partial coverage at their edges, so they
+    // belong in the raster beside the panel's own corners rather than as flat
+    // rectangles drawn over it — which is what they were, and what made the
+    // badges square.
+    let mut circles: Vec<Rectangle<i32, Physical>> = Vec::new();
+    let mut marks: Vec<Rectangle<i32, Physical>> = Vec::new();
+    let mut rings: Vec<Rectangle<i32, Physical>> = Vec::new();
+    let cell = i32::try_from(alo_dock::measures::AN_APP_CELL_IS_WIDE).unwrap_or(94);
+    let cell_is = i32::try_from(alo_dock::measures::AN_APP_CELL_IS_TALL).unwrap_or(88);
+    let icon = i32::try_from(alo_dock::measures::ICON).unwrap_or(48);
+    let glyph = i32::try_from(alo_dock::measures::GLYPH).unwrap_or(28);
+
+    // Each group's heading, where the group has anything in it.
+    for (group, what) in [
+        (overview.pinned(), &words.pinned),
+        (overview.others(), &words.others),
+    ] {
+        if group.how_many() == 0 {
+            continue;
+        }
+        let y = list.loc.y + i32::try_from(group.at().as_pixels()).unwrap_or(0) - scrolled;
+        if y >= list.loc.y && y < list.loc.y + list.size.h {
+            ink(
+                fonts,
+                inked,
+                what,
+                (list.loc.x, y),
+                inner,
+                metrics,
+                palette.dock,
+                palette.accent,
+                height,
+            );
+        }
+    }
+
+    for (which, application) in over.iter().enumerate() {
+        if !overview.is_shown(which) {
+            continue;
+        }
+        let Some((x, y)) = overview.where_a_cell_sits(which) else {
             continue;
         };
-        let row = top + i32::try_from(sits.as_pixels()).unwrap_or(0);
-        let a_row = i32::try_from(panel.a_row().as_pixels()).unwrap_or(1);
+        let at = (
+            list.loc.x + i32::try_from(x.as_pixels()).unwrap_or(0),
+            list.loc.y + i32::try_from(y.as_pixels()).unwrap_or(0) - scrolled,
+        );
+        // **The whole cell is ringed, not the artwork.** The cell is what a
+        // person is choosing — it carries the label as well — and a ring around
+        // the 28-pixel glyph inside a 94-wide cell would point at the picture
+        // rather than at the thing Enter will open.
+        if focused == Some(which) {
+            rings.push(a_focus_ring(Rectangle::new(
+                at.into(),
+                (cell, cell_is).into(),
+            )));
+        }
+        // **The artwork's box, centred across the cell.** The design's own
+        // arrangement: a 48 icon area at the top of a 94-wide cell, with the
+        // 28 artwork centred inside that.
+        let box_at = (at.0 + (cell - icon) / 2, at.1);
+        let art = Rectangle::new(
+            (box_at.0 + (icon - glyph) / 2, box_at.1 + (icon - glyph) / 2).into(),
+            (glyph, glyph).into(),
+        );
+        // No artwork exists yet, so every application shows the initial the
+        // owner ruled: a circle with its first letter. `dock_surface` draws the
+        // circle with the Dock's own badges; this is the same shape in a list.
+        circles.push(art);
+        // **`AppId::first_letter`, which the Dock's own badges already use.**
+        // It takes the first *grapheme* and not the first `char`, which is the
+        // owner's ruling — an accented letter and a combined character are one
+        // thing a person sees and two or more `char`s. Taking `chars().next()`
+        // here would have split them, and it would have been a second way of
+        // answering a question this workspace had already answered.
+        let initial = application.app().first_letter();
+        // **Shaped into a box the size of the letter, not the size of the
+        // circle.** `painted_text` hands back an **opaque** box filled with the
+        // ground colour, and the Dock's own initials survive that because the
+        // ground is the badge's own — a badge-coloured box on a badge-coloured
+        // circle is invisible.
+        //
+        // It is invisible only while the box is inside the circle. Shaped to
+        // the circle's own 28 the box reaches the corners of a square the
+        // circle does not fill, and the badge is drawn as a **square**: which
+        // is what the first picture of this popover showed, with the Dock's
+        // round badges in the same frame for comparison.
+        //
+        // So the width is the initial's size, as it is for the Dock.
+        let initial_is = i32::try_from(alo_dock::measures::AN_INITIAL_IS).unwrap_or(14);
+        let letter = crate::painted_text::centred(
+            fonts,
+            initial,
+            initial_is,
+            Metrics::new(initial_is as f32, glyph as f32),
+            palette.badge,
+            palette.badge_ink,
+        );
+        let (wide, high) = (letter.width_of_box, letter.height);
+        if let Some(drawn) = letter.placed(
+            art.loc.x + (glyph - wide) / 2,
+            art.loc.y + (glyph - high) / 2,
+            height,
+        ) {
+            inked.push(drawn);
+        }
+        // **A mark for an application that has a window**, the same two shapes
+        // the bar draws: a short dot for running, a longer bar for the one
+        // whose window has the keyboard. Nothing yet knows which is focused, so
+        // every open application gets the dot.
+        if application.is_open() {
+            let wide = i32::try_from(alo_dock::measures::AN_OPEN_MARK_IS_WIDE).unwrap_or(4);
+            let thick = i32::try_from(alo_dock::measures::A_RUNNING_MARK_IS_TALL).unwrap_or(3);
+            marks.push(Rectangle::new(
+                (box_at.0 + (icon - wide) / 2, box_at.1 + icon - thick).into(),
+                (wide, thick).into(),
+            ));
+        }
+        // Its name under it, centred across the cell.
         let name = crate::painted_text::sentence(
             fonts,
             application.app().name(),
-            across - 2 * beside,
+            cell,
             metrics,
             palette.dock,
             palette.ink,
         );
-        // Centred down its row, which is taller than the text whenever the floor
-        // is what decided it.
-        let into = row + ((a_row - name.height) / 2).max(0);
-        if let Some(drawn) = name.placed(left + beside, into, height) {
+        let wide = name.width_of_box;
+        if let Some(drawn) = name.placed(
+            at.0 + (cell - wide) / 2,
+            at.1 + icon + i32::try_from(alo_dock::measures::BETWEEN_APP_CELLS).unwrap_or(8) / 2,
+            height,
+        ) {
             inked.push(drawn);
         }
+    }
+
+    // **The thumb, when there is more below.** Drawn as a well, which is what
+    // every rounded shape on a panel is: 3 wide makes its radius 1.5, so both
+    // ends are semicircles.
+    if let Some((down_the_track, long)) = alo_dock::more_apps::a_scroll_thumb(
+        overview.the_list_is_tall(),
+        overview.the_whole_list_is_tall(),
+        overview.scrolled(),
+    ) {
+        let thumb = i32::try_from(alo_dock::measures::A_SCROLL_THUMB_IS_WIDE).unwrap_or(3);
+        wells.push(Rectangle::new(
+            (
+                list.loc.x + list.size.w - thumb,
+                list.loc.y + i32::try_from(down_the_track.as_pixels()).unwrap_or(0),
+            )
+                .into(),
+            (thumb, i32::try_from(long.as_pixels()).unwrap_or(0)).into(),
+        ));
+    }
+
+    // **The line under the list, and which of the two it is.** The design
+    // replaces one with the other rather than showing both: the same place,
+    // one sentence at a time.
+    ink(
+        fonts,
+        inked,
+        if overview.scrolls() {
+            &words.scrolling
+        } else {
+            &words.footer
+        },
+        (
+            left + pad,
+            top + tall
+                - pad
+                - i32::try_from(alo_dock::measures::THE_MORE_APPS_FOOTER_IS_TALL).unwrap_or(22),
+        ),
+        inner,
+        metrics,
+        palette.dock,
+        palette.ink_quiet,
+        height,
+    );
+
+    // **Rasterised last, drawn first.** It is pushed after the walk because the
+    // walk is what gathers the circles that belong in it; the painter draws
+    // every panel before any ink, so the order these two vectors are filled in
+    // does not decide what covers what.
+    if let Some(washed) = crate::dock_surface::a_panel(
+        area,
+        palette.dock,
+        palette.edge,
+        room,
+        crate::dock_surface::APanelsShapes {
+            circles: &circles,
+            circle: palette.badge,
+            marks: &marks,
+            mark: palette.ink,
+            wells: &wells,
+            well_is: palette.badge,
+            rings: &rings,
+            ring_is: palette.ink,
+        },
+    ) {
+        panels.push(washed);
+    }
+
+    // The same recording for the other face: `list` is the viewport the grid
+    // was clipped to, and `overview` carries the scroll it was drawn at.
+    crate::where_the_docks_surface_is::TheSurfaceAsDrawn {
+        popover: area,
+        viewport: list,
+        face: crate::where_the_docks_surface_is::WhichFace::TheOverview(overview),
+    }
+}
+
+/// Where one slot's 48 × 48 target sits on the screen.
+///
+/// **Centred across the bar's thickness, `along` down its edge** — the rule
+/// `a_letter_sits_on_the_bars_centre_line_on_every_edge` holds, written once
+/// now that two things need it: the draw that inks an initial, and the badge
+/// placement that has to agree with it exactly or a letter would sit beside its
+/// own circle.
+fn a_slot_at(
+    band: Rectangle<i32, Physical>,
+    edge: alo_dock::Edge,
+    along: i32,
+    icon: i32,
+) -> (i32, i32) {
+    let across = ((if edge.runs_across() {
+        band.size.h
+    } else {
+        band.size.w
+    }) - icon)
+        / 2;
+    if edge.runs_across() {
+        (band.loc.x + along, band.loc.y + across)
+    } else {
+        (band.loc.x + across, band.loc.y + along)
     }
 }
 
 /// Lay `dock` out on a display of `size` and rasterise it.
+///
+/// # It takes no display scale, and that is deliberate
+///
+/// Every figure here is `alo_dock`'s logical measure used directly as a pixel:
+/// the band, the slots, the radius, the hairline and the marks are all in one
+/// space, and **none of them is scaled**. This took a `display_scale` for one
+/// commit and passed it to the radius alone, which made a dense display draw an
+/// 18 radius as 36 on a band still 76 tall. Scaling one measure of an otherwise
+/// unscaled geometry is worse than scaling none.
+///
+/// Making the Dock scale-aware is one change that moves all of them together,
+/// and `CLAUDE.md`'s rule — no figure reaches a display without passing through
+/// its scale — is kept by them sharing a conversion rather than by one of them
+/// having its own.
 ///
 /// # Errors
 /// [`RenderError::DesktopScene`] for a display `alo-dock` refuses to lay a dock
@@ -345,7 +883,11 @@ pub(crate) fn picture(
     look: DesktopLook,
     size: (i32, i32),
     on_the_dock: &[OnTheDock],
-    the_overflow: (bool, &str),
+    in_more_apps: &[OnTheDock],
+    the_overflow: (
+        &crate::WhatTheDockHasOpen,
+        &crate::the_docks_words::TheDocksWords,
+    ),
     fonts: &mut FontSystem,
 ) -> Result<DockPicture, RenderError> {
     let (width, height) = size;
@@ -358,27 +900,138 @@ pub(crate) fn picture(
     let TheDocksPlaces {
         layout,
         band,
-        thickness,
+        thickness: _,
         ref places,
         ref over,
     } = standing;
     let (over, places) = (over.clone(), places.clone());
     let palette = look.palette().map_err(|_| RenderError::AccentRefused)?;
-    let measure = look.measure();
-    let rule = measure.px(2).min(thickness);
 
-    let accent = the_accent_on(layout.edge(), band, rule);
+    // **The band and the accent are not rectangles any more.** They were two
+    // `Solid`s until 2026-10-11, which is why the Dock had square corners and no
+    // shadow: both are partial coverage, and a `Solid` is one opaque colour over
+    // a rectangle. `crate::dock_surface` rasterises them together with the
+    // hairline ADR 0101 ruled, and the renderer composites the result.
+    //
+    // `the_accent_on` still decides which face looks at the canvas; the surface
+    // is told the edge and draws the rule on that face.
+    let icon = i32::try_from(ICON).unwrap_or(i32::MAX);
+    let badge_is = i32::try_from(GLYPH).unwrap_or(i32::MAX);
 
-    let mut solids = vec![
-        Solid {
-            area: band,
-            colour: palette.dock,
-        },
-        Solid {
-            area: accent,
-            colour: palette.accent,
-        },
-    ];
+    // **Where every fallback badge goes, worked out before the surface** —
+    // because a badge is drawn *into* the surface's raster, which is the only
+    // way a circle gets an edge that is not a staircase.
+    //
+    // Every application gets one today: the owner's ruling of 2026-10-11 keeps
+    // the first letter as the fallback for an application with **no usable
+    // icon**, and `alo-applications` names an icon in none of its files, so
+    // that is still every application. A real icon replaces a badge without the
+    // slot moving, because the badge **is** the artwork box.
+    let badges: Vec<Rectangle<i32, Physical>> = places
+        .each()
+        .iter()
+        .filter(|place| place.app().is_some())
+        .map(|place| {
+            let along = i32::try_from(place.from_the_start()).unwrap_or(i32::MAX);
+            let (left, top) = a_slot_at(band, layout.edge(), along, icon);
+            let inset = (icon - badge_is) / 2;
+            Rectangle::new(
+                (left + inset, top + inset).into(),
+                (badge_is, badge_is).into(),
+            )
+        })
+        .collect();
+
+    // Where the composer's field is, if this Dock has one, and the rule before
+    // the commands — both in the surface's raster, because one is rounded and
+    // the other is a hairline's worth of the same token.
+    let slot_of = |what: &alo_dock::places::WhatIsHere| {
+        places
+            .each()
+            .iter()
+            .find(|place| place.what() == what)
+            .map(|place| {
+                let along = i32::try_from(place.from_the_start()).unwrap_or(i32::MAX);
+                let across = i32::try_from(place.across()).unwrap_or(icon);
+                let (left, top) = a_slot_at(band, layout.edge(), along, icon);
+                let long =
+                    i32::try_from(alo_dock::measures::THE_COMMANDS_DIVIDER_IS_LONG).unwrap_or(28);
+                if layout.edge().runs_across() {
+                    Rectangle::new((left, top).into(), (across, icon).into())
+                } else {
+                    // Down a side the slot's long axis is the bar's, so a field
+                    // 344 along is 344 **tall** — which is what the left Dock's
+                    // own `Open alo Bar` is not, and is the open question this
+                    // names rather than guesses at.
+                    let _ = long;
+                    Rectangle::new((left, top).into(), (icon, across).into())
+                }
+            })
+    };
+    let composer = slot_of(&alo_dock::places::WhatIsHere::TheComposer);
+    let divider = slot_of(&alo_dock::places::WhatIsHere::TheDivider);
+
+    let mut panels: Vec<crate::painted::Washed> = Vec::new();
+    let mut solids: Vec<Solid> = Vec::new();
+    // **The rule between the applications and the commands.** Measured at 1 × 28
+    // on the top Dock and 28 × 1 on the left one — the same line turned to suit
+    // the bar — so its long side runs **across** the bar's thickness and its
+    // short side along it. A `Solid`, because a hairline has no curve in it.
+    if let Some(at) = divider {
+        let long = i32::try_from(alo_dock::measures::THE_COMMANDS_DIVIDER_IS_LONG).unwrap_or(28);
+        let thin = i32::try_from(alo_dock::measures::THE_DOCKS_EDGE).unwrap_or(1);
+        let (size, offset) = if layout.edge().runs_across() {
+            ((thin, long), ((at.size.w - thin) / 2, (icon - long) / 2))
+        } else {
+            ((long, thin), ((icon - long) / 2, (at.size.h - thin) / 2))
+        };
+        solids.push(Solid {
+            area: Rectangle::new(
+                (at.loc.x + offset.0, at.loc.y + offset.1).into(),
+                size.into(),
+            ),
+            colour: palette.edge,
+        });
+    }
+    // **The composer's field is a well**, which is what every rounded ground on
+    // a panel is now called: one on the Dock, one in *More apps*, and one per
+    // row in a window list. It is already computed above.
+    let wells: Vec<Rectangle<i32, Physical>> = composer.into_iter().collect();
+    let surface = crate::dock_surface::surface(crate::dock_surface::ADocksSurface {
+        // **No focus ring on the bar itself, and that is a gap and not a
+        // decision.** The keyboard reaches the two surfaces the bar opens; it
+        // does not yet reach the bar's own slots, so there is nothing here for
+        // a ring to mark. When it does, the rectangle is the slot's and the
+        // rule is `a_focus_ring`'s — the measurement is already in
+        // `alo_dock::measures`.
+        rings: &[],
+        ring_is: [0, 0, 0],
+        // **The bar's own marks are still flat**, and visibly so: the Dock's
+        // surface is painted before `solids`, so a mark pushed there lands on
+        // top of it. That is why the bar's indicators have always been visible
+        // and the popover's were not.
+        //
+        // They should be rounded, by the same measurement as the popover's —
+        // 4 by 3 with a 1.5 radius — and moving them is a change to the bar's
+        // own drawing rather than to this seam. Named here rather than done in
+        // passing.
+        marks: &[],
+        mark: [0, 0, 0],
+        badges: &badges,
+        badge: palette.badge,
+        wells: &wells,
+        well_is: palette.badge,
+        panel: band,
+        fill: palette.dock,
+        edge: palette.edge,
+        accent: palette.accent,
+        against: layout.edge(),
+        // Nothing: the rule across the bar is gone, and the surface keeps the
+        // parameter so that a focus outline — which *does* follow a target —
+        // has somewhere to arrive when it is built.
+        accent_is: 0,
+        room: size,
+    });
 
     // **One letter per application, which is what a Dock icon is today.** The
     // owner ruled on 2026-10-10 that an application with no artwork shows its
@@ -393,60 +1046,73 @@ pub(crate) fn picture(
     // one thing left here is which axis *along* is, which is the same question
     // `the_band_on` above already answers for the band.
     let icon = i32::try_from(ICON).unwrap_or(i32::MAX);
-    let glyph = i32::try_from(GLYPH).unwrap_or(i32::MAX);
+    let (the_dock_has_open, words) = the_overflow;
+    let initial = i32::try_from(alo_dock::measures::AN_INITIAL_IS).unwrap_or(i32::MAX);
     let utility = i32::try_from(A_UTILITY_GLYPH).unwrap_or(i32::MAX);
-    // **Centred across the bar, which is a rule rather than a number.** This read
-    // `MARGIN` — 8 — until 2026-10-10, and the bar is 76 thick with a 48 icon in
-    // it, so every letter sat six logical pixels above where the design puts it.
-    // The owner's ruling that day says where it goes: *the measured 48px
-    // application target centred vertically: 14px above and below.*
-    //
-    // Written as the half of what is left over rather than as 14, because the two
-    // orientations have different thicknesses — the measured 76 across, the
-    // measured 70 down a side, where the same rule gives 11 — and a constant
-    // taken off one frame would be wrong on the other. `CLAUDE.md` names this as
-    // one of the three honest kinds of number: a rule that was never a number.
-    //
-    // `MARGIN` stays where it belongs, which is the room at the bar's **ends**:
-    // `alo_dock::Places` has already put it into `from_the_start`. The two were
-    // one number while the thickness was `MARGIN + ICON + MARGIN`, and that is
-    // what let this line look derived for as long as it did.
-    let across = ((thickness - icon) / 2).max(0);
     let mut inked: Vec<Inked> = Vec::new();
     for place in places.each() {
         let along_the_bar = i32::try_from(place.from_the_start()).unwrap_or(i32::MAX);
         // The icon's own box, `ICON` square: `from_the_start` along the bar's
         // edge, and centred across its thickness.
-        let (left, top) = if layout.edge().runs_across() {
-            (band.loc.x + along_the_bar, band.loc.y + across)
-        } else {
-            (band.loc.x + across, band.loc.y + along_the_bar)
-        };
-        // **The letter is inked on the dock's own colour**, so the box it
-        // arrives in disappears into the band rather than drawing a tile the
-        // design does not ask for. `docs/design/the-alo-dock.md`: a control at
-        // rest contributes artwork and nothing else.
-        // **An application's letter, or the control's mark.** The slot is the
-        // same size either way — the owner's ruling of 2026-10-10 makes the
-        // overflow one application slot — and what is drawn in it is not: a
-        // letter would read as an application a person could open, and there is
+        let (left, top) = a_slot_at(band, layout.edge(), along_the_bar, icon);
+        // **Its own width**, which is a target's for an application and a
+        // command, and the composer's for the field. `APlace::across` has
+        // always been a field rather than a constant and this is why.
+        let its_width = i32::try_from(place.across()).unwrap_or(icon);
+        // **An application's initial on its badge, or the control's mark on the
+        // bar.** The slot is the same size either way — ADR 0101 makes the
+        // overflow one application slot — and what is in it is not: a letter
+        // there would read as an application a person could open, and there is
         // no application called *more*.
         //
-        // `A_UTILITY_GLYPH` rather than `GLYPH`, which is the owner's own
-        // distinction: *utility glyphs — search, overflow — 20 to 24, in the
-        // same 48 target.*
+        // **The ground each is inked on is the thing that matters here.**
+        // `painted_text::centred` returns an **opaque** box filled with the
+        // ground it is given, so the ground is what the box paints over the
+        // surface. An initial given the Dock's own colour paints a
+        // dock-coloured tile **over its own badge** — which is what happened
+        // for one commit: the circles were in the raster, 210 of their ~1 800
+        // pixels survived as a fringe, and the picture showed bare letters
+        // exactly as the owner said it must not.
+        //
+        // So the initial's ground is the badge's and the control's is the
+        // Dock's, and they are read together rather than defaulted.
+        //
+        // The sizes are the owner's two: `AN_INITIAL_IS` — fourteen, half its
+        // badge — and `A_UTILITY_GLYPH` for a mark that is not artwork.
         let mut one_character = [0_u8; 4];
-        let (mark, size) = match place.app() {
-            Some(app) => (app.first_letter(), glyph),
-            None => (
+        let label = i32::try_from(alo_dock::measures::A_LABEL_IS).unwrap_or(13);
+        let (mark, size, ground, ink) = match place.what() {
+            alo_dock::places::WhatIsHere::Application(app) => (
+                app.first_letter(),
+                initial,
+                palette.badge,
+                palette.badge_ink,
+            ),
+            alo_dock::places::WhatIsHere::TheOverflow => (
                 &*THE_OVERFLOWS_MARK.encode_utf8(&mut one_character),
                 utility,
+                palette.dock,
+                palette.ink,
             ),
+            // **The composer's own two strings are drawn below**, where its
+            // field is: a prompt at its left and the key at its right, neither
+            // of them centred in a slot.
+            alo_dock::places::WhatIsHere::TheComposer
+            | alo_dock::places::WhatIsHere::TheDivider => continue,
+            alo_dock::places::WhatIsHere::ShowAll => {
+                (words.show_all.as_str(), label, palette.dock, palette.ink)
+            }
+            alo_dock::places::WhatIsHere::History => {
+                (words.history.as_str(), label, palette.dock, palette.ink)
+            }
         };
         let shaped = crate::painted_text::centred(
             fonts,
             mark,
-            icon,
+            // **The slot's own width, not an icon's.** `Show all` is 88 wide and
+            // was being shaped into a 48-wide buffer, which clipped it to
+            // *Show al* — visible in the first drawing that had it.
+            its_width,
             // **`GLYPH`, which is artwork's size and not text's.** The owner's
             // ruling of 2026-10-10 is explicit that a fixed bar height must not
             // become fixed-size text elsewhere — so this is worth saying
@@ -462,51 +1128,161 @@ pub(crate) fn picture(
             // sentence on this machine does. `alo_dock::Room::a_line_at` is
             // what sizes it, and it still takes a `TextScale`.
             Metrics::new(size as f32, size as f32),
-            palette.dock,
-            palette.ink,
+            ground,
+            ink,
         );
-        // Centred down the icon as well as across it. `centred` does the one
-        // axis it can know about; this is the other.
-        let down = top + ((icon - shaped.height) / 2).max(0);
-        if let Some(letter) = shaped.placed(left, down, height) {
+        // **The mark that says this application has a window open.**
+        //
+        // Measured on the design file's `Open window indicator` — `348:23886`
+        // on the top Dock, `348:23686` on the left one, the same rectangle in
+        // both: 4 × 3, centred across the slot and flush to its bottom. **It
+        // does not rotate with the edge**: a Dock down the left side puts the
+        // mark under each icon exactly as a Dock along the bottom does, which
+        // is a measurement rather than an assumption — both variants were read.
+        //
+        // **Pinned but not open gets nothing**, which is the whole of the
+        // distinction the design calls *open indicators distinguish pinned from
+        // open*, and it is told by **width** rather than by colour.
+        //
+        // **The 12-wide focused mark is not drawn**, and this is where it would
+        // go. `alo_dock::OnTheDock` has no notion of focus — it knows pinned,
+        // open, and how many windows are put aside — and the shell's keyboard
+        // focus is a `WlSurface` that nothing maps back to an application here.
+        // Drawing the open mark for a focused application is the honest subset:
+        // it is never wrong, it is incomplete, and `A_FOCUSED_MARK_IS_WIDE` is
+        // declared and unused until something can answer the question.
+        if place.app().is_some_and(|_| {
+            on_the_dock
+                .iter()
+                .any(|one| Some(one.app()) == place.app() && one.is_open())
+        }) {
+            let wide = i32::try_from(alo_dock::measures::AN_OPEN_MARK_IS_WIDE).unwrap_or(1);
+            let tall = i32::try_from(alo_dock::measures::A_RUNNING_MARK_IS_TALL).unwrap_or(1);
+            solids.push(Solid {
+                area: Rectangle::new(
+                    (left + (icon - wide) / 2, top + icon - tall).into(),
+                    (wide, tall).into(),
+                ),
+                colour: palette.ink,
+            });
+        }
+        // **Centred on the letter's own rendered bounds, both ways.**
+        //
+        // `centred` now hands back a box trimmed to the ink actually in it, so
+        // these two lines are optical centring rather than box centring: `F`,
+        // `M` and `B` are three different widths and three different heights,
+        // and each one's own ink is the only thing that says where its middle
+        // is. Centring the *text box* instead put every letter where a Latin
+        // capital with a full descender would have been.
+        let across_by = ((its_width - shaped.width_of_box) / 2).max(0);
+        let down_by = ((icon - shaped.height) / 2).max(0);
+        if let Some(letter) = shaped.placed(left + across_by, top + down_by, height) {
             inked.push(letter);
+        }
+    }
+
+    // **The composer's own two strings**, which the slot loop above skips: they
+    // are not centred in a slot. Measured on both Dock families — the prompt at
+    // the field's left behind its padding, the key at its right behind the same
+    // — so each is placed from its own end rather than centred.
+    if let Some(field) = composer {
+        let pad = i32::try_from(alo_dock::measures::BESIDE_A_NAME_IN_A_LIST).unwrap_or(12);
+        let body = i32::try_from(alo_dock::measures::TEXT_AT_ORDINARY).unwrap_or(15);
+        let small = i32::try_from(alo_dock::measures::A_SMALL_LABEL_IS).unwrap_or(11);
+        for (what, size, from_the_left) in [
+            (words.prompt.as_str(), body, true),
+            (words.key.as_str(), small, false),
+        ] {
+            if what.is_empty() {
+                continue;
+            }
+            let shaped = crate::painted_text::centred(
+                fonts,
+                what,
+                field.size.w,
+                Metrics::new(size as f32, size as f32),
+                palette.badge,
+                palette.ink,
+            );
+            let x = if from_the_left {
+                field.loc.x + pad
+            } else {
+                field.loc.x + field.size.w - pad - shaped.width_of_box
+            };
+            let y = field.loc.y + ((field.size.h - shaped.height) / 2).max(0);
+            if let Some(drawn) = shaped.placed(x, y, height) {
+                inked.push(drawn);
+            }
         }
     }
 
     // **The list the control opens, when a person has opened it.**
     //
     // Drawn last so it sits over the bar and over the canvas, which is what a
-    // list opened from a control has to do. `alo_dock::overflow::ThePanel` is
+    // list opened from a control has to do. `alo_dock::a_list_the_dock_opens::ThePanel` is
     // the layout — rows at the floor every control is held to, growing with the
     // text, scrolling when the room runs out — and this is the only thing that
     // turns it into pixels.
-    let (the_overflow_is_open, heading) = the_overflow;
-    if the_overflow_is_open && !over.is_empty() {
-        the_overflow_list(
-            &mut solids,
+    // **Opened whether or not anything overflowed.** `over` is no longer the
+    // tail that did not fit: the ruling keeps the control available *so the
+    // person has a predictable route to the overview, even when all eligible
+    // icons fit in the Dock*. The old condition tested the overflow tail, which
+    // made this surface appear and vanish with the width of a display.
+    // **Either face opens it.** The overview needs something to list; the
+    // picker already refused to be open with nothing to choose between, which
+    // `what_that_means_now` decides and this does not repeat.
+    let it_is_open = (the_dock_has_open.is_more_apps() && !in_more_apps.is_empty())
+        || the_dock_has_open.the_windows_of().is_some();
+    let overflow_list = if it_is_open {
+        Some(the_overflow_list(
+            &mut panels,
             &mut inked,
             TheOverflowIsDrawn {
-                over: &over,
+                over: in_more_apps,
                 at: band,
                 edge: layout.edge(),
                 room: (width, height),
+                // **The same derivation `crate::desktop_raster` hands the
+                // panel**, and for the owner's reason of 2026-09-30: the
+                // panel's edge is read from the direction a person reads in
+                // rather than stored, so nothing names an edge and the two
+                // cannot disagree. `look` is the one fact needed and this file
+                // already has it.
+                clear_of: crate::panel_raster::the_column_it_reserves(
+                    look,
+                    (width, height),
+                    match look.reading() {
+                        alo_strings::Direction::LeftToRight => {
+                            alo_put_aside::the_region_the_panel_claims::WhichEdge::Right
+                        }
+                        alo_strings::Direction::RightToLeft => {
+                            alo_put_aside::the_region_the_panel_claims::WhichEdge::Left
+                        }
+                    },
+                ),
                 text: look.scale(),
-                heading,
+                words,
+                picker: the_dock_has_open.the_windows_of(),
+                focused: the_dock_has_open.focused(),
                 palette,
             },
             fonts,
-        );
-    }
+        ))
+    } else {
+        None
+    };
 
     Ok(DockPicture {
         size,
         layout,
         band,
-        accent,
         solids,
         inked,
         over,
         standing,
+        surface,
+        overflow_list,
+        panels,
     })
 }
 
@@ -555,151 +1331,301 @@ mod tests {
 
     use super::*;
     use crate::desktop_testing::{an_appearance, noon_look};
-    use crate::where_the_dock_is::the_band_on;
+    use alo_appearance::TextScale;
+    use alo_dock::Screen;
+    use alo_dock::measures::{FLOATING_ABOVE_THE_EDGE, MARGIN};
+    use alo_strings::Direction;
+
+    /// How many applications this Dock drew.
+    ///
+    /// **The bar holds more than applications since 2026-10-11** — the composer
+    /// and one or two commands — so `inked.len()` is no longer the number of
+    /// letters on it, and every test below that compared the two was asking
+    /// about a bar that no longer exists.
+    fn applications(drawn: &DockPicture) -> usize {
+        drawn
+            .standing
+            .places
+            .each()
+            .iter()
+            .filter(|place| place.app().is_some())
+            .count()
+    }
+
+    /// How many things this Dock inks: every slot but the composer and the rule.
+    ///
+    /// The composer's two strings are drawn beside its field rather than
+    /// centred in a slot, and a rule has nothing to say.
+    fn inks(drawn: &DockPicture) -> usize {
+        use alo_dock::places::WhatIsHere;
+        drawn
+            .standing
+            .places
+            .each()
+            .iter()
+            .filter(|place| {
+                !matches!(
+                    place.what(),
+                    WhatIsHere::TheComposer | WhatIsHere::TheDivider
+                )
+            })
+            .count()
+    }
 
     /// A Dock whose overflow list a person has not opened, which is every frame
     /// but the one after they press the control.
-    const fn closed() -> (bool, &'static str) {
-        (false, "")
-    }
-    use alo_appearance::{Accent, TextScale};
-    use alo_dock::measures::{FLOATING_ABOVE_THE_EDGE, MARGIN};
-    use alo_dock::{Room, Screen};
-    use alo_strings::Direction;
-
-    /// Whether `inner` lies wholly inside `outer`.
-    fn inside(inner: Rectangle<i32, Physical>, outer: Rectangle<i32, Physical>) -> bool {
-        outer.intersection(inner) == Some(inner)
+    fn closed() -> (
+        &'static crate::WhatTheDockHasOpen,
+        &'static crate::the_docks_words::TheDocksWords,
+    ) {
+        (
+            &crate::what_the_dock_has_open::NOTHING,
+            crate::desktop_testing::no_words(),
+        )
     }
 
-    /// **The accent lies on the band's inside edge, on all four edges.**
+    /// **The keyboard's focus ring is pixels, and it is a ring.**
     ///
-    /// It did not. It was the band's corner plus `(bar_width, rule)` whatever the
-    /// edge, so on a dock down the left of the screen it drew a line 176 pixels
-    /// long across the canvas beside a bar 70 wide, and on a dock along the top it
-    /// drew on the band's outer edge rather than the one facing the canvas.
+    /// # Why a differential count and not a shape list
     ///
-    /// **Found in a drawn frame rather than here**, which is the point worth
-    /// keeping: two tests already covered the two halves — one asked
-    /// `the_band_on` about four edges and never looked at the accent, the other
-    /// looked at the accent on one edge — and the defect lived in the gap between
-    /// their subjects. Each was correct.
+    /// Three faults in this file were a shape that was computed, pushed into a
+    /// list, and then not drawn — the badges as squares, the running marks
+    /// painted under the panel they belonged to. A list of rectangles cannot
+    /// tell a drawn shape from a drawn-and-covered one, so this asks the raster
+    /// instead, and asks it twice: **the same picture with nothing focused is
+    /// the control**, because the popover's marks are ink-coloured too and a
+    /// bare count would be measuring those.
     ///
-    /// Four claims, because each catches a different way of being wrong: the
-    /// accent is **inside** the band (length and axis), it is `rule` across and
-    /// the band's **whole length** along (not a shorter or longer line), and it is
-    /// flush with the **inside** face (not the outer one, which `inside` alone
-    /// would allow).
+    /// # Why a band and not a floor
+    ///
+    /// The upper bound is the half that earns its keep. A **2-pixel outline**
+    /// around a 94 × 88 cell stood off by 4 covers roughly 780 pixels; the same
+    /// rectangle **filled** covers 9,792. A floor of *more than the control*
+    /// would pass for either, so a focus treatment that quietly became a solid
+    /// plate over the cell — hiding its artwork and its label — would pass. The
+    /// ceiling is what makes this a test that the ring is a ring.
     #[test]
-    fn the_accent_lies_along_the_bands_inside_face_on_every_edge() {
-        use alo_dock::Edge;
-        let rule = 2;
-        let band_for = |edge| the_band_on(edge, (1920, 1080), 600, 70, 8);
+    fn the_focus_ring_is_drawn_and_is_an_outline() {
+        let look = noon_look(&an_appearance(), alo_strings::Direction::LeftToRight);
+        let palette = look.palette().expect("a palette at noon");
+        let apps = on_the_dock(8);
+        // The ring colour and the popover's own ground are different, or
+        // nothing below would be measuring anything.
+        assert_ne!(
+            palette.ink, palette.dock,
+            "the premise: the ring's colour is not the panel's ground"
+        );
 
-        for edge in Edge::EVERY {
-            let band = band_for(edge);
-            let accent = the_accent_on(edge, band, rule);
+        let ink_pixels = |focused: Option<usize>| -> usize {
+            let open = crate::WhatTheDockHasOpen::MoreApps { focused };
+            let drawn = picture(
+                &Dock::shipped(),
+                look,
+                (1920, 1080),
+                &apps,
+                &apps,
+                (&open, crate::desktop_testing::no_words()),
+                &mut fonts(),
+            )
+            .expect("a Dock with its overview open");
+            let list = drawn
+                .overflow_list
+                .expect("the overview was asked for and is not empty")
+                .popover;
+            let mut ink = 0;
+            for washed in &drawn.panels {
+                // The popover's own raster and not the Dock's: both are panels
+                // and only one of them holds a grid.
+                if !washed.area.overlaps(list) {
+                    continue;
+                }
+                for pixel in washed.pixels.chunks(4) {
+                    let Some([r, g, b, a]) = pixel.first_chunk::<4>() else {
+                        continue;
+                    };
+                    if *a > 200 && [*r, *g, *b] == palette.ink {
+                        ink += 1;
+                    }
+                }
+            }
+            ink
+        };
 
-            assert!(
-                inside(accent, band),
-                "{edge:?}: the accent at {accent:?} leaves the band at {band:?}, so it draws on                  the canvas"
-            );
-
-            // `rule` across the thickness, the band's whole length along it.
-            let (across, along, band_along) = if edge.runs_across() {
-                (accent.size.h, accent.size.w, band.size.w)
-            } else {
-                (accent.size.w, accent.size.h, band.size.h)
-            };
-            assert_eq!(across, rule, "{edge:?}: the accent is not {rule} across");
-            assert_eq!(
-                along, band_along,
-                "{edge:?}: the accent runs {along} along a band that runs {band_along}"
-            );
-
-            // Flush with the face that looks at the canvas, which is the far end
-            // of the thickness from the screen edge the bar is lifted off.
-            let (accent_edge, band_inside) = match edge {
-                Edge::Bottom => (accent.loc.y, band.loc.y),
-                Edge::Top => (accent.loc.y + accent.size.h, band.loc.y + band.size.h),
-                Edge::Left => (accent.loc.x + accent.size.w, band.loc.x + band.size.w),
-                Edge::Right => (accent.loc.x, band.loc.x),
-            };
-            assert_eq!(
-                accent_edge, band_inside,
-                "{edge:?}: the accent is not on the face that looks at the canvas"
-            );
-        }
+        let without = ink_pixels(None);
+        let with = ink_pixels(Some(0));
+        let extra = with.saturating_sub(without);
+        // 2 × 2 × (102 + 96) less four rounded corners, so a little under 780.
+        assert!(
+            (400..=1_200).contains(&extra),
+            "a 2px ring around one 94x88 cell should add roughly 780 ink pixels; \
+             nothing focused drew {without} and focusing the first cell drew {with}, \
+             which is {extra} more — a filled cell would be about 9,792"
+        );
     }
 
-    /// **And the drawn picture's accent is that one**, which is the claim the two
-    /// tests above cannot make.
+    /// **Focus reaches the scroll, on both faces.**
     ///
-    /// They ask `the_accent_on` directly, so they say *this helper is right*.
-    /// Mutation-tested on 2026-10-10 by putting the original fault back in
-    /// `picture` — `Rectangle::new(band.loc, (bar_width, rule).into())` — and
-    /// **all fourteen tests passed**, the two new ones included. A correct helper
-    /// nothing calls is the fault class `CLAUDE.md` names first: *a check that
-    /// stands in for the thing is not the thing.*
+    /// # The fault this is about
     ///
-    /// So this one draws, on all four edges, and asks the picture.
+    /// `TheOverview::showing` and `ThePickersPanel::showing` are each tested
+    /// where they live, and both pass with nothing in this file calling them.
+    /// **A fixture is silent about its own wiring**: the sixtieth application
+    /// would simply not be drawn, and *not drawn* is what every cell past the
+    /// viewport looks like — so the frame would be indistinguishable from a
+    /// correct frame of a list scrolled to the top.
+    ///
+    /// So this asks for the one thing that can only be true if the draw
+    /// scrolled: **the ring around the last of sixty is in the raster.** It
+    /// cannot be, at any scroll position but the end.
     #[test]
-    fn the_drawn_accent_is_the_one_the_edge_asks_for() {
-        use alo_dock::Edge;
-        let look = noon_look(&an_appearance(), Direction::LeftToRight);
-        let held = on_the_dock(4);
-        let size = (1920, 1080);
+    fn focusing_the_last_of_sixty_scrolls_the_draw_and_not_only_the_layout() {
+        let look = noon_look(&an_appearance(), alo_strings::Direction::LeftToRight);
+        let palette = look.palette().expect("a palette at noon");
+        let apps = on_the_dock(60);
+        assert_eq!(apps.len(), 60, "the premise: sixty applications");
 
-        for edge in Edge::EVERY {
-            let mut dock = Dock::shipped();
-            dock.set_edge(edge);
-            let drawn = picture(&dock, look, size, &held, closed(), &mut fonts()).unwrap();
-
-            assert_eq!(
-                drawn.accent,
-                the_accent_on(
-                    edge,
-                    drawn.band,
-                    drawn.accent.size.w.min(drawn.accent.size.h)
+        // A picker face as well as an overview face. `TheDocksWords::default`
+        // leaves `picker` unset, which is how the draw chooses the overview, so
+        // the other face needs words of its own — and the rows' states have to
+        // be as long as the list or the draw takes the wrong one for a row.
+        let picker_words = crate::the_docks_words::TheDocksWords {
+            picker: Some(crate::the_docks_words::ThePickersWords {
+                heading: "Windows".to_owned(),
+                count: "60 windows".to_owned(),
+                footer: "Escape goes back".to_owned(),
+                states: vec!["On the canvas".to_owned(); 60],
+            }),
+            ..crate::the_docks_words::TheDocksWords::default()
+        };
+        let a_browser_with_sixty = {
+            let patch =
+                alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1).expect("one by one is a patch");
+            let app = alo_dock::AppId::named("browser").expect("a named application");
+            let mut windows = alo_dock::Windows::none();
+            for number in 0..60_u64 {
+                windows.opened(alo_dock::Window::of(
+                    alo_dock::WindowId::numbered(number),
+                    Some(app.clone()),
+                    "A window",
+                    patch,
+                    alo_dock::HowItSits::OnTheCanvas,
+                ));
+            }
+            alo_dock::picking::ThePicker::of(
+                alo_dock::previews::Previews::of(
+                    &windows,
+                    &app,
+                    alo_dock::previews::Opened::ByPressingTheIcon,
                 ),
-                "{edge:?}: the picture's accent is not the one this edge asks for"
-            );
-            assert!(
-                inside(drawn.accent, drawn.band),
-                "{edge:?}: the drawn accent at {:?} leaves the band at {:?} and draws on the \
-                 canvas — which is what it did on the left edge until 2026-10-10, a line 176 \
-                 long beside a bar 70 wide",
-                drawn.accent,
-                drawn.band
-            );
-            // And it is painted, not merely computed: the solid a person sees.
-            assert!(
-                drawn.solids.iter().any(|solid| solid.area == drawn.accent),
-                "{edge:?}: nothing is painted at the accent's place"
-            );
-        }
+                alo_appearance::TextScale::default(),
+                alo_dock::Room::pixels(768),
+            )
+        };
+
+        let ink_pixels = |open: &crate::WhatTheDockHasOpen,
+                          words: &crate::the_docks_words::TheDocksWords|
+         -> usize {
+            let drawn = picture(
+                &Dock::shipped(),
+                look,
+                (1366, 768),
+                &apps,
+                &apps,
+                (open, words),
+                &mut fonts(),
+            )
+            .expect("a Dock with a surface open");
+            let list = drawn.overflow_list.expect("the surface is open").popover;
+            let mut ink = 0;
+            for washed in drawn.panels.iter().filter(|it| it.area.overlaps(list)) {
+                for pixel in washed.pixels.chunks(4) {
+                    let Some([r, g, b, a]) = pixel.first_chunk::<4>() else {
+                        continue;
+                    };
+                    if *a > 200 && [*r, *g, *b] == palette.ink {
+                        ink += 1;
+                    }
+                }
+            }
+            ink
+        };
+
+        // The overview: the sixtieth cell, which is far below the viewport.
+        let over_none = crate::WhatTheDockHasOpen::MoreApps { focused: None };
+        let over_last = crate::WhatTheDockHasOpen::MoreApps { focused: Some(59) };
+        let words = crate::the_docks_words::TheDocksWords::default();
+        let overview =
+            ink_pixels(&over_last, &words).saturating_sub(ink_pixels(&over_none, &words));
+        assert!(
+            (400..=1_200).contains(&overview),
+            "focusing the sixtieth application added {overview} ink pixels, so its ring \
+             was not drawn — the grid was not scrolled to it"
+        );
+
+        // And the window list: the sixtieth row.
+        let rows_none = crate::WhatTheDockHasOpen::TheWindowsOf {
+            picker: a_browser_with_sixty.clone(),
+            focused: None,
+        };
+        let rows_last = crate::WhatTheDockHasOpen::TheWindowsOf {
+            picker: a_browser_with_sixty,
+            focused: Some(59),
+        };
+        let rows = ink_pixels(&rows_last, &picker_words)
+            .saturating_sub(ink_pixels(&rows_none, &picker_words));
+        assert!(
+            rows > 400,
+            "focusing the sixtieth window added {rows} ink pixels, so its ring was not \
+             drawn — the list was not scrolled to it"
+        );
     }
 
-    /// **No two edges put the accent in the same place either.**
+    /// **A focused row far down a long list is on the screen.**
     ///
-    /// The companion to `the_four_edges_are_four_different_places`, and for the
-    /// same reason: four arms that each satisfy the checks above could be two arms
-    /// written twice, and a copied arm with its edge not changed is how that
-    /// happens.
+    /// The picker's list had no scroll at all until 2026-10-11: every row was
+    /// drawn at its content offset and whatever fell past the viewport was
+    /// clipped away, so a person with twenty windows could see about three and
+    /// reach none of the others. This asks the thing that proves it moved —
+    /// **the ring is in the raster** — rather than that a number changed.
     #[test]
-    fn the_four_edges_are_four_different_accents() {
-        use alo_dock::Edge;
-        let mut seen: Vec<Rectangle<i32, Physical>> = Vec::new();
-        for edge in Edge::EVERY {
-            let band = the_band_on(edge, (1920, 1080), 600, 70, 8);
-            let accent = the_accent_on(edge, band, 2);
-            assert!(
-                !seen.contains(&accent),
-                "{edge:?} puts the accent exactly where an earlier edge does: {accent:?}"
-            );
-            seen.push(accent);
-        }
-        assert_eq!(seen.len(), 4);
+    fn focusing_the_last_row_of_a_long_window_list_scrolls_it_into_view() {
+        let panel = alo_dock::picking::the_pickers_panel(20, alo_dock::Room::pixels(768));
+        assert!(
+            panel.scrolls(),
+            "the premise: twenty rows do not fit in the viewport"
+        );
+        assert!(
+            !panel.is_shown(19),
+            "the premise: the last of twenty is off the bottom before scrolling"
+        );
+        let scrolled = panel.showing(19);
+        assert!(
+            scrolled.is_shown(19),
+            "the row the keyboard moved to is still off the screen"
+        );
+        assert!(
+            !scrolled.is_shown(0),
+            "scrolling to the last row left the first one on the screen too, \
+             which means nothing moved"
+        );
+        // **The least it can**, which is what keeps a person's place: the last
+        // row sits at the bottom of the viewport, not at its top.
+        assert_eq!(
+            scrolled.scrolled(),
+            scrolled.the_furthest_it_scrolls(),
+            "scrolling to the last row of a list should be scrolled to its end"
+        );
+    }
+
+    /// The same Dock with its overflow list open.
+    fn opened() -> (
+        &'static crate::WhatTheDockHasOpen,
+        &'static crate::the_docks_words::TheDocksWords,
+    ) {
+        (
+            &crate::what_the_dock_has_open::MORE_APPS,
+            crate::desktop_testing::no_words(),
+        )
     }
 
     /// **The dock is a bar: centred, clear of the bottom edge, and as wide as
@@ -711,8 +1637,16 @@ mod tests {
         let mut whichever_way_read: Option<Rectangle<i32, Physical>> = None;
         for reading in [Direction::LeftToRight, Direction::RightToLeft] {
             let look = noon_look(&an_appearance(), reading);
-            let drawn =
-                picture(&dock, look, size, &on_the_dock(4), closed(), &mut fonts()).unwrap();
+            let drawn = picture(
+                &dock,
+                look,
+                size,
+                &on_the_dock(4),
+                &on_the_dock(4),
+                closed(),
+                &mut fonts(),
+            )
+            .unwrap();
             let layout = dock.layout_on(Screen::of(1920, 1080).unwrap());
             assert_eq!(drawn.layout, layout);
 
@@ -728,7 +1662,10 @@ mod tests {
             assert_eq!(drawn.band.size.h, thick, "{reading:?}");
 
             // As wide as what it holds, and nothing like the whole screen.
-            let wanted = i32::try_from(Room::a_bar_holding(4).as_pixels()).unwrap();
+            // **What it holds, which is no longer only icons.** The bar carries
+            // the composer and the commands since 2026-10-11, so its width is
+            // `Places::how_far_across` rather than a count of slots one size.
+            let wanted = i32::try_from(drawn.standing.places.how_far_across().as_pixels()).unwrap();
             assert_eq!(drawn.band.size.w, wanted, "{reading:?}");
             assert!(drawn.band.size.w < 1920, "{reading:?}: it spans the screen");
 
@@ -736,9 +1673,6 @@ mod tests {
             let left = drawn.band.loc.x;
             let right = 1920 - (drawn.band.loc.x + drawn.band.size.w);
             assert!((left - right).abs() <= 1, "{reading:?}: {left} vs {right}");
-
-            assert!(inside(drawn.accent, drawn.band), "{reading:?}");
-            assert_eq!(drawn.accent.loc.y, drawn.band.loc.y, "the inside edge");
 
             match whichever_way_read {
                 None => whichever_way_read = Some(drawn.band),
@@ -762,6 +1696,7 @@ mod tests {
                 &dock,
                 look,
                 (1920, 1080),
+                &on_the_dock(holding),
                 &on_the_dock(holding),
                 closed(),
                 &mut fonts(),
@@ -803,6 +1738,7 @@ mod tests {
             look,
             (1366, 768),
             &held,
+            &held,
             closed(),
             &mut fonts(),
         )
@@ -815,11 +1751,11 @@ mod tests {
         assert!(drawn.band.loc.x + drawn.band.size.w <= 1366);
 
         // Not clamped: the bar is exactly as wide as what it holds.
-        let slots = drawn.inked.len();
+        let slots = applications(&drawn);
         assert_eq!(
             drawn.band.size.w,
-            i32::try_from(Room::a_bar_holding(slots).as_pixels()).unwrap(),
-            "the bar was clamped, so it is not as wide as the {slots} slots it drew"
+            i32::try_from(drawn.standing.places.how_far_across().as_pixels()).unwrap(),
+            "the bar was clamped, so it is not as wide as what it holds"
         );
 
         // Every letter inside the band, which the clamp never guaranteed.
@@ -835,10 +1771,9 @@ mod tests {
         // one control, and the rest are behind it.
         assert!(!drawn.over.is_empty(), "nothing went into the overflow");
         assert_eq!(
-            slots - 1 + drawn.over.len(),
+            slots + drawn.over.len(),
             held.len(),
-            "{} on the bar, {} over, and {} were held",
-            slots - 1,
+            "{slots} on the bar, {} over, and {} were held",
             drawn.over.len(),
             held.len()
         );
@@ -870,7 +1805,7 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn = picture(&dock, look, size, &held, closed(), &mut fonts()).unwrap();
+            let drawn = picture(&dock, look, size, &held, &held, closed(), &mut fonts()).unwrap();
 
             // Within the edge it runs along, less the room either side.
             let (ran, edge_length) = if edge.runs_across() {
@@ -891,49 +1826,97 @@ mod tests {
                 drawn.band
             );
 
-            let slots = drawn.inked.len();
+            let slots = applications(&drawn);
             assert!(
                 !drawn.over.is_empty(),
                 "{edge:?}: two hundred applications and nothing in the overflow"
             );
             assert_eq!(
-                slots - 1 + drawn.over.len(),
+                slots + drawn.over.len(),
                 held.len(),
-                "{edge:?}: {} on the bar and {} over, of {}",
-                slots - 1,
+                "{edge:?}: {slots} on the bar and {} over, of {}",
                 drawn.over.len(),
                 held.len()
             );
             on_the_bar.push((edge, slots));
         }
 
-        // **The two orientations hold different numbers.** 1366 along the
-        // bottom and 768 down a side is not the same bar, and a length taken
-        // off the wrong axis would make all four agree.
-        let across: Vec<usize> = on_the_bar
-            .iter()
-            .filter(|(edge, _)| edge.runs_across())
-            .map(|(_, slots)| *slots)
-            .collect();
         let down: Vec<usize> = on_the_bar
             .iter()
             .filter(|(edge, _)| !edge.runs_across())
-            .map(|(_, slots)| *slots)
+            .map(|(_, holds)| *holds)
             .collect();
-        assert_eq!(across.len(), 2, "the premise");
-        assert_eq!(down.len(), 2, "the premise");
-        assert!(
-            across.iter().all(|holds| Some(holds) == across.first()),
-            "the bottom and top edges of one display hold different numbers: {on_the_bar:?}"
+        assert_eq!(down.len(), 2, "the premise: two side edges");
+
+        // **The two orientations hold different numbers**, which is the claim
+        // that catches a length taken off the wrong axis: 1366 along the bottom
+        // and 768 down a side is not the same bar.
+        //
+        // **The bottom and the top do not agree with each other**, and that is
+        // ADR 0101 rather than a fault: *keep the distinct edge layouts.* The
+        // bottom's trailing group is the composer and *Show all*, 88 wide; the
+        // edges' is a rule, the composer and History, 48 wide. Different room
+        // left over, different number of applications — measured here as
+        // Bottom 14 and Top 15, and asserted as *each holds more than a side*
+        // rather than as *the two agree*, which they have no reason to.
+        let down_holds = down.first().copied().unwrap_or_default();
+        assert_eq!(
+            down.first(),
+            down.last(),
+            "the left and right edges have the same layout and hold different numbers: \
+             {on_the_bar:?}"
         );
-        assert!(
-            down.iter().all(|holds| Some(holds) == down.first()),
-            "the left and right edges of one display hold different numbers: {on_the_bar:?}"
+        for (edge, holds) in &on_the_bar {
+            if edge.runs_across() {
+                assert!(
+                    *holds > down_holds,
+                    "{edge:?} holds {holds} and a side holds {down_holds}, so the length is \
+                     being taken off the same axis for both: {on_the_bar:?}"
+                );
+            }
+        }
+    }
+
+    /// **The list is drawn as a rounded panel, not a flat rectangle.**
+    ///
+    /// It was one `Solid` with square corners and no shadow until 2026-10-11:
+    /// the surface treatment ADR 0101 ruled reached the Dock and stopped there,
+    /// and the first drawing that had both showed a Dock with a radius beside a
+    /// list without one.
+    #[test]
+    fn the_open_list_is_a_rounded_panel_like_the_dock() {
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let crowded = on_the_dock(200);
+        let of = |how| {
+            picture(
+                &Dock::shipped(),
+                look,
+                (1366, 768),
+                &crowded,
+                &crowded,
+                how,
+                &mut fonts(),
+            )
+            .unwrap()
+        };
+        let shut = of(closed());
+        let open = of(opened());
+
+        assert!(shut.panels.is_empty(), "a closed list drew a panel");
+        assert_eq!(
+            open.panels.len(),
+            1,
+            "an open list drew {} panels",
+            open.panels.len()
         );
+
+        // **A rounded panel has transparent corners.** A flat rectangle does
+        // not, and that is the whole of what changed.
+        let panel = open.panels.first().expect("one panel");
+        let corner = panel.pixels.get(3).copied();
         assert!(
-            across.first() > down.first(),
-            "a bar along the 1366 edge does not hold more than one down the 768 edge, so the \
-             length is being taken off the same axis for both: {on_the_bar:?}"
+            corner.is_some_and(|alpha| alpha < 64),
+            "the panel's own corner pixel is {corner:?} — opaque, so it is still a rectangle"
         );
     }
 
@@ -943,7 +1926,7 @@ mod tests {
     /// closed draws the bar alone, open draws the bar and the list, and open on
     /// a Dock with nothing behind the control draws the bar alone again.
     ///
-    /// The third is the one worth having. `the_overflow_is_open` lives on the
+    /// The third is the one worth having. `WhatTheDockHasOpen` lives on the
     /// `Server` and is not cleared when the Dock stops overflowing — a person
     /// closes a window and the bar fits again — so a draw that trusted the flag
     /// alone would paint an empty list over the canvas.
@@ -951,12 +1934,13 @@ mod tests {
     fn the_list_is_drawn_only_when_it_is_open_and_has_something_in_it() {
         let look = noon_look(&an_appearance(), Direction::LeftToRight);
         let crowded = on_the_dock(200);
-        let open = (true, "More open apps");
+        let open = opened();
 
         let shut = picture(
             &Dock::shipped(),
             look,
             (1366, 768),
+            &crowded,
             &crowded,
             closed(),
             &mut fonts(),
@@ -967,17 +1951,28 @@ mod tests {
             look,
             (1366, 768),
             &crowded,
+            &crowded,
             open,
             &mut fonts(),
         )
         .unwrap();
 
         assert!(!shut.over.is_empty(), "the premise: something overflowed");
+        // **A panel, not more solids.** This asked for more `solids` until
+        // 2026-10-11, when the popover's shapes — its badges' circles, its
+        // search field's rounded well, its running marks — moved into the
+        // raster where they belong. A circle and a rounded end are partial
+        // coverage, which a `Solid` cannot express, and `crate::desktop_paint`
+        // paints every solid *before* any panel, so a shape pushed there was
+        // drawn and then covered by the popover it was part of.
+        //
+        // So the popover adds **no** solids at all now, and the thing to assert
+        // is the panel it adds instead.
         assert!(
-            opened.solids.len() > shut.solids.len(),
-            "opening the list drew no more shapes: {} against {}",
-            opened.solids.len(),
-            shut.solids.len()
+            opened.panels.len() > shut.panels.len(),
+            "opening the list rasterised no panel: {} against {}",
+            opened.panels.len(),
+            shut.panels.len()
         );
         assert!(
             opened.inked.len() > shut.inked.len(),
@@ -986,12 +1981,22 @@ mod tests {
             shut.inked.len()
         );
 
-        // Open, on a Dock with room for everything: the flag says open and
-        // there is nothing to show.
+        // **Open on a Dock with room for everything: it is still drawn.**
+        //
+        // This asserted the opposite until 2026-10-11 — *the flag says open and
+        // there is nothing to show* — because the surface was the overflow and
+        // a Dock with room has no overflow. ADR 0103 made it an overview whose
+        // control is present *even when all eligible icons fit in the Dock*, so
+        // four applications that all fit are four rows in it.
+        //
+        // Measured here rather than argued: `over` is empty and the list is
+        // drawn anyway, which is exactly the pair the old rule said could not
+        // happen.
         let roomy = picture(
             &Dock::shipped(),
             look,
             (1920, 1080),
+            &on_the_dock(4),
             &on_the_dock(4),
             open,
             &mut fonts(),
@@ -1002,15 +2007,41 @@ mod tests {
             look,
             (1920, 1080),
             &on_the_dock(4),
+            &on_the_dock(4),
             closed(),
             &mut fonts(),
         )
         .unwrap();
-        assert!(roomy.over.is_empty(), "the premise");
-        assert_eq!(
-            (roomy.solids.len(), roomy.inked.len()),
-            (roomy_shut.solids.len(), roomy_shut.inked.len()),
-            "an empty list was drawn over the canvas"
+        assert!(roomy.over.is_empty(), "the premise: nothing overflowed");
+        assert!(
+            roomy.overflow_list.is_some(),
+            "nothing overflowed, so the overview did not open — which is the \
+             rule ADR 0103 replaced"
+        );
+        assert!(
+            roomy.inked.len() > roomy_shut.inked.len(),
+            "the overview opened and inked no names: {} against {}",
+            roomy.inked.len(),
+            roomy_shut.inked.len()
+        );
+
+        // **And nothing to show really does draw nothing.** The other half, and
+        // the one the clause above could otherwise be satisfied by a list that
+        // always opens: a Dock whose overview is empty draws no list even with
+        // the flag set.
+        let empty = picture(
+            &Dock::shipped(),
+            look,
+            (1920, 1080),
+            &[],
+            &[],
+            open,
+            &mut fonts(),
+        )
+        .unwrap();
+        assert!(
+            empty.overflow_list.is_none(),
+            "an empty overview was drawn over the canvas"
         );
     }
 
@@ -1036,7 +2067,8 @@ mod tests {
                 look,
                 size,
                 &crowded,
-                (true, "More open apps"),
+                &crowded,
+                opened(),
                 &mut fonts(),
             )
             .unwrap();
@@ -1064,6 +2096,251 @@ mod tests {
         }
     }
 
+    /// **An application with a window open carries a mark; a pinned one does
+    /// not.**
+    ///
+    /// The design file's own sentence for the component — *open indicators
+    /// distinguish pinned from open* — and the distinction is told by **width**
+    /// rather than by colour, which is what `docs/design/the-alo-dock.md`
+    /// promises and had nothing behind it until 2026-10-11.
+    ///
+    /// Asserted on all four edges, because the mark is measured as **not**
+    /// rotating with the edge: a Dock down the left puts it under each icon
+    /// exactly as one along the bottom does. Both variants were read from the
+    /// file — `348:23886` and `348:23686` are the same rectangle — so a draw
+    /// that helpfully turned it sideways would be wrong against a measurement.
+    #[test]
+    fn an_open_application_carries_a_mark_and_a_pinned_one_does_not() {
+        use alo_dock::Edge;
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let size = (1920, 1080);
+
+        for edge in Edge::EVERY {
+            let mut dock = Dock::shipped();
+            dock.set_edge(edge);
+
+            // Three with windows open.
+            let open = picture(
+                &dock,
+                look,
+                size,
+                &on_the_dock(3),
+                &on_the_dock(3),
+                closed(),
+                &mut fonts(),
+            )
+            .unwrap();
+            // The same three, pinned and closed.
+            let mut holding = alo_dock::Holding::nothing();
+            for number in 0..3 {
+                holding.pin(alo_dock::AppId::named(&format!("app-{number}")).unwrap());
+            }
+            let pinned = holding.showing(&alo_dock::Windows::none());
+            let shut =
+                picture(&dock, look, size, &pinned, &pinned, closed(), &mut fonts()).unwrap();
+
+            let wide = i32::try_from(alo_dock::measures::AN_OPEN_MARK_IS_WIDE).unwrap();
+            let tall = i32::try_from(alo_dock::measures::A_RUNNING_MARK_IS_TALL).unwrap();
+            let marks = |drawn: &DockPicture| {
+                drawn
+                    .solids
+                    .iter()
+                    .filter(|solid| solid.area.size == (wide, tall).into())
+                    .count()
+            };
+
+            assert_eq!(
+                marks(&open),
+                3,
+                "{edge:?}: three applications have windows open and {} marks were drawn",
+                marks(&open)
+            );
+            assert_eq!(
+                marks(&shut),
+                0,
+                "{edge:?}: a pinned application that is not open was given a mark"
+            );
+
+            // **The premise**: both Docks drew the same three slots, so the
+            // difference above is the mark and not the Dock being empty.
+            assert_eq!(applications(&open), applications(&shut), "{edge:?}");
+            assert_eq!(applications(&open), 3, "{edge:?}");
+        }
+    }
+
+    /// **The mark sits under its own icon, centred, flush to the slot's
+    /// bottom.**
+    ///
+    /// Where, not whether. Measured at `x: 20, y: 40` in a 44 slot — centred
+    /// across it, and three tall ending at the slot's edge — which normalises
+    /// to centred in a 48 target ending at its bottom.
+    #[test]
+    fn the_mark_sits_centred_under_its_own_icon() {
+        let look = noon_look(&an_appearance(), Direction::LeftToRight);
+        let drawn = picture(
+            &Dock::shipped(),
+            look,
+            (1920, 1080),
+            &on_the_dock(3),
+            &on_the_dock(3),
+            closed(),
+            &mut fonts(),
+        )
+        .unwrap();
+
+        let icon = i32::try_from(alo_dock::measures::ICON).unwrap();
+        let wide = i32::try_from(alo_dock::measures::AN_OPEN_MARK_IS_WIDE).unwrap();
+        let tall = i32::try_from(alo_dock::measures::A_RUNNING_MARK_IS_TALL).unwrap();
+        let marks: Vec<_> = drawn
+            .solids
+            .iter()
+            .filter(|solid| solid.area.size == (wide, tall).into())
+            .collect();
+        assert_eq!(marks.len(), 3, "the premise");
+
+        for (which, place) in drawn
+            .standing
+            .places
+            .each()
+            .iter()
+            .filter(|place| place.app().is_some())
+            .enumerate()
+        {
+            let along = i32::try_from(place.from_the_start()).unwrap();
+            let (left, top) = if drawn.layout.edge().runs_across() {
+                (
+                    drawn.band.loc.x + along,
+                    drawn.band.loc.y + (drawn.band.size.h - icon) / 2,
+                )
+            } else {
+                (
+                    drawn.band.loc.x + (drawn.band.size.w - icon) / 2,
+                    drawn.band.loc.y + along,
+                )
+            };
+            let wanted = (left + (icon - wide) / 2, top + icon - tall);
+            assert!(
+                marks
+                    .iter()
+                    .any(|mark| (mark.area.loc.x, mark.area.loc.y) == wanted),
+                "no mark at {wanted:?} for slot {which}; marks are at {:?}",
+                marks
+                    .iter()
+                    .map(|mark| (mark.area.loc.x, mark.area.loc.y))
+                    .collect::<Vec<_>>()
+            );
+        }
+    }
+
+    /// **Every initial sits on a complete circle**, in both schemes.
+    ///
+    /// The owner's ruling of 2026-10-11 — *draw a complete circle … render only
+    /// the letter's foreground over the badge, preserving the circle
+    /// underneath* — asked after a drawing in which each badge was two
+    /// crescents, above and below its letter.
+    ///
+    /// **A count is the wrong test for this and was the first one written.** It
+    /// counted badge-coloured pixels and passed on a raster whose circles were
+    /// all there and all about to be covered; tightened to count *after* the
+    /// letters, it still only said *enough pixels*, which a crescent pair also
+    /// satisfies. What the owner asked for is that the circle is **whole**, so
+    /// this walks each badge's circumference and asks every point on it.
+    #[test]
+    fn every_initial_sits_on_a_complete_circle_in_both_schemes() {
+        use alo_appearance::{Following, Scheme};
+        for scheme in [Scheme::Light, Scheme::Dark] {
+            let mut always = an_appearance();
+            always.follow(Following::from(scheme));
+            let look = noon_look(&always, Direction::LeftToRight);
+            assert_eq!(
+                look.scheme(),
+                scheme,
+                "the premise: this look is {scheme:?}"
+            );
+
+            let drawn = picture(
+                &Dock::shipped(),
+                look,
+                (1920, 1080),
+                &on_the_dock(3),
+                &on_the_dock(3),
+                closed(),
+                &mut fonts(),
+            )
+            .unwrap();
+            let surface = drawn.surface.as_ref().expect("the Dock has a surface");
+            let wanted = look.palette().unwrap().badge;
+
+            // The surface with every letter drawn over it, as `crate::painted`
+            // composes them — because the fault being forbidden is the letters
+            // covering the circles.
+            let mut composed = surface.pixels.clone();
+            let (width, height) = (surface.area.size.w, surface.area.size.h);
+            for ink in &drawn.inked {
+                for (n, pixel) in ink.pixels.iter().enumerate() {
+                    let wide = ink.area.size.w.max(1);
+                    let x = ink.area.loc.x + (n as i32 % wide) - surface.area.loc.x;
+                    let y = ink.area.loc.y + (n as i32 / wide) - surface.area.loc.y;
+                    if x < 0 || y < 0 || x >= width || y >= height {
+                        continue;
+                    }
+                    let at = ((y as usize) * (width as usize) + (x as usize)) * 4;
+                    if let Some(into) = composed.get_mut(at..at + 3) {
+                        into.copy_from_slice(pixel);
+                    }
+                }
+            }
+            let at = |x: i32, y: i32| -> Option<[u8; 3]> {
+                if x < 0 || y < 0 || x >= width || y >= height {
+                    return None;
+                }
+                let n = ((y as usize) * (width as usize) + (x as usize)) * 4;
+                let bytes = composed.get(n..n + 3)?;
+                let mut out = [0_u8; 3];
+                out.copy_from_slice(bytes);
+                Some(out)
+            };
+
+            // Each badge's own circumference, eight points round it, just
+            // inside the edge so the anti-aliased rim is not what is sampled.
+            let badge_is = i32::try_from(GLYPH).unwrap();
+            let icon = i32::try_from(ICON).unwrap();
+            let mut circles = 0;
+            for place in drawn.standing.places.each() {
+                if place.app().is_none() {
+                    continue;
+                }
+                let along = i32::try_from(place.from_the_start()).unwrap();
+                let (left, top) = a_slot_at(drawn.band, drawn.layout.edge(), along, icon);
+                let inset = (icon - badge_is) / 2;
+                let (cx, cy) = (
+                    left + inset + badge_is / 2 - surface.area.loc.x,
+                    top + inset + badge_is / 2 - surface.area.loc.y,
+                );
+                let r = badge_is / 2 - 3;
+                for (dx, dy) in [
+                    (r, 0),
+                    (-r, 0),
+                    (0, r),
+                    (0, -r),
+                    (r * 7 / 10, r * 7 / 10),
+                    (-r * 7 / 10, r * 7 / 10),
+                    (r * 7 / 10, -r * 7 / 10),
+                    (-r * 7 / 10, -r * 7 / 10),
+                ] {
+                    assert_eq!(
+                        at(cx + dx, cy + dy),
+                        Some(wanted),
+                        "{scheme:?}: the badge at ({cx}, {cy}) is not its own colour {dx} across \
+                         and {dy} down — the circle is not complete there"
+                    );
+                }
+                circles += 1;
+            }
+            assert_eq!(circles, 3, "{scheme:?}: the premise, three badges");
+        }
+    }
+
     /// **A bar with room for everything has no control and nothing over.**
     ///
     /// The companion to the test above, and the premise that keeps it honest: if
@@ -1078,6 +2355,7 @@ mod tests {
             look,
             (1920, 1080),
             &held,
+            &held,
             closed(),
             &mut fonts(),
         )
@@ -1087,7 +2365,7 @@ mod tests {
             "a Dock of four overflowed on a 1920 screen"
         );
         assert_eq!(
-            drawn.inked.len(),
+            applications(&drawn),
             held.len(),
             "a control was drawn for an empty overflow"
         );
@@ -1116,6 +2394,7 @@ mod tests {
             look,
             (1366, 768),
             &on_the_dock(4),
+            &on_the_dock(4),
             closed(),
             &mut fonts(),
         )
@@ -1125,6 +2404,7 @@ mod tests {
             look,
             (3840, 2160),
             &on_the_dock(4),
+            &on_the_dock(4),
             closed(),
             &mut fonts(),
         )
@@ -1133,6 +2413,7 @@ mod tests {
             &dock,
             look,
             (1080, 1920),
+            &on_the_dock(4),
             &on_the_dock(4),
             closed(),
             &mut fonts(),
@@ -1163,36 +2444,6 @@ mod tests {
         }
     }
 
-    /// **The accent is `alo-appearance`'s**: the rule along the band's inside
-    /// edge is exactly the accent the person chose, for the scheme on screen,
-    /// and the band is never deep teal.
-    #[test]
-    fn the_dock_carries_the_persons_accent() {
-        for accent in Accent::ALL {
-            let mut appearance = an_appearance();
-            appearance.set_accent(accent);
-            let look = noon_look(&appearance, Direction::LeftToRight);
-            let drawn = picture(
-                &Dock::shipped(),
-                look,
-                (1920, 1080),
-                &on_the_dock(4),
-                closed(),
-                &mut fonts(),
-            )
-            .unwrap();
-            let rule = drawn
-                .solids
-                .iter()
-                .find(|solid| solid.area == drawn.accent)
-                .unwrap();
-            assert_eq!(
-                rule.colour,
-                crate::desktop_look::rgb(accent.on(look.scheme()))
-            );
-        }
-    }
-
     /// **A display `alo-dock` refuses is refused**, and so is one larger than any
     /// this dock is laid out for, rather than a dock drawn over somebody's whole
     /// screen.
@@ -1206,6 +2457,7 @@ mod tests {
                         &Dock::shipped(),
                         look,
                         size,
+                        &on_the_dock(4),
                         &on_the_dock(4),
                         closed(),
                         &mut fonts()
@@ -1228,13 +2480,27 @@ mod tests {
         let dock = Dock::shipped();
         let look = noon_look(&an_appearance(), Direction::LeftToRight);
         let held = on_the_dock(3);
-        let drawn = picture(&dock, look, (1920, 1080), &held, closed(), &mut fonts()).unwrap();
+        let drawn = picture(
+            &dock,
+            look,
+            (1920, 1080),
+            &held,
+            &held,
+            closed(),
+            &mut fonts(),
+        )
+        .unwrap();
 
         assert_eq!(
-            drawn.inked.len(),
+            applications(&drawn),
             held.len(),
-            "three applications on the Dock and {} letters drawn",
-            drawn.inked.len()
+            "three applications on the Dock and {} laid out",
+            applications(&drawn)
+        );
+        assert_eq!(
+            drawn.inked.len(),
+            inks(&drawn),
+            "something other than a slot inked, or a slot did not"
         );
         for letter in &drawn.inked {
             assert!(
@@ -1288,8 +2554,8 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn = picture(&dock, look, size, &held, closed(), &mut fonts()).unwrap();
-            assert_eq!(drawn.inked.len(), held.len(), "{edge:?}");
+            let drawn = picture(&dock, look, size, &held, &held, closed(), &mut fonts()).unwrap();
+            assert_eq!(applications(&drawn), held.len(), "{edge:?}");
 
             // The band's centre across its thickness, and each letter's.
             let thickness = i32::try_from(drawn.layout.thickness().as_pixels()).unwrap();
@@ -1335,15 +2601,20 @@ mod tests {
             look,
             (1920, 1080),
             &[],
+            &[],
             closed(),
             &mut fonts(),
         )
         .unwrap();
-        assert!(drawn.inked.is_empty());
+        assert_eq!(
+            applications(&drawn),
+            0,
+            "a Dock holding nothing laid out an application"
+        );
         assert!(
-            !drawn.solids.is_empty(),
-            "the premise: the band is still drawn, so an empty `inked` is about letters and \
-             not about nothing being drawn at all"
+            drawn.surface.is_some(),
+            "the premise: the Dock's surface is still drawn, so an empty `inked` is about \
+             letters and not about nothing being drawn at all"
         );
     }
 
@@ -1374,12 +2645,15 @@ mod tests {
             look,
             (1920, 1080),
             &held,
+            &held,
             closed(),
             &mut fonts(),
         )
         .unwrap();
 
-        assert_eq!(drawn.inked.len(), 3);
+        assert_eq!(applications(&drawn), 3);
+        let inks: Vec<&Inked> = drawn.inked.iter().take(3).collect();
+        let _ = &inks;
         // **No indexing**, which this workspace denies: consecutive pairs
         // instead, which is the same claim and says which pair differed.
         let inks: Vec<&Vec<[u8; 3]>> = drawn.inked.iter().map(|it| &it.pixels).collect();

@@ -81,33 +81,48 @@ pub const ABOVE_AND_BELOW_AN_ICON: u32 = 14;
 
 /// The side of the artwork drawn inside [`ICON`].
 ///
-/// **Thirty-two inside forty-eight, settled by the owner on 2026-10-09**:
-/// *I recommend 32px icons inside 48px clickable areas, with no automatic
-/// shrinking or hover enlargement.*
+/// **Twenty-eight inside forty-eight, by [ADR
+/// 0101](../../../docs/decisions/0101-one-dock-component-family-and-the-renderer-that-can-draw-it.md)**:
+/// *application artwork: 28 × 28, centred. This supersedes the earlier 32px
+/// artwork proposal.*
 ///
-/// # Why this is a second number and not a smaller [`ICON`]
+/// It was 32 from 2026-10-09, which the owner gave as a **proposal** and said
+/// so. The canonical design file draws 28 in every `Dock edges / Button / *`,
+/// and the edge family is the baseline the same ruling chose.
 ///
-/// [`ICON`] is the **clickable area** — what a hand has to hit — and this is
-/// the **artwork** inside it. Keeping them apart is what lets the target stay
-/// 48 while the drawing is 32, with eight logical pixels of quiet on every
-/// side. Collapsing them into one number is the mistake this file has already
-/// watched twice in one afternoon: a drawn extent compared against a hit
-/// target, and a glyph compared against a cell, each nearly published as a
-/// contradiction that was not there.
+/// # Four numbers, and the ruling says not to confuse them
+///
+/// The owner's sentence, which is the one most likely to be lost:
+///
+/// > The 52 × 48 bottom measurement may include spacing around a target;
+/// > distinguish that from the target itself. Do not silently treat all these
+/// > measurements as interchangeable.
+///
+/// So there are four, and this file keeps them apart by name:
+///
+/// | | | |
+/// |---|---|---|
+/// | the **target** | what a hand must hit | [`ICON`], 48 |
+/// | the **artwork** | what an eye reads | this, 28 |
+/// | the **quiet** | what is left over, each side | [`AROUND_THE_ARTWORK`], 10 |
+/// | the **pitch** | one target to the next | [`ICON`] + [`GAP`] |
+///
+/// A fifth — the 52 in the bottom Dock's `52 × 48` slot — is spacing a layout
+/// put around a target and is **not** any of these. This repository has already
+/// published one contradiction by comparing two of the four; the cure is that
+/// each has a name and none is derived from another by coincidence.
 ///
 /// # No shrinking, and the owner's reason is the whole of it
 ///
 /// The Figma implementation contract said *icons may reduce from 32 to 28*.
-/// **The owner revised their own earlier suggestion**, in these words:
-/// *smaller artwork alone does not create more usable space*. So when the Dock
-/// runs out of edge it uses overflow rather than shaving the artwork, because
-/// a 28-pixel glyph in a 48-pixel target buys four pixels of room and costs
-/// legibility for the person who could least spare it.
+/// **The owner revised that**, in these words: *smaller artwork alone does not
+/// create more usable space*. So when the Dock runs out of edge it uses
+/// overflow rather than shaving the artwork — and 28 is now the **one** size
+/// rather than the bottom of a range.
 ///
 /// **And no hover enlargement**, by the same decision. §10 of the Dock's
 /// specification already forbids magnification that pushes neighbours sideways
-/// — *the person should be able to aim once and click* — and a fixed size is
-/// how that is kept rather than tuned.
+/// — *the person should be able to aim once and click.*
 ///
 /// # What a person may change, and when
 ///
@@ -115,11 +130,141 @@ pub const ABOVE_AND_BELOW_AN_ICON: u32 = 14;
 /// that belongs with **`[v0.5]` The dock's size, and whether it hides when a
 /// window needs the room** in `docs/features.md`. Until then this is fixed,
 /// which is a number nobody has been offered rather than a choice withdrawn.
+pub const GLYPH: u32 = 28;
+
+/// What is left over around the artwork, on each side of it.
 ///
-/// Utility symbols — search, overflow — are 20 to 24 by the same decision, in
-/// the same 48 target. They are not this constant: a magnifying glass is not
-/// an application.
-pub const GLYPH: u32 = 32;
+/// **Derived, and named rather than left implicit**, because the three numbers
+/// it sits between are each fixed by something different: the target by the
+/// standard a hand is held to, the artwork by the design file, and this by
+/// arithmetic. It was eight — the spacing unit — while the artwork was 32, and
+/// that coincidence is what let a reader believe the three were one system.
+/// They are not, and ADR 0101 says so.
+pub const AROUND_THE_ARTWORK: u32 = (ICON - GLYPH) / 2;
+
+/// How wide the mark under an application that has a window open is.
+///
+/// Measured at **4 × 3** on `Open window indicator` — `348:23886` on the top
+/// Dock and `348:23686` on the left one, identically.
+pub const AN_OPEN_MARK_IS_WIDE: u32 = 4;
+
+/// How wide the mark under the application a person is working in is.
+///
+/// Measured at **12 × 3** on `Active window indicator` — `348:23880` and
+/// `348:23680`.
+///
+/// **Three states told apart by width and not by colour**, which is what
+/// `docs/design/the-alo-dock.md` has promised all along: focused is this, open
+/// is [`AN_OPEN_MARK_IS_WIDE`], and pinned-but-not-open is nothing at all. The
+/// design file's own words for the component: *open indicators distinguish
+/// pinned from open.*
+pub const A_FOCUSED_MARK_IS_WIDE: u32 = 12;
+
+/// How tall either mark is.
+pub const A_RUNNING_MARK_IS_TALL: u32 = 3;
+
+/// The radius of the Dock's own corners.
+///
+/// `radius/lg` in the design file, measured on `Edge=Top, State=Overflow`
+/// (`348:23874`) and ruled for every edge by ADR 0101. The bottom Dock's older
+/// component draws 16; the ruling normalises both to this.
+pub const THE_DOCKS_CORNER: u32 = 18;
+
+/// How thick the hairline around the Dock is.
+///
+/// One logical pixel, in `border/default`. A *measure*, not a colour: which
+/// colour it is belongs to `alo_appearance`, like every other colour this
+/// product draws.
+pub const THE_DOCKS_EDGE: u32 = 1;
+
+/// How far the Dock's shadow is offset, and how far it spreads.
+///
+/// `Overlay / Glass` in the design file: `0 8px 24px rgba(7,19,31,0.08)`. Held
+/// as two measures and a share rather than a string, because a shadow is drawn
+/// and not written — and because the opacity is not this crate's to hold, for
+/// the reason [`THE_DOCKS_EDGE`] gives about colour.
+pub const THE_SHADOW_FALLS: u32 = 8;
+
+/// How far the Dock's shadow spreads from its edge.
+pub const THE_SHADOW_SPREADS: u32 = 24;
+
+/// How much the canvas behind the Dock is blurred.
+///
+/// Eighteen, by ADR 0101 — and **with a designed opaque alternative when a
+/// person has asked for reduced transparency.** That alternative is not a
+/// fallback for a hard problem: it is a state the owner named, and it ships
+/// whatever the blur costs.
+pub const BEHIND_THE_DOCK_IS_BLURRED: u32 = 18;
+
+/// How wide the composer — *Find, open, or ask…* — is at the reference size.
+///
+/// Measured at **344 × 48** on both Dock families (`349:25790` and
+/// `I321:17430;74:53`), which is the one thing they already agreed on, and
+/// preserved by ADR 0101.
+pub const THE_COMPOSER_IS_WIDE: u32 = 344;
+
+/// How tall the composer is: the same as a target, so it sits on their line.
+pub const THE_COMPOSER_IS_TALL: u32 = ICON;
+
+/// How big the key shown at the composer's end is drawn.
+///
+/// `Label/Small` in the design file: **Manrope SemiBold 11**, letter-spacing
+/// 0.3 — measured on `Bar shortcut` (`I321:17430;74:55`) and `349:25792`.
+pub const A_SMALL_LABEL_IS: u32 = 11;
+
+/// How big a command's label is drawn.
+///
+/// `Label/Medium` in the design file: **Manrope SemiBold 13**, letter-spacing
+/// 0.1 — measured on `Canvas zoom menu` and `Canvas options menu`. The face and
+/// the weight are `crate::painted_text`'s already; this is the size.
+pub const A_LABEL_IS: u32 = 13;
+
+/// How wide the *Show all* control on the bottom Dock is.
+///
+/// Measured at **88 × 44** on `Canvas zoom menu` (`I321:17430;100:3008`). Its
+/// height is a target's, by ADR 0101's normalisation; only its width is its
+/// own, because it holds a word rather than a mark.
+pub const SHOW_ALL_IS_WIDE: u32 = 88;
+
+/// How long the rule between the applications and the commands is.
+///
+/// Measured at **1 × 28** on the top Dock's `Apps / commands divider`
+/// (`348:23930`) and **28 × 1** on the left one's (`348:23730`) — the same rule
+/// turned to suit the bar. So this is its **long** side; its short side is
+/// [`THE_DOCKS_EDGE`], because a divider and a hairline are one line's worth of
+/// the same token.
+pub const THE_COMMANDS_DIVIDER_IS_LONG: u32 = 28;
+
+/// The radius of the composer's own corners — `radius/md` in the design file.
+pub const THE_COMPOSERS_CORNER: u32 = 12;
+
+/// How thick the keyboard's focus ring is.
+///
+/// **Measured, not chosen.** `docs/design/the-first-start.md` read the design's
+/// own `Keyboard focus / not selected` node (`384:26478`) on 2026-10-06: a card
+/// of 600×108 at x 160, y 205 gets a ring of 608×116 at x 156, y 201 with a
+/// **2px navy border** and a corner radius of 16 against the card's 12.
+///
+/// So all three of these are one measurement read three ways: the ring is 2
+/// thick, sits [`THE_FOCUS_RING_STANDS_OFF`] outside what it surrounds on every
+/// side, and its radius is the item's plus that same stand-off.
+///
+/// `docs/features.md` carries the promise this keeps: *keyboard focus stays a
+/// separate mark — an outer ring with its own gap.* Separate from selection,
+/// and separate from the Dock's running mark, which is a teal bar inside the
+/// slot. **Teal never means focused** (ADR 0067).
+pub const THE_FOCUS_RING_IS_THICK: u32 = 2;
+
+/// How far outside the focused item its ring sits, on every side.
+///
+/// 4, from the same node: 608 − 600 is 8 across two sides, and y 201 against
+/// 205 is 4 above. See [`THE_FOCUS_RING_IS_THICK`].
+///
+/// **Outside and not inside**, which is the whole reason the ring reads as its
+/// own element rather than as a border the item grew. A ring drawn inside would
+/// change what the item looks like, and a person moving focus would see the
+/// thing they are pointing at redraw itself.
+pub const THE_FOCUS_RING_STANDS_OFF: u32 = 4;
 
 // **The standards' target floors left this file on 2026-09-30.**
 // `SMALLEST_TARGET` was here because a dock icon was the first thing that
@@ -134,6 +279,23 @@ pub const GLYPH: u32 = 32;
 // is a name the next person will use, and then there are two homes for one
 // standard. The Mac lane found this on the day a second surface was about to
 // produce a second copy of the same 24 under a different name.
+
+/// How big the initial in a fallback badge is drawn.
+///
+/// **The owner's ruling of 2026-10-11**, for an application with no usable
+/// icon: *circle: 28 × 28 logical pixels, centred within the existing 48 × 48
+/// hit target. Initial: Manrope SemiBold, 14px, optically centred.*
+///
+/// The circle is [`GLYPH`] — the badge **is** the artwork box, so a real icon
+/// replaces a fallback without the slot moving or resizing, which is the last
+/// line of that ruling. This is the letter inside it, and it is half the badge
+/// rather than a number of its own: *half* is what makes a single initial read
+/// as a mark rather than as cramped text.
+///
+/// **Manrope SemiBold is not repeated here.** `crate::painted_text`'s
+/// `alos_own_text` is already that face at weight 600, in one place so that a
+/// measurement and a drawing cannot disagree about which face they meant.
+pub const AN_INITIAL_IS: u32 = 14;
 
 /// The side of a utility symbol drawn inside [`ICON`] — search, overflow.
 ///
@@ -157,38 +319,156 @@ pub const GAP: u32 = 8;
 /// The room between what the dock holds and each of the dock's two faces.
 pub const MARGIN: u32 = 8;
 
-/// How wide the list the overflow control opens is.
+/// How wide *More apps* is.
 ///
-/// **Measured, and the same on all four edges** — which is what keeps it a
-/// number rather than a proportion. `docs/design/figma-snapshot/70-28.xml` names
-/// it `More apps / opens inward` beside a left dock, a right dock and a top
-/// dock, and `Open applications overflow` beside the bottom one, and all four
-/// are **248 × 313**.
+/// Measured off `More apps / Popover` — `406:26881`, read from the live file on
+/// 2026-10-11 and captured in `docs/design/figma-snapshot/406-26881.xml`. Every
+/// one of its six states is 448 wide.
 ///
-/// The 313 is not here, and that is the owner's ruling of 2026-10-10: it was six
-/// rows at a 39 pitch, and 39 is below the 44 every control in alo OS is built
-/// to. *Let the panel grow beyond 313px when space permits, then scroll its list
-/// within the available screen space.* So the height follows the contents and
-/// the room, and only the width is a measurement.
-pub const AN_OVERFLOW_PANEL_IS_WIDE: u32 = 248;
+/// **This replaced 248, which was a different surface.** That figure came from
+/// `More apps / opens inward`: a narrow list of the applications that
+/// overflowed. The owner's ruling of 2026-10-11 (ADR 0103) made this an
+/// overview of every pinned and open application, drawn as a grid with a search
+/// field, and gave it a design of its own. The old frame is not an earlier
+/// version of this one and nothing may be measured off it.
+pub const MORE_APPS_IS_WIDE: u32 = 448;
 
-/// The room above and below the overflow list's heading.
+/// The most *More apps* may be, top to bottom, heading and footer included.
 ///
-/// Measured: the heading sits at y 12 in a panel whose divider is at y 44, so
-/// there are twelve above it and about ten below. Twelve is taken for both,
-/// because two paddings that differ by two pixels are a drawing's slack rather
-/// than a decision, and a reader asked to keep them apart would have nothing to
-/// go on.
-pub const AROUND_THE_OVERFLOWS_HEADING: u32 = 12;
-
-/// The room either side of a name in the overflow list.
+/// **A cap, not a height.** Stated by the owner on 2026-10-11, separately from
+/// the design file: *these are caps, not heights that increase with application
+/// count. Sixty applications must scroll inside the same bounded viewport.*
 ///
-/// Measured: the rows sit at x 18 and the divider at x 17, in a panel 248 wide.
-/// Eighteen for both sides, symmetrised for the same reason as
-/// [`AROUND_THE_OVERFLOWS_HEADING`] — the file's own two numbers differ by one.
-pub const BESIDE_A_NAME_IN_THE_OVERFLOW: u32 = 18;
+/// Every state in the design is drawn at this number, which is exactly why the
+/// file cannot show that it is a maximum — so it is said here instead.
+pub const MORE_APPS_IS_AT_MOST_TALL: u32 = 536;
 
-/// How thick the rule under the overflow list's heading is.
+/// The most the scrolling list of applications inside it may be.
+///
+/// The other half of the same ruling, and the one that does the work: the
+/// heading, the search field and the footer are fixed, and **only this
+/// scrolls**. On an output too short for the whole popover this shrinks further
+/// so that the rest still fits.
+pub const THE_APP_LIST_IS_AT_MOST_TALL: u32 = 336;
+
+/// Between a list the Dock opens and the bar it opens from.
+///
+/// Measured off `01 · More apps / Bottom · With minimised windows`
+/// (`408:28177`): the popover sits at y 312 and is 536 tall, so its lower edge
+/// is at 848; `Dock / Bottom` begins at 860. **Twelve between them**, which is
+/// also what the owner states in words — *keep a 12px gap from the Dock*.
+///
+/// It is not [`GAP`]. That is 8 and is the room between things **inside** one
+/// surface; this is the room between two surfaces, and they were the same
+/// number by accident until the popover was measured.
+pub const BESIDE_THE_DOCK: u32 = 12;
+
+/// The room inside *More apps*, on every side.
+///
+/// Measured: the first child sits at 25 in a panel with a 1-wide border, so the
+/// padding inside the border is 24 — which is `space/6` in the design's own
+/// tokens.
+pub const INSIDE_MORE_APPS: u32 = 24;
+
+/// Between the heading, the search field, the list and the footer.
+///
+/// Measured: 73 − 57, 137 − 121 and 489 − 473 are each 16, which is `space/4`.
+pub const DOWN_MORE_APPS: u32 = 16;
+
+/// How tall the heading of *More apps* is.
+///
+/// Measured: `Heading`, 400 × **32**, holding *More apps* at 22/30.
+pub const THE_MORE_APPS_HEADING_IS_TALL: u32 = 32;
+
+/// How tall its search field is.
+///
+/// Measured: `Search pinned and open applications`, 400 × **48** — the same 48
+/// every control on the Dock is built to.
+pub const THE_SEARCH_FIELD_IS_TALL: u32 = 48;
+
+/// How tall the line of words under the list is.
+///
+/// **22, which is its box and not its ink.** The capture reports the text as
+/// 207 × 16 — that is the glyphs at 11/16. The box it sits in is what the
+/// layout uses, and the frame gives it exactly: the footer starts at 489, the
+/// popover is 536, and the bottom border and padding are 25, so 536 − 25 − 489
+/// is 22.
+///
+/// Worth the four lines because taking the 16 makes the whole popover 530 and
+/// the owner's cap is 536, and a reader checking the sum would find it 6 short
+/// with every individual number right.
+pub const THE_MORE_APPS_FOOTER_IS_TALL: u32 = 22;
+
+/// How wide the thumb of a scrolling list is.
+///
+/// Measured: `Scrollbar / thumb` in `State=Scroll`, a rounded rectangle **3**
+/// wide at x 397 in a list 400 wide — so it is flush to the list's right edge.
+///
+/// **Its length is not a measurement.** The frame draws it 96 tall in a list
+/// whose content is 564 and whose viewport is 336; a thumb proportional to what
+/// is shown would be about 200. A static mock's thumb says *there is more
+/// below*, not how much, so the drawing takes the proportional rule — the only
+/// one that still says something true at sixty applications — and this note
+/// records that the frame and the rule disagree rather than leaving a reader to
+/// find it.
+pub const A_SCROLL_THUMB_IS_WIDE: u32 = 3;
+
+/// The shortest a scroll thumb may be drawn.
+///
+/// A list long enough makes a proportional thumb a single pixel, which is a
+/// mark nobody can see and nobody can grab. Four times its width is the
+/// smallest thing that still reads as a bar rather than a dot.
+pub const A_SCROLL_THUMB_IS_AT_LEAST: u32 = A_SCROLL_THUMB_IS_WIDE * 4;
+
+/// How tall a window's row in the picker is.
+///
+/// Measured: `Window / Launch website`, 400 × **106**, with 8 between rows.
+pub const A_WINDOW_ROW_IS_TALL: u32 = 106;
+
+/// How tall the picker's heading is, which is taller than the overview's.
+///
+/// Measured: `Heading`, 400 × **48** — it holds a 48 × 48 back control beside
+/// the title, where the overview's holds only a line of text.
+pub const THE_PICKERS_HEADING_IS_TALL: u32 = 48;
+
+/// How tall the line saying how many windows there are is.
+///
+/// Measured: `Window count and selection instruction`, 400 × **48**.
+pub const THE_WINDOW_COUNT_IS_TALL: u32 = 48;
+
+/// How wide one application's cell in the grid is.
+///
+/// Measured: `More apps / Application`, **94** × 88, and the component's own
+/// description says so — *94×88 grid cell; 48×48 icon area; 28×28 artwork.*
+pub const AN_APP_CELL_IS_WIDE: u32 = 94;
+
+/// How tall one is.
+pub const AN_APP_CELL_IS_TALL: u32 = 88;
+
+/// Between cells, between rows, and between a group's heading and its rows.
+///
+/// Measured: the cells sit at 0, 102, 204 and 306, so 8 between them; the rows
+/// at 26 and 122 under an 18-high heading, so 8 again. One number because the
+/// design uses one — `space/2`.
+pub const BETWEEN_APP_CELLS: u32 = 8;
+
+/// How tall a group's heading is — *Pinned*, *Other open apps*.
+///
+/// Measured: 44 × **18** and 104 × **18**, at 13/18.
+pub const AN_APP_GROUP_HEADING_IS_TALL: u32 = 18;
+
+/// The room either side of a name in a list the Dock opens.
+///
+/// Measured off the old `More apps / opens inward`: the rows sit at x 18 and
+/// the divider at x 17, in a panel 248 wide. Eighteen for both sides,
+/// symmetrised because the file's own two numbers differ by one.
+///
+/// **Still used, and no longer by *More apps*.** The window chooser is a list
+/// of rows and this is its inset; the overview is a grid and uses
+/// [`INSIDE_MORE_APPS`].
+pub const BESIDE_A_NAME_IN_A_LIST: u32 = 18;
+
+/// How thick a rule under a heading is.
 ///
 /// Measured: `Divider`, 214 × **1**.
 pub const A_DIVIDER: u32 = 1;
@@ -297,23 +577,41 @@ pub const AROUND_A_NAME_BESIDE_AN_ICON: u32 = 12;
 // instead, so a spacing unit cannot be changed into an inconsistent set and
 // land anywhere.
 
-/// The artwork fits inside the target with one spacing unit on every side.
+/// The artwork fits inside the target, centred, with the quiet it leaves.
 ///
-/// Eight logical pixels, which is also [`MARGIN`] and [`GAP`]: one unit, used
-/// three ways. If somebody changes any of the four, this names which.
+/// **This asserted `(ICON - GLYPH) / 2 == MARGIN && == GAP` until ADR 0101**,
+/// which was true while the artwork was 32 and was a **coincidence** rather
+/// than a system: one spacing unit happened to be what 48 less 32, halved,
+/// came to. The owner's ruling moved the artwork to 28 and the coincidence
+/// broke, which is the right way for a false relationship to be found.
+///
+/// What is held now is what is actually true: the artwork is smaller than the
+/// target, it is centred in it, and the quiet is even. The quiet's **value** is
+/// `AROUND_THE_ARTWORK`'s own business and is deliberately not compared to a
+/// spacing unit here.
 const _: () = assert!(
-    GLYPH < ICON && (ICON - GLYPH) / 2 == MARGIN && (ICON - GLYPH) / 2 == GAP,
-    "the owner's sizes no longer agree: the artwork must sit inside its target \
-     with one spacing unit of quiet on each side"
+    GLYPH < ICON && (ICON - GLYPH).is_multiple_of(2) && AROUND_THE_ARTWORK * 2 + GLYPH == ICON,
+    "the artwork no longer sits centred inside its target with even quiet on each side"
 );
 
-/// A Dock holding one application is 64 logical pixels thick.
+/// A Dock holding one application is 64 logical pixels thick./// A Dock holding one application is 64 logical pixels thick.
 ///
 /// The owner gave 64 as its own figure as well as the three it is built from,
 /// so both are held here and a change to a spacing unit says what it costs.
 const _: () = assert!(
     MARGIN + ICON + MARGIN == 64,
     "the Dock is no longer 64 logical pixels thick"
+);
+
+/// The initial is half its badge, and the badge is the artwork box.
+///
+/// Both halves of the owner's ruling of 2026-10-11, held at compile time: a
+/// change to [`GLYPH`] that forgot this would give a badge the initial no
+/// longer suits, and a badge that is not [`GLYPH`] would move the slot when a
+/// real icon arrived.
+const _: () = assert!(
+    AN_INITIAL_IS * 2 == GLYPH,
+    "the initial in a fallback badge is no longer half the badge it sits in"
 );
 
 /// A utility symbol is inside the owner's range and inside the target.

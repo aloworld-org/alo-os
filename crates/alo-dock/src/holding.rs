@@ -104,6 +104,33 @@ impl OnTheDock {
     pub const fn how_many_put_aside(&self) -> usize {
         self.put_aside
     }
+
+    /// Whether this application belongs on the Dock at all.
+    ///
+    /// The owner's membership rule of 2026-10-11 —
+    /// [ADR 0103](https://github.com/alo-os/alo-os/blob/main/docs/decisions/0103-the-dock-more-apps-and-the-minimised-panel-are-three-connected-surfaces.md).
+    /// **Pinned is unconditional**; unpinned needs **a window that is not
+    /// minimised**.
+    ///
+    /// # What this supersedes, and why it was never a rule anybody could check
+    ///
+    /// Until this method existed, [`Holding::showing`] gave an icon to every
+    /// application that had a window and asked nothing about that window's
+    /// state. So an unpinned application whose windows a person had all put
+    /// aside stayed on the bar, with its windows *also* each in the panel — the
+    /// same application answering in two places, one of which was supposed to be
+    /// the record of it being away. That behaviour was written down nowhere.
+    ///
+    /// # "Not minimised" is a fact about the window, never about the camera
+    ///
+    /// A window on another Place, outside the view, or behind another window is
+    /// **not** minimised and keeps its application here. This type cannot make
+    /// the other mistake, because it holds counts and has never seen a camera —
+    /// which is the architecture doing the work rather than a reviewer.
+    #[must_use]
+    pub const fn belongs_on_the_dock(&self) -> bool {
+        matches!(self.pinned, Pinned::ByThePerson) || self.windows > self.put_aside
+    }
 }
 
 /// The Dock's applications, in the order they are drawn.
@@ -149,8 +176,12 @@ impl Holding {
         self.pinned.iter()
     }
 
-    /// What the Dock shows, given what is open: pinned first, then the rest of
-    /// what is open, in the order it opened.
+    /// What the Dock shows: pinned first, then every **other application with a
+    /// window that is not minimised**, in the order it opened.
+    ///
+    /// The membership rule is [`OnTheDock::belongs_on_the_dock`], which is where
+    /// its reasons are. Pinned applications are not filtered, because pinned is
+    /// unconditional — a person who put something here meant it to stay.
     ///
     /// **Nothing here is ordered by use.** Where an icon sits is a fact a person
     /// learns once; which window a click goes to is a fact about this moment.
@@ -158,6 +189,56 @@ impl Holding {
     /// advantage for a marginal one.
     #[must_use]
     pub fn showing(&self, windows: &Windows) -> Vec<OnTheDock> {
+        let mut shown = self.in_the_overview(windows);
+
+        // **An unpinned application whose windows are all minimised is not
+        // here**, and its windows are each in the panel at the edge.
+        // [`OnTheDock::belongs_on_the_dock`] carries the rule and the reasons.
+        //
+        // Applied to **every** row, not to the unpinned ones alone. Measured
+        // 2026-10-11: with the filter on the unpinned rows only, deleting the
+        // pinned clause from `belongs_on_the_dock` left all 219 tests passing —
+        // the clause was correct, documented, and dead. A rule stated in one
+        // place and applied to half its subjects survives every test written
+        // against the behaviour, because the behaviour is what it gets right.
+        //
+        // Order is untouched: a filter keeps what it keeps where it was, so the
+        // pinned section and the opening order both survive it.
+        shown.retain(OnTheDock::belongs_on_the_dock);
+        shown
+    }
+
+    /// **Everything *More apps* shows**: every pinned application in its saved
+    /// order, then every other application with a window, in opening order.
+    ///
+    /// The owner's ruling of 2026-10-11, ADR 0103: *pinned applications first,
+    /// in their saved order; other currently open applications after them,
+    /// **including applications whose windows are all minimised**; each
+    /// application exactly once.*
+    ///
+    /// # It is the Dock before the membership rule, and that is the point
+    ///
+    /// [`Self::showing`] is this list with
+    /// [`OnTheDock::belongs_on_the_dock`] applied. Written as two walks they
+    /// would be two answers to *which applications does this person have*, and
+    /// the one place they are guaranteed to differ — an unpinned application
+    /// whose windows are all minimised — is the exact case the ruling says must
+    /// appear here and not there. A second walk would get that right on the day
+    /// and drift afterwards.
+    ///
+    /// So the relationship is a line of code rather than a convention: **More
+    /// apps is everything; the Dock is everything that belongs on it.**
+    ///
+    /// # What is not here
+    ///
+    /// Applications that are merely installed. The ruling is explicit —
+    /// *installed applications that are neither pinned nor open do not belong
+    /// in this grid; they remain available through Apps or the alo Bar* — and
+    /// this type could not list them anyway: it is handed what is pinned and
+    /// what is open and has never seen an installed-application list. **Absent
+    /// by construction rather than by a filter somebody has to remember.**
+    #[must_use]
+    pub fn in_the_overview(&self, windows: &Windows) -> Vec<OnTheDock> {
         let mut shown: Vec<OnTheDock> = self
             .pinned
             .iter()
@@ -603,3 +684,7 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "holding_membership_tests.rs"]
+mod membership_tests;

@@ -373,10 +373,49 @@ fn a_process_that_began_between_readings_has_no_rate_yet() {
 fn a_number_the_kernel_does_not_keep_is_not_said_and_agrees_with_the_file() {
     let reading = Reading::now().unwrap();
     let mut not_said = 0;
+    // **How many rows were really compared, and how many were let through.**
+    //
+    // Two `continue`s stand above the comparison — a process that ended and a
+    // process that is ending — and a guard that skipped every row would leave
+    // this test passing having checked nothing. That is the fault `CLAUDE.md`
+    // names: *what would have to be true for this to pass while the product is
+    // broken.* The answer here is *every process was skipped*, so the count is
+    // asserted below and the skips are counted beside it.
+    let mut compared = 0;
+    let mut ending = 0;
     for process in reading.processes() {
         let Ok(status) = std::fs::read_to_string(process.memory.from().file()) else {
             continue; // ended since the reading; nothing to compare against
         };
+        // **And one that is ending is the same case.** A process that exited
+        // between the reading and this re-read is often still in the table as a
+        // zombie: its `status` file reads perfectly and has **no `VmRSS`**,
+        // because the kernel has already taken its memory back. Comparing a
+        // reading taken while it was alive against a file written after it died
+        // is comparing two different moments, which is not what this test is
+        // about.
+        //
+        // Without this the test asserts that the machine was quiet. It was not
+        // mine and it is not reproducible by hand — nine runs in a row pass,
+        // quiet and under load — but it refused a full nine-gate run on
+        // 2026-10-12 with `pid 1128895`, a sibling of the test process's own
+        // 1128932, which is what a gate running thousands of short-lived test
+        // binaries beside it looks like. `docs/autonomy/SHARED_MAIN.md` carries
+        // the family: three unrelated tests assumed they were alone on the
+        // machine, and each failed a gate for a reason that had nothing to do
+        // with what it tests.
+        //
+        // The guard is narrow on purpose: only a process the kernel now calls
+        // `Z` is skipped, so a live process whose reading disagrees with its
+        // file still fails, which is the whole of what this test is for.
+        if status
+            .lines()
+            .any(|line| line.starts_with("State:") && line.contains('Z'))
+        {
+            ending += 1;
+            continue;
+        }
+        compared += 1;
         match &process.memory {
             Number::Known(_) => assert!(
                 kilobytes_on(&status, "VmRSS").is_some(),
@@ -406,4 +445,15 @@ fn a_number_the_kernel_does_not_keep_is_not_said_and_agrees_with_the_file() {
         );
         assert!(not_said > 0);
     }
+    // **This machine is running more than a handful of processes**, so a run
+    // that compared almost nothing compared the wrong thing. Twenty is well
+    // under what any machine this suite runs on has — the gate's own VM carries
+    // over a hundred — and well over what a broken guard would leave.
+    assert!(
+        compared > 20,
+        "only {compared} of {} processes were compared, and {ending} were skipped as ending: \
+         a guard above this loop is eating rows rather than the handful that are really \
+         going away",
+        reading.processes().len()
+    );
 }

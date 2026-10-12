@@ -114,16 +114,50 @@ pub(crate) fn picture(
         look,
         place.room().across_and_along(),
         &[],
+        // **And nothing in *More apps* either**, for the same reason: this
+        // picture's subject is where the screens are, not what is on them. The
+        // list is closed below in any case, so an overview here would be built
+        // and thrown away.
+        &[],
         // **A preview of an arrangement, where nothing is open and so
         // nothing can have overflowed.** Not a placeholder: a Dock holding
         // nothing has no control to open a list with, and `picture` draws
         // none for an empty overflow whatever this says.
-        (false, ""),
+        // **A preview of an arrangement says nothing.** It is a small picture of
+        // several screens, drawn to show where they are relative to each other;
+        // the words on a Dock are for the Dock a person uses, and this is not
+        // it. Empty rather than invented, for `crate::the_docks_words`' reason.
+        (
+            &crate::what_the_dock_has_open::NOTHING,
+            &crate::the_docks_words::TheDocksWords::default(),
+        ),
         fonts,
     )?;
     let warming = place.warming();
     for solid in &mut drawn.solids {
         solid.colour = warm(solid.colour, warming);
+    }
+    // **And the surface, which is where the Dock's own colour is since
+    // 2026-10-11.** It was only the solids until then, and the solids were the
+    // band and the accent; now they are neither, so a night light that warmed
+    // only them would warm nothing a person can see. Found by
+    // `night_light_warms_the_background_and_the_dock_on_every_screen`, which
+    // read the Dock's ground as pure white on a warmed screen.
+    //
+    // **The alpha is not touched.** Warming is about the light a screen emits,
+    // and a shadow's transparency is not a colour.
+    if let Some(surface) = drawn.surface.as_mut() {
+        let (pixels, _) = surface.pixels.as_chunks_mut::<4>();
+        for pixel in pixels {
+            let mut was = [0_u8; 3];
+            if let Some(colour) = pixel.get(..3) {
+                was.copy_from_slice(colour);
+            }
+            let now = warm(was, warming);
+            if let Some(into) = pixel.get_mut(..3) {
+                into.copy_from_slice(&now);
+            }
+        }
     }
     let background =
         ScreenBackground::prepare(place.wearing().background(), warming, place.room())?;

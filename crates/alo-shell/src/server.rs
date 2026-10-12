@@ -114,6 +114,18 @@ pub struct Server {
     /// a band that has not been measured on this display.
     pub(crate) dock_as_drawn:
         std::collections::BTreeMap<String, crate::where_the_dock_is::TheDocksPlaces>,
+    /// Where each display's **open surface** was drawn, when one was.
+    ///
+    /// Beside `dock_as_drawn` and not inside it, because the two have different
+    /// lifetimes: a band is drawn on every frame and a popover only while it is
+    /// open. A field inside the band's record would have to carry an `Option`
+    /// that every reader checked anyway, and an entry left behind by a surface
+    /// that has closed is a press taken by something no longer on the screen.
+    ///
+    /// **Cleared by a draw with nothing open**, which is how it cannot go
+    /// stale: the draw that closes a surface is the draw that removes this.
+    pub(crate) the_docks_surface_as_drawn:
+        std::collections::BTreeMap<String, crate::where_the_docks_surface_is::TheSurfaceAsDrawn>,
     /// Whether the list of applications the bar had no room for is open.
     ///
     /// **One home, and it is here rather than on the desktop**, because the
@@ -123,7 +135,7 @@ pub struct Server {
     /// It is **not** per display. The overflow is a list a person opened, not a
     /// property of a screen, and two displays showing two open lists for one
     /// press would be two answers to one question.
-    pub(crate) the_overflow_is_open: bool,
+    pub(crate) the_dock_was_asked_for: crate::what_the_dock_has_open::WhatTheDockWasAskedFor,
     /// Windows the **person** has asked to put aside, not yet acted on.
     ///
     /// # Why a request rather than the act
@@ -144,6 +156,20 @@ pub struct Server {
     /// only the latest would silently drop a window a person asked to put away, which is the
     /// one outcome this whole surface exists to prevent.
     pub(crate) asked_to_put_aside: Vec<WlSurface>,
+    /// What a person pressed on a window's edge, not yet carried out.
+    ///
+    /// §6 of `docs/design/the-external-window-edge.md`. Recorded here and met
+    /// in `crate::direct_desktop` for `asked_to_put_aside`'s reason above:
+    /// Minimise needs the live `Panel`, and input has no desktop in scope.
+    /// Close and Maximise join it rather than acting in the press handler
+    /// because their mechanisms answer with their own error types, and an input
+    /// path that returned `InputError` for a refused close would be
+    /// relabelling somebody else's failure.
+    ///
+    /// **A list, like the one above, because two presses in one batch are two
+    /// windows** — and because a person may press Close on one window and
+    /// Minimise on another before either frame is drawn.
+    pub(crate) asked_on_an_edge: Vec<(WlSurface, crate::window_edge::OnTheEdge)>,
     /// Whether each window's external edge is revealed, one machine per window.
     ///
     /// §5 of `docs/design/the-external-window-edge.md`. The edge is **per
@@ -289,9 +315,11 @@ impl Server {
             // empty picture — see the field's own note.
             panel_as_drawn: None,
             dock_as_drawn: std::collections::BTreeMap::new(),
-            the_overflow_is_open: false,
+            the_docks_surface_as_drawn: std::collections::BTreeMap::new(),
+            the_dock_was_asked_for: crate::what_the_dock_has_open::WhatTheDockWasAskedFor::Nothing,
             // Nobody has asked for anything yet.
             asked_to_put_aside: Vec::new(),
+            asked_on_an_edge: Vec::new(),
             edges_revealed: Vec::new(),
             keyboard_on_edges: Vec::new(),
             asked_to_bring_back: Vec::new(),

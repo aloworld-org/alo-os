@@ -51,6 +51,66 @@
 use alo_dock::{HowItSits, Patch, Spot, Window, WindowId, Windows};
 
 impl crate::Server {
+    /// Every window the Dock knows of, as `(its id, its surface, how it sits)`.
+    ///
+    /// **One iteration, so that two questions cannot answer differently.**
+    /// [`Self::the_windows_the_dock_sees`] turns these into `alo_dock::Window`s
+    /// and [`Self::the_window_numbered`] turns an id back into a surface, and
+    /// both are wrong together or right together. Written out twice they would
+    /// be two places deciding what a `WindowId` means — and a lookup that
+    /// disagreed with the builder would focus **somebody else's window**, which
+    /// is the worst failure this seam has available to it.
+    ///
+    /// Mapped first, then minimised. `mapped_surfaces` is the visible renderer
+    /// and input list and excludes minimised roots, so the two are disjoint.
+    ///
+    /// A surface past `u64::MAX` ends the iteration rather than wrapping. It
+    /// cannot happen and saying what would is cheaper than arguing that it
+    /// cannot.
+    fn the_windows_and_what_they_are(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            WindowId,
+            &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
+            HowItSits,
+        ),
+    > {
+        let on_the_canvas = self
+            .mapped_surfaces()
+            .map(|surface| (surface, HowItSits::OnTheCanvas));
+        let put_aside = self
+            .minimized_surfaces()
+            .map(|surface| (surface, HowItSits::PutAside));
+        on_the_canvas
+            .chain(put_aside)
+            .enumerate()
+            .map_while(|(number, (surface, sits))| {
+                u64::try_from(number)
+                    .ok()
+                    .map(|number| (WindowId::numbered(number), surface, sits))
+            })
+    }
+
+    /// The surface this `WindowId` names, if the Dock still knows of it.
+    ///
+    /// **`None` is an ordinary answer**, not a failure: a window can close
+    /// between the frame that drew the Dock and the press that acts on it, and
+    /// ids are this list's own indices, so a window closing renumbers the rest.
+    /// Acting on a stale id is exactly the case this returns `None` for rather
+    /// than quietly acting on whichever window inherited the number — and the
+    /// id is re-looked-up at the moment of the press for that reason, instead
+    /// of a surface being remembered from the draw.
+    #[must_use]
+    pub fn the_window_numbered(
+        &self,
+        id: WindowId,
+    ) -> Option<&smithay::reexports::wayland_server::protocol::wl_surface::WlSurface> {
+        self.the_windows_and_what_they_are()
+            .find(|(numbered, _, _)| *numbered == id)
+            .map(|(_, surface, _)| surface)
+    }
+
     /// Every mapped window, as the Dock understands windows.
     ///
     /// One [`alo_dock::Window`] per mapped surface, in `mapped_surfaces`'
@@ -65,10 +125,37 @@ impl crate::Server {
     /// *substitute a fabricated app identity*. Such a window has no icon to
     /// appear under, which `Holding::showing` already knows.
     ///
-    /// **Minimised windows are not here**, because `mapped_surfaces` excludes
-    /// them: a window a person put aside is not a window on the canvas. The
-    /// Dock learns about those through `alo-put-aside`, which is a different
-    /// road and not this one.
+    /// **Minimised windows are here, marked as minimised.** `mapped_surfaces`
+    /// excludes them — it is the visible renderer and input list — so
+    /// `minimized_surfaces` is read after it and its windows carry
+    /// [`HowItSits::PutAside`].
+    ///
+    /// This sentence used to say the opposite: *minimised windows are not here,
+    /// because `mapped_surfaces` excludes them … the Dock learns about those
+    /// through `alo-put-aside`, which is a different road and not this one.*
+    /// That was a true description of the code and it made three answers wrong,
+    /// in a way that looked right:
+    ///
+    /// - **`how_many_put_aside` was always zero**, on every entry, on every
+    ///   machine. `alo_dock::announcing` reads it for what a screen reader is
+    ///   told, so a person with three windows put away was told about none of
+    ///   them.
+    /// - **`is_open` was false for an application whose windows were all
+    ///   minimised**, so it drew no running indicator. The owner's ruling of
+    ///   2026-10-11 is explicit that *open, including minimised windows* gets
+    ///   one.
+    /// - **The membership rule could not fire.** An unpinned application with
+    ///   only minimised windows was already absent from the Dock — but by
+    ///   *exclusion*, not by decision, and `OnTheDock::belongs_on_the_dock`
+    ///   never saw it. The right answer for the wrong reason, which stops being
+    ///   the right answer the moment the rule changes.
+    ///
+    /// **The order is unaffected for every application that has an icon.** The
+    /// minimised windows are appended, so an application whose windows are all
+    /// minimised would sort last — and that application is not on the Dock
+    /// unless it is pinned, and a pinned one sits in the pinned section before
+    /// any of this. An application with one window open and one put aside takes
+    /// its place from the open one, which is where it already was.
     ///
     /// See this file's own header for what the resulting order does and does
     /// not mean.
@@ -90,16 +177,24 @@ impl crate::Server {
         let Ok(somewhere) = Patch::of(Spot::at(0, 0), 1, 1) else {
             return windows;
         };
-        for (number, surface) in self.mapped_surfaces().enumerate() {
+        for (number, surface, sits) in self.the_windows_and_what_they_are() {
             // This list's own index, not anything a client chose: a `WindowId`
             // only has to tell two windows apart, and a client cannot be
             // trusted to supply one that does.
-            let Ok(number) = u64::try_from(number) else {
-                break;
-            };
+            //
+            // **And it is stable only within one frame**, which was already
+            // true and matters more now that there are two lists: minimising a
+            // window moves it from the first to the second and renumbers
+            // everything after it. Nothing today carries an id between frames —
+            // `Holding::showing` groups and counts — so this is correct and
+            // cheap. **The window picker will need an id that outlives a
+            // frame**, because *choose this window* is a sentence about one
+            // window said now and acted on later, and that is task 3 of
+            // `docs/autonomy/the-dock-more-apps-and-the-minimised-panel.md`
+            // rather than something to invent here.
             let called = self.the_name_of(surface);
             windows.opened(Window::of(
-                WindowId::numbered(number),
+                number,
                 self.the_application_of(surface),
                 // The application's own string where it gave one, and an empty
                 // name otherwise. **Not a translated word**: `FrameName`
@@ -109,7 +204,7 @@ impl crate::Server {
                 // be a translated string in a field that holds client text.
                 called.its_own_words().unwrap_or_default(),
                 somewhere,
-                HowItSits::OnTheCanvas,
+                sits,
             ));
         }
         windows
@@ -138,6 +233,22 @@ impl crate::Server {
     #[must_use]
     pub fn what_the_dock_holds(&self, pinned: &alo_dock::Holding) -> Vec<alo_dock::OnTheDock> {
         pinned.showing(&self.the_windows_the_dock_sees())
+    }
+
+    /// The entries *More apps* shows, in the order it shows them.
+    ///
+    /// **A longer list than [`Self::what_the_dock_holds`], and not derivable
+    /// from it.** An unpinned application whose windows are all minimised is in
+    /// this one and not that one — the owner's ruling of 2026-10-11, ADR 0103 —
+    /// so the applications that differ are precisely the ones the Dock's list
+    /// does not contain.
+    ///
+    /// `alo_dock::Holding::in_the_overview` is that list, and
+    /// [`Self::what_the_dock_holds`] is it with the membership rule applied, so
+    /// the two are one walk and cannot come to disagree.
+    #[must_use]
+    pub fn what_more_apps_holds(&self, pinned: &alo_dock::Holding) -> Vec<alo_dock::OnTheDock> {
+        pinned.in_the_overview(&self.the_windows_the_dock_sees())
     }
 }
 

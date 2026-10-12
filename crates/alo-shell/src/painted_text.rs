@@ -176,16 +176,12 @@ pub(crate) fn centred(
             .ceil() as i32;
         (height, drawn)
     };
-    // Half the room left over, and never negative: a glyph wider than its box
-    // starts at the box's own edge rather than before it, which keeps it inside
-    // the icon even when it does not fit.
-    let shift = ((width - drawn) / 2).max(0);
-    let mut shaped = inked(fonts, &buffer, (width, height.max(1)), shift, ground, ink);
+    let mut shaped = inked(fonts, &buffer, (width, height.max(1)), 0, ground, ink);
     shaped.width = drawn.clamp(0, width);
     trimmed_to_its_ink(shaped, ground)
 }
 
-/// The same box with its blank rows cut off the top and the bottom.
+/// The same box cut down to the ink actually in it, on **both** axes.
 ///
 /// **So that centring the box centres the letter.** A line box is not a letter:
 /// it holds the ascent, the descent and the leading of whatever the font would
@@ -193,11 +189,20 @@ pub(crate) fn centred(
 /// and the letter rides high — visibly so, which is what the Dock's first
 /// drawing showed.
 ///
+/// **It cut rows only until 2026-10-11, and the columns were the worse half.**
+/// The box kept the full width it was shaped in — a Dock slot, forty-eight —
+/// and that box is **opaque**, so drawing one letter painted a forty-eight-wide
+/// strip of its ground across whatever was behind it. Over a twenty-eight
+/// circle that leaves a crescent above and a crescent below, which is exactly
+/// what the owner saw and said was wrong. A letter's box is now the letter.
+///
 /// Trimming is better than asking the font for its cap height because it is
 /// **exact for the glyph actually drawn**: a Devanagari letter with a matra
 /// above it, an emoji that fills the line, and a Latin capital all have
 /// different ink, and this centres what each of them really is rather than what
-/// a Latin capital would be.
+/// a Latin capital would be. The same argument applies sideways — `F`, `M` and
+/// `B` are three different widths, and only their own ink says where each one's
+/// middle is.
 ///
 /// A box with no ink in it comes back unchanged. There is nothing to centre and
 /// a height of zero would place nothing at all.
@@ -206,28 +211,32 @@ fn trimmed_to_its_ink(shaped: Shaped, ground: [u8; 3]) -> Shaped {
     if across <= 0 {
         return shaped;
     }
-    let inked_rows: Vec<usize> = shaped
-        .pixels
-        .chunks(across as usize)
-        .enumerate()
-        .filter(|(_, row)| row.iter().any(|pixel| *pixel != ground))
-        .map(|(which, _)| which)
-        .collect();
-    let (Some(first), Some(last)) = (inked_rows.first(), inked_rows.last()) else {
+    let rows: Vec<&[[u8; 3]]> = shaped.pixels.chunks(across as usize).collect();
+    let inked = |pixel: &[u8; 3]| *pixel != ground;
+
+    let top = rows.iter().position(|row| row.iter().any(inked));
+    let bottom = rows.iter().rposition(|row| row.iter().any(inked));
+    let left = (0..across as usize).find(|&x| rows.iter().any(|row| row.get(x).is_some_and(inked)));
+    let right =
+        (0..across as usize).rfind(|&x| rows.iter().any(|row| row.get(x).is_some_and(inked)));
+    let (Some(top), Some(bottom), Some(left), Some(right)) = (top, bottom, left, right) else {
         return shaped;
     };
-    let from = first.saturating_mul(across as usize);
-    let to = last.saturating_add(1).saturating_mul(across as usize);
-    let Some(kept) = shaped.pixels.get(from..to.min(shaped.pixels.len())) else {
-        return shaped;
-    };
+
+    let width = right.saturating_sub(left).saturating_add(1);
+    let mut kept = Vec::with_capacity(width * (bottom - top + 1));
+    for row in rows.get(top..=bottom).unwrap_or_default() {
+        for x in left..=right {
+            kept.push(*row.get(x).unwrap_or(&ground));
+        }
+    }
     let height =
-        i32::try_from(last.saturating_sub(*first).saturating_add(1)).unwrap_or(shaped.height);
+        i32::try_from(bottom.saturating_sub(top).saturating_add(1)).unwrap_or(shaped.height);
     Shaped {
-        width_of_box: across,
-        width: shaped.width,
+        width_of_box: i32::try_from(width).unwrap_or(shaped.width_of_box),
+        width: i32::try_from(width).unwrap_or(shaped.width),
         height,
-        pixels: kept.to_vec(),
+        pixels: kept,
     }
 }
 

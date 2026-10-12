@@ -157,6 +157,64 @@ short — **and a reader who finds only one of the two will build a restore that
 defensible and is not what was asked for.** `the-alo-dock.md` is another lane's surface,
 so this note does not edit it.
 
+## The measurements, normalised, and the one that is not a formula
+
+Settled 2026-10-11 by the owner,
+[ADR 0103](../decisions/0103-the-dock-more-apps-and-the-minimised-panel-are-three-connected-surfaces.md).
+Every figure is **logical** and is converted at each display's scale; none of
+them is a pixel constant reaching a framebuffer.
+
+| what | measure | derivation, where there is one |
+|---|---|---|
+| expanded reference panel | 244 × 604 | measured, `337:21508` |
+| preview card | 216 × 106 | measured, 10 between cards |
+| collapsed target | 48 × 48 | `alo_dock::measures::ICON` |
+| collapsed gaps | 8 between, 8 outside | `alo_dock::measures::MARGIN` |
+| collapsed rail height | `64 + 56 × count` | `MARGIN + ICON + GAP` and `ICON + GAP` |
+| shared-edge handle | one 48 × 48 control centred in 64 × 64 | `ICON` inside `ICON + 2 × MARGIN` |
+
+The rail's formula and its derivation were already here and already built; what
+is new is the first two rows and the two rules below.
+
+**The empty presentation is not `64 + 56 × 0`.** It has a design of its own, and
+inferring it from the formula would be the familiar fault of letting a rule that
+fits the cases somebody measured decide a case nobody did. `337:23323` is the
+frame.
+
+**The handle holds no overflowed restore controls.** It is one expansion
+control, and expanding it opens the designed inward preview lane — not a longer
+rail with the leftovers pushed into the handle.
+
+**The rail scrolls before it runs off the display.** `64 + 56 × count` grows
+without bound and a screen does not: past the available height the list scrolls
+inside the panel and **the expansion control stays put**, which is the same
+rule the popover has for its search field and for the same reason.
+
+## What a card shows, and what it must never do
+
+Each expanded card: the **window's title**, its **application identity**, a
+**recognisable preview** where that is permitted, and the **designed privacy
+placeholder** where it is not.
+
+**Two windows of one application are two cards.** Never one icon with a count
+behind it — `Preview`'s own header has said *a preview is one window, never one
+application* since it was written, and `the_panel_holds_windows_and_not_applications`
+is the test. Selecting a card restores **that** window at its saved geometry and
+Place, travels to it where it must, and takes that item out of the panel. It
+never restores the application's other windows with it.
+
+**The panel is not a launcher and not an overflow.** An application never
+arrives here because the Dock ran out of room; ADR 0102 settled that and ADR
+0103 leaves it standing.
+
+## Full screen and the keyboard
+
+The approved edge-reveal behaviour stands, with a **continuous pointer path**
+onto the panel — the path a pointer takes from the edge to a card is inside the
+panel's region the whole way, which is the fault `revealing` exists to prevent.
+**Keyboard access does not require hovering**, so the reveal is not the only
+road in.
+
 ## What is missing
 
 - **A Place.** A window knows its patch and not which Place it belongs to. The

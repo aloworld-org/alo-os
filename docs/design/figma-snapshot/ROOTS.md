@@ -17,6 +17,8 @@ refreshed  2026-10-07, by the development PC at the owner's instruction
 |---|---|---|---|---|
 | `0:1` | canvas | — | 00 — Cover | yes, `0-1.xml` |
 | `70:28` | canvas | — | 03 — alo OS · Living canvas | yes, `70-28.xml` |
+| `406:26881` | frame | 2824×576 | More apps / Popover — six states | yes, `406-26881.xml` |
+| `408:28177` | frame | 1440×960 | 01 · More apps / Bottom · With minimised windows | **no**, read 2026-10-11 for placement only |
 | `70:29` | frame | 1440×960 | 01 · Your canvas | inside `70-28.xml` |
 | `351:25693` | section | 4680×7400 | Dock edges · v0.01 specification | inside `70-28.xml` |
 | `8:2` | frame | 1440×1266 | Foundations — alo OS | **no** |

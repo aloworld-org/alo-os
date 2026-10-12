@@ -53,8 +53,8 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
             {
                 let dock = Dock::shipped();
                 let frame = |egress| DesktopFrame {
-                    the_overflow_is_open: false,
-                    the_overflows_heading: "",
+                    the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
+                    the_docks_words: crate::desktop_testing::no_words(),
                     in_use: &[],
                     notifications: &[],
                     capturing: None,
@@ -68,6 +68,7 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                     filling_the_screen: false,
                     display_scale: 100,
                     on_the_dock: &[],
+                    in_more_apps: &[],
                     dock: &dock,
                     look: noon_look(&an_appearance(), reading),
                     strings: &strings,
@@ -79,7 +80,7 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                 let pictures =
                     frame_pictures(frame(&quiet), None, None, &mut labels, size).unwrap();
                 assert!(pictures.status.is_empty());
-                assert!(!pictures.desktop.dock.as_ref().unwrap().solids.is_empty());
+                assert!(pictures.desktop.dock.as_ref().unwrap().surface.is_some());
 
                 let pictures = frame_pictures(frame(&lit), None, None, &mut labels, size).unwrap();
                 let dock_drawn = &pictures.desktop.dock;
@@ -172,8 +173,8 @@ fn a_desktop_frame_whose_indicator_was_never_told_is_refused_whole() {
     let filling = FillingWindow::closed();
     let never_told = EgressStatus::on_an_output();
     let frame = DesktopFrame {
-        the_overflow_is_open: false,
-        the_overflows_heading: "",
+        the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
+        the_docks_words: crate::desktop_testing::no_words(),
         in_use: &[],
         notifications: &[],
         capturing: None,
@@ -187,6 +188,7 @@ fn a_desktop_frame_whose_indicator_was_never_told_is_refused_whole() {
         filling_the_screen: false,
         display_scale: 100,
         on_the_dock: &[],
+        in_more_apps: &[],
         dock: &dock,
         look: noon_look(&an_appearance(), Direction::LeftToRight),
         strings: &strings,
@@ -221,8 +223,8 @@ fn the_record_window_sits_in_the_desktop_frame() {
         RecordOpened::Shown
     );
     let desktop = DesktopFrame {
-        the_overflow_is_open: false,
-        the_overflows_heading: "",
+        the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
+        the_docks_words: crate::desktop_testing::no_words(),
         in_use: &[],
         notifications: &[],
         capturing: None,
@@ -236,6 +238,7 @@ fn the_record_window_sits_in_the_desktop_frame() {
         filling_the_screen: false,
         display_scale: 100,
         on_the_dock: &[],
+        in_more_apps: &[],
         dock: &dock,
         look: noon_look(&an_appearance(), Direction::LeftToRight),
         strings: &strings,
@@ -251,7 +254,7 @@ fn the_record_window_sits_in_the_desktop_frame() {
     let pictures = frame_pictures(desktop, Some(record), None, &mut labels, (1920, 1080)).unwrap();
     assert!(!pictures.record.as_ref().unwrap().entries.is_empty());
     assert!(pictures.approval.is_none());
-    assert!(!pictures.desktop.dock.as_ref().unwrap().solids.is_empty());
+    assert!(pictures.desktop.dock.as_ref().unwrap().surface.is_some());
 }
 
 /// **A frame carries the panel's reveal state through to the picture**, rather
@@ -282,8 +285,8 @@ fn the_frame_carries_whether_the_panel_is_revealed() {
         let mut labels = WindowControlLabels::new().unwrap();
         frame_pictures(
             DesktopFrame {
-                the_overflow_is_open: false,
-                the_overflows_heading: "",
+                the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
+                the_docks_words: crate::desktop_testing::no_words(),
                 in_use: &[],
                 notifications: &[],
                 capturing: None,
@@ -295,6 +298,7 @@ fn the_frame_carries_whether_the_panel_is_revealed() {
                 filling_the_screen: false,
                 display_scale: 100,
                 on_the_dock: &[],
+                in_more_apps: &[],
                 dock: &dock,
                 look: noon_look(&an_appearance(), Direction::LeftToRight),
                 strings: &strings,

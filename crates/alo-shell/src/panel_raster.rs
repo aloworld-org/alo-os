@@ -133,6 +133,58 @@ pub(crate) struct PanelPicture {
     pub(crate) solids: Vec<Solid>,
 }
 
+/// The column the put-aside panel owns on a display of `size`, or `None` when
+/// the display is too narrow to hold one.
+///
+/// **Two surfaces need this rectangle and neither draws the other.** The panel
+/// reserves it so a pointer in it belongs to the panel; the Dock's overflow
+/// list has to open *clear* of it, because the list is a popover anchored to a
+/// control on the bar and the panel is a fixed column at an edge. On
+/// 2026-10-11 the list computed its own position from the bar and the display
+/// alone, and on a bottom Dock wide enough to overflow its right-hand end is
+/// near the display's right-hand end — so the popover opened straight over the
+/// panel's column. Nothing was wrong with either surface's own geometry.
+///
+/// So the figure lives here once rather than in both files. `None` rather than
+/// a zero-width rectangle for the reason `crate::desktop_raster` gives
+/// elsewhere: *there is no column* and *the column is empty* are different
+/// answers, and only the first is a refusal.
+///
+/// It takes no `Panel`, because the column does not depend on what is in it —
+/// an empty panel keeps its column, which is the ruling [`picture`] records.
+#[must_use]
+pub(crate) fn the_column_it_reserves(
+    look: DesktopLook,
+    size: (i32, i32),
+    edge: WhichEdge,
+) -> Option<Rectangle<i32, Physical>> {
+    let (width, height) = size;
+    if width > LARGEST_SIDE || height > LARGEST_SIDE || width <= 0 || height <= 0 {
+        return None;
+    }
+    let measure = look.measure();
+    let icon = px(measure, ICON).ok()?;
+    let margin = px(measure, MARGIN).ok()?;
+    let clearance = margin.saturating_mul(3);
+
+    let rail_width = icon.saturating_add(margin.saturating_mul(2));
+    let reserved_width = rail_width.saturating_add(clearance.saturating_mul(2));
+    if reserved_width >= width {
+        return None;
+    }
+
+    // Which side the column sits on is the only place the edge is read, and it
+    // is read as a position rather than as a name.
+    let reserved_x = match edge {
+        WhichEdge::Right => width.saturating_sub(reserved_width),
+        WhichEdge::Left => 0,
+    };
+    Some(Rectangle::new(
+        Point::from((reserved_x, 0)),
+        Size::from((reserved_width, height)),
+    ))
+}
+
 /// Lay `panel` out on a display of `size` and rasterise it.
 ///
 /// An empty panel has a rail of no height and no slots. **That is the true
@@ -165,21 +217,13 @@ pub(crate) fn picture(
     let clearance = margin.saturating_mul(3);
 
     let rail_width = icon.saturating_add(margin.saturating_mul(2));
-    let reserved_width = rail_width.saturating_add(clearance.saturating_mul(2));
-    if reserved_width >= width {
+    // **Asked, not worked out here.** The column is also what the Dock's
+    // overflow list has to open clear of, and two files deriving it would be
+    // two files that agree today. [`the_column_it_reserves`] is the one answer
+    // both read.
+    let Some(reserved) = the_column_it_reserves(look, size, edge) else {
         return Err(RenderError::DesktopScene);
-    }
-
-    // Which side the column sits on is the only place the edge is read, and it
-    // is read as a position rather than as a name.
-    let reserved_x = match edge {
-        WhichEdge::Right => width.saturating_sub(reserved_width),
-        WhichEdge::Left => 0,
     };
-    let reserved = Rectangle::new(
-        Point::from((reserved_x, 0)),
-        Size::from((reserved_width, height)),
-    );
 
     let holding = i32::try_from(panel.holding()).map_err(|_| RenderError::DesktopScene)?;
     // **A concealed panel draws no rail and keeps its column.** The same picture an empty

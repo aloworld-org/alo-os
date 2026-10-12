@@ -508,6 +508,21 @@ impl LoopInput for Desk<'_> {
                         server, update, extent, strings,
                     );
                 }
+                // **Escape closes what the Dock has open**, and only then.
+                // Asked after Settings because Settings is in front of the
+                // Dock when both are up: a person pressing Escape at a
+                // Settings window is cancelling that, whatever the Dock is
+                // doing behind it.
+                //
+                // The question is false unless a Dock surface is open, so on
+                // an ordinary frame this costs one `matches!` and the keys go
+                // where they went before this existed.
+                if server.the_dock_is_taking_the_keys() {
+                    return crate::a_key_reaches_the_docks_surfaces::a_key_reaches_the_docks_surfaces(
+                        server, update, extent,
+                    )
+                    .map_err(std::io::Error::other);
+                }
                 server
                     .libinput_update(update, extent)
                     .map_err(std::io::Error::other)
@@ -528,6 +543,27 @@ impl LoopInput for Desk<'_> {
         // and the window's own controls record the ask on the server, because neither has a
         // desktop in scope; this is the one place that holds both. See
         // `Server::asked_to_put_aside`.
+        // **What was pressed on a window's edge, met before the put-aside asks
+        // rather than after.** An edge's Minimise joins `asked_to_put_aside`,
+        // which the next line is what performs — so this has to run first or a
+        // person's press would wait a whole frame for no reason. §6 of
+        // `docs/design/the-external-window-edge.md`.
+        for (_, does) in server.meet_what_was_pressed_on_an_edge() {
+            // **Said rather than dropped.** The one action on the edge with no
+            // mechanism behind it is the window menu: `OnTheEdge::Menu` is
+            // there because an application that draws its own header keeps
+            // movement and the menu, and nothing in this crate opens one. A
+            // press that reached here and vanished is what a person reports as
+            // *the button does nothing*, so the machine says so.
+            //
+            // Once per press and not once per frame, because
+            // `meet_what_was_pressed_on_an_edge` drains its list — a person has
+            // to press it again to see this again.
+            eprintln!(
+                "alo-shell: {does:?} was pressed on a window's edge and this machine has no \
+                 mechanism for it yet"
+            );
+        }
         server.put_aside_what_was_asked_for(self.desktop.the_panel());
         // **And the other direction, met in the same place and for the same reason.** A click
         // on a preview was claimed where input happens, because whether the panel owns a click
@@ -594,27 +630,37 @@ impl LoopInput for Desk<'_> {
         // it has to outlive the frame; built inside `what_only_the_server_knows`
         // it would die at that function's end.
         let on_the_dock = server.what_the_dock_holds(&alo_dock::Holding::nothing());
+        // **And the longer list *More apps* shows**, for `on_the_dock`'s reason
+        // exactly: the frame borrows it, so it has to outlive the frame.
+        let in_more_apps = server.what_more_apps_holds(&alo_dock::Holding::nothing());
+        // **A local, for `on_the_dock`'s reason exactly.** The frame borrows
+        // which of the Dock's surfaces is open, and the borrow must not be of
+        // the `Server` — this lane calls `&mut server` again further down, to
+        // record where the Dock and the fixed controls were drawn.
+        let the_dock_has_open = server.what_the_dock_has_open();
         // **Said here because the drawing path may not word a sentence**, and a
         // local for `windows`' reason exactly: the frame borrows it.
         // `tests/desktop_source.rs` holds that no `desktop_*` or `dock_*` file
         // names `Word::` or `.say(` — every sentence a person meets comes from
         // `alo-saying`, and a raster that looked one up would be a second place
         // deciding what a person reads.
-        let the_overflows_heading = self
-            .strings
-            .say(
-                &alo_dock::words::MORE_OPEN_APPS.key(),
-                &alo_strings::Filling::nothing(),
-            )
-            .into_text();
+        // **Said after the Dock's state is worked out**, because what the
+        // picker says depends on which application is open and how many windows
+        // it has — a bundle said before that would have to be said again.
+        let the_docks_words =
+            crate::the_docks_words::TheDocksWords::said(self.strings, &the_dock_has_open);
         let mut frame = self.desktop.now();
         let named = FrameTarget::metadata(target)?.name;
         what_only_the_server_knows(
             &mut frame,
             server,
-            &windows,
-            &on_the_dock,
-            &the_overflows_heading,
+            crate::what_the_server_tells_a_frame::WhatTheLaneBuilt {
+                windows: &windows,
+                on_the_dock: &on_the_dock,
+                in_more_apps: &in_more_apps,
+                the_dock_has_open: &the_dock_has_open,
+                the_docks_words: &the_docks_words,
+            },
             &named,
         );
         // **Read back from the frame rather than asked again.** The scale the
@@ -679,9 +725,13 @@ impl LoopInput for Desk<'_> {
             what_only_the_server_knows(
                 &mut frame,
                 server,
-                &windows,
-                &on_the_dock,
-                &the_overflows_heading,
+                crate::what_the_server_tells_a_frame::WhatTheLaneBuilt {
+                    windows: &windows,
+                    on_the_dock: &on_the_dock,
+                    in_more_apps: &in_more_apps,
+                    the_dock_has_open: &the_dock_has_open,
+                    the_docks_words: &the_docks_words,
+                },
                 &named,
             );
             // Read off the frame before it is given away, for the reason the
@@ -748,6 +798,19 @@ impl LoopInput for Desk<'_> {
             if let Some(dock) = its_pictures.desktop.dock.as_ref() {
                 server.the_docks_slots_were_drawn(&its.name, dock.standing.clone());
             }
+            // **And where its open surface was, or that there was none.**
+            // Outside the `if let` above deliberately: the two cases that must
+            // clear the record are *no Dock on this display* and *a Dock with
+            // nothing open*, and a call inside that block would miss the first
+            // and leave a press being taken by a popover that is gone.
+            server.the_docks_surface_was_drawn(
+                &its.name,
+                its_pictures
+                    .desktop
+                    .dock
+                    .as_ref()
+                    .and_then(|dock| dock.overflow_list),
+            );
             server.the_fixed_controls_were_drawn(
                 &its.name,
                 crate::canvas_fixed_controls::FixedControlsDrawn {
@@ -762,6 +825,16 @@ impl LoopInput for Desk<'_> {
         if let Some(dock) = pictures.desktop.dock.as_ref() {
             server.the_docks_slots_were_drawn(&named, dock.standing.clone());
         }
+        // The same for this display, and outside the `if let` for the same
+        // reason the one above is.
+        server.the_docks_surface_was_drawn(
+            &named,
+            pictures
+                .desktop
+                .dock
+                .as_ref()
+                .and_then(|dock| dock.overflow_list),
+        );
         server.the_fixed_controls_were_drawn(
             &named,
             crate::canvas_fixed_controls::FixedControlsDrawn {

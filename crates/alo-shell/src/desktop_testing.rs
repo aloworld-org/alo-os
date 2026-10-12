@@ -374,3 +374,37 @@ pub(crate) fn three_windows_put_aside() -> &'static alo_put_aside::Panel {
         panel
     })
 }
+
+/// The colour the Dock's surface drew at the middle of its band.
+///
+/// **The question four tests used to ask of `DockPicture::solids[0]`.** The band
+/// stopped being a flat rectangle on 2026-10-11 — it has a radius, a hairline
+/// and a shadow now, none of which a rectangle can be — so *what colour is the
+/// Dock* is a question about a pixel. Taken at the middle of the band, which is
+/// the one place no corner, hairline or accent reaches.
+///
+/// [`None`] for a Dock that gave way, which has no surface at all.
+pub(crate) fn the_docks_ground(dock: &crate::dock_raster::DockPicture) -> Option<[u8; 3]> {
+    let surface = dock.surface.as_ref()?;
+    let x = dock.band.loc.x + dock.band.size.w / 2 - surface.area.loc.x;
+    let y = dock.band.loc.y + dock.band.size.h / 2 - surface.area.loc.y;
+    if x < 0 || y < 0 || x >= surface.area.size.w || y >= surface.area.size.h {
+        return None;
+    }
+    let at = ((y as usize) * (surface.area.size.w as usize) + (x as usize)) * 4;
+    let bytes = surface.pixels.get(at..at + 3)?;
+    let mut out = [0_u8; 3];
+    out.copy_from_slice(bytes);
+    Some(out)
+}
+
+/// A Dock whose words nobody has said, for a test that is not about them.
+///
+/// **Empty rather than invented.** A test that does not care what the composer
+/// says should not have to pick a sentence, and a blank is honest: the lane
+/// says the real ones, and `crate::the_docks_words` is where that happens.
+pub(crate) fn no_words() -> &'static crate::the_docks_words::TheDocksWords {
+    static IT: std::sync::OnceLock<crate::the_docks_words::TheDocksWords> =
+        std::sync::OnceLock::new();
+    IT.get_or_init(crate::the_docks_words::TheDocksWords::default)
+}

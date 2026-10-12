@@ -1,0 +1,150 @@
+<!--
+  More apps / Popover — read from the live file on 2026-10-11.
+
+  WHY THIS IS A FILE OF ITS OWN
+
+  The same reason as 398-26305.xml: it belongs to the page, and the page
+  export does not contain it. Searched for by name against 70-28.xml, which
+  holds 7,344 frames: "More apps / Popover" returns nothing, and the only
+  match for "More apps" is `More apps / opens inward` — the LIST design this
+  component replaces.
+
+  So the page export is stale for this component and this file is
+  authoritative for it. A full re-export remains owed and does not block it.
+
+  WHAT IT REPLACES, AND WHY THAT MATTERS TO A READER
+
+  `More apps / opens inward` is a 248-wide list of names. This is a 448-wide
+  popover with a search field and a four-column grid of applications. They are
+  not versions of one design; the owner's ruling of 2026-10-11 (ADR 0103)
+  changed what the surface is — from the applications that overflowed to every
+  pinned and open application — and this is the design for that.
+
+  **Anything measured off `More apps / opens inward` is measuring the old
+  surface.** `AN_OVERFLOW_PANEL_IS_WIDE = 248` in `alo_dock::measures` came
+  from it and is superseded by the 448 here.
+
+  THE HEIGHTS ARE CAPS, NOT MEASUREMENTS OF THESE FRAMES
+
+  The owner stated them separately from the file, on 2026-10-11:
+
+    the entire popover, including heading, search and footer   536
+    the scrollable application-list viewport                   336
+    the reference width                                        448
+
+  Every state below is 448 x 536 because each is drawn at the cap. **Sixty
+  applications must scroll inside the same bounded viewport**, and on a
+  shorter output the list viewport shrinks further so that the whole popover
+  fits. So a reader must not take 336 as "the height of the list": it is the
+  largest the list may be.
+
+  WHERE IT SITS, from `01 · More apps / Bottom · With minimised windows`
+  (408:28177, a 1440x960 frame)
+
+    popover            x 668, y 312, 448 x 536   -> bottom edge at 848
+    Dock / Bottom      x 164, y 860, 952 x  76   -> top edge at 860
+
+  **12 between them**, which is the gap the owner names. The minimised-window
+  panel in the same frame is at x 1172, 244 wide, so the popover's right edge
+  at 1116 clears it by 56.
+-->
+<frame id="406:26881" name="More apps / Popover" x="0" y="300" width="2824" height="576">
+
+  <!-- Every state is drawn at the cap: 448 x 536. -->
+  <symbol id="406:26380" name="State=Default" x="16" y="16" width="448" height="536">
+    <!--
+      The vertical rhythm, in local coordinates: a 1px border and 24 of
+      padding put the first child at 25, and every gap below is 16.
+
+        heading  25 ..  57   (32)
+        search   73 .. 121   (48)
+        list    137 .. 473  (336)   <- the capped viewport
+        footer  489 .. 505   (16)
+    -->
+    <frame id="406:26381" name="Heading" x="25" y="25" width="400" height="32">
+      <text id="406:26382" name="More apps" x="0" y="1" width="108" height="30" />
+    </frame>
+    <frame id="406:26383" name="Search pinned and open applications" x="25" y="73" width="400" height="48">
+      <frame id="409:27527" name="Search" x="16" y="16" width="16" height="16" />
+      <text id="406:26384" name="Search apps" x="40" y="13" width="80" height="22" />
+    </frame>
+    <frame id="406:26385" name="Scrollable application list" x="25" y="137" width="400" height="336">
+      <!--
+        Four columns: 4 x 94 + 3 x 8 = 400, which is the inner width exactly.
+        Every gap inside the list is 8 — between a group's heading and its
+        first row, between rows, and between groups.
+      -->
+      <frame id="406:26386" name="Pinned group" x="0" y="0" width="400" height="116">
+        <text id="406:26387" name="Pinned" x="0" y="0" width="44" height="18" />
+        <frame id="406:26388" name="Application row" x="0" y="26" width="400" height="88">
+          <instance id="406:26389" name="More apps / Application" x="0" y="0" width="94" height="88" />
+          <instance id="406:26400" name="More apps / Application" x="102" y="0" width="94" height="88" />
+          <instance id="406:26411" name="More apps / Application" x="204" y="0" width="94" height="88" />
+          <instance id="406:26419" name="More apps / Application" x="306" y="0" width="94" height="88" />
+        </frame>
+      </frame>
+      <frame id="406:26427" name="Other open applications" x="0" y="124" width="400" height="204">
+        <text id="406:26428" name="Other open apps" x="0" y="0" width="104" height="18" />
+        <frame id="406:26429" name="Application row" x="0" y="26" width="400" height="88">
+          <instance id="406:26430" name="More apps / Application" x="0" y="0" width="94" height="88" />
+          <instance id="406:26441" name="More apps / Application" x="102" y="0" width="94" height="88" />
+          <instance id="406:26452" name="More apps / Application" x="204" y="0" width="94" height="88" />
+          <instance id="406:26461" name="More apps / Application" x="306" y="0" width="94" height="88" />
+        </frame>
+        <frame id="406:26470" name="Application row" x="0" y="122" width="400" height="88">
+          <instance id="406:26471" name="More apps / Application" x="0" y="0" width="94" height="88" />
+          <instance id="406:26480" name="More apps / Application" x="102" y="0" width="94" height="88" />
+          <instance id="406:26489" name="More apps / Application" x="204" y="0" width="94" height="88" />
+          <instance id="406:26498" name="More apps / Application" x="306" y="0" width="94" height="88" />
+        </frame>
+      </frame>
+    </frame>
+    <text id="406:26507" name="Pinned and open apps · Escape closes" x="25" y="489" width="207" height="16" />
+  </symbol>
+
+  <symbol id="406:26508" name="State=Search" x="484" y="16" width="448" height="536" />
+  <symbol id="406:26529" name="State=No results" x="952" y="16" width="448" height="536" />
+  <symbol id="406:26538" name="State=Keyboard" x="1420" y="16" width="448" height="536" />
+  <symbol id="406:26666" name="State=Scroll" x="1888" y="16" width="448" height="536" />
+
+  <!--
+    The window chooser, which is the same popover showing one application's
+    windows rather than the applications. Reached by pressing an application
+    that has more than one window, and left by Escape — which returns here
+    rather than closing, by the owner's ruling: *Escape dismisses the current
+    picker first, then the parent popover.*
+
+      heading  25 ..  73   (48)   a 48x48 back control, then the title at 56
+      count    89 .. 137   (48)   "2 windows · Choose one to return"
+      list    153 .. 473  (320)   <- 16 shorter than the Default state's,
+                                     because its heading is 48 and not 32
+      footer  489 .. 505   (16)
+
+    A window row is 400 x 106 with 8 between rows: a title at (16,16) and
+    its state and Place at (16,49). **The state is on the row** — *Open ·
+    Work*, *Minimised · Personal* — which is the ruling's *including its
+    minimised windows with their state clearly identified*.
+  -->
+  <symbol id="406:26868" name="State=Windows" x="2356" y="16" width="448" height="536">
+    <frame id="406:26869" name="Heading" x="25" y="25" width="400" height="48">
+      <frame id="409:27552" name="Back to apps" x="0" y="0" width="48" height="48">
+        <text id="409:27553" name="‹" x="17" y="9" width="14" height="30" />
+      </frame>
+      <text id="406:26870" name="Browser windows" x="56" y="9" width="179" height="30" />
+    </frame>
+    <frame id="406:26871" name="Window count and selection instruction" x="25" y="89" width="400" height="48">
+      <text id="406:26872" name="2 windows · Choose one to return" x="0" y="13" width="214" height="22" />
+    </frame>
+    <frame id="406:26873" name="Scrollable application list" x="25" y="153" width="400" height="320">
+      <frame id="406:26874" name="Window / Launch website" x="0" y="0" width="400" height="106">
+        <text id="406:26875" name="Launch website" x="16" y="16" width="116" height="25" />
+        <text id="406:26876" name="Open · Work" x="16" y="49" width="77" height="22" />
+      </frame>
+      <frame id="406:26877" name="Window / Travel plans" x="0" y="114" width="400" height="106">
+        <text id="406:26878" name="Travel plans" x="16" y="16" width="87" height="25" />
+        <text id="406:26879" name="Minimised · Personal" x="16" y="49" width="131" height="22" />
+      </frame>
+    </frame>
+    <text id="406:26880" name="Choose a window · Escape returns to apps" x="25" y="489" width="231" height="16" />
+  </symbol>
+</frame>

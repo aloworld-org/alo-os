@@ -67,6 +67,10 @@ fn the_desktop_files() -> Vec<(String, Vec<(usize, String)>)> {
             // these promises like the rest, because a file that can make the
             // dock disappear is one a revoke button could hide behind.
             "dock_room.rs",
+            // The Dock's own surface: a rounded panel with a hairline and a
+            // shadow, rasterised with alpha. It draws furniture and nothing
+            // else, which is what every rule below asks of a `dock_*` file.
+            "dock_surface.rs",
             // What the Dock is told is open, built from the mapped surfaces.
             // Not a surface that draws, and held to the same promises for the
             // same reason `desktop_membership.rs` is: it decides which windows

@@ -111,9 +111,9 @@ pub(crate) struct Shown<'a> {
     /// Handed in like the rest, and for the sharpest version of the same
     /// reason: a person opened it with a press, presses reach the `Server`, and
     /// this crate's drawing half has no way to know.
-    pub(crate) the_overflow_is_open: bool,
-    /// What the overflow list's heading says, already said by the lane.
-    pub(crate) the_overflows_heading: &'a str,
+    pub(crate) the_dock_has_open: &'a crate::WhatTheDockHasOpen,
+    /// Everything on the Dock that a person reads, already said by the lane.
+    pub(crate) the_docks_words: &'a crate::the_docks_words::TheDocksWords,
     /// The windows a person put aside, which the panel at the edge shows.
     ///
     /// Handed in like the rest: `alo-put-aside` decides what is in the panel
@@ -161,6 +161,9 @@ pub(crate) struct Shown<'a> {
     /// it, and `Server::how_many_the_dock_holds` built the list and threw it
     /// away on the way here.
     pub(crate) on_the_dock: &'a [OnTheDock],
+    /// What *More apps* lists, from
+    /// [`crate::nested_desktop::DesktopFrame::in_more_apps`].
+    pub(crate) in_more_apps: &'a [OnTheDock],
 }
 
 /// What the running window shows, as a panel.
@@ -221,8 +224,9 @@ pub(crate) fn picture(
         panel_is_revealed,
         display_scale,
         on_the_dock,
-        the_overflow_is_open,
-        the_overflows_heading,
+        in_more_apps,
+        the_dock_has_open,
+        the_docks_words,
     } = shown;
     // **The count the desktop handed over, not a constant.** This passed a
     // literal `0` until 2026-10-09, with a comment saying a bar holding nothing
@@ -236,7 +240,8 @@ pub(crate) fn picture(
         look,
         size,
         on_the_dock,
-        (the_overflow_is_open, the_overflows_heading),
+        in_more_apps,
+        (the_dock_has_open, the_docks_words),
         fonts,
     )?;
 

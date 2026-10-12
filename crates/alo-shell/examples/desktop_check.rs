@@ -215,7 +215,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         let patch = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1)
             .map_err(|error| format!("{error:?}"))?;
         let mut windows = alo_dock::Windows::none();
-        for number in 0..30_u64 {
+        // **Sixty, which is the number the owner asks this to be checked at.**
+        // *Sixty applications must scroll inside the same bounded viewport*,
+        // and thirty did not reach the cap on a 768-high output, so a picture
+        // of thirty could not show whether the cap held.
+        for number in 0..60_u64 {
             let letter = char::from(b'a' + u8::try_from(number % 26).unwrap_or(0));
             let named = format!("{letter}{number}");
             windows.opened(alo_dock::Window::of(
@@ -226,7 +230,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 alo_dock::HowItSits::OnTheCanvas,
             ));
         }
-        alo_dock::Holding::nothing().showing(&windows)
+        // **Four pinned, so both of the design's groups are drawn.** With none
+        // pinned the popover shows one heading and a picture of it could not
+        // show that the groups are laid out at all.
+        let mut holding = alo_dock::Holding::nothing();
+        for named in ["Files", "Browser", "Apps", "Settings"] {
+            holding.pin(alo_dock::AppId::named(named).map_err(|error| format!("{error:?}"))?);
+        }
+        holding.showing(&windows)
     };
 
     let a_few_applications = {
@@ -248,23 +259,26 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     // **Said once, because the drawing path may not word a sentence.** The same
     // rule `direct_desktop` follows: `tests/desktop_source.rs` holds that no
     // `desktop_*` or `dock_*` file names `Word::` or `.say(`.
-    let the_overflows_heading = strings
-        .say(
-            &alo_dock::words::MORE_OPEN_APPS.key(),
-            &alo_strings::Filling::nothing(),
-        )
-        .into_text();
 
     let mut submitted = 0;
     let mut draw = |what: &str,
                     dock: &Dock,
                     on_the_dock: &[alo_dock::OnTheDock],
-                    the_overflow_is_open: bool,
+                    in_more_apps: &[alo_dock::OnTheDock],
+                    the_dock_has_open: &alo_shell::WhatTheDockHasOpen,
+                    put_aside: &alo_put_aside::Panel,
                     egress: &EgressStatus,
                     running: &RunningWindow,
                     filling: &FillingWindow,
                     nested: &mut Nested|
      -> Result<(), Box<dyn std::error::Error>> {
+        // **Said inside the draw, because a window picker's words are about
+        // this frame**: its heading carries the application's name and its rows
+        // carry each window's state. The Dock's own labels do not change and
+        // are said again here only because they travel in one bundle, which
+        // cannot be half-filled.
+        let the_docks_words =
+            alo_shell::the_docks_words::TheDocksWords::said(&strings, the_dock_has_open);
         // A display nobody has divided, which is what this probe's is: the
         // Server holds no division yet and the session that will is a task of
         // its own.
@@ -313,8 +327,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 // fixture: *it needs eyes, and eyes need
                                 // pictures.*
                                 on_the_dock,
-                                the_overflow_is_open,
-                                the_overflows_heading: &the_overflows_heading,
+                                // **The overview, which this fixture's windows
+                                // make the same list.** Every one of them is on
+                                // the canvas, so nothing is excluded from the
+                                // Dock and the two lists coincide — which is
+                                // why the caller passes one slice for both.
+                                in_more_apps,
+                                the_dock_has_open,
+                                the_docks_words: &the_docks_words,
                                 dock,
                                 look: DesktopLook::of(
                                     &appearance,
@@ -337,7 +357,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 division: &division,
                                 offer: &alo_dividing::Offer::Nothing,
                                 windows: &[],
-                                put_aside: nothing_put_aside(),
+                                put_aside,
                                 // A fixture that is not about revealing draws the panel, so what it lays out is
                                 // the rail rather than an empty column.
                                 panel_is_revealed: true,
@@ -411,7 +431,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             &format!("the dock alone on the {} edge", an_edges_name(edge)),
             &dock,
             &a_few_applications,
-            false,
+            &a_few_applications,
+            &alo_shell::NOTHING,
+            nothing_put_aside(),
             &quiet,
             &closed_running,
             &closed_filling,
@@ -430,7 +452,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             &format!("the dock overflowing on the {} edge", an_edges_name(edge)),
             &dock,
             &a_crowded_dock,
-            true,
+            &a_crowded_dock,
+            &alo_shell::MORE_APPS,
+            nothing_put_aside(),
             &quiet,
             &closed_running,
             &closed_filling,
@@ -438,11 +462,97 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         )?;
     }
 
+    // **One application's windows**, which is the popover's other face.
+    //
+    // Four windows of one application, two of them put aside, so the picture
+    // shows both of the states a row can be in — *Open* and *Minimised* — which
+    // is the owner's *including its minimised windows with their state clearly
+    // identified*. A standing with every window on the canvas would draw one
+    // state four times and show nothing about the other.
+    let a_browser_with_four_windows = {
+        let patch = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1)
+            .map_err(|error| format!("{error:?}"))?;
+        let mut windows = alo_dock::Windows::none();
+        for (number, called, sits) in [
+            (1_u64, "Launch website", alo_dock::HowItSits::OnTheCanvas),
+            (2, "Travel plans", alo_dock::HowItSits::PutAside),
+            (3, "Research", alo_dock::HowItSits::OnTheCanvas),
+            (4, "Tomorrow's reading", alo_dock::HowItSits::PutAside),
+        ] {
+            windows.opened(alo_dock::Window::of(
+                alo_dock::WindowId::numbered(number),
+                Some(alo_dock::AppId::named("Browser").map_err(|error| format!("{error:?}"))?),
+                called,
+                patch,
+                sits,
+            ));
+        }
+        windows
+    };
+    let the_browsers_windows = alo_shell::WhatTheDockHasOpen::TheWindowsOf {
+        picker: alo_dock::picking::ThePicker::of(
+            alo_dock::previews::Previews::of(
+                &a_browser_with_four_windows,
+                &alo_dock::AppId::named("Browser").map_err(|error| format!("{error:?}"))?,
+                alo_dock::previews::Opened::ByPressingTheIcon,
+            ),
+            alo_appearance::TextScale::default(),
+            alo_dock::Room::pixels(1_000),
+        ),
+        // **The second row, so the picture shows the ring.** A check that only
+        // ever drew the unfocused list would be a check that passes with no
+        // focus treatment drawn at all — and the ring is the whole of what tells
+        // a person where an arrow key just put them.
+        focused: Some(1),
+    };
+    draw(
+        "one application's windows",
+        &shipped,
+        &a_crowded_dock,
+        &a_crowded_dock,
+        &the_browsers_windows,
+        nothing_put_aside(),
+        &quiet,
+        &closed_running,
+        &closed_filling,
+        &mut nested,
+    )?;
+
+    // **Both right-hand surfaces at once**, which is the only way to look at
+    // the thing the owner's ruling of 2026-10-11 separates.
+    //
+    // The right-hand panel holds *windows a person minimised* — one item per
+    // window, so two windows of one application are two items — and the Dock's
+    // overflow holds *applications the bar had no room for*, as a popover
+    // anchored to its control. They had never been drawn in one frame, and
+    // *looking the same* was the fault: the popover hung off the bar's far end,
+    // a bar wide enough to overflow has its far end near the display's, and the
+    // panel is at the display's far end. Nothing was wrong with either
+    // surface's contents.
+    //
+    // So this picture is the check. Two items in the panel from one
+    // application, a crowded Dock with its list open, and a gap between the two
+    // that a person can see.
+    draw(
+        "the overflow list beside two minimised windows of one application",
+        &shipped,
+        &a_crowded_dock,
+        &a_crowded_dock,
+        &alo_shell::MORE_APPS,
+        two_windows_of_one_application(),
+        &quiet,
+        &closed_running,
+        &closed_filling,
+        &mut nested,
+    )?;
+
     draw(
         "the dock with a question leaving",
         &shipped,
         &a_few_applications,
-        false,
+        &a_few_applications,
+        &alo_shell::NOTHING,
+        nothing_put_aside(),
         &lit,
         &closed_running,
         &closed_filling,
@@ -458,7 +568,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "what is running",
         &shipped,
         &a_few_applications,
-        false,
+        &a_few_applications,
+        &alo_shell::NOTHING,
+        nothing_put_aside(),
         &quiet,
         &running,
         &closed_filling,
@@ -471,7 +583,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "what is running, read again",
         &shipped,
         &a_few_applications,
-        false,
+        &a_few_applications,
+        &alo_shell::NOTHING,
+        nothing_put_aside(),
         &lit,
         &running,
         &closed_filling,
@@ -484,7 +598,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "what is filling a folder",
         &shipped,
         &a_few_applications,
-        false,
+        &a_few_applications,
+        &alo_shell::NOTHING,
+        nothing_put_aside(),
         &quiet,
         &closed_running,
         &filling,
@@ -496,7 +612,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "a folder opened",
         &shipped,
         &a_few_applications,
-        false,
+        &a_few_applications,
+        &alo_shell::NOTHING,
+        nothing_put_aside(),
         &quiet,
         &closed_running,
         &filling,
@@ -506,7 +624,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "both windows",
         &shipped,
         &a_few_applications,
-        false,
+        &a_few_applications,
+        &alo_shell::NOTHING,
+        nothing_put_aside(),
         &lit,
         &running,
         &filling,
@@ -519,7 +639,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "a folder that is gone",
         &shipped,
         &a_few_applications,
-        false,
+        &a_few_applications,
+        &alo_shell::NOTHING,
+        nothing_put_aside(),
         &quiet,
         &running,
         &filling,
@@ -546,6 +668,44 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     Ok(())
 }
+/// **Two windows of one application, put aside.**
+///
+/// The shape the owner's ruling of 2026-10-11 separates the two right-hand
+/// surfaces on: *several minimised windows from one application remain separate
+/// items* in the panel, while the Dock shows that application once. So this
+/// panel draws two rows and the Dock draws one icon, from the same two windows
+/// — which is what makes a picture of them side by side worth looking at.
+///
+/// Both windows name `Notes`, and they differ in title and id. A fixture with
+/// two *different* applications would draw the same two rows and prove nothing.
+fn two_windows_of_one_application() -> &'static alo_put_aside::Panel {
+    static HOLDING: std::sync::OnceLock<alo_put_aside::Panel> = std::sync::OnceLock::new();
+    HOLDING.get_or_init(|| {
+        let mut panel = alo_put_aside::Panel::new();
+        for (which, titled) in [(1_u64, "Monday"), (2, "Tuesday")] {
+            let Ok(app) = alo_dock::AppId::named("Notes") else {
+                return panel;
+            };
+            let Ok(patch) = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 800, 600) else {
+                return panel;
+            };
+            let _ = panel.put_aside(
+                &alo_dock::Window::of(
+                    alo_dock::WindowId::numbered(which),
+                    Some(app),
+                    titled,
+                    patch,
+                    alo_dock::HowItSits::PutAside,
+                ),
+                alo_canvas::Zoom::LIFE_SIZE,
+                alo_canvas::Place::FIRST,
+                alo_put_aside::whether_it_is_private::Privacy::Ordinary,
+            );
+        }
+        panel
+    })
+}
+
 /// A desk where nothing has been put aside.
 ///
 /// One shared value rather than a temporary at each site, so the borrow does
