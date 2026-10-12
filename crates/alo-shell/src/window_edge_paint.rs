@@ -61,6 +61,17 @@ pub type Solid = (Rectangle<i32, Logical>, Colour);
 /// `border border-solid` in the design, which is one logical unit.
 const THE_BORDER_IS: i32 = 1;
 
+/// How thick the keyboard-focus ring is.
+///
+/// **Two, and not [`THE_BORDER_IS`].** Measured from `414:27609` on
+/// 2026-10-12: at the ring's middle row the rendered pixels read
+/// `#ffffff #102a43 #102a43 #ffffff` — the ink exactly, twice, with no
+/// partial values either side, so it is two units and not one spread over
+/// two by antialiasing. The strip's own border is a different line and
+/// stays at one; sharing a constant would have made a design change to
+/// either silently move the other.
+const A_FOCUS_RING_IS: i32 = 2;
+
 /// What a person is doing to the edge, which is all that changes its colour.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Pointing {
@@ -112,7 +123,15 @@ pub fn solids(edge: &WindowEdge, pointing: Pointing) -> Vec<Solid> {
             solids.extend(artwork_of(control, ink));
         }
         if pointing.focused == Some(control.does) {
-            solids.extend(outline_of(control.highlight, Role::TextPrimary));
+            // **The target, not the highlight**, which this rang until
+            // 2026-10-12. `control.highlight` is 32 × 28 at `(+6, +14)` and
+            // is right for hover — it is byte-for-byte the rectangle
+            // `State=Menu open` draws. The design rings the whole 44 × 44
+            // interaction envelope, so the real ring stands 12 units above
+            // the visible strip and the drawn one sat inside it. Measured
+            // from `414:27609`; `MANIFEST.md` carries the reading and why
+            // `get_metadata` could not show it.
+            solids.extend(outline_of(control.target, Role::TextPrimary));
         }
     }
     solids
@@ -201,22 +220,17 @@ fn artwork_of(control: &EdgeControl, ink: Role) -> Vec<Solid> {
 /// not — so it is `text/primary` rather than a colour of its own.
 fn outline_of(around: Rectangle<i32, Logical>, ink: Role) -> Vec<Solid> {
     let colour = ink.colour();
+    let thick = A_FOCUS_RING_IS;
     let (x, y, w, h) = (around.loc.x, around.loc.y, around.size.w, around.size.h);
     vec![
+        (Rectangle::new((x, y).into(), (w, thick).into()), colour),
         (
-            Rectangle::new((x, y).into(), (w, THE_BORDER_IS).into()),
+            Rectangle::new((x, y + h - thick).into(), (w, thick).into()),
             colour,
         ),
+        (Rectangle::new((x, y).into(), (thick, h).into()), colour),
         (
-            Rectangle::new((x, y + h - THE_BORDER_IS).into(), (w, THE_BORDER_IS).into()),
-            colour,
-        ),
-        (
-            Rectangle::new((x, y).into(), (THE_BORDER_IS, h).into()),
-            colour,
-        ),
-        (
-            Rectangle::new((x + w - THE_BORDER_IS, y).into(), (THE_BORDER_IS, h).into()),
+            Rectangle::new((x + w - thick, y).into(), (thick, h).into()),
             colour,
         ),
     ]

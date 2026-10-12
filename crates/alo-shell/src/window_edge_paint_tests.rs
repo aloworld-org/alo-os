@@ -262,3 +262,134 @@ fn no_window_buttons_are_drawn_for_an_application_that_has_its_own() {
     );
     assert_eq!(drawn, closing, "a control that is not there was drawn");
 }
+
+/// **The focus ring is the interaction target, measured from `414:27609`.**
+///
+/// This rang `control.highlight` — the 32 × 28 at `(+6, +14)` — until
+/// 2026-10-12. That rectangle is right for hover and is byte-for-byte what
+/// `State=Menu open` draws; the design rings the whole 44 × 44, so the real
+/// ring stands 12 units above the visible strip and the drawn one sat inside
+/// it.
+///
+/// The node id is in this comment so that the next person to doubt the number
+/// re-reads the file rather than re-measuring a PNG, which is what it took to
+/// find: a stroke on a frame is not a child layer, so `get_metadata` returns
+/// that state identical to `State=Reveal`.
+#[test]
+fn the_focus_ring_is_the_whole_target_and_two_units_thick() {
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
+    let close = edge
+        .controls
+        .iter()
+        .find(|control| control.does == OnTheEdge::Close)
+        .expect("a revealed edge has a Close control");
+    // The control: the two rectangles really are different, or this proves
+    // nothing about which one was rung.
+    assert_ne!(close.target, close.highlight);
+    assert_eq!(close.target.size, Size::from((44, 44)));
+
+    let ringed = solids(
+        &edge,
+        Pointing {
+            hovered: None,
+            focused: Some(OnTheEdge::Close),
+        },
+    );
+    let quiet = solids(
+        &edge,
+        Pointing {
+            hovered: None,
+            focused: None,
+        },
+    );
+    // Everything the ring added, and nothing else: the difference between the
+    // two draws rather than a guess at which solids are the ring.
+    let ring: Vec<_> = ringed
+        .iter()
+        .filter(|solid| !quiet.contains(solid))
+        .copied()
+        .collect();
+    assert_eq!(ring.len(), 4, "a ring is four bars: {ring:?}");
+
+    // Its outer bounds are the target's, which is the whole finding.
+    let left = ring.iter().map(|(r, _)| r.loc.x).min().expect("four bars");
+    let top = ring.iter().map(|(r, _)| r.loc.y).min().expect("four bars");
+    let right = ring
+        .iter()
+        .map(|(r, _)| r.loc.x + r.size.w)
+        .max()
+        .expect("four bars");
+    let bottom = ring
+        .iter()
+        .map(|(r, _)| r.loc.y + r.size.h)
+        .max()
+        .expect("four bars");
+    assert_eq!(
+        (left, top, right - left, bottom - top),
+        (
+            close.target.loc.x,
+            close.target.loc.y,
+            close.target.size.w,
+            close.target.size.h
+        ),
+        "the ring is not the target it rings"
+    );
+
+    // And two units, which was one until the PNG was measured.
+    for (bar, _) in &ring {
+        assert!(
+            bar.size.w == A_FOCUS_RING_IS || bar.size.h == A_FOCUS_RING_IS,
+            "a bar of the ring is not two units thick: {bar:?}"
+        );
+    }
+
+    // **The strip's own border is a different line and did not move.** The two
+    // shared a constant before this, so a change to either moved the other.
+    assert_eq!(THE_BORDER_IS, 1);
+    assert_eq!(A_FOCUS_RING_IS, 2);
+}
+
+/// **The hover highlight stays where the design puts it**, which is the half
+/// that was already right and must not be dragged along by the fix above.
+#[test]
+fn hover_still_fills_the_thirty_two_by_twenty_eight() {
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
+    let close = edge
+        .controls
+        .iter()
+        .find(|control| control.does == OnTheEdge::Close)
+        .expect("a revealed edge has a Close control");
+    assert_eq!(close.highlight.size, Size::from((32, 28)));
+    assert_eq!(
+        (
+            close.highlight.loc.x - close.target.loc.x,
+            close.highlight.loc.y - close.target.loc.y
+        ),
+        (6, 14),
+        "`State=Menu open` draws it at (6, 14) inside the target"
+    );
+
+    let drawn = solids(
+        &edge,
+        Pointing {
+            hovered: Some(OnTheEdge::Close),
+            focused: None,
+        },
+    );
+    assert!(
+        drawn
+            .iter()
+            .any(|(rectangle, _)| *rectangle == close.highlight),
+        "the hovered control's 32 x 28 is not filled"
+    );
+}

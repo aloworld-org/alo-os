@@ -51,14 +51,49 @@ geometry* — so the compact edge and the menu need no new role in
 `alo-appearance`. Read per node because the connector is mode-incoherent
 within one response; both sets are in `variables.toml`.
 
-**Unexpanded, and recorded as unexpanded:** `414:27566` (*State=Rest*),
-`414:27594` (*State=Menu open*), `414:27609` (*State=Keyboard focus*) and
-`414:27653` (*Window=Maximised*). Each is a 148 × 44 or 264 × 344 box here
-with no contents captured. Rest and reveal are stated by the contract to share
-geometry, and the menu-open and keyboard-focus states differ from reveal in
-colour rather than in layout, so the geometry this snapshot does hold is the
-geometry being implemented against — but **the focus ring's own measurements
-are not in this capture** and must be read live before they are drawn.
+**Two of the four were read on 2026-10-12 and are expanded above**:
+`414:27594` (*State=Menu open*) and `414:27609` (*State=Keyboard focus*).
+`414:27566` (*State=Rest*) and `414:27653` (*Window=Maximised*) are still
+boxes with no contents; rest and reveal are stated by the contract to share
+geometry.
+
+**Menu open adds exactly one layer and exactly one colour.** A
+`rounded-rectangle` 32 × 28 at `(6, 14)` inside the *Window menu / 44×44*
+frame, and `bg/cool` over the keyboard-focus set. That is the same 32 × 28
+`A_HIGHLIGHT_IS` the painter already fills on hover, so **an open menu draws
+its trigger as hovered** and the painter needs no new shape and no new colour
+for it.
+
+**The focus ring is a stroke on a frame, and `get_metadata` cannot see one.**
+That is why this section used to say the ring's measurements *are not in this
+capture*: the statement was true and it hid the reason. `414:27609`'s metadata
+comes back **byte-for-byte identical to `State=Reveal`** — no extra child, no
+extra variable — because a frame's stroke is not a child layer. Anything else
+in this file read for a focus state has the same blind spot.
+
+Measured off the rendered PNG instead, by differencing the two states' renders
+and keeping what is dark in one and not the other (309 pixels):
+
+| | |
+|---|---|
+| the ring | `x 52..95, y 0..43` — **44 × 44**, the *Window menu / 44×44* frame's own bounds |
+| thickness | **2 units** |
+| colour | `text/primary`, the only dark ink bound on the node |
+| corner | reaches full width by the 5th row; `radius/sm` = 8 is the only radius bound — **inferred, not measured** |
+
+The thickness was checked against antialiasing, which would have faked it: at
+row 21 the pixels read `#ffffff #102a43 #102a43 #ffffff`, the ink exactly with
+no partial values either side.
+
+**The ring is the 44 × 44 interaction envelope and not the 32 × 28 visible
+strip**, so it stands 12 units above the strip, which begins at `y = 12`. The
+obvious implementation — ring the pill a person can see — is wrong, and nothing
+in the file says so except the geometry. `window_edge_paint` had done exactly
+that, and the change that carries this capture fixes it.
+
+**Dark needs no separate read for either state.** The ring is `text/primary`
+and the highlight `bg/cool`, and `variables.toml` already holds both in dark
+(`#FFFCF8` and `#183B56`).
 ## Stale for a second component, 2026-10-11
 
 **`70-28.xml` is stale for `More apps / Popover` and `406-26881.xml` is
