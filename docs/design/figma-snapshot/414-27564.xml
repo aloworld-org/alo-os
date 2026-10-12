@@ -34,8 +34,41 @@
           </frame>
         </frame>
       </symbol>
-      <symbol id="414:27594" name="State=Menu open" x="496" y="20" width="148" height="44" />
-      <symbol id="414:27609" name="State=Keyboard focus" x="736" y="20" width="148" height="44" />
+      <symbol id="414:27594" name="State=Menu open" x="496" y="20" width="148" height="44">
+        <rounded-rectangle id="414:27595" name="32px visible edge / 44px interaction" x="0" y="12" width="148" height="32" />
+        <frame id="414:27596" name="Continuous input region" x="0" y="0" width="148" height="44">
+          <frame id="414:27597" name="Move window / 44×44" x="4" y="0" width="44" height="44">
+            <frame id="414:27598" name="Move window / 14px glyph" x="15" y="21" width="14" height="14" />
+          </frame>
+          <frame id="414:27600" name="Window menu / 44×44" x="52" y="0" width="44" height="44">
+            <rounded-rectangle id="414:27605" name="Rectangle" x="6" y="14" width="32" height="28" />
+            <frame id="414:27601" name="Window menu / 14px glyph" x="15" y="21" width="14" height="14" />
+          </frame>
+          <frame id="414:27606" name="Close / 44×44" x="100" y="0" width="44" height="44">
+            <frame id="414:27607" name="Close / 14px glyph" x="15" y="21" width="14" height="14" />
+          </frame>
+        </frame>
+      </symbol>
+      <symbol id="414:27609" name="State=Keyboard focus" x="736" y="20" width="148" height="44">
+        <!-- The focus ring is NOT in this tree. It is a stroke on the
+             `Window menu / 44×44` frame, and a stroke is not a child layer, so
+             `get_metadata` returns this state byte-for-byte identical to
+             `State=Reveal` above. The ring was measured off the rendered PNG
+             instead and is recorded in `MANIFEST.md`: 44 × 44 at the target's
+             own origin, 2 units thick, `text/primary`. -->
+        <rounded-rectangle id="414:27610" name="32px visible edge / 44px interaction" x="0" y="12" width="148" height="32" />
+        <frame id="414:27611" name="Continuous input region" x="0" y="0" width="148" height="44">
+          <frame id="414:27612" name="Move window / 44×44" x="4" y="0" width="44" height="44">
+            <frame id="414:27613" name="Move window / 14px glyph" x="15" y="21" width="14" height="14" />
+          </frame>
+          <frame id="414:27615" name="Window menu / 44×44" x="52" y="0" width="44" height="44">
+            <frame id="414:27616" name="Window menu / 14px glyph" x="15" y="21" width="14" height="14" />
+          </frame>
+          <frame id="414:27620" name="Close / 44×44" x="100" y="0" width="44" height="44">
+            <frame id="414:27621" name="Close / 14px glyph" x="15" y="21" width="14" height="14" />
+          </frame>
+        </frame>
+      </symbol>
       <symbol id="414:27623" name="State=Full controls" x="976" y="20" width="196" height="44">
         <rounded-rectangle id="414:27624" name="32px visible edge / 44px interaction" x="0" y="12" width="196" height="32" />
         <frame id="414:27625" name="Continuous input region" x="0" y="0" width="196" height="44">
