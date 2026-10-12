@@ -41,12 +41,15 @@ impl crate::Server {
     /// built, not a fresh one.
     ///
     /// `focused` is the host's to supply and is passed straight through.
-    /// Nothing in this repository can focus a control yet: §6 of
-    /// `docs/design/the-external-window-edge.md` is where keyboard navigation
-    /// into the edge gets built, and until it exists every caller passes
-    /// [`None`]. It is an argument rather than a hardcoded [`None`] so that
-    /// the day something can focus a control, the call site changes and this
-    /// does not.
+    ///
+    /// **This said nothing in this repository could focus a control, and that
+    /// is no longer true.** §6 built the keyboard road:
+    /// `crate::Server::where_the_keyboard_is_on_this_windows_edge` holds one
+    /// state per window and
+    /// `crate::TheKeyboardOnTheEdge::what_the_painter_shows` is the value to
+    /// pass. `examples/a_real_application` passes it, which is what the old
+    /// wording promised would happen — the call site changed and this method
+    /// did not.
     ///
     /// Answers nothing hovered in three cases, and they are one picture
     /// deliberately — the design draws a highlight on the hovered control and

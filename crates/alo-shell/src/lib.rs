@@ -296,6 +296,7 @@ mod software_scanout;
 pub mod status_items;
 mod status_row;
 mod surfaces;
+mod the_edge_takes_the_keyboard;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;

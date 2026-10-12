@@ -241,12 +241,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 // highlight is measured against the layout being drawn and
                 // not a second one.
                 //
-                // `None` for focus because nothing can focus a control yet -
-                // §6 is where keyboard navigation into the edge gets built,
-                // and this argument is what it will fill.
+                // **And which control has the keyboard**, which passed `None`
+                // until 2026-10-12 under a comment saying nothing could focus
+                // a control yet. §6 built that: the server now holds one
+                // keyboard state per window, and this is the caller the
+                // comment said would fill the argument. A walk that tabs to an
+                // edge sees a focus ring; one that does not sees none.
+                let focused = server
+                    .where_the_keyboard_is_on_this_windows_edge(surface)
+                    .what_the_painter_shows();
                 alo_shell::EdgePicture::of(
                     &edge,
-                    server.what_this_edge_is_pointing_at(&edge, None),
+                    server.what_this_edge_is_pointing_at(&edge, focused),
                     title.its_own_words(),
                     &mut faces,
                     (THE_OUTPUT_IS.0, THE_OUTPUT_IS.1),
