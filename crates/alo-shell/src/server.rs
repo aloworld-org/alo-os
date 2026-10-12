@@ -170,6 +170,50 @@ pub struct Server {
     /// windows** — and because a person may press Close on one window and
     /// Minimise on another before either frame is drawn.
     pub(crate) asked_on_an_edge: Vec<(WlSurface, crate::window_edge::OnTheEdge)>,
+    /// Which applications a person asked to start, not yet started.
+    ///
+    /// `docs/features.md` [v0.01] *clicking an application — **nothing open:**
+    /// it starts.* Recorded here and carried out off the input path, for
+    /// `asked_to_put_aside`'s reason and one of its own.
+    ///
+    /// **Starting an application is a bus call that waits for the bus to start
+    /// it.** `alo_portals::activated` sends `Activate` to the application's own
+    /// name, and the bus launches it if it is not running — which is the right
+    /// mechanism and is not a fast one. Made from the press handler it would
+    /// hold the compositor's input loop for however long an application takes
+    /// to answer, so **every window on the machine would stop drawing while one
+    /// started.** A person pressing a Dock icon would see the desktop freeze.
+    ///
+    /// So the press records the ask and returns, and whoever has an async
+    /// context sends it. That is the same division `asked_on_an_edge` makes and
+    /// for a stricter reason: that one waits because input has no desktop, this
+    /// one waits because input must not block.
+    ///
+    /// **A list, like the two above**, because two presses in one batch are two
+    /// applications — and because the one outcome to avoid is silently dropping
+    /// something a person asked for.
+    pub(crate) asked_to_start: Vec<alo_dock::AppId>,
+    /// How this machine asks an application to start, when something has told
+    /// it.
+    ///
+    /// **[`None`] is the honest state and not a placeholder.** The sender is
+    /// `alo_portals::activated`, and `alo-portals` is a dev-dependency of this
+    /// crate rather than a real one — the compositor has no business reaching
+    /// portal policy. So the implementation is supplied from outside by
+    /// whoever stands the desktop up, and until it is, **nothing starts and
+    /// every ask is reported as not started.**
+    ///
+    /// That is the safe direction. A machine with no way to start an
+    /// application says so for every press; the alternative — a default that
+    /// silently succeeds — would be a press a person believes worked.
+    /// *Absent is stronger than defaulted.*
+    ///
+    /// Set once rather than threaded through every frame, because it is
+    /// configuration and not state: it is the same thing on the first frame
+    /// and the thousandth, and a parameter on the draw path would be four
+    /// layers of signature for a value that never changes.
+    pub(crate) asks_an_application_to_start:
+        Option<crate::an_application_is_started::AWayToStartApplications>,
     /// Whether each window's external edge is revealed, one machine per window.
     ///
     /// §5 of `docs/design/the-external-window-edge.md`. The edge is **per
@@ -308,6 +352,8 @@ impl Server {
             // Nobody has asked for anything yet.
             asked_to_put_aside: Vec::new(),
             asked_on_an_edge: Vec::new(),
+            asked_to_start: Vec::new(),
+            asks_an_application_to_start: None,
             edges_revealed: Vec::new(),
             asked_to_bring_back: Vec::new(),
             clicks_the_panel_took: std::collections::HashSet::new(),

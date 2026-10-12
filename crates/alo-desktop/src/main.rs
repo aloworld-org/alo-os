@@ -121,6 +121,7 @@ mod running {
                     }
                 }
             },
+            a_way_to_start_applications(),
         ) {
             Ok(stood) => {
                 eprintln!("alo-desktop: the display has ended: {:?}", stood.display);
@@ -744,6 +745,46 @@ mod running {
                  it is"
             )
         })
+    }
+
+    /// How this machine asks an application to start, if it can.
+    ///
+    /// `alo_portals::activated` sends `Activate` to the application's own bus name
+    /// and the bus starts it if it is not running — **a message to an application,
+    /// never a command run.** Nothing here reads an `Exec` line, starts a process
+    /// or passes anything to a shell, which is what makes a Dock press permissible
+    /// under the second law at all: a person pressing their own icon *is* the
+    /// choice the law requires, and the mechanism is the part that must not be an
+    /// escape hatch.
+    ///
+    /// # A machine with no bus says so rather than pretending
+    ///
+    /// [`None`] when the session bus cannot be reached, and then every ask is
+    /// reported as not started. The alternative — a sender that answers `true`
+    /// without sending anything — would be a press a person believes worked.
+    ///
+    /// # The connection is opened once and kept
+    ///
+    /// `Activate` is sent from the draw lane between frames, so the connection has
+    /// to outlive the call. Opening one per press would add a bus handshake to
+    /// every icon a person clicks, and failing to open one would then look like a
+    /// failure to start the application rather than a failure to reach the bus.
+    fn a_way_to_start_applications() -> Option<alo_shell::AWayToStartApplications> {
+        match zbus::blocking::Connection::session() {
+            Ok(session) => {
+                let connection = session.into_inner();
+                Some(Box::new(move |identifier: &str| {
+                    zbus::block_on(alo_portals::activated(&connection, identifier))
+                }))
+            }
+            Err(why) => {
+                eprintln!(
+                    "alo-desktop: no session bus, so no application can be started from the Dock: \
+                     {why}"
+                );
+                None
+            }
+        }
     }
 }
 

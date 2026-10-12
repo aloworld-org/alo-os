@@ -147,6 +147,7 @@ mod network_monitor_portal;
 mod open_uri_portal;
 #[cfg(target_os = "linux")]
 mod opening;
+pub use opening::activated;
 #[cfg(target_os = "linux")]
 mod secret_portal;
 #[cfg(target_os = "linux")]

@@ -24,6 +24,60 @@ use zbus::zvariant::{ObjectPath, Value};
 /// The interface an activatable application serves.
 const AN_APPLICATION: &str = "org.freedesktop.Application";
 
+/// Ask `application` to start, with no file, and whether it said it did.
+///
+/// `Activate(a{sv} platform_data)` — the same interface and the same contract
+/// as this module's `opened_in`, with the one difference that matters:
+/// **there is no file.**
+/// `Open` means *open this document*; `Activate` means *start, or come to the
+/// front if you are already running*, which is what a person pressing an icon
+/// with nothing open is asking for.
+///
+/// # Why this is not a launcher
+///
+/// It is the same reasoning this module's header gives for `Open`, and it is
+/// worth repeating where somebody might reach for the easier thing: **a message
+/// to an application, never a command run.** Nothing here reads an `Exec` line,
+/// starts a process, or passes anything to a shell. The destination is the
+/// application's own identifier, validated before it arrives and turned into a
+/// path by one character substitution; the method is a literal; the only
+/// argument is an empty map. There is nowhere in that for anything to be
+/// injected.
+///
+/// That matters because of the second law. *No code runs unless the person
+/// chose it* — and a person pressing their own Dock icon **is** that choice, so
+/// starting the application is permitted. What the law forbids is the
+/// mechanism: anything that builds a command line hands an attacker, or a
+/// model, the one thing the whole capability model exists to withhold. This
+/// shape cannot, structurally.
+///
+/// # And an application that cannot be reached this way is not started
+///
+/// Exactly as for `Open`: no name on the bus and nothing to start one means
+/// `false`, and the caller says so rather than falling back. Starting such an
+/// application from its `Exec` line is a launcher's work and deliberately not
+/// this module's — the header has said so since it was written, and adding it
+/// here would be the escape hatch that sentence refuses.
+pub async fn activated(connection: &zbus::Connection, application: &str) -> bool {
+    let (Ok(name), Ok(object)) = (
+        WellKnownName::try_from(application),
+        ObjectPath::try_from(object_of(application)),
+    ) else {
+        return false;
+    };
+    let platform_data: HashMap<&str, Value<'_>> = HashMap::new();
+    connection
+        .call_method(
+            Some(name),
+            object,
+            Some(AN_APPLICATION),
+            "Activate",
+            &(platform_data,),
+        )
+        .await
+        .is_ok()
+}
+
 /// Ask `opener` to open the file at `path`, and whether it said it did.
 pub(crate) async fn opened_in(connection: &zbus::Connection, opener: &str, path: &Path) -> bool {
     let (Ok(name), Ok(object)) = (

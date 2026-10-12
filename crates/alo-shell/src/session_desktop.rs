@@ -67,6 +67,7 @@ pub fn stand_the_desktop_up(
     display: ADisplayToStandOn<'_>,
     desktop: &mut dyn TheDesktop,
     mut next: impl FnMut() -> DirectFrame,
+    asks_an_application_to_start: Option<crate::AWayToStartApplications>,
 ) -> Result<StoodUp, WouldNotStand> {
     let mut server = Server::bind_keyboard(
         display.runtime,
@@ -76,6 +77,14 @@ pub fn stand_the_desktop_up(
             ..XkbConfig::default()
         },
     )?;
+    // **How this machine starts an application, handed in rather than built.**
+    // `alo_portals::activated` is the implementation and `alo-portals` is a
+    // dev-dependency here, so the caller supplies it — see
+    // `Server::asks_an_application_to_start`. `None` is a machine that cannot
+    // start anything and reports every ask, which is the honest default.
+    if let Some(ask) = asks_an_application_to_start {
+        server.it_can_start_applications_with(ask);
+    }
     let mut labels = WindowControlLabels::new()?;
     // The machine's own sentences, for the names a reader is told. The same
     // bundle the sign-in screen words a refusal from, read the same way.
