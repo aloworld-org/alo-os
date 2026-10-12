@@ -46,6 +46,11 @@ alo-shortcuts = { path = "../alo-shortcuts" }
 alo-access = { path = "../alo-access" }
 alo-dividing = { path = "../alo-dividing" }
 alo-dock = { path = "../alo-dock" }
+# **What this machine has installed**, which is the other half of the Dock's
+# default pins: `alo-dock` holds the roles and this crate reads the machine, and
+# only a binary sees both. See `crate::what_this_machine_offers`.
+alo-software = { path = "../alo-software" }
+alo-applications = { path = "../alo-applications" }
 
 # Where this person's grants and pairings are kept, which Settings reads at the
 # moment a person opens it. For those two paths only: `this_persons_grants`

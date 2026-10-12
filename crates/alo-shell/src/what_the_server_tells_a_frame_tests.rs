@@ -98,11 +98,31 @@ fn the_dock_is_told_what_it_holds() {
 fn the_list_is_built_from_the_server_by_the_caller() {
     let at = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/direct_desktop.rs");
     let text = std::fs::read_to_string(&at).expect("this file is where it says");
-    let built = text.matches("server.what_the_dock_holds(").count();
+    let built = text.matches("server.what_this_persons_dock_holds(").count();
     assert!(
         built >= 1,
         "`direct_desktop` builds the Dock's list nowhere, so whatever reaches the frame is not \
          the server's answer"
+    );
+    // **And it is this person's list, not a list built from a constant.**
+    // The two argument-taking methods exist for comparing a Dock with and
+    // without a pin, which `examples/a_real_application` does. Reached from the
+    // draw they mean *the Dock ignores what the person pinned*, and that is
+    // exactly what every caller did until 2026-10-12 — **854 of 854 tests
+    // passed with the constant back in place**, which is why the seam is
+    // asserted here rather than trusted.
+    assert_eq!(
+        text.matches("Holding::nothing()").count(),
+        0,
+        "`direct_desktop` builds a Dock list from an empty Holding, so what a person pinned is \
+         not what they are shown"
+    );
+    assert_eq!(
+        text.matches("server.what_this_persons_more_apps_holds(")
+            .count(),
+        1,
+        "`direct_desktop` does not take *More apps* from this person's own list, so the grid \
+         drawn and the grid the arrow keys walk are two different lists"
     );
     assert!(
         !text.contains("frame.on_the_dock ="),

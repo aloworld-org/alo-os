@@ -40,6 +40,10 @@ fn a_session_with_no_seat_refuses_by_naming_the_seat() {
         // No way to start an application: this test is about a session that
         // never stands up, so nothing reaches the asks at all.
         None,
+        // And nothing discovered, for the same reason: the display is refused
+        // before the Dock is filled, which is itself part of the order this
+        // test is about.
+        &alo_dock::pinning::Discovery::Failed,
     )
     .err()
     .unwrap();

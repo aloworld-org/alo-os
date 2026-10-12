@@ -214,6 +214,14 @@ pub struct Server {
     /// layers of signature for a value that never changes.
     pub(crate) asks_an_application_to_start:
         Option<crate::an_application_is_started::AWayToStartApplications>,
+    /// What this person's Dock is pinned to.
+    ///
+    /// **Empty until `its_dock_is_filled_from` is called**, which is at
+    /// stand-up and nowhere else — the pins are configuration, like the way to
+    /// start an application above, and re-deriving them per frame would undo a
+    /// removal on the frame after it was made. See
+    /// `crate::what_the_dock_is_filled_with`.
+    pub(crate) what_the_dock_is_pinned_to: alo_dock::Holding,
     /// Whether each window's external edge is revealed, one machine per window.
     ///
     /// §5 of `docs/design/the-external-window-edge.md`. The edge is **per
@@ -354,6 +362,8 @@ impl Server {
             asked_on_an_edge: Vec::new(),
             asked_to_start: Vec::new(),
             asks_an_application_to_start: None,
+            // Nothing has been worked out yet; the stand-up fills it.
+            what_the_dock_is_pinned_to: alo_dock::Holding::nothing(),
             edges_revealed: Vec::new(),
             asked_to_bring_back: Vec::new(),
             clicks_the_panel_took: std::collections::HashSet::new(),

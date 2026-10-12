@@ -68,6 +68,7 @@ pub fn stand_the_desktop_up(
     desktop: &mut dyn TheDesktop,
     mut next: impl FnMut() -> DirectFrame,
     asks_an_application_to_start: Option<crate::AWayToStartApplications>,
+    what_this_machine_offers: &alo_dock::pinning::Discovery,
 ) -> Result<StoodUp, WouldNotStand> {
     let mut server = Server::bind_keyboard(
         display.runtime,
@@ -85,6 +86,11 @@ pub fn stand_the_desktop_up(
     if let Some(ask) = asks_an_application_to_start {
         server.it_can_start_applications_with(ask);
     }
+    // **What this person's Dock is pinned to, worked out once.** A reading of
+    // the machine, so it arrives as data for the same reason the sender above
+    // does: `crates/alo-shell` does not scan. See
+    // `crate::what_the_dock_is_filled_with` for why it is not asked per frame.
+    server.its_dock_is_filled_from(what_this_machine_offers);
     let mut labels = WindowControlLabels::new()?;
     // The machine's own sentences, for the names a reader is told. The same
     // bundle the sign-in screen words a refusal from, read the same way.
