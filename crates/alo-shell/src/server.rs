@@ -269,6 +269,24 @@ pub struct Server {
     /// wrong and silent — the alternative, falling back to some identifier,
     /// would be the invented name again.
     pub(crate) the_settings_entry_is_called: String,
+    /// The task windows this person has open.
+    ///
+    /// **Empty until somebody asks for something**, which is the honest state
+    /// of a machine nobody has spoken to.
+    pub(crate) the_tasks: crate::the_tasks_a_person_opened::TheTasks,
+    /// The Dock's composer, as a field a person types a request into.
+    ///
+    /// **One per machine and not one per display**, because there is one
+    /// keyboard: a person typing a request is typing it once, and two composers
+    /// holding half a sentence each is a bug nobody could describe.
+    pub(crate) the_composer: crate::the_composer_a_person_types_in::TheComposer,
+    /// What a person asked alo for, waiting to become a task.
+    ///
+    /// **Recorded here rather than acted on**, exactly as `asked_to_start` is:
+    /// building a task needs to know which model answers on this machine, and
+    /// that is a reading of a person's settings. This crate shows and never
+    /// measures.
+    pub(crate) asked_alo: Vec<String>,
     /// Whether each window's external edge is revealed, one machine per window.
     ///
     /// §5 of `docs/design/the-external-window-edge.md`. The edge is **per
@@ -430,6 +448,9 @@ impl Server {
             which_area_has_the_keyboard: None,
             which_slot_on_the_bar: None,
             the_settings_entry_is_called: String::new(),
+            the_tasks: crate::the_tasks_a_person_opened::TheTasks::none_yet(),
+            the_composer: crate::the_composer_a_person_types_in::TheComposer::empty(),
+            asked_alo: Vec::new(),
             edges_revealed: Vec::new(),
             keyboard_on_edges: Vec::new(),
             asked_to_bring_back: Vec::new(),

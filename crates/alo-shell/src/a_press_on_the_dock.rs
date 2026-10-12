@@ -54,6 +54,16 @@ pub(crate) enum WhatAPressOnTheDockDoes {
     /// have made a press on an icon indistinguishable from a press on a gap, and
     /// then the hit test would have been written twice.
     GoTo(AppId),
+    /// **Put the keyboard in the composer**, so the next key typed goes into
+    /// the field rather than to whatever had the keyboard before.
+    ///
+    /// A variant of its own rather than [`Self::Nothing`], which is what it was
+    /// until 2026-10-12: a press on the field was *taken and not acted on*,
+    /// under a comment saying the field was a surface somebody had to build.
+    /// Nothing in this repository had ever accepted a keystroke there, which
+    /// left *the composer is the agent's only way in* a promise with no door
+    /// behind it.
+    TypeIntoTheComposer,
     /// Do this, which the compositor does itself.
     ///
     /// **A separate variant from [`Self::GoTo`]**, which is the owner's ruling
@@ -83,21 +93,21 @@ pub(crate) fn what_a_press_on_the_dock_does(
         Some(WhatIsHere::Application(app)) => WhatAPressOnTheDockDoes::GoTo(app.clone()),
         Some(WhatIsHere::ANativeAction(action)) => WhatAPressOnTheDockDoes::Do(*action),
         // **Taken and not yet acted on**, like `GoTo` above and for the same
-        // reason: each is a surface somebody has to build — the composer opens
-        // a field a person types into, *Show all* lays every window out, and
-        // History opens what they did before. Returning *taken* is still right:
-        // a press that fell through to the canvas would move the view when a
-        // person aimed at a control.
+        // reason: each is a surface somebody has to build — *Show all* lays
+        // every window out, and History opens what they did before. Returning
+        // *taken* is still right: a press that fell through to the canvas would
+        // move the view when a person aimed at a control.
+        //
+        // **The composer left this group on 2026-10-12** and has a variant of
+        // its own, because the field it opens now exists.
         //
         // `TheDivider` cannot arrive here at all — `Places::at` refuses it, so
         // a press on the rule between the applications and the commands reaches
         // nothing, which is what a line a person cannot press should do.
-        Some(
-            WhatIsHere::TheComposer
-            | WhatIsHere::ShowAll
-            | WhatIsHere::History
-            | WhatIsHere::TheDivider,
-        ) => WhatAPressOnTheDockDoes::Nothing,
+        Some(WhatIsHere::TheComposer) => WhatAPressOnTheDockDoes::TypeIntoTheComposer,
+        Some(WhatIsHere::ShowAll | WhatIsHere::History | WhatIsHere::TheDivider) => {
+            WhatAPressOnTheDockDoes::Nothing
+        }
     }
 }
 
@@ -325,6 +335,13 @@ impl crate::Server {
             }
             Some(WhatAPressOnTheDockDoes::Do(action)) => {
                 self.do_this_native_action(action);
+                true
+            }
+            Some(WhatAPressOnTheDockDoes::TypeIntoTheComposer) => {
+                // **What was typed is kept**, which is why this is not a
+                // `TheComposer::empty()`: somebody who pressed the field, went
+                // to read a document and came back is writing one request.
+                self.the_composer.it_took_the_keyboard();
                 true
             }
         }

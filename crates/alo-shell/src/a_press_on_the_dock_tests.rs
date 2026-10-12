@@ -447,3 +447,64 @@ fn the_applications_beside_a_native_entry_are_still_applications() {
         }
     }
 }
+
+/// **A press on the composer puts the keyboard in the field, on every edge.**
+///
+/// Until 2026-10-12 this slot answered `Nothing` — *taken and not acted on* —
+/// because the field it would open did not exist. It does now, so the press has
+/// an outcome of its own, and this asserts it at the slot's first and last
+/// pixel rather than at its middle: a hit test that is one pixel out passes a
+/// test aimed at the centre.
+#[test]
+fn a_press_on_the_composer_types_into_it_on_every_edge() {
+    for edge in Edge::EVERY {
+        let dock = on_the_edge(edge, 5);
+        let slots = dock.places.each();
+        let composer = slots
+            .iter()
+            .find(|place| matches!(place.what(), alo_dock::places::WhatIsHere::TheComposer))
+            .unwrap_or_else(|| panic!("{edge:?}: the Dock has no composer"));
+
+        assert_eq!(
+            what_a_press_on_the_dock_does(&dock, at(&dock, composer.from_the_start())),
+            WhatAPressOnTheDockDoes::TypeIntoTheComposer,
+            "{edge:?}: the field's first pixel"
+        );
+        assert_eq!(
+            what_a_press_on_the_dock_does(
+                &dock,
+                at(&dock, composer.past_its_end().saturating_sub(1))
+            ),
+            WhatAPressOnTheDockDoes::TypeIntoTheComposer,
+            "{edge:?}: the field's last pixel"
+        );
+    }
+}
+
+/// **The two commands beside it still do nothing**, so the change above gave
+/// the composer an outcome without quietly giving one to its neighbours.
+#[test]
+fn show_all_and_history_are_still_taken_and_not_acted_on() {
+    for edge in Edge::EVERY {
+        let dock = on_the_edge(edge, 5);
+        let mut found = 0;
+        for place in dock.places.each() {
+            if matches!(
+                place.what(),
+                alo_dock::places::WhatIsHere::ShowAll | alo_dock::places::WhatIsHere::History
+            ) {
+                found += 1;
+                assert_eq!(
+                    what_a_press_on_the_dock_does(&dock, at(&dock, place.from_the_start())),
+                    WhatAPressOnTheDockDoes::Nothing,
+                    "{edge:?}: {:?}",
+                    place.what()
+                );
+            }
+        }
+        assert!(
+            found > 0,
+            "{edge:?}: neither command is on this Dock, so this proves nothing"
+        );
+    }
+}

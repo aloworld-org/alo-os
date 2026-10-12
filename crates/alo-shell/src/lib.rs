@@ -125,6 +125,8 @@ mod canvas_wheel_zoom;
 mod capture_flatten;
 mod capture_paint;
 mod capture_raster;
+/// What one key press means in the Dock's composer.
+pub mod composer_keys;
 mod cursor;
 mod cursor_mask;
 mod default_cursor;
@@ -316,6 +318,8 @@ mod software_scanout;
 pub mod status_items;
 mod status_row;
 mod surfaces;
+/// The Dock's composer as a field a person types a request into.
+pub mod the_composer_a_person_types_in;
 /// Everything on the Dock that a person reads, said once a frame.
 mod tab_moves_among_the_bars_controls;
 pub mod the_docks_words;
@@ -323,6 +327,8 @@ mod the_edge_takes_the_keyboard;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;
+/// The task windows a person opened by asking alo for something.
+pub mod the_tasks_a_person_opened;
 mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
 mod their_displays;
