@@ -97,15 +97,23 @@ pub(crate) fn every_windows_edge(
             EdgePicture::of(
                 &edge,
                 pointing,
-                menu.as_ref().map(|(menu, on)| {
-                    (
-                        menu,
-                        crate::window_menu_paint::PointingAtTheMenu {
-                            hovered: None,
-                            focused: *on,
-                        },
-                    )
-                }),
+                crate::window_edge_picture::OverTheEdge {
+                    menu: menu.as_ref().map(|(menu, on)| {
+                        (
+                            menu,
+                            crate::window_menu_paint::PointingAtTheMenu {
+                                hovered: None,
+                                focused: *on,
+                            },
+                        )
+                    }),
+                    // **A reason to show the whole title**, where there is one.
+                    // The title sits in the drag region, so a pointer on the
+                    // title is one the edge classifies as `Drag`; the keyboard's
+                    // road is being on the edge at all, which is the nearest
+                    // thing to focusing the title until a tab stop exists for it.
+                    showing: the_reason_to_show_the_whole_title(server, &edge, keyboard),
+                },
                 title.its_own_words(),
                 &mut labels.fonts,
                 output,
@@ -118,3 +126,34 @@ pub(crate) fn every_windows_edge(
 #[cfg(test)]
 #[path = "every_windows_edge_tests.rs"]
 mod tests;
+
+/// Why the whole title would be shown for this window, if it was cut.
+///
+/// [`None`] where there is no reason, which is most windows most of the time.
+/// `crate::window_edge_tooltip::tooltip_of` answers `None` again for a title
+/// that fits, so this says *a person is looking at this title* and nothing
+/// about whether there is more of it to see.
+fn the_reason_to_show_the_whole_title(
+    server: &crate::Server,
+    edge: &crate::window_edge::WindowEdge,
+    keyboard: crate::window_edge_keys::TheKeyboardOnTheEdge,
+) -> Option<crate::window_edge_tooltip::Because> {
+    // **The pointer first**, because it is the specific one: a person pointing
+    // at a title is asking about that title, where the keyboard being
+    // somewhere on the edge is weaker evidence.
+    if let Some(at) = server.where_the_pointer_is_in_logical_pixels()
+        && matches!(
+            crate::window_edge_pointing::what_is_under(edge, at),
+            Some(crate::window_edge_pointing::UnderThePointer::Drag)
+        )
+    {
+        return Some(crate::window_edge_tooltip::Because::APointerIsOnIt);
+    }
+    match keyboard {
+        crate::window_edge_keys::TheKeyboardOnTheEdge::Nowhere => None,
+        crate::window_edge_keys::TheKeyboardOnTheEdge::OnAControl(_)
+        | crate::window_edge_keys::TheKeyboardOnTheEdge::InTheMenu(_) => {
+            Some(crate::window_edge_tooltip::Because::TheKeyboardIsOnIt)
+        }
+    }
+}
