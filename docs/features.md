@@ -131,6 +131,23 @@ Nothing here is a differentiator. All of it is required.
   **pinned-and-open** grid its design specifies (`406-26320`), so an installed
   application that is neither pinned nor open does not belong in it. Removing
   the default neither creates nor cancels an application-store feature.
+- [v0.01] ★ **An icon's own menu, holding only what works** — the way a person
+  reaches *pin*, *unpin* and *show windows* for one application, opened from
+  its icon by the pointer, by the menu key and by a screen reader's own route.
+  **It lists what this machine can actually do and nothing else.** An action
+  with no performer is absent rather than greyed, which is the same rule as
+  *omit unavailable applications; never show placeholders or non-working
+  buttons* — and it is why this arrives with three items when
+  `alo_dock::menu::What` names eleven: the other eight have nowhere to go yet,
+  and each joins the menu in the change that makes it work.
+  **The Dock never becomes a dashboard for the agent.** Nothing on it is
+  permanent, `What::on_the_dock_permanently` is an empty list and a test says
+  so, and *Let alo work in this window* is a window's menu rather than an
+  icon's.
+  *Added 2026-10-12 by the owner, into the current release, after it was
+  measured that `docs/features.md` already promised the person owns their
+  pinned list and **nothing in the product could pin or unpin anything** —
+  every call outside a test was a fixture.*
 - [v0.01] ★ **The Dock holds two kinds of thing, and the person owns both** —
   an **application entry**, which starts or focuses an application, and a
   **native-action entry**, which reaches one of alo's own surfaces. Settings is
