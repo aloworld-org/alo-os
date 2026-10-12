@@ -13,14 +13,19 @@
 
 use super::*;
 use crate::{
-    SignInKey, SignInScreen, Signing, WindowControlLabels, direct_sign_in::Lane,
-    direct_target::Target, sign_in_raster::SignInLook, software_scanout::SoftwarePainter,
+    DirectPointerEvent, SignInKey, SignInScreen, Signing, WindowControlLabels,
+    direct_sign_in::Lane,
+    direct_target::Target,
+    sign_in_layout::{SignInLayout, sign_in_laid_out},
+    sign_in_raster::SignInLook,
+    software_scanout::SoftwarePainter,
 };
 use alo_accounts::Accounts;
 use alo_appearance::{Scheme, TextScale};
 use alo_greeting::{Greeting, Knocking, NotAnswered};
 use alo_sessiond::{Answered, Knock};
 use alo_strings::Strings;
+use smithay::utils::{Logical, Rectangle, Size};
 
 /// A door that opens for anybody who reaches it.
 #[derive(Debug)]
@@ -158,4 +163,179 @@ fn nothing_is_drawn_once_a_session_has_opened() {
         handed_to_the_card(&mut opened).is_empty(),
         "a frame was drawn after somebody had already signed in"
     );
+}
+
+/// The display these tests draw to: `scanout_tests::output()`'s own mode.
+const DISPLAY: (i32, i32) = (1280, 720);
+
+/// The middle of one of the design's targets, on that display.
+///
+/// **Laid out rather than written down**, so a test aims where the frame drew
+/// and not at a number somebody copied out of the capture.
+fn the_middle_of(which: fn(&SignInLayout) -> Rectangle<i32, Logical>) -> (i32, i32) {
+    let at = sign_in_laid_out(Size::from(DISPLAY)).unwrap();
+    let target = which(&at);
+    (
+        target.loc.x + target.size.w / 2,
+        target.loc.y + target.size.h / 2,
+    )
+}
+
+/// Type `keys`, optionally draw a frame, optionally move the pointer, then
+/// press the left button — and say both whether anything was pressed and what
+/// became of the screen.
+///
+/// The frame comes first because **nothing is pressed before the first draw**:
+/// the lane hit-tests against the size it last drew at, which is how the press
+/// and the picture cannot disagree.
+fn after_a_click(
+    keys: &[SignInKey],
+    drawn: bool,
+    pointing: Option<(i32, i32)>,
+) -> (bool, Option<Signing<ADoor>>) {
+    let mut signing = Some(Signing::Still(Box::new(a_screen())));
+    let mut labels = WindowControlLabels::new().unwrap();
+    let (device, _log) = fixture(&[], 0);
+    let mut target = Target::new(
+        SoftwarePainter::new().unwrap(),
+        device,
+        scanout_tests::output(),
+    );
+    let pressed = {
+        let mut lane = Lane::of(&mut signing, &mut labels, light());
+        for key in keys {
+            lane.pressed(*key);
+        }
+        if drawn {
+            lane.present(&mut target).unwrap();
+        }
+        if let Some((x, y)) = pointing {
+            lane.pointed(&DirectPointerEvent::Absolute {
+                x: f64::from(x) / f64::from(DISPLAY.0 - 1),
+                y: f64::from(y) / f64::from(DISPLAY.1 - 1),
+                time: 1,
+            })
+            .unwrap();
+        }
+        lane.pressed_by_the_pointer()
+    };
+    drop(target);
+    (pressed, signing)
+}
+
+/// Everything typed to reach a password waiting to be submitted.
+fn ready_to_submit() -> Vec<SignInKey> {
+    let mut keys = typing("ada");
+    keys.push(SignInKey::Enter);
+    keys.extend(typing("the-one-they-typed"));
+    keys
+}
+
+/// **A click on the submit arrow signs somebody in.**
+///
+/// The test this whole change exists for. The arrow was drawn from
+/// 2026-10-12 and nothing took a press, so it was a picture of a control: the
+/// screen reached the display, a person could see the thing to click, and
+/// clicking it did nothing at all. That is the fault this repository keeps
+/// finding — two halves with nothing joining them — and this is the assertion
+/// that the join is there.
+#[test]
+fn a_click_on_the_submit_arrow_signs_somebody_in() {
+    let (pressed, signing) = after_a_click(
+        &ready_to_submit(),
+        true,
+        Some(the_middle_of(|at| at.submit)),
+    );
+    assert!(pressed, "the click did not land on the submit target");
+    assert!(
+        matches!(signing, Some(Signing::HandedOver(_))),
+        "a click on the submit arrow did not open a session"
+    );
+}
+
+/// **A click on the power target signs nobody in and powers nothing off.**
+///
+/// The refusal that matters most on this screen: a press before anybody has
+/// signed in reaches the bottom-right corner, and nothing privileged is wired
+/// to it. `crate::a_press_on_the_sign_in_screen` holds the reason; this holds
+/// it from outside, through the real lane, with a password typed and waiting —
+/// which is the state in which a mistake would be worst.
+#[test]
+fn a_click_on_the_power_target_signs_nobody_in_and_powers_nothing_off() {
+    let (pressed, signing) =
+        after_a_click(&ready_to_submit(), true, Some(the_middle_of(|at| at.power)));
+    assert!(
+        pressed,
+        "the power target did not answer, so this test proves nothing about it"
+    );
+    assert!(
+        matches!(signing, Some(Signing::Still(_))),
+        "a click on the power target opened a session"
+    );
+}
+
+/// **A click before the first frame does nothing**, because the lane has no
+/// size to hit-test against and will not invent one.
+#[test]
+fn a_click_before_the_first_frame_does_nothing() {
+    let (pressed, signing) = after_a_click(
+        &ready_to_submit(),
+        false,
+        Some(the_middle_of(|at| at.submit)),
+    );
+    assert!(
+        !pressed,
+        "a press was acted on before anything had been drawn"
+    );
+    assert!(matches!(signing, Some(Signing::Still(_))));
+}
+
+/// **A click from a pointer nothing has moved does nothing.**
+///
+/// A pointer with no position is not a pointer at the origin. Without this a
+/// stray button event would land at (0, 0), and *Back to lock* sits at
+/// (32, 28) — near enough the corner that the wrong answer would look right.
+#[test]
+fn a_click_with_no_pointer_motion_does_nothing() {
+    let (pressed, signing) = after_a_click(&ready_to_submit(), true, None);
+    assert!(!pressed, "a pointer with no position pressed something");
+    assert!(matches!(signing, Some(Signing::Still(_))));
+}
+
+/// **Clicking *Switch person* takes back everything typed.**
+///
+/// Read from the pixels rather than from the call: the frame afterwards is the
+/// frame of a screen nobody has typed at. The owner's own sentence is
+/// *switching people clears the previous credential entry*, and a screen that
+/// kept the password while saying it had switched would pass any test that
+/// only checked the click was consumed.
+#[test]
+fn clicking_switch_person_takes_back_what_was_typed() {
+    let (pressed, mut signing) = after_a_click(
+        &ready_to_submit(),
+        true,
+        Some(the_middle_of(|at| at.switch_person)),
+    );
+    assert!(pressed, "the switch person target did not answer");
+    assert_eq!(
+        handed_to_the_card(&mut signing),
+        handed_to_the_card(&mut after(&[])),
+        "switching people left what had been typed on the screen"
+    );
+    // The control: a screen still holding a typed password is *not* that
+    // frame, so the comparison above is about the clearing and not about two
+    // frames that are always equal.
+    assert_ne!(
+        handed_to_the_card(&mut after(&ready_to_submit())),
+        handed_to_the_card(&mut after(&[])),
+        "a typed password changes nothing in the frame"
+    );
+}
+
+/// **A click on the ground is consumed by nothing and changes nothing.**
+#[test]
+fn a_click_on_the_ground_presses_nothing() {
+    let (pressed, signing) = after_a_click(&ready_to_submit(), true, Some((8, 8)));
+    assert!(!pressed, "the screen's own ground answered as a control");
+    assert!(matches!(signing, Some(Signing::Still(_))));
 }
