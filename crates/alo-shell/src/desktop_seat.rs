@@ -73,6 +73,24 @@ impl Server {
         })
     }
 
+    /// Whether Shift was held when this key was pressed.
+    ///
+    /// For Tab on the bar, which moves one way or the other. **Answered by the
+    /// seat** rather than by a modifier the Dock tracks itself: there is one
+    /// XKB state on this machine and it is here.
+    ///
+    /// Answers `false` for a key the seat did not intercept, which is a key
+    /// that was already down — the honest answer, and the direction that moves
+    /// a person onward rather than back.
+    ///
+    /// # Errors
+    /// As [`Server::running_key`].
+    pub(crate) fn the_docks_tab_key(&mut self, code: u32) -> Result<bool, InputError> {
+        Ok(self
+            .desktop_key(code, KeyState::Pressed, 0, |_, held| held.shift)?
+            .unwrap_or(false))
+    }
+
     /// One key, intercepted, and what `meaning` makes of its symbol.
     fn desktop_key<K>(
         &mut self,

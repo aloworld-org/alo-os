@@ -317,6 +317,7 @@ pub mod status_items;
 mod status_row;
 mod surfaces;
 /// Everything on the Dock that a person reads, said once a frame.
+mod tab_moves_among_the_bars_controls;
 pub mod the_docks_words;
 mod the_edge_takes_the_keyboard;
 mod the_panel_reveals;
