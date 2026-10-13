@@ -1,8 +1,19 @@
 # ADR 0106 — alo's own service is a fourth place an answer comes from, and it needs an account the sign-in cannot give
 
-**Status:** **proposed, 2026-10-13**, by the Mac lane, for the owner. Decision
-3 is the owner's own answer, given the same day; one question in it is still not
-a lane's to answer, so this asks rather than changes.
+**Status:** **proposed, 2026-10-13**, by the Mac lane — and the work **deferred
+by the owner** the same day, in these words: *we can not bill when the alo os is
+not working, let us first make alo os work perfectly than think of billing.*
+
+*Proposed and not accepted, deliberately: decision 3 is the owner's own words
+and the identifier question below was answered, but decisions 1, 2 and 4 are
+this lane's and he has not ruled on them — and `alo-citing` is right that an ADR
+with no status is one every reader takes as settled.*
+
+Everything below stands as the shape to build **when it returns**, and the lane
+is the desktop lane's by the owner's word. Nothing in it is built. It is kept
+rather than withdrawn because it was decided rather than guessed, and because
+the identifier question below was answered on the way — an answer worth more
+than the proposal it belongs to.
 
 ## What the owner decided, and what it ran into
 
@@ -131,29 +142,42 @@ lawful rather than merely visible — **named on the choice before it is made**.
 Picking that row is the permission for it. It is never automatic, and a machine
 whose owner chose any of the other four never contacts anything.
 
+## The question that was answered on the way: nothing identifies the machine
+
+This ADR asked *what identifies a machine during the trial, before any account
+exists*, because credits have to be metered against something. **The desktop
+lane's answer is that nothing should, and it is better than the question.**
+
+An identifier minted for metering is a tracking identifier whatever it is
+called: created before the person has an account, sent to us, and persistent
+across sessions. That is the shape of the thing this product exists not to be,
+and [ADR 0004](0004-the-organisations-machine.md)'s *no silent enrollment* and
+law 1 both bite on it. **Hardware-derived is worse rather than better** — a
+fingerprint leaving a machine sold on sovereignty is not something to write.
+
+So: **the client sends no identifier, and the trial is metered at the service**,
+by what it already observes and by how the free credit is sized. Per-machine
+metering begins when an account exists, which is exactly the moment the person
+chose it.
+
+**The price, written down rather than discovered:** the trial is farmable by
+reinstalling. That is the right trade. The free credit is marketing spend, and
+the alternative buys abuse-resistance with the product's central claim — *we
+fingerprint your machine before you have an account* is not a sentence anybody
+recovers from.
+
+If per-machine metering is ever decided to be required, the least-bad shape is a
+**random** token the client generates at the moment a person picks alo, shown to
+them, stored locally, resettable, and never hardware-derived — in an ADR with
+this trade written down. The lane that proposed this would argue against even
+that, and said so.
+
 ## The question this does not answer
 
-**What the online account is, and who builds it.** The destination is settled —
-a token in the Secret Service keyring with a `SecretRef` in the person's
-`settings.toml`, which `alo_agentd::questions::Questions::a_key_from` already
-looks up and which `crates/alo-agentd/tests/the_agent_asks_a_real_provider.rs`
-proves end to end. **The source does not exist.** Nothing in alo OS creates an
-online identity, authenticates against one, or renews a token, and nothing in
-the sign-in path writes to that reference.
-
-That is a product decision with a service behind it rather than a lane's design
-choice, so it is the owner's:
-
-- what the trial's own credential is — the machine contacts the service before
-  any account exists, so something has to identify it, and whatever that is
-  lands in the keyring with a reference in the settings like any other key;
-- what happens to a machine whose token has expired or whose payment has
-  stopped: proposed here as **the agent's surfaces say the service cannot be
-  reached and nothing silently falls back to a local model or another provider**,
-  because *never a silent fallback* is one of the two protections law 5 keeps on
-  at every setting;
-- and whether a person may hold both an alo-service account and their own
-  provider key at once, which the settings already permit and nothing forbids.
+**Who builds the service.** There is no alo service: the server, the metering
+and the billing are outside this repository, so what either lane could build
+today is the machine-side half against something that does not exist. Both lanes
+said so to the owner independently, which is part of why it is deferred.
 
 **And one thing learnt from another lane, worth writing into this ADR before
 anything is built.** `desktop`'s lane spent 2026-10-13 finding four defects in
