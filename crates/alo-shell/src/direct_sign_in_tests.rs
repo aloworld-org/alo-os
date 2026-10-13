@@ -339,3 +339,60 @@ fn a_click_on_the_ground_presses_nothing() {
     assert!(!pressed, "the screen's own ground answered as a control");
     assert!(matches!(signing, Some(Signing::Still(_))));
 }
+
+/// **The frame a card is handed is the design's own ground, by name.**
+///
+/// The boot of 2026-10-12 drew a white screen with forty pixels of ink on it.
+/// Every test in this file passed: `the_sign_in_screen_reaches_the_bytes_a_card_is_handed`
+/// asked whether the bytes were more than one colour, and
+/// `two_different_passwords_are_the_same_frame` asked whether they changed
+/// with what was typed. **A white rectangle with a word on it satisfies both.**
+/// Neither ever asked what colour anything was.
+///
+/// The cause was one full-screen `Solid` of `palette.ground` painted *over*
+/// the raster, because `SignInPicture::paint` draws the surface first and the
+/// solids on top. So this names the colour, which is the only question that
+/// would have caught it.
+#[test]
+fn the_frame_a_card_is_handed_carries_the_designs_ground() {
+    let pixels = handed_to_the_card(&mut after(&[]));
+    assert!(!pixels.is_empty(), "nothing was handed to the card");
+
+    // **The scanout's own byte order, which is not the design's.** The bytes
+    // come back blue first; `#FAF7F2` arrives as `F2 F7 FA`. Read as written
+    // and the assertion below would be about a colour nothing draws.
+    let mut ground = 0_usize;
+    let mut white = 0_usize;
+    let mut distinct: Vec<[u8; 3]> = Vec::new();
+    for four in pixels.as_chunks::<4>().0 {
+        let (Some(b), Some(g), Some(r)) = (four.first(), four.get(1), four.get(2)) else {
+            continue;
+        };
+        let colour = [*r, *g, *b];
+        if colour == crate::sign_in_surface::THE_GROUND_IS {
+            ground += 1;
+        }
+        if colour == [0xFF, 0xFF, 0xFF] {
+            white += 1;
+        }
+        if distinct.len() < 256 && !distinct.contains(&colour) {
+            distinct.push(colour);
+        }
+    }
+
+    assert!(
+        ground > 0,
+        "not one pixel of the design's ground #FAF7F2 reached the card, and {white} are \
+         pure white: the raster was painted over"
+    );
+    assert!(
+        distinct.len() > 16,
+        "the frame has {} distinct colours: a handful of flat rectangles, not a drawn design",
+        distinct.len()
+    );
+    assert!(
+        white * 2 < pixels.len() / 4,
+        "{white} of {} pixels are pure white, which is not a screen this design draws",
+        pixels.len() / 4
+    );
+}
