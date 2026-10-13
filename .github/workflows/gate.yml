@@ -332,7 +332,7 @@ jobs:
       # definition excludes three packages and one test by name. One lane runs
       # `cargo test --workspace` with **no** exclusion at all, so its green covers
       # strictly more than this one's — and nobody reading a tick would know which
-      # they were looking at. This is the *first* of two ways a green here is
+      # they were looking at. This is the *first* of three ways a green here is
       # narrower than a lane's; `alo/gates-on-a-runner` at the bottom of this file
       # is the second, and it is named the way it is for the same reason.
       #
@@ -341,6 +341,28 @@ jobs:
       # and what no hosted runner can do. CI running something other than the
       # repository's own definition would be the drift this file exists to
       # prevent, pointing the other way.
+      #
+      # **Third: this runs no doctests.** `cargo-nextest` does not execute them
+      # at all, so `cargo test --workspace` on a lane covers strictly more than a
+      # green here *again*, and for a reason that cannot be printed the way the
+      # exclusions below can — it is not a filter anybody chose and there is no
+      # list to read it off. Which is exactly why it is written here.
+      #
+      # Measured on 2026-10-13, with a control: neither this file nor
+      # `tools/kernel-loop/src/gates.rs` contains `doctest`, `--doc` or
+      # `doc-test` anywhere, while this file discusses coverage gaps four times.
+      #
+      # It was found the expensive way. `alo-approving`'s **crate-level
+      # example** — the first thing a reader of the approval crate meets —
+      # renames `/home/anna/Invoices/march.pdf` and `.expect`s the grants to
+      # permit it. #667 made a change wait on a sentence that is about
+      # something, so `proposing` now refuses a path nothing is at, and the
+      # example panics with the refusal inside it. **It was broken on `main`
+      # with every gate green**, through #667's own nine gates and through every
+      # gate run after it, and a lane's unfiltered `cargo test --workspace` is
+      # what found it. One broken example in 634 binaries, so the workspace's
+      # answer is *this one* rather than *we have a doctest problem* — but the
+      # gate's answer is that it cannot see any of them.
       #
       # So it prints the exclusions instead. A reader comparing a green here
       # against a green on a lane can see the difference rather than infer it,
