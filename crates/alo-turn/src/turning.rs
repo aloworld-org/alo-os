@@ -89,6 +89,7 @@ use crate::became::Became;
 use crate::carrying::carrying_out;
 use crate::machine::Machine;
 use crate::refusing::NotDone;
+use crate::the_sentence_is_about_something::the_sentence_is_about_something;
 use crate::what_a_verb_did::WhatAVerbDid;
 
 /// A turn that is under way.
@@ -293,6 +294,22 @@ impl<'a, 'm> Turning<'a, 'm> {
                 return Err(NotDone::NeverAsked(why));
             }
         };
+        // **And that the sentence is about something that is there.**
+        // `the_sentence_is_about_something` says at length why this is asked
+        // here as well as at execution: *what a person approves is that
+        // sentence*, and a sentence naming a file that does not exist is one
+        // they cannot judge. It is also the only refusal an agent can learn
+        // from, because a turn ends when a change is waiting.
+        //
+        // Refused as the grants' own refusal is, so it is one entry of one kind
+        // in the record and `NotDone::Refused` to the caller — this is the
+        // capability model saying no about a path, which is what
+        // `NotDone::Refused` already means.
+        if let Err(refused) =
+            the_sentence_is_about_something(&call, self.machine.resolving(), self.machine.strings())
+        {
+            return self.stopped_at_the_moment(refused, now);
+        }
         let id = self.approvals.propose(proposal);
         self.became.push((id.as_u64(), Became::Waiting));
         Ok(id)
