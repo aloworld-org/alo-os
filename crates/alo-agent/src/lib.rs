@@ -27,6 +27,9 @@
 //!
 //! # What it still cannot do
 //!
+//! [`AtTheDaemonsSocket`] is the real door; the loop is tested against one that
+//! answers from a list.
+//!
 //! **Nothing here has driven a real model through more than one step.** Every
 //! grade in `data/catalogue.toml` was earned on single-step exercises — ask,
 //! answer, done — and `gpt-4o-mini` scoring ten of ten on 2026-10-13 was ten of
@@ -36,11 +39,13 @@
 //! order of the steps and nothing about a model.
 #![forbid(unsafe_code)]
 
+pub mod at_the_daemons_socket;
 pub mod driving;
 pub mod how_far;
 pub mod the_door;
 pub mod what_happened;
 
+pub use at_the_daemons_socket::AtTheDaemonsSocket;
 pub use driving::driving;
 pub use how_far::HowFar;
 pub use the_door::{NotAnswered, TheDoor};
