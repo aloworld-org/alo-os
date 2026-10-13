@@ -92,6 +92,12 @@ pub struct Asking<'a> {
     pub(crate) policy: &'a SourcePolicy,
 }
 
+/// What a service calls the envelope back in an error.
+///
+/// Named for the thing rather than `schema`, because it is what appears in a
+/// provider's own message when it will not accept it.
+const THE_ENVELOPE_IS_CALLED: &str = "alo_agent_request";
+
 impl<'a> Asking<'a> {
     /// A question about to be put where this permission allows.
     #[must_use]
@@ -157,6 +163,17 @@ impl<'a> Asking<'a> {
     /// caller before any boundary was entered (ADR 0020). It is not resolved
     /// here and no name server is asked anything: a request with an address
     /// nobody registered is one that would reach somewhere nobody was shown.
+    /// **Put the question to a provider somebody added**, answered in prose.
+    ///
+    /// *This doc was reattached on 2026-10-13, when the envelope door was added
+    /// above it and took the original with it.* What stood here is the
+    /// paragraph above: one permission, one attempt, `to` resolved and
+    /// registered by the caller, and [`NotAsked`]'s four different things to
+    /// do.
+    ///
+    /// # Errors
+    /// [`NotAsked`] — see [`crate::refusing`]'s table. Three of the four mean
+    /// nothing was sent at all.
     pub fn to_a_provider(
         self,
         question: &Question,
@@ -164,6 +181,75 @@ impl<'a> Asking<'a> {
         indicator: &mut Indicator,
         now: SystemTime,
         to: &[SocketAddr],
+    ) -> Result<Asked, NotAsked> {
+        self.the_provider_road(question, hosted, indicator, now, to, false)
+    }
+
+    /// **Put an agent turn's question to a provider, holding the answer to the
+    /// protocol's envelope.**
+    ///
+    /// [`Asking::to_a_provider`] with one thing more, and
+    /// [`Asking::to_this_machine_in_the_envelope`]'s reason met on the other
+    /// road: an agent turn's question must be answered *in the protocol*, and
+    /// until now only the local runtime was asked that way.
+    ///
+    /// # Why, measured rather than supposed
+    ///
+    /// A local model is held to the envelope before a single token comes back,
+    /// and cannot put a verb's name where a door belongs. A hosted model was
+    /// held to nothing. On 2026-10-13, three rounds of `alo-driving`'s fixed ten
+    /// against `gpt-4o-mini`, **every failure was that one shape error** —
+    /// `{"format":1,"asks":{"find_in_folder":{…}}}` — and it was the only
+    /// failure the agent's own end-to-end run had left.
+    ///
+    /// The schema is `alo_models::in_the_envelope::the_envelope_a_provider_accepts`
+    /// and **not** the one the local runtime is handed, which is a difference
+    /// measured rather than chosen: a provider's strict mode refuses `oneOf`
+    /// outright and requires every object to be fully specified, so *a door
+    /// whose contents are any object* — which is exactly what the envelope says
+    /// — cannot be expressed to it. That function carries the provider's own
+    /// error messages and what the difference costs.
+    ///
+    /// Takes `self`, as every door does: one permission, one attempt.
+    ///
+    /// # Errors
+    /// [`NotAsked`], exactly as [`Asking::to_a_provider`] answers it — and a
+    /// service that does not know `response_format` answers 400, which arrives
+    /// as *something answered, and not with an answer*. **Nothing falls back to
+    /// asking unheld**, because a constraint that quietly stops applying is one
+    /// nobody can rely on; a provider that cannot be held is one the person is
+    /// told about.
+    pub fn to_a_provider_in_the_envelope(
+        self,
+        question: &Question,
+        hosted: &Hosted<'_>,
+        indicator: &mut Indicator,
+        now: SystemTime,
+        to: &[SocketAddr],
+    ) -> Result<Asked, NotAsked> {
+        self.the_provider_road(question, hosted, indicator, now, to, true)
+    }
+
+    /// Both provider doors, so law 1 happens once and in one order.
+    ///
+    /// Not named `to_…` on purpose: the public doors take `self` deliberately —
+    /// one permission, one attempt — and a private `to_` that did the same
+    /// reads to clippy as a conversion that should borrow. The name says what
+    /// it is instead.
+    ///
+    /// `in_the_envelope` is the only difference between them, and it changes
+    /// the request and nothing about what is shown, permitted or recorded —
+    /// which is why they share this rather than each doing the showing. A
+    /// second copy of the order *showable, then permitted, then asked* is a
+    /// second place to get law 1 wrong.
+    fn the_provider_road(
+        self,
+        question: &Question,
+        hosted: &Hosted<'_>,
+        indicator: &mut Indicator,
+        now: SystemTime,
+        to: &[SocketAddr],
+        in_the_envelope: bool,
     ) -> Result<Asked, NotAsked> {
         let source = self.answering.source().clone();
         match &source {
@@ -197,7 +283,19 @@ impl<'a> Asking<'a> {
             .map_err(NotAsked::HeldBack)?;
 
         // And only now.
-        match hosted.ask(question, to) {
+        let said = if in_the_envelope {
+            hosted.ask_held_to_a_schema(
+                question,
+                to,
+                crate::openai::AShape {
+                    named: THE_ENVELOPE_IS_CALLED,
+                    schema: alo_models::in_the_envelope::the_envelope_a_provider_accepts(),
+                },
+            )
+        } else {
+            hosted.ask(question, to)
+        };
+        match said {
             Ok(said) => Ok(Asked::new(
                 departing,
                 Answer::new(said, source, question.of().to_owned()),
