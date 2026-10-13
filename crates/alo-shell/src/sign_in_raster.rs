@@ -169,6 +169,7 @@ pub(crate) fn picture(
             drawn.inked.extend(text.placed(left, top, height));
         }
         SignInShows::Fields {
+            whose: who,
             name,
             password_typed,
             field,
@@ -223,7 +224,7 @@ pub(crate) fn picture(
                 // and their casing: `docs` is theirs and `Disan` is theirs, and
                 // upper-casing it here would be this file deciding how somebody's
                 // name looks.
-                if let Some(initial) = name.chars().next() {
+                if let Some(initial) = who.chars().next() {
                     let shaped = sentence(
                         fonts,
                         &initial.to_string(),
@@ -241,7 +242,7 @@ pub(crate) fn picture(
                 // literal: `disan` in the design is sample content.
                 let greeting = sentence(
                     fonts,
-                    name,
+                    who,
                     at.account.size.w,
                     measure.metrics(),
                     palette.ground,

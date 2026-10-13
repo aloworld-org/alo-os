@@ -85,6 +85,18 @@ pub enum Signing<K: Knocking> {
 pub enum SignInShows<'a> {
     /// A name field and a password field.
     Fields {
+        /// **Whose screen this is**: the display name of the person this
+        /// machine signs in, read from their own account. Empty when the
+        /// machine has nobody with that number yet.
+        ///
+        /// Separate from `name`, because they are different facts and were
+        /// confused once. The full-screen design greets the person it is
+        /// authenticating — *alo, disan* above the entry — and that greeting
+        /// was drawn from `name`, which is **what has been typed** and is
+        /// empty when the screen appears. So the screen shaped an empty
+        /// string, drew a box with no glyphs in it, and a booted machine
+        /// showed a blank bar where somebody's name belongs.
+        whose: &'a str,
         /// The name as typed.
         name: &'a str,
         /// Whether anything is typed in the password field. Not how much.
@@ -154,7 +166,8 @@ impl<K: Knocking> SignInScreen<K> {
     #[must_use]
     pub fn shows(&self) -> SignInShows<'_> {
         match &self.stands {
-            Stands::SignIn(_) => SignInShows::Fields {
+            Stands::SignIn(greeting) => SignInShows::Fields {
+                whose: greeting.whose_name().unwrap_or_default(),
                 name: self.entry.name(),
                 password_typed: self.entry.has_password(),
                 field: self.entry.field(),

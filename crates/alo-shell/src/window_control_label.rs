@@ -50,9 +50,27 @@ pub struct WindowControlLabel {
 }
 
 impl WindowControlLabels {
-    /// Use the bundled, OFL-licensed Inter face specified by the design brief.
+    /// The bundled, OFL-licensed faces: **Manrope first, then Inter.**
+    ///
+    /// Manrope is alo's own face — every `Label/*` in the design file is drawn
+    /// in it, and `crate::painted_text::ALOS_OWN_FACE` names it. Inter stays
+    /// loaded behind it because a script Manrope does not cover must still
+    /// render; narrowing that would mean somebody's language stops appearing.
+    ///
+    /// **This loaded Inter alone until 2026-10-12, and the sign-in screen drew
+    /// no text at all.** That screen shapes its sentences through these fonts
+    /// while asking for `Family::Name("Manrope")`, which was in no database
+    /// here — so cosmic-text found no face, laid out no glyphs, and gave back
+    /// a box of the right size with nothing in it. A booted machine showed the
+    /// wallpaper, the monogram's square and the entry field, and not one word,
+    /// including the person's own name. The Dock was unaffected because
+    /// `crate::dock_raster` loads Manrope into a font system of its own, which
+    /// is how one capability written twice hides a fault in the other.
     pub fn new() -> Result<Self, WindowControlLabelError> {
-        Self::from_fonts([include_bytes!("../fonts/Inter.ttf").to_vec()])
+        Self::from_fonts([
+            include_bytes!("../fonts/Manrope.ttf").to_vec(),
+            include_bytes!("../fonts/Inter.ttf").to_vec(),
+        ])
     }
 
     /// Supply an explicit primary font followed by fallback fonts. Every entry

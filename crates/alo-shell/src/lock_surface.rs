@@ -92,6 +92,12 @@ impl<N> LockSurface<N> {
     /// The same password-free view used by the sign-in rasterizer.
     pub fn shows(&self) -> SignInShows<'_> {
         SignInShows::Fields {
+            // **Nobody, here.** The lock surface re-reads the accounts only at
+            // submission and holds no greeting, so it has no account to name.
+            // It draws `WhoseScreen::InsideAnother`, which greets nobody, so
+            // this is unused rather than wrong — and empty rather than a name
+            // this surface would have to go and look up.
+            whose: "",
             name: self.entry.name(),
             password_typed: self.entry.has_password(),
             field: self.entry.field(),

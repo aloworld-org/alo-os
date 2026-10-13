@@ -105,9 +105,17 @@ fn the_sign_in_screen_reaches_the_bytes_a_card_is_handed() {
         nothing_typed.iter().any(|byte| Some(*byte) != first),
         "the frame handed to the card is one flat colour: nothing was drawn on it"
     );
+    // **A password, not a name.** This typed a name until 2026-10-12, when
+    // the full-screen design stopped having a name field: it greets the
+    // person it is authenticating and offers one entry, so typing a name
+    // changes nothing a display is handed, and the assertion would be about
+    // a field that is no longer drawn.
+    let mut into_the_password = typing("ada");
+    into_the_password.push(SignInKey::Enter);
+    into_the_password.extend(typing("x"));
     assert_ne!(
         nothing_typed,
-        handed_to_the_card(&mut after(&typing("ada"))),
+        handed_to_the_card(&mut after(&into_the_password)),
         "the same pixels were handed to the card whatever was typed at the screen"
     );
 }
@@ -394,5 +402,75 @@ fn the_frame_a_card_is_handed_carries_the_designs_ground() {
         white * 2 < pixels.len() / 4,
         "{white} of {} pixels are pure white, which is not a screen this design draws",
         pixels.len() / 4
+    );
+}
+
+/// **The screen greets the person it is authenticating, by name.**
+///
+/// Read from the ink, not from the call: the greeting and the monogram's
+/// initial must put glyphs on the screen before anybody has typed anything.
+///
+/// Until 2026-10-12 they were drawn from the *typed* name, which is empty when
+/// the screen appears. So the shaper was handed an empty string, returned a
+/// box of the right size with nothing in it, and a booted machine showed a
+/// blank bar where somebody's name belongs — with the wallpaper, the monogram
+/// square and the entry all drawn correctly around it.
+#[test]
+fn the_screen_greets_the_person_it_is_authenticating() {
+    let ink_of = |shows_for: &Option<Signing<ADoor>>| -> usize {
+        let Some(Signing::Still(screen)) = shows_for.as_ref() else {
+            return 0;
+        };
+        let mut labels = WindowControlLabels::new().unwrap();
+        let drawn = crate::sign_in_raster::picture(
+            screen.shows(),
+            &mut labels,
+            (1280, 800),
+            light(),
+            crate::sign_in_raster::WhoseScreen::ItsOwn,
+        )
+        .unwrap();
+        drawn
+            .inked
+            .iter()
+            .map(|ink| {
+                ink.pixels
+                    .iter()
+                    .filter(|p| u32::from(p[0]) + u32::from(p[1]) + u32::from(p[2]) < 300)
+                    .count()
+            })
+            .sum()
+    };
+
+    // Nothing typed, which is how a person meets this screen.
+    let waiting = Some(Signing::Still(Box::new(a_screen())));
+    let drawn = ink_of(&waiting);
+    // Fifty, because the broken screen drew **zero** and a three-letter name
+    // draws about a hundred. The number tells drawn from not drawn; it is not
+    // a measurement of a typeface.
+    assert!(
+        drawn > 50,
+        "only {drawn} ink pixels before anything was typed: the greeting and the monogram's \
+         initial are not being drawn, so the screen names nobody"
+    );
+
+    // **The control: the same screen with nobody to greet.** An account under
+    // another number leaves this machine signing somebody in — so the screen
+    // is still the fields, not the *make an account* sentence — while
+    // `whose_name` answers nothing. An empty store would have been a
+    // different screen altogether, drawing a sentence and plenty of ink,
+    // which is what this control first did and why it failed.
+    let nobody = {
+        let mut store = Accounts::none().unwrap();
+        store.created("ada", 1001, "the-one-they-typed").unwrap();
+        let words = Strings::of(alo_saying::everything_this_machine_can_say().unwrap());
+        Some(Signing::Still(Box::new(SignInScreen::of(
+            Ok(Greeting::of(store, 1000, ADoor)),
+            words,
+        ))))
+    };
+    assert!(
+        ink_of(&nobody) < drawn,
+        "a machine with no account for this person drew as much ink as one with an account"
     );
 }

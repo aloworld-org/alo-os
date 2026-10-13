@@ -157,6 +157,7 @@ fn what_was_typed_is_forgotten_once_it_is_asked_about() {
     assert!(matches!(
         screen.shows(),
         SignInShows::Fields {
+            whose: _,
             name: "",
             password_typed: false,
             field: SignInField::Name,
@@ -181,6 +182,7 @@ fn editing_asks_nobody_anything() {
     assert!(matches!(
         screen.shows(),
         SignInShows::Fields {
+            whose: _,
             name: "ada",
             password_typed: true,
             field: SignInField::Name,
@@ -424,6 +426,7 @@ fn a_submission_leaves_no_screen_to_submit_again() {
     assert!(matches!(
         screen.shows(),
         SignInShows::Fields {
+            whose: _,
             name: "",
             password_typed: false,
             ..

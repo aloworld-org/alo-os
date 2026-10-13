@@ -153,6 +153,36 @@ impl Accounts {
         self.everybody.iter().any(|one| one.uid() == uid)
     }
 
+    /// The display name of one account, by its number.
+    ///
+    /// **This is the one thing the store will name**, and it exists because a
+    /// sign-in screen greets the person it is authenticating: the design draws
+    /// *alo, disan* above the entry, and a screen that could not read a name
+    /// would greet nobody. Until it existed the screen shaped an empty string,
+    /// drew a box with no glyphs in it, and a booted machine showed a blank
+    /// bar where somebody's name belongs.
+    ///
+    /// # Why this does not widen what the store tells
+    ///
+    /// This file's header says there is no way to ask what the store holds —
+    /// no iterator over names, no `contains` — so that nobody enumerates the
+    /// accounts on a machine they do not own. That stands. **Holding an
+    /// [`Accounts`] already means having read the store**, which is a
+    /// root-owned file at mode `0600` that [`crate::keeping::found`] refuses
+    /// unless nobody else could have written it. A caller who can ask this has
+    /// the whole file in hand and could read every name from it regardless.
+    ///
+    /// What is still refused is the question the other way round: there is no
+    /// way to ask *which names exist*, or whether a given name has an account,
+    /// which is the question an attacker at a keyboard would ask.
+    #[must_use]
+    pub fn name_of(&self, uid: u32) -> Option<&str> {
+        self.everybody
+            .iter()
+            .find(|one| one.uid() == uid)
+            .map(Account::name)
+    }
+
     /// The accounts, for `written.rs` to write down.
     pub(crate) fn everybody(&self) -> &[Account] {
         &self.everybody

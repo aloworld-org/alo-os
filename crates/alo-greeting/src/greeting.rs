@@ -139,6 +139,21 @@ impl<K: Knocking> Greeting<K> {
         self.person
     }
 
+    /// The display name of that person, as their account records it.
+    ///
+    /// [`None`] when this machine has no account with that number — the
+    /// first-start state, where there is nobody to greet yet.
+    ///
+    /// **Only ever this greeter's own person.** A caller cannot ask for a name
+    /// by a number of their choosing: the number is [`Greeting::person`], read
+    /// from `/etc/alo/agentd.toml` before this greeting was made. A surface
+    /// that could name any account would be an enumeration door, which
+    /// `alo_accounts`'s own header refuses to be.
+    #[must_use]
+    pub fn whose_name(&self) -> Option<&str> {
+        self.accounts.name_of(self.person)
+    }
+
     /// The door this greeter knocks at.
     ///
     /// Borrowed rather than handed over: a surface that took the door out of a
