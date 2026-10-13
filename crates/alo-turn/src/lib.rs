@@ -143,6 +143,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+mod acting_on_an_application;
 pub mod answering_for;
 pub mod answers;
 pub mod arriving;
@@ -160,6 +161,7 @@ pub mod next_request;
 pub mod places;
 pub mod refusing;
 pub mod shortening;
+mod the_door_the_compositor_serves;
 mod the_sentence_is_about_something;
 pub mod the_verbs_would_not_declare;
 pub mod turning;
@@ -172,6 +174,7 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use acting_on_an_application::Reached;
 pub use answering_for::AnsweredFor;
 pub use answers::Answers;
 pub use arriving::Arriving;
@@ -179,10 +182,11 @@ pub use became::Became;
 pub use bounding::{Bounding, Doing, Done};
 pub use crossing::Departed;
 pub use kept::Kept;
-pub use machine::Machine;
+pub use machine::{Machine, WhatASoftwareVerbNeeds, WhatAnApplicationVerbNeeds};
 pub use places::Places;
 pub use refusing::NotDone;
 pub use shortening::{Shortened, Shortening};
+pub use the_door_the_compositor_serves::{NotAtTheDoor, TheDoorTheCompositorServes};
 pub use the_verbs_would_not_declare::TheVerbsWouldNotDeclare;
 pub use turning::Turning;
 pub use unanswered::NoAnswer;

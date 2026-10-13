@@ -33,4 +33,14 @@ pub enum TheVerbsWouldNotDeclare {
     /// `alo-software`'s one, or its name colliding with one of the six.
     #[error("the software verb could not be declared: {0}")]
     TheSoftwareVerb(#[from] alo_software::Declaring),
+    /// `alo-applications`' three, or a name colliding with one of the seven.
+    ///
+    /// **Three of its four**, and the fourth's absence is the machine's choice
+    /// rather than this type's: `arrange_application` has no road, so
+    /// `Machine::carrying_out_file_software_and_application_verbs` declares the
+    /// three with
+    /// `alo_applications::verbs::declare_the_three_with_a_road_into` and that
+    /// function carries the argument.
+    #[error("the application verbs could not be declared: {0}")]
+    TheApplicationVerbs(#[from] alo_applications::Declaring),
 }

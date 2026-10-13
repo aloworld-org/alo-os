@@ -104,6 +104,21 @@ pub enum Done {
         /// machine.
         sandboxed: bool,
     },
+    /// An application was opened, brought to the front, or asked to close.
+    ///
+    /// **`acted` means *this machine asked*, never *it is done*** —
+    /// `docs/contracts/application-door.md` says so, and
+    /// `docs/contracts/agent-verbs.md` already promised it about the third act:
+    /// *`close_application` asks; nothing kills anything.* A client that read
+    /// this as *the window is gone* would be reading more than the compositor
+    /// said.
+    Reached {
+        /// Which act: `open`, `focus` or `close`, as the door's own wire spells
+        /// them.
+        act: String,
+        /// The application it was asked of.
+        application: String,
+    },
 }
 
 impl Done {
@@ -134,6 +149,26 @@ impl Done {
                 Sandboxing::Sandboxed => true,
                 Sandboxing::Unsandboxed => false,
             },
+        }
+    }
+
+    /// What one of the three application acts did, as it goes on the wire.
+    ///
+    /// **Takes the two words rather than a turn's type**, which is this file's
+    /// rule and the reason it has one constructor per family: `alo-protocol`
+    /// holds `alo-turn` as a dev-dependency, so whoever knows what a turn is
+    /// does the choosing. Here that means `alo_corridor` and `alo_agentd` pass
+    /// `reached.acting().on_the_wire()` and the application's identifier.
+    ///
+    /// Neither is put through this crate's `naming`, for
+    /// [`Done::of_an_installation`]'s reason: the act is one of three literals
+    /// this machine wrote, and the identifier is already held to its own shape
+    /// by `alo_applications::Application`.
+    #[must_use]
+    pub fn of_an_application_act(act: &str, application: &str) -> Self {
+        Self::Reached {
+            act: act.to_owned(),
+            application: application.to_owned(),
         }
     }
 
@@ -194,6 +229,19 @@ impl Done {
             // and nothing a shell should put a caveat beside. `false` is the
             // honest answer rather than the default one.
             Self::Installed { .. } => false,
+            // **An application act leaves nothing out either, and the
+            // temptation here is to say otherwise.** *This machine asked* is
+            // not the same as *it is done* — an application may be putting up
+            // its own *save your changes?* — so a caveat looks right.
+            //
+            // It is not, and the reason is where that caveat already lives:
+            // the approval sentence a person read says **ask** Geary to close
+            // (`docs/contracts/agent-verbs.md` puts the word in the sentence
+            // rather than only in documentation, deliberately). A flag here
+            // would put a second caveat beside every `open` and every `focus`
+            // as well, which omit nothing at all — and a caveat on everything
+            // is a caveat on nothing.
+            Self::Reached { .. } => false,
         }
     }
 }

@@ -1715,6 +1715,7 @@ dependencies = [
 name = "alo-turn"
 version = "0.0.1"
 dependencies = [
+ "alo-acting",
  "alo-answering",
  "alo-applications",
  "alo-asking",

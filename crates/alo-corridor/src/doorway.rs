@@ -477,6 +477,18 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> alo_protocol::
         alo_turn::WhatAVerbDid::AnApplicationInstalled(installed) => {
             alo_protocol::Done::of_an_installation(installed)
         }
+        // **This arm cannot be taken through this door either**, and for the
+        // same reason as the one above: all three application acts are changes,
+        // so a change from another machine leaves here as a proposal and comes
+        // back through `Arriving::approving`. Written out rather than left to
+        // an `unreachable!()`, because the comment above this function says
+        // that is where a third family gets noticed — and it was.
+        alo_turn::WhatAVerbDid::AnApplicationWasReached(reached) => {
+            alo_protocol::Done::of_an_application_act(
+                reached.acting().on_the_wire(),
+                reached.acting().application().identifier(),
+            )
+        }
     }
 }
 

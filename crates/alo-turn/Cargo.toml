@@ -36,6 +36,11 @@ alo-software = { path = "../alo-software" }
 # crate needs the type to put one to the executor in a test, and the words so
 # that an installation's refusals read as sentences rather than missing keys.
 alo-applications = { path = "../alo-applications" }
+# The three acts, the request line and the one-word answers the compositor's
+# door speaks (ADR 0108). This crate holds the vocabulary and never the socket:
+# the path is `alo-agentd`'s, and `the_door_the_compositor_serves` is the trait
+# in between — the same division `installing_with` makes for the rented tool.
+alo-acting = { path = "../alo-acting" }
 # The words a model is shown when an agent asks it for its next request (ADR
 # 0037). A dependency and never a place to write: the text is that crate's, and
 # a turn shows what `shown_to_a_turn` returns.

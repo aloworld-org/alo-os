@@ -27,5 +27,12 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid) -> Done {
     match did {
         WhatAVerbDid::ToFiles(answer) => Done::of_a_file_verb(answer),
         WhatAVerbDid::AnApplicationInstalled(installed) => Done::of_an_installation(installed),
+        // The third family, arriving exactly where this file's header said it
+        // would. The two words are handed over rather than the turn's type,
+        // because `alo-protocol` must not learn what a turn is.
+        WhatAVerbDid::AnApplicationWasReached(reached) => Done::of_an_application_act(
+            reached.acting().on_the_wire(),
+            reached.acting().application().identifier(),
+        ),
     }
 }

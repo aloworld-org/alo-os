@@ -42,15 +42,23 @@ use alo_turn::{Machine, Turning};
 
 /// What a verb did, as the wire carries it.
 ///
-/// The two-arm match this crate cannot write for itself: it holds `alo-turn` as
-/// a dev-dependency, so `Done` has one constructor per family and whoever knows
-/// what a turn is picks between them.
+/// The three-arm match this crate cannot write for itself: it holds `alo-turn`
+/// as a dev-dependency, so `Done` has one constructor per family and whoever
+/// knows what a turn is picks between them.
+///
+/// It was two arms until 2026-10-13. A third family of verbs arrived and the
+/// compiler named this copy along with the two real ones, which is what a
+/// closed enum is for.
 fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
     match did {
         alo_turn::WhatAVerbDid::ToFiles(answer) => Done::of_a_file_verb(answer),
         alo_turn::WhatAVerbDid::AnApplicationInstalled(installed) => {
             Done::of_an_installation(installed)
         }
+        alo_turn::WhatAVerbDid::AnApplicationWasReached(reached) => Done::of_an_application_act(
+            reached.acting().on_the_wire(),
+            reached.acting().application().identifier(),
+        ),
     }
 }
 

@@ -68,6 +68,53 @@ pub const NOT_INSTALLED: Word = Word::saying(
 .noting(AN_IDENTIFIER);
 
 // ---------------------------------------------------------------------------
+// What a person is told when the compositor could not do it —
+// `alo_acting::NotActed`, in words.
+//
+// **Three of its four**, and the fourth is deliberate: `not-installed` already
+// has `NOT_INSTALLED` above, and `crate::Reaching` refuses with it *before* the
+// door is asked at all — step 2 of its two questions. So that answer cannot
+// arrive from this road, and a second wording of it would be two sentences for
+// one fact.
+// ---------------------------------------------------------------------------
+
+/// There is no window of that application to act on.
+///
+/// **Worded here rather than on the wire**, and that is
+/// [ADR 0108](../../../docs/decisions/0108-the-compositor-carries-an-application-verb-out-and-needs-no-token-to.md)'s
+/// rule for this door: what crosses it is *which kind* it was, one word, and
+/// the daemon turns it into the words it already has. A sentence written by the
+/// compositor would be a second wording of something already said, in whatever
+/// language a window system happened to think in.
+pub const NO_WINDOW: Word = Word::saying(
+    "applications.no-window",
+    "{application} has no window open here — open it first, or name one that is open",
+)
+.noting(AN_IDENTIFIER);
+
+/// The application was asked and has not done it.
+///
+/// Not a failure. An application entitled to ask the person *save your
+/// changes?* is an application that has not closed, and `agent-verbs.md`
+/// promises exactly that: *`close_application` asks; nothing kills anything.*
+pub const IT_DID_NOT: Word = Word::saying(
+    "applications.it-did-not",
+    "{application} was asked and has not done it — it may be waiting for an answer from you",
+)
+.noting(AN_IDENTIFIER);
+
+/// This machine could not ask the application at all.
+///
+/// The one of the four that is about the machine rather than the application,
+/// and the one worth somebody reading a log about. It is also what a person is
+/// told when no compositor is serving the door — there is nothing to ask.
+pub const COULD_NOT_ASK: Word = Word::saying(
+    "applications.could-not-ask",
+    "this machine could not reach {application} — nothing was changed",
+)
+.noting(AN_IDENTIFIER);
+
+// ---------------------------------------------------------------------------
 // What could not join the list of what is installed — [`crate::NotAnApplication`].
 // ---------------------------------------------------------------------------
 
@@ -416,8 +463,11 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// it could not reach, what could not join the list, how one is shown, the four
 /// verbs, the arrangements one of them offers, what opens what, and what is said
 /// about the person's own file of those choices.
-pub const EVERY_WORD: [Word; 34] = [
+pub const EVERY_WORD: [Word; 37] = [
     NOT_INSTALLED,
+    NO_WINDOW,
+    IT_DID_NOT,
+    COULD_NOT_ASK,
     NO_IDENTIFIER,
     NOT_AN_IDENTIFIER,
     CALLED,
