@@ -486,7 +486,7 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// the shortcuts do, what is held down, the keys that print a word, why a
 /// combination was refused, what one chord wanted twice says, and then what is
 /// said about the person's own file.
-pub const EVERY_WORD: [Word; 53] = [
+pub const EVERY_WORD: [Word; 55] = [
     THE_AGENT,
     LAUNCHER,
     SETTINGS,
@@ -505,6 +505,8 @@ pub const EVERY_WORD: [Word; 53] = [
     SHOW_ALL_ON_THE_CANVAS,
     MOVE_THE_WINDOW_TO_THE_NEXT_PLACE,
     GO_BACK_ON_THIS_PLACE,
+    THE_NEXT_AREA,
+    THE_PREVIOUS_AREA,
     SUPER,
     CTRL,
     ALT,
@@ -608,6 +610,30 @@ pub const GO_BACK_ON_THIS_PLACE: Word = Word::saying(
      ago, and leaves every other surface alone. One step back each time it is pressed, so \
      pressing it twice goes back twice. *Place* is the person's own named surface on the \
      canvas, the same word the other Place shortcuts use, and not a location in the world.",
+);
+
+/// What [`crate::Action::TheNextArea`] does.
+pub const THE_NEXT_AREA: Word = Word::saying(
+    "shortcuts.action.the-next-area",
+    "Move the keyboard to the next part of the screen",
+)
+.noting(
+    "Moves the keyboard on among the canvas, the dock, the panel of put-aside windows, \
+     notifications and the status area, and back to the canvas. **Part of the screen** rather \
+     than *region* or *landmark*: it is what a person sees, and the word a screen reader's own \
+     documentation uses in a given language is the right one here. A part with nothing to act \
+     on is passed over rather than stopped at.",
+);
+
+/// What [`crate::Action::ThePreviousArea`] does.
+pub const THE_PREVIOUS_AREA: Word = Word::saying(
+    "shortcuts.action.the-previous-area",
+    "Move the keyboard to the previous part of the screen",
+)
+.noting(
+    "The other direction of the one above, and worded as its mirror so the two read as a pair \
+     in a list of shortcuts. A person who overshoots by one presses this, which is the \
+     commonest thing anybody does with a cycle.",
 );
 
 #[cfg(test)]

@@ -131,6 +131,26 @@ Nothing here is a differentiator. All of it is required.
   **pinned-and-open** grid its design specifies (`406-26320`), so an installed
   application that is neither pinned nor open does not belong in it. Removing
   the default neither creates nor cancels an application-store feature.
+- [v0.01] ★ **The keyboard reaches every part of the screen, not only the
+  windows** — **F6 and Shift+F6 move among the canvas, the Dock, the panel of
+  put-aside windows, notifications and the status area**; Tab and Shift+Tab move
+  among the controls inside whichever of those has the keyboard; Enter acts on
+  the one that is focused; and Escape leaves.
+  **The route is the design's, not a new invention** —
+  `docs/design/the-shortcuts-and-the-edges.md` settles all four in its own
+  table, and this line records that alo OS owes them rather than that somebody
+  thought of them.
+  **An area with nothing a person can act on is skipped**, so the cycle never
+  parks the keyboard somewhere Tab does nothing; and **where focus was is given
+  back** when the person leaves, rather than being dropped on the canvas.
+  **This is what makes the rest of the Dock's keyboard promises true at all.**
+  Its surfaces take the arrows, Enter and Escape already, and a person could
+  not reach them without lifting a hand to a pointer: the opening move was
+  missing. The same gap holds for the panel and the status area.
+  *Added 2026-10-12 by the owner, into the current release, after it was
+  measured that **F6 appears nowhere in this workspace but a key-name table**
+  and that nothing anywhere models which area has the keyboard — so the design
+  had specified the route and no part of it existed.*
 - [v0.01] ★ **An icon's own menu, holding only what works** — the way a person
   reaches *pin*, *unpin* and *show windows* for one application, opened from
   its icon by the pointer, by the menu key and by a screen reader's own route.

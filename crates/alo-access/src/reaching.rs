@@ -144,7 +144,20 @@ pub const fn the_tab_stop_for(action: Action) -> Surface {
         Action::ZoomTheCanvasIn
         | Action::ZoomTheCanvasOut
         | Action::ShowAllOnTheCanvas
-        | Action::GoBackOnThisPlace => Surface::Desktop,
+        | Action::GoBackOnThisPlace
+        // **Moving the keyboard between the parts of the screen is reached
+        // from the work**, because that is where a person is when they need
+        // it: the whole point of the two is to get *out* of the canvas without
+        // a pointer, so a reader who had to already be somewhere else to find
+        // them would be told about a door from inside the room it opens into.
+        //
+        // This is the one pair here that a keyboard needs no Tab stop for at
+        // all — they are reached by their own chord from anywhere. The answer
+        // is still the desktop rather than an `Option`, because what this
+        // function says is *where a reader meets this*, and a reader meets
+        // these in the surface they spend their time in.
+        | Action::TheNextArea
+        | Action::ThePreviousArea => Surface::Desktop,
     }
 }
 

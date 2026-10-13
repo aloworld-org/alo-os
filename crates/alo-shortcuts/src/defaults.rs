@@ -30,6 +30,10 @@ const SUPER_SHIFT: Modifiers = SUPER.and(Modifier::Shift);
 const ALT: Modifiers = Modifiers::just(Modifier::Alt);
 /// Alt and Shift held.
 const ALT_SHIFT: Modifiers = ALT.and(Modifier::Shift);
+/// Shift alone, which only the landmark cycle's reverse uses.
+const SHIFT: Modifiers = Modifiers::just(Modifier::Shift);
+/// Nothing held at all. See the two F6 entries for why one chord has none.
+const NOTHING: Modifiers = Modifiers::none();
 
 /// The shortcuts alo OS ships with, in the order a settings panel lists them.
 ///
@@ -37,7 +41,7 @@ const ALT_SHIFT: Modifiers = ALT.and(Modifier::Shift);
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 18] = [
+const SHIPPED: [(Action, Chord); 20] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::Settings, Chord::shipped(SUPER, Key::I)),
@@ -96,6 +100,17 @@ const SHIPPED: [(Action, Chord); 18] = [
         Action::GoBackOnThisPlace,
         Chord::shipped(SUPER_SHIFT, Key::Z),
     ),
+    // **F6 with nothing held, which is the one chord here that has no
+    // modifier.** `docs/design/the-shortcuts-and-the-edges.md` settles it, and
+    // the reason it is bare is that it is the same key on every system a
+    // person may be arriving from: somebody who already knows how to reach a
+    // landmark should not have to learn ours.
+    //
+    // It is safe bare in a way a letter would not be: a function key is not
+    // something an application expects to receive as typing, and this one is
+    // taken only when it reaches the shell rather than a client.
+    (Action::TheNextArea, Chord::shipped(NOTHING, Key::F6)),
+    (Action::ThePreviousArea, Chord::shipped(SHIFT, Key::F6)),
 ];
 
 /// Why a set of defaults cannot be used.

@@ -107,13 +107,34 @@ pub enum Action {
     /// cannot drag: `docs/autonomy/the-canvas-and-its-places.md` says *neither
     /// road is the only road*.
     GoBackOnThisPlace,
+    /// Move the keyboard on to the next part of the screen.
+    ///
+    /// The canvas, the Dock, the panel of put-aside windows, notifications and
+    /// the status area, in that order, and back to the canvas.
+    /// `docs/design/the-shortcuts-and-the-edges.md` settles the route and the
+    /// key: **F6**, which is what a landmark cycle is bound to on every system
+    /// a person may be arriving from, so somebody who already knows it does not
+    /// have to learn ours.
+    ///
+    /// **Without it the rest of this product's keyboard work is unreachable.**
+    /// The Dock's surfaces take the arrows, Enter and Escape, and until this
+    /// existed a person had to lift a hand to a pointer to reach them.
+    TheNextArea,
+    /// Move the keyboard back to the part of the screen before this one.
+    ///
+    /// Shift+F6. **Its own action rather than a modifier on the one above**,
+    /// because a person rebinding one may want the other somewhere else — and
+    /// because a settings panel has to be able to show them as two rows with
+    /// two chords, which is what `Self::ALL` is for.
+    ThePreviousArea,
 }
 
 impl Action {
     /// Everything a shortcut can do, in the order a settings panel lists them:
     /// the three that summon something, then the five done to the window in
     /// front, then the four for moving between windows and applications, then
-    /// the canvas's five.
+    /// the canvas's five, then the two that move the keyboard between the
+    /// parts of the screen.
     ///
     /// **The sentence above counts, and it had stopped.** It read *the three
     /// that summon something, then the window in front, then moving between
@@ -141,6 +162,8 @@ impl Action {
         Self::ShowAllOnTheCanvas,
         Self::MoveTheWindowToTheNextPlace,
         Self::GoBackOnThisPlace,
+        Self::TheNextArea,
+        Self::ThePreviousArea,
     ];
 
     /// The string this crate declares for it: the key a translator's file is
@@ -166,6 +189,8 @@ impl Action {
             Self::ShowAllOnTheCanvas => words::SHOW_ALL_ON_THE_CANVAS,
             Self::MoveTheWindowToTheNextPlace => words::MOVE_THE_WINDOW_TO_THE_NEXT_PLACE,
             Self::GoBackOnThisPlace => words::GO_BACK_ON_THIS_PLACE,
+            Self::TheNextArea => words::THE_NEXT_AREA,
+            Self::ThePreviousArea => words::THE_PREVIOUS_AREA,
         }
     }
 

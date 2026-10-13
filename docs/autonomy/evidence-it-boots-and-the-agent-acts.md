@@ -1518,6 +1518,39 @@ Wayland client, so this is a measurement somebody took rather than a check that
 runs again.
 
 
+### The keyboard reaches every part of the screen, not only the
+
+**Shown by:** `crates/alo-shell/src/which_area_has_the_keyboard_tests.rs` for
+the walk — six tests, including the two that are properties rather than worked
+examples: forward then back returns to where it started from every area, and
+the work is reachable from everywhere by pressing F6 enough times.
+
+And `crates/alo-shell/src/a_chord_moves_the_keyboard_between_areas_tests.rs`
+for the chord on a real server — that F6 reaches the Dock and a second press
+returns to the work, that arriving lands on a slot and leaving forgets it, that
+no other chord moves the keyboard, and that a person who unbinds it gets their
+key back rather than having it swallowed by a shell that remembered.
+
+The two actions are bound in `crates/alo-shortcuts/src/defaults.rs` to F6 and
+Shift+F6, which is what the design settles.
+
+**Still owed: three of the four areas, and Tab inside one.** The panel,
+notifications and the status area answer *nothing to act on* and are passed
+over, because none of them has a focusable control in this shell yet — they are
+named in the walk so that each becomes reachable in the change that gives it
+something to reach, rather than being left out and discovered missing. And
+**Tab does not yet move among the controls inside an area**: arriving on the
+Dock focuses its first slot and nothing moves from there, so what is reachable
+today is the Dock's surfaces rather than its own controls.
+
+**Why the chord rule changed with it.** A shortcut with no modifier was refused
+outright, and the refusal's own words give the reason — *a shortcut on this key
+by itself would take that key away from everything you type*, and *Shift only
+changes which character it prints*. Function keys print nothing, so neither
+reason reached them: the rule was wider than its justification. It is now the
+rule its own sentences describe, which is additive — every chord that was
+allowed still is.
+
 ### An icon's own menu, holding only what works
 
 **Shown by:** `crates/alo-dock/src/menu.rs` for **what the menu contains** —
@@ -1599,7 +1632,7 @@ contract are updated together before this is called complete.
 
 ## What this audit found
 
-**The audit in figures: 86 promises, 3 shown whole, 55 shown in part, 28 with no
+**The audit in figures: 87 promises, 4 shown whole, 55 shown in part, 28 with no
 evidence at all.**
 
 *This line is the ledger's own count of itself and it is checked.*
