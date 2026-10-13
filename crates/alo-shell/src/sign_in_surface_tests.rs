@@ -9,14 +9,20 @@
     reason = "in a test, a panic on a raster that is not there is the failure being reported"
 )]
 
-use super::{THE_GROUND_IS, TheEntryIs, sign_in_surface};
+use super::{TheColours, TheEntryIs, sign_in_surface};
 use crate::sign_in_layout::sign_in_laid_out;
+
+/// The designed light palette, which is what these pixels were read against.
+fn designed() -> TheColours {
+    TheColours::of(crate::Contrast::AsDesigned, alo_appearance::Scheme::Light)
+}
 use smithay::utils::{Scale, Size};
 
 /// The reference screen, at one-to-one.
 fn drawn(entry: TheEntryIs) -> (crate::painted::Washed, crate::sign_in_layout::SignInLayout) {
     let at = sign_in_laid_out(Size::from((1440, 960))).expect("the reference size lays out");
-    let washed = sign_in_surface(&at, entry, Scale::from(1.0)).expect("a screen with area draws");
+    let washed = sign_in_surface(&at, entry, Scale::from(1.0), designed())
+        .expect("a screen with area draws");
     (washed, at)
 }
 
@@ -34,9 +40,13 @@ fn at(washed: &crate::painted::Washed, x: i32, y: i32) -> [u8; 3] {
 #[test]
 fn the_ground_is_the_warm_off_white_and_not_white() {
     let (washed, _) = drawn(TheEntryIs::Waiting);
-    assert_eq!(at(&washed, 20, 20), THE_GROUND_IS);
-    assert_eq!(THE_GROUND_IS, [0xFA, 0xF7, 0xF2]);
-    assert_ne!(THE_GROUND_IS, [0xFF, 0xFF, 0xFF], "it must not be white");
+    assert_eq!(at(&washed, 20, 20), designed().ground);
+    assert_eq!(designed().ground, [0xFA, 0xF7, 0xF2]);
+    assert_ne!(
+        designed().ground,
+        [0xFF, 0xFF, 0xFF],
+        "it must not be white"
+    );
 }
 
 /// **The raster is the whole screen**, four bytes a pixel.
@@ -65,7 +75,7 @@ fn the_entry_is_drawn_on_the_ground() {
         [0xFF, 0xFF, 0xFF],
         "the entry's surface is bg/surface"
     );
-    assert_ne!(middle, THE_GROUND_IS);
+    assert_ne!(middle, designed().ground);
 }
 
 /// **The monogram is its own square**, `bg/cool` on the ground.
@@ -90,7 +100,8 @@ fn the_entry_has_corners_rather_than_being_a_rectangle() {
     let (washed, layout) = drawn(TheEntryIs::Waiting);
     let corner = at(&washed, layout.entry.loc.x + 1, layout.entry.loc.y + 1);
     assert_eq!(
-        corner, THE_GROUND_IS,
+        corner,
+        designed().ground,
         "the entry's corner is filled, so it was drawn as a rectangle"
     );
 
@@ -103,7 +114,8 @@ fn the_entry_has_corners_rather_than_being_a_rectangle() {
         layout.entry.loc.y + 1,
     );
     assert_ne!(
-        along_the_top, THE_GROUND_IS,
+        along_the_top,
+        designed().ground,
         "the entry's top edge is not drawn at all"
     );
 }
@@ -118,7 +130,7 @@ fn the_monogram_has_corners_too() {
             layout.monogram.loc.x + 1,
             layout.monogram.loc.y + 1
         ),
-        THE_GROUND_IS
+        designed().ground
     );
     assert_ne!(
         at(
@@ -126,7 +138,7 @@ fn the_monogram_has_corners_too() {
             layout.monogram.loc.x + layout.monogram.size.w / 2,
             layout.monogram.loc.y + 1
         ),
-        THE_GROUND_IS,
+        designed().ground,
         "the monogram's top edge is not drawn"
     );
 }
@@ -183,7 +195,7 @@ fn a_refusal_does_not_touch_what_is_inside_the_entry() {
 fn it_draws_at_fractional_scale() {
     let at_ = sign_in_laid_out(Size::from((1440, 960))).expect("lays out");
     for scale in [1.0, 1.25, 1.5, 2.0] {
-        let washed = sign_in_surface(&at_, TheEntryIs::Waiting, Scale::from(scale))
+        let washed = sign_in_surface(&at_, TheEntryIs::Waiting, Scale::from(scale), designed())
             .expect("a screen with area draws at every scale");
         assert_eq!(
             washed.pixels.len(),
@@ -194,5 +206,83 @@ fn it_draws_at_fractional_scale() {
             washed.area.size.w >= 1440,
             "scaling {scale} made the raster smaller than the logical screen"
         );
+    }
+}
+
+/// **The light colours are still the design's own**, to the unit where the
+/// palette answers and within three where they are mixed.
+///
+/// This is what makes taking the colours from the palette a correction rather
+/// than a redesign: in light, at the designed contrast, the screen draws the
+/// same pixels it drew when these were seven written-down hexes.
+#[test]
+fn the_light_colours_are_still_the_designs() {
+    let it = designed();
+    assert_eq!(it.ground, [0xFA, 0xF7, 0xF2], "the ground is not #FAF7F2");
+    assert_eq!(it.entry, [0xFF, 0xFF, 0xFF], "the entry is not #FFFFFF");
+    assert_eq!(it.ink, [0x10, 0x2A, 0x43], "the ink is not #102A43");
+
+    // The four with no palette role: the design's own recorded values.
+    for (what, drawn, designed) in [
+        ("the monogram, bg/cool", it.monogram, [0xEE_u8, 0xF2, 0xF4]),
+        (
+            "the border, border/default",
+            it.border,
+            [0xE7_u8, 0xEB, 0xEF],
+        ),
+        (
+            "the placeholder, text/muted",
+            it.muted,
+            [0x59_u8, 0x6B, 0x78],
+        ),
+    ] {
+        for (channel, (a, b)) in drawn.iter().zip(designed.iter()).enumerate() {
+            assert!(
+                u32::from(*a).abs_diff(u32::from(*b)) <= 3,
+                "{what}: channel {channel} is {a} and the design says {b}"
+            );
+        }
+    }
+}
+
+/// **Every scheme and every contrast draws a readable screen.**
+///
+/// The regression this file exists to stop: the colours were fixed light-mode
+/// values while the text was drawn in `Contrast::ink`, which follows the
+/// scheme. In dark the ink turned light and landed on a light ground — at
+/// least one label at a contrast of **zero** against its own background.
+///
+/// Read as the distance between the ink and each surface it is drawn on, in
+/// every combination a person can choose.
+#[test]
+fn every_scheme_and_contrast_draws_a_readable_screen() {
+    for contrast in [crate::Contrast::AsDesigned, crate::Contrast::High] {
+        for scheme in [alo_appearance::Scheme::Light, alo_appearance::Scheme::Dark] {
+            let it = TheColours::of(contrast, scheme);
+            let apart = |a: [u8; 3], b: [u8; 3]| {
+                u32::from(a[0]).abs_diff(u32::from(b[0]))
+                    + u32::from(a[1]).abs_diff(u32::from(b[1]))
+                    + u32::from(a[2]).abs_diff(u32::from(b[2]))
+            };
+            for (what, surface) in [
+                ("the ground", it.ground),
+                ("the entry", it.entry),
+                ("the monogram", it.monogram),
+            ] {
+                assert!(
+                    apart(it.ink, surface) > 200,
+                    "{contrast:?}/{scheme:?}: ink on {what} is only {} apart, which is a \
+                     screen somebody cannot read",
+                    apart(it.ink, surface)
+                );
+            }
+            // The placeholder is softer than the ink by design, and must still
+            // be legible on the field it sits in.
+            assert!(
+                apart(it.muted, it.entry) > 90,
+                "{contrast:?}/{scheme:?}: the placeholder is only {} from the field",
+                apart(it.muted, it.entry)
+            );
+        }
     }
 }

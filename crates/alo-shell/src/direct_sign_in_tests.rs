@@ -376,7 +376,13 @@ fn the_frame_a_card_is_handed_carries_the_designs_ground() {
             continue;
         };
         let colour = [*r, *g, *b];
-        if colour == crate::sign_in_surface::THE_GROUND_IS {
+        if colour
+            == crate::sign_in_surface::TheColours::of(
+                crate::Contrast::AsDesigned,
+                alo_appearance::Scheme::Light,
+            )
+            .ground
+        {
             ground += 1;
         }
         if colour == [0xFF, 0xFF, 0xFF] {

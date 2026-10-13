@@ -37,38 +37,109 @@ use crate::painted::Washed;
 use crate::sign_in_layout::{SignInLayout, THE_ENTRY_CORNER_IS};
 
 /// The ground the design draws the screen on.
+/// Every colour this screen draws, for one scheme and one contrast.
 ///
-/// `#FAF7F2`, a warm off-white, read from the wallpaper export's own first
-/// fill. **It is not one of the bound colour tokens** — it is a fill on the
-/// frame — which is why it is a constant here with its provenance beside it
-/// rather than a lookup in `alo_appearance`.
-pub(crate) const THE_GROUND_IS: [u8; 3] = [0xFA, 0xF7, 0xF2];
-
-/// The monogram's square, `bg/cool`.
-pub(crate) const THE_MONOGRAM_GROUND_IS: [u8; 3] = [0xEE, 0xF2, 0xF4];
-
-/// The entry's surface, `bg/surface`.
-pub(crate) const THE_ENTRY_GROUND_IS: [u8; 3] = [0xFF, 0xFF, 0xFF];
-
-/// The ink every mark on this screen is drawn in, `text/primary`.
-pub(crate) const THE_INK_IS: [u8; 3] = [0x10, 0x2A, 0x43];
-
-/// Muted text, `text/muted`, which the placeholder inside the entry is
-/// lettered in.
+/// **Taken from the palette, not written down.** Each of these was a fixed
+/// light-mode hex until 2026-10-13, while the text was drawn in
+/// `Contrast::ink`, which does follow the scheme — so in dark mode the ink
+/// turned light and landed on a hardcoded light ground. Measured before it was
+/// fixed: 591 inked pixels against 3826 in light, and at least one label at a
+/// contrast of **zero** against its own background. The two-field screen this
+/// design replaced took every colour from the palette and was readable in both
+/// schemes, so this was a regression, and high contrast — the setting that
+/// exists for people who need it — was broken the same way.
 ///
-/// `#596B78`, from `variables.toml`, which records that the owner stated it
-/// on 2026-09-27 rather than it being read from a pure-light node. Named
-/// here with that provenance rather than guessed from the render.
-pub(crate) const THE_MUTED_TEXT_IS: [u8; 3] = [0x59, 0x6B, 0x78];
-
-/// The entry's border at rest, `border/default`.
-const THE_ENTRY_BORDER_IS: [u8; 3] = [0xE7, 0xEB, 0xEF];
-
-/// The entry's border after a refusal.
+/// # Why mixes and not the design file's dark table
 ///
-/// Read from the render of `367:25584`, not from the tree: a stroke on a frame
-/// is not a child layer, which is the blind spot `MANIFEST.md` records twice.
-const THE_REFUSED_BORDER_IS: [u8; 3] = [0xC0, 0x39, 0x2B];
+/// `variables.toml` records a dark set, and says of it: *dark-theme parity
+/// needs its own measured evidence before being marked complete … still
+/// adopted by nothing*. Adopting it here would be this lane deciding a
+/// question the design lane has left open, and it has no dark value for the
+/// screen's ground at all.
+///
+/// So the three roles the palette already answers are taken from it, and the
+/// four it does not are mixed from those. **In light, at the designed
+/// contrast, the mixes land within three units of the design's own hexes** —
+/// `#EEF2F4`, `#E7EBEF` and `#596B78` — which is what
+/// `the_light_colours_are_still_the_designs` holds them to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct TheColours {
+    /// The screen behind everything, which the wallpaper is drawn onto.
+    pub(crate) ground: [u8; 3],
+    /// The entry field's own surface.
+    pub(crate) entry: [u8; 3],
+    /// The monogram's rounded square.
+    pub(crate) monogram: [u8; 3],
+    /// Words, marks and the arrow.
+    pub(crate) ink: [u8; 3],
+    /// The placeholder inside an empty entry.
+    pub(crate) muted: [u8; 3],
+    /// The entry's border at rest.
+    pub(crate) border: [u8; 3],
+    /// The entry's border after a refusal.
+    pub(crate) refused: [u8; 3],
+}
+
+impl TheColours {
+    /// This screen's colours for the scheme and contrast a person chose.
+    ///
+    /// **At the designed contrast these are the design's own recorded values,
+    /// per scheme.** `variables.toml` carries both tables, and taking the dark
+    /// one is reading what was measured rather than inventing it — that file
+    /// asks for more evidence before dark parity is called *complete*, which
+    /// is a different thing from a screen being readable at all.
+    ///
+    /// **At high contrast the design is overruled**, which is the whole point
+    /// of the setting: the palette answers, and the tints are derived from it
+    /// so nothing is softer than the person asked for.
+    pub(crate) fn of(contrast: crate::Contrast, scheme: alo_appearance::Scheme) -> Self {
+        let ground = contrast.ground(scheme);
+        let ink = contrast.ink(scheme);
+        if matches!(contrast, crate::Contrast::High) {
+            return Self {
+                ground,
+                entry: contrast.dock(scheme),
+                monogram: contrast.dock(scheme),
+                ink,
+                // No softening at high contrast: a muted placeholder is the
+                // thing this setting exists to stop.
+                muted: ink,
+                border: ink,
+                refused: THE_DANGER_IS,
+            };
+        }
+        match scheme {
+            alo_appearance::Scheme::Light => Self {
+                ground,
+                entry: [0xFF, 0xFF, 0xFF],
+                monogram: [0xEE, 0xF2, 0xF4],
+                ink,
+                muted: [0x59, 0x6B, 0x78],
+                border: [0xE7, 0xEB, 0xEF],
+                refused: THE_DANGER_IS,
+            },
+            // Every one of these is in `variables.toml`'s own dark table:
+            // `navy/950`, `bg/surface`, `bg/cool`, `text/primary`,
+            // `text/muted` and `border/default`.
+            alo_appearance::Scheme::Dark => Self {
+                ground: [0x07, 0x13, 0x1F],
+                entry: [0x10, 0x2A, 0x43],
+                monogram: [0x18, 0x3B, 0x56],
+                ink: [0xFF, 0xFC, 0xF8],
+                muted: [0xA4, 0xB4, 0xC2],
+                border: [0x27, 0x4C, 0x68],
+                refused: THE_DANGER_IS,
+            },
+        }
+    }
+}
+
+/// A refusal's colour, `status/danger`.
+///
+/// **A status colour, not a scheme colour.** Danger reads as danger in both,
+/// and a refusal that changed hue with the appearance would be saying
+/// something different about the same event.
+const THE_DANGER_IS: [u8; 3] = [0xC0, 0x39, 0x2B];
 
 /// How thick the entry's border is.
 const THE_BORDER_IS: f32 = 1.5;
@@ -96,6 +167,7 @@ pub(crate) fn sign_in_surface(
     at: &SignInLayout,
     entry: TheEntryIs,
     scale: Scale<f64>,
+    colours: TheColours,
 ) -> Option<Washed> {
     let area: Rectangle<i32, Physical> = at.screen.to_physical_precise_round(scale);
     if area.size.w <= 0 || area.size.h <= 0 {
@@ -111,17 +183,17 @@ pub(crate) fn sign_in_surface(
     // The power mark.s stroke, which is the entry.s border a little heavier so
     // a 20-unit ring reads at arm.s length.
     let stroke = (f64::from(THE_BORDER_IS) * scale.x * 1.3).max(1.5);
-    let ink = crate::sign_in_surface::THE_INK_IS;
+    let ink = colours.ink;
     let edge = match entry {
-        TheEntryIs::Waiting => THE_ENTRY_BORDER_IS,
-        TheEntryIs::Refused => THE_REFUSED_BORDER_IS,
+        TheEntryIs::Waiting => colours.border,
+        TheEntryIs::Refused => colours.refused,
     };
 
     // **The design's own ground**, which is the five folds of light on
     // `THE_GROUND_IS` rather than the flat colour this drew until the
     // wallpaper existed. One raster for the whole screen, made once, read
     // below as each pixel's starting colour.
-    let behind = crate::sign_in_wallpaper::the_wallpaper(w, h, THE_GROUND_IS);
+    let behind = crate::sign_in_wallpaper::the_wallpaper(w, h, colours.ground);
 
     let mut pixels = Vec::with_capacity((w as usize) * (h as usize) * 4);
     for y in 0..h {
@@ -136,14 +208,14 @@ pub(crate) fn sign_in_surface(
             let mut colour = behind
                 .get(((y * w + x) as usize).min(behind.len().saturating_sub(1)))
                 .copied()
-                .unwrap_or(THE_GROUND_IS);
+                .unwrap_or(colours.ground);
 
             // The monogram's square, under everything else it overlaps with
             // nothing — it is above the ground and below no other shape.
             let d = how_far(px, py, monogram, monogram_corner);
             let inside = coverage(d);
             if inside > 0.0 {
-                colour = mixed(colour, THE_MONOGRAM_GROUND_IS, inside);
+                colour = mixed(colour, colours.monogram, inside);
             }
 
             // The entry: its surface, then its border drawn as the ring
@@ -153,7 +225,7 @@ pub(crate) fn sign_in_surface(
             let outer = how_far(px, py, field, corner);
             let in_field = coverage(outer);
             if in_field > 0.0 {
-                colour = mixed(colour, THE_ENTRY_GROUND_IS, in_field);
+                colour = mixed(colour, colours.entry, in_field);
                 let inner = how_far(px, py, inset(field, border), (corner - border).max(0.0));
                 let ring = in_field - coverage(inner);
                 if ring > 0.0 {
