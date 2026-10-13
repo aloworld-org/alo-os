@@ -44,6 +44,7 @@ use alo_turn::Arriving;
 use crate::answering::nothing_is_waiting;
 use crate::network::TheNetwork;
 use crate::rereading;
+use crate::what_a_client_is_told_a_verb_did::as_a_client_sees_it;
 
 /// The three things a person can send about a turn, each against the remote
 /// turn holding the machine.
@@ -83,7 +84,7 @@ pub fn answered_to(
             Some(waiting) => {
                 let shared = network.locked();
                 match arriving.approving(waiting, shared.pairings(), grants, now) {
-                    Ok(answer) => ToAPerson::did(&answer),
+                    Ok(answer) => ToAPerson::did(as_a_client_sees_it(&answer)),
                     Err(why) => ToAPerson::refused(&why.said(strings)),
                 }
             }

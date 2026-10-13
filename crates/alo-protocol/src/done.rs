@@ -1,9 +1,11 @@
 //! What the machine found or did, as it goes back to a client.
 //!
 //! `alo_files::Answer`'s six, with every path put through [`crate::naming`] and
-//! everything that could not be shown counted. It is made from an `Answer` and
-//! from nothing else — there is no constructor here that takes a path, so a
-//! daemon cannot answer with something no verb produced.
+//! everything that could not be shown counted — and, since 2026-10-13, an
+//! installation, which carries no path and so goes through none of that. Each
+//! is made from what a verb really answered with and from nothing else: there
+//! is no constructor here that takes a path or an application name, so a daemon
+//! cannot answer with something no verb produced.
 //!
 //! # Every bound still says it was reached
 //!
@@ -27,9 +29,16 @@ use alo_files::Answer;
 use serde::{Deserialize, Serialize};
 
 use crate::naming::{all_shown, shown};
+use alo_software::{Installed, Sandboxing};
+
 use crate::thing::Thing;
 
-/// What one of the six file verbs answered with.
+/// What a verb this machine carried out answered with.
+///
+/// Six of the seven are the file verbs. The seventh arrived with the second
+/// executor, and it is additive on purpose: a client built against the six
+/// reads an answer it has no arm for rather than failing to parse the six it
+/// knows, which is what *contracts change additively* means on a wire.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Done {
@@ -81,12 +90,56 @@ pub enum Done {
         /// How many bytes the archive holds.
         bytes: u64,
     },
+    /// An application was installed.
+    Installed {
+        /// What it is called where it came from — the identifier, which is what
+        /// a person asked for and what every other surface knows it by.
+        application: String,
+        /// Whether it is sandboxed.
+        ///
+        /// On the wire rather than derivable, for the reason
+        /// `alo_software::Installed` keeps it: a client marking an unsandboxed
+        /// application has the fact handed to it, and a client that forgot to
+        /// ask would quietly show a person the wrong thing about their own
+        /// machine.
+        sandboxed: bool,
+    },
 }
 
 impl Done {
-    /// What a verb answered, as it goes on the wire.
+    /// What an installation answered, as it goes on the wire.
+    ///
+    /// **One constructor per family rather than one taking
+    /// `alo_turn::WhatAVerbDid`**, and that is a layering decision rather than
+    /// a style: `alo-turn` is a *dev*-dependency of this crate on purpose — the
+    /// wire format does not know what a turn is, and a `Done` that could only
+    /// be made from one would make the orchestrator something every client
+    /// library had to build against. Whoever holds a `WhatAVerbDid` matches it
+    /// and calls one of these. There are two such places —
+    /// `alo_agentd::what_a_client_is_told_a_verb_did` and `alo-corridor`'s
+    /// door — and the compiler names both of them when a third family arrives,
+    /// which is what a closed enum is for.
+    ///
+    /// The identifier is **not** put through this crate's `naming`, unlike every
+    /// path in [`Done::of_a_file_verb`]: `org.gnome.TextEditor` is decided by
+    /// whoever packaged the application and is already held to its own shape by
+    /// `alo_applications::Application`, so there is nothing in it to filter.
     #[must_use]
-    pub fn of(answer: &Answer) -> Self {
+    pub fn of_an_installation(installed: &Installed) -> Self {
+        Self::Installed {
+            application: installed.application().identifier().to_owned(),
+            // Matched rather than compared, so a third kind of sandboxing
+            // cannot quietly go on the wire as `false`.
+            sandboxed: match installed.sandboxing() {
+                Sandboxing::Sandboxed => true,
+                Sandboxing::Unsandboxed => false,
+            },
+        }
+    }
+
+    /// What one of the six file verbs answered, as it goes on the wire.
+    #[must_use]
+    pub fn of_a_file_verb(answer: &Answer) -> Self {
         match answer {
             Answer::Listed(listing) => Self::Listed {
                 things: listing.things().iter().map(Thing::of).collect(),
@@ -135,6 +188,12 @@ impl Done {
             Self::Read { .. } => false,
             Self::Renamed { now_at } | Self::Moved { now_at } => now_at.is_none(),
             Self::Archived { at, left_out, .. } => at.is_none() || *left_out > 0,
+            // **An installation leaves nothing out.** It names one application
+            // and says whether it is sandboxed, and both are always there —
+            // there is no bound to reach, no path that might not be showable,
+            // and nothing a shell should put a caveat beside. `false` is the
+            // honest answer rather than the default one.
+            Self::Installed { .. } => false,
         }
     }
 }
@@ -163,7 +222,7 @@ mod tests {
     #[test]
     fn what_is_in_a_file_crosses_as_it_is_written() {
         let contents = "Dear Anna,\n\n\tthe invoice is attached.\u{1b}[0m\n";
-        let done = Done::of(&Answer::Read(contents.to_owned()));
+        let done = Done::of_a_file_verb(&Answer::Read(contents.to_owned()));
         let written = serde_json::to_string(&done).unwrap();
         assert!(!written.contains('\n'), "{written}");
         let back: Done = serde_json::from_str(&written).unwrap();
@@ -181,7 +240,7 @@ mod tests {
     /// at.
     #[test]
     fn a_search_that_found_nothing_says_so() {
-        let done = Done::of(&Answer::Found(Search::default()));
+        let done = Done::of_a_file_verb(&Answer::Found(Search::default()));
         assert_eq!(
             done,
             Done::Found {
@@ -199,11 +258,11 @@ mod tests {
     /// disk.
     #[test]
     fn a_change_with_an_unshowable_path_is_the_change_without_the_path() {
-        let moved = Done::of(&Answer::Moved(PathBuf::from("/home/anna/a\u{1b}.pdf")));
+        let moved = Done::of_a_file_verb(&Answer::Moved(PathBuf::from("/home/anna/a\u{1b}.pdf")));
         assert_eq!(moved, Done::Moved { now_at: None });
         assert!(moved.left_something_out());
 
-        let renamed = Done::of(&Answer::Renamed(PathBuf::from("/home/anna/b.pdf")));
+        let renamed = Done::of_a_file_verb(&Answer::Renamed(PathBuf::from("/home/anna/b.pdf")));
         assert_eq!(
             renamed,
             Done::Renamed {
@@ -248,7 +307,7 @@ mod tests {
     /// was refused where the folder was read.
     #[test]
     fn a_listing_carries_the_count_the_disk_made_and_makes_no_second_one() {
-        let complete = Done::of(&Answer::Listed(Listing::default()));
+        let complete = Done::of_a_file_verb(&Answer::Listed(Listing::default()));
         assert_eq!(
             complete,
             Done::Listed {
@@ -272,21 +331,57 @@ mod tests {
     #[test]
     fn every_answer_reads_back_as_what_was_written() {
         for done in [
-            Done::of(&Answer::Listed(Listing::default())),
-            Done::of(&Answer::Read("hello".to_owned())),
-            Done::of(&Answer::Found(Search::default())),
-            Done::of(&Answer::Renamed(PathBuf::from("/home/anna/a.pdf"))),
-            Done::of(&Answer::Moved(PathBuf::from("/home/anna/b.pdf"))),
+            Done::of_a_file_verb(&Answer::Listed(Listing::default())),
+            Done::of_a_file_verb(&Answer::Read("hello".to_owned())),
+            Done::of_a_file_verb(&Answer::Found(Search::default())),
+            Done::of_a_file_verb(&Answer::Renamed(PathBuf::from("/home/anna/a.pdf"))),
+            Done::of_a_file_verb(&Answer::Moved(PathBuf::from("/home/anna/b.pdf"))),
             Done::Archived {
                 at: Some("/home/anna/c.zip".to_owned()),
                 things: 1,
                 left_out: 0,
                 bytes: 2,
             },
+            Done::Installed {
+                application: "org.gnome.TextEditor".to_owned(),
+                sandboxed: true,
+            },
         ] {
             let written = serde_json::to_string(&done).unwrap();
             let back: Done = serde_json::from_str(&written).unwrap();
             assert_eq!(back, done);
         }
+    }
+
+    /// **The shape an installation goes on the wire in**, asserted literally.
+    ///
+    /// `docs/contracts/daemon-protocol.md` prints this exact line, so a renamed
+    /// field is a broken client rather than a failing test — and the round-trip
+    /// above would not notice, because it writes and reads with the same code.
+    ///
+    /// Built here rather than from an `alo_software::Installed`, which has no
+    /// public constructor **on purpose**: one of those is evidence that an
+    /// installation really happened, and anything able to make one could claim
+    /// it did. The mapping from that evidence to this shape is asserted in
+    /// `tests/an_installation_as_a_client_sees_it.rs`, which gets its
+    /// `Installed` the only way there is — by installing something.
+    #[test]
+    fn an_installation_is_the_identifier_and_whether_it_is_sandboxed() {
+        assert_eq!(
+            serde_json::to_string(&Done::Installed {
+                application: "org.gnome.TextEditor".to_owned(),
+                sandboxed: true,
+            })
+            .unwrap(),
+            r#"{"installed":{"application":"org.gnome.TextEditor","sandboxed":true}}"#
+        );
+        assert_eq!(
+            serde_json::to_string(&Done::Installed {
+                application: "org.gnome.TextEditor".to_owned(),
+                sandboxed: false,
+            })
+            .unwrap(),
+            r#"{"installed":{"application":"org.gnome.TextEditor","sandboxed":false}}"#
+        );
     }
 }

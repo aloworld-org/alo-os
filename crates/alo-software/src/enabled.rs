@@ -59,7 +59,7 @@ impl Enabled {
     ///
     /// # Errors
     /// [`NotDone::DidNotAnswer`] when the tool could not say.
-    pub fn read(tool: &impl Tool, bound: Bound) -> Result<Self, NotDone> {
+    pub fn read(tool: &(impl Tool + ?Sized), bound: Bound) -> Result<Self, NotDone> {
         match tool.sources() {
             Ok(configured) => Ok(Self::of(&configured, bound)),
             Err(failed) => Err(did_not_answer(failed)),

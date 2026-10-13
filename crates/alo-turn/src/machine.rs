@@ -17,19 +17,28 @@
 //!
 //! # The list an agent may ask from is the list this machine can carry out
 //!
-//! [`Machine::carrying_out_file_verbs`] builds the registry rather than
-//! receiving one, and that is the decision this file exists for. A registry
-//! handed in from outside could hold a verb nothing here can execute — the
-//! application verbs are declared and portable, and what actually moves a
-//! window is Wayland and D-Bus on a Linux host — and an agent asking for one
-//! would be told *the machine could not*, which is a sentence about a disk
-//! being full rather than about a capability this machine does not have.
+//! [`Machine::carrying_out_file_and_software_verbs`] builds the registry rather
+//! than receiving one, and that is the decision this file exists for. A
+//! registry handed in from outside could hold a verb nothing here can execute —
+//! the four application verbs are declared and portable, and what actually
+//! moves a window is Wayland and D-Bus in another process — and an agent asking
+//! for one would be told *the machine could not*, which is a sentence about a
+//! disk being full rather than about a capability this machine does not have.
 //!
 //! So the two lists are one list. A verb an agent can name is a verb something
 //! here can do, and adding an executor and adding to the offered list are the
 //! same edit. The name says which executors there are, so the day there is a
-//! second one the name is wrong until somebody fixes it — which is what it is
+//! third one the name is wrong until somebody fixes it — which is what it is
 //! for.
+//!
+//! **It said `carrying_out_file_verbs` until 2026-10-13, and the name was the
+//! whole of what was wrong.** `alo_software::software_verbs` had been declared,
+//! worded, tested and undoable since it was written, and
+//! `docs/contracts/agent-verbs.md` listed `install_application` publicly for
+//! third parties to build against. Nothing offered it: `software_verbs` was
+//! called by its own tests and by nothing else, so on a real machine an agent
+//! could install nothing, and the sentence above is what said so. The second
+//! executor is `crate::installing_an_application`.
 //!
 //! Asking a model something is **not** one of those verbs, and the name of the
 //! constructor stays right because of it: a question an agent puts to a model
@@ -64,13 +73,15 @@
 
 use alo_capability::Verbs;
 use alo_egress::Indicator;
-use alo_files::{Declaring, Resolving, file_verbs};
+use alo_files::{Resolving, file_verbs};
 use alo_record::Entry;
+use alo_software::{Bound, Tool};
 use alo_strings::{Said, Strings};
 
 use crate::bounding::Bounding;
 use crate::kept::Kept;
 use crate::shortening::{Shortened, Shortening};
+use crate::the_verbs_would_not_declare::TheVerbsWouldNotDeclare;
 
 /// The verbs, the words, the resolver, the boundary, the indicator and the
 /// record: one machine's, shared by every turn on it.
@@ -86,6 +97,35 @@ pub struct Machine<'a> {
     strings: &'a Strings,
     /// Where a path really leads.
     resolving: &'a dyn Resolving,
+    /// The rented tool an installation reaches, on a machine that can install.
+    ///
+    /// Taken rather than assumed for `resolving`'s reason: what installs an
+    /// application is a program at a path, so a crate that named it could not
+    /// be built or tested anywhere that program is not.
+    ///
+    /// **`None` and the install verb are absent together**, which is this
+    /// file's rule rather than an exception to it. A machine built by
+    /// [`Machine::carrying_out_file_verbs`] has no tool *and does not offer the
+    /// verb*, so the two lists are still one list; a machine built by
+    /// [`Machine::carrying_out_file_and_software_verbs`] has both. There is no
+    /// constructor that produces one without the other, which is why the one
+    /// unreachable case is the machine contradicting itself rather than
+    /// something a caller can arrange.
+    installing_with: Option<&'a dyn Tool>,
+    /// Whether an organisation said which places this machine may install from.
+    ///
+    /// `Bound::Nobodys` on a machine that cannot install at all, which is what
+    /// *nobody set a rule* means and is the only honest value where there is
+    /// nothing to bound.
+    ///
+    /// Held here rather than passed to the door, which is the opposite of
+    /// `alo_models::SourcePolicy` one paragraph down, and the difference is
+    /// where it comes from: this is `[applications]` in the description a root
+    /// wrote, read once when the daemon starts, and `alo-agentd` has no road
+    /// that changes it while a turn is open. The *places* it bounds are asked
+    /// of the tool at every installation, which is where a place switched off a
+    /// moment ago takes effect.
+    bound: Bound,
     /// What a verb's work runs inside.
     ///
     /// Exclusive, because imposing one is a thing that happens to a kernel: an
@@ -107,10 +147,50 @@ pub struct Machine<'a> {
 impl<'a> Machine<'a> {
     /// A machine that can carry out the six file verbs, and offers those.
     ///
+    /// No tool and no installation: a machine made this way answers an agent
+    /// with six verbs, which is the whole list of what it can do. It is what
+    /// every surface that has nothing to do with software is built from — a
+    /// compositor drawing an approval, a corridor proving a verb crossed, a
+    /// test about a boundary — and keeping it is what stops *this machine can
+    /// install* from being a thing seventy-six callers have to answer.
+    ///
+    /// # Errors
+    /// [`TheVerbsWouldNotDeclare`], which the six as they are written cannot cause. It is a
+    /// `Result` rather than an unwrap for the reason `alo-files` gives: a
+    /// library that panics inside the daemon takes the daemon with it.
+    pub fn carrying_out_file_verbs(
+        strings: &'a Strings,
+        resolving: &'a dyn Resolving,
+        bounding: &'a mut dyn Bounding,
+        indicator: &'a mut Indicator,
+        kept: &'a mut dyn Shortening,
+    ) -> Result<Self, TheVerbsWouldNotDeclare> {
+        Ok(Self {
+            verbs: file_verbs()?,
+            strings,
+            resolving,
+            installing_with: None,
+            bound: Bound::Nobodys,
+            bounding,
+            indicator,
+            kept,
+        })
+    }
+
+    /// A machine that can carry out the six file verbs and one installation,
+    /// and offers exactly those.
+    ///
     /// The resolver is taken rather than assumed so that the decisions in this
     /// crate are testable on a machine where making a symbolic link needs a
     /// privilege — `alo_files::OnThisMachine` is the one that ships, and
-    /// `alo_files::Resolving` says why there is only one.
+    /// `alo_files::Resolving` says why there is only one. The tool is taken for
+    /// the same reason one step further: installing reaches a program at a
+    /// path, and `alo_software::TheRentedTool` is the one that ships.
+    ///
+    /// The bound is taken because it is somebody else's rule and this crate
+    /// does not read files: `alo-agentd` reads `[applications]` out of the
+    /// description a root wrote and hands it over as it comes back, which is
+    /// what makes it an organisation's rather than ours.
     ///
     /// The boundary is taken for the reason the record is, and it is the
     /// stronger half of the same argument: what imposes one is a kernel, this
@@ -123,24 +203,51 @@ impl<'a> Machine<'a> {
     /// [`Machine::showing`] is how the shell reads it back.
     ///
     /// # Errors
-    /// [`Declaring`], which the six as they are written cannot cause. It is a
+    /// [`TheVerbsWouldNotDeclare`], naming the family that refused. The seven as
+    /// they are written cannot cause it. It is a
     /// `Result` rather than an unwrap for the reason `alo-files` gives: a
-    /// library that panics inside the daemon takes the daemon with it.
-    pub fn carrying_out_file_verbs(
+    /// library that panics inside the daemon takes the daemon with it. It can
+    /// also report two families having declared the same verb name, which is a
+    /// thing that becomes possible the moment there is more than one of them.
+    pub fn carrying_out_file_and_software_verbs(
         strings: &'a Strings,
         resolving: &'a dyn Resolving,
+        installing_with: &'a dyn Tool,
+        bound: Bound,
         bounding: &'a mut dyn Bounding,
         indicator: &'a mut Indicator,
         kept: &'a mut dyn Shortening,
-    ) -> Result<Self, Declaring> {
+    ) -> Result<Self, TheVerbsWouldNotDeclare> {
+        let mut verbs = file_verbs()?;
+        alo_software::verbs::declare_into(&mut verbs)?;
         Ok(Self {
-            verbs: file_verbs()?,
+            verbs,
             strings,
             resolving,
+            installing_with: Some(installing_with),
+            bound,
             bounding,
             indicator,
             kept,
         })
+    }
+
+    /// The tool, the organisation's rule and the indicator at once.
+    ///
+    /// `pub(crate)`, and the only caller is `installing_an_application.rs`.
+    /// Three fields of one machine, handed out together for the reason
+    /// [`Machine::bounding_and_indicator`] hands out two: an installation needs
+    /// the tool to reach, the rule to be held to and the indicator to be shown
+    /// on, and asking for them one at a time would be three borrows of one
+    /// machine. This is the one place that knows they are different fields.
+    ///
+    /// The bound is cloned because `alo_software::Enabled::read` takes it by
+    /// value, and it is a word or two rather than a list.
+    pub(crate) fn installing_and_showing(
+        &mut self,
+    ) -> Option<(&'a dyn Tool, Bound, &mut Indicator)> {
+        let tool = self.installing_with?;
+        Some((tool, self.bound.clone(), self.indicator))
     }
 
     /// What an agent may ask for on this machine.

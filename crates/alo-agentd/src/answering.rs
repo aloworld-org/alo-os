@@ -111,6 +111,7 @@ use crate::opening_workspaces;
 use crate::pairing::{self, AboutAPairing, Nearby};
 use crate::reaching;
 use crate::rereading::{self, WhatIsGranted};
+use crate::what_a_client_is_told_a_verb_did::as_a_client_sees_it;
 use crate::what_is_advertised;
 
 /// Read one line as something the person said, and answer it.
@@ -256,7 +257,7 @@ fn answered_to(
         | FromAPerson::Advertised => ToAPerson::refused(&rereading::what_to_say(strings)),
         FromAPerson::Approve { number } => match under(turning, number, now) {
             Some(waiting) => match turning.approving(waiting, grants, now) {
-                Ok(answer) => ToAPerson::did(&answer),
+                Ok(answer) => ToAPerson::did(as_a_client_sees_it(&answer)),
                 Err(why) => ToAPerson::refused(&why.said(strings)),
             },
             None => nothing_is_waiting(number, strings),

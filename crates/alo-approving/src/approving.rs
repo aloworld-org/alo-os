@@ -44,8 +44,7 @@
 use std::time::SystemTime;
 
 use alo_capability::{AnswerError, Grants, ProposalId};
-use alo_files::Answer;
-use alo_turn::Turning;
+use alo_turn::{Turning, WhatAVerbDid};
 
 use crate::asked::Asked;
 use crate::refusing::{NotAnswered, NotAsked};
@@ -66,7 +65,14 @@ pub enum Asks {
 pub enum Answered {
     /// The person approved it and the machine did it. What came back is the
     /// verb's own answer, handed on whole.
-    Carried(Answer),
+    ///
+    /// **An `alo_turn::WhatAVerbDid` and not an `alo_files::Answer` since
+    /// 2026-10-13**, which is the day a person could approve something other
+    /// than a change to their files. It is the same *whole answer, handed on*
+    /// either way; what changed is that there is more than one shape of it,
+    /// and narrowing it here would have made this surface able to put an
+    /// installation to a person and unable to tell them it happened.
+    Carried(WhatAVerbDid),
     /// The person said no. Nothing happened, nothing was asked about why, and
     /// the record says they declined it.
     Declined,

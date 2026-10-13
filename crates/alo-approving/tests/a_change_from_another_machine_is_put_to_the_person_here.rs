@@ -197,7 +197,14 @@ fn a_change_from_a_paired_machine_is_shown_to_the_person_on_this_machine() {
     // The person on this machine approves it, on this machine, and it happens
     // once.
     let answer = arriving.approving(id, &pairings, &grants, noon()).unwrap();
-    assert!(answer.now_at().unwrap().ends_with("march-final.pdf"));
+    assert!(
+        answer
+            .to_files()
+            .unwrap()
+            .now_at()
+            .unwrap()
+            .ends_with("march-final.pdf")
+    );
     assert!(!invoice.is_file());
     assert!(arriving.approving(id, &pairings, &grants, noon()).is_err());
     arriving.ending(&mut grants);

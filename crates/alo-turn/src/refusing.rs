@@ -65,6 +65,7 @@ use alo_keeping::NotKept;
 use alo_strings::{Filling, Said, Strings};
 
 use crate::unbounded::NoBoundary;
+use crate::went_wrong_installing::WentWrongInstalling;
 use crate::words;
 
 /// Why a turn did not do what it was asked.
@@ -114,16 +115,34 @@ pub enum NotDone {
     /// Something earlier in this turn could not be written down, so nothing
     /// more will be done under it.
     TurnClosed,
+    /// An installation this machine would not or could not do.
+    ///
+    /// Kept apart from [`Self::Refused`] and [`Self::MachineCouldNot`] for the
+    /// reason those two are kept apart from each other: `alo-software` draws
+    /// its own line between a place an organisation does not permit and a tool
+    /// that did not answer, it words both itself, and a record that rewrote
+    /// either as one of the three above would be telling a reader the file
+    /// grants stopped something they say nothing about.
+    CouldNotInstall(alo_software::NotDone),
+    /// An installation alo OS could not carry out through a fault of its own.
+    ///
+    /// The installing half of [`Self::NotBounded`]: not the capability model
+    /// and not the world, but this machine unable to keep its own working
+    /// consistent. [`WentWrongInstalling`] holds the technical reason in
+    /// English for whoever administers the machine, and the sentence a person
+    /// reads carries none of it.
+    CouldNotInstallHere(WentWrongInstalling),
 }
 
 impl NotDone {
     /// What this says, in the language the person reads.
     ///
-    /// Six of the eight hand the question straight to whoever made the refusal,
+    /// Seven of the ten hand the question straight to whoever made the refusal,
     /// so what a person is told about a call that did not form is the same
-    /// sentence wherever in alo OS the call was made. The seventh is worded by
-    /// [`NoBoundary`], which is this crate's own type carrying this crate's own
-    /// word.
+    /// sentence wherever in alo OS the call was made. The other three are this
+    /// crate's own words for this crate's own facts: a turn that closed, a
+    /// boundary that could not be applied, and an installation this machine
+    /// could not carry out through a fault here.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
         match self {
@@ -135,6 +154,10 @@ impl NotDone {
             Self::NotBounded(why) => why.said(strings),
             Self::NotRecorded(why) => why.said(strings),
             Self::TurnClosed => strings.say(&words::TURN_CLOSED.key(), &Filling::nothing()),
+            Self::CouldNotInstall(refused) => refused.said(strings),
+            Self::CouldNotInstallHere(_) => {
+                strings.say(&words::COULD_NOT_INSTALL_HERE.key(), &Filling::nothing())
+            }
         }
     }
 
@@ -148,7 +171,7 @@ impl NotDone {
     pub fn was_refused(&self) -> bool {
         matches!(
             self,
-            Self::TurnedAway(_) | Self::NeverAsked(_) | Self::Refused(_)
+            Self::TurnedAway(_) | Self::NeverAsked(_) | Self::Refused(_) | Self::CouldNotInstall(_)
         )
     }
 
@@ -214,15 +237,18 @@ mod tests {
         }
     }
 
-    /// **Six of the eight are somebody else's words**, and this is the test
-    /// that says so: with only this crate's own vocabulary loaded, the two
+    /// **Seven of the ten are somebody else's words**, and this is the test
+    /// that says so: with only this crate's own vocabulary loaded, the three
     /// sentences that are ours read and the rest are keys nothing declares.
     ///
-    /// The second of the two is the turn that could not be bounded, and it is
-    /// ours because a boundary is a mechanism and says nothing to anybody —
-    /// [`crate::words`] is the argument.
+    /// The three are a turn that closed, a boundary that could not be applied,
+    /// and an installation alo OS could not carry out through a fault of its
+    /// own. Each is ours for the same reason: it is a mechanism failing and
+    /// says nothing to anybody else — [`crate::words`] is the argument. The
+    /// third arrived with the second verb family on 2026-10-13, and this test
+    /// is what noticed, which is what it is for.
     #[test]
-    fn the_only_sentences_this_crate_says_of_its_own_are_its_own_two() {
+    fn the_only_sentences_this_crate_says_of_its_own_are_its_own_three() {
         let ours = Strings::of(words::turn_words().unwrap());
         let mut said_by_us = 0;
         for not_done in everything_that_can_come_back() {
@@ -231,7 +257,7 @@ mod tests {
             }
         }
         assert_eq!(
-            said_by_us, 2,
+            said_by_us, 3,
             "this crate has started saying something somebody else already says"
         );
         assert!(!NotDone::TurnClosed.said(&ours).is_a_bug());
@@ -239,6 +265,13 @@ mod tests {
             !NotDone::NotBounded(crate::NoBoundary::because("no kernel".to_owned()))
                 .said(&ours)
                 .is_a_bug()
+        );
+        assert!(
+            !NotDone::CouldNotInstallHere(crate::WentWrongInstalling::NotAnInstallation(
+                alo_software::NotAnInstallation::NotApproved,
+            ))
+            .said(&ours)
+            .is_a_bug()
         );
     }
 
@@ -255,11 +288,21 @@ mod tests {
                 "{not_done:?} is both a refusal and the end of the turn"
             );
             match not_done {
-                NotDone::TurnedAway(_) | NotDone::NeverAsked(_) | NotDone::Refused(_) => {
+                NotDone::TurnedAway(_)
+                | NotDone::NeverAsked(_)
+                | NotDone::Refused(_)
+                // A place an organisation does not permit is the capability
+                // model saying no, as much as a folder nobody granted is.
+                | NotDone::CouldNotInstall(_) => {
                     assert!(refused);
                 }
                 NotDone::NotRecorded(_) | NotDone::TurnClosed => assert!(over),
-                NotDone::NotAnswered(_) | NotDone::MachineCouldNot(_) | NotDone::NotBounded(_) => {
+                NotDone::NotAnswered(_)
+                | NotDone::MachineCouldNot(_)
+                | NotDone::NotBounded(_)
+                // alo OS contradicting itself: not the grants, not the world,
+                // and not the end of the turn either.
+                | NotDone::CouldNotInstallHere(_) => {
                     assert!(!refused && !over);
                 }
             }

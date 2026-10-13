@@ -49,10 +49,14 @@ fn in_finnish() -> Strings {
         .says(
             Key::named("turn.no-longer-paired").expect("a key"),
             "tämä kone ei ole enää pariliitoksessa koneen {machine} kanssa, joten mitään sen              pyytämää ei enää käsitellä",
+        )
+        .says(
+            Key::named("turn.could-not-install-here").expect("a key"),
+            "mitään ei asennettu: tämä kone ei pystynyt suorittamaan asennusta, ja vika on alo              OS:ssä eikä missään, mitä sinä tai agenttisi pyysi",
         );
     let speaking = vocabulary
         .check(translation)
-        .expect("a translation of five sentences with the gaps the code fills");
+        .expect("a translation of six sentences with the gaps the code fills");
     let mut strings = Strings::of(vocabulary);
     strings.speaks(speaking).expect("a checked translation");
     strings.prefers(&[finnish]);

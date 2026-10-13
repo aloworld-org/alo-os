@@ -140,7 +140,10 @@ fn one_turn_moves_a_file_and_the_record_on_the_disk_says_what_happened() {
                 noon(),
             )
             .unwrap();
-        assert_eq!(listing.listed().unwrap().things().len(), 1);
+        assert_eq!(
+            listing.to_files().unwrap().listed().unwrap().things().len(),
+            1
+        );
 
         // A folder nobody granted, refused before the disk is touched.
         let refused = turning
@@ -171,7 +174,10 @@ fn one_turn_moves_a_file_and_the_record_on_the_disk_says_what_happened() {
         approval = id.as_u64();
 
         let moved = turning.approving(id, &grants, noon()).unwrap();
-        assert_eq!(moved.now_at(), Some(archive.join("march.pdf").as_path()));
+        assert_eq!(
+            moved.to_files().unwrap().now_at(),
+            Some(archive.join("march.pdf").as_path())
+        );
 
         // And the turn ends, taking the grant the invocation made with it.
         assert!(

@@ -357,7 +357,7 @@ impl<'a, 'm> Doorway<'a, 'm> {
                 if door == Door::Read {
                     arriving
                         .reading(carried.verb(), &given, pairings, grants, now)
-                        .map(|answer| Answered::Did(alo_protocol::Done::of(&answer)))
+                        .map(|answer| Answered::Did(as_the_asking_machine_sees_it(&answer)))
                 } else {
                     arriving
                         .proposing(carried.verb(), &given, pairings, grants, changes_wait, now)
@@ -455,6 +455,28 @@ fn before_the_door(at_the_door: AtTheDoor) -> Judged {
     Judged::Reply {
         from: None,
         replying: Replying::before_the_door(at_the_door),
+    }
+}
+
+/// What a verb did, as the machine that asked will read it.
+///
+/// `alo-protocol` holds `alo-turn` as a dev-dependency, so `Done` has one
+/// constructor per family of verbs and the choosing is done by whoever knows
+/// what a turn is. This is that, for the corridor.
+///
+/// **The installation arm cannot be taken through this door today** — a read is
+/// what reaches it, and installing is a change, so a change from another
+/// machine leaves here as a proposal and comes back through
+/// [`Arriving::approving`](alo_turn::Arriving::approving). It is written out
+/// rather than left to an `unreachable!()` because the match is where a third
+/// family gets noticed, and a door that panicked on a shape it did not expect
+/// would be a worse answer than one that carries it.
+fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> alo_protocol::Done {
+    match did {
+        alo_turn::WhatAVerbDid::ToFiles(answer) => alo_protocol::Done::of_a_file_verb(answer),
+        alo_turn::WhatAVerbDid::AnApplicationInstalled(installed) => {
+            alo_protocol::Done::of_an_installation(installed)
+        }
     }
 }
 

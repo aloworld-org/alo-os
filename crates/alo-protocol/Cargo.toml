@@ -19,6 +19,13 @@ alo-capability = { path = "../alo-capability" }
 # derived there, because a path is not always text; `naming.rs` is the whole of
 # that argument. Light enough to be safe: `alo-files` is `std::fs` and no more.
 alo-files = { path = "../alo-files" }
+# What an installation answered with, and whether it is sandboxed. A leaf, the
+# same layer as `alo-files`, and here for the same reason: this crate turns what
+# a verb did into what crosses the wire, so it has to know the shapes. **Not
+# `alo-turn`**, which stays a dev-dependency — the wire does not know what a
+# turn is, and `Done` therefore has one constructor per family rather than one
+# taking `alo_turn::WhatAVerbDid`.
+alo-software = { path = "../alo-software" }
 # Every refusal in this crate is read by somebody, so none of them is English.
 alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
@@ -36,3 +43,9 @@ alo-context = { path = "../alo-context" }
 alo-egress = { path = "../alo-egress" }
 alo-record = { path = "../alo-record" }
 alo-turn = { path = "../alo-turn" }
+# What an application is. Used only by
+# `tests/an_installation_as_a_client_sees_it.rs`, which has to really install
+# something to get hold of an `alo_software::Installed` — that type has no
+# public constructor, deliberately, because one of them is evidence an
+# installation happened.
+alo-applications = { path = "../alo-applications" }

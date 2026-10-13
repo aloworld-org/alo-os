@@ -473,6 +473,7 @@ corridor.at-the-door.not-a-verb	{machine} could not read what was sent as a verb
 corridor.at-the-door.not-bounded	{machine} could not put a boundary around this, so it did not run.
 corridor.at-the-door.not-for-this-wire	{machine} did not recognise the request. Its alo OS may be older or newer than this one.
 corridor.at-the-door.not-granted-there	This has not been granted on {machine}. Only the person at that machine can grant it.
+corridor.at-the-door.not-installed-there	{machine} did not install it. Whoever uses that machine can see why on it.
 corridor.at-the-door.the-wrong-door	{machine} refused this: a change has to wait for approval there, and a read does not wait.
 corridor.at-the-door.turned-away	{machine} does not do that, or not with what was given. Nothing was done.
 corridor.not-crossed.not-an-answer	{machine} answered with something this machine could not read. Nothing is known about what happened there.
@@ -1604,6 +1605,7 @@ telling.carry-on	You can carry on. Nothing else on this machine depends on the a
 telling.runs-them-anyway	That is said once: alo OS will run these weights whenever you choose them, and will not mention their size again by itself
 telling.the-agent-cannot-answer	The agent cannot answer right now
 turn.closed	this turn has stopped, because what happened on it could not be written down
+turn.could-not-install-here	nothing was installed: this machine could not carry the installation out, and the fault is in alo OS rather than in anything you or your agent asked for — ask whoever set this machine up to look at it
 turn.grant-here-expired	{machine} was permitted {reach} on this machine, and that has expired, so it cannot reach {wanted} — nothing granted on another machine stands in for it
 turn.no-longer-paired	this machine is no longer paired with {machine}, so nothing more it asked for is considered
 turn.not-bounded	nothing was done: this machine cannot hold an agent inside what you granted it, so it will not let one act at all — ask whoever set this machine up to look at it

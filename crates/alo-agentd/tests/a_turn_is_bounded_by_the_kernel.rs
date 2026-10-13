@@ -273,13 +273,17 @@ fn a_turn_of_this_service_runs_inside_a_boundary_and_does_what_it_was_asked() {
 
     let read = read.expect("a granted file was refused to the turn that named it");
     assert_eq!(
-        read.read(),
+        read.to_files().expect("a read is a file verb").read(),
         Some("March, 4180.00"),
         "the boundary let the open through and the answer is not what is in the file"
     );
 
     let archived = archived.expect("the widest call the six have was refused inside its boundary");
-    let made = archived.archived().expect("an archive answers with itself");
+    let made = archived
+        .to_files()
+        .expect("an archive is a file verb")
+        .archived()
+        .expect("an archive answers with itself");
     assert_eq!(made.things(), 1);
     assert!(
         archive.join("invoices.zip").is_file(),
@@ -292,7 +296,7 @@ fn a_turn_of_this_service_runs_inside_a_boundary_and_does_what_it_was_asked() {
     // would show: a granted move refused with `EACCES` inside its own bound.
     let moved = moved.expect("a granted move was refused to the turn inside its boundary");
     assert_eq!(
-        moved.now_at(),
+        moved.to_files().expect("a move is a file verb").now_at(),
         Some(archive.join("march.pdf").as_path()),
         "the move answered with somewhere other than where it was asked to go"
     );

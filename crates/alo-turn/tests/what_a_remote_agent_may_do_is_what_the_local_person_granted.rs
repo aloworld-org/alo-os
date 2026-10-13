@@ -273,7 +273,10 @@ fn a_verb_from_a_paired_machine_is_evaluated_against_this_machines_grants() {
                     noon(),
                 )
                 .unwrap();
-            assert_eq!(answer.listed().unwrap().things().len(), 1);
+            assert_eq!(
+                answer.to_files().unwrap().listed().unwrap().things().len(),
+                1
+            );
             assert_eq!(held.len(), 1);
             (arriving.grantee().clone(), held)
         },
@@ -414,7 +417,7 @@ fn a_change_from_a_paired_machine_waits_for_the_person_on_this_machine() {
 
             // B's person approves it, on B. It runs once.
             let answer = arriving.approving(id, pairings, grants, noon()).unwrap();
-            let now_at = answer.now_at().unwrap().to_path_buf();
+            let now_at = answer.to_files().unwrap().now_at().unwrap().to_path_buf();
             let again = arriving
                 .approving(id, pairings, grants, noon())
                 .unwrap_err();

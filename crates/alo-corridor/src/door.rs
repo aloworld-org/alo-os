@@ -54,6 +54,22 @@ pub enum AtTheDoor {
     NotBounded,
     /// Everything permitted it and the receiving machine could not.
     MachineCouldNot,
+    /// The receiving machine would not install it.
+    ///
+    /// **Why is deliberately not carried.** `alo_software::NotDone` says which
+    /// of five things it was — a place that machine's organisation does not
+    /// permit, a place switched off, the application already there, a
+    /// signature that did not check, a tool that did not answer — and every
+    /// one of those is a fact about somebody else's machine. *Which
+    /// applications are installed over there* and *what rules that
+    /// organisation set* are exactly what a refusal must not hand across a
+    /// pairing; `alo_applications::Reaching` makes the same argument one level
+    /// down and asks its two questions in the order that keeps it true.
+    ///
+    /// So this is one kind, and the person who asked learns that it did not
+    /// happen. The receiving machine's own record has the reason, in that
+    /// machine's own words, for the person who owns it.
+    NotInstalledThere,
     /// The request was for something other than this wire.
     NotForThisWire,
 }
@@ -61,7 +77,7 @@ pub enum AtTheDoor {
 /// Every word this file spells on the wire, with the arm it spells.
 ///
 /// One table for both directions, so the two cannot drift.
-const ON_THE_WIRE: [(AtTheDoor, &str); 14] = [
+const ON_THE_WIRE: [(AtTheDoor, &str); 15] = [
     (
         AtTheDoor::NotProven(NotProven::NotWithThatMachine),
         "not-paired",
@@ -87,6 +103,7 @@ const ON_THE_WIRE: [(AtTheDoor, &str); 14] = [
     (AtTheDoor::TurnedAway, "turned-away"),
     (AtTheDoor::NotBounded, "not-bounded"),
     (AtTheDoor::MachineCouldNot, "machine-could-not"),
+    (AtTheDoor::NotInstalledThere, "not-installed-there"),
     (AtTheDoor::NotForThisWire, "not-for-this-wire"),
 ];
 
@@ -129,7 +146,8 @@ impl AtTheDoor {
             | Self::TheWrongDoor
             | Self::TurnedAway
             | Self::NotBounded
-            | Self::MachineCouldNot => (422, "Unprocessable Content"),
+            | Self::MachineCouldNot
+            | Self::NotInstalledThere => (422, "Unprocessable Content"),
         }
     }
 
@@ -160,6 +178,7 @@ impl AtTheDoor {
             Self::TurnedAway => words::TURNED_AWAY,
             Self::NotBounded => words::NOT_BOUNDED_THERE,
             Self::MachineCouldNot => words::MACHINE_COULD_NOT,
+            Self::NotInstalledThere => words::NOT_INSTALLED_THERE,
             Self::NotForThisWire => words::NOT_FOR_THIS_WIRE,
         }
     }
@@ -202,6 +221,14 @@ impl AtTheDoor {
             }),
             NotDone::MachineCouldNot(_) => Some(Self::MachineCouldNot),
             NotDone::NotBounded(_) => Some(Self::NotBounded),
+            // One kind for both, and they are two facts locally. To the
+            // machine that asked they are the same one — *it was not installed
+            // there* — and the difference between a rule somebody set and a
+            // fault in alo OS is for the person who owns the receiving machine
+            // to read in its record, not for a pairing to carry.
+            NotDone::CouldNotInstall(_) | NotDone::CouldNotInstallHere(_) => {
+                Some(Self::NotInstalledThere)
+            }
             NotDone::NotRecorded(_) | NotDone::TurnClosed => None,
         }
     }
@@ -237,6 +264,7 @@ mod tests {
             AtTheDoor::TurnedAway,
             AtTheDoor::NotBounded,
             AtTheDoor::MachineCouldNot,
+            AtTheDoor::NotInstalledThere,
             AtTheDoor::NotForThisWire,
         ]
     }

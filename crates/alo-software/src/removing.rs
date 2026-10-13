@@ -82,7 +82,7 @@ impl Removed {
 /// refused. In both, no grant has ended.
 pub fn remove(
     application: Application,
-    tool: &impl Tool,
+    tool: &(impl Tool + ?Sized),
     machine: &mut Agent,
     now: SystemTime,
 ) -> Result<Removed, NotDone> {

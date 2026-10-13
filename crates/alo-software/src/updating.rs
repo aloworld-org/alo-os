@@ -123,7 +123,7 @@ pub fn offered(
     during: &Underway,
     enabled: &Enabled,
     source: &str,
-    tool: &impl Tool,
+    tool: &(impl Tool + ?Sized),
 ) -> Result<Vec<Offer>, Stopped> {
     let (source, destination) = enabled.usable(source)?;
     held_to(during, Errand::CheckingForApplicationUpdates, destination)?;
@@ -145,7 +145,11 @@ pub fn offered(
 /// # Errors
 /// [`NotDone`] — the place may no longer be used, the application is no longer
 /// installed, it is open, or the tool could not say.
-pub fn applying(enabled: &Enabled, offer: &Offer, tool: &impl Tool) -> Result<OnItsOwn, NotDone> {
+pub fn applying(
+    enabled: &Enabled,
+    offer: &Offer,
+    tool: &(impl Tool + ?Sized),
+) -> Result<OnItsOwn, NotDone> {
     let (_, destination) = enabled.usable(offer.source.as_str())?;
     still_closed_and_here(offer, tool)?;
     Ok(OnItsOwn::for_(
@@ -168,7 +172,7 @@ pub fn apply(
     during: &Underway,
     enabled: &Enabled,
     offer: Offer,
-    tool: &impl Tool,
+    tool: &(impl Tool + ?Sized),
 ) -> Result<Updated, Stopped> {
     let (source, destination) = enabled.usable(offer.source.as_str())?;
     held_to(during, Errand::UpdatingAnApplication, destination)?;
@@ -181,7 +185,7 @@ pub fn apply(
 }
 
 /// Refused when the application is no longer installed, or is open.
-fn still_closed_and_here(offer: &Offer, tool: &impl Tool) -> Result<(), NotDone> {
+fn still_closed_and_here(offer: &Offer, tool: &(impl Tool + ?Sized)) -> Result<(), NotDone> {
     let identifier = offer.application.identifier();
     if !tool
         .installed()

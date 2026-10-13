@@ -12,9 +12,15 @@ said what we are building toward: *a working OS that the users can use, we want
 to launch.* Everything below this section is the older ordering, kept because
 it holds real state and not because it is the plan.
 
-**Five things stand between today and a machine somebody outside this team can
+**Six things stand between today and a machine somebody outside this team can
 use.** Nothing else is on the critical path. Everything in `docs/features.md`
 that is not here is real work for after the launch.
+
+*The sixth was added on 2026-10-13, by the owner, in these words: "The agent
+should be able to work end to end on the next release and also we should be
+able to install applications and work with them."* The first half of that
+sentence is the fifth item below and was already here. The second half was not
+on the list at all, and the measurement that found it is in the item itself.
 
 - **It installs from a release page onto a PC**, without erasing what was there.
   *Three releases exist and `alo-installer` is thirty-eight source files. What
@@ -40,6 +46,20 @@ that is not here is real work for after the launch.
   with, the one approval, and the Settings row where a person chooses how code
   runs.*
 
+- **A person installs an application, and the agent can work with it.** *The
+  installing is built and has never run. `alo-software` is twenty-nine source
+  files holding the places, the organisation's rule, the signature check and
+  the refusals in a person's own words, and `alo-shipping.service` installs the
+  seven applications `crates/alo-software/shipped.toml` names at first boot
+  (ADR 0073). **Nothing has booted the image**, so no application has ever
+  arrived on a machine this way. The agent's half was separately missing and is
+  being built now: `install_application` is an enumerated verb — declared,
+  worded, undoable, and published in `docs/contracts/agent-verbs.md` for third
+  parties to build against — and until 2026-10-13 it was offered to nobody.
+  `alo_turn::Machine` had one constructor, `carrying_out_file_verbs`, and those
+  six file verbs were the whole list an agent on a real machine could ask
+  from.*
+
 **And two things stay true at every step, because neither restricts anybody:**
 the record of what happened, and the egress indicator telling the truth while
 it happens.
@@ -52,12 +72,36 @@ it works on a PC we can put our hands on, the report **names that PC**, and says
 what was observed rather than that it worked. No certified model, no graphics
 card. What was not exercised is named.
 
+**For the sixth, that rule has a sharp edge worth writing down.** An
+installation reaches a place on the network, so it is the one item on this list
+that *cannot* be shown with a fixture: a test tool that records what it was
+asked to install proves the road, and proves nothing about whether an
+application arrives. **Done is an application a person can then open**, named,
+on a PC we can put our hands on, from a place that really served it — and a
+report that says *the install verb was carried out* without saying which
+application opened afterwards has measured the road and called it the journey.
+This is `CLAUDE.md`'s own warning in its fifth set of clothes: `test -x` on a
+converter stood in for the converter starting, and a tool that answers `Ok(())`
+stands in for an application existing.
+
 ### What is deliberately not here
 
 The Dock's icon menu, the composer's find-and-open half, persistence of
 window arrangements, the panel and status area taking keyboard focus, anything
 about an organisation. All real, all written down in `docs/features.md`, none of
 it between a person and a machine they can use.
+
+**And, within the sixth item: updating and removing.** `docs/features.md`
+promises all three in one line — *install applications … update and remove
+them* — and `alo-software` has `crates/alo-software/src/updating.rs` and
+`crates/alo-software/src/removing.rs` built beside
+`crates/alo-software/src/installing.rs`. Neither is declared as a verb and
+neither is on this list.
+Installing is what stands between a person and software they do not have;
+removing something they chose to install does not. Naming the split here is the
+point, because *install, update and remove* is one line in the features
+document and it would otherwise read as one item somebody quietly did a third
+of.
 
 ## Where we are
 

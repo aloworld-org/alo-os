@@ -152,16 +152,41 @@ pub const NO_LONGER_PAIRED: Word = Word::saying(
      this machine's person gave the other machine, and is never translated.",
 );
 
+/// An installation that did not happen because alo OS contradicted itself.
+///
+/// Not a refusal and not the network: an authority routed to the wrong
+/// executor, or an indicator line that did not describe the errand about to be
+/// carried out. Both are faults here and neither can be caused by anything a
+/// person or an agent did.
+///
+/// Said rather than panicked, because a library that panics inside the daemon
+/// takes the daemon with it. The technical reason is kept in English beside it
+/// for whoever administers the machine and deliberately not worked into this,
+/// which is [`NOT_BOUNDED`]'s rule for the same kind of fault.
+pub const COULD_NOT_INSTALL_HERE: Word = Word::saying(
+    "turn.could-not-install-here",
+    "nothing was installed: this machine could not carry the installation out, and the fault is \
+     in alo OS rather than in anything you or your agent asked for — ask whoever set this \
+     machine up to look at it",
+)
+.noting(
+    "Shown to a person whose agent was about to install an application and did not. Nothing was \
+     installed, nothing was refused and nothing left the machine: alo OS found its own working \
+     inconsistent and stopped rather than go on. The technical reason is a separate sentence kept \
+     in English for whoever administers the machine, and must not be worked into this one.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 5] = [
+pub const EVERY_WORD: [Word; 6] = [
     TURN_CLOSED,
     NOT_BOUNDED,
     NOT_GRANTED_HERE,
     GRANT_HERE_EXPIRED,
     NO_LONGER_PAIRED,
+    COULD_NOT_INSTALL_HERE,
 ];
 
 /// Why this crate's own list could not be declared.

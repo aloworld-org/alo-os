@@ -32,6 +32,21 @@ use alo_record::Record;
 use alo_strings::{Language, Strings, Translation, Vocabulary};
 use alo_turn::{Machine, Turning};
 
+/// What a verb did, as the wire carries it.
+///
+/// The two-arm match `alo-protocol` cannot write for itself: it holds
+/// `alo-turn` as a dev-dependency, so `Done` has one constructor per family and
+/// whoever knows about turns picks between them. The compiler names this
+/// function when a third family arrives, which is the point.
+fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
+    match did {
+        alo_turn::WhatAVerbDid::ToFiles(answer) => Done::of_a_file_verb(answer),
+        alo_turn::WhatAVerbDid::AnApplicationInstalled(installed) => {
+            Done::of_an_installation(installed)
+        }
+    }
+}
+
 /// A fixed moment, so that a question standing for an hour is arithmetic.
 fn noon() -> SystemTime {
     SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000)
@@ -122,7 +137,7 @@ fn what_a_real_folder_holds_crosses_as_what_the_machine_found() {
                 noon(),
             )
             .unwrap();
-        ToAnAgent::did(&answer)
+        ToAnAgent::did(as_a_client_sees_it(&answer))
     });
 
     let written = told.written().unwrap();
@@ -158,7 +173,7 @@ fn a_real_file_crosses_with_its_line_breaks_intact() {
                 noon(),
             )
             .unwrap();
-        ToAnAgent::did(&answer)
+        ToAnAgent::did(as_a_client_sees_it(&answer))
     });
 
     let written = told.written().unwrap();
@@ -208,7 +223,11 @@ fn a_change_crosses_as_a_number_and_the_sentence_the_person_is_asked() {
             .unwrap();
             assert_eq!(answered.number(), Some(id.as_u64()));
             let did = turning.approving(id, grants, noon()).unwrap();
-            (to_the_agent, to_the_person, ToAPerson::did(&did))
+            (
+                to_the_agent,
+                to_the_person,
+                ToAPerson::did(as_a_client_sees_it(&did)),
+            )
         });
 
     assert!(to_the_agent.waits_for_a_person());
@@ -356,7 +375,7 @@ fn a_search_crosses_with_its_paths_and_its_counts() {
                 noon(),
             )
             .unwrap();
-        ToAnAgent::did(&answer)
+        ToAnAgent::did(as_a_client_sees_it(&answer))
     });
 
     let back = ToAnAgent::read(&told.written().unwrap()).unwrap();
@@ -406,7 +425,7 @@ fn an_archive_crosses_with_its_path_and_its_counts() {
             )
             .unwrap();
         let did = turning.approving(id, grants, noon()).unwrap();
-        ToAPerson::did(&did)
+        ToAPerson::did(as_a_client_sees_it(&did))
     });
 
     let back = ToAPerson::read(&told.written().unwrap()).unwrap();
