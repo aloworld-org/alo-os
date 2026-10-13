@@ -96,7 +96,12 @@ pub struct Asking<'a> {
 ///
 /// Named for the thing rather than `schema`, because it is what appears in a
 /// provider's own message when it will not accept it.
-const THE_ENVELOPE_IS_CALLED: &str = "alo_agent_request";
+///
+/// **Public so that a test naming it names this**, rather than repeating the
+/// string beside the code that writes it — two copies of a literal agree with
+/// each other whatever either of them is, which is a test that cannot catch
+/// the name changing.
+pub const THE_ENVELOPE_IS_CALLED: &str = "alo_agent_request";
 
 impl<'a> Asking<'a> {
     /// A question about to be put where this permission allows.

@@ -506,10 +506,27 @@ mod tests {
     }
 
     /// **A hosted provider is shown the product's words for the next request,
-    /// and is otherwise asked exactly as it is asked a question in words**
-    /// (ADR 0032, decision 4; ADR 0037): the request carrying an agent's next
-    /// request is the same bytes as a question in words carrying those words,
-    /// neither holds a schema, and both leave under a departure.
+    /// and the one thing that differs is the schema it is held to**
+    /// (ADR 0037; ADR 0107).
+    ///
+    /// # This test asserted the opposite until 2026-10-13, and was right to
+    ///
+    /// It read *neither holds a schema, and both leave under a departure*, and
+    /// cited ADR 0032 decision 4 for it. That decision deferred the question —
+    /// *whether they are held to a shape is a separate question, measured
+    /// separately* — and this test turned the deferral into a prohibition,
+    /// which is a thing a test can do silently and a reader cannot see.
+    ///
+    /// [ADR 0107](../../../docs/decisions/0107-a-provider-is-held-to-the-shape-its-api-accepts.md)
+    /// answered it: a provider's API accepts a schema, so a provider asked for
+    /// a next request is held to one, and a model that cannot write the shape
+    /// is refused by the provider rather than by us reading prose. A **local**
+    /// runtime is held by the runtime (ADR 0032) and a **service** somebody
+    /// runs is held by neither, which is the test below this one.
+    ///
+    /// So what is asserted now is narrower and says more: the two roads are
+    /// **the same request but for `response_format`**, that field is the
+    /// envelope and nothing else, and both still leave under a departure.
     #[test]
     fn a_provider_is_shown_the_products_words_for_the_next_request_and_asked_as_before() {
         let mut bodies = Vec::new();
@@ -553,12 +570,59 @@ mod tests {
         let [in_words, for_the_next] = bodies.as_slice() else {
             unreachable!("two roads, two requests")
         };
-        assert_eq!(in_words, for_the_next, "the provider was asked differently");
         shown_in_the_products_words(
             &what_the_model_was_shown(for_the_next),
             &the_machines_verbs(),
             WHAT_NEXT,
         );
+
+        // **A question in words holds no schema**, which is the half of ADR
+        // 0107 that did not change: words are answered in words.
+        let asked_in_words: serde_json::Value = serde_json::from_str(in_words).unwrap();
+        assert!(
+            asked_in_words.get("response_format").is_none(),
+            "a question in words was held to a schema: {in_words}"
+        );
+
+        // **And the next request is held to the envelope**, by name and
+        // strictly — the two things an OpenAI-shaped API decides from.
+        let mut asked_for_the_next: serde_json::Value = serde_json::from_str(for_the_next).unwrap();
+        assert!(
+            asked_for_the_next.get("response_format").is_some(),
+            "the next request was not held to anything: {for_the_next}"
+        );
+        let held = asked_for_the_next.get("response_format").unwrap();
+        assert_eq!(
+            held.pointer("/type").and_then(|t| t.as_str()),
+            Some("json_schema")
+        );
+        assert_eq!(
+            held.pointer("/json_schema/name").and_then(|n| n.as_str()),
+            Some(alo_asking::THE_ENVELOPE_IS_CALLED)
+        );
+        assert_eq!(
+            held.pointer("/json_schema/strict")
+                .and_then(|s| s.as_bool()),
+            Some(true),
+            "a schema a provider may ignore is not a schema: {for_the_next}"
+        );
+        assert_eq!(
+            held.pointer("/json_schema/schema"),
+            Some(&alo_models::in_the_envelope::the_envelope_a_provider_accepts()),
+            "the provider was held to a shape this machine did not write"
+        );
+
+        // **And that is the only difference.** Said by taking it away rather
+        // than by listing what matches, so a field added to one road and not
+        // the other fails here instead of passing unnoticed.
+        if let Some(object) = asked_for_the_next.as_object_mut() {
+            object.remove("response_format");
+        }
+        assert_eq!(
+            asked_in_words, asked_for_the_next,
+            "the provider was asked differently in more than the schema"
+        );
+
         for body in &bodies {
             assert!(
                 serde_json::from_str::<serde_json::Value>(body)
