@@ -124,10 +124,27 @@ fn a_window_rasterises_with_room_for_its_shadow() {
     );
 }
 
-/// **The middle of the window is its own surface**, opaque and the palette's.
+/// **The middle of an empty window is its own surface**, opaque and the
+/// palette's.
+///
+/// **Given no conversation on purpose.** This sampled the middle of a window
+/// that had three things said in it and passed until bubbles were drawn as real
+/// shapes — at which point the middle was a bubble, correctly. The fixture is
+/// now a window with nothing said, so the point really is empty surface.
 #[test]
-fn the_middle_of_the_window_is_its_surface() {
-    let drawn = as_drawn();
+fn the_middle_of_an_empty_window_is_its_surface() {
+    let files = two_files();
+    let mut fonts = cosmic_text::FontSystem::new();
+    let drawn = furniture(
+        Rectangle::new((120, 80).into(), (1040, 800).into()),
+        a_look(),
+        0,
+        &the_words(&files),
+        &[],
+        &mut fonts,
+    )
+    .expect("the design's size");
+
     let (x, y) = in_the_raster(&drawn, drawn.at.size.w / 2, 300);
     let [r, g, b, a] = pixel(&drawn, x, y);
 
@@ -140,38 +157,43 @@ fn the_middle_of_the_window_is_its_surface() {
     );
 }
 
-/// **The reply field is drawn, and it is the cool colour rather than the
-/// surface.**
+/// **The reply field is outlined, not filled.**
 ///
-/// The field is the one well at radius 18, so this is also the test that the
-/// per-well corner reaches a real window rather than only the rasteriser's own
-/// unit test.
+/// The design gives it `bg/surface` with a `border/default` hairline, and the
+/// panel behind it is already that colour — so what makes it a field is its
+/// edge.
+///
+/// **This test asserted the opposite until 2026-10-13**, when a picture of a
+/// real draw showed what a cool fill costs: the field read as a grey slab and
+/// the three composer controls, which are `bg/cool` themselves, vanished into
+/// it. The test had encoded the bug, which is why changing the code broke it —
+/// a test can be wrong, and the way to tell is to look at the thing.
 #[test]
-fn the_reply_field_is_drawn_in_the_cool_colour() {
+fn the_reply_field_is_outlined_rather_than_filled() {
     let drawn = as_drawn();
     let palette = crate::task_look::TaskPalette::of(a_look()).expect("a palette");
     let rows = alo_tasks::layout::TheRows::of(1040, 800).expect("the design's size");
 
-    // The middle of the field, which is well inside its radius.
-    let field_middle_y = rows.composer.from_the_top
+    // Well inside the field, which must be the window's own surface.
+    let inside_it = rows.composer.from_the_top
         + alo_tasks::measures::ABOVE_THE_FIELD
-        + alo_tasks::measures::THE_FIELD_IS_TALL / 4;
+        + alo_tasks::measures::THE_FIELD_IS_TALL / 2;
     let (x, y) = in_the_raster(
         &drawn,
         drawn.at.size.w / 2,
-        i32::try_from(field_middle_y).expect("a small number"),
+        i32::try_from(inside_it).expect("a small number"),
     );
     let [r, g, b, _] = pixel(&drawn, x, y);
 
     assert_eq!(
         [r, g, b],
-        palette.cool,
-        "the reply field is not drawn in the cool colour"
+        palette.surface,
+        "the reply field is filled rather than outlined"
     );
     assert_ne!(
         [r, g, b],
-        palette.surface,
-        "the field and the window are the same colour, so the field is invisible"
+        palette.cool,
+        "the field is cool, which is what hid the controls that sit on it"
     );
 }
 

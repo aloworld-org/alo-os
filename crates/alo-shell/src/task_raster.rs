@@ -116,6 +116,25 @@ const fn ground_of(whose: alo_tasks::WhoseBlock, palette: &TaskPalette) -> [u8; 
     }
 }
 
+/// The heading's own figures, measured off the design's frame.
+///
+/// Not in `alo_tasks::measures` because they are this raster's arrangement of
+/// one row rather than something another surface asks about, and because the
+/// four only mean anything together: `Identity` is 680 × 54 in a row 76 tall,
+/// so it begins 11 down; its title is 30, then a gap of 4, then the kind at 16.
+/// `Task status` is 260 wide and right aligned.
+const THE_IDENTITY_IS_WIDE: u32 = 680;
+/// How far down the heading the identity column begins.
+const IDENTITY_STARTS: u32 = 11;
+/// The title's own line.
+const TITLE_IS_TALL: u32 = 30;
+/// Between the title and what kind of task it is.
+const BETWEEN_THEM: u32 = 4;
+/// The line saying what kind of task it is.
+const THE_KIND_IS_TALL: u32 = 16;
+/// The status's column on the right.
+const THE_STATUS_IS_WIDE: u32 = 260;
+
 /// A logical measure as a pixel count.
 fn px(of: u32) -> i32 {
     i32::try_from(of).unwrap_or(i32::MAX)
@@ -189,13 +208,16 @@ pub(crate) fn furniture(
         m::BESIDE_A_ROW,
         rows.composer.from_the_top + m::ABOVE_THE_FIELD,
     );
-    wells.push(AWell {
-        at: Rectangle::new(
-            (fx, fy).into(),
-            (px(field_is_wide), px(m::THE_FIELD_IS_TALL)).into(),
-        ),
-        corner: m::THE_FIELDS_CORNER,
-    });
+    // **An outline, not a fill.** The design gives the reply field `bg/surface`
+    // with a `border/default` hairline, and the panel it sits on is already that
+    // colour — so what distinguishes it is its edge. It was a `bg/cool` well
+    // until a picture of a real draw showed what that costs: the field read as a
+    // grey slab and the three composer controls, which are `bg/cool` themselves,
+    // vanished into it. Cool on cool is invisible, and no test was about colour.
+    let field = Rectangle::new(
+        (fx, fy).into(),
+        (px(field_is_wide), px(m::THE_FIELD_IS_TALL)).into(),
+    );
 
     // **The three square controls**, at `radius/md`. Attach, the model and
     // permissions have a cool ground; *where the processing happens* is text
@@ -221,36 +243,14 @@ pub(crate) fn furniture(
         (px(m::A_CONTROL_IS), px(m::A_CONTROL_IS)).into(),
     )];
 
-    let panel = a_panel(
-        at,
-        palette.surface,
-        palette.edge,
-        (at.loc.x + at.size.w, at.loc.y + at.size.h),
-        APanelsShapes {
-            circles: &button,
-            circle: palette.the_one_button,
-            marks: &[],
-            mark: palette.ink,
-            wells: &wells,
-            well_is: palette.cool,
-            rings: &[],
-            ring_is: palette.ink,
-        },
-    )
-    .ok_or(NoTaskPicture::TooSmall(TooSmall::NotTallEnough {
-        the_least: alo_tasks::layout::the_least_height(),
-    }))?;
-
-    // **The words, inked onto the ground each sits on.** Each is placed from the
-    // window's own inside corner, cut at the window's bottom edge so a long
-    // title cannot write past the frame.
     let measure = look.measure();
-    let limit = at.loc.y + at.size.h;
-    let mut inked = Vec::new();
-    // **Measured here, before `write` exists, and that order is forced.** Both
+    // **Measured before the panel is rasterised, and that order is forced twice
+    // over.** Both
     // the measuring and the writing need the font system mutably, and two
     // closures holding it at once is what the compiler refused — so the
     // measuring finishes and gives the borrow up before the writer takes it.
+    // And a bubble is a shape **in the panel's own raster**, so the heights
+    // that decide where bubbles go have to be known before the panel is made.
     //
     // **The conversation, in two passes.** Every block has to be measured
     // before any can be stacked — a message's height depends on how many lines
@@ -305,18 +305,71 @@ pub(crate) fn furniture(
     let scrolled = blocks.scrolled_to_the_newest(view);
     let top_of_the_column = rows.conversation.from_the_top + m::INSIDE_THE_CONVERSATION;
 
+    // **The bubbles, as rounded shapes rather than the text's own ground.**
+    // Until now what looked like a bubble was the box `sentence` inks text
+    // into: exactly the height of the words, with no padding and no corner. The
+    // design draws a real one at `radius/md` with 16 inside, and a picture of a
+    // real draw is what showed the difference — no test could, because every
+    // test was about where the words are.
+    for block in blocks.each() {
+        if !block.whose.is_in_a_bubble() || !block.is_in_view(scrolled, view) {
+            continue;
+        }
+        let (bx, by) = inside(
+            m::INSIDE_THE_CONVERSATION + block.from_the_left,
+            top_of_the_column + block.from_the_top.saturating_sub(scrolled),
+        );
+        wells.push(AWell {
+            at: Rectangle::new((bx, by).into(), (px(block.wide), px(block.tall)).into()),
+            corner: m::A_BLOCKS_CORNER,
+        });
+    }
+
+    let panel = a_panel(
+        at,
+        palette.surface,
+        palette.edge,
+        (at.loc.x + at.size.w, at.loc.y + at.size.h),
+        APanelsShapes {
+            circles: &button,
+            circle: palette.the_one_button,
+            marks: &[],
+            mark: palette.ink,
+            wells: &wells,
+            well_is: palette.cool,
+            rings: &[field],
+            ring_is: palette.edge,
+        },
+    )
+    .ok_or(NoTaskPicture::TooSmall(TooSmall::NotTallEnough {
+        the_least: alo_tasks::layout::the_least_height(),
+    }))?;
+
+    // **The words, inked onto the ground each sits on.** Each is placed from the
+    // window's own inside corner, cut at the window's bottom edge so a long
+    // title cannot write past the frame.
+    let limit = at.loc.y + at.size.h;
+    let mut inked = Vec::new();
+
     // **Centred in the band it is given, from its own measured height.** Not
     // from a half-of-a-leading constant: the height depends on the font, the
     // person's text size and how many lines it wrapped to, so a constant would
     // be right only at one setting and would drift at the one a person turns on
     // in order to read.
+    // **`to_the_right` is how the status sits against the far edge.** The design
+    // puts the identity in a 680 column on the left and the status in a 260 one
+    // on the right, `justify-end`. Everything was drawn left-aligned until a
+    // picture showed all three heading lines stacked on top of one another, the
+    // status's own opaque ink box painting over the title's lower half — which
+    // read as the title being clipped and was not.
     let mut write = |words: &str,
                      style: AStyle,
                      ground: [u8; 3],
                      ink: [u8; 3],
                      x: u32,
                      band: (u32, u32),
-                     width: u32| {
+                     width: u32,
+                     to_the_right: bool| {
         if words.is_empty() {
             return;
         }
@@ -334,7 +387,31 @@ pub(crate) fn furniture(
         let (top, tall) = band;
         let spare = px(tall) - shaped.height;
         let down = px(top) + if spare > 0 { spare / 2 } else { 0 };
-        let (px_x, _) = inside(x, 0);
+        // **Right-aligned text is shaped twice**, and the second time at its own
+        // width. `sentence` inks into a box exactly as wide as it was told, so
+        // shifting that box to the right edge leaves it hanging past it — which
+        // is what a picture showed: the status's opaque ground ran 143 pixels
+        // beyond the window. Measuring, then re-shaping at the measured width,
+        // gives a box the size of the words.
+        let (shaped, along) = if to_the_right {
+            let fits = shaped.width.max(1);
+            let again = crate::task_text::shaped(
+                fonts,
+                crate::task_text::ToWrite {
+                    words,
+                    style,
+                    ground,
+                    ink,
+                },
+                fits,
+                measure,
+            );
+            let slack = u32::try_from((px(width) - fits).max(0)).unwrap_or(0);
+            (again, x + slack)
+        } else {
+            (shaped, x)
+        };
+        let (px_x, _) = inside(along, 0);
         let px_y = at.loc.y + i32::try_from(m::BORDER).unwrap_or(0) + down;
         if let Some(one) = shaped.placed(px_x, px_y, limit) {
             inked.push(one);
@@ -349,11 +426,9 @@ pub(crate) fn furniture(
         palette.surface,
         palette.ink,
         m::BESIDE_A_ROW,
-        (
-            rows.heading.from_the_top + m::GAP,
-            m::THE_HEADING_IS_TALL / 2,
-        ),
-        identity_is_wide,
+        (rows.heading.from_the_top + IDENTITY_STARTS, TITLE_IS_TALL),
+        THE_IDENTITY_IS_WIDE.min(identity_is_wide),
+        false,
     );
     write(
         words.kind,
@@ -362,10 +437,11 @@ pub(crate) fn furniture(
         palette.ink_secondary,
         m::BESIDE_A_ROW,
         (
-            rows.heading.from_the_top + m::THE_HEADING_IS_TALL / 2,
-            m::THE_HEADING_IS_TALL / 2,
+            rows.heading.from_the_top + IDENTITY_STARTS + TITLE_IS_TALL + BETWEEN_THEM,
+            THE_KIND_IS_TALL,
         ),
-        identity_is_wide,
+        THE_IDENTITY_IS_WIDE.min(identity_is_wide),
+        false,
     );
     // **The status in teal while alo is working**, which is the caller's
     // wording and this crate's colour: ADR 0067's teal marks alo acting.
@@ -374,9 +450,14 @@ pub(crate) fn furniture(
         AStyle::Label,
         palette.surface,
         palette.alo,
-        m::BESIDE_A_ROW,
+        // **In its own column on the right**, which is what the design draws
+        // and what stops it painting over the title.
+        rows.heading
+            .wide
+            .saturating_sub(m::BESIDE_A_ROW + THE_STATUS_IS_WIDE),
         (rows.heading.from_the_top, m::THE_HEADING_IS_TALL),
-        identity_is_wide,
+        THE_STATUS_IS_WIDE,
+        true,
     );
 
     // Each chip's label, on the chip's own cool ground.
@@ -394,6 +475,7 @@ pub(crate) fn furniture(
             x + m::BEFORE_A_CHIPS_LABEL,
             (rows.shared_files.from_the_top, m::THE_SHARED_FILES_ARE_TALL),
             m::A_CHIP_IS_WIDE.saturating_sub(m::BEFORE_A_CHIPS_LABEL * 2),
+            false,
         );
     }
 
@@ -409,6 +491,7 @@ pub(crate) fn furniture(
             m::THE_FIELD_IS_TALL / 3,
         ),
         field_is_wide.saturating_sub(m::INSIDE_THE_FIELD * 2),
+        false,
     );
     write(
         words.model,
@@ -418,6 +501,7 @@ pub(crate) fn furniture(
         controls.model + m::GAP,
         (controls.from_the_top, m::A_CONTROL_IS),
         m::THE_MODEL_CONTROL_IS_WIDE.saturating_sub(m::A_CHEVRON + m::GAP * 2),
+        false,
     );
     write(
         words.destination,
@@ -427,6 +511,7 @@ pub(crate) fn furniture(
         controls.destination,
         (controls.from_the_top, m::A_CONTROL_IS),
         m::THE_DESTINATION_IS_WIDE,
+        false,
     );
 
     for (one, block) in said.iter().zip(blocks.each()) {
@@ -448,6 +533,7 @@ pub(crate) fn furniture(
             m::INSIDE_THE_CONVERSATION + block.from_the_left + padding,
             (down, block.tall.saturating_sub(padding * 2)),
             block.wide.saturating_sub(padding * 2),
+            false,
         );
     }
 
@@ -460,6 +546,7 @@ pub(crate) fn furniture(
         m::BESIDE_A_ROW,
         (rows.scope_note.from_the_top, m::THE_SCOPE_NOTE_IS_TALL),
         rows.scope_note.wide.saturating_sub(m::BESIDE_A_ROW * 2),
+        false,
     );
 
     Ok(TaskPicture { panel, at, inked })

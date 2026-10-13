@@ -297,6 +297,53 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     ("read left to right", Direction::LeftToRight),
                     ("read right to left", Direction::RightToLeft),
                 ] {
+                    // **One task window, so there is one to look at.** The
+                    // whole of this feature was built, tested and never seen;
+                    // this fixture's own header says why that matters —
+                    // *it needs eyes, and eyes need pictures.*
+                    //
+                    // Example content, exactly as the design's component
+                    // description says twice: nothing here is a simulated
+                    // completed action, and the words are a caller's to say.
+                    let files: Vec<String> = Vec::new();
+                    let said = [
+                        alo_shell::task_text::WhatWasSaid {
+                            whose: alo_tasks::WhoseBlock::ThePersons,
+                            words: "Tidy my invoices folder and tell me what you moved.",
+                        },
+                        alo_shell::task_text::WhatWasSaid {
+                            whose: alo_tasks::WhoseBlock::Alos,
+                            words: "I\u{2019}ll look through them and say what I changed.",
+                        },
+                        alo_shell::task_text::WhatWasSaid {
+                            whose: alo_tasks::WhoseBlock::AnAccount,
+                            words: "Reading your folder",
+                        },
+                    ];
+                    let a_task_window = [alo_shell::task_raster::ATaskOnTheDisplay {
+                        // **Cut to this display rather than the design's
+                        // 1040 x 800.** This fixture draws on a 1366 x 768
+                        // output and the design's size does not fit: the first
+                        // picture had the window's bottom 92 pixels off the
+                        // screen. In production `where_a_task_window_opens`
+                        // does this cutting; here the figure is written down so
+                        // the fixture is honest about drawing a window smaller
+                        // than the design.
+                        at: smithay::utils::Rectangle::new((60, 24).into(), (1040, 700).into()),
+                        how_many_files: 0,
+                        words: alo_shell::task_text::TheWordsInATaskWindow {
+                            title: "Tidy my invoices folder",
+                            kind: "alo task",
+                            status: "alo is working",
+                            model: "",
+                            destination: "on this machine",
+                            invitation: "Reply to alo or change the direction\u{2026}",
+                            scope_note: "Permissions and model choices apply to this task.",
+                            files: &files,
+                            how_many_files: "",
+                        },
+                        said: said.to_vec(),
+                    }];
                     let until = Instant::now() + Duration::from_millis(60);
                     while Instant::now() < until {
                         nested.pump()?;
@@ -307,7 +354,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             &[],
                             &mut labels,
                             DesktopFrame {
-                                tasks: &[],
+                                tasks: &a_task_window,
                                 display_scale: 100,
                                 // **Three applications, so there is a Dock to
                                 // look at.** This held nothing until

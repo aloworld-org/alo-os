@@ -121,6 +121,20 @@ impl DesktopPicture {
         for (texture, area) in tasks {
             crate::painted::wash(frame, texture, *area)?;
         }
+        // **And their words, after their panels.** A task window's panel is one
+        // texture with its rounded shapes drawn into it; its text is inked onto
+        // the ground it sits on and painted over the panel.
+        //
+        // **This was missing and no test could have said so.** The words were
+        // shaped, measured, placed and asserted — `the_words_are_drawn_and_an_
+        // empty_window_draws_none` holds the count at twelve — and the list
+        // never reached a frame. Every test was about the list; none was about
+        // the painting. What found it was looking at a picture of a real draw,
+        // which is what `examples/desktop_check.rs` exists for and says so in
+        // its own header: *it needs eyes, and eyes need pictures.*
+        for task in &self.tasks {
+            crate::painted::paint(frame, &[], &task.inked)?;
+        }
         for window in [&self.running, &self.filling] {
             if !window.is_empty() {
                 crate::painted::paint(frame, &window.solids, &window.inked)?;
