@@ -109,6 +109,14 @@ than a different door — `alo-broker`'s `ApprovingKey` would have to stop being
 typed to `SystemVerb` first, which is a change to privileged proof code and
 deserves its own decision.
 
+## What it produced
+
+[`docs/contracts/application-door.md`](../contracts/application-door.md) — the
+path, the modes, the request line, the answers and which refusal each act can
+honestly meet. It is a published surface from its first version rather than
+from the version somebody outside starts depending on, as every other contract
+in that directory is.
+
 ## Not relitigated
 
 ADR 0001 §2's broker and its token, `daemon-protocol.md`'s two doors and its

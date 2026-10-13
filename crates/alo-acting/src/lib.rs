@@ -7,7 +7,11 @@
 //! D-Bus, and it is not this crate's.* This is that half's door.
 //!
 //! [ADR 0108](../../../docs/decisions/0108-the-compositor-carries-an-application-verb-out-and-needs-no-token-to.md)
-//! is the shape and the argument.
+//! is the shape and the argument, and
+//! [`application-door.md`](../../../docs/contracts/application-door.md) is the
+//! published surface — the path, the modes and the wire. **That document is
+//! what a compositor somebody else writes is held to**, so a change here that
+//! is not in it is a change nobody outside can see.
 //!
 //! # Why there is a door at all
 //!

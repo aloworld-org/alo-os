@@ -42,6 +42,25 @@ jiff = { version = "0.2", default-features = false, features = ["std", "tzdb-bun
 # carries keys to it; every answer goes back through `alo_approving::Approving`
 # and nothing here approves, declines or words anything itself.
 alo-approving = { path = "../alo-approving" }
+# The application door's vocabulary: the three acts, the request line and the
+# one-word answers (ADR 0108). Handed through and never decided here, as
+# `alo-capability` below is — *may this run* was settled by the turn before a
+# line was written, and a compositor that could refuse for permission would be
+# a second place deciding it.
+#
+# It brings `alo-applications` with it, which was a dev-dependency of this
+# crate until 2026-10-13 under the comment *never a dependency of the shipped
+# surface, which only draws*. The shipped surface no longer only draws: ADR
+# 0108 gave it a door. The vocabulary is types and words, not the verb
+# declarations' authority, and nothing here reads a grant or a sentence.
+alo-acting = { path = "../alo-acting" }
+# The application identifier a verb is granted and approved against, which
+# `an_application_verb_is_carried_out` converts to the Dock's own `AppId` at
+# that one seam. **It was a dev-dependency until 2026-10-13**, under the
+# comment *never a dependency of the shipped surface, which only draws*; the
+# shipped surface no longer only draws, because ADR 0108 gave it a door. Only
+# the identifier type is used here — no declaration, no grant, no sentence.
+alo-applications = { path = "../alo-applications" }
 # The number a question is answered by, and the grants an approval is checked
 # against again at the moment it runs — handed through, never decided here.
 alo-capability = { path = "../alo-capability" }
@@ -161,9 +180,6 @@ zbus = { version = "5.19", default-features = false, features = ["async-io", "bl
 drm = "=0.14.1"
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
-# An application to say who is using a camera in the in-use indicator's tests.
-# Never a dependency of the shipped surface, which only draws.
-alo-applications = { path = "../alo-applications" }
 # The agent's own reader, used to read this machine's tree back off the bus:
 # one description, read by the reader a blind person uses and by the one an
 # agent uses, is the claim `alo_access::tree` makes and this measures it.

@@ -20,8 +20,14 @@
 //! smuggle. `alo-broker` chose the same for the same reason one level up.
 //!
 //! A line that is not exactly two words is not a request, rather than a request
-//! with something missing: *read around nothing* is ADR 0031's rule for a body
-//! a machine reads, and it is cheaper to keep here than to recover from.
+//! with something missing. That is `docs/contracts/daemon-protocol.md`'s rule
+//! one level up — *a field nobody declared … is refused rather than ignored*,
+//! rather than *having the part it cared about dropped* — and it is cheaper to
+//! keep here than to recover from.
+//!
+//! An earlier version of this paragraph attributed that rule to ADR 0031, which
+//! is about pairing and says nothing of the kind. The phrase it quoted appears
+//! nowhere in this repository outside the sentence that invented it.
 
 use alo_applications::Application;
 

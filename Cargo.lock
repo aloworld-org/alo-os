@@ -1529,6 +1529,7 @@ version = "0.1.0"
 dependencies = [
  "alo-access",
  "alo-accounts",
+ "alo-acting",
  "alo-adapters",
  "alo-appearance",
  "alo-applications",
