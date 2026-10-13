@@ -1,0 +1,120 @@
+<!--
+  The first-start journey's account sheets, read from the live file on
+  2026-10-13 with `get_metadata`, with the component instances expanded.
+
+  `70-28.xml` carries these frames from the page export, but every `Choice /`
+  and `Action /` in them is a stub — the same blind spot that made a dedicated
+  capture necessary for the sign-in screen (`176-10686.xml`). This file is the
+  expansion, for the two sheets that stand between a fresh machine and a
+  person who can use it.
+
+  Reference size 1440 x 960. Every number is a logical pixel.
+
+  Read with `get_metadata`, so: ids, names, x, y, width, height and `hidden`.
+  **Effects and strokes are not in it** - a stroke on a frame is not a child
+  layer, which `MANIFEST.md` records as the blind spot that hid the window
+  edge's focus ring and the sign-in entry's error border. Colours and type
+  must be read from a render or from `variables.toml`, never assumed.
+
+  ## The sheets share one skeleton
+
+  Both frames below are the same composition with different contents, and
+  `ROOTS.md` says the rule is structural rather than a list: *a frame carries
+  the strip when it is a setup sheet*. So this is one layout to build once and
+  fill many times, the way `crate::sign_in_layout` is one layout for the
+  sign-in and unlock screens.
+
+      Wallpaper / folded light   0,0      1440 x 960
+      Stage                      950,52    420 x 18
+      Main / <name>              160,164   600 x <tall>
+        Eyebrow                    0,0     600 x 16
+        Title                      0,32    600 x <tall>
+        Introduction               0,<y>   600 x <tall>
+        Choices                    0,<y>   600 x 180
+          <a choice>               0,0     600 x 85
+          <a choice>               0,95    600 x 85
+        Consequence                0,<y>   600 x 22
+        Actions                    0,<y>   600 x 48
+          <an action>              0,0     160 x 48
+          <an action>            172,0     160 x 48   (176 wide where the words need it)
+      Action / Accessibility      40,876   160 x 48
+      Footer                     736,892   640 x 16
+
+  **The column is left-aligned at x=160**, not centred: a setup sheet is read,
+  and the sign-in screen's centred group is for a screen that is answered.
+
+  ## The wallpaper is the one already drawn
+
+  `371:30183` and `371:30390` below carry the same five vectors, at the same
+  coordinates, as `364:25552` in `176-10686.xml` — the artwork
+  `crate::sign_in_wallpaper` already rasterises. One wallpaper for the whole
+  first start and the sign-in screen alike; nothing new to transcribe.
+
+  ## Still owed by this capture
+
+  - The `Choice /` component's own states. Each is 600 x 85 with a Title at
+    (21, 17) and a Description at (21, 46); whether it draws a field, a
+    border, or a selected state is **not** in the metadata and must be read
+    from a render before anything is drawn.
+  - Every `Action /` instance is a stub here: 160 x 48 and nothing about what
+    is inside it.
+  - The nine other frames of the journey — Welcome, language, region,
+    keyboard, Protect your computer, Sign-in options, fingerprint, recovery
+    and the AI choice — are listed in `ROOTS.md` and not captured here.
+-->
+<frame id="183:10675" name="10 · Your name" x="3320" y="180" width="1440" height="960">
+  <frame id="371:30183" name="Wallpaper / folded light" x="0" y="0" width="1440" height="960">
+    <vector id="371:30184" name="Vector" x="1016" y="-180" width="584" height="1240" />
+    <vector id="371:30185" name="Vector" x="1140" y="-180" width="460" height="1240" />
+    <vector id="371:30186" name="Vector" x="1302.321533203125" y="-120" width="297.678466796875" height="1120" />
+    <vector id="371:30187" name="Vector" x="-180" y="686.465087890625" width="992" height="413.534912109375" />
+    <vector id="371:30188" name="Vector" x="-180" y="785.3609008789062" width="895" height="314.63909912109375" />
+  </frame>
+  <text id="371:30190" name="Stage" x="950" y="52" width="420" height="18" />
+  <frame id="371:30191" name="Main / name" x="160" y="164" width="600" height="459">
+    <text id="371:30192" name="Eyebrow" x="0" y="0" width="600" height="16" />
+    <text id="371:30193" name="Title" x="0" y="32" width="600" height="88" />
+    <text id="371:30194" name="Introduction" x="0" y="136" width="600" height="25" />
+    <frame id="371:30195" name="Choices" x="0" y="177" width="600" height="180">
+      <instance id="371:30196" name="Choice / Your name" x="0" y="0" width="600" height="85">
+        <text id="I371:30196;370:30055" name="Title" x="21" y="17" width="560" height="25" />
+        <text id="I371:30196;370:30056" name="Description" x="21" y="46" width="560" height="22" />
+      </instance>
+      <instance id="371:30199" name="Choice / Profile picture · optional" x="0" y="95" width="600" height="85" />
+    </frame>
+    <text id="371:30202" name="Consequence" x="0" y="373" width="600" height="22" />
+    <frame id="371:30203" name="Actions" x="0" y="411" width="600" height="48">
+      <instance id="371:30204" name="Action / Continue" x="0" y="0" width="160" height="48" />
+      <instance id="371:30206" name="Action / Back" x="172" y="0" width="160" height="48" />
+    </frame>
+  </frame>
+  <instance id="371:30208" name="Action / Accessibility" x="40" y="876" width="160" height="48" />
+  <text id="371:30210" name="Footer" x="736" y="892" width="640" height="16" />
+</frame>
+
+<frame id="186:10737" name="11a · Add a PIN" x="4920" y="1320" width="1440" height="960">
+  <frame id="371:30390" name="Wallpaper / folded light" x="0" y="0" width="1440" height="960">
+    <vector id="371:30391" name="Vector" x="1016" y="-180" width="584" height="1240" />
+    <vector id="371:30392" name="Vector" x="1140" y="-180" width="460" height="1240" />
+    <vector id="371:30393" name="Vector" x="1302.321533203125" y="-120" width="297.678466796875" height="1120" />
+    <vector id="371:30394" name="Vector" x="-180" y="686.465087890625" width="992" height="413.534912109375" />
+    <vector id="371:30395" name="Vector" x="-180" y="785.3609008789062" width="895" height="314.63909912109375" />
+  </frame>
+  <text id="371:30397" name="Stage" x="950" y="52" width="420" height="18" />
+  <frame id="371:30398" name="Main / pin" x="160" y="164" width="600" height="440">
+    <text id="371:30399" name="Eyebrow" x="0" y="0" width="600" height="16" />
+    <text id="371:30400" name="Title" x="0" y="32" width="600" height="44" />
+    <text id="371:30401" name="Introduction" x="0" y="92" width="600" height="50" />
+    <frame id="371:30402" name="Choices" x="0" y="158" width="600" height="180">
+      <instance id="371:30403" name="Choice / New PIN" x="0" y="0" width="600" height="85" />
+      <instance id="371:30406" name="Choice / Confirm PIN" x="0" y="95" width="600" height="85" />
+    </frame>
+    <text id="371:30409" name="Consequence" x="0" y="354" width="600" height="22" />
+    <frame id="371:30410" name="Actions" x="0" y="392" width="600" height="48">
+      <instance id="371:30411" name="Action / Save PIN" x="0" y="0" width="160" height="48" />
+      <instance id="371:30413" name="Action / Use password only" x="172" y="0" width="176" height="48" />
+    </frame>
+  </frame>
+  <instance id="371:30415" name="Action / Accessibility" x="40" y="876" width="160" height="48" />
+  <text id="371:30417" name="Footer" x="736" y="892" width="640" height="16" />
+</frame>

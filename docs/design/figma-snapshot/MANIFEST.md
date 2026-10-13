@@ -444,3 +444,36 @@ A frame appearing here is **design evidence**. It is not authorisation to build 
 `CLAUDE.md` binds building to `docs/features.md` with a tier, inside the current release.
 A design that draws something this repository has not promised is a question for the owner,
 not a licence.
+
+## The first-start account sheets, 2026-10-13
+
+**`the-first-start-sheets.xml` is authoritative for *10 · Your name* and
+*11a · Add a PIN***, and supersedes `70-28.xml` for them. The page export
+holds both frames with every `Choice /` and `Action /` as a stub; this holds
+the choice component expanded, which is where the measurements an
+implementation needs begin.
+
+**Two sheets of a journey of eleven.** `ROOTS.md` inventories the whole
+first start — Welcome, language, region, keyboard, Your name, Protect your
+computer, Sign-in options, Add a PIN, fingerprint, recovery, and the AI
+choice. These two are captured first because they are what stands between a
+machine with no accounts and a person who can use it: `alo-greeting`'s
+`makes_an_account` has been able to make the first account since 2026-10-10,
+and no screen has ever been able to call it.
+
+**They are one composition, not two.** Both carry the same skeleton — a
+stage line, a 600-wide column at (160, 164) of eyebrow, title, introduction,
+two 600 × 85 choices, a consequence and two actions, with Accessibility at
+the bottom left and a footer at the bottom right. That is a *setup sheet*,
+and `ROOTS.md` says the rule is structural rather than a list. It should be
+built once and filled many times, the way `crate::sign_in_layout` serves both
+the sign-in and the unlock screen.
+
+**The wallpaper is the one already drawn.** Both frames carry the same five
+vectors at the same coordinates as `364:25552` in `176-10686.xml`, which
+`crate::sign_in_wallpaper` already rasterises. Nothing new to transcribe.
+
+**What this capture does not have**, recorded so nobody reads its silence as
+absence: the `Choice /` component's own states — whether a row draws a field,
+a border or a selected state is not in metadata and must be read from a
+render; the contents of every `Action /` instance; and the nine other frames.
