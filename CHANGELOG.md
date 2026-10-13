@@ -12,6 +12,24 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **You can ask alo to open an application, bring it to the front, or close
+  it.** The four application verbs had been written down, worded, published for
+  other people to build against, and offered to nobody: nothing on a running
+  machine could carry one out. Three of them now can. *Closing **asks** — the
+  application may put up its own "save your changes?" and you answer that;
+  nothing is killed. Opening something already running brings it forward rather
+  than starting a second copy, and bringing an application to the front brings
+  the window you last used, not an arbitrary one.*
+
+  *The fourth, putting a window somewhere on the screen, is **not** offered yet
+  and that is deliberate: there is nothing behind it, and a verb you could
+  approve with nothing behind it would be an approval that did nothing. It
+  arrives when where-a-window-goes has one answer again.*
+
+  *Not yet seen on a real machine: every test of these uses a stand-in for the
+  compositor, because the real one needs a display. The three verbs have never
+  opened an actual window.*
+
 - **Ask alo to do something and it does it, instead of stopping at the first
   wrong guess.** Until now a request like *rename the March invoice* produced a
   perfectly valid request and nothing else: the machine would work out what to
