@@ -351,6 +351,15 @@ pub fn all_of_them(at: &Path, touched: &[String]) -> Result<Vec<String>, String>
             }
             Err(why) => why,
         };
+        // **Asked before the retry, because a full disk is not a transient.**
+        // The second run exists for a failure that *might* not happen again;
+        // a filesystem with no room left will refuse identically and the retry
+        // is pure cost. Measured on 2026-10-13: a run that filled the disk was
+        // re-run in full before anybody was told, and the second attempt took
+        // as long as the first.
+        if let Some(why) = only_a_person_can_clear_this(&refused) {
+            return Err(needs_a_person_to_clear_it(gate.named, why, &refused));
+        }
         let again = Instant::now();
         if let Ok(coverage) = ran(gate, at)? {
             // Both durations, because the first one is how long the failure
@@ -372,6 +381,12 @@ pub fn all_of_them(at: &Path, touched: &[String]) -> Result<Vec<String>, String>
         // answer, fails as reliably as a broken change and says nothing
         // whatever about it. Reported as the work, it parks something finished
         // under a sentence blaming it, which happened twice on 2026-09-11.
+        // **Asked a second time**, because a gate can fill the disk on its
+        // *second* run having had room on its first — the first run's own
+        // artefacts are what took the space.
+        if let Some(why) = only_a_person_can_clear_this(&refused) {
+            return Err(needs_a_person_to_clear_it(gate.named, why, &refused));
+        }
         if let Some(why) = the_machine_rather_than_the_work(&refused) {
             return Err(format!(
                 "{NOT_READY_TO_BE_GATED}: {why}. The gate `{}` was not answering about the \
@@ -446,6 +461,92 @@ mod a_transient_says_which {
     fn a_test_named_twice_is_named_once() {
         let said = "        FAIL [   0.0s] (1/2) c::b only_one\n        FAIL [   0.0s] (1/2) c::b only_one\n";
         assert_eq!(which_ones_refused(said), ", and it was only_one");
+    }
+}
+
+#[cfg(test)]
+mod which_door_a_refusal_goes_through {
+    use super::{only_a_person_can_clear_this, the_machine_rather_than_the_work};
+
+    /// **A filesystem that filled up during a run needs a person**, and it is
+    /// the sentence the machine itself wrote.
+    #[test]
+    fn a_full_filesystem_needs_a_person() {
+        let said = "error: failed to write file /root/alo-builds/this-machine/debug/incremental/                    off_means_there_is_nothing_left_to_open-3irdo5fx9uaj1/s-hn6fj1b4di-0dak55x-                    working/dep-graph.part.bin: No space left on device (os error 28)";
+        assert_eq!(
+            only_a_person_can_clear_this(said),
+            Some("the filesystem the gates build on filled up during the run")
+        );
+    }
+
+    /// Either spelling, because which one appears depends on who is reporting:
+    /// `rustc` prints the words and a `std::io::Error` prints the number.
+    #[test]
+    fn either_spelling_of_a_full_filesystem_is_caught() {
+        for said in [
+            "No space left on device",
+            "Os { code: 28, kind: StorageFull, message: \"No space left on device\" }",
+            "failed to write: os error 28",
+        ] {
+            assert!(
+                only_a_person_can_clear_this(said).is_some(),
+                "{said:?} was not read as a full filesystem"
+            );
+        }
+    }
+
+    /// **And the ordinary broken change goes through neither door**, which is
+    /// the control: a classifier that answered for everything would turn every
+    /// real failure into *the machine's fault*.
+    #[test]
+    fn a_broken_change_is_not_the_machines_and_needs_nobody() {
+        for said in [
+            "error[E0308]: mismatched types",
+            "error: used `unwrap()` on an `Option` value",
+            "        FAIL [   0.0s] (12/34) alo-shell::client_lifecycle window_controls::name",
+            "error: could not compile `alo-turn` (lib) due to 1 previous error",
+        ] {
+            assert_eq!(only_a_person_can_clear_this(said), None, "{said:?}");
+            assert_eq!(the_machine_rather_than_the_work(said), None, "{said:?}");
+        }
+    }
+
+    /// **The two doors do not both claim one refusal**, because the first one
+    /// asked wins and a refusal that could go either way would be reported
+    /// differently depending on the order they happen to be checked in.
+    #[test]
+    fn no_refusal_goes_through_both_doors() {
+        for said in [
+            "No space left on device",
+            "os error 28",
+            "Cannot allocate memory",
+            "os error 12",
+            "Wsl/Service/",
+            "the virtual machine did not finish booting",
+            "memory allocation of",
+        ] {
+            let needs_a_person = only_a_person_can_clear_this(said).is_some();
+            let the_machine = the_machine_rather_than_the_work(said).is_some();
+            assert!(
+                needs_a_person != the_machine,
+                "{said:?} goes through {} doors",
+                usize::from(needs_a_person) + usize::from(the_machine)
+            );
+        }
+    }
+
+    /// Running out of **memory** is still the machine's and still answered by
+    /// running again, which this change must not have moved.
+    #[test]
+    fn running_out_of_memory_is_still_the_machines_own() {
+        assert_eq!(
+            the_machine_rather_than_the_work("rustc: Cannot allocate memory"),
+            Some("the compiler ran out of memory on this machine")
+        );
+        assert_eq!(
+            only_a_person_can_clear_this("rustc: Cannot allocate memory"),
+            None
+        );
     }
 }
 
@@ -658,9 +759,15 @@ pub(crate) fn every_crate_among(touched: &[String]) -> Vec<String> {
 /// its own.
 ///
 /// Deliberately narrow: it looks for the machine's own words and nothing
-/// resembling them. `no space left on device` is **not** here, because
-/// `crate::where_it_builds` measures that before a gate runs and says so in its
-/// own sentence.
+/// resembling them.
+///
+/// `no space left on device` is **not** here, and this paragraph used to say
+/// the reason was that `crate::where_it_builds` measures it before a gate runs.
+/// That reserve is real and it is a *pre-flight*: it cannot see a run that
+/// begins with room and ends without it. Such a run is
+/// [`only_a_person_can_clear_this`]'s, which is checked before this — the right
+/// answer is *a person has to clear something*, not *run again in a moment*,
+/// because a second attempt cannot make room appear.
 pub(crate) fn the_machine_rather_than_the_work(refused: &str) -> Option<&'static str> {
     const NOT_THE_WORK: [(&str, &str); 5] = [
         (
@@ -685,6 +792,65 @@ pub(crate) fn the_machine_rather_than_the_work(refused: &str) -> Option<&'static
         ),
     ];
     NOT_THE_WORK
+        .into_iter()
+        .find(|(said, _)| refused.contains(said))
+        .map(|(_, why)| why)
+}
+
+/// The refusal a person has to clear, worded once.
+///
+/// **Two callers and one sentence**: [`all_of_them`] asks before the retry
+/// and again after it, and two copies of this text would be two sentences that
+/// drift. The *do not delete anything shared* line is the load-bearing part —
+/// the obvious way past a full disk is somebody else's build directory.
+fn needs_a_person_to_clear_it(gate: &str, why: &str, refused: &str) -> String {
+    format!(
+        "{ONLY_A_PERSON_CAN_CLEAR_THIS}: {why}. The gate `{gate}` was not answering about the \
+         change. Nothing was staged, committed or pushed, and the work is where it was. **Do not \
+         delete anything shared to get past this.** Caches, another worker's build directory and \
+         anything under a system folder belong to whoever owns them; ask for space to be made. \
+         What it said:\n\n{refused}"
+    )
+}
+
+/// Whether what refused a gate is something only a person can clear.
+///
+/// **The third answer, and it exists because the other two are both wrong for
+/// it.** A filesystem that filled up during a run is not the work — nothing is
+/// wrong with the change — and it is not a machine that comes back on its own,
+/// because a second attempt cannot make room appear.
+///
+/// # Why this is not [`the_machine_rather_than_the_work`]'s list
+///
+/// That function's own documentation says *`no space left on device` is **not**
+/// here, because `crate::where_it_builds` measures that before a gate runs and
+/// says so in its own sentence* — and that was true of the case it was written
+/// for. The reserve is checked **before** the run. It cannot see a run that
+/// starts with room and ends without it.
+///
+/// Measured on 2026-10-13: a gate began with 19 GB free, the workspace's test
+/// binaries filled the filesystem, `rustc` refused with *No space left on
+/// device (os error 28)* while writing a dep-graph, and the run answered
+/// **`GATES-REFUSED: 0 of nine passed`** under the sentence *run twice and
+/// refused both times, so this is the work rather than the machine*. Both runs
+/// failed for the same reason and neither was the work. A deterministic failure
+/// is not evidence that the change caused it, which is the assumption the
+/// twice-is-the-work rule rests on and the one case where it does not hold.
+///
+/// It is checked **before** that rule, because a full disk also produces
+/// linker errors that look like anything at all.
+fn only_a_person_can_clear_this(refused: &str) -> Option<&'static str> {
+    const NEEDS_A_PERSON: [(&str, &str); 2] = [
+        (
+            "No space left on device",
+            "the filesystem the gates build on filled up during the run",
+        ),
+        (
+            "os error 28",
+            "the filesystem the gates build on filled up during the run",
+        ),
+    ];
+    NEEDS_A_PERSON
         .into_iter()
         .find(|(said, _)| refused.contains(said))
         .map(|(_, why)| why)
