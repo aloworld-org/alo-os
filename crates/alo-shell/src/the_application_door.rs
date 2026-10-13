@@ -16,8 +16,9 @@
 //! somebody can cause on purpose.
 //!
 //! So **a connection is held across frames**: everything is non-blocking,
-//! [`Self::answered`] takes whatever bytes have arrived and returns, and a
-//! caller that has written half a line is read again next frame. A caller that
+//! [`TheApplicationDoor::answered`] takes whatever bytes have arrived and
+//! returns, and a caller that has written half a line is read again next
+//! frame. A caller that
 //! writes nothing is dropped when its patience runs out, and the number held at
 //! once is bounded, so a process opening connections in a loop costs this door
 //! a fixed amount of memory and no time at all.
@@ -46,7 +47,7 @@ use crate::the_application_doors_place::{NoDoor, ThePlace};
 /// `alo_shell::an_application_is_started`'s `AsksAnApplicationToStart` is a
 /// function type: it makes the door testable without a compositor, and a door
 /// is the half worth testing on its own. The compositor's implementation lives
-/// in [`crate::an_application_verb_is_carried_out`].
+/// in `crate::an_application_verb_is_carried_out`.
 ///
 /// It answers [`Answer`] and never a refusal of its own, because *may this run*
 /// was decided by the turn before the line was written (ADR 0108). A compositor

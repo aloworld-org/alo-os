@@ -3,21 +3,24 @@
 **Status:** contract. Additive changes only; a break requires versioning and a
 deprecation period. See `CLAUDE.md`, "Contracts outlive code".
 
-**Nothing serves this door yet, and this document is a specification rather
-than an account of working code.** `crates/alo-acting` is real — the acts, the
-request, the answers and their tests — and it deliberately names no path,
-because it is the vocabulary rather than the transport. Everything in *The
-transport* below is a requirement on code that does not exist: there is no
-`UnixListener` anywhere in `alo-shell`, and `alo-agentd` does not offer the
-three verbs. Written down first because a contract is what the two halves are
-built against, and because a page that read as finished would be the
-measurement-reported-as-a-property fault in document form.
+**One half of this door is built and one is not**, and the table says which.
+A page that read as finished would be the measurement-reported-as-a-property
+fault in document form.
 
 | | |
 |---|---|
 | The vocabulary and its tests | **built** (`crates/alo-acting`) |
-| The compositor listening and acting | **not built** (`alo-shell`) |
+| The compositor serving the door | **built** (`alo-shell`) |
+| The compositor carrying the acts out | **built**, not yet walked against a real client |
 | The daemon offering the verbs and asking | **not built** (`alo-agentd`) |
+
+So **nothing asks this door anything yet**: `alo-agentd` offers none of
+`open_application`, `focus_application` or `close_application`, and until it
+does, the door is served and quiet. The third row carries its own limit — which
+window to reach is arithmetic over the window list and is unit-tested, but
+*reaching* one needs a real compositor and a real client, which is the nested
+fixture's road and `examples/a_real_application.rs`'s, and has not been walked
+for these three acts.
 
 This is what goes across the compositor's door in both directions: the one line
 `alo-agentd` writes to have something done to an application's window, and the
@@ -185,7 +188,7 @@ One word.
 
 | answer | what it means |
 |---|---|
-| `acted` | it was done |
+| `acted` | **this machine asked**; see below |
 | `no-window` | that application has no window here |
 | `not-installed` | that application is not installed here |
 | `it-did-not` | the application was asked and has not done it |
@@ -194,6 +197,16 @@ One word.
 **None of these means *not permitted*.** That answer is given long before, at the
 daemon, and a door that could give it would be a second place deciding it.
 
+**And `acted` means *asked*, never *done*.** Not a weakening — it is what
+`agent-verbs.md` already promises a person about the third act:
+*`close_application` asks; nothing kills anything … the application is asked, it
+may put up its own save your changes?, and the person answers that.* The
+compositor's own `request_window_close` says the same one layer down: *success
+means one XDG close event was queued … it does not mean the application received
+it or closed.* An application that declines is `it-did-not` where the compositor
+can tell, and where it cannot, the record is the person's own: a window that is
+still there.
+
 **Which refusals an act can honestly meet.** One act is constrained and two are
 not:
 
@@ -201,6 +214,21 @@ not:
   reason to open something rather than a reason not to. A compositor that
   answered it has reported a refusal where it should have started an
   application.
+- **`open` on an application that is already running brings it up and starts
+  nothing.** It is the same thing a press on a Dock icon does with one window
+  open; an `open` that started a second copy would be a verb doing something
+  nobody approved a sentence for.
+- **`focus` never starts anything.** That is `open`'s, and a `focus` that
+  started an application would carry out a different sentence from the one a
+  person read.
+- **`not-installed` is a word alo OS's own compositor never says**, and that is
+  honest rather than a gap. Which applications exist is
+  `alo_applications::Installed`'s answer and the compositor has no business
+  holding it — *three answers, three owners*, above. An `open` for something not
+  installed is asked for, the bus finds no name to start, and the person sees
+  nothing open: the same outcome by a road that keeps one question in one place.
+  The word stays in the vocabulary because a compositor that *does* know may say
+  it, which is why `could_answer` permits it rather than requiring it.
 - **`focus` and `close` may answer any of the four**, and are deliberately not
   narrowed. *No window* is the usual answer, but a compositor may honestly know
   more than that — that the application is not installed at all, or that a
@@ -241,11 +269,28 @@ windows (`native-window-dividing.md`). The chord that put one window on half a
 display has no answer any more. Reinstating it or respelling `arrange`'s options
 is a decision and not an addition to this contract.
 
-**Anything about several windows.** `focus` on an application with more than one
-window is the compositor's choice among its own windows, and this contract does
-not constrain it beyond requiring that one of them ends up in front. A person
-pressing a Dock icon is offered a list; an agent is not, because an agent is not
-standing there to pick from one.
+**A list to pick from.** A person pressing a Dock icon for an application with
+three windows is offered one, because they are standing there to choose. An
+agent is not, so no act ever opens a picker — and what happens instead is
+decided rather than left to the compositor:
+
+- **`open` and `focus` bring forward the window the person used most recently**
+  — the one they last looked at, which is the only choice among the windows that
+  is about the person rather than about the list's order.
+- **`close` asks every window of that application, oldest first.** *close Geary*
+  means Geary and not one of its windows, and a person who approved *ask Geary
+  to close* did not approve leaving two of its three open. Oldest first so that
+  a second run of the same act asks the same windows in the same order, and so
+  that an application putting up *save your changes?* puts it up for the window
+  the person opened first. A window that cannot be asked does not stop the
+  others: `acted` if any was asked, and `it-did-not` if none could be — there
+  *were* windows when the list was made, so `no-window` would say something
+  false.
+- **A window belonging to no application is reached by no act.** A client may
+  map a toplevel having set neither a class nor a title, so
+  `alo_dock::Window::app` is an `Option` by the owner's direction — *do not
+  substitute a fabricated app identity* — and two such windows must not collapse
+  into one application an act could name.
 
 **A session.** One line is one act. There is no connection that stays
 authorised, because nothing about this door is an authorisation in the first

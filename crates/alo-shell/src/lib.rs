@@ -179,6 +179,14 @@ mod a_press_on_the_dock;
 mod an_application_is_started;
 mod what_the_dock_is_filled_with;
 pub use an_application_is_started::{AWayToStartApplications, AsksAnApplicationToStart};
+/// Where the application door's socket goes, and what it refuses rather than
+/// serve. Public because `docs/contracts/application-door.md` publishes the
+/// path and the modes, and a test holds this crate to that document.
+/// The application door itself: who is at it, what they asked, and what they
+/// are told. Public because `docs/contracts/application-door.md` publishes the
+/// wire, and because whoever wires a compositor together serves the door.
+/// The compositor's hand for the three application acts the door carries.
+mod an_application_verb_is_carried_out;
 mod dock_room;
 mod dock_windows;
 mod drawing;
@@ -338,12 +346,6 @@ pub mod task_raster;
 /// it puts in one. `examples/desktop_check.rs` is the first such caller outside
 /// this crate.
 pub mod task_text;
-/// Where the application door's socket goes, and what it refuses rather than
-/// serve. Public because `docs/contracts/application-door.md` publishes the
-/// path and the modes, and a test holds this crate to that document.
-/// The application door itself: who is at it, what they asked, and what they
-/// are told. Public because `docs/contracts/application-door.md` publishes the
-/// wire, and because whoever wires a compositor together serves the door.
 pub mod the_application_door;
 pub mod the_application_doors_place;
 /// The Dock's composer as a field a person types a request into.
@@ -361,6 +363,10 @@ mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
 mod their_displays;
 mod top_controls_region;
+/// Which window each of the three acts asks for, decided without a compositor.
+mod what_an_application_act_asks_for;
+#[cfg(test)]
+mod what_an_application_act_asks_for_tests;
 mod what_the_dock_has_open;
 mod what_the_server_tells_a_frame;
 mod where_a_task_window_opens;
