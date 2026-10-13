@@ -225,6 +225,19 @@ impl Turning<'_, '_> {
         let asking = Asking::by(&agent, answering, places.everywhere_else(), places.policy());
 
         match answers {
+            // **`held` is read here since ADR 0107**, which answered the
+            // separate question ADR 0032 decision 4 deferred: a hosted service
+            // accepts a JSON schema where it refuses `llama.cpp`'s `grammar`
+            // field, so an agent turn's question can be held to the protocol's
+            // shape on this road too. Measured — the fixed ten, three rounds,
+            // `gpt-4o-mini`: 29 of 30 and **no shape error at all**, against
+            // every failure being a shape error when the model was shown
+            // instructions that encouraged a second step.
+            //
+            // It is held to `the_envelope_a_provider_accepts` and not to the
+            // envelope the runtime gets, because a provider refuses that one
+            // outright; `alo_models::in_the_envelope` carries the provider's
+            // own error messages and what the difference costs.
             Answers::Provider(hosted) => {
                 // **Resolved out here, deliberately** (ADR 0020). The daemon is
                 // not a turn, so this is the same lookup it has always made;
@@ -232,8 +245,11 @@ impl Turning<'_, '_> {
                 // boundary permitting these addresses and no others, and asks
                 // no name server anything of its own.
                 let to = registering(hosted.where_it_would_connect());
-                self.put_off_this_machine(&to, None, &agent, now, |indicator| {
-                    asking.to_a_provider(&question, hosted, indicator, now, &to)
+                self.put_off_this_machine(&to, None, &agent, now, |indicator| match held {
+                    Held::InWords => asking.to_a_provider(&question, hosted, indicator, now, &to),
+                    Held::ToTheEnvelope => {
+                        asking.to_a_provider_in_the_envelope(&question, hosted, indicator, now, &to)
+                    }
                 })
             }
             // **Down the corridor, exactly as to a provider in everything law 1

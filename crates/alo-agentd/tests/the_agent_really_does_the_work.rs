@@ -45,6 +45,40 @@
 //! it skips — printing what it did not do, because a quiet pass here is the one
 //! shape of pass worth being suspicious of.
 //!
+//! # Three failure modes, and which of them the machine can catch
+//!
+//! Measured on 2026-10-13, `gpt-4o-mini`, the request *find whichever invoice is
+//! for March and add `-final` to its name* over a folder holding `march.pdf`
+//! and `april.pdf`.
+//!
+//! **A shape the protocol cannot read** — the verb's name where the door
+//! belongs. Fixed, and by construction rather than by asking: ADR 0107 holds a
+//! provider to a schema and the shape became impossible. Four runs after it,
+//! none.
+//!
+//! **A path that is not there** — `March_invoice.txt`, invented. Caught when
+//! the change is *proposed*, by `alo_turn::the_sentence_is_about_something`, and
+//! **the agent then corrects itself**: it searched, was shown `march.pdf`, and
+//! proposed renaming that. This is the loop working.
+//!
+//! **A path that is there and is the wrong one — and the machine cannot catch
+//! this.** Two of four runs proposed renaming the *folder*,
+//! `given: [{"named":"file","is":".../Invoices"},{"named":"name","is":"-final"}]`.
+//! The folder exists. The grants cover it. The argument names are right. There
+//! is nothing for the capability model to refuse, and no schema can fix a value
+//! that is well-formed and wrong.
+//!
+//! **What catches it is the sentence**, and only the sentence: *rename
+//! …/Invoices to -final*. A person reads that and says no. Which is why
+//! `CLAUDE.md`'s *what a person approves is that sentence* is load-bearing
+//! rather than decorative, and why the sentence being **true** — the previous
+//! commit's work — is what makes it readable at all.
+//!
+//! So two of four runs here end with a person declining something daft, which
+//! is the system working. This test asserts the work was *done*, so it fails on
+//! those: the assertion is about the model finishing a job, not about the
+//! machine being safe, and the machine was safe in all four.
+//!
 //! # And what a failure here means
 //!
 //! **A model that cannot finish this is a result, not a broken test.** No

@@ -1,22 +1,32 @@
-# ADR 0107 — A provider can be held to a shape now, and ADR 0032 decision 4 was right until it could
+# ADR 0107 — A provider is held to the shape its API accepts
 
-**Status:** **proposed, 2026-10-13**, by the Mac lane, for the owner. It asks to
-change one clause of an accepted decision, so it does not change it.
+**Status:** **accepted, 2026-10-13**, by the owner.
 
-## What ADR 0032 decided, and why it is being revisited
+## It answers a question ADR 0032 left open rather than changing one it closed
 
-[ADR 0032](0032-a-local-model-is-held-to-the-envelope-not-the-call.md) decision 4:
-only the pinned runtime may be asked to hold its answer to the protocol's
-envelope. `alo-turn`'s `asking.rs` carries that out — the provider arm and the
-paired-machine arm do not read `held` at all, and say so.
+[ADR 0032](0032-a-local-model-is-held-to-the-envelope-not-the-call.md) decision 4
+reads, in full:
 
-**That was right, and for a reason that has changed.** The only way to hold a
-model to a shape was `llama.cpp`'s `grammar` field, and a hosted service answers
-400 to it. A provider therefore could not be held to anything, so reading `held`
-on that arm would have been a field with no effect.
+> **Only the pinned runtime.** A hosted provider or a paired machine answers
+> through other doors with other capabilities; whether they are held to a shape
+> is a **separate question, measured separately**.
 
-Hosted services now accept a JSON schema with `strict`. Measured against OpenAI
-on 2026-10-13, with the key the owner provided.
+So decision 4 did not forbid holding a provider. It deferred the question and
+named the price of answering it: a measurement. This is that measurement, and
+decision 4 is **unchanged** — a pointer is added to it so the next reader finds
+the answer rather than the question.
+
+*This ADR's first draft said decision 4 "was right until it could" and proposed
+amending it. That was a misreading of a clause that had already made room for
+this, and it is recorded here rather than quietly fixed, because the habit of
+reading a deferral as a prohibition is how a repository relitigates decisions
+that were never in the way.*
+
+**Why it could not be answered sooner.** The only way to hold a model to a shape
+was `llama.cpp`'s `grammar` field, and a hosted service answers 400 to it. A
+provider could not be held to anything, so there was nothing to measure. Hosted
+services now accept a JSON schema with `strict`, measured against OpenAI on
+2026-10-13 with the key the owner provided.
 
 ## What the measurements say
 
@@ -66,13 +76,12 @@ shape carrying nonsense, which is the placeholder-copying
 That is still a better refusal to be given: `ArgumentRefused` names the
 argument, and an agent can act on it, where an unreadable message ends a turn.
 
-## The decision this proposes
+## The decision
 
 1. **The provider arm reads `held`**, so an agent turn's question to a provider
    is held to `the_envelope_a_provider_accepts` and a person's question in prose
-   is not. ADR 0032's decisions 1, 2, 3 and 5 are untouched; **decision 4 gains
-   a second permitted place and keeps its reason**, which was never *only the
-   pinned runtime is trustworthy* but *only the pinned runtime can be held*.
+   is not. **ADR 0032 is untouched in every part**, including decision 4: its
+   *separate question* now has an answer, which is what it asked for.
 2. **Nothing falls back to asking unheld.** A service that refuses
    `response_format` answers 400 and the person is told *something answered, and
    not with an answer*. A constraint that quietly stops applying is one nobody
@@ -81,7 +90,7 @@ argument, and an agent can act on it, where an unreadable message ends a turn.
 3. **The paired-machine arm still does not read `held`**, unchanged: a paired
    machine is asked the question its own turn wrote.
 
-## What it does not propose
+## What it does not decide
 
 **Enumerating the verbs and their arguments.** That would close the content
 error too, and the knowledge already exists —
