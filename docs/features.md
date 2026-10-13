@@ -641,6 +641,27 @@ told so at first sign-in. There is no silent enrollment.
 - ★ **No telemetry.** Not "anonymised telemetry". None — and the policy lives in a Rust service, not a checkbox
 - ★ **A working day with the runtime alo OS ships produces zero inference egress**, measured at the network boundary — and we publish the test. **The runtime, specifically**: it opens no socket at all, so the claim is carried by the absence of one. A service somebody else runs opens a loopback socket that this measurement cannot see past, and is not what this line promises
 - Full-disk encryption, enrolled at install
+- ★ **A forgotten password never loses a person's data** (owner, 2026-10-13:
+  *"No data should not be lost"*). Two secrets, and neither one of them being
+  forgotten may destroy anything:
+  - **The disk's** PIN or passphrase — already answered by ADR 0054. The
+    person writes down a recovery key and **types it back before the install
+    finishes**, and `alo_encrypting::WrittenDown` is the only proof that
+    happened, held as a type so the compiler refuses to skip it.
+  - **The account's** password — *not* answered yet, and the gap is measured
+    rather than assumed: `alo_accounts::Accounts` has `created` and `signs_in`
+    and **no way to change or reset a password**, and nothing in
+    `alo-greeting` or `alo-shell` offers one. The root filesystem is what is
+    encrypted (ADR 0054), so a person who forgets their account password
+    reaches their own sign-in screen with every byte they own intact on a disk
+    that opens, and cannot get in. Nothing is destroyed; it is a wall, and a
+    wall is not what *no data lost* means to the person in front of it.
+  - **The way back is the recovery key they already hold**, and it widens
+    nothing: whoever has that key can already read the whole root filesystem
+    by opening the disk, so letting them set a new password with it grants no
+    access they did not have. That is what makes this safe rather than a
+    trade-off — and it is the mechanism `account recovery`, one of the eleven
+    first-start screens, exists for.
 - Signed images, verified before a deployment becomes bootable; Secure Boot with our key
 - Third-party security audit of `alo-agentd` and the broker, published
 
