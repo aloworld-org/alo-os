@@ -195,6 +195,8 @@ mod every_windows_edge;
 mod filling_keys;
 mod filling_rows;
 mod filling_window;
+mod first_start_sheet;
+pub mod first_start_words;
 mod flip_gate;
 mod frame_edges;
 mod frame_handle;
@@ -302,6 +304,8 @@ mod settings_seat;
 #[path = "../tests/unit_fixtures/settings_testing.rs"]
 mod settings_testing;
 mod settings_window;
+mod setup_sheet_layout;
+mod setup_sheet_surface;
 mod shortcut_dispatch;
 mod sign_in_entry;
 mod sign_in_keys;

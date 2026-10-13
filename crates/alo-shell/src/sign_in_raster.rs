@@ -157,6 +157,32 @@ pub(crate) fn picture(
     let fonts = &mut labels.fonts;
 
     match shows {
+        // **The first-start sheet**, for a machine that knows nobody.
+        //
+        // A different composition from the sign-in screen, deliberately: read
+        // top to bottom in a column at the left, where the sign-in screen is
+        // answered in one place at the middle. `crate::setup_sheet_layout`
+        // places it and `crate::first_start_sheet` fills it.
+        SignInShows::FirstAccount {
+            name,
+            password_typed,
+            field,
+            said,
+        } => {
+            return crate::first_start_sheet::drawn(
+                &crate::first_start_sheet::FirstStartSheet {
+                    on_the_pin: matches!(field, SignInField::Password) || password_typed,
+                    typed: name,
+                    password_typed,
+                    said,
+                },
+                fonts,
+                words,
+                (width, height),
+                crate::sign_in_surface::TheColours::of(look.contrast, look.scheme),
+                &measure,
+            );
+        }
         SignInShows::Sentence(said) => {
             let text = sentence(
                 fonts,
@@ -525,26 +551,26 @@ pub(crate) fn picture(
 }
 
 /// Measures scaled by the person's text scale, never below one pixel.
-struct Measure {
+pub(crate) struct Measure {
     /// The scale, in percent.
     percent: i32,
 }
 
 impl Measure {
     /// Measures for this scale.
-    fn of(scale: TextScale) -> Self {
+    pub(crate) fn of(scale: TextScale) -> Self {
         Self {
             percent: i32::from(scale.as_percent()),
         }
     }
 
     /// `at_one` pixels at the ordinary scale, scaled.
-    fn px(&self, at_one: i32) -> i32 {
+    pub(crate) fn px(&self, at_one: i32) -> i32 {
         (at_one * self.percent / 100).max(1)
     }
 
     /// The text metrics most lines on this screen use.
-    fn metrics(&self) -> Metrics {
+    pub(crate) fn metrics(&self) -> Metrics {
         let factor = self.percent as f32 / 100.0;
         Metrics::new(16.0 * factor, 24.0 * factor)
     }
@@ -556,14 +582,21 @@ impl Measure {
     /// sets the line height. Drawn at the ordinary 16 until 2026-10-12, which
     /// is why a booted machine whispered the person.s name instead of
     /// greeting them with it.
-    fn greeting_metrics(&self) -> Metrics {
+    pub(crate) fn greeting_metrics(&self) -> Metrics {
         let factor = self.percent as f32 / 100.0;
         Metrics::new(32.0 * factor, 44.0 * factor)
     }
 
+    /// The title on a first-start sheet: the same size the sign-in screen's
+    /// greeting is drawn at, because both are the one line that says what the
+    /// screen is for.
+    pub(crate) fn title_metrics(&self) -> Metrics {
+        self.greeting_metrics()
+    }
+
     /// What the row of essential actions is lettered at: the smallest text
     /// this screen draws, and still a readable size at every scale.
-    fn label_metrics(&self) -> Metrics {
+    pub(crate) fn label_metrics(&self) -> Metrics {
         let factor = self.percent as f32 / 100.0;
         Metrics::new(14.0 * factor, 20.0 * factor)
     }

@@ -98,7 +98,9 @@ fn signs_in(
 /// The sentence a screen shows under its fields.
 fn sentence(screen: &SignInScreen<CountingDoor>) -> Option<String> {
     match screen.shows() {
-        SignInShows::Fields { said, .. } => said.map(|said| said.text().to_owned()),
+        SignInShows::Fields { said, .. } | SignInShows::FirstAccount { said, .. } => {
+            said.map(|said| said.text().to_owned())
+        }
         SignInShows::Sentence(said) => Some(said.text().to_owned()),
     }
 }
@@ -250,30 +252,48 @@ fn a_machine_described_for_somebody_else_knocks_for_nobody() {
     assert!(heard.borrow().is_empty());
 }
 
-/// **A machine nobody has an account on shows *make an account* and takes no
-/// keys** — nothing is created here, and nothing is knocked on.
+/// **A machine nobody has an account on offers a sheet to make one**, and a
+/// greeting with nowhere to keep an account refuses rather than pretending.
+///
+/// This asserted *takes no keys and makes no account* until 2026-10-13, which
+/// was true and was the fault: the screen said *make an account* and offered
+/// nowhere to make one, so a fresh machine could not be used at all. What is
+/// still true, and is what this now holds, is that **nothing is knocked on**
+/// — this greeting was built from accounts in hand rather than read from a
+/// store, so it has nowhere to write and says so instead of opening a session
+/// against an account no restart would find.
 #[test]
-fn a_machine_with_nobody_on_it_takes_no_keys_and_makes_no_account() {
+fn a_machine_with_nobody_on_it_is_offered_a_sheet_and_refused_without_a_store() {
     let (door, heard) = a_door(Ok(Answered::Opened));
     let mut screen = SignInScreen::of(
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
     );
+    // A name, then a secret, then submit — the walk a person actually takes.
+    // The old sequence moved between the fields without ever submitting,
+    // which is how it proved keys were ignored.
     for key in [
         SignInKey::Letter('a'),
         SignInKey::Enter,
-        SignInKey::OtherField,
+        SignInKey::Letter('b'),
         SignInKey::Enter,
     ] {
         screen = still(screen.pressed(key));
     }
-    assert!(matches!(screen.shows(), SignInShows::Sentence(_)));
+    assert!(
+        matches!(screen.shows(), SignInShows::FirstAccount { .. }),
+        "a machine with nobody on it is not offered a sheet to make an account"
+    );
     assert_eq!(
         sentence(&screen).unwrap(),
-        alo_greeting::MAKE_AN_ACCOUNT.says()
+        alo_greeting::THE_ACCOUNT_WAS_NOT_KEPT.says(),
+        "a greeting with nowhere to keep an account did not say so"
     );
-    assert!(heard.borrow().is_empty());
-    assert!(matches!(screen.stands, Stands::MakeAnAccount(_)));
+    assert!(
+        heard.borrow().is_empty(),
+        "a refused account still knocked at the door"
+    );
+    assert!(matches!(screen.stands, Stands::MakeAnAccount(_, _)));
 }
 
 /// **Accounts that would not be read show `alo-greeting`'s sentence, take no
@@ -320,16 +340,29 @@ fn every_sentence_the_screen_can_show_is_collected_and_none_is_written_here() {
 
     let mut shown: Vec<Said> = Vec::new();
     let mut collect = |screen: &SignInScreen<CountingDoor>| match screen.shows() {
-        SignInShows::Fields { said, .. } => shown.extend(said.cloned()),
+        SignInShows::Fields { said, .. } | SignInShows::FirstAccount { said, .. } => {
+            shown.extend(said.cloned());
+        }
         SignInShows::Sentence(said) => shown.push(said.clone()),
     };
 
-    // Standing at a sentence: nobody on the machine, and accounts refused.
+    // **The first-start sheet says nothing until something is tried**, so it
+    // is walked rather than merely built: a name and a secret at a greeting
+    // with nowhere to keep an account answers the keeping refusal.
     let (door, _) = a_door(Ok(Answered::Opened));
-    collect(&SignInScreen::of(
+    let mut fresh = SignInScreen::of(
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
-    ));
+    );
+    for key in [
+        SignInKey::Letter('a'),
+        SignInKey::Enter,
+        SignInKey::Letter('b'),
+        SignInKey::Enter,
+    ] {
+        fresh = still(fresh.pressed(key));
+    }
+    collect(&fresh);
     collect(&SignInScreen::of(
         Err(NotReadable {
             at: "/etc/alo/accounts.toml".to_owned(),

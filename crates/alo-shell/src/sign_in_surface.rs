@@ -292,7 +292,7 @@ fn the_power_mark(px: f64, py: f64, within: Rectangle<i32, Physical>, stroke: f6
 /// `crate::dock_surface::rounded`'s formulation, in this file's own units. It
 /// is exact for every point, which is what lets one `0.5 - d` antialias the
 /// flats and the corners by the same rule.
-fn how_far(px: f64, py: f64, of: Rectangle<i32, Physical>, radius: f64) -> f64 {
+pub(crate) fn how_far(px: f64, py: f64, of: Rectangle<i32, Physical>, radius: f64) -> f64 {
     let hw = f64::from(of.size.w) / 2.0;
     let hh = f64::from(of.size.h) / 2.0;
     let cx = f64::from(of.loc.x) + hw;
@@ -309,12 +309,12 @@ fn how_far(px: f64, py: f64, of: Rectangle<i32, Physical>, radius: f64) -> f64 {
 /// **One rule for flats and corners alike**, which is the whole reason for the
 /// distance field: a corner antialiased differently from an edge reads as a
 /// different shape at the join.
-fn coverage(distance: f64) -> f64 {
+pub(crate) fn coverage(distance: f64) -> f64 {
     (0.5 - distance).clamp(0.0, 1.0)
 }
 
 /// The same rectangle, pulled in on every side.
-fn inset(of: Rectangle<i32, Physical>, by: f64) -> Rectangle<i32, Physical> {
+pub(crate) fn inset(of: Rectangle<i32, Physical>, by: f64) -> Rectangle<i32, Physical> {
     #[expect(
         clippy::cast_possible_truncation,
         reason = "a border is a few pixels and the rectangle it insets is an output's worth"
@@ -327,7 +327,7 @@ fn inset(of: Rectangle<i32, Physical>, by: f64) -> Rectangle<i32, Physical> {
 }
 
 /// `over` laid on `under` at this coverage.
-fn mixed(under: [u8; 3], over: [u8; 3], how_much: f64) -> [u8; 3] {
+pub(crate) fn mixed(under: [u8; 3], over: [u8; 3], how_much: f64) -> [u8; 3] {
     let how_much = how_much.clamp(0.0, 1.0);
     let one = |u: u8, o: u8| {
         #[expect(

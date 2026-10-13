@@ -363,8 +363,13 @@ fn the_sign_in_screen_calls_the_greeting_and_never_what_it_composes() {
     assert_eq!(asked.len(), 1, "{asked:#?}");
     let (named, line) = asked.first().unwrap();
     assert_eq!(named, "sign_in_screen.rs");
+    // **It is the greeting's own, and it is the only one.** This asked for
+    // the literal `let greeted = greeting.signs_in(` until 2026-10-13, when
+    // the screen gained a second road — making the first account — and the
+    // call moved into a match arm beside it. What matters is unchanged and is
+    // what is asked here: one call, in this file, on a greeting.
     assert!(
-        line.starts_with("let greeted = greeting.signs_in("),
+        line.contains("greeting.signs_in(") && !line.contains("fn "),
         "{line}"
     );
 

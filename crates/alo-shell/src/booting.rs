@@ -215,6 +215,8 @@ pub fn what_this_machine_can_say() -> Result<Strings, WouldNotStand> {
     // but recorded, because it is the same shape of fault this line avoids.
     crate::sign_in_words::declare_sign_in_words(&mut vocabulary)
         .map_err(|why| WouldNotStand::Words(why.to_string()))?;
+    crate::first_start_words::declare_first_start_words(&mut vocabulary)
+        .map_err(|why| WouldNotStand::Words(why.to_string()))?;
     Ok(Strings::of(vocabulary))
 }
 
