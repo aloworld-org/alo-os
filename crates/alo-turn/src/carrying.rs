@@ -55,14 +55,16 @@
 //! round to writing at a different time from the one it decided at.
 
 use alo_capability::{Authorised, Grants};
-use alo_files::{Answer, Reaching, Touching};
+use alo_files::{Reaching, Touching};
 use alo_nearby::Origin;
 use alo_record::Entry;
 
 use crate::arriving::worded_here;
 use crate::bounding::Doing;
+use crate::installing_an_application::installing_an_application;
 use crate::machine::Machine;
 use crate::refusing::NotDone;
+use crate::what_a_verb_did::WhatAVerbDid;
 
 /// Carry an authorised call out inside a boundary, and say what happened.
 ///
@@ -84,7 +86,18 @@ pub(crate) fn carrying_out(
     authorised: Authorised,
     grants: &Grants,
     origin: Option<&Origin>,
-) -> (Entry, Result<Answer, NotDone>) {
+    now: std::time::SystemTime,
+) -> (Entry, Result<WhatAVerbDid, NotDone>) {
+    // **Which executor, decided by the verb's own name and nothing else.**
+    // The alternative is asking the arguments what shape they are, which is a
+    // second opinion about what a call is: `alo_capability` already decided
+    // that when the call was validated against the declaration, and a verb
+    // routed by anything but its name could be routed one way here and another
+    // way in the record.
+    if authorised.verb() == alo_software::INSTALL_APPLICATION {
+        let (entry, installed) = installing_an_application(machine, authorised, now);
+        return (entry, installed.map(WhatAVerbDid::from));
+    }
     let at = authorised.at();
     let agent = authorised.under().clone();
     let strings = machine.strings();
@@ -136,6 +149,8 @@ pub(crate) fn carrying_out(
     let (authorised, outcome) = did.into_parts();
     (
         Entry::ran(&authorised, strings),
-        outcome.map_err(NotDone::MachineCouldNot),
+        outcome
+            .map(WhatAVerbDid::from)
+            .map_err(NotDone::MachineCouldNot),
     )
 }

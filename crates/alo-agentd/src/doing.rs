@@ -52,6 +52,7 @@ use alo_secrets::NotStored;
 use crate::corridor::{Corridor, put_down_the_corridor};
 use crate::questions::{Questions, WhatAnswers};
 use crate::rereading;
+use crate::what_a_client_is_told_a_verb_did::as_a_client_sees_it;
 use crate::words::{
     AN_ADMINISTRATOR_SET_THAT_RULE, NO_KEY_FOR_THIS_PROVIDER, NO_KEYRING_FOR_A_PROVIDER,
     NOTHING_ANSWERS_QUESTIONS, NOTHING_WAS_ASKED, THE_KEYRING_IS_LOCKED, THE_KEYRING_REFUSED_US,
@@ -112,7 +113,7 @@ fn carried_out(
     match asked {
         FromAnAgent::Read { verb, .. } => {
             match turning.reading(verb, &asked.given(), grants, now) {
-                Ok(answer) => ToAnAgent::did(&answer),
+                Ok(answer) => ToAnAgent::did(as_a_client_sees_it(&answer)),
                 Err(why) => not_done(&why, strings),
             }
         }

@@ -386,7 +386,7 @@ would corrupt the text of the readers alo OS says it serves.
 
 ## The file verbs
 
-The six `docs/features.md` promises at v0.01, over granted paths only. Every one
+The six `docs/features.md` promises, over granted paths only. Every one
 of them requires a grant over **every** path it names, and every path it names
 is something that already exists — a new name is a **name**, never a path.
 
@@ -430,7 +430,7 @@ anything else.
 
 ## The application verbs
 
-`docs/features.md` promises four at v0.01 — open, focus, arrange, close — over
+`docs/features.md` promises four — open, focus, arrange, close — over
 granted applications only. **All four are declared.**
 
 | Verb | Effect | Arguments | Sentence |
@@ -440,7 +440,7 @@ granted applications only. **All four are declared.**
 | `close_application` | change | `application` (application) | ask {application} to close |
 | `arrange_application` | change | `application` (application), `where` (choice) | put {application} {where} |
 
-`arrange_application` offers three arrangements at v0.01: `left_half`,
+`arrange_application` offers three arrangements: `left_half`,
 `right_half` and `whole_screen`. Two windows on opposite halves is *tile*, and
 the whole screen is *maximise*; **quarters are v0.5** and are not offered.
 Minimising is not on this list at all — this verb says where a window goes, and
@@ -547,7 +547,7 @@ half-English line as finished.
 
 ## The measurement verbs
 
-`docs/features.md` promises three measurements of the machine at v0.5 — *search
+`docs/features.md` promises three measurements of the machine — *search
 your own files, without asking anything*, *what is running, and what it is
 using*, and *what is filling the disk* — and each names a window. The agent's
 *"where is that file?"* and *"why is it slow?"* are these three verbs, declared
@@ -597,7 +597,7 @@ the honest state of a verb that exists and is not on the list a machine offers.
 
 ## The printing verb
 
-`docs/features.md` promises printing at v0.5, and ★ *Printers, solved*. What an
+`docs/features.md` promises printing, and ★ *Printers, solved*. What an
 agent may ask for is one verb, declared in `alo-printing`'s `src/verbs.rs` with a
 `pub fn declare_into`.
 
@@ -728,7 +728,7 @@ and `alo-agentd`.
 
 ## The converting verb
 
-`docs/features.md` promises at v0.5 that *the documents people are actually sent
+`docs/features.md` promises that *the documents people are actually sent
 open: `.docx`, `.xlsx`, `.pptx`*. [ADR 0039](../decisions/0039-a-document-is-converted-by-an-engine-that-can-reach-nothing.md)
 decides how. What an agent may ask for is one verb, declared in
 `alo-converting`'s `src/verbs.rs` with a `pub fn declare_into`.
@@ -823,9 +823,20 @@ an application gets, in the colour reserved for the agent.
 
 ## The installing verb
 
-`docs/features.md` promises *install applications* at v0.5. What an agent may
+`docs/features.md` promises *install applications*. What an agent may
 ask for is one verb, declared in `alo-software`'s `src/verbs.rs` with a
 `pub fn declare_into`.
+
+**It became something an agent could really ask for on 2026-10-13, and this
+contract described it for weeks before that.** Everything below was true of the
+declaration — the arguments, the sentence, the approval, the absence of a grant
+— and `alo_turn::Machine` offered the six file verbs and nothing else, so a
+daemon answered *that verb is not on the list* to anybody who tried. Nothing in
+this section changed; what changed is that a second executor exists
+(`crates/alo-turn/src/installing_an_application.rs`) and the machine the daemon
+builds offers seven. It is written down here because a third party reading a
+contract has no way to tell *specified* from *reachable*, and this one was the
+first for which those two came apart.
 
 | Verb | Effect | Arguments | Sentence |
 |---|---|---|---|

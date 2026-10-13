@@ -73,6 +73,16 @@ impl Failed {
 }
 
 /// The rented tool that installs, updates and removes sandboxed applications.
+/// **Every function here takes `&(impl Tool + ?Sized)` rather than
+/// `&impl Tool`**, which is the same thing for every caller that passes a
+/// concrete tool and is the difference for one that holds a `&dyn Tool`.
+///
+/// `alo-turn` is that one. A machine holds its tool behind a reference,
+/// exactly as it holds `alo_files::Resolving` and `alo_turn::Bounding`,
+/// because a portable crate cannot name the program that installs things —
+/// and `&impl Tool` quietly requires `Sized`, which `dyn Tool` is not. The
+/// relaxation was made on 2026-10-13, when the first `dyn` caller arrived; it
+/// takes nothing away from the nine callers that came before it.
 pub trait Tool {
     /// Every place the tool is set up to install from, switched off or not.
     ///

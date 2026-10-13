@@ -351,7 +351,10 @@ fn an_approved_change_really_happens() {
         let Answered::Carried(answer) = approving.approve(turning, grants, noon()) else {
             panic!("an approved change did not happen");
         };
-        assert_eq!(answer.now_at(), Some(places.archived().as_path()));
+        assert_eq!(
+            answer.to_files().unwrap().now_at(),
+            Some(places.archived().as_path())
+        );
     });
 
     assert!(places.archived().is_file());

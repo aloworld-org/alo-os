@@ -128,8 +128,9 @@ use alo_files::OnThisMachine;
 use alo_models::Catalogue;
 use alo_nearby::Pairings;
 use alo_saying::{Loaded, everything_this_machine_can_say, the_translations};
+use alo_software::TheRentedTool;
 use alo_strings::Strings;
-use alo_turn::{Bounding, Machine, Shortening};
+use alo_turn::{Bounding, Machine, Shortening, TheVerbsWouldNotDeclare};
 
 use crate::caller::Uid;
 use crate::described::Described;
@@ -240,8 +241,27 @@ pub fn until_stopped(
     kept: &mut dyn Shortening,
 ) -> Result<Served, NotStarted> {
     let mut indicator = Indicator::default();
-    let mut machine =
-        Machine::carrying_out_file_verbs(strings, &OnThisMachine, bounding, &mut indicator, kept)?;
+    // **The verbs this machine can carry out, which is the list an agent is
+    // offered.** Seven: `alo-files`' six, and `alo-software`'s one.
+    //
+    // The tool is the rented one at the path `alo-software` chose; this file
+    // names no program. The bound is `[applications]` out of the description a
+    // root wrote, handed over exactly as `crate::describing` read it back,
+    // which is what makes the rule an organisation's rather than ours.
+    //
+    // Until 2026-10-13 this asked for the six alone, and `install_application`
+    // — declared, worded, undoable, and in `docs/contracts/agent-verbs.md` for
+    // third parties to build against — was offered to nobody. An agent on a
+    // real machine could install nothing.
+    let installing_with = TheRentedTool::on_this_machine();
+    let mut machine = what_this_machine_can_carry_out(
+        strings,
+        &installing_with,
+        described,
+        bounding,
+        &mut indicator,
+        kept,
+    )?;
     // What this machine holds about the other machines: what `src/main.rs`
     // read back off the disk, handed in as a value for the grants' reason,
     // and one lock over it — with the one way to write the list whole beside
@@ -299,6 +319,44 @@ pub fn until_stopped(
     )
 }
 
+/// The machine every turn on this daemon happens against.
+///
+/// **A named function and not a line inside [`until_stopped`]**, because what
+/// it chooses is the thing most worth holding: which verbs an agent is offered.
+/// `alo_turn::Machine` has two constructors, one of which offers six verbs and
+/// one seven, and the five-argument one compiles perfectly well here — so the
+/// difference between a daemon whose agent can install an application and one
+/// whose agent cannot is one identifier, in one line, with nothing watching it.
+/// Now there is something watching it, one test below.
+///
+/// It decides nothing else. The tool is `alo-software`'s, at the path that
+/// crate chose; the bound is `[applications]` as `crate::describing` read it
+/// back out of the description a root wrote, handed over unchanged, which is
+/// what makes the rule an organisation's rather than this file's.
+///
+/// # Errors
+/// [`TheVerbsWouldNotDeclare`], **naming the family that refused** — which
+/// includes two of them having declared the same name, a thing that became
+/// possible the moment there was more than one.
+fn what_this_machine_can_carry_out<'a>(
+    strings: &'a Strings,
+    installing_with: &'a dyn alo_software::Tool,
+    described: &Described,
+    bounding: &'a mut dyn Bounding,
+    indicator: &'a mut alo_egress::Indicator,
+    kept: &'a mut dyn Shortening,
+) -> Result<Machine<'a>, TheVerbsWouldNotDeclare> {
+    Machine::carrying_out_file_and_software_verbs(
+        strings,
+        &OnThisMachine,
+        installing_with,
+        described.applications().clone(),
+        bounding,
+        indicator,
+        kept,
+    )
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -330,6 +388,81 @@ mod tests {
             0,
         )
         .unwrap()
+    }
+
+    /// **The daemon offers seven verbs, and one of them installs an
+    /// application.** The production function is the subject, not a copy of
+    /// it: a second arrangement built here would pass while `until_stopped`
+    /// went on handing an agent six.
+    ///
+    /// Until 2026-10-13 it was six. `install_application` was declared in
+    /// `alo-software`, worded, undoable by `alo-keeping-up`, and listed in
+    /// `docs/contracts/agent-verbs.md` for third parties to build against —
+    /// and `alo_software::software_verbs` was called by its own tests and by
+    /// nothing else, so an agent on a real machine could install nothing. This
+    /// test is what makes that not happen again quietly.
+    #[test]
+    fn this_daemon_offers_the_six_file_verbs_and_the_installation() {
+        let described = an_ordinary_machine();
+        let loaded = what_this_machine_says().unwrap();
+        let strings = loaded.strings();
+        let installing_with = TheRentedTool::on_this_machine();
+        let mut indicator = alo_egress::Indicator::default();
+        let mut record = Record::default();
+        let mut bounding = crate::testing::NothingIsBounded;
+        let machine = what_this_machine_can_carry_out(
+            strings,
+            &installing_with,
+            &described,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
+        let offered: Vec<&str> = machine
+            .verbs()
+            .all()
+            .map(alo_capability::Verb::name)
+            .collect();
+        assert_eq!(
+            offered.len(),
+            7,
+            "the daemon offers these and nothing else: {offered:?}"
+        );
+        assert!(
+            offered.contains(&alo_software::INSTALL_APPLICATION),
+            "an agent on this machine cannot install an application: {offered:?}"
+        );
+        // And the six are still there. A family that replaced rather than
+        // joined the list would otherwise read as a pass on the count alone.
+        for file_verb in [
+            "list_folder",
+            "read_file",
+            "find_in_folder",
+            "rename_file",
+            "move_file",
+            "archive_folder",
+        ] {
+            assert!(
+                machine.verbs().of(file_verb).is_some(),
+                "{file_verb} went missing when the installation arrived"
+            );
+        }
+    }
+
+    /// **The rule the installation is held to is the organisation's**, read out
+    /// of the description and not decided here. Asserted on the machine the
+    /// daemon really builds, because *whose rule it is* is the half of ADR
+    /// 0073 that a line in the wrong file would quietly take away.
+    #[test]
+    fn the_places_it_may_install_from_are_the_descriptions_and_not_this_files() {
+        let described = an_ordinary_machine();
+        assert_eq!(
+            described.applications(),
+            &alo_software::Bound::Nobodys,
+            "a machine no organisation manages bounds nothing, which is what nobody-set-a-rule \
+             means"
+        );
     }
 
     /// A machine described the ordinary way, with the agent these tests use.

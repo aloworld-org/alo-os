@@ -39,7 +39,6 @@
 use std::time::SystemTime;
 
 use alo_capability::Waiting;
-use alo_files::Answer;
 use alo_strings::{Said, Strings};
 
 use crate::advertised::Advertised;
@@ -300,9 +299,15 @@ impl ToAPerson {
     }
 
     /// What the change they approved did.
+    ///
+    /// Takes the [`Done`] rather than what a verb answered with, because which
+    /// family answered is a question `alo-turn` can ask and this crate cannot:
+    /// it holds `alo-turn` as a *dev*-dependency so that a client library never
+    /// has to build the orchestrator. [`Done::of_a_file_verb`] and
+    /// [`Done::of_an_installation`] are what a caller picks between.
     #[must_use]
-    pub fn did(answer: &Answer) -> Self {
-        Self::Did(Done::of(answer))
+    pub fn did(done: Done) -> Self {
+        Self::Did(done)
     }
 
     /// Everything waiting for them, in the order it was proposed.
@@ -482,6 +487,7 @@ mod tests {
     use crate::ToAnAgent;
     use crate::testing::{a_change_waiting, an_hour_in, in_english, the_change, the_moment};
     use crate::words;
+    use alo_files::Answer;
     use alo_strings::Filling;
 
     /// One sentence this crate really declares.
@@ -494,9 +500,9 @@ mod tests {
     fn the_five_a_person_is_told_read_back() {
         let (approvals, strings) = a_change_waiting();
         for told in [
-            ToAPerson::did(&Answer::Renamed(
+            ToAPerson::did(Done::of_a_file_verb(&Answer::Renamed(
                 "/home/anna/Invoices/march-final.pdf".into(),
-            )),
+            ))),
             ToAPerson::waiting(approvals.waiting_at(the_moment()), &strings, the_moment()),
             ToAPerson::Declined,
             ToAPerson::granted(2),
@@ -760,9 +766,9 @@ mod tests {
     /// whoever said yes.
     #[test]
     fn what_an_approved_change_did_comes_back_to_the_person() {
-        let told = ToAPerson::did(&Answer::Renamed(
+        let told = ToAPerson::did(Done::of_a_file_verb(&Answer::Renamed(
             "/home/anna/Invoices/march-final.pdf".into(),
-        ));
+        )));
         assert_eq!(
             told.done().unwrap(),
             &Done::Renamed {

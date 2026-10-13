@@ -991,8 +991,13 @@ pub enum NotStarted {
     #[error("{0}")]
     NotBound(#[from] NotBound),
     /// The verbs this machine offers could not be declared.
+    ///
+    /// Holds `alo-turn`'s own type rather than one family's, so the message
+    /// names which family refused. It was `alo_files::Declaring` until
+    /// 2026-10-13, when there was only one family and the question had no
+    /// answer to get wrong.
     #[error("the verbs this machine can carry out could not be declared: {0}")]
-    NoVerbs(#[from] alo_files::Declaring),
+    NoVerbs(#[from] alo_turn::TheVerbsWouldNotDeclare),
     /// The catalogue built into this image does not hold.
     ///
     /// English rather than a word from the vocabulary, and for the reason

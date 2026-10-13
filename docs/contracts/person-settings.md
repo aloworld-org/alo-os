@@ -882,8 +882,8 @@ handed. It holds `alo_dock::Changes`.
 fixed it to the bottom edge on 2026-09-29 and the owner reversed that within a
 day; their order of work held the setting back while two of the four edges could
 not be laid out, and it was offered once all four could. `docs/features.md`
-promises it at **[v0.01]**: *the bottom edge by default, and the person may
-choose bottom, left, right or top.*
+promises it: *the bottom edge by default, and the person may choose bottom,
+left, right or top.*
 
 ### Keys
 
@@ -902,8 +902,15 @@ rewrites a person's file behind them, so the choice was still there.
 
 `displays` was how per-display exceptions were kept. *Per display, so the dock
 can sit along the bottom of the laptop and down the side of the external screen*
-is **[v0.5]** in `docs/features.md`, so nothing writes it and nothing reads what
-it holds.
+is in `docs/features.md` and **not on `ROADMAP.md`'s launch list**, so nothing
+writes it and nothing reads what it holds.
+
+*This read `is **[v0.5]** in docs/features.md` until 2026-10-13. The tier was
+not decoration here — it was the whole reason given — and
+[ADR 0105](../decisions/0105-there-are-no-versions-until-there-is-a-launch.md)
+removed every tier on 2026-10-12, which left this paragraph resting on a marker
+that no longer exists. The launch list is what answers* when *now, and it does
+not have this.*
 
 **A file that has it reads, and it is ignored.** It is still a *recognised* key,
 which is the point: an unrecognised key is refused whole

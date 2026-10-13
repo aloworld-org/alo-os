@@ -25,6 +25,17 @@ alo-egress = { path = "../alo-egress" }
 alo-context = { path = "../alo-context" }
 # The only thing in this repository that touches a disk on an agent's behalf.
 alo-files = { path = "../alo-files" }
+# The second verb family this machine can carry out, and the whole of what an
+# installation is: the places, the bound an organisation set, the two halves
+# either side of the indicator, and the refusals in a person's own words.
+# Portable, because what reaches the rented tool is behind its `Tool` trait —
+# so `alo-turn` stays a crate that names no program and touches no disk.
+alo-software = { path = "../alo-software" }
+# What an application is, which is one of the installation's two arguments.
+# `alo-software` holds it as a value and never declares a verb over it; this
+# crate needs the type to put one to the executor in a test, and the words so
+# that an installation's refusals read as sentences rather than missing keys.
+alo-applications = { path = "../alo-applications" }
 # The words a model is shown when an agent asks it for its next request (ADR
 # 0037). A dependency and never a place to write: the text is that crate's, and
 # a turn shows what `shown_to_a_turn` returns.

@@ -214,7 +214,10 @@ fn a_turn_of_this_service_is_refused_when_a_hook_is_no_longer_held() {
 
     let read =
         read_while_bounded.expect("a granted read was refused while the boundary was in place");
-    assert_eq!(read.read(), Some("March, 4180.00"));
+    assert_eq!(
+        read.to_files().expect("a read is a file verb").read(),
+        Some("March, 4180.00")
+    );
 
     let refused = read_afterwards.expect_err("a read ran with a hook of the boundary detached");
     assert!(matches!(refused, NotDone::NotBounded(_)), "{refused:?}");

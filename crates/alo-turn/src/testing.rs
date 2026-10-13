@@ -242,6 +242,11 @@ fn everything_this_machine_says() -> alo_strings::Vocabulary {
     alo_answering::declare_into(&mut vocabulary).unwrap();
     alo_asking::declare_into(&mut vocabulary).unwrap();
     alo_nearby::words::declare_into(&mut vocabulary).unwrap();
+    // The second verb family's own words, so an installation refused by a
+    // place an organisation does not permit reads as that sentence rather than
+    // as a missing key.
+    alo_software::words::declare_into(&mut vocabulary).unwrap();
+    alo_applications::words::declare_into(&mut vocabulary).unwrap();
     crate::words::declare_into(&mut vocabulary).unwrap();
     vocabulary
 }
@@ -554,6 +559,16 @@ pub(crate) fn everything_that_can_come_back() -> Vec<NotDone> {
             "the kernel would not load the boundary".to_owned(),
         )),
         NotDone::TurnClosed,
+        // The second verb family's two. `OutsideTheBound` is the one a person
+        // really meets — an organisation's rule — and it is `alo-software`'s
+        // own refusal, worded by that crate.
+        NotDone::CouldNotInstall(alo_software::NotDone::OutsideTheBound {
+            source: "flathub".to_owned(),
+            set_by: alo_software::SetBy::AnAdministrator,
+        }),
+        NotDone::CouldNotInstallHere(crate::WentWrongInstalling::NotAnInstallation(
+            alo_software::NotAnInstallation::NotApproved,
+        )),
     ]
 }
 

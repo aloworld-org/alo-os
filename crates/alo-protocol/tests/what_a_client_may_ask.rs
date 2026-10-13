@@ -140,7 +140,10 @@ fn a_read_off_the_wire_is_carried_out_and_written_down() {
         let answer = turning
             .reading(asked.verb().unwrap(), &asked.given(), grants, noon())
             .unwrap();
-        assert_eq!(answer.listed().unwrap().things().len(), 1);
+        assert_eq!(
+            answer.to_files().unwrap().listed().unwrap().things().len(),
+            1
+        );
     });
 
     assert_eq!(record.len(), 1);
@@ -192,6 +195,8 @@ fn a_change_is_proposed_on_one_door_and_approved_on_the_other() {
 
         turning
             .approving(waiting, grants, noon())
+            .unwrap()
+            .to_files()
             .unwrap()
             .now_at()
             .unwrap()

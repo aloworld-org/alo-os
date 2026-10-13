@@ -193,7 +193,9 @@ mod tests {
         let (approvals, strings) = a_change_waiting();
         let standing = Standing::of(the_change(&approvals), &strings, the_moment());
         vec![
-            Told::Did(Done::of(&Answer::Read("March, 4180.00".to_owned()))),
+            Told::Did(Done::of_a_file_verb(&Answer::Read(
+                "March, 4180.00".to_owned(),
+            ))),
             Told::Proposed(standing.clone()),
             Told::Answered {
                 text: "Three of them are unpaid.".to_owned(),

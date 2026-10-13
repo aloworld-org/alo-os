@@ -160,7 +160,7 @@ impl Installed {
 pub fn installing(
     enabled: &Enabled,
     wanted: &Wanted,
-    tool: &impl Tool,
+    tool: &(impl Tool + ?Sized),
 ) -> Result<OnItsOwn, NotDone> {
     let (_, destination) = enabled.usable(&wanted.source)?;
     already_here(wanted, tool)?;
@@ -180,7 +180,7 @@ pub fn install(
     during: &Underway,
     enabled: &Enabled,
     wanted: Wanted,
-    tool: &impl Tool,
+    tool: &(impl Tool + ?Sized),
 ) -> Result<Installed, Stopped> {
     let (source, destination) = enabled.usable(&wanted.source)?;
     held_to(during, Errand::InstallingAnApplication, destination)?;
@@ -194,7 +194,7 @@ pub fn install(
 }
 
 /// Refused when the application is already installed.
-fn already_here(wanted: &Wanted, tool: &impl Tool) -> Result<(), NotDone> {
+fn already_here(wanted: &Wanted, tool: &(impl Tool + ?Sized)) -> Result<(), NotDone> {
     let installed = tool.installed().map_err(did_not_answer)?;
     if installed
         .iter()

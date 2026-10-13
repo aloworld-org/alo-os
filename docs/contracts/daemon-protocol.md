@@ -482,6 +482,7 @@ chosen. A list without the field reads as `false`.
 {"did":{"renamed":{"now_at":"/home/anna/Invoices/march-final.pdf"}}}
 {"did":{"moved":{"now_at":"/home/anna/Archive/march.pdf"}}}
 {"did":{"archived":{"at":"/home/anna/Archive/2026.zip","things":12,"left_out":1,"bytes":40960}}}
+{"did":{"installed":{"application":"org.gnome.TextEditor","sandboxed":true}}}
 {"proposed":{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300}}
 {"answered":{"text":"Three are unpaid.","came_from":{"text":"by Mistral, in the EU","came_from":"translation"},"model":"mistral-small-latest"}}
 {"waiting":{"changes":[{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300}]}}
@@ -490,11 +491,27 @@ chosen. A list without the field reads as `false`.
 {"refused":{"text":"@files has not been granted the folder /home/anna/Secrets — grants are made by picking a folder, never by asking for one","came_from":"the-source"}}
 ```
 
-`did` is `alo_files::Answer`'s six shapes: what a read found, and what a change
-did once the person approved it. **Every answer that was bounded says it was
-bounded** — a listing and a search carry `cut_short`, an archive carries
-`left_out` — because a bounded answer that does not say so reads exactly like a
-complete one.
+`did` is what a verb this machine carried out answered with: what a read found,
+and what a change did once the person approved it. **Every answer that was
+bounded says it was bounded** — a listing and a search carry `cut_short`, an
+archive carries `left_out` — because a bounded answer that does not say so reads
+exactly like a complete one.
+
+`installed` was added **additively on 2026-10-13**, with the second family of
+verbs this machine can carry out. Until then `did` was `alo_files::Answer`'s six
+shapes and nothing else, because the six file verbs were the only verbs an agent
+was offered — `install_application` had been in
+[the verb contract](agent-verbs.md) since it was written and was offered to
+nobody. A client written against the six reads `installed` as a shape it has no
+arm for; none of the six changed, and nothing was renamed or removed.
+
+`sandboxed` is on the wire rather than left to be derived. A client marking an
+unsandboxed application is handed the fact, because a client that forgot to ask
+would quietly tell a person something untrue about their own machine.
+`application` is the identifier the place it came from knows it by, such as
+`org.gnome.TextEditor`; it is not put through the name filter the paths above
+are, because an identifier is held to its own shape before it is ever installed
+and there is nothing in it to filter out.
 
 `proposed` and `waiting` carry the number **and the sentence it stands on**. A
 number alone would let a shell offer *approve change 7*, and what a person

@@ -6,8 +6,10 @@
 //! happen in, and the guarantee that none of them can be skipped. It reaches
 //! [`alo_context`], [`alo_capability`], [`alo_files`], [`alo_record`],
 //! [`alo_keeping`] and — since a turn learned to put a question to a model —
-//! [`alo_asking`], [`alo_answering`], [`alo_egress`] and [`alo_models`]. Nothing
-//! reaches it.
+//! [`alo_asking`], [`alo_answering`], [`alo_egress`] and [`alo_models`]. Since
+//! 2026-10-13 it also reaches [`alo_software`], because a turn learned to carry
+//! out a second family of verbs and installing an application is the one in it.
+//! Nothing reaches it.
 //!
 //! # The order, and why each step is where it is
 //!
@@ -34,13 +36,22 @@
 //!    approval is spent, [`alo_files::Touching`] asks about where each path
 //!    really leads, and [`alo_files::Did`] asks about anything the call would
 //!    create. A grant revoked between the approval and the execution stops it.
-//! 5. **The verb's work runs inside a boundary the kernel imposes, and nothing
-//!    else does.** [`Bounding`] is what a [`Machine`] is made with and cannot be
-//!    made without; [`alo_files::Reaching`] is what it is told to allow. The
-//!    resolving happens outside it and the record is written outside it —
-//!    `carrying.rs` is the order and the argument, and ADR 0015's *a turn whose
-//!    boundary cannot be applied does not run* is what happens when there is
-//!    none.
+//! 5. **A file verb's work runs inside a boundary the kernel imposes, and
+//!    nothing else does.** [`Bounding`] is what a [`Machine`] is made with and
+//!    cannot be made without; [`alo_files::Reaching`] is what it is told to
+//!    allow. The resolving happens outside it and the record is written outside
+//!    it — `carrying.rs` is the order and the argument, and ADR 0015's *a turn
+//!    whose boundary cannot be applied does not run* is what happens when there
+//!    is none.
+//!
+//!    **This step said *the verb's work* until 2026-10-13**, when there was one
+//!    family and the sentence was exact. An installation has no boundary around
+//!    it and `installing_an_application.rs` is where that is argued: a reach is
+//!    made of resolved paths, an installation names none, and what the rented
+//!    tool is held at arm's length by is that an installed application arrives
+//!    **granted nothing**. The correction is to this sentence and not to the
+//!    rule — a file verb that escaped its boundary would be the same bug it
+//!    always was.
 //! 6. **What happened is written down before anybody is told about it.** That
 //!    is this crate's own rule and the next section is about it.
 //! 7. **The turn ends and the grant goes with it**, whether or not anything was
@@ -142,15 +153,19 @@ mod carrying;
 pub mod crossing;
 #[cfg(test)]
 mod down_the_corridor;
+mod installing_an_application;
 pub mod kept;
 pub mod machine;
 pub mod next_request;
 pub mod places;
 pub mod refusing;
 pub mod shortening;
+pub mod the_verbs_would_not_declare;
 pub mod turning;
 pub mod unanswered;
 pub mod unbounded;
+pub mod went_wrong_installing;
+pub mod what_a_verb_did;
 pub mod words;
 
 #[cfg(test)]
@@ -167,7 +182,10 @@ pub use machine::Machine;
 pub use places::Places;
 pub use refusing::NotDone;
 pub use shortening::{Shortened, Shortening};
+pub use the_verbs_would_not_declare::TheVerbsWouldNotDeclare;
 pub use turning::Turning;
 pub use unanswered::NoAnswer;
 pub use unbounded::NoBoundary;
+pub use went_wrong_installing::WentWrongInstalling;
+pub use what_a_verb_did::WhatAVerbDid;
 pub use words::{EVERY_WORD, Word, WordsError, declare_into, turn_words};

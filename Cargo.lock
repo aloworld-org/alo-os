@@ -1286,11 +1286,13 @@ dependencies = [
 name = "alo-protocol"
 version = "0.0.1"
 dependencies = [
+ "alo-applications",
  "alo-capability",
  "alo-context",
  "alo-egress",
  "alo-files",
  "alo-record",
+ "alo-software",
  "alo-strings",
  "alo-turn",
  "serde",
@@ -1691,6 +1693,7 @@ name = "alo-turn"
 version = "0.0.1"
 dependencies = [
  "alo-answering",
+ "alo-applications",
  "alo-asking",
  "alo-capability",
  "alo-context",
@@ -1701,6 +1704,7 @@ dependencies = [
  "alo-models",
  "alo-nearby",
  "alo-record",
+ "alo-software",
  "alo-strings",
  "ring",
  "serde_json",

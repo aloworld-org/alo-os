@@ -124,6 +124,20 @@ pub const MACHINE_COULD_NOT: Word = Word::saying(
      other machine.",
 );
 
+/// The other machine would not install it, and why is that machine's business.
+pub const NOT_INSTALLED_THERE: Word = Word::saying(
+    "corridor.at-the-door.not-installed-there",
+    "{machine} did not install it. Whoever uses that machine can see why on it.",
+)
+.noting(
+    "Said when an installation a person here approved was refused or failed on the other \
+     machine. **It deliberately does not say why**: the reasons are a place that machine's \
+     organisation does not permit, a place switched off, the application already being there, a \
+     signature that did not check, or its installing tool not answering — and each of those is a \
+     fact about somebody else's machine that a refusal must not hand over. {machine} is the name \
+     the reader gave the other machine.",
+);
+
 /// The request was for something other than this wire.
 pub const NOT_FOR_THIS_WIRE: Word = Word::saying(
     "corridor.at-the-door.not-for-this-wire",
@@ -151,7 +165,7 @@ pub const NOT_AN_ANSWER: Word = Word::saying(
 );
 
 /// Everything this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 10] = [
+pub const EVERY_WORD: [Word; 11] = [
     NO_PROOF,
     NOT_A_VERB,
     ANOTHER_TURN_IS_OPEN,
@@ -159,6 +173,7 @@ pub const EVERY_WORD: [Word; 10] = [
     THE_WRONG_DOOR,
     TURNED_AWAY,
     NOT_BOUNDED_THERE,
+    NOT_INSTALLED_THERE,
     MACHINE_COULD_NOT,
     NOT_FOR_THIS_WIRE,
     NOT_AN_ANSWER,

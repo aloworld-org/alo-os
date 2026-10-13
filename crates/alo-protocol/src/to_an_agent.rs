@@ -27,7 +27,6 @@
 //! working around the capability model. What it needs is what a person needs:
 //! the sentence.
 
-use alo_files::Answer;
 use alo_strings::{Said, Strings};
 
 use crate::done::Done;
@@ -60,10 +59,16 @@ pub enum ToAnAgent {
 }
 
 impl ToAnAgent {
-    /// What a read found.
+    /// What a verb did.
+    ///
+    /// Takes the [`Done`] rather than what a verb answered with, because which
+    /// family answered is a question `alo-turn` can ask and this crate cannot:
+    /// it holds `alo-turn` as a *dev*-dependency so that a client library never
+    /// has to build the orchestrator. [`Done::of_a_file_verb`] and
+    /// [`Done::of_an_installation`] are what a caller picks between.
     #[must_use]
-    pub fn did(answer: &Answer) -> Self {
-        Self::Did(Done::of(answer))
+    pub fn did(done: Done) -> Self {
+        Self::Did(done)
     }
 
     /// A change is waiting under this number, with the sentence it waits on.
@@ -209,6 +214,7 @@ mod tests {
     use crate::testing::{a_change_waiting, in_english, the_change, the_moment};
     use crate::words;
     use crate::{ToAPerson, wording::CameFrom};
+    use alo_files::Answer;
     use alo_strings::Filling;
 
     /// **The four things this daemon can say to an agent, and a credential is
@@ -274,7 +280,9 @@ mod tests {
     fn the_four_an_agent_is_told_read_back() {
         let (approvals, strings) = a_change_waiting();
         for told in [
-            ToAnAgent::did(&Answer::Read("March, 4180.00".to_owned())),
+            ToAnAgent::did(Done::of_a_file_verb(&Answer::Read(
+                "March, 4180.00".to_owned(),
+            ))),
             ToAnAgent::proposed(the_change(&approvals), &strings, the_moment()),
             ToAnAgent::answered("Three are unpaid.", &a_sentence(), "mistral-small-latest"),
             ToAnAgent::refused(&a_sentence()),

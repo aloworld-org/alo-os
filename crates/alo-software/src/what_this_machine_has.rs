@@ -115,7 +115,7 @@ impl WhatThisMachineHas {
 /// nothing on it — `docs/features.md` requires that distinction and says why:
 /// *an unfinished scan and a failed one are not evidence that an application is
 /// absent.*
-pub fn what_this_machine_has(tool: &impl Tool) -> Result<WhatThisMachineHas, Failed> {
+pub fn what_this_machine_has(tool: &(impl Tool + ?Sized)) -> Result<WhatThisMachineHas, Failed> {
     let printed = tool.installed()?;
     let mut installed = Installed::nothing();
     let mut not_taken = Vec::new();
