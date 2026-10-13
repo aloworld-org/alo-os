@@ -1,7 +1,6 @@
 # ADR 0108 — The compositor carries an application verb out, and needs no token to
 
-**Status:** **proposed, 2026-10-13**, by the Mac lane, for the owner. It opens a
-new public surface, so it asks rather than builds.
+**Status:** **accepted, 2026-10-13**, by the owner, who chose the socket.
 
 ## What is stuck, and it is not the hard part
 
@@ -72,14 +71,30 @@ boundary it already controls — ceremony that reads as a guarantee.
   otherwise, which is `daemon-protocol.md`'s rule for a stranger and its reason:
   an answer tells whoever knocked that there is an alo OS here.
 
-## What this does not decide
+## A Unix socket, and not a D-Bus interface
 
-**Whether the door is a Unix socket or a D-Bus interface.** The compositor
-already serves D-Bus (`alo_shell::access_bus`, for accessibility), and the
-daemon already speaks one-line-in-one-line-out over a Unix socket. Either fits;
-the second is more like everything else in this repository and the first is
-fewer moving parts. It is a public surface either way, so it belongs in
-`docs/contracts/` before it is built and the owner may prefer one.
+The owner chose it, and the reason is the one thing this door must get right.
+
+Everything about its safety rests on whether the caller is the person or the
+agent. `daemon-protocol.md` already settled how that question is answered and
+why: **the credentials are the kernel's account of the caller, not the caller's
+account of itself.** A socket gets that from the kernel at the moment the
+connection is accepted, before a byte is read. D-Bus gets it by asking the bus —
+a third party standing between this door and the one fact it turns on.
+
+The rest is smaller and points the same way: the daemon, the broker and the
+session service all already do one-line-in-one-line-out over a socket, so this
+is a fourth instance of a pattern rather than a second pattern; it works whether
+or not a session bus is up; and nothing else on the machine can see it.
+
+**The honest cost, measured rather than waved at: the compositor has never
+listened on a socket.** There is no `UnixListener` anywhere in `alo-shell`. So
+this is new work inside a window system's event loop, not a new file beside an
+existing listener — and D-Bus would have been the cheaper build precisely
+because `alo_shell::access_bus` is already there. The identity check was worth
+more than the saving.
+
+## What this does not decide
 
 **And nothing about `arrange`.** Open, focus and close are a window named and a
 thing done. `arrange` takes a *where*, and where a window goes on a screen is
