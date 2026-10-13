@@ -62,19 +62,20 @@ fn the_sign_in_files() -> Vec<(String, Vec<(usize, String)>)> {
         .into_iter()
         .filter(|(named, _)| named.contains("sign_in"))
         .collect();
-    // 15 on 2026-10-12: 8 before, the 6 the owner's design added, and
-    // `direct_sign_in.rs`, which the old filter never reached. The six are
+    // 16 on 2026-10-12: 8 before, the 7 the owner's design added, and
+    // `direct_sign_in.rs`, which the old filter never reached. The seven are
     // `sign_in_layout` placing it, `sign_in_surface` drawing its rounded
     // shapes, `sign_in_wallpaper` drawing the folded light behind it,
     // `sign_in_pointing` saying what a press is on, `sign_in_pointer` holding
     // where the pointer is, and `a_press_on_the_sign_in_screen` saying what
-    // each press does. This number is a tripwire, not a fact: raising it
+    // each press does, and `sign_in_words` saying what this screen says in
+    // words somebody can translate. This number is a tripwire, not a fact: raising it
     // without reading the new file is the one thing it cannot stop. It fired
     // on `sign_in_wallpaper.rs` the hour after it was widened, which is the
     // only evidence worth having that it works.
     assert_eq!(
         files.len(),
-        15,
+        16,
         "a sign-in file was added or lost: {:?}",
         file_names(&files)
     );
@@ -272,21 +273,41 @@ fn no_type_that_carries_a_password_has_a_debug_that_could_print_it() {
     );
 }
 
-/// **The sign-in screen writes no words of its own.** Every sentence it shows
-/// is handed to it by `alo-greeting`, so nothing in its files declares a word,
-/// fills a gap or looks a key up.
+/// **The sign-in screen writes no words of its own**, anywhere but in the one
+/// file that holds them.
+///
+/// This read *every* sentence it shows is handed to it by `alo-greeting`
+/// until 2026-10-12. That stopped being true when the full-screen design
+/// arrived: *Enter your PIN*, *Other ways to sign in*, *Accessibility* and
+/// *Switch person* are the screen.s own furniture, and `alo-greeting` has no
+/// reason to own a label that is not a refusal or a standing.
+///
+/// So the prohibition keeps its teeth and gains **one named home**:
+/// `sign_in_words.rs`, where a phrase sits beside the note a translator
+/// reads. Everywhere else — every file that lays the screen out or draws it —
+/// an English sentence is still a bug, which is what stops a label being
+/// typed into a drawing where no translation can reach it.
+const THE_ONE_FILE_THAT_HOLDS_WORDS: &str = "sign_in_words.rs";
+
 #[test]
 fn the_sign_in_screen_writes_no_words_of_its_own() {
+    let mut homes = 0;
     for (named, code) in the_sign_in_files() {
+        if named == THE_ONE_FILE_THAT_HOLDS_WORDS {
+            homes += 1;
+            continue;
+        }
         for (which, line) in code {
-            for writing in [
-                "Word::saying",
-                "Word::",
-                "Vocabulary",
-                "Filling",
-                ".say(",
-                "Key::named",
-            ] {
+            // **Declaring, not looking up.** `Filling` and `.say(` were on this
+            // list until 2026-10-12, when the design gave the screen labels of
+            // its own: a drawing that asks the vocabulary for *Enter your PIN*
+            // is doing the right thing, and forbidding the lookup would leave
+            // English typed into the drawing as the only way to draw a label.
+            //
+            // What stays forbidden is **owning** words: declaring a phrase,
+            // holding a vocabulary, or conjuring a key from a string rather
+            // than naming one of the declared ones.
+            for writing in ["Word::saying", "Word::", "Vocabulary", "Key::named"] {
                 assert!(
                     !line.contains(writing),
                     "{named}:{which} writes its own words: {line}"
@@ -294,6 +315,12 @@ fn the_sign_in_screen_writes_no_words_of_its_own() {
             }
         }
     }
+    // **One home, and only one.** A second file declaring words would be a
+    // second place a label can hide from a translator.
+    assert_eq!(
+        homes, 1,
+        "there should be exactly one file holding this screen's words, and there are {homes}"
+    );
 }
 
 /// **The screen calls the greeting and never what the greeting composes.** No

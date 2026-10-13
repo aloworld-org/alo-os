@@ -1,6 +1,7 @@
 //! The laid-out screen, read as pixels: what is on it and what never is.
 #![expect(
     clippy::unwrap_used,
+    clippy::expect_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
@@ -10,7 +11,6 @@ use alo_accounts::Accounts;
 use alo_appearance::Token;
 use alo_greeting::{Greeting, Knocking, NotAnswered};
 use alo_sessiond::{Answered, Knock};
-use alo_strings::Strings;
 
 /// A door that is never reached in these tests: nobody presses Enter.
 #[derive(Debug)]
@@ -35,7 +35,7 @@ fn light() -> SignInLook {
 fn typed(name: &str, password: &str) -> SignInScreen<NoDoor> {
     let mut store = Accounts::none().unwrap();
     store.created("ada", 1000, "irrelevant").unwrap();
-    let words = Strings::of(alo_saying::everything_this_machine_can_say().unwrap());
+    let words = crate::what_this_machine_can_say().unwrap();
     let mut screen = SignInScreen::of(Ok(Greeting::of(store, 1000, NoDoor)), words);
     let mut keys: Vec<SignInKey> = name.chars().map(SignInKey::Letter).collect();
     keys.push(SignInKey::OtherField);
@@ -56,6 +56,7 @@ fn drawn(screen: &SignInScreen<NoDoor>, look: SignInLook) -> SignInPicture {
     picture(
         screen.shows(),
         &mut labels,
+        screen.words(),
         (800, 600),
         look,
         super::WhoseScreen::ItsOwn,
@@ -116,7 +117,7 @@ fn the_persons_own_name_is_drawn() {
 fn whose_screen(name: &str) -> crate::sign_in_raster::SignInPicture {
     let mut store = Accounts::none().unwrap();
     store.created(name, 1000, "irrelevant").unwrap();
-    let words = Strings::of(alo_saying::everything_this_machine_can_say().unwrap());
+    let words = crate::what_this_machine_can_say().unwrap();
     drawn(
         &SignInScreen::of(Ok(Greeting::of(store, 1000, NoDoor)), words),
         light(),
@@ -193,6 +194,7 @@ fn an_output_that_cannot_hold_the_screen_is_refused() {
                 picture(
                     screen.shows(),
                     &mut labels,
+                    screen.words(),
                     size,
                     light(),
                     super::WhoseScreen::ItsOwn,
@@ -227,6 +229,7 @@ fn the_waiting_field_is_told_apart_by_shape() {
         picture(
             screen.shows(),
             &mut labels,
+            screen.words(),
             (800, 600),
             light(),
             super::WhoseScreen::InsideAnother,
@@ -320,11 +323,7 @@ fn high_contrast_draws_the_same_screen_in_the_palette_that_crate_decided() {
 fn no_inked_box_is_wider_than_its_own_words() {
     let drawn = whose_screen("disan");
     for ink in &drawn.inked {
-        let lit = ink
-            .pixels
-            .iter()
-            .filter(|p| u32::from(p[0]) + u32::from(p[1]) + u32::from(p[2]) < 300)
-            .count();
+        let lit = marked(ink);
         assert!(
             lit > 0,
             "an inked box at {:?} carries no ink at all: it is a rectangle of ground \
@@ -342,4 +341,97 @@ fn no_inked_box_is_wider_than_its_own_words() {
             ink.area
         );
     }
+}
+
+/// **Every label and every mark the design draws puts ink on the screen.**
+///
+/// Not "it was placed": the pixels are read back. A label whose key is not in
+/// the vocabulary renders as `«the.key»`, and a glyph no bundled face carries
+/// renders as a tofu box or as nothing at all — both of which this screen has
+/// shown on a real machine within one day. Neither is visible to a test that
+/// counts calls.
+///
+/// The power control is checked in the surface raster rather than the ink,
+/// because `U+23FB` is in neither bundled face and it is drawn by
+/// `crate::sign_in_surface` as a ring with a bar standing in it.
+#[test]
+fn every_label_and_mark_is_drawn_and_not_merely_placed() {
+    let drawn = whose_screen("disan");
+    let at = crate::sign_in_layout::sign_in_laid_out(smithay::utils::Size::from((800, 600)))
+        .expect("this size lays out");
+
+    let dark = marked;
+    for (what, box_of) in [
+        ("the greeting", at.account),
+        ("the submit arrow", at.submit),
+        ("back to lock", at.back),
+        ("other ways to sign in", at.other_ways),
+        ("accessibility", at.accessibility),
+        ("switch person", at.switch_person),
+    ] {
+        let found: usize = drawn
+            .inked
+            .iter()
+            .filter(|ink| {
+                let same: smithay::utils::Rectangle<i32, smithay::utils::Physical> =
+                    smithay::utils::Rectangle::new(
+                        (box_of.loc.x, box_of.loc.y).into(),
+                        (box_of.size.w, box_of.size.h).into(),
+                    );
+                ink.area.intersection(same).is_some()
+            })
+            .map(dark)
+            .sum();
+        assert!(
+            found > 0,
+            "{what} has no ink anywhere in {box_of:?}: it is laid out and not drawn"
+        );
+    }
+
+    // The power control, in the raster.
+    let surface = drawn.surface.as_ref().expect("the design draws a surface");
+    let w = surface.area.size.w;
+    let mut marked = 0_usize;
+    for y in at.power.loc.y..(at.power.loc.y + at.power.size.h) {
+        for x in at.power.loc.x..(at.power.loc.x + at.power.size.w) {
+            let i = ((y * w + x) * 4) as usize;
+            let (Some(r), Some(g), Some(b)) = (
+                surface.pixels.get(i),
+                surface.pixels.get(i + 1),
+                surface.pixels.get(i + 2),
+            ) else {
+                continue;
+            };
+            if u32::from(*r) + u32::from(*g) + u32::from(*b) < 400 {
+                marked += 1;
+            }
+        }
+    }
+    assert!(
+        marked > 20,
+        "the power control has only {marked} marked pixels: it is laid out, answered by the \
+         hit test, and not drawn"
+    );
+}
+
+/// How many pixels of an inked box are ink rather than the ground it was
+/// shaped against.
+///
+/// **Not "how many are dark".** The placeholder inside the entry is drawn in
+/// `text/muted` — `#596B78`, whose channels sum to 316 — so a darkness
+/// threshold counted a correctly drawn placeholder as an empty box. A box's
+/// own first pixel is its ground, and ink is whatever differs from it.
+fn marked(ink: &crate::painted::Inked) -> usize {
+    let Some(ground) = ink.pixels.first().copied() else {
+        return 0;
+    };
+    ink.pixels
+        .iter()
+        .filter(|p| {
+            u32::from(p[0]).abs_diff(u32::from(ground[0]))
+                + u32::from(p[1]).abs_diff(u32::from(ground[1]))
+                + u32::from(p[2]).abs_diff(u32::from(ground[2]))
+                > 24
+        })
+        .count()
 }

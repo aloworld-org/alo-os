@@ -48,7 +48,18 @@ pub(crate) const THE_GROUND_IS: [u8; 3] = [0xFA, 0xF7, 0xF2];
 pub(crate) const THE_MONOGRAM_GROUND_IS: [u8; 3] = [0xEE, 0xF2, 0xF4];
 
 /// The entry's surface, `bg/surface`.
-const THE_ENTRY_GROUND_IS: [u8; 3] = [0xFF, 0xFF, 0xFF];
+pub(crate) const THE_ENTRY_GROUND_IS: [u8; 3] = [0xFF, 0xFF, 0xFF];
+
+/// The ink every mark on this screen is drawn in, `text/primary`.
+pub(crate) const THE_INK_IS: [u8; 3] = [0x10, 0x2A, 0x43];
+
+/// Muted text, `text/muted`, which the placeholder inside the entry is
+/// lettered in.
+///
+/// `#596B78`, from `variables.toml`, which records that the owner stated it
+/// on 2026-09-27 rather than it being read from a pure-light node. Named
+/// here with that provenance rather than guessed from the render.
+pub(crate) const THE_MUTED_TEXT_IS: [u8; 3] = [0x59, 0x6B, 0x78];
 
 /// The entry's border at rest, `border/default`.
 const THE_ENTRY_BORDER_IS: [u8; 3] = [0xE7, 0xEB, 0xEF];
@@ -96,6 +107,11 @@ pub(crate) fn sign_in_surface(
     let corner = f64::from(THE_ENTRY_CORNER_IS) * scale.x;
     let monogram_corner = f64::from(THE_MONOGRAM_CORNER_IS) * scale.x;
     let border = f64::from(THE_BORDER_IS) * scale.x;
+    let power = at.power.to_physical_precise_round::<f64, i32>(scale);
+    // The power mark.s stroke, which is the entry.s border a little heavier so
+    // a 20-unit ring reads at arm.s length.
+    let stroke = (f64::from(THE_BORDER_IS) * scale.x * 1.3).max(1.5);
+    let ink = crate::sign_in_surface::THE_INK_IS;
     let edge = match entry {
         TheEntryIs::Waiting => THE_ENTRY_BORDER_IS,
         TheEntryIs::Refused => THE_REFUSED_BORDER_IS,
@@ -145,10 +161,57 @@ pub(crate) fn sign_in_surface(
                 }
             }
 
+            // **The power mark**, drawn rather than lettered. Neither bundled
+            // face carries U+23FB, and a glyph a font does not have is drawn
+            // as a tofu box — which is what this screen showed before this
+            // existed, a hex rectangle where the design has a power control.
+            // A ring with a gap at the top and a bar through it, from the
+            // same distance fields the entry.s corners use.
+            let mark = the_power_mark(px, py, power, stroke);
+            if mark > 0.0 {
+                colour = mixed(colour, ink, mark);
+            }
+
             pixels.extend_from_slice(&[colour[0], colour[1], colour[2], 0xFF]);
         }
     }
     Some(Washed { area, pixels })
+}
+
+/// How much of this pixel the power mark covers.
+///
+/// A ring with a gap at the top and a bar standing in the gap, which is the
+/// power symbol every machine draws. Built from the same distance fields as
+/// the rounded rectangles above, because neither bundled face carries
+/// U+23FB and a glyph a font lacks is drawn as a tofu box.
+fn the_power_mark(px: f64, py: f64, within: Rectangle<i32, Physical>, stroke: f64) -> f64 {
+    if within.size.w <= 0 || within.size.h <= 0 {
+        return 0.0;
+    }
+    let side = f64::from(within.size.w.min(within.size.h));
+    let cx = f64::from(within.loc.x) + f64::from(within.size.w) / 2.0;
+    let cy = f64::from(within.loc.y) + f64::from(within.size.h) / 2.0;
+    // The ring takes a little under half the target, which is what leaves the
+    // 48-unit control reading as a mark rather than a filled circle.
+    let radius = side * 0.21;
+    let half = stroke / 2.0;
+    let from_centre = (px - cx).hypot(py - cy);
+    // The ring itself: the distance to the circle, signed, so `coverage`
+    // antialiases it by the one rule the rest of this file uses.
+    let on_the_ring = coverage((from_centre - radius).abs() - half);
+    // **Only the notch the bar stands in.** Cutting the whole upper middle
+    // left two side arcs and a bar, which reads as brackets rather than as a
+    // power control.
+    let notch = py < cy - radius * 0.55 && (px - cx).abs() < half * 2.2;
+    let ring = if notch { 0.0 } else { on_the_ring };
+    // The bar standing in the notch, from above the ring down to its middle.
+    let within_the_bar = py >= cy - radius * 1.5 && py <= cy - radius * 0.15;
+    let bar = if within_the_bar {
+        coverage((px - cx).abs() - half)
+    } else {
+        0.0
+    };
+    ring.max(bar).clamp(0.0, 1.0)
 }
 
 /// The signed distance from a point to a rounded rectangle: negative inside,

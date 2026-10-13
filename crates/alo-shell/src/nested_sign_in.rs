@@ -104,6 +104,7 @@ impl Nested {
         let drawn = picture(
             screen.shows(),
             labels,
+            screen.words(),
             (size.w, size.h),
             look,
             crate::sign_in_raster::WhoseScreen::ItsOwn,

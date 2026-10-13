@@ -162,6 +162,18 @@ impl<K: Knocking> SignInScreen<K> {
         Signing::Still(Box::new(self))
     }
 
+    /// The words this machine can say, for a surface that draws this screen.
+    ///
+    /// **Lent, never handed over.** The labels on the sign-in screen are said
+    /// in the person's own language, and the drawing has no business holding a
+    /// vocabulary of its own — it asks this one at the moment it letters a
+    /// line, the way it already takes a worded refusal rather than composing
+    /// an English sentence from a reason.
+    #[must_use]
+    pub const fn words(&self) -> &Strings {
+        &self.strings
+    }
+
     /// What the screen draws now.
     #[must_use]
     pub fn shows(&self) -> SignInShows<'_> {

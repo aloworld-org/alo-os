@@ -46,6 +46,7 @@ pub(crate) fn picture(
         let mut form = crate::sign_in_raster::picture(
             fields,
             labels,
+            look.strings,
             (size.0, height),
             look.appearance,
             crate::sign_in_raster::WhoseScreen::InsideAnother,

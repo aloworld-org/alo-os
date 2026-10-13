@@ -127,6 +127,7 @@ pub(crate) enum WhoseScreen {
 pub(crate) fn picture(
     shows: SignInShows<'_>,
     labels: &mut WindowControlLabels,
+    words: &alo_strings::Strings,
     size: (i32, i32),
     look: SignInLook,
     whose: WhoseScreen,
@@ -242,14 +243,27 @@ pub(crate) fn picture(
                     drawn.inked.extend(shaped.placed(x, y, height));
                 }
 
-                // **The greeting, by name.** The name is the person's, never a
-                // literal: `disan` in the design is sample content.
+                // **The greeting, in the design's own words.**
+                //
+                // `alo, {name}` through the vocabulary, not a name with a comma
+                // written in front of it here: a language may put the name
+                // first or greet another way, and the gap is a translator's to
+                // move. The name is the person's own, and `disan` in the design
+                // file is sample content.
+                //
+                // It is also the largest line on the screen, which it was not
+                // until 2026-10-12: drawn at the ordinary size, it whispered
+                // somebody's name instead of greeting them with it.
+                let said_hello = words.say(
+                    &crate::sign_in_words::GREETING.key(),
+                    &alo_strings::Filling::of("name", who),
+                );
                 let greeting = sentence(
                     fonts,
-                    who,
+                    said_hello.text(),
                     at.account.size.w,
-                    measure.metrics(),
-                    // **The design.s ground**, which is what the raster drew
+                    measure.greeting_metrics(),
+                    // **The design's ground**, which is what the raster drew
                     // behind this. `palette.ground` is white, and a white box
                     // on the folded light is a bar across the wallpaper.
                     crate::sign_in_surface::THE_GROUND_IS,
@@ -260,6 +274,79 @@ pub(crate) fn picture(
                 drawn
                     .inked
                     .extend(greeting.placed(greeting_x, at.account.loc.y, height));
+
+                // **What the entry says before anything is typed into it.**
+                // Nothing typed, so nothing to mask: the placeholder is drawn
+                // only while the field is empty, and never over the dots.
+                if !password_typed {
+                    let hint = words.say(
+                        &crate::sign_in_words::ENTER_YOUR_PIN.key(),
+                        &alo_strings::Filling::nothing(),
+                    );
+                    let shaped = sentence(
+                        fonts,
+                        hint.text(),
+                        at.entry.size.w
+                            - measure.px(42)
+                            - crate::sign_in_layout::THE_SUBMIT_TARGET_IS,
+                        measure.metrics(),
+                        crate::sign_in_surface::THE_ENTRY_GROUND_IS,
+                        crate::sign_in_surface::THE_MUTED_TEXT_IS,
+                    )
+                    .cropped_to_its_ink();
+                    let y = at.entry.loc.y + (at.entry.size.h - shaped.height) / 2;
+                    drawn
+                        .inked
+                        .extend(shaped.placed(at.entry.loc.x + measure.px(21), y, height));
+                }
+
+                // **The row below the entry**, and the row of essential actions
+                // along the bottom. Each was laid out by `crate::sign_in_layout`
+                // and answered by `crate::sign_in_pointing` from the morning of
+                // 2026-10-12, while **nothing drew a single one of their
+                // labels** — four controls a person could press and could not
+                // see. This is the half that was missing.
+                for (word, box_of, centred, metrics) in [
+                    (
+                        crate::sign_in_words::OTHER_WAYS,
+                        at.other_ways,
+                        true,
+                        measure.metrics(),
+                    ),
+                    (
+                        crate::sign_in_words::ACCESSIBILITY,
+                        at.accessibility,
+                        false,
+                        measure.label_metrics(),
+                    ),
+                    (
+                        crate::sign_in_words::SWITCH_PERSON,
+                        at.switch_person,
+                        false,
+                        measure.label_metrics(),
+                    ),
+                ] {
+                    if box_of.size.w <= 0 {
+                        continue;
+                    }
+                    let said = words.say(&word.key(), &alo_strings::Filling::nothing());
+                    let shaped = sentence(
+                        fonts,
+                        said.text(),
+                        box_of.size.w,
+                        metrics,
+                        crate::sign_in_surface::THE_GROUND_IS,
+                        palette.ink,
+                    )
+                    .cropped_to_its_ink();
+                    let x = if centred {
+                        box_of.loc.x + (box_of.size.w - shaped.width) / 2
+                    } else {
+                        box_of.loc.x
+                    };
+                    let y = box_of.loc.y + (box_of.size.h - shaped.height) / 2;
+                    drawn.inked.extend(shaped.placed(x, y, height));
+                }
 
                 // **What is typed, masked.** A band per nothing: the design shows
                 // four dots and the owner's direction is explicit that they do not
@@ -283,20 +370,38 @@ pub(crate) fn picture(
                     }
                 }
 
-                // **The submit arrow, inside the entry.** Two bars making a
-                // chevron, which is what the 20 × 20 artwork is at this size.
-                let bar = measure.px(2).max(2);
-                drawn.solids.push(Solid {
-                    area: Rectangle::new(
-                        (
-                            at.arrow.loc.x,
-                            at.arrow.loc.y + at.arrow.size.h / 2 - bar / 2,
-                        )
-                            .into(),
-                        (at.arrow.size.w, bar).into(),
-                    ),
-                    colour: palette.ink,
-                });
+                // **The three pieces of artwork the design draws**, each a
+                // glyph: the submit arrow inside the entry, the chevron that
+                // goes back to the lock screen, and the power control at the
+                // far right of the essential actions.
+                //
+                // Glyphs rather than shapes, because a `Solid` is an
+                // axis-aligned rectangle and every one of these has a diagonal
+                // or a curve in it. The submit arrow was one flat bar until
+                // 2026-10-12 — a dash where the design draws an arrow, and the
+                // only thing on the screen a photograph could find.
+                //
+                // **A font without one of these draws nothing**, silently,
+                // which is how this screen lost all of its text once already.
+                // `the_artwork_is_drawn_and_not_merely_placed` reads the ink
+                // back for each.
+                for (mark, box_of, size_of) in [
+                    ("\u{2192}", at.submit, at.arrow.size.w),
+                    ("\u{2039}", at.back, at.back.size.w / 2),
+                ] {
+                    let shaped = sentence(
+                        fonts,
+                        mark,
+                        box_of.size.w.max(1),
+                        Metrics::new(size_of.max(8) as f32, (size_of.max(8) as f32) * 1.25),
+                        crate::sign_in_surface::THE_GROUND_IS,
+                        palette.ink,
+                    )
+                    .cropped_to_its_ink();
+                    let x = box_of.loc.x + (box_of.size.w - shaped.width) / 2;
+                    let y = box_of.loc.y + (box_of.size.h - shaped.height) / 2;
+                    drawn.inked.extend(shaped.placed(x, y, height));
+                }
 
                 // **A refusal, said where the design says it**, between the entry
                 // and the row below it.
@@ -429,10 +534,29 @@ impl Measure {
         (at_one * self.percent / 100).max(1)
     }
 
-    /// The text metrics every line on this screen uses.
+    /// The text metrics most lines on this screen use.
     fn metrics(&self) -> Metrics {
         let factor = self.percent as f32 / 100.0;
         Metrics::new(16.0 * factor, 24.0 * factor)
+    }
+
+    /// The greeting.s own size, larger than everything else on the screen
+    /// because it is the one line that says whose machine this is.
+    ///
+    /// `176-10686.xml` gives its box as 44 tall at `176:10998`, which is what
+    /// sets the line height. Drawn at the ordinary 16 until 2026-10-12, which
+    /// is why a booted machine whispered the person.s name instead of
+    /// greeting them with it.
+    fn greeting_metrics(&self) -> Metrics {
+        let factor = self.percent as f32 / 100.0;
+        Metrics::new(32.0 * factor, 44.0 * factor)
+    }
+
+    /// What the row of essential actions is lettered at: the smallest text
+    /// this screen draws, and still a readable size at every scale.
+    fn label_metrics(&self) -> Metrics {
+        let factor = self.percent as f32 / 100.0;
+        Metrics::new(14.0 * factor, 20.0 * factor)
     }
 }
 
