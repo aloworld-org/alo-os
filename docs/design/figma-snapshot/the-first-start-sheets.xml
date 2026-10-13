@@ -118,3 +118,49 @@
   <instance id="371:30415" name="Action / Accessibility" x="40" y="876" width="160" height="48" />
   <text id="371:30417" name="Footer" x="736" y="892" width="640" height="16" />
 </frame>
+
+<!--
+  ## Read from the renders of `183:10675` and `186:10737`, 2026-10-13
+
+  Metadata carries no colour, no corner, no border and no weight, and
+  `MANIFEST.md` records that a stroke on a frame is not a child layer. These
+  were read from the two renders instead, which is the same way the sign-in
+  screen's error border was read.
+
+  **A choice row is a card, not a field.** 600 x 85, `bg/surface` white, a
+  hairline `border/default`, and a corner of the same family as the sign-in
+  entry's. Inside it, the Title at (21, 17) in `text/primary` and the
+  Description at (21, 46) in `text/muted`.
+
+  The Description is **whatever that row is for**: on *Your name* it is the
+  name as typed — `disan`, which is sample content — and on *New PIN* it is
+  the invitation *Enter your PIN*. So the row is the same component doing the
+  work the sign-in entry does, with its label above rather than inside.
+
+  **The two actions are not the same shape.** The first is filled: a navy
+  ground, `text/primary` inverted to the warm off-white, the same corner. The
+  second is outlined: the screen's own ground with a hairline and ink
+  lettering. First is *Continue* and *Save PIN*; second is *Back* and *Use
+  password only*.
+
+  **The eyebrow's casing is the content's, not the component's.** *MAKE IT
+  YOURS* is upper on one sheet and *Optional · PIN* is sentence case on the
+  other, at the same size and colour. Nothing should upper-case it in code.
+
+  **The title wraps.** *What should we call you?* is two lines at 88 tall;
+  *Add a PIN?* is one at 44. So the column's height is the content's and the
+  blocks below it move — which is what the two frames' differing `Main`
+  heights, 459 and 440, already say.
+
+  **The stage line reads `alo OS`** at the top right, and the footer reads
+  *Local setup. No online account required.* at the bottom right, muted. Both
+  are the same on both sheets.
+
+  ## Still owed
+
+  The exact hexes and corner radii are **not** recorded here, because reading
+  a colour off a render is a guess at an anti-aliased pixel. They should come
+  from `variables.toml`'s roles — `bg/surface`, `border/default`,
+  `text/primary`, `text/muted` — which `crate::sign_in_surface::TheColours`
+  already answers per scheme and contrast.
+-->
