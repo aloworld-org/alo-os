@@ -1,0 +1,283 @@
+//! What a model is shown on the **second** request of a turn, and every one
+//! after it.
+//!
+//! [`crate::shown_to_a_turn`] shows a model the instructions, the verbs and one
+//! request. That is the whole of what a turn could show until now, and it is
+//! why every grade in `data/catalogue.toml` is a grade at **one step**: ask,
+//! answer, done. Real work is not one step. *Tidy my invoices* is a folder
+//! listed, what came back read, and only then a move proposed — and a model
+//! that cannot be told what came back cannot take the second step.
+//!
+//! This is the telling. Nothing else here is new.
+//!
+//! # The instructions do not change, and that is the point
+//!
+//! [`Instructions`] is a closed set of two texts, each with a digest, and
+//! `Instructions::SHOWN_TO_A_TURN` names the one a turn shows. **A turn shown
+//! any other text is a turn no grade is about.** So a continued turn is shown
+//! the *same* instructions and the *same* verbs; what grows is the request half,
+//! which was always the part that differs from one turn to the next.
+//!
+//! Had the continuation been written into the instructions instead, every grade
+//! ever earned would have stopped describing what a turn shows, silently, and
+//! `Instructions::SHOWN_TO_A_TURN`'s own sentence would have become false.
+//!
+//! **What this does not do is make those grades cover more.** A model that
+//! drove ten single-step exercises reliably has been measured at one step and
+//! nowhere else. Whether it can finish a job of five is a different
+//! measurement, which this file makes possible and does not perform.
+//!
+//! # A step is the exact two lines, not a description of them
+//!
+//! [`AStep`] holds the line the model wrote and the line the daemon answered
+//! with, as they went over the socket. Three reasons, and the third is the one
+//! that matters:
+//!
+//! 1. The model already reads and writes that dialect — the instructions teach
+//!    it, in literal JSON.
+//! 2. This crate composes no prose about an answer, so there is no second
+//!    wording of a refusal to keep true.
+//! 3. **What the model is told it asked for cannot drift from what was really
+//!    asked.** A shape holding `alo_protocol::FromAnAgent` would be re-rendered
+//!    here, and a re-rendering can differ from what was sent — which is the
+//!    failure this repository keeps meeting under other names.
+//!
+//! # Every step that was shortened says so
+//!
+//! `alo-files`' rule, met a third time. A read can answer with a whole file, and
+//! a turn of five steps carrying five whole files would be a prompt no model can
+//! hold. So a line longer than [`AStep::THE_MOST_OF_AN_ANSWER`] is cut and
+//! **says that it was cut**, in the text the model reads, because an answer
+//! silently shortened reads exactly like a complete one — to a model as much as
+//! to a person.
+
+use alo_capability::Verbs;
+
+use crate::instructions::Instructions;
+use crate::shown::shown_to_a_model;
+
+/// One request a turn has already made, and what came back.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AStep {
+    /// The line the model wrote, as it was sent.
+    asked: String,
+    /// The line the daemon answered with, as it arrived.
+    came_back: String,
+}
+
+impl AStep {
+    /// How much of one answer a model is shown, in bytes.
+    ///
+    /// A bound rather than a budget: it is per answer, so a turn of five steps
+    /// shows at most five of these. The number is deliberately generous for a
+    /// listing and ungenerous for a file, because a listing is what a next step
+    /// is usually decided from and a file's contents rarely are.
+    pub const THE_MOST_OF_AN_ANSWER: usize = 2000;
+
+    /// What was asked and what came back, as the two lines really were.
+    #[must_use]
+    pub fn of(asked: &str, came_back: &str) -> Self {
+        Self {
+            asked: asked.trim().to_owned(),
+            came_back: came_back.trim().to_owned(),
+        }
+    }
+
+    /// The answer as the model is shown it, cut if it is long and saying so.
+    ///
+    /// Cut on a character boundary, because cutting a UTF-8 string by bytes
+    /// alone panics on the byte that is halfway through a character — and a
+    /// file with an accent in it is not an unusual file.
+    fn the_answer_shown(&self) -> String {
+        if self.came_back.len() <= Self::THE_MOST_OF_AN_ANSWER {
+            return self.came_back.clone();
+        }
+        let mut at = Self::THE_MOST_OF_AN_ANSWER;
+        while at > 0 && !self.came_back.is_char_boundary(at) {
+            at -= 1;
+        }
+        let shown = self.came_back.get(..at).unwrap_or("");
+        format!("{shown}\n(this answer was longer than that and was cut here)")
+    }
+}
+
+/// A turn that has already asked for something.
+///
+/// Holds the person's request and every step since, in the order they happened.
+/// It borrows rather than owns, because the loop that drives a turn holds both
+/// and this is read once per round.
+#[derive(Debug, Clone, Copy)]
+pub struct ATurnInProgress<'a> {
+    /// What the person asked for, in their own words.
+    request: &'a str,
+    /// What has been asked and answered so far, oldest first.
+    steps: &'a [AStep],
+}
+
+impl<'a> ATurnInProgress<'a> {
+    /// A turn on this request, after these steps.
+    #[must_use]
+    pub const fn of(request: &'a str, steps: &'a [AStep]) -> Self {
+        Self { request, steps }
+    }
+
+    /// Whether anything has been asked yet.
+    ///
+    /// A turn with no steps is what [`crate::shown_to_a_turn`] already shows,
+    /// and [`shown_to_a_turn_in_progress`] answers identically for one — which
+    /// is asserted below rather than left to be assumed, because two texts for
+    /// the first round would make a grade earned through one door a statement
+    /// about the other.
+    #[must_use]
+    pub const fn has_begun(&self) -> bool {
+        !self.steps.is_empty()
+    }
+}
+
+/// **The whole text a model is shown on a continued turn**: the same
+/// instructions, the same verbs, the request, and then what has happened.
+///
+/// For a turn with no steps this is exactly [`crate::shown_to_a_turn`]'s text,
+/// to the byte.
+#[must_use]
+pub fn shown_to_a_turn_in_progress(verbs: &Verbs, turn: ATurnInProgress<'_>) -> String {
+    shown_in_progress(Instructions::SHOWN_TO_A_TURN, verbs, turn)
+}
+
+/// The same, under a named set of instructions.
+///
+/// **Taken rather than assumed, because a grade is about a set.** A harness
+/// measuring whether `Instructions::SeveralSteps` helps a model take a second
+/// step has to be able to put the same turn under both, and
+/// [`shown_to_a_turn_in_progress`] names the one a turn really shows so that a
+/// surface with no opinion cannot pick a set by accident.
+#[must_use]
+pub fn shown_in_progress(
+    instructions: Instructions,
+    verbs: &Verbs,
+    turn: ATurnInProgress<'_>,
+) -> String {
+    let mut text = shown_to_a_model(instructions, verbs, turn.request);
+    if !turn.has_begun() {
+        return text;
+    }
+    text.push_str("\n\nYou have already asked for this, and this came back:\n");
+    for step in turn.steps {
+        text.push_str("\nYou asked: ");
+        text.push_str(&step.asked);
+        text.push_str("\nThe answer: ");
+        text.push_str(&step.the_answer_shown());
+        text.push('\n');
+    }
+    // Last, for `shown.rs`'s reason: nothing after the instruction can be
+    // mistaken for part of what came back.
+    text.push_str("\nAnswer with the next line of JSON, or with the propose line that finishes ");
+    text.push_str("the request.");
+    text
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+mod tests {
+    use super::{AStep, ATurnInProgress, shown_to_a_turn_in_progress};
+    use crate::shown::shown_to_a_turn;
+    use crate::testing::the_verbs;
+
+    /// **A turn that has asked nothing is shown what it was shown before**, to
+    /// the byte. The grade every model holds was earned through
+    /// `shown_to_a_turn`, so a first round that differed here would make this
+    /// file a change to what a turn shows rather than an addition to it.
+    #[test]
+    fn the_first_round_is_the_text_it_always_was() {
+        let verbs = the_verbs();
+        let nothing: [AStep; 0] = [];
+        assert_eq!(
+            shown_to_a_turn_in_progress(&verbs, ATurnInProgress::of("tidy my invoices", &nothing)),
+            shown_to_a_turn(&verbs, "tidy my invoices")
+        );
+    }
+
+    /// And a second round carries the first, as the two lines really were.
+    #[test]
+    fn a_second_round_shows_what_was_asked_and_what_came_back() {
+        let verbs = the_verbs();
+        let asked = r#"{"format":1,"asks":{"read":{"verb":"list_folder","given":[]}}}"#;
+        let came_back = r#"{"format":1,"tells":{"did":{"listed":{"things":[]}}}}"#;
+        let steps = [AStep::of(asked, came_back)];
+        let shown = shown_to_a_turn_in_progress(&verbs, ATurnInProgress::of("tidy", &steps));
+
+        assert!(shown.contains(asked), "the line it wrote is not shown back");
+        assert!(shown.contains(came_back), "the answer is not shown");
+        assert!(
+            shown.starts_with(&shown_to_a_turn(&verbs, "tidy")),
+            "a continued turn no longer begins with what a turn shows"
+        );
+        // The request still comes before what happened, and the instruction to
+        // answer comes last.
+        let request_at = shown.find("The request: tidy").unwrap();
+        let answer_at = shown.find(came_back).unwrap();
+        let next_at = shown.find("Answer with the next line").unwrap();
+        assert!(
+            request_at < answer_at,
+            "the request moved after the answers"
+        );
+        assert!(answer_at < next_at, "the instruction is not last");
+    }
+
+    /// **A long answer is cut and says it was cut.** The number is asserted
+    /// rather than the behaviour alone, because a bound nobody can see the edge
+    /// of is a bound somebody will widen by accident.
+    #[test]
+    fn a_long_answer_is_cut_and_says_so() {
+        let verbs = the_verbs();
+        let long = "x".repeat(AStep::THE_MOST_OF_AN_ANSWER + 500);
+        let steps = [AStep::of("{}", &long)];
+        let shown = shown_to_a_turn_in_progress(&verbs, ATurnInProgress::of("read it", &steps));
+        assert!(
+            shown.contains("was longer than that and was cut here"),
+            "a shortened answer did not say so"
+        );
+        assert!(
+            !shown.contains(&"x".repeat(AStep::THE_MOST_OF_AN_ANSWER + 1)),
+            "the whole long answer was shown anyway"
+        );
+        // And one that just fits is not cut.
+        let fits = "y".repeat(AStep::THE_MOST_OF_AN_ANSWER);
+        let steps = [AStep::of("{}", &fits)];
+        let shown = shown_to_a_turn_in_progress(&verbs, ATurnInProgress::of("read it", &steps));
+        assert!(shown.contains(&fits), "an answer at the bound was cut");
+        assert!(!shown.contains("was cut here"));
+    }
+
+    /// **Cutting does not panic on a character that straddles the bound.** A
+    /// file with an accent in it is an ordinary file, and `&s[..n]` on the wrong
+    /// byte is a panic inside a daemon.
+    #[test]
+    fn a_long_answer_full_of_accents_is_cut_without_panicking() {
+        let verbs = the_verbs();
+        // Each 'é' is two bytes, so the bound lands mid-character for half of
+        // the offsets this could have chosen.
+        let long = "é".repeat(AStep::THE_MOST_OF_AN_ANSWER);
+        let steps = [AStep::of("{}", &long)];
+        let shown = shown_to_a_turn_in_progress(&verbs, ATurnInProgress::of("read it", &steps));
+        assert!(shown.contains("was cut here"));
+    }
+
+    /// Several steps are shown oldest first, which is the order they happened
+    /// and the only order a model can read as a sequence.
+    #[test]
+    fn the_steps_are_shown_in_the_order_they_happened() {
+        let verbs = the_verbs();
+        let steps = [
+            AStep::of("asked-first", "answered-first"),
+            AStep::of("asked-second", "answered-second"),
+        ];
+        let shown = shown_to_a_turn_in_progress(&verbs, ATurnInProgress::of("a job", &steps));
+        let first = shown.find("asked-first").unwrap();
+        let second = shown.find("asked-second").unwrap();
+        assert!(first < second, "the steps are shown newest first");
+    }
+}

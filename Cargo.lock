@@ -99,9 +99,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-agent"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-files",
+ "alo-instructing",
+ "alo-protocol",
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-agentd"
 version = "0.0.1"
 dependencies = [
+ "alo-agent",
  "alo-answering",
  "alo-applications",
  "alo-asking",

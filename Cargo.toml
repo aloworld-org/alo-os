@@ -6,6 +6,7 @@ members = [
   "tools/graphics-check",
   "tools/what-a-gate-needs-in-memory",
   "crates/alo-access",
+  "crates/alo-agent",
   "crates/alo-arranging",
   "crates/alo-playing",
   "crates/alo-installed",
