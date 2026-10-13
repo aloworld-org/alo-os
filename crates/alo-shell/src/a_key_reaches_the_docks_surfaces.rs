@@ -46,6 +46,9 @@ use smithay::backend::input::KeyState;
 mod codes {
     /// Escape.
     pub(super) const ESCAPE: u32 = 1;
+    /// Tab. **In the same place on every layout**, which is this module's rule
+    /// — a layout moves letters about and never Tab.
+    pub(super) const TAB: u32 = 15;
     /// Enter, the one above the right Shift.
     pub(super) const ENTER: u32 = 28;
     /// Enter on the number pad, which is a different code and the same key to
@@ -74,6 +77,12 @@ mod codes {
 enum WhatWasAsked {
     /// Close a surface.
     Dismiss,
+    /// Move along the controls of the area that has the keyboard.
+    ///
+    /// **Which way is not here**, because Shift is a modifier and this match is
+    /// on the code before any layout or modifier is applied. The direction is
+    /// asked of the seat where the symbol is.
+    Along,
     /// Move the focus.
     Move(crate::what_the_dock_has_open::AKeyMoves),
     /// Act on the focused item.
@@ -90,6 +99,7 @@ const fn which_key(code: u32) -> Option<WhatWasAsked> {
     use crate::what_the_dock_has_open::AKeyMoves;
     match code {
         codes::ESCAPE => Some(WhatWasAsked::Dismiss),
+        codes::TAB => Some(WhatWasAsked::Along),
         codes::ENTER | codes::PAD_ENTER => Some(WhatWasAsked::Choose),
         codes::UP => Some(WhatWasAsked::Move(AKeyMoves::Up)),
         codes::LEFT => Some(WhatWasAsked::Move(AKeyMoves::Left)),
@@ -107,7 +117,14 @@ impl Server {
     /// last one the Dock takes.
     #[must_use]
     pub fn the_dock_is_taking_the_keys(&self) -> bool {
+        // **Or the keyboard is on the bar itself**, which F6 put it on. The
+        // bar is not a surface a person opened, so `is_anything` says nothing
+        // about it — and without this clause Tab on a focused bar would reach
+        // the application behind, which is the one place a person is certainly
+        // not looking.
         self.the_dock_was_asked_for.is_anything()
+            || self.which_area_has_the_keyboard
+                == Some(crate::which_area_has_the_keyboard::AnArea::TheDock)
     }
 }
 
@@ -178,6 +195,22 @@ pub(crate) fn a_key_reaches_the_docks_surfaces(
         // the application, and a key meaning *do it* that reached past the
         // thing in front would do something a person cannot see.
         WhatWasAsked::Choose => server.the_keyboard_takes_what_is_focused(),
+        // **Tab moves along the bar, and only the bar.** A surface the Dock
+        // opened has its own walk on the arrow keys, and Tab inside one would
+        // be a second way to move through the same grid — two roads to one
+        // place, which is how they come to disagree.
+        //
+        // Which way is asked of the seat, because Shift is a modifier and the
+        // match above is on the code before any layout is applied.
+        WhatWasAsked::Along => {
+            if server.the_dock_was_asked_for.is_anything() {
+                // A surface is open. Tab is not its key, and passing it on is
+                // what a person expects of a key a surface does not use.
+                return server.libinput_update(InputUpdate::Event(event), extent);
+            }
+            let held = server.which_way_tab_was_pressed(key.code)?;
+            let _taken = server.tab_moves_among_the_bars_controls(held);
+        }
     }
     Ok(())
 }
