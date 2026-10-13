@@ -37,12 +37,19 @@
 //! the panel's own geometry and nothing else — so it has no opinion about the Dock's edge or
 //! the top controls', and cannot disagree with whatever eventually arbitrates between them.
 //!
-//! **When that arbiter exists it goes in front of this, not inside it.** The handover on
-//! `handover/dev-pc/the-pointer-classifier` holds one, and it cannot land yet: it arbitrates
-//! between the panel, the Dock and the top controls, and the top controls do not exist in this
-//! crate and are promised in `docs/features.md` at no tier. When they do, this file's caller
-//! asks the arbiter first and passes `Elsewhere` when the answer is not the panel's. One line,
-//! and nothing here changes.
+//! **When that arbiter exists it goes in front of this, not inside it.**
+//! `docs/design/the-pointer-arbiter/` holds one, and it cannot land yet: it
+//! arbitrates between the panel, the Dock and the top controls, and the top
+//! controls do not exist in this crate and are promised in `docs/features.md`
+//! at no tier. When they do, this file's caller asks the arbiter first and
+//! passes `Elsewhere` when the answer is not the panel's. One line, and
+//! nothing here changes.
+//!
+//! **That path used to be a branch**, `handover/dev-pc/the-pointer-classifier`,
+//! and this sentence pointed at it. The branch was deleted on 2026-10-13 while
+//! clearing the remote, so the arbiter moved into the repository rather than
+//! leaving this reference pointing at nothing — which is the fault its own
+//! README was written to prevent.
 
 use alo_dock::revealing::ThePointer;
 use smithay::utils::{Physical, Point, Rectangle};
