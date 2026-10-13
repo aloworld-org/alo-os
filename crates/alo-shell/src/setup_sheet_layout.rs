@@ -137,11 +137,19 @@ pub struct TheTextIsTall {
     pub title: i32,
     /// The introduction's height, after wrapping.
     pub introduction: i32,
-    /// The consequence's height, after wrapping.
+    /// The consequence's height, after wrapping, or **zero where the sheet
+    /// has none**.
     ///
     /// One line in the design and two in a language that needs more words. It
     /// was a fixed 22 until a fresh machine drew its sentence straight through
     /// the button below it.
+    ///
+    /// **Zero means there is no consequence**, not a consequence of no height:
+    /// no box is placed and no gap is left after it. `185:10770` — *Sign-in
+    /// options* — has three choices, two actions and nothing between them, and
+    /// a layout that always placed one would have put that sheet's buttons
+    /// thirty-eight units low. A sheet says what its answer means when it has
+    /// something to say.
     pub consequence: i32,
     /// How many choice rows this sheet has.
     pub choices: usize,
@@ -235,9 +243,19 @@ pub fn setup_sheet_laid_out(
 
     let consequence = line(
         choices_end + gaps::AFTER_THE_CHOICES,
-        tall.consequence.max(THE_CONSEQUENCE_IS_TALL),
+        if tall.consequence > 0 {
+            tall.consequence.max(THE_CONSEQUENCE_IS_TALL)
+        } else {
+            0
+        },
     );
-    let actions_top = consequence.loc.y + consequence.size.h + gaps::AFTER_THE_CONSEQUENCE;
+    // A sheet with nothing to say skips both the box and the gap after it,
+    // which is what puts `185:10770`'s actions 16 below its choices.
+    let actions_top = if tall.consequence > 0 {
+        consequence.loc.y + consequence.size.h + gaps::AFTER_THE_CONSEQUENCE
+    } else {
+        choices_end + gaps::AFTER_THE_CHOICES
+    };
     let actions: Vec<_> = (0..tall.actions)
         .map(|which| {
             #[expect(
