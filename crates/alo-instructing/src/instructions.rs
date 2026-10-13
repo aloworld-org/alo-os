@@ -51,6 +51,100 @@ others. A path is always a full path.
 
 These are the only verbs there are:";
 
+/// **The one paragraph [`SEVERAL_STEPS`] adds to [`ONE_EXAMPLE_PER_DOOR`].**
+///
+/// Held separately so the difference between the two sets is a value rather
+/// than a diff somebody reads: a test below asserts that taking this out of
+/// `SEVERAL_STEPS` gives `ONE_EXAMPLE_PER_DOOR` back, which is what makes a
+/// measured difference between them attributable to these words and nothing
+/// else.
+pub const AND_YOU_MAY_LOOK_FIRST: &str = "\
+You may send more than one line, one at a time. The word after \"asks\" is
+always read or propose and never the name of a verb. When you do not know what
+is there, send a read line first; you will be shown its answer, and then you
+send the next line. Send a propose line only once you know.
+
+Never name a file you have not seen in an answer. A verb reaches what is there,
+so a name you guessed is refused and the turn is wasted.
+
+";
+
+/// **Everything [`ONE_EXAMPLE_PER_DOOR`] says, and that a turn may take several
+/// steps.**
+///
+/// Written out in full rather than composed, because what a model is shown
+/// should be readable in one place — and held to
+/// [`ONE_EXAMPLE_PER_DOOR`] plus [`AND_YOU_MAY_LOOK_FIRST`] by a test, so the
+/// two cannot drift and a difference in a grade is attributable.
+///
+/// # What it fixes, measured
+///
+/// On 2026-10-13, under [`Instructions::OneExamplePerDoor`], a request that needed a
+/// look first — *find whichever invoice is for March and add `-final` to its
+/// name*, over a folder holding `march.pdf` and `april.pdf` — was answered by
+/// **both** `gpt-4o-mini` and `gpt-4o` with a proposal to rename a file that
+/// did not exist: `march_invoice.pdf` and `invoice_march.pdf`. Neither listed
+/// the folder; neither read anything at all. The machine refused both in its
+/// own words — *there is nothing at … — a verb reaches what is there, so name
+/// something that exists* — so nothing was damaged and nothing was done.
+///
+/// Under these instructions both models searched the folder first, were shown
+/// `march.pdf`, proposed renaming **that**, and the file moved.
+/// `crates/alo-agentd/tests/the_agent_really_does_the_work.rs` is the run.
+///
+/// # And what it costs, also measured
+///
+/// **It is worse at a single step, which is why it is not what a turn shows.**
+/// The fixed ten, three rounds, `gpt-4o-mini` at OpenAI on 2026-10-13:
+///
+/// | instructions | drove | grade |
+/// |---|---|---|
+/// | `one-example-per-door` | 30 of 30 | `reliably` |
+/// | `several-steps`, as first written | 24 of 30 | `sometimes` |
+/// | `several-steps`, reworded | 26 of 30 | `sometimes` |
+///
+/// Every failure was the same kind — `NotAMessage(NotReadable)`, the verb's
+/// name put where the door belongs, as in
+/// `{"format":1,"asks":{"find_in_folder":{…}}}`. The reword added *the word
+/// after "asks" is always read or propose and never the name of a verb*, which
+/// halved them and did not end them.
+///
+/// So **two wordings have now cost a grade** that
+/// [`Instructions::OneExamplePerDoor`] holds, and this set is kept for what it
+/// measured rather than because it is ready: a paragraph about taking several
+/// turns, placed among the rules about shape, competes with them. Whether the
+/// right answer is a third wording, the guidance moved out of the first round
+/// entirely, or a change somewhere else altogether is open — and the
+/// alternative worth weighing is that a proposal naming a path that is not
+/// there could be refused when it is **proposed** rather than when it is
+/// approved, which would let a model correct itself with no instruction
+/// change at all and no grade touched.
+pub const SEVERAL_STEPS: &str = "\
+You are talking to a computer, not to a person. Answer with one line of JSON and
+nothing else: no explanation, no code fence, no second line.
+
+For a verb that only answers a question, the line has this shape:
+
+{\"format\":1,\"asks\":{\"read\":{\"verb\":\"NAME\",\"given\":[{\"named\":\"ARGUMENT\",\"is\":VALUE}]}}}
+
+For a verb that changes something, the line has this shape:
+
+{\"format\":1,\"asks\":{\"propose\":{\"verb\":\"NAME\",\"given\":[{\"named\":\"ARGUMENT\",\"is\":VALUE}]}}}
+
+Each verb below says which it is: (read) or (propose). VALUE is text in quotes,
+or a whole number with no quotes. Give every argument the verb takes and no
+others. A path is always a full path.
+
+You may send more than one line, one at a time. The word after \"asks\" is
+always read or propose and never the name of a verb. When you do not know what
+is there, send a read line first; you will be shown its answer, and then you
+send the next line. Send a propose line only once you know.
+
+Never name a file you have not seen in an answer. A verb reaches what is there,
+so a name you guessed is refused and the turn is wasted.
+
+These are the only verbs there are:";
+
 /// **Which instructions a model was shown.**
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Instructions {
@@ -59,11 +153,22 @@ pub enum Instructions {
     AsFirstWritten,
     /// [`ONE_EXAMPLE_PER_DOOR`]: an example through each door.
     OneExamplePerDoor,
+    /// [`SEVERAL_STEPS`]: the same, and that a turn may take several of them.
+    ///
+    /// **Not yet what a turn shows.** `Self::SHOWN_TO_A_TURN` is a measured
+    /// choice and this has not been measured against the fixed ten, so naming
+    /// it there before it has been would make every grade a statement about
+    /// text nobody has graded under.
+    SeveralSteps,
 }
 
 impl Instructions {
     /// Both, in the order they were written.
-    pub const ALL: [Self; 2] = [Self::AsFirstWritten, Self::OneExamplePerDoor];
+    pub const ALL: [Self; 3] = [
+        Self::AsFirstWritten,
+        Self::OneExamplePerDoor,
+        Self::SeveralSteps,
+    ];
 
     /// **The set an agent turn shows a model** (ADR 0037, decision 2).
     ///
@@ -82,6 +187,7 @@ impl Instructions {
         match self {
             Self::AsFirstWritten => HOW_TO_ANSWER,
             Self::OneExamplePerDoor => ONE_EXAMPLE_PER_DOOR,
+            Self::SeveralSteps => SEVERAL_STEPS,
         }
     }
 
@@ -91,6 +197,7 @@ impl Instructions {
         match self {
             Self::AsFirstWritten => "as-first-written",
             Self::OneExamplePerDoor => "one-example-per-door",
+            Self::SeveralSteps => "several-steps",
         }
     }
 
@@ -117,6 +224,63 @@ impl Instructions {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// **The third set is the second plus one paragraph, and nothing else.**
+    ///
+    /// Taking [`AND_YOU_MAY_LOOK_FIRST`] out of [`SEVERAL_STEPS`] gives
+    /// [`ONE_EXAMPLE_PER_DOOR`] back. That is what makes a measured difference
+    /// between the two **attributable**: without it, a third set written out in
+    /// full could gain a reworded sentence anywhere and a better grade would be
+    /// a mystery with two explanations.
+    #[test]
+    fn the_third_set_is_the_second_plus_one_paragraph() {
+        assert!(
+            SEVERAL_STEPS.contains(AND_YOU_MAY_LOOK_FIRST),
+            "the paragraph the third set is supposed to add is not in it"
+        );
+        assert_eq!(
+            SEVERAL_STEPS.replace(AND_YOU_MAY_LOOK_FIRST, ""),
+            ONE_EXAMPLE_PER_DOOR,
+            "the third set differs from the second by more than that paragraph"
+        );
+    }
+
+    /// **And it is not what a turn shows, until it has been measured.**
+    ///
+    /// `SHOWN_TO_A_TURN` is a measured choice (ADR 0037, decision 2). Naming an
+    /// unmeasured set there would make every grade a statement about text
+    /// nobody graded under, which is the fault this whole enum exists to
+    /// prevent. When `several-steps` has been put to the fixed ten, this test
+    /// is the one to come back to.
+    #[test]
+    fn what_a_turn_shows_is_a_set_that_has_been_measured() {
+        assert_eq!(
+            Instructions::SHOWN_TO_A_TURN,
+            Instructions::OneExamplePerDoor
+        );
+        assert_ne!(
+            Instructions::SHOWN_TO_A_TURN,
+            Instructions::SeveralSteps,
+            "several-steps became what a turn shows; it needs a grade first"
+        );
+    }
+
+    /// Every set has its own text, its own name and its own digest.
+    ///
+    /// Three sets make this worth asserting where two did not: two constants
+    /// that drifted into being equal would make `of_digest` answer with
+    /// whichever came first in `ALL`, and a grade would name a set at random.
+    #[test]
+    fn no_two_sets_are_the_same_text_name_or_digest() {
+        for (nth, one) in Instructions::ALL.into_iter().enumerate() {
+            for other in Instructions::ALL.into_iter().skip(nth + 1) {
+                assert_ne!(one.text(), other.text(), "{one:?} and {other:?}");
+                assert_ne!(one.named(), other.named(), "{one:?} and {other:?}");
+                assert_ne!(one.digest(), other.digest(), "{one:?} and {other:?}");
+            }
+            assert_eq!(Instructions::of_digest(&one.digest()), Some(one));
+        }
+    }
 
     /// **The instructions every existing grade was earned under are unchanged**:
     /// held to the digest they had when ADR 0034 was taken, so an edit to
@@ -161,11 +325,17 @@ mod tests {
         assert_eq!(count(Instructions::OneExamplePerDoor.text(), "propose"), 1);
     }
 
-    /// Two sets, two digests, and each digest finds its own set.
+    /// Every set has a digest, and each digest finds its own set.
+    ///
+    /// Three now rather than two. The shape of this test was `let [first,
+    /// second] = …`, which is the honest kind of break: adding a set failed to
+    /// compile here rather than quietly leaving the third unchecked.
     #[test]
     fn a_digest_names_one_set_of_instructions() {
-        let [first, second] = Instructions::ALL.map(Instructions::digest);
+        let [first, second, third] = Instructions::ALL.map(Instructions::digest);
         assert_ne!(first, second);
+        assert_ne!(second, third);
+        assert_ne!(first, third);
         assert_eq!(first.len(), 64);
         assert!(
             first
@@ -179,6 +349,10 @@ mod tests {
         assert_eq!(
             Instructions::of_digest(&second),
             Some(Instructions::OneExamplePerDoor)
+        );
+        assert_eq!(
+            Instructions::of_digest(&third),
+            Some(Instructions::SeveralSteps)
         );
         assert_eq!(Instructions::of_digest(&"0".repeat(64)), None);
         assert!(

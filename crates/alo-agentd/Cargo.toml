@@ -211,3 +211,8 @@ path = "src/main.rs"
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+# The loop this crate's door exists to answer. A dev-dependency only: nothing
+# `alo-agentd` ships reaches the agent, and the agent is another process.
+alo-agent = { path = "../alo-agent" }

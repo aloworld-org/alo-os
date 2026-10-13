@@ -141,7 +141,23 @@ impl<'a> ATurnInProgress<'a> {
 /// to the byte.
 #[must_use]
 pub fn shown_to_a_turn_in_progress(verbs: &Verbs, turn: ATurnInProgress<'_>) -> String {
-    let mut text = shown_to_a_model(Instructions::SHOWN_TO_A_TURN, verbs, turn.request);
+    shown_in_progress(Instructions::SHOWN_TO_A_TURN, verbs, turn)
+}
+
+/// The same, under a named set of instructions.
+///
+/// **Taken rather than assumed, because a grade is about a set.** A harness
+/// measuring whether `Instructions::SeveralSteps` helps a model take a second
+/// step has to be able to put the same turn under both, and
+/// [`shown_to_a_turn_in_progress`] names the one a turn really shows so that a
+/// surface with no opinion cannot pick a set by accident.
+#[must_use]
+pub fn shown_in_progress(
+    instructions: Instructions,
+    verbs: &Verbs,
+    turn: ATurnInProgress<'_>,
+) -> String {
+    let mut text = shown_to_a_model(instructions, verbs, turn.request);
     if !turn.has_begun() {
         return text;
     }

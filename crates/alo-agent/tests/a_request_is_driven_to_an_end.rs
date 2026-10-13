@@ -34,6 +34,7 @@ use std::time::{Duration, SystemTime};
 use alo_agent::{HowFar, NotAnswered, TheDoor, WhatHappened, driving};
 use alo_capability::{Approvals, Given, Grant, Grantee, Grants, Proposal, Reach, Verbs};
 use alo_files::{OnThisMachine, Resolving as _};
+use alo_instructing::Instructions;
 use alo_protocol::{FromAnAgent, Standing, ToAnAgent, Wording};
 use alo_strings::Strings;
 
@@ -219,7 +220,13 @@ fn what_a_read_found_is_shown_back_on_the_next_round() {
         the_model_said("they are march.pdf and april.pdf"),
     ]);
 
-    let happened = driving("tidy my invoices", &verbs, &mut door, HowFar::THE_ORDINARY);
+    let happened = driving(
+        "tidy my invoices",
+        &verbs,
+        &mut door,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+    );
     assert_eq!(happened.after().len(), 1, "the read it did was dropped");
 
     let second = door.the_question(1);
@@ -251,7 +258,13 @@ fn an_accepted_proposal_waits_for_the_person() {
         the_model_said(&a_proposed_rename()),
         Ok(ToAnAgent::Proposed(standing)),
     ]);
-    let happened = driving("rename it", &verbs, &mut door, HowFar::THE_ORDINARY);
+    let happened = driving(
+        "rename it",
+        &verbs,
+        &mut door,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+    );
     assert!(happened.is_waiting_for_the_person(), "{happened:?}");
     match happened {
         WhatHappened::AChangeIsWaiting {
@@ -273,7 +286,13 @@ fn an_accepted_proposal_waits_for_the_person() {
 fn words_that_are_not_a_request_are_the_answer() {
     let verbs = the_verbs();
     let mut door = ADoorThatAnswers::with(vec![the_model_said("It is in /home/anna/Invoices.")]);
-    match driving("where is it?", &verbs, &mut door, HowFar::THE_ORDINARY) {
+    match driving(
+        "where is it?",
+        &verbs,
+        &mut door,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+    ) {
         WhatHappened::ItWasAnsweredInWords { said, .. } => {
             assert_eq!(said, "It is in /home/anna/Invoices.");
         }
@@ -297,7 +316,13 @@ fn a_refused_read_is_told_back_and_the_turn_goes_on() {
         Ok(ToAnAgent::Proposed(standing_in(&approvals, &strings))),
     ]);
 
-    let happened = driving("tidy", &verbs, &mut door, HowFar::THE_ORDINARY);
+    let happened = driving(
+        "tidy",
+        &verbs,
+        &mut door,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+    );
     assert!(
         happened.is_waiting_for_the_person(),
         "a refused read ended the turn: {happened:?}"
@@ -320,7 +345,13 @@ fn a_turn_that_gets_nowhere_stops_and_keeps_what_it_did() {
         answers.push(Ok(it_listed("nothing new")));
     }
     let mut door = ADoorThatAnswers::with(answers);
-    match driving("go round for ever", &verbs, &mut door, HowFar::of(3)) {
+    match driving(
+        "go round for ever",
+        &verbs,
+        &mut door,
+        HowFar::of(3),
+        Instructions::SHOWN_TO_A_TURN,
+    ) {
         WhatHappened::ItRanOutOfRounds { after } => assert_eq!(after.len(), 3),
         other => panic!("{other:?}"),
     }
@@ -333,7 +364,13 @@ fn a_door_that_cannot_be_reached_says_so_in_english() {
     let mut door = ADoorThatAnswers::with(vec![Err(NotAnswered::NotReached {
         why: "no such socket".to_owned(),
     })]);
-    match driving("anything", &verbs, &mut door, HowFar::THE_ORDINARY) {
+    match driving(
+        "anything",
+        &verbs,
+        &mut door,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+    ) {
         WhatHappened::TheMachineCouldNotBeAsked { why, after } => {
             assert!(why.contains("no such socket"), "{why}");
             assert!(after.is_empty());
@@ -356,7 +393,13 @@ fn every_request_it_makes_is_one_an_agent_may_make() {
         the_model_said(&a_proposed_rename()),
         Ok(ToAnAgent::Proposed(standing_in(&approvals, &strings))),
     ]);
-    driving("tidy", &verbs, &mut door, HowFar::THE_ORDINARY);
+    driving(
+        "tidy",
+        &verbs,
+        &mut door,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+    );
 
     assert!(!door.asked.is_empty(), "it asked for nothing at all");
     for request in &door.asked {

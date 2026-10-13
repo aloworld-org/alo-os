@@ -114,9 +114,10 @@ fn the_fixed_set_is_put_to_a_model_at_a_provider() {
     let instructions = match measuring::said(WHICH_INSTRUCTIONS).as_deref() {
         None | Some("one-example-per-door") => alo_driving::Instructions::OneExamplePerDoor,
         Some("as-first-written") => alo_driving::Instructions::AsFirstWritten,
+        Some("several-steps") => alo_driving::Instructions::SeveralSteps,
         Some(other) => panic!(
-            "{WHICH_INSTRUCTIONS} is `one-example-per-door`, `as-first-written` or unset, not \
-             `{other}`"
+            "{WHICH_INSTRUCTIONS} is `one-example-per-door`, `several-steps`, \
+             `as-first-written` or unset, not `{other}`"
         ),
     };
     let key = Secret::typed(&key).expect("the key read from the environment is a sendable one");

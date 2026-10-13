@@ -42,7 +42,7 @@
 //! person's settings**, and law 1's indicator is lit by it rather than by us.
 
 use alo_capability::Verbs;
-use alo_instructing::{AStep, ATurnInProgress, shown_to_a_turn_in_progress};
+use alo_instructing::{AStep, ATurnInProgress, Instructions, shown_in_progress};
 use alo_protocol::{Answered, FromAnAgent, ToAnAgent};
 
 use crate::how_far::HowFar;
@@ -53,16 +53,23 @@ use crate::what_happened::WhatHappened;
 ///
 /// `verbs` is the list the machine really has, so the model is told about what
 /// exists; this crate reads it and decides nothing from it.
+///
+/// `instructions` is **taken and not assumed**, because a grade is a statement
+/// about a set of them: a caller with no opinion passes
+/// `Instructions::SHOWN_TO_A_TURN`, which is the measured one, and a harness
+/// comparing two passes each in turn. A loop that chose for itself would be a
+/// second place deciding the one thing every grade is about.
 pub fn driving(
     request: &str,
     verbs: &Verbs,
     door: &mut dyn TheDoor,
     how_far: HowFar,
+    instructions: Instructions,
 ) -> WhatHappened {
     let mut steps: Vec<AStep> = Vec::new();
 
     for _ in 0..how_far.rounds() {
-        let shown = shown_to_a_turn_in_progress(verbs, ATurnInProgress::of(request, &steps));
+        let shown = shown_in_progress(instructions, verbs, ATurnInProgress::of(request, &steps));
         let asked = FromAnAgent::Ask {
             question: shown,
             answered: Answered::AsTheNextRequest,
