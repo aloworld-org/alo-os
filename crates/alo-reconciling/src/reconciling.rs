@@ -147,8 +147,8 @@ pub fn reconcile_these(
 ///
 /// `in_the_document` is every promise the features document makes — an entry
 /// must quote one of these or it is about nothing. `on_the_launch_list` is what
-/// must each **have** an entry. See [`the_audit`] for why they stopped being
-/// one set.
+/// must each **have** an entry. See `the_audit` below for why the two stopped
+/// being one set.
 ///
 /// # Errors
 /// As [`reconcile`].
