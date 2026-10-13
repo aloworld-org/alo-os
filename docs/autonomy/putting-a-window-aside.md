@@ -865,7 +865,7 @@ each watched failing under a substituted constant. See the finding below: that s
 three lanes' state crosses and no plan owns it.
 
 **The three-surface arbitration is not in this**, deliberately. `whose_area` on
-`handover/dev-pc/the-pointer-classifier` arbitrates between the panel, the Dock and the top
+`docs/design/the-pointer-arbiter/` arbitrates between the panel, the Dock and the top
 controls, and **the top controls do not exist in `alo-shell` and are promised in
 `docs/features.md` at no tier.** So the reveal road asks the panel's own region and nothing
 else, which means one opinion about the panel's edge and none about anybody else's. When the

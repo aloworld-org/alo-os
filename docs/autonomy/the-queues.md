@@ -256,9 +256,9 @@ another lane depends on, so splitting them breaks nothing.
 ### Not landable yet — the pointer classifier, and not for the reason given twice
 
 **This entry said `Ready` under this machine and it is the panel lane's task.**
-The material is this lane's; the task is not. `handover/README.md` on
-`handover/dev-pc/the-pointer-classifier` records the handover and, in advance,
-the error of taking it back:
+The material is this lane's; the task is not.
+`docs/design/the-pointer-arbiter/README.md` records the handover and, in
+advance, the error of taking it back:
 
 > Handed to the desktop lane on 2026-10-01 at its request, with the dev-PC lane
 > claiming the task back from it earlier the same day for exactly the reason it
@@ -350,8 +350,12 @@ complete.
 of a home.** That is what its README meant by *`Revealing` has no owner*, which
 both lanes read as a question about which crate.
 
-The files stay on `handover/dev-pc/the-pointer-classifier` at `29f28ba8`, where
-they are findable and where they remain correct.
+The files are kept in `docs/design/the-pointer-arbiter/`, where they are
+findable and where they remain correct. **They used to be on
+`handover/dev-pc/the-pointer-classifier` at `29f28ba8`**, and that branch was
+deleted on 2026-10-13 while clearing the remote to `main` alone — so the files
+moved into the repository rather than out of reach, which is the thing this
+entry was written to prevent.
 
 **A question for the owner, not a lane's to answer:** the design draws the top
 controls and `features.md` does not carry them at any tier. `CLAUDE.md` says

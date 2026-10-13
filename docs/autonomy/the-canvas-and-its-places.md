@@ -274,7 +274,7 @@ lettered heading stays because this belongs beside the controls it joins rather
 than at the end of the plan.
 
 **Owner:** the **development PC** — the lane holding the parked pointer classifier, by
-`handover/dev-pc/the-pointer-classifier`'s own README. The Mac holds the band it
+`docs/design/the-pointer-arbiter/`'s own README. The Mac holds the band it
 reserves and the surface it is drawn into, so the two meet in `alo-shell` and say
 which files before starting.
 
@@ -309,7 +309,7 @@ could not land in any crate because one of its three inputs was unbuildable.
   the status area got, which is the only kind that can notice whether a control
   is handed over at all.
 - **Owner:** the lane holding the parked classifier, which is the panel lane by
-  `handover/dev-pc/the-pointer-classifier`'s own README. **Not this lane's**, and
+  `docs/design/the-pointer-arbiter/`'s own README. **Not this lane's**, and
   recorded here rather than taken.
 
 ### 6. The fixed controls, and a window that can always be got back
