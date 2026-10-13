@@ -1,7 +1,8 @@
 # ADR 0106 — alo's own service is a fourth place an answer comes from, and it needs an account the sign-in cannot give
 
-**Status:** **proposed, 2026-10-13**, by the Mac lane, for the owner. One
-question in it is not a lane's to answer, so this asks rather than changes.
+**Status:** **proposed, 2026-10-13**, by the Mac lane, for the owner. Decision
+3 is the owner's own answer, given the same day; one question in it is still not
+a lane's to answer, so this asks rather than changes.
 
 ## What the owner decided, and what it ran into
 
@@ -57,19 +58,32 @@ extension of the existing one.
    one provider where a person has most reason to wonder whether we gave
    ourselves an exception. Proposed by `desktop`'s lane in exactly those terms,
    and adopted here.
-3. **It is a fifth choice at first start, and it creates nothing there.**
-   `alo_setting_up::Offered` has four today, and the note on their order says
-   the local one is first *because it is the one that needs nothing added — no
-   key, no pairing, no account*. The alo-service choice needs an account, so it
-   does not slot in silently: choosing it at first start **records the choice
-   and creates no account**, and the account is made later, from Settings, by a
-   person who has used the machine.
+3. **It is a fifth choice at the same step as the other four, and it can be
+   changed afterwards.** The owner decided this on 2026-10-13, in these words:
+   *we can add the selection when the user have to setup where he chooses the
+   local model, apis or alo os and the user can also updated it in the
+   settings.*
 
-   [ADR 0004](0004-the-organisations-machine.md)'s *no
-   silent enrollment* is the reason, and it cuts harder here than it looks: an
-   account for a paid service made during first start is enrollment at the
-   moment a person is least able to judge it. `desktop`'s lane pushed on this
-   and is right.
+   So it goes into `alo_setting_up::Offered` beside the four rather than into a
+   flow of its own, and Settings can change it later.
+
+   **That answers ADR 0004 better than this ADR's first draft did.** The draft
+   said the choice must create no account at first start and that the account be
+   made later from Settings only, on the argument that an account made during
+   setup is enrollment at the moment a person is least able to judge it.
+   `desktop`'s lane raised the same worry and then withdrew it for a better
+   reason, which is the owner's: **it is the choice being revisitable that makes
+   offering it at setup not a trap.** A person picks a direction, not a
+   commitment, and a first-start choice that could not be revisited is the one
+   that makes a wrong pick permanent.
+
+   What this ADR still holds, because the owner's sentence is about the
+   *selection* and not about an account: **choosing alo's service at first start
+   does not by itself create an account or charge anybody.** Selecting a
+   direction and signing up are two acts, and the second stays deliberate. If
+   the owner means them to be one act, that is a change to this clause and
+   should be written here rather than assumed from this one.
+
 4. **The local account and the service account are never the same account, and
    the words never suggest they are.** No sentence a person reads may imply that
    signing in to the machine signs them in to anything, and the first-start
@@ -97,6 +111,15 @@ choice, so it is the owner's:
   at every setting;
 - and whether a person may hold both an alo-service account and their own
   provider key at once, which the settings already permit and nothing forbids.
+
+**And one thing learnt from another lane, worth writing into this ADR before
+anything is built.** `desktop`'s lane spent 2026-10-13 finding four defects in
+the sign-in screen that **every existing test passed through**, because each
+test asked whether something was *present* or *different* and none asked what it
+*looked like*. So the test that proves this road is wired may not assert that a
+key was stored and a reference written: it has to **read the value back out of
+the keyring through the reference in the settings** and compare it. A test that
+asserts the call was made is the shape that cost them a day.
 
 Until that is answered, **nothing here is built**: a lookup wired to a reference
 nobody writes is the shape of half a feature, and `docs/features.md` gains no
