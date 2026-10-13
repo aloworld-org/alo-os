@@ -62,8 +62,18 @@ pub struct SignInScreen<K: Knocking> {
 enum Stands<K: Knocking> {
     /// A name and a password are asked for.
     SignIn(Greeting<K>),
-    /// Nobody has an account; this is the sentence, and no keys are taken.
-    MakeAnAccount(Said),
+    /// Nobody has an account yet: this is the sentence, **and the greeting
+    /// that can make the first one**.
+    ///
+    /// The greeting was dropped here until 2026-10-13, so this state could
+    /// say *make an account* and had no way for anybody to make one — the
+    /// screen took no keys at all. `alo_greeting::makes_an_account` has been
+    /// able to make a machine's first account since 2026-10-10, refusing
+    /// when the store is not empty and writing to the disk before signing
+    /// anybody in, and **nothing had ever called it**. A fresh machine had
+    /// nobody to sign in as, which is what stood between alo OS and a usable
+    /// computer.
+    MakeAnAccount(Said, Greeting<K>),
     /// The accounts would not be read; this is the sentence and the reason,
     /// and no keys are taken.
     Unreadable(Said, NotReadable),
@@ -106,6 +116,25 @@ pub enum SignInShows<'a> {
         /// What the last attempt answered, if it answered anything.
         said: Option<&'a Said>,
     },
+    /// **The first account on this machine**: a name and a password, on the
+    /// first-start sheet rather than the sign-in screen.
+    ///
+    /// Told apart from [`Self::Fields`] because the two are different
+    /// surfaces for different moments. `Fields` authenticates somebody this
+    /// machine already knows and greets them by name; this one is asked of a
+    /// machine that knows nobody, so there is no name to greet and no *other
+    /// ways to sign in* to offer.
+    FirstAccount {
+        /// The name as typed.
+        name: &'a str,
+        /// Whether anything is typed in the password field. Not how much.
+        password_typed: bool,
+        /// Where the next letter goes.
+        field: SignInField,
+        /// What this machine last said about making an account — the
+        /// invitation before anybody has tried, and the refusal after.
+        said: Option<&'a Said>,
+    },
     /// A sentence and nothing to type into.
     Sentence(&'a Said),
 }
@@ -123,7 +152,7 @@ impl<K: Knocking> SignInScreen<K> {
             Err(why) => Stands::Unreadable(why.said(&strings), why),
             Ok(greeting) => match greeting.standing() {
                 Standing::MakeAnAccount => match Standing::MakeAnAccount.said(&strings) {
-                    Some(said) => Stands::MakeAnAccount(said),
+                    Some(said) => Stands::MakeAnAccount(said, greeting),
                     // `alo-greeting` always words this standing; were it ever
                     // not to, asking for a name is the honest fallback —
                     // `alo-accounts` refuses every one on an empty machine.
@@ -151,15 +180,26 @@ impl<K: Knocking> SignInScreen<K> {
     /// no keys at all.
     #[must_use]
     pub fn pressed(mut self, key: SignInKey) -> Signing<K> {
-        let Stands::SignIn(greeting) = &self.stands else {
+        if !self.entry.pressed(key) {
             return Signing::Still(Box::new(self));
-        };
-        if self.entry.pressed(key) {
-            let greeted = greeting.signs_in(self.entry.name(), self.entry.password());
-            self.entry.forgotten();
-            return self.answered(greeted);
         }
-        Signing::Still(Box::new(self))
+        // **Both fields are forgotten the moment either road is taken**, and
+        // before the answer is looked at, which is the rule that already held
+        // for signing in and holds no less for making an account: a refusal
+        // that left a password in memory would be a refusal that kept it.
+        let name = self.entry.name().to_owned();
+        let password = self.entry.password().to_owned();
+        self.entry.forgotten();
+        let greeted = match &mut self.stands {
+            Stands::SignIn(greeting) => greeting.signs_in(&name, &password),
+            // **The first account on this machine.** `makes_an_account`
+            // refuses when the store is not empty, writes before it signs
+            // anybody in, and signs in through `signs_in` rather than opening
+            // a second road to a knock — so there is nothing to repeat here.
+            Stands::MakeAnAccount(_, greeting) => greeting.makes_an_account(&name, &password),
+            Stands::Unreadable(_, _) => return Signing::Still(Box::new(self)),
+        };
+        self.answered(greeted)
     }
 
     /// The words this machine can say, for a surface that draws this screen.
@@ -185,9 +225,22 @@ impl<K: Knocking> SignInScreen<K> {
                 field: self.entry.field(),
                 said: self.said.as_ref(),
             },
-            Stands::MakeAnAccount(said) | Stands::Unreadable(said, _) => {
-                SignInShows::Sentence(said)
-            }
+            // **Fields, not a sentence.** This answered `Sentence` until
+            // 2026-10-13, which is why a machine with no accounts showed
+            // *make an account* and offered nowhere to make one.
+            Stands::MakeAnAccount(_said, _) => SignInShows::FirstAccount {
+                name: self.entry.name(),
+                password_typed: self.entry.has_password(),
+                field: self.entry.field(),
+                // **Only what an attempt answered.** This also passed the
+                // standing sentence — *nobody has an account yet* — which is
+                // advice rather than a refusal, and drawing it where the
+                // sheet's own consequence goes wrapped it into the button
+                // below. The sheet says what making an account means; the
+                // greeting speaks only when something was tried.
+                said: self.said.as_ref(),
+            },
+            Stands::Unreadable(said, _) => SignInShows::Sentence(said),
         }
     }
 
@@ -201,7 +254,7 @@ impl<K: Knocking> SignInScreen<K> {
     pub fn for_the_maintainer(&self) -> Option<String> {
         match &self.stands {
             Stands::Unreadable(_, why) => Some(why.to_string()),
-            Stands::SignIn(_) | Stands::MakeAnAccount(_) => {
+            Stands::SignIn(_) | Stands::MakeAnAccount(_, _) => {
                 self.trouble.as_ref().map(ToString::to_string)
             }
         }
