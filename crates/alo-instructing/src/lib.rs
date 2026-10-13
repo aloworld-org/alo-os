@@ -47,6 +47,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod a_turn_in_progress;
 pub mod answering_in;
 pub mod instructions;
 pub mod shown;
@@ -56,6 +57,7 @@ pub mod verb_as_told;
 #[cfg(test)]
 mod testing;
 
+pub use a_turn_in_progress::{AStep, ATurnInProgress, shown_to_a_turn_in_progress};
 pub use answering_in::{answering_in, shown_to_a_turn_answering_in_the_language_asked_in};
 pub use instructions::{HOW_TO_ANSWER, Instructions, ONE_EXAMPLE_PER_DOOR};
 pub use shown::{shown_to_a_model, shown_to_a_turn};

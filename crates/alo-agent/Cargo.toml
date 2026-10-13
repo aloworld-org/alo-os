@@ -1,0 +1,31 @@
+[package]
+name = "alo-agent"
+version = "0.0.1"
+description = "The agent: a person's words, a model asked what to do, and the machine doing it."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# The two things that cross the door, and the envelope they cross in. This
+# crate composes no JSON: it writes what `FromAnAgent` serialises and reads
+# what `ToAnAgent` parses, so the dialect has one owner.
+alo-protocol = { path = "../alo-protocol" }
+# The verbs the machine has, which are what a model is told about. Read and
+# never decided from: the list comes from the daemon's own registry.
+alo-capability = { path = "../alo-capability" }
+# What a model is shown, including a turn already in progress. **The only
+# place any text a model reads is written** — a sentence composed here would be
+# a second author of the one thing every grade is a statement about.
+alo-instructing = { path = "../alo-instructing" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The real verbs and the real words a turn is about, so the tests script shapes
+# the daemon really sends rather than hand-made ones.
+alo-files = { path = "../alo-files" }
+alo-strings = { path = "../alo-strings" }
