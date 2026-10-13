@@ -61,8 +61,19 @@ impl crate::Server {
     /// disagreed with the builder would focus **somebody else's window**, which
     /// is the worst failure this seam has available to it.
     ///
+    /// **The id is the window's own number, not its place in this list.** It
+    /// comes from `crate::window_number::the_window_id_of`, which is the one
+    /// place in this crate that mints a `WindowId`. Until 2026-10-13 this
+    /// function numbered the windows 0, 1, 2 as it walked them, which made the
+    /// id a fact about the iteration: closing the first window renumbered the
+    /// rest, and putting a window aside moved it from the first run to the
+    /// second and changed its id. That is the *somebody else's window* failure
+    /// named above, reachable from the sentence above it.
+    ///
     /// Mapped first, then minimised. `mapped_surfaces` is the visible renderer
     /// and input list and excludes minimised roots, so the two are disjoint.
+    /// The order still decides what a person sees; it no longer decides what a
+    /// window is called.
     ///
     /// A surface past `u64::MAX` ends the iteration rather than wrapping. It
     /// cannot happen and saying what would is cheaper than arguing that it
@@ -82,25 +93,32 @@ impl crate::Server {
         let put_aside = self
             .minimized_surfaces()
             .map(|surface| (surface, HowItSits::PutAside));
-        on_the_canvas
-            .chain(put_aside)
-            .enumerate()
-            .map_while(|(number, (surface, sits))| {
-                u64::try_from(number)
-                    .ok()
-                    .map(|number| (WindowId::numbered(number), surface, sits))
-            })
+        on_the_canvas.chain(put_aside).map(|(surface, sits)| {
+            (
+                crate::window_number::the_window_id_of(surface),
+                surface,
+                sits,
+            )
+        })
     }
 
     /// The surface this `WindowId` names, if the Dock still knows of it.
     ///
     /// **`None` is an ordinary answer**, not a failure: a window can close
     /// between the frame that drew the Dock and the press that acts on it, and
-    /// ids are this list's own indices, so a window closing renumbers the rest.
-    /// Acting on a stale id is exactly the case this returns `None` for rather
-    /// than quietly acting on whichever window inherited the number — and the
-    /// id is re-looked-up at the moment of the press for that reason, instead
-    /// of a surface being remembered from the draw.
+    /// a closed window's id belongs to nothing. The id is re-looked-up at the
+    /// moment of the press rather than a surface being remembered from the
+    /// draw, so a press on a window that has gone does nothing.
+    ///
+    /// **And `None` is now the only wrong-window answer available.** This
+    /// sentence used to read *ids are this list's own indices, so a window
+    /// closing renumbers the rest*, with `None` offered as the protection. It
+    /// was not protection: `None` is returned for an id past the end of the
+    /// list, and renumbering put live windows at ids that other windows had
+    /// been drawn with — so a press meant for the second window reached the
+    /// third rather than reaching nothing. The ids are the windows' own
+    /// numbers now (`crate::window_number::the_window_id_of`), never reused,
+    /// so an id either names the window it was drawn for or names nothing.
     #[must_use]
     pub fn the_window_numbered(
         &self,

@@ -119,3 +119,30 @@ impl Numbers {
 pub(crate) fn reserve() -> u64 {
     NEXT.fetch_add(1, Ordering::Relaxed)
 }
+
+/// The Dock's identity for this window: the one place a `WindowId` is minted.
+///
+/// **One named conversion, and `where_a_window_id_is_minted.rs` holds it to
+/// that.** A crate that mints ids can give two windows the same one or one
+/// window two; a crate with a single place that mints cannot. That test used
+/// to pass with the minting split between `putting_a_window_aside` and
+/// `dock_windows`, and the second of those was minting from **the position of
+/// a window in an iteration** rather than from the window.
+///
+/// What that cost, said plainly because it was live: `dock_windows` listed the
+/// windows on the canvas and then the ones put aside, numbered them 0, 1, 2 as
+/// it went, and handed those out as ids. So closing the first window renumbered
+/// the rest, and **putting a window aside moved it from one run to the other
+/// and changed its id**. `the_window_numbered` answered `None` for an id past
+/// the end of the list and could not answer `None` for an id that now named a
+/// different, live window — which is the case `dock_windows`' own header calls
+/// *focus somebody else's window*, the worst failure that seam has available.
+///
+/// [`Numbers::of`] is the fix and was always the answer: assigned the first
+/// time a surface is seen, stable for its life, never reused. `alo_dividing`
+/// bridges to its own id the same way, so a window put aside, a window a
+/// division moved and a window the Dock lists are one window rather than three
+/// ids that agree while nothing changes.
+pub(crate) fn the_window_id_of(surface: &WlSurface) -> alo_dock::WindowId {
+    alo_dock::WindowId::numbered(Numbers::of(surface))
+}
