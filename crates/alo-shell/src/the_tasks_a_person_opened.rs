@@ -21,7 +21,9 @@
 //! keypress registered. **The first thing a task window shows is proof that the
 //! machine heard them.**
 
+use alo_strings::Direction;
 use alo_tasks::ATask;
+use smithay::utils::{Logical, Physical, Rectangle};
 
 /// Which task a person is looking at or talking to.
 ///
@@ -50,6 +52,23 @@ pub struct TheTasks {
     /// windows, and a window that moves under a hand is one somebody closes by
     /// accident.
     open: Vec<ATask>,
+    /// Where each task's window was put, in the same order.
+    ///
+    /// **Placed once and then kept**, which is the design's own requirement:
+    /// *apply default placement once; later redraws or remapping must not
+    /// unexpectedly reposition it.* A position recomputed each frame is a
+    /// window that jumps when somebody else's opens.
+    ///
+    /// [`None`] until something places it. A task exists the moment somebody
+    /// asks, and the frame that places it is the next one — so *asked for and
+    /// not yet anywhere* is a real state rather than a gap.
+    ///
+    /// **A parallel list, and held to it by `debug_assert` at every door that
+    /// changes either.** Two vectors that must stay the same length is a shape
+    /// worth distrusting; it is this way because `ATask` is `alo-tasks`' and a
+    /// window's position is the shell's, and putting a screen rectangle inside
+    /// the model would be the shell's state kept in the wrong crate.
+    placed: Vec<Option<Rectangle<i32, Physical>>>,
 }
 
 impl TheTasks {
@@ -69,7 +88,65 @@ impl TheTasks {
     /// setting makes the task and this holds it.
     pub fn and_now_this_one(&mut self, task: ATask) -> WhichTask {
         self.open.push(task);
+        self.placed.push(None);
+        debug_assert_eq!(self.open.len(), self.placed.len());
         WhichTask(self.open.len() - 1)
+    }
+
+    /// Where each task's window is, in the order the tasks opened.
+    #[must_use]
+    pub fn where_each_went(&self) -> &[Option<Rectangle<i32, Physical>>] {
+        &self.placed
+    }
+
+    /// Put the window of every task that has nowhere to be.
+    ///
+    /// Answers how many were placed, so a caller can tell *nothing to do* from
+    /// *a view too small to put one in* — both leave the list unchanged and
+    /// only one of them is a machine working as intended.
+    ///
+    /// **Already-placed windows are not moved**, and are handed to the placer
+    /// as the ones already open so a new window lands beside them rather than
+    /// on them.
+    pub fn put_whatever_has_nowhere_to_be(
+        &mut self,
+        view: Rectangle<i32, Logical>,
+        reading: Direction,
+        fixed: &[Rectangle<i32, Logical>],
+    ) -> usize {
+        debug_assert_eq!(self.open.len(), self.placed.len());
+        let mut placed = 0;
+        for which in 0..self.placed.len() {
+            if self.placed.get(which).is_some_and(Option::is_some) {
+                continue;
+            }
+            // **Front-to-back: the newest first.** That makes the most recently
+            // placed window the active one for the next placement, which is
+            // what *beside the active window* means when alo is the one
+            // opening them.
+            let already: Vec<Rectangle<i32, Logical>> = self
+                .placed
+                .iter()
+                .rev()
+                .filter_map(|at| *at)
+                .map(|at| {
+                    Rectangle::new((at.loc.x, at.loc.y).into(), (at.size.w, at.size.h).into())
+                })
+                .collect();
+            let Some(at) = crate::where_a_task_window_opens::where_one_more_goes(
+                view, &already, reading, fixed,
+            ) else {
+                // A view too small for the window at all. Nothing is placed and
+                // nothing is invented: the next frame on a larger display will
+                // place it.
+                continue;
+            };
+            if let Some(slot) = self.placed.get_mut(which) {
+                *slot = Some(crate::where_a_task_window_opens::as_a_frame_draws_it(at));
+                placed += 1;
+            }
+        }
+        placed
     }
 
     /// One task, to read.

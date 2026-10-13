@@ -1068,7 +1068,7 @@ fn a_task_window_reaches_the_desktop_picture_and_is_painted() {
         at: smithay::utils::Rectangle::new((200, 120).into(), (1040, 800).into()),
         how_many_files: 2,
         words: a_tasks_words(),
-        said: &[],
+        said: Vec::new(),
     }];
     let with = of(&one);
 
@@ -1111,7 +1111,7 @@ fn a_task_window_too_small_is_left_out_rather_than_refusing_the_frame() {
         at: smithay::utils::Rectangle::new((0, 0).into(), (120, 60).into()),
         how_many_files: 0,
         words: a_tasks_words(),
-        said: &[],
+        said: Vec::new(),
     }];
     let drawn = picture(
         &dock,

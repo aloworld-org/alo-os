@@ -351,7 +351,7 @@ pub(crate) fn picture(
                 look,
                 task.how_many_files,
                 &task.words,
-                task.said,
+                &task.said,
                 fonts,
             )
             .ok()

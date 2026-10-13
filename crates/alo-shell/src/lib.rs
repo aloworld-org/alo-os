@@ -335,12 +335,15 @@ mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;
 /// The task windows a person opened by asking alo for something.
 pub mod the_tasks_a_person_opened;
+/// Everything in a task window that a person reads, said once a frame.
+mod the_tasks_words;
 mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
 mod their_displays;
 mod top_controls_region;
 mod what_the_dock_has_open;
 mod what_the_server_tells_a_frame;
+mod where_a_task_window_opens;
 mod where_a_window_opens;
 mod where_the_dock_is;
 pub mod which_area_has_the_keyboard;

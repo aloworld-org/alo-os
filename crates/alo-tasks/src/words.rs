@@ -19,6 +19,21 @@
 //! machine's state and *your permission* is what it is waiting on, and dropping
 //! the second half leaves a window that looks merely slow.
 //!
+//! # Where the processing happens is **not** said here
+//!
+//! A task window must always show it — law 1, and the design gives it a
+//! permanent place beside the model's name. It is not in this file because
+//! `alo-models` already says it: `InferenceSource::said` words all four
+//! sources, fills in a provider and a region, and is the sentence the rest of
+//! this machine uses.
+//!
+//! **A `tasks.where.this-computer` stood here for part of 2026-10-12 and was
+//! removed.** It said *On this computer*, which `models.source.this-machine`
+//! already said as *on this machine* — and two sentences about where a person's
+//! data goes is the one duplication this product cannot afford. It would also
+//! have covered only one of the four sources, so a paired machine or a provider
+//! would have been drawn with the local wording or with nothing.
+//!
 //! # And one that is a promise rather than a label
 //!
 //! [`WHAT_THIS_TASK_REACHES`] — *permissions and model choices apply to this
@@ -96,16 +111,8 @@ pub const WHAT_THIS_TASK_REACHES: Word = Word::saying(
      to.",
 );
 
-/// Where the processing happens: on this machine.
-pub const ON_THIS_COMPUTER: Word = Word::saying("tasks.where.this-computer", "On this computer")
-    .noting(
-        "Beside the model's name, saying where the answering happens. Law 1's shape in three \
-         words: a person can see without asking that nothing is leaving. It is a **reading** of \
-         the task's inference source and never a reassurance written by the window.",
-    );
-
 /// Every word this crate can say.
-pub const EVERY_WORD: [Word; 9] = [
+pub const EVERY_WORD: [Word; 8] = [
     A_TASK,
     ALO_IS_WORKING,
     WAITING_FOR_YOUR_PERMISSION,
@@ -114,7 +121,6 @@ pub const EVERY_WORD: [Word; 9] = [
     COMPLETE,
     REPLY_TO_ALO,
     WHAT_THIS_TASK_REACHES,
-    ON_THIS_COMPUTER,
 ];
 
 /// Why this crate's words did not go into a vocabulary.

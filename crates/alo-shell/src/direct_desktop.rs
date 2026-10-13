@@ -712,6 +712,29 @@ impl LoopInput for Desk<'_> {
                 );
         let mut frame = self.desktop.now();
         let named = FrameTarget::metadata(target)?.name;
+        // **Placed once, and after the frame, because the reading direction is
+        // the look's.** A task window
+        // that had nowhere to be gets somewhere now; one that already has a
+        // position is left exactly where it is, which is the design's own
+        // requirement — *later redraws must not unexpectedly reposition it.*
+        //
+        // The view is the display rather than the camera's, because a task
+        // window is drawn against the display like the two desktop windows
+        // beside it. `crate::where_a_task_window_opens` records that, and
+        // records that whether it ought to live on the canvas instead is a
+        // question the owner has not answered.
+        let the_view = smithay::utils::Rectangle::new((0, 0).into(), (size.w, size.h).into());
+        server
+            .tasks_mut()
+            .put_whatever_has_nowhere_to_be(the_view, frame.look.reading(), &[]);
+        // **Said once a frame, and kept alive for as long as the frame is.**
+        // The raster borrows these strings.
+        let the_tasks_words = crate::the_tasks_words::TheTasksWords::said(
+            server.tasks().each(),
+            server.tasks().where_each_went(),
+            self.strings,
+        );
+        let the_task_windows = the_tasks_words.as_displayed();
         what_only_the_server_knows(
             &mut frame,
             server,
@@ -721,6 +744,7 @@ impl LoopInput for Desk<'_> {
                 in_more_apps: &in_more_apps,
                 the_dock_has_open: &the_dock_has_open,
                 the_docks_words: &the_docks_words,
+                tasks: &the_task_windows,
             },
             &named,
         );
@@ -792,6 +816,19 @@ impl LoopInput for Desk<'_> {
                     in_more_apps: &in_more_apps,
                     the_dock_has_open: &the_dock_has_open,
                     the_docks_words: &the_docks_words,
+                    // **None on an extra display, and that is a named gap.** A
+                    // task window belongs to the display it was placed on, and
+                    // nothing records which that was — the position is one
+                    // rectangle per task, not one per task per display. Handing
+                    // this list over here would draw the same window on every
+                    // display at the same coordinates, which is worse than
+                    // drawing it on one: a person would have two of a window
+                    // they can only type into once.
+                    //
+                    // So a task window is on the first display today. Making it
+                    // belong to a display is a change to what `TheTasks`
+                    // stores, and it is written down rather than guessed at.
+                    tasks: &[],
                 },
                 &named,
             );

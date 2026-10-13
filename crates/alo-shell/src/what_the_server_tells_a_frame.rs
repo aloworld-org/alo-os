@@ -72,6 +72,13 @@ pub(crate) struct WhatTheLaneBuilt<'a> {
     pub(crate) the_dock_has_open: &'a crate::WhatTheDockHasOpen,
     /// What the Dock says, already said in this person's language.
     pub(crate) the_docks_words: &'a crate::the_docks_words::TheDocksWords,
+    /// The task windows a person has open, already placed and already worded.
+    ///
+    /// **Borrowed from a bundle the lane keeps alive**, for
+    /// `the_docks_words`' reason: the raster holds `&str` and the words are
+    /// `String`s somewhere. An empty slice is a machine nobody has asked
+    /// anything, which is most machines most of the time.
+    pub(crate) tasks: &'a [crate::task_raster::ATaskOnTheDisplay<'a>],
 }
 
 /// Fill the fields of `frame` that only `server` and the lane can answer.
@@ -89,7 +96,9 @@ pub(crate) fn what_only_the_server_knows<'a>(
         in_more_apps,
         the_dock_has_open,
         the_docks_words,
+        tasks,
     } = built;
+    frame.tasks = tasks;
     frame.windows = windows;
     // A desktop's own state cannot know that a window has taken the whole
     // screen, and the Dock gives way to one that has.

@@ -175,6 +175,43 @@ impl ATask {
         self.stopping = Stopping::stopped(changed);
     }
 
+    /// Which word says what is happening in this task.
+    ///
+    /// **The model chooses the word and the shell says it.** Which of the five
+    /// applies is a reading of this task — and a drawing surface that worked it
+    /// out would be a second place deciding, which is how two surfaces come to
+    /// disagree about whether alo is still working.
+    ///
+    /// The order is the design's variant table, and the first two tests are the
+    /// ones that matter:
+    ///
+    /// 1. **A stop asked for and not confirmed is *stopping*,** never
+    ///    *stopped*. The work is still running, and saying it has ended is the
+    ///    one thing a Stop must not claim.
+    /// 2. **A confirmed stop is *stopped*** whatever the activity still says,
+    ///    for the reason [`Self::the_one_button`] gives: the runtime's word
+    ///    outranks a log that nobody closed out.
+    /// 3. Waiting on the person, which the design draws in navy rather than
+    ///    teal, because alo is not acting.
+    /// 4. Working, which is the only one drawn in teal.
+    /// 5. Otherwise finished.
+    #[must_use]
+    pub fn what_is_happening(&self) -> alo_strings::Word {
+        match self.stopping {
+            Stopping::Asked => crate::words::STOPPING,
+            Stopping::Stopped { .. } => crate::words::STOPPED,
+            Stopping::NobodyAsked => {
+                if self.conversation.is_waiting_for_the_person() {
+                    crate::words::WAITING_FOR_YOUR_PERMISSION
+                } else if self.activity.doing_now().is_some() || self.conversation.is_alos_turn() {
+                    crate::words::ALO_IS_WORKING
+                } else {
+                    crate::words::COMPLETE
+                }
+            }
+        }
+    }
+
     /// What the right-hand panel shows while this is minimised.
     #[must_use]
     pub fn in_the_panel(&self) -> InThePanel {

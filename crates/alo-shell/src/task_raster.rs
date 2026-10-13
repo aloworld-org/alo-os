@@ -48,7 +48,7 @@ use crate::task_text::AStyle;
 /// opening*. This takes the rectangle somebody already decided on, so that a
 /// change to placement cannot reach the rasteriser and a change to the
 /// rasteriser cannot move anybody's window.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ATaskOnTheDisplay<'a> {
     /// Where the window is, in this display's pixels.
     pub at: smithay::utils::Rectangle<i32, smithay::utils::Physical>,
@@ -62,7 +62,7 @@ pub struct ATaskOnTheDisplay<'a> {
     /// state and not a placeholder: a request opens its window before anything
     /// has answered, so the first thing a person sees is proof the machine
     /// heard them.
-    pub said: &'a [crate::task_text::WhatWasSaid<'a>],
+    pub said: Vec<crate::task_text::WhatWasSaid<'a>>,
 }
 
 /// Why a task window could not be rasterised.

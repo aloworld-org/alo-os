@@ -1598,7 +1598,6 @@ tasks.status.stopped	Stopped
 tasks.status.stopping	Stopping…
 tasks.status.waiting	Waiting for your permission
 tasks.status.working	alo is working
-tasks.where.this-computer	On this computer
 tasks.window.kind	alo task
 tasks.window.scope	Permissions and model choices apply to this task.
 telling.carry-on	You can carry on. Nothing else on this machine depends on the agent, and nothing here is waiting for you to do anything about this
