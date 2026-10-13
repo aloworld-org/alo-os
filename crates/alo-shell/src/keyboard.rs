@@ -107,6 +107,53 @@ impl Server {
         Ok(server)
     }
 
+    /// Change which keyboard is in front of this machine, while it runs.
+    ///
+    /// **Nothing could do this until 2026-10-13**, and the sign-in screen was
+    /// drawn for a keyboard named in a unit file: `ALO_KEYBOARD=gb`, the same
+    /// on every machine ever written. A person on a French or a German
+    /// keyboard typed their password through a mapping nobody asked them
+    /// about, and `docs/features.md` promises all 24 official EU languages
+    /// from the first day. `alo_keyboards` has known which keyboard goes with
+    /// each of those languages for as long as it has existed; there was no
+    /// way to act on it.
+    ///
+    /// # Every held key is let go first
+    ///
+    /// A key held down under one layout means a different symbol under the
+    /// next, and a client told it was released would be told the wrong one —
+    /// or never told at all, and would repeat a letter for ever. So the seat
+    /// lets go of everything it believes held **before** the layout changes,
+    /// which is `Server::sign_in_keys_released`'s rule and the same reason.
+    ///
+    /// # Errors
+    /// [`InputError::Unavailable`] for a display bound without a keyboard, and
+    /// [`InputError::Keymap`] for a layout this machine's rented tables do not
+    /// have — which leaves the keyboard **as it was**, because a machine whose
+    /// layout could not be changed must still be typeable.
+    pub fn the_keyboard_is_now(&mut self, config: XkbConfig<'_>) -> Result<(), InputError> {
+        let keyboard = self
+            .surfaces
+            .keyboard
+            .as_ref()
+            .ok_or(InputError::Unavailable)?;
+        let handle = keyboard.handle.clone();
+        let time = keyboard.time;
+        for code in handle.pressed_keys() {
+            handle.input::<(), _>(
+                &mut self.surfaces,
+                code,
+                smithay::backend::input::KeyState::Released,
+                smithay::utils::SERIAL_COUNTER.next_serial(),
+                time,
+                |_, _, _| smithay::input::keyboard::FilterResult::Intercept(()),
+            );
+        }
+        handle
+            .set_xkb_config(&mut self.surfaces, config)
+            .map_err(|error| InputError::Keymap(error.to_string()))
+    }
+
     /// Set focus from trusted shell policy, refusing foreign, dead or unmapped roots.
     ///
     /// Clearing or changing focus releases held keys before leave, so a new
