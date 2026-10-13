@@ -56,3 +56,9 @@ alo-answering = { path = "../alo-answering" }
 # Where a measurement of a brought file is written: the person's own settings,
 # through the one door they are changed by.
 alo-choosing = { path = "../alo-choosing" }
+# Law 1's indicator. A measurement against a provider **cannot** be made
+# without one: `Hosted::ask` is private and its only caller requires an
+# `alo_egress::Departing` first, so every exercise appears on the indicator and
+# in the record. A dev-dependency because only the provider measurement needs
+# it — nothing this crate ships leaves the machine.
+alo-egress = { path = "../alo-egress" }
