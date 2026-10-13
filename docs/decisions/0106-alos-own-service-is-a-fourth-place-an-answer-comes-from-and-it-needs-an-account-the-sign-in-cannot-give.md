@@ -89,6 +89,48 @@ extension of the existing one.
    signing in to the machine signs them in to anything, and the first-start
    promise above stays exactly as it is.
 
+## How a person meets it, decided by the owner
+
+On 2026-10-13 the owner decided the shape: **a free trial of credits, and a
+subscription asked for when they run out.** In their words: *we shall have a
+free trial for some credit so if it is done then we ask the users to buy the
+subscription.*
+
+So the walk is:
+
+1. **First sign-in: the account on this machine**, which is what
+   `alo-greeting` already does and promises is not sent anywhere.
+2. **Setup asks where questions are answered**, and alo's service is one of the
+   five. Picking it creates nothing: no email, no password, no card.
+3. **It answers the first question immediately.** This is the step the design is
+   for. Every other assistant makes a person find an API key before anything
+   happens; here the machine works on one choice.
+4. **When the credits run out, the agent says so** — what is left, what a
+   subscription costs, and that nothing changes if they say no. **This is the
+   only moment an alo account exists**, and by then the person has used the
+   thing they are being asked to pay for.
+
+Available in Settings from the first day for anybody who would rather set it up
+sooner. Offered, never pushed.
+
+**The two accounts are never on one screen, and that is the load-bearing part.**
+The sign-in screen promises *the account you make here is this machine's own,
+and it is not sent anywhere*. An online sign-up at or beside that moment breaks
+that sentence while it is being said, to a person who is typing a password and
+cannot tell the two apart. So no sentence a person reads may suggest that
+signing in to the machine signs them in to anything.
+
+## What the trial costs, named rather than discovered
+
+**To meter credits, alo's service has to know which machine is spending them.**
+So the machine contacts the service, identified, the first time it is asked
+anything. That is something leaving.
+
+It is therefore on the indicator, in the record, and — the part that makes it
+lawful rather than merely visible — **named on the choice before it is made**.
+Picking that row is the permission for it. It is never automatic, and a machine
+whose owner chose any of the other four never contacts anything.
+
 ## The question this does not answer
 
 **What the online account is, and who builds it.** The destination is settled —
@@ -102,8 +144,9 @@ the sign-in path writes to that reference.
 That is a product decision with a service behind it rather than a lane's design
 choice, so it is the owner's:
 
-- is it an account made on alo's own service from Settings, with the token
-  written to the keyring — or something else entirely;
+- what the trial's own credential is — the machine contacts the service before
+  any account exists, so something has to identify it, and whatever that is
+  lands in the keyring with a reference in the settings like any other key;
 - what happens to a machine whose token has expired or whose payment has
   stopped: proposed here as **the agent's surfaces say the service cannot be
   reached and nothing silently falls back to a local model or another provider**,
