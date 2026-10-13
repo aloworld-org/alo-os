@@ -35,7 +35,7 @@ use alo_agent::{HowFar, NotAnswered, TheDoor, WhatHappened, driving};
 use alo_capability::{Approvals, Given, Grant, Grantee, Grants, Proposal, Reach, Verbs};
 use alo_files::{OnThisMachine, Resolving as _};
 use alo_instructing::Instructions;
-use alo_protocol::{FromAnAgent, Standing, ToAnAgent, Wording};
+use alo_protocol::{Done, FromAnAgent, Standing, ToAnAgent, Wording};
 use alo_strings::Strings;
 
 /// A door that answers from a list and remembers every request it was given.
@@ -190,7 +190,9 @@ fn a_real_refusal() -> Wording {
 
 /// What a listing answers with.
 fn it_listed(text: &str) -> ToAnAgent {
-    ToAnAgent::did(&alo_files::Answer::Read(text.to_owned()))
+    ToAnAgent::did(Done::of_a_file_verb(&alo_files::Answer::Read(
+        text.to_owned(),
+    )))
 }
 
 /// The line a model writes to ask for a read.
