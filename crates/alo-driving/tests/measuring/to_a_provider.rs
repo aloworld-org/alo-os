@@ -42,19 +42,23 @@ fn put_to_a_provider(
     agent: &Grantee,
     policy: &SourcePolicy,
     indicator: &mut alo_egress::Indicator,
+    in_the_envelope: bool,
 ) -> Result<String, String> {
     let question = Question::asked(text, model).map_err(|why| format!("{why:?}"))?;
     let answering = Answering::chosen(hosted.named_source(), policy)
         .map_err(|why| format!("the policy forbids this provider: {why:?}"))?;
-    let asked = Asking::by(agent, answering, &[], policy)
-        .to_a_provider(
-            &question,
-            hosted,
-            indicator,
-            std::time::SystemTime::now(),
-            &resolved(hosted.where_it_would_connect()),
-        )
-        .map_err(|why| format!("{why:?}"))?;
+    let asking = Asking::by(agent, answering, &[], policy);
+    let to = resolved(hosted.where_it_would_connect());
+    let now = std::time::SystemTime::now();
+    // **Both doors, so the same ten exercises measure the difference between
+    // them and nothing else.** Every door takes `self`, so this branches on
+    // which to call rather than on what to pass.
+    let put = if in_the_envelope {
+        asking.to_a_provider_in_the_envelope(&question, hosted, indicator, now, &to)
+    } else {
+        asking.to_a_provider(&question, hosted, indicator, now, &to)
+    };
+    let asked = put.map_err(|why| format!("{why:?}"))?;
     let answer = asked.ended(indicator);
     // **The answer says where it came from, and it is not this machine.** The
     // local measurement asserts the mirror of this; a provider measurement whose
@@ -89,6 +93,7 @@ pub fn the_fixed_set_put_to_a_provider(
     key: &alo_models::Secret,
     rounds: usize,
     instructions: Instructions,
+    in_the_envelope: bool,
 ) -> Measured {
     let verbs = the_verbs();
     let exercises = Exercises::over(&verbs).expect("the fixed set is built over alo OS's verbs");
@@ -112,6 +117,7 @@ pub fn the_fixed_set_put_to_a_provider(
         &measuring,
         &policy,
         &mut indicator,
+        in_the_envelope,
     );
     assert!(
         warmed.is_ok(),
@@ -128,6 +134,7 @@ pub fn the_fixed_set_put_to_a_provider(
                 &measuring,
                 &policy,
                 &mut indicator,
+                in_the_envelope,
             );
             let answer = match answered {
                 Ok(answer) => answer,

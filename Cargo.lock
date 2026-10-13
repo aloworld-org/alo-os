@@ -63,6 +63,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-acting"
+version = "0.0.1"
+dependencies = [
+ "alo-applications",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-adapters"
 version = "0.0.1"
 dependencies = [

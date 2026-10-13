@@ -183,7 +183,7 @@ mod testing;
 
 pub use answer::Answer;
 pub use asked::Asked;
-pub use asking::Asking;
+pub use asking::{Asking, THE_ENVELOPE_IS_CALLED};
 pub use corridor::{DownTheCorridor, THE_PROOF_HEADER, THE_QUESTION_PATH};
 pub use found::{Found, NotVetted};
 pub use hosted::Hosted;

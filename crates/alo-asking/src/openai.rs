@@ -211,6 +211,76 @@ struct HeldToAGrammar {
     grammar: String,
 }
 
+/// The same question, with the answer held to a **JSON schema**.
+///
+/// A third shape rather than a field on either of the other two, for
+/// [`HeldToAGrammar`]'s reason: [`Sent`] is also what a body arriving here is
+/// read by, and this is only ever sent.
+///
+/// # Why this exists beside the grammar
+///
+/// `grammar` is `llama.cpp`'s own field. A hosted provider answers 400 to it,
+/// so until now **a hosted model was held to nothing at all** while a local one
+/// was held to the envelope before a single token came back — and that showed.
+/// Measured on 2026-10-13, three rounds of the fixed ten against
+/// `gpt-4o-mini`: every failure was the same shape error, the verb's name put
+/// where the protocol's door belongs, as in
+/// `{"format":1,"asks":{"find_in_folder":{…}}}`. A local model through the
+/// pinned runtime cannot write that, because the runtime will not let it.
+///
+/// `response_format` with `strict` is the hosted equivalent, and
+/// `OpenAI`-shaped services that have it will not emit a token outside the
+/// schema. One that does not have it answers 400, exactly as one without
+/// `grammar` does, and the caller hears *something answered, and not with an
+/// answer* — which is what it is.
+#[derive(Serialize)]
+struct HeldToASchema {
+    /// The model to answer it.
+    model: String,
+    /// The question, as the one message in this conversation.
+    messages: Vec<Message>,
+    /// Whole answers only.
+    stream: bool,
+    /// The schema every answer must satisfy.
+    response_format: ResponseFormat,
+}
+
+/// A shape an answer is held to, and what a service calls it back.
+///
+/// The two travel together because they are one thing to a caller and because
+/// splitting them put [`put_held_to_a_schema`] one argument over what clippy
+/// will take — which is a fair complaint about a function with eight.
+pub(crate) struct AShape<'a> {
+    /// What the service calls it back in an error.
+    pub named: &'a str,
+    /// The schema itself.
+    pub schema: serde_json::Value,
+}
+
+/// `OpenAI`'s own way of naming a schema an answer is held to.
+#[derive(Serialize)]
+struct ResponseFormat {
+    /// Always `json_schema`.
+    #[serde(rename = "type")]
+    kind: String,
+    /// The schema, under the name the service reports it by.
+    json_schema: NamedSchema,
+}
+
+/// A schema with a name and no room to be ignored.
+#[derive(Serialize)]
+struct NamedSchema {
+    /// What the service calls it back in an error.
+    name: String,
+    /// **True, always.** Without it a service treats the schema as a hint and
+    /// may answer outside it, which is the whole thing this shape is for: a
+    /// constraint that is advisory is a constraint that fails exactly when a
+    /// model is having trouble, which is when it is needed.
+    strict: bool,
+    /// The schema itself.
+    schema: serde_json::Value,
+}
+
 /// One message in that shape.
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -502,6 +572,56 @@ pub(crate) fn put_held_to_a_grammar(
     };
     let body = serde_json::to_vec(&sent).map_err(|_| WentWrong::NothingUsable)?;
     sending(endpoint, key, &body, waiting, (to, None), None, None)
+}
+
+/// **Put the question, and hold the answer to a JSON schema.**
+///
+/// [`put_held_to_a_grammar`] one road along, for a hosted service rather than
+/// an engine with `llama.cpp`'s field. `named` is what the service calls the
+/// schema back in an error, so it is worth being the name of the thing rather
+/// than a word like `schema`.
+///
+/// **It takes the proxy and the grammar road does not**, which is not an
+/// inconsistency: that road is the measurement's, against a service somebody
+/// runs themselves, and this is the one a managed machine's question really
+/// takes (ADR 0016).
+///
+/// # Errors
+/// [`WentWrong`], as [`put`] answers it. A service that does not know
+/// `response_format` answers 400, which reaches a person as *something
+/// answered, and not with an answer*.
+pub(crate) fn put_held_to_a_schema(
+    through: Option<ureq::Proxy>,
+    endpoint: &str,
+    key: Option<&Secret>,
+    question: &Question,
+    waiting: Duration,
+    to: &[SocketAddr],
+    shape: AShape<'_>,
+) -> Result<String, WentWrong> {
+    let sent = HeldToASchema {
+        model: question.of().to_owned(),
+        messages: vec![Message {
+            role: THE_PERSON.to_owned(),
+            content: question.text().to_owned(),
+        }],
+        stream: false,
+        response_format: ResponseFormat {
+            kind: "json_schema".to_owned(),
+            json_schema: NamedSchema {
+                name: shape.named.to_owned(),
+                strict: true,
+                schema: shape.schema,
+            },
+        },
+    };
+    let body = serde_json::to_vec(&sent).map_err(|_| WentWrong::NothingUsable)?;
+    // **Through the proxy, unlike the grammar road.** That one is reached only
+    // by the measurement, against a service somebody runs themselves; this is
+    // the road a managed machine's question really takes, and dropping the
+    // proxy here would be a question that cannot leave on the network an
+    // organisation gave it.
+    sending(endpoint, key, &body, waiting, (to, None), through, None)
 }
 
 /// Where a request may connect: the addresses registered for it, and the

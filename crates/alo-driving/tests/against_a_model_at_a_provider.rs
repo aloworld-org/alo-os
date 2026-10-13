@@ -122,12 +122,21 @@ fn the_fixed_set_is_put_to_a_model_at_a_provider() {
     };
     let key = Secret::typed(&key).expect("the key read from the environment is a sendable one");
 
+    // **Held to the protocol's envelope, or not.** Unset means held, because
+    // that is what an agent turn really asks for and what the local runtime has
+    // always done; `ALO_PROVIDER_UNHELD=1` is how the two are compared.
+    let in_the_envelope = std::env::var("ALO_PROVIDER_UNHELD").is_err();
+    println!(
+        "held to the protocol's envelope: {}",
+        if in_the_envelope { "yes" } else { "no" }
+    );
     let measured = measuring::to_a_provider::the_fixed_set_put_to_a_provider(
         &ready.model,
         &ready.provider,
         &key,
         ready.rounds,
         instructions,
+        in_the_envelope,
     );
 
     // What this test asserts is that a measurement *happened*, never that it

@@ -37,7 +37,7 @@ use alo_approving::{Approving, Asks, Compositor, SurfaceRefused};
 use alo_capability::{Given, Grant, Grants, Reach};
 use alo_context::Context;
 use alo_egress::Indicator;
-use alo_files::{OnThisMachine, Reaching};
+use alo_files::{OnThisMachine, Reaching, Resolving};
 use alo_notifying::Picked;
 use alo_record::Record;
 use alo_turn::{Bounding, Doing, Done, Machine, NoBoundary, Turning};
@@ -111,16 +111,18 @@ fn a_change_that_is_waiting_is_still_waiting_after_every_action_is_picked() {
     let hour = Duration::from_secs(60 * 60);
     let strings = the_machines_words();
 
+    // **A real folder with a real file in it**, because the change this test
+    // needs has to be one that is really waiting — and since
+    // `alo_turn::the_sentence_is_about_something` a proposal naming a path
+    // nothing is at is refused before it ever waits. A fixture that invented
+    // `/home/anna/Invoices/march.pdf` tested the refusal by accident, which is
+    // not what the three paragraphs above are about.
+    let invoices = a_folder_of_our_own();
+    let march = invoices.join("march.pdf");
+    fs::write(&march, b"a scan").unwrap();
+
     let mut grants = Grants::default();
-    grants.grant(
-        Grant::checked(
-            "@files",
-            Reach::Folder("/home/anna/Invoices".into()),
-            now,
-            hour,
-        )
-        .unwrap(),
-    );
+    grants.grant(Grant::checked("@files", Reach::Folder(invoices.clone()), now, hour).unwrap());
     let mut record = Record::default();
     let mut indicator = Indicator::default();
     let mut bounding = NothingIsBounded;
@@ -145,7 +147,7 @@ fn a_change_that_is_waiting_is_still_waiting_after_every_action_is_picked() {
         .proposing(
             "rename_file",
             &[
-                ("file", Given::text("/home/anna/Invoices/march.pdf")),
+                ("file", Given::text(march.to_string_lossy().into_owned())),
                 ("name", Given::text("march-final.pdf")),
             ],
             &grants,
@@ -223,6 +225,19 @@ fn nothing_that_comes_out_of_a_notification_carries_a_proposal() {
     // person picked something they were never shown.
     let relabelled = alo_notifying::Action::offering("approve", "Approve everything").unwrap();
     assert_eq!(Picked::of(&notification, &relabelled), None);
+}
+
+/// A folder of this test's own, resolved, with nothing in it.
+///
+/// Resolved because a grant is over a place and a resolved path can be spelt
+/// differently from the typed one — on Windows with a `\\?\` prefix — so a
+/// grant made over the other spelling would match nothing. `docs/quirks.md`
+/// records it, and `alo_turn`'s own fixtures resolve for the same reason.
+fn a_folder_of_our_own() -> std::path::PathBuf {
+    let at = std::env::temp_dir().join(format!("alo-notifying-waiting-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&at);
+    fs::create_dir_all(&at).unwrap();
+    OnThisMachine.real(&at).unwrap().into_path_buf()
 }
 
 /// Every source file this crate ships, with its test modules cut off.

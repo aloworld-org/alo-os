@@ -167,6 +167,44 @@ impl<'a> Hosted<'a> {
         )
     }
 
+    /// **Ask, and hold the answer to a JSON schema.**
+    ///
+    /// [`Hosted::ask`] with one thing more, and the reason it exists is
+    /// measured: a hosted model was held to nothing while a local one was held
+    /// to the protocol's envelope before a token came back, and on 2026-10-13
+    /// every failure of `gpt-4o-mini` over three rounds of the fixed ten was
+    /// the same shape error — the verb's name where the door belongs. A local
+    /// model cannot write that; the runtime will not let it.
+    ///
+    /// The proxy is carried exactly as [`Hosted::ask`] carries it, because this
+    /// is the same road with a narrower answer and a managed machine's question
+    /// still has to leave the way its organisation said.
+    ///
+    /// # Errors
+    /// [`WentWrong`], as [`Hosted::ask`] answers it — and a service that does
+    /// not know `response_format` answers 400, which arrives as *something
+    /// answered, and not with an answer*.
+    pub(crate) fn ask_held_to_a_schema(
+        &self,
+        question: &Question,
+        to: &[SocketAddr],
+        shape: openai::AShape<'_>,
+    ) -> Result<String, WentWrong> {
+        let through = match self.through {
+            None => None,
+            Some(carried) => carried.for_a_request().map_err(|_| WentWrong::NoWayThere)?,
+        };
+        openai::put_held_to_a_schema(
+            through,
+            &self.provider.endpoint,
+            self.key,
+            question,
+            WHILE_A_MODEL_THINKS,
+            to,
+            shape,
+        )
+    }
+
     /// The host and port this would connect to, for somebody to resolve and
     /// register before the boundary is entered (ADR 0020).
     ///

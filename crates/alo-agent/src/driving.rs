@@ -20,11 +20,19 @@
 //! 6. A model that answered in words rather than asking for anything has
 //!    finished the request.
 //!
-//! # Why a refusal is a step and not an end
+//! # Why a refusal is a step and not an end, whichever door it came from
 //!
-//! A read refused — a folder nobody granted, a file that is gone — is told back
+//! A refusal — a folder nobody granted, a file that is not there — is told back
 //! to the model, and it may ask for something else. That is how a person works,
 //! and the alternative is a turn that gives up on its first wrong guess.
+//!
+//! **This now holds for a refused proposal as well as a refused read**, and it
+//! used not to. While a refused proposal could only mean *the grants said no*,
+//! ending the turn was right. Since
+//! `alo_turn::the_sentence_is_about_something` it can also mean *there is
+//! nothing at that path*, which is precisely what a model that guessed a
+//! filename has to be told — and measured on 2026-10-13, ending there meant the
+//! one refusal that could teach it was the one it never saw.
 //!
 //! It is bounded by [`HowFar`] and by nothing else, which is deliberate: a
 //! model that asks for the same forbidden folder eight times is eight correct
@@ -97,8 +105,28 @@ pub fn driving(
         // rather than a re-rendering of it — `alo_instructing::AStep` says why.
         let next = match FromAnAgent::read(&said) {
             Ok(next) => next,
-            // Not a line of the protocol. The model has answered in words,
-            // which for a request that needed no change is the whole answer.
+            // Not a line of the protocol, and there are two of those.
+            //
+            // **Words** — *it is in /home/anna/Invoices* — are the whole answer
+            // to a request that needed no change, and the turn is finished.
+            //
+            // **A request that tried and failed** is a different thing, and
+            // ending the turn on it throws away a correctable mistake.
+            // Measured on 2026-10-13: `gpt-4o-mini` wrote
+            // `{"asks":{"find_in_folder":{"verb":"find_in_folder",…}}}` — the
+            // verb's name where the door belongs — and the turn ended as though
+            // the model had answered in prose. It had not; it had made a shape
+            // error it could have been told about.
+            //
+            // Told apart by whether it looks like JSON at all, which is the
+            // only distinction available here and is not a judgement about
+            // content. What the model is shown is the protocol's own `Debug` of
+            // its own complaint, because `alo_protocol::NotUnderstood` has no
+            // `Display` on purpose and this loop may not reword it.
+            Err(why) if said.trim_start().starts_with('{') => {
+                steps.push(AStep::of(&said, &format!("not a request: {why:?}")));
+                continue;
+            }
             Err(_) => {
                 return WhatHappened::ItWasAnsweredInWords { said, after: steps };
             }
@@ -107,11 +135,10 @@ pub fn driving(
         match next {
             FromAnAgent::Read { .. } => match door.asking(&next) {
                 Ok(answer) => {
-                    let (line, refused) = as_a_step(&answer);
-                    steps.push(AStep::of(&said, &line));
-                    // A refusal is a step and the turn goes on — this module's
-                    // header is the argument. The bound is what ends it.
-                    let _ = refused;
+                    // A refusal is a step and the turn goes on, whichever door
+                    // it came from — this module's header is the argument, and
+                    // the bound is what ends it.
+                    steps.push(AStep::of(&said, &as_a_step(&answer)));
                 }
                 Err(not_answered) => return could_not_be_asked(not_answered, steps),
             },
@@ -123,11 +150,28 @@ pub fn driving(
                         after: steps,
                     };
                 }
+                // **A refused proposal is a step too, for the same reason a
+                // refused read is**, and this arm used to end the turn.
+                //
+                // It was right while a refused proposal could only mean *the
+                // grants said no*, which no amount of trying again fixes. Since
+                // `alo_turn::the_sentence_is_about_something` it can also mean
+                // *there is nothing at that path* — which is exactly what a
+                // model that guessed a filename needs to be told, and it has
+                // rounds left to use. Measured: `gpt-4o-mini` proposed
+                // `March-invoice.pdf` in a folder holding `march.pdf`, and
+                // ending here meant the one refusal that could teach it was the
+                // one it never saw.
+                //
+                // **The loop does not tell the two apart**, and will not: which
+                // refusals are worth another go is the capability model's
+                // opinion and it has exactly one per request. A model that
+                // proposes the same forbidden thing until the bound stops it is
+                // a short turn and a record full of correct refusals, which is
+                // the cheaper mistake.
                 Ok(ToAnAgent::Refused(why)) => {
-                    return WhatHappened::ItWasRefused {
-                        said: why.text().to_owned(),
-                        after: steps,
-                    };
+                    let line = ToAnAgent::Refused(why).written().unwrap_or_default();
+                    steps.push(AStep::of(&said, &line));
                 }
                 Ok(ToAnAgent::Did(_) | ToAnAgent::Answered { .. }) => {
                     return WhatHappened::TheMachineCouldNotBeAsked {
@@ -150,16 +194,16 @@ pub fn driving(
     WhatHappened::ItRanOutOfRounds { after: steps }
 }
 
-/// One answer, as the line a model is shown and whether it was a refusal.
+/// One answer, as the line a model is shown.
 ///
-/// The line is what the daemon really said, re-serialised by the protocol's own
-/// writer — the one place that decides how a message reads.
-fn as_a_step(answer: &ToAnAgent) -> (String, bool) {
-    let refused = matches!(answer, ToAnAgent::Refused(_));
-    let line = answer
+/// What the daemon really said, re-serialised by the protocol's own writer —
+/// the one place that decides how a message reads. **Whether it was a refusal
+/// is not answered here**, because the loop no longer asks: a refusal is a step
+/// either way.
+fn as_a_step(answer: &ToAnAgent) -> String {
+    answer
         .written()
-        .unwrap_or_else(|_| "{\"format\":1,\"tells\":{}}".to_owned());
-    (line, refused)
+        .unwrap_or_else(|_| "{\"format\":1,\"tells\":{}}".to_owned())
 }
 
 /// The door failed, and how far the turn had got.

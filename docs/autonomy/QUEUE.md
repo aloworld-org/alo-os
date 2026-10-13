@@ -3981,6 +3981,18 @@ out.
   can move a window, a machine that offered these verbs would be a machine an
   agent can be refused by in a new way rather than one that can do more.
 
+  **That blocker lifted and this item was not updated.** The compositor starts
+  an application over the bus (`alo_portals::activated`, which the Dock uses),
+  and activates, switches and closes windows. What is actually in the way is one
+  process boundary — the capability model is in `alo-agentd` and the windows are
+  in the compositor — and
+  [ADR 0108](../decisions/0108-the-compositor-carries-an-application-verb-out-and-needs-no-token-to.md)
+  proposes the road: a door the compositor serves, which only the person's uid
+  may use and which the agent's own login therefore cannot reach, with **no
+  token**, because unlike `alo-broker` the compositor is not privileged and a
+  token would be this machine proving something to itself. *Noticed 2026-10-13,
+  while asking what stood between the agent and controlling an application.*
+
 - [x] **20. Where the record is written, and what prunes it.** Formerly 4b,
   carried since item 4, and finished once 21d had a loop and 21e had a machine
   saying which path and how long. What this item was left holding was one

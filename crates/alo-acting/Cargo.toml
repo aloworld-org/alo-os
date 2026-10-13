@@ -1,0 +1,17 @@
+[package]
+name = "alo-acting"
+version = "0.0.1"
+description = "The acting half of the application verbs: a door the compositor serves and the daemon asks."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# What an application is, and the four verbs this door carries out. The names
+# and the arguments are that crate's; nothing here invents one.
+alo-applications = { path = "../alo-applications" }
+thiserror = { workspace = true }

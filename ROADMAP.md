@@ -47,18 +47,28 @@ on the list at all, and the measurement that found it is in the item itself.
   runs.*
 
 - **A person installs an application, and the agent can work with it.** *The
-  installing is built and has never run. `alo-software` is twenty-nine source
+  installing is built and has run. `alo-software` is twenty-nine source
   files holding the places, the organisation's rule, the signature check and
   the refusals in a person's own words, and `alo-shipping.service` installs the
   seven applications `crates/alo-software/shipped.toml` names at first boot
-  (ADR 0073). **Nothing has booted the image**, so no application has ever
-  arrived on a machine this way. The agent's half was separately missing and is
+  (ADR 0073). **And it has now run**: a machine booted from `06c1444f` on
+  2026-10-13 installed all seven, confirmed by `flatpak list` on the running
+  machine and by the unit's own line — *7 of this machine's applications
+  arrived, 0 still owed*. Read on a booted machine by the desktop lane. *This
+  read **nothing has booted the image, so no application has ever arrived on a
+  machine this way** when it was written earlier the same day, which was true
+  then and false by the evening; the first report of the boot said the unit had
+  been skipped, and that was withdrawn — a search for `Started alo-…` cannot
+  find a `Type=oneshot` unit, which logs **Finished**.* The agent's half was separately missing and is
   being built now: `install_application` is an enumerated verb — declared,
   worded, undoable, and published in `docs/contracts/agent-verbs.md` for third
   parties to build against — and until 2026-10-13 it was offered to nobody.
   `alo_turn::Machine` had one constructor, `carrying_out_file_verbs`, and those
   six file verbs were the whole list an agent on a real machine could ask
-  from.*
+  from. **What is still owed is the part this item's own `done` rule names**:
+  the applications that arrived are the seven this release ships, installed by a
+  unit at first boot. **Nobody has yet asked the agent to install one**, on a
+  machine, and then opened it.*
 
 **And two things stay true at every step, because neither restricts anybody:**
 the record of what happened, and the egress indicator telling the truth while

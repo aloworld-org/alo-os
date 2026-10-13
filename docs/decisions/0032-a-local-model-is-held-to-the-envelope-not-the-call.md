@@ -92,6 +92,16 @@ plain object of name to value, which no envelope constraint reaches.
 4. **Only the pinned runtime.** A hosted provider or a paired machine answers
    through other doors with other capabilities; whether they are held to a
    shape is a separate question, measured separately.
+
+   *That separate question was measured on 2026-10-13 and answered for a
+   provider:
+   [ADR 0107](0107-a-provider-is-held-to-the-shape-its-api-accepts.md). A
+   hosted service accepts a JSON schema where it refuses `llama.cpp`'s
+   `grammar` field, and it will not accept **this** envelope — `oneOf` is
+   refused and every object must be fully specified, so "a door whose contents
+   are any object" cannot be said to it. It is held to a near relative instead.
+   A paired machine is still not held to anything, and that half of this clause
+   stands unmeasured.*
 5. **A grade says how the model was asked.** A grade earned with the envelope
    held is a different measurement from one earned asking freely, and one is
    never written over the other. The catalogue carries both, each with its

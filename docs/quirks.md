@@ -7705,3 +7705,51 @@ unreachable**, and the work it needs is a touch input path with its own seat
 capability, which is work of its own and is not in the change that found this.
 
 **Date:** 2026-10-12.
+
+## An application identifier is not a D-Bus bus name, whatever the tutorials say (2026-10-13)
+
+**The specification.** GNOME's *Application ID* tutorial, Flatpak's conventions
+page and `g_application_id_is_valid` all say the same thing: an application ID
+follows the D-Bus well-known bus name format — at least two elements separated
+by dots, each element `[A-Za-z0-9_-]`, none of them starting with a digit, 255
+characters at most. `alo_portals::activated` sends an identifier to the bus as
+exactly that, so for the applications it starts, the rule is real.
+
+**What reality is.** `alo-installed` derives an identifier from a *desktop
+entry*, and the Desktop Entry Specification's ID is the file's own stem. The
+two sets barely overlap. Measured on 2026-10-13 in the gating virtual machine,
+over `/usr/share/applications` and `/usr/local/share/applications`:
+
+| what was counted | entries |
+|---|---|
+| `.desktop` entries on the machine | 15 |
+| stems that are a well-formed bus name | **1** |
+| stems that are not | **14** |
+
+The refused ones are ordinary software: `htop`, `byobu`, `info`,
+`libreoffice-writer`, `gcr-prompter`. Two of the fourteen fail for the second
+reason rather than the first — `python3.12` has two elements and the second one
+begins with a digit — and a real machine with 1Password on it would refuse
+`1password` the same way.
+
+**So `Application::identified` is not tightened to the bus-name format**, and
+this entry exists because the research that says it should is correct, citable
+and easy to find. A change making it so was written on 2026-10-13, measured
+first against the 16 identifiers that appear as literals in this repository —
+of which it refused 2, both negative tests — and that measurement was simply
+the wrong population. The suite found it: five tests in `alo-installed` failed
+because a desktop entry no longer became an application at all, which on a real
+machine is an installed-applications list with one entry in it.
+
+What the type refuses is unchanged: an empty identifier, any control character,
+any whitespace, `/` and `\`. What it does **not** refuse is shell punctuation,
+and `alo_acting::request`'s
+`nothing_in_a_request_can_carry_a_path_or_a_window_to_look_up` says so out loud
+and fails if that boundary moves — which is how the tightening announced
+itself. Why that is not reachable as an injection is law 2 rather than this
+type: every consumer hands the identifier over as one element of an argument
+vector or as a bus name, and neither composes a shell line.
+
+**If it is ever tightened, the rule has to be the desktop entry's and not the
+bus's** — and the two consumers want different things, which is the real
+finding here and is a decision rather than a patch.
