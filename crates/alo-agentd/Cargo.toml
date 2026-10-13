@@ -51,6 +51,20 @@ alo-context = { path = "../alo-context" }
 alo-protocol = { path = "../alo-protocol" }
 alo-strings = { path = "../alo-strings" }
 alo-turn = { path = "../alo-turn" }
+# The three acts and the one-word answers the compositor's door speaks
+# (ADR 0108). `crate::at_the_compositors_door` is the one implementation that
+# reaches a real socket; the trait is `alo-turn`'s.
+alo-acting = { path = "../alo-acting" }
+# The applications this machine has, read out of the desktop entries the
+# specification's own directories hold. Read once when the daemon starts, which
+# `starting::what_is_installed_here` argues — nothing here watches a directory.
+alo-installed = { path = "../alo-installed" }
+# The application identifier a verb is granted and approved against, and the
+# list of what is installed that `crate::starting` reads once. **It was a
+# dev-dependency of this crate until 2026-10-13**; the three application verbs
+# made it a real one. Only the types are used — no declaration is read here, and
+# which verbs this machine offers is `alo_turn::Machine`'s to say.
+alo-applications = { path = "../alo-applications" }
 
 # What the process assembles a machine out of, which is queue item 21f and the
 # reason the first two moved up here out of the dev-dependencies below: a
