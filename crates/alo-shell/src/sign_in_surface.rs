@@ -45,7 +45,7 @@ use crate::sign_in_layout::{SignInLayout, THE_ENTRY_CORNER_IS};
 pub(crate) const THE_GROUND_IS: [u8; 3] = [0xFA, 0xF7, 0xF2];
 
 /// The monogram's square, `bg/cool`.
-const THE_MONOGRAM_GROUND_IS: [u8; 3] = [0xEE, 0xF2, 0xF4];
+pub(crate) const THE_MONOGRAM_GROUND_IS: [u8; 3] = [0xEE, 0xF2, 0xF4];
 
 /// The entry's surface, `bg/surface`.
 const THE_ENTRY_GROUND_IS: [u8; 3] = [0xFF, 0xFF, 0xFF];

@@ -230,9 +230,13 @@ pub(crate) fn picture(
                         &initial.to_string(),
                         at.monogram.size.w,
                         measure.metrics(),
-                        palette.ground,
+                        // **The square it sits in, not the palette ground.** The
+                        // box behind a glyph is drawn, so shaping against a
+                        // colour the screen does not use leaves a rectangle.
+                        crate::sign_in_surface::THE_MONOGRAM_GROUND_IS,
                         palette.ink,
-                    );
+                    )
+                    .cropped_to_its_ink();
                     let x = at.monogram.loc.x + (at.monogram.size.w - shaped.width) / 2;
                     let y = at.monogram.loc.y + (at.monogram.size.h - shaped.height) / 2;
                     drawn.inked.extend(shaped.placed(x, y, height));
@@ -245,9 +249,13 @@ pub(crate) fn picture(
                     who,
                     at.account.size.w,
                     measure.metrics(),
-                    palette.ground,
+                    // **The design.s ground**, which is what the raster drew
+                    // behind this. `palette.ground` is white, and a white box
+                    // on the folded light is a bar across the wallpaper.
+                    crate::sign_in_surface::THE_GROUND_IS,
                     palette.ink,
-                );
+                )
+                .cropped_to_its_ink();
                 let greeting_x = at.account.loc.x + (at.account.size.w - greeting.width) / 2;
                 drawn
                     .inked
@@ -298,9 +306,10 @@ pub(crate) fn picture(
                         said.text(),
                         at.feedback.size.w,
                         measure.metrics(),
-                        palette.ground,
+                        crate::sign_in_surface::THE_GROUND_IS,
                         palette.ink,
-                    );
+                    )
+                    .cropped_to_its_ink();
                     let x = at.feedback.loc.x + (at.feedback.size.w - shaped.width) / 2;
                     drawn
                         .inked
