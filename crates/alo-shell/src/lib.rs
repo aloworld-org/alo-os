@@ -75,6 +75,8 @@ mod a_chord_moves_the_keyboard_between_areas;
 mod a_chord_reaches_its_action;
 mod a_click_brings_a_window_back;
 mod a_frame_per_display;
+/// Typing into a task window's reply box.
+pub mod a_key_reaches_a_task_window;
 mod a_key_reaches_settings;
 mod a_key_reaches_the_docks_surfaces;
 mod a_key_types_into_more_apps;
@@ -318,6 +320,8 @@ mod software_scanout;
 pub mod status_items;
 mod status_row;
 mod surfaces;
+/// Everything on the Dock that a person reads, said once a frame.
+mod tab_moves_among_the_bars_controls;
 /// The colours a task window draws in, mapped from the design's tokens.
 mod task_look;
 /// A task window's furniture, rasterised.
@@ -331,8 +335,6 @@ pub mod task_raster;
 pub mod task_text;
 /// The Dock's composer as a field a person types a request into.
 pub mod the_composer_a_person_types_in;
-/// Everything on the Dock that a person reads, said once a frame.
-mod tab_moves_among_the_bars_controls;
 pub mod the_docks_words;
 mod the_edge_takes_the_keyboard;
 mod the_panel_reveals;
