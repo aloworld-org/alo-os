@@ -10,6 +10,7 @@ repository.workspace = true
 [dependencies]
 # The machinery. Every type here is one of this crate's: a vocabulary to fill,
 # a translation to check against it, and the lookup that comes out.
+alo-tasks = { path = "../alo-tasks" }
 alo-strings = { path = "../alo-strings" }
 
 # Every crate that declares a word. This crate is reached by whatever assembles

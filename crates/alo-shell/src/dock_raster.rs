@@ -354,7 +354,7 @@ fn the_overflow_list(
     // The rounded grounds on this panel: the search field, and the scroll
     // thumb when the list has one. Declared here because the field is drawn
     // before the list is.
-    let mut wells: Vec<Rectangle<i32, Physical>> = Vec::new();
+    let mut wells: Vec<crate::dock_surface::AWell> = Vec::new();
     let line = i32::try_from(alo_dock::Room::a_line_at(text).as_pixels()).unwrap_or(1);
     let size = i32::try_from(alo_dock::Room::text_at(text).as_pixels()).unwrap_or(1);
     let metrics = Metrics::new(size as f32, line as f32);
@@ -458,7 +458,7 @@ fn the_overflow_list(
         // the viewport holds could see the first few and reach none of the
         // rest, which is what every frame did until 2026-10-11.
         let scrolled_rows = i32::try_from(panel.scrolled().as_pixels()).unwrap_or(0);
-        let mut wells: Vec<Rectangle<i32, Physical>> = Vec::new();
+        let mut wells: Vec<crate::dock_surface::AWell> = Vec::new();
         let mut rings: Vec<Rectangle<i32, Physical>> = Vec::new();
         for (which, window) in picker
             .map(alo_dock::picking::ThePicker::rows)
@@ -483,10 +483,10 @@ fn the_overflow_list(
                 )));
             }
             // The row's own rounded surface, in the raster beside the circles.
-            wells.push(Rectangle::new(
-                (left + pad, y).into(),
-                (inner, row_is).into(),
-            ));
+            wells.push(crate::dock_surface::AWell {
+                at: Rectangle::new((left + pad, y).into(), (inner, row_is).into()),
+                corner: alo_dock::measures::THE_COMPOSERS_CORNER,
+            });
             // Its title, and under it what state it is in and where it sits.
             ink(
                 fonts,
@@ -592,7 +592,10 @@ fn the_overflow_list(
         )
             .into(),
     );
-    wells.push(field);
+    wells.push(crate::dock_surface::AWell {
+        at: field,
+        corner: alo_dock::measures::THE_COMPOSERS_CORNER,
+    });
     // **What they typed, or the prompt — never both.** The prompt stands *in*
     // the field rather than above it, so a field with text in it that also
     // showed the prompt would be two strings in one box. And the typed text is
@@ -806,14 +809,21 @@ fn the_overflow_list(
         overview.scrolled(),
     ) {
         let thumb = i32::try_from(alo_dock::measures::A_SCROLL_THUMB_IS_WIDE).unwrap_or(3);
-        wells.push(Rectangle::new(
-            (
-                list.loc.x + list.size.w - thumb,
-                list.loc.y + i32::try_from(down_the_track.as_pixels()).unwrap_or(0),
-            )
-                .into(),
-            (thumb, i32::try_from(long.as_pixels()).unwrap_or(0)).into(),
-        ));
+        // **The thumb keeps `radius/md` and is drawn as a capsule**, because the
+        // radius is clamped to half the shorter side and a thumb is three
+        // across. That was already true when the radius was one constant; it is
+        // written down now that each well carries its own.
+        wells.push(crate::dock_surface::AWell {
+            corner: alo_dock::measures::THE_COMPOSERS_CORNER,
+            at: Rectangle::new(
+                (
+                    list.loc.x + list.size.w - thumb,
+                    list.loc.y + i32::try_from(down_the_track.as_pixels()).unwrap_or(0),
+                )
+                    .into(),
+                (thumb, i32::try_from(long.as_pixels()).unwrap_or(0)).into(),
+            ),
+        });
     }
 
     // **The line under the list, and which of the two it is.** The design
@@ -1037,7 +1047,15 @@ pub(crate) fn picture(
     // **The composer's field is a well**, which is what every rounded ground on
     // a panel is now called: one on the Dock, one in *More apps*, and one per
     // row in a window list. It is already computed above.
-    let wells: Vec<Rectangle<i32, Physical>> = composer.into_iter().collect();
+    // Every well on a Dock is `radius/md`; the radius is per well now because
+    // the task window needs three on one panel.
+    let wells: Vec<crate::dock_surface::AWell> = composer
+        .into_iter()
+        .map(|at| crate::dock_surface::AWell {
+            at,
+            corner: alo_dock::measures::THE_COMPOSERS_CORNER,
+        })
+        .collect();
     let surface = crate::dock_surface::surface(crate::dock_surface::ADocksSurface {
         // **No focus ring on the bar itself, and that is a gap and not a
         // decision.** The keyboard reaches the two surfaces the bar opens; it

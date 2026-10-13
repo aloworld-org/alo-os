@@ -378,6 +378,33 @@ mod running {
         /// could read a grant and not say it was revoked would show a revoke
         /// button that leaves the running daemon serving the old list.
         /// `alo_changing::this_persons_door` asks the same one kernel question
+        /// A task for this request, reading which model answers here.
+        ///
+        /// **The shell asks and this answers**, because the answer is in a
+        /// person's settings and `alo-shell`'s own source guard holds every
+        /// shipped file in that crate to never naming one. This binary owns the
+        /// folder, so it is the one that may read it.
+        ///
+        /// **`where_it_is`, not `where_the_folder_is`.** The first gives the
+        /// settings **file** and the second its folder; they differ by one path
+        /// segment, and this method was written with the folder before
+        /// `alo_choosing::what_answers_here`'s own test caught it. A folder
+        /// answers nothing, so the symptom would have been no task, no window,
+        /// and nothing saying why.
+        ///
+        /// Every reading worth testing is in that function, in the crate that
+        /// owns settings. All this adds is two environment variables, which a
+        /// test cannot set without racing every other test in the process —
+        /// which is why this binary stays as thin as the others.
+        fn a_task_for(&mut self, request: &str) -> Option<alo_tasks::ATask> {
+            let at = alo_choosing::where_it_is(
+                std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+                std::env::var_os("HOME").as_deref(),
+            )?;
+            let answers = alo_choosing::what_answers_here(&at)?;
+            Some(alo_tasks::ATask::asked_for(request, answers))
+        }
+
         /// through the same one place that answers it.
         fn the_settings_places(&mut self) -> Option<alo_shell::SettingsPlaces> {
             Some(alo_shell::SettingsPlaces::of(
@@ -689,6 +716,7 @@ mod running {
 
         fn now(&self) -> DesktopFrame<'_> {
             DesktopFrame {
+                tasks: &[],
                 // **The lane fills both of these before it draws.** A
                 // desktop's own state cannot know whether a person has opened
                 // the overflow list — a press turns it over and presses reach
@@ -775,7 +803,6 @@ mod running {
             }
         }
     }
-
     /// The clock this machine really keeps, and the honest absence of the rest.
     ///
     /// The clock is here and the other three are not because of what each looks

@@ -65,6 +65,15 @@ alo-dividing = { path = "../alo-dividing" }
 alo-canvas = { path = "../alo-canvas" }
 alo-desktops = { path = "../alo-desktops" }
 alo-dock = { path = "../alo-dock" }
+# **What a task window holds.** The six areas the owner specified and the rules
+# in them — a model change cannot land midway, Stop has a waiting state, an
+# approval covers one action. This crate draws them and decides none of them.
+#
+# **It does not bring `alo-models` with it into the shipped surface.** Making a
+# task needs an `InferenceSource`, which is a reading of a person's settings —
+# so the binary makes the task and this crate holds it. The dev-dependency note
+# below keeps its meaning.
+alo-tasks = { path = "../alo-tasks" }
 # The panel of windows a person put aside: what is in it and what each preview
 # says. It holds no geometry at all, deliberately, so the conversion from the
 # design's figures to this display's pixels happens once, here, in the crate

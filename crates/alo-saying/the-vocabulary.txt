@@ -1592,6 +1592,14 @@ starting.refused.would-not-be-told	This computer would not be told to start Wind
 starting.starts-at-alo-os	This computer starts alo OS when nobody chooses
 starting.starts-at-windows	This computer starts Windows when nobody chooses
 starting.windows-next	Windows will start the next time you switch this computer on. Nothing else changed: the time after that, it starts the way it always does
+tasks.composer.invitation	Reply to alo or change the direction…
+tasks.status.complete	Complete
+tasks.status.stopped	Stopped
+tasks.status.stopping	Stopping…
+tasks.status.waiting	Waiting for your permission
+tasks.status.working	alo is working
+tasks.window.kind	alo task
+tasks.window.scope	Permissions and model choices apply to this task.
 telling.carry-on	You can carry on. Nothing else on this machine depends on the agent, and nothing here is waiting for you to do anything about this
 telling.runs-them-anyway	That is said once: alo OS will run these weights whenever you choose them, and will not mention their size again by itself
 telling.the-agent-cannot-answer	The agent cannot answer right now

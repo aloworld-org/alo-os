@@ -63,6 +63,14 @@ pub(crate) struct DesktopPicture {
     /// the precedent: a region exists because a surface owns its edge, whatever is
     /// drawn in it.
     pub(crate) top_controls: Option<smithay::utils::Rectangle<i32, smithay::utils::Physical>>,
+    /// Each open task window's furniture.
+    ///
+    /// **A window that could not be rasterised is left out rather than
+    /// refusing the frame.** A task window too small for its own layout is one
+    /// window's problem; refusing the frame would take the whole desktop down
+    /// with it, including the Dock the person needs in order to do anything
+    /// about it. `crate::task_raster::furniture` says what it refuses.
+    pub(crate) tasks: Vec<crate::task_raster::TaskPicture>,
     /// The window of what is running.
     pub(crate) running: ListPicture,
     /// The window of what is filling the disk.
@@ -93,6 +101,8 @@ pub(crate) struct Shown<'a> {
     pub(crate) running: &'a ListShows,
     /// The window of what is filling the disk.
     pub(crate) filling: &'a ListShows,
+    /// The task windows open on this display, already placed.
+    pub(crate) tasks: &'a [crate::task_raster::ATaskOnTheDisplay<'a>],
     /// How this display is divided.
     pub(crate) division: &'a alo_dividing::Division,
     /// What letting go of a dragged window would do.
@@ -214,6 +224,7 @@ pub(crate) fn picture(
     size: (i32, i32),
 ) -> Result<DesktopPicture, RenderError> {
     let Shown {
+        tasks,
         running,
         filling,
         division,
@@ -327,7 +338,28 @@ pub(crate) fn picture(
     let top_controls =
         crate::top_controls_region::reserved(size, panel.reserved, filling_the_screen);
 
+    // **Each task window's furniture, and a window that refuses is left out.**
+    // `furniture` refuses a window too small for its own layout, and that is one
+    // window's problem: refusing the whole frame would take the desktop down with
+    // it — including the Dock a person needs in order to close the window that
+    // caused it.
+    let tasks = tasks
+        .iter()
+        .filter_map(|task| {
+            crate::task_raster::furniture(
+                task.at,
+                look,
+                task.how_many_files,
+                &task.words,
+                &task.said,
+                fonts,
+            )
+            .ok()
+        })
+        .collect();
+
     Ok(DesktopPicture {
+        tasks,
         top_controls,
         size,
         dock: match showing {

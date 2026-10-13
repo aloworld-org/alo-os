@@ -177,6 +177,32 @@ pub trait TheDesktop {
     /// through [`Server::the_settings_places_are`](crate::Server::the_settings_places_are).
     /// **The shell asks and does not read**: where a person's grants, pairings
     /// and folder are is the desktop's to know, because a compositor that
+    /// A task for this request, if this machine can answer one.
+    ///
+    /// **The last link between a person pressing Enter and a window opening.**
+    /// `crate::Server::a_person_asked_alo` records what somebody typed; this is
+    /// how it becomes an `ATask`, and the shell asks rather than reads for
+    /// `the_settings_places`' reason exactly: making a task needs to know
+    /// **which model answers here**, that answer lives in a person's settings,
+    /// and `tests/settings_source.rs` holds the whole shell to never naming a
+    /// settings file. *A compositor that opened a person's settings file would
+    /// be a compositor measuring.*
+    ///
+    /// [`None`] is a true answer and the honest default: a machine where nobody
+    /// has chosen what answers their questions **cannot** make a task, and the
+    /// request stays unanswered rather than a window opening onto a model that
+    /// is not there. A desktop that has not been taught to read the choice
+    /// returns it too, which is why the default is this and not a panic.
+    ///
+    /// **Never a fallback.** If the person's choice names a provider this
+    /// machine has no entry for, the answer is [`None`] — not *this machine
+    /// instead*. Silently answering locally a question somebody pointed
+    /// elsewhere, or the reverse, is the one thing
+    /// `docs/decisions` and law 1 both forbid.
+    fn a_task_for(&mut self, _request: &str) -> Option<alo_tasks::ATask> {
+        None
+    }
+
     /// opened a person's settings file would be a compositor measuring.
     fn the_settings_places(&mut self) -> Option<crate::SettingsPlaces> {
         None
@@ -710,8 +736,51 @@ impl LoopInput for Desk<'_> {
                     server.what_was_typed_into_more_apps(),
                     in_more_apps.len(),
                 );
+        // **What somebody asked for becomes a task, here, once a frame — and
+        // before the frame.** Asking the desktop needs it mutably and `now()`
+        // borrows it immutably for as long as the frame lives, so this cannot
+        // sit lower down.
+        // `a_person_asked_alo` recorded the words; this is the moment they
+        // become a window. Taken rather than read, so one Enter opens one
+        // window however many frames pass before this runs.
+        //
+        // **A request the desktop cannot answer is dropped, and that is
+        // deliberate.** `TheDesktop::a_task_for` says `None` on a machine where
+        // nobody has chosen what answers their questions, and a window opened
+        // onto a model that is not there would be worse than none: a person
+        // would type into a surface that could never reply. The request is not
+        // queued either — queueing it would mean a window appearing later for
+        // something they typed and gave up on.
+        for request in server.take_what_was_asked_of_alo() {
+            if let Some(task) = self.desktop.a_task_for(&request) {
+                server.tasks_mut().and_now_this_one(task);
+            }
+        }
         let mut frame = self.desktop.now();
         let named = FrameTarget::metadata(target)?.name;
+        // **Placed once, and after the frame, because the reading direction is
+        // the look's.** A task window
+        // that had nowhere to be gets somewhere now; one that already has a
+        // position is left exactly where it is, which is the design's own
+        // requirement — *later redraws must not unexpectedly reposition it.*
+        //
+        // The view is the display rather than the camera's, because a task
+        // window is drawn against the display like the two desktop windows
+        // beside it. `crate::where_a_task_window_opens` records that, and
+        // records that whether it ought to live on the canvas instead is a
+        // question the owner has not answered.
+        let the_view = smithay::utils::Rectangle::new((0, 0).into(), (size.w, size.h).into());
+        server
+            .tasks_mut()
+            .put_whatever_has_nowhere_to_be(the_view, frame.look.reading(), &[]);
+        // **Said once a frame, and kept alive for as long as the frame is.**
+        // The raster borrows these strings.
+        let the_tasks_words = crate::the_tasks_words::TheTasksWords::said(
+            server.tasks().each(),
+            server.tasks().where_each_went(),
+            self.strings,
+        );
+        let the_task_windows = the_tasks_words.as_displayed();
         what_only_the_server_knows(
             &mut frame,
             server,
@@ -721,6 +790,7 @@ impl LoopInput for Desk<'_> {
                 in_more_apps: &in_more_apps,
                 the_dock_has_open: &the_dock_has_open,
                 the_docks_words: &the_docks_words,
+                tasks: &the_task_windows,
             },
             &named,
         );
@@ -792,6 +862,19 @@ impl LoopInput for Desk<'_> {
                     in_more_apps: &in_more_apps,
                     the_dock_has_open: &the_dock_has_open,
                     the_docks_words: &the_docks_words,
+                    // **None on an extra display, and that is a named gap.** A
+                    // task window belongs to the display it was placed on, and
+                    // nothing records which that was — the position is one
+                    // rectangle per task, not one per task per display. Handing
+                    // this list over here would draw the same window on every
+                    // display at the same coordinates, which is worse than
+                    // drawing it on one: a person would have two of a window
+                    // they can only type into once.
+                    //
+                    // So a task window is on the first display today. Making it
+                    // belong to a display is a change to what `TheTasks`
+                    // stores, and it is written down rather than guessed at.
+                    tasks: &[],
                 },
                 &named,
             );

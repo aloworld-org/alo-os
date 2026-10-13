@@ -147,3 +147,69 @@ fn stopping_a_task_asks_and_then_reports() {
         "a stopped task did not name what it had already changed"
     );
 }
+
+/// **A stop asked for and not confirmed says *stopping*, never *stopped*.**
+///
+/// The one thing a Stop must not claim. The work is still running at this
+/// moment, and every later branch of the rule would have said something else.
+#[test]
+fn a_stop_not_yet_confirmed_says_stopping() {
+    let mut task = a_task();
+    task.and_then(Act::doing("reading your documents"));
+    task.stop();
+
+    assert_eq!(task.what_is_happening(), crate::words::STOPPING);
+    assert_ne!(task.what_is_happening(), crate::words::STOPPED);
+}
+
+/// **A confirmed stop says *stopped*, whatever the activity still says.**
+///
+/// The runtime's word outranks a log nobody closed out — the same rule
+/// `the_one_button` follows, and asserted with the disagreement present so it
+/// cannot pass by the log happening to be tidy.
+#[test]
+fn a_confirmed_stop_says_stopped_even_with_an_act_still_open() {
+    let mut task = a_task();
+    task.and_then(Act::doing("reading your documents"));
+    task.it_stopped(WhatChanged::nothing());
+
+    assert!(
+        task.activity().doing_now().is_some(),
+        "the fixture must still hold an open act, or this proves nothing"
+    );
+    assert_eq!(task.what_is_happening(), crate::words::STOPPED);
+}
+
+/// **Waiting on the person is its own word, and it is not the working one.**
+#[test]
+fn waiting_on_the_person_is_not_the_working_word() {
+    let mut task = a_task();
+    task.alo_says(Turn::alo_proposing(
+        "May I save it in your Presentations folder?",
+    ));
+
+    assert_eq!(
+        task.what_is_happening(),
+        crate::words::WAITING_FOR_YOUR_PERMISSION
+    );
+    assert_ne!(task.what_is_happening(), crate::words::ALO_IS_WORKING);
+}
+
+/// **A request nothing has answered yet is already working.**
+///
+/// The seconds between Enter and alo's first word, where a person most needs to
+/// see that the machine heard them.
+#[test]
+fn a_request_nothing_has_answered_is_already_working() {
+    assert_eq!(a_task().what_is_happening(), crate::words::ALO_IS_WORKING);
+}
+
+/// **A task that finished says so.**
+#[test]
+fn a_finished_task_says_complete() {
+    let mut task = a_task();
+    task.and_then(Act::done("Launch brief.pdf read"));
+    task.alo_says(Turn::from_alo("Your presentation is ready."));
+
+    assert_eq!(task.what_is_happening(), crate::words::COMPLETE);
+}

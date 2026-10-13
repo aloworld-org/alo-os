@@ -7,6 +7,16 @@
 //! the whole of task 4's promise: a brought file measured by a second copy of
 //! this code would be measured by whatever that copy had drifted into.
 
+// The provider road, in its own file: a second way of asking is a second
+// reason to change, and law 4 does not make an exception for test support.
+// Its configuration reader is **not** here — it carries its own tests, and a
+// shared module would run them once per test binary.
+#[allow(
+    dead_code,
+    reason = "only against_a_model_at_a_provider.rs puts the set to a provider"
+)]
+pub mod to_a_provider;
+
 use alo_answering::Answering;
 use alo_asking::{Answer, Asking, NotAnswered, Question};
 use std::net::SocketAddr;

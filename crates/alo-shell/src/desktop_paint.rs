@@ -50,12 +50,21 @@ impl DesktopPicture {
     /// for these first, uploads them, and hands the textures back — the same
     /// order it already uses for every client surface.
     pub(crate) fn washed(&self) -> impl Iterator<Item = &Washed> {
-        // **The Dock's own surface first, then anything opened from it.** That
-        // order is the painting order and `Self::paint` relies on it: the first
-        // goes under the Dock's contents and the rest go over them.
+        // **The task windows first, then the Dock's own surface, then anything
+        // opened from it.** `Self::paint` takes the tasks off the front *by
+        // count* and the rest positionally.
+        //
+        // The tasks lead deliberately. Appending them would have put them after
+        // the Dock's panels, which `Self::paint` drains with a `for` loop
+        // **inside** its `if let Some(dock)` — so on a desktop whose Dock had
+        // given way, every task window's texture would have been consumed as
+        // the Dock's surface and then never drawn. Taking a known number off
+        // the front cannot do that, whether or not there is a Dock.
         let dock = self.dock.as_ref();
-        dock.and_then(|dock| dock.surface.as_ref())
-            .into_iter()
+        self.tasks
+            .iter()
+            .map(|task| &task.panel)
+            .chain(dock.and_then(|dock| dock.surface.as_ref()))
             .chain(dock.into_iter().flat_map(|dock| dock.panels.iter()))
     }
 
@@ -74,6 +83,11 @@ impl DesktopPicture {
         // Anything after it is a panel opened *from* the Dock — the overflow
         // list — and goes over them, which is the order `Self::washed` yields.
         let mut washed = washed.iter();
+        // **The tasks come off the front by count**, which is the one thing
+        // that makes the rest of this positional read safe — see `Self::washed`.
+        let tasks: Vec<_> = (0..self.tasks.len())
+            .filter_map(|_| washed.next())
+            .collect();
         let dock_surface = washed.next();
 
         // The division first: its rules and the outline a drop would take sit
@@ -97,6 +111,30 @@ impl DesktopPicture {
         // their areas are kept apart rather than ordered. An empty panel has no
         // solids, so a person who has put nothing aside is painted nothing.
         crate::painted::paint(frame, &self.panel.solids, &[])?;
+        // **Task windows above the Dock, with the other two shell windows.**
+        // They are the same kind of thing — a window the shell draws rather
+        // than a client's — and the two desktop windows have been painted above
+        // the Dock since before this. Whether a task window should instead give
+        // way to the Dock is a placement question, and
+        // `docs/design/where-a-new-window-opens.md` is where it would be
+        // settled; it is not settled here and this does not pretend to.
+        for (texture, area) in tasks {
+            crate::painted::wash(frame, texture, *area)?;
+        }
+        // **And their words, after their panels.** A task window's panel is one
+        // texture with its rounded shapes drawn into it; its text is inked onto
+        // the ground it sits on and painted over the panel.
+        //
+        // **This was missing and no test could have said so.** The words were
+        // shaped, measured, placed and asserted — `the_words_are_drawn_and_an_
+        // empty_window_draws_none` holds the count at twelve — and the list
+        // never reached a frame. Every test was about the list; none was about
+        // the painting. What found it was looking at a picture of a real draw,
+        // which is what `examples/desktop_check.rs` exists for and says so in
+        // its own header: *it needs eyes, and eyes need pictures.*
+        for task in &self.tasks {
+            crate::painted::paint(frame, &[], &task.inked)?;
+        }
         for window in [&self.running, &self.filling] {
             if !window.is_empty() {
                 crate::painted::paint(frame, &window.solids, &window.inked)?;

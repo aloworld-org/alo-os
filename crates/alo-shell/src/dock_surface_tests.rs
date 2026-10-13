@@ -296,3 +296,87 @@ fn nothing_in_the_surface_scales_on_its_own() {
         "the corner reaches {reach} where the ruled radius is {radius}"
     );
 }
+
+/// **A well is drawn at its own radius**, and the proof is that two wells of
+/// one size with different radii differ at the corner and agree in the middle.
+///
+/// The test this capability needed. The radius was one constant, so nothing
+/// checked that a well's corner came from the well — and a parameter nothing
+/// reads looks exactly like a parameter that works. Substituting one and
+/// watching is the only way to tell.
+#[test]
+fn a_wells_corner_comes_from_the_well_and_not_from_a_constant() {
+    let square = Rectangle::new((20, 20).into(), (80, 80).into());
+    let of = |corner: u32| {
+        surface(ADocksSurface {
+            marks: &[],
+            mark: [0, 0, 0],
+            panel: Rectangle::new((0, 0).into(), (200, 120).into()),
+            fill: [255, 255, 255],
+            edge: [255, 255, 255],
+            accent: [255, 255, 255],
+            against: Edge::Bottom,
+            accent_is: 0,
+            room: (400, 300),
+            badges: &[],
+            badge: [0, 0, 0],
+            wells: &[super::AWell { at: square, corner }],
+            well_is: [0, 0, 0],
+            rings: &[],
+            ring_is: [0, 0, 0],
+        })
+        .expect("a panel with area rasterises")
+    };
+
+    let sharp = of(0);
+    let round = of(40);
+
+    // The raster is offset by the shadow's reach, so sample through the same
+    // conversion for both rather than assuming where the panel starts.
+    let corner_of = |washed: &super::Washed| {
+        let x = square.loc.x - washed.area.loc.x + 1;
+        let y = square.loc.y - washed.area.loc.y + 1;
+        pixel(washed, x, y)
+    };
+    let middle_of = |washed: &super::Washed| {
+        let x = square.loc.x - washed.area.loc.x + square.size.w / 2;
+        let y = square.loc.y - washed.area.loc.y + square.size.h / 2;
+        pixel(washed, x, y)
+    };
+
+    assert_eq!(
+        middle_of(&sharp),
+        middle_of(&round),
+        "the middle of a well must not depend on its radius, or this test is \
+         measuring something else"
+    );
+    assert_ne!(
+        corner_of(&sharp),
+        corner_of(&round),
+        "a 0 and a 40 radius drew the same corner, so the well's own corner is \
+         being ignored"
+    );
+
+    // And the direction is the one a radius implies: a large radius cuts the
+    // corner away, so *less* of the well is there and more of the panel shows.
+    //
+    // **Measured on brightness, not on alpha.** The well sits on an opaque
+    // panel, so alpha is full across all of it and a corner that is all panel
+    // and a corner that is all well are both opaque — the first version of this
+    // compared alpha and could not have told them apart. The well is black on a
+    // white fill, so the rounder corner is the lighter one.
+    let lightness = |p: [u8; 4]| u32::from(p[0]) + u32::from(p[1]) + u32::from(p[2]);
+    assert!(
+        lightness(corner_of(&round)) > lightness(corner_of(&sharp)),
+        "a rounder corner did not let more of the panel through: round {:?} vs \
+         sharp {:?}",
+        corner_of(&round),
+        corner_of(&sharp)
+    );
+    assert_eq!(
+        corner_of(&round)[3],
+        corner_of(&sharp)[3],
+        "both corners sit on an opaque panel, which is why alpha cannot be the \
+         measurement here"
+    );
+}

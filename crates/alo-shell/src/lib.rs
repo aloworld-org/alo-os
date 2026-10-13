@@ -75,6 +75,8 @@ mod a_chord_moves_the_keyboard_between_areas;
 mod a_chord_reaches_its_action;
 mod a_click_brings_a_window_back;
 mod a_frame_per_display;
+/// Typing into a task window's reply box.
+pub mod a_key_reaches_a_task_window;
 mod a_key_reaches_settings;
 mod a_key_reaches_the_docks_surfaces;
 mod a_key_types_into_more_apps;
@@ -125,6 +127,8 @@ mod canvas_wheel_zoom;
 mod capture_flatten;
 mod capture_paint;
 mod capture_raster;
+/// What one key press means in the Dock's composer.
+pub mod composer_keys;
 mod cursor;
 mod cursor_mask;
 mod default_cursor;
@@ -318,17 +322,35 @@ mod status_row;
 mod surfaces;
 /// Everything on the Dock that a person reads, said once a frame.
 mod tab_moves_among_the_bars_controls;
+/// The colours a task window draws in, mapped from the design's tokens.
+mod task_look;
+/// A task window's furniture, rasterised.
+pub mod task_raster;
+/// The type styles a task window is written in, and the words a window says.
+///
+/// **Public because `task_raster::ATaskOnTheDisplay` is**, and it carries these
+/// types: a caller that builds a task window has to be able to name the words
+/// it puts in one. `examples/desktop_check.rs` is the first such caller outside
+/// this crate.
+pub mod task_text;
+/// The Dock's composer as a field a person types a request into.
+pub mod the_composer_a_person_types_in;
 pub mod the_docks_words;
 mod the_edge_takes_the_keyboard;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;
+/// The task windows a person opened by asking alo for something.
+pub mod the_tasks_a_person_opened;
+/// Everything in a task window that a person reads, said once a frame.
+mod the_tasks_words;
 mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
 mod their_displays;
 mod top_controls_region;
 mod what_the_dock_has_open;
 mod what_the_server_tells_a_frame;
+mod where_a_task_window_opens;
 mod where_a_window_opens;
 mod where_the_dock_is;
 pub mod which_area_has_the_keyboard;

@@ -64,6 +64,7 @@ impl ADesktop {
 impl crate::TheDesktop for ADesktop {
     fn now(&self) -> crate::DesktopFrame<'_> {
         crate::DesktopFrame {
+            tasks: &[],
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
             the_docks_words: crate::desktop_testing::no_words(),
             dock: &self.dock,

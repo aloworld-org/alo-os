@@ -167,6 +167,24 @@ impl TheConversation {
             .last()
             .is_some_and(Turn::is_waiting_for_the_person)
     }
+
+    /// Whether alo owes a reply: the person spoke last.
+    ///
+    /// **This is what makes a task *working* before it has done anything.** A
+    /// request that has just been sent has one turn in it, no activity and no
+    /// reply, and a reader that decided *working* from the activity alone would
+    /// call that task idle and offer Send — in the seconds when the person most
+    /// needs to see that the machine heard them and can be stopped.
+    ///
+    /// Not the negation of [`Self::is_waiting_for_the_person`]: a conversation
+    /// whose last turn is a plain reply from alo is neither waiting for the
+    /// person nor owed a reply, which is a finished task.
+    #[must_use]
+    pub fn is_alos_turn(&self) -> bool {
+        self.turns
+            .last()
+            .is_some_and(|turn| matches!(turn.who(), WhoSaidIt::ThePerson))
+    }
 }
 
 #[cfg(test)]

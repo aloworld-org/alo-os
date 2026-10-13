@@ -52,6 +52,7 @@ fn drawn_with(
         dock,
         look,
         crate::desktop_raster::Shown {
+            tasks: &[],
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
             the_docks_words: crate::desktop_testing::no_words(),
             running: &running_shows(running, &strings),
@@ -105,6 +106,7 @@ fn drawn_with_an_open_list(
         &dock,
         noon_look(&an_appearance(), reading),
         crate::desktop_raster::Shown {
+            tasks: &[],
             the_dock_has_open: &crate::what_the_dock_has_open::MORE_APPS,
             the_docks_words: crate::desktop_testing::no_words(),
             running: &running_shows(&RunningWindow::closed(), &strings),
@@ -147,6 +149,7 @@ fn drawn_at(
         dock,
         look,
         crate::desktop_raster::Shown {
+            tasks: &[],
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
             the_docks_words: crate::desktop_testing::no_words(),
             running: &running_shows(running, &strings),
@@ -569,6 +572,7 @@ fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
             &Dock::shipped(),
             look,
             crate::desktop_raster::Shown {
+                tasks: &[],
                 the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
                 the_docks_words: crate::desktop_testing::no_words(),
                 running: &running_shows(&running, &strings),
@@ -988,5 +992,157 @@ fn an_open_application_in_more_apps_has_a_mark_in_the_raster() {
         (panel.area.size.w, panel.area.size.h),
         (list.size.w + 2 * reach, list.size.h + 2 * reach),
         "the raster is not the popover's surface plus its shadow's reach"
+    );
+}
+
+/// What a task window says, for a fixture that is about the seam rather than
+/// the wording.
+fn a_tasks_words() -> crate::task_text::TheWordsInATaskWindow<'static> {
+    crate::task_text::TheWordsInATaskWindow {
+        title: "Prepare the launch presentation",
+        kind: "alo task",
+        status: "alo is working",
+        model: "SmolLM2 1.7B",
+        destination: "On this computer",
+        invitation: "Reply to alo\u{2026}",
+        scope_note: "Permissions and model choices apply to this task.",
+        files: &[],
+        how_many_files: "",
+    }
+}
+
+/// **A task window reaches the frame**, and is painted as its own texture.
+///
+/// The test the wiring was owed. Every piece of a task window had its own
+/// passing tests while nothing on a desktop drew one, which is this
+/// repository's standing fault — a seam nobody crosses in a test looks exactly
+/// like a seam that works. This crosses it: a task in `Shown` becomes a picture
+/// in `DesktopPicture`, and that picture's raster is one of the textures
+/// `washed` asks the renderer to upload.
+#[test]
+fn a_task_window_reaches_the_desktop_picture_and_is_painted() {
+    let dock = Dock::shipped();
+    let look = noon_look(&an_appearance(), Direction::LeftToRight);
+    let strings = words();
+    let mut labels = WindowControlLabels::new().unwrap();
+    let running = RunningWindow::closed();
+    let filling = FillingWindow::closed();
+    let size = (1920, 1080);
+
+    let mut of = |tasks: &[crate::task_raster::ATaskOnTheDisplay]| {
+        picture(
+            &dock,
+            look,
+            crate::desktop_raster::Shown {
+                tasks,
+                the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
+                the_docks_words: crate::desktop_testing::no_words(),
+                running: &running_shows(&running, &strings),
+                filling: &filling_shows(&filling, &strings),
+                division: crate::desktop_testing::an_undivided_display(),
+                offer: crate::desktop_testing::nothing_offered(),
+                windows: &[],
+                put_aside: crate::desktop_testing::nothing_put_aside(),
+                panel_is_revealed: true,
+                filling_the_screen: false,
+                display_scale: 100,
+                on_the_dock: &[],
+                in_more_apps: &[],
+            },
+            &mut labels.fonts,
+            size,
+        )
+        .unwrap()
+    };
+
+    // **Nothing asked, nothing drawn** — the honest state of a machine nobody
+    // has spoken to, and the control this test needs to mean anything.
+    let empty = of(&[]);
+    assert!(
+        empty.tasks.is_empty(),
+        "a task window was drawn for no task"
+    );
+    let washed_without = empty.washed().count();
+
+    let one = [crate::task_raster::ATaskOnTheDisplay {
+        at: smithay::utils::Rectangle::new((200, 120).into(), (1040, 800).into()),
+        how_many_files: 2,
+        words: a_tasks_words(),
+        said: Vec::new(),
+    }];
+    let with = of(&one);
+
+    assert_eq!(
+        with.tasks.len(),
+        1,
+        "the task window did not reach the picture"
+    );
+    assert_eq!(
+        with.washed().count(),
+        washed_without + 1,
+        "the task window's raster is not among the textures to upload, so it \
+         would never be painted"
+    );
+    // And it is the *first* texture, which is what `DesktopPicture::paint`
+    // relies on to take the tasks off the front by count.
+    let first = with.washed().next().unwrap();
+    assert_eq!(
+        first.area,
+        with.tasks.first().unwrap().panel.area,
+        "the task window is not the first texture, so paint would take the \
+         wrong one as the Dock's surface"
+    );
+}
+
+/// **A task window too small is left out, and the frame still draws.**
+///
+/// One window's problem must not take the desktop down with it: a person whose
+/// task window cannot lay out still needs the Dock in order to close it.
+#[test]
+fn a_task_window_too_small_is_left_out_rather_than_refusing_the_frame() {
+    let dock = Dock::shipped();
+    let look = noon_look(&an_appearance(), Direction::LeftToRight);
+    let strings = words();
+    let mut labels = WindowControlLabels::new().unwrap();
+    let running = RunningWindow::closed();
+    let filling = FillingWindow::closed();
+
+    let impossible = [crate::task_raster::ATaskOnTheDisplay {
+        at: smithay::utils::Rectangle::new((0, 0).into(), (120, 60).into()),
+        how_many_files: 0,
+        words: a_tasks_words(),
+        said: Vec::new(),
+    }];
+    let drawn = picture(
+        &dock,
+        look,
+        crate::desktop_raster::Shown {
+            tasks: &impossible,
+            the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
+            the_docks_words: crate::desktop_testing::no_words(),
+            running: &running_shows(&running, &strings),
+            filling: &filling_shows(&filling, &strings),
+            division: crate::desktop_testing::an_undivided_display(),
+            offer: crate::desktop_testing::nothing_offered(),
+            windows: &[],
+            put_aside: crate::desktop_testing::nothing_put_aside(),
+            panel_is_revealed: true,
+            filling_the_screen: false,
+            display_scale: 100,
+            on_the_dock: &[],
+            in_more_apps: &[],
+        },
+        &mut labels.fonts,
+        (1920, 1080),
+    )
+    .unwrap();
+
+    assert!(
+        drawn.tasks.is_empty(),
+        "a 120 by 60 task window was rasterised"
+    );
+    assert!(
+        drawn.dock.is_some(),
+        "the Dock is gone, so the person cannot reach the window that failed"
     );
 }
