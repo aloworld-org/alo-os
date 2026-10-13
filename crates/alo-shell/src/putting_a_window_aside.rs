@@ -149,7 +149,7 @@ impl crate::Server {
         panel: &mut Panel,
         frame: &WlSurface,
     ) -> Result<Preview, NotAside> {
-        let id = WindowId::numbered(crate::window_number::Numbers::of(frame));
+        let id = crate::window_number::the_window_id_of(frame);
         let preview = panel.bring_back(id)?;
         let _ = self.set_window_minimized(frame, false);
         Ok(preview)
@@ -163,7 +163,7 @@ impl crate::Server {
     /// window put aside and a window a division moved are the same window,
     /// rather than two ids that agree by luck.
     fn as_a_model_window(&self, frame: &WlSurface, at: Patch) -> Window {
-        let id = WindowId::numbered(crate::window_number::Numbers::of(frame));
+        let id = crate::window_number::the_window_id_of(frame);
         // **Two different facts, read separately on purpose.** `the_name_of`
         // answers one question — *what is this frame called* — by falling back
         // from the title to the class, which is right for a label and wrong
