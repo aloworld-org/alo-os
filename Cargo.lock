@@ -122,6 +122,7 @@ dependencies = [
 name = "alo-agentd"
 version = "0.0.1"
 dependencies = [
+ "alo-acting",
  "alo-agent",
  "alo-answering",
  "alo-applications",
@@ -134,6 +135,7 @@ dependencies = [
  "alo-egress",
  "alo-entering",
  "alo-files",
+ "alo-installed",
  "alo-instructing",
  "alo-keeping",
  "alo-keyring-fixture",

@@ -201,7 +201,6 @@ mod a_port_another_program_let_go_of;
 mod a_port_held_over_ipv6_at_start;
 #[cfg(all(test, target_os = "linux"))]
 mod a_proposal_measured_on_the_network_it_arrived_on;
-#[cfg(target_os = "linux")]
 pub mod ageing;
 #[cfg(target_os = "linux")]
 pub mod answering;
@@ -209,6 +208,8 @@ pub mod answering;
 mod answering_discovery;
 #[cfg(target_os = "linux")]
 pub mod arrived_on;
+#[cfg(target_os = "linux")]
+pub mod at_the_compositors_door;
 #[cfg(target_os = "linux")]
 pub mod bounding;
 #[cfg(target_os = "linux")]

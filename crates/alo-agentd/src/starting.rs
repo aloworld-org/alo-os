@@ -123,6 +123,8 @@
 //! still writes every refusal down, which is the capability model running
 //! rather than missing, and there is a test below that says so.
 
+use std::path::Path;
+
 use alo_egress::{EgressPolicy, Indicator};
 use alo_files::OnThisMachine;
 use alo_models::Catalogue;
@@ -130,13 +132,18 @@ use alo_nearby::Pairings;
 use alo_saying::{Loaded, everything_this_machine_can_say, the_translations};
 use alo_software::TheRentedTool;
 use alo_strings::Strings;
-use alo_turn::{Bounding, Machine, Shortening, TheVerbsWouldNotDeclare};
+use alo_turn::{
+    Bounding, Machine, Shortening, TheVerbsWouldNotDeclare, WhatASoftwareVerbNeeds,
+    WhatAnApplicationVerbNeeds,
+};
 
+use crate::at_the_compositors_door::AtTheCompositorsDoor;
 use crate::caller::Uid;
 use crate::described::Described;
 use crate::knocking::Knocking;
 use crate::names::TheNames;
 use crate::network::{KeepingPairings, TheNetwork};
+use crate::place::Place;
 use crate::questions::Questions;
 use crate::refusing::NotStarted;
 use crate::rereading::WhatIsGranted;
@@ -254,10 +261,19 @@ pub fn until_stopped(
     // third parties to build against — was offered to nobody. An agent on a
     // real machine could install nothing.
     let installing_with = TheRentedTool::on_this_machine();
+    // **The compositor's door, beside this daemon's own socket.** `Place` owns
+    // `/run/alo/<uid>` and made it (ADR 0017); this only appends a filename the
+    // contract publishes. A machine with no compositor running has no socket
+    // there, which `AtTheCompositorsDoor` answers as *no compositor* — a
+    // machine at the sign-in screen is in exactly that state, and it is an
+    // answer rather than a reason not to start.
+    let mut at_the_compositors_door =
+        AtTheCompositorsDoor::beside(Place::for_person(described.sides().person()).directory());
     let mut machine = what_this_machine_can_carry_out(
         strings,
         &installing_with,
         described,
+        &mut at_the_compositors_door,
         bounding,
         &mut indicator,
         kept,
@@ -323,11 +339,17 @@ pub fn until_stopped(
 ///
 /// **A named function and not a line inside [`until_stopped`]**, because what
 /// it chooses is the thing most worth holding: which verbs an agent is offered.
-/// `alo_turn::Machine` has two constructors, one of which offers six verbs and
-/// one seven, and the five-argument one compiles perfectly well here — so the
-/// difference between a daemon whose agent can install an application and one
-/// whose agent cannot is one identifier, in one line, with nothing watching it.
-/// Now there is something watching it, one test below.
+/// `alo_turn::Machine` has **three** constructors — six verbs, seven, or ten —
+/// and every one of them compiles perfectly well here, so the difference
+/// between a daemon whose agent can open an application and one whose agent
+/// cannot is one identifier, in one line, with nothing watching it. There is
+/// something watching it, one test below, and that test is the reason this is a
+/// named function rather than a line inside [`until_stopped`].
+///
+/// **Ten and not eleven**: `arrange_application` has no road, so
+/// `alo_applications::verbs::declare_the_three_with_a_road_into` leaves it out
+/// and an agent is never shown it. A verb a model can propose and a person can
+/// approve with nothing behind it is an approval that does nothing.
 ///
 /// It decides nothing else. The tool is `alo-software`'s, at the path that
 /// crate chose; the bound is `[applications]` as `crate::describing` read it
@@ -342,19 +364,60 @@ fn what_this_machine_can_carry_out<'a>(
     strings: &'a Strings,
     installing_with: &'a dyn alo_software::Tool,
     described: &Described,
+    at_the_compositors_door: &'a mut AtTheCompositorsDoor,
     bounding: &'a mut dyn Bounding,
     indicator: &'a mut alo_egress::Indicator,
     kept: &'a mut dyn Shortening,
 ) -> Result<Machine<'a>, TheVerbsWouldNotDeclare> {
-    Machine::carrying_out_file_and_software_verbs(
+    Machine::carrying_out_file_software_and_application_verbs(
         strings,
         &OnThisMachine,
-        installing_with,
-        described.applications().clone(),
+        WhatASoftwareVerbNeeds {
+            tool: installing_with,
+            bound: described.applications().clone(),
+        },
+        WhatAnApplicationVerbNeeds {
+            installed: what_is_installed_here(),
+            door: at_the_compositors_door,
+        },
         bounding,
         indicator,
         kept,
     )
+}
+
+/// The applications this machine has, read once, now.
+///
+/// **Read here and not watched**, which is the same rule as everything else a
+/// machine holds about itself: an application installed a moment ago is not in
+/// this list, and the answer to that is the compositor's own —
+/// `alo_applications::Reaching`'s header says it cannot close the gap between
+/// an application being found and being reached, and a second look would not
+/// either.
+///
+/// It reads the environment rather than being told, because the desktop entry
+/// specification's answer *is* the environment: `$XDG_DATA_HOME` and
+/// `$XDG_DATA_DIRS`, with the specification's own defaults where either is
+/// unset or empty. `alo_installed::where_entries_live` holds that, including
+/// that an empty variable means unset — treating `""` as a directory would read
+/// entries out of this process's working directory.
+///
+/// A directory that is not there is not an error and a file that does not parse
+/// is skipped, both of which are `alo_installed::read`'s own decisions. So a
+/// machine with nothing installed answers an empty list, and the three verbs
+/// then refuse every application by name rather than failing.
+fn what_is_installed_here() -> alo_applications::Installed {
+    // Bound to locals rather than chained, so each borrow outlives the call
+    // that reads it and the whole thing stays one expression nobody has to
+    // reason about the lifetime of.
+    let home = std::env::var_os("HOME");
+    let data_home = std::env::var_os("XDG_DATA_HOME");
+    let data_dirs = std::env::var_os("XDG_DATA_DIRS");
+    alo_installed::read(&alo_installed::where_entries_live(
+        home.as_deref().map(Path::new),
+        data_home.as_deref(),
+        data_dirs.as_deref(),
+    ))
 }
 
 #[cfg(test)]
@@ -390,23 +453,38 @@ mod tests {
         .unwrap()
     }
 
-    /// **The daemon offers seven verbs, and one of them installs an
-    /// application.** The production function is the subject, not a copy of
-    /// it: a second arrangement built here would pass while `until_stopped`
-    /// went on handing an agent six.
+    /// **The daemon offers ten verbs: the six files, the installation, and
+    /// three of the four application acts.** The production function is the
+    /// subject, not a copy of it: a second arrangement built here would pass
+    /// while `until_stopped` went on handing an agent six.
     ///
-    /// Until 2026-10-13 it was six. `install_application` was declared in
-    /// `alo-software`, worded, undoable by `alo-keeping-up`, and listed in
-    /// `docs/contracts/agent-verbs.md` for third parties to build against —
-    /// and `alo_software::software_verbs` was called by its own tests and by
-    /// nothing else, so an agent on a real machine could install nothing. This
-    /// test is what makes that not happen again quietly.
+    /// It was six until 2026-10-13, then seven, and is ten in the same day.
+    /// Each time the verbs were declared, worded, undoable and published in
+    /// `docs/contracts/agent-verbs.md` for third parties to build against, and
+    /// each time they were offered to **nobody** until a line in this file
+    /// changed. That is what this test is for.
+    ///
+    /// # Ten and not eleven, and the absence is asserted
+    ///
+    /// `arrange_application` is the fourth application verb and it has no road
+    /// — `docs/features.md` promises it and no machine can carry it out, for
+    /// the reason ADR 0108 gives. So
+    /// `alo_applications::verbs::declare_the_three_with_a_road_into` leaves it
+    /// out and this asserts it is **absent**, not merely that ten are present.
+    ///
+    /// A verb on the offered list with nothing behind it is one a model
+    /// proposes, a person reads a sentence for, a person approves — and then
+    /// nothing happens. An approval that does nothing is a worse thing to ship
+    /// than a capability that is missing, so the absence is as much a property
+    /// as the presences.
     #[test]
-    fn this_daemon_offers_the_six_file_verbs_and_the_installation() {
+    fn this_daemon_offers_the_six_the_installation_and_the_three_application_acts() {
         let described = an_ordinary_machine();
         let loaded = what_this_machine_says().unwrap();
         let strings = loaded.strings();
         let installing_with = TheRentedTool::on_this_machine();
+        let mut at_the_compositors_door =
+            AtTheCompositorsDoor::beside(std::path::Path::new("/run/alo/0"));
         let mut indicator = alo_egress::Indicator::default();
         let mut record = Record::default();
         let mut bounding = crate::testing::NothingIsBounded;
@@ -414,6 +492,7 @@ mod tests {
             strings,
             &installing_with,
             &described,
+            &mut at_the_compositors_door,
             &mut bounding,
             &mut indicator,
             &mut record,
@@ -426,12 +505,24 @@ mod tests {
             .collect();
         assert_eq!(
             offered.len(),
-            7,
+            10,
             "the daemon offers these and nothing else: {offered:?}"
         );
         assert!(
             offered.contains(&alo_software::INSTALL_APPLICATION),
             "an agent on this machine cannot install an application: {offered:?}"
+        );
+        // The three with a road.
+        for act in ["open_application", "focus_application", "close_application"] {
+            assert!(
+                machine.verbs().of(act).is_some(),
+                "an agent on this machine cannot {act}: {offered:?}"
+            );
+        }
+        // **And the one without a road is not offered.**
+        assert!(
+            machine.verbs().of("arrange_application").is_none(),
+            "a verb nothing can carry out is offered to an agent: {offered:?}"
         );
         // And the six are still there. A family that replaced rather than
         // joined the list would otherwise read as a pass on the count alone.
@@ -445,7 +536,7 @@ mod tests {
         ] {
             assert!(
                 machine.verbs().of(file_verb).is_some(),
-                "{file_verb} went missing when the installation arrived"
+                "{file_verb} went missing when the application acts arrived"
             );
         }
     }

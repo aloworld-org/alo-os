@@ -70,6 +70,21 @@ on the list at all, and the measurement that found it is in the item itself.
   unit at first boot. **Nobody has yet asked the agent to install one**, on a
   machine, and then opened it.*
 
+  *And **working with** one is now built, later the same day, in three parts:
+  the compositor serves a door only the person's uid may open (ADR 0108), a
+  turn carries an act to it, and the daemon knocks. **Three verbs, not the four
+  `docs/features.md` promises**: `open_application`, `focus_application` and
+  `close_application` have a road and `arrange_application` does not, so it is
+  **not declared** and an agent is never shown it. The reason is recorded in
+  ADR 0108 and it is not laziness — the compositor's single-window half was
+  removed on 2026-09-26 so that there would be exactly one layout decider, and
+  what replaced it divides between two windows, so the chord that put one
+  window on half a display has no answer any more. Giving `arrange` a road is a
+  decision, not an addition. **What this item still owes is unchanged in
+  kind**: the three acts have never run against a real application on a booted
+  machine. Every test of them uses a stand-in on a real socket, because the
+  compositor needs a Wayland parent, and a stand-in is not a window.*
+
 **And two things stay true at every step, because neither restricts anybody:**
 the record of what happened, and the egress indicator telling the truth while
 it happens.
