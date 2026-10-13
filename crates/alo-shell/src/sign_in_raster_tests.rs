@@ -98,13 +98,29 @@ fn that_a_password_is_typed_is_visible() {
     );
 }
 
-/// **The name is drawn as typed**, so two names are two pictures.
+/// **The person this machine signs in is named on the screen**, so two
+/// machines with two people are two pictures.
+///
+/// This asked whether the **typed** name was drawn until 2026-10-12. The
+/// full-screen design has one entry — the PIN — and greets the person it is
+/// authenticating above it, so there is no name field to type into and
+/// nothing about typing changes this. Drawing the typed name is what left a
+/// booted machine greeting nobody, because nothing is typed when the screen
+/// appears.
 #[test]
-fn the_name_is_drawn() {
-    assert_ne!(
-        drawn(&typed("ada", ""), light()),
-        drawn(&typed("grace", ""), light())
-    );
+fn the_persons_own_name_is_drawn() {
+    assert_ne!(whose_screen("ada"), whose_screen("grace"));
+}
+
+/// The screen of a machine whose one account has this name.
+fn whose_screen(name: &str) -> crate::sign_in_raster::SignInPicture {
+    let mut store = Accounts::none().unwrap();
+    store.created(name, 1000, "irrelevant").unwrap();
+    let words = Strings::of(alo_saying::everything_this_machine_can_say().unwrap());
+    drawn(
+        &SignInScreen::of(Ok(Greeting::of(store, 1000, NoDoor)), words),
+        light(),
+    )
 }
 
 /// **Deep teal is not on this screen**: it means the agent, and nobody has
