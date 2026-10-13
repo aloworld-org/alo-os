@@ -182,6 +182,11 @@ pub(crate) fn picture(
             WhoseScreen::ItsOwn => {
                 let _ = field;
 
+                // **The palette the person chose**, not seven light-mode
+                // constants. `crate::sign_in_surface::TheColours` says what
+                // each is and why four of them are mixed.
+                let colours = crate::sign_in_surface::TheColours::of(look.contrast, look.scheme);
+
                 // **The design's own layout**, in the units this picture is drawn
                 // in. `crate::sign_in_layout` is the only thing that decides where
                 // anything goes, so a test can hold it against `176-10686.xml`
@@ -218,8 +223,12 @@ pub(crate) fn picture(
                 // The ground, the monogram and the entry, with their corners. The
                 // flat `Solid` cannot draw an 18-unit radius, which is why this is
                 // a raster — see `crate::sign_in_surface`.
-                drawn.surface =
-                    crate::sign_in_surface::sign_in_surface(&at, refused, Scale::from(1.0));
+                drawn.surface = crate::sign_in_surface::sign_in_surface(
+                    &at,
+                    refused,
+                    Scale::from(1.0),
+                    colours,
+                );
 
                 // **The initial, in the monogram.** The person's own first letter,
                 // and their casing: `docs` is theirs and `Disan` is theirs, and
@@ -234,8 +243,8 @@ pub(crate) fn picture(
                         // **The square it sits in, not the palette ground.** The
                         // box behind a glyph is drawn, so shaping against a
                         // colour the screen does not use leaves a rectangle.
-                        crate::sign_in_surface::THE_MONOGRAM_GROUND_IS,
-                        palette.ink,
+                        colours.monogram,
+                        colours.ink,
                     )
                     .cropped_to_its_ink();
                     let x = at.monogram.loc.x + (at.monogram.size.w - shaped.width) / 2;
@@ -266,8 +275,8 @@ pub(crate) fn picture(
                     // **The design's ground**, which is what the raster drew
                     // behind this. `palette.ground` is white, and a white box
                     // on the folded light is a bar across the wallpaper.
-                    crate::sign_in_surface::THE_GROUND_IS,
-                    palette.ink,
+                    colours.ground,
+                    colours.ink,
                 )
                 .cropped_to_its_ink();
                 let greeting_x = at.account.loc.x + (at.account.size.w - greeting.width) / 2;
@@ -290,8 +299,8 @@ pub(crate) fn picture(
                             - measure.px(42)
                             - crate::sign_in_layout::THE_SUBMIT_TARGET_IS,
                         measure.metrics(),
-                        crate::sign_in_surface::THE_ENTRY_GROUND_IS,
-                        crate::sign_in_surface::THE_MUTED_TEXT_IS,
+                        colours.entry,
+                        colours.muted,
                     )
                     .cropped_to_its_ink();
                     let y = at.entry.loc.y + (at.entry.size.h - shaped.height) / 2;
@@ -335,8 +344,8 @@ pub(crate) fn picture(
                         said.text(),
                         box_of.size.w,
                         metrics,
-                        crate::sign_in_surface::THE_GROUND_IS,
-                        palette.ink,
+                        colours.ground,
+                        colours.ink,
                     )
                     .cropped_to_its_ink();
                     let x = if centred {
@@ -365,7 +374,7 @@ pub(crate) fn picture(
                                     .into(),
                                 (dot, dot).into(),
                             ),
-                            colour: palette.ink,
+                            colour: colours.ink,
                         });
                     }
                 }
@@ -394,8 +403,8 @@ pub(crate) fn picture(
                         mark,
                         box_of.size.w.max(1),
                         Metrics::new(size_of.max(8) as f32, (size_of.max(8) as f32) * 1.25),
-                        crate::sign_in_surface::THE_GROUND_IS,
-                        palette.ink,
+                        colours.ground,
+                        colours.ink,
                     )
                     .cropped_to_its_ink();
                     let x = box_of.loc.x + (box_of.size.w - shaped.width) / 2;
@@ -411,8 +420,8 @@ pub(crate) fn picture(
                         said.text(),
                         at.feedback.size.w,
                         measure.metrics(),
-                        crate::sign_in_surface::THE_GROUND_IS,
-                        palette.ink,
+                        colours.ground,
+                        colours.ink,
                     )
                     .cropped_to_its_ink();
                     let x = at.feedback.loc.x + (at.feedback.size.w - shaped.width) / 2;
