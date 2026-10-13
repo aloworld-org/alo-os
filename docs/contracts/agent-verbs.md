@@ -433,6 +433,12 @@ anything else.
 `docs/features.md` promises four — open, focus, arrange, close — over
 granted applications only. **All four are declared.**
 
+**Three of them are carried out**, and
+[`application-door.md`](application-door.md) is the other half of that: what
+`alo-agentd` asks the compositor once a verb on this list has been granted and
+approved. `arrange_application` has no road yet and the reason is recorded
+there, not here — the shape of an argument on this list did not change.
+
 | Verb | Effect | Arguments | Sentence |
 |---|---|---|---|
 | `open_application` | change | `application` (application) | open {application} |
