@@ -338,6 +338,10 @@ pub mod task_raster;
 /// it puts in one. `examples/desktop_check.rs` is the first such caller outside
 /// this crate.
 pub mod task_text;
+/// Where the application door's socket goes, and what it refuses rather than
+/// serve. Public because `docs/contracts/application-door.md` publishes the
+/// path and the modes, and a test holds this crate to that document.
+pub mod the_application_doors_place;
 /// The Dock's composer as a field a person types a request into.
 pub mod the_composer_a_person_types_in;
 pub mod the_docks_words;
@@ -703,6 +707,8 @@ mod lock_raster_tests;
 mod lock_surface_tests;
 #[cfg(test)]
 mod lock_testing;
+#[cfg(test)]
+mod the_application_doors_place_tests;
 
 mod lock_battery;
 mod nested_lock_input;
