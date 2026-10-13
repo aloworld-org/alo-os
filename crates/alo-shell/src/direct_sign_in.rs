@@ -246,6 +246,7 @@ impl<'a, K: Knocking> Lane<'a, K> {
         let drawn = picture(
             screen.shows(),
             self.labels,
+            screen.words(),
             (size.w, size.h),
             self.look,
             crate::sign_in_raster::WhoseScreen::ItsOwn,

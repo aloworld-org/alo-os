@@ -201,9 +201,21 @@ fn first_look() -> SignInLook {
 /// a machine that cannot word a refusal — and a sign-in screen that could not
 /// say *that password is wrong* is one nobody can use.
 pub fn what_this_machine_can_say() -> Result<Strings, WouldNotStand> {
-    alo_saying::everything_this_machine_can_say()
-        .map(Strings::of)
-        .map_err(|why| WouldNotStand::Words(why.to_string()))
+    let mut vocabulary = alo_saying::everything_this_machine_can_say()
+        .map_err(|why| WouldNotStand::Words(why.to_string()))?;
+    // **This crate's own words, which `alo-saying` cannot collect.** That crate
+    // gathers every other crate's list by calling its `declare_into`; it cannot
+    // call this one's, because this crate depends on it and a dependency cannot
+    // point both ways. So the shell declares its own here, at the one place a
+    // running machine builds its `Strings`.
+    //
+    // **`crate::window_control_reader_words` is declared nowhere but in an
+    // example**, which means its four strings have never been sayable on a real
+    // machine. Not fixed here — a different surface, deserving its own change —
+    // but recorded, because it is the same shape of fault this line avoids.
+    crate::sign_in_words::declare_sign_in_words(&mut vocabulary)
+        .map_err(|why| WouldNotStand::Words(why.to_string()))?;
+    Ok(Strings::of(vocabulary))
 }
 
 #[cfg(test)]

@@ -24,7 +24,6 @@ use alo_accounts::Accounts;
 use alo_appearance::{Scheme, TextScale};
 use alo_greeting::{Greeting, Knocking, NotAnswered};
 use alo_sessiond::{Answered, Knock};
-use alo_strings::Strings;
 use smithay::utils::{Logical, Rectangle, Size};
 
 /// A door that opens for anybody who reaches it.
@@ -50,7 +49,7 @@ fn light() -> SignInLook {
 fn a_screen() -> SignInScreen<ADoor> {
     let mut store = Accounts::none().unwrap();
     store.created("ada", 1000, "the-one-they-typed").unwrap();
-    let words = Strings::of(alo_saying::everything_this_machine_can_say().unwrap());
+    let words = crate::what_this_machine_can_say().unwrap();
     SignInScreen::of(Ok(Greeting::of(store, 1000, ADoor)), words)
 }
 
@@ -425,6 +424,7 @@ fn the_screen_greets_the_person_it_is_authenticating() {
         let drawn = crate::sign_in_raster::picture(
             screen.shows(),
             &mut labels,
+            screen.words(),
             (1280, 800),
             light(),
             crate::sign_in_raster::WhoseScreen::ItsOwn,
@@ -463,7 +463,7 @@ fn the_screen_greets_the_person_it_is_authenticating() {
     let nobody = {
         let mut store = Accounts::none().unwrap();
         store.created("ada", 1001, "the-one-they-typed").unwrap();
-        let words = Strings::of(alo_saying::everything_this_machine_can_say().unwrap());
+        let words = crate::what_this_machine_can_say().unwrap();
         Some(Signing::Still(Box::new(SignInScreen::of(
             Ok(Greeting::of(store, 1000, ADoor)),
             words,
