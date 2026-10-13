@@ -197,6 +197,22 @@ pub(crate) fn picture(
                 } else {
                     crate::sign_in_surface::TheEntryIs::Waiting
                 };
+                // **The flat ground goes: the raster below *is* the ground.**
+                //
+                // This picture starts with one full-screen `Solid` of
+                // `palette.ground`, which the other arms still need.
+                // `SignInPicture::paint` draws the surface first and the solids
+                // on top of it, so leaving that rectangle here painted white
+                // over the whole design.
+                //
+                // **That is what a booted machine showed on 2026-10-12**: a
+                // white screen with forty pixels of ink on it — the greeting,
+                // drawn after the solid and so the only thing left. Every test
+                // passed, because they asked whether the frame was more than one
+                // colour and whether it changed with what was typed, and a
+                // rectangle with a word on it is both.
+                drawn.solids.clear();
+
                 // The ground, the monogram and the entry, with their corners. The
                 // flat `Solid` cannot draw an 18-unit radius, which is why this is
                 // a raster — see `crate::sign_in_surface`.
