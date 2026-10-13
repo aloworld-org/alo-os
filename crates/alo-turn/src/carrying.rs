@@ -59,12 +59,21 @@ use alo_files::{Reaching, Touching};
 use alo_nearby::Origin;
 use alo_record::Entry;
 
+use crate::acting_on_an_application::acting_on_an_application;
 use crate::arriving::worded_here;
 use crate::bounding::Doing;
 use crate::installing_an_application::installing_an_application;
 use crate::machine::Machine;
 use crate::refusing::NotDone;
 use crate::what_a_verb_did::WhatAVerbDid;
+
+/// The verbs `crate::acting_on_an_application` carries out.
+///
+/// Three of `alo-applications`' four. `arrange_application` is absent because
+/// nothing can carry it out — `Machine::carrying_out_file_software_and_application_verbs`
+/// does not declare it either, and the two absences have to agree.
+const THE_APPLICATION_ACTS: [&str; 3] =
+    ["open_application", "focus_application", "close_application"];
 
 /// Carry an authorised call out inside a boundary, and say what happened.
 ///
@@ -97,6 +106,15 @@ pub(crate) fn carrying_out(
     if authorised.verb() == alo_software::INSTALL_APPLICATION {
         let (entry, installed) = installing_an_application(machine, authorised, now);
         return (entry, installed.map(WhatAVerbDid::from));
+    }
+    // **The three application acts, routed by name for the same reason.** The
+    // fourth, `arrange_application`, is not declared by the constructor that
+    // offers these, so a call for it is never authorised and never arrives —
+    // and `acting_on_an_application` refuses it by name anyway, because a list
+    // and an executor are two edits and somebody will one day make only one.
+    if THE_APPLICATION_ACTS.contains(&authorised.verb()) {
+        let (entry, reached) = acting_on_an_application(machine, authorised, grants);
+        return (entry, reached.map(WhatAVerbDid::from));
     }
     let at = authorised.at();
     let agent = authorised.under().clone();

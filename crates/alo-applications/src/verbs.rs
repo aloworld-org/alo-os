@@ -139,6 +139,64 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), Declaring> {
     Ok(())
 }
 
+/// Put only the application verbs a machine can really carry out on a list.
+///
+/// **Three of the four**, and the absent one is `arrange_application`.
+///
+/// # Why a verb with no road is not offered at all
+///
+/// `docs/features.md` promises four and [`declare_into`] declares four, which
+/// is right: this crate decides the verbs and a list of what alo OS *means* to
+/// do is a different thing from a list of what one machine can do today.
+///
+/// What a machine hands an agent is the second list. `alo-instructing` shows a
+/// model *these are the only verbs there are* from exactly this list, so a verb
+/// on it with nothing behind it is a verb a model will propose, a person will
+/// read a sentence for, and a person will approve — and then nothing will
+/// happen. **An approval that does nothing is the worst outcome available
+/// here**, worse than the capability being absent, because the person spent
+/// their one approval on it and the record says they approved something that
+/// did not occur.
+///
+/// Absent, a model is never shown it and never proposes it. The promise in
+/// `docs/features.md` is then undelivered, which is a thing a roadmap can carry
+/// honestly, rather than broken in front of somebody.
+///
+/// # Why `arrange_application` is the one without a road
+///
+/// [ADR 0108](../../../docs/decisions/0108-the-compositor-carries-an-application-verb-out-and-needs-no-token-to.md)
+/// says it: `open`, `focus` and `close` are a window named and a thing done,
+/// and `arrange` takes a **where**. Where a window goes on a screen is
+/// `alo-arranging`'s answer and the design's, and the compositor's
+/// single-window half was removed on 2026-09-26 so that there would be exactly
+/// one layout decider — so the chord that put one window on half a display has
+/// no answer any more. Giving `arrange` a road is a decision, not an addition.
+///
+/// This is additive: [`declare_into`] is unchanged and still declares four.
+///
+/// # Errors
+/// [`Declaring::List`] if the list already holds one of these names, found
+/// before anything is added — as [`declare_into`] does, so a list never ends up
+/// holding half a set of capabilities nobody chose.
+pub fn declare_the_three_with_a_road_into(verbs: &mut Verbs) -> Result<(), Declaring> {
+    let declaring = [
+        open_application()?,
+        focus_application()?,
+        close_application()?,
+    ];
+    for verb in &declaring {
+        if verbs.of(verb.name()).is_some() {
+            return Err(Declaring::List(VerbsError::AlreadyDeclared {
+                name: verb.name().to_owned(),
+            }));
+        }
+    }
+    for verb in declaring {
+        verbs.declare(verb)?;
+    }
+    Ok(())
+}
+
 /// Start an application.
 fn open_application() -> Result<Verb, VerbError> {
     Verb::checked(

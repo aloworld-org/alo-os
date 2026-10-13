@@ -177,8 +177,10 @@ appearance.verb.set-the-scheme.purpose	choose light or dark, whatever the time i
 appearance.verb.set-the-scheme.scheme	which of the two to use
 appearance.verb.set-the-scheme.sentence	use the {scheme} appearance from now on, whatever the time is
 applications.called	{called} ({application})
+applications.could-not-ask	this machine could not reach {application} — nothing was changed
 applications.entry.no-identifier	an application with no identifier cannot be reached — an identifier is what a grant is made over and what a verb names
 applications.entry.not-an-identifier	{application} is not an identifier — an identifier has no spaces and no folders in it, so this one could never arrive as an argument
+applications.it-did-not	{application} was asked and has not done it — it may be waiting for an answer from you
 applications.kept.another-format	your choices of what opens each kind of file, at {path}, were written for a different alo OS than this one, so nothing in the file has been used and each kind opens in the application that says it can
 applications.kept.not-expressible	this alo OS could not write that change into your choices of what opens each kind of file, at {path}, in a form it can read back again, so nothing about what opens what has been changed
 applications.kept.not-read	your choices of what opens each kind of file, at {path}, could not be read, so each kind opens in the application that says it can
@@ -187,6 +189,7 @@ applications.kept.not-understood	your choices of what opens each kind of file, a
 applications.kept.not-understood-at	your choices of what opens each kind of file, at {path}, stop making sense at line {line}, so nothing in the file has been used and each kind opens in the application that says it can
 applications.kept.not-written	your choices of what opens each kind of file, at {path}, could not be written, so nothing about what opens what has been changed
 applications.kept.unknown-key	your choices of what opens each kind of file, at {path}, say {key}, which is not something alo OS can change about what opens what, so nothing in the file has been used
+applications.no-window	{application} has no window open here — open it first, or name one that is open
 applications.not-installed	nothing installed on this machine is {application} — install it, or name one that is here
 applications.opens.chosen	{application} opens {what}, because you chose it for that
 applications.opens.declared	{application} opens {what}, because it says it can and you have not chosen an application for it

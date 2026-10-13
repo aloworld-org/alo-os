@@ -28,6 +28,8 @@
 use alo_files::Answer;
 use alo_software::Installed;
 
+use crate::acting_on_an_application::Reached;
+
 /// What a verb this machine carried out answered with.
 ///
 /// One arm per family of verbs that has an executor here — which is the same
@@ -38,6 +40,12 @@ pub enum WhatAVerbDid {
     ToFiles(Answer),
     /// An application was installed, and what it is sandboxed by.
     AnApplicationInstalled(Installed),
+    /// An application was opened, brought to the front, or asked to close.
+    ///
+    /// It carries the act and the application rather than a word, because
+    /// *which* application had *what* asked of it is the whole of what
+    /// happened — the compositor's answer on success is one word, `acted`.
+    AnApplicationWasReached(Reached),
 }
 
 impl WhatAVerbDid {
@@ -50,7 +58,7 @@ impl WhatAVerbDid {
     pub const fn to_files(&self) -> Option<&Answer> {
         match self {
             Self::ToFiles(answer) => Some(answer),
-            Self::AnApplicationInstalled(_) => None,
+            Self::AnApplicationInstalled(_) | Self::AnApplicationWasReached(_) => None,
         }
     }
 
@@ -59,7 +67,16 @@ impl WhatAVerbDid {
     pub const fn installed(&self) -> Option<&Installed> {
         match self {
             Self::AnApplicationInstalled(installed) => Some(installed),
-            Self::ToFiles(_) => None,
+            Self::ToFiles(_) | Self::AnApplicationWasReached(_) => None,
+        }
+    }
+
+    /// What was asked of an application, when one was reached.
+    #[must_use]
+    pub const fn reached(&self) -> Option<&Reached> {
+        match self {
+            Self::AnApplicationWasReached(reached) => Some(reached),
+            Self::ToFiles(_) | Self::AnApplicationInstalled(_) => None,
         }
     }
 }
@@ -73,6 +90,12 @@ impl From<Answer> for WhatAVerbDid {
 impl From<Installed> for WhatAVerbDid {
     fn from(installed: Installed) -> Self {
         Self::AnApplicationInstalled(installed)
+    }
+}
+
+impl From<Reached> for WhatAVerbDid {
+    fn from(reached: Reached) -> Self {
+        Self::AnApplicationWasReached(reached)
     }
 }
 

@@ -483,6 +483,7 @@ chosen. A list without the field reads as `false`.
 {"did":{"moved":{"now_at":"/home/anna/Archive/march.pdf"}}}
 {"did":{"archived":{"at":"/home/anna/Archive/2026.zip","things":12,"left_out":1,"bytes":40960}}}
 {"did":{"installed":{"application":"org.gnome.TextEditor","sandboxed":true}}}
+{"did":{"reached":{"act":"focus","application":"org.gnome.Geary"}}}
 {"proposed":{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300}}
 {"answered":{"text":"Three are unpaid.","came_from":{"text":"by Mistral, in the EU","came_from":"translation"},"model":"mistral-small-latest"}}
 {"waiting":{"changes":[{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300}]}}
@@ -504,6 +505,34 @@ was offered — `install_application` had been in
 [the verb contract](agent-verbs.md) since it was written and was offered to
 nobody. A client written against the six reads `installed` as a shape it has no
 arm for; none of the six changed, and nothing was renamed or removed.
+
+`reached` was added **additively on 2026-10-13 too**, with the third family —
+`open_application`, `focus_application` and `close_application`. A client
+written against the six, or against the seven, reads it as a shape it has no arm
+for; nothing was renamed or removed.
+
+**`act` is one of exactly three words**: `open`, `focus` and `close`. They are
+the compositor door's own spellings
+([`application-door.md`](application-door.md)), so one vocabulary crosses two
+sockets rather than two that have to be kept in step. The fourth application
+verb, `arrange_application`, **cannot appear here**: nothing on this machine can
+carry it out, so it is not declared and never authorised — `docs/features.md`
+promises it and no machine offers it yet.
+
+**And `reached` means *this machine asked*, never *it is done*.** A client must
+not render it as *the window closed*. That is not a hedge, it is what
+[the verb contract](agent-verbs.md) already promises a person about the third
+act — *`close_application` asks; nothing kills anything … the application is
+asked, it may put up its own save your changes?, and the person answers that* —
+and what the compositor says one layer down: a close request is queued, and
+whether the application acted on it is the application's business. An
+application that was asked and visibly did not is `refused` carrying
+*{application} was asked and has not done it*, not a `did`.
+
+`application` is the identifier a grant was made over and an approval was read
+about, and like `installed`'s it is not put through the name filter the paths
+above go through: it is already held to its own shape by
+`alo_applications::Application`.
 
 `sandboxed` is on the wire rather than left to be derived. A client marking an
 unsandboxed application is handed the fact, because a client that forgot to ask

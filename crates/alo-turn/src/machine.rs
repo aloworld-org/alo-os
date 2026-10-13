@@ -71,6 +71,7 @@
 //! turn would be a list that could not change under it. Nothing here reads a
 //! clock either, as everywhere else in this workspace.
 
+use alo_applications::Installed;
 use alo_capability::Verbs;
 use alo_egress::Indicator;
 use alo_files::{Resolving, file_verbs};
@@ -81,6 +82,7 @@ use alo_strings::{Said, Strings};
 use crate::bounding::Bounding;
 use crate::kept::Kept;
 use crate::shortening::{Shortened, Shortening};
+use crate::the_door_the_compositor_serves::TheDoorTheCompositorServes;
 use crate::the_verbs_would_not_declare::TheVerbsWouldNotDeclare;
 
 /// The verbs, the words, the resolver, the boundary, the indicator and the
@@ -142,6 +144,62 @@ pub struct Machine<'a> {
     /// only writes to one: [`Machine::kept`] hands a turn the smaller one, and
     /// [`Machine::shorten`] is the door the other half goes through.
     kept: &'a mut dyn Shortening,
+    /// The applications this machine has, for an application verb to be held to.
+    ///
+    /// **Empty on a machine that offers no application verb**, which is the
+    /// same rule as `installing_with` above and not an exception to it: a list
+    /// nothing can ask about is an honest empty list, and the three verbs and a
+    /// real list arrive together or not at all.
+    ///
+    /// Read once when the daemon starts, like `bound`. An application installed
+    /// a moment ago is not in it, and the answer to that is the compositor's
+    /// own — `alo_applications::Reaching`'s header says so: *nor can it close
+    /// the gap between an application being found and being reached*.
+    installed: Installed,
+    /// The compositor's door, on a machine where one is running.
+    ///
+    /// **`None` and the three verbs are absent together**, as with the tool.
+    /// `None` on a machine built any other way, and a machine at the sign-in
+    /// screen with no compositor is the ordinary case rather than an error —
+    /// `crate::the_door_the_compositor_serves` carries that argument.
+    reaching_the_compositor: Option<&'a mut dyn TheDoorTheCompositorServes>,
+}
+
+/// What a machine needs to carry out the installation verb.
+///
+/// **A pair rather than two arguments**, because
+/// [`Machine::carrying_out_file_software_and_application_verbs`] would
+/// otherwise take nine and clippy's bound is seven — and the bound is right
+/// here rather than inconvenient: nine positional arguments of which four are
+/// `&mut dyn` is a call nobody can read at the call site.
+///
+/// Grouped by *which family needs them* rather than by type, so the grouping
+/// says something true. `Machine::carrying_out_file_and_software_verbs` still
+/// takes its two separately and is unchanged: it has seven and does not need
+/// this.
+pub struct WhatASoftwareVerbNeeds<'a> {
+    /// The rented tool an installation reaches.
+    pub tool: &'a dyn Tool,
+    /// Whether an organisation said which places this machine may install from.
+    pub bound: Bound,
+}
+
+/// What a machine needs to carry out the three application acts.
+///
+/// [`WhatASoftwareVerbNeeds`]' twin, for the same reason and one more: the
+/// door is `&mut`, because one line in and one line out on one socket is not
+/// a thing two turns may do at once.
+pub struct WhatAnApplicationVerbNeeds<'a> {
+    /// The applications this machine has, read once when the daemon starts.
+    pub installed: Installed,
+    /// The compositor's door.
+    ///
+    /// Not an [`Option`]: a caller with no compositor builds a machine that
+    /// offers no application verb, which is this file's rule that the list an
+    /// agent may ask from is the list the machine can carry out. The `None`
+    /// inside lives on the field, where it means *this machine does not offer
+    /// them*.
+    pub door: &'a mut dyn TheDoorTheCompositorServes,
 }
 
 impl<'a> Machine<'a> {
@@ -170,6 +228,8 @@ impl<'a> Machine<'a> {
             strings,
             resolving,
             installing_with: None,
+            installed: Installed::default(),
+            reaching_the_compositor: None,
             bound: Bound::Nobodys,
             bounding,
             indicator,
@@ -225,6 +285,8 @@ impl<'a> Machine<'a> {
             strings,
             resolving,
             installing_with: Some(installing_with),
+            installed: Installed::default(),
+            reaching_the_compositor: None,
             bound,
             bounding,
             indicator,
@@ -248,6 +310,84 @@ impl<'a> Machine<'a> {
     ) -> Option<(&'a dyn Tool, Bound, &mut Indicator)> {
         let tool = self.installing_with?;
         Some((tool, self.bound.clone(), self.indicator))
+    }
+
+    /// Every verb this machine can carry out: the six, the installation, and
+    /// the three application acts that have a road.
+    ///
+    /// # Three of the four, and the fourth is not offered
+    ///
+    /// `alo_applications::verbs::declare_the_three_with_a_road_into` is used
+    /// rather than `declare_into`, so `arrange_application` is **absent** from
+    /// what an agent is shown. That function carries the whole argument; the
+    /// short form is that `alo-instructing` shows a model *these are the only
+    /// verbs there are* from exactly this list, and a verb on it with nothing
+    /// behind it is one a model proposes, a person approves, and nothing then
+    /// does. **An approval that does nothing is the worst outcome available
+    /// here.**
+    ///
+    /// This file's rule therefore still holds: *the list an agent may ask from
+    /// is the list this machine can carry out.*
+    ///
+    /// # What is taken, and why each one
+    ///
+    /// `installed` is the applications this machine has, read once when the
+    /// daemon starts, which `alo_applications::Reaching` asks after the grants
+    /// and never before. `reaching_the_compositor` is the door — exclusive,
+    /// because one line in and one line out on one socket is not a thing two
+    /// turns may do at once.
+    ///
+    /// # Errors
+    /// [`TheVerbsWouldNotDeclare`], naming the family that refused. The ten as
+    /// they are written cannot cause it. It can also report two families having
+    /// declared one verb name, which is what this `Result` is really for.
+    pub fn carrying_out_file_software_and_application_verbs(
+        strings: &'a Strings,
+        resolving: &'a dyn Resolving,
+        software: WhatASoftwareVerbNeeds<'a>,
+        applications: WhatAnApplicationVerbNeeds<'a>,
+        bounding: &'a mut dyn Bounding,
+        indicator: &'a mut Indicator,
+        kept: &'a mut dyn Shortening,
+    ) -> Result<Self, TheVerbsWouldNotDeclare> {
+        let mut verbs = file_verbs()?;
+        alo_software::verbs::declare_into(&mut verbs)?;
+        alo_applications::verbs::declare_the_three_with_a_road_into(&mut verbs)?;
+        Ok(Self {
+            verbs,
+            strings,
+            resolving,
+            installing_with: Some(software.tool),
+            installed: applications.installed,
+            reaching_the_compositor: Some(applications.door),
+            bound: software.bound,
+            bounding,
+            indicator,
+            kept,
+        })
+    }
+
+    /// The applications this machine has.
+    ///
+    /// `pub(crate)`, and the only caller is `acting_on_an_application.rs`.
+    /// Empty on a machine that offers no application verb, which is what the
+    /// field says and is honest rather than absent: nothing can ask about it.
+    pub(crate) fn the_applications_installed(&self) -> &Installed {
+        &self.installed
+    }
+
+    /// The compositor's door, on a machine where one is running.
+    ///
+    /// `pub(crate)`, and the only caller is `acting_on_an_application.rs`.
+    /// [`None`] is *no compositor is serving one*, which is an answer a person
+    /// is told rather than a fault — a machine at the sign-in screen is in
+    /// exactly that state.
+    pub(crate) fn at_the_compositors_door(
+        &mut self,
+    ) -> Option<&mut dyn TheDoorTheCompositorServes> {
+        self.reaching_the_compositor
+            .as_deref_mut()
+            .map(|door| door as &mut dyn TheDoorTheCompositorServes)
     }
 
     /// What an agent may ask for on this machine.
