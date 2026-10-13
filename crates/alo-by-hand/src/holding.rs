@@ -19,7 +19,7 @@ use crate::{
     document::{THE_ANSWERS, entries_in},
     entry::Entry,
     finding::Finding,
-    promised::{Promised, promises_in, releases_among},
+    promised::{Promised, promises_in},
 };
 
 /// What the verbs add up to, once every one of them has been answered.
@@ -102,10 +102,6 @@ pub fn held(
     }
 
     let promises = promises_in(features);
-    let releases: Vec<String> = releases_among(&promises)
-        .iter()
-        .map(|release| release.as_written().to_owned())
-        .collect();
 
     let shipped: Vec<&str> = verbs.all().map(alo_capability::Verb::name).collect();
     let mut answered = vec![false; shipped.len()];
@@ -132,7 +128,7 @@ pub fn held(
                 continue;
             }
         }
-        whether_it_answers(entry, &promises, &releases, &mut findings, &mut held);
+        whether_it_answers(entry, &promises, &mut findings, &mut held);
     }
 
     for (verb, answered) in shipped.iter().zip(&answered) {
@@ -181,7 +177,6 @@ fn whether_every_list_was_handed_in(
 fn whether_it_answers(
     entry: &Entry,
     promises: &[Promised],
-    releases: &[String],
     findings: &mut Vec<Finding>,
     held: &mut Held,
 ) {
@@ -225,18 +220,10 @@ fn whether_it_answers(
     }
 
     if let Some(owed) = entry.owed() {
-        match owed.release() {
-            None => findings.push(Finding::AnOwedAnswerWithNoRelease {
-                verb: entry.verb().to_owned(),
-            }),
-            Some(named) if !releases.iter().any(|release| release == named) => {
-                findings.push(Finding::AReleaseNobodyShips {
-                    verb: entry.verb().to_owned(),
-                    named: named.to_owned(),
-                });
-            }
-            Some(_) => {}
-        }
+        // **A debt no longer names a release**, because there are no releases to
+        // name until there is a launch (ADR 0105). What is still checked is that
+        // the debt says something a person could act on, which is the half of
+        // the old pair that was never about tiers.
         if !owed.is_an_answer() {
             findings.push(Finding::AShrugRatherThanAnAnswer {
                 verb: entry.verb().to_owned(),

@@ -91,7 +91,7 @@ it — `A file manager, with trash, and archives that open`.
 
 ### archive_folder
 
-**Owed at:** [v0.5] the definition promises archives that open and not archives
+**Owed:** the definition promises archives that open and not archives
 a person makes.
 
 ## What this document does not do
@@ -118,9 +118,15 @@ is a good answer.
             entries.last().unwrap().by_hand().is_none(),
             "the section written after the entries was read into the last one"
         );
-        assert_eq!(
-            entries.last().unwrap().owed().unwrap().release(),
-            Some("v0.5")
+        assert!(
+            entries
+                .last()
+                .unwrap()
+                .owed()
+                .unwrap()
+                .sentence()
+                .starts_with("the definition promises"),
+            "the debt's reason was not read"
         );
     }
 

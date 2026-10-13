@@ -162,7 +162,7 @@ manager — `A file manager, with trash, and archives that open`.
 
 ### move_file
 
-**Owed at:** [v0.5] — the file manager is v0.5 work and nothing on this machine
+**Owed:** — the file manager is work and nothing on this machine
 shows a folder to drag anything into yet.
 
 ## What this document does not do
@@ -286,7 +286,7 @@ fn a_crate_that_declares_verbs_behind_the_checks_back_is_refused() {
 #[test]
 fn a_verb_with_no_plain_way_and_nothing_owed_is_refused() {
     let empty = a_sound_document().replace(
-        "**Owed at:** [v0.5] — the file manager is v0.5 work and nothing on this machine\nshows a folder to drag anything into yet.",
+        "**Owed:** — the file manager is work and nothing on this machine\nshows a folder to drag anything into yet.",
         "It is being thought about.",
     );
     let findings = checking(&empty).expect_err("a verb with neither was accepted");
@@ -363,28 +363,32 @@ fn an_answer_that_fits_two_promises_is_refused() {
     );
 }
 
-/// A debt with nobody on the hook for it, and a debt owed at a release nobody
-/// ships.
+/// **A debt no longer has to name a release, and this records that it does
+/// not.**
+///
+/// Until 2026-10-12 this test was `a_debt_with_no_release_or_a_release_nobody_ships_is_refused`
+/// and asserted two findings that no longer exist: a debt had to name a release,
+/// and the release had to be one the definition promised for. The owner removed
+/// the versions (ADR 0105), so there is no release to name.
+///
+/// **It is replaced rather than deleted** because a check that got looser should
+/// leave something behind that says so. What a debt must still do is say why, in
+/// words a person can act on — which `a_shrug_is_refused_in_both_forms` holds —
+/// and a release left in the text is now read as part of the sentence, so it is
+/// visible to a reader instead of being stripped by a parser with no use for it.
 #[test]
-fn a_debt_with_no_release_or_a_release_nobody_ships_is_refused() {
-    let nameless = a_sound_document().replace("**Owed at:** [v0.5] —", "**Owed at:**");
+fn a_debt_needs_no_release_and_a_stale_one_stays_visible() {
+    let nameless = a_sound_document().replace("**Owed:** \u{2014}", "**Owed:**");
     assert!(
-        checking(&nameless)
-            .expect_err("a debt naming no release was accepted")
-            .iter()
-            .any(|finding| matches!(finding, Finding::AnOwedAnswerWithNoRelease { .. })),
-        "the plain way was owed by nobody in particular"
+        checking(&nameless).is_ok(),
+        "a debt naming no release is accepted now: {:?}",
+        checking(&nameless).err()
     );
 
-    let invented = a_sound_document().replace("[v0.5] —", "[v2] —");
-    let findings = checking(&invented).expect_err("a release nobody ships was accepted");
+    let stale = a_sound_document().replace("**Owed:** \u{2014}", "**Owed:** [v0.5] \u{2014}");
     assert!(
-        findings.iter().any(|finding| matches!(
-            finding,
-            Finding::AReleaseNobodyShips { named, .. } if named == "v2"
-        )),
-        "a verb was owed at a release the definition makes no promises for: \
-         {findings:?}"
+        checking(&stale).is_ok(),
+        "a stale release does not fail the check; it is simply read as text"
     );
 }
 
@@ -411,7 +415,7 @@ fn a_shrug_is_not_an_answer_in_either_form() {
     );
 
     let owed = a_sound_document().replace(
-        "the file manager is v0.5 work and nothing on this machine\nshows a folder to drag anything into yet.",
+        "the file manager is work and nothing on this machine\nshows a folder to drag anything into yet.",
         "not yet.",
     );
     assert!(

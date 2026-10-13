@@ -114,6 +114,7 @@ members = [
   "crates/alo-sound",
   "crates/alo-starting",
   "crates/alo-strings",
+    "crates/alo-tasks",
   "crates/alo-telling",
   "crates/alo-turn",
 ]

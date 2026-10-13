@@ -21,6 +21,28 @@
 //! the check stays armed for everything new. A list that grows without a reader
 //! noticing is the failure this whole crate exists to prevent, so each list is
 //! short enough to read and each entry says what would remove it.
+//!
+//! **Two tests left this file on 2026-10-12**, when the owner removed the
+//! version tiers — [ADR
+//! 0105](../../../docs/decisions/0105-there-are-no-versions-until-there-is-a-launch.md).
+//! Both audited the **v0.5 gate**: one that every v0.5 promise had a box in it,
+//! one that the v0.5 ledger reconciled. With no `[v0.5]` markers in
+//! `docs/features.md` their subject is the empty set, and an audit of nothing
+//! passes — which is worse than no audit, because it reads as a check.
+//!
+//! What they were guarding is not lost, it moves: `ROADMAP.md`'s **launch
+//! list** is the one ordering now, and
+//! `every_v0_01_promise_is_reconciled.rs` audits it.
+//!
+//! **A third thing left with them, and it was found by a warning rather than by
+//! reading.** `EVERY_DISAGREEMENT_THAT_STANDS` named the four tier
+//! disagreements that stood, under a long docstring explaining why naming them
+//! all was worth the lines. With no tiers there is nothing for it to name, and
+//! it sat dead — along with five imports — behind a `cargo clippy` that exits
+//! **0 while printing warnings**. The deletion that removed the tests was
+//! correct and incomplete, and the gate would have caught it because the gate
+//! denies warnings. A pre-check that does not is a pre-check that passes work
+//! the gate will refuse.
 
 #![expect(
     clippy::expect_used,
@@ -32,13 +54,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use alo_reconciling::Finding;
 use alo_reconciling::the_gate::{
-    counts_that_drifted, denials_by_task_number, orphaned_boxes, promises_with_no_box,
-    refusals_a_report_contradicts, statuses_their_own_section_contradicts, tiers_that_disagree,
-    withdrawals_left_open,
+    counts_that_drifted, denials_by_task_number, orphaned_boxes, refusals_a_report_contradicts,
+    statuses_their_own_section_contradicts, withdrawals_left_open,
 };
-use alo_reconciling::tier::Tier;
-use alo_reconciling::{Finding, promises_at, reconcile_at};
 
 /// This repository.
 fn the_repository() -> PathBuf {
@@ -148,129 +168,6 @@ fn no_half_is_under_the_wrong_promise() {
         say(&findings)
     );
 }
-
-/// **A promise with no box, and a promise answered at the wrong tier, are found
-/// — and neither can gate yet. This test says why, with the numbers.**
-///
-/// Both checks have to decide whether a box *covers* a promise, and the gate
-/// groups: **31 boxes over 92 promises.** *Settings, as one place* is one box over
-/// nine areas; *Making it yours* is one box over six promises about appearance.
-/// So most promises are covered by a box that does not quote them, and coverage is
-/// a judgement the gate expresses in prose.
-///
-/// Two settings were measured against the real documents, and neither is a check:
-///
-/// | how a box is taken to answer a promise | what it reported |
-/// |---|---|
-/// | half the promise's words over two characters appear anywhere in the section | **3** promises with no box — and it missed at least two real ones, because half the words of *Audio in and out, with device switching that works mid-call* are `and`, `out`, `with`, `that` |
-/// | a run of four consecutive words of five characters or more | **69** of the 92, including *Multi-monitor, display scaling, hotplug*, which has a box titled *Multi-monitor, scaling, hotplug* |
-///
-/// **Tuning that number until the answer looks right would be fitting the check to
-/// the documents**, which is the reading it replaces wearing a test's name. The
-/// answer is not a better matcher: **it is for each box in the gate to name the
-/// promises it answers.** Then this is exact — two sets, compared — and no
-/// heuristic is involved. That is a change to the gate's own shape and is written
-/// up in
-/// `docs/autonomy/updates/the-gate-is-a-check-now-and-what-it-cannot-check-yet.md`
-/// for whoever owns `ROADMAP.md`.
-///
-/// Until then both functions are kept, unit-tested against fixtures in
-/// `the_gate`, and run here against the real documents so they cannot rot into
-/// code nobody compiles — asserting only what is reliable: that each **does** find
-/// the thing it was written for.
-#[test]
-fn a_promise_with_no_box_is_found_even_though_it_cannot_gate_yet() {
-    let findings = promises_with_no_box(
-        &document("docs/features.md"),
-        &document("ROADMAP.md"),
-        Tier::V0_5,
-    );
-    let said = say(&findings);
-    for known in [
-        "Input methods for non-Latin scripts",
-        "Bluetooth: pairing, audio, keyboards, mice",
-        "Full-disk encryption, enrolled at install",
-    ] {
-        assert!(
-            said.contains(known),
-            "the check no longer finds `{known}`, which has no box in the v0.5 gate and was found \
-             by hand on 2026-09-27. Either a box was added for it — in which case remove it from \
-             this list — or the check stopped working"
-        );
-    }
-
-    let tiers = tiers_that_disagree(&document("docs/features.md"), &document("ROADMAP.md"));
-    let tiers = say(&tiers);
-    for known in EVERY_DISAGREEMENT_THAT_STANDS {
-        assert!(
-            tiers.contains(known),
-            "the check no longer finds `{known}`, which it reported against the real documents on \
-             2026-09-29. Either the documents were reconciled — in which case take it off that \
-             list and say so — or the check stopped working"
-        );
-    }
-}
-
-/// **Every tier disagreement this check reports against the real documents**,
-/// measured on 2026-09-29 rather than recalled.
-///
-/// # Why this list exists
-///
-/// The assertion above named **one** of these — *Camera and microphone* — and that
-/// one was true. What it did not say is that the check reports **six findings
-/// across five promises**, so four promises stood unmentioned in a repository
-/// that runs this test on every gate. A reader of the old assertion would have
-/// concluded the check had one finding and it was known about.
-///
-/// That is not the check failing to work. It is a reader learning less from a
-/// passing test than the test's own function knew, and the remedy is cheap:
-/// name them all.
-///
-/// # What this list is not
-///
-/// **It is not an approval, and it is deliberately not a count.** The test above
-/// says at length why neither of these checks can gate yet, and asserting *and
-/// nothing else* would pin the output of a heuristic — the same fitting-to-the-
-/// documents that docstring refuses. **A new disagreement appearing will not fail
-/// this test**, and that is a stated limit rather than an oversight.
-///
-/// What it does buy: each of the five is held **live**. If the documents are
-/// reconciled, or the matcher drifts, the one that goes quiet is named.
-///
-/// # What each one is, on inspection
-///
-/// Three look like a promise **kept earlier than it was promised**, which is not a
-/// contradiction: *Lock screen, suspend and resume* and *Drag and drop between
-/// applications* are `[v0.5]` in the definition and answered inside v0.01's gate,
-/// and *Serving more than one person from one workstation* is `[v1]` answered in
-/// v0.01's. **Work done ahead of its tier reports the same as work at the wrong
-/// tier**, because the check compares where a promise is answered with where it is
-/// promised and cannot see which direction is a fault.
-///
-/// Three are the kind it was written for — *Camera and microphone*, *Drag and drop
-/// between applications* also answered in v1's gate, and the self-hosted workspace
-/// line: each `[v0.5]` in the definition and answered in v1's gate, which is a
-/// promise the scope gate says is in this release and the roadmap puts in the next.
-///
-/// **Which of those is a fault and which is a stale sentence is the owner's, not
-/// this test's.** It is recorded here so the question exists somewhere other than
-/// in a passing check's silence.
-const EVERY_DISAGREEMENT_THAT_STANDS: [&str; 4] = [
-    // Most likely kept earlier than promised, these two and the next.
-    "Lock screen, suspend and resume",
-    "Serving more than one person from one workstation",
-    // Answered in two gates at once, v0.01's and v1's — its own question, and the
-    // reason five promises produce six findings.
-    "Drag and drop between applications",
-    // *Camera and microphone* stood here until 2026-10-03 and is **reconciled**,
-    // not silenced. It was the kind this check was written for — `[v0.5]` in the
-    // definition and answered in v1's gate — and
-    // `docs/decisions/0084-seven-promises-move-from-v1-into-v0-5.md` moved the
-    // Devices promise in `ROADMAP.md` to the tier `docs/features.md` already gave
-    // it. The disagreement is gone because the documents agree, which is the only
-    // reason an entry may leave this list.
-    "A self-hosted workspace on the network is **discovered, not configured**",
-];
 
 /// **No box denies work that its own named task says is done.**
 ///
@@ -408,56 +305,6 @@ fn the_accents_the_code_has() -> usize {
         .and_then(|(_, rest)| rest.split_once(']'))
         .and_then(|(how_many, _)| how_many.trim().parse::<usize>().ok())
         .unwrap_or(0)
-}
-
-/// **Every v0.5 promise names the test or the report that shows it, or is named
-/// as owed** — against this repository, on the disk it is checked out on.
-///
-/// The same audit `every_v0_01_promise_is_reconciled.rs` runs for the first
-/// release, at the second's tier. 92 promises rather than 41, which is why its
-/// ledger groups them with bold lines instead of headings: every `###` under the
-/// one heading is an entry, and a group heading would have taken a section of
-/// entries out of the audit without failing it.
-#[test]
-fn every_v0_5_promise_is_reconciled_against_evidence_that_runs() {
-    let here = the_repository();
-    let off_the_disk = move |named: &str| fs::read_to_string(here.join(named)).ok();
-    let (ledger, _) = Tier::V0_5
-        .ledger()
-        .expect("v0.5 has a ledger, or nothing above is checking anything");
-
-    match reconcile_at(
-        &document("docs/features.md"),
-        &document(ledger),
-        Tier::V0_5,
-        &off_the_disk,
-    ) {
-        Ok(reconciled) => {
-            assert_eq!(
-                reconciled.promises(),
-                promises_at(&document("docs/features.md"), Tier::V0_5).len(),
-                "the reconciliation counted a different number of promises than the definition \
-                 makes"
-            );
-            assert!(
-                reconciled.promises() > 50,
-                "only {} v0.5 promises were read, which means this audit passed over a document \
-                 it never found",
-                reconciled.promises()
-            );
-            assert_eq!(
-                reconciled.wholly_shown() + reconciled.partly_owed() + reconciled.wholly_owed(),
-                reconciled.promises(),
-                "every promise is wholly shown, partly owed or wholly owed, and these do not add \
-                 up to the promises read"
-            );
-        }
-        Err(findings) => panic!(
-            "{} finding(s) between docs/features.md and {ledger}:{}",
-            findings.len(),
-            say(&findings)
-        ),
-    }
 }
 
 /// **No promise this repository withdrew is still open in the roadmap, and this

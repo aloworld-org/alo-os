@@ -25,13 +25,18 @@ adding a verb.
 **A promise in `docs/features.md`, quoted.** Not a sentence somebody wrote here.
 ADR 0009's rule is not *have an idea about how a person might manage*; it is *no
 surface may be left out because an agent can do it instead*, and the only place a
-surface is committed to is the definition, with a tier. So the answer quotes the
-definition, and **the release that owns it is read off the line** rather than
-asserted beside it.
+surface is committed to is the definition. So the answer quotes the definition
+rather than being asserted beside it.
 
-**Or the debt, with the release that owes it** — `**Owed at:** [v0.5] …`, where
-the release has to be one the definition actually makes promises for. One verb
-needs this form today, and writing it that way is what keeps it visible.
+**Or the debt, with why it is owed** — `**Owed:** …`. One verb needs this form
+today, and writing it that way is what keeps it visible.
+
+*Until 2026-10-12 a debt named the release that owed it, and the release had to
+be one the definition made promises for — a debt with a date rather than a shrug.
+The owner removed the versions ([ADR
+0105](decisions/0105-there-are-no-versions-until-there-is-a-launch.md)), so there
+is no release to name. What a debt must still do is say why, in words somebody
+can act on. The weakening is recorded in `crates/alo-by-hand/src/owed.rs`.*
 
 What no check can reach is whether a surface *really* lets a person do what the
 verb does. That is the reader's, and it is why this document is prose with
@@ -96,7 +101,7 @@ keyboard way.
 
 ### archive_folder
 
-**Owed at:** [v0.5] — nothing in `docs/features.md` promises **making** an
+**Owed:** nothing in `docs/features.md` promises **making** an
 archive by hand. The file manager line promises `archives that open`, which is
 the other direction, and stretching it to cover creating one would be this check
 lying in the first change that used it. The honest state is that this verb can do

@@ -93,7 +93,6 @@ pub mod finding;
 pub mod holding;
 pub mod owed;
 pub mod promised;
-pub mod release;
 pub mod wrapping;
 
 pub use answer::AN_ANSWER;
@@ -104,6 +103,5 @@ pub use entry::Entry;
 pub use finding::Finding;
 pub use holding::{Held, held};
 pub use owed::Owed;
-pub use promised::{Promised, promises_in, releases_among};
-pub use release::Release;
+pub use promised::{Promised, promises_in};
 pub use wrapping::one_line;

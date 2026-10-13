@@ -3,6 +3,62 @@
 **Execution resumed 2026-09-07.** The full v0.01 release is now pursued by the
 repository-owned Rust development loop (`tools/dev-loop`).
 
+## The launch list
+
+**This is the one list that matters now.** On 2026-10-12 the owner removed the
+version tiers ([ADR
+0105](docs/decisions/0105-there-are-no-versions-until-there-is-a-launch.md)) and
+said what we are building toward: *a working OS that the users can use, we want
+to launch.* Everything below this section is the older ordering, kept because
+it holds real state and not because it is the plan.
+
+**Five things stand between today and a machine somebody outside this team can
+use.** Nothing else is on the critical path. Everything in `docs/features.md`
+that is not here is real work for after the launch.
+
+- **It installs from a release page onto a PC**, without erasing what was there.
+  *Three releases exist and `alo-installer` is thirty-eight source files. What
+  nobody knows is whether anyone has installed from a release page onto a PC —
+  which is a different claim from the installer compiling. Finding out is the
+  first task, not the last.*
+- **It boots and a person signs in.** *The greeter exists. The handover of the
+  graphics card from the greeter to the desktop is a named race —
+  `alo-desktop.service` says its ordering is intent rather than a guarantee, and
+  is owed a measurement on a machine.*
+- **A desktop appears, with a Dock holding what this machine has.** *Landed
+  2026-10-12: before the unit existed, a booted machine signed a person in and
+  showed them nothing. The Dock's discovery has never run anywhere that could
+  answer anything but failed.*
+- **One application starts and draws.** *The ask exists and has never been done
+  on real hardware — it needs a session bus and a D-Bus-activatable
+  application, and the gate machine has neither.*
+- **A person asks the agent in plain words, and the agent does it.** *The
+  composer is drawn and takes no typing; nothing joins it to the agent. A local
+  model answers today and nothing leaves the machine — measured at the
+  interface, `tx+0` across three asks with a control. What is missing is the
+  road between a person's words and that, the sentence a change is proposed
+  with, the one approval, and the Settings row where a person chooses how code
+  runs.*
+
+**And two things stay true at every step, because neither restricts anybody:**
+the record of what happened, and the egress indicator telling the truth while
+it happens.
+
+### What *done* means for each of them
+
+[ADR
+0104](docs/decisions/0104-any-pc-that-works-is-done-and-no-gpu-is-required.md):
+it works on a PC we can put our hands on, the report **names that PC**, and says
+what was observed rather than that it worked. No certified model, no graphics
+card. What was not exercised is named.
+
+### What is deliberately not here
+
+The Dock's icon menu, the composer's find-and-open half, persistence of
+window arrangements, the panel and status area taking keyboard focus, anything
+about an organisation. All real, all written down in `docs/features.md`, none of
+it between a person and a machine they can use.
+
 ## Where we are
 
 **Read this first.** Everything below is *what* gets built. This is *when*, and
