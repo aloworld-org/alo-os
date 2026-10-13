@@ -66,11 +66,20 @@
 //! let strings =
 //!     Strings::of(everything_this_machine_can_say().expect("everything alo OS can say"));
 //!
+//! // **A folder that is really there.** This example named a literal
+//! // `/home/anna/Invoices` and so demonstrated nothing: `alo_files` checks
+//! // that a path exists — *a verb reaches what is there* — so `proposing`
+//! // refused and the `.expect` below panicked with the refusal inside it.
+//! let invoices = std::env::temp_dir().join(format!("alo-approving-{}", std::process::id()));
+//! std::fs::create_dir_all(&invoices).expect("a folder of this example's own");
+//! let march = invoices.join("march.pdf");
+//! std::fs::write(&march, b"an invoice").expect("a file there is something to rename");
+//!
 //! // A machine with a grant over one folder, and a turn under way on it.
 //! let mut grants = Grants::default();
 //! let over_the_invoices = Grant::checked(
 //!     "@files",
-//!     Reach::Folder("/home/anna/Invoices".into()),
+//!     Reach::Folder(invoices.clone()),
 //!     now,
 //!     hour,
 //! )
@@ -95,7 +104,7 @@
 //! let id = turning.proposing(
 //!     "rename_file",
 //!     &[
-//!         ("file", Given::text("/home/anna/Invoices/march.pdf")),
+//!         ("file", Given::text(march.to_str().expect("a temporary path is text"))),
 //!         ("name", Given::text("march-final.pdf")),
 //!     ],
 //!     &grants,
@@ -111,7 +120,7 @@
 //! };
 //! assert_eq!(
 //!     asked.sentence().text(),
-//!     "rename /home/anna/Invoices/march.pdf to march-final.pdf",
+//!     format!("rename {} to march-final.pdf", march.display()),
 //! );
 //!
 //! // They say no. Nothing happens, nobody is asked why, and the record says so.
@@ -126,6 +135,9 @@
 //!     approving.ask(None, &turning, id, now),
 //!     Asks::Refused(NotAsked::NoCompositor),
 //! );
+//!
+//! // The change was declined, so the file is still there. Tidy it away.
+//! std::fs::remove_dir_all(&invoices).expect("a folder this example made");
 //! ```
 //!
 //! # What is here
