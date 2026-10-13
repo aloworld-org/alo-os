@@ -619,6 +619,7 @@ dependencies = [
  "alo-software",
  "alo-sound",
  "alo-strings",
+ "alo-tasks",
  "jiff",
  "zbus",
 ]

@@ -42,6 +42,8 @@ alo-appearance = { path = "../alo-appearance" }
 # like the battery and the network above.
 alo-arranging = { path = "../alo-arranging" }
 alo-choosing = { path = "../alo-choosing" }
+# The task a request becomes.
+alo-tasks = { path = "../alo-tasks" }
 alo-shortcuts = { path = "../alo-shortcuts" }
 alo-access = { path = "../alo-access" }
 alo-dividing = { path = "../alo-dividing" }

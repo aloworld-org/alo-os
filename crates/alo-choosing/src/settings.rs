@@ -467,3 +467,128 @@ mod tests {
         assert_eq!(Settings::at(&nowhere).unwrap(), Settings::untouched());
     }
 }
+
+/// Where a question put on this machine is answered, from the choice recorded
+/// in this settings file.
+///
+/// **The one reading a session needs to make a task of a request.** `alo-shell`
+/// may not make it — its own source guard holds every shipped file in that
+/// crate to never naming a settings file — so the binary that owns the folder
+/// asks this, and the arithmetic lives here where it can be tested rather than
+/// in a binary that has no tests at all.
+///
+/// `at` is the **settings file**, which is `crate::where_it_is`' answer and not
+/// `crate::where_the_folder_is`'. The two differ by one path segment and a
+/// caller that passes the folder gets [`None`] from a file that will not read —
+/// *no task, no window, and nothing saying why.* That mistake was made once on
+/// the way to writing this, and giving it a tested home is how it stops being
+/// available to make.
+///
+/// # Three ways this answers nothing, and all three are the right answer
+///
+/// **No file, or one that does not read.** A session with no choice recorded
+/// cannot answer a question.
+///
+/// **Nothing chosen.** Somebody who has not picked what answers their
+/// questions has not been asked to yet.
+///
+/// **A provider this file names no entry for.** [`Picked::source`] answers
+/// `None` and this passes it through **unchanged** — never *this machine
+/// instead*. Answering locally a question somebody pointed at a provider is the
+/// silent switch between local and remote processing that law 1 forbids, and it
+/// would be invisible: everything a person could see would look right.
+#[must_use]
+pub fn what_answers_here(at: &std::path::Path) -> Option<alo_models::InferenceSource> {
+    let settings = Settings::at(at).ok()?;
+    let picked = settings.chosen()?;
+    // **The one provider a settings file can name, in a list of its own.**
+    // `Picked::source` takes a list because a choice and a list can be checked
+    // against each other; a file holds at most one, and a choice naming any
+    // other provider correctly answers nothing.
+    let mut providers = alo_models::Providers::default();
+    if let Some(provider) = settings.provider() {
+        providers.add(provider.clone()).ok()?;
+    }
+    picked.source(&providers)
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on a settings file that will not write is the failure being \
+              reported"
+)]
+mod what_answers_here_tests {
+    use std::path::PathBuf;
+
+    use alo_models::InferenceSource;
+
+    use super::what_answers_here;
+    use crate::{Choosing, Chosen, Picked, Which};
+
+    /// A settings file of our own, in a folder nobody else's test uses.
+    fn a_settings_file(what: &str) -> PathBuf {
+        let at = std::env::temp_dir()
+            .join(format!("alo-what-answers-{what}-{}", std::process::id()))
+            .join(crate::THE_FOLDER)
+            .join(crate::THE_SETTINGS);
+        drop(std::fs::remove_dir_all(at.parent().unwrap()));
+        at
+    }
+
+    /// **A chosen local model answers on this machine.**
+    #[test]
+    fn a_chosen_local_model_answers_here() {
+        let at = a_settings_file("local");
+        let mut choosing = Choosing::at(&at).unwrap();
+        choosing
+            .answered_by(Some(Picked::OnThisMachine(
+                Chosen::of(Which::Catalogue, "mistral-small").unwrap(),
+            )))
+            .unwrap();
+
+        assert_eq!(
+            what_answers_here(&at),
+            Some(InferenceSource::ThisMachine),
+            "a recorded local choice did not answer"
+        );
+    }
+
+    /// **A machine nobody has configured answers nothing**, rather than
+    /// answering *this machine* because that is the cheap guess.
+    #[test]
+    fn a_machine_nobody_has_configured_answers_nothing() {
+        let at = a_settings_file("untouched");
+
+        assert_eq!(what_answers_here(&at), None);
+        assert!(!at.exists(), "asking wrote a file");
+    }
+
+    /// **The folder is not the file**, and passing the folder answers nothing.
+    ///
+    /// The mistake this function exists to make untakeable: `where_it_is` gives
+    /// the file and `where_the_folder_is` gives the folder, they differ by one
+    /// segment, and a caller that passes the folder would get no task, no
+    /// window, and nothing saying why.
+    #[test]
+    fn the_folder_is_not_the_file_and_answers_nothing() {
+        let at = a_settings_file("folder-not-file");
+        let mut choosing = Choosing::at(&at).unwrap();
+        choosing
+            .answered_by(Some(Picked::OnThisMachine(
+                Chosen::of(Which::Catalogue, "mistral-small").unwrap(),
+            )))
+            .unwrap();
+        let folder = at.parent().unwrap();
+
+        assert!(
+            what_answers_here(&at).is_some(),
+            "the file itself must answer, or this test is measuring nothing"
+        );
+        assert_eq!(
+            what_answers_here(folder),
+            None,
+            "the folder answered as though it were the file"
+        );
+    }
+}
