@@ -16,13 +16,17 @@
 //! `alo-accounts` and the door is knocked on by `alo-greeting`; this file
 //! decides nothing about either.
 //!
+//! **The keyboard is one of those things it is told.** It used to be told a
+//! constant: `Environment=ALO_KEYBOARD=gb` in `alo-compositor.service`, the
+//! same on every machine this repository has ever written. It is now told
+//! whatever `crate::the_machines_keyboard::the_keyboard_this_machine_has`
+//! read out of this machine's own `keyboards.toml`, with that constant left
+//! as the answer for a machine nobody has set up yet. It stays a parameter
+//! rather than a default hidden in here, for the reason it always was: a
+//! person whose keyboard is not the one named cannot type their password.
+//!
 //! # What it does not do yet, said here rather than discovered
 //!
-//! - **The keyboard is the layout the caller names, and nothing on this machine
-//!   decides that layout.** No crate in this repository does yet. A person
-//!   whose keyboard is not the one named cannot type their password, which is
-//!   why the layout is a parameter that must be passed rather than a default
-//!   hidden in here.
 //! - **The screen is drawn light, at the ordinary text scale, in the designed
 //!   palette.** `alo-appearance` holds what a person chose, and what a person
 //!   chose is kept in their own session — which nobody has opened yet at a
@@ -69,6 +73,13 @@ pub struct AMachineToStandOn<'a> {
     pub socket: &'a str,
     /// The XKB layout this machine's keyboard has — `gb`, `de`, `fr`.
     pub layout: &'a str,
+    /// The XKB variant of that layout — `oss` for `fr(oss)` — and empty for
+    /// the layout's plain form.
+    ///
+    /// Empty rather than [`None`] because empty is XKB's own word for *the
+    /// layout's default*, and a second spelling of the same absence would be
+    /// a second thing to translate at the one place it is handed over.
+    pub variant: &'a str,
 }
 
 /// How a compositor's morning ended.
@@ -156,6 +167,7 @@ pub fn stand_the_sign_in_screen_up(
         machine.socket,
         XkbConfig {
             layout: machine.layout,
+            variant: machine.variant,
             ..XkbConfig::default()
         },
     )?;

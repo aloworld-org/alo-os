@@ -29,6 +29,10 @@ alo-appearance = { path = "../alo-appearance" }
 alo-keeping-up = { path = "../alo-keeping-up" }
 alo-locking = { path = "../alo-locking" }
 alo-formats = { path = "../alo-formats" }
+# Which keyboard is in front of this machine, before anybody has signed in.
+# `/etc/alo/keyboards.toml` is that crate's file in that crate's shape; this
+# crate reads it at the one moment there is no person to ask.
+alo-keyboards = { path = "../alo-keyboards" }
 alo-overlay = { path = "../alo-overlay" }
 alo-egress = { path = "../alo-egress" }
 image = { version = "=0.25.10", default-features = false, features = ["png", "jpeg"] }

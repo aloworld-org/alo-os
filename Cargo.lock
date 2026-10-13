@@ -1553,6 +1553,7 @@ dependencies = [
  "alo-indicator",
  "alo-keeping",
  "alo-keeping-up",
+ "alo-keyboards",
  "alo-locking",
  "alo-measuring",
  "alo-models",

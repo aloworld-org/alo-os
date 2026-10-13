@@ -342,6 +342,7 @@ pub mod task_text;
 pub mod the_composer_a_person_types_in;
 pub mod the_docks_words;
 mod the_edge_takes_the_keyboard;
+pub mod the_machines_keyboard;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;

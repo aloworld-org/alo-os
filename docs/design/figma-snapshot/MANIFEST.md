@@ -477,3 +477,41 @@ vectors at the same coordinates as `364:25552` in `176-10686.xml`, which
 absence: the `Choice /` component's own states — whether a row draws a field,
 a border or a selected state is not in metadata and must be read from a
 render; the contents of every `Action /` instance; and the nine other frames.
+
+## The language, region and keyboard sheets, 2026-10-13
+
+**`the-language-region-keyboard-sheets.xml`** holds four more of the eleven:
+`185:10702` *09 - Language, region and keyboard*, and the three pickers behind
+its three rows - `372:30625` *09b - Choose language*, `372:30655` *09c - Choose
+region* and `185:10736` *09a - Keyboard choice*.
+
+**They are the same setup sheet again**, which is the fact worth having: the
+same 600-wide column at (160, 164), the same eyebrow at 0, title at 32,
+introduction at 136, choices at 177 in rows of 85 at 95 apart, the same
+Accessibility at (40, 876) and the same footer at (736, 892). Six captured
+frames now share one composition, and `crate::setup_sheet_layout` is it.
+
+**Three differences from the two account sheets**, each already answerable:
+
+- **A picker has no introduction.** On *09b* the choices begin at 136, where
+  the introduction would have been, with no gap left for it. That is the same
+  shape as a sheet with no consequence, which `setup_sheet_laid_out` already
+  takes as *a height of zero means there is none*.
+- **The selected row is 87 tall where the others are 85.** A pixel on each
+  side, which metadata can measure and cannot explain. Whether that is a
+  thicker stroke, a ring outside the border or a shadow has to come from a
+  render before it is drawn.
+- **A primary action is as wide as its label.** *Use this language* and *Use
+  this keyboard* are 176 wide and push *Back* to 188; *Continue* and *Use this
+  region* are 160 and push it to 172. So an action's width is measured from
+  its own text, not the constant 160 the account sheets let us assume.
+
+**Two things in these frames are decisions, not drawings**, and both are the
+owner's:
+
+- *09a* carries a fourth choice, **Test your keyboard** - a row that puts the
+  question *does this layout match the keys in front of you* to the person
+  before their password depends on the answer. Nothing in this repository
+  draws it yet.
+- A picker shows **three** rows and there are **24** languages. How 24 become
+  3 is not in the capture.

@@ -57,6 +57,7 @@ mod running {
     use std::process::ExitCode;
 
     use alo_greeting::TheOpenersDoor;
+    use alo_shell::the_machines_keyboard::WhoSaidSo;
     use alo_shell::{AMachineToStandOn, DirectFrame, Stood, what_this_machine_can_say};
 
     /// The name of this compositor's socket inside its runtime directory.
@@ -97,7 +98,8 @@ mod running {
             door: TheOpenersDoor::on_this_machine(),
             runtime: &said.runtime,
             socket: THE_SOCKET,
-            layout: &said.layout,
+            layout: said.keyboard.layout(),
+            variant: said.keyboard.variant(),
         };
         let words = match what_this_machine_can_say() {
             Ok(words) => words,
@@ -107,11 +109,34 @@ mod running {
             }
         };
 
+        // **The keyboard is logged with where it came from.** A machine typing
+        // through `gb` because somebody chose it and a machine typing through
+        // `gb` because nothing on it has ever been asked are the same two
+        // lines on a screen and two different things to go and fix.
         eprintln!(
-            "alo-compositor: the sign-in screen is going up on {}, for uid {}, on a {} keyboard",
+            "alo-compositor: the sign-in screen is going up on {}, for uid {}, on a {} keyboard \
+             ({})",
             machine.display.display(),
             machine.person,
-            machine.layout
+            match machine.variant {
+                "" => machine.layout.to_owned(),
+                variant => format!("{}({variant})", machine.layout),
+            },
+            match said.keyboard.from() {
+                WhoSaidSo::ThisMachinesFile => {
+                    format!(
+                        "chosen, and kept in {}",
+                        alo_keyboards::THE_MACHINES_KEYBOARDS
+                    )
+                }
+                WhoSaidSo::TheUnitFile => {
+                    "named by this machine's unit file, because nobody has chosen one yet"
+                        .to_owned()
+                }
+                WhoSaidSo::TheUnitFileBecauseTheMachinesFileDidNotRead(why) => format!(
+                    "named by this machine's unit file, because its own would not read: {why}"
+                ),
+            }
         );
 
         let started = std::time::Instant::now();
@@ -176,8 +201,8 @@ mod running {
         runtime: PathBuf,
         /// Whose machine it is.
         person: u32,
-        /// Which keyboard is in front of it.
-        layout: String,
+        /// Which keyboard is in front of it, and where that was learnt.
+        keyboard: alo_shell::the_machines_keyboard::TheKeyboardThisMachineHas,
     }
 
     /// Read the three things a machine differs by, and systemd's own directory.
@@ -188,7 +213,7 @@ mod running {
             person: named("ALO_PERSON")?
                 .parse()
                 .map_err(|_| "ALO_PERSON is not a uid".to_owned())?,
-            layout: named("ALO_KEYBOARD")?,
+            keyboard: the_keyboard_in_front_of_this_machine()?,
         })
     }
 
@@ -198,6 +223,23 @@ mod running {
     // on most UEFI machines. Two binaries that are the same machine's two
     // halves must not be able to disagree about which screen that is, and the
     // way to guarantee that is one function rather than two that match today.
+
+    /// Which keyboard is in front of this machine: its own file, then the unit
+    /// file's word.
+    ///
+    /// The unit file's word is passed as an option rather than demanded,
+    /// because a machine whose `keyboards.toml` answers does not need it — and
+    /// after the first-start sheet writes that file, a unit without the line at
+    /// all is a machine that works. Until then `ALO_KEYBOARD` is the only
+    /// answer a fresh disk has, so a machine with neither is refused by name.
+    fn the_keyboard_in_front_of_this_machine()
+    -> Result<alo_shell::the_machines_keyboard::TheKeyboardThisMachineHas, String> {
+        alo_shell::the_machines_keyboard::the_keyboard_this_machine_has(
+            Path::new(alo_keyboards::THE_MACHINES_KEYBOARDS),
+            std::env::var("ALO_KEYBOARD").ok().as_deref(),
+        )
+        .map_err(|why| why.to_string())
+    }
 
     /// One variable the unit file has to set, or the sentence saying it did not.
     fn named(variable: &str) -> Result<String, String> {
