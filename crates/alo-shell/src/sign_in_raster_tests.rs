@@ -304,3 +304,42 @@ fn high_contrast_draws_the_same_screen_in_the_palette_that_crate_decided() {
         );
     }
 }
+
+/// **No inked box is wider than the words in it.**
+///
+/// A shaped box is as wide as the width it was given to wrap inside, and
+/// carries its ground colour everywhere the ink is not. On a flat screen that
+/// is invisible. On this one the raster draws the design's folded light, and
+/// an uncropped box is a **bar** laid across it — which is what a booted
+/// machine showed on 2026-10-12: the person's name, and then a white rectangle
+/// running from it to halfway across the display.
+///
+/// It also broke the centring. A caller centring by `(box - ink) / 2` places
+/// the ink correctly and then draws the rest of the box off to one side.
+#[test]
+fn no_inked_box_is_wider_than_its_own_words() {
+    let drawn = whose_screen("disan");
+    for ink in &drawn.inked {
+        let lit = ink
+            .pixels
+            .iter()
+            .filter(|p| u32::from(p[0]) + u32::from(p[1]) + u32::from(p[2]) < 300)
+            .count();
+        assert!(
+            lit > 0,
+            "an inked box at {:?} carries no ink at all: it is a rectangle of ground \
+             colour on the design's own artwork",
+            ink.area
+        );
+        // Generous: a box may be a little wider than the ink it holds, because
+        // a glyph's own side bearings belong to it. A box four times the ink
+        // is the fault this catches.
+        let area = (ink.area.size.w * ink.area.size.h) as usize;
+        assert!(
+            area < lit * 40,
+            "the box at {:?} is {area} pixels around {lit} of ink: it is mostly ground, \
+             and that ground is drawn over the wallpaper",
+            ink.area
+        );
+    }
+}

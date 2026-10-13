@@ -52,6 +52,39 @@ pub(crate) struct Shaped {
 }
 
 impl Shaped {
+    /// The same text in a box only as wide as its own ink.
+    ///
+    /// A shaped box is as wide as the width it was given to wrap inside, and
+    /// the ink sits at its left. Everywhere the ink is not, the box carries
+    /// the ground colour it was shaped against — invisible on a flat screen,
+    /// and a **rectangle** on one with artwork behind it.
+    ///
+    /// **This is what a centred line needs.** A caller that centres by placing
+    /// the box at `(box - ink) / 2` puts the ink in the right place and then
+    /// draws the rest of the box off to one side: on the sign-in screen that
+    /// was a white bar running from the person's name to halfway across the
+    /// display, over the wallpaper. Cropping first makes the box and the ink
+    /// the same thing, so a centred placement is centred.
+    ///
+    /// Rows are untouched; only columns past the ink are dropped.
+    #[must_use]
+    pub(crate) fn cropped_to_its_ink(self) -> Self {
+        let keep = self.width.clamp(0, self.width_of_box);
+        if keep == self.width_of_box || keep <= 0 || self.width_of_box <= 0 {
+            return self;
+        }
+        let pixels = self
+            .pixels
+            .chunks(self.width_of_box as usize)
+            .flat_map(|row| row.iter().take(keep as usize).copied())
+            .collect();
+        Self {
+            width_of_box: keep,
+            pixels,
+            ..self
+        }
+    }
+
     /// The box at (`x`, `y`), cut at the bottom of an output `limit` high.
     pub(crate) fn placed(self, x: i32, y: i32, limit: i32) -> Option<Inked> {
         let rows = self.height.min(limit - y);
