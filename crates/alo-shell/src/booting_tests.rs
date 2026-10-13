@@ -53,6 +53,7 @@ fn a_machine_with_no_seat_refuses_by_naming_the_seat() {
             runtime: runtime.path(),
             socket: "a-machine-with-no-seat",
             layout: "gb",
+            variant: "",
         },
         what_this_machine_can_say().unwrap(),
         || DirectFrame::Stop,

@@ -1,0 +1,122 @@
+<!--
+  Captured 2026-10-13 from nDxyF5Ho9oC4RObjVzwBNJ with get_metadata, one call
+  per frame, pasted unedited. Four frames: the sheet that shows what a machine
+  has been set to, and the three pickers behind its three rows.
+
+  WHAT METADATA CANNOT SAY, recorded so nobody reads its silence as absence:
+  no colour, no corner radius, no type size, no stroke. Which of the rows on a
+  picker is the selected one is visible only as its height - 87 against 85 -
+  and what that extra pixel on each side IS must be read from a render. The
+  `Choice /` component's own states are not here, and neither is any text.
+
+  AND: a picker shows three rows. There are 24 languages and more regions than
+  that, so how 24 become 3 - a scroll, a page, a search - is NOT in this
+  capture and is not decided by it.
+-->
+
+<frame id="185:10702" name="09 - Language, region and keyboard" x="1720" y="180" width="1440" height="960">
+  <frame id="371:30153" name="Wallpaper / folded light" x="0" y="0" width="1440" height="960">
+    <vector id="371:30154" name="Vector" x="1016" y="-180" width="584" height="1240" />
+    <vector id="371:30155" name="Vector" x="1140" y="-180" width="460" height="1240" />
+    <vector id="371:30156" name="Vector" x="1302.321533203125" y="-120" width="297.678466796875" height="1120" />
+    <vector id="371:30157" name="Vector" x="-180" y="686.465087890625" width="992" height="413.534912109375" />
+    <vector id="371:30158" name="Vector" x="-180" y="785.3609008789062" width="895" height="314.63909912109375" />
+  </frame>
+  <text id="371:30160" name="Stage" x="950" y="52" width="420" height="18" />
+  <frame id="371:30161" name="Main / locale" x="160" y="164" width="600" height="516">
+    <text id="371:30162" name="Eyebrow" x="0" y="0" width="600" height="16" />
+    <text id="371:30163" name="Title" x="0" y="32" width="600" height="88" />
+    <text id="371:30164" name="Introduction" x="0" y="136" width="600" height="25" />
+    <frame id="371:30165" name="Choices" x="0" y="177" width="600" height="275">
+      <instance id="371:30166" name="Choice / Language" x="0" y="0" width="600" height="85" />
+      <instance id="371:30169" name="Choice / Region" x="0" y="95" width="600" height="85" />
+      <instance id="371:30172" name="Choice / Keyboard" x="0" y="190" width="600" height="85" />
+    </frame>
+    <frame id="371:30175" name="Actions" x="0" y="468" width="600" height="48">
+      <instance id="371:30176" name="Action / Continue" x="0" y="0" width="160" height="48" />
+      <instance id="371:30178" name="Action / Back" x="172" y="0" width="160" height="48" />
+    </frame>
+  </frame>
+  <instance id="371:30180" name="Action / Accessibility" x="40" y="876" width="160" height="48" />
+  <text id="371:30182" name="Footer" x="736" y="892" width="640" height="16" />
+</frame>
+
+<frame id="372:30625" name="09b - Choose language" x="1720" y="3600" width="1440" height="960">
+  <frame id="372:30626" name="Wallpaper / folded light" x="0" y="0" width="1440" height="960">
+    <vector id="372:30627" name="Vector" x="1016" y="-180" width="584" height="1240" />
+    <vector id="372:30628" name="Vector" x="1140" y="-180" width="460" height="1240" />
+    <vector id="372:30629" name="Vector" x="1302.321533203125" y="-120" width="297.678466796875" height="1120" />
+    <vector id="372:30630" name="Vector" x="-180" y="686.465087890625" width="992" height="413.534912109375" />
+    <vector id="372:30631" name="Vector" x="-180" y="785.3609008789062" width="895" height="314.63909912109375" />
+  </frame>
+  <text id="372:30633" name="Stage" x="950" y="52" width="420" height="18" />
+  <frame id="372:30634" name="Main / language" x="160" y="164" width="600" height="477">
+    <text id="372:30635" name="Eyebrow" x="0" y="0" width="600" height="16" />
+    <text id="372:30636" name="Title" x="0" y="32" width="600" height="88" />
+    <frame id="372:30637" name="Choices" x="0" y="136" width="600" height="277">
+      <instance id="372:30638" name="Choice / English" x="0" y="0" width="600" height="87" />
+      <instance id="372:30641" name="Choice / Nederlands" x="0" y="97" width="600" height="85" />
+      <instance id="372:30644" name="Choice / Francais" x="0" y="192" width="600" height="85" />
+    </frame>
+    <frame id="372:30647" name="Actions" x="0" y="429" width="600" height="48">
+      <instance id="372:30648" name="Action / Use this language" x="0" y="0" width="176" height="48" />
+      <instance id="372:30650" name="Action / Back" x="188" y="0" width="160" height="48" />
+    </frame>
+  </frame>
+  <instance id="372:30652" name="Action / Accessibility" x="40" y="876" width="160" height="48" />
+  <text id="372:30654" name="Footer" x="736" y="892" width="640" height="16" />
+</frame>
+
+<frame id="372:30655" name="09c - Choose region" x="1720" y="4740" width="1440" height="960">
+  <frame id="372:30656" name="Wallpaper / folded light" x="0" y="0" width="1440" height="960">
+    <vector id="372:30657" name="Vector" x="1016" y="-180" width="584" height="1240" />
+    <vector id="372:30658" name="Vector" x="1140" y="-180" width="460" height="1240" />
+    <vector id="372:30659" name="Vector" x="1302.321533203125" y="-120" width="297.678466796875" height="1120" />
+    <vector id="372:30660" name="Vector" x="-180" y="686.465087890625" width="992" height="413.534912109375" />
+    <vector id="372:30661" name="Vector" x="-180" y="785.3609008789062" width="895" height="314.63909912109375" />
+  </frame>
+  <text id="372:30663" name="Stage" x="950" y="52" width="420" height="18" />
+  <frame id="372:30664" name="Main / region" x="160" y="164" width="600" height="423">
+    <text id="372:30665" name="Eyebrow" x="0" y="0" width="600" height="16" />
+    <text id="372:30666" name="Title" x="0" y="32" width="600" height="88" />
+    <text id="372:30667" name="Introduction" x="0" y="136" width="600" height="25" />
+    <frame id="372:30668" name="Choices" x="0" y="177" width="600" height="182">
+      <instance id="372:30669" name="Choice / Belgium" x="0" y="0" width="600" height="87" />
+      <instance id="372:30672" name="Choice / Other region" x="0" y="97" width="600" height="85" />
+    </frame>
+    <frame id="372:30675" name="Actions" x="0" y="375" width="600" height="48">
+      <instance id="372:30676" name="Action / Use this region" x="0" y="0" width="160" height="48" />
+      <instance id="372:30678" name="Action / Back" x="172" y="0" width="160" height="48" />
+    </frame>
+  </frame>
+  <instance id="372:30680" name="Action / Accessibility" x="40" y="876" width="160" height="48" />
+  <text id="372:30682" name="Footer" x="736" y="892" width="640" height="16" />
+</frame>
+
+<frame id="185:10736" name="09a - Keyboard choice" x="1720" y="1320" width="1440" height="960">
+  <frame id="371:30329" name="Wallpaper / folded light" x="0" y="0" width="1440" height="960">
+    <vector id="371:30330" name="Vector" x="1016" y="-180" width="584" height="1240" />
+    <vector id="371:30331" name="Vector" x="1140" y="-180" width="460" height="1240" />
+    <vector id="371:30332" name="Vector" x="1302.321533203125" y="-120" width="297.678466796875" height="1120" />
+    <vector id="371:30333" name="Vector" x="-180" y="686.465087890625" width="992" height="413.534912109375" />
+    <vector id="371:30334" name="Vector" x="-180" y="785.3609008789062" width="895" height="314.63909912109375" />
+  </frame>
+  <text id="371:30336" name="Stage" x="950" y="52" width="420" height="18" />
+  <frame id="371:30337" name="Main / keyboard" x="160" y="164" width="600" height="613">
+    <text id="371:30338" name="Eyebrow" x="0" y="0" width="600" height="16" />
+    <text id="371:30339" name="Title" x="0" y="32" width="600" height="88" />
+    <text id="371:30340" name="Introduction" x="0" y="136" width="600" height="25" />
+    <frame id="371:30341" name="Choices" x="0" y="177" width="600" height="372">
+      <instance id="371:30342" name="Choice / Belgian AZERTY" x="0" y="0" width="600" height="87" />
+      <instance id="371:30345" name="Choice / US QWERTY" x="0" y="97" width="600" height="85" />
+      <instance id="371:30348" name="Choice / French AZERTY" x="0" y="192" width="600" height="85" />
+      <instance id="371:30351" name="Choice / Test your keyboard" x="0" y="287" width="600" height="85" />
+    </frame>
+    <frame id="371:30354" name="Actions" x="0" y="565" width="600" height="48">
+      <instance id="371:30355" name="Action / Use this keyboard" x="0" y="0" width="176" height="48" />
+      <instance id="371:30357" name="Action / Back" x="188" y="0" width="160" height="48" />
+    </frame>
+  </frame>
+  <instance id="371:30359" name="Action / Accessibility" x="40" y="876" width="160" height="48" />
+  <text id="371:30361" name="Footer" x="736" y="892" width="640" height="16" />
+</frame>
