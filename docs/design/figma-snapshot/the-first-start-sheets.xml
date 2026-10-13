@@ -164,3 +164,69 @@
   `text/primary`, `text/muted` — which `crate::sign_in_surface::TheColours`
   already answers per scheme and contrast.
 -->
+
+<!--
+  ## Two more of the journey, 2026-10-13
+
+  Captured to check the composition against frames it had not been built from,
+  and both found something.
+
+  **`183:10673` — 08 · Welcome to alo OS.** The same skeleton with **no
+  choices at all** and **one action**: Main is 213 tall, eyebrow, title (76),
+  introduction (25), then actions straight after. It also carries one element
+  no other sheet has — `386:26226` *Spoken setup shortcut*, 500 x 16 at
+  (64, 840), a line telling somebody how to drive setup by voice. That is an
+  accessibility affordance on the very first screen and belongs with the
+  owner's direction that accessibility must work before sign-in.
+
+  **`185:10770` — 11 · Sign-in options.** Three choices — Password, PIN,
+  Fingerprint, at y 0, 95 and 190, so the 95 spacing holds for a third — two
+  actions, and **no consequence line**. Main is 516 tall: choices end at 452
+  and the actions begin at 468, a gap of 16 and nothing between them.
+
+  That last one is the finding. The composition had been read from two sheets
+  that both carry a consequence, so `crate::setup_sheet_layout` always placed
+  one; on this frame it would have put the buttons 38 units low. A sheet
+  says what its answer means **when it has something to say**, and the layout
+  now takes a consequence of zero to mean there is none — no box, and no gap
+  after it.
+
+      183:10673  Welcome          0 choices, 1 action, a consequence
+      183:10675  Your name        2 choices, 2 actions, a consequence
+      185:10770  Sign-in options  3 choices, 2 actions, NO consequence
+      186:10737  Add a PIN        2 choices, 2 actions, a consequence
+-->
+<frame id="183:10673" name="08 · Welcome to alo OS" x="120" y="180" width="1440" height="960">
+  <text id="371:30142" name="Stage" x="950" y="52" width="420" height="18" />
+  <frame id="371:30143" name="Main / welcome" x="160" y="164" width="600" height="213">
+    <text id="371:30144" name="Eyebrow" x="0" y="0" width="600" height="16" />
+    <text id="371:30145" name="Title" x="0" y="32" width="600" height="76" />
+    <text id="371:30146" name="Introduction" x="0" y="124" width="600" height="25" />
+    <frame id="371:30147" name="Actions" x="0" y="165" width="600" height="48">
+      <instance id="371:30148" name="Action / Let’s begin" x="0" y="0" width="160" height="48" />
+    </frame>
+  </frame>
+  <instance id="371:30150" name="Action / Accessibility" x="40" y="876" width="160" height="48" />
+  <text id="371:30152" name="Footer" x="736" y="892" width="640" height="16" />
+  <text id="386:26226" name="Spoken setup shortcut" x="64" y="840" width="500" height="16" />
+</frame>
+
+<frame id="185:10770" name="11 · Sign-in options" x="4920" y="2460" width="1440" height="960">
+  <text id="371:30578" name="Stage" x="950" y="52" width="420" height="18" />
+  <frame id="371:30579" name="Main / protection" x="160" y="164" width="600" height="516">
+    <text id="371:30580" name="Eyebrow" x="0" y="0" width="600" height="16" />
+    <text id="371:30581" name="Title" x="0" y="32" width="600" height="88" />
+    <text id="371:30582" name="Introduction" x="0" y="136" width="600" height="25" />
+    <frame id="371:30583" name="Choices" x="0" y="177" width="600" height="275">
+      <instance id="371:30584" name="Choice / Password" x="0" y="0" width="600" height="85" />
+      <instance id="371:30587" name="Choice / PIN" x="0" y="95" width="600" height="85" />
+      <instance id="371:30590" name="Choice / Fingerprint" x="0" y="190" width="600" height="85" />
+    </frame>
+    <frame id="371:30593" name="Actions" x="0" y="468" width="600" height="48">
+      <instance id="371:30594" name="Action / Add a PIN" x="0" y="0" width="160" height="48" />
+      <instance id="371:30596" name="Action / Done" x="172" y="0" width="160" height="48" />
+    </frame>
+  </frame>
+  <instance id="371:30598" name="Action / Accessibility" x="40" y="876" width="160" height="48" />
+  <text id="371:30600" name="Footer" x="736" y="892" width="640" height="16" />
+</frame>

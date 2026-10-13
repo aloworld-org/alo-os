@@ -274,3 +274,61 @@ fn a_sheet_of_any_shape_lays_out() {
         }
     }
 }
+
+/// **A sheet with nothing to say puts its actions straight under its
+/// choices.**
+///
+/// `185:10770` — *Sign-in options* — has three choices, two actions and no
+/// consequence between them: Main is 516 tall, the choices end at 452 and the
+/// actions begin at 468. The composition had been read from two sheets that
+/// both carry a consequence, so it always placed one, and this frame's buttons
+/// would have landed thirty-eight units low.
+#[test]
+fn a_sheet_with_no_consequence_puts_its_actions_under_its_choices() {
+    let at = laid_out(
+        1440,
+        960,
+        TheTextIsTall {
+            title: 88,
+            introduction: 25,
+            consequence: 0,
+            choices: 3,
+            actions: 2,
+        },
+    );
+    assert_eq!(at.choices.len(), 3, "`371:30583` holds three choices");
+    // The third sits 190 below the first, so the 95 spacing holds for a third.
+    assert_eq!(
+        at.choices.get(2).expect("three").loc.y - at.choices.first().expect("three").loc.y,
+        190,
+        "`371:30590` is 190 below `371:30584`"
+    );
+    // `371:30593` — the actions at y=468 inside the column.
+    assert_eq!(
+        at.actions.first().expect("two").loc.y - at.column.loc.y,
+        468,
+        "`371:30593` is at y=468"
+    );
+    assert_eq!(
+        at.consequence.size.h, 0,
+        "a sheet with nothing to say reserved a box anyway"
+    );
+
+    // The control: the same sheet *with* a consequence puts them lower, so the
+    // assertion above is about the absence and not about the number 468.
+    let with = laid_out(
+        1440,
+        960,
+        TheTextIsTall {
+            title: 88,
+            introduction: 25,
+            consequence: 22,
+            choices: 3,
+            actions: 2,
+        },
+    );
+    assert!(
+        with.actions.first().expect("two").loc.y > at.actions.first().expect("two").loc.y,
+        "a consequence did not move the actions down"
+    );
+}
