@@ -495,6 +495,72 @@ mod which_door_a_refusal_goes_through {
         }
     }
 
+    /// **A ceiling needs a person too, and the sentence it gets names both
+    /// numbers because the message names neither.**
+    ///
+    /// This is the real failure, word for word, from a disk write on
+    /// 2026-10-14. It says *too many open files*, and the limit that had
+    /// actually run out was `fs.inotify.max_user_instances` at 128 — while
+    /// `ulimit -n`, the number anybody checks first, read 10240 and was fine.
+    #[test]
+    fn a_ceiling_needs_a_person_and_the_answer_names_both_numbers() {
+        let said = "Failed to add inotify watch for /run/udev: Too many open files\n\
+                    error: Installing to disk: Creating rootfs: Failed to run udevadm settle";
+        let why = only_a_person_can_clear_this(said);
+        assert!(
+            why.is_some_and(
+                |w| w.contains("ulimit -n") && w.contains("fs.inotify.max_user_instances")
+            ),
+            "the answer sends somebody to one number and not the other: {why:?}"
+        );
+        // **Not read as a full disk**, which is the mistake worth asserting
+        // against: both doors are the person's, so a wrong `why` would send
+        // somebody to clear space on a machine with plenty.
+        assert!(
+            !why.is_some_and(|w| w.contains("filled up")),
+            "a ceiling was reported as a full filesystem: {why:?}"
+        );
+    }
+
+    /// Every spelling of a ceiling, because which appears depends on who is
+    /// reporting: a C library prints the words, a `std::io::Error` prints the
+    /// number, and `udevadm` names the mechanism.
+    #[test]
+    fn every_spelling_of_a_ceiling_is_caught() {
+        for said in [
+            "Too many open files",
+            "Os { code: 24, kind: Uncategorized, message: \"Too many open files\" }",
+            "failed to open: os error 24",
+            "Failed to add inotify watch for /run/udev",
+        ] {
+            assert!(
+                only_a_person_can_clear_this(said).is_some(),
+                "{said:?} was not read as a ceiling"
+            );
+        }
+    }
+
+    /// **A full disk and a ceiling are told apart**, which is the point of
+    /// having two sentences rather than one: they send a person to different
+    /// places, and the cost of the wrong one is the thirty minutes that
+    /// produced this test.
+    #[test]
+    fn a_full_disk_and_a_ceiling_get_different_answers() {
+        let disk = only_a_person_can_clear_this("No space left on device");
+        let ceiling = only_a_person_can_clear_this("Too many open files");
+        // **Both are asserted present first**, because `None != None` is false
+        // and a classifier that answered for neither would pass the comparison
+        // below while recognising nothing at all.
+        assert!(
+            disk.is_some() && ceiling.is_some(),
+            "one of the two refusals is not recognised at all: disk={disk:?} ceiling={ceiling:?}"
+        );
+        assert_ne!(
+            disk, ceiling,
+            "both refusals get the same sentence, so the door cannot say which to clear"
+        );
+    }
+
     /// **And the ordinary broken change goes through neither door**, which is
     /// the control: a classifier that answered for everything would turn every
     /// real failure into *the machine's fault*.
@@ -524,6 +590,9 @@ mod which_door_a_refusal_goes_through {
             "Wsl/Service/",
             "the virtual machine did not finish booting",
             "memory allocation of",
+            "Too many open files",
+            "os error 24",
+            "Failed to add inotify watch for /run/udev",
         ] {
             let needs_a_person = only_a_person_can_clear_this(said).is_some();
             let the_machine = the_machine_rather_than_the_work(said).is_some();
@@ -840,15 +909,36 @@ fn needs_a_person_to_clear_it(gate: &str, why: &str, refused: &str) -> String {
 /// It is checked **before** that rule, because a full disk also produces
 /// linker errors that look like anything at all.
 fn only_a_person_can_clear_this(refused: &str) -> Option<&'static str> {
-    const NEEDS_A_PERSON: [(&str, &str); 2] = [
-        (
-            "No space left on device",
-            "the filesystem the gates build on filled up during the run",
-        ),
-        (
-            "os error 28",
-            "the filesystem the gates build on filled up during the run",
-        ),
+    /// **The message never says which ceiling**, which is the whole reason this
+    /// sentence is long. A run that hit one of these printed *Too many open
+    /// files* and the first thing anybody checks is `ulimit -n`; on
+    /// 2026-10-14 that read **10240** and was not the limit that failed.
+    /// `fs.inotify.max_user_instances` was **128** and had been exhausted by a
+    /// neighbouring container build. Thirty minutes went into a number that
+    /// was fine.
+    ///
+    /// So this names **both** numbers and does not guess, and it says the
+    /// neighbour part too: a ceiling a neighbouring build is holding comes
+    /// back when that build finishes, and one that is genuinely too low does
+    /// not. A person can tell those apart in a second and a classifier cannot.
+    const WHICH_CEILING: &str = "something on this machine ran out of a limit rather \
+                                 than of disk — the message says \"too many open files\" \
+                                 and does not say which ceiling. Check `ulimit -n` and \
+                                 `fs.inotify.max_user_instances`; if a container build \
+                                 is running, it may be holding them and they come back \
+                                 when it finishes";
+    const DISK: &str = "the filesystem the gates build on filled up during the run";
+    const NEEDS_A_PERSON: [(&str, &str); 5] = [
+        ("No space left on device", DISK),
+        ("os error 28", DISK),
+        // **EMFILE, by its words and by its number.** Neither spelling tells
+        // you which limit, for the reason `WHICH_CEILING` gives.
+        ("Too many open files", WHICH_CEILING),
+        ("os error 24", WHICH_CEILING),
+        // The one that named itself. `systemd-udevd` and `udevadm settle`
+        // report it this way when `inotify_init` is refused, and it is the
+        // sentence a disk write actually failed with.
+        ("inotify watch", WHICH_CEILING),
     ];
     NEEDS_A_PERSON
         .into_iter()
