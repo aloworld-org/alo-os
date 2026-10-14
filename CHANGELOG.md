@@ -12,6 +12,24 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **A developer who opens the terminal can clone and build.** `git`, `gcc`,
+  `g++`, `make` and `pkg-config` are in the image, so the first thing somebody
+  tries on a new machine — clone a repository and build it — works without
+  installing a toolchain first.
+
+  *Said plainly because the history does not say it: this landed inside the
+  change whose subject is about choosing a language before sign-in, by
+  accident, and that commit's message does not mention a toolchain. Measured
+  2026-10-14, before the fix: the image recipe named `git` **nowhere**, and
+  `gcc` only inside a build stage that does not reach the finished image.*
+
+  *And now something checks it on every build.* The check that was there asked
+  three of the five tools whether their file existed and only asked `git` to
+  run; `g++` and `pkg-config` were not named at all, because the packages that
+  carry them are spelled differently from the commands a person types. All five
+  are now **started** during the build, so a tool whose libraries are missing
+  fails the build instead of shipping, and a test holds that check in place.
+
 - **You can ask alo to open an application, bring it to the front, or close
   it.** The four application verbs had been written down, worded, published for
   other people to build against, and offered to nobody: nothing on a running
