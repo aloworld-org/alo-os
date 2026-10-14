@@ -497,21 +497,10 @@ frames now share one composition, and `crate::setup_sheet_layout` is it.
   the introduction would have been, with no gap left for it. That is the same
   shape as a sheet with no consequence, which `setup_sheet_laid_out` already
   takes as *a height of zero means there is none*.
-- **The selected row is 87 tall where the others are 85.** A pixel on each
-  side, which metadata can measure and cannot explain. Whether that is a
-  thicker stroke, a ring outside the border or a shadow has to come from a
-  render before it is drawn.
-- **A primary action is as wide as its label.** *Use this language* and *Use
-  this keyboard* are 176 wide and push *Back* to 188; *Continue* and *Use this
-  region* are 160 and push it to 172. So an action's width is measured from
-  its own text, not the constant 160 the account sheets let us assume.
-
-**Two things in these frames are decisions, not drawings**, and both are the
-owner's:
-
-- *09a* carries a fourth choice, **Test your keyboard** - a row that puts the
-  question *does this layout match the keys in front of you* to the person
-  before their password depends on the answer. Nothing in this repository
-  draws it yet.
-- A picker shows **three** rows and there are **24** languages. How 24 become
-  3 is not in the capture.
+- **The selected row is 87 tall where the others are 85**, and that was
+  already settled: `../the-first-start.md` measured every card over all 77
+  frames on 2026-10-07 and recorded *ordinary 85, 1px border; selected 87,
+  2px border, one more pixel on each edge*, with the check that a surviving
+  1.5px border would have measured 86 and none does. **This note previously
+  said it had to come from a render.** It did not, and saying so sent the
+  next reader to Figma for a fact this repository had already written down.

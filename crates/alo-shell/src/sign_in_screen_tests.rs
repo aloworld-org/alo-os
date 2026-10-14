@@ -102,6 +102,10 @@ fn sentence(screen: &SignInScreen<CountingDoor>) -> Option<String> {
             said.map(|said| said.text().to_owned())
         }
         SignInShows::Sentence(said) => Some(said.text().to_owned()),
+        // The language sheet shows no sentence of its own: it offers a list
+        // and two actions, and what it would say about a refusal belongs to
+        // the sheet that asks for a name.
+        SignInShows::Language { .. } => None,
     }
 }
 
@@ -269,7 +273,13 @@ fn a_machine_with_nobody_on_it_is_offered_a_sheet_and_refused_without_a_store() 
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
     );
-    // A name, then a secret, then submit — the walk a person actually takes.
+    // Past the language sheet, then a name, a secret and submit — the walk a
+    // person actually takes. The two Enters at the front choose the language
+    // under the cursor and take `Use this language`.
+    for key in [SignInKey::Enter, SignInKey::Enter] {
+        screen = still(screen.pressed(key));
+    }
+    // A name, then a secret, then submit.
     // The old sequence moved between the fields without ever submitting,
     // which is how it proved keys were ignored.
     for key in [
@@ -344,6 +354,8 @@ fn every_sentence_the_screen_can_show_is_collected_and_none_is_written_here() {
             shown.extend(said.cloned());
         }
         SignInShows::Sentence(said) => shown.push(said.clone()),
+        // The language sheet has no sentence to collect.
+        SignInShows::Language { .. } => {}
     };
 
     // **The first-start sheet says nothing until something is tried**, so it
@@ -355,6 +367,9 @@ fn every_sentence_the_screen_can_show_is_collected_and_none_is_written_here() {
         the_machines_words(),
     );
     for key in [
+        // Past the language sheet: choose, then take `Use this language`.
+        SignInKey::Enter,
+        SignInKey::Enter,
         SignInKey::Letter('a'),
         SignInKey::Enter,
         SignInKey::Letter('b'),
