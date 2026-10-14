@@ -1,0 +1,18 @@
+[package]
+name = "alo-terminal"
+version = "0.0.1"
+description = "A pseudoterminal running a person's own shell, and the grid of cells its output becomes."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# ADR 0114: the VT state machine, the grid, the scrollback and the pty are a
+# pinned upstream engine behind our own interface, never written here and never
+# patched. What this crate owns is the interface in front of it.
+alacritty_terminal = "0.26.0"
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

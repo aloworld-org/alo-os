@@ -32,11 +32,21 @@
 //!   through `Attrs::weight`. A static face would need a second file and the
 //!   drawing code would silently draw regular where it meant bold.
 
+// **Counted rather than guessed at**, because an unfulfilled `#[expect]` is
+// itself an error here and the first version of this block listed
+// `clippy::panic`, which nothing in the file uses. Measured: `.expect(` three,
+// `panic!` zero, indexing seven, slicing one.
 #![expect(
     clippy::expect_used,
-    clippy::panic,
-    reason = "an unreadable or malformed face is the failure this test reports, and a formatted \
-              panic names the table it could not find"
+    reason = "an unreadable or malformed face is the failure this test reports"
+)]
+#![expect(
+    clippy::indexing_slicing,
+    reason = "this file parses a binary format by offset, which is what indexing is for. The \
+              bounds are the font's own table directory and the file's hash is asserted beside \
+              this, so an index past the end means the bytes are not the face whose provenance \
+              is recorded — which is a failure this test exists to report rather than one to \
+              handle gracefully."
 )]
 
 use std::path::{Path, PathBuf};
