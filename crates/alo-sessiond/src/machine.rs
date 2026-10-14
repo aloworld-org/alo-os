@@ -21,23 +21,31 @@
 //! authentication path — which was the price ADR 0024 priced for the other
 //! option.
 //!
-//! # What this component deliberately does not decide
+//! # The seat, the VT, and what this component still does not decide
 //!
-//! **The seat and the virtual terminal.** They are passed empty and zero, which
-//! is a session with no seat. A seat and a VT are facts about *what draws*, and
-//! this component must not draw, start a compositor, or decide what a person
-//! sees — that is task 13's and the desktop lane's. A seatless session is
-//! enough for the thing this task exists for: `logind` starts the person's own
-//! `user@<uid>.service` on their first session whatever its seat, and
-//! `alo-agentd.service` is `BindsTo=` that.
+//! **The seat and the virtual terminal, which were empty and zero until
+//! 2026-10-14.** They are now `seat0` and `1`, and the paragraph that stood
+//! here said why they were not:
 //!
-//! **The session type.** `unspecified`, for the same reason: claiming
-//! `wayland` would be this process asserting that something is drawing, when
-//! the compositor it would be asserting about has no binary yet.
+//! > A seat and a VT are facts about *what draws*, and this component must
+//! > not draw, start a compositor, or decide what a person sees [...] Both
+//! > are additive to change — a later task that starts a compositor is the
+//! > one that knows which VT it is on, and it will be changing an argument
+//! > here rather than adding a door.
 //!
-//! Both are additive to change — a later task that starts a compositor is the
-//! one that knows which VT it is on, and it will be changing an argument here
-//! rather than adding a door.
+//! That was right, and this is that later task. A booted machine showed the
+//! cost of the seatless session: a person made their first account, two
+//! sessions were opened for them, and `alo-desktop` found no seat six times
+//! over. [ADR 0115](../../../docs/decisions/0115-the-desktop-runs-inside-the-session-alo-sessiond-opened.md)
+//! has the measurement, including the half of it this change does not fix:
+//! a seated session still answers nothing for a process `logind` cannot place
+//! in it, and putting the desktop inside this one is its own change.
+//!
+//! **The session type is still `unspecified`**, and that is now a narrower
+//! claim than it was. It said *the compositor it would be asserting about has
+//! no binary yet*, which has stopped being true. What is still true is that
+//! this component does not assert which protocol draws; the seat is what a
+//! card is lent from, and the type is not.
 //!
 //! # The session lasts as long as this process holds it
 //!
@@ -77,6 +85,36 @@ const A_PERSONS: &str = "user";
 /// What this component will not claim about what is drawing.
 const NOT_SAID: &str = "unspecified";
 
+/// The seat a person sits at, named rather than left empty.
+///
+/// **This was the empty string until 2026-10-14, and that was half of why a
+/// desktop could not take the card.** A session created with no seat is a
+/// session with no seat to lend, so `libseat` would have found nothing even
+/// once the desktop was inside it. The module header predicted this change in
+/// as many words: *a later task that starts a compositor is the one that knows
+/// which VT it is on, and it will be changing an argument here rather than
+/// adding a door.* This is that task.
+///
+/// One seat, because alo OS certifies one machine rather than every machine
+/// (ADR 0002). A machine with two seats is a decision nobody has taken.
+const THE_SEAT: &str = "seat0";
+
+/// The virtual terminal that seat draws on.
+///
+/// One, because that is what the image puts a screen on: both
+/// `alo-compositor.service` and `alo-desktop.service` carry
+/// `TTYPath=/dev/tty1`, and `getty@tty1` is masked in the recipe so nothing
+/// else owns it. The greeter measured what happens without it: *a session
+/// with no TTY is given no seat -- logind answered seat= vtnr=0. With it, the
+/// same machine answered seat=seat0 vtnr=1.*
+const THE_VT: u32 = 1;
+
+/// The terminal that VT is, as logind spells it.
+///
+/// Passed because a seated session is expected to name one, and the greeter
+/// gets its seat by way of `pam_systemd` reading exactly this from `PAM_TTY`.
+const THE_TERMINAL: &str = "tty1";
+
 /// `systemd-logind`, on this machine's system bus.
 #[derive(Debug, Default)]
 pub struct TheMachinesLogind {
@@ -107,9 +145,9 @@ impl Logind for TheMachinesLogind {
                     NOT_SAID,
                     A_PERSONS,
                     "",
-                    "",
-                    0_u32,
-                    "",
+                    THE_SEAT,
+                    THE_VT,
+                    THE_TERMINAL,
                     "",
                     false,
                     "",
@@ -194,6 +232,35 @@ mod tests {
         assert_eq!(THE_MANAGER, "/org/freedesktop/login1");
         assert_eq!(THE_INTERFACE, "org.freedesktop.login1.Manager");
         assert_eq!(CREATE_SESSION, "CreateSession");
+    }
+
+    /// **The session is created with a seat, and an empty one here is the
+    /// fault this test exists to stop coming back.**
+    ///
+    /// Until 2026-10-14 the seat was the empty string and the VT was zero, so
+    /// every session this machine opened was a session with no seat to lend.
+    /// A booted machine showed what that costs: a person made their first
+    /// account, two sessions were opened for them, and `alo-desktop` found no
+    /// seat six times over while PAM reported success each time.
+    ///
+    /// This asserts the values **and that they are not empty**, because the
+    /// way this regresses is somebody restoring a default, not somebody
+    /// choosing a different seat.
+    #[test]
+    fn the_session_this_opens_has_a_seat_to_lend() {
+        assert_eq!(THE_SEAT, "seat0");
+        assert_eq!(THE_VT, 1);
+        assert_eq!(THE_TERMINAL, "tty1");
+
+        assert!(
+            !THE_SEAT.is_empty(),
+            "an empty seat is what logind is told when nobody names one, and it is the \n             state this change ended: libseat asks a session for its seat and an empty \n             one has none to give"
+        );
+        assert_ne!(
+            THE_VT, 0,
+            "vtnr zero is logind's word for no virtual terminal, and the greeter measured \n             that a session with no TTY is given no seat at all"
+        );
+        assert!(!THE_TERMINAL.is_empty());
     }
 
     /// **A machine with no accounts file has no accounts**, rather than an
