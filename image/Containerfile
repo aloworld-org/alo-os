@@ -677,6 +677,8 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/systemd/system/alo-sessiond.service \
                /usr/lib/systemd/system/alo-modeld.service \
                /usr/lib/systemd/system/alo-convertd.socket \
+               /usr/lib/systemd/system/alo-asking.socket \
+               /usr/lib/systemd/system/alo-asking@.service \
                /usr/lib/systemd/system/alo-convertd.service \
                /usr/lib/systemd/system/alo-compositor.service \
                /usr/lib/systemd/system/alo-desktop.service \
@@ -693,6 +695,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
  && systemctl mask getty@tty1.service \
  && systemctl enable alo-boundaryd.service alo-agentd.service alo-sessiond.service \
                      alo-modeld.service alo-convertd.socket \
+                     alo-asking.socket \
                      alo-compositor.service alo-portald.service \
                      alo-shipping.service alo-desktop.service \
  && bootc container lint

@@ -143,6 +143,26 @@ fn the_frame_loop_turns_a_request_into_a_task_and_draws_it() {
         "production never asks the desktop to make a task, so the only road from a request to \
          a window is unused"
     );
+
+    // **And the request leaves this process**, which until ADR 0109 it did
+    // not: a person pressed Enter, a window opened, and that was the end of
+    // the road. Both halves are asserted, because either alone is a different
+    // machine — one that asks and never hears, or one that listens for an
+    // answer to a question it never sent.
+    assert!(
+        shipped.contains("self.asking.ask("),
+        "production never sends what a person asked to their agent, so Enter opens a window \
+         with nothing behind it"
+    );
+    assert!(
+        shipped.contains("self.asking.whatever_came_back()"),
+        "production never drains what came back, so an agent could answer and nobody would \
+         ever see it"
+    );
+    assert!(
+        shipped.contains("task.alo_says("),
+        "production never puts an answer into the task it belongs to"
+    );
     assert!(
         shipped.contains("and_now_this_one("),
         "a task is made in production and never kept, so it would be dropped the moment it \

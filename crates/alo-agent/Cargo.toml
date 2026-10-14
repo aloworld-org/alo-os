@@ -28,6 +28,13 @@ alo-instructing = { path = "../alo-instructing" }
 # for whoever writes an adapter. Nothing else in `alo-turn` is used here — this
 # process carries out no verb and holds no machine.
 alo-turn = { path = "../alo-turn" }
+# `SO_PEERCRED` on this process's input, which is how ADR 0109's road says which
+# person asked. `std::os::unix::net::UnixStream::peer_cred` is unstable —
+# feature `peer_credentials_unix_socket`, rust-lang #42839 — and `CLAUDE.md`
+# forbids `unsafe` workspace-wide, so a `getsockopt` by hand is not available
+# either. `alo-agentd`, `alo-broker` and `alo-sessiond` rent the same crate for
+# the same question; this is the fourth.
+rustix = { workspace = true, features = ["net", "process"] }
 thiserror = { workspace = true }
 
 [dev-dependencies]
