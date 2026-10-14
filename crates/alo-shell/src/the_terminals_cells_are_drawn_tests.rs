@@ -973,3 +973,43 @@ fn the_grid_is_the_gutter_narrower_than_the_region() {
         "the grid is not the region less the gutter"
     );
 }
+
+/// **The gutter draws the word, not a marker where a word should be.**
+///
+/// Every other test here would pass if the vocabulary had no key for an origin:
+/// `Strings::say` answers *something* for a key it does not hold, the gutter
+/// would draw that something, the pixels would be stable, the label would be
+/// drawn once, and nothing would be in the cells' room. A green suite, and a
+/// terminal whose gutter says a bug marker.
+///
+/// That is the `declared is not dispatched` fault, and it is a real one in this
+/// repository: `booting.rs` carries a comment about `window_control_reader_words`
+/// being declared nowhere but in an example, so its four strings have never been
+/// sayable on a machine.
+///
+/// So this asserts the road the drawing really walks: the key the origin names,
+/// through the vocabulary the drawing is given, resolves to the English the
+/// design draws — and is not flagged as a bug.
+#[test]
+fn every_origin_resolves_to_the_word_the_design_draws() {
+    let said_by = the_words();
+    let nothing = alo_strings::Filling::nothing();
+    for (who, expected) in [
+        (alo_terminal::WhoIsSpeaking::AProgram, "program"),
+        (alo_terminal::WhoIsSpeaking::Alo, "alo"),
+        (alo_terminal::WhoIsSpeaking::TheSystem, "system"),
+        (alo_terminal::WhoIsSpeaking::ThePerson, "you"),
+    ] {
+        let said = said_by.say(&who.the_word().key(), &nothing);
+        assert!(
+            !said.is_a_bug(),
+            "{who:?} resolved to a bug marker, so the gutter would draw one"
+        );
+        assert_eq!(
+            said.text(),
+            expected,
+            "{who:?} draws {:?} where the design draws {expected:?}",
+            said.text()
+        );
+    }
+}
