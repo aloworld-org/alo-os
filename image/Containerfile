@@ -147,7 +147,8 @@ RUN cargo build --release --target ${THE_TARGET} \
       --package alo-agentd --package alo-boundaryd --package alo-sessiond \
       --package alo-portald \
       --package alo-software \
-      --package alo-converting
+      --package alo-converting \
+      --package alo-agent
 
 # ---------------------------------------------------------------------------
 # The office engine, fetched pinned and checked before it is trusted
@@ -287,6 +288,19 @@ ARG THE_TARGET
 # would have found the one privileged component alo OS has.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-boundaryd /usr/libexec/alo-boundaryd
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-agentd /usr/bin/alo-agentd
+
+# **The agent itself, in `bin` rather than `libexec`, because a person runs it.**
+# Everything in `libexec` beside it is started once by systemd and never by
+# hand; this is the opposite — `alo-agent <request…>` is how a person at a
+# terminal drives a turn today, and how a shell will drive one when the composer
+# is joined to it.
+#
+# It is **not** a service and nothing enables it. A turn is one request and one
+# process: `alo_agent::AtTheDaemonsSocket`'s own rule is that one connection is
+# one turn, so a long-running agent daemon would be a thing holding a turn open
+# with nobody asking anything. systemd starts the daemon; a person starts the
+# agent.
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-agent /usr/bin/alo-agent
 
 # The opener is in libexec beside the loader, and for the same reason: nobody
 # runs it by hand. It is started once by systemd, it opens one door, and a person
@@ -657,7 +671,7 @@ COPY --chmod=0644 image/signing/alo-os.pub /etc/containers/alo-os.pub
 RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/libexec/alo-convertd /usr/libexec/alo-portald \
                /usr/libexec/alo-shipping \
-               /usr/bin/alo-agentd /usr/bin/ollama \
+               /usr/bin/alo-agentd /usr/bin/alo-agent /usr/bin/ollama \
  && chmod 0644 /usr/lib/systemd/system/alo-boundaryd.service \
                /usr/lib/systemd/system/alo-agentd.service \
                /usr/lib/systemd/system/alo-sessiond.service \
