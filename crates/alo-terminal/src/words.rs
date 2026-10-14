@@ -59,11 +59,68 @@ pub const THE_PERSON: Word = Word::saying("terminal.who.you", "you").noting(
      wide.",
 );
 
+/// A command parked on a read from a terminal.
+pub const WAITING_FOR_THE_KEYBOARD: Word =
+    Word::saying("terminal.waiting.keyboard", "waiting for the keyboard").noting(
+        "Said about a command that looks stuck. It is parked reading from the terminal, so it is \
+         waiting for the person to type something. Not an error and not a fault: the sentence \
+         exists so that somebody does not stop a command that was only waiting for them.",
+    );
+
+/// A command parked on a read from a socket.
+pub const WAITING_FOR_THE_NETWORK: Word =
+    Word::saying("terminal.waiting.network", "waiting for the network").noting(
+        "Said about a command that looks stuck. It is parked reading from a socket, so it is \
+         waiting for something on a network or on another machine. The phrase means whatever it \
+         is talking to, not this machine's own connection being down.",
+    );
+
+/// A command parked on another process, or on a lock one holds.
+pub const WAITING_FOR_ANOTHER_PROCESS: Word = Word::saying(
+    "terminal.waiting.another-process",
+    "waiting for another program, or for a lock",
+)
+.noting(
+    "Said about a command that looks stuck. It is waiting for a different program to finish, to \
+     write something, or to let go of a lock on a file. One sentence covers all three because \
+     the evidence cannot separate them, and inventing a distinction would be a guess.",
+);
+
+/// A command that is not waiting at all.
+pub const STILL_COMPUTING: Word = Word::saying("terminal.waiting.computing", "still computing")
+    .noting(
+        "Said about a command that looks stuck and is not: the machine has it on a processor and \
+         it is working. This is a measurement rather than a shrug -- the kernel says the command \
+         is running -- and it is the sentence that stops somebody killing something nearly done.",
+    );
+
+/// Nothing found settles it.
+pub const NOBODY_CAN_TELL: Word = Word::saying(
+    "terminal.waiting.not-known",
+    "waiting for something alo cannot identify",
+)
+.noting(
+    "Said about a command that looks stuck when the evidence does not settle why. It must not be \
+     translated as an error or as a failure to look: alo did look, and what it found does not \
+     answer the question. A translation that reads like \"unknown error\" would say something \
+     this does not.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 4] = [A_PROGRAM, ALO, THE_SYSTEM, THE_PERSON];
+pub const EVERY_WORD: [Word; 9] = [
+    A_PROGRAM,
+    ALO,
+    THE_SYSTEM,
+    THE_PERSON,
+    WAITING_FOR_THE_KEYBOARD,
+    WAITING_FOR_THE_NETWORK,
+    WAITING_FOR_ANOTHER_PROCESS,
+    STILL_COMPUTING,
+    NOBODY_CAN_TELL,
+];
 
 /// Why this crate's own list could not be declared.
 ///

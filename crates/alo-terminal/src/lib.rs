@@ -38,7 +38,10 @@ pub mod measures;
 mod terminal_output_becomes_a_grid;
 pub mod what_a_cell_looks_like;
 pub mod what_a_person_typed;
+#[cfg(target_os = "linux")]
+pub mod what_the_kernel_says;
 pub mod who_is_speaking;
+pub mod why_a_command_is_waiting;
 pub mod words;
 
 pub use a_shell_on_a_pseudoterminal::{
@@ -49,3 +52,6 @@ pub use terminal_output_becomes_a_grid::{
     ACellRun, ACursorShape, TerminalOutput, WhereTheCursorIs,
 };
 pub use who_is_speaking::{ARegion, WhoIsSpeaking, regions_of};
+pub use why_a_command_is_waiting::{
+    TheEvidence, WhatItReadsFrom, WhyItIsWaiting, why_it_is_waiting,
+};

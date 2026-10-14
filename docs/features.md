@@ -438,6 +438,25 @@ file carries it with a tier.*
   mechanism — a `wchan` is a kernel symbol and any table we write is finite —
   rather than being added for honesty's sake. **This one needs no kernel
   boundary**, which makes it the first buildable*
+  **Built 2026-10-14**: the five answers, from the three unprivileged reads,
+  about **the command the terminal has in front** rather than about the shell —
+  asking about the shell answers *waiting for the keyboard* every time,
+  including while a command runs, which is the one case anybody asks in.
+  **Two things the measurement overturned**, both now in `docs/quirks.md`:
+  `wchan` **cannot** tell a terminal read from a socket read — both are
+  `wait_woken` on 7.0.0 — so what the command reads from is what separates the
+  keyboard from the network, and the symbol names move between kernels (the
+  `wait_for_partner` recorded above is this kernel's `anon_pipe_read`); and a
+  first version of the table answered *waiting for another program* about
+  `sleep`, because it reached for the file when the kernel had already said the
+  command was waiting on a clock. It now consults the file only where the
+  kernel has said nothing or said only *parked*. Checked against real processes
+  on a real kernel, each with its control. **Not built**: *show the prompt*,
+  *inspect the connection*, *reveal what is blocking it* and *stop* — the four
+  actions, which are a surface and need one. **So nothing in the shell asks
+  yet**, and the answer lives as public API of `alo-terminal` rather than as a
+  method with no caller: an uncalled method is a claim that something is wired
+  when it is not.
 - ★ **Try a command without letting it touch anything.** Paste the install
   script from a README and run it in a box that sees the project and nothing
   else, with no network except what you approved, thrown away after. See what it

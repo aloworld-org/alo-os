@@ -31,7 +31,7 @@ fn a_key_already_taken_is_not_replaced() {
 /// missing translation at the far end.
 #[test]
 fn every_word_declared_is_in_the_array() {
-    for word in [A_PROGRAM, ALO, THE_SYSTEM, THE_PERSON] {
+    for word in IN_THE_GUTTER.into_iter().chain(ABOUT_A_COMMAND_THAT_WAITS) {
         assert!(
             EVERY_WORD
                 .iter()
@@ -40,7 +40,7 @@ fn every_word_declared_is_in_the_array() {
             word.named()
         );
     }
-    assert_eq!(EVERY_WORD.len(), 4);
+    assert_eq!(EVERY_WORD.len(), 9);
 }
 
 /// **No key appears twice.**
@@ -57,22 +57,57 @@ fn no_key_is_used_twice() {
     }
 }
 
-/// **Each of the four is one word**, because the design gives the label 80 of
-/// the gutter's 96 and a phrase has nowhere to go.
+/// Everything this crate says, by what constrains it.
+///
+/// **The gutter's labels are one word and the rest are sentences**, and the
+/// difference is not a style preference: the design gives a gutter label 80 of
+/// the gutter's 96, and a phrase has nowhere to go. A sentence answering *why
+/// is it waiting* is read in a panel and is under no such rule.
+const IN_THE_GUTTER: [Word; 4] = [A_PROGRAM, ALO, THE_SYSTEM, THE_PERSON];
+
+/// The sentences said about a command that looks stuck.
+const ABOUT_A_COMMAND_THAT_WAITS: [Word; 5] = [
+    WAITING_FOR_THE_KEYBOARD,
+    WAITING_FOR_THE_NETWORK,
+    WAITING_FOR_ANOTHER_PROCESS,
+    STILL_COMPUTING,
+    NOBODY_CAN_TELL,
+];
+
+/// **Each gutter label is one word**, because the design gives it 80 of the
+/// gutter's 96 and a phrase has nowhere to go.
 ///
 /// Held in English, where it is checkable. A translation is checked by the
 /// person writing it, which is what the note on each word is for.
 #[test]
-fn each_of_them_is_a_single_word() {
-    for word in EVERY_WORD {
+fn each_gutter_label_is_a_single_word() {
+    for word in IN_THE_GUTTER {
         assert!(
             !word.says().contains(' '),
             "{} is {:?}, which is more than one word",
             word.named(),
             word.says()
         );
+    }
+}
+
+/// **Nothing this crate says is empty**, label or sentence.
+#[test]
+fn nothing_this_crate_says_is_empty() {
+    for word in EVERY_WORD {
         assert!(!word.says().is_empty(), "{} says nothing", word.named());
     }
+}
+
+/// **The two groups together are the whole list**, so a word added to the file
+/// and to neither group is caught here rather than going unchecked.
+#[test]
+fn the_two_groups_are_the_whole_list() {
+    assert_eq!(
+        IN_THE_GUTTER.len() + ABOUT_A_COMMAND_THAT_WAITS.len(),
+        EVERY_WORD.len(),
+        "a word is declared and in neither group, so no rule is applied to it"
+    );
 }
 
 /// **Every one carries a note.**
@@ -97,7 +132,7 @@ fn every_one_carries_a_note_a_translator_needs() {
 fn every_key_is_the_terminals_own() {
     for word in EVERY_WORD {
         assert!(
-            word.named().starts_with("terminal.who."),
+            word.named().starts_with("terminal."),
             "{} is not under this crate's own area",
             word.named()
         );
