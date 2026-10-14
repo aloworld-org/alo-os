@@ -202,6 +202,40 @@ pub struct WhatAnApplicationVerbNeeds<'a> {
     pub door: &'a mut dyn TheDoorTheCompositorServes,
 }
 
+/// Every verb a whole machine offers, as one list.
+///
+/// **One list with two readers**, and that is the point of it existing at all.
+/// `Machine::carrying_out_file_software_and_application_verbs` builds the list a
+/// daemon can carry out; an **agent in another process** needs the same list to
+/// know what it may ask for, and it cannot ask the daemon — `FromAnAgent` has
+/// three messages and none of them is *what may I ask for*, because
+/// `docs/contracts/agent-verbs.md` **is** the answer: *a closed list; if a
+/// capability is not written here, `alo-agentd` does not have it.*
+///
+/// So the list is read from a document by whoever writes an adapter, and from
+/// this function by anything in this workspace. Two places *computing* it is the
+/// fault this replaces: the three families could not drift in their contents,
+/// because both would call the same declaring functions — but they could drift
+/// in **which families are included**, and that drift has exactly one shape.
+/// A verb the machine carries out and the agent is never told about is a
+/// capability offered to nobody, which is the fault this repository has now met
+/// four times.
+///
+/// The other direction is harmless and is why this is not a security boundary:
+/// an agent told about a verb the machine does not have asks for it and is
+/// refused, in words, with the refusal written down.
+///
+/// # Errors
+/// [`TheVerbsWouldNotDeclare`], naming the family that refused — including two
+/// families having declared one name, which is what this `Result` is really
+/// for. The ten as they are written cannot cause it.
+pub fn the_verbs_a_whole_machine_offers() -> Result<Verbs, TheVerbsWouldNotDeclare> {
+    let mut verbs = file_verbs()?;
+    alo_software::verbs::declare_into(&mut verbs)?;
+    alo_applications::verbs::declare_the_three_with_a_road_into(&mut verbs)?;
+    Ok(verbs)
+}
+
 impl<'a> Machine<'a> {
     /// A machine that can carry out the six file verbs, and offers those.
     ///
@@ -350,9 +384,9 @@ impl<'a> Machine<'a> {
         indicator: &'a mut Indicator,
         kept: &'a mut dyn Shortening,
     ) -> Result<Self, TheVerbsWouldNotDeclare> {
-        let mut verbs = file_verbs()?;
-        alo_software::verbs::declare_into(&mut verbs)?;
-        alo_applications::verbs::declare_the_three_with_a_road_into(&mut verbs)?;
+        // **The same list an agent is told about**, read from one place so the
+        // two cannot drift in which families they include.
+        let verbs = the_verbs_a_whole_machine_offers()?;
         Ok(Self {
             verbs,
             strings,
@@ -591,16 +625,90 @@ impl std::fmt::Debug for Machine<'_> {
 }
 
 #[cfg(test)]
+// Counted: 3 `unwrap` and 2 `expect`, no `panic!` or `unreachable!`, so both are
+// listed and nothing else is — an unfulfilled expectation is an error here.
 #[expect(
     clippy::unwrap_used,
+    clippy::expect_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 mod tests {
+
     use super::*;
     use crate::testing::{NothingIsBounded, in_english};
     use alo_capability::Verb;
     use alo_files::OnThisMachine;
     use alo_record::Record;
+
+    /// **Every verb this machine offers, by name.**
+    ///
+    /// # This test compared the two readers with each other and proved nothing
+    ///
+    /// The first version built a `Machine` the ten-verb way, called
+    /// [`the_verbs_a_whole_machine_offers`], and asserted the two lists matched
+    /// by name and by count. It read well and it was **a tautology**: the
+    /// constructor calls that same function, so both sides were one list
+    /// compared with itself. Deleting the application family from the function
+    /// left the test green — which is how it was found, and the second time in
+    /// one day that a test of mine compared a thing with itself.
+    ///
+    /// **One function with two readers cannot drift, which is the point of it
+    /// and the reason a test of their agreement is worthless.** What can still
+    /// go wrong is the function itself losing a family — and the only thing
+    /// that catches that is naming what must be there.
+    ///
+    /// # Why the names and not a count
+    ///
+    /// A count passes when one family replaces another. These are the ten in
+    /// `docs/contracts/agent-verbs.md`, which is the published list a third
+    /// party builds an adapter against: *a closed list; if a capability is not
+    /// written here, `alo-agentd` does not have it.* So this is the contract
+    /// held against the code, in the direction that matters — a verb the
+    /// contract promises and the machine does not offer is a capability offered
+    /// to nobody, which this repository has met four times.
+    ///
+    /// **`arrange_application` is absent on purpose** and is asserted absent:
+    /// it has no road (ADR 0108), so it is not declared, and an approval for a
+    /// verb with nothing behind it is worse than the capability missing.
+    #[test]
+    fn every_verb_this_machine_offers_is_named_here_and_no_other() {
+        let offered = the_verbs_a_whole_machine_offers().expect("the ten verbs declare");
+        let told: Vec<&str> = offered.all().map(alo_capability::Verb::name).collect();
+
+        let the_ten = [
+            // `alo-files`' six.
+            "list_folder",
+            "read_file",
+            "find_in_folder",
+            "rename_file",
+            "move_file",
+            "archive_folder",
+            // `alo-software`'s one.
+            "install_application",
+            // `alo-applications`' three with a road.
+            "open_application",
+            "focus_application",
+            "close_application",
+        ];
+        for name in the_ten {
+            assert!(
+                told.contains(&name),
+                "{name} is in docs/contracts/agent-verbs.md and this machine does not offer it, \
+                 which is a capability offered to nobody: {told:?}"
+            );
+        }
+        assert_eq!(
+            told.len(),
+            the_ten.len(),
+            "this machine offers {} verbs and {} are named here: {told:?}",
+            told.len(),
+            the_ten.len()
+        );
+        assert!(
+            !told.contains(&"arrange_application"),
+            "a verb with no road is offered to an agent: {told:?}"
+        );
+    }
 
     /// **The offered list is the list this machine can carry out**, which is
     /// the six file verbs and nothing else. An application verb is declared,
