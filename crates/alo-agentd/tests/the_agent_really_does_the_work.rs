@@ -102,7 +102,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard, PoisonError};
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant, SystemTime};
 
 use alo_agent::{HowFar, NotAnswered, TheDoor, WhatHappened, driving};
 use alo_agentd::questions::{Questions, TheBound, WhoseKeyring};
@@ -192,6 +192,22 @@ struct TheDaemonInThisProcess<'a, 'm, 't> {
     /// Every line it was given, so the test can say what the model really asked
     /// for rather than describing it.
     lines: Vec<String>,
+    /// How long the **model** took, summed over every question put to it.
+    ///
+    /// The owner asked for an end-to-end number as well as a standing one, and
+    /// a single total would not answer it: almost all of a turn is a provider
+    /// thinking, and *alo OS is slow* and *the model is slow* are different
+    /// claims with different answers. So the two are separated here, at the one
+    /// place that can tell them apart — a `FromAnAgent::Ask` is a question to a
+    /// model and everything else is this machine.
+    ///
+    /// `alo-turn`'s `what_a_turn_costs` measures this machine's share on its
+    /// own, far more precisely and on every build. This is the other half: what
+    /// a person actually waits through.
+    asking_a_model: Duration,
+    /// How many times a model was asked, so the total can be read per round
+    /// trip rather than only in sum.
+    rounds: usize,
 }
 
 impl TheDoor for TheDaemonInThisProcess<'_, '_, '_> {
@@ -202,7 +218,12 @@ impl TheDoor for TheDaemonInThisProcess<'_, '_, '_> {
                 why: format!("the request could not be written: {why}"),
             })?;
         self.lines.push(line.clone());
-        Ok(what_an_agent_said(
+        // **Only a question to a model is the model's time.** A `read` or a
+        // `propose` goes nowhere near a provider, so counting the whole call
+        // would attribute this machine's work to whoever is answering.
+        let asking_a_model = matches!(request, FromAnAgent::Ask { .. });
+        let began = Instant::now();
+        let answered = what_an_agent_said(
             &line,
             self.turning,
             self.questions,
@@ -211,7 +232,12 @@ impl TheDoor for TheDaemonInThisProcess<'_, '_, '_> {
             self.strings,
             hour(),
             self.now,
-        ))
+        );
+        if asking_a_model {
+            self.asking_a_model += began.elapsed();
+            self.rounds += 1;
+        }
+        Ok(answered)
     }
 }
 
@@ -387,8 +413,33 @@ fn a_real_model_is_asked_in_words_and_a_file_really_moves() {
             strings: &strings,
             now,
             lines: Vec::new(),
+            asking_a_model: Duration::ZERO,
+            rounds: 0,
         };
+        // **Enter to done**, which is the number the owner asked for beside the
+        // standing one. The clock starts on the request and stops when the loop
+        // has finished, so what it covers is exactly what a person waits
+        // through.
+        let pressed_enter = Instant::now();
         let happened = driving(&request, &offered, &mut door, HowFar::of(6), instructions);
+        let enter_to_done = pressed_enter.elapsed();
+        let this_machine = enter_to_done.saturating_sub(door.asking_a_model);
+        println!("\n--- Enter to done ---");
+        println!("  the whole turn          {enter_to_done:?}");
+        println!(
+            "  of which the model      {:?} over {} round trip(s)",
+            door.asking_a_model, door.rounds
+        );
+        println!("  of which this machine   {this_machine:?}");
+        if enter_to_done.as_micros() > 0 {
+            let share = door.asking_a_model.as_micros() * 100 / enter_to_done.as_micros();
+            println!("  the model's share       {share}%");
+        }
+        println!(
+            "  model {model} at {}",
+            std::env::var("ALO_PROVIDER").unwrap_or_else(|_| "https://api.openai.com".to_owned())
+        );
+        println!("--- (one run, on whatever this ran on; nothing re-measures it) ---\n");
         (happened, door.lines)
     };
 
