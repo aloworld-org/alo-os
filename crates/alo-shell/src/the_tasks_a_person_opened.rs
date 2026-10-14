@@ -39,6 +39,19 @@ impl WhichTask {
     pub const fn at(self) -> usize {
         self.0
     }
+
+    /// The task at this place.
+    ///
+    /// **Only a test makes one of these**, which is why it is `cfg(test)`:
+    /// every real one comes back from [`TheTasks::and_now_this_one`], so a task
+    /// that is named has been opened. A caller that could mint one could name a
+    /// task that does not exist — and `TheTasks::the_mut` would answer `None`,
+    /// which is safe but is a question nothing should be able to ask.
+    #[cfg(test)]
+    #[must_use]
+    pub(crate) const fn numbered(at: usize) -> Self {
+        Self(at)
+    }
 }
 
 /// Every task window this person has open, oldest first.

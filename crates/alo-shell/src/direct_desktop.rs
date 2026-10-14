@@ -445,6 +445,15 @@ impl crate::DirectSession {
                             .map(crate::a_screen_arrives_or_leaves::WhatIsPluggedIn::these)
                             .unwrap_or_default(),
                             desktop,
+                            // **The door a person's words go out of** (ADR
+                            // 0109), at the path the decision published. A
+                            // machine with nothing listening there answers
+                            // *nothing is listening* and the desktop keeps
+                            // drawing, which is what a session before sign-in
+                            // looks like.
+                            asking:
+                                crate::what_a_person_asked_goes_to_the_agent::TheAgentsDoor::default(
+                                ),
                             labels,
                             strings,
                             left,
@@ -491,6 +500,14 @@ struct Desk<'a> {
     >,
     /// What the crates that decide each of these say is on the display now.
     desktop: &'a mut dyn TheDesktop,
+    /// Where what a person typed goes, and where its answer comes back.
+    ///
+    /// **Owned by the loop rather than by the `Server`**, because it holds
+    /// threads and a channel and the `Server` is handed out as `&mut` all over
+    /// this crate. It is also the right place by what it is: the loop is the
+    /// thing with a *frame* to drain an answer into, and ADR 0109's whole point
+    /// is that nothing waits.
+    asking: crate::what_a_person_asked_goes_to_the_agent::TheAgentsDoor,
     /// The bundled font every word on the desktop is laid out with.
     labels: &'a mut WindowControlLabels,
     /// This machine's own sentences, for the names a reader is told.
@@ -777,7 +794,29 @@ impl LoopInput for Desk<'_> {
         // something they typed and gave up on.
         for request in server.take_what_was_asked_of_alo() {
             if let Some(task) = self.desktop.a_task_for(&request) {
-                server.tasks_mut().and_now_this_one(task);
+                let which = server.tasks_mut().and_now_this_one(task);
+                // **And the request goes to the agent**, which until ADR 0109
+                // nothing did: a person pressed Enter, a window opened, and
+                // that was the end of the road. `ask` hands it to a thread and
+                // returns at once — a frame loop that waited here would stop
+                // every window on the machine drawing until a model answered.
+                self.asking.ask(which, &request);
+            }
+        }
+        // **And whatever has come back since the last frame**, which is why
+        // asking could return at once. Drained rather than read, so one answer
+        // reaches one window once.
+        for came in self.asking.whatever_came_back() {
+            if let Some(task) = server.tasks_mut().the_mut(came.which) {
+                // The machine failing and the agent answering are told apart,
+                // because a person reads them differently: an answer belongs in
+                // the conversation and *this machine could not be asked*
+                // belongs beside it as something wrong with the machine.
+                if came.the_machines_fault {
+                    task.and_then(alo_tasks::Act::done(came.said));
+                } else {
+                    task.alo_says(alo_tasks::Turn::from_alo(came.said));
+                }
             }
         }
         let mut frame = self.desktop.now();

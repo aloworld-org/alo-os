@@ -337,6 +337,132 @@ fn the_image_builds_and_installs_the_agent_itself() {
     );
 }
 
+/// **A person's words reach the agent, and systemd is what changes user.**
+///
+/// ADR 0109. The shell runs as the person, `alo-agentd` refuses to run as root,
+/// and the agent is its own login — so nothing of alo OS's may start a process
+/// as the agent. systemd may, and `alo-asking.socket` is how it is asked to.
+///
+/// Read off the units rather than inferred, and **every part is asserted
+/// because each one alone is a different machine**: a socket the person's group
+/// cannot open is a door nobody can knock at; a service that does not run as
+/// the agent is the two doors collapsed into one, which is the thing the daemon
+/// refuses to start for; and `Accept=no` would make one process serve every
+/// request, which is one process holding one turn open for ever.
+#[test]
+fn a_persons_words_reach_the_agent_and_the_units_say_how() {
+    let units = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("image")
+        .join("usr")
+        .join("lib")
+        .join("systemd")
+        .join("system");
+    let read = |named: &str| {
+        std::fs::read_to_string(units.join(named))
+            .unwrap_or_else(|why| panic!("{named} is where it says: {why}"))
+    };
+
+    let socket = read("alo-asking.socket");
+    for said in [
+        "ListenStream=/run/alo-asking/socket",
+        // **The person's group, and theirs alone.** The kernel decides it
+        // before a byte is read, which is the same protection the daemon's own
+        // door relies on pointing the other way.
+        "SocketGroup=alo",
+        "SocketMode=0660",
+        // One connection is one process is one turn.
+        "Accept=yes",
+    ] {
+        assert!(
+            socket.lines().any(|line| line.trim() == said),
+            "alo-asking.socket no longer says `{said}`"
+        );
+    }
+
+    let service = read("alo-asking@.service");
+    for said in [
+        "ExecStart=/usr/bin/alo-agent",
+        // **The whole point of the unit.** ADR 0001 §5: the agent is its own
+        // login because `SO_PEERCRED` is how the daemon tells its two doors
+        // apart.
+        "User=alo-agent",
+        "Group=alo-agent",
+        // The connection is this process's input and its answer.
+        "StandardInput=socket",
+        "StandardOutput=socket",
+        // It asks a daemon for verbs by name and carries nothing out itself.
+        "CapabilityBoundingSet=",
+        "NoNewPrivileges=yes",
+    ] {
+        assert!(
+            service.lines().any(|line| line.trim() == said),
+            "alo-asking@.service no longer says `{said}`"
+        );
+    }
+
+    // And the image installs and enables them. **The socket and not the
+    // service**: the service is a template with `Accept=yes`, so systemd starts
+    // one instance per connection and there is nothing to enable.
+    let recipe = std::fs::read_to_string(
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("..")
+            .join("image")
+            .join("Containerfile"),
+    )
+    .unwrap_or_else(|why| panic!("the Containerfile is where it says: {why}"));
+    // **The `systemctl enable` command itself, not the file anywhere in the
+    // recipe.** The first version asserted `recipe.contains("alo-asking.socket
+    // \\\n")`, which matched the **chmod** line — so removing the socket from
+    // the enable command left the test green. A substring where a relationship
+    // was meant: the question is not *does this name appear* but *is it in the
+    // list of things enabled*.
+    let enabling = the_enable_command(&recipe);
+    assert!(
+        enabling.contains("alo-asking.socket"),
+        "the image does not enable alo-asking.socket, so nothing listens for a person's words. \
+         What it enables: {enabling}"
+    );
+    assert!(
+        !enabling.contains("alo-asking@"),
+        "the image enables the template, which has `Accept=yes` and nothing to enable: {enabling}"
+    );
+    // The control: the same reading finds a unit this image has enabled for
+    // months. Without it, an enable command this failed to find would make both
+    // assertions above pass by being empty.
+    assert!(
+        enabling.contains("alo-agentd.service"),
+        "the control failed: this is not the enable command. What was read: {enabling}"
+    );
+}
+
+/// The recipe's `systemctl enable` command, as one line.
+///
+/// A shell continuation is a backslash and a newline, so the command runs from
+/// `systemctl enable` until the first line that does not end in one. Joined
+/// rather than searched line by line, because a unit's name may sit on any of
+/// them.
+fn the_enable_command(recipe: &str) -> String {
+    let mut saying = String::new();
+    let mut inside = false;
+    for line in recipe.lines() {
+        if line.contains("systemctl enable") {
+            inside = true;
+        }
+        if !inside {
+            continue;
+        }
+        saying.push(' ');
+        saying.push_str(line.trim().trim_end_matches('\\').trim());
+        if !line.trim_end().ends_with('\\') {
+            break;
+        }
+    }
+    saying
+}
+
 /// **The second privileged component alo OS has holds no capability at all.**
 ///
 /// ADR 0024 accepted a second privileged component beside ADR 0018's loader,

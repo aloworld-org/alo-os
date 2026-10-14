@@ -116,6 +116,7 @@ dependencies = [
  "alo-protocol",
  "alo-strings",
  "alo-turn",
+ "rustix 1.1.4",
  "thiserror 2.0.20",
 ]
 

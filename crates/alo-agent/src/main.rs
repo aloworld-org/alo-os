@@ -73,9 +73,20 @@ fn main() -> ExitCode {
 /// Drive one request, and say what happened.
 fn run() -> Result<ExitCode, String> {
     let asked = what_was_asked()?;
+    // **Three ways to know whose daemon to ask, in this order.**
+    //
+    // `--at` is whoever started this by hand saying so. Then the kernel: when
+    // this process was started by `alo-asking.socket` (ADR 0109), its input
+    // *is* the person's connection, and `SO_PEERCRED` says which person — not a
+    // path this was told and not a directory it guessed. Only when there is
+    // neither does it go looking, and that road refuses rather than choosing
+    // when it finds two.
     let at = match asked.at {
         Some(at) => at,
-        None => the_one_door_we_can_reach(Path::new(THE_ROOT))?,
+        None => match whoever_is_asking() {
+            Some(person) => the_door_of(Path::new(THE_ROOT), person),
+            None => the_one_door_we_can_reach(Path::new(THE_ROOT))?,
+        },
     };
 
     // The list this machine offers, from the one place that builds it. An agent
@@ -211,6 +222,35 @@ fn what_was_asked() -> Result<Asked, String> {
         );
     }
     Ok(Asked { request, at })
+}
+
+/// The person at the other end of this process's input, when there is one.
+///
+/// **The question ADR 0109 turns on, and the kernel answers it.** Started by
+/// `alo-asking.socket` with `Accept=yes`, this process's input is the
+/// connection a person's shell opened — so `SO_PEERCRED` says which person
+/// asked, as the kernel recorded them when they called `connect`. It is not a
+/// field in the request and the asking side cannot set it.
+///
+/// That matters because a machine can have two signed-in people and the request
+/// must run against the **asking** person's grants. Getting it wrong is the one
+/// mistake here nobody could see from the outcome: the turn would succeed, the
+/// record would be the other person's, and the answer would look right.
+///
+/// [`None`] when the input is not a connected socket — somebody at a terminal,
+/// or a pipe — which is not a failure and is the ordinary case for
+/// `alo-agent <request…>`.
+fn whoever_is_asking() -> Option<u32> {
+    use std::os::fd::AsFd as _;
+
+    rustix::net::sockopt::socket_peercred(std::io::stdin().as_fd())
+        .ok()
+        .map(|peer| peer.uid.as_raw())
+}
+
+/// This person's door, by the contract's own spelling.
+fn the_door_of(root: &Path, person: u32) -> PathBuf {
+    root.join(person.to_string()).join(THE_SOCKET)
 }
 
 /// The one door under `root` this process can reach.

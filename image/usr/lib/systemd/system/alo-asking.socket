@@ -1,0 +1,33 @@
+# alo OS: where a person's words are handed to their agent.
+#
+# ADR 0109. The person's shell writes one line here — a request, as they typed
+# it. systemd accepts the connection and starts one `alo-agent` as the **agent's
+# own user**, which is the thing neither the shell nor the daemon can do: the
+# shell runs as the person, and `alo-agentd` refuses to run as root (ADR 0001
+# §2), so nothing of ours may change user. systemd may, and it is already
+# trusted with that.
+#
+# **Only the person's group may open it.** That is the same protection
+# `docs/contracts/daemon-protocol.md` relies on one door along and in the same
+# direction: there the agent's group reaches the daemon, here the person's group
+# reaches the agent. The kernel decides it before a byte is read.
+#
+# **Accept=yes, so one connection is one process is one turn.**
+# `daemon-protocol.md`: *nothing names a turn* — which turn a message belongs to
+# is answered by the connection it arrived on. A waiting agent would hold one
+# turn open with nobody asking anything, or manage several and need a name for
+# each, which is the number an agent could change. This makes the rule
+# systemd's to keep rather than ours to remember.
+[Unit]
+Description=alo OS: where a person's words are handed to their agent
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0109-a-persons-words-reach-the-agent-through-a-socket-systemd-opens-as-the-agent.md
+
+[Socket]
+ListenStream=/run/alo-asking/socket
+SocketUser=root
+SocketGroup=alo
+SocketMode=0660
+Accept=yes
+
+[Install]
+WantedBy=sockets.target

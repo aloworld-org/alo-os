@@ -1,0 +1,53 @@
+# alo OS: one request, driven to its end, as the agent.
+#
+# ADR 0109. One instance per connection — `alo-asking.socket` has `Accept=yes`,
+# so systemd starts one of these for each thing a person asks and stops it when
+# the answer has gone back.
+#
+# **The connection is this process's input and output.** `alo-agent` with no
+# arguments reads one line and prints what happened, which is exactly what a
+# socket-activated instance needs, so the binary needs no mode of its own for
+# this. What goes to the person is the answer; what goes to the journal is the
+# step count and any fault.
+#
+# **It runs as `alo-agent` and that is the whole point of the unit.** The agent
+# is its own Unix login (ADR 0001 §5) because `SO_PEERCRED` is how the daemon
+# tells its two doors apart — and a machine where the person and the agent are
+# one login has no socket at all, since the side that proposed a change could
+# then approve it.
+#
+# **It holds no capability.** Like `alo-convertd` beside it: an empty bounding
+# set, no new privileges, and nothing it may write. It asks a daemon for verbs
+# by name; it carries nothing out itself.
+[Unit]
+Description=alo OS: one request a person asked, driven to its end
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0109-a-persons-words-reach-the-agent-through-a-socket-systemd-opens-as-the-agent.md
+Requires=alo-asking.socket
+After=alo-asking.socket alo-agentd.service
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/alo-agent
+StandardInput=socket
+StandardOutput=socket
+StandardError=journal
+User=alo-agent
+Group=alo-agent
+# It reaches a socket and nothing else. The capability set is empty for
+# `alo-convertd`'s reason: a process that needs none should be unable to use
+# one, so that a future change which needs one has to say so here.
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native

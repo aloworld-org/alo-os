@@ -367,6 +367,8 @@ mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
 mod their_displays;
 mod top_controls_region;
+/// What a person typed, on its way to their agent and back (ADR 0109).
+pub mod what_a_person_asked_goes_to_the_agent;
 /// Which window each of the three acts asks for, decided without a compositor.
 mod what_an_application_act_asks_for;
 #[cfg(test)]
