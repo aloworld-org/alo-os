@@ -27,11 +27,15 @@
 //! changes — because the middle one can be *tested without a display or a
 //! child process*, and the other two cannot.
 //!
-//! So what is here is finished rather than started: bytes arrive, a grid
-//! changes, and what the grid says can be read back and asserted.
+//! So what is here is finished rather than started: a shell runs on a
+//! pseudoterminal, the bytes it writes arrive, a grid changes, and what the
+//! grid says can be read back and asserted. **What is not here is drawing**,
+//! which needs a compositor and is the next change.
 
+mod a_shell_on_a_pseudoterminal;
 mod how_big_the_grid_is;
 mod terminal_output_becomes_a_grid;
 
+pub use a_shell_on_a_pseudoterminal::{AShellOnAPseudoterminal, NoShell, WhatArrived};
 pub use how_big_the_grid_is::{HowBig, NotASize};
 pub use terminal_output_becomes_a_grid::TerminalOutput;
