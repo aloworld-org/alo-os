@@ -178,6 +178,21 @@ impl Server {
             self.shortcuts = Some(shortcuts);
             return;
         }
+        // **The agent, answered here for the third time the same reason: it
+        // borrows nothing.** One flag on the composer — no window, no places,
+        // no clock — so the layers below never see it.
+        //
+        // **This chord did nothing at all until 2026-10-14.** Measured: the
+        // shell's dispatch chain had zero arms for `Action::TheAgent`, against
+        // four for Settings. `Super`+`A` was shipped, declared, bound, worded
+        // and translated, and pressing it was indistinguishable from pressing
+        // an unbound key. `crate::a_chord_brings_up_the_agent`'s header has the
+        // judgement, and says what is still owed: the overlay that floats over
+        // the focused window is a promise of its own and is not this.
+        if self.a_chord_brings_up_the_agent(&shortcuts, chord) {
+            self.shortcuts = Some(shortcuts);
+            return;
+        }
         // **The one clock read on this road, and it is read here.** A chord is
         // a thing that happened at a moment, and one action — putting a Place
         // back as it was — holds the state being left under that moment. Every
