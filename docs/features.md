@@ -358,16 +358,49 @@ file carries it with a tier.*
 - File associations — what opens what, changeable by a person
 - A text editor and an image viewer, so a fresh machine is not helpless
 - **A terminal.** Law 2 forbids the *agent* running arbitrary commands; it says nothing about a person, and an operating system that does not trust its owner with a shell is a toy
+- ★ **And you decide whether alo may use it.** **alo can open a terminal for
+  you** — that is an ordinary thing to ask an assistant for, and it hands alo
+  nothing: a terminal window opens onto a prompt waiting for a keystroke, and
+  nothing lets alo type into it, so what it has opened is a window **only you
+  can use**. Whether it may **run commands** in one is the part you decide. Off
+  when a machine arrives, and yours to turn on. The
+  sentence you turn it on with says what it costs, in the words the decision
+  that used to forbid it wrote: *a shell is the whole machine by another road* —
+  which is true of whoever can **drive** a shell, and is why opening the window
+  is a different question from running things in it.
+  Revocable in one action, and it expires. Whatever you choose, every command
+  and its output are written to the record, your files are snapshotted before
+  each run so it can be undone, and anything that leaves the machine is shown —
+  **none of those three is a setting**, because none of them takes a choice away.
+  *Added 2026-10-14 by the owner's ruling —* "we are not dictators so the users
+  should be able to choose if the agent can use the terminal or not" *— and
+  recorded as
+  [ADR 0111](decisions/0111-the-person-chooses-whether-their-agent-may-use-the-terminal.md),
+  which supersedes
+  [ADR 0043](decisions/0043-the-terminal-is-a-persons-and-never-an-agents.md).
+  That record walled the terminal off entirely, and three things had made it
+  untenable: law 5 reached `CLAUDE.md` after it; ADR 0064 replaced its stated
+  foundation six days later and permits an agent to run **any** command at full
+  trust, so the wall forbade the lesser act while the greater was allowed; and
+  ADR 0079 already permits handing an agent a whole remote machine. **Not
+  built**: the capability, its surface and its refusal path are all owed, and
+  `alo-capability` refuses an agent a terminal three ways today — including the
+  opening the owner has now permitted.
+  **The split between the two halves is the owner's second ruling of the same
+  day**, in these words:* "agent can open terminal window application".
 - ★ **The agent writes the command; only you run it.** You ask for something and
   get a **command and a sentence about it**, in a surface alo draws. You read it
   and press Enter, or you do not. **alo cannot press Enter** — that is a
   mechanism and not a promise: the surface is the compositor's, the agent
   reaches it through a verb that carries text and nothing else, and there is no
-  verb that submits, that types into a terminal you already have open, or that
-  starts a shell — the last of those is
-  [ADR 0043](decisions/0043-the-terminal-is-a-persons-and-never-an-agents.md),
-  which is **built**: an agent cannot be granted a terminal, ask for one, or
-  name one in any argument. *Every other AI terminal is built around the agent executing.
+  verb that submits or that types into a terminal you already have open. **This
+  is the shape at the default setting**, and since
+  [ADR 0111](decisions/0111-the-person-chooses-whether-their-agent-may-use-the-terminal.md)
+  it is a default rather than the only shape: a person who grants more gets an
+  agent that runs the command instead of proposing it, and the line above
+  describes what they chose rather than what they are allowed. What no setting
+  changes is that **running code is not a verb on the broker's list** — ADR 0064
+  — so no `exec` exists at any level. *Every other AI terminal is built around the agent executing.
   Law 2 forbids that here, and that is what makes the next two lines possible:
   an agent running three hundred commands cannot be undone, and one command you
   chose can. And undo is not a nice idea: law 2 already says every run at every
@@ -955,5 +988,19 @@ person may opt in on their own network, told that it also trusts every device on
 it (ADR 0064). **No code runs unless the person chose it** (ADR 0064, replacing
 ADR 0001 §1): the verb list stays typed and closed, and running code is the
 person's grant — a sealed box by default, asking each time, or full trust.
+
+**Every line above is about what we build, and none of them is a limit on what
+a person may have.** That distinction is already how this section is written —
+*a person with the hardware runs whatever training they like on it, because it
+is their machine and their electricity* — and
+[ADR 0112](decisions/0112-with-the-persons-permission-the-agent-may-do-anything-on-the-machine.md)
+makes it the rule rather than a habit: with the person's permission the agent may
+do anything on the machine, and the only things their permission does not reach
+are the four law 5 names — protections that restrict nothing, protections that
+guard them from others, the law, and an organisation's policy on machines it
+owns. **A non-goal that reads as *the agent may never* is a statement about what
+is not built**, and a lane that turns one into a wall has found a bug in what it
+is writing. ADR 0043 is the worked example of how that happens with every reason
+to get it right.
 
 Every absence here is a sales argument.

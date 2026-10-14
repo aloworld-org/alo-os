@@ -1,6 +1,25 @@
 # ADR 0043 — The terminal is a person's, and never an agent's
 
-**Status:** accepted, 2026-09-16 — option **C**, and **the software plan makes
+**Status:** **superseded on 2026-10-14 by
+[ADR 0111](0111-the-person-chooses-whether-their-agent-may-use-the-terminal.md)**,
+by the owner: *"we are not dictators so the users should be able to choose if
+the agent can use the terminal or not."*
+
+**What survives, and it is most of this record.** The risk is real and this
+document is where it is stated best — *a shell is the whole machine by another
+road* — and 0111 reuses that sentence verbatim as the plain words a person is
+shown when they grant the capability. The closed list of terminal emulators
+survives too, as the **default**. What does not survive is the wall: law 5
+reached `CLAUDE.md` after this record and says only the law or an organisation
+on machines it owns may truly forbid, and ADR 0064 replaced ADR 0001 §1 — this
+record's own stated foundation — six days after it was accepted. See 0111 for
+the three reasons in full, including that ADR 0079 already permits a strictly
+larger grant.
+
+**It was right that a shell is the whole machine. It was wrong only about who
+decides.**
+
+**Original status:** accepted, 2026-09-16 — option **C**, and **the software plan makes
 the additive change to `alo-capability`** described in part 2, and only that
 change: `persons_own.rs`, `GrantError::APersonsOwn` with its word, and the three
 refusals with their tests. The applications plan has not edited `alo-capability`
