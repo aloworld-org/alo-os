@@ -89,6 +89,9 @@ where
     if let Some(capturing) = native.capturing {
         capturing.validate(size)?;
     }
+    if let Some(terminal) = native.terminal {
+        terminal.validate(size)?;
+    }
     // One of these two is always empty: the plain arrow and the double-headed one
     // over a frame's resize band are the same kind of thing, and only one cursor
     // is on the screen at a time.
@@ -257,6 +260,15 @@ where
     // setting being changed; below the question and the indicator.
     if let Some(settings) = native.settings.filter(|settings| !settings.is_empty()) {
         settings.paint(&mut frame)?;
+    }
+    // **alo's own terminal: a window among windows, and under every one of the
+    // surfaces below.** The approval sentence, the egress indicator, what is in
+    // use, a notification and the capture tools each sit above whatever a
+    // client maps — the comments on each say why — and a terminal has no claim
+    // to that. It is drawn here, after the desktop's own furniture and before
+    // the first of them.
+    if let Some(terminal) = native.terminal.filter(|drawn| !drawn.is_empty()) {
+        terminal.paint(&mut frame)?;
     }
     // Above every client and control, so no window covers the sentence a
     // person is asked to approve; below the indicator, so the question never

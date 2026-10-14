@@ -202,6 +202,22 @@ pub struct Server {
     /// measures, and a session nobody has told has no terminal to open rather
     /// than a guess at one. See `crate::a_chord_opens_a_terminal`.
     pub(crate) the_terminal: Option<alo_dock::AppId>,
+    /// **alo's own terminal**, when a person has opened one.
+    ///
+    /// Distinct from [`Self::the_terminal`] above, and the pair is worth
+    /// reading together: that one is *which installed application this
+    /// machine's terminal is*, a third-party program started on the bus; this
+    /// one is **alo's**, drawn by this compositor, running the person's shell
+    /// on a pseudoterminal this process owns.
+    ///
+    /// Both exist because the installed one was the only terminal there was
+    /// until alo had its own. The chord now opens this one first — see
+    /// `crate::a_chord_opens_a_terminal` for the judgement and why nothing is
+    /// taken away by it.
+    ///
+    /// **[`None`] is a machine where nobody has opened a terminal**, which is
+    /// how every machine starts. Nothing opens one on a person's behalf.
+    pub(crate) alos_own_terminal: Option<crate::the_terminal_a_person_opened::TheTerminal>,
     /// How this machine asks an application to start, when something has told
     /// it.
     ///
@@ -448,6 +464,7 @@ impl Server {
             asked_on_an_edge: Vec::new(),
             asked_to_start: Vec::new(),
             the_terminal: None,
+            alos_own_terminal: None,
             asks_an_application_to_start: None,
             // Nothing has been worked out yet; the stand-up fills it.
             what_the_dock_is_pinned_to: alo_dock::Holding::nothing(),

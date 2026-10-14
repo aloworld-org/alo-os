@@ -145,7 +145,7 @@ impl Nested {
     ) -> Result<Reached, RenderError> {
         let size = self.size();
         let composed = instead_of_the_desktop(
-            frame_pictures(desktop, record, approval, labels, (size.w, size.h)),
+            frame_pictures(desktop, record, approval, labels, (size.w, size.h), None),
             recovery.screen,
             labels,
             (size.w, size.h),

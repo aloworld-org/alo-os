@@ -1614,6 +1614,7 @@ dependencies = [
  "alo-sound",
  "alo-strings",
  "alo-tasks",
+ "alo-terminal",
  "alo-turn",
  "cosmic-text",
  "drm",

@@ -650,6 +650,20 @@ impl LoopInput for Desk<'_> {
         // loop over what came back and say on stderr that the machine had no
         // mechanism for it, which was true of exactly one control: the window
         // menu. It opens, so nothing comes back and there is nothing to say.
+        // **What the terminal's shell wrote, taken once a frame.** Here for the
+        // same reason as the asks around it: this is the one place that holds
+        // both the server and the desktop, and the read must happen whether or
+        // not anything is drawn — a command's output has to accumulate in the
+        // grid while a person is looking at something else, or switching back
+        // to the terminal would show a gap.
+        //
+        // **It never blocks.** The pseudoterminal's master end is
+        // non-blocking, so a shell with nothing to say costs one read that
+        // finds nothing. Whether anything changed is read and not acted on
+        // yet: the frame is drawn every time regardless, and the answer is
+        // what a later change will use to skip redrawing a terminal nobody has
+        // typed in.
+        let _ = server.the_terminal_was_written_to();
         server.meet_what_was_pressed_on_an_edge();
         // **And the applications a person asked to start**, met here for
         // `asked_to_put_aside`'s reason and one of its own: sending `Activate`
@@ -941,6 +955,13 @@ impl LoopInput for Desk<'_> {
             None,
             self.labels,
             (size.w, size.h),
+            // **alo's own terminal's screen**, when a person has one open.
+            // Borrowed only for this call, which is the whole reason it is an
+            // argument and not a field on the frame: this lane writes to the
+            // server either side of here.
+            server
+                .alos_own_terminal()
+                .map(crate::the_terminal_a_person_opened::TheTerminal::screen),
         )?;
         // **Every open window's edge, which nothing on a machine drew until
         // now.** Built after the pictures because both want the font system
@@ -1031,6 +1052,9 @@ impl LoopInput for Desk<'_> {
                 None,
                 self.labels,
                 (size.w, size.h),
+                server
+                    .alos_own_terminal()
+                    .map(crate::the_terminal_a_person_opened::TheTerminal::screen),
             )?;
             // **This display's own edges**, at this display's own scale. One
             // list shared with the display above would be right for whichever

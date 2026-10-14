@@ -211,6 +211,7 @@ fn what_is_drawn_on_two_desktops_carries_the_indicator_and_the_question() {
                 }),
                 &mut labels,
                 A_LAPTOP,
+                None,
             )
             .unwrap();
 

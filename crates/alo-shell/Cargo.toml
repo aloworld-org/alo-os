@@ -97,6 +97,15 @@ alo-dock = { path = "../alo-dock" }
 # so the binary makes the task and this crate holds it. The dev-dependency note
 # below keeps its meaning.
 alo-tasks = { path = "../alo-tasks" }
+# The terminal's pty, its VT state machine and its keyboard conventions, behind
+# an interface of ours
+# ([ADR 0114](../../docs/decisions/0114-the-terminals-engine-is-pinned-and-its-face-is-bundled.md)).
+# **It knows no display and no keymap**, which is the split that makes both
+# halves testable: `what_a_person_typed` holds the conventions a shell expects —
+# `Ctrl`+`C` is byte 3, an arrow depends on a mode the program set — and can be
+# tested by writing down what somebody pressed; `crate::what_the_keyboard_said`
+# holds the layout reading, which can only happen here.
+alo-terminal = { path = "../alo-terminal" }
 # The panel of windows a person put aside: what is in it and what each preview
 # says. It holds no geometry at all, deliberately, so the conversion from the
 # design's figures to this display's pixels happens once, here, in the crate
