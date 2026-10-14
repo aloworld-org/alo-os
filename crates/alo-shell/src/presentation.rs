@@ -20,6 +20,15 @@ pub enum RenderError {
     /// Fresh native label selection or shaping refused before submission.
     #[error(transparent)]
     ControlLabel(#[from] crate::WindowControlLabelError),
+    /// alo's own terminal was laid out for another display, or draws outside
+    /// the one it was given.
+    ///
+    /// **Named rather than reusing a neighbour's**, for the reason
+    /// `SceneNotOnThisBackend` below gives about itself: a refusal that says
+    /// *the desktop cannot be drawn* when it was the terminal sends whoever
+    /// reads it looking in the wrong place.
+    #[error("alo's own terminal cannot be drawn on this frame")]
+    TerminalScene,
     /// This backend has not implemented native scene submission.
     #[error("target does not support native controls")]
     ControlsUnsupported,

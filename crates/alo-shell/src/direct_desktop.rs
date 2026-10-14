@@ -650,6 +650,20 @@ impl LoopInput for Desk<'_> {
         // loop over what came back and say on stderr that the machine had no
         // mechanism for it, which was true of exactly one control: the window
         // menu. It opens, so nothing comes back and there is nothing to say.
+        // **What the terminal's shell wrote, taken once a frame.** Here for the
+        // same reason as the asks around it: this is the one place that holds
+        // both the server and the desktop, and the read must happen whether or
+        // not anything is drawn — a command's output has to accumulate in the
+        // grid while a person is looking at something else, or switching back
+        // to the terminal would show a gap.
+        //
+        // **It never blocks.** The pseudoterminal's master end is
+        // non-blocking, so a shell with nothing to say costs one read that
+        // finds nothing. Whether anything changed is read and not acted on
+        // yet: the frame is drawn every time regardless, and the answer is
+        // what a later change will use to skip redrawing a terminal nobody has
+        // typed in.
+        let _ = server.the_terminal_was_written_to();
         server.meet_what_was_pressed_on_an_edge();
         // **And the applications a person asked to start**, met here for
         // `asked_to_put_aside`'s reason and one of its own: sending `Activate`
@@ -935,12 +949,37 @@ impl LoopInput for Desk<'_> {
                 );
             }
         }
+        // **The terminal is made to fit its window before it is drawn**, and
+        // here rather than in the input lane because this is where the display
+        // is known: the grid is the transcript's room divided by the cell, and
+        // the cell comes from the face at *this display's* scale.
+        //
+        // Nothing happens on the frames where the answer has not changed,
+        // which is every frame but the ones where the window, the font size or
+        // the scale moved — and that third one is what happens when a laptop is
+        // plugged into another monitor.
+        let _ = server.the_terminal_fits_its_window(
+            &mut self.labels.fonts,
+            (size.w, size.h),
+            f64::from(server.the_scale_of_display(&named)) / 100.0,
+        );
+        // **alo's own terminal, drawn here and not inside `frame_pictures`.**
+        // Two rules put it here. That file is held to *no string a person could
+        // read* by `desktop_source`, so the sentence below has nowhere to live
+        // there; and a terminal that cannot be drawn must be **left out rather
+        // than refuse the frame**, which is `DesktopPictures::tasks`' own rule
+        // and for its reason — a terminal too small for its own layout is one
+        // window's problem, and refusing the frame would take the whole desktop
+        // down with it, including the Dock a person needs to do anything about
+        // it.
+        let terminal = drawn_terminal(server, self.labels, (size.w, size.h), &named, frame);
         let pictures = crate::nested_desktop::frame_pictures(
             frame,
             None,
             None,
             self.labels,
             (size.w, size.h),
+            terminal,
         )?;
         // **Every open window's edge, which nothing on a machine drew until
         // now.** Built after the pictures because both want the font system
@@ -1025,12 +1064,14 @@ impl LoopInput for Desk<'_> {
             // fails that guard, which is the guard working: rename this and
             // either give it a name that still says what it is, or say in that
             // test where the rectangles now come from. Do not loosen it.
+            let its_terminal = drawn_terminal(server, self.labels, (size.w, size.h), &named, frame);
             let its_pictures = crate::nested_desktop::frame_pictures(
                 frame,
                 None,
                 None,
                 self.labels,
                 (size.w, size.h),
+                its_terminal,
             )?;
             // **This display's own edges**, at this display's own scale. One
             // list shared with the display above would be right for whichever
@@ -1459,5 +1500,49 @@ impl FrameTarget for Layered<'_> {
     ) -> Result<Vec<WlSurface>, RenderError> {
         self.target
             .submit_native_layers(roots, popups, cursor, self.layers)
+    }
+}
+
+/// alo's own terminal, drawn for one display, or left out with a reason said.
+///
+/// **One function rather than the same six lines at two call sites**, which is
+/// `crate::what_the_server_tells_a_frame`'s own rule about this very lane: it
+/// builds a frame twice, once for the display the loop holds and once per other
+/// display, and *two of them in two files is how they drift apart*.
+///
+/// **A terminal that cannot be drawn is left out rather than refusing the
+/// frame.** `DesktopPictures::tasks` states that rule and the reason: one
+/// window too small for its own layout is one window's problem, and refusing
+/// the frame would take the whole desktop down with it — including the Dock a
+/// person needs in order to do anything about it. What went wrong is said on
+/// the error stream rather than swallowed, because *never a silent fallback*.
+///
+/// **And it is drawn here rather than in `frame_pictures`** because
+/// `desktop_source`'s `the_desktop_adds_no_number_of_its_own` holds that file
+/// to *no string a person could read*. The sentence below has nowhere to live
+/// there, and the rule is right: words belong where words are owned.
+fn drawn_terminal(
+    server: &Server,
+    labels: &mut crate::WindowControlLabels,
+    size: (i32, i32),
+    named: &str,
+    frame: crate::DesktopFrame<'_>,
+) -> Option<crate::the_terminals_cells_are_drawn::TerminalPicture> {
+    let screen = server
+        .alos_own_terminal()
+        .map(crate::the_terminal_a_person_opened::TheTerminal::screen)?;
+    let scale = f64::from(server.the_scale_of_display(named)) / 100.0;
+    match crate::the_terminals_cells_are_drawn::picture(
+        &mut labels.fonts,
+        screen,
+        size,
+        scale,
+        frame.look.scheme(),
+    ) {
+        Ok(drawn) => Some(drawn),
+        Err(why) => {
+            eprintln!("alo-shell: alo's own terminal could not be drawn on {named}: {why}");
+            None
+        }
     }
 }

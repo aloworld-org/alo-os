@@ -1,9 +1,32 @@
-//! **Ctrl+Alt+T asks for the terminal this machine has, and for nothing else.**
+//! **Ctrl+Alt+T opens alo's own terminal, and asks for nothing else.**
 //!
 //! The refusal paths are tested as carefully as the one that works, which for
 //! this file means three of them: a chord that is not this action, a machine
-//! with no terminal, and the question of whether the chord is still taken when
-//! there is nothing to open.
+//! with no installed terminal, and the question of whether the chord is still
+//! taken when there is nothing to open.
+//!
+//! # What these two tests used to assert, and why they changed
+//!
+//! They asserted that the chord **asked the bus to start the installed
+//! terminal** — one ask per press, two presses two terminals. That was the
+//! behaviour, and it was the behaviour because alo had no terminal of its own:
+//! this file's header records that it exists because *nothing could open a
+//! terminal at all*.
+//!
+//! Now it opens alo's own, so the old assertions are assertions about the
+//! stopgap. They are rewritten rather than deleted, and each says what it now
+//! holds — including that **nothing is asked of the bus**, which is the half a
+//! deletion would have lost.
+//!
+//! # The fallback is not tested here, and that is said rather than hidden
+//!
+//! When alo's own terminal cannot be opened, the installed one is asked for
+//! instead. **No test here reaches that branch**, because it needs
+//! `AShellOnAPseudoterminal::the_persons_own` to fail and this test cannot
+//! stop a machine from opening a pseudoterminal. It is reachable on a real
+//! machine — a container with no `/dev/pts`, a process out of file
+//! descriptors — and `open_alos_own_terminal` says on the error stream why,
+//! which is the half that is checkable by reading.
 
 #![expect(
     clippy::expect_used,
@@ -44,45 +67,51 @@ fn a_terminal() -> alo_dock::AppId {
 }
 
 #[test]
-fn the_chord_asks_for_the_terminal_this_machine_has() {
+fn the_chord_opens_alos_own_terminal_and_asks_the_bus_for_nothing() {
     let (_runtime, mut server) = a_session("a-terminal-chord");
     let shortcuts = Shortcuts::shipped();
+    // **An installed terminal is present throughout**, which is what makes
+    // this test mean something: the assertion is that alo's own is opened
+    // *although* there is one to fall back to.
     server.its_terminal_is(a_terminal());
 
     assert_eq!(server.how_many_are_waiting_to_start(), 0);
+    assert!(server.alos_own_terminal().is_none(), "nothing is open yet");
     assert!(
         server.a_chord_opens_a_terminal(&shortcuts, the_terminals_chord(&shortcuts)),
         "the terminal's own chord was not taken by the terminal's road"
     );
+    assert!(
+        server.alos_own_terminal().is_some(),
+        "the chord was taken and alo's own terminal was not opened"
+    );
     assert_eq!(
         server.how_many_are_waiting_to_start(),
-        1,
-        "the chord was taken and nothing was asked to start"
-    );
-    // **`start_what_was_asked_for_now` answers what could *not* be started**,
-    // and with no sender installed that is everything — which is how this
-    // session reads the list back without a bus. The assertion is therefore
-    // about *which application was asked for*, not about a failure.
-    assert_eq!(
-        server.start_what_was_asked_for_now(),
-        vec![a_terminal()],
-        "something other than this machine's terminal was asked for"
+        0,
+        "the installed terminal was asked for as well, so the chord opens two terminals"
     );
 }
 
 #[test]
-fn two_presses_ask_for_two_terminals() {
+fn two_presses_open_one_terminal() {
     let (_runtime, mut server) = a_session("two-terminals");
     let shortcuts = Shortcuts::shipped();
     let chord = the_terminals_chord(&shortcuts);
     server.its_terminal_is(a_terminal());
 
     assert!(server.a_chord_opens_a_terminal(&shortcuts, chord));
+    let first = std::ptr::from_ref(server.alos_own_terminal().expect("it opened"));
     assert!(server.a_chord_opens_a_terminal(&shortcuts, chord));
+    let second = std::ptr::from_ref(server.alos_own_terminal().expect("it is still open"));
+
+    assert_eq!(
+        first, second,
+        "a second press replaced the terminal, so it started another shell"
+    );
     assert_eq!(
         server.how_many_are_waiting_to_start(),
-        2,
-        "a second press was swallowed, so \"Open a terminal\" opens only the first"
+        0,
+        "a second press asked the bus for a terminal as well"
     );
 }
 

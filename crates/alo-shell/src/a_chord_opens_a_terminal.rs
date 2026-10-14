@@ -81,6 +81,41 @@ impl crate::Server {
         if shortcuts.action_for(chord) != Some(Action::Terminal) {
             return false;
         }
+        // **alo's own terminal, and this is the judgement the change states.**
+        // `CLAUDE.md` asks a change to say which answer it got and why, in one
+        // sentence: *this makes an existing promise true, because the terminal
+        // `docs/features.md` promises is alo's own and not a third party's.*
+        //
+        // The longer form, because this one changes what a key a person
+        // already presses does:
+        //
+        // - `docs/features.md` promises **a terminal**, and
+        //   [ADR 0113](../../docs/decisions/0113-the-terminal-owns-a-gutter-that-says-who-is-speaking.md)
+        //   promises a gutter beside its transcript that **no program can
+        //   write into**. Nothing running as somebody else's application could
+        //   ever guarantee that, so the promised terminal is necessarily
+        //   alo's.
+        // - This file's own header records that starting the *installed* one
+        //   was what there was: it exists because **nothing could open a
+        //   terminal at all**, and `shipped.toml` installs a third-party one.
+        //   A stopgap, not a decision.
+        // - **Nothing is taken away**, which is law 5's question. The installed
+        //   terminal stays installed, stays on the Dock when it is pinned or
+        //   open, and stays in *More apps*. A person who prefers it reaches it
+        //   exactly as before.
+        //
+        // What it does not settle is sessions, the window edge or where the
+        // window sits — those are the design's and are measured in
+        // `docs/design/the-terminal-window.md`.
+        if self.open_alos_own_terminal(crate::the_terminal_a_person_opened::A_SENSIBLE_FIRST_GRID) {
+            return true;
+        }
+        // **Falling back to the installed one is deliberate and is not a
+        // silent fallback**, because `open_alos_own_terminal` has already said
+        // on the error stream why it could not start. A machine whose
+        // pseudoterminal could not be opened still has a terminal a person can
+        // use, and refusing to open it would be answering a person's keypress
+        // with nothing.
         match self.the_terminal.clone() {
             Some(terminal) => {
                 // **Pushed and not started here**, which is
@@ -89,9 +124,16 @@ impl crate::Server {
                 // would hold the compositor still while an application
                 // started.
                 //
-                // **Every press is one ask.** A person who presses the chord
-                // twice has asked for two terminals, which is what every other
-                // system does and what the word *a* in "Open a terminal" says.
+                // **Every press is one ask**, for the *installed* terminal,
+                // which is a third-party application and behaves like every
+                // other system's: two presses, two windows.
+                //
+                // **alo's own terminal above is the other way**, and the
+                // difference is the design's: it draws one terminal window
+                // with a session strip inside it, so a second press is a
+                // person reaching for the terminal they have rather than
+                // asking for another shell. `TheTerminal::opened`'s own road
+                // says so.
                 self.asked_to_start.push(terminal);
             }
             None => {

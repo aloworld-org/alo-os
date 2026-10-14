@@ -79,11 +79,12 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                 };
 
                 let pictures =
-                    frame_pictures(frame(&quiet), None, None, &mut labels, size).unwrap();
+                    frame_pictures(frame(&quiet), None, None, &mut labels, size, None).unwrap();
                 assert!(pictures.status.is_empty());
                 assert!(pictures.desktop.dock.as_ref().unwrap().surface.is_some());
 
-                let pictures = frame_pictures(frame(&lit), None, None, &mut labels, size).unwrap();
+                let pictures =
+                    frame_pictures(frame(&lit), None, None, &mut labels, size, None).unwrap();
                 let dock_drawn = &pictures.desktop.dock;
                 let rows = &pictures.status.rows;
                 assert_eq!(rows.len(), 2, "{reading:?} {size:?}");
@@ -199,7 +200,7 @@ fn a_desktop_frame_whose_indicator_was_never_told_is_refused_whole() {
         filling: &filling,
     };
     assert!(matches!(
-        frame_pictures(frame, None, None, &mut labels, (1920, 1080)),
+        frame_pictures(frame, None, None, &mut labels, (1920, 1080), None),
         Err(RenderError::EgressStatusUnknown)
     ));
 }
@@ -254,7 +255,8 @@ fn the_record_window_sits_in_the_desktop_frame() {
         strings: &strings,
         look: light(),
     };
-    let pictures = frame_pictures(desktop, Some(record), None, &mut labels, (1920, 1080)).unwrap();
+    let pictures =
+        frame_pictures(desktop, Some(record), None, &mut labels, (1920, 1080), None).unwrap();
     assert!(!pictures.record.as_ref().unwrap().entries.is_empty());
     assert!(pictures.approval.is_none());
     assert!(pictures.desktop.dock.as_ref().unwrap().surface.is_some());
@@ -314,6 +316,7 @@ fn the_frame_carries_whether_the_panel_is_revealed() {
             None,
             &mut labels,
             (1920, 1080),
+            None,
         )
     };
 

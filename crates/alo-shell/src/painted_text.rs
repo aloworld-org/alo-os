@@ -41,6 +41,36 @@ pub(crate) fn alos_own_text<'a>() -> Attrs<'a> {
         .weight(ALOS_OWN_WEIGHT)
 }
 
+/// What a terminal's cells are drawn in.
+///
+/// **Geist Mono, because the design says so**: its `Terminal/Command` style is
+/// *Geist Mono Medium, size 14, weight 500, line height 22*, read off the
+/// transcript node `487:29034` and recorded in
+/// `docs/design/the-terminal-window.md`.
+///
+/// **This string is the name the face declares, not a name we chose.** Asking
+/// for a family no database holds is not an error in cosmic-text — it either
+/// lays out nothing or **silently substitutes another face**, and
+/// `docs/quirks.md` carries both. So the name is measured, and the guards in
+/// `window_control_label_tests.rs` shape characters through the real font
+/// system and name the family that drew each one.
+pub(crate) const ALOS_OWN_MONO: &str = "Geist Mono";
+
+/// How alo asks for a terminal's text.
+///
+/// **The weight comes from `alo_terminal::measures`**, not from a literal here,
+/// because it is the design's figure and a second copy of it is a second thing
+/// to keep in step. It is also load-bearing in a way a weight usually is not:
+/// at any other weight the family is thrown away entirely and the transcript is
+/// drawn in a proportional face. `fonts/GeistMono-Medium.ttf` is the static cut
+/// that makes this weight an exact match; before it was bundled, this ask drew
+/// **Inter**.
+pub(crate) fn alos_own_mono<'a>() -> Attrs<'a> {
+    Attrs::new()
+        .family(Family::Name(ALOS_OWN_MONO))
+        .weight(Weight(alo_terminal::measures::THE_WEIGHT))
+}
+
 /// Text shaped and inked into its own box, not yet placed.
 pub(crate) struct Shaped {
     /// The box's width.

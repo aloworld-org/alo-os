@@ -314,7 +314,7 @@ impl Nested {
         approval: Option<ApprovalFrame<'_>>,
     ) -> Result<Vec<WlSurface>, RenderError> {
         let size = self.size();
-        let pictures = frame_pictures(desktop, record, approval, labels, (size.w, size.h))?;
+        let pictures = frame_pictures(desktop, record, approval, labels, (size.w, size.h), None)?;
         self.submit_native_layers(
             roots,
             popups,
@@ -330,6 +330,7 @@ impl Nested {
                 in_use: Some(&pictures.in_use),
                 notifications: Some(&pictures.notifications),
                 capturing: pictures.capturing.as_ref(),
+                terminal: pictures.terminal.as_ref(),
             },
         )
     }
@@ -337,6 +338,8 @@ impl Nested {
 
 /// Every native picture in one desktop frame.
 pub(crate) struct DesktopPictures {
+    /// alo's own terminal, when one is open and could be drawn.
+    pub(crate) terminal: Option<crate::the_terminals_cells_are_drawn::TerminalPicture>,
     /// The egress indicator.
     pub(crate) status: EgressStatusPicture,
     /// What on this machine is watching or listening.
@@ -375,6 +378,20 @@ pub(crate) fn frame_pictures(
     approval: Option<ApprovalFrame<'_>>,
     labels: &mut WindowControlLabels,
     size: (i32, i32),
+    // **The finished picture, drawn by the lane and only carried here.**
+    //
+    // Two rules put it in this shape rather than letting this function draw it.
+    // It cannot be a field on the frame: `DesktopFrame` is `Copy`, is built once
+    // and used across a whole lane's draw while that lane writes to the server,
+    // so a frame carrying `&Server` data stops five of those writes compiling.
+    // And it cannot be drawn *here*: `desktop_source`'s
+    // `the_desktop_adds_no_number_of_its_own` holds this file to **no string a
+    // person could read**, so the sentence that says a terminal could not be
+    // drawn has nowhere to go in this file. Words belong where words are owned.
+    //
+    // So the lane draws it, says what went wrong if it did, and hands over the
+    // result.
+    terminal: Option<crate::the_terminals_cells_are_drawn::TerminalPicture>,
 ) -> Result<DesktopPictures, RenderError> {
     let running = running_shows(desktop.running, desktop.strings);
     let filling = filling_shows(desktop.filling, desktop.strings);
@@ -461,6 +478,7 @@ pub(crate) fn frame_pictures(
         None => None,
     };
     Ok(DesktopPictures {
+        terminal,
         status,
         in_use,
         notifications,

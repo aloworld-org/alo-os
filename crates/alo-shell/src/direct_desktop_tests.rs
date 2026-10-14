@@ -177,6 +177,7 @@ fn the_four_fixed_controls_a_draw_lays_out_do_not_overlap() {
         None,
         &mut labels,
         (size.w, size.h),
+        None,
     )
     .unwrap();
 
@@ -270,6 +271,7 @@ fn handed_to_the_card(desktop: &ADesktop) -> Vec<u8> {
         None,
         &mut labels,
         (size.w, size.h),
+        None,
     )
     .unwrap();
     crate::presentation::NativeTarget::submit_native_layers(

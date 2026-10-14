@@ -78,6 +78,7 @@ fn a_desktop_that_will_not_start_sends_the_person_to_the_recovery_screen() {
         None,
         &mut labels,
         A_LAPTOP,
+        None,
     );
     assert!(desktop.is_err(), "the desktop composed after all");
 
@@ -125,6 +126,7 @@ fn a_desktop_that_starts_is_what_a_person_sees() {
         None,
         &mut labels,
         A_LAPTOP,
+        None,
     );
     assert!(desktop.is_ok(), "an ordinary desktop refused");
 

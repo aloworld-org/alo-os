@@ -80,6 +80,23 @@ impl Keyboard {
     }
 }
 
+/// What the seat's own filter took out of a keypress, before any client saw it.
+///
+/// **One type rather than two filters.** The chord road and the terminal road
+/// both have to run inside `KeyboardHandle::input` — that call is what advances
+/// XKB, so the modifiers a chord reads and the character a terminal reads are
+/// both this press's own — and a filter can return one value. Naming the two
+/// outcomes is how both roads share it without either guessing which it is.
+enum WhatTheSeatTook {
+    /// One of the person's own chords.
+    AChord(Chord),
+    /// A keypress for alo's own terminal, as what was typed and what was held.
+    TypedAtTheTerminal(
+        alo_terminal::what_a_person_typed::WhatWasTyped,
+        alo_terminal::what_a_person_typed::Held,
+    ),
+}
+
 impl Server {
     /// Bind a display with a keyboard seat and an explicitly supplied XKB layout.
     ///
@@ -249,7 +266,13 @@ impl Server {
         // `crate::a_chord_reaches_its_action`, which holds the argument for why
         // a chord beats the window in front while an arrow does not.
         let shortcuts = self.shortcuts.take();
-        let took = keyboard.input::<Option<Chord>, _>(
+        // **Whether alo's own terminal is taking the keys, read before the
+        // filter** — the filter borrows `self.surfaces`, so it cannot ask. One
+        // `is_some_and` on an ordinary frame, false unless a terminal is open
+        // and its shell is still running, so every other key goes the road it
+        // went before this existed.
+        let the_terminal_takes = self.the_terminal_is_taking_the_keys();
+        let took = keyboard.input::<Option<WhatTheSeatTook>, _>(
             &mut self.surfaces,
             code,
             state,
@@ -260,7 +283,31 @@ impl Server {
                     && let Some(chord) =
                         Server::the_chord_a_key_makes(shortcuts.as_ref(), &symbol, held)
                 {
-                    return FilterResult::Intercept(Some(chord));
+                    return FilterResult::Intercept(Some(WhatTheSeatTook::AChord(chord)));
+                }
+                // **After the chord, deliberately.** A chord beats the window
+                // in front — `crate::a_chord_reaches_its_action` holds that
+                // argument — and a terminal does not get to be the exception,
+                // so `Ctrl`+`Alt`+`T` still opens a terminal from inside one.
+                //
+                // **And this is the one place both input paths pass.**
+                // `libinput_update` reaches here through `direct_seat` and
+                // `direct_keyboard`, and the nested backend calls this
+                // directly, so a terminal hooked here is a terminal that takes
+                // keys on a real machine and in a nested one. Hooking the two
+                // lanes separately would have been two answers to one
+                // question.
+                if state == KeyState::Pressed
+                    && the_terminal_takes
+                    && let Some((typed, modifiers)) =
+                        crate::what_the_keyboard_said::what_the_keyboard_said(
+                            symbol.modified_sym(),
+                            held,
+                        )
+                {
+                    return FilterResult::Intercept(Some(WhatTheSeatTook::TypedAtTheTerminal(
+                        typed, modifiers,
+                    )));
                 }
                 if deliver {
                     FilterResult::Forward
@@ -273,20 +320,34 @@ impl Server {
         // **A chord the shell took goes no further.** The client was never told
         // about the press, so the matching release is already held back by the
         // `forwarded` set this function keeps — no second rule is needed for it.
-        if let Some(chord) = took.flatten() {
+        // **Matched once**, because `took` is an `Option<Option<_>>` and
+        // flattening it twice would be reading a moved value — and because the
+        // two arms share the bookkeeping below.
+        if let Some(seat_took) = took.flatten() {
             if let Some(keyboard) = self.surfaces.keyboard.as_mut() {
                 keyboard.time = time;
                 keyboard.popup_key = None;
             }
-            // **The answer is read and not acted on here, deliberately.** A
-            // chord that reaches no road is a bug in this repository rather
-            // than something a person's keypress should behave differently
-            // about, and `the_chord_does_what_it_names` has already said so on
-            // the error stream. What the value is for is
-            // `crate::a_chord_reaches_its_action`'s own test, which presses
-            // every declared action and asserts that none of them answers
-            // `NoRoad` — the check that would have caught four dead chords.
-            let _ = self.the_chord_does_what_it_names(chord);
+            match seat_took {
+                // **The answer is read and not acted on here, deliberately.**
+                // A chord that reaches no road is a bug in this repository
+                // rather than something a person's keypress should behave
+                // differently about, and `the_chord_does_what_it_names` has
+                // already said so on the error stream. What the value is for is
+                // `crate::a_chord_reaches_its_action`'s own test, which presses
+                // every declared action and asserts that none of them answers
+                // `NoRoad` — the check that would have caught four dead chords.
+                WhatTheSeatTook::AChord(chord) => {
+                    let _ = self.the_chord_does_what_it_names(chord);
+                }
+                // **Also read and not acted on further.** A terminal that has
+                // gone between the filter and here takes nothing, which is a
+                // true answer: the key is already not reaching a client,
+                // because nothing was forwarded.
+                WhatTheSeatTook::TypedAtTheTerminal(typed, modifiers) => {
+                    let _ = self.a_key_reached_alos_own_terminal(typed, modifiers);
+                }
+            }
             return Ok(false);
         }
         // **Arrows pan the canvas with nothing focused** — ADR 0065's keyboard

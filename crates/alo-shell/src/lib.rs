@@ -369,6 +369,15 @@ mod the_session_holds_its_screens;
 pub mod the_tasks_a_person_opened;
 /// Everything in a task window that a person reads, said once a frame.
 mod the_tasks_words;
+/// alo's own terminal: the shell it runs, the screen it keeps, and when it has
+/// the keyboard. The compositor holds it because ADR 0114 says the compositor
+/// draws it, and ADR 0113's gutter could not be promised by an application.
+mod the_terminal_a_person_opened;
+/// alo's own terminal, drawn: the window, its transcript and the cells in it.
+/// Every figure comes from `alo_terminal::measures` through this display's own
+/// scale; the window's size is a share of the display, because the design's
+/// 1040x800 is what it was drawn at and not what a window is.
+mod the_terminals_cells_are_drawn;
 mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
 mod their_displays;
@@ -380,6 +389,10 @@ mod what_an_application_act_asks_for;
 #[cfg(test)]
 mod what_an_application_act_asks_for_tests;
 mod what_the_dock_has_open;
+/// One keypress, read as what a person typed: the compositor's half of the
+/// terminal's keyboard, where the keymap is. `alo_terminal` turns the answer
+/// into the bytes a shell receives, where no keymap is needed.
+mod what_the_keyboard_said;
 mod what_the_server_tells_a_frame;
 mod where_a_task_window_opens;
 mod where_a_window_opens;

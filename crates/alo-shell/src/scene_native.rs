@@ -68,6 +68,12 @@ pub(crate) struct NativeLayers<'a> {
     /// marking what they captured. Above everything, because what a person is
     /// drawing on must not be covered by what arrives while they draw.
     pub(crate) capturing: Option<&'a crate::capture_raster::CapturePicture>,
+    /// alo's own terminal, when one is open and was drawn.
+    ///
+    /// **A window rather than furniture**, which is why it is its own layer:
+    /// the Dock, the status area and a notification each sit above whatever a
+    /// client maps, and a terminal does not — it is a window among windows.
+    pub(crate) terminal: Option<&'a crate::the_terminals_cells_are_drawn::TerminalPicture>,
 }
 
 impl NativeLayers<'_> {
@@ -88,6 +94,7 @@ impl NativeLayers<'_> {
             in_use: None,
             notifications: None,
             capturing: None,
+            terminal: None,
         }
     }
 
@@ -103,6 +110,10 @@ impl NativeLayers<'_> {
             && self.in_use.is_none()
             && self.notifications.is_none()
             && self.capturing.is_none()
+            // **And the terminal**, or a frame holding nothing but alo's own
+            // terminal would read as empty and a caller that skips empty
+            // frames would skip it.
+            && self.terminal.is_none()
     }
 }
 
