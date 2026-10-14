@@ -27,6 +27,11 @@ refreshed  2026-10-07, by the development PC at the owner's instruction
 | `371:30134` | section | 11400×5960 | 02 — Set up your PC | yes, `70-28.xml` |
 | `372:30292` | section | 11400×3580 | 03 — Start working | yes, `70-28.xml` |
 | `383:26066` | section | 8500×8700 | 04 — AI choice | yes, `70-28.xml` |
+| `479:28965` | section | 4480×1180 | Terminal · Rich results by default | yes, `479-28965.xml` |
+| `485:28999` | — | — | Terminal · Current behaviour, source labels, autonomy, recovery | yes, `485-28999.xml` |
+| `493:29344` | — | — | Terminal settings · permission levels and model selection | yes, `493-29344.xml` |
+| `498:29475` | component | 48×48 | Terminal / Settings / Owner-approved gear | yes, `498-29475.xml` |
+| `500:29477` | — | — | Terminal settings · the detailed states, light and dark | yes, `500-29477.xml` |
 
 **All four section roots are in the snapshot as of the 2026-10-07 refresh.** They are
 children of page `70:28`, which is why they arrived with it rather than needing four
@@ -266,3 +271,47 @@ re-running the script against a moved base matched and inserted again.
 correctly, for the second time. **A check that a patch added what it meant to add cannot
 tell one application from two**, which is a real limit of an otherwise sound habit. For a
 file this size the remedy is to write it in full and read it.
+
+## The terminal's five nodes, 2026-10-14
+
+Given by the owner with the instruction to refresh them **before** measuring or
+implementing. All five were reached by id and confirmed on 2026-10-14 by the
+Mac lane.
+
+**`485:28999` is the contract; `479:28965` is only rendering.** Each of the
+three rich-result frames carries a note deferring to it by id for the source
+gutter, autonomy and recovery. A reader taking provenance rules from the
+rendering node has taken them from the wrong one, which is the kind of mistake
+a snapshot exists to make impossible rather than unlikely.
+
+**`498:29475` settles two numbers that must stay two**: the artwork is 24×24,
+the target is 48×48. This repository has already shipped one constant used for
+both a drawn size and a pressable size.
+
+## The terminal's links, to open while building
+
+**Kept here because an id is not a link.** The table above is what a capture
+reads; this is what a person opens, and somebody mid-implementation should not
+have to reconstruct a URL from a node id or go back through a chat log to find
+one. The owner gave these on 2026-10-14 with the instruction to store them for
+development.
+
+A link is `https://www.figma.com/design/<file key>/alo-OS?node-id=<id>`, with
+the id's colon written as a hyphen. The file key is `nDxyF5Ho9oC4RObjVzwBNJ`
+for every one of them.
+
+| what it settles | open |
+|---|---|
+| **Current behaviour** — source labels, autonomy, recovery. **The contract.** | <https://www.figma.com/design/nDxyF5Ho9oC4RObjVzwBNJ/alo-OS?node-id=485-28999> |
+| **Main settings** — the three permission levels and model selection | <https://www.figma.com/design/nDxyF5Ho9oC4RObjVzwBNJ/alo-OS?node-id=493-29344> |
+| **Detailed settings** — access, duration, confirmations, failures, light and dark | <https://www.figma.com/design/nDxyF5Ho9oC4RObjVzwBNJ/alo-OS?node-id=500-29477> |
+| **The gear** — the approved component, 24 inside 48 | <https://www.figma.com/design/nDxyF5Ho9oC4RObjVzwBNJ/alo-OS?node-id=498-29475> |
+| **Rich results** — rendering only, defers to 485:28999 | <https://www.figma.com/design/nDxyF5Ho9oC4RObjVzwBNJ/alo-OS?node-id=479-28965> |
+| The 24 transcript states — the terminal's own behaviour | <https://www.figma.com/design/nDxyF5Ho9oC4RObjVzwBNJ/alo-OS?node-id=471-28762> |
+| Terminal appearance, slash menu, inline attachments | <https://www.figma.com/design/nDxyF5Ho9oC4RObjVzwBNJ/alo-OS?node-id=454-28670> |
+
+**Open the link, but measure the capture.** A link shows what the file says
+today; the `.xml` beside it says what it said when somebody last looked, and
+only the second can be diffed. Where they disagree, that disagreement is the
+finding — and the way to record it is to re-capture, not to edit the file by
+hand.

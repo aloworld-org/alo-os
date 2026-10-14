@@ -1,0 +1,1235 @@
+<!--
+  Terminal settings — permission levels and model selection — read from the live file on 2026-10-14.
+
+  Six frames: the three permission levels, each in light and dark. Every frame is
+  1440x1040 and carries the same children, so the levels are what differs and the
+  appearances are not.
+
+  Captured because `docs/decisions/0114` begins the terminal and the owner's
+  instruction of 2026-10-14 is to refresh these nodes in the committed snapshot
+  **before** measuring or implementing them. A design change must show up here
+  as a diff rather than as nothing.
+
+  file key  nDxyF5Ho9oC4RObjVzwBNJ
+-->
+Currently selected nodes:
+- 493:29344: Terminal · Settings · Model and permissions
+
+<section id="493:29344" name="Terminal · Settings · Model and permissions" x="108280" y="400" width="4480" height="5600">
+  <frame id="493:29345" name="Terminal settings · Ask before acting · Light" x="40" y="100" width="1440" height="1040">
+    <text id="493:29346" name="Terminal settings · Ask before acting · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="493:29347" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="493:29348" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="493:29349" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="493:29350" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="493:29351" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="493:29352" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="493:29354" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="493:29355" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="493:29357" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="493:29358" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="493:29360" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="493:29361" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="493:29362" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="493:29363" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="493:29364" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="493:29365" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="493:29366" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29367" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="493:29368" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="493:29369" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="493:29370" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="493:29371" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="493:29372" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="493:29373" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="493:29374" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="493:29375" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="493:29376" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="493:29377" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="493:29378" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="493:29379" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="493:29380" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="493:29381" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="493:29382" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="493:29383" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="493:29384" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="493:29385" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="493:29386" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="493:29387" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="493:29388" name="Changes remain a draft until Apply permissions. Escape or Cancel keeps the existing grant. Example scope and model; use real availability in production." x="200" y="950" width="1040" height="60" />
+    <frame id="493:29389" name="alo settings / modal" x="380" y="120" width="680" height="750">
+      <text id="493:29390" name="alo settings" x="25" y="25" width="632" height="30" />
+      <text id="493:29391" name="Choose your model and how much alo may do in this terminal." x="25" y="71" width="632" height="22" />
+      <frame id="493:29392" name="Model picker / open" x="25" y="109" width="632" height="64">
+        <text id="493:29393" name="Model SmolLM2 1.7B Change ›" x="12" y="8" width="608" height="22" />
+        <text id="493:29394" name="On this computer · Applies to the next request" x="12" y="34" width="608" height="22" />
+      </frame>
+      <text id="493:29395" name="Permissions" x="25" y="189" width="632" height="22" />
+      <frame id="493:29396" name="Permission level / single selection" x="25" y="227" width="632" height="222">
+        <frame id="493:29397" name="Ask before acting / selected" x="0" y="0" width="632" height="70">
+          <text id="493:29398" name="Ask before acting · Selected" x="14" y="12" width="608" height="22" />
+          <text id="493:29399" name="alo proposes actions and waits for approval." x="14" y="36" width="608" height="22" />
+        </frame>
+        <frame id="493:29400" name="Act within my permissions / unselected" x="0" y="78" width="632" height="68">
+          <text id="493:29401" name="Act within my permissions" x="13" y="11" width="608" height="22" />
+          <text id="493:29402" name="Allowed actions run without repeated questions." x="13" y="35" width="608" height="22" />
+        </frame>
+        <frame id="493:29403" name="Full control / unselected" x="0" y="154" width="632" height="68">
+          <text id="493:29404" name="Full control" x="13" y="11" width="608" height="22" />
+          <text id="493:29405" name="alo can act unattended with the access you grant." x="13" y="35" width="608" height="22" />
+        </frame>
+      </frame>
+      <text id="493:29406" name="Access · ~/Projects/launch" x="25" y="465" width="632" height="22" />
+      <text id="493:29407" name="Read project files. Ask before commands, changes or network access." x="25" y="503" width="632" height="22" />
+      <frame id="493:29408" name="Edit access and destinations" x="25" y="541" width="632" height="22">
+        <text id="493:29409" name="Edit folders, applications and network destinations ›" x="0" y="0" width="632" height="22" />
+      </frame>
+      <text id="493:29410" name="Duration This terminal session Change ›" x="25" y="579" width="632" height="22" />
+      <text id="493:29411" name="Actions outside this scope still need permission. Your next terminal keeps its existing defaults." x="25" y="617" width="632" height="44" />
+      <frame id="493:29412" name="Frame" x="25" y="677" width="380" height="48">
+        <instance id="493:29413" name="Ask alo / Action" x="0" y="0" width="160" height="48" />
+        <instance id="493:29415" name="Ask alo / Action" x="172" y="0" width="208" height="48" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="493:29427" name="Terminal settings · Act within my permissions · Light" x="1520" y="100" width="1440" height="1040">
+    <text id="493:29428" name="Terminal settings · Act within my permissions · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="493:29429" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="493:29430" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="493:29431" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="493:29432" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="493:29433" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="493:29434" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="493:29436" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="493:29437" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="493:29439" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="493:29440" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="493:29442" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="493:29443" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="493:29444" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="493:29445" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="493:29446" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="493:29447" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="493:29448" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29449" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="493:29450" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="493:29451" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="493:29452" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="493:29453" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="493:29454" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="493:29455" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="493:29456" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="493:29457" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="493:29458" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="493:29459" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="493:29460" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="493:29461" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="493:29462" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="493:29463" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="493:29464" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="493:29465" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="493:29466" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="493:29467" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="493:29468" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="493:29469" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="493:29470" name="Changes remain a draft until Apply permissions. Escape or Cancel keeps the existing grant. Example scope and model; use real availability in production." x="200" y="950" width="1040" height="60" />
+    <frame id="493:29471" name="alo settings / modal" x="380" y="120" width="680" height="750">
+      <text id="493:29472" name="alo settings" x="25" y="25" width="632" height="30" />
+      <text id="493:29473" name="Choose your model and how much alo may do in this terminal." x="25" y="71" width="632" height="22" />
+      <frame id="493:29474" name="Model picker / open" x="25" y="109" width="632" height="64">
+        <text id="493:29475" name="Model SmolLM2 1.7B Change ›" x="12" y="8" width="608" height="22" />
+        <text id="493:29476" name="On this computer · Applies to the next request" x="12" y="34" width="608" height="22" />
+      </frame>
+      <text id="493:29477" name="Permissions" x="25" y="189" width="632" height="22" />
+      <frame id="493:29478" name="Permission level / single selection" x="25" y="227" width="632" height="222">
+        <frame id="493:29479" name="Ask before acting / unselected" x="0" y="0" width="632" height="68">
+          <text id="493:29480" name="Ask before acting" x="13" y="11" width="608" height="22" />
+          <text id="493:29481" name="alo proposes actions and waits for approval." x="13" y="35" width="608" height="22" />
+        </frame>
+        <frame id="493:29482" name="Act within my permissions / selected" x="0" y="76" width="632" height="70">
+          <text id="493:29483" name="Act within my permissions · Selected" x="14" y="12" width="608" height="22" />
+          <text id="493:29484" name="Allowed actions run without repeated questions." x="14" y="36" width="608" height="22" />
+        </frame>
+        <frame id="493:29485" name="Full control / unselected" x="0" y="154" width="632" height="68">
+          <text id="493:29486" name="Full control" x="13" y="11" width="608" height="22" />
+          <text id="493:29487" name="alo can act unattended with the access you grant." x="13" y="35" width="608" height="22" />
+        </frame>
+      </frame>
+      <text id="493:29488" name="Access · ~/Projects/launch" x="25" y="465" width="632" height="22" />
+      <text id="493:29489" name="Run commands and edit project files. Network: localhost only." x="25" y="503" width="632" height="22" />
+      <frame id="493:29490" name="Edit access and destinations" x="25" y="541" width="632" height="22">
+        <text id="493:29491" name="Edit folders, applications and network destinations ›" x="0" y="0" width="632" height="22" />
+      </frame>
+      <text id="493:29492" name="Duration This terminal session Change ›" x="25" y="579" width="632" height="22" />
+      <text id="493:29493" name="Actions outside this scope still need permission. Your next terminal keeps its existing defaults." x="25" y="617" width="632" height="44" />
+      <frame id="493:29494" name="Frame" x="25" y="677" width="380" height="48">
+        <instance id="493:29495" name="Ask alo / Action" x="0" y="0" width="160" height="48" />
+        <instance id="493:29497" name="Ask alo / Action" x="172" y="0" width="208" height="48" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="493:29509" name="Terminal settings · Full control · Light" x="3000" y="100" width="1440" height="1040">
+    <text id="493:29510" name="Terminal settings · Full control · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="493:29511" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="493:29512" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="493:29513" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="493:29514" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="493:29515" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="493:29516" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="493:29518" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="493:29519" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="493:29521" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="493:29522" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="493:29524" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="493:29525" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="493:29526" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="493:29527" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="493:29528" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="493:29529" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="493:29530" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29531" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="493:29532" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="493:29533" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="493:29534" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="493:29535" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="493:29536" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="493:29537" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="493:29538" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="493:29539" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="493:29540" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="493:29541" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="493:29542" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="493:29543" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="493:29544" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="493:29545" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="493:29546" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="493:29547" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="493:29548" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="493:29549" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="493:29550" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="493:29551" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="493:29552" name="Changes remain a draft until Apply permissions. Escape or Cancel keeps the existing grant. Example scope and model; use real availability in production." x="200" y="950" width="1040" height="60" />
+    <frame id="493:29553" name="alo settings / modal" x="380" y="120" width="680" height="772">
+      <text id="493:29554" name="alo settings" x="25" y="25" width="632" height="30" />
+      <text id="493:29555" name="Choose your model and how much alo may do in this terminal." x="25" y="71" width="632" height="22" />
+      <frame id="493:29556" name="Model picker / open" x="25" y="109" width="632" height="64">
+        <text id="493:29557" name="Model SmolLM2 1.7B Change ›" x="12" y="8" width="608" height="22" />
+        <text id="493:29558" name="On this computer · Applies to the next request" x="12" y="34" width="608" height="22" />
+      </frame>
+      <text id="493:29559" name="Permissions" x="25" y="189" width="632" height="22" />
+      <frame id="493:29560" name="Permission level / single selection" x="25" y="227" width="632" height="222">
+        <frame id="493:29561" name="Ask before acting / unselected" x="0" y="0" width="632" height="68">
+          <text id="493:29562" name="Ask before acting" x="13" y="11" width="608" height="22" />
+          <text id="493:29563" name="alo proposes actions and waits for approval." x="13" y="35" width="608" height="22" />
+        </frame>
+        <frame id="493:29564" name="Act within my permissions / unselected" x="0" y="76" width="632" height="68">
+          <text id="493:29565" name="Act within my permissions" x="13" y="11" width="608" height="22" />
+          <text id="493:29566" name="Allowed actions run without repeated questions." x="13" y="35" width="608" height="22" />
+        </frame>
+        <frame id="493:29567" name="Full control / selected" x="0" y="152" width="632" height="70">
+          <text id="493:29568" name="Full control · Selected" x="14" y="12" width="608" height="22" />
+          <text id="493:29569" name="alo can act unattended with the access you grant." x="14" y="36" width="608" height="22" />
+        </frame>
+      </frame>
+      <text id="493:29570" name="Access · This computer" x="25" y="465" width="632" height="22" />
+      <text id="493:29571" name="Read, change or delete files; control apps and run commands. Administrator actions still require OS authentication." x="25" y="503" width="632" height="44" />
+      <frame id="493:29572" name="Edit access and destinations" x="25" y="563" width="632" height="22">
+        <text id="493:29573" name="Edit folders, applications and network destinations ›" x="0" y="0" width="632" height="22" />
+      </frame>
+      <text id="493:29574" name="Duration This terminal session Change ›" x="25" y="601" width="632" height="22" />
+      <text id="493:29575" name="External processing still requires a visible destination choice. You can pause alo or revoke this grant at any time." x="25" y="639" width="632" height="44" />
+      <frame id="493:29576" name="Frame" x="25" y="699" width="380" height="48">
+        <instance id="493:29577" name="Ask alo / Action" x="0" y="0" width="160" height="48" />
+        <instance id="493:29579" name="Ask alo / Action" x="172" y="0" width="208" height="48" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="493:29591" name="Terminal settings · Ask before acting · Dark" x="40" y="1200" width="1440" height="1040">
+    <text id="493:29592" name="Terminal settings · Ask before acting · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="493:29593" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="493:29594" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="493:29595" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="493:29596" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="493:29597" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="493:29598" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="493:29600" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="493:29601" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="493:29603" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="493:29604" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="493:29606" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="493:29607" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="493:29608" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="493:29609" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="493:29610" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="493:29611" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="493:29612" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29613" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="493:29614" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="493:29615" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="493:29616" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="493:29617" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="493:29618" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="493:29619" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="493:29620" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="493:29621" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="493:29622" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="493:29623" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="493:29624" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="493:29625" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="493:29626" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="493:29627" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="493:29628" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="493:29629" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="493:29630" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="493:29631" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="493:29632" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="493:29633" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="493:29634" name="Changes remain a draft until Apply permissions. Escape or Cancel keeps the existing grant. Example scope and model; use real availability in production." x="200" y="950" width="1040" height="60" />
+    <frame id="493:29635" name="alo settings / modal" x="380" y="120" width="680" height="750">
+      <text id="493:29636" name="alo settings" x="25" y="25" width="632" height="30" />
+      <text id="493:29637" name="Choose your model and how much alo may do in this terminal." x="25" y="71" width="632" height="22" />
+      <frame id="493:29638" name="Model picker / open" x="25" y="109" width="632" height="64">
+        <text id="493:29639" name="Model SmolLM2 1.7B Change ›" x="12" y="8" width="608" height="22" />
+        <text id="493:29640" name="On this computer · Applies to the next request" x="12" y="34" width="608" height="22" />
+      </frame>
+      <text id="493:29641" name="Permissions" x="25" y="189" width="632" height="22" />
+      <frame id="493:29642" name="Permission level / single selection" x="25" y="227" width="632" height="222">
+        <frame id="493:29643" name="Ask before acting / selected" x="0" y="0" width="632" height="70">
+          <text id="493:29644" name="Ask before acting · Selected" x="14" y="12" width="608" height="22" />
+          <text id="493:29645" name="alo proposes actions and waits for approval." x="14" y="36" width="608" height="22" />
+        </frame>
+        <frame id="493:29646" name="Act within my permissions / unselected" x="0" y="78" width="632" height="68">
+          <text id="493:29647" name="Act within my permissions" x="13" y="11" width="608" height="22" />
+          <text id="493:29648" name="Allowed actions run without repeated questions." x="13" y="35" width="608" height="22" />
+        </frame>
+        <frame id="493:29649" name="Full control / unselected" x="0" y="154" width="632" height="68">
+          <text id="493:29650" name="Full control" x="13" y="11" width="608" height="22" />
+          <text id="493:29651" name="alo can act unattended with the access you grant." x="13" y="35" width="608" height="22" />
+        </frame>
+      </frame>
+      <text id="493:29652" name="Access · ~/Projects/launch" x="25" y="465" width="632" height="22" />
+      <text id="493:29653" name="Read project files. Ask before commands, changes or network access." x="25" y="503" width="632" height="22" />
+      <frame id="493:29654" name="Edit access and destinations" x="25" y="541" width="632" height="22">
+        <text id="493:29655" name="Edit folders, applications and network destinations ›" x="0" y="0" width="632" height="22" />
+      </frame>
+      <text id="493:29656" name="Duration This terminal session Change ›" x="25" y="579" width="632" height="22" />
+      <text id="493:29657" name="Actions outside this scope still need permission. Your next terminal keeps its existing defaults." x="25" y="617" width="632" height="44" />
+      <frame id="493:29658" name="Frame" x="25" y="677" width="380" height="48">
+        <instance id="493:29659" name="Ask alo / Action" x="0" y="0" width="160" height="48" />
+        <instance id="493:29661" name="Ask alo / Action" x="172" y="0" width="208" height="48" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="493:29673" name="Terminal settings · Act within my permissions · Dark" x="1520" y="1200" width="1440" height="1040">
+    <text id="493:29674" name="Terminal settings · Act within my permissions · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="493:29675" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="493:29676" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="493:29677" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="493:29678" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="493:29679" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="493:29680" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="493:29682" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="493:29683" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="493:29685" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="493:29686" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="493:29688" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="493:29689" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="493:29690" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="493:29691" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="493:29692" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="493:29693" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="493:29694" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29695" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="493:29696" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="493:29697" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="493:29698" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="493:29699" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="493:29700" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="493:29701" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="493:29702" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="493:29703" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="493:29704" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="493:29705" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="493:29706" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="493:29707" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="493:29708" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="493:29709" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="493:29710" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="493:29711" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="493:29712" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="493:29713" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="493:29714" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="493:29715" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="493:29716" name="Changes remain a draft until Apply permissions. Escape or Cancel keeps the existing grant. Example scope and model; use real availability in production." x="200" y="950" width="1040" height="60" />
+    <frame id="493:29717" name="alo settings / modal" x="380" y="120" width="680" height="750">
+      <text id="493:29718" name="alo settings" x="25" y="25" width="632" height="30" />
+      <text id="493:29719" name="Choose your model and how much alo may do in this terminal." x="25" y="71" width="632" height="22" />
+      <frame id="493:29720" name="Model picker / open" x="25" y="109" width="632" height="64">
+        <text id="493:29721" name="Model SmolLM2 1.7B Change ›" x="12" y="8" width="608" height="22" />
+        <text id="493:29722" name="On this computer · Applies to the next request" x="12" y="34" width="608" height="22" />
+      </frame>
+      <text id="493:29723" name="Permissions" x="25" y="189" width="632" height="22" />
+      <frame id="493:29724" name="Permission level / single selection" x="25" y="227" width="632" height="222">
+        <frame id="493:29725" name="Ask before acting / unselected" x="0" y="0" width="632" height="68">
+          <text id="493:29726" name="Ask before acting" x="13" y="11" width="608" height="22" />
+          <text id="493:29727" name="alo proposes actions and waits for approval." x="13" y="35" width="608" height="22" />
+        </frame>
+        <frame id="493:29728" name="Act within my permissions / selected" x="0" y="76" width="632" height="70">
+          <text id="493:29729" name="Act within my permissions · Selected" x="14" y="12" width="608" height="22" />
+          <text id="493:29730" name="Allowed actions run without repeated questions." x="14" y="36" width="608" height="22" />
+        </frame>
+        <frame id="493:29731" name="Full control / unselected" x="0" y="154" width="632" height="68">
+          <text id="493:29732" name="Full control" x="13" y="11" width="608" height="22" />
+          <text id="493:29733" name="alo can act unattended with the access you grant." x="13" y="35" width="608" height="22" />
+        </frame>
+      </frame>
+      <text id="493:29734" name="Access · ~/Projects/launch" x="25" y="465" width="632" height="22" />
+      <text id="493:29735" name="Run commands and edit project files. Network: localhost only." x="25" y="503" width="632" height="22" />
+      <frame id="493:29736" name="Edit access and destinations" x="25" y="541" width="632" height="22">
+        <text id="493:29737" name="Edit folders, applications and network destinations ›" x="0" y="0" width="632" height="22" />
+      </frame>
+      <text id="493:29738" name="Duration This terminal session Change ›" x="25" y="579" width="632" height="22" />
+      <text id="493:29739" name="Actions outside this scope still need permission. Your next terminal keeps its existing defaults." x="25" y="617" width="632" height="44" />
+      <frame id="493:29740" name="Frame" x="25" y="677" width="380" height="48">
+        <instance id="493:29741" name="Ask alo / Action" x="0" y="0" width="160" height="48" />
+        <instance id="493:29743" name="Ask alo / Action" x="172" y="0" width="208" height="48" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="493:29755" name="Terminal settings · Full control · Dark" x="3000" y="1200" width="1440" height="1040">
+    <text id="493:29756" name="Terminal settings · Full control · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="493:29757" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="493:29758" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="493:29759" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="493:29760" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="493:29761" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="493:29762" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="493:29764" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="493:29765" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="493:29767" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="493:29768" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="493:29770" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="493:29771" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="493:29772" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="493:29773" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="493:29774" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="493:29775" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="493:29776" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29777" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="493:29778" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="493:29779" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="493:29780" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="493:29781" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="493:29782" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="493:29783" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="493:29784" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="493:29785" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="493:29786" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="493:29787" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="493:29788" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="493:29789" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="493:29790" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="493:29791" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="493:29792" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="493:29793" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="493:29794" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="493:29795" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="493:29796" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="493:29797" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="493:29798" name="Changes remain a draft until Apply permissions. Escape or Cancel keeps the existing grant. Example scope and model; use real availability in production." x="200" y="950" width="1040" height="60" />
+    <frame id="493:29799" name="alo settings / modal" x="380" y="120" width="680" height="772">
+      <text id="493:29800" name="alo settings" x="25" y="25" width="632" height="30" />
+      <text id="493:29801" name="Choose your model and how much alo may do in this terminal." x="25" y="71" width="632" height="22" />
+      <frame id="493:29802" name="Model picker / open" x="25" y="109" width="632" height="64">
+        <text id="493:29803" name="Model SmolLM2 1.7B Change ›" x="12" y="8" width="608" height="22" />
+        <text id="493:29804" name="On this computer · Applies to the next request" x="12" y="34" width="608" height="22" />
+      </frame>
+      <text id="493:29805" name="Permissions" x="25" y="189" width="632" height="22" />
+      <frame id="493:29806" name="Permission level / single selection" x="25" y="227" width="632" height="222">
+        <frame id="493:29807" name="Ask before acting / unselected" x="0" y="0" width="632" height="68">
+          <text id="493:29808" name="Ask before acting" x="13" y="11" width="608" height="22" />
+          <text id="493:29809" name="alo proposes actions and waits for approval." x="13" y="35" width="608" height="22" />
+        </frame>
+        <frame id="493:29810" name="Act within my permissions / unselected" x="0" y="76" width="632" height="68">
+          <text id="493:29811" name="Act within my permissions" x="13" y="11" width="608" height="22" />
+          <text id="493:29812" name="Allowed actions run without repeated questions." x="13" y="35" width="608" height="22" />
+        </frame>
+        <frame id="493:29813" name="Full control / selected" x="0" y="152" width="632" height="70">
+          <text id="493:29814" name="Full control · Selected" x="14" y="12" width="608" height="22" />
+          <text id="493:29815" name="alo can act unattended with the access you grant." x="14" y="36" width="608" height="22" />
+        </frame>
+      </frame>
+      <text id="493:29816" name="Access · This computer" x="25" y="465" width="632" height="22" />
+      <text id="493:29817" name="Read, change or delete files; control apps and run commands. Administrator actions still require OS authentication." x="25" y="503" width="632" height="44" />
+      <frame id="493:29818" name="Edit access and destinations" x="25" y="563" width="632" height="22">
+        <text id="493:29819" name="Edit folders, applications and network destinations ›" x="0" y="0" width="632" height="22" />
+      </frame>
+      <text id="493:29820" name="Duration This terminal session Change ›" x="25" y="601" width="632" height="22" />
+      <text id="493:29821" name="External processing still requires a visible destination choice. You can pause alo or revoke this grant at any time." x="25" y="639" width="632" height="44" />
+      <frame id="493:29822" name="Frame" x="25" y="699" width="380" height="48">
+        <instance id="493:29823" name="Ask alo / Action" x="0" y="0" width="160" height="48" />
+        <instance id="493:29825" name="Ask alo / Action" x="172" y="0" width="208" height="48" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="494:29385" name="Terminal settings · Model and processing" x="40" y="2300" width="1440" height="1040">
+    <text id="494:29386" name="Terminal settings · Model and processing" x="200" y="40" width="1040" height="24" />
+    <frame id="494:29387" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="494:29388" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="494:29389" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="494:29390" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="494:29391" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="494:29392" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="494:29394" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="494:29395" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="494:29397" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="494:29398" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="494:29400" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="494:29401" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="494:29402" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="494:29403" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="494:29404" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="494:29405" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="494:29406" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="494:29407" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="494:29408" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="494:29409" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="494:29410" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="494:29411" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="494:29412" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="494:29413" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="494:29414" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="494:29415" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="494:29416" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="494:29417" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="494:29418" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="494:29419" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="494:29420" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="494:29421" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="494:29422" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="494:29423" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="494:29424" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="494:29425" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="494:29426" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="494:29427" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="494:29428" name="Prototype illustrates choices only. Model availability, destinations and access come from real session state. Keyboard focus enters the dialog and returns to settings on close." x="200" y="950" width="1040" height="60" />
+    <frame id="494:29429" name="alo settings / modal" x="380" y="120" width="680" height="684">
+      <text id="494:29455" name="Model and processing" x="25" y="25" width="632" height="32" />
+      <text id="494:29456" name="Choose the model for the next request." x="25" y="73" width="632" height="22" />
+      <frame id="494:29457" name="SmolLM2 1.7B · Selected" x="25" y="111" width="632" height="94">
+        <text id="494:29458" name="SmolLM2 1.7B · Selected" x="12" y="12" width="608" height="22" />
+        <text id="494:29459" name="On this computer · Installed · No external processing" x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="494:29460" name="Qwen2.5 Coder 7B" x="25" y="221" width="632" height="94">
+        <text id="494:29461" name="Qwen2.5 Coder 7B" x="12" y="12" width="608" height="22" />
+        <text id="494:29462" name="On this computer · Installed · Example catalogue entry" x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="494:29463" name="A machine on your network" x="25" y="331" width="632" height="94">
+        <text id="494:29464" name="A machine on your network" x="12" y="12" width="608" height="22" />
+        <text id="494:29465" name="Choose a paired machine and its available models." x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="494:29466" name="My provider" x="25" y="441" width="632" height="94">
+        <text id="494:29467" name="My provider" x="12" y="12" width="608" height="22" />
+        <text id="494:29468" name="Choose a configured provider and model. Review sharing first." x="12" y="38" width="608" height="44" />
+      </frame>
+      <text id="494:29469" name="The current request keeps its model. Stop and restart explicitly to change it. No silent switch to an external model." x="25" y="551" width="632" height="44" />
+      <frame id="494:29470" name="Frame" x="25" y="611" width="428" height="48">
+        <instance id="494:29471" name="Ask alo / Action" x="0" y="0" width="208" height="48" />
+        <instance id="494:29473" name="Ask alo / Action" x="220" y="0" width="208" height="48" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="494:29485" name="Terminal settings · External processing / review" x="1520" y="2300" width="1440" height="1040">
+    <text id="494:29486" name="Terminal settings · External processing / review" x="200" y="40" width="1040" height="24" />
+    <frame id="494:29487" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="494:29488" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="494:29489" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="494:29490" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="494:29491" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="494:29492" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="494:29494" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="494:29495" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="494:29497" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="494:29498" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="494:29500" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="494:29501" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="494:29502" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="494:29503" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="494:29504" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="494:29505" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="494:29506" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="494:29507" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="494:29508" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="494:29509" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="494:29510" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="494:29511" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="494:29512" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="494:29513" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="494:29514" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="494:29515" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="494:29516" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="494:29517" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="494:29518" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="494:29519" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="494:29520" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="494:29521" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="494:29522" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="494:29523" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="494:29524" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="494:29525" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="494:29526" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="494:29527" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="494:29528" name="Prototype illustrates choices only. Model availability, destinations and access come from real session state. Keyboard focus enters the dialog and returns to settings on close." x="200" y="950" width="1040" height="60" />
+    <frame id="494:29529" name="alo settings / modal" x="380" y="120" width="680" height="574">
+      <text id="494:29555" name="External processing / review" x="25" y="25" width="632" height="32" />
+      <text id="494:29556" name="Before using a provider model" x="25" y="73" width="632" height="22" />
+      <frame id="494:29557" name="Destination" x="25" y="111" width="632" height="94">
+        <text id="494:29558" name="Destination" x="12" y="12" width="608" height="22" />
+        <text id="494:29559" name="The selected provider and model must be named here." x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="494:29560" name="What will be sent" x="25" y="221" width="632" height="94">
+        <text id="494:29561" name="What will be sent" x="12" y="12" width="608" height="22" />
+        <text id="494:29562" name="Your next message and the conversation context selected below." x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="494:29563" name="Attachments · None selected" x="25" y="331" width="632" height="94">
+        <text id="494:29564" name="Attachments · None selected" x="12" y="12" width="608" height="22" />
+        <text id="494:29565" name="Files and screenshots are included only when you choose them." x="12" y="38" width="608" height="44" />
+      </frame>
+      <text id="494:29566" name="Provider charges may apply. Changing the model does not widen file or command permissions. Cancel keeps the local model." x="25" y="441" width="632" height="44" />
+      <frame id="494:29567" name="Frame" x="25" y="501" width="428" height="48">
+        <instance id="494:29568" name="Ask alo / Action" x="0" y="0" width="208" height="48" />
+        <instance id="494:29570" name="Ask alo / Action" x="220" y="0" width="208" height="48" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="494:29582" name="Terminal settings · Access / project grant" x="3000" y="2300" width="1440" height="1040">
+    <text id="494:29583" name="Terminal settings · Access / project grant" x="200" y="40" width="1040" height="24" />
+    <frame id="494:29584" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="494:29585" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="494:29586" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="494:29587" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="494:29588" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="494:29589" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="494:29591" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="494:29592" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="494:29594" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="494:29595" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="494:29597" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="494:29598" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="494:29599" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="494:29600" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="494:29601" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="494:29602" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="494:29603" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="494:29604" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="494:29605" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="494:29606" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="494:29607" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="494:29608" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="494:29609" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="494:29610" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="494:29611" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="494:29612" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="494:29613" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="494:29614" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="494:29615" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="494:29616" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="494:29617" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="494:29618" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="494:29619" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="494:29620" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="494:29621" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="494:29622" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="494:29623" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="494:29624" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="494:29625" name="Prototype illustrates choices only. Model availability, destinations and access come from real session state. Keyboard focus enters the dialog and returns to settings on close." x="200" y="950" width="1040" height="60" />
+    <frame id="494:29626" name="alo settings / modal" x="380" y="120" width="680" height="794">
+      <text id="494:29652" name="Access / project grant" x="25" y="25" width="632" height="32" />
+      <text id="494:29653" name="Choose what alo may access in this session." x="25" y="73" width="632" height="22" />
+      <frame id="494:29654" name="Files · ~/Projects/launch" x="25" y="111" width="632" height="94">
+        <text id="494:29655" name="Files · ~/Projects/launch" x="12" y="12" width="608" height="22" />
+        <text id="494:29656" name="Read and write within this folder. Other folders need a grant." x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="494:29657" name="Commands · Allowed in this project" x="25" y="221" width="632" height="94">
+        <text id="494:29658" name="Commands · Allowed in this project" x="12" y="12" width="608" height="22" />
+        <text id="494:29659" name="Commands remain subject to file and network restrictions." x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="494:29660" name="Applications · None granted" x="25" y="331" width="632" height="94">
+        <text id="494:29661" name="Applications · None granted" x="12" y="12" width="608" height="22" />
+        <text id="494:29662" name="Choose applications or windows alo may control." x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="494:29663" name="Network · Localhost only" x="25" y="441" width="632" height="94">
+        <text id="494:29664" name="Network · Localhost only" x="12" y="12" width="608" height="22" />
+        <text id="494:29665" name="Add destinations explicitly. External AI processing is separate." x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="494:29666" name="Administrator actions · Ask" x="25" y="551" width="632" height="94">
+        <text id="494:29667" name="Administrator actions · Ask" x="12" y="12" width="608" height="22" />
+        <text id="494:29668" name="Operating-system authentication still applies." x="12" y="38" width="608" height="44" />
+      </frame>
+      <text id="494:29669" name="Edits are a draft until you apply them on the settings screen." x="25" y="661" width="632" height="44" />
+      <frame id="494:29670" name="Frame" x="25" y="721" width="428" height="48">
+        <instance id="494:29671" name="Ask alo / Action" x="0" y="0" width="208" height="48" />
+        <instance id="494:29673" name="Ask alo / Action" x="220" y="0" width="208" height="48" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="494:29685" name="Terminal settings · Duration / remember choice" x="40" y="3400" width="1440" height="1040">
+    <text id="494:29686" name="Terminal settings · Duration / remember choice" x="200" y="40" width="1040" height="24" />
+    <frame id="494:29687" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="494:29688" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="494:29689" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="494:29690" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="494:29691" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="494:29692" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="494:29694" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="494:29695" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="494:29697" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="494:29698" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="494:29700" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="494:29701" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="494:29702" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="494:29703" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="494:29704" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="494:29705" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="494:29706" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="494:29707" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="494:29708" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="494:29709" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="494:29710" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="494:29711" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="494:29712" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="494:29713" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="494:29714" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="494:29715" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="494:29716" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="494:29717" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="494:29718" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="494:29719" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="494:29720" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="494:29721" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="494:29722" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="494:29723" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="494:29724" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="494:29725" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="494:29726" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="494:29727" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="494:29728" name="Prototype illustrates choices only. Model availability, destinations and access come from real session state. Keyboard focus enters the dialog and returns to settings on close." x="200" y="950" width="1040" height="60" />
+    <frame id="494:29729" name="alo settings / modal" x="380" y="120" width="680" height="574">
+      <text id="494:29755" name="Duration / remember choice" x="25" y="25" width="632" height="32" />
+      <text id="494:29756" name="How long should these permissions apply?" x="25" y="73" width="632" height="22" />
+      <frame id="494:29757" name="This task" x="25" y="111" width="632" height="94">
+        <text id="494:29758" name="This task" x="12" y="12" width="608" height="22" />
+        <text id="494:29759" name="Return to the previous permission level when the task ends." x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="494:29760" name="This terminal session · Selected" x="25" y="221" width="632" height="94">
+        <text id="494:29761" name="This terminal session · Selected" x="12" y="12" width="608" height="22" />
+        <text id="494:29762" name="Ends when this session closes. Other terminals are unchanged." x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="494:29763" name="Save for this project" x="25" y="331" width="632" height="94">
+        <text id="494:29764" name="Save for this project" x="12" y="12" width="608" height="22" />
+        <text id="494:29765" name="Reuse for this project on this machine. Review when scope changes." x="12" y="38" width="608" height="44" />
+      </frame>
+      <text id="494:29766" name="Saved preferences are explicit. You can revoke a grant at any time. Revocation stops future access, not effects already completed." x="25" y="441" width="632" height="44" />
+      <frame id="494:29767" name="Frame" x="25" y="501" width="428" height="48">
+        <instance id="494:29768" name="Ask alo / Action" x="0" y="0" width="208" height="48" />
+        <instance id="494:29770" name="Ask alo / Action" x="220" y="0" width="208" height="48" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="494:29782" name="Terminal settings · Permissions applied / manage" x="1520" y="3400" width="1440" height="1040">
+    <text id="494:29783" name="Terminal settings · Permissions applied / manage" x="200" y="40" width="1040" height="24" />
+    <frame id="494:29784" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="494:29785" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="494:29786" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="494:29787" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="494:29788" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="494:29789" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="494:29791" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="494:29792" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="494:29794" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="494:29795" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="494:29797" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="494:29798" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="494:29799" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="494:29800" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="494:29801" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="494:29802" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="494:29803" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="494:29804" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="494:29805" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="494:29806" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="494:29807" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="494:29808" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="494:29809" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="494:29810" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="494:29811" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="494:29812" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="494:29813" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="494:29814" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="494:29815" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="494:29816" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="494:29817" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="494:29818" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="494:29819" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="494:29820" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="494:29821" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="494:29822" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="494:29823" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="494:29824" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="494:29825" name="Prototype illustrates choices only. Model availability, destinations and access come from real session state. Keyboard focus enters the dialog and returns to settings on close." x="200" y="950" width="1040" height="60" />
+    <frame id="494:29826" name="alo settings / modal" x="380" y="120" width="680" height="638">
+      <text id="494:29852" name="Permissions applied / manage" x="25" y="25" width="632" height="32" />
+      <text id="494:29853" name="alo can now act within your grant." x="25" y="73" width="632" height="22" />
+      <frame id="494:29854" name="Act within my permissions" x="25" y="111" width="632" height="94">
+        <text id="494:29855" name="Act within my permissions" x="12" y="12" width="608" height="22" />
+        <text id="494:29856" name="Project: ~/Projects/launch · Until this terminal session closes" x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="494:29857" name="Model · SmolLM2 1.7B" x="25" y="221" width="632" height="94">
+        <text id="494:29858" name="Model · SmolLM2 1.7B" x="12" y="12" width="608" height="22" />
+        <text id="494:29859" name="On this computer · Applies to the next request" x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="494:29860" name="Access" x="25" y="331" width="632" height="94">
+        <text id="494:29861" name="Access" x="12" y="12" width="608" height="22" />
+        <text id="494:29862" name="Project files and commands · Network: localhost only" x="12" y="38" width="608" height="44" />
+      </frame>
+      <text id="494:29863" name="Allowed actions no longer ask repeatedly. Actions outside this scope still need permission. You can interrupt alo at any time." x="25" y="441" width="632" height="44" />
+      <frame id="494:29864" name="Frame" x="25" y="501" width="428" height="48">
+        <instance id="494:29865" name="Ask alo / Action" x="0" y="0" width="208" height="48" />
+        <instance id="494:29867" name="Ask alo / Action" x="220" y="0" width="208" height="48" />
+      </frame>
+      <frame id="494:29869" name="Frame" x="25" y="565" width="428" height="48">
+        <instance id="494:29870" name="Ask alo / Action" x="0" y="0" width="208" height="48" />
+        <instance id="494:29872" name="Ask alo / Action" x="220" y="0" width="208" height="48" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="496:29447" name="Terminal settings · Applied · Ask before acting" x="3000" y="3400" width="1440" height="1040">
+    <text id="496:29448" name="Terminal settings · Permissions applied / manage" x="200" y="40" width="1040" height="24" />
+    <frame id="496:29449" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="496:29450" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="496:29451" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="496:29452" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="496:29453" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="496:29454" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="496:29456" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="496:29457" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="496:29459" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="496:29460" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="496:29462" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="496:29463" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="496:29464" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="496:29465" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="496:29466" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="496:29467" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="496:29468" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="496:29469" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="496:29470" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="496:29471" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="496:29472" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="496:29473" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="496:29474" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="496:29475" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="496:29476" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="496:29477" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="496:29478" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="496:29479" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="496:29480" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="496:29481" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="496:29482" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="496:29483" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="496:29484" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="496:29485" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="496:29486" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="496:29487" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="496:29488" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="496:29489" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="496:29490" name="Prototype illustrates choices only. Model availability, destinations and access come from real session state. Keyboard focus enters the dialog and returns to settings on close." x="200" y="950" width="1040" height="60" />
+    <frame id="496:29491" name="alo settings / modal" x="380" y="120" width="680" height="638">
+      <text id="496:29492" name="Permissions applied / manage" x="25" y="25" width="632" height="32" />
+      <text id="496:29493" name="alo will ask before acting." x="25" y="73" width="632" height="22" />
+      <frame id="496:29494" name="Act within my permissions" x="25" y="111" width="632" height="94">
+        <text id="496:29495" name="Ask before acting" x="12" y="12" width="608" height="22" />
+        <text id="496:29496" name="Project: ~/Projects/launch · Ask before changes" x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="496:29497" name="Model · SmolLM2 1.7B" x="25" y="221" width="632" height="94">
+        <text id="496:29498" name="Model · SmolLM2 1.7B" x="12" y="12" width="608" height="22" />
+        <text id="496:29499" name="On this computer · Applies to the next request" x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="496:29500" name="Access" x="25" y="331" width="632" height="94">
+        <text id="496:29501" name="Access" x="12" y="12" width="608" height="22" />
+        <text id="496:29502" name="Read project files. Commands and changes need approval." x="12" y="38" width="608" height="44" />
+      </frame>
+      <text id="496:29503" name="Commands and changes wait for your approval. You can grant more autonomy in settings." x="25" y="441" width="632" height="44" />
+      <frame id="496:29504" name="Frame" x="25" y="501" width="428" height="48">
+        <instance id="496:29505" name="Ask alo / Action" x="0" y="0" width="208" height="48" />
+        <instance id="496:29506" name="Ask alo / Action" x="220" y="0" width="208" height="48" />
+      </frame>
+      <frame id="496:29507" name="Frame" x="25" y="565" width="428" height="48">
+        <instance id="496:29508" name="Ask alo / Action" x="0" y="0" width="208" height="48" />
+        <instance id="496:29509" name="Ask alo / Action" x="220" y="0" width="208" height="48" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="496:29524" name="Terminal settings · Applied · Full control" x="40" y="4500" width="1440" height="1040">
+    <text id="496:29525" name="Terminal settings · Permissions applied / manage" x="200" y="40" width="1040" height="24" />
+    <frame id="496:29526" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="496:29527" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="496:29528" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="496:29529" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="496:29530" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="496:29531" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="496:29533" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="496:29534" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="496:29536" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="496:29537" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="496:29539" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="496:29540" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="496:29541" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="496:29542" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="496:29543" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="496:29544" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="496:29545" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="496:29546" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="496:29547" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="496:29548" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="496:29549" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="496:29550" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="496:29551" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="496:29552" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="496:29553" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="496:29554" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="496:29555" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="496:29556" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="496:29557" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="496:29558" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="496:29559" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="496:29560" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="496:29561" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="496:29562" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="496:29563" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="496:29564" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="496:29565" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="496:29566" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="496:29567" name="Prototype illustrates choices only. Model availability, destinations and access come from real session state. Keyboard focus enters the dialog and returns to settings on close." x="200" y="950" width="1040" height="60" />
+    <frame id="496:29568" name="alo settings / modal" x="380" y="120" width="680" height="638">
+      <text id="496:29569" name="Permissions applied / manage" x="25" y="25" width="632" height="32" />
+      <text id="496:29570" name="alo can act unattended with this grant." x="25" y="73" width="632" height="22" />
+      <frame id="496:29571" name="Act within my permissions" x="25" y="111" width="632" height="94">
+        <text id="496:29572" name="Full control" x="12" y="12" width="608" height="22" />
+        <text id="496:29573" name="This computer · Until this terminal session closes" x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="496:29574" name="Model · SmolLM2 1.7B" x="25" y="221" width="632" height="94">
+        <text id="496:29575" name="Model · SmolLM2 1.7B" x="12" y="12" width="608" height="22" />
+        <text id="496:29576" name="On this computer · Applies to the next request" x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="496:29577" name="Access" x="25" y="331" width="632" height="94">
+        <text id="496:29578" name="Access" x="12" y="12" width="608" height="22" />
+        <text id="496:29579" name="Files, applications and commands. External AI consent is separate." x="12" y="38" width="608" height="44" />
+      </frame>
+      <text id="496:29580" name="Actions covered by this grant run without repeated questions. You can pause alo or revoke access at any time." x="25" y="441" width="632" height="44" />
+      <frame id="496:29581" name="Frame" x="25" y="501" width="428" height="48">
+        <instance id="496:29582" name="Ask alo / Action" x="0" y="0" width="208" height="48" />
+        <instance id="496:29583" name="Ask alo / Action" x="220" y="0" width="208" height="48" />
+      </frame>
+      <frame id="496:29584" name="Frame" x="25" y="565" width="428" height="48">
+        <instance id="496:29585" name="Ask alo / Action" x="0" y="0" width="208" height="48" />
+        <instance id="496:29586" name="Ask alo / Action" x="220" y="0" width="208" height="48" />
+      </frame>
+    </frame>
+  </frame>
+  <frame id="503:30691" name="Terminal settings · Access overview · Dark" x="1520" y="4500" width="1440" height="1040">
+    <text id="503:30692" name="Terminal settings · Access / project grant" x="200" y="40" width="1040" height="24" />
+    <frame id="503:30693" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="503:30694" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="503:30695" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="503:30696" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="503:30697" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="503:30698" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="503:30700" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="503:30701" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="503:30703" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="503:30704" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="503:30706" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="503:30707" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="503:30708" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="503:30709" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="503:30710" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="503:30711" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="503:30712" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="503:30713" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="503:30714" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="503:30715" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="503:30716" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="503:30717" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="503:30718" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="503:30719" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="503:30720" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="503:30721" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="503:30722" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="503:30723" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="503:30724" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="503:30725" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="503:30726" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="503:30727" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="503:30728" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="503:30729" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="503:30730" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="503:30731" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="503:30732" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="503:30733" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="503:30734" name="Prototype illustrates choices only. Model availability, destinations and access come from real session state. Keyboard focus enters the dialog and returns to settings on close." x="200" y="950" width="1040" height="60" />
+    <frame id="503:30735" name="alo settings / modal" x="380" y="120" width="680" height="794">
+      <text id="503:30736" name="Access / project grant" x="25" y="25" width="632" height="32" />
+      <text id="503:30737" name="Choose what alo may access in this session." x="25" y="73" width="632" height="22" />
+      <frame id="503:30738" name="Files · ~/Projects/launch" x="25" y="111" width="632" height="94">
+        <text id="503:30739" name="Files · ~/Projects/launch" x="12" y="12" width="608" height="22" />
+        <text id="503:30740" name="Read and write within this folder. Other folders need a grant." x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="503:30741" name="Commands · Allowed in this project" x="25" y="221" width="632" height="94">
+        <text id="503:30742" name="Commands · Allowed in this project" x="12" y="12" width="608" height="22" />
+        <text id="503:30743" name="Commands remain subject to file and network restrictions." x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="503:30744" name="Applications · None granted" x="25" y="331" width="632" height="94">
+        <text id="503:30745" name="Applications · None granted" x="12" y="12" width="608" height="22" />
+        <text id="503:30746" name="Choose applications or windows alo may control." x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="503:30747" name="Network · Localhost only" x="25" y="441" width="632" height="94">
+        <text id="503:30748" name="Network · Localhost only" x="12" y="12" width="608" height="22" />
+        <text id="503:30749" name="Add destinations explicitly. External AI processing is separate." x="12" y="38" width="608" height="44" />
+      </frame>
+      <frame id="503:30750" name="Administrator actions · Ask" x="25" y="551" width="632" height="94">
+        <text id="503:30751" name="Administrator actions · Ask" x="12" y="12" width="608" height="22" />
+        <text id="503:30752" name="Operating-system authentication still applies." x="12" y="38" width="608" height="44" />
+      </frame>
+      <text id="503:30753" name="Edits are a draft until you apply them on the settings screen." x="25" y="661" width="632" height="44" />
+      <frame id="503:30754" name="Frame" x="25" y="721" width="428" height="48">
+        <instance id="503:30755" name="Ask alo / Action" x="0" y="0" width="208" height="48" />
+        <instance id="503:30756" name="Ask alo / Action" x="220" y="0" width="208" height="48" />
+      </frame>
+    </frame>
+  </frame>
+</section>IMPORTANT: After you call this tool, you MUST call get_design_context if trying to implement the design, since this tool only returns metadata. If you do not call get_design_context, the agent will not be able to implement the design.

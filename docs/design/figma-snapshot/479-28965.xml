@@ -1,0 +1,200 @@
+<!--
+  Terminal · Rich results by default · Original text preserved — read from the
+  live file on 2026-10-14.
+
+  THREE FRAMES, AND THE FIRST IS THE IMPORTANT ONE
+
+  01 is **unstructured output falling back to text**, 02 a benchmark drawn as a
+  graph, 03 a diff. The order matters: the fallback is drawn first, which is the
+  design saying that recognising nothing is the ordinary case rather than the
+  failure case.
+
+  WHAT THIS NODE IS NOT AUTHORITATIVE FOR
+
+  Every one of the three carries the same note at the foot of the frame:
+
+    Workflow / rendering reference. Current source gutter, autonomy and recovery
+    contract: Terminal · Current behaviour (485:28999). Preserve original output
+    and existing shell input.
+
+  So this file is **rendering only**. The source gutter, what alo may do without
+  asking, and what a checkpoint promises are `485-28999.xml`'s, and a reader who
+  takes provenance from here has taken it from the wrong node.
+
+  THE TWO RICH VIEWS ARE INSTANCES, NOT DRAWN HERE
+
+  `479:29079` is an instance of `Terminal / View / Benchmark comparison` and
+  `479:29140` of `Terminal / View / File diff`. Both are 990x320 inside a 1038
+  wide transcript. The components themselves are not in this capture — a change
+  to either would arrive in its own node, and this file would not move.
+
+  file key  nDxyF5Ho9oC4RObjVzwBNJ
+-->
+<section id="479:28965" name="Terminal · Rich results by default · Original text preserved" x="97200" y="400" width="4480" height="1180">
+  <frame id="479:28997" name="Terminal Views · 01 · Unstructured output / text fallback" x="40" y="100" width="1440" height="1040">
+    <text id="479:28998" name="Terminal Views · 01 · Unstructured output / text fallback" x="200" y="40" width="340" height="18" />
+    <frame id="479:28999" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="479:29000" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="479:29001" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="479:29002" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="479:29003" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="479:29004" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="479:29006" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="479:29007" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="479:29009" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="479:29010" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="479:29012" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="479:29013" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="479:29014" name="Project identity" x="24" y="16" width="740" height="24">
+          <text id="479:29015" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="479:29016" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="479:29017" name="Spacer" x="776" y="27.5" width="66" height="1" />
+        <text id="479:29018" name="Local · disan" x="854" y="19" width="70" height="18" />
+        <frame id="479:29019" name="Terminal menu / search, new session, settings" x="936" y="6" width="44" height="44">
+          <ellipse id="479:29020" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="479:29021" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="479:29022" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="479:29023" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="479:29024" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="479:29025" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="479:29026" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="479:29027" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="479:29028" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="479:29029" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="479:29030" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="479:29031" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="479:29032" name="Transcript / optional view explicitly requested" x="1" y="57" width="1038" height="706">
+        <text id="479:29037" name="launch ❯ ./legacy-tool Connecting to local workspace… Processing files… Done. launch ❯ ▏" x="24" y="20" width="990" height="154" />
+      </frame>
+      <frame id="479:29034" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="479:29035" name="zsh · UTF-8" x="24" y="0" width="66" height="16" />
+      </frame>
+    </frame>
+    <text id="479:29036" name="Workflow / rendering reference. Current source gutter, autonomy and recovery contract: Terminal · Current behaviour (485:28999). Preserve original output and existing shell input." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="479:29038" name="Terminal Views · 02 · Benchmark / automatic graph" x="1520" y="100" width="1440" height="1040">
+    <text id="479:29039" name="Terminal Views · 02 · Benchmark / automatic graph" x="200" y="40" width="308" height="18" />
+    <frame id="479:29040" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="479:29041" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="479:29042" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="479:29043" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="479:29044" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="479:29045" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="479:29047" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="479:29048" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="479:29050" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="479:29051" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="479:29053" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="479:29054" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="479:29055" name="Project identity" x="24" y="16" width="740" height="24">
+          <text id="479:29056" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="479:29057" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="479:29058" name="Spacer" x="776" y="27.5" width="66" height="1" />
+        <text id="479:29059" name="Local · disan" x="854" y="19" width="70" height="18" />
+        <frame id="479:29060" name="Terminal menu / search, new session, settings" x="936" y="6" width="44" height="44">
+          <ellipse id="479:29061" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="479:29062" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="479:29063" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="479:29064" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="479:29065" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="479:29066" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="479:29067" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="479:29068" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="479:29069" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="479:29070" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="479:29071" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="479:29072" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="479:29073" name="Transcript / optional view explicitly requested" x="1" y="57" width="1038" height="706">
+        <text id="479:29078" name="launch ❯ cargo bench Benchmark complete · Structured result recognised" x="24" y="20" width="990" height="44" />
+        <instance id="479:29079" name="Terminal / View / Benchmark comparison" x="24" y="80" width="990" height="320" />
+        <text id="479:29098" name="launch ❯ ▏" x="24" y="416" width="990" height="22" />
+      </frame>
+      <frame id="479:29075" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="479:29076" name="zsh · UTF-8" x="24" y="0" width="66" height="16" />
+      </frame>
+    </frame>
+    <text id="479:29077" name="Workflow / rendering reference. Current source gutter, autonomy and recovery contract: Terminal · Current behaviour (485:28999). Preserve original output and existing shell input." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="479:29099" name="Terminal Views · 03 · Changes / automatic diff" x="3000" y="100" width="1440" height="1040">
+    <text id="479:29100" name="Terminal Views · 03 · Changes / automatic diff" x="200" y="40" width="278" height="18" />
+    <frame id="479:29101" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="479:29102" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="479:29103" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="479:29104" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="479:29105" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="479:29106" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="479:29108" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="479:29109" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="479:29111" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="479:29112" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="479:29114" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="479:29115" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="479:29116" name="Project identity" x="24" y="16" width="740" height="24">
+          <text id="479:29117" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="479:29118" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="479:29119" name="Spacer" x="776" y="27.5" width="66" height="1" />
+        <text id="479:29120" name="Local · disan" x="854" y="19" width="70" height="18" />
+        <frame id="479:29121" name="Terminal menu / search, new session, settings" x="936" y="6" width="44" height="44">
+          <ellipse id="479:29122" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="479:29123" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="479:29124" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="479:29125" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="479:29126" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="479:29127" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="479:29128" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="479:29129" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="479:29130" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="479:29131" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="479:29132" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="479:29133" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="479:29134" name="Transcript / optional view explicitly requested" x="1" y="57" width="1038" height="706">
+        <text id="479:29139" name="launch ❯ git diff Diff format recognised · 1 file changed" x="24" y="20" width="990" height="44" />
+        <instance id="479:29140" name="Terminal / View / File diff" x="24" y="80" width="990" height="320" />
+        <text id="479:29151" name="launch ❯ ▏" x="24" y="416" width="990" height="22" />
+      </frame>
+      <frame id="479:29136" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="479:29137" name="zsh · UTF-8" x="24" y="0" width="66" height="16" />
+      </frame>
+    </frame>
+    <text id="479:29138" name="Workflow / rendering reference. Current source gutter, autonomy and recovery contract: Terminal · Current behaviour (485:28999). Preserve original output and existing shell input." x="200" y="950" width="1040" height="60" />
+  </frame>
+</section>

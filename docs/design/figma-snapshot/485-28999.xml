@@ -1,0 +1,1849 @@
+<!--
+  Terminal — current behaviour, source labels, autonomy and recovery — read from the live file on 2026-10-14.
+
+  The contract the rich-result frames defer to: every one of them carries a note
+  reading `Current source gutter, autonomy and recovery contract: Terminal ·
+  Current behaviour (485:28999)`.
+
+  Captured because `docs/decisions/0114` begins the terminal and the owner's
+  instruction of 2026-10-14 is to refresh these nodes in the committed snapshot
+  **before** measuring or implementing them. A design change must show up here
+  as a diff rather than as nothing.
+
+  file key  nDxyF5Ho9oC4RObjVzwBNJ
+-->
+<section id="485:28999" name="Terminal · Current behaviour · Provenance, autonomy and recovery" x="102000" y="400" width="5960" height="9100">
+  <frame id="487:28999" name="Terminal · 01 · Run project / proposing · Light" x="40" y="100" width="1440" height="1040">
+    <text id="487:29000" name="Run project / proposing · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29001" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29002" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29003" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29004" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29005" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29006" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29008" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29009" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29011" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29012" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29014" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29015" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29016" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29017" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29018" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29019" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29020" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29251" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29021" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29022" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29023" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29024" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29025" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29026" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29027" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29028" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29029" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29030" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29031" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29032" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29033" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29034" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29039" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:29042" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="487:29045" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="487:29048" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="487:29036" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29037" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29038" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29051" name="Terminal · 01 · Run project / proposing · Dark" x="1520" y="100" width="1440" height="1040">
+    <text id="487:29052" name="Run project / proposing · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29053" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29054" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29055" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29056" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29057" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29058" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29060" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29061" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29063" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29064" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29066" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29067" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29068" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29069" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29070" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29071" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29072" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29254" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29073" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29074" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29075" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29076" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29077" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29078" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29079" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29080" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29081" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29082" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29083" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29084" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29085" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29086" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29091" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:29094" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="487:29097" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="487:29100" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="487:29088" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29089" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29090" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29103" name="Terminal · 02 · Run project / acting · Light" x="3000" y="100" width="1440" height="1040">
+    <text id="487:29104" name="Run project / acting · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29105" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29106" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29107" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29108" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29109" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29110" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29112" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29113" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29115" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29116" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29118" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29119" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29120" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29121" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29122" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29123" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29124" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29257" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29125" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29126" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29127" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29128" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29129" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29130" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29131" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29132" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29133" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29134" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29135" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29136" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29137" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29138" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29143" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:29146" name="Terminal / Source region" x="24" y="62" width="990" height="44" />
+        <instance id="487:29149" name="Terminal / Source region" x="24" y="122" width="990" height="22" />
+        <instance id="487:29152" name="Terminal / Source region" x="24" y="160" width="990" height="44" />
+        <instance id="487:29155" name="Terminal / Source region" x="24" y="220" width="990" height="44" />
+        <instance id="487:29158" name="Terminal / Source region" x="24" y="280" width="990" height="22" />
+      </frame>
+      <frame id="487:29140" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29141" name="Acting within your grant · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29142" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29161" name="Terminal · 02 · Run project / acting · Dark" x="4480" y="100" width="1440" height="1040">
+    <text id="487:29162" name="Run project / acting · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29163" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29164" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29165" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29166" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29167" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29168" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29170" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29171" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29173" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29174" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29176" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29177" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29178" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29179" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29180" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29181" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29182" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29260" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29183" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29184" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29185" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29186" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29187" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29188" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29189" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29190" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29191" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29192" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29193" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29194" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29195" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29196" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29201" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:29204" name="Terminal / Source region" x="24" y="62" width="990" height="44" />
+        <instance id="487:29207" name="Terminal / Source region" x="24" y="122" width="990" height="22" />
+        <instance id="487:29210" name="Terminal / Source region" x="24" y="160" width="990" height="44" />
+        <instance id="487:29213" name="Terminal / Source region" x="24" y="220" width="990" height="44" />
+        <instance id="487:29216" name="Terminal / Source region" x="24" y="280" width="990" height="22" />
+      </frame>
+      <frame id="487:29198" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29199" name="Acting within your grant · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29200" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29219" name="Terminal · 03 · Restore / proposing · Light" x="40" y="1200" width="1440" height="1040">
+    <text id="487:29220" name="Restore / proposing · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29221" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29222" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29223" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29224" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29225" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29226" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29228" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29229" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29231" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29232" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29234" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29235" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29236" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29237" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29238" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29239" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29240" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29263" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29241" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29242" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29243" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29244" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29245" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29246" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29247" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29248" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29249" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29250" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29251" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29252" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29253" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29254" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29259" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:29262" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="487:29265" name="Terminal / Source region" x="24" y="144" width="990" height="66" />
+      </frame>
+      <frame id="487:29256" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29257" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29258" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29268" name="Terminal · 03 · Restore / proposing · Dark" x="1520" y="1200" width="1440" height="1040">
+    <text id="487:29269" name="Restore / proposing · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29270" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29271" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29272" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29273" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29274" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29275" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29277" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29278" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29280" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29281" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29283" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29284" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29285" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29286" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29287" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29288" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29289" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29266" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29290" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29291" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29292" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29293" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29294" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29295" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29296" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29297" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29298" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29299" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29300" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29301" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29302" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29303" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29308" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:29311" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="487:29314" name="Terminal / Source region" x="24" y="144" width="990" height="66" />
+      </frame>
+      <frame id="487:29305" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29306" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29307" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29317" name="Terminal · 04 · Restore / acting · Light" x="3000" y="1200" width="1440" height="1040">
+    <text id="487:29318" name="Restore / acting · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29319" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29320" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29321" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29322" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29323" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29324" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29326" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29327" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29329" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29330" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29332" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29333" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29334" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29335" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29336" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29337" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29338" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29269" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29339" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29340" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29341" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29342" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29343" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29344" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29345" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29346" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29347" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29348" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29349" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29350" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29351" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29352" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29357" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:29360" name="Terminal / Source region" x="24" y="62" width="990" height="44" />
+        <instance id="487:29363" name="Terminal / Source region" x="24" y="122" width="990" height="22" />
+        <instance id="487:29366" name="Terminal / Source region" x="24" y="160" width="990" height="44" />
+        <instance id="487:29369" name="Terminal / Source region" x="24" y="220" width="990" height="22" />
+      </frame>
+      <frame id="487:29354" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29355" name="Acting within your grant · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29356" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29372" name="Terminal · 04 · Restore / acting · Dark" x="4480" y="1200" width="1440" height="1040">
+    <text id="487:29373" name="Restore / acting · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29374" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29375" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29376" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29377" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29378" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29379" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29381" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29382" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29384" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29385" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29387" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29388" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29389" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29390" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29391" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29392" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29393" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29272" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29394" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29395" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29396" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29397" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29398" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29399" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29400" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29401" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29402" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29403" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29404" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29405" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29406" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29407" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29412" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:29415" name="Terminal / Source region" x="24" y="62" width="990" height="44" />
+        <instance id="487:29418" name="Terminal / Source region" x="24" y="122" width="990" height="22" />
+        <instance id="487:29421" name="Terminal / Source region" x="24" y="160" width="990" height="44" />
+        <instance id="487:29424" name="Terminal / Source region" x="24" y="220" width="990" height="22" />
+      </frame>
+      <frame id="487:29409" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29410" name="Acting within your grant · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29411" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29427" name="Terminal · 05 · Isolated trial / proposing · Light" x="40" y="2300" width="1440" height="1040">
+    <text id="487:29428" name="Isolated trial / proposing · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29429" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29430" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29431" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29432" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29433" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29434" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29436" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29437" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29439" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29440" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29442" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29443" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29444" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29445" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29446" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29447" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29448" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29275" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29449" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29450" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29451" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29452" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29453" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29454" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29455" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29456" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29457" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29458" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29459" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29460" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29461" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29462" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29467" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:29470" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="487:29473" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="487:29476" name="Terminal / Source region" x="24" y="204" width="990" height="44" />
+      </frame>
+      <frame id="487:29464" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29465" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29466" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29479" name="Terminal · 05 · Isolated trial / proposing · Dark" x="1520" y="2300" width="1440" height="1040">
+    <text id="487:29480" name="Isolated trial / proposing · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29481" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29482" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29483" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29484" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29485" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29486" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29488" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29489" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29491" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29492" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29494" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29495" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29496" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29497" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29498" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29499" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29500" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29278" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29501" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29502" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29503" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29504" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29505" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29506" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29507" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29508" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29509" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29510" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29511" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29512" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29513" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29514" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29519" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:29522" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="487:29525" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="487:29528" name="Terminal / Source region" x="24" y="204" width="990" height="44" />
+      </frame>
+      <frame id="487:29516" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29517" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29518" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29531" name="Terminal · 06 · Isolated trial / acting · Light" x="3000" y="2300" width="1440" height="1040">
+    <text id="487:29532" name="Isolated trial / acting · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29533" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29534" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29535" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29536" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29537" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29538" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29540" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29541" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29543" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29544" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29546" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29547" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29548" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29549" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29550" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29551" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29552" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29281" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29553" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29554" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29555" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29556" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29557" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29558" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29559" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29560" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29561" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29562" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29563" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29564" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29565" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29566" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29571" name="Terminal / Source region" x="24" y="24" width="990" height="44" />
+        <instance id="487:29574" name="Terminal / Source region" x="24" y="84" width="990" height="22" />
+        <instance id="487:29577" name="Terminal / Source region" x="24" y="122" width="990" height="44" />
+        <instance id="487:29580" name="Terminal / Source region" x="24" y="182" width="990" height="88" />
+      </frame>
+      <frame id="487:29568" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29569" name="Acting within your grant · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29570" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29583" name="Terminal · 06 · Isolated trial / acting · Dark" x="4480" y="2300" width="1440" height="1040">
+    <text id="487:29584" name="Isolated trial / acting · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29585" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29586" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29587" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29588" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29589" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29590" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29592" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29593" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29595" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29596" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29598" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29599" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29600" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29601" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29602" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29603" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29604" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29284" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29605" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29606" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29607" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29608" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29609" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29610" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29611" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29612" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29613" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29614" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29615" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29616" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29617" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29618" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29623" name="Terminal / Source region" x="24" y="24" width="990" height="44" />
+        <instance id="487:29626" name="Terminal / Source region" x="24" y="84" width="990" height="22" />
+        <instance id="487:29629" name="Terminal / Source region" x="24" y="122" width="990" height="44" />
+        <instance id="487:29632" name="Terminal / Source region" x="24" y="182" width="990" height="88" />
+      </frame>
+      <frame id="487:29620" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29621" name="Acting within your grant · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29622" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29635" name="Terminal · 07 · Stop / proposing · Light" x="40" y="3400" width="1440" height="1040">
+    <text id="487:29636" name="Stop / proposing · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29637" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29638" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29639" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29640" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29641" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29642" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29644" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29645" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29647" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29648" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29650" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29651" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29652" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29653" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29654" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29655" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29656" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29287" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29657" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29658" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29659" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29660" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29661" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29662" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29663" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29664" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29665" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29666" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29667" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29668" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29669" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29670" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29675" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:29678" name="Terminal / Source region" x="24" y="62" width="990" height="44" />
+        <instance id="487:29681" name="Terminal / Source region" x="24" y="122" width="990" height="66" />
+        <instance id="487:29684" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="487:29672" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29673" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29674" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29687" name="Terminal · 07 · Stop / proposing · Dark" x="1520" y="3400" width="1440" height="1040">
+    <text id="487:29688" name="Stop / proposing · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29689" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29690" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29691" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29692" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29693" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29694" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29696" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29697" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29699" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29700" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29702" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29703" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29704" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29705" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29706" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29707" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29708" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29290" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29709" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29710" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29711" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29712" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29713" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29714" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29715" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29716" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29717" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29718" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29719" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29720" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29721" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29722" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29727" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:29730" name="Terminal / Source region" x="24" y="62" width="990" height="44" />
+        <instance id="487:29733" name="Terminal / Source region" x="24" y="122" width="990" height="66" />
+        <instance id="487:29736" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+      </frame>
+      <frame id="487:29724" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29725" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29726" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29739" name="Terminal · 08 · Stop / acting · Light" x="3000" y="3400" width="1440" height="1040">
+    <text id="487:29740" name="Stop / acting · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29741" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29742" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29743" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29744" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29745" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29746" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29748" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29749" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29751" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29752" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29754" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29755" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29756" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29757" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29758" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29759" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29760" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29293" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29761" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29762" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29763" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29764" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29765" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29766" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29767" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29768" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29769" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29770" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29771" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29772" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29773" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29774" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29779" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:29782" name="Terminal / Source region" x="24" y="62" width="990" height="22" />
+        <instance id="487:29785" name="Terminal / Source region" x="24" y="100" width="990" height="22" />
+        <instance id="487:29788" name="Terminal / Source region" x="24" y="138" width="990" height="44" />
+        <instance id="487:29791" name="Terminal / Source region" x="24" y="198" width="990" height="22" />
+      </frame>
+      <frame id="487:29776" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29777" name="Acting within your grant · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29778" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29794" name="Terminal · 08 · Stop / acting · Dark" x="4480" y="3400" width="1440" height="1040">
+    <text id="487:29795" name="Stop / acting · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29796" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29797" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29798" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29799" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29800" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29801" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29803" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29804" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29806" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29807" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29809" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29810" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29811" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29812" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29813" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29814" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29815" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29296" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29816" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29817" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29818" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29819" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29820" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29821" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29822" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29823" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29824" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29825" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29826" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29827" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29828" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29829" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29834" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:29837" name="Terminal / Source region" x="24" y="62" width="990" height="22" />
+        <instance id="487:29840" name="Terminal / Source region" x="24" y="100" width="990" height="22" />
+        <instance id="487:29843" name="Terminal / Source region" x="24" y="138" width="990" height="44" />
+        <instance id="487:29846" name="Terminal / Source region" x="24" y="198" width="990" height="22" />
+      </frame>
+      <frame id="487:29831" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29832" name="Acting within your grant · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29833" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29849" name="Terminal · 09 · Three receipts / source is not truth · Light" x="40" y="4500" width="1440" height="1040">
+    <text id="487:29850" name="Three receipts / source is not truth · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29851" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29852" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29853" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29854" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29855" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29856" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29858" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29859" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29861" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29862" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29864" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29865" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29866" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29867" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29868" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29869" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29870" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29299" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29871" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29872" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29873" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29874" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29875" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29876" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29877" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29878" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29879" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29880" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29881" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29882" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29883" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29884" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29889" name="Terminal / Source region" x="24" y="24" width="990" height="44" />
+        <instance id="487:29892" name="Terminal / Source region" x="24" y="84" width="990" height="44" />
+        <instance id="487:29895" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="487:29898" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+        <instance id="487:29901" name="Terminal / Source region" x="24" y="242" width="990" height="22" />
+        <instance id="487:29904" name="Terminal / Source region" x="24" y="280" width="990" height="22" />
+        <instance id="487:29907" name="Terminal / Source region" x="24" y="318" width="990" height="22" />
+      </frame>
+      <frame id="487:29886" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29887" name="Acting within your grant · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29888" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29910" name="Terminal · 09 · Three receipts / source is not truth · Dark" x="1520" y="4500" width="1440" height="1040">
+    <text id="487:29911" name="Three receipts / source is not truth · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29912" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29913" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29914" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29915" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29916" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29917" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29919" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29920" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29922" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29923" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29925" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29926" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29927" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29928" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29929" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29930" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29931" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29302" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29932" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29933" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29934" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29935" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29936" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29937" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29938" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:29939" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:29940" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:29941" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:29942" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:29943" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:29944" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:29945" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:29950" name="Terminal / Source region" x="24" y="24" width="990" height="44" />
+        <instance id="487:29953" name="Terminal / Source region" x="24" y="84" width="990" height="44" />
+        <instance id="487:29956" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="487:29959" name="Terminal / Source region" x="24" y="204" width="990" height="22" />
+        <instance id="487:29962" name="Terminal / Source region" x="24" y="242" width="990" height="22" />
+        <instance id="487:29965" name="Terminal / Source region" x="24" y="280" width="990" height="22" />
+        <instance id="487:29968" name="Terminal / Source region" x="24" y="318" width="990" height="22" />
+      </frame>
+      <frame id="487:29947" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:29948" name="Acting within your grant · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:29949" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:29971" name="Terminal · 10 · Ask the machine / measured and inferred · Light" x="3000" y="4500" width="1440" height="1040">
+    <text id="487:29972" name="Ask the machine / measured and inferred · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="487:29973" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:29974" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:29975" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:29976" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:29977" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:29978" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29980" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:29981" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:29983" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:29984" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:29986" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:29987" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:29988" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:29989" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:29990" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:29991" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:29992" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29305" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:29993" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:29994" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29995" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:29996" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:29997" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:29998" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:29999" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:30000" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:30001" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:30002" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:30003" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:30004" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:30005" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:30006" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:30011" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:30014" name="Terminal / Source region" x="24" y="62" width="990" height="88" />
+        <instance id="487:30017" name="Terminal / Source region" x="24" y="166" width="990" height="66" />
+        <instance id="487:30020" name="Terminal / Source region" x="24" y="248" width="990" height="22" />
+      </frame>
+      <frame id="487:30008" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:30009" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:30010" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:30023" name="Terminal · 10 · Ask the machine / measured and inferred · Dark" x="4480" y="4500" width="1440" height="1040">
+    <text id="487:30024" name="Ask the machine / measured and inferred · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="487:30025" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:30026" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:30027" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:30028" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:30029" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:30030" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30032" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:30033" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30035" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:30036" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:30038" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:30039" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:30040" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:30041" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:30042" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:30043" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:30044" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29308" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:30045" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:30046" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30047" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30048" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:30049" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:30050" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:30051" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:30052" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:30053" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:30054" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:30055" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:30056" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:30057" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:30058" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:30063" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:30066" name="Terminal / Source region" x="24" y="62" width="990" height="88" />
+        <instance id="487:30069" name="Terminal / Source region" x="24" y="166" width="990" height="66" />
+        <instance id="487:30072" name="Terminal / Source region" x="24" y="248" width="990" height="22" />
+      </frame>
+      <frame id="487:30060" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:30061" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:30062" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:30075" name="Terminal · 11 · Act on a window / exact target · Light" x="40" y="5600" width="1440" height="1040">
+    <text id="487:30076" name="Act on a window / exact target · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="487:30077" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:30078" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:30079" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:30080" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:30081" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:30082" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30084" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:30085" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30087" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:30088" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:30090" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:30091" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:30092" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:30093" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:30094" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:30095" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:30096" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29311" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:30097" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:30098" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30099" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30100" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:30101" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:30102" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:30103" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:30104" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:30105" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:30106" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:30107" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:30108" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:30109" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:30110" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:30115" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:30118" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="487:30121" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="487:30124" name="Terminal / Source region" x="24" y="204" width="990" height="44" />
+      </frame>
+      <frame id="487:30112" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:30113" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:30114" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:30127" name="Terminal · 11 · Act on a window / exact target · Dark" x="1520" y="5600" width="1440" height="1040">
+    <text id="487:30128" name="Act on a window / exact target · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="487:30129" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:30130" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:30131" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:30132" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:30133" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:30134" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30136" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:30137" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30139" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:30140" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:30142" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:30143" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:30144" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:30145" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:30146" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:30147" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:30148" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29314" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:30149" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:30150" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30151" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30152" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:30153" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:30154" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:30155" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:30156" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:30157" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:30158" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:30159" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:30160" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:30161" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:30162" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:30167" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:30170" name="Terminal / Source region" x="24" y="62" width="990" height="66" />
+        <instance id="487:30173" name="Terminal / Source region" x="24" y="144" width="990" height="44" />
+        <instance id="487:30176" name="Terminal / Source region" x="24" y="204" width="990" height="44" />
+      </frame>
+      <frame id="487:30164" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:30165" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:30166" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:30179" name="Terminal · 12 · Pipelines / bytes unchanged · Light" x="3000" y="5600" width="1440" height="1040">
+    <text id="487:30180" name="Pipelines / bytes unchanged · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="487:30181" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:30182" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:30183" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:30184" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:30185" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:30186" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30188" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:30189" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30191" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:30192" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:30194" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:30195" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:30196" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:30197" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:30198" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:30199" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:30200" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29317" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:30201" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:30202" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30203" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30204" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:30205" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:30206" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:30207" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:30208" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:30209" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:30210" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:30211" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:30212" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:30213" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:30214" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:30219" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:30222" name="Terminal / Source region" x="24" y="62" width="990" height="44" />
+        <instance id="487:30225" name="Terminal / Source region" x="24" y="122" width="990" height="44" />
+      </frame>
+      <frame id="487:30216" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:30217" name="Shell input · AI not invoked · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:30218" name="Rich presentation never rewrites stdout or stderr. Pipelines and redirection retain original bytes. Source labels are terminal UI, not injected text." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:30228" name="Terminal · 12 · Pipelines / bytes unchanged · Dark" x="4480" y="5600" width="1440" height="1040">
+    <text id="487:30229" name="Pipelines / bytes unchanged · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="487:30230" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:30231" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:30232" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:30233" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:30234" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:30235" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30237" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:30238" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30240" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:30241" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:30243" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:30244" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:30245" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:30246" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:30247" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:30248" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:30249" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29320" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:30250" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:30251" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30252" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30253" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:30254" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:30255" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:30256" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:30257" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:30258" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:30259" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:30260" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:30261" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:30262" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:30263" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:30268" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:30271" name="Terminal / Source region" x="24" y="62" width="990" height="44" />
+        <instance id="487:30274" name="Terminal / Source region" x="24" y="122" width="990" height="44" />
+      </frame>
+      <frame id="487:30265" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:30266" name="Shell input · AI not invoked · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:30267" name="Rich presentation never rewrites stdout or stderr. Pipelines and redirection retain original bytes. Source labels are terminal UI, not injected text." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:30277" name="Terminal · 13 · Missing checkpoint / no invented recovery · Light" x="40" y="6700" width="1440" height="1040">
+    <text id="487:30278" name="Missing checkpoint / no invented recovery · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="487:30279" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:30280" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:30281" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:30282" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:30283" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:30284" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30286" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:30287" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30289" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:30290" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:30292" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:30293" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:30294" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:30295" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:30296" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:30297" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:30298" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29323" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:30299" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:30300" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30301" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30302" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:30303" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:30304" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:30305" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:30306" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:30307" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:30308" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:30309" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:30310" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:30311" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:30312" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:30317" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:30320" name="Terminal / Source region" x="24" y="62" width="990" height="44" />
+        <instance id="487:30323" name="Terminal / Source region" x="24" y="122" width="990" height="44" />
+        <instance id="487:30326" name="Terminal / Source region" x="24" y="182" width="990" height="22" />
+      </frame>
+      <frame id="487:30314" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:30315" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:30316" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:30329" name="Terminal · 13 · Missing checkpoint / no invented recovery · Dark" x="1520" y="6700" width="1440" height="1040">
+    <text id="487:30330" name="Missing checkpoint / no invented recovery · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="487:30331" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:30332" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:30333" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:30334" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:30335" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:30336" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30338" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:30339" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30341" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:30342" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:30344" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:30345" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:30346" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:30347" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:30348" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:30349" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:30350" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29326" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:30351" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:30352" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30353" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30354" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:30355" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:30356" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:30357" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:30358" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:30359" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:30360" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:30361" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:30362" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:30363" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:30364" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:30369" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <instance id="487:30372" name="Terminal / Source region" x="24" y="62" width="990" height="44" />
+        <instance id="487:30375" name="Terminal / Source region" x="24" y="122" width="990" height="44" />
+        <instance id="487:30378" name="Terminal / Source region" x="24" y="182" width="990" height="22" />
+      </frame>
+      <frame id="487:30366" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:30367" name="Proposing · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:30368" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:30381" name="Terminal · 14 · First run / your shell remains yours · Light" x="3000" y="6700" width="1440" height="1040">
+    <text id="487:30382" name="First run / your shell remains yours · Light" x="200" y="40" width="1040" height="24" />
+    <frame id="487:30383" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:30384" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:30385" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:30386" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:30387" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:30388" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30390" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:30391" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30393" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:30394" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:30396" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:30397" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:30398" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:30399" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:30400" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:30401" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:30402" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29329" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:30403" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:30404" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30405" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30406" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:30407" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:30408" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:30409" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:30410" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:30411" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:30412" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:30413" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:30414" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:30415" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:30416" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:30421" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+      </frame>
+      <frame id="487:30418" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:30419" name="Shell input · AI off · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:30420" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="487:30424" name="Terminal · 14 · First run / your shell remains yours · Dark" x="4480" y="6700" width="1440" height="1040">
+    <text id="487:30425" name="First run / your shell remains yours · Dark" x="200" y="40" width="1040" height="24" />
+    <frame id="487:30426" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="487:30427" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="487:30428" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="487:30429" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="487:30430" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="487:30431" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30433" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="487:30434" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="487:30436" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="487:30437" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="487:30439" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="487:30440" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="487:30441" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="487:30442" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="487:30443" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="487:30444" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="487:30445" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29332" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="487:30446" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="487:30447" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30448" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="487:30449" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="487:30450" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="487:30451" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="487:30452" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="487:30453" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="487:30454" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="487:30455" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="487:30456" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="487:30457" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="487:30458" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="487:30459" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="487:30464" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+      </frame>
+      <frame id="487:30461" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="487:30462" name="Shell input · AI off · On this computer · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="487:30463" name="alo writes the command, and you decide who runs it. Source labels belong to the terminal; program content is clipped separately. Illustrative state, not runtime evidence." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="488:29231" name="Terminal · 15 · Rich program result / source preserved · Light" x="40" y="7800" width="1440" height="1040">
+    <text id="488:29232" name="Rich by default · Program output stays Program" x="200" y="40" width="1040" height="24" />
+    <frame id="488:29233" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="488:29234" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="488:29235" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="488:29236" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="488:29237" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="488:29238" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="488:29240" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="488:29241" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="488:29243" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="488:29244" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="488:29246" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="488:29247" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="488:29248" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="488:29249" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="488:29250" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="488:29251" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="488:29252" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29335" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="488:29253" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="488:29254" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="488:29255" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="488:29256" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="488:29257" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="488:29258" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="488:29259" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="488:29260" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="488:29261" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="488:29262" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="488:29263" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="488:29264" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="488:29265" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="488:29266" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="488:29282" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <frame id="488:29285" name="Program content boundary / protected source outside" x="24" y="62" width="990" height="262">
+          <text id="488:29286" name="program" x="0" y="0" width="80" height="22" />
+          <frame id="488:29287" name="Rich test result / untrusted program data" x="96" y="0" width="894" height="262">
+            <text id="488:29288" name="Tests · 23 passed · 1 failed" x="17" y="17" width="862" height="22" />
+            <text id="488:29289" name="Source: cargo test output · Not independently verified" x="17" y="55" width="862" height="22" />
+            <text id="488:29290" name="FAILED parser::rejects_invalid_input Expected an error; received Ok(value). 23 passed · 1 failed · 0 ignored" x="17" y="93" width="862" height="88" />
+            <frame id="488:29291" name="Frame" x="17" y="197" width="376" height="48">
+              <instance id="488:29292" name="Ask alo / Action" x="0" y="0" width="100" height="48" />
+              <instance id="488:29294" name="Ask alo / Action" x="108" y="0" width="100" height="48" />
+              <instance id="488:29296" name="Ask alo / Action" x="216" y="0" width="160" height="48" />
+            </frame>
+          </frame>
+        </frame>
+        <instance id="488:29298" name="Terminal / Source region" x="24" y="340" width="990" height="22" />
+      </frame>
+      <frame id="488:29271" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="488:29272" name="Shell input · No AI request · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="488:29273" name="Formatted output is not system evidence. Text reveals original bytes. Keyboard focus stays at the shell until a view is explicitly entered; Escape returns it." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="488:29301" name="Terminal · 15 · Rich program result / source preserved · Dark" x="1520" y="7800" width="1440" height="1040">
+    <text id="488:29302" name="Rich by default · Program output stays Program" x="200" y="40" width="1040" height="24" />
+    <frame id="488:29303" name="External window edge" x="200" y="80" width="1040" height="44">
+      <rounded-rectangle id="488:29304" name="32px visible edge / 44px interaction" x="0" y="12" width="1040" height="32" />
+      <frame id="488:29305" name="Move task window / drag region" x="12" y="0" width="880" height="44">
+        <text id="488:29306" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="488:29307" name="Minimise / 44px target" x="896" y="0" width="44" height="44">
+        <frame id="488:29308" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="488:29310" name="Maximise / 44px target" x="944" y="0" width="44" height="44">
+        <frame id="488:29311" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="488:29313" name="Close / 44px target" x="992" y="0" width="44" height="44">
+        <frame id="488:29314" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="488:29316" name="Terminal only / 01 · Quiet light" x="200" y="124" width="1040" height="800">
+      <frame id="488:29317" name="Project and session identity" x="1" y="1" width="1038" height="56">
+        <frame id="488:29318" name="Project identity" x="24" y="16" width="688" height="24">
+          <text id="488:29319" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="488:29320" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="488:29321" name="Spacer" x="724" y="27.5" width="66" height="1" />
+        <text id="488:29322" name="Local · disan" x="802" y="19" width="70" height="18" />
+        <instance id="493:29338" name="alo settings / model and permissions / 48px target" x="884" y="4" width="48" height="48" />
+        <frame id="488:29323" name="Terminal menu / search, new session, settings" x="944" y="6" width="44" height="44">
+          <ellipse id="488:29324" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="488:29325" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="488:29326" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="488:29327" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="488:29328" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="488:29329" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="488:29330" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="488:29331" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="488:29332" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="488:29333" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="488:29334" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="488:29335" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="488:29336" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="1038" height="706">
+        <instance id="488:29352" name="Terminal / Source region" x="24" y="24" width="990" height="22" />
+        <frame id="488:29355" name="Program content boundary / protected source outside" x="24" y="62" width="990" height="262">
+          <text id="488:29356" name="program" x="0" y="0" width="80" height="22" />
+          <frame id="488:29357" name="Rich test result / untrusted program data" x="96" y="0" width="894" height="262">
+            <text id="488:29358" name="Tests · 23 passed · 1 failed" x="17" y="17" width="862" height="22" />
+            <text id="488:29359" name="Source: cargo test output · Not independently verified" x="17" y="55" width="862" height="22" />
+            <text id="488:29360" name="FAILED parser::rejects_invalid_input Expected an error; received Ok(value). 23 passed · 1 failed · 0 ignored" x="17" y="93" width="862" height="88" />
+            <frame id="488:29361" name="Frame" x="17" y="197" width="376" height="48">
+              <instance id="488:29362" name="Ask alo / Action" x="0" y="0" width="100" height="48" />
+              <instance id="488:29364" name="Ask alo / Action" x="108" y="0" width="100" height="48" />
+              <instance id="488:29366" name="Ask alo / Action" x="216" y="0" width="160" height="48" />
+            </frame>
+          </frame>
+        </frame>
+        <instance id="488:29368" name="Terminal / Source region" x="24" y="340" width="990" height="22" />
+      </frame>
+      <frame id="488:29341" name="Task scope note" x="1" y="763" width="1038" height="28">
+        <text id="488:29342" name="Shell input · No AI request · zsh" x="24" y="0" width="980" height="20" />
+      </frame>
+    </frame>
+    <text id="488:29343" name="Formatted output is not system evidence. Text reveals original bytes. Keyboard focus stays at the shell until a view is explicitly entered; Escape returns it." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="488:29371" name="Terminal · 16 · Narrow / restore choice · 720px window" x="3000" y="7800" width="1440" height="1040">
+    <text id="488:29372" name="Narrow · Reflow choices, preserve source and input ownership" x="200" y="40" width="1040" height="24" />
+    <frame id="488:29373" name="External window edge" x="360" y="80" width="720" height="44">
+      <rounded-rectangle id="488:29374" name="32px visible edge / 44px interaction" x="0" y="12" width="720" height="32" />
+      <frame id="488:29375" name="Move task window / drag region" x="12" y="0" width="560" height="44">
+        <text id="488:29376" name="Terminal · launch" x="0" y="19" width="106" height="18" />
+      </frame>
+      <frame id="488:29377" name="Minimise / 44px target" x="576" y="0" width="44" height="44">
+        <frame id="488:29378" name="Minimise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="488:29380" name="Maximise / 44px target" x="624" y="0" width="44" height="44">
+        <frame id="488:29381" name="Maximise" x="15" y="21" width="14" height="14" />
+      </frame>
+      <frame id="488:29383" name="Close / 44px target" x="672" y="0" width="44" height="44">
+        <frame id="488:29384" name="Close" x="15" y="21" width="14" height="14" />
+      </frame>
+    </frame>
+    <frame id="488:29386" name="Terminal only / 01 · Quiet light" x="360" y="124" width="720" height="800">
+      <frame id="488:29387" name="Project and session identity" x="1" y="1" width="718" height="56">
+        <frame id="488:29388" name="Project identity" x="24" y="16" width="368" height="24">
+          <text id="488:29389" name="launch" x="0" y="0" width="72" height="30" hidden="true" />
+          <text id="488:29390" name="~/Projects/launch" x="0" y="3" width="116" height="18" />
+        </frame>
+        <frame id="488:29391" name="Spacer" x="404" y="27.5" width="66" height="1" />
+        <text id="488:29392" name="Local · disan" x="482" y="19" width="70" height="18" />
+        <instance id="493:29341" name="alo settings / model and permissions / 48px target" x="564" y="4" width="48" height="48" />
+        <frame id="488:29393" name="Terminal menu / search, new session, settings" x="624" y="6" width="44" height="44">
+          <ellipse id="488:29394" name="Ellipse" x="14.5" y="20.5" width="3" height="3" />
+          <ellipse id="488:29395" name="Ellipse" x="20.5" y="20.5" width="3" height="3" />
+          <ellipse id="488:29396" name="Ellipse" x="26.5" y="20.5" width="3" height="3" />
+        </frame>
+      </frame>
+      <frame id="488:29397" name="Sessions" x="1" y="73" width="1038" height="56" hidden="true">
+        <frame id="488:29398" name="Build session" x="24" y="4" width="184" height="48">
+          <text id="488:29399" name="Build · complete" x="42.5" y="15" width="99" height="18" />
+        </frame>
+        <frame id="488:29400" name="Server session" x="216" y="4" width="112" height="48">
+          <text id="488:29401" name="Server" x="35.5" y="15" width="41" height="18" />
+        </frame>
+        <frame id="488:29402" name="Logs session" x="336" y="4" width="112" height="48">
+          <text id="488:29403" name="Shell" x="40" y="15" width="32" height="18" />
+        </frame>
+        <frame id="488:29404" name="+ session" x="456" y="4" width="48" height="48">
+          <text id="488:29405" name="+" x="20" y="15" width="8" height="18" />
+        </frame>
+      </frame>
+      <frame id="488:29406" name="Protected transcript / terminal-owned source gutter" x="1" y="57" width="718" height="706">
+        <instance id="488:29407" name="Terminal / Source region" x="24" y="24" width="670" height="22" />
+        <instance id="488:29408" name="Terminal / Source region" x="24" y="62" width="670" height="66" />
+        <instance id="488:29409" name="Terminal / Source region" x="24" y="144" width="670" height="66" />
+      </frame>
+      <frame id="488:29410" name="Task scope note" x="1" y="763" width="718" height="28">
+        <text id="488:29411" name="Proposing · On this computer · zsh" x="24" y="0" width="670" height="20" />
+      </frame>
+    </frame>
+    <text id="488:29412" name="720px terminal width. No smaller text. Wrap prompts and options; keep the source gutter. Transcript scrolls; current input stays reachable." x="200" y="950" width="1040" height="60" />
+  </frame>
+  <frame id="488:29419" name="Terminal · Interaction and evidence contract" x="4480" y="7800" width="1440" height="1040">
+    <text id="488:29420" name="Terminal · Behaviour contract" x="80" y="80" width="1280" height="44" />
+    <text id="488:29421" name="Input belongs to the foreground owner. A custom shell prompt means shell; alo ❯ means an alo session. Prompt text alone is not authentication." x="80" y="148" width="1280" height="66" />
+    <text id="488:29422" name="Choose [1/2/3] reads keyboard input in alo. Enter cancels where stated. Ctrl+C cancels that pending choice; it does not stop an unrelated background server. Normal child-process interruption follows foreground process ownership." x="80" y="238" width="1280" height="66" />
+    <text id="488:29423" name="Source gutter: terminal-owned, outside clipped program content. PROGRAM includes parsed rich results. SYSTEM means an attributed observation, with scope and time. ALO is interpretation. YOU is input. Colour is supplementary." x="80" y="328" width="1280" height="66" />
+    <text id="488:29424" name="Permissions status opens the effective grant. Changing autonomy is explicit and revocable. Stopping or revoking does not undo completed side effects. No silent permission expansion." x="80" y="418" width="1280" height="66" />
+    <text id="488:29425" name="Screen reader: announce source once per region. BLOCKED announces the refused action and that permissions did not change, without moving focus. Never announce each streaming token." x="80" y="508" width="1280" height="66" />
+    <text id="488:29426" name="History has retention and privacy controls. Show unavailable observations or checkpoints honestly. Secrets are not deliberately copied into receipts. Restore scope excludes remote effects and process state." x="80" y="598" width="1280" height="66" />
+    <text id="488:29427" name="Source marks are protected in the live terminal, not authenticated in an arbitrary screenshot. All shown measurements are illustrative design content." x="80" y="688" width="1280" height="66" />
+  </frame>
+</section>IMPORTANT: After you call this tool, you MUST call get_design_context if trying to implement the design, since this tool only returns metadata. If you do not call get_design_context, the agent will not be able to implement the design.
