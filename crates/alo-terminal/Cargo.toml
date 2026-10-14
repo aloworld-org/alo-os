@@ -12,6 +12,10 @@ repository.workspace = true
 # pinned upstream engine behind our own interface, never written here and never
 # patched. What this crate owns is the interface in front of it.
 alacritty_terminal = "0.26.0"
+# `CLAUDE.md`: user-facing strings are externalized from day one, which makes
+# hardcoded English a bug. The gutter's four words are the strings this crate
+# says, and `alo-strings` depends on nothing itself.
+alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
 
 [lints]

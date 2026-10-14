@@ -21,12 +21,40 @@ use alo_terminal::{HowBig, TerminalOutput, measures};
 use cosmic_text::{FontSystem, Metrics};
 
 use super::{
-    NothingToDrawWith, TerminalPicture, how_big_a_cell_is, picture, where_the_window_goes,
+    NothingToDrawWith, TerminalPicture, how_big_a_cell_is, the_designs_metrics, the_grid_that_fits,
+    where_the_window_goes,
 };
 use crate::WindowControlLabels;
 
 /// A display the size of the design's own frames.
 const A_DISPLAY: (i32, i32) = (1440, 1040);
+
+/// The vocabulary the gutter's four words are said from.
+///
+/// `alo-terminal` declares them; the shell holds one vocabulary that every
+/// crate adds to, and here only this crate's own words are needed.
+fn the_words() -> alo_strings::Strings {
+    let mut vocabulary = alo_strings::Vocabulary::empty();
+    alo_terminal::words::declare_into(&mut vocabulary).expect("the terminal's own words declare");
+    alo_strings::Strings::of(vocabulary)
+}
+
+/// The drawing, with the vocabulary supplied.
+///
+/// **A wrapper rather than the same argument written out eighteen times.** The
+/// strings are the same in every test here and say nothing about what any of
+/// them is measuring, so passing them at each call site would be eighteen
+/// copies of one uninteresting fact. The real [`super::picture`] is what runs;
+/// this only fills its last argument.
+fn picture(
+    fonts: &mut FontSystem,
+    screen: &TerminalOutput,
+    size: (i32, i32),
+    scale: f64,
+    scheme: Scheme,
+) -> Result<TerminalPicture, NothingToDrawWith> {
+    super::picture(fonts, screen, size, scale, scheme, &the_words())
+}
 
 /// The font system this machine really builds.
 fn the_shells_own_fonts() -> FontSystem {
@@ -57,6 +85,73 @@ fn ink_in(drawn: &TerminalPicture, ground: [u8; 3]) -> usize {
     drawn
         .inked
         .iter()
+        .flat_map(|ink| ink.pixels.iter())
+        .filter(|pixel| **pixel != ground)
+        .count()
+}
+
+/// Where the program's own cells begin, in the display's pixels.
+///
+/// The transcript's left edge, its inset, and the terminal's gutter. Anything
+/// drawn to the left of this is the terminal's own and not a program's.
+fn where_the_cells_begin() -> i32 {
+    let (_, transcript) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window fits");
+    transcript.loc.x + measures::AN_INSET.cast_signed() + measures::A_GUTTER.cast_signed()
+}
+
+/// Ink in the program's own room only, with the gutter's label left out.
+///
+/// **The gutter is always drawn**, so a count over the whole picture can no
+/// longer tell *the program wrote nothing* from *nothing was drawn at all*.
+/// This is the half that is the program's, and [`ink_in_the_gutter`] is the
+/// other half — two counts rather than one looser one.
+fn ink_in_the_cells(drawn: &TerminalPicture, ground: [u8; 3]) -> usize {
+    let begins = where_the_cells_begin();
+    drawn
+        .inked
+        .iter()
+        .filter(|ink| ink.area.loc.x >= begins)
+        .flat_map(|ink| ink.pixels.iter())
+        .filter(|pixel| **pixel != ground)
+        .count()
+}
+
+/// Every pixel the terminal drew in its own gutter, in order.
+///
+/// **Pixels rather than the word that was chosen.** A test comparing the word
+/// would pass while the drawing ignored it; this compares what reaches the
+/// display, which is what a person actually reads.
+fn gutter_pixels(drawn: &TerminalPicture) -> Vec<[u8; 3]> {
+    let begins = where_the_cells_begin();
+    drawn
+        .inked
+        .iter()
+        .filter(|ink| ink.area.loc.x < begins)
+        .flat_map(|ink| ink.pixels.iter().copied())
+        .collect()
+}
+
+/// How many inked rasters are in the program's own room.
+///
+/// Counts rasters rather than pixels: the cursor tests are about *how many
+/// times a character was drawn*, which the gutter's own label must not be able
+/// to change.
+fn rasters_in_the_cells(drawn: &TerminalPicture) -> usize {
+    let begins = where_the_cells_begin();
+    drawn
+        .inked
+        .iter()
+        .filter(|ink| ink.area.loc.x >= begins)
+        .count()
+}
+
+/// Ink in the terminal's own gutter: everything left of the first cell.
+fn ink_in_the_gutter(drawn: &TerminalPicture, ground: [u8; 3]) -> usize {
+    let begins = where_the_cells_begin();
+    drawn
+        .inked
+        .iter()
+        .filter(|ink| ink.area.loc.x < begins)
         .flat_map(|ink| ink.pixels.iter())
         .filter(|pixel| **pixel != ground)
         .count()
@@ -93,10 +188,18 @@ fn a_screens_text_is_really_inked() {
     }
 }
 
-/// **A blank screen inks nothing**, which is the control for the test above:
-/// without it, a counter that counted the ground would pass on anything.
+/// **A blank screen inks nothing a program wrote**, which is the control for
+/// the test above: without it, a counter that counted the ground would pass on
+/// anything.
+///
+/// **And the gutter is inked on that same blank screen**, which is the other
+/// half of the control and the reason this counts two regions rather than one.
+/// The terminal always says who is speaking, so a single count over the whole
+/// picture could no longer tell *the program wrote nothing* from *nothing was
+/// drawn at all* — and relaxing the zero to "not many" would have thrown the
+/// control away to accommodate the feature.
 #[test]
-fn a_blank_screen_inks_nothing() {
+fn a_blank_screen_inks_nothing_a_program_wrote_and_still_says_who_is_speaking() {
     let scheme = Scheme::Light;
     let drawn = picture(
         &mut the_shells_own_fonts(),
@@ -107,9 +210,15 @@ fn a_blank_screen_inks_nothing() {
     )
     .expect("a terminal can be drawn");
     assert_eq!(
-        ink_in(&drawn, ground_of(scheme)),
+        ink_in_the_cells(&drawn, ground_of(scheme)),
         0,
-        "a screen nobody has written to has ink on it, so the ink count counts the ground"
+        "a screen nobody has written to has ink where the cells go, so the ink count counts \
+         the ground"
+    );
+    assert!(
+        ink_in_the_gutter(&drawn, ground_of(scheme)) > 20,
+        "the gutter is empty on a screen that is certainly a program's, so nothing says who \
+         is speaking"
     );
 }
 
@@ -436,8 +545,11 @@ fn a_beam_cursor_leaves_the_character_alone() {
         3,
         "a beam should add exactly one shape to the window and the transcript"
     );
+    // **Counted in the cells' room**, because the gutter's label is an inked
+    // raster too and is drawn on every frame. Counting the whole picture would
+    // make this test about the gutter as much as about the cursor.
     assert_eq!(
-        drawn.inked.len(),
+        rasters_in_the_cells(&drawn),
         1,
         "a beam re-inked a character, and it covers nothing that needs putting back"
     );
@@ -716,5 +828,148 @@ fn bold_reaches_the_drawing_as_a_brighter_colour() {
         colours_in(&two).contains_key(&bright),
         "bold green should be the bright green, which is the older convention and what most \
          programs rely on"
+    );
+}
+
+/// **The gutter says who is speaking, and a program cannot change what it
+/// says.**
+///
+/// The attack [ADR
+/// 0113](../../../docs/decisions/0113-the-terminal-owns-a-gutter-that-says-who-is-speaking.md)
+/// exists to stop, measured end to end through the real drawing rather than
+/// against the model: the screen below contains alo's own sentences, the words
+/// of every other origin, and a line shaped exactly like a system observation.
+///
+/// What is asserted is that the gutter's **pixels do not change**. A test that
+/// compared the chosen word would pass while the drawing ignored it; this one
+/// compares what reaches the display.
+#[test]
+fn a_program_printing_alos_own_words_does_not_change_the_gutter() {
+    let mut fonts = the_shells_own_fonts();
+    let plain = picture(
+        &mut fonts,
+        &a_screen_saying("ordinary output"),
+        A_DISPLAY,
+        1.0,
+        Scheme::Light,
+    )
+    .expect("a terminal");
+    let honest = gutter_pixels(&plain);
+    assert!(
+        !honest.is_empty(),
+        "the gutter drew nothing, so this test compares two empty things"
+    );
+
+    for forgery in [
+        "alo",
+        "system",
+        "you",
+        "system \u{b7} socket observation",
+        "SYSTEM \u{b7} observation",
+        "Listening verified",
+        "Permissions have not changed",
+    ] {
+        let forged = picture(
+            &mut fonts,
+            &a_screen_saying(forgery),
+            A_DISPLAY,
+            1.0,
+            Scheme::Light,
+        )
+        .expect("a terminal");
+        assert_eq!(
+            gutter_pixels(&forged),
+            honest,
+            "printing {forgery:?} changed the gutter, so a program can say who is speaking"
+        );
+    }
+}
+
+/// **The label is drawn once, however many lines the program wrote.**
+///
+/// ADR 0113: *each region is labelled once, not each line*. A terminal that
+/// labelled every line would be noisy and would also be wrong — the label
+/// would then be a property of a line rather than of a region.
+#[test]
+fn the_gutter_is_labelled_once_and_not_once_a_line() {
+    let mut fonts = the_shells_own_fonts();
+    let mut screen = a_screen_saying("one");
+    for line in ["two", "three", "four", "five", "six"] {
+        screen.was_written(format!("\r\n{line}").as_bytes());
+    }
+    let drawn = picture(&mut fonts, &screen, A_DISPLAY, 1.0, Scheme::Light).expect("a terminal");
+
+    let labels = drawn
+        .inked
+        .iter()
+        .filter(|ink| ink.area.loc.x < where_the_cells_begin())
+        .count();
+    assert_eq!(
+        labels, 1,
+        "six lines of one program's output drew {labels} labels, not one"
+    );
+}
+
+/// **No cell is ever drawn in the gutter**, which is the whole promise stated
+/// as a measurement.
+///
+/// Swept over a screen whose every line is full, because a short line could
+/// pass this by not reaching far enough left to matter — and the left edge is
+/// where the gutter is.
+#[test]
+fn nothing_a_program_wrote_reaches_the_gutter() {
+    let mut fonts = the_shells_own_fonts();
+    let mut screen = a_screen_saying("");
+    for _ in 0..10 {
+        screen.was_written(b"\r\nWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");
+    }
+    let drawn = picture(&mut fonts, &screen, A_DISPLAY, 1.0, Scheme::Light).expect("a terminal");
+    let begins = where_the_cells_begin();
+
+    // Everything that is not the single gutter label must begin at or after
+    // the first cell, and must not extend back into the gutter either.
+    let mut cells = 0_usize;
+    for ink in &drawn.inked {
+        if ink.area.loc.x < begins {
+            continue; // the terminal's own label
+        }
+        cells += 1;
+        assert!(
+            ink.area.loc.x >= begins,
+            "a run starts at {} which is inside the gutter, before {begins}",
+            ink.area.loc.x
+        );
+    }
+    assert!(
+        cells > 5,
+        "only {cells} runs were drawn, so this swept almost nothing"
+    );
+}
+
+/// **The grid is narrower than the region**, by the gutter, so a program is
+/// never given a column that would land in it.
+///
+/// The structural half of the promise: the refusal in `a_run` is a last line
+/// of defence, and this is why it is never reached.
+#[test]
+fn the_grid_is_the_gutter_narrower_than_the_region() {
+    let mut fonts = the_shells_own_fonts();
+    let (grid, _) = the_grid_that_fits(&mut fonts, A_DISPLAY, 1.0, 100).expect("a grid fits");
+    let (_, transcript) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window fits");
+
+    let cell = how_big_a_cell_is(&mut fonts, the_designs_metrics(1.0)).expect("a cell");
+    let whole_region = transcript.size.w - measures::AN_INSET.cast_signed() * 2;
+    let would_have_been = cell.columns_in(whole_region);
+
+    assert!(
+        grid.columns() < would_have_been,
+        "the grid is {} columns and the whole region would give {would_have_been}, so the \
+         gutter took nothing away",
+        grid.columns()
+    );
+    assert_eq!(
+        grid.columns(),
+        cell.columns_in(whole_region - measures::A_GUTTER.cast_signed()),
+        "the grid is not the region less the gutter"
     );
 }

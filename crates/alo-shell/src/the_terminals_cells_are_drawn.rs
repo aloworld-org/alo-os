@@ -57,7 +57,7 @@ use smithay::backend::renderer::Frame;
 use smithay::utils::{Physical, Rectangle};
 
 use crate::painted::{Inked, Solid};
-use crate::painted_text::{ALOS_OWN_MONO, alos_own_mono, alos_own_mono_at, inked};
+use crate::painted_text::{ALOS_OWN_MONO, alos_own_mono, alos_own_mono_at, alos_own_text, inked};
 
 /// How much of the display's width the window takes: 1040 of 1440.
 const ACROSS_THE_DISPLAY: f32 = 1040.0 / 1440.0;
@@ -249,6 +249,24 @@ fn the_designs_metrics(scale: f64) -> Metrics {
     metrics
 }
 
+/// The design's `Label/Medium`, on this display.
+///
+/// Manrope SemiBold **13** on a line of **18**, where the transcript is Geist
+/// Mono 14 on 22. Separate from [`the_designs_metrics`] because they are
+/// different type styles answering different questions, and a label drawn at
+/// the transcript's size is a label that reads as transcript.
+fn the_labels_metrics(scale: f64) -> Metrics {
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a two-digit logical measure through a display's scale is a size in pixels"
+    )]
+    let metrics = Metrics::new(
+        (f64::from(measures::THE_LABEL) * scale) as f32,
+        (f64::from(measures::THE_LABELS_LINE) * scale) as f32,
+    );
+    metrics
+}
+
 /// Measure one cell, and refuse if the face is not there to measure.
 ///
 /// Three things in order, and the order is load-bearing:
@@ -398,7 +416,16 @@ pub(crate) fn the_grid_that_fits(
         (f64::from(measures::AN_INSET) * scale).round() as i32,
         (f64::from(measures::CONTENT_BELOW_THE_TOP) * scale).round() as i32,
     );
-    let columns = cell.columns_in(transcript.size.w - inset_across * 2);
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "as elsewhere in this file: a two-digit logical measure through a scale"
+    )]
+    let gutter = (f64::from(measures::A_GUTTER) * scale).round() as i32;
+    // **The columns are counted in the program's room, not the region's.** The
+    // gutter is the terminal's, so a grid sized to the whole region would hand
+    // the program columns that land in it — and the drawing would then refuse
+    // them one frame at a time rather than never offering them.
+    let columns = cell.columns_in(transcript.size.w - inset_across * 2 - gutter);
     let lines = lines_in(transcript.size.h - inset_down, metrics.line_height);
     let grid = alo_terminal::HowBig::of(columns, lines, remembered)
         .map_err(|_| NothingToDrawWith::TheresNoRoom)?;
@@ -421,10 +448,19 @@ struct WhereTheCellsGo {
     transcript: Rectangle<i32, Physical>,
     /// How far the content is inset from its left and its top.
     inset: (i32, i32),
+    /// The terminal's own column, between the inset and the first cell.
+    ///
+    /// **Room taken from the cells before they are laid out**, never an
+    /// overlay drawn on top of them — the design's annotation says the gutter
+    /// is *outside clipped program content*, and ADR 0113 makes that the
+    /// difference between a promise and a decoration.
+    gutter: i32,
     /// The cell the face advances by.
     cell: ACell,
     /// The size and line height the cells are drawn at.
     metrics: Metrics,
+    /// This display's scale, which the gutter's own measures go through.
+    scale: f64,
 }
 
 impl WhereTheCellsGo {
@@ -436,7 +472,7 @@ impl WhereTheCellsGo {
     )]
     fn the_cell_at(self, column: usize, line: usize) -> (i32, i32) {
         (
-            self.transcript.loc.x + self.inset.0 + self.cell.across(column) as i32,
+            self.transcript.loc.x + self.inset.0 + self.gutter + self.cell.across(column) as i32,
             self.transcript.loc.y + self.inset.1 + (self.metrics.line_height * line as f32) as i32,
         )
     }
@@ -453,19 +489,47 @@ impl WhereTheCellsGo {
         )
     }
 
-    /// The room the cells have: the transcript less its insets.
+    /// The room the cells have: the transcript, less its insets, less the
+    /// terminal's own gutter.
+    ///
+    /// **The gutter is taken off both the start and the width**, so a cell
+    /// cannot reach it from either side. `a_run` refuses anything that is not
+    /// wholly inside this rectangle, which is what makes *no program writes in
+    /// the gutter* a thing the drawing cannot do rather than a thing it
+    /// chooses not to.
     fn the_room(self) -> Rectangle<i32, Physical> {
         Rectangle::new(
             (
-                self.transcript.loc.x + self.inset.0,
+                self.transcript.loc.x + self.inset.0 + self.gutter,
                 self.transcript.loc.y + self.inset.1,
             )
                 .into(),
             (
-                self.transcript.size.w - self.inset.0 * 2,
+                self.transcript.size.w - self.inset.0 * 2 - self.gutter,
                 self.transcript.size.h - self.inset.1,
             )
                 .into(),
+        )
+    }
+
+    /// The type the gutter's label is drawn at, on this display.
+    fn label_metrics(self) -> Metrics {
+        the_labels_metrics(self.scale)
+    }
+
+    /// Where the gutter's label goes for a region starting at this line.
+    ///
+    /// The region's own left edge — the inset, before the gutter — and the top
+    /// of the line it labels. The design puts the label text node at (0, 0) of
+    /// the region, which is this point.
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a line's offset inside a transcript is bounded by the transcript"
+    )]
+    fn the_label_at(self, line: usize) -> (i32, i32) {
+        (
+            self.transcript.loc.x + self.inset.0,
+            self.transcript.loc.y + self.inset.1 + (self.metrics.line_height * line as f32) as i32,
         )
     }
 }
@@ -529,6 +593,54 @@ fn a_run(
     let shaped = inked(fonts, &buffer, (wide, tall), 0, its_ground, its_ink);
     let bottom = goes.transcript.loc.y + goes.transcript.size.h;
     (behind, shaped.placed(across, down, bottom))
+}
+
+/// The gutter's label for one region, drawn in alo's own face.
+///
+/// **The one place in the terminal a program cannot write**
+/// ([ADR 0113](../../../docs/decisions/0113-the-terminal-owns-a-gutter-that-says-who-is-speaking.md)),
+/// so what it says is decided by [`alo_terminal::WhoIsSpeaking`] and never by
+/// anything on the screen. The word arrives here already chosen; this function
+/// cannot see a single byte the program wrote, which is the guarantee expressed
+/// as a signature rather than as a comment.
+///
+/// **Drawn in alo's own face at the design's `Label/Medium`** — Manrope
+/// SemiBold 13 on a line of 18 — where the transcript is Geist Mono 14. Two
+/// families and two sizes, so the difference is visible before a word is read.
+/// That is ADR 0113's *distinct boundary shape*, and the words carry it in any
+/// case: *colour is supplementary*, in the design's own annotation.
+///
+/// Answers [`None`] where the label would not fit wholly inside the gutter,
+/// for the same reason a run reaching past the transcript draws nothing.
+fn a_regions_label(
+    fonts: &mut FontSystem,
+    said: &str,
+    goes: WhereTheCellsGo,
+    line: usize,
+    colours: ([u8; 3], [u8; 3]),
+) -> Option<Inked> {
+    let (ground, ink) = colours;
+    let (across, down) = goes.the_label_at(line);
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "two logical measures through a display's scale, each two digits"
+    )]
+    let (room, tall) = (
+        (f64::from(measures::THE_LABELS_ROOM) * goes.scale).round() as i32,
+        goes.metrics.line_height.ceil() as i32,
+    );
+    if room <= 0 || tall <= 0 {
+        return None;
+    }
+
+    let mut buffer = Buffer::new(fonts, goes.label_metrics());
+    buffer.set_wrap(fonts, Wrap::None);
+    buffer.set_size(fonts, None, None);
+    buffer.set_text(fonts, said, &alos_own_text(), Shaping::Advanced);
+    buffer.shape_until_scroll(fonts, false);
+    let shaped = inked(fonts, &buffer, (room, tall), 0, ground, ink);
+    let bottom = goes.transcript.loc.y + goes.transcript.size.h;
+    shaped.placed(across, down, bottom)
 }
 
 /// A colour a cell asked for, or the one this machine uses when it asked for
@@ -671,6 +783,7 @@ pub(crate) fn picture(
     size: (i32, i32),
     scale: f64,
     scheme: Scheme,
+    says: &alo_strings::Strings,
 ) -> Result<TerminalPicture, NothingToDrawWith> {
     let (window, transcript) =
         where_the_window_goes(size, scale).ok_or(NothingToDrawWith::TheresNoRoom)?;
@@ -700,7 +813,12 @@ pub(crate) fn picture(
         (f64::from(measures::AN_INSET) * scale).round() as i32,
         (f64::from(measures::CONTENT_BELOW_THE_TOP) * scale).round() as i32,
     );
-    let room_across = transcript.size.w - inset_across * 2;
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "as above: a two-digit logical measure through a display's scale"
+    )]
+    let gutter = (f64::from(measures::A_GUTTER) * scale).round() as i32;
+    let room_across = transcript.size.w - inset_across * 2 - gutter;
     let room_down = transcript.size.h - inset_down;
     if room_across <= 0 || room_down <= 0 || cell.columns_in(room_across) == 0 {
         return Err(NothingToDrawWith::TheresNoRoom);
@@ -718,8 +836,10 @@ pub(crate) fn picture(
     let goes = WhereTheCellsGo {
         transcript,
         inset: (inset_across, inset_down),
+        gutter,
         cell,
         metrics,
+        scale,
     };
     let mut behind: Vec<Solid> = Vec::new();
     let mut placed: Vec<Inked> = Vec::new();
@@ -728,6 +848,25 @@ pub(crate) fn picture(
             let (its_ground, its_ink) = a_run(fonts, &run, goes, line, (ground, ink));
             behind.extend(its_ground);
             placed.extend(its_ink);
+        }
+    }
+
+    // **The gutter, once per region.** `regions_of` is given a count of lines
+    // and nothing else — it cannot see what the program wrote, so a program
+    // printing `alo` or `system` changes nothing here. That is ADR 0113's
+    // promise, and it is kept by what this call is unable to receive rather
+    // than by anything it checks.
+    //
+    // The word is resolved through the vocabulary, because `CLAUDE.md` makes
+    // hardcoded English a bug and these four are read by every person who uses
+    // the machine.
+    for region in alo_terminal::regions_of(screen.size().lines()) {
+        let said = says.say(
+            &region.who.the_word().key(),
+            &alo_strings::Filling::nothing(),
+        );
+        if let Some(label) = a_regions_label(fonts, said.text(), goes, region.from, (ground, ink)) {
+            placed.push(label);
         }
     }
 

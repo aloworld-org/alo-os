@@ -400,6 +400,25 @@ file carries it with a tier.*
   itself: **programs cannot impersonate the terminal's own provenance inside the
   live terminal**, and a screenshot is a picture like any other.
   [ADR 0113](decisions/0113-the-terminal-owns-a-gutter-that-says-who-is-speaking.md)
+  **Built 2026-10-14**: the column — 96 wide, measured off the design at two
+  nodes and taken out of the cells' room before they are laid out rather than
+  drawn over them — the four origins, and the word drawn in alo's own face
+  where the transcript is mono. **The words are drawn as the design draws
+  them** — `you`, `alo`, `system`, `program`, lowercase — rather than in the
+  capitals this entry and ADR 0113 write them in: the decision says which
+  origins exist and that the gutter names them in words, and the design file is
+  the visual truth for how a word is set. `docs/design/the-terminal-window.md`
+  carries that reading and the measurement behind it. The guarantee is tested on the **pixels**: a
+  program printing `system`, `alo`, or *Listening verified* leaves the gutter
+  byte-for-byte unchanged, and no road from text to an origin exists for one to
+  be added later without a test refusing it. **The live terminal shows one
+  origin, `program`**, because a pseudoterminal is the only thing that writes to
+  a transcript today — including the person's own typing, which the shell echoes
+  back and which is therefore the program's bytes. The other three become
+  reachable when alo itself writes into a transcript. **Not built**: the source
+  qualifier — `· cargo test` — which the design puts inside the region as a
+  caption rather than in the 96-wide column, and which belongs with rich
+  results.
 - ★ **And alo says what it measured apart from what it worked out.** One rule
   over everything below, because it is the same rule four of them would
   otherwise repeat: *blocked reading from the keyboard* is a measurement and
