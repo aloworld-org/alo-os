@@ -488,10 +488,34 @@ file carries it with a tier.*
   *Built on the canvas's Places, which already promise that a Place remembers
   time, rather than beside them — two things called a workspace would outlive
   everyone who made them*
+- ★ **Ask the machine itself, from the terminal.** *What is using the memory?
+  Why is this slow? What is filling the disk? What is on port 3000? What is that
+  process doing?* Answers name the actual processes, files and sockets rather
+  than describing them, and each one can be acted on from where it is named.
+  **A shell can only run a program you already know the name of**; this answers
+  the question a person actually has. The measured and the worked-out stay
+  apart: *this process is holding 4.2 GB* is an observation, *that is why your
+  machine is slow* is a reading of it, and a sensor nobody can read is said to
+  be missing rather than guessed at
+- ★ **Do it, not just read about it.** *Close Slack. Stop that server. Put that
+  window on the other screen.* **A shell cannot close a window** — a window is
+  not a program, has no PID a person knows, and no command addresses it — so
+  every terminal on earth makes you reach for the mouse. alo reaches it through
+  the same enumerated verbs the rest of the machine uses, which is why the
+  answer and the action are in one place. At the default setting a change is
+  proposed in a sentence and waits; grant more and it simply happens
+- ★ **Anything you can do on this machine, you can do by typing what you mean.**
+  Not only what has a command. Running a program, closing a window, changing a
+  setting, revoking a grant, moving a file, asking what happened yesterday —
+  **the terminal stops being the place you run programs and becomes the place
+  you tell the machine what you want.** *The owner, 2026-10-14: "in the terminal
+  the user can command and run anything on the pc."* What bounds it is the
+  person's own settings and nothing else; what never changes is that the run is
+  recorded, the files are snapshotted before it, and what leaves is shown
 - **Completion that has read your whole machine, because nothing leaves it.**
   Your real file tree, your installed packages, your history, on the device. *A
   completer that sends your tree somewhere can never be given it*
-  *The seventeen lines above were added on 2026-10-14 by the owner's ruling
+  *The twenty lines above were added on 2026-10-14 by the owner's ruling
   — "these are great features and we shall add them all" — after
   [ADR 0112](decisions/0112-with-the-persons-permission-the-agent-may-do-anything-on-the-machine.md)
   removed the question of whether a person may permit them. **None of them is
