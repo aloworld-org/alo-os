@@ -28,7 +28,7 @@
 //! use alo_capability::{Given, Grant, Grants, Reach};
 //! use alo_context::Context;
 //! use alo_egress::Indicator;
-//! use alo_files::{OnThisMachine, Reaching};
+//! use alo_files::{OnThisMachine, Reaching, Resolving as _};
 //! use alo_record::Record;
 //! use alo_saying::everything_this_machine_can_say;
 //! use alo_strings::Strings;
@@ -66,12 +66,26 @@
 //! let strings =
 //!     Strings::of(everything_this_machine_can_say().expect("everything alo OS can say"));
 //!
-//! // **A folder that is really there.** This example named a literal
-//! // `/home/anna/Invoices` and so demonstrated nothing: `alo_files` checks
-//! // that a path exists — *a verb reaches what is there* — so `proposing`
-//! // refused and the `.expect` below panicked with the refusal inside it.
+//! // **A folder that is really there, and spelt the way the machine spells
+//! // it.** This example named a literal `/home/anna/Invoices` and so
+//! // demonstrated nothing: `alo_files` checks that a path exists — *a verb
+//! // reaches what is there* — so `proposing` refused and the `.expect` below
+//! // panicked with the refusal inside it.
+//! //
+//! // **And the grant is made over the resolved spelling**, which is what
+//! // every other fixture in this repository does — `alo_turn::testing`,
+//! // `alo_corridor::testing` and two of that crate's tests all resolve
+//! // before granting. On Linux `temp_dir()` is `/tmp` and resolves to
+//! // itself, so an unresolved grant passes and this example looked right; on
+//! // macOS it is `/var/folders/…` and resolves to `/private/var/folders/…`,
+//! // and a grant over the first reaches nothing under the second. A grant is
+//! // over a *place*, and the resolved spelling is the one it has.
 //! let invoices = std::env::temp_dir().join(format!("alo-approving-{}", std::process::id()));
 //! std::fs::create_dir_all(&invoices).expect("a folder of this example's own");
+//! let invoices = OnThisMachine
+//!     .real(&invoices)
+//!     .expect("a folder that is really there")
+//!     .into_path_buf();
 //! let march = invoices.join("march.pdf");
 //! std::fs::write(&march, b"an invoice").expect("a file there is something to rename");
 //!
