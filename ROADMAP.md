@@ -95,10 +95,37 @@ on the list at all, and the measurement that found it is in the item itself.
   removed on 2026-09-26 so that there would be exactly one layout decider, and
   what replaced it divides between two windows, so the chord that put one
   window on half a display has no answer any more. Giving `arrange` a road is a
-  decision, not an addition. **What this item still owes is unchanged in
-  kind**: the three acts have never run against a real application on a booted
-  machine. Every test of them uses a stand-in on a real socket, because the
-  compositor needs a Wayland parent, and a stand-in is not a window.*
+  decision, not an addition.*
+
+  *And **the three acts have now moved a real window**, which this item said on
+  2026-10-13 they never had. `crates/alo-shell/examples/the_door_moves_a_real_window.rs`
+  starts alo OS's own compositor, hands its socket to `weston-terminal` — a
+  program nobody here wrote — reads back **the identifier that program set for
+  itself**, and asks the door to open, focus and close it. Three runs on
+  2026-10-14, each answering `acted` to all three acts, each ending with the
+  window gone:*
+
+  ```text
+  the program calls itself org.freedesktop.weston.wayland-terminal
+    open  org.freedesktop.weston.wayland-terminal → acted
+    focus org.freedesktop.weston.wayland-terminal → acted
+    close org.freedesktop.weston.wayland-terminal → acted
+    the window is gone
+  ```
+
+  *What it is **not**: a certified machine — a nested compositor under a
+  headless parent — and not a turn, because the fixture writes the lines itself
+  with no grant, no approval and no record. `alo-turn`'s tests hold that half.
+  And `open` here can only bring something **already running** forward: starting
+  an application goes through the bus, and this is not a session with one. **So
+  what this item still owes is the hardware**, not the road.*
+
+  *The identifier is worth one line of its own, because it is an accident that
+  proves something. `org.freedesktop.weston.wayland-terminal` came off the
+  program, and on 2026-10-13 `Application::identified` was nearly tightened to
+  the D-Bus bus-name format, which would have refused the single-word names
+  ordinary software uses. `docs/quirks.md` records why that was backed out; this
+  is the first run where a real program's own name had to survive it.*
 
 **And two things stay true at every step, because neither restricts anybody:**
 the record of what happened, and the egress indicator telling the truth while
