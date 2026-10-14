@@ -223,8 +223,15 @@ Nothing here is a differentiator. All of it is required.
   an application that is already focused **does not minimise it and does not
   open a second window**; *New window* stays a thing a person asks for.
   *Added 2026-10-11 by the owner's ruling, ADR 0103, into the current release.
-  `alo_dock::clicking` decides this and no production caller reaches it: a press
-  on an icon is taken and nothing is done with it.*
+  `alo_dock::clicking` decides this and **it is reached**:
+  `Server::go_to_this_application` calls `what_a_press_on_an_icon_does` and acts
+  on three of its five answers, from a pointer press and from the keyboard on
+  the Dock's surfaces. **The note here said the opposite until 2026-10-14** —
+  "no production caller reaches it: a press on an icon is taken and nothing is
+  done with it" — which was true when it was written and had stopped being
+  true. What is still owed is the window picker's travelling: `WhatAClickDoes`
+  says when the canvas should travel to a window and the Dock ignores it
+  deliberately, because the windows it is handed carry placeholder geometry.*
 - **More apps** — an **overview of a person's applications**, not a
   spillover. Its control is **always on the bar**, so the route to it does not
   appear and vanish with the width of a display. It opens a **compact,
@@ -255,6 +262,26 @@ Nothing here is a differentiator. All of it is required.
   the window picker, every keyboard route, and Escape. The owner's note that
   **the list-style reference is historical input rather than the final design**
   is why the visual layout is not settled and the Figma file is owed an update.*
+
+  *Corrected 2026-10-14: the "**Not built**" list above named five things —
+  the grid, the search field, the window picker, every keyboard route, and
+  Escape — and **all five are built and wired.** Measured by following each to
+  a production caller rather than to a definition, which is the distinction
+  that makes this checkable: `alo_dock::more_apps::TheOverview` is drawn by
+  `dock_raster`; the search field is typed into by
+  `a_key_types_into_the_search_field`; `alo_dock::picking::the_pickers_panel`
+  is drawn by the same raster; `when_escape_is_pressed` and the arrow routes
+  are reached from `a_key_reaches_the_docks_surfaces`; and that router's own
+  caller is `<Desk as LoopInput>::dispatch` in `direct_desktop`, which is the
+  frame loop a running machine is in.*
+
+  *Left in place because a stale "not built" is how a thing gets built twice,
+  and this one nearly managed it: a lane reading that list would have rebuilt
+  the grid, the field and the keyboard. **The first attempt to measure it said
+  the router had zero callers**, from a `grep -v` that excluded every line
+  containing the function's own name — a check that could only ever answer
+  zero. The method here names a caller for each item, so an item that loses one
+  reads as absent rather than as a number nobody can check.*
 - **Minimising is about one window** — it takes that window off the
   canvas, **keeps its Place, its position, its size and what is needed to bring
   it back**, puts an item in the panel at the edge, and **works out again
