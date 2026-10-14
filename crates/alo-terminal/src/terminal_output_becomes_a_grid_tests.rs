@@ -298,3 +298,98 @@ fn laying_out_again_keeps_what_is_remembered() {
         "a resize changed how far back a person can scroll"
     );
 }
+
+/// **A program hiding the cursor is answered with nothing.**
+///
+/// `DECTCEM` is written by every full-screen program on every redraw, so this
+/// is the common case and not an edge one. A terminal that drew a cursor
+/// regardless would show one flickering in the wrong place throughout an
+/// editor's redraw.
+#[test]
+fn a_hidden_cursor_is_no_cursor() {
+    let mut screen = TerminalOutput::of(HowBig::of(80, 24, 100).expect("a terminal"));
+    assert!(
+        screen.where_the_cursor_is().is_some(),
+        "a fresh screen should have a cursor, or the test below proves nothing"
+    );
+
+    screen.was_written(b"\x1b[?25l");
+    assert!(
+        screen.where_the_cursor_is().is_none(),
+        "the cursor is still reported after the program hid it"
+    );
+
+    screen.was_written(b"\x1b[?25h");
+    assert!(
+        screen.where_the_cursor_is().is_some(),
+        "the cursor did not come back when the program showed it again"
+    );
+}
+
+/// **The shape is the one the program asked for.**
+///
+/// An editor changes it — a bar in insert mode, a block in normal mode — so a
+/// terminal that drew one shape always would be telling a person the wrong
+/// thing about the mode they are in.
+#[test]
+fn the_shape_follows_what_the_program_asked_for() {
+    use super::ACursorShape;
+    for (sequence, wanted) in [
+        (&b"\x1b[2 q"[..], ACursorShape::Block),
+        (&b"\x1b[4 q"[..], ACursorShape::Underline),
+        (&b"\x1b[6 q"[..], ACursorShape::Beam),
+    ] {
+        let mut screen = TerminalOutput::of(HowBig::of(80, 24, 100).expect("a terminal"));
+        screen.was_written(sequence);
+        assert_eq!(
+            screen.where_the_cursor_is().map(|at| at.shape),
+            Some(wanted),
+            "the sequence {sequence:?} should ask for {wanted:?}"
+        );
+    }
+}
+
+/// **The cursor is where the program left it, and the character under it is
+/// the one that is there.**
+///
+/// The second half is what a block cursor needs in order to put the character
+/// back: fill the cell and the letter vanishes, so a terminal re-inks it. A
+/// reader that asked for the wrong cell would re-ink the wrong letter.
+#[test]
+fn the_character_under_the_cursor_is_the_one_there() {
+    let mut screen = TerminalOutput::of(HowBig::of(80, 24, 100).expect("a terminal"));
+    // Put the cursor back onto the `b` of `abc`.
+    screen.was_written(b"abc\x1b[1;2H");
+    let at = screen.where_the_cursor_is().expect("a cursor");
+    assert_eq!((at.column, at.line), (1, 0));
+    assert_eq!(
+        screen.the_character_under(at),
+        Some('b'),
+        "the character under the cursor is not the one at its own cell"
+    );
+}
+
+/// **A cursor on an empty cell reports a space**, which is the ordinary case:
+/// it usually sits after the last character of a line, and there is nothing to
+/// put back.
+#[test]
+fn a_cursor_on_an_empty_cell_has_a_space_under_it() {
+    let mut screen = TerminalOutput::of(HowBig::of(80, 24, 100).expect("a terminal"));
+    screen.was_written(b"abc");
+    let at = screen.where_the_cursor_is().expect("a cursor");
+    assert_eq!(at.column, 3, "it should sit after the third character");
+    assert_eq!(screen.the_character_under(at), Some(' '));
+}
+
+/// **A cursor past the bottom of the screen has nothing under it**, rather
+/// than a blank line invented for it.
+#[test]
+fn a_cursor_past_the_screen_has_nothing_under_it() {
+    let screen = TerminalOutput::of(HowBig::of(80, 24, 100).expect("a terminal"));
+    let past = super::WhereTheCursorIs {
+        column: 0,
+        line: 99,
+        shape: super::ACursorShape::Block,
+    };
+    assert_eq!(screen.the_character_under(past), None);
+}
