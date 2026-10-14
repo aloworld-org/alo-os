@@ -146,6 +146,59 @@ impl TerminalOutput {
         (at.column.0, line)
     }
 
+    /// Where the cursor is and what it looks like, or [`None`] when the
+    /// program has hidden it.
+    ///
+    /// **Hidden is a real state and the common one.** A program hides the
+    /// cursor with `DECTCEM` (`\x1b[?25l`) while it redraws, and every
+    /// full-screen program does it on every frame — so a terminal that drew a
+    /// cursor regardless would show one flickering in the wrong place
+    /// throughout an editor's redraw.
+    ///
+    /// This replaces [`Self::cursor`], which answered a position and could not
+    /// say *there is no cursor*. That one is kept because something may want
+    /// the position whatever the program asked for.
+    #[must_use]
+    pub fn where_the_cursor_is(&self) -> Option<WhereTheCursorIs> {
+        use alacritty_terminal::term::TermMode;
+        use alacritty_terminal::vte::ansi::CursorShape;
+        if !self.term.mode().contains(TermMode::SHOW_CURSOR) {
+            return None;
+        }
+        let shape = match self.term.cursor_style().shape {
+            CursorShape::Block => ACursorShape::Block,
+            CursorShape::HollowBlock => ACursorShape::HollowBlock,
+            CursorShape::Underline => ACursorShape::Underline,
+            CursorShape::Beam => ACursorShape::Beam,
+            // **The engine has a `Hidden` shape as well as the mode flag**, and
+            // either means the same thing to a person: nothing is drawn. Two
+            // roads to one answer, folded here so no caller has to know there
+            // were two.
+            CursorShape::Hidden => return None,
+        };
+        let (column, line) = self.cursor();
+        Some(WhereTheCursorIs {
+            column,
+            line,
+            shape,
+        })
+    }
+
+    /// The character under the cursor, for whatever draws over it.
+    ///
+    /// **A block cursor has to put it back.** Filling the cell hides what is
+    /// there, so a terminal draws the character again in the ground colour on
+    /// top — which is what inverting a cell means and what every terminal does.
+    /// Without it, the letter a person is sitting on disappears.
+    ///
+    /// [`None`] past the end of the screen, and a space where the cell is
+    /// empty — which is the ordinary case, because the cursor usually sits
+    /// after the last character of a line.
+    #[must_use]
+    pub fn the_character_under(&self, at: WhereTheCursorIs) -> Option<char> {
+        self.line(at.line)?.chars().nth(at.column)
+    }
+
     /// Whether the program has asked for **application cursor keys**.
     ///
     /// A program sets this with `DECCKM` (`\x1b[?1h`), and it changes what the
@@ -165,6 +218,41 @@ impl TerminalOutput {
             .mode()
             .contains(alacritty_terminal::term::TermMode::APP_CURSOR)
     }
+}
+
+/// Where the cursor is and what it looks like.
+///
+/// **Ours rather than the engine's**, for the reason ADR 0114 gives about the
+/// whole interface: the engine sits behind something of ours, and a compositor
+/// matching on `vte::ansi::CursorShape` would be a compositor that cannot be
+/// built without the engine. The shapes are the ones the terminal protocol has,
+/// which is not a choice either of us gets to make.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WhereTheCursorIs {
+    /// Which column, counted from the left of the screen.
+    pub column: usize,
+    /// Which line, counted from the top of the screen.
+    pub line: usize,
+    /// What it should look like.
+    pub shape: ACursorShape,
+}
+
+/// What a cursor looks like, as the program asked for it.
+///
+/// A program chooses with `DECSCUSR` (`\x1b[<n> q`). **An editor changes this**
+/// — a bar in insert mode, a block in normal mode is the convention — so a
+/// terminal that drew one shape always would be telling a person the wrong
+/// thing about the mode they are in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ACursorShape {
+    /// A filled block over the cell.
+    Block,
+    /// An outline, drawn when the terminal does not have the keyboard.
+    HollowBlock,
+    /// A line under the cell.
+    Underline,
+    /// A line down the left of the cell.
+    Beam,
 }
 
 /// **Written by hand, because the engine's types are not `Debug`** — and

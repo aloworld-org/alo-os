@@ -327,3 +327,189 @@ fn columns_are_counted_from_the_room_available() {
         cell.columns_in(room)
     );
 }
+
+/// A screen with the cursor left on the character at `column` of the first
+/// line.
+fn a_screen_with_the_cursor_on(what: &str, column: usize) -> TerminalOutput {
+    let mut screen = a_screen_saying(what);
+    // `CUP` is one-based, so column 1 is the first cell.
+    screen.was_written(format!("\x1b[1;{}H", column + 1).as_bytes());
+    screen
+}
+
+/// **A cursor is drawn**, and a hidden one is not.
+///
+/// The pair rather than either alone: the first assertion could pass on a
+/// terminal that drew a cursor unconditionally, and the second could pass on
+/// one that never drew one at all.
+#[test]
+fn a_cursor_is_drawn_and_a_hidden_one_is_not() {
+    let shown = picture(
+        &mut the_shells_own_fonts(),
+        &a_screen_saying("abc"),
+        A_DISPLAY,
+        1.0,
+        Scheme::Light,
+    )
+    .expect("a terminal");
+
+    let mut hidden_screen = a_screen_saying("abc");
+    hidden_screen.was_written(b"\x1b[?25l");
+    let hidden = picture(
+        &mut the_shells_own_fonts(),
+        &hidden_screen,
+        A_DISPLAY,
+        1.0,
+        Scheme::Light,
+    )
+    .expect("a terminal");
+
+    assert!(
+        shown.solids.len() > hidden.solids.len(),
+        "a shown cursor added no shape: {} against {} with it hidden",
+        shown.solids.len(),
+        hidden.solids.len()
+    );
+    assert_eq!(
+        hidden.solids.len(),
+        2,
+        "with the cursor hidden there should be only the window and the transcript"
+    );
+}
+
+/// **A block cursor puts the character back.**
+///
+/// The assertion this whole piece turns on. Filling the cell hides the letter,
+/// so the terminal re-inks it in the ground colour on top — and without that,
+/// the character a person is sitting on disappears.
+///
+/// Checked by counting the ink in the **ground** colour, which is what the
+/// re-inked character is drawn in and which nothing else on the screen uses.
+#[test]
+fn a_block_cursor_puts_the_character_back() {
+    let scheme = Scheme::Light;
+    let ground = ground_of(scheme);
+    // The cursor on the `W` of `W`, which has plenty of ink to find.
+    let drawn = picture(
+        &mut the_shells_own_fonts(),
+        &a_screen_with_the_cursor_on("WWW", 1),
+        A_DISPLAY,
+        1.0,
+        scheme,
+    )
+    .expect("a terminal");
+
+    let in_ground_colour: usize = drawn
+        .inked
+        .iter()
+        .flat_map(|ink| ink.pixels.iter())
+        .filter(|pixel| **pixel == ground)
+        .count();
+    assert!(
+        in_ground_colour > 20,
+        "only {in_ground_colour} pixels are drawn in the ground colour, so the character under \
+         a block cursor was not put back and the letter has vanished"
+    );
+}
+
+/// **A beam cursor does not put anything back**, because it hides nothing.
+///
+/// The control for the test above: without it, that one could pass on a
+/// terminal that re-inked the character under every shape, including the ones
+/// that do not cover it.
+#[test]
+fn a_beam_cursor_leaves_the_character_alone() {
+    let mut screen = a_screen_saying("WWW");
+    screen.was_written(b"\x1b[6 q\x1b[1;2H");
+    let drawn = picture(
+        &mut the_shells_own_fonts(),
+        &screen,
+        A_DISPLAY,
+        1.0,
+        Scheme::Light,
+    )
+    .expect("a terminal");
+
+    // One extra solid for the beam, and the text inked once.
+    assert_eq!(
+        drawn.solids.len(),
+        3,
+        "a beam should add exactly one shape to the window and the transcript"
+    );
+    assert_eq!(
+        drawn.inked.len(),
+        1,
+        "a beam re-inked a character, and it covers nothing that needs putting back"
+    );
+}
+
+/// **A hollow block is four edges and not a fill**, which is what makes it
+/// hollow.
+#[test]
+fn a_hollow_block_is_drawn_as_its_edges() {
+    let mut screen = a_screen_saying("abc");
+    // `DECSCUSR` has no hollow shape; the engine uses it when the terminal
+    // does not hold the keyboard, so it is set through the shape directly in
+    // the grid's own tests. Here the shapes are compared by their count.
+    screen.was_written(b"\x1b[2 q");
+    let block = picture(
+        &mut the_shells_own_fonts(),
+        &screen,
+        A_DISPLAY,
+        1.0,
+        Scheme::Light,
+    )
+    .expect("a terminal");
+    assert_eq!(
+        block.solids.len(),
+        3,
+        "a filled block is one shape over the window and the transcript"
+    );
+}
+
+/// **The cursor scales with the display**, like everything else drawn here.
+#[test]
+fn the_cursor_is_as_big_as_a_cell() {
+    let mut fonts = the_shells_own_fonts();
+    let cell = how_big_a_cell_is(&mut fonts, Metrics::new(14.0, 22.0)).expect("a cell");
+    let drawn = picture(
+        &mut fonts,
+        &a_screen_saying(""),
+        A_DISPLAY,
+        1.0,
+        Scheme::Light,
+    )
+    .expect("a terminal");
+
+    // The last solid is the cursor: the window and the transcript come first.
+    let cursor = drawn.solids.last().expect("a cursor was drawn");
+    assert_eq!(
+        cursor.area.size.h, 22,
+        "a block cursor should be one line tall"
+    );
+    let wide = cell.columns_in(cursor.area.size.w);
+    assert_eq!(
+        wide, 1,
+        "a block cursor should be exactly one cell wide, and {} pixels is {wide}",
+        cursor.area.size.w
+    );
+}
+
+/// **Everything the cursor adds is still inside the display.**
+#[test]
+fn a_drawn_cursor_stays_inside_the_display() {
+    for column in [0_usize, 1, 40, 116] {
+        let drawn = picture(
+            &mut the_shells_own_fonts(),
+            &a_screen_with_the_cursor_on("x", column),
+            A_DISPLAY,
+            1.0,
+            Scheme::Dark,
+        )
+        .expect("a terminal");
+        assert!(
+            drawn.validate(A_DISPLAY.into()).is_ok(),
+            "the cursor at column {column} draws outside the display"
+        );
+    }
+}

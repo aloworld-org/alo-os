@@ -173,6 +173,15 @@ impl ACell {
         answer
     }
 
+    /// How far along column `which` begins.
+    ///
+    /// **Fractional, deliberately.** The advance is the face's own, so column
+    /// *n* sits at *n* advances — rounding each one would drift visibly across
+    /// a wide screen, which is the whole reason this is not an integer.
+    pub(crate) fn across(self, which: usize) -> f32 {
+        self.advance * which as f32
+    }
+
     /// How many whole columns fit in this many pixels.
     ///
     /// **A count, never a constant.** How many columns a terminal has is the
@@ -396,6 +405,184 @@ pub(crate) fn the_grid_that_fits(
     Ok((grid, cell.in_pixels(metrics.line_height)))
 }
 
+/// Where the transcript's cells go, on one display.
+///
+/// **A type rather than four arguments, and it is a thing rather than a call
+/// site.** `painted_text::line` carries an exemption for its own argument count
+/// with the reason *bundling them into a struct would name the struct after a
+/// call site*; this is the case that reason does not cover. The transcript, its
+/// insets, the cell and the metrics are **one answer to one question** — where
+/// does character *n* of line *m* sit on this display — and both the text and
+/// the cursor need exactly that answer. Two callers of one thing is what makes
+/// it a thing.
+#[derive(Debug, Clone, Copy)]
+struct WhereTheCellsGo {
+    /// The transcript, in this display's pixels.
+    transcript: Rectangle<i32, Physical>,
+    /// How far the content is inset from its left and its top.
+    inset: (i32, i32),
+    /// The cell the face advances by.
+    cell: ACell,
+    /// The size and line height the cells are drawn at.
+    metrics: Metrics,
+}
+
+impl WhereTheCellsGo {
+    /// The top-left of the cell at this column and line.
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a cell's offset inside a transcript is bounded by the transcript, which is \
+                  bounded by the display"
+    )]
+    fn the_cell_at(self, column: usize, line: usize) -> (i32, i32) {
+        (
+            self.transcript.loc.x + self.inset.0 + self.cell.across(column) as i32,
+            self.transcript.loc.y + self.inset.1 + (self.metrics.line_height * line as f32) as i32,
+        )
+    }
+
+    /// One cell in whole pixels, rounded up so a stem is never cut off.
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a cell is two digits of pixels on any display this product lays out for"
+    )]
+    fn a_cells_box(self) -> (i32, i32) {
+        (
+            self.cell.advance.ceil() as i32,
+            self.metrics.line_height.ceil() as i32,
+        )
+    }
+
+    /// The room the cells have: the transcript less its insets.
+    fn the_room(self) -> Rectangle<i32, Physical> {
+        Rectangle::new(
+            (
+                self.transcript.loc.x + self.inset.0,
+                self.transcript.loc.y + self.inset.1,
+            )
+                .into(),
+            (
+                self.transcript.size.w - self.inset.0 * 2,
+                self.transcript.size.h - self.inset.1,
+            )
+                .into(),
+        )
+    }
+}
+
+/// The cursor, drawn over the cell it sits on.
+///
+/// **A block cursor has to put the character back**, and that is the whole of
+/// why this is more than one rectangle. Filling the cell hides what is there,
+/// so the character is shaped again in the **ground** colour and drawn on top —
+/// which is what inverting a cell means, and what every terminal does. Without
+/// it, the letter a person is sitting on disappears.
+///
+/// **No blink.** A blinking cursor needs a clock, and nothing in this drawing
+/// has one: a frame is drawn when something changed, not on a timer. A cursor
+/// that blinked would need the compositor to redraw on its own account, which
+/// is a decision about frames and not about terminals. The program's `blinking`
+/// flag is read and ignored, and this says so rather than leaving a reader to
+/// wonder.
+///
+/// Answers the shapes and the re-inked character, or nothing when the cursor is
+/// outside the room the transcript has — which happens for one frame while a
+/// window is shrinking, before the grid has been laid out again.
+fn the_cursor(
+    fonts: &mut FontSystem,
+    screen: &TerminalOutput,
+    at: alo_terminal::WhereTheCursorIs,
+    goes: WhereTheCellsGo,
+    ground: [u8; 3],
+    ink: [u8; 3],
+) -> (Vec<Solid>, Vec<Inked>) {
+    let (across, down) = goes.the_cell_at(at.column, at.line);
+    let (wide, tall) = goes.a_cells_box();
+    if wide <= 0 || tall <= 0 {
+        return (Vec::new(), Vec::new());
+    }
+    // **Outside the transcript draws nothing.** True for one frame while a
+    // window is shrinking, before the grid has been laid out again — and a
+    // rectangle outside the output is what `validate` refuses, so this is the
+    // check that stops a true state becoming a refused frame.
+    let whole = Rectangle::new((across, down).into(), (wide, tall).into());
+    if goes.the_room().intersection(whole) != Some(whole) {
+        return (Vec::new(), Vec::new());
+    }
+
+    // **The thickness of a line cursor is a measure, not a pixel.** A beam two
+    // pixels wide on a dense screen is a beam nobody can see, so it is the
+    // design's own border scaled the same way everything else is — and at least
+    // one, because a cursor rounded away is a cursor that is not there.
+    let thin = (tall / 12).max(1);
+    let shapes = match at.shape {
+        alo_terminal::ACursorShape::Block => vec![Solid {
+            area: whole,
+            colour: ink,
+        }],
+        alo_terminal::ACursorShape::Underline => vec![Solid {
+            area: Rectangle::new((across, down + tall - thin).into(), (wide, thin).into()),
+            colour: ink,
+        }],
+        alo_terminal::ACursorShape::Beam => vec![Solid {
+            area: Rectangle::new((across, down).into(), (thin, tall).into()),
+            colour: ink,
+        }],
+        // Four edges rather than a fill, which is what makes it hollow.
+        alo_terminal::ACursorShape::HollowBlock => vec![
+            Solid {
+                area: Rectangle::new((across, down).into(), (wide, thin).into()),
+                colour: ink,
+            },
+            Solid {
+                area: Rectangle::new((across, down + tall - thin).into(), (wide, thin).into()),
+                colour: ink,
+            },
+            Solid {
+                area: Rectangle::new((across, down).into(), (thin, tall).into()),
+                colour: ink,
+            },
+            Solid {
+                area: Rectangle::new((across + wide - thin, down).into(), (thin, tall).into()),
+                colour: ink,
+            },
+        ],
+    };
+
+    // **Only a filled block hides the character**, so only a filled block puts
+    // it back. An underline and a beam sit beside it.
+    if at.shape != alo_terminal::ACursorShape::Block {
+        return (shapes, Vec::new());
+    }
+    let Some(character) = screen.the_character_under(at) else {
+        return (shapes, Vec::new());
+    };
+    if character == ' ' {
+        // Nothing to put back, which is the ordinary case: the cursor usually
+        // sits after the last character of a line.
+        return (shapes, Vec::new());
+    }
+    let mut buffer = Buffer::new(fonts, goes.metrics);
+    buffer.set_wrap(fonts, Wrap::None);
+    buffer.set_size(fonts, None, None);
+    buffer.set_text(
+        fonts,
+        &character.to_string(),
+        &alos_own_mono(),
+        Shaping::Advanced,
+    );
+    buffer.shape_until_scroll(fonts, false);
+    // **Ground on ink**, the two swapped, which is the inversion.
+    let shaped = inked(fonts, &buffer, (wide, tall), 0, ink, ground);
+    (
+        shapes,
+        shaped
+            .placed(across, down, goes.transcript.loc.y + goes.transcript.size.h)
+            .into_iter()
+            .collect(),
+    )
+}
+
 /// Draw alo's own terminal onto a display this size.
 ///
 /// # Errors
@@ -463,19 +650,43 @@ pub(crate) fn picture(
     // The window's ground, then the transcript's. Two solids rather than one,
     // because the identity strip and the note between them are a later change
     // and will need the window's ground behind them.
+    let mut solids = vec![
+        Solid {
+            area: window,
+            colour: ground,
+        },
+        Solid {
+            area: transcript,
+            colour: ground,
+        },
+    ];
+    let mut cells: Vec<Inked> = placed.into_iter().collect();
+
+    // **The cursor last**, because it is drawn *over* the cell it sits on —
+    // both the shape and, for a block, the character put back on top of it.
+    // Nothing is drawn when the program has hidden it, which every full-screen
+    // program does on every redraw.
+    if let Some(at) = screen.where_the_cursor_is() {
+        let (shapes, put_back) = the_cursor(
+            fonts,
+            screen,
+            at,
+            WhereTheCellsGo {
+                transcript,
+                inset: (inset_across, inset_down),
+                cell,
+                metrics,
+            },
+            ground,
+            ink,
+        );
+        solids.extend(shapes);
+        cells.extend(put_back);
+    }
     Ok(TerminalPicture {
         size,
-        solids: vec![
-            Solid {
-                area: window,
-                colour: ground,
-            },
-            Solid {
-                area: transcript,
-                colour: ground,
-            },
-        ],
-        inked: placed.into_iter().collect(),
+        solids,
+        inked: cells,
     })
 }
 
