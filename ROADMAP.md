@@ -31,6 +31,21 @@ on the list at all, and the measurement that found it is in the item itself.
   graphics card from the greeter to the desktop is a named race —
   `alo-desktop.service` says its ordering is intent rather than a guarantee, and
   is owed a measurement on a machine.*
+- **A forgotten password never loses a person's data.** *The owner ruled this on
+  2026-10-13, so it is a launch item rather than a screen for later. **Half of it
+  is already true and the other half is a wall rather than a loss.** The disk is
+  safe: ADR 0054 has the root filesystem encrypted and the person writing down a
+  recovery key **and typing it back before the install finishes**, with
+  `alo_encrypting::WrittenDown` as the only proof that happened — a type, so
+  enrolment cannot claim completion without it. What is missing is any way to
+  change the account password: `alo_accounts::Accounts` offers `none`,
+  `created`, `signs_in`, `how_many`, `numbers` and `name_of`, and nothing that
+  sets a new one. The password is an Argon2id hash and not a key, so nothing is
+  destroyed — a person stands at their own sign-in screen with every byte intact
+  on a disk that opens, and cannot get in. **The way back adds no reach**: whoever
+  holds the recovery key can already read the whole root filesystem by opening
+  the disk, so letting them set a new password grants nothing they did not have.
+  Measured by the desktop lane.*
 - **A desktop appears, with a Dock holding what this machine has.** *Landed
   2026-10-12: before the unit existed, a booted machine signed a person in and
   showed them nothing. The Dock's discovery has never run anywhere that could

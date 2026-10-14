@@ -12,6 +12,73 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **You can ask alo to open an application, bring it to the front, or close
+  it.** The four application verbs had been written down, worded, published for
+  other people to build against, and offered to nobody: nothing on a running
+  machine could carry one out. Three of them now can. *Closing **asks** — the
+  application may put up its own "save your changes?" and you answer that;
+  nothing is killed. Opening something already running brings it forward rather
+  than starting a second copy, and bringing an application to the front brings
+  the window you last used, not an arbitrary one.*
+
+  *The fourth, putting a window somewhere on the screen, is **not** offered yet
+  and that is deliberate: there is nothing behind it, and a verb you could
+  approve with nothing behind it would be an approval that did nothing. It
+  arrives when where-a-window-goes has one answer again.*
+
+  *Not yet seen on a real machine: every test of these uses a stand-in for the
+  compositor, because the real one needs a display. The three verbs have never
+  opened an actual window.*
+
+- **Ask alo to do something and it does it, instead of stopping at the first
+  wrong guess.** Until now a request like *rename the March invoice* produced a
+  perfectly valid request and nothing else: the machine would work out what to
+  do and then stop. Three things were in the way and all three are fixed.
+
+  **You are no longer shown a sentence about a file that is not there.** A model
+  asked to rename `march.pdf` would sometimes ask for `March-invoice.pdf`, and
+  the sentence you were given to approve named a file nothing was at. The
+  machine now checks that every path a change names is really there *before* the
+  sentence reaches you — so what you read is about something, and the agent is
+  told it guessed while it still has tries left.
+
+  **A refusal now teaches it instead of ending the turn.** Being told *there is
+  nothing at that path*, or *nobody granted that folder*, used to end the
+  request. It is now one step of several, so the agent corrects itself and
+  carries on — bounded, so a model that asks for the same forbidden folder eight
+  times gets eight refusals in the record and a turn that ends saying it got
+  nowhere.
+
+  **And a mangled answer is treated as a mistake rather than as prose.** An
+  answer that was nearly right used to be read as though the agent had replied
+  in words and the turn finished. It is now a correctable step.
+
+  *What has not changed: a change still waits for you. Every one of these is
+  about the request that reaches your approval, not about anything happening
+  without it.*
+
+- **A model answered by a provider is held to the shape its own API accepts.**
+  A model running on your own machine is held to a shape by the runtime; one
+  answering from a provider was held to nothing, so a malformed answer had to be
+  read out of prose. The request now carries the shape, so the provider refuses
+  a wrong answer before it reaches us.
+
+- **The keyboard in front of a machine can change while it is running, and a
+  machine reads the keyboard it has instead of being told it is British.** The
+  layout was fixed in a file written once and the same on every machine ever
+  built, so somebody on a French or German keyboard typed their password through
+  a British one — and nothing on a running machine could change it. A machine
+  now reads `/etc/alo/keyboards.toml` first, every held key is released before
+  the layout changes, and the old answer stays only for a machine nobody has set
+  up yet. *Tested by what a key produces rather than by a call returning
+  successfully: key 16 is `q` on a British keyboard and `a` on a French one, and
+  key 44 is `z` on British and `y` on German.*
+
+- **Pressing a window in the Dock reaches that window, and not the one after
+  it.** Windows were numbered by their place in a list, so closing one
+  renumbered the rest — and a press drawn for the second window could reach the
+  third. Each window now keeps a number of its own for as long as it is open.
+
 - **Settings opens on a signed-in desktop, takes the keyboard while it is
   open, and closes when you press Escape.** The window itself was finished
   some time ago and nothing on a running machine ever built one, so every
