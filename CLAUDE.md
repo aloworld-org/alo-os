@@ -476,10 +476,31 @@ next lane relitigates.*
   merge is the scarce thing and a branch on the remote costs nobody
   anything. A gate on an unpublished branch cannot prove the tree it
   measured is the tree anyone else can fetch.
-- **Push early even when it is unfinished.** Work that is only on a
-  local disk *looks absent*, and a lane that reads absence as
-  abandonment takes a crate that has an owner — which is the fault the
-  lane table exists to prevent and which happened twice in one day.
+- **Nothing stays on a local disk. Push first, then gate.** *The owner,
+  2026-10-14: "please always merge the code to the remote not on local."*
+  Work that is only on a local disk **does not exist** as far as every
+  other lane is concerned, and the two failures that follow from it are
+  opposite and both expensive. A lane that reads absence as abandonment
+  **takes a crate that has an owner** — the fault the lane table exists
+  to prevent, twice in one day. And a lane that reads absence correctly
+  **starts the same work again**: on 2026-10-14 a regression deleted six
+  files and about 480 lines, one lane began restoring it and gated
+  locally for the better part of an hour, and the other was one check
+  away from starting the identical cherry-pick. Two lanes on one
+  conflict, because a finished local fix is indistinguishable from
+  nothing at all.
+  **So the order is push, then gate, and never the reverse** — and the
+  push happens the moment there is a commit, not when the work feels
+  presentable. There is no state of a branch too rough to publish: a
+  branch on the remote costs nobody anything, it is not a landing, and
+  it cannot be reviewed, found, taken over or finished by anybody else
+  until it is there. **A verdict on an unpushed tree is also a verdict
+  about a tree nobody can fetch**, which is the separate reason the
+  rule above exists.
+  **And when somebody asks what the state of something is, the answer
+  is what the remote holds**, never what a working copy holds. *It is
+  fixed on my machine* is not an answer to *is it fixed*; the question
+  is about `main`, and the honest reply names what `origin` shows.
 - **Stack your own dependent work.** Branch off your own branch rather
   than waiting for it to land. Waiting for your own pull request is
   serialisation a lane does to itself.
