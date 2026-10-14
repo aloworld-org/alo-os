@@ -1,4 +1,4 @@
-# ADR 0114 — The desktop runs inside the session alo-sessiond opened for it
+# ADR 0115 — The desktop runs inside the session alo-sessiond opened for it
 
 **Status:** proposed, 2026-10-14, by the third-PC lane, from a measurement on a
 booted machine.
