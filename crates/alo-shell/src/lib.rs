@@ -71,6 +71,7 @@
 
 #![cfg(target_os = "linux")]
 
+mod a_chord_brings_up_the_agent;
 mod a_chord_moves_the_keyboard_between_areas;
 mod a_chord_opens_a_terminal;
 mod a_chord_reaches_its_action;
