@@ -150,6 +150,7 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_screen_holds_nothing(image, &mut wrong);
     the_person_has_a_home_of_their_own(image, &mut wrong);
     nothing_else_takes_the_shells_screen(image, &mut wrong);
+    the_greeter_signs_in_as_a_greeter(image, &mut wrong);
     the_desktop_is_the_persons(image, &mut wrong);
     no_unit_names_a_card_number(image, &mut wrong);
     the_desktop_lives_and_dies_with_its_session(image, &mut wrong);
@@ -1015,6 +1016,56 @@ fn nothing_else_takes_the_shells_screen(image: &Image, wrong: &mut Vec<Wrong>) {
     }
 }
 
+/// **The greeter signs in as a greeter, so it does not hold the screen.**
+///
+/// A session with no `XDG_SESSION_CLASS` is given the class `user` by
+/// `pam_systemd`, and **a `user` session occupies the virtual terminal**. The
+/// greeter names `TTYPath=/dev/tty1` — it has to, because a session with no TTY
+/// is given no seat — so without this it takes tty1 as a person would, and the
+/// person who then signs in is refused:
+///
+/// ```text
+/// org.freedesktop.login1.SessionBusy -- Already occupied by a session
+/// ```
+///
+/// Measured on a booted machine on 2026-10-14, where both PAM sessions were
+/// root and one of them was this unit.
+///
+/// **This sits beside [`nothing_else_takes_the_shells_screen`] on purpose.**
+/// That one is about a *different* unit taking tty1; this one is about the
+/// greeter taking it from the person it is serving. Two ways to lose the same
+/// screen, and the second is the one nothing could notice, because the greeter
+/// went on working: its seat comes from `libseat`'s builtin backend as root and
+/// never needed the session at all. *A privileged component succeeding was
+/// never evidence the mechanism worked.*
+fn the_greeter_signs_in_as_a_greeter(image: &Image, wrong: &mut Vec<Wrong>) {
+    const AS_A_GREETER: &str = "XDG_SESSION_CLASS=greeter";
+
+    // Only a unit that asks for a login session gets a class at all: the class
+    // is `pam_systemd`'s doing, so a greeter with no `PAMName=` has no session
+    // to be the wrong class of.
+    if image.screen().as_login().is_none() {
+        return;
+    }
+
+    let says = image.screen().environment();
+    if says.contains(&AS_A_GREETER) {
+        return;
+    }
+
+    // What it will actually be given, so the sentence names the real class
+    // rather than only the missing line. Anything other than `greeter` on this
+    // unit is the same fault, and `user` is what no line at all means.
+    let class = says
+        .iter()
+        .find_map(|said| said.strip_prefix("XDG_SESSION_CLASS="))
+        .unwrap_or("user");
+    wrong.push(Wrong::TheGreetersSessionHoldsTheScreen {
+        unit: image.screen().called().to_owned(),
+        class: class.to_owned(),
+    });
+}
+
 /// **A desktop is the person's, and the greeter is the machine's.**
 ///
 /// `the_screen_holds_nothing` above says the compositor *is* root and is the
@@ -1333,8 +1384,8 @@ mod tests {
     use crate::testing::{
         THE_AGENTS_UNIT, THE_BOOTING_DOCUMENT, THE_CONTAINERFILE, THE_DESCRIPTION_FILE,
         THE_DESKTOPS_UNIT, THE_JOURNAL_DROP_IN, THE_KERNEL_ARGUMENTS, THE_LOADERS_UNIT,
-        THE_OPENERS_UNIT, THE_SERVERS_UNIT, THE_SYSUSERS, THE_TMPFILES, a_copy_of_the_image,
-        edited, image_at, the_release_line, the_store_file,
+        THE_OPENERS_UNIT, THE_SCREENS_UNIT, THE_SERVERS_UNIT, THE_SYSUSERS, THE_TMPFILES,
+        a_copy_of_the_image, edited, image_at, the_release_line, the_store_file,
     };
 
     /// **The image this repository ships says one thing.** Everything below
@@ -1564,6 +1615,95 @@ mod tests {
                 unit.called()
             );
         }
+    }
+
+    /// **The greeter this repository ships signs in as a greeter.**
+    ///
+    /// The half that says the check below is about something real, read off
+    /// the shipped unit rather than a copy.
+    #[test]
+    fn the_shipped_greeter_signs_in_as_a_greeter() {
+        let image = image_at(Path::new(crate::THE_IMAGE));
+
+        assert!(
+            image
+                .screen()
+                .environment()
+                .contains(&"XDG_SESSION_CLASS=greeter"),
+            "{} does not sign in as a greeter, so it will hold tty1 against the person it is \
+             asking to sign in: {:?}",
+            image.screen().called(),
+            image.screen().environment()
+        );
+        assert!(
+            everything_wrong_with(&image)
+                .iter()
+                .all(|it| !matches!(it, Wrong::TheGreetersSessionHoldsTheScreen { .. })),
+            "the shipped image is reported as holding its own screen"
+        );
+    }
+
+    /// **A greeter that names no class is caught, and the sentence says it will
+    /// be given `user`.**
+    ///
+    /// Measured on a booted machine on 2026-10-14: without the line,
+    /// `pam_systemd` gave this unit the class `user`, a `user` session occupies
+    /// the virtual terminal, and `alo-sessiond` was refused the person's
+    /// session with `SessionBusy -- Already occupied by a session`.
+    ///
+    /// **Nothing could have noticed before it was booted.** The greeter takes
+    /// its card as root through `libseat`'s builtin backend and never needed
+    /// the session, so it went on working while holding the screen. That is
+    /// this check's reason for existing: a privileged component succeeding was
+    /// never evidence the mechanism worked.
+    #[test]
+    fn a_greeter_that_names_no_class_is_caught() {
+        let root = a_copy_of_the_image("greeter-with-no-class");
+        edited(
+            &root,
+            THE_SCREENS_UNIT,
+            "Environment=XDG_SESSION_CLASS=greeter",
+            "",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        let found = wrong.iter().find_map(|it| match it {
+            Wrong::TheGreetersSessionHoldsTheScreen { class, .. } => Some(class.clone()),
+            _ => None,
+        });
+        assert_eq!(
+            found.as_deref(),
+            Some("user"),
+            "a greeter naming no class was not caught, or was not said to be given `user`: \
+             {wrong:?}"
+        );
+    }
+
+    /// **And a greeter that asks for `user` outright is the same fault.**
+    ///
+    /// The check is about the class the session ends up with, not about one
+    /// missing line — so writing the wrong class is caught as surely as writing
+    /// none, and the sentence names what was actually asked for.
+    #[test]
+    fn a_greeter_that_asks_for_a_user_session_is_caught() {
+        let root = a_copy_of_the_image("greeter-asking-for-user");
+        edited(
+            &root,
+            THE_SCREENS_UNIT,
+            "Environment=XDG_SESSION_CLASS=greeter",
+            "Environment=XDG_SESSION_CLASS=user",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheGreetersSessionHoldsTheScreen { class, .. } if class == "user"
+            )),
+            "{wrong:?}"
+        );
     }
 
     /// **A getty left to take the shell's screen is caught.**

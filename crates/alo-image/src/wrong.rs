@@ -123,6 +123,46 @@ pub enum Wrong {
         /// The unit that would take it.
         unit: String,
     },
+    /// The greeter's session is not a greeter's, so it occupies the screen it
+    /// is asking somebody to sign in on.
+    ///
+    /// **Measured on a booted machine on 2026-10-14.** A person made the first
+    /// account and `alo-sessiond` was refused their session in these words:
+    ///
+    /// ```text
+    /// systemd-logind would not open a session for 1000:
+    /// org.freedesktop.login1.SessionBusy -- Already occupied by a session
+    /// ```
+    ///
+    /// Two PAM sessions existed and **both were root**, one of them on
+    /// `/dev/tty1` -- the greeter's own unit. Without `XDG_SESSION_CLASS`,
+    /// `pam_systemd` gives a session the class `user`, and a `user` session
+    /// **occupies the virtual terminal**. So the screen the person was looking
+    /// at was held against them by the process that had just asked them to sign
+    /// in.
+    ///
+    /// **And the session buys the greeter nothing**, which is why nothing
+    /// caught it: it takes the card as root through `libseat`'s builtin
+    /// backend, needing no login session at all. It was occupying a seat's
+    /// terminal for a seat it did not use, and the greeter worked throughout.
+    /// *A privileged component succeeding was never evidence the mechanism
+    /// worked* -- the same reading that explains
+    /// [`Self::SomethingElseOwnsTheScreen`] and the card-number rule.
+    ///
+    /// `greeter` is logind's own class for exactly this: it does not block the
+    /// person's session that follows it on the same seat, which is what every
+    /// display manager relies on.
+    #[error(
+        "{unit} does not set XDG_SESSION_CLASS=greeter, so logind gives it the class {class} - \
+         and a user session occupies the virtual terminal, which is the screen it is asking \
+         somebody to sign in on"
+    )]
+    TheGreetersSessionHoldsTheScreen {
+        /// The greeter's unit.
+        unit: String,
+        /// The class it will be given, which is `user` when it names none.
+        class: String,
+    },
     /// The desktop's service is not the person's.
     ///
     /// **The inverse of [`Self::TheScreenHoldsSomething`]'s case, and the
