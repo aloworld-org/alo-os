@@ -17,7 +17,7 @@
 //!   replaced 0043's stated foundation six days later and permits an agent to
 //!   run **any** command at full trust — so the wall forbade the lesser act
 //!   while the greater was allowed;
-//! - [ADR 0079](../../../docs/decisions/0079-a-whole-machine.md) already
+//! - [ADR 0079](../../../docs/decisions/0079-a-person-may-hand-their-agent-a-whole-machine.md) already
 //!   permits handing an agent a whole remote machine.
 //!
 //! # Two halves, and this file is only the first
