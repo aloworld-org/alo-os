@@ -30,6 +30,8 @@ const SUPER_SHIFT: Modifiers = SUPER.and(Modifier::Shift);
 const ALT: Modifiers = Modifiers::just(Modifier::Alt);
 /// Alt and Shift held.
 const ALT_SHIFT: Modifiers = ALT.and(Modifier::Shift);
+/// Control and Alt held, which only the terminal uses.
+const CTRL_ALT: Modifiers = Modifiers::just(Modifier::Ctrl).and(Modifier::Alt);
 /// Shift alone, which only the landmark cycle's reverse uses.
 const SHIFT: Modifiers = Modifiers::just(Modifier::Shift);
 /// Nothing held at all. See the two F6 entries for why one chord has none.
@@ -41,10 +43,23 @@ const NOTHING: Modifiers = Modifiers::none();
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 20] = [
+const SHIPPED: [(Action, Chord); 21] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::Settings, Chord::shipped(SUPER, Key::I)),
+    // **Ctrl+Alt+T, which is the habit people arrive with.** It is the chord
+    // GNOME, Ubuntu, Cinnamon and Xfce all ship for a terminal, and
+    // `docs/features.md` promises *the habits people arrive with still work*.
+    //
+    // **Not Super+T**, which would have been shorter and is the wrong trade: a
+    // person who has opened a terminal this way for ten years should not have
+    // to learn ours, and nothing else wants Ctrl+Alt.
+    //
+    // `Chord::checked` admits it — `the_clipboard` refuses C, X and V only when
+    // Ctrl is held **alone**, so a second modifier is not shadowing a copy — and
+    // `alo_keyboards::switching::the_chord` is Alt+Space, which this does not
+    // touch.
+    (Action::Terminal, Chord::shipped(CTRL_ALT, Key::T)),
     // **Alt+F3, beside Alt+F4 which closes.** `docs/features.md` promises the
     // habits people arrive with still work, and KDE spells *the window's own
     // operations menu* exactly this way.

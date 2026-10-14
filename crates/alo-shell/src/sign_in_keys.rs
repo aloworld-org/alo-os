@@ -27,16 +27,6 @@ pub enum SignInKey {
     /// machine starts at, and somebody who cannot see the password field must
     /// be able to start it again with one key rather than counting erasures.
     Clear,
-    /// Move to the row above, on a screen that offers a list.
-    ///
-    /// **A list needs these and the two fields never did**, which is why they
-    /// arrived with the language sheet rather than with the sign-in screen.
-    /// On a screen with no list they do nothing, by the same rule as
-    /// [`Self::Nothing`] — an arrow key is not a letter and must never become
-    /// one in a password field.
-    Earlier,
-    /// Move to the row below, on a screen that offers a list.
-    Later,
     /// Anything else, which does nothing at all.
     Nothing,
 }
@@ -55,8 +45,6 @@ impl SignInKey {
             Keysym::Tab | Keysym::ISO_Left_Tab => return Self::OtherField,
             Keysym::Return | Keysym::KP_Enter => return Self::Enter,
             Keysym::Escape => return Self::Clear,
-            Keysym::Up | Keysym::KP_Up => return Self::Earlier,
-            Keysym::Down | Keysym::KP_Down => return Self::Later,
             _ => {}
         }
         if held.ctrl || held.alt || held.logo {
@@ -152,60 +140,5 @@ mod tests {
             alo_access::leaving(alo_access::tree::Surface::SignIn),
             alo_access::Leaving::ClearsWhatWasTyped
         );
-    }
-}
-
-#[cfg(test)]
-mod the_arrows_move_a_list {
-    use super::{Keysym, ModifiersState, SignInKey};
-
-    /// Up and down move, from both the arrow block and the keypad.
-    #[test]
-    fn up_and_down_move_a_row_at_a_time() {
-        let held = ModifiersState::default();
-        assert_eq!(SignInKey::of(Keysym::Up, &held), SignInKey::Earlier);
-        assert_eq!(SignInKey::of(Keysym::KP_Up, &held), SignInKey::Earlier);
-        assert_eq!(SignInKey::of(Keysym::Down, &held), SignInKey::Later);
-        assert_eq!(SignInKey::of(Keysym::KP_Down, &held), SignInKey::Later);
-    }
-
-    /// **And they are not letters**, which is the thing that would be worst.
-    /// `key_char` answers `None` for an arrow, so this would pass without the
-    /// arms above by falling through to `Nothing` — the assertion that makes
-    /// it mean something is that they are `Earlier` and `Later` rather than
-    /// merely *not a letter*.
-    #[test]
-    fn an_arrow_never_types_a_character() {
-        let held = ModifiersState::default();
-        for arrow in [Keysym::Up, Keysym::Down, Keysym::KP_Up, Keysym::KP_Down] {
-            assert!(
-                !matches!(SignInKey::of(arrow, &held), SignInKey::Letter(_)),
-                "an arrow key typed a character into a field"
-            );
-        }
-    }
-
-    /// **A chord does not suppress an arrow, and that is deliberate.**
-    ///
-    /// The modifier check exists for one reason, which [`SignInKey::of`] gives:
-    /// a letter typed with Control held would put a character into a password
-    /// field that the person did not mean and cannot see. An arrow is never a
-    /// character, so there is nothing to protect against — and `Tab`, `Enter`,
-    /// `Escape` and `BackSpace` are all answered before that check for the
-    /// same reason. An arrow answered after it would be the odd one out.
-    ///
-    /// This test first asserted the opposite, on the assumption that a chord
-    /// should always mean *nothing*. It is written down this way round so the
-    /// next reader sees a decision rather than an oversight.
-    #[test]
-    fn a_chord_does_not_stop_an_arrow_moving() {
-        let held = ModifiersState {
-            ctrl: true,
-            ..ModifiersState::default()
-        };
-        assert_eq!(SignInKey::of(Keysym::Up, &held), SignInKey::Earlier);
-        assert_eq!(SignInKey::of(Keysym::Down, &held), SignInKey::Later);
-        // And the rule it is contrasted with still holds: a letter is not.
-        assert_eq!(SignInKey::of(Keysym::a, &held), SignInKey::Nothing);
     }
 }

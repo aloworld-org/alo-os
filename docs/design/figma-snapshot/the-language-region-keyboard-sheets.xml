@@ -4,15 +4,10 @@
   has been set to, and the three pickers behind its three rows.
 
   WHAT METADATA CANNOT SAY, recorded so nobody reads its silence as absence:
-  no colour, no corner radius, no type size, no stroke. The `Choice /`
-  component's own states are not here, and neither is any text.
-
-  One thing metadata CAN say and this capture nearly mis-stated: a picker's
-  selected row measures 87 where the others measure 85. That is not an open
-  question - ../the-first-start.md settled it on 2026-10-07 by measuring
-  every card in all 77 frames: ordinary 85 is a 1px border, selected 87 is a
-  2px border reaching one pixel further on each edge, and a surviving 1.5px
-  border would have measured 86, which nothing does.
+  no colour, no corner radius, no type size, no stroke. Which of the rows on a
+  picker is the selected one is visible only as its height - 87 against 85 -
+  and what that extra pixel on each side IS must be read from a render. The
+  `Choice /` component's own states are not here, and neither is any text.
 
   AND: a picker shows three rows. There are 24 languages and more regions than
   that, so how 24 become 3 - a scroll, a page, a search - is NOT in this

@@ -93,7 +93,16 @@ pub const fn side_for(action: Action) -> Option<Side> {
         // The file refused to compile again when they were added, which is the
         // second time that comment has earned itself.
         | Action::TheNextArea
-        | Action::ThePreviousArea => None,
+        | Action::ThePreviousArea
+        // And opening a terminal is not a division: it asks for an application
+        // to start, and a window that does not exist yet has no share of
+        // anything. Where it lands once it has a surface is `alo-dividing`'s
+        // ordinary business for a new window, reached the way every other new
+        // window reaches it rather than from here.
+        //
+        // The file refused to compile a third time, which is the third time
+        // that comment has earned itself.
+        | Action::Terminal => None,
     }
 }
 

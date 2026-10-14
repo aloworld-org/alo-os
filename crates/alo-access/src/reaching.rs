@@ -105,6 +105,21 @@ pub const fn the_tab_stop_for(action: Action) -> Surface {
         // reaches it from without a chord is the same one.
         Action::Launcher
         | Action::Settings
+        // **A terminal is the Dock's by the same reasoning, and today there is
+        // nothing there to find.** This answers *where a reader meets this*,
+        // and an application is met where applications are. But a terminal is
+        // not among the three a fresh machine pins, and an unpinned application
+        // with no window is not on the Dock at all — so a person told "it is on
+        // the Dock" would look and not find it.
+        //
+        // Said plainly rather than smoothed over, because **that gap is the
+        // reason the chord exists**: `Action::Terminal` is currently the only
+        // road to an installed terminal. When the Dock gains a way to reach
+        // every installed application, this arm becomes true as written and
+        // nothing here has to change. Until then it names where this is going
+        // rather than where it is, which is the one thing a reader of this
+        // function should not have to guess.
+        | Action::Terminal
         | Action::NextApplication
         | Action::PreviousApplication => Surface::Dock,
         // Everything done to the window in front is where that window's own

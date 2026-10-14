@@ -228,8 +228,36 @@ fn a_tool_that_will_not_answer_is_a_failure_and_not_an_empty_machine() {
 /// and means nothing, with no sentence anywhere admitting it.
 #[test]
 fn asking_this_machine_answers_without_panicking() {
+    let offered = what_this_machine_offers();
     assert!(
-        !matches!(what_this_machine_offers(), Discovery::StillLooking),
+        !matches!(offered.roles, Discovery::StillLooking),
         "this producer answers in one pass and must never report that it is still looking"
     );
+    // **The terminal is read in the same pass**, and what it finds is not
+    // asserted for the reason the roles are not: a gate machine has no rented
+    // tool and answers `None`, a machine with one answers whichever it has.
+    // What is asserted is that asking for it is possible at all — which is the
+    // half that would break if the two answers stopped coming from one reading.
+    let _ = offered.terminal;
+}
+
+/// **A failed scan gives no terminal, and that is not the same as a scan that
+/// found none.**
+///
+/// Neither can be told apart from `Offered`, which is deliberate and is why the
+/// field's own rustdoc says so. What this asserts is the only thing that must
+/// hold: a reading that failed never hands out a terminal, because
+/// `Server::its_terminal_is` would then be told about an application this
+/// machine may not have — and the owner's fourth clause is that *an unfinished
+/// scan or discovery failure is not proof that an application is absent*, which
+/// cuts both ways.
+#[test]
+fn a_reading_that_failed_offers_no_terminal() {
+    let offered = what_this_machine_offers();
+    if matches!(offered.roles, Discovery::Failed) {
+        assert!(
+            offered.terminal.is_none(),
+            "a scan that failed named a terminal anyway"
+        );
+    }
 }

@@ -193,6 +193,15 @@ pub struct Server {
     /// applications — and because the one outcome to avoid is silently dropping
     /// something a person asked for.
     pub(crate) asked_to_start: Vec<alo_dock::AppId>,
+    /// Which application this machine's terminal is, when something has told
+    /// it.
+    ///
+    /// **[`None`] is the honest state and not a placeholder**, exactly as
+    /// `asks_an_application_to_start` below is: which applications are
+    /// installed is a scan of the machine, `crates/alo-shell` shows and never
+    /// measures, and a session nobody has told has no terminal to open rather
+    /// than a guess at one. See `crate::a_chord_opens_a_terminal`.
+    pub(crate) the_terminal: Option<alo_dock::AppId>,
     /// How this machine asks an application to start, when something has told
     /// it.
     ///
@@ -438,6 +447,7 @@ impl Server {
             asked_to_put_aside: Vec::new(),
             asked_on_an_edge: Vec::new(),
             asked_to_start: Vec::new(),
+            the_terminal: None,
             asks_an_application_to_start: None,
             // Nothing has been worked out yet; the stand-up fills it.
             what_the_dock_is_pinned_to: alo_dock::Holding::nothing(),

@@ -74,17 +74,6 @@ pub(crate) struct TheColours {
     pub(crate) ink: [u8; 3],
     /// The placeholder inside an empty entry.
     pub(crate) muted: [u8; 3],
-    /// The second line of a choice row: `text/secondary`.
-    ///
-    /// **Not [`Self::muted`], which is a different colour.** The design draws
-    /// an eyebrow and a hint in `text/muted` `#596B78` and a choice row's
-    /// second line in `text/secondary` `#274C68` — the English name under a
-    /// language's own, the consequence under a choice's title. Flattening the
-    /// two would make the quieter of them the wrong quiet, and the pair is
-    /// recorded in `docs/design/figma-snapshot/variables.toml` with its own
-    /// `confirmed_from`, so there is a reading behind each rather than a
-    /// judgement.
-    pub(crate) secondary: [u8; 3],
     /// The entry's border at rest.
     pub(crate) border: [u8; 3],
     /// The entry's border after a refusal.
@@ -115,8 +104,6 @@ impl TheColours {
                 // No softening at high contrast: a muted placeholder is the
                 // thing this setting exists to stop.
                 muted: ink,
-                // No softening at high contrast, the same rule as `muted`.
-                secondary: ink,
                 border: ink,
                 refused: THE_DANGER_IS,
             };
@@ -128,7 +115,6 @@ impl TheColours {
                 monogram: [0xEE, 0xF2, 0xF4],
                 ink,
                 muted: [0x59, 0x6B, 0x78],
-                secondary: [0x27, 0x4C, 0x68],
                 border: [0xE7, 0xEB, 0xEF],
                 refused: THE_DANGER_IS,
             },
@@ -141,7 +127,6 @@ impl TheColours {
                 monogram: [0x18, 0x3B, 0x56],
                 ink: [0xFF, 0xFC, 0xF8],
                 muted: [0xA4, 0xB4, 0xC2],
-                secondary: [0xCB, 0xD5, 0xE1],
                 border: [0x27, 0x4C, 0x68],
                 refused: THE_DANGER_IS,
             },

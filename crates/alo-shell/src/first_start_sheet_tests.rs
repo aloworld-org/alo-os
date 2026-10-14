@@ -49,25 +49,6 @@ fn a_fresh_machine() -> (tempfile::TempDir, SignInScreen<ADoor>) {
     (kept, SignInScreen::of(Ok(greeting), words))
 }
 
-/// A fresh machine, walked past the language sheet to the name sheet.
-///
-/// **The language sheet comes first since 2026-10-13**, so a test about the
-/// account sheet has to reach it the way a person does: one Enter chooses the
-/// language under the cursor, a second takes *Use this language*. Walking the
-/// real journey rather than adding a constructor that skips it — a test that
-/// built the name sheet directly would keep passing on a machine where the
-/// language sheet never handed over.
-fn at_the_name_sheet(screen: SignInScreen<ADoor>) -> SignInScreen<ADoor> {
-    let chosen = match screen.pressed(crate::SignInKey::Enter) {
-        Signing::Still(screen) => *screen,
-        Signing::HandedOver(_) => panic!("choosing a language signed somebody in"),
-    };
-    match chosen.pressed(crate::SignInKey::Enter) {
-        Signing::Still(screen) => *screen,
-        Signing::HandedOver(_) => panic!("leaving the language sheet signed somebody in"),
-    }
-}
-
 /// The picture a fresh machine draws.
 fn drawn(screen: &SignInScreen<ADoor>) -> crate::sign_in_raster::SignInPicture {
     let mut labels = WindowControlLabels::new().unwrap();
@@ -106,7 +87,6 @@ fn marked(ink: &crate::painted::Inked) -> usize {
 #[test]
 fn a_machine_with_no_accounts_offers_a_sheet_to_make_one() {
     let (_kept, screen) = a_fresh_machine();
-    let screen = at_the_name_sheet(screen);
     assert!(
         matches!(screen.shows(), crate::SignInShows::FirstAccount { .. }),
         "a fresh machine does not offer the first-start sheet"
@@ -128,7 +108,6 @@ fn a_machine_with_no_accounts_offers_a_sheet_to_make_one() {
 #[test]
 fn what_is_typed_reaches_the_sheet() {
     let (_kept, screen) = a_fresh_machine();
-    let screen = at_the_name_sheet(screen);
     let empty = drawn(&screen);
     let screen = match screen.pressed(SignInKey::Letter('a')) {
         Signing::Still(screen) => *screen,
@@ -181,10 +160,7 @@ fn two_secrets_of_different_lengths_are_the_same_sheet() {
 /// machine with no accounts could not be used at all.
 #[test]
 fn a_fresh_machine_makes_its_first_account_and_signs_in() {
-    let (kept, screen) = a_fresh_machine();
-    // Past the language sheet first: this test is about the name sheet, and a
-    // person reaches it by choosing a language.
-    let mut screen = at_the_name_sheet(screen);
+    let (kept, mut screen) = a_fresh_machine();
     let store = kept.path().join("accounts.toml");
 
     let mut keys: Vec<SignInKey> = "ada".chars().map(SignInKey::Letter).collect();

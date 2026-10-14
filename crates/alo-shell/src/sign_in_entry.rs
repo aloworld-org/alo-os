@@ -60,13 +60,6 @@ impl SignInEntry {
             // the same forgetting that follows a sign-in: the password first,
             // the name with it, and the name field waiting again.
             crate::SignInKey::Clear => self.forgotten(),
-            // **An arrow does nothing to a field, and says so by name.** The
-            // two fields have no list to move through; the language sheet
-            // does, and routes these before an entry ever sees them. An arm
-            // each rather than a catch-all, because this match is where the
-            // compiler tells whoever adds the next key that there is a second
-            // screen to think about.
-            crate::SignInKey::Earlier | crate::SignInKey::Later => {}
             crate::SignInKey::Nothing => {}
         }
         false

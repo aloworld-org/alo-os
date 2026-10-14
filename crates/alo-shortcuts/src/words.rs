@@ -68,6 +68,13 @@ pub const THE_AGENT: Word = Word::saying("shortcuts.action.the-agent", "Ask the 
 pub const LAUNCHER: Word = Word::saying("shortcuts.action.launcher", "Open the launcher")
     .noting("The launcher is where a person finds and starts an application.");
 
+/// What [`crate::Action::Terminal`] does.
+pub const TERMINAL: Word = Word::saying("shortcuts.action.terminal", "Open a terminal").noting(
+    "A terminal is the window where a person types commands to their own computer. \
+     \"A terminal\" and not \"the terminal\": pressing this again opens another one, the way \
+     every other system spells it, so a translator should not make it definite.",
+);
+
 /// What [`crate::Action::Settings`] does.
 pub const SETTINGS: Word = Word::saying("shortcuts.action.settings", "Open Settings").noting(
     "Settings is where a person changes what their own machine does — the one place, not a \
@@ -486,10 +493,11 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// the shortcuts do, what is held down, the keys that print a word, why a
 /// combination was refused, what one chord wanted twice says, and then what is
 /// said about the person's own file.
-pub const EVERY_WORD: [Word; 55] = [
+pub const EVERY_WORD: [Word; 56] = [
     THE_AGENT,
     LAUNCHER,
     SETTINGS,
+    TERMINAL,
     WINDOW_OPTIONS,
     CLOSE_WINDOW,
     MINIMISE_WINDOW,

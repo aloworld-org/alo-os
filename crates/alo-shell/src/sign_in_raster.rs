@@ -183,19 +183,6 @@ pub(crate) fn picture(
                 &measure,
             );
         }
-        // **The language sheet**, which a fresh machine shows before it asks
-        // for a name — so that a person has their own keyboard before they
-        // type a password through it.
-        SignInShows::Language { offered } => {
-            return crate::language_sheet::drawn(
-                &crate::language_sheet::LanguageSheet { offered },
-                fonts,
-                words,
-                (width, height),
-                crate::sign_in_surface::TheColours::of(look.contrast, look.scheme),
-                &measure,
-            );
-        }
         SignInShows::Sentence(said) => {
             let text = sentence(
                 fonts,

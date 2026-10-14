@@ -1,4 +1,5 @@
-//! Which installed application fills each of the Dock's default roles.
+//! Which installed application fills each of the Dock's default roles, and
+//! which one is this machine's terminal.
 //!
 //! `alo_dock::pinning::Discovery` is the shape of this answer and has been
 //! since the roles were written down. **Nothing produced one.** Its own header
@@ -44,20 +45,74 @@ use alo_dock::window::AppId;
 use alo_software::rented::TheRentedTool;
 use alo_software::{Role, Shipped};
 
-/// The Dock roles this machine can fill from what it has installed, in
-/// [`ARole::EVERY`]'s order.
+/// What one reading of this machine tells the desktop.
+///
+/// **Two answers from one reading, and that is the point of the type.** Reading
+/// the machine means waiting for the rented tool — a subprocess — and this
+/// happens before the display is taken, so a second reading would delay the
+/// desktop's appearance twice over for the same information.
+#[derive(Debug)]
+pub struct Offered {
+    /// The Dock roles this machine can fill, in [`ARole::EVERY`]'s order.
+    pub roles: Discovery,
+    /// This machine's terminal, when it has one installed.
+    ///
+    /// **[`None`] is a real machine and not a fault**, and it is two different
+    /// real machines: one where the scan failed, and one where the scan
+    /// succeeded and found no terminal. Neither may be told apart from here and
+    /// neither should be guessed at — `alo_shell::Server::its_terminal_is` is
+    /// simply never called, and the chord says on the error stream that this
+    /// machine has none.
+    pub terminal: Option<AppId>,
+}
+
+/// The Dock roles this machine can fill, and its terminal.
 ///
 /// Reads the machine once, through the rented tool, and matches what it found
 /// against the applications this system ships for each role.
-pub fn what_this_machine_offers() -> Discovery {
+pub fn what_this_machine_offers() -> Offered {
     let tool = TheRentedTool::on_this_machine();
     let Ok(has) = alo_software::what_this_machine_has::what_this_machine_has(&tool) else {
-        return Discovery::Failed;
+        return Offered {
+            roles: Discovery::Failed,
+            terminal: None,
+        };
     };
     let Ok(ships) = Shipped::decided() else {
-        return Discovery::Failed;
+        return Offered {
+            roles: Discovery::Failed,
+            terminal: None,
+        };
     };
-    Discovery::Completed(filled_by(&has, &ships))
+    Offered {
+        roles: Discovery::Completed(filled_by(&has, &ships)),
+        terminal: the_terminal_among(&has, &ships),
+    }
+}
+
+/// The terminal this machine has installed, from one reading and one shipped
+/// list.
+///
+/// **Not a Dock role, and deliberately not one.** `ARole` is the list of roles
+/// a **fresh machine pins**, and `what_a_fresh_machine_pins` answers Files,
+/// Browser and Settings — the owner's own three. Adding the terminal to `ARole`
+/// would pin it and contradict them, so the terminal is asked for separately
+/// and reaches the keyboard rather than the Dock.
+///
+/// Separated from the reading above so it can be tested at all, exactly as
+/// [`filled_by`] is.
+fn the_terminal_among(
+    has: &alo_software::what_this_machine_has::WhatThisMachineHas,
+    ships: &Shipped,
+) -> Option<AppId> {
+    let identifier = ships.the(Role::Terminal).application().identifier();
+    if !has.installed().has(identifier) {
+        // **Omitted and not placeholdered**, which is the owner's words and the
+        // same rule `filled_by` follows: *omit unavailable applications; never
+        // show placeholders or non-working buttons.*
+        return None;
+    }
+    AppId::named(identifier).ok()
 }
 
 /// The pairs, from one reading and one shipped list.
