@@ -730,6 +730,231 @@ the accommodation lives in our configuration and the reason lives here.
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
 
+### `alacritty_terminal` — a shell that exits reports `EIO`, not end of file
+**Version:** `alacritty_terminal` 0.26.0 on Linux 6.x, measured 2026-10-14 in
+the Lima VM against a real `/bin/sh`.
+
+**What the specification implies.** A read that finds nothing left answers
+`Ok(0)`. `Pty::file()` hands back a `File`, and `std::io::Read` on a file at its
+end is `Ok(0)`. So the obvious reading is that a shell which has exited is
+end of file.
+
+**What actually happens.** The last process holding the slave end closes it, and
+a read on the master then fails with `errno 5`, `EIO` — an **error**, not an
+end. `Ok(0)` does occur, but `EIO` is the ordinary case for a shell that ran a
+command and exited.
+
+**What we do about it.** `alo_terminal::AShellOnAPseudoterminal::what_it_wrote`
+maps both to the same answer, `WhatArrived::ItFinished`:
+
+```rust
+Ok(0) => Ok(WhatArrived::ItFinished),
+// ...
+_ if why.raw_os_error() == Some(5) => Ok(WhatArrived::ItFinished),
+```
+
+Reporting `EIO` as a failure would make **every terminal that has ever closed**
+look broken. The accommodation is matched on the raw OS error rather than on
+`ErrorKind`, because `std::io::ErrorKind` has no variant for `EIO` and maps it
+to `Uncategorized`, which is not matchable.
+
+**And a second thing, which is the one that wastes an afternoon.** Bytes written
+just before the child exited are **still in the kernel's queue** when `EIO`
+arrives. A reader that stops at the first `ItFinished` loses the last line of
+every command that ends quickly — which is most of them, and `echo hello` is the
+first thing anybody tests. Read on past it until the queue is empty.
+`a_shell_on_a_pseudoterminal_tests.rs`'s `read_until` does, and says so.
+
+### cosmic-text — the family name a face declares is not always the one to ask for
+**Version:** cosmic-text 0.14.2 with its bundled `fontdb`, measured 2026-10-14.
+
+**What the specification implies.** `Family::Name(…)` takes the family name, and
+a font's family name is name ID 1 in its `name` table.
+
+**What actually happens.** The two differ for a variable font, in opposite
+directions, and this product contains one of each:
+
+| face | ID 1 (family) | ID 16 (typographic family) | what you must ask for |
+|---|---|---|---|
+| `Manrope.ttf` | `Manrope ExtraLight` | `Manrope` | `Manrope` |
+| `GeistMono.ttf` | `Geist Mono` | **absent** | `Geist Mono` |
+
+Both are `[wght]` variable fonts, and they reach the right answer by **two
+different routes.** Manrope's ID 1 carries the name of its lightest instance,
+because that is where its axis starts — so ID 1 is `Manrope ExtraLight` and the
+name to ask for is in ID 16. Geist Mono has **no ID 16 at all**, so the name to
+ask for is its ID 1. fontdb prefers ID 16 and falls back to ID 1, which is why
+one line of code works for both.
+
+**So reading ID 1 gives the right answer for one of our two faces and the wrong
+answer for the other** — and a reader who checks the other face first concludes
+that ID 1 is the field to read. That is the trap: both readings are confirmed by
+one of the two files in this very directory.
+
+**What we do about it.** The names live in one place each —
+`painted_text::ALOS_OWN_FACE`, and the monospace family's name in the test
+module that guards it — and **neither is trusted because it was read off the
+file.** Each is asserted by a test that
+shapes a character and counts ink, because getting one wrong is **not an error**
+in cosmic-text, and what it does instead has now been seen two different ways.
+
+### cosmic-text — the family you ask for is honoured only at an exact weight match
+**Version:** cosmic-text 0.14.2 with its bundled fontdb, measured 2026-10-14 in
+the Lima VM against the shell's own three bundled faces.
+
+**What the specification implies.** `Manrope[wght].ttf` is a variable font
+covering ExtraLight to ExtraBold, so `Family::Name("Manrope")` with
+`Weight(600)` should give Manrope at SemiBold. Failing that, it should at worst
+give Manrope at the nearest weight it has — `fontdb::Database::query` filters
+candidates to the family **first** and picks the best weight only among them,
+and never leaves the family.
+
+**What actually happens.** Two things compound, and only the second is
+surprising.
+
+First, fontdb registers a variable font as **one** face at its default
+instance, not as a family spanning its axis. The shell's three faces register
+as:
+
+| face | weight | monospaced |
+|---|---|---|
+| Manrope | **200** | no |
+| Inter | 400 | no |
+| Geist Mono | 400 | yes |
+
+Second — and this is the part no documentation says — **cosmic-text does not
+use `fontdb::query`.** It builds its own candidate list, and the filter that
+builds it is `Attrs::matches`, which does not look at the family at all:
+
+```rust
+pub fn matches(&self, face: &fontdb::FaceInfo) -> bool {
+    face.post_script_name.contains("Emoji")
+        || (face.style == self.style && face.stretch == self.stretch)
+}
+```
+
+Style and stretch only. Every Normal/Normal face in the database is a
+candidate, whatever its family, sorted by distance from the requested weight.
+The family is consulted in exactly one place, `FontFallbackIter::
+default_font_match_key`, and **only among faces whose weight difference is
+zero**:
+
+```rust
+self.font_match_keys
+    .iter()
+    .filter(|m_key| m_key.font_weight_diff == 0)   // exact weight only
+    .find(|m_key| self.face_contains_family(m_key.id, default_family_name))
+```
+
+**So if no face in the whole database has exactly the weight you asked for, the
+family is abandoned** — `(false, None) => break 'DEF_FAM` — and the generic,
+family-blind, nearest-weight list wins:
+
+| ask | face that drew it |
+|---|---|
+| `Manrope` at 200 | **Manrope** |
+| `Manrope` at 400, 600, 700 | **Inter** |
+| `Inter` at 200 | **Manrope** |
+| `Geist Mono` at 400 | **Geist Mono** |
+| `Geist Mono` at 600, 700 | **Inter** |
+
+Every row follows from the two rules above. `Manrope` at 600: nothing in the
+database is weight 600, so the exact-match filter is empty, the family is
+dropped, and the nearest weight anywhere is 400 — Inter. `Inter` at 200:
+Manrope is the only weight-200 face and it is not in the Inter family, so the
+same thing happens in the other direction and **asking for Inter gives
+Manrope**, which is the clearest way to see the rule.
+
+**The practical statement of it:** a weight on an `Attrs` is not a preference
+that degrades. It is **part of the key**, and missing it by one step throws the
+family away.
+
+**What this costs us today.** `painted_text::alos_own_text` asks for Manrope at
+`ALOS_OWN_WEIGHT`, which is 600 — the design's `Label/Medium`. **So alo's own
+surfaces are drawn in Inter, not Manrope.** This is the same fault
+`painted_text.rs`'s header describes having fixed on 2026-10-09 — *nothing in
+this product drew the typeface its own design uses* — fixed in the **asking**
+and not in the **resolving**, and it has been live ever since.
+
+**It is measured and named, and not yet fixed.** There are two remedies and
+**the choice between them is the owner's, because they trade different things
+away:**
+
+1. **Bundle static instances of Manrope** at the weights the design uses, under
+   their licence, with their revisions recorded beside the variable file. Right
+   typeface, right weight. `fonts/README.md` records that bundling a face is
+   the owner's word to give, and ADR 0114 required that word for Geist Mono.
+2. **Ask for `Weight(200)`**, the weight the one registered face has. One line,
+   no licensing, and the interface is immediately drawn in Manrope — but in
+   **ExtraLight**, where the design says `Label/Medium` is SemiBold. Right
+   typeface, wrong weight.
+
+Today's behaviour is *wrong typeface, and the weight is Inter's idea of 400*,
+which is neither of the two.
+
+**What to do meanwhile.** If a family has one registered weight, that is the
+only weight at which asking for it works at all. And **never conclude from an
+advance alone that you got the face you asked for** — read the glyph's
+`font_id` back and look up its family. That is the only honest check, and it is
+what every font test in this tree now does. The test
+`the_bundled_monospace_face::a_variable_face_is_registered_at_one_weight_only`
+in `crates/alo-shell/src/window_control_label_tests.rs` asserts this table and
+**fails when somebody fixes it**, which is deliberate: its message says so.
+
+**How it was found.** A test written to prove that loading a third face had not
+changed the interface's typeface asserted that asking for Manrope gives Manrope.
+It failed with `left: "Inter", right: "Manrope"` — on a tree where nothing about
+the interface had been touched. *The test was wrong about what it was asserting
+and right to fail.*
+
+### cosmic-text — a family that is not loaded is substituted, not refused
+**Version:** cosmic-text 0.14.2, measured 2026-10-14 in the Lima VM.
+
+**What actually happens, both ways.** Asking `Family::Name(…)` for a family no
+database holds has produced two different outcomes in this product, and a design
+that handles one of them ships the other:
+
+| what was asked | what the database held | what happened |
+|---|---|---|
+| `Manrope` | Inter alone | **nothing laid out** — a box of the right size, empty |
+| `Geist Mono` | Manrope and Inter | **substituted Inter**, and laid out glyphs |
+
+The first shipped, on 2026-10-12: a booted machine showed the wallpaper, the
+monogram and the entry field with not one word on it, including the person's own
+name. The second is this entry's measurement — asking for `Geist Mono` with only
+the two proportional faces loaded returned glyphs **from Inter**, advancing
+14.45, 3.88 and 15.77 pixels for `M`, `i` and `W` at a 16px size.
+
+**The substitution is the worse of the two**, and it is worse in this
+repository's recurring way: a terminal drawn in Inter is **full of letters**,
+with every column in the wrong place, and nothing about it looks like a font
+fault. An empty rectangle at least announces itself to anybody looking at the
+screen.
+
+**What we do about it.** *Do not ask the shaper whether your face is there* — it
+answers *here are your glyphs* either way, so it cannot be the witness. Ask the
+**database**:
+
+```rust
+fonts.db().faces().filter(|face|
+    face.families.iter().any(|(family, _)| family == wanted))
+```
+
+And then check the shaped glyph's `font_id` against the result, because
+presence is not use.
+
+**This was found by a test failing, not by review.** The first probe written for
+it shaped a character and treated *glyphs came back* as *the face is here*,
+which passes on the substitution — it reported a perfectly good cell size,
+measured off Inter. `an_absent_family_is_substituted_rather_than_refused`, in
+`window_control_label_tests.rs`, keeps the measurement running on every build
+rather than leaving it in a commit message.
+
+**And one more trap in the same corner:** `Buffer::new` **asserts** internally
+that a line height is not zero — `buffer.rs:248`, *line height cannot be 0*. So
+validating metrics after constructing a buffer is a panic, and this workspace
+denies panics. Check the metrics first.
+
 ### LibreOffice writes a date format's separators into the part as text
 **Version:** LibreOffice 26.2.6.3, the build ADR 0039 pins at
 `/opt/libreoffice26.2/program/soffice`, on 2026-09-27.

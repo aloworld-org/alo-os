@@ -66,10 +66,30 @@ impl WindowControlLabels {
     /// including the person's own name. The Dock was unaffected because
     /// `crate::dock_raster` loads Manrope into a font system of its own, which
     /// is how one capability written twice hides a fault in the other.
+    ///
+    /// **Geist Mono is third, and it is the terminal's.** It is here rather
+    /// than in a font system of the terminal's own for exactly the reason the
+    /// paragraph above gives:
+    /// [ADR 0114](../../docs/decisions/0114-the-terminals-engine-is-pinned-and-its-face-is-bundled.md)
+    /// says *the terminal uses that one, and does not create its own*, because
+    /// a third copy would hide the next fault as the second hid that one.
+    ///
+    /// **Third and not first, deliberately.** [`Self::from_fonts`] makes the
+    /// *first* face's family this database's sans-serif, so putting a
+    /// monospace face in front would silently change the typeface of every
+    /// sentence on this machine that asks for sans-serif. Order is load-bearing
+    /// here, and the test
+    /// `the_bundled_monospace_face::the_interfaces_face_is_still_the_first_one`
+    /// in this file's own test module is what keeps it so.
+    ///
+    /// **Nothing asks for the monospace family yet** — the drawing is a later
+    /// change — so what is finished here is the load, and the tests beside it
+    /// prove the load rather than assert that a terminal exists.
     pub fn new() -> Result<Self, WindowControlLabelError> {
         Self::from_fonts([
             include_bytes!("../fonts/Manrope.ttf").to_vec(),
             include_bytes!("../fonts/Inter.ttf").to_vec(),
+            include_bytes!("../fonts/GeistMono.ttf").to_vec(),
         ])
     }
 
