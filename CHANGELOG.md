@@ -12,6 +12,56 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **You can open a terminal.** `Ctrl`+`Alt`+`T` — the chord GNOME, Ubuntu,
+  Cinnamon and Xfce all use, so the habit you arrive with works. Press it twice
+  and you get two terminals, which is what every other system does.
+
+  *This was promised and unreachable.* A terminal has shipped in the image and
+  installed itself at first boot for some time, and **no road led to it**: it is
+  not one of the three applications a fresh machine puts on the Dock (Files,
+  your browser, Settings); an application that is neither pinned nor open is not
+  on the Dock at all; the Dock's *More apps* overview is for things pinned or
+  currently open rather than everything installed; and no shortcut opened one —
+  **zero**, against eight shortcuts that open something. So the terminal was
+  installed on every machine and openable on none.
+
+  *It is a person's road and only a person's. The agent has no verb for it,
+  nothing of it is on the list of things an agent may do, and no path leads from
+  a model to it.*
+
+- **`Super`+`A` brings up alo.** The key with the Windows logo on it, and `A`.
+  It puts the cursor in the Dock's field, so the next thing you type is a
+  request.
+
+  *The chord shipped, was bound, was given words and was translated, and
+  pressing it did nothing at all.* Not "did the wrong thing" — nothing, exactly
+  as if the key were unbound.
+
+  *What is not built yet: alo does not yet appear **over** the window you are
+  looking at. The design calls for that, and the field at the bottom edge is
+  what exists today.*
+
+- **The Dock's *Show all* now lays every open window out, which is what it is
+  for.** Pressing it used to do nothing — worse than nothing: because the
+  control gave no answer, the press fell through to the desktop underneath and
+  **moved your view**, so somebody aiming at a control got a canvas that jumped.
+
+  *The behaviour was built and working all along, reachable by a keyboard
+  shortcut. What was missing was the join between the control you can see and
+  the thing it names. It went unnoticed because two different things in this
+  system are called "show all", and every search for the name found the one that
+  worked.*
+
+  *The **History** control beside it still does nothing, and that is a different
+  kind of gap: nothing on the machine records what you did before, so there is
+  nothing yet for it to open.*
+
+- **The list of what is built is honest about the Dock's overview again.** The
+  feature list said the application grid, its search field, the window picker,
+  every keyboard route and `Escape` were **not built**. All five are built and
+  reachable. A stale "not built" is how work gets done twice, and this one nearly
+  managed it.
+
 - **A developer who opens the terminal can clone and build.** `git`, `gcc`,
   `g++`, `make` and `pkg-config` are in the image, so the first thing somebody
   tries on a new machine — clone a repository and build it — works without
