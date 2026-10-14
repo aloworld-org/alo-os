@@ -22,6 +22,12 @@ alo-capability = { path = "../alo-capability" }
 # place any text a model reads is written** — a sentence composed here would be
 # a second author of the one thing every grade is a statement about.
 alo-instructing = { path = "../alo-instructing" }
+# The list of verbs this machine offers, from the one place that builds it. An
+# agent cannot ask the daemon for it: `FromAnAgent` has three messages and none
+# is *what may I ask for*, because `docs/contracts/agent-verbs.md` is the answer
+# for whoever writes an adapter. Nothing else in `alo-turn` is used here — this
+# process carries out no verb and holds no machine.
+alo-turn = { path = "../alo-turn" }
 thiserror = { workspace = true }
 
 [dev-dependencies]

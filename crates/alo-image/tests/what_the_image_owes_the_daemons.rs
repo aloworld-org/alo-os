@@ -281,6 +281,62 @@ fn the_units_start_the_binaries_the_image_installs() {
     );
 }
 
+/// **The agent itself is built and installed**, which it was not until
+/// 2026-10-14.
+///
+/// Every test above this one is about a *daemon*: a unit starts it, so a unit
+/// naming a binary the image never installed would fail beside the unit. The
+/// agent has **no unit** — a turn is one request and one process, so nothing
+/// starts it and nothing was holding the image to carrying it.
+///
+/// So it was not carried. `alo-agent`'s binary was written, tested and absent
+/// from the image; the three mentions of `alo-agent` in the Containerfile were
+/// all about the agent's **Unix user** (uid 60989), which is a different thing
+/// with the same name. A person on a real machine had the user and not the
+/// program.
+///
+/// **Read off the Containerfile rather than off a unit**, because there is no
+/// unit to read — which is exactly why this test has to exist separately. Both
+/// halves are asserted: the package is built, and the binary is copied to a
+/// path, because either alone passes while the other is missing.
+#[test]
+fn the_image_builds_and_installs_the_agent_itself() {
+    let recipe = std::fs::read_to_string(
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("..")
+            .join("image")
+            .join("Containerfile"),
+    )
+    .unwrap_or_else(|why| panic!("the Containerfile is where it says: {why}"));
+
+    assert!(
+        recipe.contains(
+            "--package alo-agent
+"
+        ) || recipe.contains("--package alo-agent "),
+        "the image does not build `alo-agent`, so there is nothing to install"
+    );
+    assert!(
+        recipe.contains("/release/alo-agent /usr/bin/alo-agent"),
+        "the image builds `alo-agent` and never installs it, which is a binary nobody on a real \
+         machine can run"
+    );
+    assert!(
+        recipe.contains("/usr/bin/alo-agent "),
+        "`/usr/bin/alo-agent` is installed and never made executable"
+    );
+
+    // **And the control**: the same search finds the daemon, which this image
+    // has carried for months. Without it, a Containerfile that failed to read
+    // would make all three assertions above pass by finding nothing to
+    // contradict — and `recipe` would be empty.
+    assert!(
+        recipe.contains("/release/alo-agentd /usr/bin/alo-agentd"),
+        "the control failed: this is not the Containerfile, or it no longer installs the daemon"
+    );
+}
+
 /// **The second privileged component alo OS has holds no capability at all.**
 ///
 /// ADR 0024 accepted a second privileged component beside ADR 0018's loader,

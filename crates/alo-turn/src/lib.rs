@@ -182,7 +182,9 @@ pub use became::Became;
 pub use bounding::{Bounding, Doing, Done};
 pub use crossing::Departed;
 pub use kept::Kept;
-pub use machine::{Machine, WhatASoftwareVerbNeeds, WhatAnApplicationVerbNeeds};
+pub use machine::{
+    Machine, WhatASoftwareVerbNeeds, WhatAnApplicationVerbNeeds, the_verbs_a_whole_machine_offers,
+};
 pub use places::Places;
 pub use refusing::NotDone;
 pub use shortening::{Shortened, Shortening};
