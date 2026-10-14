@@ -869,37 +869,55 @@ Manrope**, which is the clearest way to see the rule.
 that degrades. It is **part of the key**, and missing it by one step throws the
 family away.
 
-**What this costs us today.** `painted_text::alos_own_text` asks for Manrope at
-`ALOS_OWN_WEIGHT`, which is 600 — the design's `Label/Medium`. **So alo's own
-surfaces are drawn in Inter, not Manrope.** This is the same fault
-`painted_text.rs`'s header describes having fixed on 2026-10-09 — *nothing in
-this product drew the typeface its own design uses* — fixed in the **asking**
-and not in the **resolving**, and it has been live ever since.
+**What this cost, and it was both of alo's typefaces.** Asked exactly as the
+design asks, on the tree as it stood:
 
-**It is measured and named, and not yet fixed.** There are two remedies and
-**the choice between them is the owner's, because they trade different things
-away:**
+| the design's style | asked for | was drawn in |
+|---|---|---|
+| `Label/Medium` | Manrope weight 600 | **Inter** |
+| `Terminal/Command` | Geist Mono weight 500 | **Inter**, not even monospace |
 
-1. **Bundle static instances of Manrope** at the weights the design uses, under
-   their licence, with their revisions recorded beside the variable file. Right
-   typeface, right weight. `fonts/README.md` records that bundling a face is
-   the owner's word to give, and ADR 0114 required that word for Geist Mono.
-2. **Ask for `Weight(200)`**, the weight the one registered face has. One line,
-   no licensing, and the interface is immediately drawn in Manrope — but in
-   **ExtraLight**, where the design says `Label/Medium` is SemiBold. Right
-   typeface, wrong weight.
+**Neither of alo's typefaces could be drawn at the weight its own design
+specifies.** This is the same fault `painted_text.rs`'s header describes having
+fixed on 2026-10-09 — *nothing in this product drew the typeface its own design
+uses* — fixed in the **asking** and not in the **resolving**, and live ever
+since.
 
-Today's behaviour is *wrong typeface, and the weight is Inter's idea of 400*,
-which is neither of the two.
+**And it had two production paths, which is why one fix was not enough.**
+`painted_text::alos_own_text` asks for Manrope at weight 600;
+`window_control_label::shape_said` asked for `Family::SansSerif` with
+`Attrs::new()`, which means **weight 400**. Bundling the static cut fixed the
+first and left the second drawing Inter. Only a test that walked the real
+`shape_said` found it — one that rebuilt the attributes it *thought* production
+used passed while production asked for something else.
 
-**What to do meanwhile.** If a family has one registered weight, that is the
-only weight at which asking for it works at all. And **never conclude from an
+**Fixed on 2026-10-14, by bundling the two static cuts the design asks for.**
+The alternative considered and rejected was asking for the weight each variable
+file happens to register at — one line and no licensing, but it would have drawn
+ExtraLight and Regular where the design says SemiBold and Medium, so it traded
+the right typeface for the wrong weight. cosmic-text 0.14.2 has **no variation
+support at all** — no `variation`, `wght` or `coords` anywhere in its source —
+so there was no third option of varying the axis.
+
+`crates/alo-shell/fonts/README.md` records both files: upstream project,
+revision, path, SHA-256, and what was verified before each was added. Both are
+the upstream projects' own files byte for byte, so no derivative question
+arises; it was checked anyway, and **none of the three licences in that folder
+declares a Reserved Font Name.**
+
+**What to do from here.** If a family has one registered weight, that is the
+only weight at which asking for it works at all — so **a new weight in a design
+means a new file**, not a new `Attrs::weight`. And **never conclude from an
 advance alone that you got the face you asked for** — read the glyph's
 `font_id` back and look up its family. That is the only honest check, and it is
-what every font test in this tree now does. The test
-`the_bundled_monospace_face::a_variable_face_is_registered_at_one_weight_only`
-in `crates/alo-shell/src/window_control_label_tests.rs` asserts this table and
-**fails when somebody fixes it**, which is deliberate: its message says so.
+what every font test in this tree now does. Three tests in
+`crates/alo-shell/src/window_control_label_tests.rs` hold this down:
+`the_designs_own_weights_reach_the_designs_own_faces` asserts both design styles
+reach their own family at their own weight;
+`a_window_control_label_is_shaped_in_alos_own_face` walks the real `shape_said`;
+and `a_weight_nothing_is_bundled_at_still_loses_the_family` keeps the *mechanism*
+measured at a weight nobody bundled, so this entry stays a description of
+something real rather than of a tree that no longer exists.
 
 **How it was found.** A test written to prove that loading a third face had not
 changed the interface's typeface asserted that asking for Manrope gives Manrope.
