@@ -289,11 +289,19 @@ ARG THE_TARGET
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-boundaryd /usr/libexec/alo-boundaryd
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-agentd /usr/bin/alo-agentd
 
-# **The agent itself, in `bin` rather than `libexec`, because a person runs it.**
+# **The agent itself, in `bin` rather than `libexec`, because something other
+# than systemd runs it.**
+#
 # Everything in `libexec` beside it is started once by systemd and never by
-# hand; this is the opposite — `alo-agent <request…>` is how a person at a
-# terminal drives a turn today, and how a shell will drive one when the composer
-# is joined to it.
+# hand. This one is run by `alo-asking@.service` as the agent's own user (ADR
+# 0109), and by `sudo -u alo-agent alo-agent …` by whoever is debugging — so it
+# is on the PATH, and it holds no privilege at all: an empty capability set, no
+# new privileges, and one Unix socket it may reach.
+#
+# **This comment said *because a person runs it* and that was wrong.** A person
+# running it lands on the person's door — the daemon decides from the uid the
+# kernel recorded, not from the socket — and every request is refused as being
+# on the wrong door. The placement is still right; the reason was not.
 #
 # It is **not** a service and nothing enables it. A turn is one request and one
 # process: `alo_agent::AtTheDaemonsSocket`'s own rule is that one connection is
