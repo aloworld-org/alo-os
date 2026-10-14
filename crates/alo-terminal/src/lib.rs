@@ -1,0 +1,37 @@
+//! A terminal's output, turned into a grid of cells something can draw.
+//!
+//! **This crate has no AI in it, and that is the point rather than a stage it
+//! is at.** `docs/features.md`'s first terminal promise is that *the terminal
+//! remains fully useful when AI is disabled, unavailable or unconfigured*, and
+//! the way to keep that promise is to build the terminal without one and let
+//! everything else be added above it.
+//!
+//! # What is ours and what is the engine's
+//!
+//! [ADR 0114](../../../docs/decisions/0114-the-terminals-engine-is-pinned-and-its-face-is-bundled.md):
+//! the VT state machine, the grid, the scrollback and the pseudoterminal are
+//! `alacritty_terminal`, pinned and unpatched. Writing them here would be
+//! writing an engine, which `CLAUDE.md` forbids — and the clause exists so a
+//! small team does not end up maintaining a terminal emulator as a side effect
+//! of shipping a terminal.
+//!
+//! **What this crate owns is the interface in front of it**: a size, a thing
+//! bytes go into, and a reading of what the grid now says. Nothing above knows
+//! which engine is underneath, which is what makes the pin a pin.
+//!
+//! # Why bytes in and cells out, and nothing else yet
+//!
+//! A terminal is three jobs that are usually one program: run a shell on a
+//! pseudoterminal, interpret the bytes it writes, and draw the result. This
+//! crate does the middle one, completely, and the other two are separate
+//! changes — because the middle one can be *tested without a display or a
+//! child process*, and the other two cannot.
+//!
+//! So what is here is finished rather than started: bytes arrive, a grid
+//! changes, and what the grid says can be read back and asserted.
+
+mod how_big_the_grid_is;
+mod terminal_output_becomes_a_grid;
+
+pub use how_big_the_grid_is::{HowBig, NotASize};
+pub use terminal_output_becomes_a_grid::TerminalOutput;
