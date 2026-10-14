@@ -388,6 +388,120 @@ file carries it with a tier.*
   opening the owner has now permitted.
   **The split between the two halves is the owner's second ruling of the same
   day**, in these words:* "agent can open terminal window application".
+- ★ **And alo says what it measured apart from what it worked out.** One rule
+  over everything below, because it is the same rule four of them would
+  otherwise repeat: *blocked reading from the keyboard* is a measurement and
+  *waiting for your password* is a reading of it, and they never look alike. A
+  tool that blends them teaches you to distrust both
+- ★ **Why is it waiting?** A command looks stuck; ask, and get **waiting for the
+  keyboard**, **for the network**, **for another process or a lock**, **still
+  computing**, or **unknown with the evidence available** — then *show the
+  prompt*, *inspect the connection*, *reveal what is blocking it*, or *stop*.
+  **Instead of killing something that was nearly done.** *Measured 2026-10-14:
+  five states from four unprivileged reads — `/proc/PID/stat` field 3 for the
+  state letter, `/proc/PID/wchan` for the kernel function, `/proc/PID/fd/0` for
+  whether stdin is your terminal or a pipe. Observed with a control:
+  `sleep` → `S`/`hrtimer_nanosleep`, a pipe reader → `S`/`wait_for_partner`, a
+  busy loop → `R`/`wchan=0`, so **still computing is distinguishable rather
+  than being the absence of evidence**. The fifth state falls out of the
+  mechanism — a `wchan` is a kernel symbol and any table we write is finite —
+  rather than being added for honesty's sake. **This one needs no kernel
+  boundary**, which makes it the first buildable*
+- ★ **Try a command without letting it touch anything.** Paste the install
+  script from a README and run it in a box that sees the project and nothing
+  else, with no network except what you approved, thrown away after. See what it
+  **tried** to do, then keep it or discard it. *This is the sealed box of
+  [ADR 0064](decisions/0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md),
+  which is a decision and not yet a thing: the three level names appear in
+  **zero** Rust files, measured with a control, though cgroups, namespaces and
+  sandbox machinery are all present*
+- ★ **Scope one command without changing a setting.** `--only-here` so it may
+  not write outside this folder; `--offline` so it may not reach the network,
+  and the indicator shows that it did not. **A process cannot credibly restrict
+  itself** — the kernel has to, which is why no other terminal offers this as a
+  prefix
+- ★ **Find a command by what it did.** *The command that made the PDF. The last
+  build that passed. What started this server.* Results link to the commands,
+  outputs, files and processes themselves, and **where nothing connects them it
+  says so** rather than inventing a link. *Shell history is a list of strings;
+  this is a different thing to search. **Opt in, per session or per project** —
+  because *it forgets everything that was not an agent*, further down this file,
+  is not spent on this: nothing is watched, outcomes are kept because you asked
+  for them*
+- ★ **Scrollback you can move along, not only read.** Every command in the
+  session is a place you can return to: scroll up, choose one, and your files
+  are as they were before it ran. *In every other terminal scrollback is a
+  record of text. **A process cannot snapshot a filesystem it does not own**,
+  and alo OS picks that filesystem at install so that it can*
+- ★ **Bisect the machine, not the repository.** *It worked yesterday* becomes a
+  command: walk the snapshots to find when something broke, including everything
+  version control never held — installed packages, caches, configuration, a
+  system library that moved under you
+- ★ **Output that is not stuck in a character grid.** A benchmark draws a chart
+  you can zoom; a long error becomes something you keep beside your editor and
+  come back to tomorrow. *Other terminals can show an inline image. None can
+  make it a thing on your desk that outlives the scroll, because the compositor
+  is not theirs*
+- ★ **Hand somebody a session they can replay.** Not a transcript — the
+  commands **and what each one changed**, replayed on their machine. The
+  reproducible bug report
+- **Explain a command before it runs.** Plain words for what it does, with
+  anything destructive, anything needing elevated rights and anything leaving
+  the machine marked. Edit it, or try it in the box first. **Called an
+  explanation and not a guarantee**, because a script, an alias or something it
+  downloads can change what happens
+- **Say up front whether it can be undone.** *This can be put back* and *this
+  cannot* are different sentences, and the second is the one worth seeing before
+  you press Enter rather than after
+- **Turn something that worked into something you can run again.** *Start my
+  development environment*, holding reviewable commands, the permissions it
+  needs and the inputs you can change, and checking its assumptions still hold
+  before it runs. **It stores which permissions it needs, never a grant** —
+  grants expire ([ADR 0001](decisions/0001-the-capability-model.md) §3), and a
+  saved action must not become a way to hold one that does not. *So that nothing
+  asks a model to invent the same sequence every morning*
+- **Tell me when it finishes, if it fails, or when the server is ready.** Asked
+  for explicitly, shown in the panel of put-aside windows, and **reported from
+  what the processes actually did** rather than from an estimate
+- **Four kinds of stop, and they are not the same control.** Interrupt what alo
+  is doing; stop a server alo started; leave the conversation; close the
+  session. *Conflating them is how a server is left running after you thought
+  you had stopped it*
+- **Nothing is left running where you cannot see it.** Close a terminal and alo
+  says what it started that is still going. *The shell's job table dies with the
+  shell; a machine's process tree does not*
+- **Local and remote are never ambiguous.** A restrained header — `Remote ·
+  staging · developer account` — and before any action, where it will run and
+  whose files it touches. **What is attached here never travels to a remote
+  machine or its model without you saying so.** *For SSH the header says what
+  the connection claims rather than what alo measured: alo's own trust between
+  machines is pairing
+  ([ADR 0031](decisions/0031-the-pairing-is-the-key.md)), and an SSH host is
+  neither local nor paired*
+- **Run it on another of your machines and watch it here.** Output in this
+  terminal, files resolved on the right side, under alo's own grants rather than
+  a shell on a box
+- **A project you come back to is where you left it.** Its terminals, folders,
+  launch commands and related windows — *your workspace is restored, two
+  services are stopped* — with **Start services** as something you press.
+  **Never pretends processes survived and never silently re-runs anything.**
+  *Built on the canvas's Places, which already promise that a Place remembers
+  time, rather than beside them — two things called a workspace would outlive
+  everyone who made them*
+- **Completion that has read your whole machine, because nothing leaves it.**
+  Your real file tree, your installed packages, your history, on the device. *A
+  completer that sends your tree somewhere can never be given it*
+  *The seventeen lines above were added on 2026-10-14 by the owner's ruling
+  — "these are great features and we shall add them all" — after
+  [ADR 0112](decisions/0112-with-the-persons-permission-the-agent-may-do-anything-on-the-machine.md)
+  removed the question of whether a person may permit them. **None of them is
+  built.** Three carry a resolution that was the lane's judgement rather than
+  the owner's and may be corrected: history is opt-in so the forgetting promise
+  is not spent, a saved action stores which permissions it needs rather than a
+  grant, and a workspace is built on Places. What each one needs, and in what
+  order, is
+  [ADR 0110](decisions/0110-the-agent-writes-the-command-and-only-the-person-runs-it.md);
+  the shared rule above is why four of them no longer each repeat it.*
 - ★ **The agent writes the command; only you run it.** You ask for something and
   get a **command and a sentence about it**, in a surface alo draws. You read it
   and press Enter, or you do not. **alo cannot press Enter** — that is a
