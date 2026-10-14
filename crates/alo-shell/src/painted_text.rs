@@ -71,6 +71,33 @@ pub(crate) fn alos_own_mono<'a>() -> Attrs<'a> {
         .weight(Weight(alo_terminal::measures::THE_WEIGHT))
 }
 
+/// How alo asks for a terminal's text when a program has asked for bold or
+/// italic.
+///
+/// **Bold is a heavier face and not only a brighter colour.** A program asking
+/// for bold means both — `alo_terminal`'s palette brightens the colour and this
+/// asks for the weight — and a terminal doing one of the two is wrong in a way
+/// a person notices by comparison.
+///
+/// **Bold is 700 and not the design's 500**, because `Terminal/Command` is the
+/// ordinary weight and bold is heavier than ordinary. Whether a face is loaded
+/// at 700 is a separate question with a measured answer: it is not, so a bold
+/// cell currently resolves to the one weight that is, and
+/// `docs/design/the-terminal-window.md` records the static cut as owed. The ask
+/// is written correctly now so that bundling the cut is the only thing left.
+pub(crate) fn alos_own_mono_at<'a>(
+    looks: alo_terminal::what_a_cell_looks_like::HowItLooks,
+) -> Attrs<'a> {
+    let mut attrs = alos_own_mono();
+    if looks.bold {
+        attrs = attrs.weight(Weight(700));
+    }
+    if looks.italic {
+        attrs = attrs.style(cosmic_text::Style::Italic);
+    }
+    attrs
+}
+
 /// Text shaped and inked into its own box, not yet placed.
 pub(crate) struct Shaped {
     /// The box's width.

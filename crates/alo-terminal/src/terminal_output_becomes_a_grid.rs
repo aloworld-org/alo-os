@@ -29,6 +29,7 @@ use alacritty_terminal::term::{Config, Term};
 use alacritty_terminal::vte::ansi::Processor;
 
 use crate::how_big_the_grid_is::HowBig;
+use crate::what_a_cell_looks_like::{AColour, HowItLooks};
 
 /// A terminal's screen: bytes go in, cells come out.
 ///
@@ -146,6 +147,56 @@ impl TerminalOutput {
         (at.column.0, line)
     }
 
+    /// One line, as runs of cells that share an appearance.
+    ///
+    /// **Runs rather than cells, because shaping is per run.** A line of eighty
+    /// cells shaped one cell at a time is eighty buffers and eighty roundings;
+    /// a line shaped as one buffer cannot carry two colours. Grouping
+    /// consecutive cells that look the same is what makes both possible, and it
+    /// is what every terminal does.
+    ///
+    /// **Trailing blank cells are dropped**, which [`Self::line`] deliberately
+    /// keeps. That one answers *what is on this line* and a caller measuring a
+    /// grid needs the full width; this one answers *what is drawn*, and a run
+    /// of eighty spaces in the default colours is eighty cells of nothing.
+    /// A blank cell with a **background** is not blank and is kept.
+    ///
+    /// Empty for a line past the bottom of the screen, as [`Self::line`]
+    /// answers [`None`].
+    #[must_use]
+    pub fn runs_on(&self, line: usize) -> Vec<ACellRun> {
+        use alacritty_terminal::grid::Dimensions as _;
+        use alacritty_terminal::index::{Column, Line, Point};
+        let Ok(which) = i32::try_from(line) else {
+            return Vec::new();
+        };
+        if line >= self.size.screen_lines() {
+            return Vec::new();
+        }
+        let mut runs: Vec<ACellRun> = Vec::new();
+        for column in 0..self.size.columns() {
+            let Ok(at) = i32::try_from(column) else { break };
+            let cell =
+                &self.term.grid()[Point::new(Line(which), Column(at.unsigned_abs() as usize))];
+            let looks = HowItLooks::of(cell);
+            // **A space in the default colours draws nothing**, so it only
+            // joins a run that is already going — it never starts one, and a
+            // run is cut at it.
+            let is_nothing =
+                cell.c == ' ' && looks.ground == AColour::TheDefault && !looks.underline;
+            match runs.last_mut() {
+                Some(last) if last.looks == looks && !is_nothing => last.text.push(cell.c),
+                _ if is_nothing => {}
+                _ => runs.push(ACellRun {
+                    from_column: column,
+                    text: cell.c.to_string(),
+                    looks,
+                }),
+            }
+        }
+        runs
+    }
+
     /// Where the cursor is and what it looks like, or [`None`] when the
     /// program has hidden it.
     ///
@@ -218,6 +269,17 @@ impl TerminalOutput {
             .mode()
             .contains(alacritty_terminal::term::TermMode::APP_CURSOR)
     }
+}
+
+/// A run of cells on one line that share an appearance.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ACellRun {
+    /// Which column it starts at, counted from the left of the screen.
+    pub from_column: usize,
+    /// The characters, in order.
+    pub text: String,
+    /// How they are drawn.
+    pub looks: HowItLooks,
 }
 
 /// Where the cursor is and what it looks like.
