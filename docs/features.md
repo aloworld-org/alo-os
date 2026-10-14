@@ -443,9 +443,22 @@ file carries it with a tier.*
   else, with no network except what you approved, thrown away after. See what it
   **tried** to do, then keep it or discard it. *This is the sealed box of
   [ADR 0064](decisions/0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md),
-  which is a decision and not yet a thing: the three level names appear in
+  which was a decision and not yet a thing: the three level names appeared in
   **zero** Rust files, measured with a control, though cgroups, namespaces and
   sandbox machinery are all present*
+  **The choice itself is built, 2026-10-15**: `alo_capability::HowCodeRuns`
+  carries the three levels with the sealed box as the default, the plain-words
+  cost of full trust as ADR 0064 wrote it, and the three protections that stay
+  on at every level — the record, the snapshot before each run, and the egress
+  indicator — as a list each level must answer the same, so *at every level,
+  always on* is a test rather than a sentence. Law 5's real exposure is a later
+  change adding a wall, so a guard reads the module's own source and refuses a
+  road that could decline a level; it was checked by planting one.
+  **Still not built: the box.** The lock is the kernel's
+  ([ADR 0013](decisions/0013-the-grant-is-enforced-by-the-kernel.md)) and that
+  boundary does not exist, so a machine at the default runs nothing — which is
+  the honest behaviour of a default whose enforcement is owed, and not a reason
+  to make some other level the default.
 - ★ **Scope one command without changing a setting.** `--only-here` so it may
   not write outside this folder; `--offline` so it may not reach the network,
   and the indicator shows that it did not. **A process cannot credibly restrict

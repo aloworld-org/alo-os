@@ -574,11 +574,93 @@ pub const HAS_NO_AGENT: Word = Word::saying(
      somebody who has already said no once.",
 );
 
+/// The sealed box, which is how a fresh machine runs the agent's code.
+pub const RUNS_IN_A_SEALED_BOX: Word = Word::saying(
+    "capability.running.sealed-box",
+    "in a sealed box that sees only this project",
+)
+.noting(
+    "One of three choices for how code the agent writes is allowed to run, and the one a fresh \
+     machine arrives with. A box the agent cannot reach out of: it sees the project and nothing \
+     else, reaches no network except what the person approved, and is thrown away after each \
+     run.",
+);
+
+/// Asking the person before each run.
+pub const RUNS_AFTER_ASKING: Word = Word::saying(
+    "capability.running.asking-each-time",
+    "after showing you the command and waiting for you",
+)
+.noting(
+    "One of three choices for how code the agent writes is allowed to run. The agent shows the \
+     exact command and it runs only once the person approves that command. \"Waiting for you\" \
+     is addressed to the person reading it.",
+);
+
+/// Running directly, without asking.
+pub const RUNS_AT_FULL_TRUST: Word = Word::saying(
+    "capability.running.full-trust",
+    "straight away, without asking",
+)
+.noting(
+    "One of three choices for how code the agent writes is allowed to run, and the one the \
+     person switches on themselves. It must not be translated as a recommendation or as a \
+     warning: the warning is a separate sentence beside it.",
+);
+
+/// What a person is told when they switch full trust on.
+///
+/// **ADR 0064's own words**, kept as they were written. It informs and does
+/// not forbid.
+pub const WHAT_FULL_TRUST_COSTS: Word = Word::saying(
+    "capability.running.what-full-trust-costs",
+    "text in a web page, an email or a downloaded project can steer the agent, and at this \
+     level whatever it steers the agent to run, runs",
+)
+.noting(
+    "Shown beside the choice to let the agent run code without asking, so that the person \
+     switching it on knows what it costs. It is a plain statement and not a refusal, a scare or \
+     a recommendation -- the person is deciding about their own machine and this is the fact \
+     they need. Keep it one sentence.",
+);
+
+/// The record, which no level turns off.
+pub const ALWAYS_THE_RECORD: Word = Word::saying(
+    "capability.running.always.record",
+    "every command and what it printed is written down",
+)
+.noting(
+    "One of three things that stay on however the person lets code run. It restricts nothing -- \
+     it is a record the person themselves can read -- which is why it is not a setting.",
+);
+
+/// The snapshot before each run, which no level turns off.
+pub const ALWAYS_THE_SNAPSHOT: Word = Word::saying(
+    "capability.running.always.snapshot",
+    "your files are copied before each run, so it can be undone",
+)
+.noting(
+    "One of three things that stay on however the person lets code run, including when they \
+     have allowed the agent to run anything without asking. It takes no choice away: it is what \
+     makes undoing possible.",
+);
+
+/// The egress indicator, which no level turns off.
+pub const ALWAYS_THE_INDICATOR: Word = Word::saying(
+    "capability.running.always.indicator",
+    "anything that leaves this machine is shown as it happens",
+)
+.noting(
+    "One of three things that stay on however the person lets code run. \"Leaves this machine\" \
+     means sent over a network. It restricts nothing and it is what the person is owed, which is \
+     why it is not a setting.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 52] = [
+pub const EVERY_WORD: [Word; 59] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -631,6 +713,13 @@ pub const EVERY_WORD: [Word; 52] = [
     LAPSED,
     HAS_AN_AGENT,
     HAS_NO_AGENT,
+    RUNS_IN_A_SEALED_BOX,
+    RUNS_AFTER_ASKING,
+    RUNS_AT_FULL_TRUST,
+    WHAT_FULL_TRUST_COSTS,
+    ALWAYS_THE_RECORD,
+    ALWAYS_THE_SNAPSHOT,
+    ALWAYS_THE_INDICATOR,
 ];
 
 /// Why this crate's own list could not be declared.

@@ -289,6 +289,13 @@ capability.refused.change-waits	{verb} changes something — propose it with the
 capability.refused.expired	{agent} had a grant to {reach} and it has expired — grant it again to let {agent} reach {wanted}
 capability.refused.never-granted	{agent} has not been granted {wanted} — grants are made by picking a folder, never by asking for one
 capability.refused.no-agent	{agent} cannot reach {wanted} — this machine has no agent, so there is nothing granted and nothing to grant to
+capability.running.always.indicator	anything that leaves this machine is shown as it happens
+capability.running.always.record	every command and what it printed is written down
+capability.running.always.snapshot	your files are copied before each run, so it can be undone
+capability.running.asking-each-time	after showing you the command and waiting for you
+capability.running.full-trust	straight away, without asking
+capability.running.sealed-box	in a sealed box that sees only this project
+capability.running.what-full-trust-costs	text in a web page, an email or a downloaded project can steer the agent, and at this level whatever it steers the agent to run, runs
 capturing.another-persons-window	That window belongs to somebody else signed in on this machine, so a picture of it cannot be taken. Take a picture of your own screen instead
 capturing.copied	A picture of your screen was copied, ready to paste
 capturing.mark.arrow	Arrow
