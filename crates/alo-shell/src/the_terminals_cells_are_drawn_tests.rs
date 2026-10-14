@@ -513,3 +513,208 @@ fn a_drawn_cursor_stays_inside_the_display() {
         );
     }
 }
+
+/// Which distinct colours appear in a picture's ink, with how many pixels each.
+fn colours_in(drawn: &TerminalPicture) -> std::collections::BTreeMap<[u8; 3], usize> {
+    let mut seen = std::collections::BTreeMap::new();
+    for ink in &drawn.inked {
+        for pixel in &ink.pixels {
+            *seen.entry(*pixel).or_insert(0) += 1;
+        }
+    }
+    seen
+}
+
+/// **A program's colours reach the pixels.**
+///
+/// The assertion this whole piece turns on. `cargo test` prints its failures in
+/// ANSI red and its passes in ANSI green, and until now the drawing joined
+/// every line into one string and inked the lot in a single colour — so the
+/// screen was readable and completely flat.
+///
+/// Checked by **counting distinct colours**, not by looking for a particular
+/// one: a terminal that drew everything in red would pass a test that only
+/// looked for red.
+#[test]
+fn a_programs_colours_reach_the_pixels() {
+    let mut screen = a_screen_saying("");
+    // Red, then green, then the default — three asks on one line.
+    screen.was_written(b"\x1b[31mFAILED\x1b[32mok\x1b[0mplain");
+    let drawn = picture(
+        &mut the_shells_own_fonts(),
+        &screen,
+        A_DISPLAY,
+        1.0,
+        Scheme::Light,
+    )
+    .expect("a terminal");
+
+    let seen = colours_in(&drawn);
+    // The ground plus at least three inks.
+    assert!(
+        seen.len() >= 4,
+        "only {} distinct colours were drawn, so a line with red, green and default text came \
+         out flat: {:?}",
+        seen.len(),
+        seen.keys().collect::<Vec<_>>()
+    );
+
+    // And the two the program named are really there, by their own values.
+    let red = [0xcd, 0x00, 0x00];
+    let green = [0x00, 0xcd, 0x00];
+    assert!(
+        seen.contains_key(&red),
+        "the ANSI red the program asked for is not on the screen: {:?}",
+        seen.keys().collect::<Vec<_>>()
+    );
+    assert!(
+        seen.contains_key(&green),
+        "the ANSI green the program asked for is not on the screen"
+    );
+}
+
+/// **A screen with no colours in it draws one ink**, which is the control.
+///
+/// Without it, the test above could pass on a terminal that scattered colours
+/// at random.
+#[test]
+fn a_screen_with_no_colours_draws_one_ink() {
+    let drawn = picture(
+        &mut the_shells_own_fonts(),
+        &a_screen_saying("just plain text"),
+        A_DISPLAY,
+        1.0,
+        Scheme::Light,
+    )
+    .expect("a terminal");
+
+    let ink = [
+        alo_appearance::Token::Navy.colour().red(),
+        alo_appearance::Token::Navy.colour().green(),
+        alo_appearance::Token::Navy.colour().blue(),
+    ];
+    let seen = colours_in(&drawn);
+    for colour in seen.keys() {
+        assert!(
+            *colour == ink
+                || *colour == ground_of(Scheme::Light)
+                || is_between(*colour, ink, ground_of(Scheme::Light)),
+            "a screen with no colours in it drew {colour:?}, which is neither the ink, the \
+             ground, nor a blend of the two"
+        );
+    }
+}
+
+/// Whether a colour lies between two others on every channel — which is what
+/// an antialiased edge between ink and ground is.
+fn is_between(colour: [u8; 3], one: [u8; 3], other: [u8; 3]) -> bool {
+    colour
+        .iter()
+        .zip(one.iter().zip(other.iter()))
+        .all(|(it, (a, b))| *it >= *a.min(b) && *it <= *a.max(b))
+}
+
+/// **A background a program asked for is painted behind its own run, and only
+/// its own run.**
+///
+/// A run in the default ground gets no solid of its own — the transcript's is
+/// already behind everything — so a terminal that painted one per run would
+/// cover the whole line.
+#[test]
+fn a_coloured_background_is_painted_behind_its_run_alone() {
+    let mut screen = a_screen_saying("");
+    screen.was_written(b"\x1b[44mblue\x1b[0m and plain");
+    let drawn = picture(
+        &mut the_shells_own_fonts(),
+        &screen,
+        A_DISPLAY,
+        1.0,
+        Scheme::Light,
+    )
+    .expect("a terminal");
+
+    let blue = [0x00, 0x00, 0xee];
+    let behind: Vec<_> = drawn
+        .solids
+        .iter()
+        .filter(|solid| solid.colour == blue)
+        .collect();
+    assert_eq!(
+        behind.len(),
+        1,
+        "there should be exactly one blue background, for the one run that asked"
+    );
+    // Four cells of `blue`, so its width is four cells and not the whole line.
+    let (_, transcript) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window");
+    let its_width = behind.first().expect("the one blue background").area.size.w;
+    assert!(
+        its_width < transcript.size.w / 4,
+        "the blue background is {its_width} wide and the transcript is {}; a four-character \
+         run should be a small fraction of it",
+        transcript.size.w
+    );
+}
+
+/// **A plain screen paints no background of its own**, which is the other half:
+/// the transcript's ground is already there.
+#[test]
+fn a_plain_screen_paints_no_extra_background() {
+    let drawn = picture(
+        &mut the_shells_own_fonts(),
+        &a_screen_saying("plain"),
+        A_DISPLAY,
+        1.0,
+        Scheme::Light,
+    )
+    .expect("a terminal");
+    // The window, the transcript, and the cursor. Nothing else.
+    assert_eq!(
+        drawn.solids.len(),
+        3,
+        "a screen with no coloured backgrounds painted {} solids; it should paint the window, \
+         the transcript and the cursor",
+        drawn.solids.len()
+    );
+}
+
+/// **Bold asks for a heavier face as well as a brighter colour.**
+///
+/// Both halves, because a terminal doing one of the two is wrong in a way a
+/// person notices by comparison. The colour half is checked here; the weight
+/// half is `alos_own_mono_at`'s and is asserted by the advance differing.
+#[test]
+fn bold_reaches_the_drawing_as_a_brighter_colour() {
+    let mut plain = a_screen_saying("");
+    plain.was_written(b"\x1b[32mok");
+    let mut bold = a_screen_saying("");
+    bold.was_written(b"\x1b[1;32mok");
+
+    let one = picture(
+        &mut the_shells_own_fonts(),
+        &plain,
+        A_DISPLAY,
+        1.0,
+        Scheme::Light,
+    )
+    .expect("a terminal");
+    let two = picture(
+        &mut the_shells_own_fonts(),
+        &bold,
+        A_DISPLAY,
+        1.0,
+        Scheme::Light,
+    )
+    .expect("a terminal");
+
+    let ordinary = [0x00, 0xcd, 0x00];
+    let bright = [0x00, 0xff, 0x00];
+    assert!(
+        colours_in(&one).contains_key(&ordinary),
+        "plain green should be the ordinary green"
+    );
+    assert!(
+        colours_in(&two).contains_key(&bright),
+        "bold green should be the bright green, which is the older convention and what most \
+         programs rely on"
+    );
+}

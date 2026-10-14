@@ -57,7 +57,7 @@ use smithay::backend::renderer::Frame;
 use smithay::utils::{Physical, Rectangle};
 
 use crate::painted::{Inked, Solid};
-use crate::painted_text::{ALOS_OWN_MONO, alos_own_mono, inked};
+use crate::painted_text::{ALOS_OWN_MONO, alos_own_mono, alos_own_mono_at, inked};
 
 /// How much of the display's width the window takes: 1040 of 1440.
 const ACROSS_THE_DISPLAY: f32 = 1040.0 / 1440.0;
@@ -470,6 +470,83 @@ impl WhereTheCellsGo {
     }
 }
 
+/// One run of cells, drawn in its own colours.
+///
+/// **A buffer per run rather than per screen or per cell.** Per screen cannot
+/// carry two colours; per cell is a buffer and a rounding for every character
+/// on the display. A run is the unit the grid already groups by, and it is what
+/// every terminal shapes.
+///
+/// Answers the run's ground, where it has one, and its ink — the ground first
+/// because it is painted under the characters.
+fn a_run(
+    fonts: &mut FontSystem,
+    run: &alo_terminal::ACellRun,
+    goes: WhereTheCellsGo,
+    line: usize,
+    default: ([u8; 3], [u8; 3]),
+) -> (Option<Solid>, Option<Inked>) {
+    let (ground, ink) = default;
+    let its_ink = a_colour(run.looks.ink, ink);
+    let its_ground = a_colour(run.looks.ground, ground);
+    let (across, down) = goes.the_cell_at(run.from_column, line);
+    let (cell_wide, tall) = goes.a_cells_box();
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a run's width is a count of cells times a cell, both bounded by the transcript"
+    )]
+    let wide = (goes.cell.advance * run.text.chars().count() as f32).ceil() as i32;
+    if wide <= 0 || tall <= 0 || cell_wide <= 0 {
+        return (None, None);
+    }
+    let whole = Rectangle::new((across, down).into(), (wide, tall).into());
+    // **A run reaching past the transcript draws nothing.** True for a frame
+    // while a window is shrinking, before the grid has been laid out again —
+    // and a rectangle outside the output is what `validate` refuses, so this is
+    // what stops a true state becoming a refused frame.
+    if goes.the_room().intersection(whole) != Some(whole) {
+        return (None, None);
+    }
+
+    // **Only a run with its own ground gets a solid.** A run in the default
+    // ground already has the transcript's, painted once behind everything.
+    let behind = (run.looks.ground != alo_terminal::what_a_cell_looks_like::AColour::TheDefault)
+        .then_some(Solid {
+            area: whole,
+            colour: its_ground,
+        });
+
+    let mut buffer = Buffer::new(fonts, goes.metrics);
+    buffer.set_wrap(fonts, Wrap::None);
+    buffer.set_size(fonts, None, None);
+    buffer.set_text(
+        fonts,
+        &run.text,
+        &alos_own_mono_at(run.looks),
+        Shaping::Advanced,
+    );
+    buffer.shape_until_scroll(fonts, false);
+    let shaped = inked(fonts, &buffer, (wide, tall), 0, its_ground, its_ink);
+    let bottom = goes.transcript.loc.y + goes.transcript.size.h;
+    (behind, shaped.placed(across, down, bottom))
+}
+
+/// A colour a cell asked for, or the one this machine uses when it asked for
+/// nothing.
+///
+/// **The default pair is the shell's**, which is why `alo-terminal` answers
+/// `TheDefault` rather than a value: a program asking for *the* foreground
+/// colour is asking for whatever this terminal uses, and that is the design's
+/// `text/primary` on `bg/surface`.
+fn a_colour(asked: alo_terminal::what_a_cell_looks_like::AColour, default: [u8; 3]) -> [u8; 3] {
+    match asked {
+        alo_terminal::what_a_cell_looks_like::AColour::TheDefault => default,
+        alo_terminal::what_a_cell_looks_like::AColour::Exactly { red, green, blue } => {
+            [red, green, blue]
+        }
+    }
+}
+
 /// The cursor, drawn over the cell it sits on.
 ///
 /// **A block cursor has to put the character back**, and that is the whole of
@@ -629,23 +706,30 @@ pub(crate) fn picture(
         return Err(NothingToDrawWith::TheresNoRoom);
     }
 
-    // **One buffer for the whole screen**, lines separated by `\n` and wrapping
-    // off. In a monospace face every advance is the same, so column *n* lands
-    // at *n* advances without this function placing it — and where it lands is
-    // the face's own, not a rounded copy.
-    let text = screen.lines().join("\n");
-    let mut buffer = Buffer::new(fonts, metrics);
-    buffer.set_wrap(fonts, Wrap::None);
-    buffer.set_size(fonts, None, None);
-    buffer.set_text(fonts, &text, &alos_own_mono(), Shaping::Advanced);
-    buffer.shape_until_scroll(fonts, false);
-
-    let shaped = inked(fonts, &buffer, (room_across, room_down), 0, ground, ink);
-    let placed = shaped.placed(
-        transcript.loc.x + inset_across,
-        transcript.loc.y + inset_down,
-        size.1,
-    );
+    // **A buffer per run of cells that share an appearance**, which is what
+    // lets a line hold two colours at all. One buffer for the screen could
+    // not; one per cell would be a buffer and a rounding for every character
+    // on the display. The grid already groups by run, and a run is what every
+    // terminal shapes.
+    //
+    // **This replaced one buffer for the whole screen**, which joined the lines
+    // with `\n` and inked them in a single colour — so `cargo test` had no red
+    // or green and a diff was unreadable.
+    let goes = WhereTheCellsGo {
+        transcript,
+        inset: (inset_across, inset_down),
+        cell,
+        metrics,
+    };
+    let mut behind: Vec<Solid> = Vec::new();
+    let mut placed: Vec<Inked> = Vec::new();
+    for line in 0..screen.size().lines() {
+        for run in screen.runs_on(line) {
+            let (its_ground, its_ink) = a_run(fonts, &run, goes, line, (ground, ink));
+            behind.extend(its_ground);
+            placed.extend(its_ink);
+        }
+    }
 
     // The window's ground, then the transcript's. Two solids rather than one,
     // because the identity strip and the note between them are a later change
@@ -660,26 +744,17 @@ pub(crate) fn picture(
             colour: ground,
         },
     ];
-    let mut cells: Vec<Inked> = placed.into_iter().collect();
+    let mut cells: Vec<Inked> = placed;
+    // **Each run's own ground goes under the cells**, after the transcript's
+    // and before the characters.
+    solids.extend(behind);
 
     // **The cursor last**, because it is drawn *over* the cell it sits on —
     // both the shape and, for a block, the character put back on top of it.
     // Nothing is drawn when the program has hidden it, which every full-screen
     // program does on every redraw.
     if let Some(at) = screen.where_the_cursor_is() {
-        let (shapes, put_back) = the_cursor(
-            fonts,
-            screen,
-            at,
-            WhereTheCellsGo {
-                transcript,
-                inset: (inset_across, inset_down),
-                cell,
-                metrics,
-            },
-            ground,
-            ink,
-        );
+        let (shapes, put_back) = the_cursor(fonts, screen, at, goes, ground, ink);
         solids.extend(shapes);
         cells.extend(put_back);
     }
