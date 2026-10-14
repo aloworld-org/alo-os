@@ -1,0 +1,25 @@
+<!--
+  Terminal / Settings / Owner-approved gear — read from the live file on 2026-10-14.
+
+  WHY A FILE FOR TWO NODES
+
+  It is a component, and the owner's instruction of 2026-10-14 names it as the
+  approved one, superseding the sliders icon drawn before it. A component is
+  what instances point at, so this is the node a change would arrive in.
+
+  WHAT IT SETTLES, AND IT SETTLES IT EXACTLY
+
+  The symbol is 48x48 and its artwork is 24x24 at (12, 12) — so the spec's
+  "24px artwork centred in a 48x48 logical-pixel target" is the file's own
+  geometry rather than a reading of it. 48 is also the Dock's `ICON` measure,
+  which is a logical measure scaled per display and not a raw pixel figure.
+
+  **A glyph is not a target.** The drawn size is 24 and the pressable size is
+  48, and this repository has already shipped one constant used for both. They
+  are two numbers here and must stay two.
+
+  file key  nDxyF5Ho9oC4RObjVzwBNJ
+-->
+<symbol id="498:29475" name="Terminal / Settings / Owner-approved gear" x="40" y="160" width="48" height="48">
+  <frame id="498:29476" name="Settings / supplied vector / 24px" x="12" y="12" width="24" height="24" />
+</symbol>
