@@ -69,7 +69,7 @@ fn an_unprivileged_caller_is_refused_by_logind() {
 
     let mut logind = TheMachinesLogind::default();
     match logind.open_a_session_for(1000) {
-        Ok(()) => panic!(
+        Ok(_) => panic!(
             "systemd-logind opened a session for an unprivileged caller — ADR 0024's boundary is \
              privilege, and on this machine it is not"
         ),

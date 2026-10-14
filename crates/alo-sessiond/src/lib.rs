@@ -81,6 +81,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+mod a_persons_folder;
 mod accounts;
 mod asking;
 mod door;
@@ -90,6 +91,7 @@ mod machine;
 mod opening;
 mod place;
 mod refusing;
+mod the_persons_desktop;
 #[cfg(unix)]
 mod unix;
 pub mod words;
@@ -97,15 +99,20 @@ pub mod words;
 #[cfg(unix)]
 pub mod listening;
 
+pub use a_persons_folder::{THE_USER_DATABASE, the_folder_in, the_folder_of};
 pub use accounts::TheAccounts;
 pub use asking::{Answered, Knock};
 pub use door::Door;
-pub use logind::Logind;
+pub use logind::{Logind, TheSessionOpened};
 #[cfg(target_os = "linux")]
-pub use machine::{TheMachinesAccounts, TheMachinesLogind};
+pub use machine::{TheMachineStartsIt, TheMachinesAccounts, TheMachinesLogind};
 pub use opening::Opening;
 pub use place::{THE_DOOR, THE_DOORS_DIRECTORY};
 pub use refusing::{NotADoor, NotAKnock, NotAnAnswer, NotAsked, NotOpened};
+pub use the_persons_desktop::{
+    NotStarted, StartsADesktop, THE_DESKTOP, TheDesktopToStart, WHERE_THE_SOCKET_GOES,
+    the_desktop_for,
+};
 #[cfg(unix)]
 pub use unix::our_group;
 pub use words::{
