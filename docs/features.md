@@ -502,13 +502,16 @@ file carries it with a tier.*
   order, is
   [ADR 0110](decisions/0110-the-agent-writes-the-command-and-only-the-person-runs-it.md);
   the shared rule above is why four of them no longer each repeat it.*
-- ★ **The agent writes the command; only you run it.** You ask for something and
-  get a **command and a sentence about it**, in a surface alo draws. You read it
-  and press Enter, or you do not. **alo cannot press Enter** — that is a
-  mechanism and not a promise: the surface is the compositor's, the agent
-  reaches it through a verb that carries text and nothing else, and there is no
-  verb that submits or that types into a terminal you already have open. **This
-  is the shape at the default setting**, and since
+- ★ **alo writes the command, and you decide who runs it.** You ask for
+  something and get a **command and a sentence about it**, in a surface alo
+  draws. **Out of the box you press Enter and alo does not** — the surface is
+  the compositor's and the agent reaches it through a verb carrying text and
+  nothing else, so at that setting there is nothing that submits on your behalf.
+  **Grant more and alo runs it**, at the level you picked, and the record, the
+  snapshot before each run and the egress line stay on at every level. **The
+  headline of this line read "only you run it" until 2026-10-14**, which was a
+  default written as a rule — the owner: *no limitations for the AI agent, only
+  when the user chooses in the settings*. Since
   [ADR 0111](decisions/0111-the-person-chooses-whether-their-agent-may-use-the-terminal.md)
   it is a default rather than the only shape: a person who grants more gets an
   agent that runs the command instead of proposing it, and the line above
