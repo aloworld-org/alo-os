@@ -113,8 +113,39 @@ pub const FOOTER: Word = Word::saying(
 )
 .noting("A quiet line at the bottom right of every first-start sheet, repeating that nothing here needs an account elsewhere.");
 
+/// The small line above the heading on the language sheet.
+pub const LANGUAGE_EYEBROW: Word =
+    Word::saying("shell.first-start.language.eyebrow", "FEEL AT HOME").noting(
+        "A short line above the heading on the screen where a person picks the language alo OS \
+         speaks to them in. Read from the design file, frame `09b`. Upper case in English; use \
+         whatever register your language gives a small heading, and do not translate it as an \
+         instruction - it describes the step, it does not ask for anything.",
+    );
+
+/// The heading on the language sheet.
+pub const LANGUAGE_TITLE: Word =
+    Word::saying("shell.first-start.language.title", "Choose your language.")
+        .noting("The heading of the screen where a person picks the language alo OS speaks.");
+
+/// The way on from the language sheet.
+pub const USE_THIS_LANGUAGE: Word =
+    Word::saying("shell.first-start.language.use", "Use this language").noting(
+        "The button that accepts the language the person has picked. It names the thing it does \
+         rather than saying OK, so somebody reading only the buttons can tell what will happen.",
+    );
+
+/// The way back from a sheet that has one.
+pub const BACK: Word = Word::saying("shell.first-start.back", "Back")
+    .noting("The button that returns to the previous step of setting up. It changes nothing.");
+
+/// What is appended to a chosen row, beside its border.
+pub const SELECTED: Word = Word::saying("shell.first-start.selected", "Selected").noting(
+    "Appended to the title of the row a person has chosen, after a middle dot. It exists so that \
+     a choice is never shown by colour alone - somebody who cannot see the border reads this \
+     word. Keep it a single word if your language has one.",
+);
 /// Every string these sheets draw.
-pub const FIRST_START_WORDS: [Word; 15] = [
+pub const FIRST_START_WORDS: [Word; 20] = [
     STAGE,
     NAME_EYEBROW,
     NAME_TITLE,
@@ -130,6 +161,11 @@ pub const FIRST_START_WORDS: [Word; 15] = [
     PIN_CONSEQUENCE,
     CONTINUE,
     SAVE,
+    LANGUAGE_EYEBROW,
+    LANGUAGE_TITLE,
+    USE_THIS_LANGUAGE,
+    BACK,
+    SELECTED,
 ];
 
 /// Invalid declaration or collision while registering this wording.
