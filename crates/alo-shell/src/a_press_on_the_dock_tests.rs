@@ -11,10 +11,27 @@
               a formatted panic names the edge it was on"
 )]
 
+use std::os::unix::fs::PermissionsExt as _;
+
 use alo_dock::{Dock, Edge};
 
 use super::{WhatAPressOnTheDockDoes, what_a_press_on_the_dock_does};
+use crate::Server;
 use crate::where_the_dock_is::{TheDocksPlaces, where_the_dock_is};
+
+/// A session on this machine's seat, for the one test that needs a `Server`.
+///
+/// The same shape as `crate::a_key_reaches_settings_tests::a_session` and for
+/// the same reason: a `Server` needs a private runtime directory of its own, and
+/// a test that shared one with another test would fail for a reason that has
+/// nothing to do with what it measures.
+fn a_session(what: &str) -> (tempfile::TempDir, Server) {
+    let runtime = tempfile::tempdir().expect("a runtime directory of this test's own");
+    std::fs::set_permissions(runtime.path(), std::fs::Permissions::from_mode(0o700))
+        .expect("a private runtime directory");
+    let server = Server::bind(runtime.path(), what).expect("a display");
+    (runtime, server)
+}
 
 /// This many applications on a Dock, built the way `alo-dock` would hand them
 /// over rather than assembled by hand.
@@ -481,30 +498,163 @@ fn a_press_on_the_composer_types_into_it_on_every_edge() {
     }
 }
 
-/// **The two commands beside it still do nothing**, so the change above gave
-/// the composer an outcome without quietly giving one to its neighbours.
+/// **Show all answers on every edge, and on every edge it is really there.**
+///
+/// The `found` guard is the point of the loop rather than decoration: a Dock
+/// that put no *Show all* on this edge would walk zero places, assert nothing,
+/// and pass. `WhatIsHere::ShowAll`'s own rustdoc says the bottom Dock has it
+/// and the edge Docks put History in its place, so *how many* differs by edge
+/// and only *at least one somewhere* is safe to assert here.
 #[test]
-fn show_all_and_history_are_still_taken_and_not_acted_on() {
+fn a_press_on_show_all_lays_every_window_out() {
+    let mut edges_with_one = 0;
     for edge in Edge::EVERY {
         let dock = on_the_edge(edge, 5);
         let mut found = 0;
         for place in dock.places.each() {
-            if matches!(
-                place.what(),
-                alo_dock::places::WhatIsHere::ShowAll | alo_dock::places::WhatIsHere::History
-            ) {
+            if matches!(place.what(), alo_dock::places::WhatIsHere::ShowAll) {
                 found += 1;
                 assert_eq!(
                     what_a_press_on_the_dock_does(&dock, at(&dock, place.from_the_start())),
-                    WhatAPressOnTheDockDoes::Nothing,
-                    "{edge:?}: {:?}",
-                    place.what()
+                    WhatAPressOnTheDockDoes::ShowEveryWindow,
+                    "{edge:?}: a press on Show all"
+                );
+                assert_eq!(
+                    what_a_press_on_the_dock_does(
+                        &dock,
+                        at(&dock, place.past_its_end().saturating_sub(1))
+                    ),
+                    WhatAPressOnTheDockDoes::ShowEveryWindow,
+                    "{edge:?}: Show all's last pixel"
                 );
             }
         }
-        assert!(
-            found > 0,
-            "{edge:?}: neither command is on this Dock, so this proves nothing"
-        );
+        if found > 0 {
+            edges_with_one += 1;
+        }
     }
+    assert!(
+        edges_with_one > 0,
+        "no edge put a Show all on its Dock, so this test proves nothing"
+    );
+}
+
+/// **History is still taken and not acted on**, so answering Show all did not
+/// quietly give its neighbour an outcome too.
+///
+/// It is a different kind of hole and the assertion says which: nothing in this
+/// repository records what a person did before, so there is nothing for the
+/// control to open. The day something does, this test fails and names itself.
+#[test]
+fn history_is_still_taken_and_not_acted_on() {
+    let mut edges_with_one = 0;
+    for edge in Edge::EVERY {
+        let dock = on_the_edge(edge, 5);
+        for place in dock.places.each() {
+            if matches!(place.what(), alo_dock::places::WhatIsHere::History) {
+                edges_with_one += 1;
+                assert_eq!(
+                    what_a_press_on_the_dock_does(&dock, at(&dock, place.from_the_start())),
+                    WhatAPressOnTheDockDoes::Nothing,
+                    "{edge:?}: a press on History"
+                );
+            }
+        }
+    }
+    assert!(
+        edges_with_one > 0,
+        "no edge put a History on its Dock, so this test proves nothing"
+    );
+}
+
+/// **The divider is unpressable, and the reason is `Places::at` rather than the
+/// match arm below it.**
+///
+/// Both halves are asserted, because only one of them is the mechanism.
+/// `Places::at` finds a place that `holds(along)` **and** `can_be_pressed()`,
+/// and `WhatIsHere::can_be_pressed` is `!matches!(self, Self::TheDivider)` — so
+/// a press on the rule between the applications and the commands resolves to
+/// `None` before any arm sees it. The arm that lists `TheDivider` beside
+/// `History` exists for exhaustiveness and would answer the same thing; it is
+/// not what makes this true.
+///
+/// **The first draft of this test asserted that no divider was walkable at
+/// all** and failed with `left: 3`, because it counted the dividers in
+/// `places.each()` — which lists every place, pressable or not — instead of
+/// what a press resolves to. The two are different populations and the test
+/// named neither; it is written out here because the failure read like a fault
+/// in the code and was a fault in the measurement.
+#[test]
+fn a_press_where_the_divider_is_reaches_nothing_because_at_refuses_it() {
+    let mut found = 0;
+    for edge in Edge::EVERY {
+        let dock = on_the_edge(edge, 5);
+        for place in dock.places.each() {
+            if !matches!(place.what(), alo_dock::places::WhatIsHere::TheDivider) {
+                continue;
+            }
+            found += 1;
+            let along = place.from_the_start();
+            assert!(
+                dock.places.at(along).is_none(),
+                "{edge:?}: `Places::at` handed out a divider, which `can_be_pressed` forbids"
+            );
+            assert_eq!(
+                what_a_press_on_the_dock_does(&dock, at(&dock, along)),
+                WhatAPressOnTheDockDoes::Nothing,
+                "{edge:?}: a press on the divider"
+            );
+        }
+    }
+    assert!(
+        found > 0,
+        "no edge drew a divider, so this test proves nothing"
+    );
+}
+
+/// **The press is taken by the Dock rather than falling through to the canvas**,
+/// which is the half of this change that `what_a_press_on_the_dock_does` alone
+/// cannot show.
+///
+/// `the_dock_takes_this_press` answers `false` for
+/// [`WhatAPressOnTheDockDoes::Nothing`] and `true` for every variant it acts on,
+/// and its caller in `crate::pointer` uses that answer to decide whether the
+/// canvas sees the press. So this assertion is exactly the behaviour a person
+/// feels: **before this change a press on *Show all* moved the view**, because
+/// the control answered `Nothing` and the canvas underneath took it.
+///
+/// **What this does not prove is that the canvas fitted anything.** A `Server`
+/// built here has no output, so `show_all_on_the_canvas` answers `None` and
+/// moves nothing — which is the refusal path, and is asserted as that. Nothing
+/// in this repository presses the Dock through a real pointer with a display
+/// behind it; `GoTo`, `Do` and `TypeIntoTheComposer` are all tested at this same
+/// level, so the gap is the road's and not this control's.
+#[test]
+fn the_dock_takes_a_press_on_show_all() {
+    let (_runtime, mut server) = a_session("a-press-on-show-all");
+    let dock = on_the_edge(Edge::Bottom, 5);
+    let show_all = dock
+        .places
+        .each()
+        .iter()
+        .find(|place| matches!(place.what(), alo_dock::places::WhatIsHere::ShowAll))
+        .map(|place| place.from_the_start())
+        .expect("the bottom Dock carries Show all");
+    let where_it_is = at(&dock, show_all);
+    let elsewhere = (0, 0).into();
+    server.the_docks_slots_were_drawn("a-display", dock);
+
+    assert!(
+        server.the_dock_takes_this_press(where_it_is),
+        "a press on Show all was not taken, so the canvas underneath would move"
+    );
+    assert!(
+        !server.the_dock_takes_this_press(elsewhere),
+        "a press in the corner was taken by the Dock, so this proves nothing about aim"
+    );
+    assert_eq!(
+        server.show_all_on_the_canvas(),
+        None,
+        "a session with no output fitted something, so the refusal path above is untested"
+    );
 }

@@ -64,6 +64,25 @@ pub(crate) enum WhatAPressOnTheDockDoes {
     /// left *the composer is the agent's only way in* a promise with no door
     /// behind it.
     TypeIntoTheComposer,
+    /// **Lay every window on this Place out at once**, which is what the
+    /// control is for: `alo_dock::places::WhatIsHere::ShowAll`'s own rustdoc
+    /// says *the control that lays every open window out at once*, and
+    /// `crate::canvas_show_all` is that behaviour, built and tested since
+    /// before this control was drawn.
+    ///
+    /// **This closes a gap, and the gap was invisible because there are two
+    /// Show-alls.** `Action::ShowAllOnTheCanvas` reaches the same canvas
+    /// behaviour by chord and has since it was written, so searching this tree
+    /// for *show all* finds a built, tested, called thing and reads as though
+    /// the Dock's control were done too. It was not: a press on it answered
+    /// [`Self::Nothing`], so the control a person can see did nothing while the
+    /// chord nobody is told about worked.
+    ///
+    /// A variant of its own rather than [`Self::Do`], because an
+    /// `ANativeAction` is *an entry a person pinned to their Dock* and this is
+    /// one of the Dock's own fixed controls — a different thing, and the owner's
+    /// ruling of 2026-10-12 is that each is dispatched through its own handler.
+    ShowEveryWindow,
     /// Do this, which the compositor does itself.
     ///
     /// **A separate variant from [`Self::GoTo`]**, which is the owner's ruling
@@ -105,9 +124,28 @@ pub(crate) fn what_a_press_on_the_dock_does(
         // a press on the rule between the applications and the commands reaches
         // nothing, which is what a line a person cannot press should do.
         Some(WhatIsHere::TheComposer) => WhatAPressOnTheDockDoes::TypeIntoTheComposer,
-        Some(WhatIsHere::ShowAll | WhatIsHere::History | WhatIsHere::TheDivider) => {
-            WhatAPressOnTheDockDoes::Nothing
-        }
+        // **`ShowAll` is answered; `History` is not, and that is a gap rather
+        // than a decision.**
+        //
+        // `WhatIsHere::ShowAll` says what it is — *the control that lays every
+        // open window out at once* — so it was never unspecified, and
+        // `crate::canvas_show_all` has been that behaviour all along. What was
+        // missing was this arm. Recorded here because the reason it was missed
+        // is worth keeping: **there are two Show-alls**, the chord
+        // (`alo_shortcuts::Action::ShowAllOnTheCanvas`) and this control, and
+        // the chord's road was built first. Every search for *show all* found
+        // it.
+        //
+        // **History stays `Nothing`, and that is not the same kind of hole.**
+        // Nothing in this repository records what a person did before — no
+        // model, no store, no surface — so there is nothing for the control to
+        // open. Answering *taken* is still right: a press that fell through to
+        // the canvas would move the view when a person aimed at a control.
+        //
+        // `TheDivider` cannot arrive here at all — `Places::at` refuses it — so
+        // it is kept in this arm only because the match must be exhaustive.
+        Some(WhatIsHere::ShowAll) => WhatAPressOnTheDockDoes::ShowEveryWindow,
+        Some(WhatIsHere::History | WhatIsHere::TheDivider) => WhatAPressOnTheDockDoes::Nothing,
     }
 }
 
@@ -335,6 +373,20 @@ impl crate::Server {
             }
             Some(WhatAPressOnTheDockDoes::Do(action)) => {
                 self.do_this_native_action(action);
+                true
+            }
+            Some(WhatAPressOnTheDockDoes::ShowEveryWindow) => {
+                // **The camera is discarded, and that is what the chord does
+                // too.** `show_all_on_the_canvas` moves the view itself and
+                // hands back where it moved to, for a caller that wants to say
+                // so; `dispatch_canvas_command` ignores it the same way.
+                //
+                // **`None` is not a failure.** It means there was nothing on
+                // this Place to fit, and pressing *Show all* on an empty Place
+                // is an ordinary thing to do — the screen already shows there
+                // is nothing there. The press is still taken, because a press
+                // on a control must never reach the canvas underneath it.
+                let _ = self.show_all_on_the_canvas();
                 true
             }
             Some(WhatAPressOnTheDockDoes::TypeIntoTheComposer) => {
