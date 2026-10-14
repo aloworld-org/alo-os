@@ -76,6 +76,19 @@ PAMName=alo-desktop
 # so that there is one of it rather than two. `ALO_DISPLAY` is still honoured
 # where somebody sets it, because it is a public configuration key; nothing in
 # this image sets it.
+
+# **A fallback since 2026-10-14, not the answer.** This line was the only
+# thing this binary read, and a booted machine showed what that costs: a
+# person chose Français at the language sheet, the compositor said *the
+# keyboard is now fr*, and the desktop went up on gb one line later. It now
+# reads `/etc/alo/keyboards.toml` first — the file the language sheet writes —
+# and falls back to this only on a machine where nobody has chosen yet.
+#
+# Kept rather than deleted for that reason: deleting it would leave a fresh
+# machine with no layout at all, which is a desktop that refuses to start.
+# It is the same shape as ALO_DISPLAY above, one paragraph on: honoured
+# where it is set, and no longer the machine making the decision.
+
 Environment=ALO_KEYBOARD=gb
 
 # The socket this person's clients connect to goes in a directory systemd makes

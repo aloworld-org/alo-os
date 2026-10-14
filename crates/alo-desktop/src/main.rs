@@ -54,6 +54,9 @@ mod running {
     use std::path::PathBuf;
     use std::process::ExitCode;
 
+    use alo_shell::the_machines_keyboard::{
+        TheKeyboardThisMachineHas, WhoSaidSo, the_keyboard_this_machine_has,
+    };
     use alo_shell::{
         ADisplayToStandOn, DesktopFrame, DesktopLook, DirectFrame, EgressStatus, FillingWindow,
         RunningWindow, TheDesktop,
@@ -92,12 +95,28 @@ mod running {
             }
         };
 
+        // **The layout, and where it came from.** A desktop on `gb` because
+        // somebody chose it and one on `gb` because nothing asked are the same
+        // line on a screen and two different things to go and fix — which is
+        // the distinction #668 gave the greeter, and this is the other half of
+        // it.
         eprintln!(
-            "alo-desktop: the desktop is going up on {}, on a {} keyboard; the status area shows \
-             this machine's own four readings, and leaves out any it could not take — the line \
-             above says which those were and why",
+            "alo-desktop: the desktop is going up on {}, on a {} keyboard ({}); the status area \
+             shows this machine's own four readings, and leaves out any it could not take — the \
+             line above says which those were and why",
             said.display.display(),
-            said.layout
+            match said.keyboard.variant() {
+                "" => said.keyboard.layout().to_owned(),
+                variant => format!("{}({variant})", said.keyboard.layout()),
+            },
+            match said.keyboard.from() {
+                WhoSaidSo::ThisMachinesFile => "chosen at the language sheet".to_owned(),
+                WhoSaidSo::TheUnitFile =>
+                    "named by this machine's unit file, because nobody has chosen one yet"
+                        .to_owned(),
+                WhoSaidSo::TheUnitFileBecauseTheMachinesFileDidNotRead(why) =>
+                    format!("the unit file's, because this machine's own would not read: {why}"),
+            }
         );
 
         // **What fills the Dock's default roles on this machine**, asked once
@@ -129,7 +148,8 @@ mod running {
                 display: &said.display,
                 runtime: &said.runtime,
                 socket: THE_SOCKET,
-                layout: &said.layout,
+                layout: said.keyboard.layout(),
+                variant: said.keyboard.variant(),
             },
             &mut desktop,
             || {
@@ -872,8 +892,21 @@ mod running {
         display: PathBuf,
         /// The runtime directory systemd made.
         runtime: PathBuf,
-        /// Which keyboard is in front of it.
-        layout: String,
+        /// Which keyboard is in front of it, and where that was learnt.
+        ///
+        /// **Not `ALO_KEYBOARD` alone any more.** That is what this read until
+        /// 2026-10-14, when a booted machine showed a person choosing French at
+        /// the language sheet, the compositor saying *the keyboard is now fr*,
+        /// and this binary's very next line saying *the desktop is going up on
+        /// a gb keyboard*. #668 taught the greeter to read
+        /// `/etc/alo/keyboards.toml` and nothing taught this, so the choice
+        /// held until the moment the person reached the desktop they had made
+        /// it for.
+        ///
+        /// It is the same shape as the card below: *the greeter had the fix and
+        /// this did not, because the greeter met the fault first.* Twice now,
+        /// which is why this comment names the pattern rather than the bug.
+        keyboard: TheKeyboardThisMachineHas,
     }
 
     /// Read the two things a machine differs by, and systemd's own directory.
@@ -893,7 +926,11 @@ mod running {
         Ok(Said {
             display: alo_shell::which_card_the_seat_holds()?,
             runtime: PathBuf::from(named("RUNTIME_DIRECTORY")?),
-            layout: named("ALO_KEYBOARD")?,
+            keyboard: the_keyboard_this_machine_has(
+                std::path::Path::new(alo_keyboards::THE_MACHINES_KEYBOARDS),
+                std::env::var("ALO_KEYBOARD").ok().as_deref(),
+            )
+            .map_err(|why| why.to_string())?,
         })
     }
 

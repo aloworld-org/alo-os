@@ -28,6 +28,10 @@ alo-portals = { path = "../alo-portals" }
 zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
 # Everything a desktop is drawn from, and the loop that draws it.
 alo-shell = { path = "../alo-shell" }
+# Where this machine keeps the keyboard a person chose, so this binary reads the
+# same file the greeter does. Named here rather than reached through alo-shell:
+# a path is a fact about the machine and this is the crate that reads machines.
+alo-keyboards = { path = "../alo-keyboards" }
 # The four readings a status area shows, each from the entry point the crate
 # that owns it already has. Read here and handed over; none of them is decided.
 alo-power = { path = "../alo-power" }
