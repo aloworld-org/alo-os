@@ -53,13 +53,46 @@ on the list at all, and the measurement that found it is in the item itself.
 - **One application starts and draws.** *The ask exists and has never been done
   on real hardware — it needs a session bus and a D-Bus-activatable
   application, and the gate machine has neither.*
-- **A person asks the agent in plain words, and the agent does it.** *The
-  composer is drawn and takes no typing; nothing joins it to the agent. A local
+- **A person asks the agent in plain words, and the agent does it.** *A local
   model answers today and nothing leaves the machine — measured at the
-  interface, `tx+0` across three asks with a control. What is missing is the
-  road between a person's words and that, the sentence a change is proposed
-  with, the one approval, and the Settings row where a person chooses how code
-  runs.*
+  interface, `tx+0` across three asks with a control.*
+
+  *This item said on 2026-10-13 that **what is missing is the road between a
+  person's words and that, the sentence a change is proposed with, the one
+  approval, and the Settings row where a person chooses how code runs.** Four
+  things. **Three of them were built on 2026-10-14** and this is what is left.*
+
+  *Built and measured:*
+
+  - *the **road**. `alo_agent::driving` takes a request, asks a model, reads
+    the answer as a line of the protocol, and ends when a change is waiting.
+    It had no caller outside a test until #682 gave it a process, and nothing
+    sent a person's words to that process until #684 — ADR 0109's socket, which
+    systemd opens as the agent's own user because neither the shell nor the
+    daemon may change user;*
+  - *the **sentence**. #667: a change waits on a sentence that is about
+    something, so a path nothing is at is refused **before** a person reads a
+    sentence naming it. Measured first: two models proposed renaming a file that
+    did not exist;*
+  - *the **one approval**, which `alo-approving` and `alo-turn` have held with
+    tests since before this item was written — one approval causes exactly one
+    execution, and every execution and every refusal leaves a record;*
+  - *and beside them, what a turn **costs**: alo OS adds **37.8 µs** at the
+    median over fifty turns, asserted on every build; Enter to done against
+    `gpt-4o-mini` was **2.25 s**, of which **99% was the model** and 461 µs was
+    this machine. One run for the second number, and the file says so.*
+
+  ***What is still missing is the fourth: the Settings row where a person
+  chooses how code runs.*** *`docs/features.md` promises it with a ★ — a sealed
+  box the kernel locks down, asking each time, or full trust — and measured on
+  2026-10-14 with a control, the three names appear in **zero** Rust files
+  against ADR 0064 being cited in eleven. It is law 2's own subject and the
+  largest piece this item still owes.*
+
+  ***And none of it has run on a machine.*** *Every proof above is a test on a
+  development machine. The one link with no test at all is systemd starting
+  `alo-asking@.service`, which is asserted against the unit's own text and
+  nothing more. The desktop lane has the measuring boot.*
 
 - **A person installs an application, and the agent can work with it.** *The
   installing is built and has run. `alo-software` is twenty-nine source
