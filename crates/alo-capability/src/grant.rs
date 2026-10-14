@@ -32,6 +32,7 @@ use std::time::{Duration, SystemTime};
 use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
+use crate::a_terminal_for_the_agent::ATerminalForTheAgent;
 pub use crate::grantee::Grantee;
 use crate::path::{is_a_root, is_usable};
 use crate::persons_own::is_a_persons_own;
@@ -167,6 +168,40 @@ impl Grant {
         from: SystemTime,
         lasting: Duration,
     ) -> Result<Self, GrantError> {
+        // **The strict reading, for every caller that has not been told
+        // otherwise.** `CLAUDE.md`: *a flag that fails open is a flag that
+        // will be forgotten in the direction that matters* — so this road
+        // means *the person has not chosen*, and no caller is loosened by
+        // being out of date.
+        Self::checked_for_when(
+            grantee,
+            reach,
+            from,
+            lasting,
+            ATerminalForTheAgent::NotAtAll,
+        )
+    }
+
+    /// The same, told what the person has allowed their agent to do with a
+    /// terminal.
+    ///
+    /// **The one road, with [`Self::checked_for`] as its default.** Two
+    /// functions rather than a changed signature because `Grant::checked_for`
+    /// has 63 call sites across 39 files, nearly all of them tests with no
+    /// opinion about terminals — and `CLAUDE.md` says a contract changes
+    /// **additively**. What makes this one road rather than two answers is that
+    /// the default is named: the shorter name means `NotAtAll` and says so.
+    ///
+    /// # Errors
+    /// As [`Self::checked_for`], and [`GrantError::APersonsOwn`] for a terminal
+    /// the person has not allowed.
+    pub fn checked_for_when(
+        grantee: &Grantee,
+        reach: Reach,
+        from: SystemTime,
+        lasting: Duration,
+        terminal: ATerminalForTheAgent,
+    ) -> Result<Self, GrantError> {
         if grantee.as_str().is_empty() {
             return Err(if grantee.is_an_application() {
                 GrantError::NoApplicationNamed
@@ -182,6 +217,7 @@ impl Grant {
         if let Reach::Application(identifier) = &reach
             && !grantee.is_an_application()
             && is_a_persons_own(identifier)
+            && !terminal.may_open_one()
         {
             return Err(GrantError::APersonsOwn);
         }
@@ -337,6 +373,69 @@ mod tests {
         );
     }
 
+    /// **A person may allow their agent to open a terminal**, which is the
+    /// half ADR 0111 added and the owner ruled on: *agent can open terminal
+    /// window application.*
+    ///
+    /// The grant is made for every terminal on the list, because a refusal
+    /// that lifted for one and not another would be a list nobody could
+    /// reason about.
+    #[test]
+    fn a_person_may_allow_their_agent_to_open_a_terminal() {
+        for terminal in crate::A_PERSONS_OWN {
+            let reach = Reach::Application((*terminal).to_owned());
+            let agent = Grantee::named("@alo");
+            let allowed = Grant::checked_for_when(
+                &agent,
+                reach.clone(),
+                noon(),
+                hour(),
+                ATerminalForTheAgent::MayOpenOne,
+            );
+            assert!(
+                allowed.is_ok(),
+                "{terminal} was refused although the person allowed it: {:?}",
+                allowed.err()
+            );
+            // **And the default still refuses the same grant**, which is what
+            // makes the assertion above about the choice rather than about
+            // the list.
+            assert_eq!(
+                Grant::checked_for(&agent, reach, noon(), hour()).unwrap_err(),
+                GrantError::APersonsOwn,
+                "{terminal} was permitted without the person choosing"
+            );
+        }
+    }
+
+    /// **Allowing a terminal does not allow the whole machine.**
+    ///
+    /// The refusal that must survive the loosening. ADR 0043's reasoning was
+    /// *a terminal is the whole machine by another road*, and ADR 0111 answers
+    /// that the road is **driving** a shell and not opening a window — so a
+    /// grant over `/` stays refused however the terminal choice is set.
+    #[test]
+    fn allowing_a_terminal_still_does_not_allow_the_whole_machine() {
+        for terminal in [
+            ATerminalForTheAgent::NotAtAll,
+            ATerminalForTheAgent::MayOpenOne,
+        ] {
+            let agent = Grantee::named("@alo");
+            assert_eq!(
+                Grant::checked_for_when(
+                    &agent,
+                    Reach::Folder("/".into()),
+                    noon(),
+                    hour(),
+                    terminal,
+                )
+                .unwrap_err(),
+                GrantError::TheWholeMachine,
+                "a grant to the whole machine was permitted with {terminal:?}"
+            );
+        }
+    }
+
     /// A path that could lead somewhere else is refused when the grant is
     /// made, not argued about when it is used.
     #[test]
@@ -361,12 +460,20 @@ mod tests {
         );
     }
 
-    /// ADR 0043: **there is no grant to an agent over a terminal**, for the
-    /// reason there is none to `/` — and beside the refusal, the two grants that
-    /// are still made: an agent's over a text editor, and an application's over
-    /// the terminal a person chose to open something in.
+    /// **A terminal is refused to an agent until the person allows it** —
+    /// ADR 0111, which supersedes ADR 0043's outright wall.
+    ///
+    /// This test asserted the wall and now asserts the **default**, which is
+    /// the same refusal for the commonest case and a different claim about
+    /// why: not *no agent can be granted one* but *nobody has allowed it on
+    /// this machine*. `a_person_may_allow_their_agent_to_open_a_terminal`
+    /// below is the other half, and neither means much without the other.
+    ///
+    /// Beside the refusal, the two grants that are still made: an agent's over
+    /// a text editor, and an application's over the terminal a person chose to
+    /// open something in.
     #[test]
-    fn there_is_no_grant_to_an_agent_over_a_terminal() {
+    fn a_terminal_is_refused_to_an_agent_until_the_person_allows_it() {
         for terminal in crate::A_PERSONS_OWN {
             let reach = Reach::Application(format!("  {terminal} "));
             assert_eq!(
@@ -386,11 +493,21 @@ mod tests {
             )
             .is_ok()
         );
+        // **The refusal says nobody has allowed it, not that nobody may.**
+        // The old wording — *whatever is typed into it runs, so no agent can
+        // be granted one* — stated ADR 0043 as a rule of the product, and
+        // ADR 0111 makes that false: it is a choice the person has not made.
+        // A refusal that misstates a decision is worse than a terse one,
+        // because a person reads it and believes it.
+        let said = GrantError::APersonsOwn.said(&in_english());
         assert!(
-            GrantError::APersonsOwn
-                .said(&in_english())
-                .text()
-                .contains("no agent can be granted one")
+            said.text().contains("have not allowed"),
+            "the refusal says {:?}, which does not tell the person it is their choice",
+            said.text()
+        );
+        assert!(
+            !said.text().contains("no agent can be granted"),
+            "the refusal still states ADR 0043, which ADR 0111 superseded"
         );
     }
 

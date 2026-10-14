@@ -17,6 +17,11 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
+# **To read the choice back as a person's settings file holds it.** A test that
+# compared the enum to itself would prove the enum; what matters is that the
+# words a person sees in their own file mean what this crate thinks, and that a
+# spelling it does not know is refused rather than becoming a permission.
+toml = { workspace = true }
 
 [lints]
 workspace = true

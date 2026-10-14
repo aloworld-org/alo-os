@@ -153,12 +153,13 @@ pub const NOT_FOR_AN_AGENT: Word = Word::saying(
 /// A grant to an agent over a terminal, which ADR 0043 does not allow.
 pub const PERSONS_OWN: Word = Word::saying(
     "capability.grant.a-persons-own",
-    "a terminal is yours alone — whatever is typed into it runs, so no agent can be granted one",
+    "you have not allowed alo to open a terminal",
 )
 .noting(
     "An agent is an AI assistant, not a person. A terminal is the window a person types commands \
-     into. This is a rule of alo OS, the same one as there being no grant to the whole machine, \
-     and not something a person can change in a setting.",
+     into. alo can open one for you if you allow it, and even then nothing lets it type into one \
+     — what it opens is a window only you can use. This refusal means nobody has allowed it on \
+     this machine.",
 );
 
 // ---------------------------------------------------------------------------

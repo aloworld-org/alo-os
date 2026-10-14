@@ -1120,9 +1120,28 @@ them.
 ## The person chooses (ADR 0064)
 
 Law 5: on their own machine a person decides, and every protection is a default
-they can change with its cost said plainly. These are decided and not yet built.
+they can change with its cost said plainly.
 
-- ★ **Running code, at the level the person picks** — a sealed box the kernel locks down (the default), asking each time, or full trust. At every level each run is recorded and a snapshot taken first, so it can be undone
+**Being decided and not built is no longer a reason to leave them alone.** The
+owner's ruling of 2026-10-14: *permission levels in the ADR should not stop us
+to development.* So these are in scope, and the first of them is being built —
+which is why the line below says what is done rather than only what is
+promised.
+
+*Recorded here rather than only in a commit, because `CLAUDE.md` says scope is
+gated on this file: a reader deciding whether something may be built looks
+here, and a ruling that lives in a pull request is a ruling they will not
+find.*
+
+- ★ **Running code, at the level the person picks** — a sealed box the kernel locks down (the default), asking each time, or full trust. At every level each run is recorded and a snapshot taken first, so it can be undone.
+  **Started 2026-10-14.** `alo_capability::ATerminalForTheAgent` is the first
+  half of ADR 0111's split — whether an agent may **open** a terminal — and the
+  three places that refused one outright now ask the person's choice beside the
+  list. **The default is that they have not chosen**, so nothing is loosened
+  until something passes the choice. What is still owed: the setting a person
+  makes it in, the surface they make it on, and the three levels for *running*
+  commands, of which the sealed box needs the kernel boundary
+  ([ADR 0013](decisions/0013-the-grant-is-enforced-by-the-kernel.md)).
 - Update checking can be turned off, saying that security fixes stop arriving while it is off
 - *Trust devices on this network*, off by default, saying that it also trusts guests' phones and every device on the network
 - A provider address that is not https can be allowed after a plain warning that the key crosses the network readable
