@@ -614,12 +614,22 @@ mod the_bundled_monospace_face {
     /// | `Geist Mono` at 400 | **Geist Mono** |
     /// | `Geist Mono` at 600, 700 | **Inter** |
     ///
-    /// `Manrope.ttf` is `Manrope[wght].ttf`, a variable font, and fontdb
-    /// registers it as **one** face at its default instance — weight 200,
-    /// ExtraLight — rather than as a family spanning its axis. So an ask for a
-    /// weight no registered face in that family has does not fall back *within*
-    /// the family; it leaves the family and takes the nearest weight anywhere.
-    /// **Weight beats family.**
+    /// Two things compound. `Manrope.ttf` is `Manrope[wght].ttf`, and fontdb
+    /// registers a variable font as **one** face at its default instance —
+    /// weight 200, ExtraLight — rather than as a family spanning its axis.
+    ///
+    /// And then **cosmic-text consults the family only among faces whose
+    /// weight matches exactly.** `Attrs::matches`, which builds its candidate
+    /// list, compares style and stretch and **never looks at the family**;
+    /// `FontFallbackIter::default_font_match_key` is the one place the family
+    /// is checked, behind `filter(|key| key.font_weight_diff == 0)`. So when
+    /// nothing in the database has the weight asked for, the family is dropped
+    /// and a family-blind nearest-weight list wins.
+    ///
+    /// That is why asking for **Inter** at weight 200 gives **Manrope**: it is
+    /// the only weight-200 face, and it is not in the Inter family. A weight is
+    /// not a preference that degrades — it is part of the key, and missing it
+    /// by one step throws the family away.
     ///
     /// **And that means the interface is not drawn in its own typeface.**
     /// `painted_text::alos_own_text` asks for Manrope at
@@ -639,6 +649,11 @@ mod the_bundled_monospace_face {
     ///
     /// **It asserts the broken behaviour.** When somebody fixes it, this test
     /// fails — and its message says so, which is the point.
+    ///
+    /// `docs/quirks.md` carries the two remedies and the trade between them:
+    /// bundling static instances at the design's weights, or asking for
+    /// `Weight(200)` and getting Manrope in ExtraLight. Today's behaviour is
+    /// neither — it is Inter.
     #[test]
     fn a_variable_face_is_registered_at_one_weight_only() {
         let mut fonts = the_shells_own_fonts();

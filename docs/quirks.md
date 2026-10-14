@@ -798,17 +798,23 @@ file.** Each is asserted by a test that
 shapes a character and counts ink, because getting one wrong is **not an error**
 in cosmic-text, and what it does instead has now been seen two different ways.
 
-### fontdb — a variable font is one face at one weight, and weight beats family
+### cosmic-text — the family you ask for is honoured only at an exact weight match
 **Version:** cosmic-text 0.14.2 with its bundled fontdb, measured 2026-10-14 in
 the Lima VM against the shell's own three bundled faces.
 
 **What the specification implies.** `Manrope[wght].ttf` is a variable font
 covering ExtraLight to ExtraBold, so `Family::Name("Manrope")` with
-`Weight(600)` should give Manrope at SemiBold.
+`Weight(600)` should give Manrope at SemiBold. Failing that, it should at worst
+give Manrope at the nearest weight it has — `fontdb::Database::query` filters
+candidates to the family **first** and picks the best weight only among them,
+and never leaves the family.
 
-**What actually happens.** fontdb registers a variable font as **one** face at
-its default instance, not as a family spanning its axis. The shell's three
-faces register as:
+**What actually happens.** Two things compound, and only the second is
+surprising.
+
+First, fontdb registers a variable font as **one** face at its default
+instance, not as a family spanning its axis. The shell's three faces register
+as:
 
 | face | weight | monospaced |
 |---|---|---|
@@ -816,8 +822,33 @@ faces register as:
 | Inter | 400 | no |
 | Geist Mono | 400 | yes |
 
-And an ask for a weight no registered face in that family has does **not** fall
-back within the family. It leaves the family:
+Second — and this is the part no documentation says — **cosmic-text does not
+use `fontdb::query`.** It builds its own candidate list, and the filter that
+builds it is `Attrs::matches`, which does not look at the family at all:
+
+```rust
+pub fn matches(&self, face: &fontdb::FaceInfo) -> bool {
+    face.post_script_name.contains("Emoji")
+        || (face.style == self.style && face.stretch == self.stretch)
+}
+```
+
+Style and stretch only. Every Normal/Normal face in the database is a
+candidate, whatever its family, sorted by distance from the requested weight.
+The family is consulted in exactly one place, `FontFallbackIter::
+default_font_match_key`, and **only among faces whose weight difference is
+zero**:
+
+```rust
+self.font_match_keys
+    .iter()
+    .filter(|m_key| m_key.font_weight_diff == 0)   // exact weight only
+    .find(|m_key| self.face_contains_family(m_key.id, default_family_name))
+```
+
+**So if no face in the whole database has exactly the weight you asked for, the
+family is abandoned** — `(false, None) => break 'DEF_FAM` — and the generic,
+family-blind, nearest-weight list wins:
 
 | ask | face that drew it |
 |---|---|
@@ -827,8 +858,16 @@ back within the family. It leaves the family:
 | `Geist Mono` at 400 | **Geist Mono** |
 | `Geist Mono` at 600, 700 | **Inter** |
 
-**Weight beats family.** Asking for *Inter* at weight 200 gives *Manrope*,
-which is the clearest way to see it.
+Every row follows from the two rules above. `Manrope` at 600: nothing in the
+database is weight 600, so the exact-match filter is empty, the family is
+dropped, and the nearest weight anywhere is 400 — Inter. `Inter` at 200:
+Manrope is the only weight-200 face and it is not in the Inter family, so the
+same thing happens in the other direction and **asking for Inter gives
+Manrope**, which is the clearest way to see the rule.
+
+**The practical statement of it:** a weight on an `Attrs` is not a preference
+that degrades. It is **part of the key**, and missing it by one step throws the
+family away.
 
 **What this costs us today.** `painted_text::alos_own_text` asks for Manrope at
 `ALOS_OWN_WEIGHT`, which is 600 — the design's `Label/Medium`. **So alo's own
@@ -837,17 +876,27 @@ surfaces are drawn in Inter, not Manrope.** This is the same fault
 this product drew the typeface its own design uses* — fixed in the **asking**
 and not in the **resolving**, and it has been live ever since.
 
-**It is measured and named, and not yet fixed.** The remedy is a bundling
-decision rather than a code change: static instances of Manrope at the weights
-the design uses, under their licence, with their revisions recorded beside the
-variable file. `fonts/README.md` records that bundling a face is the owner's
-word to give, and ADR 0114 required that word for Geist Mono.
+**It is measured and named, and not yet fixed.** There are two remedies and
+**the choice between them is the owner's, because they trade different things
+away:**
 
-**What to do meanwhile.** Treat a weight on an `Attrs` as **part of the face
-selector, not a modifier of it.** If a family has one registered weight, that is
-the only weight at which asking for it works. And **never conclude from an
+1. **Bundle static instances of Manrope** at the weights the design uses, under
+   their licence, with their revisions recorded beside the variable file. Right
+   typeface, right weight. `fonts/README.md` records that bundling a face is
+   the owner's word to give, and ADR 0114 required that word for Geist Mono.
+2. **Ask for `Weight(200)`**, the weight the one registered face has. One line,
+   no licensing, and the interface is immediately drawn in Manrope — but in
+   **ExtraLight**, where the design says `Label/Medium` is SemiBold. Right
+   typeface, wrong weight.
+
+Today's behaviour is *wrong typeface, and the weight is Inter's idea of 400*,
+which is neither of the two.
+
+**What to do meanwhile.** If a family has one registered weight, that is the
+only weight at which asking for it works at all. And **never conclude from an
 advance alone that you got the face you asked for** — read the glyph's
-`font_id` back and look up its family. The test
+`font_id` back and look up its family. That is the only honest check, and it is
+what every font test in this tree now does. The test
 `the_bundled_monospace_face::a_variable_face_is_registered_at_one_weight_only`
 in `crates/alo-shell/src/window_control_label_tests.rs` asserts this table and
 **fails when somebody fixes it**, which is deliberate: its message says so.
