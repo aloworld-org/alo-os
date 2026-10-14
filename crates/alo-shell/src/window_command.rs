@@ -31,6 +31,17 @@ pub enum WindowCommandError {
     Dividing(#[from] crate::NotDivided),
 }
 
+impl WindowCommandError {
+    /// Forwarded from [`ShortcutDispatchError::the_action_with_no_road`].
+    #[must_use]
+    pub(crate) const fn the_action_with_no_road(&self) -> Option<Action> {
+        match self {
+            Self::Shortcut(why) => why.the_action_with_no_road(),
+            _ => None,
+        }
+    }
+}
+
 impl Server {
     /// Resolve current personal bindings to native window commands.
     ///
