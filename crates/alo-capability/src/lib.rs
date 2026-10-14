@@ -190,6 +190,7 @@ mod test_calls;
 #[cfg(test)]
 mod testing;
 
+pub use a_terminal_for_the_agent::ATerminalForTheAgent;
 pub use agent::Agent;
 pub use allowing::NotAllowed;
 pub use approval::Approved;

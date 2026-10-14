@@ -54,12 +54,13 @@
 //!
 //! # The default is closed, and it fails closed
 //!
-//! [`Self::NotAtAll`] is [`Default`], and it is what every road in this crate
-//! that does **not** take a choice means. `CLAUDE.md`: *where a flag chooses
-//! between the strict and the loose reading, the strict one is the default: a
-//! flag that fails open is a flag that will be forgotten in the direction that
-//! matters.* So a caller that has not been taught about this gets the refusal
-//! it got before, and no caller is loosened by being out of date.
+//! [`ATerminalForTheAgent::NotAtAll`] is [`Default`], and it is what every road
+//! in this crate that does **not** take a choice means. `CLAUDE.md`: *where a
+//! flag chooses between the strict and the loose reading, the strict one is
+//! the default: a flag that fails open is a flag that will be forgotten in
+//! the direction that matters.* So a caller that has not been taught about
+//! this gets the refusal it got before, and no caller is loosened by being out
+//! of date.
 
 use serde::{Deserialize, Serialize};
 
