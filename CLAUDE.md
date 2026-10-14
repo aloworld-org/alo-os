@@ -7,8 +7,12 @@ discipline. You are that team. Everything here is absolute;
 everything else is judgment.
 
 The workspace that runs on it — mail, files, chat, documents and the
-product agents — lives in `alo-workplace`. The rendering engine lives
-in `alo-engine` — decided, but not started and not scheduled. This
+product agents — lives in `alo-workplace`. The rendering engine is
+`alo-engine`, and it is **started**: it is the repository
+`aloworld-org/alo-browser`, which already renders an alo screen. Its
+first stage needs no operating system and no hardware, so it does not
+wait on this repository and this repository does not wait on it
+([ADR 0002](docs/decisions/0002-the-shell-is-native.md)). This
 repository is the system underneath both: the shell a person signs
 into, the service that lets an agent reach the machine, and the image
 that boots.
