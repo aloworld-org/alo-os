@@ -14,6 +14,31 @@
 //! `docs/contracts/daemon-protocol.md`, in one process that a person's shell —
 //! or a person at a terminal — can start.
 //!
+//! # Who runs this, which is not a person
+//!
+//! **Run as a person, every request it makes is refused** — and that is the two
+//! doors holding rather than a fault. `alo_agentd::side::Sides::which` decides
+//! which door a connection is on from **the uid the kernel recorded**, not from
+//! which socket it arrived at:
+//!
+//! ```text
+//! if uid == self.agent.raw()  { return Ok(Side::Agent); }
+//! if uid == self.person.raw() { return Ok(Side::Person); }
+//! ```
+//!
+//! So a person running this lands on the person's door, where `read`, `propose`
+//! and `ask` are not that side's messages — `docs/contracts/daemon-protocol.md`
+//! lists *a request on the wrong door* among its nine refusals. The property
+//! survives a person running the agent's own binary by hand, which is stronger
+//! than it needed to be.
+//!
+//! What runs it is `alo-asking@.service` with `User=alo-agent` (ADR 0109), and
+//! `sudo -u alo-agent alo-agent …` is the same thing by hand, for whoever is
+//! debugging. **The earlier version of this file said *a person runs it*, which
+//! is why it is in `bin` rather than `libexec`** — the placement is still right
+//! and the reason was wrong: something other than systemd runs it, and that
+//! something is the agent's own user.
+//!
 //! # What it is, and what it is deliberately not
 //!
 //! **It is a process, not a surface.** It takes a request as words and prints
@@ -195,7 +220,14 @@ fn what_was_asked() -> Result<Asked, String> {
                 println!(
                     "alo-agent: drive one request to its end.\n\n  alo-agent <request…>\n  \
                      alo-agent --at /run/alo/1000/agentd.sock <request…>\n\nWith no request on \
-                     the command line, one line is read from the input."
+                     the command line, one line is read from the input.\n\nRun this as the \
+                     AGENT, not as yourself. The daemon decides which of its two doors a \
+                     connection is on from the uid the kernel recorded, so run by a person it \
+                     lands on the person's door and every request is refused as being on the \
+                     wrong one. That is the two doors holding, not a fault.\n\n  sudo -u \
+                     alo-agent alo-agent <request…>\n\nOrdinarily nothing types this: \
+                     alo-asking.socket hands a person's words to one of these, running as the \
+                     agent (ADR 0109)."
                 );
                 std::process::exit(0);
             }
