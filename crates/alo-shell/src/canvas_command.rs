@@ -50,6 +50,17 @@ pub enum CanvasCommandError {
     Window(#[from] crate::WindowCommandError),
 }
 
+impl CanvasCommandError {
+    /// Forwarded from [`crate::WindowCommandError::the_action_with_no_road`].
+    #[must_use]
+    pub(crate) const fn the_action_with_no_road(&self) -> Option<Action> {
+        match self {
+            Self::Window(why) => why.the_action_with_no_road(),
+            _ => None,
+        }
+    }
+}
+
 impl Server {
     /// Resolve one chord against the person's bindings, including the canvas's.
     ///

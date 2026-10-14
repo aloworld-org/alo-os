@@ -278,7 +278,15 @@ impl Server {
                 keyboard.time = time;
                 keyboard.popup_key = None;
             }
-            self.the_chord_does_what_it_names(chord);
+            // **The answer is read and not acted on here, deliberately.** A
+            // chord that reaches no road is a bug in this repository rather
+            // than something a person's keypress should behave differently
+            // about, and `the_chord_does_what_it_names` has already said so on
+            // the error stream. What the value is for is
+            // `crate::a_chord_reaches_its_action`'s own test, which presses
+            // every declared action and asserts that none of them answers
+            // `NoRoad` — the check that would have caught four dead chords.
+            let _ = self.the_chord_does_what_it_names(chord);
             return Ok(false);
         }
         // **Arrows pan the canvas with nothing focused** — ADR 0065's keyboard

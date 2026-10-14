@@ -25,6 +25,26 @@ pub enum ShortcutDispatchError {
     Close(#[from] WindowCloseError),
 }
 
+impl ShortcutDispatchError {
+    /// The action this refusal is about, when the refusal is *nothing carries
+    /// this out*.
+    ///
+    /// **The innermost answer in a stack of four error types**, and the only
+    /// one that knows the difference between *a road said no* and *there is no
+    /// road*. Each layer above forwards this; see
+    /// `crate::a_chord_reaches_its_action` for why that is done by hand rather
+    /// than by walking `Error::source`.
+    #[must_use]
+    pub(crate) const fn the_action_with_no_road(&self) -> Option<Action> {
+        match self {
+            Self::Unsupported(action) => Some(*action),
+            // Written out rather than caught by a wildcard, so a variant added
+            // here is a compile error until somebody says which side it is on.
+            Self::Input(_) | Self::NoFocusedWindow | Self::Switch(_) | Self::Close(_) => None,
+        }
+    }
+}
+
 impl Server {
     /// Resolve one trusted chord against the person's current bindings and act.
     ///

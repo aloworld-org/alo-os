@@ -77,6 +77,16 @@ pub enum SettingsCommandError {
     Canvas(#[from] CanvasCommandError),
 }
 
+impl SettingsCommandError {
+    /// Forwarded from [`crate::CanvasCommandError::the_action_with_no_road`].
+    #[must_use]
+    pub(crate) const fn the_action_with_no_road(&self) -> Option<Action> {
+        match self {
+            Self::Canvas(why) => why.the_action_with_no_road(),
+        }
+    }
+}
+
 impl Server {
     /// **Resolve one chord against the person's bindings, including Settings'.**
     ///

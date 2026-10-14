@@ -44,9 +44,44 @@
 //! lane and every existing test bind no shortcuts, so no key they send is ever
 //! looked up and the road is the one they already had.
 
-use alo_shortcuts::{Chord, Shortcuts};
+use alo_shortcuts::{Action, Chord, Shortcuts};
 
 use crate::Server;
+
+/// What one chord's whole road came to.
+///
+/// **Four answers, and the fourth is the point of the type.** A chord that is
+/// bound and reaches nothing is a different fault from a chord nobody bound,
+/// and until 2026-10-14 this road could not tell them apart: it returned `()`
+/// and put every outcome through one sentence on the error stream. Four actions
+/// — the agent, the launcher, and moving between applications — were shipped,
+/// bound, worded and translated with **no arm anywhere in the chain**, so
+/// pressing one was indistinguishable from pressing an unbound key.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WhatTheChordCameTo {
+    /// Nothing is bound to it, so it belongs to whatever had the keyboard.
+    NotBound,
+    /// A road carried it out.
+    Carried(Action),
+    /// A road refused it, which is an ordinary thing and not a fault.
+    ///
+    /// *Show all* with nothing open and a zoom with no output are both this: a
+    /// person pressing either on an empty desktop has done something
+    /// reasonable, and the screen already shows there is nothing there.
+    ///
+    /// **Carries no action**, because the refusal arrives as a string from four
+    /// layers of error type and the action it was about is not recoverable from
+    /// it. What a caller needs to know is *a road answered*, which is what
+    /// separates this from [`Self::NoRoad`].
+    Refused,
+    /// **It is bound and nothing in this compositor carries it out.**
+    ///
+    /// A bug in this repository every time, and never a state a person's
+    /// machine can be in by choice: the action is in `Action::ALL`, it has a
+    /// word, a translation and a default chord, and the chain has no arm for
+    /// it.
+    NoRoad(Action),
+}
 
 impl Server {
     /// The shortcuts this session is bound by, told once as the desktop stands
@@ -147,10 +182,16 @@ impl Server {
     /// falls through to the canvas road it was already on. That is the sign-in
     /// screen, the nested lane and every test that never says: they keep
     /// exactly the behaviour they had.
-    pub(crate) fn the_chord_does_what_it_names(&mut self, chord: Chord) {
+    pub(crate) fn the_chord_does_what_it_names(&mut self, chord: Chord) -> WhatTheChordCameTo {
         let Some(shortcuts) = self.shortcuts.take() else {
-            return;
+            // Nobody has given this session any bindings, so nothing is bound.
+            return WhatTheChordCameTo::NotBound;
         };
+        // **Read once, before any road is tried**, so every answer below can
+        // name the action it was about. A road that answered `true` knows which
+        // action it took; a road that refused hands back four layers of error
+        // type and does not.
+        let names = shortcuts.action_for(chord);
         // **The keyboard's own two, answered before anything else.** They move
         // where the keyboard *is* rather than doing something to a window, a
         // canvas or a setting, so nothing below them has an opinion about them
@@ -161,7 +202,7 @@ impl Server {
         // one exit for the value it borrowed.
         if self.a_chord_moves_the_keyboard_between_areas(&shortcuts, chord) {
             self.shortcuts = Some(shortcuts);
-            return;
+            return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
         }
         // **A terminal, answered next and for the same reason: it borrows
         // nothing.** One push onto `Server::asked_to_start`, no window, no
@@ -176,7 +217,7 @@ impl Server {
         // Dock or the keyboard could open it.
         if self.a_chord_opens_a_terminal(&shortcuts, chord) {
             self.shortcuts = Some(shortcuts);
-            return;
+            return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
         }
         // **The agent, answered here for the third time the same reason: it
         // borrows nothing.** One flag on the composer — no window, no places,
@@ -191,7 +232,21 @@ impl Server {
         // the focused window is a promise of its own and is not this.
         if self.a_chord_brings_up_the_agent(&shortcuts, chord) {
             self.shortcuts = Some(shortcuts);
-            return;
+            return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
+        }
+        // **Moving between applications, the fourth road that borrows
+        // nothing.** Two more chords that were shipped, bound, worded,
+        // translated and reached nothing: measured 2026-10-14, the chain had
+        // zero arms for `NextApplication` or `PreviousApplication`.
+        //
+        // Answered here rather than beside `Alt`+`Tab` in
+        // `crate::shortcut_dispatch`, although they are the same mechanism at a
+        // coarser grain, because that road wants a focused window and this one
+        // does not: pressing it with nothing focused starts at an end of the
+        // list, which is a thing a person does and not a refusal.
+        if self.a_chord_moves_between_applications(&shortcuts, chord) {
+            self.shortcuts = Some(shortcuts);
+            return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
         }
         // **The one clock read on this road, and it is read here.** A chord is
         // a thing that happened at a moment, and one action — putting a Place
@@ -199,27 +254,81 @@ impl Server {
         // layer below takes it as an argument so a test can choose it; this is
         // the layer where *now* is not a choice.
         let now = std::time::SystemTime::now();
-        let said = match self.settings_places.take() {
+        // **Each layer is asked, rather than a source chain walked.** This was
+        // a `Box<dyn Error>` and a loop over `Error::source`, and **it was
+        // wrong in the direction that hides the fault**: every layer here is
+        // `#[error(transparent)]`, and transparent forwards `source()` to the
+        // *inner error's own source* — so the walk skipped every intermediate
+        // type and never saw `ShortcutDispatchError` at all. It answered
+        // `false` for everything, and the test that exists to catch a dead
+        // action passed while an action was dead.
+        //
+        // So `the_action_with_no_road` is forwarded by hand through the four
+        // error types. More lines, each a match the compiler checks, and no
+        // assumption about what `source()` means.
+        let (said, with_no_road) = match self.settings_places.take() {
             Some(places) => {
                 let mut window = std::mem::take(&mut self.settings);
-                let did = self
-                    .dispatch_settings_command(&shortcuts, chord, &mut window, &places, now)
-                    .map(|what| what.map(|_| ()))
-                    .map_err(|why| why.to_string());
+                let did =
+                    self.dispatch_settings_command(&shortcuts, chord, &mut window, &places, now);
                 self.settings = window;
                 self.settings_places = Some(places);
-                did
+                match did {
+                    Ok(what) => (Ok(what.map(|_| ())), None),
+                    Err(why) => {
+                        let road = why.the_action_with_no_road();
+                        (Err(why.to_string()), road)
+                    }
+                }
             }
-            // Nobody has said where this person's settings are kept, so there is
-            // nothing to open and the chord takes the road it always had.
-            None => self
-                .dispatch_canvas_command(&shortcuts, chord, now)
-                .map(|what| what.map(|_| ()))
-                .map_err(|why| why.to_string()),
+            // Nobody has said where this person's settings are kept, so there
+            // is nothing to open and the chord takes the road it always had.
+            None => match self.dispatch_canvas_command(&shortcuts, chord, now) {
+                Ok(what) => (Ok(what.map(|_| ())), None),
+                Err(why) => {
+                    let road = match why.the_action_with_no_road() {
+                        // **Settings is not roadless here; its road was
+                        // skipped.** This branch is the session that was never
+                        // told where settings are kept — the sign-in screen,
+                        // the nested lane — and on it `Super`+`I` legitimately
+                        // reaches nothing. The layers below cannot know that
+                        // and answer `Unsupported(Settings)`, which would make
+                        // the louder sentence below claim a bug in alo OS
+                        // about a state a machine is correctly in.
+                        //
+                        // Caught by the test that walks every action, on a
+                        // session with no settings places: it reported
+                        // `[Launcher, Settings]` where only the first is real.
+                        Some(Action::Settings) => None,
+                        other => other,
+                    };
+                    (Err(why.to_string()), road)
+                }
+            },
         };
         self.shortcuts = Some(shortcuts);
-        if let Err(why) = said {
-            eprintln!("alo-shell: a chord was pressed and could not be carried out — {why}");
+        match said {
+            Ok(Some(())) => names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried),
+            // The layers below answer `None` for a chord nothing is bound to.
+            Ok(None) => WhatTheChordCameTo::NotBound,
+            Err(why) => {
+                if let Some(action) = with_no_road {
+                    // **A louder sentence, because this one is ours.** The
+                    // generic line below is about a person's machine; this one
+                    // is about this repository, and a reader of a log should
+                    // not have to tell them apart by squinting.
+                    eprintln!(
+                        "alo-shell: {action:?} is bound and nothing in this compositor carries \
+                         it out — this is a bug in alo OS rather than a setting"
+                    );
+                    WhatTheChordCameTo::NoRoad(action)
+                } else {
+                    eprintln!(
+                        "alo-shell: a chord was pressed and could not be carried out — {why}"
+                    );
+                    WhatTheChordCameTo::Refused
+                }
+            }
         }
     }
 }
@@ -227,7 +336,9 @@ impl Server {
 #[cfg(test)]
 #[expect(
     clippy::expect_used,
-    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+    clippy::panic,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported, and \
+              a formatted panic names the action it was about"
 )]
 #[path = "a_chord_reaches_its_action_tests.rs"]
 mod tests;
