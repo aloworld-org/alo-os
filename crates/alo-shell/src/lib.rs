@@ -72,6 +72,7 @@
 #![cfg(target_os = "linux")]
 
 mod a_chord_moves_the_keyboard_between_areas;
+mod a_chord_opens_a_terminal;
 mod a_chord_reaches_its_action;
 mod a_click_brings_a_window_back;
 mod a_display_has_gone;
@@ -215,7 +216,6 @@ mod in_use_mark;
 mod in_use_paint;
 mod in_use_raster;
 mod keyboard;
-mod language_sheet;
 mod libinput_gestures;
 mod libinput_routing;
 mod libinput_scroll;
@@ -356,8 +356,6 @@ pub mod the_composer_a_person_types_in;
 mod the_desk_is_reconciled;
 pub mod the_docks_words;
 mod the_edge_takes_the_keyboard;
-mod the_keyboard_a_person_chose;
-pub mod the_languages_offered;
 pub mod the_machines_keyboard;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;

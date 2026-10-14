@@ -163,6 +163,21 @@ impl Server {
             self.shortcuts = Some(shortcuts);
             return;
         }
+        // **A terminal, answered next and for the same reason: it borrows
+        // nothing.** One push onto `Server::asked_to_start`, no window, no
+        // places and no clock — so the layers below are never entered for it
+        // and never have to have an opinion about it.
+        //
+        // **This is the only road to a terminal on this machine**, which is why
+        // it is here rather than left for one of the layers below to pick up.
+        // `crate::a_chord_opens_a_terminal`'s header has the four roads that
+        // were closed and the measurement behind each; the short version is
+        // that a terminal ships, installs at first boot, and nothing on the
+        // Dock or the keyboard could open it.
+        if self.a_chord_opens_a_terminal(&shortcuts, chord) {
+            self.shortcuts = Some(shortcuts);
+            return;
+        }
         // **The one clock read on this road, and it is read here.** A chord is
         // a thing that happened at a moment, and one action — putting a Place
         // back as it was — holds the state being left under that moment. Every

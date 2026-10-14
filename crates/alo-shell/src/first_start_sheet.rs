@@ -141,17 +141,12 @@ pub(crate) fn drawn(
 
     let mut drawn = SignInPicture {
         size,
-        surface: crate::setup_sheet_surface::setup_sheet_surface(
-            &at,
-            colours,
-            crate::setup_sheet_surface::TheMarks::default(),
-            Scale::from(1.0),
-        ),
+        surface: crate::setup_sheet_surface::setup_sheet_surface(&at, colours, Scale::from(1.0)),
         solids: Vec::new(),
         inked: Vec::new(),
     };
 
-    crate::painted_text::line(
+    line(
         &mut drawn.inked,
         height,
         fonts,
@@ -161,7 +156,7 @@ pub(crate) fn drawn(
         colours.ground,
         colours.muted,
     );
-    crate::painted_text::line(
+    line(
         &mut drawn.inked,
         height,
         fonts,
@@ -191,7 +186,7 @@ pub(crate) fn drawn(
     // typed or the invitation to type.
     if let Some(card) = at.choices.first() {
         let inside = measure.px(21);
-        crate::painted_text::line(
+        line(
             &mut drawn.inked,
             height,
             fonts,
@@ -225,7 +220,7 @@ pub(crate) fn drawn(
                     });
                 }
             } else {
-                crate::painted_text::line(
+                line(
                     &mut drawn.inked,
                     height,
                     fonts,
@@ -237,7 +232,7 @@ pub(crate) fn drawn(
                 );
             }
         } else if sheet.typed.is_empty() {
-            crate::painted_text::line(
+            line(
                 &mut drawn.inked,
                 height,
                 fonts,
@@ -248,7 +243,7 @@ pub(crate) fn drawn(
                 colours.muted,
             );
         } else {
-            crate::painted_text::line(
+            line(
                 &mut drawn.inked,
                 height,
                 fonts,
@@ -288,7 +283,7 @@ pub(crate) fn drawn(
         let y = button.loc.y + (button.size.h - shaped.height).max(0) / 2;
         drawn.inked.extend(shaped.placed(x, y, height));
     }
-    crate::painted_text::line(
+    line(
         &mut drawn.inked,
         height,
         fonts,
@@ -298,7 +293,7 @@ pub(crate) fn drawn(
         colours.ground,
         colours.ink,
     );
-    crate::painted_text::line(
+    line(
         &mut drawn.inked,
         height,
         fonts,
@@ -310,6 +305,35 @@ pub(crate) fn drawn(
     );
 
     Ok(drawn)
+}
+
+/// One line of a sheet, lettered and placed at its box's own left.
+///
+/// **A function rather than a closure.** A closure capturing the picture's ink
+/// held it borrowed for the whole of `drawn`, so the title and introduction —
+/// which are shaped before the layout, to decide where everything sits, and
+/// placed afterwards — could not be added. Taking the vector as an argument is
+/// what lets both roads write to it.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "every one is a different thing about one line, and bundling them               into a struct would name the struct after this call site"
+)]
+fn line(
+    into: &mut Vec<crate::painted::Inked>,
+    height: i32,
+    fonts: &mut FontSystem,
+    text: &str,
+    box_of: Rectangle<i32, smithay::utils::Logical>,
+    metrics: cosmic_text::Metrics,
+    ground: [u8; 3],
+    ink: [u8; 3],
+) {
+    if box_of.size.w <= 0 || text.is_empty() {
+        return;
+    }
+    let shaped = sentence(fonts, text, box_of.size.w, metrics, ground, ink).cropped_to_its_ink();
+    let y = box_of.loc.y + (box_of.size.h - shaped.height).max(0) / 2;
+    into.extend(shaped.placed(box_of.loc.x, y, height));
 }
 
 #[cfg(test)]

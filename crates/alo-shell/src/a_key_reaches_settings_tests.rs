@@ -31,8 +31,18 @@ const KEY_ENTER: u32 = 28;
 const KEY_LEFTCTRL: u32 = 29;
 /// Left Alt.
 const KEY_LEFTALT: u32 = 56;
-/// T.
-const KEY_T: u32 = 20;
+/// Q.
+///
+/// **It was T, and T stopped being free on 2026-10-14** when
+/// `alo_shortcuts::Action::Terminal` took Ctrl+Alt+T — the chord GNOME, Ubuntu,
+/// Cinnamon and Xfce all ship for a terminal. This test rebinds a shortcut to a
+/// chord of its own choosing, so it needs one **nothing** holds; binding to a
+/// taken chord is refused by `Shortcuts::bind` and the window kept the old
+/// binding, which is what the failure looked like.
+///
+/// The chord is now asserted free before it is used, so the next person to take
+/// it gets a sentence saying so rather than an assertion about the wrong thing.
+const KEY_Q: u32 = 16;
 
 /// A session on this machine's seat, with a keyboard on a US layout.
 fn a_session(what: &str) -> (tempfile::TempDir, Server) {
@@ -160,11 +170,28 @@ fn a_chord_bound_in_settings_is_in_force_at_once() {
         "choosing a binding did not start waiting for a chord"
     );
 
-    // Control+Alt+T, held as a person holds it: the modifiers down, the key
+    // Control+Alt+Q, held as a person holds it: the modifiers down, the key
     // tapped, the modifiers up.
+    //
+    // **Asserted free first.** `Shortcuts::bind` refuses a chord another action
+    // holds, and the window then keeps the binding it had — so a chord that
+    // quietly stopped being free turns this test's subject from *a rebinding
+    // takes effect at once* into *a rebinding was refused*, and the assertion
+    // below reports the wrong thing. That is what happened when the terminal
+    // took Ctrl+Alt+T.
+    let wants = alo_shortcuts::Chord::checked(
+        alo_shortcuts::Modifiers::just(alo_shortcuts::Modifier::Ctrl)
+            .and(alo_shortcuts::Modifier::Alt),
+        alo_shortcuts::Key::Q,
+    )
+    .expect("Ctrl+Alt+Q is a chord a person could bind");
+    assert!(
+        Shortcuts::shipped().action_for(wants).is_none(),
+        "the release now binds {wants:?}, so this test would measure a refusal instead of a          rebinding — pick another free chord"
+    );
     pressed(&mut server, KEY_LEFTCTRL, &strings);
     pressed(&mut server, KEY_LEFTALT, &strings);
-    tapped(&mut server, KEY_T, &strings);
+    tapped(&mut server, KEY_Q, &strings);
 
     let bound = server
         .the_settings_window()

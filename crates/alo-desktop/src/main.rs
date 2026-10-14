@@ -104,7 +104,23 @@ mod running {
         // and before the display is taken, so a slow tool delays the desktop's
         // appearance rather than a frame of it.
         let offers = crate::what_this_machine_offers::what_this_machine_offers();
-        eprintln!("alo-desktop: the Dock's default roles resolve to {offers:?}");
+        eprintln!(
+            "alo-desktop: the Dock's default roles resolve to {:?}",
+            offers.roles
+        );
+        match offers.terminal {
+            Some(ref terminal) => eprintln!(
+                "alo-desktop: a chord opens this machine's terminal, which is {}",
+                terminal.name()
+            ),
+            // **Said rather than passed over.** A machine with no terminal is a
+            // machine where `Action::Terminal` has nothing to open, and the one
+            // thing that must not happen is somebody reading a silent log and
+            // concluding the chord is broken.
+            None => eprintln!(
+                "alo-desktop: this machine has no terminal installed, so its chord opens nothing"
+            ),
+        }
 
         let started = std::time::Instant::now();
         let mut last = None;
@@ -135,7 +151,8 @@ mod running {
             // rented tool is a process this has to wait for, and waiting for
             // one on the draw lane would stop every window on the machine. See
             // `crate::what_this_machine_offers`.
-            &offers,
+            &offers.roles,
+            offers.terminal.clone(),
         ) {
             Ok(stood) => {
                 eprintln!("alo-desktop: the display has ended: {:?}", stood.display);

@@ -69,6 +69,7 @@ pub fn stand_the_desktop_up(
     mut next: impl FnMut() -> DirectFrame,
     asks_an_application_to_start: Option<crate::AWayToStartApplications>,
     what_this_machine_offers: &alo_dock::pinning::Discovery,
+    the_terminal: Option<alo_dock::AppId>,
 ) -> Result<StoodUp, WouldNotStand> {
     let mut server = Server::bind_keyboard(
         display.runtime,
@@ -85,6 +86,14 @@ pub fn stand_the_desktop_up(
     // start anything and reports every ask, which is the honest default.
     if let Some(ask) = asks_an_application_to_start {
         server.it_can_start_applications_with(ask);
+    }
+    // **Which application this machine's terminal is, handed in for the reason
+    // the sender above is**: it is a reading of the machine, and this crate
+    // shows rather than measures. `None` is a machine with no terminal
+    // installed, and `crate::a_chord_opens_a_terminal` says so on the error
+    // stream rather than quietly doing nothing.
+    if let Some(terminal) = the_terminal {
+        server.its_terminal_is(terminal);
     }
     // **What this person's Dock is pinned to, worked out once.** Two readings
     // meet here and neither is this crate's to take: what they kept, which is a

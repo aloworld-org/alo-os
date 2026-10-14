@@ -60,6 +60,7 @@ fn auf_deutsch() -> Strings {
             (words::THE_AGENT, "Den Assistenten fragen"),
             (words::LAUNCHER, "Das Startmenü öffnen"),
             (words::SETTINGS, "Einstellungen öffnen"),
+            (words::TERMINAL, "Ein Terminal öffnen"),
             (words::WINDOW_OPTIONS, "Fensteroptionen anzeigen"),
             (words::CLOSE_WINDOW, "Fenster schließen"),
             (words::MINIMISE_WINDOW, "Fenster minimieren"),
@@ -214,6 +215,7 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
                 "Super+Leertaste".to_owned()
             ),
             ("Einstellungen öffnen".to_owned(), "Super+I".to_owned()),
+            ("Ein Terminal öffnen".to_owned(), "Strg+Alt+T".to_owned()),
             ("Fenster schließen".to_owned(), "Alt+F4".to_owned()),
             ("Fensteroptionen anzeigen".to_owned(), "Alt+F3".to_owned()),
             (

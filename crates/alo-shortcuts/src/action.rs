@@ -45,6 +45,25 @@ pub enum Action {
     TheAgent,
     /// Open the launcher.
     Launcher,
+    /// Open a terminal.
+    ///
+    /// **The only road to it, and that is why it exists.** `docs/features.md`
+    /// promises *a terminal* — law 2's own words, *an operating system that does
+    /// not trust its owner with a shell is a toy* — and `alo-software`'s
+    /// `shipped.toml` installs one at first boot with `role = "terminal"`.
+    /// Nothing could open it. It is not among the three a fresh machine pins
+    /// (Files, Browser, Settings — the owner's own list, so a fourth would
+    /// contradict it), an unpinned application with no window is not on the
+    /// Dock at all, and the Dock's *More apps* overview is specified to hold
+    /// pinned and **currently open** applications rather than merely installed
+    /// ones. So an installed terminal was unreachable by pointer and by
+    /// keyboard alike, which made that promise one with nothing behind it.
+    ///
+    /// **This makes an existing promise true rather than adding one**, which is
+    /// the judgement `CLAUDE.md` asks a change to state: the terminal is
+    /// promised, keyboard shortcuts are promised, and what was missing was a
+    /// road between them.
+    Terminal,
     /// Open Settings.
     ///
     /// **The road that needs no pointer**, which is why it is a shortcut as well
@@ -147,6 +166,7 @@ impl Action {
         Self::TheAgent,
         Self::Launcher,
         Self::Settings,
+        Self::Terminal,
         Self::CloseWindow,
         Self::WindowOptions,
         Self::MinimiseWindow,
@@ -174,6 +194,7 @@ impl Action {
             Self::TheAgent => words::THE_AGENT,
             Self::Launcher => words::LAUNCHER,
             Self::Settings => words::SETTINGS,
+            Self::Terminal => words::TERMINAL,
             Self::CloseWindow => words::CLOSE_WINDOW,
             Self::WindowOptions => words::WINDOW_OPTIONS,
             Self::MinimiseWindow => words::MINIMISE_WINDOW,

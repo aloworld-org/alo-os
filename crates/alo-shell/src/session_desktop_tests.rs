@@ -44,6 +44,10 @@ fn a_session_with_no_seat_refuses_by_naming_the_seat() {
         // before the Dock is filled, which is itself part of the order this
         // test is about.
         &alo_dock::pinning::Discovery::Failed,
+        // And no terminal, for the third time the same reason: a display
+        // refused before the Dock is filled is refused before a chord could
+        // reach anything.
+        None,
     )
     .err()
     .unwrap();

@@ -1479,6 +1479,7 @@ shortcuts.action.settings	Open Settings
 shortcuts.action.show-all-on-the-canvas	Show all windows on the canvas
 shortcuts.action.snap-left	Put the window on the left half
 shortcuts.action.snap-right	Put the window on the right half
+shortcuts.action.terminal	Open a terminal
 shortcuts.action.the-agent	Ask the agent
 shortcuts.action.the-next-area	Move the keyboard to the next part of the screen
 shortcuts.action.the-previous-area	Move the keyboard to the previous part of the screen
