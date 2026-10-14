@@ -160,6 +160,31 @@ impl AShellOnAPseudoterminal {
         }
     }
 
+    /// Tell the child its terminal is a new size.
+    ///
+    /// **This is the one `ioctl` the whole thing turns on.** Writing the size
+    /// to the pseudoterminal does two things, and only the first is ours: the
+    /// kernel stores it, so `TIOCGWINSZ` — which is what `stty size` and
+    /// `tput cols` read — answers the new numbers; and **the kernel sends
+    /// `SIGWINCH` to the foreground process group**, which is what makes a
+    /// full-screen program wake up and redraw. No terminal on any Unix does
+    /// this differently, because there is no other road.
+    ///
+    /// **Call it after the grid has been laid out again, never before.** A
+    /// program redraws the moment it gets the signal, and a redraw that
+    /// arrives while the grid is still the old size lands in the wrong shape.
+    ///
+    /// # Errors
+    /// [`NoShell::ItWouldNotAnswer`] if the pseudoterminal refused it.
+    pub fn the_window_changed(&mut self, size: HowBig, cell: ACellInPixels) -> Result<(), NoShell> {
+        use alacritty_terminal::event::OnResize as _;
+        let mut told = how_the_child_is_told(size);
+        told.cell_width = cell.width;
+        told.cell_height = cell.height;
+        self.pty.on_resize(told);
+        Ok(())
+    }
+
     /// What a person typed, sent to the shell.
     ///
     /// **Bytes, not a string, and not a command.** What arrives here is what
@@ -177,16 +202,36 @@ impl AShellOnAPseudoterminal {
     }
 }
 
+/// How big one cell is, in whole pixels.
+///
+/// **A terminal reports this to the child and we have been reporting zero.**
+/// `TIOCSWINSZ` carries `ws_xpixel` and `ws_ypixel` beside the rows and
+/// columns, and a program that draws a picture — a graph, an image, anything
+/// using a graphics protocol — asks for them to work out how many pixels a cell
+/// is worth. Zero is what a terminal reports when it does not know, and it was
+/// the truthful answer while nothing had measured a cell.
+///
+/// Something measures one now, so the truth is available and this is how it is
+/// carried. **Still zero when a caller has not measured one**, because an
+/// invented cell size is worse than an admitted absence: a program would draw
+/// at a scale nobody chose.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ACellInPixels {
+    /// How wide, or zero for *nobody has measured one*.
+    pub width: u16,
+    /// How tall, or zero.
+    pub height: u16,
+}
+
 /// What the child is told about the terminal it is running in.
 ///
-/// **The two pixel figures are zero, and that is the truthful answer rather
-/// than a placeholder.** A child asks for them so it can draw at pixel
-/// precision; nothing has drawn this terminal yet, so this machine does not
-/// know. Zero is what every terminal reports when it has no answer, programs
-/// that care check for it, and inventing a plausible cell size would be
-/// telling a program something nobody measured.
-///
-/// When something draws, it will say so and the child will be told again.
+/// **The two pixel figures are zero here**, and
+/// [`AShellOnAPseudoterminal::the_window_changed`] is where a caller that has
+/// measured a cell fills them in. At the moment a shell starts nothing has
+/// drawn the terminal, so this machine does not know how big a cell is — and
+/// zero is what every terminal reports when it has no answer, which programs
+/// that care check for. Inventing a plausible figure would be telling a
+/// program something nobody measured.
 fn how_the_child_is_told(size: HowBig) -> WindowSize {
     WindowSize {
         num_lines: u16::try_from(size.screen_lines()).unwrap_or(u16::MAX),

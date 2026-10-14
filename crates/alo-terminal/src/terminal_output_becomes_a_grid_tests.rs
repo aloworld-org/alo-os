@@ -227,3 +227,74 @@ fn it_reports_the_size_it_was_built_with() {
     let screen = TerminalOutput::of(size);
     assert_eq!(screen.size(), size);
 }
+
+/// **Laying the grid out again changes its size, and says whether it did.**
+///
+/// The second half is the throttle every caller depends on: a resize signals
+/// the child, and a caller that worked the size out every frame and resized
+/// every frame would make a full-screen program unusable. So *it was already
+/// this size* has to be an answer and not a silent no-op.
+#[test]
+fn a_grid_laid_out_again_reports_whether_it_moved() {
+    let first = HowBig::of(80, 24, 100).expect("a terminal");
+    let mut screen = TerminalOutput::of(first);
+    assert_eq!(screen.size(), first);
+
+    let larger = HowBig::of(117, 31, 100).expect("a terminal");
+    assert!(
+        screen.laid_out_again(larger),
+        "laying it out at a different size reported no change"
+    );
+    assert_eq!(screen.size(), larger, "the stored size did not follow");
+    assert_eq!(
+        screen.lines().len(),
+        31,
+        "the grid still reads back its old number of lines"
+    );
+
+    assert!(
+        !screen.laid_out_again(larger),
+        "laying it out at the size it already is reported a change, so a caller would resize \
+         every frame and signal the child every frame"
+    );
+}
+
+/// **What a program wrote survives being laid out again.**
+///
+/// The engine reflows, which is the half ADR 0114 chose a pinned engine for.
+/// A terminal that lost the screen on every resize would be one nobody could
+/// drag the edge of.
+#[test]
+fn what_was_written_survives_a_new_size() {
+    let mut screen = TerminalOutput::of(HowBig::of(80, 24, 100).expect("a terminal"));
+    screen.was_written(b"a line that was already here");
+    assert!(
+        screen
+            .lines()
+            .iter()
+            .any(|line| line.contains("already here")),
+        "the line was not on the screen to begin with"
+    );
+
+    screen.laid_out_again(HowBig::of(117, 31, 100).expect("a terminal"));
+    assert!(
+        screen
+            .lines()
+            .iter()
+            .any(|line| line.contains("already here")),
+        "laying the grid out again lost what a program had written. The screen held: {:?}",
+        screen.lines()
+    );
+}
+
+/// **The scrollback is not quietly changed by a resize.**
+#[test]
+fn laying_out_again_keeps_what_is_remembered() {
+    let mut screen = TerminalOutput::of(HowBig::of(80, 24, 1_000).expect("a terminal"));
+    screen.laid_out_again(HowBig::of(117, 31, 1_000).expect("a terminal"));
+    assert_eq!(
+        screen.size().remembered(),
+        1_000,
+        "a resize changed how far back a person can scroll"
+    );
+}

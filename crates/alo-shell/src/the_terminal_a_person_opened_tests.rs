@@ -261,3 +261,171 @@ fn the_server_opens_one_terminal_however_often_it_is_asked() {
         "asking twice replaced the terminal, so a second shell was started"
     );
 }
+
+/// **The grid the shell is told matches the window it is drawn in** — asked of
+/// the shell, through the whole chain the lane drives.
+///
+/// This is the fault the resize exists to end, and it is asserted the only way
+/// that cannot pass on a lie: `stty size` runs **inside the child** and reads
+/// the kernel's own answer, and the expected numbers come from the **drawing's**
+/// own arithmetic rather than from figures typed here. If the two ever drift
+/// apart again, they drift apart in this assertion.
+#[test]
+fn the_shell_is_told_the_grid_the_window_has_room_for() {
+    use std::os::unix::fs::PermissionsExt as _;
+    let directory = tempfile::tempdir().expect("a temporary directory");
+    std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700))
+        .expect("a private runtime directory");
+    let mut server =
+        crate::Server::bind(directory.path(), "alo-terminal-fits").expect("a bound socket");
+    let mut fonts = crate::WindowControlLabels::new()
+        .expect("the bundled faces load")
+        .fonts;
+
+    assert!(server.open_alos_own_terminal(A_SENSIBLE_FIRST_GRID));
+    assert_eq!(
+        server
+            .alos_own_terminal()
+            .expect("it is open")
+            .screen()
+            .size()
+            .columns(),
+        80,
+        "it should start at the conventional grid, before any window is known"
+    );
+
+    // The display the design's own frames are the size of.
+    let display = (1440, 1040);
+    let (wanted, _) =
+        crate::the_terminals_cells_are_drawn::the_grid_that_fits(&mut fonts, display, 1.0, 1_000)
+            .expect("this display has room for a terminal");
+    // **The expected figures come from the drawing**, not from this test. A
+    // literal here would keep passing after somebody changed the insets.
+    assert!(
+        wanted.columns() > 80,
+        "the window should have room for more than the conventional 80 columns, not {}",
+        wanted.columns()
+    );
+
+    assert!(
+        server.the_terminal_fits_its_window(&mut fonts, display, 1.0),
+        "the terminal did not take the size its window has room for"
+    );
+    let terminal = server.alos_own_terminal().expect("it is still open");
+    assert_eq!(
+        (
+            terminal.screen().size().columns(),
+            terminal.screen().size().lines()
+        ),
+        (wanted.columns(), wanted.lines()),
+        "the grid and the drawing disagree about the size"
+    );
+
+    // **And the shell itself, which is the party that was wrong.**
+    let expected = format!("{} {}", wanted.lines(), wanted.columns());
+    let terminal = server
+        .alos_own_terminal_mut_for_tests()
+        .expect("it is still open");
+    type_it(terminal, "stty size");
+    terminal.a_person_typed_a_key(WhatWasTyped::Named(ANamedKey::Enter), Held::default());
+    let arrived = pump_until(terminal, |terminal| grid_says(terminal, &expected));
+    assert!(
+        arrived,
+        "the shell was never told the window's grid. It should have answered {expected:?}, and \
+         the grid held: {:?}",
+        terminal.screen().lines()
+    );
+}
+
+/// **Fitting it twice does nothing the second time**, which is the throttle.
+///
+/// A resize signals the program, and this is called once a frame. Without the
+/// change check a full-screen program would be signalled sixty times a second.
+#[test]
+fn fitting_the_same_window_twice_changes_nothing() {
+    use std::os::unix::fs::PermissionsExt as _;
+    let directory = tempfile::tempdir().expect("a temporary directory");
+    std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700))
+        .expect("a private runtime directory");
+    let mut server =
+        crate::Server::bind(directory.path(), "alo-terminal-throttle").expect("a bound socket");
+    let mut fonts = crate::WindowControlLabels::new()
+        .expect("the bundled faces load")
+        .fonts;
+    assert!(server.open_alos_own_terminal(A_SENSIBLE_FIRST_GRID));
+
+    let display = (1440, 1040);
+    assert!(
+        server.the_terminal_fits_its_window(&mut fonts, display, 1.0),
+        "the first fit should change the size"
+    );
+    assert!(
+        !server.the_terminal_fits_its_window(&mut fonts, display, 1.0),
+        "fitting the same window again reported a change, so every frame would resize the grid \
+         and signal the program"
+    );
+    assert!(
+        !server.the_terminal_fits_its_window(&mut fonts, display, 1.0),
+        "and again"
+    );
+}
+
+/// **A denser display gives a smaller grid in the same window**, because the
+/// letters are bigger in pixels while the window is the same share.
+///
+/// The check that the scale reaches the grid. A terminal that ignored it would
+/// put twice as many columns on a dense screen as fit.
+#[test]
+fn a_denser_display_fits_fewer_cells() {
+    let mut fonts = crate::WindowControlLabels::new()
+        .expect("the bundled faces load")
+        .fonts;
+    let display = (1440, 1040);
+    let (at_one, cell_at_one) =
+        crate::the_terminals_cells_are_drawn::the_grid_that_fits(&mut fonts, display, 1.0, 100)
+            .expect("a grid");
+    let (at_two, cell_at_two) =
+        crate::the_terminals_cells_are_drawn::the_grid_that_fits(&mut fonts, display, 2.0, 100)
+            .expect("a grid");
+    assert!(
+        at_two.columns() < at_one.columns(),
+        "a denser display fitted {} columns against {} at the ordinary scale; bigger letters \
+         must fit fewer",
+        at_two.columns(),
+        at_one.columns()
+    );
+    assert!(
+        cell_at_two.width > cell_at_one.width,
+        "the cell reported to the child did not grow with the scale: {} against {}",
+        cell_at_two.width,
+        cell_at_one.width
+    );
+}
+
+/// **The cell in pixels is reported to the child rather than left at zero.**
+///
+/// `TIOCSWINSZ` carries it, and a program drawing a picture asks for it. Zero
+/// was the honest answer while nothing had measured a cell; something does now.
+#[test]
+fn the_cell_told_to_the_child_is_no_longer_zero() {
+    let mut fonts = crate::WindowControlLabels::new()
+        .expect("the bundled faces load")
+        .fonts;
+    let (_, cell) = crate::the_terminals_cells_are_drawn::the_grid_that_fits(
+        &mut fonts,
+        (1440, 1040),
+        1.0,
+        100,
+    )
+    .expect("a grid");
+    assert!(
+        cell.width > 0 && cell.height > 0,
+        "the cell reported to the child is {cell:?}, so a program that draws a picture still \
+         has nothing to scale it by"
+    );
+    assert_eq!(
+        cell.height,
+        u16::try_from(alo_terminal::measures::A_LINE).expect("two digits"),
+        "the cell's height should be the design's own line height at scale one"
+    );
+}

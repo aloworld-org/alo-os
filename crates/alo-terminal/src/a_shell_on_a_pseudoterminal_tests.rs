@@ -209,3 +209,89 @@ fn the_shell_is_told_the_size_of_its_terminal() {
         screen.lines()
     );
 }
+
+/// **The child sees the new size, asked of the child.**
+///
+/// `stty size` runs *inside* the shell and reads `TIOCGWINSZ`, so this is the
+/// kernel's own answer rather than this crate agreeing with itself. It is the
+/// only witness that matters: the child was the party that was wrong.
+#[test]
+fn the_child_is_told_when_the_window_changes() {
+    let first = HowBig::of(80, 24, 100).expect("a terminal");
+    let mut shell = AShellOnAPseudoterminal::running(first, "/bin/sh", &["-s"])
+        .expect("this machine can start /bin/sh");
+    let mut screen = a_screen();
+
+    // Lay it out again before asking, at a size nothing would arrive at by
+    // accident.
+    let larger = HowBig::of(117, 31, 100).expect("a terminal");
+    shell
+        .the_window_changed(
+            larger,
+            crate::ACellInPixels {
+                width: 8,
+                height: 22,
+            },
+        )
+        .expect("the pseudoterminal takes a new size");
+
+    shell
+        .a_person_typed(b"stty size\n")
+        .expect("the shell takes what was typed");
+    read_until(&mut shell, &mut screen, |screen| {
+        screen_says(screen, "31 117")
+    });
+    assert!(
+        screen_says(&screen, "31 117"),
+        "the child still believes its old size. `stty size` said: {:?}",
+        screen.lines()
+    );
+    assert!(
+        !screen_says(&screen, "24 80"),
+        "the child answered its original size as well, so something is reporting both"
+    );
+}
+
+/// **A program running at the time is told**, which is what `SIGWINCH` is for
+/// and the half an `ioctl` alone would not give.
+///
+/// A shell waiting on `read` is woken, and `$COLUMNS` is re-read. Checked by
+/// asking twice across one resize and requiring two different answers — a
+/// single answer could be a stale one that happened to be right.
+#[test]
+fn a_resize_reaches_a_shell_that_is_already_running() {
+    let first = HowBig::of(80, 24, 100).expect("a terminal");
+    let mut shell = AShellOnAPseudoterminal::running(first, "/bin/sh", &["-s"])
+        .expect("this machine can start /bin/sh");
+    let mut screen = a_screen();
+
+    shell
+        .a_person_typed(b"stty size\n")
+        .expect("the shell takes it");
+    read_until(&mut shell, &mut screen, |screen| {
+        screen_says(screen, "24 80")
+    });
+    assert!(
+        screen_says(&screen, "24 80"),
+        "the shell did not answer its first size at all, so this test cannot see a change. \
+         The screen held: {:?}",
+        screen.lines()
+    );
+
+    let larger = HowBig::of(132, 43, 100).expect("a terminal");
+    shell
+        .the_window_changed(larger, crate::ACellInPixels::default())
+        .expect("the pseudoterminal takes a new size");
+
+    shell
+        .a_person_typed(b"stty size\n")
+        .expect("the shell takes it");
+    read_until(&mut shell, &mut screen, |screen| {
+        screen_says(screen, "43 132")
+    });
+    assert!(
+        screen_says(&screen, "43 132"),
+        "a shell that was already running never saw the new size. The screen held: {:?}",
+        screen.lines()
+    );
+}

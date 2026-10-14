@@ -177,6 +177,36 @@ impl TheTerminal {
         self.a_person_typed(&bytes)
     }
 
+    /// Lay this terminal out at a new size.
+    ///
+    /// **The order is the whole of it: the grid first, then the child.**
+    /// Telling the child sends it `SIGWINCH` and it redraws *immediately* — so
+    /// a child told before the grid was laid out again writes its new frame
+    /// into a grid that is still the old shape. Every Unix terminal does these
+    /// two steps in this order, and there is no third step.
+    ///
+    /// Answers whether anything changed, which is **the throttle**: a caller
+    /// works the size out every frame and this does nothing on the frames where
+    /// it is the same. A resize per frame would make a full-screen program
+    /// unusable.
+    pub(crate) fn laid_out_again(
+        &mut self,
+        size: HowBig,
+        cell: alo_terminal::ACellInPixels,
+    ) -> bool {
+        if self.finished || !self.screen.laid_out_again(size) {
+            return false;
+        }
+        if let Err(why) = self.shell.the_window_changed(size, cell) {
+            // **Said rather than swallowed, and the grid keeps the new size.**
+            // The grid is what gets drawn, so a person sees the right shape
+            // even on a machine whose pseudoterminal refused the `ioctl`; what
+            // they lose is programs knowing, which is what this line is for.
+            eprintln!("alo-shell: the terminal's shell could not be told its new size: {why}");
+        }
+        true
+    }
+
     /// The screen, for whatever draws it.
     pub(crate) fn screen(&self) -> &TerminalOutput {
         &self.screen
@@ -243,6 +273,52 @@ impl crate::Server {
         self.alos_own_terminal
             .as_mut()
             .is_some_and(TheTerminal::what_the_shell_wrote)
+    }
+
+    /// Make alo's own terminal the size its window has room for.
+    ///
+    /// **Called once a frame, before anything is drawn**, and it does nothing
+    /// on the frames where the answer has not changed — which is every frame
+    /// but the ones where the window, the font size or the display's scale
+    /// moved. That third one is the one that is easy to forget and is exactly
+    /// what happens when a laptop is plugged into another monitor.
+    ///
+    /// Answers whether it changed, for a caller that wants to know a frame is
+    /// worth redrawing.
+    pub(crate) fn the_terminal_fits_its_window(
+        &mut self,
+        fonts: &mut cosmic_text::FontSystem,
+        size: (i32, i32),
+        scale: f64,
+    ) -> bool {
+        let Some(terminal) = self.alos_own_terminal.as_mut() else {
+            return false;
+        };
+        // **The scrollback it already keeps**, so laying the grid out again
+        // never silently changes how much a person can scroll back to.
+        let remembered = terminal.screen().size().remembered();
+        match crate::the_terminals_cells_are_drawn::the_grid_that_fits(
+            fonts, size, scale, remembered,
+        ) {
+            Ok((grid, cell)) => terminal.laid_out_again(grid, cell),
+            // **A window with no room for a cell leaves the terminal alone.**
+            // Not a refusal to draw and not a resize to nothing: the grid it
+            // has is the last one that fitted, which is what a person sees
+            // while a window is briefly too small.
+            Err(_) => false,
+        }
+    }
+
+    /// alo's own terminal, for a test that needs to type into it.
+    ///
+    /// **Only for a test, and the name says so.** Nothing in production needs
+    /// a mutable terminal through the server: a keypress goes through
+    /// [`Self::a_key_reached_alos_own_terminal`] and a frame through
+    /// [`Self::the_terminal_was_written_to`], each of which is the one road for
+    /// its job. A general mutable accessor would be a second road to both.
+    #[cfg(test)]
+    pub(crate) fn alos_own_terminal_mut_for_tests(&mut self) -> Option<&mut TheTerminal> {
+        self.alos_own_terminal.as_mut()
     }
 
     /// alo's own terminal, for whatever draws it.

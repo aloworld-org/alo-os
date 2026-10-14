@@ -65,6 +65,27 @@ impl TerminalOutput {
         }
     }
 
+    /// Lay this screen out at a new size.
+    ///
+    /// **The engine reflows**, which is the hard half and the reason ADR 0114
+    /// chose a pinned engine rather than writing one: rewrapping lines a
+    /// program has already written, and the scrollback above them, when the
+    /// width changes. Terminals differ on whether they do it at all, and the
+    /// ones that do have the bugs.
+    ///
+    /// Answers whether anything changed, so a caller can tell *it is now this
+    /// size* from *it was already*. **That distinction is the whole throttle**:
+    /// a resize signals the program, and one per frame would make a full-screen
+    /// program unusable.
+    pub fn laid_out_again(&mut self, size: HowBig) -> bool {
+        if size == self.size {
+            return false;
+        }
+        self.term.resize(size);
+        self.size = size;
+        true
+    }
+
     /// How big this screen is.
     #[must_use]
     pub const fn size(&self) -> HowBig {

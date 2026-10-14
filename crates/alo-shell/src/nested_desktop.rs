@@ -378,17 +378,20 @@ pub(crate) fn frame_pictures(
     approval: Option<ApprovalFrame<'_>>,
     labels: &mut WindowControlLabels,
     size: (i32, i32),
-    // **An argument rather than a field on the frame, and the reason is a
-    // borrow.** `DesktopFrame` is `Copy` and is built once and used across the
-    // whole of a lane's draw, during which the lane also writes to the server —
-    // what the Dock drew, what a surface drew. A frame carrying `&Server` data
-    // holds an immutable borrow for all of that and every one of those writes
-    // stops compiling. It cannot own the grid either, because `Copy`.
+    // **The finished picture, drawn by the lane and only carried here.**
     //
-    // So the screen comes in here, where the borrow lives for one call. The
-    // first version of this put it on the frame and the compiler refused it in
-    // five places, which was the design telling us where it belonged.
-    alos_own_terminal: Option<&alo_terminal::TerminalOutput>,
+    // Two rules put it in this shape rather than letting this function draw it.
+    // It cannot be a field on the frame: `DesktopFrame` is `Copy`, is built once
+    // and used across a whole lane's draw while that lane writes to the server,
+    // so a frame carrying `&Server` data stops five of those writes compiling.
+    // And it cannot be drawn *here*: `desktop_source`'s
+    // `the_desktop_adds_no_number_of_its_own` holds this file to **no string a
+    // person could read**, so the sentence that says a terminal could not be
+    // drawn has nowhere to go in this file. Words belong where words are owned.
+    //
+    // So the lane draws it, says what went wrong if it did, and hands over the
+    // result.
+    terminal: Option<crate::the_terminals_cells_are_drawn::TerminalPicture>,
 ) -> Result<DesktopPictures, RenderError> {
     let running = running_shows(desktop.running, desktop.strings);
     let filling = filling_shows(desktop.filling, desktop.strings);
@@ -419,37 +422,6 @@ pub(crate) fn frame_pictures(
     // taken from the picture rather than recomputed, so there is no second answer to
     // keep in step — the same reason `crate::top_controls_region` takes it as an
     // argument.
-    // **alo's own terminal, drawn if one is open.** After the desktop because
-    // it is a window and not furniture, and before the three corner surfaces
-    // for the same reason: the status area, what is in use and a notification
-    // each sit above whatever a client maps, and a terminal is a window among
-    // windows.
-    //
-    // **A terminal that cannot be drawn is left out rather than refusing the
-    // frame**, which is `DesktopPictures::tasks`' own rule and for its reason: a
-    // terminal too small for its own layout is one window's problem, and
-    // refusing the frame would take the whole desktop down with it — including
-    // the Dock a person needs in order to do anything about it. What went wrong
-    // is said on the error stream rather than swallowed.
-    let terminal = alos_own_terminal.and_then(|screen| {
-        match crate::the_terminals_cells_are_drawn::picture(
-            &mut labels.fonts,
-            screen,
-            size,
-            // **The scale is a percentage**, which is how this frame carries it —
-            // `100` is one physical pixel per logical one. Divided here rather
-            // than stored as a ratio, because every other reader of this field
-            // expects the percentage.
-            f64::from(desktop.display_scale) / 100.0,
-            desktop.look.scheme(),
-        ) {
-            Ok(drawn) => Some(drawn),
-            Err(why) => {
-                eprintln!("alo-shell: alo's own terminal could not be drawn: {why}");
-                None
-            }
-        }
-    });
     let room = crate::egress_status_place::TheRoom {
         size,
         panel: Some(drawn.panel.reserved),

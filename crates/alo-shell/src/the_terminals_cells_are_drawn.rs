@@ -153,6 +153,26 @@ pub(crate) struct ACell {
 }
 
 impl ACell {
+    /// This cell in whole pixels, as the child is told it.
+    ///
+    /// **Rounded, and the rounding is why the drawing does not use this.** The
+    /// advance is fractional on purpose so that column *n* lands at *n*
+    /// advances; `TIOCSWINSZ` carries whole `u16`s, so the figure handed to a
+    /// child is the nearest whole pixel. The two are different answers to
+    /// different questions and neither is a rounding of the other's job.
+    pub(crate) fn in_pixels(self, line_height: f32) -> alo_terminal::ACellInPixels {
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "a cell is two digits of pixels on any display this product lays out for,                       and both figures are positive by construction"
+        )]
+        let answer = alo_terminal::ACellInPixels {
+            width: self.advance.round() as u16,
+            height: line_height.round() as u16,
+        };
+        answer
+    }
+
     /// How many whole columns fit in this many pixels.
     ///
     /// **A count, never a constant.** How many columns a terminal has is the
@@ -315,6 +335,65 @@ pub(crate) fn where_the_window_goes(
         (transcript_width, transcript_height).into(),
     );
     Some((window, transcript))
+}
+
+/// How many lines fit in this many pixels.
+fn lines_in(height: i32, line_height: f32) -> usize {
+    if line_height <= 0.0 || height <= 0 {
+        return 0;
+    }
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "a count of lines is bounded by the height it was divided out of"
+    )]
+    let lines = (height as f32 / line_height) as usize;
+    lines
+}
+
+/// The grid a terminal window on this display has room for, and the cell to
+/// tell the child about.
+///
+/// **This is the one source of truth for the size**, and the fault it exists to
+/// end is three parties each holding their own: the drawing measured the
+/// window, the engine's grid was built at 80 by 24, and the child was told 80
+/// by 24 once at startup. Measured 2026-10-14: at 1440x1040 the window has room
+/// for **117 by 31** and all three believed 80 by 24, so programs broke their
+/// lines a third of the way across and anything drawing a full screen drew it
+/// at the wrong size.
+///
+/// The room is the transcript less its insets — the same arithmetic the drawing
+/// uses, because a grid worked out any other way would be a fourth answer.
+///
+/// # Errors
+/// [`NothingToDrawWith::TheresNoRoom`] when not one whole cell fits, which is
+/// a refusal rather than a clamp: a child told it has no columns divides by
+/// zero or draws nothing, and a child told it has one when it has none has
+/// been lied to.
+pub(crate) fn the_grid_that_fits(
+    fonts: &mut FontSystem,
+    size: (i32, i32),
+    scale: f64,
+    remembered: usize,
+) -> Result<(alo_terminal::HowBig, alo_terminal::ACellInPixels), NothingToDrawWith> {
+    let (_, transcript) =
+        where_the_window_goes(size, scale).ok_or(NothingToDrawWith::TheresNoRoom)?;
+    let metrics = the_designs_metrics(scale);
+    let cell = how_big_a_cell_is(fonts, metrics)?;
+
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "as elsewhere in this file: a two-digit logical measure through a scale"
+    )]
+    let (inset_across, inset_down) = (
+        (f64::from(measures::AN_INSET) * scale).round() as i32,
+        (f64::from(measures::CONTENT_BELOW_THE_TOP) * scale).round() as i32,
+    );
+    let columns = cell.columns_in(transcript.size.w - inset_across * 2);
+    let lines = lines_in(transcript.size.h - inset_down, metrics.line_height);
+    let grid = alo_terminal::HowBig::of(columns, lines, remembered)
+        .map_err(|_| NothingToDrawWith::TheresNoRoom)?;
+    Ok((grid, cell.in_pixels(metrics.line_height)))
 }
 
 /// Draw alo's own terminal onto a display this size.
