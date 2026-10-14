@@ -88,23 +88,65 @@ The transcript's own content begins 20 rows below its top: its single text child
 sits at y 20 inside it. So the transcript is inset **24 horizontally** (measured
 twice, below) and **20 vertically at the top**.
 
-## A disagreement the file has with itself, left unresolved
+## Sessions and the Transcript overlap, and the designer switched Sessions off
 
-**Sessions and the Transcript overlap.** Sessions occupies rows 73–129 and the
-Transcript occupies rows 57–763, so Sessions sits **inside** the Transcript's own
-span. Both cannot be drawn at once.
+**The overlap is real.** Sessions occupies rows 73–129 and the Transcript
+occupies rows 57–763, so Sessions sits **inside** the Transcript's own span.
+Both cannot be drawn at once.
 
-The Transcript's own name says *optional view explicitly requested*, which
-suggests the two are alternative states rather than a stacked layout — and the
-arithmetic above supports that reading, because the body balances **without**
-the sessions strip in it. But the file does not say which is drawn when, and
-**this document does not guess.**
-`CLAUDE.md`: `docs/design/` records *what was measured off it and what the owner
-decided where it is silent or disagrees with itself.* This is the silence.
+This was recorded here as a silence in the file, with *this document does not
+guess* beside it. It is not a silence. The file answers it, in the one place
+nobody had read: **the visibility flag the designer set.**
 
-**What is needed before the sessions strip is built:** which of the two is
-drawn, and on what. What is **not** blocked by it is the transcript itself,
-which is the same 1038×706 in every one of the ~30 instances measured below.
+### The measurement
+
+Every placement of the frame named `Sessions` in the captured snapshot, counted
+by whether it carries `hidden="true"`:
+
+| node | placements | hidden | visible |
+|---|---|---|---|
+| `479-28965.xml` | 3 | 3 | 0 |
+| `485-28999.xml` | 31 | 31 | 0 |
+| `493-29344.xml` | 14 | 14 | 0 |
+| `500-29477.xml` | 68 | 68 | 0 |
+| | **116** | **116** | **0** |
+
+**One hundred and sixteen placements, and the designer drew none of them.**
+
+### Three things that have to agree, and do
+
+A visibility flag on its own could be an accident of one export. Three
+independent readings point the same way:
+
+1. **The flag**, above: hidden in 116 of 116.
+2. **The arithmetic.** The body balances to exactly 800 — `1 + 56 + 706 + 28 +
+   9` — **without** the sessions strip in it. A layout that meant to stack
+   both would not add up without one of them.
+3. **The nesting.** `Sessions` (`479:29023`) and the Transcript
+   (`479:29032`) sit at the same depth — 3 — under the **same parent node**,
+   `479:29012`: two sibling frames in one container, one on and one off. That is what a toggled state
+   looks like in a design file. A stacked layout would have one inside the
+   other, or neither overlapping.
+
+Corroborating how `hidden` is used in this file at all: in `479-28965.xml` it
+appears six times, and the other three are a text named `launch`. Both uses are
+alternatives the designer parked, not deletions.
+
+### What this answers, and what it still does not
+
+**Answered: the default.** The transcript is what is drawn. The strip is not. So
+the 1038×706 transcript is unconditional, which is what the code already
+builds, and nothing in the window is waiting on this.
+
+**Still unanswered: the condition.** A flag says what the default is; it does
+not say what turns the strip on. That question is now a narrow one — *when does
+a second session appear in the strip* — rather than a contradiction blocking the
+window, and it is the owner's to settle when the strip is wanted.
+
+**So the sessions strip is not built from this design.** Not because the file
+contradicts itself, but because the file shows it drawn nowhere, and
+`docs/features.md` carries no line for it. Building a surface the design
+switched off in every frame it drew would be a promise nobody made.
 
 ## The transcript is the protected region, and it is one size
 
