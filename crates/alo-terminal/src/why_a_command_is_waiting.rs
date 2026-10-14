@@ -195,7 +195,9 @@ const PARKED_AND_NOTHING_MORE: [&str; 2] = [
 /// 1. **Running beats everything.** A process the kernel has on a processor is
 ///    not waiting for anything, whatever else is true of it.
 /// 2. **A kernel name that describes what it waits for.** A lock, a pipe or a
-///    child names itself; see [`WAITING_ON_ANOTHER_PROCESS`]. This comes before
+///    child names itself; the list is `WAITING_ON_ANOTHER_PROCESS` in this
+///    file, kept private because it is a table of one kernel's symbols rather
+///    than a promise to anybody. This comes before
 ///    the file deliberately: a command blocked on a lock usually still has a
 ///    terminal for its input, and *waiting for the keyboard* would send a
 ///    person to press a key that changes nothing.
