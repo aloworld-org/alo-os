@@ -388,6 +388,18 @@ file carries it with a tier.*
   opening the owner has now permitted.
   **The split between the two halves is the owner's second ruling of the same
   day**, in these words:* "agent can open terminal window application".
+- ★ **You can always tell who is speaking.** A narrow gutter beside the
+  transcript belongs to the terminal, and **no program can write into it** — it
+  says `PROGRAM · cargo test`, `ALO · response`, `SYSTEM · observation` or
+  `YOU · submitted request`, once per region rather than per line, in words
+  rather than in colour alone. *Any program can print "Listening verified" —
+  those are the sentences carrying the trust here — so who said something has to
+  be answered somewhere a program cannot reach.* **Rich formatting never
+  changes it**: a table drawn from `cargo test`'s own bytes is still the
+  program's. And the promise is the narrow one, because no picture authenticates
+  itself: **programs cannot impersonate the terminal's own provenance inside the
+  live terminal**, and a screenshot is a picture like any other.
+  [ADR 0113](decisions/0113-the-terminal-owns-a-gutter-that-says-who-is-speaking.md)
 - ★ **And alo says what it measured apart from what it worked out.** One rule
   over everything below, because it is the same rule four of them would
   otherwise repeat: *blocked reading from the keyboard* is a measurement and
@@ -498,11 +510,18 @@ file carries it with a tier.*
   machine is slow* is a reading of it, and a sensor nobody can read is said to
   be missing rather than guessed at
 - ★ **Do it, not just read about it.** *Close Slack. Stop that server. Put that
-  window on the other screen.* **A shell cannot close a window** — a window is
-  not a program, has no PID a person knows, and no command addresses it — so
-  every terminal on earth makes you reach for the mouse. alo reaches it through
-  the same enumerated verbs the rest of the machine uses, which is why the
-  answer and the action are in one place. At the default setting a change is
+  window on the other screen.* **What a shell cannot do is work out which
+  window you meant** — a window is not a program and has no name a person
+  knows, so a tool that can close one still needs you to identify it. *This
+  line claimed a shell cannot close a window at all, which the owner corrected
+  on 2026-10-14: tools that request window operations exist on some systems.
+  The advantage is resolving the intended window and applying one set of
+  permissions to it, not that the operation is impossible elsewhere.* And the
+  three it covers are different acts, named apart rather than collapsed:
+  **asking a window to close**, **quitting the application**, and **forcing a
+  process to stop** — the first is what *close Slack* means, unsaved-work
+  prompts are the application's and are respected, and a window that has not
+  closed is reported rather than assumed. At the default setting a change is
   proposed in a sentence and waits; grant more and it simply happens
 - ★ **Anything you can do on this machine, you can do by typing what you mean.**
   Not only what has a command. Running a program, closing a window, changing a
