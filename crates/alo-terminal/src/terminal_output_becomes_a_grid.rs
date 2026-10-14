@@ -124,6 +124,26 @@ impl TerminalOutput {
         let line = usize::try_from(at.line.0).unwrap_or(0);
         (at.column.0, line)
     }
+
+    /// Whether the program has asked for **application cursor keys**.
+    ///
+    /// A program sets this with `DECCKM` (`\x1b[?1h`), and it changes what the
+    /// arrow keys must send: `\x1b[A` ordinarily, `\x1bOA` while it is on.
+    /// Full-screen programs — an editor, a pager, anything using readline's
+    /// own line editing — turn it on, so a terminal that ignored it would send
+    /// arrows that those programs do not recognise. **The usual symptom is
+    /// arrow keys printing `^[[A` instead of moving the cursor**, which is the
+    /// single most recognisable broken-terminal behaviour there is.
+    ///
+    /// It is asked of the engine rather than tracked here, because the engine
+    /// is what parses the sequence that sets it — a second copy of this state
+    /// would be a second answer to the same question.
+    #[must_use]
+    pub fn arrows_are_in_application_mode(&self) -> bool {
+        self.term
+            .mode()
+            .contains(alacritty_terminal::term::TermMode::APP_CURSOR)
+    }
 }
 
 /// **Written by hand, because the engine's types are not `Debug`** — and
