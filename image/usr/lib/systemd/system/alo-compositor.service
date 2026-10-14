@@ -82,6 +82,34 @@ RuntimeDirectoryMode=0700
 # machine that already runs logind.
 PAMName=alo-compositor
 
+# **The greeter signs in as a greeter, not as a person, and a booted machine
+# is why.**
+#
+# Without this line `pam_systemd` gives this session class `user`, which
+# **occupies the virtual terminal**. On 2026-10-14 a person made the first
+# account on a machine and `alo-sessiond` was refused their session in those
+# words:
+#
+#   systemd-logind would not open a session for 1000:
+#   org.freedesktop.login1.SessionBusy -- Already occupied by a session
+#
+# Two PAM sessions existed and **both were root**, one of them on
+# `/dev/tty1` -- this unit. So the screen a person was looking at was held
+# against them by the very process that had asked them to sign in.
+#
+# **And this session buys the greeter nothing.** It takes the card as root
+# through `libseat`'s builtin backend, which needs no login session at all;
+# ADR 0115 measured that and it is why the greeter has always worked while
+# the desktop could not. The session was occupying a VT for a seat it was
+# not using.
+#
+# `greeter` is logind's own class for this: a greeter session does not block
+# the person's session that follows it on the same seat, which is what every
+# display manager relies on. The TTY stays named above, because the
+# measurement in that comment still holds -- a session with no TTY is given
+# no seat.
+Environment=XDG_SESSION_CLASS=greeter
+
 # Root, because a card comes from the login seat and logind decides that on a
 # privileged caller, and because the sign-in screen exists before anybody is
 # signed in and so cannot be anybody. And the greeter's group, for the door:
