@@ -1518,6 +1518,7 @@ dependencies = [
  "alo-strings",
  "alo-tasks",
  "alo-telling",
+ "alo-terminal",
  "alo-turn",
  "serde",
  "thiserror 2.0.20",
@@ -1757,6 +1758,7 @@ name = "alo-terminal"
 version = "0.0.1"
 dependencies = [
  "alacritty_terminal",
+ "alo-strings",
  "thiserror 2.0.20",
 ]
 

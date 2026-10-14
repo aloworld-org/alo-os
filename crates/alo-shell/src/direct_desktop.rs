@@ -972,7 +972,14 @@ impl LoopInput for Desk<'_> {
         // window's problem, and refusing the frame would take the whole desktop
         // down with it, including the Dock a person needs to do anything about
         // it.
-        let terminal = drawn_terminal(server, self.labels, (size.w, size.h), &named, frame);
+        let terminal = drawn_terminal(
+            server,
+            self.labels,
+            (size.w, size.h),
+            &named,
+            frame,
+            self.strings,
+        );
         let pictures = crate::nested_desktop::frame_pictures(
             frame,
             None,
@@ -1064,7 +1071,14 @@ impl LoopInput for Desk<'_> {
             // fails that guard, which is the guard working: rename this and
             // either give it a name that still says what it is, or say in that
             // test where the rectangles now come from. Do not loosen it.
-            let its_terminal = drawn_terminal(server, self.labels, (size.w, size.h), &named, frame);
+            let its_terminal = drawn_terminal(
+                server,
+                self.labels,
+                (size.w, size.h),
+                &named,
+                frame,
+                self.strings,
+            );
             let its_pictures = crate::nested_desktop::frame_pictures(
                 frame,
                 None,
@@ -1527,6 +1541,7 @@ fn drawn_terminal(
     size: (i32, i32),
     named: &str,
     frame: crate::DesktopFrame<'_>,
+    says: &alo_strings::Strings,
 ) -> Option<crate::the_terminals_cells_are_drawn::TerminalPicture> {
     let screen = server
         .alos_own_terminal()
@@ -1538,6 +1553,7 @@ fn drawn_terminal(
         size,
         scale,
         frame.look.scheme(),
+        says,
     ) {
         Ok(drawn) => Some(drawn),
         Err(why) => {

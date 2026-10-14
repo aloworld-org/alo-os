@@ -197,6 +197,105 @@ information was asked for.
 and 16. The totals are what a reader checks against; the split is what makes
 them checkable.*
 
+## The gutter, and the four words in it
+
+[ADR 0113](../decisions/0113-the-terminal-owns-a-gutter-that-says-who-is-speaking.md)
+decides that a narrow column beside the transcript belongs to the terminal and
+says who is speaking. The design draws it, and the file states the rule in its
+own words — an annotation on `485-28999`:
+
+> **Source gutter: terminal-owned, outside clipped program content. PROGRAM
+> includes parsed rich results. SYSTEM means an attributed observation, with
+> scope and time. ALO is interpretation. YOU is input. Colour is
+> supplementary.**
+
+*Outside clipped program content* is the load-bearing phrase. The gutter is not
+an overlay drawn on top of the cells; it is room taken away from them before
+they are laid out. That is the difference between a promise and a decoration,
+and it is why `a_programs_room_inside` exists rather than a drawing order.
+
+### It is 96 wide, and the second measurement is the one that matters
+
+| read from | figure |
+|---|---|
+| `Rich test result / untrusted program data`, 894 wide at x **96** inside a 990-wide boundary | `96 + 894 = 990` exactly |
+| a **plain** `Terminal / Source region`, rendered 1:1 and measured by pixel | gutter holds `you`; the content's ink resumes at x **97** |
+
+The first alone would have been a measure of **rich results**, and a plain
+transcript would then have drawn its cells straight through the gutter. The
+second is a node with no rich result anywhere in it, and it has the same
+column — so the gutter is unconditional.
+
+### What is in it
+
+| | |
+|---|---|
+| the label's box | **80** wide, **22** tall, at (0, 0) of the region |
+| between label and first character | **16** — `96 − 80` |
+| type | `Label/Medium`: **Manrope SemiBold, size 13, line height 18, letter spacing 0.1** |
+| colour | `text/primary`, **#102a43** |
+| the words | `you`, `alo`, `system`, `program` — **lowercase**, as drawn |
+
+The type and the colour were asked of the live file **for the label node
+itself** (`488:29286`) and not for its parent, because a parent's variables are
+every variable used anywhere beneath it. Asking the parent would have been a
+measurement of the subtree reported as a measurement of the label.
+
+**Four readings off the rendered image agree with the file's own tokens**,
+which is why these are recorded as measured rather than as read:
+
+| measured from the 1:1 render | the file's token |
+|---|---|
+| ink `(16, 42, 67)` | `text/primary` `#102a43` |
+| program ground `(238, 242, 244)` | `bg/cool` `#eef2f4` |
+| gutter ground `(255, 255, 255)` | `bg/surface` `#ffffff` |
+| x-height 7 + descender 3 ⇒ ~13 | `Label/Medium` size **13** |
+
+### Labelled once per region, which the design draws plainly
+
+The transcript node renders as:
+
+```
+you      launch ❯ alo "run this project"
+alo      Found one project: ~/Projects/launch…
+         Proposed command: npm run dev
+         Starts a local server. May write bui…
+system   Grant: read this project; ask before…
+         Recovery covers project files only i…
+alo      Run this command? [y/N]
+```
+
+The `alo` region is three lines tall and carries **one** `alo`. That is ADR
+0113's *each region is labelled once, not each line*, drawn rather than
+described, and it is why `ARegion::labelled_at` exists as one function instead
+of a condition each caller writes for itself.
+
+### Where the design and ADR 0113 do not say the same thing
+
+ADR 0113 writes the labels as `PROGRAM · cargo test`, `ALO · response`,
+`SYSTEM · observation`, `YOU · submitted request`. The design draws the origin
+word alone, in lowercase, and **96 wide cannot hold the longer form** — at the
+label's own 13px, `PROGRAM · cargo test` is roughly twice the 80 the design
+gives it.
+
+The reading taken, and the reason:
+
+- **The ADR governs which origins exist and that the gutter says them in
+  words.** That is what it decided, and it is decided.
+- **The design governs how they are drawn** — case, size, family, colour.
+  Those are visual properties, and `CLAUDE.md` makes the design the visual
+  truth. The uppercase in ADR 0113 is how its examples are written, not a
+  stated typographic rule.
+- **The qualifier is not dropped, it is owed.** The design puts the source
+  detail inside the region as a caption — `Source: cargo test output · Not
+  independently verified` — rather than in the gutter. That belongs with rich
+  results, which are not built, so it is recorded here rather than guessed at.
+
+This is written down because it is a deliberate departure from one of two
+documents that disagree, and `CLAUDE.md` asks for exactly that: *a deliberate
+departure is written down where the next person looks rather than left in a
+diff.*
+
 ## The type, asked of the live file
 
 The snapshot has no type information, so these came from the file's own variable

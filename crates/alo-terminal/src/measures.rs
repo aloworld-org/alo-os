@@ -130,6 +130,78 @@ pub const BELOW_THE_NOTE: u32 = 9;
 /// symmetry the file does not state.
 pub const CONTENT_BELOW_THE_TOP: u32 = 20;
 
+/// How wide the terminal's own gutter is, at the left of every source region.
+///
+/// **The column a program cannot write into** —
+/// [ADR 0113](../../../docs/decisions/0113-the-terminal-owns-a-gutter-that-says-who-is-speaking.md).
+/// The design's annotation states the rule in words: *source gutter:
+/// terminal-owned, **outside clipped program content***. So this is not an
+/// overlay drawn on top of the cells; it is room taken away from them before
+/// they are laid out, which is what makes the promise structural rather than
+/// cosmetic.
+///
+/// Measured twice, on two different nodes, and the second was the one that
+/// mattered:
+///
+/// - inside `Program content boundary / protected source outside` (990 wide),
+///   the frame named `Rich test result / untrusted program data` is 894 wide at
+///   x **96**, and `96 + 894 = 990` exactly;
+/// - and in a **plain** `Terminal / Source region` — no rich result anywhere in
+///   it — the gutter holds `you` and the content's ink resumes at x **97**.
+///
+/// The second is why this is unconditional. A figure taken only from the rich
+/// frame would have been a measure of rich results, and a plain transcript
+/// would have drawn its cells straight through the gutter.
+pub const A_GUTTER: u32 = 96;
+
+/// How much of [`A_GUTTER`] the label itself is given.
+///
+/// The design's text node is 80 wide in the 96-wide column, so **16 separates
+/// the label from the program's first character**. The word drawn in it is
+/// narrower again — `program` measures 51 — so the 80 is the box the label is
+/// laid out in and not the width of any particular word.
+///
+/// It is here rather than derived from the longest word because the longest
+/// word changes with the language, and `CLAUDE.md` asks for all 24 official EU
+/// languages. A box the design set is a measure; the widest translation is a
+/// race.
+pub const THE_LABELS_ROOM: u32 = 80;
+
+/// The type size the gutter's label is drawn at.
+///
+/// The design's `Label/Medium`, asked of the live file for the label node
+/// itself rather than its parent: *Manrope SemiBold, size 13, weight 600, line
+/// height 18, letter spacing 0.1*.
+///
+/// **Deliberately not [`A_LETTER`].** The label is 13 where the transcript is
+/// 14, and in another family — alo's own rather than the mono — which is what
+/// makes a glance tell them apart before any word is read.
+pub const THE_LABEL: u32 = 13;
+
+/// The line height the gutter's label is laid out on, from `Label/Medium`.
+///
+/// Eighteen in a row that is [`A_LINE`] tall, so the label sits inside the
+/// line it labels with two above and two below.
+pub const THE_LABELS_LINE: u32 = 18;
+
+/// The weight the gutter's label is drawn at: `SemiBold`, from `Label/Medium`.
+///
+/// The same weight as alo's own face everywhere else, and in this file for the
+/// reason [`THE_WEIGHT`] is: a weight missed by one step does not look like a
+/// weight error, it silently throws the family away.
+pub const THE_LABELS_WEIGHT: u16 = 600;
+
+/// How wide a program's own content is, inside a transcript this wide.
+///
+/// [`a_source_region_inside`] less [`A_GUTTER`]: the region, less the column
+/// the terminal keeps. Saturating for the same reason, and it is the figure the
+/// grid is counted in — **a column of cells that reached the gutter would be a
+/// program writing where the design says it cannot**.
+#[must_use]
+pub const fn a_programs_room_inside(transcript_width: u32) -> u32 {
+    a_source_region_inside(transcript_width).saturating_sub(A_GUTTER)
+}
+
 /// How wide a source region is, inside a transcript this wide.
 ///
 /// The arithmetic the two measured pairs satisfy, rather than either of the
