@@ -7753,3 +7753,51 @@ vector or as a bus name, and neither composes a shell line.
 **If it is ever tightened, the rule has to be the desktop entry's and not the
 bus's** — and the two consumers want different things, which is the real
 finding here and is a decision rather than a patch.
+
+## Removing a worktree poisons the shared build directory (2026-10-13)
+
+**The specification.** `cargo` rebuilds what changed and reuses what did not,
+and every gate on the gating machine builds in one directory —
+`/root/alo-builds/this-machine` — whatever checkout it is gating. That is
+deliberate and the gate says so out loud: *every checkout on this machine builds
+there, one at a time, because they take turns at the gates.*
+
+**What reality is.** `cargo` compiles `env!("CARGO_MANIFEST_DIR")` into each
+test binary, and many tests read a repository file through it. Nothing about a
+removed worktree changes a source file, so cargo reuses those binaries — and
+they name a directory that is gone.
+
+Measured on 2026-10-13, after a merged worktree was removed:
+
+| | |
+|---|---|
+| gate verdict | `GATES-REFUSED: 0 of nine passed` |
+| crates that failed | 7 — `alo-reconciling`, `alo-shortcuts`, `alo-appearance`, `alo-accounts`, `alo-remembering`, `alo-saying`, `alo-starting` |
+| the same tests run directly | **all passed** |
+| `debug/deps/*.d` files naming the removed worktree | **313** |
+
+The error text is the giveaway, and it names the vanished path:
+
+```text
+Unreadable { at: ".../alo-worktrees/app-door/crates/alo-image/../../image/usr/
+lib/systemd/system/alo-boundaryd.service", why: NotFound }
+```
+
+**What to do.** Clear the shared build directory in the same breath as removing
+a worktree, or leave the worktree until after the next gate. Recovery is
+`sudo rm -rf /root/alo-builds/this-machine`, which costs one full rebuild and
+frees about 35 GB. To confirm the diagnosis before paying for it:
+
+```sh
+grep -rl "alo-worktrees/<the removed name>" \
+  /root/alo-builds/this-machine/debug/deps/*.d | wc -l
+```
+
+**And the gate said it was the work.** It printed *run twice and refused both
+times, so this is the work rather than the machine*, which is the second time in
+one day that sentence was wrong — the first was a filesystem that filled up
+mid-run, and `only_a_person_can_clear_this` now catches that one. This case is
+**not** caught: a path that is `NotFound` is indistinguishable, from the text
+alone, from a test that genuinely cannot find a file it should have. A
+deterministic failure is not evidence that the change caused it, and *twice is
+the work* assumes it is.
