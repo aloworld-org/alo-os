@@ -5,6 +5,19 @@ feature list and the decisions must not be what stops a terminal worth
 switching for: *"the features and adr should not stop us from making the wow
 features to the terminal, we can edit them."*
 
+**Its title is a default, not a limit, and was written before the rulings that
+say so.** *Only the person runs it* is what a machine does out of the box. The
+owner, later the same day: *"no limitations for the AI agent, only when the user
+chooses in the settings."*
+[ADR 0111](0111-the-person-chooses-whether-their-agent-may-use-the-terminal.md)
+and
+[ADR 0112](0112-with-the-persons-permission-the-agent-may-do-anything-on-the-machine.md)
+carry those rulings. The filename stays because other records cite it, and a
+link broken to tidy away an awkward title is worse than a title read beside this
+paragraph. What holds at every level, rather than only at the default, is the
+three always-ons: the run is recorded, the files are snapshotted before it, and
+what leaves the machine is shown.
+
 **What is still the owner's**, and is the only thing this document leaves open:
 whether any of it joins the six-item launch list in `ROADMAP.md`. Everything
 else here is decided. The earlier word, relayed through the desktop lane, was
@@ -84,11 +97,13 @@ The agent answers a request with a **command and a sentence about it**, drawn
 in a surface the compositor owns. The person reads it and presses Enter, or
 does not.
 
-**The agent cannot press Enter, and this is a mechanism rather than a
-promise.** The surface is the compositor's; the agent reaches it through an
-enumerated verb that carries text and nothing else. There is no verb that
-submits, no verb that types into somebody else's terminal, and no verb that
-starts a shell. What the agent produces is a **proposal**, which is the same
+**At the default setting the agent does not press Enter, and that is a mechanism
+rather than a promise.** The surface is the compositor's; the agent reaches it
+through an enumerated verb that carries text and nothing else, and at that
+setting nothing submits on the person's behalf. **At a level the person grants,
+it runs the command** — ADR 0112 — and the mechanism here is what makes the
+default real rather than merely asserted, instead of being a limit on what a
+person may have. What the agent produces is a **proposal**, which is the same
 shape as every other change it can ask for: *reads answer, changes wait*, and
 what a person approves is the sentence they read.
 
