@@ -3382,7 +3382,9 @@ seconds, who else has power over it.
 ## Not scheduled
 
 The engine (`alo-engine`) replaces the workspace's rendering incrementally and
-has its own roadmap.
+has its own roadmap. Not scheduled **here** does not mean not started: it is
+`aloworld-org/alo-browser` and it is being built, on that roadmap rather than
+this one ([ADR 0002](docs/decisions/0002-the-shell-is-native.md)).
 
 **alo OS Desktop** — the packaging for the Windows 10 fleet at scale — follows
 once alo OS AI has customers, and inherits everything built here. It used to be
