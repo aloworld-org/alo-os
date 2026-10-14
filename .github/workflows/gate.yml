@@ -397,6 +397,25 @@ jobs:
       - name: build the supervisor
         run: cargo build --quiet --manifest-path tools/kernel-loop/Cargo.toml
 
+      # **And test it, which nothing did.** Measured 2026-10-14:
+      # `tools/kernel-loop` is its own workspace — it has a `[workspace]` of
+      # its own and is in neither the root `members` nor its `exclude` — so
+      # `cargo test --workspace` never reaches it and the step above only
+      # built it. **197 tests, run by nothing on a push.**
+      #
+      # They are not incidental tests. `gates.rs` decides **which door a
+      # refusal goes through**: the work's, a machine that comes back on its
+      # own, or one only a person can clear. Getting that wrong spends a
+      # repair worker on Rust nothing is wrong with, or waits for ever for a
+      # disk to empty itself. `which_door_a_refusal_goes_through` is the
+      # module that holds it to that, and it had never run here.
+      #
+      # Cheap, and it belongs on this job rather than a new one: the crate is
+      # already built and cached by the step above, so this is the test
+      # binaries and nothing else.
+      - name: the supervisor's own tests
+        run: cargo test --quiet --manifest-path tools/kernel-loop/Cargo.toml
+
       # **That the runner ran the binary we think it ran, shown rather than
       # assumed.** Cargo decides what to rebuild by comparing modification times,
       # not contents, so a source that arrives older than the artefact built
