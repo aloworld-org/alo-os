@@ -502,9 +502,20 @@ mod the_bundled_monospace_face {
         }
     }
 
-    /// A terminal's ask: the monospace family at its ordinary weight.
-    fn a_terminals_ask<'a>() -> Attrs<'a> {
-        Attrs::new().family(Family::Name(THE_MONO_FAMILY))
+    /// The weight the design's `Terminal/Command` asks for: Medium.
+    const THE_DESIGNS_MONO_WEIGHT: u16 = 500;
+
+    /// The terminal's ask **as the design makes it** — the monospace family at
+    /// Medium, not at whatever weight happens to be the default.
+    ///
+    /// Asking at the default weight is what hid this fault: Geist Mono's
+    /// variable file registers at 400, so a default-weight ask matched exactly
+    /// and looked correct, while the weight the design actually specifies
+    /// resolved to Inter.
+    fn the_designs_terminal_ask<'a>() -> Attrs<'a> {
+        Attrs::new()
+            .family(Family::Name(THE_MONO_FAMILY))
+            .weight(Weight(THE_DESIGNS_MONO_WEIGHT))
     }
 
     /// **The face is in the database, under the name a caller must ask for.**
@@ -531,9 +542,9 @@ mod the_bundled_monospace_face {
     /// *size* would pass on either, which is why the family that drew each
     /// glyph is asserted too.
     #[test]
-    fn a_terminals_ask_reaches_a_really_monospace_face() {
+    fn the_terminals_face_is_monospace_at_the_designs_weight() {
         let mut fonts = the_shells_own_fonts();
-        let (cell, drawn_in) = what_drew(&mut fonts, "M", &a_terminals_ask());
+        let (cell, drawn_in) = what_drew(&mut fonts, "M", &the_designs_terminal_ask());
         assert_eq!(
             drawn_in, THE_MONO_FAMILY,
             "`M` was drawn in {drawn_in} rather than {THE_MONO_FAMILY}, advance {cell}"
@@ -541,7 +552,7 @@ mod the_bundled_monospace_face {
         assert!(cell > 0.0, "nothing was laid out for `M`");
 
         for character in ["i", "W", "l", ".", "8", "@", "m"] {
-            let (advance, face) = what_drew(&mut fonts, character, &a_terminals_ask());
+            let (advance, face) = what_drew(&mut fonts, character, &the_designs_terminal_ask());
             assert_eq!(
                 face, THE_MONO_FAMILY,
                 "`{character}` was drawn in {face} rather than {THE_MONO_FAMILY}"
@@ -566,138 +577,158 @@ mod the_bundled_monospace_face {
         );
     }
 
-    /// **Adding a third face changed nothing about the interface's own text.**
+    /// **A real window control label is drawn in alo's own typeface.**
     ///
-    /// The regression this change could plausibly have caused, measured against
-    /// the font system as it was before: the same ask, both databases, and the
-    /// same face and the same advance out of each.
+    /// This goes through [`WindowControlLabels::shape_said`] — **the production
+    /// path every window control label takes** — rather than reconstructing the
+    /// attributes it uses. A test that rebuilt the ask would pass while
+    /// production asked for something else, which is the whole fault family
+    /// this module keeps running into.
     ///
-    /// It matters because [`WindowControlLabels::from_fonts`] makes the
-    /// **first** face's family this database's sans-serif, so a face inserted
-    /// in front of Manrope would silently retypeset every sentence on this
-    /// machine. Geist Mono is loaded third for that reason.
+    /// # What it found
     ///
-    /// **This asserts no particular face**, deliberately — only that the answer
-    /// did not move. Which face the interface's ask reaches is a separate and
-    /// unhappy question, and it is
-    /// [`a_variable_face_is_registered_at_one_weight_only`]'s.
+    /// Written to guard the load *order* — `from_fonts` makes the first face's
+    /// family this database's sans-serif, so a monospace face loaded ahead of
+    /// Manrope would retypeset every label — and it found something else
+    /// instead: `shape_said` asked for `Family::SansSerif` with `Attrs::new()`,
+    /// which means **weight 400**. Nothing in the Manrope family is weight 400,
+    /// so the exact-weight rule dropped the family and every window control
+    /// label on this machine was drawn in **Inter**, with no error.
+    ///
+    /// Bundling Manrope SemiBold fixed `painted_text::alos_own_text`, which
+    /// asks at weight 600, and left this path untouched — **two production text
+    /// paths, one fixed and one not, and only a test that walked the real one
+    /// could tell them apart.**
     #[test]
-    fn adding_the_monospace_face_changed_nothing_about_the_interfaces_text() {
-        let mut before = the_fonts_before_geist_mono();
-        let mut after = the_shells_own_fonts();
-        for character in ["W", "i", "g", "A", "1"] {
-            let (was, was_face) = what_drew(&mut before, character, &alos_own_text());
-            let (now, now_face) = what_drew(&mut after, character, &alos_own_text());
-            assert_eq!(
-                was_face, now_face,
-                "`{character}` was drawn in {was_face} before the monospace face was loaded and \
-                 in {now_face} after, so loading it moved the interface's typeface"
+    fn a_window_control_label_is_shaped_in_alos_own_face() {
+        let mut renderer = WindowControlLabels::new().expect("the bundled faces load");
+        let layout = crate::WindowControlLayout::new((640, 480), (0, 0), [false; 3], true)
+            .expect("a control strip");
+        let strings = super::translated("Schließen");
+
+        for control in layout.controls() {
+            let said = control.action().said(&strings);
+            let buffer = renderer
+                .shape_said(&said, 240, alo_appearance::TextScale::ordinary())
+                .expect("the label shapes");
+            let faces: Vec<String> = buffer
+                .layout_runs()
+                .flat_map(|run| run.glyphs.iter())
+                .map(|glyph| {
+                    renderer
+                        .fonts
+                        .db()
+                        .face(glyph.font_id)
+                        .and_then(|face| face.families.first().map(|(name, _)| name.clone()))
+                        .unwrap_or_else(|| "<no face>".to_owned())
+                })
+                .collect();
+            assert!(
+                !faces.is_empty(),
+                "`{}` laid out no glyphs at all",
+                said.text()
             );
             assert!(
-                (was - now).abs() < 0.001,
-                "`{character}` advanced {was} before and {now} after, in {now_face}"
+                faces.iter().all(|face| face == ALOS_OWN_FACE),
+                "`{}` was shaped in {:?} rather than entirely in {ALOS_OWN_FACE}, so alo's own \
+                 labels are not in alo's own typeface",
+                said.text(),
+                faces
             );
         }
     }
 
-    /// **A variable font is registered at one weight, and asking for another
-    /// weight leaves its family entirely.**
+    /// **Both of the design's own text styles are drawn in their own
+    /// typeface, at the weight the design asks for.**
     ///
-    /// The measurement the rest of this module rests on, and it is not a happy
-    /// one. Measured 2026-10-14 in the Lima VM, on the shell's own three faces:
+    /// The two styles, read from the design file on 2026-10-14:
     ///
-    /// | ask | face that drew it |
+    /// | token | font |
     /// |---|---|
-    /// | `Manrope` at 200 | **Manrope** |
-    /// | `Manrope` at 400, 600, 700 | **Inter** |
-    /// | `Inter` at 200 | **Manrope** |
-    /// | `Geist Mono` at 400 | **Geist Mono** |
-    /// | `Geist Mono` at 600, 700 | **Inter** |
+    /// | `Label/Medium` | Manrope SemiBold, size 13, weight 600, line height 18 |
+    /// | `Terminal/Command` | Geist Mono Medium, size 14, weight 500, line height 22 |
     ///
-    /// Two things compound. `Manrope.ttf` is `Manrope[wght].ttf`, and fontdb
-    /// registers a variable font as **one** face at its default instance —
-    /// weight 200, ExtraLight — rather than as a family spanning its axis.
+    /// **Neither of them worked before the static cuts were bundled.** Asked
+    /// exactly as above, both resolved to **Inter** — and the terminal's style
+    /// was not even monospace. Two things compound to cause it: fontdb
+    /// registers a variable font as **one** face at its default instance
+    /// (`Manrope[wght].ttf` at weight 200, `GeistMono[wght].ttf` at 400), and
+    /// cosmic-text honours a requested family **only among faces whose weight
+    /// matches exactly** — `Attrs::matches`, which builds the candidate list,
+    /// compares style and stretch and never looks at the family, and
+    /// `FontFallbackIter::default_font_match_key` checks the family behind
+    /// `filter(|key| key.font_weight_diff == 0)`. Miss the weight by one step
+    /// and the family is thrown away.
     ///
-    /// And then **cosmic-text consults the family only among faces whose
-    /// weight matches exactly.** `Attrs::matches`, which builds its candidate
-    /// list, compares style and stretch and **never looks at the family**;
-    /// `FontFallbackIter::default_font_match_key` is the one place the family
-    /// is checked, behind `filter(|key| key.font_weight_diff == 0)`. So when
-    /// nothing in the database has the weight asked for, the family is dropped
-    /// and a family-blind nearest-weight list wins.
-    ///
-    /// That is why asking for **Inter** at weight 200 gives **Manrope**: it is
-    /// the only weight-200 face, and it is not in the Inter family. A weight is
-    /// not a preference that degrades — it is part of the key, and missing it
-    /// by one step throws the family away.
-    ///
-    /// **And that means the interface is not drawn in its own typeface.**
-    /// `painted_text::alos_own_text` asks for Manrope at
-    /// [`ALOS_OWN_WEIGHT`] — 600, the design's `Label/Medium` — and gets
-    /// **Inter**. That is a live fault in this product, it is older than this
-    /// change and untouched by it, and it is the same fault
-    /// `painted_text`'s own header describes having fixed on 2026-10-09:
-    /// *nothing in this product drew the typeface its own design uses.* It was
-    /// fixed in the asking and not in the resolving.
-    ///
-    /// It is **not fixed here**, because the remedy is a bundling decision —
-    /// static instances of Manrope at the weights the design uses, under their
-    /// licence, with their revisions recorded — and `fonts/README.md` is clear
-    /// that bundling a face is the owner's word to give. This test exists so
-    /// that the fault is **measured and named** rather than rediscovered, and
-    /// so that whoever fixes it has the table above to check against.
-    ///
-    /// **It asserts the broken behaviour.** When somebody fixes it, this test
-    /// fails — and its message says so, which is the point.
-    ///
-    /// `docs/quirks.md` carries the two remedies and the trade between them:
-    /// bundling static instances at the design's weights, or asking for
-    /// `Weight(200)` and getting Manrope in ExtraLight. Today's behaviour is
-    /// neither — it is Inter.
+    /// So this asserts the whole chain in the only way that cannot pass on the
+    /// wrong face: **it names the family that actually drew the glyph.** An
+    /// advance, a box size, or "glyphs came back" would all have passed
+    /// throughout the period when this was broken.
     #[test]
-    fn a_variable_face_is_registered_at_one_weight_only() {
+    fn the_designs_own_weights_reach_the_designs_own_faces() {
         let mut fonts = the_shells_own_fonts();
 
-        let registered: Vec<(String, u16)> = fonts
-            .db()
-            .faces()
-            .map(|face| {
-                (
-                    face.families
-                        .first()
-                        .map(|(name, _)| name.clone())
-                        .unwrap_or_default(),
-                    face.weight.0,
-                )
-            })
-            .collect();
-        assert!(
-            registered
-                .iter()
-                .any(|(family, weight)| family == ALOS_OWN_FACE && *weight == 200),
-            "{ALOS_OWN_FACE} is no longer registered at weight 200; the faces are {registered:?}, \
-             so this module's table needs remeasuring"
+        // `Label/Medium`: Manrope SemiBold 600.
+        let (_, interface) = what_drew(&mut fonts, "W", &alos_own_text());
+        assert_eq!(
+            interface, ALOS_OWN_FACE,
+            "the interface asks for {ALOS_OWN_FACE} at weight {} and was drawn in {interface}, \
+             so alo's own surfaces are not in alo's own typeface",
+            ALOS_OWN_WEIGHT.0
         );
 
-        // At the weight it is registered at, the family answers for itself.
-        let (_, at_its_own_weight) = what_drew(
+        // `Terminal/Command`: Geist Mono Medium 500.
+        let (cell, terminal) = what_drew(&mut fonts, "M", &the_designs_terminal_ask());
+        assert_eq!(
+            terminal, THE_MONO_FAMILY,
+            "the design asks for {THE_MONO_FAMILY} at weight {THE_DESIGNS_MONO_WEIGHT} and it \
+             was drawn in {terminal}, so a terminal would have crooked columns"
+        );
+
+        // And at that weight it is still monospace, which is the half a family
+        // name alone does not establish.
+        for character in ["i", "W", "l", ".", "8", "@", "m"] {
+            let (advance, face) = what_drew(&mut fonts, character, &the_designs_terminal_ask());
+            assert_eq!(face, THE_MONO_FAMILY, "`{character}` was drawn in {face}");
+            assert!(
+                (advance - cell).abs() < 0.01,
+                "`{character}` advances {advance} where a cell is {cell}, in {face}"
+            );
+        }
+    }
+
+    /// **A weight the database does not hold still leaves the family**, which
+    /// is why the static cuts had to be bundled rather than the weight asked
+    /// for being rounded.
+    ///
+    /// Nothing is loaded at weight 900, so this is the unfixed behaviour still
+    /// visible at a weight nobody bundled. It is here so that the mechanism
+    /// `docs/quirks.md` describes stays measured after the two faces that
+    /// suffered from it stopped suffering — otherwise the entry would be a
+    /// claim about a version of the tree that no longer exists.
+    #[test]
+    fn a_weight_nothing_is_bundled_at_still_loses_the_family() {
+        let mut fonts = the_shells_own_fonts();
+        let registered: Vec<u16> = fonts.db().faces().map(|face| face.weight.0).collect();
+        assert!(
+            !registered.contains(&900),
+            "something is now bundled at weight 900, so this test needs a different weight; \
+             the weights loaded are {registered:?}"
+        );
+
+        let (_, drawn_in) = what_drew(
             &mut fonts,
             "W",
             &Attrs::new()
-                .family(Family::Name(ALOS_OWN_FACE))
-                .weight(Weight(200)),
+                .family(Family::Name(THE_MONO_FAMILY))
+                .weight(Weight(900)),
         );
-        assert_eq!(at_its_own_weight, ALOS_OWN_FACE);
-
-        // At the weight the design asks for, it does not.
-        let (_, at_the_designs_weight) = what_drew(&mut fonts, "W", &alos_own_text());
         assert_ne!(
-            at_the_designs_weight, ALOS_OWN_FACE,
-            "{ALOS_OWN_FACE} now answers at weight {}, so the interface has started being drawn \
-             in its own typeface. **That is good news and this test is the wrong shape for it** \
-             — delete this assertion, and check whether `docs/quirks.md`'s entry on fontdb \
-             weight matching still describes anything real.",
-            ALOS_OWN_WEIGHT.0
+            drawn_in, THE_MONO_FAMILY,
+            "a weight nothing is bundled at now stays inside its family, so cosmic-text's \
+             matching has changed. **That is good news** — check whether `docs/quirks.md`'s \
+             entry on exact weight matching still describes anything real, and whether the \
+             static cuts are still needed."
         );
     }
 
@@ -729,8 +760,8 @@ mod the_bundled_monospace_face {
             "this font system was meant to be missing {THE_MONO_FAMILY} and holds {families:?}"
         );
 
-        let (narrow, substitute) = what_drew(&mut without, "i", &a_terminals_ask());
-        let (wide, _) = what_drew(&mut without, "W", &a_terminals_ask());
+        let (narrow, substitute) = what_drew(&mut without, "i", &the_designs_terminal_ask());
+        let (wide, _) = what_drew(&mut without, "W", &the_designs_terminal_ask());
         assert!(
             narrow > 0.0 && wide > 0.0,
             "nothing was laid out, so on this cosmic-text an absent family is empty rather than \

@@ -67,29 +67,51 @@ impl WindowControlLabels {
     /// `crate::dock_raster` loads Manrope into a font system of its own, which
     /// is how one capability written twice hides a fault in the other.
     ///
-    /// **Geist Mono is third, and it is the terminal's.** It is here rather
-    /// than in a font system of the terminal's own for exactly the reason the
-    /// paragraph above gives:
+    /// **The two static cuts are why the design's own weights draw at all.**
+    /// A variable font is registered by fontdb as **one** face at its default
+    /// instance, and cosmic-text honours a requested family **only among faces
+    /// whose weight matches exactly** — so an ask for a weight nothing in the
+    /// database has drops the family and takes the nearest weight anywhere.
+    ///
+    /// Measured 2026-10-14, before these two files existed, asking exactly as
+    /// the design asks:
+    ///
+    /// | the design's style | asked for | was drawn in |
+    /// |---|---|---|
+    /// | `Label/Medium` | Manrope weight 600 | **Inter** |
+    /// | `Terminal/Command` | Geist Mono weight 500 | **Inter**, not monospace |
+    ///
+    /// **Neither of alo's typefaces could be drawn at its own specified
+    /// weight.** `docs/quirks.md` carries the mechanism and the table it was
+    /// read from. The remedy is static cuts at exactly those weights, which is
+    /// what the last two entries are; the variable files stay, so the weights
+    /// they *do* cover keep working.
+    ///
+    /// **Geist Mono is here rather than in a font system of the terminal's
+    /// own** for exactly the reason the paragraph above gives:
     /// [ADR 0114](../../docs/decisions/0114-the-terminals-engine-is-pinned-and-its-face-is-bundled.md)
     /// says *the terminal uses that one, and does not create its own*, because
     /// a third copy would hide the next fault as the second hid that one.
     ///
-    /// **Third and not first, deliberately.** [`Self::from_fonts`] makes the
-    /// *first* face's family this database's sans-serif, so putting a
-    /// monospace face in front would silently change the typeface of every
+    /// **No monospace face is first, deliberately.** [`Self::from_fonts`] makes
+    /// the *first* face's family this database's sans-serif, so a monospace
+    /// face in front of Manrope would silently change the typeface of every
     /// sentence on this machine that asks for sans-serif. Order is load-bearing
-    /// here, and the test
-    /// `the_bundled_monospace_face::the_interfaces_face_is_still_the_first_one`
+    /// here, and
+    /// `the_bundled_monospace_face::adding_the_monospace_face_changed_nothing_about_the_interfaces_text`
     /// in this file's own test module is what keeps it so.
-    ///
-    /// **Nothing asks for the monospace family yet** — the drawing is a later
-    /// change — so what is finished here is the load, and the tests beside it
-    /// prove the load rather than assert that a terminal exists.
     pub fn new() -> Result<Self, WindowControlLabelError> {
         Self::from_fonts([
+            // **The variable files first**, because the first face's family
+            // becomes this database's sans-serif and that must stay Manrope.
             include_bytes!("../fonts/Manrope.ttf").to_vec(),
             include_bytes!("../fonts/Inter.ttf").to_vec(),
             include_bytes!("../fonts/GeistMono.ttf").to_vec(),
+            // **And the two static cuts the design actually asks for.** Not a
+            // nicety: without these, neither of alo's typefaces could be drawn
+            // at the weight its own design specifies.
+            include_bytes!("../fonts/Manrope-SemiBold.ttf").to_vec(),
+            include_bytes!("../fonts/GeistMono-Medium.ttf").to_vec(),
         ])
     }
 
@@ -153,7 +175,23 @@ impl WindowControlLabels {
         buffer.set_text(
             &mut self.fonts,
             said.text(),
-            &Attrs::new().family(Family::SansSerif),
+            // **Sans-serif, at alo's own weight.** `from_fonts` makes the
+            // first face's family this database's sans-serif, so the family
+            // here is already Manrope — but cosmic-text honours a family only
+            // among faces whose weight matches **exactly**, and `Attrs::new()`
+            // means weight 400. Nothing in the Manrope family is 400, so this
+            // asked for sans-serif, failed to match, left the family and drew
+            // **Inter** — every window control label on this machine, in the
+            // wrong typeface, with no error.
+            //
+            // The weight is the design's own: `Label/Medium` is Manrope
+            // SemiBold, which is what `ALOS_OWN_WEIGHT` holds. Caught on
+            // 2026-10-14 by `the_bundled_monospace_face::
+            // sans_serif_still_means_the_interfaces_own_face`, which was
+            // written to guard the load *order* and found this instead.
+            &Attrs::new()
+                .family(Family::SansSerif)
+                .weight(crate::painted_text::ALOS_OWN_WEIGHT),
             Shaping::Advanced,
         );
         buffer.shape_until_scroll(&mut self.fonts, false);
