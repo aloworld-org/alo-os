@@ -9,6 +9,8 @@ use cosmic_text::{
     Attrs, Buffer, Color, Family, FontSystem, Metrics, Shaping, SwashCache, Weight, Wrap,
 };
 
+use smithay::utils::Rectangle;
+
 use crate::painted::Inked;
 
 /// What alo's own surfaces are drawn in.
@@ -316,6 +318,42 @@ pub(crate) fn inked(
         height,
         pixels,
     }
+}
+
+/// One line of a sheet, lettered and placed at its box's own left.
+///
+/// **A function rather than a closure.** A closure capturing the picture's ink
+/// held it borrowed for the whole of a sheet's `drawn`, so the title and
+/// introduction — which are shaped before the layout, to decide where
+/// everything sits, and placed afterwards — could not be added. Taking the
+/// vector as an argument is what lets both roads write to it.
+///
+/// **It lives here rather than beside one sheet.** It was private to
+/// `crate::first_start_sheet` until `crate::language_sheet` wanted the same
+/// thing; drawing a line of text in a box is this file's responsibility, and
+/// a second sheet reaching into the first for a utility would have made that
+/// file two things.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "every one is a different thing about one line, and bundling them into a struct \
+              would name the struct after a call site"
+)]
+pub(crate) fn line(
+    into: &mut Vec<crate::painted::Inked>,
+    height: i32,
+    fonts: &mut FontSystem,
+    text: &str,
+    box_of: Rectangle<i32, smithay::utils::Logical>,
+    metrics: Metrics,
+    ground: [u8; 3],
+    ink: [u8; 3],
+) {
+    if box_of.size.w <= 0 || text.is_empty() {
+        return;
+    }
+    let shaped = sentence(fonts, text, box_of.size.w, metrics, ground, ink).cropped_to_its_ink();
+    let y = box_of.loc.y + (box_of.size.h - shaped.height).max(0) / 2;
+    into.extend(shaped.placed(box_of.loc.x, y, height));
 }
 
 #[cfg(test)]
