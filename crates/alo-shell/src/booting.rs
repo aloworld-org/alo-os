@@ -20,10 +20,12 @@
 //! constant: `Environment=ALO_KEYBOARD=gb` in `alo-compositor.service`, the
 //! same on every machine this repository has ever written. It is now told
 //! whatever `crate::the_machines_keyboard::the_keyboard_this_machine_has`
-//! read out of this machine's own `keyboards.toml`, with that constant left
-//! as the answer for a machine nobody has set up yet. It stays a parameter
-//! rather than a default hidden in here, for the reason it always was: a
-//! person whose keyboard is not the one named cannot type their password.
+//! read out of this machine's own `keyboards.toml` — and **a person chooses
+//! that before they type anything**: `crate::language_sheet` comes before the
+//! name sheet on a machine with no accounts, and the layout changes under
+//! their hands when they take it. It stays a parameter rather than a default
+//! hidden in here, for the reason it always was: a person whose keyboard is
+//! not the one named cannot type their password.
 //!
 //! # What it does not do yet, said here rather than discovered
 //!

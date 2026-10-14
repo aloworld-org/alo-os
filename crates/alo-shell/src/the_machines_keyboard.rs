@@ -11,6 +11,14 @@
 //! falls back to the unit file's word when it is not, which is what makes a
 //! machine that nobody has set up yet still signable-in.
 //!
+//! **And something writes it now.** `crate::language_sheet` asks a person
+//! which language they speak before it asks for a name, and
+//! `crate::the_keyboard_a_person_chose` keeps the answer here — so the file
+//! this reads at the next boot is the one they chose at the first, and the
+//! fallback below is for a machine on its very first frame rather than for
+//! every machine forever. That was not true when this file was written: the
+//! choice was reachable and nothing could make it.
+//!
 //! # Why an unreadable file does not stop the screen
 //!
 //! `alo_keyboards::keeping` refuses a file that is there and wrong, whole, and

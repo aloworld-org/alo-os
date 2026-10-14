@@ -94,6 +94,8 @@ impl crate::DirectSession {
                     Greeter {
                         owner,
                         screen: Lane::of(&mut signing, labels, look),
+                        chose:
+                            crate::the_keyboard_a_person_chose::TheKeyboardAPersonChose::nothing_yet(),
                     },
                 ),
                 Err(error) => DirectLoopResult {
@@ -136,6 +138,64 @@ struct Greeter<'a, K: Knocking> {
     /// Everything about the screen itself, which needs no input devices to
     /// exercise — and so can be checked on a machine that has none.
     screen: Lane<'a, K>,
+    /// The keyboard a person picked on the language sheet, and whether it
+    /// still needs writing down and applying.
+    ///
+    /// Here rather than in `Lane` because applying it needs the `Server` and
+    /// `Lane` deliberately has none -- that is the whole reason a keystroke
+    /// can be checked on a machine with no input devices.
+    chose: crate::the_keyboard_a_person_chose::TheKeyboardAPersonChose,
+}
+
+/// Keep and apply the keyboard a person chose, if they just chose one.
+///
+/// **A free function rather than a method**, because it is the one place the
+/// three halves meet: the screen that knows the choice, the file that keeps
+/// it, and the `Server` that holds the keymap. Each of them is somebody
+/// else's, and a method on any of the three would have made that one the owner
+/// of the other two.
+///
+/// Every outcome ends on the log rather than on the screen. A person at a
+/// language sheet whose keyboard would not change has a working machine and a
+/// wrong layout; a sentence about `keyboards.toml` in front of them would be
+/// this program's problem printed where their name goes.
+fn the_keyboard_is_now<K: Knocking>(
+    chose: &mut crate::the_keyboard_a_person_chose::TheKeyboardAPersonChose,
+    screen: &Lane<'_, K>,
+    server: &mut Server,
+) {
+    use crate::the_keyboard_a_person_chose::AboutTheKeyboard;
+    match chose.chose(
+        screen.the_language_chosen(),
+        std::path::Path::new(alo_keyboards::THE_MACHINES_KEYBOARDS),
+    ) {
+        AboutTheKeyboard::Unchanged => {}
+        AboutTheKeyboard::Apply(layout) => {
+            let config = smithay::input::keyboard::XkbConfig {
+                layout: layout.name(),
+                variant: layout.variant().unwrap_or_default(),
+                ..smithay::input::keyboard::XkbConfig::default()
+            };
+            match server.the_keyboard_is_now(config) {
+                Ok(()) => eprintln!(
+                    "alo-compositor: the keyboard is now {}, chosen on the language sheet",
+                    layout
+                ),
+                // **The file is already written, and that is the right way
+                // round.** The next boot reads it and comes up in the layout
+                // the person asked for, so a keymap that would not rebuild
+                // now costs them this session rather than the choice.
+                Err(why) => eprintln!(
+                    "alo-compositor: {} was chosen and the keymap would not take it: {why}",
+                    layout
+                ),
+            }
+        }
+        AboutTheKeyboard::NotKept(why) => eprintln!(
+            "alo-compositor: a keyboard was chosen and could not be written down, so it \
+             was not applied: {why}"
+        ),
+    }
 }
 
 /// The screen a machine boots to, and what becomes of it.
@@ -219,6 +279,14 @@ impl<'a, K: Knocking> Lane<'a, K> {
             self.pressed(meant);
         }
         true
+    }
+
+    /// The language a person chose on the sheet, or [`None`].
+    pub(crate) fn the_language_chosen(&self) -> Option<&str> {
+        match self.signing.as_ref() {
+            Some(Signing::Still(screen)) => screen.the_language_chosen(),
+            Some(Signing::HandedOver(_)) | None => None,
+        }
     }
 
     /// Hand one key's meaning to the screen, and keep whatever it becomes.
@@ -314,6 +382,9 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
         poll: &mut dyn FnMut() -> Result<(), SessionError>,
     ) -> Result<(), DirectLoopError> {
         let screen = &mut self.screen;
+        // Borrowed beside the screen, because the closure below takes both and
+        // `self` cannot be lent twice into it.
+        let chose = &mut self.chose;
         self.owner.dispatch(
             || poll().map_err(io::Error::other),
             |update| {
@@ -326,6 +397,16 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
                         match server.sign_in_key(key.code, key.state, key.time) {
                             Ok(Some(meant)) => {
                                 screen.pressed(meant);
+                                // **The keyboard a person just chose, applied
+                                // before their next key.** This is the whole
+                                // point of the language sheet coming before
+                                // the name: a password typed through the
+                                // wrong layout is a password nobody can type.
+                                //
+                                // Asked after every press and answers
+                                // `Unchanged` for all but one of them, so an
+                                // arrow does not rebuild a keymap.
+                                the_keyboard_is_now(chose, screen, server);
                                 Ok(())
                             }
                             // A release, a repeat, and a key this keyboard has

@@ -513,6 +513,31 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
     done \
  && echo "every decoder, encoder and media-server element the decision names registers"
 
+
+# **What a developer finds when they open the terminal.** The audience for the
+# first release is developers (owner, 2026-10-14), and the terminal alo OS
+# ships is the thing law 2 is about: *a system that does not trust its owner
+# with a shell is a toy*. A terminal with no `git` is that toy with a prompt.
+#
+# Measured before this was added: the Containerfile named `git` **nowhere**,
+# and `gcc` only in the `shell` build stage, so a booted machine had a shell,
+# no version control and nothing to build with. Somebody who cannot clone a
+# repository on a developer workstation stops before they have started.
+#
+# **Not an editor.** `shipped.toml` carries one application per role and
+# `alo_software::Shipped::decided` refuses a list where a role appears twice,
+# so a code editor is a decision about that list rather than a line here. A
+# developer with `git` and a toolchain installs the editor they already prefer
+# in one command; a developer without them cannot.
+RUN dnf install --assumeyes --setopt=install_weak_deps=False \
+      git gcc gcc-c++ make pkgconf-pkg-config \
+ && dnf clean all \
+ && test -x /usr/bin/git \
+ && test -x /usr/bin/gcc \
+ && test -x /usr/bin/make \
+ && git --version \
+ && echo "a developer who opens the terminal can clone and build"
+
 # The model runtime (ADR 0006, pinned above; ADR 0025 is why it is aboard at
 # all): the binary and the libraries it loads, exactly as upstream lays them
 # out. How the runtime is spoken to stays `crates/alo-models/src/ollama.rs`'s
