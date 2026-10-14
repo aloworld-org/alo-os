@@ -18,5 +18,12 @@ alacritty_terminal = "0.26.0"
 alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
 
+# `tcgetpgrp`, to ask the pseudoterminal which process is in front. The shell is
+# the child; the command a person is waiting on is whatever the shell put in the
+# foreground, and asking about the wrong one answers "waiting for the keyboard"
+# every time. Linux only, as the reading of `/proc` beside it is.
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix = { workspace = true, features = ["termios"] }
+
 [lints]
 workspace = true

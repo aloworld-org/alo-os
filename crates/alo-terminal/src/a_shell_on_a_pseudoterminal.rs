@@ -200,6 +200,40 @@ impl AShellOnAPseudoterminal {
         door.write_all(bytes).map_err(NoShell::ItWouldNotAnswer)?;
         door.flush().map_err(NoShell::ItWouldNotAnswer)
     }
+
+    /// The shell this terminal is running.
+    ///
+    /// The direct child, and **not usually the process a person is waiting
+    /// on** — see [`Self::the_command_in_front`]. It is here because stopping
+    /// a terminal and asking about its shell are different questions with
+    /// different right answers, and a caller that wants this one should be
+    /// able to say so.
+    #[must_use]
+    pub fn the_shell_itself(&self) -> u32 {
+        self.pty.child().id()
+    }
+
+    /// The process the pseudoterminal has in front, if it will say.
+    ///
+    /// **This, and not the shell, is what *why is it waiting* is about.** A
+    /// shell sits reading its own terminal whenever a person is at a prompt,
+    /// so asking about the shell answers *waiting for the keyboard* every
+    /// time, including while a command is running — the one case the question
+    /// exists for.
+    ///
+    /// Answers [`None`] where the terminal will not say, which is not an
+    /// error: a pseudoterminal with no foreground group, or one being torn
+    /// down, has no answer to give and a caller should treat that as *nothing
+    /// to report* rather than as a fault.
+    ///
+    /// **When it answers the same as [`Self::the_shell_itself`], nothing is
+    /// running** — the shell is in front, and the person is at a prompt.
+    #[cfg(target_os = "linux")]
+    #[must_use]
+    pub fn the_command_in_front(&self) -> Option<u32> {
+        let who = rustix::termios::tcgetpgrp(self.pty.file()).ok()?;
+        u32::try_from(who.as_raw_nonzero().get()).ok()
+    }
 }
 
 /// How big one cell is, in whole pixels.

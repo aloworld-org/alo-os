@@ -8044,3 +8044,61 @@ mid-run, and `only_a_person_can_clear_this` now catches that one. This case is
 alone, from a test that genuinely cannot find a file it should have. A
 deterministic failure is not evidence that the change caused it, and *twice is
 the work* assumes it is.
+
+## `wchan` cannot tell a terminal read from a socket read (2026-10-14)
+
+**What was expected.** `/proc/PID/wchan` names the kernel function a parked
+process is waiting in, so a table of those names would say what it is waiting
+for — *waiting for the keyboard* and *waiting for the network* among them.
+
+**What happens.** They are the same function. Measured on
+**7.0.0-31-generic**, each with a control:
+
+| what the process was doing | state | `wchan` |
+|---|---|---|
+| `cat` with a terminal for its input | `S` | `wait_woken` |
+| a socket read nothing ever answers | `S` | `wait_woken` |
+| a busy loop *(control)* | `R` | `0` |
+
+A table keyed on the kernel function alone answers one of those two wrongly
+every time, and both are answers somebody acts on — pressing a key, or going to
+look at a network.
+
+**What is done instead.** What the process reads from decides: `/proc/PID/fd/0`
+points at `/dev/pts/N` for a terminal and at `socket:[…]` for a socket. The
+kernel function is used only where the name *describes* what is waited for — a
+lock, a pipe, a child — and never to identify the keyboard or the network.
+`crates/alo-terminal/src/why_a_command_is_waiting.rs` carries the table and the
+measurement.
+
+**And the names move between kernels.** `docs/features.md` recorded a pipe
+reader as `wait_for_partner` from an earlier measurement; this kernel says
+`anon_pipe_read`. Both are true, of different kernels, which is the second
+reason the identification does not rest on these names. Both spellings are in
+the table, and a name in neither list answers *unknown with the evidence
+available* rather than the nearest entry.
+
+## A shell without job control never moves the terminal's foreground group (2026-10-14)
+
+**What was expected.** `tcgetpgrp` on a pseudoterminal answers which process
+group is in front, so it names the command a person is waiting on rather than
+the shell running it.
+
+**What happens.** It does — but only with a shell that has job control. Two
+arrangements that look like tests of this and are not:
+
+- `sh -c "sleep 30"` — a shell given exactly one command `exec`s it, so the
+  process is the same one and its pid never changes;
+- any non-interactive shell — children stay in the shell's own process group
+  and the foreground group is never moved, so the answer is the shell for as
+  long as it runs.
+
+Both were found by a test failing that asserted the two pids differ. An
+interactive shell on a pseudoterminal, typed into, does move the group, which is
+the arrangement the product actually has.
+
+**What follows.** The foreground group answering the shell's own pid is
+meaningful rather than a failure: it means **nothing is running** and the person
+is at a prompt.
+`crates/alo-terminal/src/what_the_kernel_says_tests.rs` holds both cases, the
+command in front and the shell in front, so neither can regress into the other.
