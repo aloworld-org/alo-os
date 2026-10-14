@@ -425,12 +425,52 @@ impl crate::Server {
     ///
     /// **The canvas does not travel.** `WhatAClickDoes::travels` says when it
     /// should and this ignores it, deliberately: `the_windows_the_dock_sees`
-    /// gives every window a one-by-one patch at the origin, because it cannot
-    /// see canvas geometry, so `TheView::already_shows` is comparing
-    /// placeholders. **Travelling on that would be motion decided by a
-    /// placeholder**, which is worse than not travelling — a view that jumps
-    /// somewhere arbitrary is harder to recover from than one that stays put.
-    /// What is owed is the window's real patch reaching this builder.
+    /// gives every window a one-by-one patch at the origin, and
+    /// `what_a_press_on_an_icon_does` hands over a one-by-one view to match, so
+    /// `TheView::already_shows` compares a placeholder with a placeholder and
+    /// always answers *yes, already shown*. **Travelling on that would be
+    /// motion decided by a placeholder**, which is worse than not travelling —
+    /// a view that jumps somewhere arbitrary is harder to recover from than one
+    /// that stays put.
+    ///
+    /// # Two things are owed, and this comment used to name one
+    ///
+    /// It said *what is owed is the window's real patch reaching this builder*.
+    /// **That is half of it, and a reader who did only that half would ship a
+    /// bug rather than a feature.** Measured 2026-10-14:
+    ///
+    /// 1. **The real patch**, which the compositor has:
+    ///    `Server::the_frames_on_the_plane` builds one per surface from
+    ///    `window_buffer_origin` and `scene::geometry`, rounding outwards. So
+    ///    this half is a wiring job.
+    /// 2. **Which Place that patch is on**, which **nothing in `alo-dock` can
+    ///    hold.** `alo_dock::Window` carries `at: Patch` and no place;
+    ///    `alo_dock::TheView` carries one `Patch` and no place; `Patch` itself
+    ///    is a corner and two extents. The crate does not depend on
+    ///    `alo-canvas` at all, where `Frame` **does** carry a `Place`.
+    ///
+    /// Why the second half is not a detail: `already_shows` is
+    /// `patch.wholly_inside(self.showing)`, a pure rectangle test. Given real
+    /// geometry and no Place, a window on **another** Place at coordinates
+    /// inside the current view reads as *already shown* and the Dock does
+    /// nothing, while one on another Place outside the view reads as *travel
+    /// there* and the shell pans **this** Place to coordinates where that
+    /// window is not. Both are wrong, and the second moves a person's view to
+    /// an empty region for a press they aimed at a window they can see.
+    ///
+    /// **The gap is already recorded where a reader of `alo-dock` meets it**,
+    /// and was before this: `alo_dock::words::A_WINDOW_IS_OPEN`'s note says the
+    /// design shows *Open · Work* and the Dock draws only *Open*, because
+    /// `previews::Preview` *knows the patch a window sits on and not which
+    /// Place that patch belongs to* — *the Place is owed*. The same missing
+    /// noun blocks the picker's sentence and this travel, which is worth
+    /// knowing because one change answers both.
+    ///
+    /// So what is owed is a **decision** before it is a wiring job: either
+    /// `alo-dock` learns the canvas's `Place` — widening a published surface —
+    /// or travel is decided in the compositor and the Dock stops answering
+    /// `travels` at all. `docs/features.md` promises *travels to it, to the
+    /// Place and position it already has*, and that sentence names both.
     pub(crate) fn go_to_this_application(&mut self, app: &alo_dock::AppId) {
         let windows = self.the_windows_the_dock_sees();
         let (id, back) = match what_a_press_on_an_icon_does(&windows, app) {

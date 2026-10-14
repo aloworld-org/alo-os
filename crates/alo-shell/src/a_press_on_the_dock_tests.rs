@@ -658,3 +658,51 @@ fn the_dock_takes_a_press_on_show_all() {
         "a session with no output fitted something, so the refusal path above is untested"
     );
 }
+
+/// **A window far from the view is still only focused, never travelled to —
+/// and this test is a canary rather than an approval.**
+///
+/// `what_a_press_on_an_icon_does` hands `alo_dock::clicking` a one-by-one view
+/// at the origin, and `the_windows_the_dock_sees` gives every window a
+/// one-by-one patch at the origin, so `TheView::already_shows` compares a
+/// placeholder with a placeholder and always answers *already shown*. This
+/// asserts that behaviour **so that wiring real geometry breaks it**, which is
+/// the point: `Server::go_to_this_application`'s header says two things are
+/// owed and only one of them is a wiring job. The other is that nothing in
+/// `alo-dock` can hold **which Place** a patch is on, and given real geometry
+/// without it, a window on another Place reads as *travel there* and the
+/// compositor would pan **this** Place to coordinates where that window is not.
+///
+/// So when this test fails, the question to answer is not *how do I make it
+/// pass* — it is whether the Place reached the Dock too.
+///
+/// The patch here is deliberately far away and large: if the answer depended on
+/// geometry at all, this is the case that would differ from a window at the
+/// origin, and it does not.
+#[test]
+fn a_window_far_from_the_view_is_focused_rather_than_travelled_to() {
+    use super::WhatAnIconDoes;
+
+    let app = alo_dock::AppId::named("far.away").expect("a named application");
+    let far = alo_dock::Patch::of(alo_dock::Spot::at(100_000, 100_000), 800, 600)
+        .expect("a patch far from the origin");
+    let near =
+        alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1).expect("one by one at the origin");
+
+    for (which, patch) in [("far away", far), ("at the origin", near)] {
+        let mut windows = alo_dock::Windows::none();
+        windows.opened(alo_dock::Window::of(
+            alo_dock::WindowId::numbered(0),
+            Some(app.clone()),
+            "a window",
+            patch,
+            alo_dock::HowItSits::OnTheCanvas,
+        ));
+        assert_eq!(
+            super::what_a_press_on_an_icon_does(&windows, &app),
+            WhatAnIconDoes::Focus(alo_dock::WindowId::numbered(0)),
+            "{which}: the answer depended on where the window is, which means the view is no \
+             longer a placeholder — read `go_to_this_application`'s header before making this pass"
+        );
+    }
+}
