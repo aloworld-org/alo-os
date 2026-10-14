@@ -267,7 +267,7 @@ capability.facility.screen-continuously	the screen, continuously
 capability.facility.screen-once	one picture of the screen
 capability.facility.secrets	a place for its own passwords in your keyring
 capability.facility.sleep	keeping the machine awake
-capability.grant.a-persons-own	a terminal is yours alone — whatever is typed into it runs, so no agent can be granted one
+capability.grant.a-persons-own	you have not allowed alo to open a terminal
 capability.grant.anonymous	say which agent this grant is for — a grant to nobody reaches nothing
 capability.grant.could-lead-elsewhere	a path with .. in it can lead somewhere else — grant the folder you mean by its own path
 capability.grant.no-application-named	say which application this grant is for — a grant to no application reaches nothing

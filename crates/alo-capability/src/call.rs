@@ -34,6 +34,7 @@ use std::time::SystemTime;
 use alo_strings::{Filling, Key, Said, Strings};
 use serde::Serialize;
 
+use crate::a_terminal_for_the_agent::ATerminalForTheAgent;
 use crate::arg::{ArgError, Given, Value};
 use crate::grant::Grantee;
 use crate::grants::{GrantId, Grants};
@@ -325,8 +326,28 @@ impl Call {
         grantee: &Grantee,
         now: SystemTime,
     ) -> Result<Vec<GrantId>, NotGranted> {
+        // The strict reading, for the reason `Grant::checked_for` gives.
+        self.permitting_when(grants, grantee, now, ATerminalForTheAgent::NotAtAll)
+    }
+
+    /// The same, told what the person has allowed their agent to do with a
+    /// terminal.
+    ///
+    /// # Errors
+    /// As [`Self::permitting`].
+    pub fn permitting_when(
+        &self,
+        grants: &Grants,
+        grantee: &Grantee,
+        now: SystemTime,
+        terminal: ATerminalForTheAgent,
+    ) -> Result<Vec<GrantId>, NotGranted> {
         if let Some(identifier) = self.values.values().find_map(|value| match value {
-            Value::Application(identifier) if is_a_persons_own(identifier) => Some(identifier),
+            Value::Application(identifier)
+                if is_a_persons_own(identifier) && !terminal.may_open_one() =>
+            {
+                Some(identifier)
+            }
             _ => None,
         }) {
             return Err(NotGranted::Never {
@@ -382,6 +403,7 @@ fn asks_of(verb: &Verb, values: &BTreeMap<String, Value>) -> Vec<Ask> {
 )]
 mod tests {
     use super::*;
+    use crate::a_terminal_for_the_agent::ATerminalForTheAgent;
     use crate::test_calls::{
         MOVING_INTO, MOVING_SENTENCE, THE_WORDS, archiving_march as moving_march, files, granting,
         hour, list_folder, move_file, noon, reading,
@@ -455,6 +477,65 @@ mod tests {
     /// ADR 0043: **a call that names a terminal is refused, even from a verb
     /// that requires no grant** — the shape `install_application` has — while
     /// the same verb naming a text editor is permitted with no grant, for the
+    /// **A call naming a terminal follows the person's choice**, which is the
+    /// third of the three sites and the one that catches a verb needing no
+    /// grant at all.
+    ///
+    /// Asserted as a pair: the refusal alone could be a check that refuses
+    /// everything, and the permission alone could be a check that was deleted.
+    ///
+    /// **And the permitted answer is `Ok(Vec::new())`** — no grants permitted
+    /// it, because this verb requires none. That is the same answer a text
+    /// editor gets, which is the point: once the person has allowed it, a
+    /// terminal is an application like another.
+    #[test]
+    fn the_persons_choice_decides_a_call_that_names_a_terminal() {
+        use crate::{Arg, Effect, Requires, Takes, Verb, Verbs};
+        let setting_up = Verb::checked(
+            "set_up_application",
+            Word::saying("testing.choice.purpose", "set up an application"),
+            Effect::Change,
+            vec![Arg::taking(
+                "application",
+                Word::saying("testing.choice.application", "the application"),
+                Takes::Application,
+            )],
+            Requires::nothing_because("the application is not here yet and is granted nothing"),
+            Word::saying("testing.choice.sentence", "set up {application}"),
+        )
+        .unwrap();
+        let mut verbs = Verbs::default();
+        verbs.declare(setting_up).unwrap();
+        let naming = |identifier: &str| {
+            verbs
+                .call(
+                    "set_up_application",
+                    &[("application", Given::text(identifier))],
+                )
+                .unwrap()
+        };
+        let grants = granting(&["/home/anna/Invoices"]);
+        let terminal = naming("app.devsuite.Ptyxis");
+
+        assert_eq!(
+            terminal.permitting_when(&grants, &files(), noon(), ATerminalForTheAgent::NotAtAll),
+            Err(NotGranted::Never {
+                agent: "@files".to_owned(),
+                wanted: Ask::application("app.devsuite.Ptyxis"),
+            }),
+            "a call naming a terminal was permitted although the person has not allowed it"
+        );
+        assert_eq!(
+            terminal.permitting_when(&grants, &files(), noon(), ATerminalForTheAgent::MayOpenOne),
+            Ok(Vec::new()),
+            "the person allowed it and the call was still refused"
+        );
+        assert!(
+            terminal.permitting(&grants, &files(), noon()).is_err(),
+            "the road that takes no choice permitted a call naming a terminal"
+        );
+    }
+
     /// reason its author wrote down.
     #[test]
     fn a_call_naming_a_terminal_is_refused_whatever_its_verb_requires() {

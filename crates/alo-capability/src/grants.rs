@@ -45,6 +45,7 @@ use std::time::SystemTime;
 
 use serde::{Deserialize, Serialize};
 
+use crate::a_terminal_for_the_agent::ATerminalForTheAgent;
 use crate::grant::{Grant, Grantee};
 use crate::persons_own::is_a_persons_own;
 use crate::reach::Ask;
@@ -297,17 +298,36 @@ impl Grants {
         ask: &Ask,
         now: SystemTime,
     ) -> Result<GrantId, NotGranted> {
+        // The strict reading, for the reason `Grant::checked_for` gives.
+        self.permitting_when(grantee, ask, now, ATerminalForTheAgent::NotAtAll)
+    }
+
+    /// The same, told what the person has allowed their agent to do with a
+    /// terminal.
+    ///
+    /// # Errors
+    /// As [`Self::permitting`].
+    pub fn permitting_when(
+        &self,
+        grantee: &Grantee,
+        ask: &Ask,
+        now: SystemTime,
+        terminal: ATerminalForTheAgent,
+    ) -> Result<GrantId, NotGranted> {
         if grantee.is_an_application() {
             return Err(NotGranted::Never {
                 agent: grantee.as_str().to_owned(),
                 wanted: ask.clone(),
             });
         }
-        // A terminal is a person's own (ADR 0043). Refused before the list is
-        // read, so a grant that reached the list without `Grant::checked_for` —
-        // written into the grants file by hand — permits nothing.
+        // **A terminal is refused unless the person allowed it** — ADR 0111,
+        // which supersedes ADR 0043's outright wall. Refused before the list
+        // is read, so a grant that reached the list without
+        // `Grant::checked_for_when` — written into the grants file by hand —
+        // permits nothing on a machine where the person has not chosen.
         if let Ask::Application(identifier) = ask
             && is_a_persons_own(identifier)
+            && !terminal.may_open_one()
         {
             return Err(NotGranted::Never {
                 agent: grantee.as_str().to_owned(),
@@ -403,6 +423,7 @@ fn why_not(grantee: &Grantee, ask: &Ask, lapsed: Option<&Held>) -> NotGranted {
 )]
 mod tests {
     use super::*;
+    use crate::a_terminal_for_the_agent::ATerminalForTheAgent;
     use crate::grant::GrantError;
     use crate::reach::Reach;
     use std::path::PathBuf;
@@ -649,6 +670,49 @@ mod tests {
     /// ADR 0043: **a grant over a terminal that reached the list without being
     /// checked permits an agent nothing** — written into the grants file by
     /// hand, and read back — while the same list still answers for the text
+    /// **A terminal written into the list by hand permits an agent nothing
+    /// until the person has allowed it — and then it permits exactly that.**
+    ///
+    /// The pair, because either alone is half a claim: the refusal could be a
+    /// list that refuses everything, and the permission could be a check that
+    /// was removed.
+    #[test]
+    fn the_persons_choice_decides_what_a_hand_written_terminal_permits() {
+        let by_hand = |grantee: Grantee, identifier: &str| Grant {
+            grantee,
+            reach: Reach::Application(identifier.to_owned()),
+            granted_at: noon(),
+            expires: noon() + hour(),
+        };
+        let alo = Grantee::named("@alo");
+        let grants = Grants {
+            next: 1,
+            held: vec![Held {
+                id: GrantId(0),
+                grant: by_hand(alo.clone(), "app.devsuite.Ptyxis"),
+            }],
+        };
+        let ask = Ask::Application("app.devsuite.Ptyxis".to_owned());
+
+        assert!(
+            grants
+                .permitting_when(&alo, &ask, noon(), ATerminalForTheAgent::NotAtAll)
+                .is_err(),
+            "a terminal was permitted although the person has not allowed it"
+        );
+        assert_eq!(
+            grants.permitting_when(&alo, &ask, noon(), ATerminalForTheAgent::MayOpenOne),
+            Ok(GrantId(0)),
+            "the person allowed it and the grant in the list was still refused"
+        );
+        // **And the shorter road is the strict one**, which is what every
+        // caller that has not been taught about the choice gets.
+        assert!(
+            grants.permitting(&alo, &ask, noon()).is_err(),
+            "the road that takes no choice permitted a terminal"
+        );
+    }
+
     /// editor beside it, and for an application allowed the terminal.
     #[test]
     fn a_terminal_written_into_the_list_by_hand_permits_an_agent_nothing() {
