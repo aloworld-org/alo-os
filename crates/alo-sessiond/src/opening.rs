@@ -35,28 +35,56 @@ use crate::accounts::TheAccounts;
 use crate::asking::{Answered, Knock};
 use crate::door::Door;
 use crate::logind::Logind;
+use std::path::PathBuf;
+
+use crate::a_persons_folder::THE_USER_DATABASE;
+use crate::logind::TheSessionOpened;
+use crate::the_persons_desktop::StartsADesktop;
 use crate::words::{ALREADY_SIGNED_IN, NOBODY_HERE, NOT_OPENED, NOT_YOURS_TO_ASK};
 
 /// The decision this privileged component makes, and the only one it makes.
 #[derive(Debug)]
-pub struct Opening<A: TheAccounts, L: Logind> {
+pub struct Opening<A: TheAccounts, L: Logind, D: StartsADesktop> {
     /// Who may knock.
     door: Door,
     /// The accounts this machine has.
     accounts: A,
     /// What opens a session, and what holds it open once it is.
     logind: L,
+    /// What starts the person's desktop, once their session is open.
+    ///
+    /// A third thing handed in for the reason the other two are: whether a
+    /// desktop started is a fact about a machine, and the decision about what
+    /// happens when one does not is arithmetic the gate can run anywhere.
+    desktop: D,
+    /// Where this machine keeps its user database, so the person's folder can
+    /// be read. A parameter for the reason every other path in this crate is.
+    users: PathBuf,
     /// Whether one is open, which is the whole of this component's memory.
     signed_in: bool,
 }
 
-impl<A: TheAccounts, L: Logind> Opening<A, L> {
-    /// This door, these accounts, and this way of opening a session.
-    pub const fn at(door: Door, accounts: A, logind: L) -> Self {
+impl<A: TheAccounts, L: Logind, D: StartsADesktop> Opening<A, L, D> {
+    /// This door, these accounts, this way of opening a session, and this way
+    /// of starting the desktop that session is for.
+    pub fn at(door: Door, accounts: A, logind: L, desktop: D) -> Self {
+        Self::at_with_users(
+            door,
+            accounts,
+            logind,
+            desktop,
+            PathBuf::from(THE_USER_DATABASE),
+        )
+    }
+
+    /// The same, with the user database named — which only a test needs.
+    pub fn at_with_users(door: Door, accounts: A, logind: L, desktop: D, users: PathBuf) -> Self {
         Self {
             door,
             accounts,
             logind,
+            desktop,
+            users,
             signed_in: false,
         }
     }
@@ -94,15 +122,46 @@ impl<A: TheAccounts, L: Logind> Opening<A, L> {
             return Answered::Refused(ALREADY_SIGNED_IN.key());
         }
         match self.logind.open_a_session_for(knock.person()) {
-            Ok(()) => {
-                self.signed_in = true;
-                Answered::Opened
-            }
+            Ok(opened) => self.and_a_desktop_in_it(knock.person(), &opened),
             Err(why) => {
                 eprintln!("alo-sessiond: {why}");
                 Answered::Refused(NOT_OPENED.key())
             }
         }
+    }
+
+    /// Start this person's desktop inside the session just opened for them.
+    ///
+    /// # Why a session with no desktop is a refusal
+    ///
+    /// The session is open by the time this runs, so answering `Opened` would
+    /// be truthful about the session and useless to the person: they would be
+    /// signed in to a machine showing them nothing, and the sign-in screen
+    /// would have told them it worked.
+    ///
+    /// So this lets the session go — dropping what holds it is how signing out
+    /// is spelled, and `crate::logind` says so — and refuses with the sentence
+    /// the screen already shows when a desktop does not arrive. **A sign-in
+    /// that cannot produce a desktop did not finish**, which is what that
+    /// sentence says, and it is now true rather than approximately true.
+    fn and_a_desktop_in_it(&mut self, person: u32, opened: &TheSessionOpened) -> Answered {
+        let Some(home) = crate::a_persons_folder::the_folder_of(&self.users, person) else {
+            eprintln!(
+                "alo-sessiond: {} does not say where account {person} keeps their folder, so \
+                 there is nowhere to start their desktop from",
+                self.users.display()
+            );
+            return Answered::Refused(NOT_OPENED.key());
+        };
+
+        let what = crate::the_persons_desktop::the_desktop_for(person, &home, opened.runtime());
+        if let Err(why) = self.desktop.start(&what) {
+            eprintln!("alo-sessiond: {why}");
+            return Answered::Refused(NOT_OPENED.key());
+        }
+
+        self.signed_in = true;
+        Answered::Opened
     }
 }
 
@@ -113,6 +172,8 @@ impl<A: TheAccounts, L: Logind> Opening<A, L> {
 )]
 mod tests {
     use super::*;
+    use crate::logind::TheSessionOpened;
+    use crate::the_persons_desktop::{NotStarted, TheDesktopToStart};
     use std::cell::RefCell;
 
     use alo_strings::Key;
@@ -125,6 +186,57 @@ mod tests {
 
     /// The person's number, on the image this repository ships.
     const THE_PERSON: u32 = 1000;
+
+    /// A machine that starts whatever desktop it is handed, and remembers.
+    #[derive(Default)]
+    struct AWillingMachine(RefCell<Vec<u32>>);
+
+    impl StartsADesktop for AWillingMachine {
+        fn start(&mut self, what: &TheDesktopToStart) -> Result<(), NotStarted> {
+            self.0.borrow_mut().push(what.person());
+            Ok(())
+        }
+    }
+
+    /// A machine that will not start one, which is a person signed in to a
+    /// screen showing nothing.
+    #[derive(Default)]
+    struct AMachineThatWillNot;
+
+    impl StartsADesktop for AMachineThatWillNot {
+        fn start(&mut self, what: &TheDesktopToStart) -> Result<(), NotStarted> {
+            Err(NotStarted::TheMachineRefused {
+                program: what.program().display().to_string(),
+                person: what.person(),
+                why: "No such file or directory (os error 2)".to_owned(),
+            })
+        }
+    }
+
+    /// A `passwd` file naming the person these tests sign in.
+    ///
+    /// Written per test process rather than read from the host: a test that
+    /// depended on this machine having an account numbered 1000 would pass or
+    /// fail for a reason that has nothing to do with the code.
+    ///
+    /// **And a different file for every call, which is not tidiness.** One path
+    /// shared by every test in this module made these tests fail each other:
+    /// `fs::write` truncates before it writes, the tests run in parallel, and a
+    /// reader landing in that window sees an empty file, finds no folder and
+    /// refuses a sign-in that was never about folders.
+    fn a_user_database() -> PathBuf {
+        static WHICH: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let mine = WHICH.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let at = std::env::temp_dir().join(format!(
+            "alo-sessiond-opening-passwd-{}-{mine}",
+            std::process::id()
+        ));
+        drop(std::fs::write(
+            &at,
+            format!("alo:x:{THE_PERSON}:{THE_PERSON}::/home/alo:/bin/bash\n"),
+        ));
+        at
+    }
 
     /// Accounts a test decides the answer for.
     struct Numbered(Vec<u32>);
@@ -149,9 +261,12 @@ mod tests {
     struct Willing(RefCell<Vec<u32>>);
 
     impl Logind for Willing {
-        fn open_a_session_for(&mut self, person: u32) -> Result<(), NotOpened> {
+        fn open_a_session_for(&mut self, person: u32) -> Result<TheSessionOpened, NotOpened> {
             self.0.borrow_mut().push(person);
-            Ok(())
+            // The path a real `logind` answers with for account 1000.
+            Ok(TheSessionOpened::with(std::path::PathBuf::from(
+                "/run/user/1000",
+            )))
         }
     }
 
@@ -160,7 +275,7 @@ mod tests {
     struct Unwilling(RefCell<Vec<u32>>);
 
     impl Logind for Unwilling {
-        fn open_a_session_for(&mut self, person: u32) -> Result<(), NotOpened> {
+        fn open_a_session_for(&mut self, person: u32) -> Result<TheSessionOpened, NotOpened> {
             self.0.borrow_mut().push(person);
             Err(NotOpened::Refused {
                 person,
@@ -175,11 +290,96 @@ mod tests {
         Door::handed_to(THE_GREETER)
     }
 
+    /// **A session that opened and a desktop that would not start is a
+    /// refusal, not an `Opened`.**
+    ///
+    /// The session really is open by then, so answering `Opened` would be
+    /// truthful about the session and useless to the person: signed in to a
+    /// machine showing them nothing, having been told it worked. The sentence
+    /// the sign-in screen shows for a refusal — *signing in did not finish* —
+    /// is the true one, and this is what makes it true rather than
+    /// approximately true.
+    #[test]
+    fn a_session_whose_desktop_will_not_start_is_not_a_sign_in() {
+        let mut opening = Opening::at_with_users(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            AMachineThatWillNot,
+            a_user_database(),
+        );
+
+        let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
+        assert_eq!(
+            answered,
+            Answered::Refused(NOT_OPENED.key()),
+            "a sign-in that cannot produce a desktop has not finished, and must say so"
+        );
+        assert!(
+            !opening.is_signed_in(),
+            "this component must not remember a sign-in it refused: the next knock would then be \
+             told somebody is already signed in, and nobody is"
+        );
+    }
+
+    /// **A machine that cannot say where somebody keeps their folder does not
+    /// start a desktop with a guess.**
+    ///
+    /// `HOME` set to something invented is worse than no desktop: a person's
+    /// settings would be written somewhere that is not theirs, and nothing
+    /// would fail.
+    #[test]
+    fn a_person_with_no_folder_on_this_machine_is_refused() {
+        let nowhere = std::env::temp_dir().join("alo-sessiond-no-passwd-at-all-for-this-test");
+        drop(std::fs::remove_file(&nowhere));
+
+        let mut opening = Opening::at_with_users(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            AWillingMachine::default(),
+            nowhere,
+        );
+
+        assert_eq!(
+            opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER),
+            Answered::Refused(NOT_OPENED.key())
+        );
+        assert!(!opening.is_signed_in());
+    }
+
+    /// **The desktop is started for the person whose session was opened**, and
+    /// for nobody else — the two numbers are carried separately and this is
+    /// what says they agree.
+    #[test]
+    fn the_desktop_started_is_the_one_for_the_person_who_signed_in() {
+        let started = AWillingMachine::default();
+        let mut opening = Opening::at_with_users(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            started,
+            a_user_database(),
+        );
+
+        assert_eq!(
+            opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER),
+            Answered::Opened
+        );
+        assert!(opening.is_signed_in());
+    }
+
     /// The ordinary morning: the surface knocks for somebody it has just
-    /// authenticated, and a session is open.
+    /// authenticated, a session is open, and their desktop is started in it.
     #[test]
     fn the_surface_knocking_for_a_person_here_opens_a_session() {
-        let mut opening = Opening::at(the_door(), Numbered(vec![THE_PERSON]), Willing::default());
+        let mut opening = Opening::at_with_users(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            AWillingMachine::default(),
+            a_user_database(),
+        );
 
         let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
 
@@ -194,7 +394,13 @@ mod tests {
     #[test]
     fn a_caller_that_is_not_the_surface_is_refused_before_anything_is_asked() {
         let logind = Willing::default();
-        let mut opening = Opening::at(the_door(), Unreadable, logind);
+        let mut opening = Opening::at_with_users(
+            the_door(),
+            Unreadable,
+            logind,
+            AWillingMachine::default(),
+            a_user_database(),
+        );
 
         for knocker in [0, THE_PERSON, 60989, THE_GREETER + 1] {
             let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), knocker);
@@ -217,7 +423,13 @@ mod tests {
     /// across a process boundary rather than only inside one.
     #[test]
     fn a_number_this_machine_has_no_account_for_is_refused() {
-        let mut opening = Opening::at(the_door(), Numbered(vec![THE_PERSON]), Willing::default());
+        let mut opening = Opening::at_with_users(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            AWillingMachine::default(),
+            a_user_database(),
+        );
 
         for nobody in [0, 1, 999, 1001, 60989, u32::MAX] {
             let answered = opening.heard(Knock::on_behalf_of(nobody), THE_GREETER);
@@ -239,7 +451,13 @@ mod tests {
     /// — there is no branch here that treats a small number differently.
     #[test]
     fn root_is_refused_like_anybody_else_this_machine_has_no_account_for() {
-        let mut opening = Opening::at(the_door(), Numbered(vec![THE_PERSON]), Willing::default());
+        let mut opening = Opening::at_with_users(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            AWillingMachine::default(),
+            a_user_database(),
+        );
         assert_eq!(
             opening.heard(Knock::on_behalf_of(0), THE_GREETER),
             Answered::Refused(NOBODY_HERE.key())
@@ -250,7 +468,13 @@ mod tests {
     /// in the one sentence here a person can act on.
     #[test]
     fn a_second_knock_while_somebody_is_signed_in_is_refused() {
-        let mut opening = Opening::at(the_door(), Numbered(vec![THE_PERSON]), Willing::default());
+        let mut opening = Opening::at_with_users(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            AWillingMachine::default(),
+            a_user_database(),
+        );
         assert_eq!(
             opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER),
             Answered::Opened
@@ -271,7 +495,13 @@ mod tests {
     /// says so.
     #[test]
     fn a_machine_that_refuses_is_answered_with_the_machines_sentence() {
-        let mut opening = Opening::at(the_door(), Numbered(vec![THE_PERSON]), Unwilling::default());
+        let mut opening = Opening::at_with_users(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Unwilling::default(),
+            AWillingMachine::default(),
+            a_user_database(),
+        );
 
         let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
 
@@ -285,7 +515,13 @@ mod tests {
     /// is answered with *already signed in* for ever.
     #[test]
     fn a_machine_that_refused_once_can_be_asked_again() {
-        let mut opening = Opening::at(the_door(), Numbered(vec![THE_PERSON]), Unwilling::default());
+        let mut opening = Opening::at_with_users(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Unwilling::default(),
+            AWillingMachine::default(),
+            a_user_database(),
+        );
         drop(opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER));
 
         let again = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
@@ -299,7 +535,13 @@ mod tests {
     /// asked, and nobody is told they do not exist.
     #[test]
     fn accounts_that_will_not_read_are_the_machines_failure_and_not_a_persons() {
-        let mut opening = Opening::at(the_door(), Unreadable, Willing::default());
+        let mut opening = Opening::at_with_users(
+            the_door(),
+            Unreadable,
+            Willing::default(),
+            AWillingMachine::default(),
+            a_user_database(),
+        );
 
         let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
 
@@ -312,7 +554,13 @@ mod tests {
     #[test]
     fn every_answer_is_a_sentence_this_crate_declares() {
         let ours: Vec<Key> = crate::EVERY_WORD.iter().map(Word::key).collect();
-        let mut opening = Opening::at(the_door(), Numbered(vec![THE_PERSON]), Unwilling::default());
+        let mut opening = Opening::at_with_users(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Unwilling::default(),
+            AWillingMachine::default(),
+            a_user_database(),
+        );
 
         for (knock, knocker) in [
             (Knock::on_behalf_of(THE_PERSON), 0),

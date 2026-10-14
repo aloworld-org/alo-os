@@ -28,7 +28,8 @@ use std::path::PathBuf;
 use alo_sessiond::listening::Listening;
 use alo_sessiond::{
     ALREADY_SIGNED_IN, Answered, Door, Knock, Logind, NOBODY_HERE, NOT_YOURS_TO_ASK, NotAsked,
-    NotOpened, Opening, TheAccounts, our_group,
+    NotOpened, NotStarted, Opening, StartsADesktop, TheAccounts, TheDesktopToStart,
+    TheSessionOpened, our_group,
 };
 
 /// The number this machine's one account has, in these tests.
@@ -48,8 +49,24 @@ impl TheAccounts for Numbered {
 struct Willing(Vec<u32>);
 
 impl Logind for Willing {
-    fn open_a_session_for(&mut self, person: u32) -> Result<(), NotOpened> {
+    fn open_a_session_for(&mut self, person: u32) -> Result<TheSessionOpened, NotOpened> {
         self.0.push(person);
+        // What a real `logind` answers with: the person's own runtime directory.
+        Ok(TheSessionOpened::with(PathBuf::from("/run/user/1000")))
+    }
+}
+
+/// A machine that starts whatever desktop it is handed, and remembers.
+///
+/// This test is about the door, not about a desktop appearing, so this never
+/// refuses: a refusal here would turn every sign-in below into a refusal and
+/// the test would pass for the wrong reason.
+#[derive(Default)]
+struct AWillingMachine(Vec<u32>);
+
+impl StartsADesktop for AWillingMachine {
+    fn start(&mut self, what: &TheDesktopToStart) -> Result<(), NotStarted> {
+        self.0.push(what.person());
         Ok(())
     }
 }
@@ -91,7 +108,13 @@ fn the_greeter_knocking_over_a_real_socket_opens_a_session() {
     let Ok(listening) = Listening::at(&at, ours) else {
         panic!("the door would not open at {}", at.display());
     };
-    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default());
+    let mut opening = Opening::at_with_users(
+        door,
+        Numbered(vec![THE_PERSON]),
+        Willing::default(),
+        AWillingMachine::default(),
+        a_user_database(),
+    );
 
     let knocking = std::thread::spawn({
         let at = at.clone();
@@ -122,7 +145,13 @@ fn a_caller_the_kernel_puts_in_another_group_is_refused() {
     // Accounts that hold this person and a logind that would open anything: if
     // either were reached, the answer below would be a session rather than a
     // refusal, so the assertion is also that neither was.
-    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default());
+    let mut opening = Opening::at_with_users(
+        door,
+        Numbered(vec![THE_PERSON]),
+        Willing::default(),
+        AWillingMachine::default(),
+        a_user_database(),
+    );
 
     let knocking = std::thread::spawn({
         let at = at.clone();
@@ -153,7 +182,13 @@ fn a_line_that_is_not_a_knock_is_answered_and_told_nothing() {
     let Ok(listening) = Listening::at(&at, ours) else {
         panic!("the door would not open at {}", at.display());
     };
-    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default());
+    let mut opening = Opening::at_with_users(
+        door,
+        Numbered(vec![THE_PERSON]),
+        Willing::default(),
+        AWillingMachine::default(),
+        a_user_database(),
+    );
 
     let knocking = std::thread::spawn({
         let at = at.clone();
@@ -191,7 +226,13 @@ fn a_real_door_refuses_a_stranger_and_a_second_sign_in() {
     let Ok(listening) = Listening::at(&at, ours) else {
         panic!("the door would not open at {}", at.display());
     };
-    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default());
+    let mut opening = Opening::at_with_users(
+        door,
+        Numbered(vec![THE_PERSON]),
+        Willing::default(),
+        AWillingMachine::default(),
+        a_user_database(),
+    );
 
     for (knock, expected) in [
         (
@@ -216,4 +257,29 @@ fn a_real_door_refuses_a_stranger_and_a_second_sign_in() {
     }
 
     drop(std::fs::remove_file(&at));
+}
+
+/// A `passwd` file naming the person this test signs in, so the desktop has a
+/// folder to be started with. The real one is `/etc/passwd`; a test must not
+/// depend on the host having an account numbered 1000.
+fn a_user_database() -> PathBuf {
+    // **A different file for every call.** One shared path made these tests
+    // fail each other: `fs::write` truncates before it writes, the tests run in
+    // parallel, and a reader landing in that window sees an empty file and
+    // refuses a sign-in that was never about folders.
+    static WHICH: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+    let mine = WHICH.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    // Not `somewhere()`: that returns the socket path itself, not a directory,
+    // so joining onto it asks for a file inside `sign-in.sock`.
+    let at = std::env::temp_dir().join(format!(
+        "alo-sessiond-door-passwd-{}-{mine}",
+        std::process::id()
+    ));
+    drop(std::fs::create_dir_all(&at));
+    let file = at.join("passwd");
+    drop(std::fs::write(
+        &file,
+        format!("alo:x:{THE_PERSON}:{THE_PERSON}::/home/alo:/bin/bash\n"),
+    ));
+    file
 }
