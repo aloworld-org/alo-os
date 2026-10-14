@@ -90,10 +90,12 @@ pub const A_BORDER: u32 = 1;
 ///
 /// **The sessions strip is the same height and is not here.** The design places
 /// it over the transcript's own rows (73 to 129, inside the transcript's 57 to
-/// 763), so which of the two is drawn, and when, is not settled by the file.
-/// `docs/design/the-terminal-window.md` records that silence; a measure for
-/// something nobody has decided to draw would be a guess wearing a constant's
-/// clothes.
+/// 763), and it is `hidden="true"` in **all 116 placements** across the four
+/// captured nodes that contain it — the designer drew none of them.
+/// `docs/design/the-terminal-window.md` carries that measurement and the two
+/// readings that agree with it. So the transcript is unconditional and the
+/// strip has no measure here: a constant for a surface drawn in no frame would
+/// be a guess wearing a constant's clothes.
 pub const A_STRIP: u32 = 56;
 
 /// How tall the note under the transcript is.
