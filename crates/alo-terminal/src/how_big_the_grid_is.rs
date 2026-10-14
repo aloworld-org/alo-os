@@ -74,6 +74,36 @@ impl HowBig {
     pub const fn remembered(self) -> usize {
         self.remembered
     }
+
+    /// How many cells across one line is.
+    ///
+    /// **An inherent method although the engine's trait already answers it**,
+    /// and that is the point: anything that draws this grid needs its width,
+    /// and reaching it through `alacritty_terminal::grid::Dimensions` would
+    /// mean every drawing crate importing the engine's trait to ask. `ADR
+    /// 0114` says the engine sits *behind an interface of ours*, and an
+    /// interface a caller cannot use without the engine is not one.
+    ///
+    /// Rust resolves an inherent method before a trait's, so `size.columns()`
+    /// reaches this one. Both return the same field, and
+    /// `the_inherent_size_and_the_engines_agree` is the test that keeps it
+    /// true rather than the comment.
+    #[must_use]
+    pub const fn columns(self) -> usize {
+        self.columns
+    }
+
+    /// How many lines are on the screen, not counting what is remembered
+    /// above it.
+    ///
+    /// The engine calls this `screen_lines`; here it is `lines`, because
+    /// [`Self::remembered`] is the other number and the pair reads as what it
+    /// is. Nothing is derived — [`Self::of`] stored both, and the sum is the
+    /// engine's `total_lines`.
+    #[must_use]
+    pub const fn lines(self) -> usize {
+        self.lines
+    }
 }
 
 /// The engine asks its three questions here.
@@ -102,7 +132,7 @@ impl alacritty_terminal::grid::Dimensions for HowBig {
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 mod tests {
-    use alacritty_terminal::grid::Dimensions as _;
+    use alacritty_terminal::grid::Dimensions;
 
     use super::{HowBig, NotASize};
 
@@ -166,5 +196,34 @@ mod tests {
             NotASize::NoColumns.to_string(),
             NotASize::NoLines.to_string()
         );
+    }
+
+    /// **The size this type answers and the size the engine asks for are the
+    /// same size.**
+    ///
+    /// Two roads reach every one of these numbers — the inherent methods a
+    /// drawing crate calls, and the engine's `Dimensions` trait the grid is
+    /// built against — and *a single number cannot be caught being wrong;
+    /// two that must agree can*. If an inherent accessor were ever changed to
+    /// derive, clamp or round, this is what fails; without it, a grid could
+    /// be laid out one size and drawn another, which draws perfectly and in
+    /// the wrong place.
+    #[test]
+    fn the_inherent_size_and_the_engines_agree() {
+        for (columns, lines, remembered) in [(80, 24, 100), (1, 1, 0), (200, 60, 1)] {
+            let size = HowBig::of(columns, lines, remembered).expect("a size");
+            assert_eq!(
+                size.columns(),
+                Dimensions::columns(&size),
+                "the inherent width and the engine's disagree"
+            );
+            assert_eq!(
+                size.lines(),
+                size.screen_lines(),
+                "the inherent height and the engine's disagree"
+            );
+            // And the third is the sum, which is the reason this type exists.
+            assert_eq!(size.total_lines(), size.lines() + size.remembered());
+        }
     }
 }
