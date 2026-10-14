@@ -42,6 +42,18 @@ pub struct ADisplayToStandOn<'a> {
     pub socket: &'a str,
     /// The XKB layout this machine's keyboard has.
     pub layout: &'a str,
+    /// The XKB variant of that layout — `oss` for `fr(oss)` — and empty for
+    /// the layout's plain form.
+    ///
+    /// **Added 2026-10-14, because it was missing here and present in
+    /// [`crate::AMachineToStandOn`].** The greeter has carried a variant
+    /// since it learnt to read this machine's keyboard file; this struct took
+    /// only the layout, so a person who chose `fr(oss)` signed in through
+    /// `fr(oss)` and then worked all day through plain `fr`. Empty rather
+    /// than [`None`] for the reason the greeter's is: empty is XKB's own word
+    /// for *the layout's default*, and a second spelling of one absence is a
+    /// second thing to translate at the one place it is handed over.
+    pub variant: &'a str,
 }
 
 /// How a desktop's day ended.
@@ -76,6 +88,7 @@ pub fn stand_the_desktop_up(
         display.socket,
         XkbConfig {
             layout: display.layout,
+            variant: display.variant,
             ..XkbConfig::default()
         },
     )?;

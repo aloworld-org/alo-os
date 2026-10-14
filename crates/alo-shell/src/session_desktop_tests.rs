@@ -34,6 +34,9 @@ fn a_session_with_no_seat_refuses_by_naming_the_seat() {
             runtime: runtime.path(),
             socket: "a-desktop-with-no-seat",
             layout: "gb",
+            // The plain form, which is what this test is not about: it refuses
+            // before any keymap is built.
+            variant: "",
         },
         &mut NoDesktop,
         || DirectFrame::Stop,
