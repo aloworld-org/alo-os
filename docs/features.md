@@ -358,6 +358,50 @@ file carries it with a tier.*
 - File associations — what opens what, changeable by a person
 - A text editor and an image viewer, so a fresh machine is not helpless
 - **A terminal.** Law 2 forbids the *agent* running arbitrary commands; it says nothing about a person, and an operating system that does not trust its owner with a shell is a toy
+- ★ **The agent writes the command; only you run it.** You ask for something and
+  get a **command and a sentence about it**, in a surface alo draws. You read it
+  and press Enter, or you do not. **alo cannot press Enter** — that is a
+  mechanism and not a promise: the surface is the compositor's, the agent
+  reaches it through a verb that carries text and nothing else, and there is no
+  verb that submits, that types into a terminal you already have open, or that
+  starts a shell — the last of those is
+  [ADR 0043](decisions/0043-the-terminal-is-a-persons-and-never-an-agents.md),
+  which is **built**: an agent cannot be granted a terminal, ask for one, or
+  name one in any argument. *Every other AI terminal is built around the agent executing.
+  Law 2 forbids that here, and that is what makes the next two lines possible:
+  an agent running three hundred commands cannot be undone, and one command you
+  chose can. And undo is not a nice idea: law 2 already says every run at every
+  level **can be undone**, and nothing here does it yet.*
+- ★ **Undo a command.** A command you run that way is **snapshotted before it
+  runs**, and one key puts your files back. `rm -rf` in any other AI terminal is
+  gone for ever, because a process cannot snapshot a filesystem it does not own;
+  alo OS chooses that filesystem at install
+  ([ADR 0045](decisions/0045-what-undoing-rewinds-to.md)) so that it can.
+  **What undo does not cover is said where it is offered, not in a settings
+  page**: it rewinds this machine's files, and it does not recall a push,
+  un-send an email, or undo anything that already left. A reversibility
+  overstated once is one nobody trusts again
+- ★ **Ask what a command actually did** — `alo watch cargo build` — and the
+  answer comes **from the kernel rather than from what the command printed**. A
+  command that lies in its output lies to every other tool; it cannot lie to the
+  kernel's own hooks. **One command, because you asked for that one.** This does
+  **not** weaken *it forgets everything that was not an agent* further down this
+  file and is not permitted to: nothing is watched, something was measured on
+  request, and the contrast is the point — the one system that could watch
+  everything measures only what you point at
+  *The three lines above were written on 2026-10-14 after the owner said the
+  feature list and the decisions must not be what stops a terminal worth
+  switching for, and that both may be edited.
+  [ADR 0110](decisions/0110-the-agent-writes-the-command-and-only-the-person-runs-it.md)
+  holds the design, what each part needs, and the reasoning a later reader
+  should disagree with rather than only discover. **None of it is built**: a
+  terminal opens (`Ctrl`+`Alt`+`T`) and is an ordinary terminal; the snapshot
+  filesystem is chosen at install and no command has ever been snapshotted; and
+  the kernel boundary is a prototype whose own header calls it `the smallest
+  thing that can carry that idea or disprove it`. **Whether any of it joins the
+  six-item launch list in `ROADMAP.md` is the owner's and is not yet
+  decided** — the earlier word was that the terminal comes after launch, which
+  is a scheduling call and not a design one.*
 - **Search your own files, without asking anything** — by name, kind, date and contents, in the file manager, indexed on the machine. The agent's *“where is that file?”* is a nicer way to reach this; **it is not the only way**, and a machine whose only search is a conversation is a machine somebody locked out of their own documents
 - **What is running, and what it is using** — processes, memory, disk and network in a window. The plain answer to *“why is it slow?”*, for the person who cannot or will not ask
 - **What is filling the disk** — shown as sizes you can open up and click through, not a number in Settings
