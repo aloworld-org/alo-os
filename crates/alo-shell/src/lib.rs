@@ -74,6 +74,7 @@
 mod a_chord_moves_the_keyboard_between_areas;
 mod a_chord_reaches_its_action;
 mod a_click_brings_a_window_back;
+mod a_display_has_gone;
 mod a_frame_per_display;
 /// Typing into a task window's reply box.
 pub mod a_key_reaches_a_task_window;
@@ -85,6 +86,7 @@ mod a_person_pins_and_unpins;
 mod a_press_in_the_menu;
 mod a_press_on_an_edge;
 mod a_press_on_the_sign_in_screen;
+mod a_screen_arrives_or_leaves;
 mod access_bus;
 mod access_contrast;
 mod access_magnifier;
@@ -350,6 +352,7 @@ pub mod the_application_door;
 pub mod the_application_doors_place;
 /// The Dock's composer as a field a person types a request into.
 pub mod the_composer_a_person_types_in;
+mod the_desk_is_reconciled;
 pub mod the_docks_words;
 mod the_edge_takes_the_keyboard;
 pub mod the_machines_keyboard;
