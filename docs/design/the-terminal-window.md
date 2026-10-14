@@ -54,15 +54,39 @@ So the terminal is **1040 wide** with a **44-tall** edge above it and an
 
 ### Inside the body, in the body's own coordinates
 
-| element | size | at |
+| element | size | rows it occupies |
 |---|---|---|
-| Project and session identity | 1038×56 | (1, 1) |
-| Sessions | 1038×56 | (1, 73) |
-| Transcript / optional view explicitly requested | 1038×706 | (1, 57) |
+| Project and session identity | 1038×56 | 1 – 57 |
+| Sessions | 1038×56 | 73 – 129 |
+| Transcript / optional view explicitly requested | 1038×706 | 57 – 763 |
+| Task scope note | 1038×28 | 763 – 791 |
 
 **Children begin at (1, 1) and are 1038 wide in a 1040 body**, so the body
 carries a **1px border** on every side. That is a derived figure and is stated
 as such: it is `(1040 − 1038) / 2`, not something the file labels.
+
+**And the body is fully accounted for**, which is the check that this list is
+complete rather than merely long:
+
+```text
+   1  border
++ 56  identity strip
++706  transcript
++ 28  task scope note
++  9  below the note
+= 800  the body
+```
+
+*The `Task scope note` was missing from the first draft of this table, and the
+arithmetic above is what found it: the transcript ends at 763 in an 800 body, so
+37 rows had no owner. It holds the text `zsh · UTF-8` — the shell and the
+encoding — and the design's own reference text for these views says* preserve
+original output and existing shell input, *so a shell input row is a separate
+thing still to be located.*
+
+The transcript's own content begins 20 rows below its top: its single text child
+sits at y 20 inside it. So the transcript is inset **24 horizontally** (measured
+twice, below) and **20 vertically at the top**.
 
 ## A disagreement the file has with itself, left unresolved
 
@@ -71,8 +95,10 @@ Transcript occupies rows 57–763, so Sessions sits **inside** the Transcript's 
 span. Both cannot be drawn at once.
 
 The Transcript's own name says *optional view explicitly requested*, which
-suggests the two are alternative states rather than a stacked layout — but the
-file does not say which is drawn when, and **this document does not guess.**
+suggests the two are alternative states rather than a stacked layout — and the
+arithmetic above supports that reading, because the body balances **without**
+the sessions strip in it. But the file does not say which is drawn when, and
+**this document does not guess.**
 `CLAUDE.md`: `docs/design/` records *what was measured off it and what the owner
 decided where it is silent or disagrees with itself.* This is the silence.
 

@@ -34,6 +34,7 @@
 
 mod a_shell_on_a_pseudoterminal;
 mod how_big_the_grid_is;
+pub mod measures;
 mod terminal_output_becomes_a_grid;
 
 pub use a_shell_on_a_pseudoterminal::{AShellOnAPseudoterminal, NoShell, WhatArrived};
