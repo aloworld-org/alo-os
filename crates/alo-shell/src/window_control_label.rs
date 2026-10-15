@@ -107,11 +107,20 @@ impl WindowControlLabels {
             include_bytes!("../fonts/Manrope.ttf").to_vec(),
             include_bytes!("../fonts/Inter.ttf").to_vec(),
             include_bytes!("../fonts/GeistMono.ttf").to_vec(),
-            // **And the two static cuts the design actually asks for.** Not a
+            // **And the static cuts the design actually asks for.** Not a
             // nicety: without these, neither of alo's typefaces could be drawn
             // at the weight its own design specifies.
             include_bytes!("../fonts/Manrope-SemiBold.ttf").to_vec(),
             include_bytes!("../fonts/GeistMono-Medium.ttf").to_vec(),
+            // **And the weight a bold cell asks for.** A program setting bold
+            // makes the terminal ask for Geist Mono at 700, and a family is
+            // honoured only at an exact weight match — so without this file
+            // the family was abandoned and bold output was drawn in a
+            // **proportional** face, inside a grid where every cell must be
+            // the same width. `ls` prints directories bold and `cargo test`
+            // prints its passes bold, so it was most of what a person reads.
+            // `bold_is_drawn_in_the_terminals_own_face` is the measurement.
+            include_bytes!("../fonts/GeistMono-Bold.ttf").to_vec(),
         ])
     }
 

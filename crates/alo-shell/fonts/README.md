@@ -1,6 +1,6 @@
 # Native control typefaces
 
-Five files, three families, and they are not interchangeable. **Manrope is what alo's own
+Six files, three families, and they are not interchangeable. **Manrope is what alo's own
 surfaces are drawn in**, because it is what the design is drawn in. Inter
 remains for everything not yet moved to it, and as fallback. **Geist Mono is
 what a terminal's cells are drawn in**, and nothing else.
@@ -70,8 +70,11 @@ pass.
 point — *it carries the weight axis, so a bold cell is weight 700 chosen through
 `Attrs::weight` rather than a second file* — was false for the same reason. This
 file registers at weight 400 only. The design's `Terminal/Command` is **Medium,
-weight 500**, and asking for it drew **Inter**, which is not even monospace. A
-bold cell will need its own file too, when a bold cell is built.
+weight 500**, and asking for it drew **Inter**, which is not even monospace.
+
+*It also said a bold cell would need its own file when a bold cell was built.
+Bold cells were built on 2026-10-14 and the file was not, so for a day bold
+output was drawn in a proportional face. That file is now below.*
 
 SHA-256: `d00e590b8eb3a59acc329b2d044fd143ae935090b7da33199ebee27cc7de8196`.
 171,948 bytes.
@@ -130,6 +133,42 @@ columns do not line up, which a cell-dimension test passes.
 
 SHA-256: `6fa6a795c17a11bcbef410f52a853e8503f8e25d92762d202d907c54f5c0c0fb`.
 150,096 bytes.
+Upstream: <https://github.com/vercel/geist-font/tree/a0a06a3d916dcf92fe96f12051a124f89056b36a/fonts/GeistMono/ttf>.
+
+## Geist Mono Bold — the weight a bold cell asks for
+
+Static instance, **unmodified**, under the same SIL Open Font License 1.1 in
+`GeistMono-OFL.txt`. From the Geist project's own repository, at the **same
+revision as the Medium cut** — `a0a06a3d916dcf92fe96f12051a124f89056b36a`, path
+`fonts/GeistMono/ttf/GeistMono-Bold.ttf`.
+
+**Why a third Geist Mono file.** `painted_text::alos_own_mono_at` asks for
+weight **700** when a program sets bold, and a family is honoured only at an
+exact weight match. With no 700 face the family was abandoned and bold cells
+were drawn in a **proportional** face — inside a grid where every cell must be
+one width. `ls` prints directories bold and `cargo test` prints its passes bold,
+so it was most of what a person reads.
+
+**Measured rather than reasoned about.** `bold_is_drawn_in_the_terminals_own_face`
+shapes a bold string through the real font system and reads back each glyph's
+`font_id`, failing unless every one is a face of this family. It failed against
+the tree before this file was added, which is how the fault is known rather than
+suspected.
+
+**Verified before it was added**: `usWeightClass` is 700, which is exactly what
+the ask is; family (name ID 1) is `Geist Mono` with subfamily `Bold`, and there
+is no typographic family (ID 16) to disagree with it; `post.isFixedPitch` is 1;
+and there is no `fvar` table.
+
+**And the flag is not what the tests trust**, here either.
+`a_bold_cell_is_the_same_width_as_an_ordinary_one` shapes `i`, `W`, `l`, `.`,
+`8`, `@` and `m` at both weights and holds every advance to every other — within
+and across the two. A bold cut a fraction wider than the medium one would draw a
+line that drifts further out of column the longer it is, which is visible on
+`ls` and on nothing shorter.
+
+SHA-256: `325de0913317e63c9b0084d3f571c6d1c9279e776e9260c62be19e1c12d1be3c`.
+151,260 bytes.
 Upstream: <https://github.com/vercel/geist-font/tree/a0a06a3d916dcf92fe96f12051a124f89056b36a/fonts/GeistMono/ttf>.
 
 ## Neither static cut is a derivative, and that was checked
