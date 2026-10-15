@@ -296,6 +296,56 @@ documents that disagree, and `CLAUDE.md` asks for exactly that: *a deliberate
 departure is written down where the next person looks rather than left in a
 diff.*
 
+## The note under the transcript, and what it says
+
+The design's `Task scope note`: **1038×28 at the body's row 763**, holding one
+text node — `zsh · UTF-8`, **66×16 at (24, 0)** inside the band.
+
+Two things that reading gives which the band alone does not:
+
+- **the text is inset 24**, the transcript's own inset, so the note lines up
+  with the first column of output above it;
+- **and sits at the top of the band**, not centred in it. The band is 28 and the
+  text's line is 16, so the twelve are all below. Measured, because *centred*
+  is what anybody would assume.
+
+Its type and colour, asked of the live file for the note's own node
+(`479:29034`) rather than for a parent — a parent's variables are every
+variable used anywhere beneath it:
+
+| | |
+|---|---|
+| type | `Label/Small`: **Manrope SemiBold, size 11, line height 16, letter spacing 0.3** |
+| colour | `text/muted`, **#596b78** |
+
+**Three sizes for three jobs.** The transcript is 14, the gutter's label 13,
+this 11. What a program said, who said it, and what the terminal is — read in
+that order, and the sizes are why.
+
+`alo-appearance` already holds `Role::TextMuted` at the design file's own
+`#596B78`, so the drawing reads the role rather than writing the value again.
+
+### What it says, and where that comes from
+
+**The shell's name is read from the process that is running** —
+`/proc/PID/comm` of the pseudoterminal's child — and not from `$SHELL`. Those
+can differ: `$SHELL` is a preference the environment carries, and it can be
+stale, inherited, or set by something other than what actually started. The
+note exists to tell a person what they are typing into, so a note naming a
+shell that is not the one running would be worse than no note. **Where the
+kernel will not say, the note is left out rather than guessed**, which
+`with_no_shell_named_the_note_is_left_out` holds.
+
+**The encoding is `UTF-8` and is a constant**, because the engine decodes
+UTF-8; it is not a setting this terminal has.
+
+**And none of it is in the vocabulary, deliberately.** `zsh · UTF-8` holds no
+English — a program's own name, a separator, and the name of an encoding.
+`CLAUDE.md` makes hardcoded English a bug and there is none here to
+externalise. That is the opposite call from the gutter's four words, which are
+English a person reads and needed entries of their own: the test is whether
+there is anything to translate, not whether text is drawn.
+
 ## The type, asked of the live file
 
 The snapshot has no type information, so these came from the file's own variable

@@ -364,6 +364,65 @@ pub(crate) fn where_the_window_goes(
     Some((window, transcript))
 }
 
+/// The note under the transcript, saying what this terminal is.
+///
+/// The design's `Task scope note` — `zsh · UTF-8`, the shell and the encoding —
+/// measured off node `479:29034`: the band is 1038×28 at the body's row 763,
+/// and the text sits at **(24, 0)** inside it, which is the transcript's own
+/// inset and the **top** of the band rather than its middle.
+///
+/// Drawn in `Label/Small`: Manrope SemiBold 11 on a line of 16, in
+/// `text/muted`. Three sizes for three jobs — the transcript is what a program
+/// said, the gutter says who said it, and this says what the terminal is. A
+/// person reads them in that order.
+///
+/// **No vocabulary entry, and that is deliberate.** `zsh · UTF-8` holds no
+/// English: a program's own name, a separator, and the name of an encoding.
+/// `CLAUDE.md` makes hardcoded English a bug, and there is none here to
+/// externalise — a translator handed `UTF-8` would have nothing to do with it.
+///
+/// Answers [`None`] where there is no room or no name to give.
+fn the_note_under_the_transcript(
+    fonts: &mut FontSystem,
+    said: &str,
+    window: Rectangle<i32, Physical>,
+    scale: f64,
+    colours: ([u8; 3], [u8; 3]),
+) -> Option<Inked> {
+    let (ground, ink) = colours;
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "two-digit logical measures through a display's scale"
+    )]
+    let (inset, from_the_top, tall, size, line) = (
+        (f64::from(measures::AN_INSET) * scale).round() as i32,
+        (f64::from(measures::BELOW_THE_NOTE) * scale).round() as i32,
+        (f64::from(measures::A_NOTE) * scale).round() as i32,
+        (f64::from(measures::THE_NOTE) * scale) as f32,
+        (f64::from(measures::THE_NOTES_LINE) * scale) as f32,
+    );
+    if tall <= 0 || size <= 0.0 || line <= 0.0 {
+        return None;
+    }
+
+    // The band's own top: the window, less the rows under the note, less the
+    // note. `measures::the_note_begins_at` is the same arithmetic on a body,
+    // and reproduces the design's 763 at 800.
+    let top = window.loc.y + window.size.h - from_the_top - tall;
+    let room = window.size.w - inset * 2;
+    if room <= 0 {
+        return None;
+    }
+
+    let mut buffer = Buffer::new(fonts, Metrics::new(size, line));
+    buffer.set_wrap(fonts, Wrap::None);
+    buffer.set_size(fonts, None, None);
+    buffer.set_text(fonts, said, &alos_own_text(), Shaping::Advanced);
+    buffer.shape_until_scroll(fonts, false);
+    let shaped = inked(fonts, &buffer, (room, tall), 0, ground, ink);
+    shaped.placed(window.loc.x + inset, top, window.loc.y + window.size.h)
+}
+
 /// How many lines fit in this many pixels.
 fn lines_in(height: i32, line_height: f32) -> usize {
     if line_height <= 0.0 || height <= 0 {
@@ -784,6 +843,7 @@ pub(crate) fn picture(
     scale: f64,
     scheme: Scheme,
     says: &alo_strings::Strings,
+    the_shell_is_called: Option<&str>,
 ) -> Result<TerminalPicture, NothingToDrawWith> {
     let (window, transcript) =
         where_the_window_goes(size, scale).ok_or(NothingToDrawWith::TheresNoRoom)?;
@@ -802,6 +862,12 @@ pub(crate) fn picture(
     };
     let ground = [ground.red(), ground.green(), ground.blue()];
     let ink = [ink.red(), ink.green(), ink.blue()];
+    // **The note is `text/muted`**, which the design asks for by name and which
+    // `alo-appearance` already holds at the design file's own `#596B78`. Read
+    // from the role rather than written here, so the one place that decides
+    // what muted means stays the one place.
+    let muted = alo_appearance::Role::TextMuted.colour();
+    let muted = [muted.red(), muted.green(), muted.blue()];
 
     // The content is inset from the transcript's own edges, both figures the
     // design's and both measured — `AN_INSET` at two different widths.
@@ -867,6 +933,20 @@ pub(crate) fn picture(
         );
         if let Some(label) = a_regions_label(fonts, said.text(), goes, region.from, (ground, ink)) {
             placed.push(label);
+        }
+    }
+
+    // **The note under the transcript**, which says what this terminal is:
+    // the shell actually running on it and the encoding its bytes are read as.
+    // Left out rather than guessed at when the kernel will not name the shell
+    // — a note naming a shell that is not the one running would be worse than
+    // no note.
+    if let Some(called) = the_shell_is_called {
+        let said = format!("{called} \u{b7} UTF-8");
+        if let Some(note) =
+            the_note_under_the_transcript(fonts, &said, window, scale, (ground, muted))
+        {
+            placed.push(note);
         }
     }
 

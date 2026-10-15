@@ -1554,6 +1554,7 @@ fn drawn_terminal(
         scale,
         frame.look.scheme(),
         says,
+        server.what_alos_own_terminals_shell_is_called().as_deref(),
     ) {
         Ok(drawn) => Some(drawn),
         Err(why) => {

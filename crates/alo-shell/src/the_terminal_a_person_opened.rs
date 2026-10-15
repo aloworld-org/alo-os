@@ -222,6 +222,15 @@ impl TheTerminal {
         self.finished
     }
 
+    /// What the shell running here is called, for the note under the
+    /// transcript.
+    ///
+    /// Read from the running process rather than from `$SHELL`: those can
+    /// differ and only one of them is what a person is typing into.
+    pub(crate) fn what_the_shell_is_called(&self) -> Option<String> {
+        self.shell.what_the_shell_is_called()
+    }
+
     /// Move the view back into what is remembered, or forward towards the
     /// newest. Whether it moved.
     pub(crate) fn look_back(&mut self, lines: i32) -> bool {
@@ -287,6 +296,13 @@ impl crate::Server {
         self.alos_own_terminal
             .as_mut()
             .is_some_and(|terminal| terminal.look_back(lines))
+    }
+
+    /// What alo's own terminal's shell is called, if one is open.
+    pub(crate) fn what_alos_own_terminals_shell_is_called(&self) -> Option<String> {
+        self.alos_own_terminal
+            .as_ref()
+            .and_then(TheTerminal::what_the_shell_is_called)
     }
 
     /// Take whatever the terminal's shell has written, once a frame.
