@@ -869,6 +869,38 @@ Manrope**, which is the clearest way to see the rule.
 that degrades. It is **part of the key**, and missing it by one step throws the
 family away.
 
+**And whether anybody sees it depends on which face is nearest**, which is the
+half this entry did not say and which cost an evening to rediscover. The family
+being abandoned does not mean another family is drawn — it means the choice is
+made without looking at families at all, so it may land back where it started.
+Measured 2026-10-15, varying only what is loaded:
+
+| mono weights loaded | ask 400 | ask 500 | ask 700 | ask 900 |
+|---|---|---|---|---|
+| the variable file only (registers 400) | Geist Mono | **Inter** | **Inter** | **Inter** |
+| the static Medium only (500) | **Inter** | Geist Mono | Geist Mono | Geist Mono |
+| 400, 500 and 700 together | Geist Mono | Geist Mono | Geist Mono | Geist Mono |
+
+Every row still follows the two rules above. With only the 500 face, an ask at
+900 lands on **Geist Mono** because 500 is nearer to 900 than Inter's 400 — the
+blind search goes home by luck. An ask at 400 lands on **Inter**, because Inter
+has that weight *exactly* and no distance beats an exact match.
+
+**Two consequences worth keeping.**
+
+*A test of this mechanism must remove the luck.* One written against the
+shell's own fonts asking at 900 passed, then failed the moment a third weight
+was bundled — and read as cosmic-text having changed, which it had not. It was
+measuring the bundle.
+`crates/alo-shell/src/window_control_label_tests.rs` now asks at **400** against
+a system holding 500 only, where another family's exact match cannot be beaten.
+
+*And the product is now protected partly by accident.* Shipping Geist Mono at
+400, 500 and 700 means most asks land on it however they miss. **Removing a
+weight could send bold output back into a proportional face with nothing to
+notice**, which is why `the_shells_own_bundle_absorbs_an_ask_it_does_not_hold`
+exists under that name.
+
 **What this cost, and it was both of alo's typefaces.** Asked exactly as the
 design asks, on the tree as it stood:
 

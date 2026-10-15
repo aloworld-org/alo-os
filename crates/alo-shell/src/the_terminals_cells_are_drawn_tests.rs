@@ -1013,3 +1013,137 @@ fn every_origin_resolves_to_the_word_the_design_draws() {
         );
     }
 }
+
+/// **Bold is drawn in the terminal's own face, not in whatever answers.**
+///
+/// `alos_own_mono_at` asks for weight **700** when a program sets bold, and
+/// `docs/design/the-terminal-window.md` records that no 700 face is bundled.
+/// On cosmic-text 0.14.2 that is not a near miss: a family is honoured **only
+/// among faces whose weight matches exactly**, so asking for a weight the
+/// family does not have throws the family away and leaves a family-blind
+/// nearest-weight list — which is how asking for Geist Mono drew **Inter**,
+/// proportional, with no error at all (`docs/quirks.md`).
+///
+/// So bold text in the terminal would be drawn in a proportional face: `ls`
+/// prints directories bold, `cargo test` prints its passes bold, and every one
+/// of those cells would break the grid.
+///
+/// **Read back from the shaper rather than from the ask**, which is the whole
+/// lesson of this file: *presence is not use*, and an ask that succeeds is not
+/// an ask that was honoured.
+#[test]
+fn bold_is_drawn_in_the_terminals_own_face() {
+    use alo_terminal::what_a_cell_looks_like::{AColour, HowItLooks};
+
+    let mut fonts = the_shells_own_fonts();
+    let ours = super::the_faces_in_that_family(&fonts);
+    assert!(
+        !ours.is_empty(),
+        "the terminal's own family is not loaded at all, so this tests nothing"
+    );
+
+    let bold = HowItLooks {
+        ink: AColour::TheDefault,
+        ground: AColour::TheDefault,
+        bold: true,
+        italic: false,
+        underline: false,
+    };
+
+    let mut buffer = cosmic_text::Buffer::new(&mut fonts, the_designs_metrics(1.0));
+    buffer.set_wrap(&mut fonts, cosmic_text::Wrap::None);
+    buffer.set_size(&mut fonts, None, None);
+    buffer.set_text(
+        &mut fonts,
+        "ok",
+        &crate::painted_text::alos_own_mono_at(bold),
+        cosmic_text::Shaping::Advanced,
+    );
+    buffer.shape_until_scroll(&mut fonts, false);
+
+    let drawn_in: Vec<cosmic_text::fontdb::ID> = buffer
+        .layout_runs()
+        .flat_map(|run| run.glyphs.iter().map(|glyph| glyph.font_id))
+        .collect();
+    assert!(!drawn_in.is_empty(), "bold text shaped to no glyphs at all");
+
+    for face in drawn_in {
+        assert!(
+            super::the_shaper_used_one_of(&ours, face),
+            "a bold cell was drawn in a face that is not the terminal's own, so bold output \
+             is in a different typeface from the rest of the screen"
+        );
+    }
+}
+
+/// **A bold cell is exactly as wide as an ordinary one.**
+///
+/// The grid's whole premise. `isFixedPitch` is a declaration a font can get
+/// wrong, and a bold cut whose advances differ from the medium one by a
+/// fraction would draw a line that drifts further out of column the longer it
+/// is — visible on `ls` and on nothing shorter.
+///
+/// So this measures the two through the real font system and holds them to
+/// each other, rather than reading either one's flag. The same reasoning as
+/// `window_control_label_tests`' advance sweep, applied across weights instead
+/// of across characters.
+#[test]
+fn a_bold_cell_is_the_same_width_as_an_ordinary_one() {
+    use alo_terminal::what_a_cell_looks_like::{AColour, HowItLooks};
+
+    let mut fonts = the_shells_own_fonts();
+    let metrics = the_designs_metrics(1.0);
+
+    let look = |bold: bool| HowItLooks {
+        ink: AColour::TheDefault,
+        ground: AColour::TheDefault,
+        bold,
+        italic: false,
+        underline: false,
+    };
+
+    let mut advance_of = |bold: bool| -> Vec<f32> {
+        let mut buffer = cosmic_text::Buffer::new(&mut fonts, metrics);
+        buffer.set_wrap(&mut fonts, cosmic_text::Wrap::None);
+        buffer.set_size(&mut fonts, None, None);
+        buffer.set_text(
+            &mut fonts,
+            "iWl.8@m",
+            &crate::painted_text::alos_own_mono_at(look(bold)),
+            cosmic_text::Shaping::Advanced,
+        );
+        buffer.shape_until_scroll(&mut fonts, false);
+        buffer
+            .layout_runs()
+            .flat_map(|run| run.glyphs.iter().map(|glyph| glyph.w))
+            .collect()
+    };
+
+    let ordinary = advance_of(false);
+    let bold = advance_of(true);
+
+    assert_eq!(
+        ordinary.len(),
+        bold.len(),
+        "the two weights shaped a different number of glyphs"
+    );
+    assert!(
+        !ordinary.is_empty(),
+        "nothing was shaped, so this measured nothing"
+    );
+
+    // Every advance equal within a hair, in both weights and between them.
+    let first = *ordinary.first().expect("at least one glyph was shaped");
+    for (which, (one, two)) in ordinary.iter().zip(bold.iter()).enumerate() {
+        assert!(
+            (one - two).abs() < 0.01,
+            "character {which} is {one} wide ordinary and {two} wide bold, so a bold word \
+             pushes the rest of its line out of column"
+        );
+        assert!(
+            (one - first).abs() < 0.01,
+            "character {which} is {one} wide where the first is {first}, so the face is not \
+             monospace at all"
+        );
+    }
+}

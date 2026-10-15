@@ -476,6 +476,23 @@ mod the_bundled_monospace_face {
         .fonts
     }
 
+    /// A font system holding **exactly one** weight of the mono family.
+    ///
+    /// For testing cosmic-text's matching rather than this crate's bundle: with
+    /// three weights of Geist Mono loaded, a weight nobody bundled can still
+    /// land on one of them through the family-blind nearest-weight search, and
+    /// then the mechanism is invisible although it has not changed. One weight
+    /// makes the mechanism visible again, whatever we go on to ship.
+    fn the_fonts_with_one_mono_weight() -> FontSystem {
+        WindowControlLabels::from_fonts([
+            include_bytes!("../fonts/Manrope.ttf").to_vec(),
+            include_bytes!("../fonts/Inter.ttf").to_vec(),
+            include_bytes!("../fonts/GeistMono-Medium.ttf").to_vec(),
+        ])
+        .expect("one weight of the mono family loads")
+        .fonts
+    }
+
     /// What one ask really resolves to: the advance, and **the family that drew
     /// it**, which is the half a width alone cannot tell you.
     fn what_drew(fonts: &mut FontSystem, character: &str, attrs: &Attrs<'_>) -> (f32, String) {
@@ -697,23 +714,50 @@ mod the_bundled_monospace_face {
         }
     }
 
-    /// **A weight the database does not hold still leaves the family**, which
-    /// is why the static cuts had to be bundled rather than the weight asked
-    /// for being rounded.
+    /// **A weight the family does not hold sends the ask to another family**,
+    /// which is why the static cuts had to be bundled rather than the weight
+    /// asked for being rounded inside the family.
     ///
-    /// Nothing is loaded at weight 900, so this is the unfixed behaviour still
-    /// visible at a weight nobody bundled. It is here so that the mechanism
-    /// `docs/quirks.md` describes stays measured after the two faces that
-    /// suffered from it stopped suffering — otherwise the entry would be a
-    /// claim about a version of the tree that no longer exists.
+    /// **Measured, 2026-10-15, with the whole table rather than one case**, and
+    /// the table is why this test looks the way it does:
+    ///
+    /// | mono weights loaded | ask 400 | ask 500 | ask 700 | ask 900 |
+    /// |---|---|---|---|---|
+    /// | variable only (400) | Geist Mono | Inter | Inter | Inter |
+    /// | static Medium only (500) | **Inter** | Geist Mono | Geist Mono | Geist Mono |
+    /// | 400, 500 and 700 | Geist Mono | Geist Mono | Geist Mono | Geist Mono |
+    ///
+    /// The rule is `docs/quirks.md`'s: a miss sends matching **family-blind
+    /// across every loaded face, nearest weight winning**. What the table adds
+    /// is that *whether anybody sees it* depends on which face is nearest —
+    /// Geist Mono at 500 is nearer to an ask of 900 than Inter at 400, so the
+    /// blind search lands back on the asked-for family **by luck**.
+    ///
+    /// So this asks at **400** against a system holding Geist Mono at 500
+    /// only: Inter has an exact 400, which no distance can beat, and the ask
+    /// leaves. That is the mechanism with the luck taken out.
+    ///
+    /// *An earlier version asked at 900 against the shell's own fonts. It
+    /// passed only because the bundle of the day made Inter nearest, and
+    /// bundling a third weight broke it — which read as the mechanism having
+    /// changed. It had not. The test was measuring the bundle.*
     #[test]
-    fn a_weight_nothing_is_bundled_at_still_loses_the_family() {
-        let mut fonts = the_shells_own_fonts();
-        let registered: Vec<u16> = fonts.db().faces().map(|face| face.weight.0).collect();
-        assert!(
-            !registered.contains(&900),
-            "something is now bundled at weight 900, so this test needs a different weight; \
-             the weights loaded are {registered:?}"
+    fn a_weight_the_family_does_not_hold_sends_the_ask_to_another_family() {
+        let mut fonts = the_fonts_with_one_mono_weight();
+        let weights: Vec<u16> = fonts
+            .db()
+            .faces()
+            .filter(|face| {
+                face.families
+                    .iter()
+                    .any(|(name, _)| name == THE_MONO_FAMILY)
+            })
+            .map(|face| face.weight.0)
+            .collect();
+        assert_eq!(
+            weights,
+            vec![500],
+            "this test needs exactly one mono weight, 500, and found {weights:?}"
         );
 
         let (_, drawn_in) = what_drew(
@@ -721,14 +765,39 @@ mod the_bundled_monospace_face {
             "W",
             &Attrs::new()
                 .family(Family::Name(THE_MONO_FAMILY))
-                .weight(Weight(900)),
+                .weight(Weight(400)),
         );
         assert_ne!(
             drawn_in, THE_MONO_FAMILY,
-            "a weight nothing is bundled at now stays inside its family, so cosmic-text's \
-             matching has changed. **That is good news** — check whether `docs/quirks.md`'s \
-             entry on exact weight matching still describes anything real, and whether the \
-             static cuts are still needed."
+            "an ask at a weight this family does not hold stayed inside it, although another \
+             family holds that weight exactly. **That is good news** — cosmic-text's matching \
+             has changed, so check whether `docs/quirks.md`'s entry still describes anything \
+             real and whether the static cuts are still needed."
+        );
+    }
+
+    /// **And the shell's own bundle absorbs an ask it does not hold**, which is
+    /// luck rather than protection.
+    ///
+    /// With Geist Mono at 400, 500 and 700, an ask at 900 lands on one of them
+    /// because they are nearer than any other family's face. That is worth its
+    /// own name: it means a weight **removed** later could send bold output
+    /// back into a proportional face with nothing to notice, and this test is
+    /// what would notice.
+    #[test]
+    fn the_shells_own_bundle_absorbs_an_ask_it_does_not_hold() {
+        let mut fonts = the_shells_own_fonts();
+        let (_, drawn_in) = what_drew(
+            &mut fonts,
+            "W",
+            &Attrs::new()
+                .family(Family::Name(THE_MONO_FAMILY))
+                .weight(Weight(900)),
+        );
+        assert_eq!(
+            drawn_in, THE_MONO_FAMILY,
+            "an ask at a weight nobody bundled left the family even with three weights \
+             loaded, so bold output may be drawn in another typeface again"
         );
     }
 
