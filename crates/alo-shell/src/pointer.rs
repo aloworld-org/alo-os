@@ -49,6 +49,35 @@ pub(crate) struct Pointer {
     pub(crate) popup_release: Option<(Serial, WlSurface)>,
 }
 
+/// How many lines of a transcript one scroll frame asks for.
+///
+/// **A notch is 15 of these units**, which is what `crate::canvas_wheel_zoom`
+/// names for the same reason: `crate::libinput_scroll` divides v120 by eight,
+/// so a notch is fifteen and not a number anybody liked. Three lines to a
+/// notch is what every terminal moves and what a hand is used to.
+///
+/// Truncated rather than rounded, so a fraction of a notch asks for nothing
+/// and is left unspent. **Positive is back**: a wheel pushed away from the
+/// person goes up into what is remembered, which is the direction every
+/// terminal and every document uses, and the axis is positive downwards.
+fn the_lines_a_scroll_asks_for(frame: &AxisFrame) -> i32 {
+    /// A wheel notch, in the units an [`AxisFrame`] carries here.
+    const A_NOTCH: f64 = 15.0;
+    /// Lines a notch moves.
+    const LINES_A_NOTCH: f64 = 3.0;
+
+    let lines = (-frame.axis.1 / A_NOTCH) * LINES_A_NOTCH;
+    if !lines.is_finite() {
+        return 0;
+    }
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "`bounded` has already refused anything but a small finite scroll"
+    )]
+    let whole = lines.trunc() as i32;
+    whole
+}
+
 impl Server {
     /// Enable pointer capability on the keyboard seat, idempotently.
     ///
@@ -376,6 +405,25 @@ impl Server {
     pub fn pointer_axis(&mut self, frame: AxisFrame) -> Result<bool, InputError> {
         if !bounded(frame.axis.0) || !bounded(frame.axis.1) {
             return Err(InputError::InvalidPointer);
+        }
+
+        // **alo's own terminal takes the wheel while it is taking the keys.**
+        // It is not a client, so it has no pointer focus for the hit test
+        // below to find — and the rule that already answers for the keyboard
+        // answers here: whatever is taking the keys is what a scroll is for.
+        // The design says *transcript scrolls; current input stays reachable*,
+        // and a terminal that could not be scrolled would be remembering a
+        // thousand lines nobody can reach.
+        //
+        // **A notch that moves nothing is not consumed.** At the oldest
+        // remembered line, or at the newest, the scroll falls through to the
+        // plane rather than being swallowed — which is why `look_back` answers
+        // whether the view moved rather than returning nothing.
+        if self.the_terminal_is_taking_the_keys() {
+            let lines = the_lines_a_scroll_asks_for(&frame);
+            if lines != 0 && self.alos_own_terminal_scrolled(lines) {
+                return Ok(true);
+            }
         }
         self.surfaces.prune_pointer_focus();
         let pointer = self
@@ -710,5 +758,70 @@ impl Surfaces {
         );
         handle.frame(self);
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod the_wheel_a_terminal_takes {
+    use smithay::backend::input::{Axis, AxisSource};
+    use smithay::input::pointer::AxisFrame;
+
+    use super::the_lines_a_scroll_asks_for;
+
+    /// A scroll frame carrying this much vertical movement.
+    fn a_scroll_of(down: f64) -> AxisFrame {
+        AxisFrame::new(0)
+            .source(AxisSource::Wheel)
+            .value(Axis::Vertical, down)
+    }
+
+    /// **One notch is three lines**, which is what every terminal moves and
+    /// what a hand is used to.
+    #[test]
+    fn one_notch_asks_for_three_lines() {
+        // The axis is positive downwards and scrolling down goes *forward*
+        // towards the newest, which is negative here.
+        assert_eq!(the_lines_a_scroll_asks_for(&a_scroll_of(15.0)), -3);
+        assert_eq!(the_lines_a_scroll_asks_for(&a_scroll_of(-15.0)), 3);
+    }
+
+    /// **A wheel pushed away from the person goes back into what is
+    /// remembered**, which is the direction every terminal and every document
+    /// uses.
+    ///
+    /// Asserted as a sign rather than a number, because the number is the test
+    /// above and the direction is the thing somebody would get backwards.
+    #[test]
+    fn pushing_the_wheel_away_goes_back_into_what_is_remembered() {
+        assert!(
+            the_lines_a_scroll_asks_for(&a_scroll_of(-30.0)) > 0,
+            "scrolling up moved towards the newest, which is backwards"
+        );
+        assert!(the_lines_a_scroll_asks_for(&a_scroll_of(30.0)) < 0);
+    }
+
+    /// **A fraction of a notch asks for nothing**, so it is left unspent
+    /// rather than rounded into a movement the person has not made.
+    #[test]
+    fn less_than_a_notch_asks_for_nothing() {
+        for small in [0.0, 1.0, -1.0, 4.9, -4.9] {
+            assert_eq!(
+                the_lines_a_scroll_asks_for(&a_scroll_of(small)),
+                0,
+                "a scroll of {small} asked for a line"
+            );
+        }
+    }
+
+    /// **Nothing that is not a number asks for anything.**
+    ///
+    /// `bounded` refuses these before this is reached, so this holds the
+    /// second line of defence rather than the first — and a `trunc` on a
+    /// non-finite number is what it exists to stop.
+    #[test]
+    fn a_scroll_that_is_not_a_number_asks_for_nothing() {
+        for odd in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert_eq!(the_lines_a_scroll_asks_for(&a_scroll_of(odd)), 0);
+        }
     }
 }

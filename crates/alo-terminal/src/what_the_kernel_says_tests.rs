@@ -38,6 +38,22 @@ fn started(program: &str, args: &[&str]) -> Child {
 ///
 /// Answers the evidence that satisfied it, so a test asserts on the thing it
 /// waited for rather than reading again and hoping it has not moved.
+///
+/// # Wait for the state the test is about, not for the first parked moment
+///
+/// **A process is parked long before it is parked in the thing it was started
+/// to do.** It parks while loading, while mapping libraries, while the shell
+/// that spawned it hands over. Waiting for `!running` and then asserting the
+/// answer reads whichever of those states happened to be current.
+///
+/// That is not hypothetical: `a_process_waiting_on_an_empty_pipe_reads_as_parked`
+/// waited for `!running` and answered `NobodyCanTell` on a loaded builder,
+/// because the `wchan` it caught was a startup function in neither table. The
+/// test was right about the product and wrong about when to look.
+///
+/// So a caller waits for the **answer**, and the timeout is the failure. A
+/// reader that was genuinely broken never reaches the state and the test fails
+/// with the timeout rather than passing by luck.
 fn settles_into(process: u32, question: impl Fn(&TheEvidence) -> bool) -> Option<TheEvidence> {
     let until = Instant::now() + LONG_ENOUGH;
     loop {
@@ -79,11 +95,17 @@ fn a_busy_process_reads_as_running() {
 #[test]
 fn a_process_waiting_on_an_empty_pipe_reads_as_parked() {
     let mut waiting = started("cat", &[]);
-    let evidence = settles_into(waiting.id(), |evidence| !evidence.running);
+    // **The answer, not merely `!running`** — see `settles_into`. A process
+    // that has not yet reached its own read is parked in its loader, and what
+    // it is parked in then says nothing about what it is waiting for.
+    let evidence = settles_into(waiting.id(), |evidence| {
+        !evidence.running && why_it_is_waiting(evidence) == WhyItIsWaiting::ForAnotherProcess
+    });
     let _ = waiting.kill();
     let _ = waiting.wait();
 
-    let evidence = evidence.expect("a cat on an idle pipe parks within five seconds");
+    let evidence =
+        evidence.expect("a cat on an idle pipe is explained by the pipe within five seconds");
     assert!(!evidence.running, "a parked process read as running");
     assert_eq!(
         evidence.reads_from,
@@ -114,10 +136,15 @@ fn a_command_on_a_terminal_is_waiting_for_the_keyboard() {
     let in_front = shell
         .the_command_in_front()
         .expect("the terminal says who is in front");
+    // The same rule as the pipe below: wait for the answer rather than for the
+    // first parked moment, because a process parked in its loader has a
+    // `wchan` that describes loading.
     let evidence = settles_into(in_front, |evidence| {
-        !evidence.running && evidence.reads_from == WhatItReadsFrom::ATerminal
+        !evidence.running
+            && evidence.reads_from == WhatItReadsFrom::ATerminal
+            && why_it_is_waiting(evidence) == WhyItIsWaiting::ForTheKeyboard
     })
-    .expect("cat on a terminal parks reading it within five seconds");
+    .expect("cat on a terminal is explained by the keyboard within five seconds");
 
     assert_eq!(evidence.reads_from, WhatItReadsFrom::ATerminal);
     assert_eq!(
@@ -246,7 +273,13 @@ fn a_process_that_has_gone_answers_nothing() {
 fn a_program_whose_name_has_a_space_is_still_read_correctly() {
     // A copy of a real shell under a name with a space and parentheses in it,
     // which is what the kernel records and what the parse has to survive.
-    let awkward = std::env::temp_dir().join("a dash (2)");
+    //
+    // **The name carries this process's own number**, so two runs cannot
+    // collide over one path. A fixed name failed with `ExecutableFileBusy` on
+    // a second run: a copy still held open by the run before it cannot be
+    // written over, and the test that was meant to be about parsing a name
+    // failed about a file instead.
+    let awkward = std::env::temp_dir().join(format!("a dash ({}) ", std::process::id()));
     std::fs::copy("/bin/dash", &awkward).expect("a shell can be copied to an awkward name");
 
     let mut odd = Command::new(&awkward)

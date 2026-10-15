@@ -144,6 +144,11 @@ impl TheTerminal {
         if self.finished {
             return false;
         }
+        // **Typing puts the newest output back on screen**, which is the
+        // design's *current input stays reachable*. Typing into a view of the
+        // past and watching nothing appear is the most confusing thing a
+        // scrolled terminal can do, and every terminal does this.
+        self.screen.back_to_the_newest();
         match self.shell.a_person_typed(bytes) {
             Ok(()) => true,
             Err(why) => {
@@ -216,6 +221,12 @@ impl TheTerminal {
     pub(crate) fn has_finished(&self) -> bool {
         self.finished
     }
+
+    /// Move the view back into what is remembered, or forward towards the
+    /// newest. Whether it moved.
+    pub(crate) fn look_back(&mut self, lines: i32) -> bool {
+        self.screen.look_back(lines)
+    }
 }
 
 impl crate::Server {
@@ -264,6 +275,18 @@ impl crate::Server {
         self.alos_own_terminal
             .as_ref()
             .is_some_and(|terminal| !terminal.has_finished())
+    }
+
+    /// Scroll alo's own terminal by this many lines, if one is open.
+    ///
+    /// Positive is back into what is remembered, negative is forward towards
+    /// the newest. Answers whether the view moved — which is what decides
+    /// whether a wheel notch was this terminal's to spend or belongs to
+    /// whatever is behind it.
+    pub(crate) fn alos_own_terminal_scrolled(&mut self, lines: i32) -> bool {
+        self.alos_own_terminal
+            .as_mut()
+            .is_some_and(|terminal| terminal.look_back(lines))
     }
 
     /// Take whatever the terminal's shell has written, once a frame.

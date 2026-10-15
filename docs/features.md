@@ -496,6 +496,16 @@ file carries it with a tier.*
   are as they were before it ran. *In every other terminal scrollback is a
   record of text. **A process cannot snapshot a filesystem it does not own**,
   and alo OS picks that filesystem at install so that it can*
+  **Moving along it is built, 2026-10-15**: the transcript scrolls, by wheel —
+  three lines a notch, pushing away goes back — and typing puts the newest
+  output back on screen, which is the design's *current input stays reachable*.
+  The grid was already asked to remember a thousand lines and **none of them
+  could be reached**: a terminal that remembers and cannot show has forgotten,
+  as far as a person is concerned. A notch that moves nothing is not consumed,
+  so a terminal at the end of its scrollback does not swallow scrolls.
+  **Not built**: *choose one, and your files are as they were* — that is the
+  snapshot half, which needs the filesystem this list promises and no scrolling
+  can supply.
 - ★ **Bisect the machine, not the repository.** *It worked yesterday* becomes a
   command: walk the snapshots to find when something broke, including everything
   version control never held — installed packages, caches, configuration, a
