@@ -393,3 +393,284 @@ fn a_cursor_past_the_screen_has_nothing_under_it() {
     };
     assert_eq!(screen.the_character_under(past), None);
 }
+
+/// The line numbers visible on this screen, read out of the text.
+///
+/// The fixture writes `line N` on every line, so what is on screen can be
+/// named rather than merely compared — which is what lets a test say *older*
+/// instead of *different*.
+fn the_numbers_on(screen: &TerminalOutput) -> Vec<u32> {
+    screen
+        .lines()
+        .iter()
+        .filter_map(|said| said.trim().strip_prefix("line ")?.trim().parse().ok())
+        .collect()
+}
+
+/// A screen with more lines written to it than fit, so there is something to
+/// scroll back to.
+///
+/// Each line says its own number, which is what lets a test assert *which*
+/// lines are on screen rather than that some are.
+fn a_screen_with_more_than_fits() -> TerminalOutput {
+    let mut screen = TerminalOutput::of(HowBig::of(20, 5, 100).expect("a small screen"));
+    for which in 1..=20 {
+        screen.was_written(format!("line {which}\r\n").as_bytes());
+    }
+    screen
+}
+
+/// **A terminal starts at the newest output**, which is the state every other
+/// test here assumes and none of them says.
+#[test]
+fn a_terminal_starts_showing_the_newest() {
+    let screen = a_screen_with_more_than_fits();
+    assert_eq!(screen.how_far_back(), 0);
+    assert!(
+        screen.lines().iter().any(|said| said.contains("line 20")),
+        "the newest line is not on screen at the start: {:?}",
+        screen.lines()
+    );
+}
+
+/// **Scrolling back shows what had gone**, which is the whole promise.
+///
+/// Twenty lines were written to a screen five tall, so fifteen are off the
+/// top. Before this they were stored and unreachable — a terminal that
+/// remembers and cannot show has forgotten, as far as a person is concerned.
+///
+/// **Asserted as a relationship rather than against a line number**, because
+/// the first version of this test guessed that ten lines back reached `line 3`
+/// and it reaches `line 7`. The guess was wrong and the scrolling was right,
+/// and a test that is fixed by looking at the output and writing down what it
+/// said is a test that asserts nothing.
+#[test]
+fn scrolling_back_shows_what_had_gone() {
+    let mut screen = a_screen_with_more_than_fits();
+    let at_the_newest = the_numbers_on(&screen);
+
+    assert!(screen.look_back(10), "scrolling back did nothing");
+    assert_eq!(screen.how_far_back(), 10);
+
+    let scrolled = the_numbers_on(&screen);
+    let oldest_before = at_the_newest.iter().min().copied().unwrap_or_default();
+    let newest_after = scrolled.iter().max().copied().unwrap_or_default();
+
+    assert!(
+        newest_after < oldest_before,
+        "after scrolling back, the screen still shows lines {scrolled:?} and it showed \
+         {at_the_newest:?} before — nothing older came into view"
+    );
+    // Not a count of rows: the newest screen's last row is the blank line the
+    // cursor sits on after the final newline, so it carries no number. A
+    // screen scrolled back carries one more.
+    assert!(
+        !scrolled.is_empty(),
+        "a screen scrolled back shows no numbered lines at all"
+    );
+}
+
+/// **And coming back shows the newest again.**
+///
+/// The control for the test above: a reader that always answered the oldest
+/// lines would pass that one.
+#[test]
+fn coming_back_shows_the_newest_again() {
+    let mut screen = a_screen_with_more_than_fits();
+    screen.look_back(10);
+
+    assert!(screen.back_to_the_newest(), "coming back did nothing");
+    assert_eq!(screen.how_far_back(), 0);
+    assert!(
+        screen.lines().iter().any(|said| said.contains("line 20")),
+        "the newest line is not back: {:?}",
+        screen.lines()
+    );
+}
+
+/// **Every row moves together**, which is what says the one conversion is
+/// applied everywhere rather than to the text alone.
+///
+/// A terminal that offset its text and not its runs would draw the right
+/// characters in the wrong place, and one that offset its runs and not its
+/// text would pass every test that only reads `lines`.
+///
+/// **Each run is checked where it sits**, not by joining them. Runs drop the
+/// spaces between them deliberately — a space in the default colours draws
+/// nothing — so a joined string is `line17` where the line is `line 17`. The
+/// first version of this test joined them and failed against correct runs,
+/// which is the same mistake as reading a column count off a sentence.
+#[test]
+fn the_text_and_the_runs_agree_about_what_is_on_screen() {
+    let mut screen = a_screen_with_more_than_fits();
+    let mut checked = 0_usize;
+    for back in [0_i32, 3, 7, 12] {
+        screen.back_to_the_newest();
+        screen.look_back(back);
+
+        for row in 0..5 {
+            let said = screen.line(row).unwrap_or_default();
+            for run in screen.runs_on(row) {
+                let at: String = said.chars().skip(run.from_column).collect();
+                assert!(
+                    at.starts_with(&run.text),
+                    "at {back} back, row {row}: a run says {:?} at column {} and the line says \
+                     {said:?}",
+                    run.text,
+                    run.from_column
+                );
+                checked += 1;
+            }
+        }
+    }
+    assert!(
+        checked > 10,
+        "only {checked} runs were compared, so this swept almost nothing"
+    );
+}
+
+/// **A space inside a line keeps the text after it where the program put it.**
+///
+/// A run carries its text and the column it begins at, so every character in
+/// it has to sit at `from_column` plus its own offset. A space in the default
+/// colours draws nothing and is skipped — and if it is skipped **without
+/// ending the run**, the characters after it are appended to a run that began
+/// further left, and the whole of the rest of the line is drawn shifted.
+///
+/// **That is what the code did**, found by a scrolling test comparing the text
+/// against the runs: a line reading `line 17` produced one run `line17` at
+/// column 0. Six characters drawn across seven columns, and every line with a
+/// space in it — `ls` output, a prompt, an English sentence — drawn with its
+/// spaces closed up.
+///
+/// It survived the change that introduced it because the tests beside it count
+/// **colours and ink**, and a line drawn one column left has exactly as much
+/// ink in exactly as many colours.
+#[test]
+fn a_space_inside_a_line_does_not_pull_the_rest_of_it_left() {
+    let mut screen = TerminalOutput::of(HowBig::of(40, 4, 10).expect("a screen"));
+    screen.was_written(b"two words here");
+
+    let runs = screen.runs_on(0);
+    assert_eq!(runs.len(), 3, "expected one run per word, got {runs:?}");
+
+    // Each word at the column the program actually put it at.
+    for (text, from_column) in [("two", 0), ("words", 4), ("here", 10)] {
+        assert!(
+            runs.iter()
+                .any(|run| run.text == text && run.from_column == from_column),
+            "{text:?} is not a run beginning at column {from_column}: {runs:?}"
+        );
+    }
+
+    // And the general property, which is what the fix is really about: a run's
+    // text is what the line holds from that run's own column.
+    let said = screen.line(0).unwrap_or_default();
+    for run in runs {
+        let at: String = said.chars().skip(run.from_column).collect();
+        assert!(
+            at.starts_with(&run.text),
+            "a run says {:?} at column {} and the line says {said:?}",
+            run.text,
+            run.from_column
+        );
+    }
+}
+
+/// **Scrolling stops at the oldest line it remembers**, rather than running on
+/// into nothing.
+///
+/// Asked for far more than exists, so the clamp is what is being measured and
+/// not a coincidence of the number.
+#[test]
+fn scrolling_back_stops_at_the_oldest_remembered_line() {
+    let mut screen = a_screen_with_more_than_fits();
+    assert!(screen.look_back(1_000), "the first scroll did nothing");
+    let as_far_as_it_goes = screen.how_far_back();
+
+    assert!(
+        !screen.look_back(1_000),
+        "scrolling past the oldest line reported that it moved"
+    );
+    assert_eq!(
+        screen.how_far_back(),
+        as_far_as_it_goes,
+        "scrolling past the oldest line moved the view anyway"
+    );
+    // Fifteen lines went off a five-line screen, so that is how far back it
+    // goes — a figure the grid decides and this asserts rather than assumes.
+    assert!(
+        as_far_as_it_goes >= 15,
+        "only {as_far_as_it_goes} lines are reachable, and fifteen went off the top"
+    );
+}
+
+/// **And it stops at the newest**, which is the other end of the same clamp.
+#[test]
+fn coming_forward_stops_at_the_newest() {
+    let mut screen = a_screen_with_more_than_fits();
+    assert!(
+        !screen.look_back(-5),
+        "a terminal already at the newest moved"
+    );
+    assert_eq!(screen.how_far_back(), 0);
+}
+
+/// **The cursor moves down the screen as the view scrolls back**, because it
+/// is in the text rather than on the glass.
+///
+/// A cursor that stayed put while the text moved would sit in a line it is not
+/// in — the symptom of the conversion being applied in some places and not
+/// others.
+///
+/// **The cursor is put at the top first**, because after twenty lines it is on
+/// the bottom row and *any* scroll back pushes it off the screen. The first
+/// version of this test did not, and failed against a cursor that had behaved
+/// correctly: it had left the screen, which is the next test.
+#[test]
+fn the_cursor_scrolls_with_the_text_it_is_in() {
+    let mut screen = a_screen_with_more_than_fits();
+    // `CUP` to row 1, column 1 — the top-left of the screen.
+    screen.was_written(b"\x1b[1;1H");
+
+    let at_the_newest = screen
+        .where_the_cursor_is()
+        .expect("a cursor at the newest output");
+    assert_eq!(at_the_newest.line, 0, "the cursor was not put at the top");
+
+    screen.look_back(2);
+    let scrolled = screen
+        .where_the_cursor_is()
+        .expect("the cursor is still on a screen scrolled back two lines");
+    assert_eq!(
+        scrolled.line,
+        at_the_newest.line + 2,
+        "the cursor did not move down with the text"
+    );
+    assert_eq!(scrolled.column, at_the_newest.column);
+}
+
+/// **And it leaves the screen when the view goes far enough back**, which is
+/// the honest answer rather than drawing it at the edge.
+#[test]
+fn the_cursor_leaves_the_screen_when_the_view_goes_far_enough_back() {
+    let mut screen = a_screen_with_more_than_fits();
+    assert!(screen.where_the_cursor_is().is_some());
+
+    screen.look_back(1_000);
+    assert!(
+        screen.where_the_cursor_is().is_none(),
+        "the cursor is reported on a screen it is nowhere near"
+    );
+}
+
+/// **A screen with nothing to remember cannot scroll**, which is the case a
+/// clamp gets wrong by answering *moved* about nothing.
+#[test]
+fn a_screen_with_nothing_behind_it_does_not_scroll() {
+    let mut screen = TerminalOutput::of(HowBig::of(20, 5, 100).expect("a screen"));
+    screen.was_written(b"one line\r\n");
+
+    assert!(!screen.look_back(10), "a terminal with no scrollback moved");
+    assert_eq!(screen.how_far_back(), 0);
+}

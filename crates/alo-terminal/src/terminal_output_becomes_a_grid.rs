@@ -105,6 +105,71 @@ impl TerminalOutput {
         self.parser.advance(&mut self.term, bytes);
     }
 
+    /// How far back the view is, in lines above the newest.
+    ///
+    /// Zero means the newest output is on screen, which is where a terminal
+    /// starts and where it returns the moment somebody types.
+    #[must_use]
+    pub fn how_far_back(&self) -> usize {
+        self.term.grid().display_offset()
+    }
+
+    /// Move the view by this many lines: positive is back into what is
+    /// remembered, negative is forward towards the newest.
+    ///
+    /// Answers whether the view actually moved, so a caller can tell a scroll
+    /// that did something from one at the end of what is remembered — which is
+    /// what decides whether a wheel notch is this terminal's to consume.
+    ///
+    /// **The engine clamps**, so scrolling past the oldest line or past the
+    /// newest is not an error and needs no arithmetic here. Asking it what
+    /// changed rather than working it out is the rule the rest of this file
+    /// follows: the engine owns the grid and this crate owns the interface in
+    /// front of it.
+    pub fn look_back(&mut self, lines: i32) -> bool {
+        let was = self.how_far_back();
+        self.term
+            .scroll_display(alacritty_terminal::grid::Scroll::Delta(lines));
+        self.how_far_back() != was
+    }
+
+    /// Put the newest output back on screen.
+    ///
+    /// Answers whether anything moved. **Every terminal does this when
+    /// somebody types**, because typing into a view of the past and watching
+    /// nothing appear is the most confusing thing a scrolled terminal can do.
+    pub fn back_to_the_newest(&mut self) -> bool {
+        let was = self.how_far_back();
+        self.term
+            .scroll_display(alacritty_terminal::grid::Scroll::Bottom);
+        self.how_far_back() != was
+    }
+
+    /// The grid line a displayed row is showing, given how far back the view
+    /// is.
+    ///
+    /// **The whole of scrolling is this one conversion**, which is why it is
+    /// one function rather than a `- back` at each of the places that read the
+    /// grid. Those would drift, and the symptom would be a cursor drawn a line
+    /// away from the text it is in.
+    ///
+    /// The engine numbers what is remembered **negatively**: `Line(-1)` is the
+    /// row just above the top of the screen, which is what
+    /// `Grid::display_iter` starts from at `Line(-display_offset)`. So row `n`
+    /// of the display is grid line `n - back`.
+    ///
+    /// [`None`] past the bottom of the screen. The top needs no check — a
+    /// negative line is a real line of what is remembered, and the engine
+    /// clamps `display_offset` to what it actually has.
+    fn the_grid_line_showing(&self, row: usize) -> Option<Line> {
+        if row >= self.size.screen_lines() {
+            return None;
+        }
+        let row = i32::try_from(row).ok()?;
+        let back = i32::try_from(self.how_far_back()).ok()?;
+        Some(Line(row - back))
+    }
+
     /// One line of the screen, as the characters now in its cells.
     ///
     /// Counted from the top of the screen, so line 0 is the top line a person
@@ -116,10 +181,7 @@ impl TerminalOutput {
     /// [`None`] for a line past the bottom of the screen.
     #[must_use]
     pub fn line(&self, line: usize) -> Option<String> {
-        if line >= self.size.screen_lines() {
-            return None;
-        }
-        let line = Line(i32::try_from(line).ok()?);
+        let line = self.the_grid_line_showing(line)?;
         let mut said = String::with_capacity(self.size.columns());
         for column in 0..self.size.columns() {
             said.push(self.term.grid()[Point::new(line, Column(column))].c);
@@ -165,34 +227,39 @@ impl TerminalOutput {
     /// answers [`None`].
     #[must_use]
     pub fn runs_on(&self, line: usize) -> Vec<ACellRun> {
-        use alacritty_terminal::grid::Dimensions as _;
-        use alacritty_terminal::index::{Column, Line, Point};
-        let Ok(which) = i32::try_from(line) else {
+        use alacritty_terminal::index::{Column, Point};
+        let Some(which) = self.the_grid_line_showing(line) else {
             return Vec::new();
         };
-        if line >= self.size.screen_lines() {
-            return Vec::new();
-        }
         let mut runs: Vec<ACellRun> = Vec::new();
+        // **Whether a run was cut by a space since the last character.** A run
+        // carries its text and the column it starts at, so every character in
+        // it must sit at `from_column` plus its own offset — and a space that
+        // is skipped without ending the run breaks exactly that.
+        let mut cut = false;
         for column in 0..self.size.columns() {
             let Ok(at) = i32::try_from(column) else { break };
-            let cell =
-                &self.term.grid()[Point::new(Line(which), Column(at.unsigned_abs() as usize))];
+            let cell = &self.term.grid()[Point::new(which, Column(at.unsigned_abs() as usize))];
             let looks = HowItLooks::of(cell);
-            // **A space in the default colours draws nothing**, so it only
-            // joins a run that is already going — it never starts one, and a
-            // run is cut at it.
+            // **A space in the default colours draws nothing**, so it is not
+            // drawn — and the run it interrupts ends there. What follows
+            // begins a new run at its own column, which is what keeps the
+            // text where the program put it.
             let is_nothing =
                 cell.c == ' ' && looks.ground == AColour::TheDefault && !looks.underline;
+            if is_nothing {
+                cut = true;
+                continue;
+            }
             match runs.last_mut() {
-                Some(last) if last.looks == looks && !is_nothing => last.text.push(cell.c),
-                _ if is_nothing => {}
+                Some(last) if last.looks == looks && !cut => last.text.push(cell.c),
                 _ => runs.push(ACellRun {
                     from_column: column,
                     text: cell.c.to_string(),
                     looks,
                 }),
             }
+            cut = false;
         }
         runs
     }
@@ -228,6 +295,16 @@ impl TerminalOutput {
             CursorShape::Hidden => return None,
         };
         let (column, line) = self.cursor();
+
+        // **The cursor scrolls with the text it is in.** Its grid position is
+        // a line of the live screen, so a view scrolled back by `back` shows
+        // it `back` rows further down — and far enough back it leaves the
+        // screen entirely, which is what every terminal does and the only
+        // honest answer: the cursor is not on this screen.
+        let line = line.checked_add(self.how_far_back())?;
+        if line >= self.size.screen_lines() {
+            return None;
+        }
         Some(WhereTheCursorIs {
             column,
             line,
