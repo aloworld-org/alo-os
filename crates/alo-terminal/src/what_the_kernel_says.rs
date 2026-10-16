@@ -40,6 +40,31 @@ pub fn what_can_be_found_out_about(process: u32) -> Option<TheEvidence> {
     })
 }
 
+/// What this process is called, as the kernel records it.
+///
+/// `/proc/PID/comm` — the executable's own name, **not** what `$SHELL` says it
+/// should be. A person's shell is whatever is really running on the other end
+/// of the pseudoterminal, and those two can differ: `$SHELL` is a preference
+/// the environment carries and may be stale, inherited, or set by something
+/// other than the thing that actually started.
+///
+/// Truncated by the kernel to fifteen characters, which is a fact about
+/// `comm` rather than about any shell, and is why this is not used for
+/// anything that must be a whole path.
+///
+/// [`None`] where the process is gone, which is the ordinary case rather than
+/// an error.
+#[must_use]
+pub fn what_this_process_is_called(process: u32) -> Option<String> {
+    let said =
+        fs::read_to_string(Path::new("/proc").join(process.to_string()).join("comm")).ok()?;
+    let said = said.trim();
+    if said.is_empty() {
+        return None;
+    }
+    Some(said.to_owned())
+}
+
 /// Whether the kernel has this process on a processor.
 ///
 /// Field 3 of `/proc/PID/stat`, and **read from the last `)` rather than by

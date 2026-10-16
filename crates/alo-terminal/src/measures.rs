@@ -202,6 +202,33 @@ pub const fn a_programs_room_inside(transcript_width: u32) -> u32 {
     a_source_region_inside(transcript_width).saturating_sub(A_GUTTER)
 }
 
+/// The type size the note under the transcript is drawn at.
+///
+/// The design's `Label/Small`, asked of the live file for the note's own node
+/// (`479:29034`): *Manrope SemiBold, size 11, weight 600, line height 16,
+/// letter spacing 0.3*.
+///
+/// **Smaller than the gutter's label, which is smaller than the transcript.**
+/// Three sizes for three jobs: the transcript is what a program said, the
+/// gutter says who said it, and this says what the terminal is. A person reads
+/// them in that order and the sizes are why.
+pub const THE_NOTE: u32 = 11;
+
+/// The line height the note is laid out on, from `Label/Small`.
+///
+/// Sixteen in a band that is [`A_NOTE`] tall, and the design puts the text at
+/// the **top** of that band rather than centred in it — measured, not assumed:
+/// the text node sits at y 0 of the 28.
+pub const THE_NOTES_LINE: u32 = 16;
+
+/// The weight the note is drawn at: `SemiBold`, from `Label/Small`.
+///
+/// The same 600 as the gutter's label and as alo's own face everywhere, so one
+/// bundled cut serves all three. In this file for the reason [`THE_WEIGHT`]
+/// is: a weight missed by one step does not look like a weight error, it
+/// silently throws the family away.
+pub const THE_NOTES_WEIGHT: u16 = 600;
+
 /// How wide a source region is, inside a transcript this wide.
 ///
 /// The arithmetic the two measured pairs satisfy, rather than either of the
@@ -211,6 +238,20 @@ pub const fn a_programs_room_inside(transcript_width: u32) -> u32 {
 #[must_use]
 pub const fn a_source_region_inside(transcript_width: u32) -> u32 {
     transcript_width.saturating_sub(AN_INSET * 2)
+}
+
+/// How far below the body's top the note begins.
+///
+/// The body, less the nine rows under it and the note's own height — so the
+/// note's top is `800 - 9 - 28 = 763` at the design's own size, which is
+/// exactly where the design draws it. Derived rather than written down, for
+/// the reason [`transcript_height_in`] is: a figure that only holds at 800 is
+/// a figure that holds on one machine.
+#[must_use]
+pub const fn the_note_begins_at(body_height: u32) -> u32 {
+    body_height
+        .saturating_sub(BELOW_THE_NOTE)
+        .saturating_sub(A_NOTE)
 }
 
 /// How many whole lines fit in a transcript this tall.

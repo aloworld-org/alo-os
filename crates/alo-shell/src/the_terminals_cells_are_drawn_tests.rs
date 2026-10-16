@@ -39,6 +39,26 @@ fn the_words() -> alo_strings::Strings {
     alo_strings::Strings::of(vocabulary)
 }
 
+/// The drawing, with a shell named, for the tests about the note.
+fn picture_with_a_shell_called(
+    fonts: &mut FontSystem,
+    screen: &TerminalOutput,
+    size: (i32, i32),
+    scale: f64,
+    scheme: Scheme,
+    called: &str,
+) -> Result<TerminalPicture, NothingToDrawWith> {
+    super::picture(
+        fonts,
+        screen,
+        size,
+        scale,
+        scheme,
+        &the_words(),
+        Some(called),
+    )
+}
+
 /// The drawing, with the vocabulary supplied.
 ///
 /// **A wrapper rather than the same argument written out eighteen times.** The
@@ -53,7 +73,7 @@ fn picture(
     scale: f64,
     scheme: Scheme,
 ) -> Result<TerminalPicture, NothingToDrawWith> {
-    super::picture(fonts, screen, size, scale, scheme, &the_words())
+    super::picture(fonts, screen, size, scale, scheme, &the_words(), None)
 }
 
 /// The font system this machine really builds.
@@ -1146,4 +1166,110 @@ fn a_bold_cell_is_the_same_width_as_an_ordinary_one() {
              monospace at all"
         );
     }
+}
+
+/// Ink drawn below the transcript — the note's own band.
+///
+/// The band is the last `A_NOTE` rows of the window above the `BELOW_THE_NOTE`
+/// under it, so anything inked there is the note and nothing else reaches it.
+fn ink_under_the_transcript(drawn: &TerminalPicture, ground: [u8; 3]) -> usize {
+    let (window, transcript) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window fits");
+    let below = transcript.loc.y + transcript.size.h;
+    let _ = window;
+    drawn
+        .inked
+        .iter()
+        .filter(|ink| ink.area.loc.y >= below)
+        .flat_map(|ink| ink.pixels.iter())
+        .filter(|pixel| **pixel != ground)
+        .count()
+}
+
+/// **The note says what the terminal is**, in the band the design draws it in.
+///
+/// `docs/design/the-terminal-window.md`: the `Task scope note` is 1038×28 at
+/// the body's row 763 and holds `zsh · UTF-8` — the shell and the encoding.
+/// Before this the band was reserved and empty, so the window was the design's
+/// everywhere except where it said what it was.
+#[test]
+fn the_note_under_the_transcript_is_drawn() {
+    let scheme = Scheme::Light;
+    let drawn = picture_with_a_shell_called(
+        &mut the_shells_own_fonts(),
+        &a_screen_saying("hello"),
+        A_DISPLAY,
+        1.0,
+        scheme,
+        "zsh",
+    )
+    .expect("a terminal can be drawn");
+
+    assert!(
+        ink_under_the_transcript(&drawn, ground_of(scheme)) > 20,
+        "nothing is drawn below the transcript, so the note's band is still empty"
+    );
+}
+
+/// **And with no shell named, nothing is drawn there** — which is the control,
+/// and the honest behaviour.
+///
+/// The kernel will not always say what is running: a shell that has just
+/// exited has no name to give. A note naming a shell that is not the one
+/// running would be worse than no note, so there is none.
+#[test]
+fn with_no_shell_named_the_note_is_left_out() {
+    let scheme = Scheme::Light;
+    let drawn = picture(
+        &mut the_shells_own_fonts(),
+        &a_screen_saying("hello"),
+        A_DISPLAY,
+        1.0,
+        scheme,
+    )
+    .expect("a terminal can be drawn");
+
+    assert_eq!(
+        ink_under_the_transcript(&drawn, ground_of(scheme)),
+        0,
+        "something is drawn in the note's band although no shell was named"
+    );
+}
+
+/// **The note is drawn in the muted colour, not the transcript's ink.**
+///
+/// `Label/Small` in `text/muted`, which the design asks for by name. Drawn in
+/// the transcript's own ink it would read as another line of output, which is
+/// the one thing a note about the terminal must not look like.
+#[test]
+fn the_note_is_drawn_muted_rather_than_as_output() {
+    let scheme = Scheme::Light;
+    let drawn = picture_with_a_shell_called(
+        &mut the_shells_own_fonts(),
+        &a_screen_saying("hello"),
+        A_DISPLAY,
+        1.0,
+        scheme,
+        "zsh",
+    )
+    .expect("a terminal can be drawn");
+
+    let muted = alo_appearance::Role::TextMuted.colour();
+    let muted = [muted.red(), muted.green(), muted.blue()];
+    let (_, transcript) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window fits");
+    let below = transcript.loc.y + transcript.size.h;
+
+    let darkest = drawn
+        .inked
+        .iter()
+        .filter(|ink| ink.area.loc.y >= below)
+        .flat_map(|ink| ink.pixels.iter())
+        .min_by_key(|pixel| u32::from(pixel[0]) + u32::from(pixel[1]) + u32::from(pixel[2]))
+        .copied()
+        .expect("the note inked something");
+
+    // The darkest pixel of antialiased text is the ink itself.
+    assert_eq!(
+        darkest, muted,
+        "the note's darkest pixel is {darkest:?} where `text/muted` is {muted:?}"
+    );
 }

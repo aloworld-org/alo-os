@@ -213,6 +213,22 @@ impl AShellOnAPseudoterminal {
         self.pty.child().id()
     }
 
+    /// What the shell on this terminal is called, as the kernel records it.
+    ///
+    /// **Read from the running process rather than from `$SHELL`**, because
+    /// those can differ and only one of them is what a person is typing into.
+    /// The design draws it in the note under the transcript — `zsh · UTF-8` —
+    /// and a note naming a shell that is not the one running would be worse
+    /// than no note.
+    ///
+    /// [`None`] where the kernel will not say, which is not an error: a shell
+    /// that has just exited has no name to give.
+    #[cfg(target_os = "linux")]
+    #[must_use]
+    pub fn what_the_shell_is_called(&self) -> Option<String> {
+        crate::what_the_kernel_says::what_this_process_is_called(self.the_shell_itself())
+    }
+
     /// The process the pseudoterminal has in front, if it will say.
     ///
     /// **This, and not the shell, is what *why is it waiting* is about.** A
