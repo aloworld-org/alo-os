@@ -127,17 +127,32 @@ mod running {
             "alo-desktop: the Dock's default roles resolve to {:?}",
             offers.roles
         );
+        // **What the chord opens, in the order it tries them.** Since
+        // `alo_shell::a_chord_opens_a_terminal` was written, the chord opens
+        // **alo's own** terminal and reaches the installed one only when that
+        // could not start — so naming only the installed one, as this line did
+        // until 2026-10-16, describes a machine that has not existed since.
+        //
+        // **It misled a lane the same week.** Reading this line on a serial
+        // console, the desktop lane concluded the chord asks the portal to
+        // start Ptyxis and that a crash-looping `alo-portald` therefore made
+        // alo's own terminal unreachable. Neither follows. The comment below
+        // already said *the one thing that must not happen is somebody reading
+        // a silent log and concluding the chord is broken*; a **wrong** log is
+        // the same fault with the volume up, because a reader has no reason to
+        // doubt it.
         match offers.terminal {
             Some(ref terminal) => eprintln!(
-                "alo-desktop: a chord opens this machine's terminal, which is {}",
+                "alo-desktop: a chord opens alo's own terminal, and this machine's installed \
+                 one — {} — only if alo's own cannot start",
                 terminal.name()
             ),
-            // **Said rather than passed over.** A machine with no terminal is a
-            // machine where `Action::Terminal` has nothing to open, and the one
-            // thing that must not happen is somebody reading a silent log and
-            // concluding the chord is broken.
+            // **Said rather than passed over.** A machine with no terminal
+            // installed still has alo's own, so the chord is not broken; what
+            // it has lost is the fallback.
             None => eprintln!(
-                "alo-desktop: this machine has no terminal installed, so its chord opens nothing"
+                "alo-desktop: a chord opens alo's own terminal, and this machine has no \
+                 installed terminal to fall back to"
             ),
         }
 
