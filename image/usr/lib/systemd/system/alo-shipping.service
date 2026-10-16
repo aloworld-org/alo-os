@@ -80,6 +80,38 @@ Restart=no
 CapabilityBoundingSet=
 AmbientCapabilities=
 NoNewPrivileges=yes
+
+# **A person outranks this, and a booted machine is why.**
+#
+# On 2026-10-14 a fresh machine spent **44 minutes of userspace startup** here,
+# downloading seven applications and the five runtimes they drag in — about
+# 2 GB — while somebody stood at the sign-in screen trying to make their
+# account. systemd's own line:
+#
+#   Startup finished in 11.474s (kernel) + 46.326s (initrd)
+#                     + 43min 53.694s (userspace) = 44min 51.495s
+#
+# They lost the race for their own keyboard. `d i s a n` arrived; four PIN
+# digits did not; a later attempt landed one of four. The account could not be
+# finished until this unit was done, and nothing on the screen said why.
+#
+# This unit set **no priority at all**, so flatpak's downloads and unpacking
+# competed with the compositor on equal terms. These three lines do not change
+# what is installed or how long it takes in total — they change **who waits**.
+#
+# `Nice=19` and `CPUWeight=20` put this behind anything a person is looking at;
+# `IOWeight=20` matters more, because unpacking 5 GB is what starves the disk
+# the compositor reads its fonts and its wallpaper from.
+#
+# **This is a mitigation and not the answer.** The answer is
+# [ADR 0116](../../../../docs/decisions/0116-a-fresh-machine-arrives-with-its-applications.md):
+# a machine arrives with its applications and downloads nothing between being
+# switched on and being usable. The screen says *Local setup. No online account
+# required.* while this unit talks to flathub, and no scheduling priority makes
+# that sentence true.
+Nice=19
+CPUWeight=20
+IOWeight=20
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
