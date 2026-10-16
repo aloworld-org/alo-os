@@ -86,7 +86,7 @@ impl TheKeyboardAPersonChose {
         };
         let keyboards = Keyboards::offered_with(&language);
         let layout = keyboards.in_use().clone();
-        if let Err(why) = alo_keyboards::keeping::keep(at, &keyboards) {
+        if let Err(why) = alo_keyboards::keeping::keep_the_machines(at, &keyboards) {
             return AboutTheKeyboard::NotKept(format!("{} — {:?}", at.display(), why.why()));
         }
         self.applied = Some(tag.to_owned());
