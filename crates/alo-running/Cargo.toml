@@ -1,0 +1,31 @@
+[package]
+name = "alo-running"
+version = "0.0.1"
+description = "A command the person chose, run inside the sealed box the kernel locks down."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Everything here is a control group, a boundary the kernel holds and a program
+# started inside it. On any other host it compiles to nothing at all rather
+# than to a version of itself that pretends, which is `alo-bounding`'s argument
+# and the same one: a box that could be constructed on a machine that cannot
+# close it would be a type whose existence means nothing.
+[target.'cfg(target_os = "linux")'.dependencies]
+# The boundary, the control group and the bound. This crate starts a program
+# and that crate does not; ADR 0117 is why they are two crates.
+alo-bounding = { path = "../alo-bounding" }
+# Which of ADR 0064's three levels the person chose. Read, never decided here.
+alo-capability = { path = "../alo-capability" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
+
+# The small program that puts itself inside a box and then becomes the command.
+# ADR 0117 says why the admission is an ordinary program rather than a hook
+# between `fork` and `exec`: `pre_exec` is `unsafe`, `CommandExt::exec` is not.
+[[bin]]
+name = "alo-enter-the-box"
+path = "src/bin/alo-enter-the-box.rs"
