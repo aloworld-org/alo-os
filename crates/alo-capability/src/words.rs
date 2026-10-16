@@ -660,7 +660,56 @@ pub const ALWAYS_THE_INDICATOR: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 59] = [
+/// Nothing ran because what was asked for was not a runnable command.
+pub const NOTHING_RAN_NOT_A_COMMAND: Word = Word::saying(
+    "capability.running.not-a-command",
+    "nothing ran, because what was asked for was not a command this machine could run",
+)
+.noting(
+    "Read in a record, and shown to a person, when the agent asked to run something and nothing \
+     ran. The request itself was the problem rather than the machine: no full path to a program, \
+     or no such program on this machine, or nowhere named that the command would be allowed to \
+     reach. Nothing was attempted.",
+);
+
+/// Nothing ran because the box could not be built.
+pub const NOTHING_RAN_NO_BOX: Word = Word::saying(
+    "capability.running.no-box",
+    "nothing ran, because this machine could not build the box it runs commands in",
+)
+.noting(
+    "Read in a record, and shown to a person, when the agent asked to run something and nothing \
+     ran. The \"box\" is a confinement the operating system itself holds, so that a command can \
+     reach only what the person chose. The machine could not build one and would not run the \
+     command without it. It is a fault in the machine, not a refusal by any rule, and nothing \
+     was attempted.",
+);
+
+/// Nothing ran because the command could not be started.
+pub const NOTHING_RAN_WOULD_NOT_START: Word = Word::saying(
+    "capability.running.would-not-start",
+    "nothing ran, because the command could not be started",
+)
+.noting(
+    "Read in a record, and shown to a person, when the box was built and the command still did \
+     not start — or started and the machine then lost track of it. A fault in the machine rather \
+     than a refusal by any rule.",
+);
+
+/// Nothing ran because this is not how the person said commands may run.
+pub const NOTHING_RAN_NOT_THAT_WAY: Word = Word::saying(
+    "capability.running.not-that-way",
+    "nothing ran, because running a command this way is not what you chose",
+)
+.noting(
+    "Read in a record, and shown to a person, when something asked for a command to be run in a \
+     way that does not match how the person said commands may run on this machine. Their choice \
+     stands and nothing was attempted. It is not a warning they need to act on; it is the \
+     machine saying it did what they asked.",
+);
+
+/// Every string this crate can say, in the order a translator meets them.
+pub const EVERY_WORD: [Word; 63] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -716,6 +765,10 @@ pub const EVERY_WORD: [Word; 59] = [
     RUNS_IN_A_SEALED_BOX,
     RUNS_AFTER_ASKING,
     RUNS_AT_FULL_TRUST,
+    NOTHING_RAN_NOT_A_COMMAND,
+    NOTHING_RAN_NO_BOX,
+    NOTHING_RAN_WOULD_NOT_START,
+    NOTHING_RAN_NOT_THAT_WAY,
     WHAT_FULL_TRUST_COSTS,
     ALWAYS_THE_RECORD,
     ALWAYS_THE_SNAPSHOT,

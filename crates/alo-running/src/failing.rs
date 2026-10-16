@@ -14,6 +14,7 @@
 
 use std::path::PathBuf;
 
+use alo_capability::words;
 use thiserror::Error;
 
 /// Why a command was not run inside a box.
@@ -74,16 +75,84 @@ pub enum NotRun {
 
     /// The command ran, and the box could not be taken away afterwards.
     ///
-    /// **The machine is left changed by this one**, which is why it carries what
-    /// happened: a caller still has an account of the run to record, and
-    /// discarding it to report the cleanup failure would lose the more
-    /// important of the two.
-    #[error("the command ran, and its box could not be taken away: {why}")]
+    /// **The machine is left changed by this one**, and the command **ran** —
+    /// which is why it carries how the command ended. `WhereCommandsRun::ran`
+    /// writes the run down before reporting this, because a cleanup failure
+    /// recorded as *a command was not run* would be a record saying something
+    /// that did not happen about something that did.
+    ///
+    /// *The first version of this carried the whole account and was reached
+    /// through the refusal road, which would have written exactly that lie.*
+    #[error("the command ran and returned {ended}, and its box could not be taken away: {why}")]
     TheBoxWouldNotGoAway {
-        /// What the command did, which happened and is still true.
-        what_happened: Box<crate::WhatHappened>,
+        /// How the command ended, which happened and is still true.
+        ended: std::process::ExitStatus,
         /// Why the box is still there.
         #[source]
         why: alo_bounding::NotBounded,
     },
+
+    /// What happened could not be written down, so it did not happen.
+    ///
+    /// **A protection ADR 0064 calls always on is not one that may be skipped
+    /// because a disk was full.** A run whose record could not be written is
+    /// refused, which is `alo-bounding`'s rule about a boundary arriving here:
+    /// *a turn whose boundary cannot be applied does not run.*
+    ///
+    /// For a run that already happened there is nothing to undo, so this is
+    /// reported after the attempt rather than instead of it — and a caller
+    /// meeting one has a machine whose record is incomplete, which is the fact
+    /// a review wants.
+    ///
+    /// **Carried by its `Debug` rather than through `#[source]`**, because
+    /// `alo_keeping::NotKept` is a person-facing type with a `said(strings)`
+    /// method and implements neither `Display` nor `Error`. The sentence a
+    /// person reads comes from that method; this text is for whoever administers
+    /// the machine, which is what every other message in this file is for.
+    #[error("what happened could not be written down, so the run is refused: {0:?}")]
+    ItWasNotWrittenDown(alo_keeping::NotKept),
+}
+
+impl NotRun {
+    /// What a person is told when a command did not run.
+    ///
+    /// **Four sentences for eight refusals, and the grouping is the point.** A
+    /// person asking *why did nothing happen* needs to know whether the request
+    /// was unusable, whether their own choice stopped it, or whether the machine
+    /// failed — and does not need eight shades of the third. A surface that
+    /// wants the detail has the error itself; this is the sentence.
+    ///
+    /// **The words live in `alo-capability`, not here, and that is deliberate.**
+    /// `alo-saying` is the machine's one vocabulary and it ships every crate
+    /// that declares a word, which puts that crate inside the process an agent's
+    /// turn runs in. This crate holds the only `exec` in the repository
+    /// ([ADR 0117](../../../docs/decisions/0117-the-thing-that-starts-a-program-is-not-the-thing-that-bounds-a-turn.md)),
+    /// so a word declared here would put that `exec` on a turn's dependency
+    /// path. `alo-letting-go` guards the same hazard with a test of its own, for
+    /// its one privileged remover. `alo-capability` already declares the words
+    /// for the three levels and is already in that process, which is where
+    /// these belong: they are about the capability, not about the mechanism.
+    #[must_use]
+    pub const fn the_word(&self) -> alo_strings::Word {
+        match self {
+            // The request could not be a command on this machine.
+            Self::NotAnAbsoluteProgram(_) | Self::NoSuchProgram { .. } | Self::NothingToReach => {
+                words::NOTHING_RAN_NOT_A_COMMAND
+            }
+            // The person's own choice, and it is not a fault.
+            Self::NotTheSealedBox { .. } => words::NOTHING_RAN_NOT_THAT_WAY,
+            // The machine could not build the box, so it ran nothing.
+            Self::TheBoxWouldNotClose(_) => words::NOTHING_RAN_NO_BOX,
+            // The box was built and the command still did not run, or ran and
+            // was lost. `TheBoxWouldNotGoAway` is here because the command
+            // *did* run — what failed was taking the box away afterwards — and
+            // there is no fifth sentence for it: the person's news is the run,
+            // which `WhatHappened` carries, and this sentence is only reached
+            // where a caller asks this type what to say.
+            Self::ItWouldNotStart(_)
+            | Self::ItCouldNotBeWaitedFor(_)
+            | Self::TheBoxWouldNotGoAway { .. }
+            | Self::ItWasNotWrittenDown(_) => words::NOTHING_RAN_WOULD_NOT_START,
+        }
+    }
 }

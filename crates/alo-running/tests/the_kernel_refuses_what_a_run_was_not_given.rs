@@ -59,10 +59,13 @@
 use std::{
     fs,
     path::{Path, PathBuf},
+    time::SystemTime,
 };
 
 use alo_capability::HowCodeRuns;
-use alo_running::{ARun, NotRun, ran_with_the_helper_at};
+use alo_record::Record;
+use alo_running::{AskedToRun, NotRun, WhereCommandsRun};
+use alo_strings::Strings;
 
 #[path = "../../alo-bounding/tests/on_this_kernel/mod.rs"]
 mod on_this_kernel;
@@ -118,30 +121,63 @@ fn where_boxes_go() -> PathBuf {
     at
 }
 
+/// What came of one run: whether the command was happy, and what the record
+/// says about it.
+struct WhatCameOfIt {
+    /// Whether the command itself reported success.
+    happy: bool,
+    /// Everything the run wrote down.
+    kept: Record,
+}
+
 /// Reads `file` in a box bound to `may_reach`, and says what came of it.
-fn reading_in_a_box(named: &str, file: &Path, may_reach: Vec<PathBuf>) -> Result<bool, NotRun> {
+///
+/// **It keeps the record the run wrote**, which is the half of *every execution
+/// and every refusal leaves a record* that needs a real boundary — the refusal
+/// half runs on any machine and lives in
+/// `every_run_and_every_refusal_is_written_down.rs`.
+fn reading_in_a_box(
+    named: &str,
+    file: &Path,
+    may_reach: Vec<PathBuf>,
+) -> Result<WhatCameOfIt, NotRun> {
     let _order = on_this_kernel::one_at_a_time();
     let mut machine = AsAMachineHasIt::on_this_kernel(named);
     let boxes = where_boxes_go();
 
-    let run = ARun::checked(
-        HowCodeRuns::InASealedBox,
-        PathBuf::from("/bin/cat"),
-        vec![file.as_os_str().to_owned()],
-        may_reach,
-    )
-    .expect("reading a file with cat is a well-formed run");
+    let mut vocabulary = alo_strings::Vocabulary::empty();
+    alo_capability::declare_into(&mut vocabulary).expect("the capability words declare");
+    let strings = Strings::of(vocabulary);
 
-    let what_happened = ran_with_the_helper_at(
-        &mut machine.boundary,
-        &boxes,
-        named,
-        &run,
-        Path::new(HELPER),
-    );
+    let asked = AskedToRun {
+        chose: HowCodeRuns::InASealedBox,
+        program: PathBuf::from("/bin/cat"),
+        arguments: vec![file.as_os_str().to_owned()],
+        may_reach,
+    };
+
+    let mut kept = Record::default();
+    let what_happened = {
+        let mut where_they_run = WhereCommandsRun::with_the_helper_at(
+            &mut machine.boundary,
+            &boxes,
+            &mut kept,
+            Path::new(HELPER),
+        );
+        where_they_run.ran(
+            &alo_capability::Grantee::named("@terminal"),
+            named,
+            &asked,
+            &strings,
+            SystemTime::now(),
+        )
+    };
 
     drop(fs::remove_dir_all(&boxes));
-    what_happened.map(|happened| happened.the_command_was_happy())
+    what_happened.map(|happened| WhatCameOfIt {
+        happy: happened.the_command_was_happy(),
+        kept,
+    })
 }
 
 /// **A command reaches what its box was given.**
@@ -152,7 +188,7 @@ fn reading_in_a_box(named: &str, file: &Path, may_reach: Vec<PathBuf>) -> Result
 fn a_command_reaches_what_its_box_was_given() {
     let (folder, file) = a_folder_with_a_file_in_it("granted");
 
-    let happy = reading_in_a_box(
+    let came_of_it = reading_in_a_box(
         "granted",
         &file,
         vec![
@@ -164,9 +200,26 @@ fn a_command_reaches_what_its_box_was_given() {
     .expect("a run bound to the folder it reads should have happened");
 
     assert!(
-        happy,
+        came_of_it.happy,
         "a command bound to the folder it reads could not read it, so the bound is wrong \
          rather than the refusal below being right"
+    );
+
+    // **And the run was written down**, which is the other half of the
+    // guarantee and the half that needs a kernel to reach.
+    let kept: Vec<_> = came_of_it.kept.everything().collect();
+    assert_eq!(kept.len(), 1, "a run left {} entries", kept.len());
+    let entry = kept.first().expect("a run left one entry");
+    assert!(matches!(
+        entry.happened(),
+        alo_record::Happened::RanACommand {
+            the_kernel_was_holding_it: true,
+            ..
+        }
+    ));
+    assert!(
+        !entry.happened().was_stopped(),
+        "a command that ran was written down as a refusal"
     );
 
     drop(fs::remove_dir_all(&folder));
@@ -182,7 +235,7 @@ fn the_kernel_refuses_what_its_box_was_not_given() {
     let (folder, file) = a_folder_with_a_file_in_it("refused");
     let (elsewhere, _) = a_folder_with_a_file_in_it("elsewhere");
 
-    let happy = reading_in_a_box(
+    let came_of_it = reading_in_a_box(
         "refused",
         &file,
         vec![
@@ -197,9 +250,19 @@ fn the_kernel_refuses_what_its_box_was_not_given() {
     .expect("a run bound to somewhere else should still have happened");
 
     assert!(
-        !happy,
+        !came_of_it.happy,
         "a command read a file its box was never given, so the boundary is not holding"
     );
+
+    // It ran and was refused by the kernel, so it is a **run** in the record
+    // with a failing status — not a refusal, which is what a request that never
+    // started would be.
+    let kept: Vec<_> = came_of_it.kept.everything().collect();
+    assert_eq!(kept.len(), 1);
+    assert!(matches!(
+        kept.first().expect("a run left one entry").happened(),
+        alo_record::Happened::RanACommand { .. }
+    ));
 
     drop(fs::remove_dir_all(&folder));
     drop(fs::remove_dir_all(&elsewhere));
