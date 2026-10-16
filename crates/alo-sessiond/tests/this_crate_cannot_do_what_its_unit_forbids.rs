@@ -61,6 +61,37 @@ const THE_UNIT: &str = "image/usr/lib/systemd/system/alo-sessiond.service";
 /// Ways code becomes somebody else.
 const BECOMING_SOMEBODY_ELSE: [&str; 3] = [".uid(", ".gid(", "setuid"];
 
+/// Whether a line asks the kernel to change a file's **owner**.
+///
+/// **This was missing, and the list above would not have caught it.** On
+/// 2026-10-16 this crate was nearly taught to give a person their own directory
+/// under `/var/lib/alo/undo` with `rustix::fs::chown(at, Some(uid), None)` —
+/// which needs `CAP_CHOWN`, which this unit grants no more than any other
+/// capability. It compiled and the modes were tested; what stopped it was this
+/// test firing on a `.uid()` **read** in a neighbouring test file, which is a
+/// false positive catching a real fault by accident. Without that accident it
+/// would have shipped and failed on a booted machine, which is the exact story
+/// this file's own header tells about `Command::uid()`.
+///
+/// # Why a bare `chown` cannot be the thing looked for
+///
+/// Because this crate makes a legitimate one. `chown` changing **only the
+/// group** is allowed without any capability when the process is already in
+/// that group, and `unix.rs` relies on it and explains it: that is how a socket
+/// root created becomes a socket the sign-in surface can connect to. Forbidding
+/// `chown` outright would fail on code that is correct, which is how a guard
+/// gets weakened by whoever meets it next.
+///
+/// So what is looked for is the **owner argument**. The permitted shape here is
+/// `chown(path, None, Some(group))`; a call whose owner is anything but `None`
+/// is asking for a capability the unit does not grant. Measured the same day, as
+/// root with `capsh --drop=all`: changing an owner answered *Operation not
+/// permitted* and the owner did not move, while the same call with capabilities
+/// changed it.
+fn changes_an_owner(code: &str) -> bool {
+    code.contains("chown(") && !code.contains(", None,")
+}
+
 /// Every `.rs` file in this crate's `src`.
 fn every_source(at: &Path) -> Vec<PathBuf> {
     let mut found = Vec::new();
@@ -114,15 +145,17 @@ fn nothing_here_becomes_another_user_while_its_unit_grants_no_capability() {
         let text = std::fs::read_to_string(&file).expect("this crate's own source");
         for (number, line) in text.lines().enumerate() {
             let code = line.split("//").next().unwrap_or(line);
-            for way in BECOMING_SOMEBODY_ELSE {
-                if code.contains(way) {
-                    asking.push(format!(
-                        "{}:{}  {}",
-                        file.strip_prefix(&repository).unwrap_or(&file).display(),
-                        number + 1,
-                        line.trim()
-                    ));
-                }
+            let named = BECOMING_SOMEBODY_ELSE
+                .into_iter()
+                .any(|way| code.contains(way))
+                || changes_an_owner(code);
+            if named {
+                asking.push(format!(
+                    "{}:{}  {}",
+                    file.strip_prefix(&repository).unwrap_or(&file).display(),
+                    number + 1,
+                    line.trim()
+                ));
             }
         }
     }
@@ -140,4 +173,50 @@ fn nothing_here_becomes_another_user_while_its_unit_grants_no_capability() {
          somewhere that already has the privilege, or it does not need to change user at all.",
         asking.join("\n  ")
     );
+}
+
+/// **The owner check catches the call that needs a capability and permits the
+/// one that does not.**
+///
+/// A source test that finds nothing has two indistinguishable outcomes: nothing
+/// is there, or nothing was looked for. This is the half that says which — and
+/// it matters more than usual here, because the permitted form and the forbidden
+/// one are the same function with a different argument.
+#[test]
+fn the_owner_check_tells_the_two_chowns_apart() {
+    for forbidden in [
+        "rustix::fs::chown(at, Some(rustix::fs::Uid::from_raw(owner)), None)",
+        "chown(path, Some(uid), Some(gid))?;",
+        "        fs::chown(&at, Some(person), None).map_err(…)",
+    ] {
+        assert!(
+            changes_an_owner(forbidden),
+            "a call that changes an owner was not caught: {forbidden}"
+        );
+    }
+
+    for permitted in [
+        // What `unix.rs` really does, and may: the group only, into a group this
+        // process is already in.
+        "rustix::fs::chown(path, None, Some(rustix::fs::Gid::from_raw(group)))?;",
+        "chown(&socket, None, Some(ours))",
+    ] {
+        assert!(
+            !changes_an_owner(permitted),
+            "a group-only chown was called an owner change, which would fail this crate's own \
+             correct code: {permitted}"
+        );
+    }
+
+    // And it is about `chown` rather than the word owner appearing anywhere.
+    for ordinary in [
+        "/// The group this process is in, which is the group its unit file named.",
+        "let owner = fs::metadata(&at)?.uid();",
+        "pub fn our_group() -> u32 {",
+    ] {
+        assert!(
+            !changes_an_owner(ordinary),
+            "an ordinary line was called an owner change: {ordinary}"
+        );
+    }
 }
