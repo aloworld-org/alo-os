@@ -72,6 +72,50 @@ impl Account {
         Ok(Self { name, uid, secret })
     }
 
+    /// This account's password set again, with a fresh salt.
+    ///
+    /// # Why this exists, and why it takes no old password
+    ///
+    /// A person who has forgotten theirs cannot supply it. That is the whole
+    /// case, and `ROADMAP.md` makes it a launch item in the owner's words:
+    /// *a forgotten password never loses a person's data.*
+    ///
+    /// **Nothing was ever lost.** The password is an Argon2id hash and not a
+    /// key — ADR 0054 encrypts the disk against a chip-sealed PIN or a
+    /// passphrase, and the recovery key is written down *and typed back*
+    /// before an install finishes. So a person stands at their own sign-in
+    /// screen with every byte intact, on a disk that opens, and cannot get in.
+    /// It is a wall, not a loss, and this is the door through it.
+    ///
+    /// **And it hands nobody any reach they did not have.** Whoever holds the
+    /// recovery key can already read the whole root filesystem by opening the
+    /// disk; letting them set a new password grants them nothing further. The
+    /// authority to call this is the recovery key, and it is checked before
+    /// this is reached rather than here — this type knows about names,
+    /// numbers and hashes, and deliberately nothing about who is asking.
+    ///
+    /// The old hash is replaced and not kept. A new salt is drawn, so the same
+    /// password set twice does not produce the same bytes.
+    ///
+    /// # Errors
+    ///
+    /// [`NotCreated::NoPassword`] for an empty one, and
+    /// [`NotCreated::CouldNotHash`] when the machine's randomness is
+    /// unreachable. **The account is as it was in both**, which is what makes
+    /// a failed attempt safe to retry.
+    pub fn password_set_again(&mut self, password: &str) -> Result<(), NotCreated> {
+        if password.is_empty() {
+            return Err(NotCreated::NoPassword);
+        }
+        // **Hashed before anything is replaced.** A machine whose randomness is
+        // unreachable would otherwise leave the account with no usable secret,
+        // which is the one outcome worse than the forgotten password this
+        // exists to undo.
+        let hashed = Hashed::of(password)?;
+        self.secret = hashed;
+        Ok(())
+    }
+
     /// What it is called.
     #[must_use]
     pub fn name(&self) -> &str {
