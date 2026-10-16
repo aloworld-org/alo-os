@@ -69,13 +69,34 @@ mod running {
             }
         };
 
-        let keyring = match TheKeyring::opened(&bus) {
-            Ok(keyring) => keyring,
-            Err(why) => {
-                eprintln!("alo-portald: the keyring on that bus could not be opened: {why:?}");
-                return ExitCode::FAILURE;
-            }
-        };
+        // **A machine with no keyring still opens files.**
+        //
+        // This exited here until 2026-10-16, and a booted machine showed what
+        // that costs: the image installs no Secret Service at all, so there
+        // was never a keyring to open, and the service could only crash-loop —
+        // `restart counter is at 78` by the time anybody looked.
+        //
+        // The keyring answers **one** portal of several. The file chooser,
+        // opening a URI and the rest do not touch it. So one absent capability
+        // took down every portal, and a person could not open a file dialog on
+        // a machine whose only fault was having nowhere to keep a secret.
+        //
+        // Now the Secret portal answers `Unavailable` — the word that contract
+        // already had for *the keyring is not there* — and everything else
+        // works. An application asking for its secret is told no; it is not
+        // told the portal is missing, because it is not.
+        let keyring: Arc<dyn alo_portals::keeping_secrets::KeepsSecrets> =
+            match TheKeyring::opened(&bus) {
+                Ok(keyring) => Arc::new(keyring),
+                Err(why) => {
+                    eprintln!(
+                        "alo-portald: this machine has no keyring to answer the Secret portal \
+                         from ({why:?}), so a secret will be refused as unavailable. Every other \
+                         portal is unaffected and this service is staying up."
+                    );
+                    Arc::new(alo_portals::no_keyring_here::NoKeyringHere)
+                }
+            };
 
         // **Where the answers go is `alo-portals`' decision, not this crate's.**
         // `ThePlace` reads it off this login's own variables — the state home, or
@@ -174,7 +195,7 @@ mod running {
 
         let backend = Backend::answering_from(
             Arc::new(machine),
-            Arc::new(keyring),
+            keyring,
             Sandboxes::under(THE_PROCESSES),
             Arc::new(record),
         );
