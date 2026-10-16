@@ -220,12 +220,12 @@ pub const A_COMMAND_WAS_NOT_RUN: Word = Word::saying(
     "the agent asked to run a command and it did not run",
 )
 .noting(
-    "Read at the head of one line of a record somebody is reading back. The assistant asked to run \
-     a command on this machine and nothing ran — because of what the person had chosen about \
-     running commands, because the request was not well formed, or because the machine could not \
-     build the box it runs them in. Which of those is shown after it, in the words the person was \
-     shown at the time. What it would have run is shown; what it would have been given is \
-     deliberately not kept.",
+    "Read at the head of one line of a record somebody is reading back — the agent being the \
+     assistant built into alo OS and not a person. It asked to run a command on this machine and \
+     nothing ran: because of what the person had chosen about running commands, because the \
+     request was not well formed, or because the machine could not build the box it runs them in. \
+     Which of those is shown after it, in the words the person was shown at the time. What it \
+     would have run is shown; what it would have been given is deliberately not kept.",
 );
 
 /// Something left this machine.

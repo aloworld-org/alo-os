@@ -313,7 +313,19 @@ fn the_seam_puts_nothing_back() {
         "fs::remove",
         "fs::write",
         "fs::create",
-        "Command",
+        // **`Command::` and not `Command`**, because this crate's own
+        // vocabulary now contains the word: `WhatWasDone::ACommandRan` is a
+        // command the agent ran, and naming a thing is not starting one.
+        //
+        // This is the shape `alo-bounding`'s own source guard already records
+        // about `exec`: *execution is this repository's own word for what a
+        // turn does, so a function named after one failed a test about
+        // `execve`. The word is not going away, and skipping the file it
+        // appeared in would have been the gate weakened to pass it.* So the
+        // matcher names the call: `Command::` still catches `Command::new`
+        // and `std::process::Command::new` alike, and nothing that merely
+        // says the word.
+        "Command::",
         "reflink",
         "TheBase",
     ] {
