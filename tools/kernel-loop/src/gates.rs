@@ -195,6 +195,16 @@ pub const EVERY_GATE: &[Gate] = &[
     // BPF programme, but READY below still demands the mount. That is now a
     // stricter requirement than this gate needs, and it is left alone here on
     // purpose rather than changed in the same commit that changes the runner.
+    //
+    // **One test binary is excluded rather than its whole package**, which is why
+    // the filter names a binary and not a fourth `package(...)`. `alo-running`'s
+    // kernel test imposes a boundary and runs a command inside it, so it needs
+    // root and `bpf` among the modules the kernel *started* — which this runner
+    // does not have. The rest of that crate is arithmetic over paths and a source
+    // guard, it runs anywhere, and excluding the package would take fourteen
+    // tests out of the gate in order to exclude two. It runs under
+    // `--profile boundary` after a merge, with the boundary suite, on the machine
+    // that can run it.
     Gate {
         named: "the workspace's tests",
         program: "cargo",
@@ -206,6 +216,7 @@ pub const EVERY_GATE: &[Gate] = &[
             "gates",
             "-E",
             "not (package(alo-bounding) + package(alo-agentd) + package(alo-boundaryd)) \
+             and not binary(the_kernel_refuses_what_a_run_was_not_given) \
              and not test(=naming_the_root_of_the_machine_stops_at_each_mount_point_and_says_so)",
         ],
         within: ".",

@@ -1203,6 +1203,20 @@ find.*
   makes it in, the surface they make it on, and the three levels for *running*
   commands, of which the sealed box needs the kernel boundary
   ([ADR 0013](decisions/0013-the-grant-is-enforced-by-the-kernel.md)).
+  **The sealed box runs a command as of 2026-10-16.** `alo-running` is the box,
+  in a crate of its own because `alo-bounding` guarantees — with a test over its
+  own source — that it starts no program; ADR 0117 is that decision. A command
+  runs confined to the folders it was given and the kernel refuses the rest,
+  measured end to end on a real kernel in
+  `the_kernel_refuses_what_a_run_was_not_given.rs`: the same command, the same
+  box, one line different in the bound, reading the file in one case and
+  `EACCES` in the other. **The kernel boundary is no longer what this waits
+  on.** What is owed after it: the three protections ADR 0064 keeps on at every
+  level are the caller's, and nothing calls this yet — the record, the snapshot
+  taken first, and the egress indicator — as are the setting and the surface
+  above. **And where a box's control group lives on a booted machine is open**:
+  it cannot go under `alo-bounding`'s turn root, which was measured rather than
+  reasoned about and is in `docs/quirks.md`.
 - Update checking can be turned off, saying that security fixes stop arriving while it is off
 - *Trust devices on this network*, off by default, saying that it also trusts guests' phones and every device on the network
 - A provider address that is not https can be allowed after a plain warning that the key crosses the network readable

@@ -148,6 +148,7 @@ RUN cargo build --release --target ${THE_TARGET} \
       --package alo-portald \
       --package alo-software \
       --package alo-converting \
+      --package alo-running \
       --package alo-agent
 
 # ---------------------------------------------------------------------------
@@ -288,6 +289,19 @@ ARG THE_TARGET
 # would have found the one privileged component alo OS has.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-boundaryd /usr/libexec/alo-boundaryd
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-agentd /usr/bin/alo-agentd
+
+# The thing that puts a command inside its sealed box, in libexec for the
+# strongest version of the reason the loader is there: nobody runs it by hand,
+# it is started only by `alo-running`, and a person who found it on their PATH
+# would have found a program whose whole purpose is to join a control group and
+# become something else. ADR 0117 is why it is a program at all rather than a
+# hook between `fork` and `exec` — `pre_exec` is `unsafe` and the workspace
+# forbids that outright.
+#
+# `alo_running::THE_HELPER` is this path, and
+# `the_helper_is_the_program_this_crate_builds` is the test that keeps the
+# constant and the binary's name one fact rather than two.
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-enter-the-box /usr/libexec/alo-enter-the-box
 
 # **The agent itself, in `bin` rather than `libexec`, because something other
 # than systemd runs it.**

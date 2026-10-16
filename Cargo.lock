@@ -1444,6 +1444,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-running"
+version = "0.0.1"
+dependencies = [
+ "alo-bounding",
+ "alo-capability",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-saying"
 version = "0.0.1"
 dependencies = [

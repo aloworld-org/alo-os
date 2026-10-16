@@ -8134,3 +8134,93 @@ meaningful rather than a failure: it means **nothing is running** and the person
 is at a prompt.
 `crates/alo-terminal/src/what_the_kernel_says_tests.rs` holds both cases, the
 command in front and the shell in front, so neither can regress into the other.
+
+## A process in a threaded control group never appears in `cgroup.procs` (2026-10-16)
+
+**What was expected.** `Cgroup::admit` writes a process number into
+`cgroup.procs`, so reading that file back should show the process is in the
+group. It is the obvious way to check an admission worked.
+
+**What happens.** The write succeeds, the process really moves, and
+`cgroup.procs` reads back **empty**. The task is listed in `cgroup.threads`
+instead. Measured on kernel 7.0.0-31-generic, cgroup v2:
+
+```text
+write pid to <threaded group>/cgroup.procs   exit 0, no stderr
+<threaded group>/cgroup.procs                []            <- empty
+<threaded group>/cgroup.threads              [1960423]     <- there
+/proc/1960423/cgroup                 0::/alo-dom-.../turn  <- moved
+```
+
+**Why it matters.** The obvious verification reports failure about something
+that worked, and it reports it the way a silent no-op looks: a successful write
+beside an empty readback. This was nearly written up as a live fault in the
+boundary. `/proc/PID/cgroup` is the control that tells the two apart, and it is
+the field to read.
+
+**What follows.** Ask `/proc/PID/cgroup`, or `cgroup.threads`, never
+`cgroup.procs`, about a group that holds threads. A run of a whole process
+should use an ordinary domain group anyway, where `cgroup.procs` answers
+normally — which is the next entry.
+
+## A domain control group beside a threaded one refuses every process (2026-10-16)
+
+**What was expected.** `alo-bounding`'s `Turns` makes its groups under one root,
+so a sealed box for a whole process could be made beside them with
+`Cgroup::made_under` and hold that process.
+
+**What happens.** It cannot hold anything. `Turns::under` makes its `home` group
+threaded, which makes the root above it `domain threaded`; a domain group made
+beside that `home` comes out **`domain invalid`** and refuses a process
+outright. Measured the same day:
+
+```text
+mkdir root/home root/box
+echo threaded > root/home/cgroup.type     ok
+cat root/cgroup.type                      domain threaded
+cat root/box/cgroup.type                  domain invalid   <- cannot hold a process
+echo $PID > root/box/cgroup.procs         REFUSED
+/proc/$PID/cgroup                         unchanged
+```
+
+**Why it matters.** The failure is at the *first run on a real machine*, not at
+compile time and not in any test that does not make a real control group. A
+runner written to put its boxes under the turn root looks correct, passes
+review, and refuses every command.
+
+**What follows.** `alo-running` takes the folder its boxes live in as an
+argument rather than deriving it from `Turns`, and its own kernel test makes an
+ordinary group at the root of the hierarchy — which is what `alo-bounding`'s
+kernel tests already did, for this reason. **Where that folder is on a machine
+running alo OS is still open**: it depends on what systemd delegates to the
+service, and nothing has measured it on a booted image yet.
+
+## A dynamically linked command needs its libraries inside the boundary (2026-10-16)
+
+**What was expected.** A sealed box bound to the project folder runs a command
+that works on the project.
+
+**What happens.** The command never starts. `exec` happens *after* the process
+is admitted to its box, so everything the dynamic loader opens — `ld.so`,
+`libc`, every other library — is opened **inside** the boundary and refused. The
+command dies before its first instruction, and what a reader sees is a run that
+produced nothing rather than a boundary that looks wrong.
+
+Measured by `crates/alo-running/tests/the_kernel_refuses_what_a_run_was_not_given.rs`,
+which binds three places to read one file: the folder being read, `/usr/bin`
+for `cat` itself, and the library folder. Remove the third and both tests fail
+identically, whatever the bound says about the file.
+
+**Why it matters.** `alo_bounding_map::PLACES` is 4, so two of a run's four
+places are spent on being able to start at all. A box that *looks* like it grants
+the project and nothing else actually grants the project, the command and the
+libraries — which is worth knowing before somebody promises a person otherwise.
+
+**And it is the fault `CLAUDE.md` already has a story about.** A converter that
+passed `test -x` and died at launch on eleven missing libraries is this, one
+layer down. The check that stands in for the thing here would be *the bound
+contains the project*, and the thing is *the command runs*.
+
+**What follows.** `/lib` is a link to `/usr/lib` on some machines and a folder on
+others, so the library folder is resolved rather than assumed — a bound made of
+the link would be a bound around the link.
