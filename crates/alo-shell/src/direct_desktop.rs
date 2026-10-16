@@ -432,6 +432,43 @@ impl crate::DirectSession {
                         // the first had already begun being claimed.
                         let layout = desktop.the_layout_they_left();
                         let left = crate::WhereTheyLeftIt::from(layout.clone());
+                        // **What this machine is drawing to, said once.**
+                        //
+                        // The field below is seeded with whatever is already
+                        // plugged in, deliberately — seeded empty it would
+                        // report every display as an arrival. The consequence
+                        // nobody had noticed is that the reporting block near
+                        // the end of this file runs **only** on a change, so a
+                        // machine with one screen that is never unplugged
+                        // never says what it draws to **at all**. Not rarely:
+                        // never, on the commonest machine there is.
+                        //
+                        // That block calls itself *the machine's own log, for
+                        // whoever is reading one*. Something that speaks only
+                        // about exceptions is not an account of state. So the
+                        // state is said here, once, and changes go on being
+                        // reported there.
+                        //
+                        // *Found by the desktop lane on 2026-10-16, reading a
+                        // boot log for something else and asking why a line
+                        // they expected was absent.*
+                        let seeded = crate::a_screen_arrives_or_leaves::asked_of(
+                            &crate::drm_inventory::Inventory(fd),
+                        );
+                        match &seeded {
+                            Ok(displays) if !displays.is_empty() => eprintln!(
+                                "alo-shell: this machine is drawing to {} display(s): {displays:?}",
+                                displays.len()
+                            ),
+                            Ok(_) => eprintln!(
+                                "alo-shell: this machine reports no displays, so there is \
+                                 nothing to draw to yet"
+                            ),
+                            Err(why) => eprintln!(
+                                "alo-shell: this machine would not say what is plugged in: \
+                                 {why}"
+                            ),
+                        }
                         Desk {
                             input,
                             others,
@@ -439,11 +476,9 @@ impl crate::DirectSession {
                             // Asked of the same device the displays were just
                             // discovered on, so the first frame compares like
                             // with like.
-                            plugged_in: crate::a_screen_arrives_or_leaves::asked_of(
-                                &crate::drm_inventory::Inventory(fd),
-                            )
-                            .map(crate::a_screen_arrives_or_leaves::WhatIsPluggedIn::these)
-                            .unwrap_or_default(),
+                            plugged_in: seeded
+                                .map(crate::a_screen_arrives_or_leaves::WhatIsPluggedIn::these)
+                                .unwrap_or_default(),
                             desktop,
                             // **The door a person's words go out of** (ADR
                             // 0109), at the path the decision published. A
