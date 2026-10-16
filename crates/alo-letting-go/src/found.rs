@@ -23,10 +23,91 @@
 //! tidied.** The walk goes on, which is why what it stepped over is a list
 //! beside the answer rather than an error instead of it.
 
+use std::os::unix::fs::MetadataExt as _;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 use crate::the_folder::{THE_TURN, THEIRS, TheTurn, Theirs};
+
+/// Whether the person who owns `directory` also owns `settings`.
+///
+/// `directory` is one person's directory under `/var/lib/alo/undo`, whose owner
+/// is who that directory belongs to; `settings` is the folder their own
+/// `theirs.json` named. `docs/contracts/kept-undo-folder.md` requires them to be
+/// the same person, and this is the requirement.
+///
+/// **It confirms, and does not require existence.** A settings folder that is
+/// not there is allowed through, because a person who never changed their window
+/// has none and stepping over their directory would leave their snapshots
+/// forever — see the reason beside that arm.
+///
+/// **What it does not close.** The folder is confirmed and then read, so a
+/// person could swap what the path names in between. For a unit that reads a
+/// retention window out of it that is an acceptable window, and it is said here
+/// rather than left for somebody to discover: the check stops a person pointing
+/// root at a path that was never theirs, not a person racing their own.
+///
+/// # Errors
+/// The sentence to step over with — one for a disk that would not say who owns
+/// either, and one for an owner that is not the same person. Both are refusals:
+/// a path this cannot confirm is a path this unit does not follow.
+fn the_same_person_owns(directory: &Path, settings: &Path) -> Result<(), String> {
+    let theirs = directory.metadata().map_err(|why| {
+        format!(
+            "{} would not say who it belongs to, so the settings folder it names was not \
+             followed: {why}",
+            directory.display()
+        )
+    })?;
+    let named = match settings.metadata() {
+        Ok(named) => named,
+        // **A settings folder that is not there is not a refusal.**
+        //
+        // A person who never changed their window has no `undo.toml` and may
+        // have no `alo` folder at all, which is the commonest case there is.
+        // Refusing here would step over their whole directory, so their
+        // snapshots would never be swept and their disk would fill — which is
+        // worse than the hole this check closes, and is what the first version
+        // of it did until three of this crate's own tests said so.
+        //
+        // There is nothing to follow and so nothing to confirm. What reads the
+        // window handles an absent file already, and handles it the same way
+        // whether the folder is missing or empty.
+        Err(why) if why.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(why) => {
+            return Err(format!(
+                "{} names {} as a settings folder, which would not say who it belongs to: {why}",
+                directory.display(),
+                settings.display()
+            ));
+        }
+    };
+    whether_the_same_person_owns(directory, theirs.uid(), settings, named.uid())
+}
+
+/// The comparison itself, with the two owners already read.
+///
+/// **Separate from the reading so that it can be tested either way round.** The
+/// suite runs as the person on a lane and as root in CI, so a fixture built out
+/// of *a path whose owner differs from mine* is a fixture that means one thing
+/// here and another there — and a test that quietly stopped distinguishing the
+/// two cases would be the colour of a pass. Two numbers have no such problem.
+fn whether_the_same_person_owns(
+    directory: &Path,
+    theirs: u32,
+    settings: &Path,
+    named: u32,
+) -> Result<(), String> {
+    if theirs == named {
+        return Ok(());
+    }
+    Err(format!(
+        "{} belongs to {theirs} and names {} as a settings folder, which belongs to {named} — a \
+         person's settings folder has to be their own",
+        directory.display(),
+        settings.display()
+    ))
+}
 
 /// One kept turn, found on the disk.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -161,6 +242,24 @@ impl Everyone {
                 return None;
             }
         };
+
+        // **The settings folder a person named has to be theirs.**
+        //
+        // This file is written by the person's own session — the folder is
+        // `0711` and their directory inside it is theirs
+        // ([ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md)
+        // term 8) — and this unit runs as root and is about to read `undo.toml`
+        // from wherever it says. Absolute was the only thing checked, so one
+        // person could make root follow an absolute path of their choosing.
+        //
+        // The owner it is checked against is **the uid that owns this person's
+        // own directory**, which term 8 makes authoritative. That is why no
+        // guess about where homes live is needed and no list of the people on
+        // the machine: the disk says who this directory belongs to.
+        if let Err(why) = the_same_person_owns(at, theirs.settings()) {
+            stepped_over.push(why);
+            return None;
+        }
 
         let directories = match directories_in(at) {
             Ok(directories) => directories,
@@ -309,6 +408,64 @@ mod tests {
         assert_eq!(everyone.whose()[0].at(), ada);
         assert_eq!(everyone.stepped_over().len(), 1);
         assert!(everyone.stepped_over()[0].contains("absolute"));
+    }
+
+    /// **A settings folder somebody else owns is refused**, which is the
+    /// privilege boundary this check exists for: the file naming it is written
+    /// by the person's own session and a root unit then reads `undo.toml` from
+    /// wherever it says.
+    ///
+    /// Asserted on the two owners rather than on two real paths, for the reason
+    /// `whether_the_same_person_owns` gives: the suite runs as the person here
+    /// and as root in CI, so *a path owned by somebody other than me* is not
+    /// the same fixture in both places.
+    #[test]
+    fn a_settings_folder_somebody_else_owns_is_refused() {
+        let under = Path::new("/var/lib/alo/undo/ada");
+        let named = Path::new("/root/.config/alo");
+
+        let refused = super::whether_the_same_person_owns(under, 1000, named, 0).unwrap_err();
+        assert!(refused.contains("1000"), "{refused}");
+        assert!(refused.contains("belongs to 0"), "{refused}");
+        assert!(refused.contains("has to be their own"), "{refused}");
+
+        // The control, and it is the case that must keep working: the ordinary
+        // person whose settings folder is their own.
+        super::whether_the_same_person_owns(
+            under,
+            1000,
+            Path::new("/var/home/ada/.config/alo"),
+            1000,
+        )
+        .unwrap();
+    }
+
+    /// **A settings folder that is not there is not a refusal.**
+    ///
+    /// The commonest case there is: a person who never changed their window has
+    /// no `undo.toml` and may have no `alo` folder at all. Refusing would step
+    /// over their whole directory, so their snapshots would never be swept and
+    /// their disk would fill — worse than the hole the check closes, and what
+    /// the first version of it did until three of this crate's own tests said
+    /// so.
+    #[test]
+    fn a_settings_folder_that_is_not_there_is_followed_by_nothing_and_refused_by_nothing() {
+        let under = a_folder("no-settings").join("undo");
+        let ada = one_person(&under, "ada", "/nowhere/at/all/alo-no-such-settings");
+        one_kept_turn(&ada, "one", noon(), "move March.pdf");
+
+        let everyone = Everyone::under(&under);
+        assert_eq!(
+            everyone.whose().len(),
+            1,
+            "a person whose settings folder does not exist was stepped over: {:?}",
+            everyone.stepped_over()
+        );
+        assert!(
+            everyone.stepped_over().is_empty(),
+            "{:?}",
+            everyone.stepped_over()
+        );
     }
 
     /// **A person's directory with no `theirs.json` is stepped over**: without

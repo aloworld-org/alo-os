@@ -138,15 +138,35 @@ alternatives the designer parked, not deletions.
 the 1038×706 transcript is unconditional, which is what the code already
 builds, and nothing in the window is waiting on this.
 
-**Still unanswered: the condition.** A flag says what the default is; it does
-not say what turns the strip on. That question is now a narrow one — *when does
-a second session appear in the strip* — rather than a contradiction blocking the
-window, and it is the owner's to settle when the strip is wanted.
+**Settled 2026-10-16: the condition is not a question yet, and this closes it
+rather than answering it.** It was recorded here as *the owner's to settle when
+the strip is wanted*, which read as a decision waiting on somebody. It is not.
 
-**So the sessions strip is not built from this design.** Not because the file
-contradicts itself, but because the file shows it drawn nowhere, and
-`docs/features.md` carries no line for it. Building a surface the design
+*When does a second session appear in the strip* presupposes **several sessions
+inside one terminal window**, and `docs/features.md` promises that nowhere —
+searched for a sessions strip and for a second session, **nought hits**. So
+there is no promise whose condition this would be, and naming one would be
+deciding a feature rather than resolving an ambiguity. `CLAUDE.md`: *nothing
+gets built that isn't in `docs/features.md` with a tier*, and *when the answer
+is not obvious, it is scope*.
+
+**The plural that is promised is a different plural.** *A project you come back
+to is where you left it — its terminals, folders, launch commands and related
+windows* is several terminal **windows** restored in a Place, which is the
+canvas's doing and wants no strip inside a window. A reader meeting *terminals*
+there and a hidden `Sessions` frame here could join the two into a feature
+neither says; they are unrelated, and that is written down because the join is
+the easy mistake.
+
+**So the sessions strip is not built from this design**, and nothing is waiting
+on anybody. Not because the file contradicts itself — it is consistent, and the
+three readings above agree — but because the file shows the strip drawn nowhere
+and the scope list carries no line for it. Building a surface the design
 switched off in every frame it drew would be a promise nobody made.
+
+**What would reopen it** is one line in `docs/features.md` with a tier, saying
+that a terminal window holds more than one session. The condition becomes a real
+question the moment that exists, and not before.
 
 ## The transcript is the protected region, and it is one size
 

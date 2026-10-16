@@ -62,6 +62,24 @@
 //! **Taking a bracket.** That is `alo-turn`'s, at the moment a changing turn
 //! begins, and it needs no capability. This crate only ever removes.
 //!
+//! **And nothing takes one yet** — measured 2026-10-16, which is worth saying
+//! here because this sentence reads as a description of a machine that exists.
+//! `alo-turn` names no bracket and no snapshot; nothing in the workspace creates
+//! a `btrfs` subvolume snapshot; and nothing creates `/var/lib/alo/undo` at all,
+//! there being no tmpfiles entry, no `StateDirectory=` and no line in the image.
+//! So the window, the person's surface and this remover are built, and the thing
+//! that would give them something to work on is not.
+//!
+//! *Taking one was also impossible until that day*, and not for want of a
+//! capability: `docs/contracts/kept-undo-folder.md` gave the folder as
+//! `0700 root:root`, which the person's own session cannot traverse, while the
+//! same document says that session is what writes `theirs.json` into it.
+//! [ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md) term 8
+//! is the amendment — `0711` on the folder, each person's directory their own —
+//! and term 9 is what follows from it: everything below a person's directory is
+//! **that person's own writing**, read by this crate as root, which is why
+//! `crate::found` checks that the settings folder they name is owned by them.
+//!
 //! **Deciding a window.** `alo_keeping_up::HowFarBack` is the one answer to
 //! *what does seven days or fifty changing turns still reach*, and nothing here
 //! works it out again.
