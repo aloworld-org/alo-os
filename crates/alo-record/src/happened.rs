@@ -378,6 +378,72 @@ pub enum Happened {
         /// after it.
         machine: Line,
     },
+    /// A command the person allowed the agent to run, run inside a sealed box.
+    ///
+    /// [ADR 0064](../../../docs/decisions/0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md)
+    /// keeps the record on at **every** one of its three levels, and this is
+    /// what it writes. ADR 0117 built the box; this is the entry that makes the
+    /// first of that ADR's three always-on protections true rather than
+    /// available.
+    ///
+    /// **It is not a [`Happened::Ran`], and the difference is the point.** That
+    /// one is a verb from the broker's closed list, redeemed from an approval
+    /// and checked against grants. This is a **program**, named in the moment,
+    /// which ADR 0064 is explicit is not a verb — so it has no `from_approval`
+    /// and no `against`, because there was no approval to redeem and no grant to
+    /// check. A shape that carried them would be a run wearing a verb's clothes,
+    /// and a reader counting verb executions would count this among them.
+    ///
+    /// **What the kernel was holding is kept.** `docs/features.md` promises that
+    /// at full trust a run whose boundary could not be applied may happen if the
+    /// person chooses, *told that the kernel is not watching it, and the record
+    /// says so*. A record that could not tell the two apart could not keep that
+    /// promise, so the field is here from the first entry ever written.
+    ///
+    /// Additive, and `format` stays `1` —
+    /// `docs/contracts/record-file.md`'s *a new kind of `happened` is additive*
+    /// is the decision and the reason.
+    RanACommand {
+        /// Whose authority it ran under.
+        agent: Line,
+        /// The command, which is always an absolute path.
+        program: Line,
+        /// What it was given, unchanged and never parsed.
+        arguments: Vec<Line>,
+        /// The folders the kernel let it reach, and it reached nothing else.
+        allowed: Vec<Line>,
+        /// What the command returned, or absent when a signal ended it.
+        ///
+        /// Absent rather than a number nobody can read: a program killed by a
+        /// signal has no status, and `-1` or `0` would both be a lie a person
+        /// could act on.
+        returned: Option<i32>,
+        /// Whether the kernel was holding the boundary while it ran.
+        the_kernel_was_holding_it: bool,
+    },
+    /// A command the agent asked to run, that did not run.
+    ///
+    /// `CLAUDE.md`'s gate is *every execution **and every refusal** leaves a
+    /// record*, and a run is the newest thing on this machine that can be
+    /// refused. Written whether the refusal was the person's level, a malformed
+    /// request, or a box that would not close.
+    ///
+    /// **No arguments are kept**, for [`Happened::TurnedAway`]'s reason: the
+    /// arguments of a request that never ran are whatever the model was
+    /// persuaded to send, and keeping them under an entry shaped like every
+    /// other entry is how a record gets used to say something nobody did. The
+    /// program is kept because a person asking *what did it try to run* has no
+    /// other answer, and it goes through [`Line`] like everything else here.
+    ///
+    /// Additive, and `format` stays `1`, for the same reason as above.
+    ACommandWasNotRun {
+        /// Whose authority it would have run under.
+        agent: Line,
+        /// What it would have run.
+        program: Line,
+        /// Why it did not, in the words the person was shown.
+        why: Line,
+    },
     /// Something left this machine (law 1).
     ///
     /// Made only from an [`alo_egress::Departing`], which the indicator is the
@@ -628,6 +694,8 @@ impl Happened {
             | Self::AnsweredHere { agent }
             | Self::NeverPutAnywhere { agent, .. }
             | Self::NotBounded { agent, .. }
+            | Self::RanACommand { agent, .. }
+            | Self::ACommandWasNotRun { agent, .. }
             | Self::Left { agent, .. }
             | Self::HeldBack { agent, .. }
             | Self::SleptThrough { agent, .. } => Some(agent),
@@ -677,6 +745,8 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::NotBounded { .. }
+            | Self::RanACommand { .. }
+            | Self::ACommandWasNotRun { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. } => None,
         }
@@ -713,6 +783,8 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::NotBounded { .. }
+            | Self::RanACommand { .. }
+            | Self::ACommandWasNotRun { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -758,6 +830,7 @@ impl Happened {
                 | Self::HeldBack { .. }
                 | Self::GrantsNotReadAgain { .. }
                 | Self::NotBounded { .. }
+                | Self::ACommandWasNotRun { .. }
                 | Self::Brokered {
                     refused: Some(_),
                     ..
@@ -774,6 +847,12 @@ impl Happened {
     }
 
     /// Whether a verb ran.
+    ///
+    /// **[`Happened::RanACommand`] is deliberately not counted here.** ADR 0064
+    /// is explicit that running code is not a verb, so a reader counting verb
+    /// executions must not find commands among them — and a reader wanting both
+    /// asks for both. The name is *a verb ran* rather than *something ran* for
+    /// this reason.
     #[must_use]
     pub fn ran(&self) -> bool {
         matches!(self, Self::Ran { .. })
@@ -802,6 +881,8 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::NotBounded { .. }
+            | Self::RanACommand { .. }
+            | Self::ACommandWasNotRun { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -826,6 +907,7 @@ impl Happened {
             | Self::NeverPutAnywhere { why, .. }
             | Self::GrantsNotReadAgain { why }
             | Self::NotBounded { why, .. }
+            | Self::ACommandWasNotRun { why, .. }
             | Self::SleptThrough {
                 stopped: Some(why), ..
             }
@@ -844,7 +926,8 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::Left { .. }
-            | Self::LeftOnItsOwn { .. } => None,
+            | Self::LeftOnItsOwn { .. }
+            | Self::RanACommand { .. } => None,
         }
     }
 
@@ -869,6 +952,8 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::NotBounded { .. }
+            | Self::RanACommand { .. }
+            | Self::ACommandWasNotRun { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -895,6 +980,8 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::NotBounded { .. }
+            | Self::RanACommand { .. }
+            | Self::ACommandWasNotRun { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => &[],
@@ -926,7 +1013,9 @@ impl Happened {
             | Self::Undone { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
-            | Self::NotBounded { .. } => None,
+            | Self::NotBounded { .. }
+            | Self::RanACommand { .. }
+            | Self::ACommandWasNotRun { .. } => None,
         }
     }
 
@@ -958,6 +1047,8 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::NotBounded { .. }
+            | Self::RanACommand { .. }
+            | Self::ACommandWasNotRun { .. }
             | Self::LeftOnItsOwn { .. } => None,
         }
     }

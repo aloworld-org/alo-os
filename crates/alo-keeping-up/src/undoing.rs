@@ -72,6 +72,21 @@ pub enum WhatWasDone {
     /// A verb ran that changed something else about the machine: a printer, a
     /// network, a document converted, a picture of the screen.
     ChangedSomethingElse,
+    /// A command the person allowed the agent to run, ran (ADR 0064).
+    ///
+    /// **Not [`WhatWasDone::ChangedSomethingElse`]**, which is a *verb* that
+    /// changed something that is not a file of the person's. A command is not a
+    /// verb and can change anything inside the box it ran in, the person's own
+    /// files included — so a person told *it changed something else about the
+    /// machine* about a command that rewrote their project would have been
+    /// misled by a classification, which is the one thing this enum exists to
+    /// prevent.
+    ///
+    /// There is no road back from the record for one: what a program did cannot
+    /// be worked out backwards the way a rename can. The road ADR 0064 promises
+    /// is the snapshot taken before the run, which is
+    /// [`crate::WhatWasKept`]'s question and not this one.
+    ACommandRan,
     /// Something left this machine — a question put to a model elsewhere, a
     /// file handed to another machine, anything sent.
     ItLeft,
@@ -115,8 +130,9 @@ pub enum NotUndoable {
     /// An application was installed, and removing one is the person's own act
     /// (ADR 0042) rather than an undo.
     AnApplicationIsYoursToRemove,
-    /// A change verb this machine keeps no road back for — every change verb
-    /// but the three on [`Change`].
+    /// A change this machine keeps no road back for — every change verb but the
+    /// three on [`Change`], and a command the agent ran, whose effects nothing
+    /// can work out backwards.
     NotOneOfTheChangesPutBack,
     /// Nothing happened, so there is nothing to put back.
     NothingHappened,
@@ -235,6 +251,13 @@ impl WhatWasDone {
             Self::ChangedFiles(change) => Ok(change),
             Self::OnlyLooked => Err(NotUndoable::ItOnlyLooked),
             Self::ChangedSomethingElse => Err(NotUndoable::NotOneOfTheChangesPutBack),
+            // A program's effects cannot be inverted from the record, which is
+            // what this reason says and what its own words were written to
+            // cover: *the honest answer for anything the machine has not been
+            // taught to return, including something added after this was
+            // written.* Putting back what a command did is the snapshot's road,
+            // and `WhatWasKept` is where that is asked.
+            Self::ACommandRan => Err(NotUndoable::NotOneOfTheChangesPutBack),
             Self::ItLeft => Err(NotUndoable::ItLeftThisMachine),
             Self::AModelWasTold => Err(NotUndoable::ItWasToldToAModel),
             Self::ItWasPrinted => Err(NotUndoable::ItWasPrintedOnPaper),

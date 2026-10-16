@@ -92,6 +92,15 @@ pub enum Outcome {
     /// A turn the machine would not run, because there was no boundary to run
     /// it inside (ADR 0015).
     NotBounded,
+    /// A command the person allowed the agent to run, run inside a sealed box
+    /// (ADR 0064, and ADR 0117 is the box).
+    ///
+    /// Told apart from [`Outcome::Ran`] because running code is **not** a verb,
+    /// so a person reading their record meets the two as different things —
+    /// which is also why `Happened::ran` answers false about this one.
+    RanACommand,
+    /// A command the agent asked to run, that did not run.
+    ACommandWasNotRun,
     /// Something left this machine (law 1).
     Left,
     /// Something the egress policy refused to let leave.
@@ -149,6 +158,8 @@ impl Outcome {
             Happened::Paired { .. } => Self::Paired,
             Happened::WorkspaceOpened { .. } => Self::WorkspaceOpened,
             Happened::NotBounded { .. } => Self::NotBounded,
+            Happened::RanACommand { .. } => Self::RanACommand,
+            Happened::ACommandWasNotRun { .. } => Self::ACommandWasNotRun,
             Happened::Left { .. } => Self::Left,
             Happened::HeldBack { .. } => Self::HeldBack,
             Happened::LeftOnItsOwn { .. } => Self::LeftOnItsOwn,
@@ -198,6 +209,8 @@ impl Outcome {
             Self::Paired => words::PAIRED,
             Self::WorkspaceOpened => words::WORKSPACE_OPENED,
             Self::NotBounded => words::NOT_BOUNDED,
+            Self::RanACommand => words::RAN_A_COMMAND,
+            Self::ACommandWasNotRun => words::A_COMMAND_WAS_NOT_RUN,
             Self::Left => words::LEFT,
             Self::HeldBack => words::HELD_BACK,
             Self::LeftOnItsOwn => words::LEFT_ON_ITS_OWN,

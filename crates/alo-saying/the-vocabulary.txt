@@ -1432,6 +1432,7 @@ recounting.not-a-description	What this machine did cannot be shown to you: what 
 recounting.nothing-to-show-on	What this machine's record says cannot be put in front of you: no screen is connected. Connect a screen, and ask again
 recounting.nothing-to-tell	nothing in this machine's record answers that question
 recounting.only-the-most-recent	this is the most recent part of what answers that question, and not all of it
+recounting.outcome.a-command-was-not-run	the agent asked to run a command and it did not run
 recounting.outcome.answered-for-another-machine	a machine you paired with asked a question and it was answered on this machine
 recounting.outcome.answered-here	the agent asked a question and it was answered on this machine
 recounting.outcome.carried-on-after-sleep	the machine went to sleep while the agent was working on this, and the work carried on when it woke
@@ -1452,6 +1453,7 @@ recounting.outcome.not-put-back	you asked for this to be put back as it was, and
 recounting.outcome.paired	this machine was paired with another machine
 recounting.outcome.put-back	you put this back as it was before the agent changed it
 recounting.outcome.ran	the agent did this
+recounting.outcome.ran-a-command	the agent ran a command you allowed it to run, inside a box that could reach only what you chose
 recounting.outcome.rolled-back	this machine went back to the version of its system it ran before, as the person asked, after they restarted it
 recounting.outcome.stopped-by-sleep	the machine went to sleep while the agent was working on this, and the work was stopped when it woke
 recounting.outcome.the-grants-said-no	the agent asked to do this and it was refused at the moment it would have happened
