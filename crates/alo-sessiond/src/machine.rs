@@ -54,20 +54,15 @@
 //! [`crate::Logind`] takes `&mut self`: signing out is this process letting go,
 //! and there is nothing else it could be.
 
-use std::fs::Permissions;
-use std::os::unix::fs::PermissionsExt;
-use std::os::unix::process::CommandExt;
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::path::Path;
 
 use alo_accounts::THE_ACCOUNTS;
 use zbus::blocking::Connection;
 use zbus::zvariant::{OwnedFd, OwnedObjectPath, Value};
 
 use crate::accounts::TheAccounts;
-use crate::logind::{Logind, TheSessionOpened};
+use crate::logind::Logind;
 use crate::refusing::{NotAsked, NotOpened};
-use crate::the_persons_desktop::{NotStarted, StartsADesktop, TheDesktopToStart};
 
 /// The service that opens sessions on a systemd machine.
 const LOGIND: &str = "org.freedesktop.login1";
@@ -131,7 +126,7 @@ pub struct TheMachinesLogind {
 }
 
 impl Logind for TheMachinesLogind {
-    fn open_a_session_for(&mut self, person: u32) -> Result<TheSessionOpened, NotOpened> {
+    fn open_a_session_for(&mut self, person: u32) -> Result<(), NotOpened> {
         let connection = Connection::system().map_err(|why| NotOpened::NoBus {
             why: why.to_string(),
         })?;
@@ -162,7 +157,7 @@ impl Logind for TheMachinesLogind {
             )
             .map_err(|why| refused(person, &why))?;
 
-        let (_called, _object, runtime, held, _uid, _seat, _vtnr, _existing): (
+        let (_called, _object, _runtime, held, _uid, _seat, _vtnr, _existing): (
             String,
             OwnedObjectPath,
             String,
@@ -179,7 +174,7 @@ impl Logind for TheMachinesLogind {
             })?;
 
         self.held = Some(held);
-        Ok(TheSessionOpened::with(PathBuf::from(runtime)))
+        Ok(())
     }
 }
 
@@ -278,62 +273,5 @@ mod tests {
         // If it *is* there this asserts nothing false: the question is whether
         // a missing file is an error, and a present one simply answers.
         assert!(TheMachinesAccounts.an_account_numbered(1000).is_ok());
-    }
-}
-
-/// What really starts a desktop on this machine.
-///
-/// # Why a child, and what that buys
-///
-/// `CreateSession` is passed this process's own pid as the session's leader,
-/// so `logind` puts **this** process in `session-N.scope`. A child started
-/// after that call inherits the control group, which is the question `logind`
-/// answers when `libseat` asks *which session is this process in*. The order
-/// is the whole mechanism and it is not written down anywhere the compiler can
-/// see it: open the session, then start the desktop.
-///
-/// # Law 2, and why this is not its exec
-///
-/// `THE_DESKTOP` is a constant. No message, no configuration file and no
-/// account names the program; what varies is who it runs as and which
-/// directories are theirs, and both come from the session rather than from a
-/// caller. There are no arguments at all.
-#[derive(Debug, Default)]
-pub struct TheMachineStartsIt;
-
-impl StartsADesktop for TheMachineStartsIt {
-    fn start(&mut self, what: &TheDesktopToStart) -> Result<(), NotStarted> {
-        let refused = |why: String| NotStarted::TheMachineRefused {
-            program: what.program().display().to_string(),
-            person: what.person(),
-            why,
-        };
-
-        // **The socket's directory is made before the desktop looks for it**,
-        // as the unit file's `RuntimeDirectory=` did, and with the mode that
-        // line carried: a desktop whose socket a second account could reach is
-        // a desktop that is not this person's.
-        std::fs::create_dir_all(what.runtime()).map_err(|why| refused(why.to_string()))?;
-        std::fs::set_permissions(what.runtime(), Permissions::from_mode(0o700))
-            .map_err(|why| refused(why.to_string()))?;
-        std::os::unix::fs::chown(what.runtime(), Some(what.person()), None)
-            .map_err(|why| refused(why.to_string()))?;
-
-        // **`uid` and `gid` are safe calls**, which is the whole reason this
-        // is a `Command` rather than a fork: `pre_exec` is the unsafe one and
-        // nothing here needs it. ADR 0024 refused to pay an `unsafe` exemption
-        // on the authentication path, and this does not spend one either.
-        Command::new(what.program())
-            .uid(what.person())
-            .gid(what.person())
-            .env("HOME", what.home())
-            .env("RUNTIME_DIRECTORY", what.runtime())
-            .env(
-                "XDG_RUNTIME_DIR",
-                what.runtime().parent().unwrap_or(what.runtime()),
-            )
-            .spawn()
-            .map(drop)
-            .map_err(|why| refused(why.to_string()))
     }
 }

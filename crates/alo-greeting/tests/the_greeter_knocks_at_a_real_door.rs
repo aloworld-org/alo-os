@@ -32,8 +32,8 @@ use alo_accounts::Accounts;
 use alo_greeting::{Greeted, Greeting, NotAnswered, TheOpenersDoor};
 use alo_sessiond::listening::Listening;
 use alo_sessiond::{
-    Answered, Door, Knock, Logind, NOBODY_HERE, NotAsked, NotOpened, NotStarted, Opening,
-    StartsADesktop, TheAccounts, TheDesktopToStart, TheSessionOpened, our_group,
+    Answered, Door, Knock, Logind, NOBODY_HERE, NotAsked, NotOpened, Opening, TheAccounts,
+    our_group,
 };
 use alo_strings::Strings;
 
@@ -82,12 +82,9 @@ impl TheAccounts for Numbered {
 struct Willing(Vec<u32>);
 
 impl Logind for Willing {
-    fn open_a_session_for(&mut self, person: u32) -> Result<TheSessionOpened, NotOpened> {
+    fn open_a_session_for(&mut self, person: u32) -> Result<(), NotOpened> {
         self.0.push(person);
-        // What a real `logind` answers with: the person's own runtime directory.
-        Ok(TheSessionOpened::with(std::path::PathBuf::from(
-            "/run/user/1000",
-        )))
+        Ok(())
     }
 }
 
@@ -105,12 +102,10 @@ fn a_correct_password_opens_a_session_through_a_real_door() {
     let at = somewhere("opened");
     let ours = our_group();
     let listening = Listening::at(&at, ours).unwrap();
-    let mut opening = Opening::at_with_users(
+    let mut opening = Opening::at(
         Door::handed_to(ours),
         Numbered(vec![person]),
         Willing::default(),
-        AWillingMachine,
-        a_user_database(person),
     );
 
     let greeting = Greeting::of(
@@ -140,12 +135,10 @@ fn a_refusal_comes_back_as_the_openers_own_sentence() {
     // The opener's accounts do not hold this person — a machine whose sign-in
     // surface and whose accounts disagree, which is the state `NOBODY_HERE`
     // exists for.
-    let mut opening = Opening::at_with_users(
+    let mut opening = Opening::at(
         Door::handed_to(ours),
         Numbered(Vec::new()),
         Willing::default(),
-        AWillingMachine,
-        a_user_database(person),
     );
 
     let greeting = Greeting::of(
@@ -347,35 +340,4 @@ fn a_store_that_will_not_be_believed_is_refused_rather_than_read_as_first_boot()
     assert!(!said.is_a_bug(), "{said}");
     assert!(said.text().contains("Nobody can sign in here"), "{said}");
     drop(std::fs::remove_file(&store));
-}
-
-/// A machine that starts whatever desktop it is handed.
-///
-/// This test is about the greeter reaching a real door, not about a desktop
-/// appearing, so this never refuses: a refusal would turn every sign-in here
-/// into one and the test would pass for the wrong reason.
-#[derive(Default)]
-struct AWillingMachine;
-
-impl StartsADesktop for AWillingMachine {
-    fn start(&mut self, _what: &TheDesktopToStart) -> Result<(), NotStarted> {
-        Ok(())
-    }
-}
-
-/// A `passwd` file naming the person this test signs in, so their desktop has
-/// a folder to be started with. Written per call, because `fs::write`
-/// truncates before it writes and these tests run in parallel.
-fn a_user_database(person: u32) -> std::path::PathBuf {
-    static WHICH: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-    let mine = WHICH.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let at =
-        std::env::temp_dir().join(format!("alo-greeting-passwd-{}-{mine}", std::process::id()));
-    drop(std::fs::create_dir_all(&at));
-    let file = at.join("passwd");
-    drop(std::fs::write(
-        &file,
-        format!("alo:x:{person}:{person}::/home/alo:/bin/bash\n"),
-    ));
-    file
 }

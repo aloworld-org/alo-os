@@ -1,7 +1,8 @@
 # ADR 0115 — The desktop runs inside the session alo-sessiond opened for it
 
-**Status:** proposed, 2026-10-14, by the third-PC lane, from a measurement on a
-booted machine.
+**Status:** the seat half accepted; **the desktop-as-a-child half reverted on
+2026-10-16**, see the amendment at the end. Originally proposed 2026-10-14 by
+the third-PC lane, from a measurement on a booted machine.
 
 **This decides launch item 2's named race.** `ROADMAP.md` says of *it boots and
 a person signs in*: "the handover of the graphics card from the greeter to the
@@ -150,3 +151,54 @@ this is a reading a virtual machine *can* make.
 **And a test that fails today:** nothing in the workspace asserts that the
 process which takes the card is in a login session, because until this boot
 nobody knew the greeter was not. Whatever lands this writes that test.
+
+## Amended 2026-10-16: the second half was wrong, and a machine said so
+
+The seat half stands. **The desktop-as-a-child half does not, and has been
+reverted.** A booted machine carrying both halves, plus the greeter class from
+#719, answered in one line:
+
+```text
+alo-sessiond: this machine would not start /usr/bin/alo-desktop
+              for account 1000: Permission denied (os error 13)
+```
+
+`alo-sessiond.service` grants no capability at all -- `CapabilityBoundingSet=`
+with nothing after it, and `NoNewPrivileges=yes` -- and **a process with no
+capabilities cannot become another user.** The mechanism this record decided
+could never have worked, and the fact that disqualifies it was in a file this
+record cites.
+
+**And it was not needed.** The desktop came up on that same boot through
+systemd's existing `WantedBy=user@1000.service`, because the greeter had
+stopped holding `/dev/tty1` and `alo-desktop.service`'s own PAM session could
+then be given `seat0`. The Dock drew with Dolphin and Firefox in it. **One
+line fixed what four changes were written for.**
+
+Worse than redundant: the failed start made `alo-sessiond` refuse the sign-in,
+so the screen said *signing in did not finish* over a desktop that had just
+appeared. The rule this record chose deliberately -- *a session with no
+desktop is a refusal* -- fired wrongly, because a desktop had started by a
+route the code did not know about.
+
+### What this record should have done
+
+It has a section on what would sink each **rejected** alternative and none on
+what would sink the one it chose. That asymmetry is the fault: the options
+not taken were stress-tested and the decision was not.
+
+**The question was answerable in thirty seconds** -- *is this process even
+allowed to become another user?* -- from the unit file, before any code.
+`crates/alo-sessiond/tests/this_crate_cannot_do_what_its_unit_forbids.rs` now
+asks it at the gate in 0.11 seconds. It fails against the tree this record
+produced and passes against the revert, which is the pair that makes it a
+guard rather than a comment.
+
+### What is kept
+
+**The diagnosis**, which is what produced the fix. Nobody would have looked at
+the greeter's session class without first establishing that `logind` answers
+*which session is this process in* from the control group, that the session was
+created with no seat, and that the greeter only ever worked because it runs as
+root. #719's one line is explicable because of this investigation rather than in
+spite of it.
