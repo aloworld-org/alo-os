@@ -83,6 +83,20 @@ pub fn keep(at: &Path, keyboards: &Keyboards) -> Result<(), FileNotWritten> {
     alo_kept::keep(at, &keyboards.changes())
 }
 
+/// Keep the keyboard **this machine** has, where every person on it can read
+/// it.
+///
+/// [`keep`] is the door for a person's own keyboards, in their own folder.
+/// This one is for [`crate::THE_MACHINES_KEYBOARDS`], which the greeter writes
+/// as root and a person's desktop reads as themselves — so a file only its
+/// owner could read is a language chosen at the sign-in screen that never
+/// reaches the desktop, which is what a booted machine showed on 2026-10-14.
+///
+/// # Errors
+/// [`FileNotWritten`], and the file is as it was.
+pub fn keep_the_machines(at: &Path, keyboards: &Keyboards) -> Result<(), FileNotWritten> {
+    alo_kept::keep_what_the_machine_knows(at, &keyboards.changes())
+}
 /// Put this person's keyboards back as the release ships them, replacing a file
 /// that did not read.
 ///

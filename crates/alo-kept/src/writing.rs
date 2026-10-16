@@ -83,9 +83,54 @@ pub fn text_of<K: Kept>(value: &K) -> Result<String, Unwritten> {
 /// does not read at the moment of the write. The file at `at` is as it was in
 /// all of them.
 pub fn keep<K: Kept>(at: &Path, value: &K) -> Result<(), K::NotWritten> {
-    written(at, value, Over::WhatReads)
+    written(
+        at,
+        value,
+        Over::WhatReads,
+        crate::disk::WhoMayRead::OnlyTheOwner,
+    )
 }
 
+/// This value written whole to `at`, as a fact **this machine** keeps about
+/// itself rather than as one person's settings.
+///
+/// The file is created so that every person on the machine can read it, and
+/// only its owner can write it. [`keep`] is the other door and is the right one
+/// for almost everything: a person's own settings, in their own folder, which
+/// nobody else has any business reading.
+///
+/// # When this door is the right one
+///
+/// When the answer belongs to the machine and the people on it have to read it
+/// to work. There is one such file today — the keyboard this machine has, which
+/// the greeter writes as root at the sign-in screen and a person's desktop
+/// reads as themselves.
+///
+/// **A booted machine on 2026-10-14 is why this exists.** A person chose a
+/// language, the greeter applied it and wrote the file, and their desktop could
+/// not read it:
+///
+/// ```text
+/// alo-desktop: the desktop is going up on /dev/dri/card1, on a gb keyboard
+///   (the unit file's, because this machine's own would not read:
+///    /etc/alo/keyboards.toml — Disk(PermissionDenied))
+/// ```
+///
+/// So the language sheet worked, the keyboard changed under the person's
+/// hands, and it was back to `gb` the moment they reached their desktop.
+///
+/// # Errors
+///
+/// Exactly [`keep`]'s, for exactly its reasons. The file at `at` is as it was
+/// in all of them.
+pub fn keep_what_the_machine_knows<K: Kept>(at: &Path, value: &K) -> Result<(), K::NotWritten> {
+    written(
+        at,
+        value,
+        Over::WhatReads,
+        crate::disk::WhoMayRead::EveryoneOnThisMachine,
+    )
+}
 /// The person who has changed nothing, kept as the whole of the file at `at` —
 /// **whatever is there now, including a file that did not read.**
 ///
@@ -99,16 +144,26 @@ pub fn keep<K: Kept>(at: &Path, value: &K) -> Result<(), K::NotWritten> {
 /// [`Kept::not_written`], in the owning crate's words, for a relative `at` and
 /// every step the disk refuses. The file at `at` is as it was in all of them.
 pub fn put_back_as_shipped<K: Kept>(at: &Path) -> Result<(), K::NotWritten> {
-    written(at, &K::untouched(), Over::Anything)
+    written(
+        at,
+        &K::untouched(),
+        Over::Anything,
+        crate::disk::WhoMayRead::OnlyTheOwner,
+    )
 }
 
 /// This value written whole to `at`, over whatever `over` allows.
-fn written<K: Kept>(at: &Path, value: &K, over: Over) -> Result<(), K::NotWritten> {
+fn written<K: Kept>(
+    at: &Path,
+    value: &K,
+    over: Over,
+    who: crate::disk::WhoMayRead,
+) -> Result<(), K::NotWritten> {
     if !at.has_root() {
         return Err(K::not_written(at, Unwritten::NotWhereItBelongs));
     }
     let text = text_of(value).map_err(|why| K::not_written(at, why))?;
-    disk::kept(at, &text, |on_disk| {
+    disk::kept(at, &text, who, |on_disk| {
         match std::str::from_utf8(on_disk) {
             Ok(back) if back == text => reads_back_as(value, back)?,
             Ok(_) | Err(_) => return Err(Unwritten::ReadBackAsSomethingElse),
@@ -170,7 +225,7 @@ pub fn kept_text(
     text: &str,
     holds: impl FnOnce(&[u8]) -> Result<(), Unwritten>,
 ) -> Result<(), Unwritten> {
-    crate::disk::kept(at, text, holds)
+    crate::disk::kept(at, text, crate::disk::WhoMayRead::OnlyTheOwner, holds)
 }
 
 #[cfg(test)]
