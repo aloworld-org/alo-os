@@ -536,6 +536,86 @@ impl Entry {
         )
     }
 
+    /// A command the person allowed the agent to run, run inside a sealed box.
+    ///
+    /// ADR 0064 keeps the record on at every one of its three levels, and this
+    /// is the entry that keeps it. `alo-running` is the box and ADR 0117 is why
+    /// it is a crate of its own.
+    ///
+    /// `returned` is [`None`] when a signal ended the command rather than the
+    /// command ending itself, because a program killed by a signal has no exit
+    /// status and any number put there — `0` as much as `-1` — is a sentence a
+    /// person could act on that nothing said.
+    ///
+    /// `the_kernel_was_holding_it` is false only for a run at full trust whose
+    /// boundary could not be applied, which `docs/features.md` permits if the
+    /// person chooses and requires the record to say. Nothing in this repository
+    /// passes false yet; the parameter exists because a record that could only
+    /// ever say one of the two could not keep that promise when something does.
+    ///
+    /// **Not [`Entry::ran`], and not reachable from it.** That one takes an
+    /// [`Authorised`] — a verb redeemed from an approval and checked against
+    /// grants. A command is none of those things, so it has its own entry and
+    /// [`Happened::ran`] deliberately answers false about it.
+    ///
+    /// Additive; `format` stays `1`. `docs/contracts/record-file.md`'s *a new
+    /// kind of `happened` is additive* is the decision.
+    #[must_use]
+    pub fn ran_a_command(
+        agent: &Grantee,
+        program: &str,
+        arguments: &[String],
+        allowed: &[String],
+        returned: Option<i32>,
+        the_kernel_was_holding_it: bool,
+        at: SystemTime,
+    ) -> Self {
+        Self::new(
+            at,
+            Happened::RanACommand {
+                agent: Line::of(agent.as_str()),
+                program: Line::of(program),
+                arguments: arguments.iter().map(|one| Line::of(one)).collect(),
+                allowed: allowed.iter().map(|one| Line::of(one)).collect(),
+                returned,
+                the_kernel_was_holding_it,
+            },
+        )
+    }
+
+    /// A command the agent asked to run, that did not run.
+    ///
+    /// `CLAUDE.md`'s gate is *every execution and every refusal leaves a
+    /// record*, and this is the refusal half for a run. Written whether what
+    /// stopped it was the level the person chose, a request that did not
+    /// validate, or a box that would not close.
+    ///
+    /// `why` is the sentence the person was shown, handed in already rendered
+    /// for the reason [`Entry::not_bounded`] gives: the record and the screen
+    /// cannot become two accounts of one moment.
+    ///
+    /// **No arguments are taken and there is no field for them.** A request
+    /// that never ran carries whatever the model was persuaded to send, and
+    /// [`Happened::ACommandWasNotRun`] says why that is not kept.
+    ///
+    /// Additive; `format` stays `1`, as above.
+    #[must_use]
+    pub fn a_command_was_not_run(
+        agent: &Grantee,
+        program: &str,
+        why: &str,
+        at: SystemTime,
+    ) -> Self {
+        Self::new(
+            at,
+            Happened::ACommandWasNotRun {
+                agent: Line::of(agent.as_str()),
+                program: Line::of(program),
+                why: Line::of(why),
+            },
+        )
+    }
+
     /// A properly formed call that was stopped somewhere.
     ///
     /// Private because *where* it was stopped is not a caller's choice to make
@@ -874,6 +954,167 @@ mod tests {
 
         let written = serde_json::to_string(&entry).unwrap();
         assert!(written.contains("\"not-bounded\""), "{written}");
+        let read = serde_json::from_str::<Entry>(&written).unwrap();
+        assert_eq!(read, entry);
+    }
+
+    /// **A command the person allowed the agent to run is recorded**, with what
+    /// ran, what it was allowed to reach, and how it ended.
+    ///
+    /// And it is **not** a verb execution: `ran()` answers false, there is no
+    /// approval and no grant, because ADR 0064 is explicit that running code is
+    /// not a verb. A reader counting verb executions must not find this among
+    /// them.
+    #[test]
+    fn a_command_run_in_a_box_is_recorded_and_is_not_a_verb() {
+        let entry = Entry::ran_a_command(
+            &Grantee::named("@terminal"),
+            "/usr/bin/cargo",
+            &["build".to_owned(), "--release".to_owned()],
+            &["/home/anna/project".to_owned(), "/usr/lib".to_owned()],
+            Some(0),
+            true,
+            noon(),
+        );
+
+        assert!(entry.agent().is_some_and(|agent| agent.is("@terminal")));
+        assert!(
+            !entry.happened().ran(),
+            "a command was counted as a verb execution"
+        );
+        assert!(
+            !entry.happened().was_stopped(),
+            "a command that ran was counted as a refusal"
+        );
+        assert_eq!(entry.what(), None, "a command is not a call");
+        assert_eq!(entry.happened().from_approval(), None);
+        assert!(entry.happened().against().is_empty());
+        assert_eq!(entry.happened().why_stopped(), None);
+        assert_eq!(entry.happened().stopped(), None);
+        assert_eq!(entry.happened().destination(), None);
+        assert!(!entry.happened().caused_egress());
+        assert!(!entry.happened().on_its_own(), "somebody caused this");
+
+        assert!(matches!(
+            entry.happened(),
+            Happened::RanACommand {
+                program,
+                arguments,
+                allowed,
+                returned: Some(0),
+                the_kernel_was_holding_it: true,
+                ..
+            } if program.is("/usr/bin/cargo")
+                && arguments.len() == 2
+                && allowed.len() == 2
+        ));
+
+        let written = serde_json::to_string(&entry).unwrap();
+        assert!(written.contains("\"ran-a-command\""), "{written}");
+        let read = serde_json::from_str::<Entry>(&written).unwrap();
+        assert_eq!(read, entry);
+    }
+
+    /// **A command killed by a signal is recorded with no exit status**, because
+    /// it has none and any number there would say something nothing said.
+    #[test]
+    fn a_command_a_signal_ended_is_recorded_without_a_status() {
+        let entry = Entry::ran_a_command(
+            &Grantee::named("@terminal"),
+            "/usr/bin/cargo",
+            &[],
+            &["/home/anna/project".to_owned()],
+            None,
+            true,
+            noon(),
+        );
+        assert!(matches!(
+            entry.happened(),
+            Happened::RanACommand { returned: None, .. }
+        ));
+
+        // And it survives the disk as an absence rather than becoming a zero.
+        let written = serde_json::to_string(&entry).unwrap();
+        let read = serde_json::from_str::<Entry>(&written).unwrap();
+        assert_eq!(read, entry);
+        assert!(matches!(
+            read.happened(),
+            Happened::RanACommand { returned: None, .. }
+        ));
+    }
+
+    /// **A run whose boundary the kernel was not holding says so in the
+    /// record**, which is what makes `docs/features.md`'s promise about full
+    /// trust keepable.
+    ///
+    /// Nothing passes false yet. The test is here because the field's whole
+    /// purpose is the case nothing produces, and a field only ever written one
+    /// way is a field nobody would notice had stopped working.
+    #[test]
+    fn a_run_the_kernel_was_not_watching_is_recorded_as_such() {
+        let entry = Entry::ran_a_command(
+            &Grantee::named("@terminal"),
+            "/usr/bin/cargo",
+            &[],
+            &["/home/anna/project".to_owned()],
+            Some(0),
+            false,
+            noon(),
+        );
+        assert!(matches!(
+            entry.happened(),
+            Happened::RanACommand {
+                the_kernel_was_holding_it: false,
+                ..
+            }
+        ));
+        let written = serde_json::to_string(&entry).unwrap();
+        let read = serde_json::from_str::<Entry>(&written).unwrap();
+        assert_eq!(read, entry);
+    }
+
+    /// **A command that did not run leaves a record too**, which is
+    /// `CLAUDE.md`'s *every execution and every refusal* reaching the newest
+    /// thing on this machine that can be refused.
+    ///
+    /// And it reads as a refusal: `was_stopped` counts it and `why_stopped`
+    /// carries the sentence, so a review asking what was refused finds it.
+    #[test]
+    fn a_command_that_did_not_run_is_recorded_as_a_refusal() {
+        let entry = Entry::a_command_was_not_run(
+            &Grantee::named("@terminal"),
+            "/usr/bin/cargo",
+            "nothing ran, because this machine runs commands in a sealed box and the box \
+             could not be closed",
+            noon(),
+        );
+
+        assert!(entry.agent().is_some_and(|agent| agent.is("@terminal")));
+        assert!(
+            entry.happened().was_stopped(),
+            "a refused command was not counted among what was refused"
+        );
+        assert!(!entry.happened().ran());
+        assert!(
+            entry
+                .happened()
+                .why_stopped()
+                .is_some_and(|why| why.as_str().starts_with("nothing ran"))
+        );
+        assert_eq!(
+            entry.happened().stopped(),
+            None,
+            "a command was stopped at no point in a call's journey"
+        );
+        assert_eq!(entry.what(), None);
+        assert_eq!(entry.happened().from_approval(), None);
+        assert!(entry.happened().against().is_empty());
+        assert!(!entry.happened().caused_egress());
+
+        let written = serde_json::to_string(&entry).unwrap();
+        assert!(written.contains("\"a-command-was-not-run\""), "{written}");
+        // No arguments are kept, and the shape has nowhere to put them.
+        assert!(!written.contains("arguments"), "{written}");
         let read = serde_json::from_str::<Entry>(&written).unwrap();
         assert_eq!(read, entry);
     }

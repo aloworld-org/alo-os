@@ -70,6 +70,7 @@ pub fn what_was_done(entry: &Entry) -> WhatWasDone {
         | Happened::NeverPutAnywhere { .. }
         | Happened::HeldBack { .. }
         | Happened::NotBounded { .. }
+        | Happened::ACommandWasNotRun { .. }
         | Happened::SleptThrough { .. }
         | Happened::Brokered {
             refused: Some(_), ..
@@ -77,6 +78,10 @@ pub fn what_was_done(entry: &Entry) -> WhatWasDone {
         // The broker handed one of its own verbs on: a printer, a network, a
         // drive. Not a file of the person's, so not one of the three.
         Happened::Brokered { refused: None, .. } => WhatWasDone::ChangedSomethingElse,
+        // A command the person allowed the agent to run. Its own kind rather
+        // than `ChangedSomethingElse`, because a command can change the
+        // person's own files and that variant means a verb that did not.
+        Happened::RanACommand { .. } => WhatWasDone::ACommandRan,
         // It left this machine, whatever carried it.
         Happened::Left { .. } => WhatWasDone::ItLeft,
         // A model was told it, here or for a machine this one is paired with.

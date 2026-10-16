@@ -64,7 +64,7 @@ machine that did nothing are the same file.
 Every entry carries `at` and `happened`. `happened` is tagged with what kind of
 thing it was — `ran`, `stopped`, `turned-away`, `answered-here`,
 `never-put-anywhere`, `grants-not-read-again`, `paired`, `workspace-opened`,
-`not-bounded`, `left`,
+`not-bounded`, `ran-a-command`, `a-command-was-not-run`, `left`,
 `held-back`, `left-on-its-own`, `updated`, `rolled-back`, `brokered`, `slept-through` — and the fields under it depend on
 that tag.
 `crates/alo-record` is the shape as working code; ADR 0001 §7 is why each of
@@ -242,6 +242,44 @@ approval and no grant: a file verb had a call and a question had none, and a
 shape with room for one would have a refused question wearing a call's
 clothes. A reader looking for what the machine refused of its own accord looks
 for this tag.
+
+**`ran-a-command` is a command the person allowed the agent to run**, added
+2026-10-16 and additive. ADR 0064 lets a person allow the agent to run code at
+one of three levels, and keeps the record on at every one of them; ADR 0117
+built the sealed box that is the default. The entry carries `agent`, `program`
+— always an absolute path — `arguments` as they were given, `allowed`, the
+folders the kernel let it reach and beyond which it reached nothing, `returned`,
+what the command's own exit status was, and `the-kernel-was-holding-it`.
+
+`returned` is **absent** when a signal ended the command rather than the command
+ending itself: a program killed by a signal has no exit status, and any number
+put there would be a sentence a person could act on that nothing said.
+
+`the-kernel-was-holding-it` is false only for a run at full trust whose boundary
+could not be applied, which `docs/features.md` permits if the person chooses and
+requires the record to say. It is present from the first such entry ever written
+rather than added when something needs it, because a record that could only say
+one of the two could not keep that promise at the moment it mattered.
+
+**It is not `ran`, and a reader must not add the two together.** `ran` is a verb
+from the broker's closed list, redeemed from an approval and checked against
+grants, and carries `from-approval` and `against`. A command is none of those —
+ADR 0064 is explicit that running code is not a verb — so this tag has neither
+field, and a reader counting verb executions will not find commands among them.
+A reader wanting both asks for both.
+
+**`a-command-was-not-run` is the refusal half of the same thing**, added
+2026-10-16 and additive. `CLAUDE.md`'s gate is *every execution and every
+refusal leaves a record*, and a run is the newest thing on a machine that can be
+refused — whether by the level the person chose, a request that did not
+validate, or a box that would not close. It carries `agent`, `program` and
+`why`, the sentence the person was shown.
+
+**No arguments are kept**, for the reason `turned-away` gives: the arguments of
+a request that never ran are whatever the model was persuaded to send, and
+keeping them under an entry shaped like every other entry is how a record gets
+used to say something nobody did. The program is kept because a person asking
+*what did it try to run* has no other answer.
 
 **`origin` names the machine an entry was caused from**, added 2026-09-13 and
 additive. ADR 0003: a verb from a paired machine is evaluated against the

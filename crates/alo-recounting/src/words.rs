@@ -200,6 +200,34 @@ pub const NOT_BOUNDED: Word = Word::saying(
     "Read at the head of one line of a record somebody is reading back — the agent being the      assistant built into alo OS and not a person. The machine refused to run the agent's turn      because it could not put the boundary around it that keeps the agent inside the folders and      files the person granted. Nothing was attempted and nothing was refused by any rule: it is      a fault in the machine, and the reason is shown after it in the words the person was shown      at the time.",
 );
 
+/// A command the person allowed the agent to run, run inside a sealed box.
+pub const RAN_A_COMMAND: Word = Word::saying(
+    "recounting.outcome.ran-a-command",
+    "the agent ran a command you allowed it to run, inside a box that could reach only what you \
+     chose",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back — the agent being the \
+     assistant built into alo OS and not a person. The person had allowed the agent to run \
+     commands on this machine; this is one that ran. The \"box\" is a confinement the operating \
+     system itself holds, so the command could open only the folders the person chose and nothing \
+     else. What ran, and what it was allowed to reach, are shown beside it.",
+);
+
+/// A command the agent asked to run, that did not run.
+pub const A_COMMAND_WAS_NOT_RUN: Word = Word::saying(
+    "recounting.outcome.a-command-was-not-run",
+    "the agent asked to run a command and it did not run",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. The assistant asked to run \
+     a command on this machine and nothing ran — because of what the person had chosen about \
+     running commands, because the request was not well formed, or because the machine could not \
+     build the box it runs them in. Which of those is shown after it, in the words the person was \
+     shown at the time. What it would have run is shown; what it would have been given is \
+     deliberately not kept.",
+);
+
 /// Something left this machine.
 pub const LEFT: Word = Word::saying("recounting.outcome.left", "something left this machine")
     .noting(
@@ -496,7 +524,7 @@ pub const LET_GO_THE_PERSON_ASKED_TO_FORGET: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 33] = [
+pub const EVERY_WORD: [Word; 35] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -509,6 +537,8 @@ pub const EVERY_WORD: [Word; 33] = [
     PAIRED,
     WORKSPACE_OPENED,
     NOT_BOUNDED,
+    RAN_A_COMMAND,
+    A_COMMAND_WAS_NOT_RUN,
     LEFT,
     HELD_BACK,
     LEFT_ON_ITS_OWN,
@@ -537,7 +567,7 @@ pub const EVERY_WORD: [Word; 33] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 26] = [
+pub const EVERY_OUTCOME: [Word; 28] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -550,6 +580,8 @@ pub const EVERY_OUTCOME: [Word; 26] = [
     PAIRED,
     WORKSPACE_OPENED,
     NOT_BOUNDED,
+    RAN_A_COMMAND,
+    A_COMMAND_WAS_NOT_RUN,
     LEFT,
     HELD_BACK,
     LEFT_ON_ITS_OWN,
