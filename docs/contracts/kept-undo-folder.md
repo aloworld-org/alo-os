@@ -35,15 +35,27 @@ forget an undo can erase the evidence of what it did.
 /var/lib/alo/undo
 ```
 
-`0700 root:root`. Outside every grant — there is no grant to `/` and none to
+`0711 root:root`. Outside every grant — there is no grant to `/` and none to
 this, and a person's agent cannot name a path under it because no verb takes a
 path at all.
+
+**It said `0700 root:root` until 2026-10-16**, and that was wrong rather than
+stricter. A bracket is taken by the person's own session — this document says so
+two sections down, about who writes `theirs.json` — and a session cannot
+traverse into a folder with no search bit for it, whatever the snapshot itself
+costs. Nothing had hit it because nothing takes a bracket yet.
+[ADR 0045](../decisions/0045-what-undoing-rewinds-to.md) term 8 is the
+amendment, with what was measured.
+
+`0711` and not `0755`: every person may **traverse** to their own directory and
+nobody but root may **list** the folder. Listing it would tell one person who
+else uses this machine, which is nobody's business and which nothing needs.
 
 ## The shape
 
 ```
-/var/lib/alo/undo/                 0700 root:root
-  ada/                             one directory per person
+/var/lib/alo/undo/                 0711 root:root
+  ada/                             0700 ada:ada — one directory per person
     theirs.json                    where that person's settings folder is
     4f1c8a…/                       one directory per kept changing turn
       kept.json                    when it ran, and what it did in their words
@@ -52,7 +64,28 @@ path at all.
 ```
 
 A directory directly under the folder is one person's. A directory directly
-under that is one kept changing turn. **Nothing else is read**: a file where a
+under that is one kept changing turn.
+
+**Who makes what.** The folder and each person's directory inside it are made by
+a **privileged step at the moment a person first signs in** — the session cannot
+make a directory in a root-owned folder, and image build time does not know who
+the people will be. Everything below a person's directory is made by **that
+person's own session**, which is what takes the bracket and needs no capability
+to do it.
+
+**Neither of those is built, measured 2026-10-16.** Nothing creates this folder:
+no tmpfiles entry, no `StateDirectory=`, no line in the image. Nothing takes a
+bracket either — `alo-turn` is where ADR 0045 puts it and names no snapshot. So
+this section is the design and not a description of a running machine, and it is
+marked as such here rather than leaving a reader to discover that the folder
+their code is about has never existed. What *is* built is everything that reads
+the folder: the window, the person's surface, and the privileged remover.
+
+**So everything below a person's directory is that person's own writing, and the
+remover reads it as root.** That is the whole reason for the three rules that
+follow — the link that is never followed, the name that is never parsed, and the
+settings folder whose owner is checked. Under the `0700 root:root` this document
+used to claim, all three would have been guarding against nobody. **Nothing else is read**: a file where a
 directory is expected is stepped over, and so is a link — a link here would be
 a way to point the one privileged remover on the machine at somebody else's
 subvolume, so nothing under this folder is ever followed.
@@ -78,6 +111,17 @@ machine removing the wrong snapshot.
   `docs/contracts/person-settings.md` defines it — `$XDG_CONFIG_HOME/alo`, or
   `$HOME/.config/alo` where that says nothing — **absolute**, and a relative
   path is refused.
+- **And it is owned by that person**, or it is refused. This file is written by
+  the person's own session, and a root unit on a timer then reads `undo.toml`
+  from wherever it says; without this, one person could make root follow an
+  absolute path of their choosing. The owner it is checked against is the uid
+  that owns that person's own directory in this folder, which the shape above
+  makes authoritative — so the check needs no guess about where homes live and
+  no list of the people on the machine.
+
+  *Added 2026-10-16 with the mode above, and for the same reason: the two
+  belong together. A folder the person can write and a path root follows without
+  checking is a privilege boundary with nothing on it.*
 
 **Why it exists.** How far back an undo reaches is the person's one setting, in
 `undo.toml` in that folder (ADR 0045's first term). `$XDG_CONFIG_HOME` is a

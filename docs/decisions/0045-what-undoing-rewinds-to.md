@@ -379,3 +379,75 @@ turn runs is its vocabulary. All seven terms are built.
 the status line holds both. A worker who finds this file still saying
 *proposed* and a task asking for an undo has found a plan that got ahead of its
 decision, and should stop at the plan.
+
+## Amended, 2026-10-16 — who may write a bracket, and what mode the folder is
+
+The terms above name `alo-turn` as the taker of brackets and say **taking one
+needs no capability**, which the amendment of 2026-09-21 measured and this one
+measured again. `docs/contracts/kept-undo-folder.md` then gave the folder those
+brackets go in as **`0700 root:root`**.
+
+**Those two cannot both hold, and nothing had hit it because nothing takes a
+bracket.** A folder no person may even traverse is a folder the person's own
+session cannot write a bracket into, whatever the snapshot itself costs. The
+contract's own text says who writes: *the session that takes the bracket, which
+knows, writes it down* — about `theirs.json`, in that folder.
+
+**What was measured** (2026-10-16, cgroup2fs and a loopback `btrfs` on kernel
+7.0.0-31): `btrfs subvolume snapshot -r` of a subvolume the person owns, run as
+the person with no `sudo`, **exits 0 and produces the snapshot**. So the
+operation is not the obstacle and the amendment of 2026-09-21 stands. The mode
+was.
+
+**What was also found:** nothing creates `/var/lib/alo/undo` at all. There is no
+tmpfiles entry, no `StateDirectory=`, and no line in the image — measured by
+searching `image/` for the path and finding none. Three crates read the folder
+and none of them, nor anything else, makes it. **Both ends of this feature are
+built and the middle is absent**: the window (`alo-keeping-up`), the person's
+surface (`alo-changing-undo`) and the privileged remover (`alo-letting-go`) all
+exist.
+
+### 8. The folder is traversable, each person's directory is their own
+
+- `/var/lib/alo/undo` is **`0711 root:root`** — every person may traverse it,
+  nobody but root may list it. Traversal is what a session needs to reach its
+  own directory; listing would tell one person who else uses the machine, which
+  is nobody's business and is not needed by anything.
+- `/var/lib/alo/undo/<person>` is **`0700 <person>:<person>`**, so each person
+  reaches their own brackets and no other person's.
+- **A privileged step makes both**, at the moment a person first signs in, which
+  is where the machine already learns a person exists. It is not made by the
+  session, because a session cannot make a directory in a root-owned folder, and
+  not at image build, because the people are not known then.
+
+### 9. Everything below a person's directory is that person's own writing
+
+This follows from term 8 and is the part that needs saying out loud, because the
+privileged remover reads those files **as root**.
+
+The contract already refuses to follow a link anywhere under the folder, and
+already treats both directory names as opaque. Term 8 is why those rules were
+right: they are the rules you need when the person can write there, and under
+`0700 root:root` they would have been guarding against nothing.
+
+One rule was missing. `theirs.json` names a settings folder as an **absolute
+path**, which was the only thing checked, and a root unit then reads
+`undo.toml` from wherever it says. So:
+
+- **The settings folder a person's file names must be owned by that person**,
+  and the remover refuses it otherwise. The uid is the one that owns that
+  person's own bracket directory, which term 8 makes authoritative — so the
+  check needs no guess about where homes live and no list of people.
+
+That is the whole of the privilege boundary: root reads a path a person chose,
+so root confirms the person owns what they chose.
+
+### What this costs, and what it does not
+
+- **`docs/contracts/kept-undo-folder.md` changes a published mode.** It is a
+  contract, so it says what it was and what it is now and why, rather than being
+  edited to look as though it always said this.
+- **Taking a bracket is still nobody's capability**, and `alo-turn` is still
+  where the terms put it. This amendment does not build it. It removes the
+  reason it could not be built.
+- **The remover gains one refusal** and no new privilege.
