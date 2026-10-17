@@ -40,6 +40,7 @@ mod stopping_the_command_in_front;
 mod terminal_output_becomes_a_grid;
 pub mod the_connection_it_is_waiting_on;
 pub mod what_a_cell_looks_like;
+pub mod what_a_command_will_do;
 pub mod what_a_person_typed;
 pub mod what_alo_said;
 pub mod what_is_blocking_it;
@@ -60,7 +61,8 @@ pub use terminal_output_becomes_a_grid::{
 pub use the_connection_it_is_waiting_on::{
     SocketAddr, TheConnection, the_connection_being_read_by,
 };
-pub use what_alo_said::WhatAloSaid;
+pub use what_a_command_will_do::{WhatACommandWillDo, WorthSeeing};
+pub use what_alo_said::{AloSLine, AloSRemark, WhatAloSaid};
 pub use what_is_blocking_it::{WhatIsBlockingIt, what_is_blocking};
 pub use who_is_speaking::{ARegion, WhoIsSpeaking, regions_of};
 pub use why_a_command_is_waiting::{

@@ -40,7 +40,7 @@ fn every_word_declared_is_in_the_array() {
             word.named()
         );
     }
-    assert_eq!(EVERY_WORD.len(), 9);
+    assert_eq!(EVERY_WORD.len(), 13);
 }
 
 /// **No key appears twice.**
@@ -74,6 +74,19 @@ const ABOUT_A_COMMAND_THAT_WAITS: [Word; 5] = [
     NOBODY_CAN_TELL,
 ];
 
+/// The sentences said about a command **nobody has run yet**.
+///
+/// Three marks and the disclaimer that goes with every one of them. They are
+/// under a rule the group above is not: each describes *what an answer claimed*
+/// rather than what this machine observed, so none of them may read as a
+/// verdict — which is what their notes are mostly about.
+const ABOUT_A_COMMAND_NOBODY_HAS_RUN: [Word; 4] = [
+    IT_DESTROYS_SOMETHING,
+    IT_NEEDS_MORE_THAN_YOUR_RIGHTS,
+    SOMETHING_LEAVES_THIS_MACHINE,
+    AN_EXPLANATION_AND_NOT_A_GUARANTEE,
+];
+
 /// **Each gutter label is one word**, because the design gives it 80 of the
 /// gutter's 96 and a phrase has nowhere to go.
 ///
@@ -99,14 +112,59 @@ fn nothing_this_crate_says_is_empty() {
     }
 }
 
-/// **The two groups together are the whole list**, so a word added to the file
-/// and to neither group is caught here rather than going unchecked.
+/// **The groups together are the whole list**, so a word added to the file and
+/// to none of them is caught here rather than going unchecked.
+///
+/// *It was two groups until the explanation words landed, and this test is the
+/// reason the third group exists rather than the four words going unruled.*
 #[test]
-fn the_two_groups_are_the_whole_list() {
+fn the_groups_are_the_whole_list() {
     assert_eq!(
-        IN_THE_GUTTER.len() + ABOUT_A_COMMAND_THAT_WAITS.len(),
+        IN_THE_GUTTER.len()
+            + ABOUT_A_COMMAND_THAT_WAITS.len()
+            + ABOUT_A_COMMAND_NOBODY_HAS_RUN.len(),
         EVERY_WORD.len(),
-        "a word is declared and in neither group, so no rule is applied to it"
+        "a word is declared and in no group, so no rule is applied to it"
+    );
+}
+
+/// **No mark reads as a verdict this machine reached**, which is the one rule
+/// the explanation words have and the waiting words do not.
+///
+/// A mark says what an answer claimed. Held in English, where it is checkable:
+/// a translation is checked by the person writing it, which is what the note on
+/// each word is for. The words to catch are the ones that would turn a claim
+/// into a finding — `warning`, `danger`, `unsafe`, `blocked` — and the test
+/// names them rather than describing them, so it can fail.
+#[test]
+fn no_mark_reads_as_a_verdict() {
+    for word in ABOUT_A_COMMAND_NOBODY_HAS_RUN {
+        let said = word.says().to_lowercase();
+        for verdict in ["warning", "danger", "unsafe", "forbidden", "blocked"] {
+            assert!(
+                !said.contains(verdict),
+                "{} says {:?}, and {:?} makes a model's claim read as this machine's finding",
+                word.named(),
+                word.says(),
+                verdict
+            );
+        }
+    }
+}
+
+/// **The disclaimer is short**, because it is shown under every explanation and
+/// a long one becomes noise a person stops reading.
+///
+/// Its own note says so, and a note is not a check. Sixty characters is the
+/// bound in English; a translation is the translator's to keep short, which is
+/// what the note asks them for.
+#[test]
+fn the_disclaimer_is_short_enough_to_be_read_every_time() {
+    let said = AN_EXPLANATION_AND_NOT_A_GUARANTEE.says();
+    assert!(
+        said.len() <= 60,
+        "the disclaimer is {} characters: {said:?}",
+        said.len()
     );
 }
 

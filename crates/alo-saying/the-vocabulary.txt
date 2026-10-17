@@ -1633,6 +1633,10 @@ tasks.window.scope	Permissions and model choices apply to this task.
 telling.carry-on	You can carry on. Nothing else on this machine depends on the agent, and nothing here is waiting for you to do anything about this
 telling.runs-them-anyway	That is said once: alo OS will run these weights whenever you choose them, and will not mention their size again by itself
 telling.the-agent-cannot-answer	The agent cannot answer right now
+terminal.explained.destructive	it destroys something
+terminal.explained.elevated	it needs more than your own rights
+terminal.explained.leaves	something leaves this machine
+terminal.explained.not-a-guarantee	an explanation, not a guarantee
 terminal.waiting.another-process	waiting for another program, or for a lock
 terminal.waiting.computing	still computing
 terminal.waiting.keyboard	waiting for the keyboard

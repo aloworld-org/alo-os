@@ -559,6 +559,21 @@ file carries it with a tier.*
   the machine marked. Edit it, or try it in the box first. **Called an
   explanation and not a guarantee**, because a script, an alias or something it
   downloads can change what happens
+  **The answer half is built, 2026-10-17**: `alo_terminal::WhatACommandWillDo`
+  carries the plain words, the three marks and the disclaimer, and an `alo` line
+  in the transcript can hold it beside the five waiting answers. Two rules are
+  tests rather than sentences — the disclaimer is on **every** explanation
+  because the method that answers it takes no argument, and **nothing marked
+  means nothing marked**, enforced by there being no `is_safe` to ask.
+  **What is still owed is the asking, and it is not a chord**: alo does not know
+  what a person has typed. Measured the same day — nothing keeps the typed line,
+  `the_command_in_front` gives a process already running, and the grid is
+  `alacritty_terminal` with a `VoidListener`, so no escape sequence is seen.
+  Reading it off the screen would decide what the *person* typed from what a
+  *program* printed; keeping our own copy diverges the first time somebody
+  presses Up. The real road is **shell integration**, which is a new mechanism,
+  a published contract, and a decision about a sequence any program can forge —
+  so no shortcut was bound to a surface that cannot work
 - **Say up front whether it can be undone.** *This can be put back* and *this
   cannot* are different sentences, and the second is the one worth seeing before
   you press Enter rather than after
