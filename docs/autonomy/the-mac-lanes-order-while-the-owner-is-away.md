@@ -43,19 +43,30 @@ because a reader starting from it would conclude this goal is unreachable.*
 | ★ | asks why a command is waiting | **built and reachable** as of #755, `Ctrl`+`Alt`+`W`. **Never seen on a machine** |
 | ★ | scrolls back through output | **usable** |
 | ★ | runs a command touching nothing | the runner and record exist; the kernel box does not — **not usable** |
-| ★ | scopes one command | **nothing** |
-| ★ | finds a command by what it did | **nothing** |
+| ★ | scopes one command | **blocked** — a per-command narrowing is `alo-capability`, another lane's |
+| ★ | finds a command by what it did | the record can answer it; **nothing can ask it**, and giving it a surface is scope |
 | ★ | bisects the machine | **nothing**, and waits on a bracket |
 | ★ | reads output that is not a character grid | **nothing** |
 | ★ | hands somebody a session to replay | **nothing**, and waits on rich results |
-| | asks what a command will do first | **nothing** |
+| | asks what a command will do first | **nothing built, and next** — both its surfaces exist, from #755 |
 
 **Four of thirteen are usable today. One more is reachable and unseen.** Of the
-remaining eight: **six are this lane's and startable**; one — *decides whether
-alo may use it* — is this lane's **surface** but **blocked**, because nothing
-stores either choice and the crate that would is another lane's (measured
-2026-10-17, the last step of the order); and one — *run a command touching
-nothing* — is **nobody's as of 2026-10-17**. The owner said that day
+remaining eight, counted against the rows above rather than against the order:
+
+- **four are this lane's and startable** — *asks what a command will do first*,
+  *reads output that is not a character grid*, and the two that sit behind this
+  lane's own earlier steps, *bisects the machine* and *hands somebody a session
+  to replay*;
+- **three are blocked or need a decision this lane may not take** — *decides
+  whether alo may use it* and *scopes one command*, both on `alo-capability`,
+  whose ownership ADR 0111 leaves to the integration owner; and *finds a command
+  by what it did*, which needs a scope decision about which surface asks it. All
+  three are measured at the foot of the order;
+- **one is nobody's** — *run a command touching nothing*, available to the
+  desktop lane since 2026-10-17 and taken by no lane.
+
+*That is three of thirteen behind a question rather than behind work, and all
+three were read as startable this morning.* The owner said that day
 that the development PC is off and its work can be done by the desktop lane; the
 desktop lane has read that and **has not taken it**, for a stated reason. So it
 is available and unclaimed, which is not the same as assigned. The table near the
@@ -110,16 +121,37 @@ fault — check `main` first and skip to walk step 7.
 has steps and so does the order below. A bare "step 6" could mean either, and one
 cross-reference in this file was already stale for exactly that reason.*
 
-### 2. Terminal tasks 4 and 5
+### 2. Explain a command before it runs
 
-`docs/autonomy/the-terminal-in-full-plan.md` is the truth about these. Both are
-startable today, need no machine this lane lacks, and each ends in something a
-person does:
+**The cheapest of the remaining six, by the plan's own words, and the only one
+of the thirteen not marked ★.** A person types a command and asks what it will
+do before running it.
 
-- **find a command by what it did** — *the command that changed my git config*,
-  answered from the record every run already writes;
-- **scope one command** — one command under a narrower grant than the session
-  has, without touching what the person chose for everything else.
+**It is next because its two surfaces already exist.** The asking is a chord, on
+the road `a_chord_asks_why_a_command_is_waiting` laid in #755 — which added
+`alo_shortcuts::Action::WhyIsItWaiting` under ADR 0085's rule that *`alo-shortcuts`
+is this lane's crate, so the action is this lane's to add*. The answering is an
+`alo` line in the transcript, through `alo_terminal::WhatAloSaid`, also #755's.
+So this is a third caller of machinery that works rather than anything new, and
+it stacks on #755 rather than waiting for it.
+
+**What it needs that is not built:** the question put to a model through
+`alo-asking`, and the marking the promise asks for — *anything destructive,
+anything needing elevated rights and anything leaving the machine*.
+
+**The promise names no model**, which is why this is testable on this machine: a
+provider key is present (mode 600, measured 2026-10-17). An earlier version of
+this document called it out of reach because *a model on this machine* is an
+environment this lane cannot test in — true of a **local** model and false of the
+promise.
+
+**And it is an explanation, not a guarantee**, in the promise's own words: a
+script, an alias or something a command downloads can change what happens, so the
+surface says so rather than implying certainty.
+
+*This step was *Terminal tasks 4 and 5* until 2026-10-17. See the two steps at
+the foot of this order for why both were moved, and what the plan's own status
+lines hid.*
 
 ### 3. Task 6, rich results
 
@@ -131,30 +163,55 @@ replayable session needs a transcript that is more than cells.
 printed, so it is as much about what it refuses to render as what it renders.
 
 
-### 4. Explain a command before it runs
-
-Back in the order, because the first version of this document had it out of
-reach for a reason that did not hold: `docs/features.md` asks for *plain words
-for what it does, with anything destructive, anything needing elevated rights and
-anything leaving the machine marked*, and names no model. A provider key is on
-this machine, so the asking is testable here.
-
-**Called an explanation and not a guarantee**, in the promise's own words,
-because a script, an alias or something it downloads can change what happens —
-so the surface says that rather than implying certainty.
-
-### 5. The bracket, if it is still nobody's
+### 4. The bracket, if it is still nobody's
 
 ADR 0045 puts it in `alo-turn`. #751 removed the first thing in the way and #752
 recorded the measurement it rests on. **Only if nothing else has taken it** —
 that crate is the workspace's most central and a collision in it costs a day
 where asking costs a message.
 
-### 6. Then bisect the machine, and *your files as they were*
+### 5. Then bisect the machine, and *your files as they were*
 
 Both wait on a bracket and on nothing else, so **taking the bracket step above
 makes these two this lane's** — which is why the corrected table below no longer lists them as
 unfinishable. If the bracket turns out to be another lane's, these go with it.
+
+### 6. Terminal tasks 4 and 5 — **both need a scope decision, measured 2026-10-17**
+
+**The plan says of each: *Depends on: nothing in this plan.* That is true, and I
+read it as *unblocked*, which it does not say.** Both depend on something
+outside the plan, and measuring is what found out. *A scope that lives in the
+method and not in the sentence is a scope the reader cannot check* — and here the
+scope lived in four words, *in this plan*.
+
+**Task 4, *find a command by what it did*.** The question is answerable: a record
+entry carries `What`, whose `effect` says whether a call **changed** or only
+**answered**, and `What::touched(path)` already exists and matches on recorded
+arguments rather than on text. What is missing is **anywhere to ask it from**:
+
+| where a question could arrive | why it cannot |
+|---|---|
+| the record window | **its own doctrine forbids this.** `record_keys.rs`: *no letters, so there is nowhere to type a search* and *nothing that hides a line, so no key could leave a refusal out*. A narrowed view is both of those |
+| a verb the agent calls | **there is no such verb**, and the published list in `docs/contracts/agent-verbs.md` has none for the record. Adding one changes a public contract and `alo-capability`, which is another lane's |
+| `alo-ask` | it asks **the model**, not the record — a different `Asking` type with the same name, which is how this looked reachable at first |
+
+So giving it a surface is a new window, a new verb, or a new command — and each
+of those is a promise, not the making-true of one. **That is scope**, and
+`CLAUDE.md` is explicit that when the answer is not obvious it is scope.
+
+*One real finding on the way: `RanACommand` records `allowed`, "the folders the
+kernel let it reach", which is **permitted and not changed**. Answering *what
+changed my git config* from it would answer *what could have*, which is this
+repository's oldest fault family wearing a new coat. For a raw command the
+record cannot say what it changed; for a verb it can.*
+
+**Task 5, *scope one command without changing a setting*.** A per-command
+narrowing of a grant, which is `alo-capability` — the same crate, and the same
+unanswered ownership question, as the step below.
+
+**What would unblock task 4**, in one sentence: a decision on which surface asks
+the record a narrowed question, given that the one window that shows the record
+refuses to narrow by design.
 
 ### 7. The choice of whether alo may use the terminal — **blocked, measured 2026-10-17**
 
