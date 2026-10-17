@@ -102,12 +102,25 @@ command a lane runs:
 | 7 | press `Ctrl`+`D` to end `cat`, then `Ctrl`+`Alt`+`W` again | the line **goes**, because there is nothing waiting now |
 | 8 | type `sleep 30`, Enter, then `Ctrl`+`Alt`+`W` | *nobody can tell* — a clock is none of the five, and this is the honest answer rather than a wrong confident one |
 | 9 | scroll up with the wheel, then back down | the transcript moves and stops at both ends |
+| 10 | type `printf 'test result: ok. %d passed; %d failed; %d ignored;\n' 23 1 0` | **two lines under the output**: `Tests · 23 tests passed · 1 test failed`, and under it `Source: cargo test output · Not independently verified`. **`program` in the gutter beside both**, not `alo` |
+| 11 | look at the gutter beside those two lines again | still `program`. This is the design's *PROGRAM includes parsed rich results*, and it is the one thing in the walk that is easy to get wrong and hard to notice |
+| 12 | run `ls` | the two lines **stay**, because the summary is still on the screen above. Not a fault: what is recognised is what the screen holds |
+| 13 | run `clear` | the two lines **go**, because the line they were read from is gone |
 
 **Step 6 is the measurement.** Steps 3, 4 and 9 are things believed to work that
 nobody has watched either, so they cost nothing to read while the machine is on.
 Step 8 is the one most likely to be wrong, because it is the answer a careless
 table gets wrong — a first version of that table answered *waiting for another
 program* about `sleep`.
+
+**Steps 10 to 13 were added 2026-10-17, after #761.** They are the second of
+the two things that are built, reachable and have never been seen. Step 10's
+command is **`printf` and not `echo` deliberately**: an echoed command carrying
+a summary is counted along with its output, so `echo` would show 46 passed
+across two suites. With `printf '…%d passed…' 23 1 0` the echoed line's token
+before `passed` is `%d`, which is not a number, so it is refused **by
+construction** rather than by luck. `a_test_result_a_program_printed.rs` has the
+measurement and a test that fails if that ever stops being true.
 
 **Any step failing is worth more than the rest of this document.** What to send
 back: which step, what was on the screen, and `journalctl -b 0 -u alo-compositor`
