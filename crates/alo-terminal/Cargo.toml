@@ -23,7 +23,10 @@ thiserror = { workspace = true }
 # foreground, and asking about the wrong one answers "waiting for the keyboard"
 # every time. Linux only, as the reading of `/proc` beside it is.
 [target.'cfg(target_os = "linux")'.dependencies]
-rustix = { workspace = true, features = ["termios"] }
+# `termios` asks the terminal what it has in front; `process` sends the
+# interrupt that stops it — `stopping_the_command_in_front.rs` is the only
+# caller of the second and says why the signal is the gentle one.
+rustix = { workspace = true, features = ["termios", "process"] }
 
 [lints]
 workspace = true
