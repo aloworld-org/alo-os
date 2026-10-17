@@ -366,6 +366,74 @@ externalise. That is the opposite call from the gutter's four words, which are
 English a person reads and needed entries of their own: the test is whether
 there is anything to translate, not whether text is drawn.
 
+## A recognised test result, and the four things in it
+
+The gutter above was measured against a frame named **`Rich test result /
+untrusted program data`** (`488:29287`), and that frame specifies the rich
+result itself as well. It is in `485-28999`, which **is** the authoritative node
+for the gutter and for provenance — so unlike the two rich views in
+`479:28965`, this one is a specification rather than a rendering reference.
+
+### What is in it, read off the frame
+
+The frame is **894 wide at x 96**, height **262**, inside the 990-wide
+transcript boundary. Its children, in reading order:
+
+| | x | y | w | h |
+|---|---|---|---|---|
+| the summary — `Tests · 23 passed · 1 failed` | 17 | 17 | 862 | 22 |
+| the provenance — `Source: cargo test output · Not independently verified` | 17 | 55 | 862 | 22 |
+| the program's own text, at length | 17 | 93 | 862 | 88 |
+| the actions row | 17 | 197 | 376 | 48 |
+
+and the actions row holds three `Ask alo / Action` instances, at x **0** (100
+wide), **108** (100) and **216** (160).
+
+**The inset is 17 and the step between the two one-line rows is 38** — `55 − 17`
+— which is the 22-tall row plus 16 of space. Those are the figures a layout
+derives from; they are logical measures and go through the display's scale like
+every other.
+
+### Three rules the frame states in words, and all three are tests
+
+The frame and its parent carry these as text, and each one is a rule rather
+than a caption:
+
+- ***Formatted output is not system evidence.*** So every accessor on
+  `alo_terminal::ATestResult` is named `it_said_…`, and there is no method that
+  reports a count as a fact.
+- ***Text reveals original bytes.*** So a recognised result **never replaces**
+  what the program printed — the program's own text is already on the screen
+  above the two lines, which is why the table's third row needed no code.
+- ***PROGRAM includes parsed rich results.*** So the two lines extend the
+  **program's** gutter region, not alo's: a summary read out of a stranger's
+  output is still that stranger's claim. A test asserts that alo's own remark
+  moves down when a result appears above it, which is the one observable
+  consequence of getting the region right.
+
+A fourth, on the parent frame, is **not built and is written down here so it is
+not mistaken for done**: *Keyboard focus stays at the shell until a view is
+explicitly entered; Escape returns it.* Nothing is enterable yet, so nothing
+takes focus — which is the honest state rather than a gap a surface papers over.
+
+### What was built, 2026-10-17, and what was not
+
+**Built:** the summary and the provenance, from the numbers, in the program's
+region. The ignored count is shown **only when it is not nought**, because the
+design's own summary reads `Tests · 23 passed · 1 failed` over a run with none.
+
+**Not built:** the three `Ask alo / Action` instances. They are the agent's
+road, which is a surface of its own, and binding them before it exists would be
+the fault `alo-shell`'s `tests/the_road_every_action_takes.rs` refuses.
+
+**Not specified anywhere, and so not built:** the other two rich views.
+`479:29079` and `479:29140` are instances of `Terminal / View / Benchmark
+comparison` and `Terminal / View / File diff`, **990×320**, and the components
+themselves are in no snapshot in this repository — their insides are not
+recorded anywhere a reader can check. `479-28965.xml` says so itself: *the
+components themselves are not in this capture.* That is why a test result is
+the rich view that exists: it is the one the design describes.
+
 ## The type, asked of the live file
 
 The snapshot has no type information, so these came from the file's own variable

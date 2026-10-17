@@ -845,7 +845,23 @@ pub(crate) struct Shows<'a> {
     pub(crate) screen: &'a TerminalOutput,
     /// What alo has said into this transcript, beneath it.
     pub(crate) what_alo_said: &'a alo_terminal::WhatAloSaid,
+    /// A run of tests recognised in what the program printed, if there is one.
+    ///
+    /// **Drawn in the program's own region and labelled `program`**, not alo's.
+    /// The design's annotation on `485-28999` says so outright — *PROGRAM
+    /// includes parsed rich results* — and it is the right call: a summary read
+    /// out of a stranger's output is still that stranger's claim, which is also
+    /// why the line under it says nobody checked it.
+    pub(crate) a_test_result: Option<&'a alo_terminal::ATestResult>,
 }
+
+/// What joins the parts of a recognised result's summary.
+///
+/// The design draws `Tests · 23 passed · 1 failed`, so the separator is a
+/// middle dot with a space either side, read off the frame. **Punctuation and
+/// not language**: it is the same mark in every language this ships in, which
+/// is why it is here rather than in a vocabulary.
+const BETWEEN_THE_SUMMARYS_PARTS: &str = " · ";
 
 /// Draw alo's own terminal onto a display this size.
 ///
@@ -864,6 +880,7 @@ pub(crate) fn picture(
     let Shows {
         screen,
         what_alo_said,
+        a_test_result,
     } = shows;
     let (window, transcript) =
         where_the_window_goes(size, scale).ok_or(NothingToDrawWith::TheresNoRoom)?;
@@ -946,6 +963,71 @@ pub(crate) fn picture(
     // The word is resolved through the vocabulary, because `CLAUDE.md` makes
     // hardcoded English a bug and these four are read by every person who uses
     // the machine.
+    // **A recognised test result, in the program's own region.**
+    //
+    // Two lines, in the order the design draws them: the summary from the
+    // numbers, then the sentence saying nobody checked them. The design's frame
+    // `Rich test result / untrusted program data` has a third thing in it — the
+    // program's own text at length — and that is already on the screen above,
+    // because it is what the program printed and this never replaces it. *Text
+    // reveals original bytes*, in the frame's own words.
+    //
+    // **The ignored count is shown only when there is one.** The design's
+    // summary reads `Tests · 23 passed · 1 failed` over a run with none, and a
+    // trailing `· 0 ignored` on every result would be three words of noise in
+    // the ordinary case.
+    let the_results_lines: Vec<String> = a_test_result.map_or_else(Vec::new, |result| {
+        let counted = |which: &alo_terminal::words::Counted, how_many: usize| {
+            says.count(
+                &which.key(),
+                &alo_strings::Counting::of(how_many as u64),
+                &alo_strings::Filling::nothing(),
+            )
+            .text()
+            .to_owned()
+        };
+        let mut summary = vec![
+            says.say(
+                &alo_terminal::words::TESTS.key(),
+                &alo_strings::Filling::nothing(),
+            )
+            .text()
+            .to_owned(),
+            counted(
+                &alo_terminal::words::SO_MANY_PASSED,
+                result.it_said_passed(),
+            ),
+            counted(
+                &alo_terminal::words::SO_MANY_FAILED,
+                result.it_said_failed(),
+            ),
+        ];
+        if result.it_said_ignored() > 0 {
+            summary.push(counted(
+                &alo_terminal::words::SO_MANY_IGNORED,
+                result.it_said_ignored(),
+            ));
+        }
+        let printed_it = says.say(
+            &result.what_printed_it().key(),
+            &alo_strings::Filling::nothing(),
+        );
+        let provenance = says.say(
+            &result.and_nobody_checked().key(),
+            &alo_strings::Filling::of("what", printed_it.text()),
+        );
+        vec![
+            summary.join(BETWEEN_THE_SUMMARYS_PARTS),
+            provenance.text().to_owned(),
+        ]
+    });
+    for (which, line) in the_results_lines.iter().enumerate() {
+        let beneath = screen.size().lines() + which;
+        if let Some(drawn) = a_regions_label(fonts, line, goes, beneath, (ground, ink)) {
+            placed.push(drawn);
+        }
+    }
+
     // **alo's own lines, beneath what the program wrote.** Drawn in the
     // transcript's own type at the transcript's own inset, so they read as part
     // of the conversation rather than as chrome bolted beside it. The gutter
@@ -973,13 +1055,20 @@ pub(crate) fn picture(
                 .to_owned(),
             alo_terminal::AloSLine::AsTheModelSaidIt(prose) => prose.clone(),
         };
-        let beneath = screen.size().lines() + which;
+        let beneath = screen.size().lines() + the_results_lines.len() + which;
         if let Some(drawn) = a_regions_label(fonts, &text, goes, beneath, (ground, ink)) {
             placed.push(drawn);
         }
     }
 
-    for region in alo_terminal::regions_of(screen.size().lines(), what_alo_said.lines()) {
+    // **The program's region includes the recognised result**, which is the
+    // design's own rule and not a convenience: *PROGRAM includes parsed rich
+    // results*. A summary drawn in alo's region would label a stranger's
+    // arithmetic as alo's interpretation.
+    for region in alo_terminal::regions_of(
+        screen.size().lines() + the_results_lines.len(),
+        what_alo_said.lines(),
+    ) {
         let said = says.say(
             &region.who.the_word().key(),
             &alo_strings::Filling::nothing(),

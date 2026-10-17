@@ -13,7 +13,13 @@ use super::*;
 #[test]
 fn the_whole_list_declares() {
     let vocabulary = terminal_words().unwrap();
-    assert_eq!(vocabulary.how_many(), EVERY_WORD.len());
+    // **Both lists, because the vocabulary holds both.** A plural is an entry
+    // like a phrase is, and asserting against `EVERY_WORD` alone passed until
+    // the first plural was declared and then said the list was short by three.
+    assert_eq!(
+        vocabulary.how_many(),
+        EVERY_WORD.len() + EVERY_COUNTED.len()
+    );
 }
 
 /// A vocabulary that already holds one of these keeps its own.
@@ -40,7 +46,7 @@ fn every_word_declared_is_in_the_array() {
             word.named()
         );
     }
-    assert_eq!(EVERY_WORD.len(), 13);
+    assert_eq!(EVERY_WORD.len(), 16);
 }
 
 /// **No key appears twice.**
@@ -87,6 +93,15 @@ const ABOUT_A_COMMAND_NOBODY_HAS_RUN: [Word; 4] = [
     AN_EXPLANATION_AND_NOT_A_GUARANTEE,
 ];
 
+/// The words around a test result recognised in a program's output.
+///
+/// Under the same rule as the group above and for a sharper reason: a
+/// recognised result is **a stranger's arithmetic**, so none of these may read
+/// as something this machine established. The design's own words for it are
+/// *formatted output is not system evidence*.
+const ABOUT_A_RESULT_A_PROGRAM_PRINTED: [Word; 3] =
+    [TESTS, FROM_A_CARGO_TEST_RUN, NOT_INDEPENDENTLY_VERIFIED];
+
 /// **Each gutter label is one word**, because the design gives it 80 of the
 /// gutter's 96 and a phrase has nowhere to go.
 ///
@@ -122,7 +137,8 @@ fn the_groups_are_the_whole_list() {
     assert_eq!(
         IN_THE_GUTTER.len()
             + ABOUT_A_COMMAND_THAT_WAITS.len()
-            + ABOUT_A_COMMAND_NOBODY_HAS_RUN.len(),
+            + ABOUT_A_COMMAND_NOBODY_HAS_RUN.len()
+            + ABOUT_A_RESULT_A_PROGRAM_PRINTED.len(),
         EVERY_WORD.len(),
         "a word is declared and in no group, so no rule is applied to it"
     );
@@ -193,6 +209,80 @@ fn every_key_is_the_terminals_own() {
             word.named().starts_with("terminal."),
             "{} is not under this crate's own area",
             word.named()
+        );
+    }
+}
+
+/// **Every plural is a plural**: a key that is a key, a gap that appears in
+/// both forms, and a note.
+///
+/// The three things `alo_strings::Plural::counting` can refuse, checked here so
+/// the refusal is a test rather than a panic at start-up. A gap missing from one
+/// of the two forms is the interesting one — it would show a sentence with
+/// `{passed}` in it to a person, in exactly the case that form covers and in no
+/// other, so the ordinary run would look right.
+#[test]
+fn every_plural_is_declarable() {
+    for counted in EVERY_COUNTED {
+        let gap = format!("{{{}}}", counted.number());
+        assert!(
+            counted.says_of_one().contains(&gap),
+            "{:?}'s singular does not hold {gap}",
+            counted.key()
+        );
+        assert!(
+            counted.says_of_others().contains(&gap),
+            "{:?}'s plural does not hold {gap}",
+            counted.key()
+        );
+        assert!(
+            !counted.note().is_empty(),
+            "{:?} carries no note for a translator",
+            counted.key()
+        );
+    }
+}
+
+/// **No plural shares a key with a word, or with another plural.**
+///
+/// One key means one string, and a vocabulary holds phrases and plurals in the
+/// same space — `terminal_words` would refuse the second of a pair, which is a
+/// start-up failure rather than something a reader would notice.
+#[test]
+fn no_plural_shares_a_key() {
+    for counted in EVERY_COUNTED {
+        for word in EVERY_WORD {
+            assert_ne!(
+                counted.key(),
+                word.key(),
+                "a plural and a word share {:?}",
+                word.key()
+            );
+        }
+    }
+    let mut keys: Vec<String> = EVERY_COUNTED
+        .iter()
+        .map(|counted| counted.key().to_string())
+        .collect();
+    keys.sort();
+    let how_many = keys.len();
+    keys.dedup();
+    assert_eq!(how_many, keys.len(), "two plurals share a key");
+}
+
+/// **Every plural's key is a key**, which is what makes `Counted::key`'s
+/// `unchecked` honest.
+///
+/// A key written by hand in this file is the one mistake that road cannot
+/// catch, so it is caught here. Without this test `unchecked` would be a
+/// promise nothing keeps.
+#[test]
+fn every_counted_key_is_a_key() {
+    for counted in EVERY_COUNTED {
+        assert!(
+            alo_strings::Key::named(counted.named()).is_ok(),
+            "{:?} is not a key",
+            counted.named()
         );
     }
 }

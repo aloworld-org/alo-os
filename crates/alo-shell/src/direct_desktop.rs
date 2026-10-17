@@ -1586,6 +1586,7 @@ fn drawn_terminal(
         crate::the_terminals_cells_are_drawn::Shows {
             screen,
             what_alo_said: terminal.what_alo_said(),
+            a_test_result: terminal.a_test_result(),
         },
         size,
         scale,

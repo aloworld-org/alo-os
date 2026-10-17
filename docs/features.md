@@ -551,6 +551,25 @@ file carries it with a tier.*
   come back to tomorrow. *Other terminals can show an inline image. None can
   make it a thing on your desk that outlives the scroll, because the compositor
   is not theirs*
+  **The first rich view is built, 2026-10-17**: a run of tests recognised in what
+  a program printed, drawn as the design's own frame draws it — the summary from
+  the numbers, then *Source: … · Not independently verified*. Three of that
+  frame's rules are tests rather than sentences: every accessor is named
+  `it_said_…` because *formatted output is not system evidence*; the program's
+  own text is never replaced, because *text reveals original bytes*; and the two
+  lines extend the **program's** gutter region rather than alo's, because
+  *PROGRAM includes parsed rich results*. **Untrusted is the load-bearing word**,
+  so a line carrying any control character is refused whole, a count that will
+  not parse is not a count, a sum that would overflow refuses the result, and
+  neither the summary nor the provenance can be forged by a program printing
+  them — both are built from parsed numbers and this repository's own keys.
+  **Recognising nothing is the ordinary case**, which the design says by drawing
+  its text fallback first. **Not built**: the three *Ask alo* actions, which are
+  the agent's road; and *a thing on your desk that outlives the scroll*, which
+  is a window rather than a line. **Not specified anywhere**: the benchmark and
+  diff views are instances of components no snapshot in this repository
+  contains, so their insides cannot be checked against anything — see
+  `docs/design/the-terminal-window.md`
 - ★ **Hand somebody a session they can replay.** Not a transcript — the
   commands **and what each one changed**, replayed on their machine. The
   reproducible bug report

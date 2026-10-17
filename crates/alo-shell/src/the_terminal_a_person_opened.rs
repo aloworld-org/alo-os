@@ -87,6 +87,17 @@ pub(crate) struct TheTerminal {
     /// process sixty times a second, which is the background reader
     /// `CLAUDE.md` calls a bug.
     what_alo_said: alo_terminal::WhatAloSaid,
+    /// A run of tests recognised in what the program printed, if there is one.
+    ///
+    /// **Worked out when the output changes and not when it is drawn**, for the
+    /// reason above: a drawing that recognised afresh each frame would walk the
+    /// whole screen sixty times a second to answer a question whose answer only
+    /// changes when a program writes.
+    ///
+    /// [`None`] for nearly everything a terminal ever shows, and that is the
+    /// ordinary case rather than a failure — the design draws its text fallback
+    /// first and says so in its own words.
+    a_test_result: Option<alo_terminal::ATestResult>,
 }
 
 impl TheTerminal {
@@ -101,6 +112,7 @@ impl TheTerminal {
             screen: TerminalOutput::of(size),
             finished: false,
             what_alo_said: alo_terminal::WhatAloSaid::nothing(),
+            a_test_result: None,
         })
     }
 
@@ -126,10 +138,10 @@ impl TheTerminal {
         loop {
             match self.shell.what_it_wrote(&mut self.screen) {
                 Ok(WhatArrived::Bytes(_)) => changed = true,
-                Ok(WhatArrived::NothingYet) => return changed,
+                Ok(WhatArrived::NothingYet) => break,
                 Ok(WhatArrived::ItFinished) => {
                     self.finished = true;
-                    return changed;
+                    break;
                 }
                 // **A failure is reported and the terminal kept.** What is on
                 // the screen is what the shell said, and throwing it away
@@ -139,10 +151,30 @@ impl TheTerminal {
                 Err(why) => {
                     eprintln!("alo-shell: the terminal's shell could not be read: {why}");
                     self.finished = true;
-                    return changed;
+                    break;
                 }
             }
         }
+
+        // **Recognised once, here, and only when something arrived.** This walks
+        // the screen, so doing it in the drawing would walk it every frame to
+        // answer a question that changes only when a program writes.
+        //
+        // **The three roads out of the loop above used to be three `return`s**,
+        // and this is why they are now one `break`: a recognition on two of
+        // three paths is the shape of fault where a result appears for a running
+        // command and vanishes when it exits.
+        if changed {
+            self.a_test_result = alo_terminal::a_test_result_in(&self.screen.lines());
+        }
+        changed
+    }
+
+    /// A run of tests recognised in what the program printed, if there is one.
+    ///
+    /// [`None`] for nearly everything, which is the ordinary case.
+    pub(crate) const fn a_test_result(&self) -> Option<&alo_terminal::ATestResult> {
+        self.a_test_result.as_ref()
     }
 
     /// What a person typed, sent to the shell.
