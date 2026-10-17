@@ -851,6 +851,78 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     let _ = said;
 
+    // **Walk steps 12 and 13: what a recognised result does afterwards.**
+    //
+    // The band is the one alo's answer used at step 6, which is where the
+    // result's first line now sits — so this asks about the summary without
+    // ever naming a row. Step 12: another command runs and the summary
+    // **stays**, because what is recognised is what the screen holds. Step 13:
+    // `clear` takes the line it was read from away, and the summary **goes**
+    // with it.
+    let summary_showing = ink_in_band(&recognised, &without, alos_top, alos_bottom);
+    if summary_showing == 0 {
+        return Err("the recognised summary is not in the band this step measures".into());
+    }
+
+    let at = typing(&mut server, "ls", 500)?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    until_the_shell_writes(&mut server);
+    until_the_shell_is_quiet(&mut server);
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let after_more_output = frame_just_drawn(&nested, "the terminal after `ls`")?;
+    if ink_in_band(&after_more_output, &without, alos_top, alos_bottom) == 0 {
+        return Err(
+            "the recognised summary went away when another command ran, though the line it was \
+             read from is still on the screen above. What is recognised is what the screen \
+             holds, and this screen still holds it."
+                .into(),
+        );
+    }
+
+    let at = typing(&mut server, "clear", 600)?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    until_the_shell_writes(&mut server);
+    until_the_shell_is_quiet(&mut server);
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let after_clear = frame_just_drawn(&nested, "the terminal after `clear`")?;
+    let left_behind = ink_in_band(&after_clear, &without, alos_top, alos_bottom);
+    if left_behind >= summary_showing {
+        return Err(format!(
+            "`clear` took the line away and the summary stayed: {left_behind} pixels of ink in \
+             its band against {summary_showing} before. A summary read out of a line that is no \
+             longer on the screen is a claim about nothing."
+        )
+        .into());
+    }
+
     // **Walk step 8: a clock, which is none of the five answers.** `sleep 30`
     // waits on a timer rather than on the keyboard, the network, another
     // process or the processor, and the walk's pass is the honest *waiting for
@@ -889,7 +961,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         }),
     )?;
     let about_a_clock = frame_just_drawn(&nested, "the terminal with a clock waiting")?;
-    if rows_with_ink(&about_a_clock, &without) <= rows_with_ink(&recognised, &without) {
+    if rows_with_ink(&about_a_clock, &without) <= rows_with_ink(&after_clear, &without) {
         return Err(
             "asking why a clock is waiting added no row of text, so alo answered nothing where \
              the walk expects it to say plainly that it cannot tell. A command this machine \
