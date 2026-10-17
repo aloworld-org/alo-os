@@ -672,10 +672,10 @@ mod tests {
     /// verb with nothing behind it is worse than the capability missing.
     #[test]
     fn every_verb_this_machine_offers_is_named_here_and_no_other() {
-        let offered = the_verbs_a_whole_machine_offers().expect("the ten verbs declare");
+        let offered = the_verbs_a_whole_machine_offers().expect("the eleven verbs declare");
         let told: Vec<&str> = offered.all().map(alo_capability::Verb::name).collect();
 
-        let the_ten = [
+        let the_eleven = [
             // `alo-files`' six.
             "list_folder",
             "read_file",
@@ -683,14 +683,16 @@ mod tests {
             "rename_file",
             "move_file",
             "archive_folder",
-            // `alo-software`'s one.
+            // `alo-software`'s two: the installation a person approves and the
+            // read that answers inside the turn.
             "install_application",
+            "what_can_be_installed",
             // `alo-applications`' three with a road.
             "open_application",
             "focus_application",
             "close_application",
         ];
-        for name in the_ten {
+        for name in the_eleven {
             assert!(
                 told.contains(&name),
                 "{name} is in docs/contracts/agent-verbs.md and this machine does not offer it, \
@@ -699,10 +701,10 @@ mod tests {
         }
         assert_eq!(
             told.len(),
-            the_ten.len(),
+            the_eleven.len(),
             "this machine offers {} verbs and {} are named here: {told:?}",
             told.len(),
-            the_ten.len()
+            the_eleven.len()
         );
         assert!(
             !told.contains(&"arrange_application"),

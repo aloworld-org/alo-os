@@ -206,6 +206,23 @@ approval to convert their own document: the grant and the approval are what an
 agent needs, because it is the agent choosing to read a document and write a new
 file beside it.
 
+### what_can_be_installed
+
+**By hand:** a person opens Applications on their own Dock and reads
+`A decided list of what a person can install` — the same catalogue, the same
+eight kinds of work, narrowed by pressing a kind. The verb answers from that
+same file, which is compiled into alo OS and identical on every machine, so
+neither way reaches a network and neither can tell the person anything about
+themselves. A person needs no approval to look at a list: the verb needs none
+either, because looking at it changes nothing — it is the one software verb
+that is a read.
+
+What differs is only who may ask the other question. **A person can see what is
+already on their own machine and an agent cannot**, and that asymmetry is
+deliberate: the window is handed what the sandbox reported alongside the
+catalogue, because it is the person's own screen, and no verb enumerates a
+person's software.
+
 ### install_application
 
 **By hand:** a person installs an application themselves from Software in

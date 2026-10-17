@@ -49,6 +49,9 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
             reached.acting().on_the_wire(),
             reached.acting().application().identifier(),
         ),
+        // The fourth family, 2026-10-17, naming this copy along with the three
+        // real ones exactly as the third did.
+        alo_turn::WhatAVerbDid::WhatCanBeInstalled(holds) => Done::of_a_catalogue_read(holds),
     }
 }
 

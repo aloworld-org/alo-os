@@ -517,8 +517,20 @@ mod tests {
             &mut record,
         )
         .unwrap();
-        assert_eq!(machine.verbs().all().count(), 7);
+        assert_eq!(machine.verbs().all().count(), 8);
         assert!(machine.verbs().of(INSTALL_APPLICATION).is_some());
+        // **And the read beside it**, which arrived on 2026-10-17. It needs no
+        // tool at all — `alo_turn::looking_at_the_catalogue` reads a string
+        // compiled into this binary — and is declared with the installation
+        // only because `alo_software::verbs::declare_into` is one function. A
+        // surface that wants the read without a tool is the change that splits
+        // it, and until something does, a machine with no tool offers neither.
+        assert!(
+            machine
+                .verbs()
+                .of(alo_software::WHAT_CAN_BE_INSTALLED)
+                .is_some()
+        );
         // Named rather than counted, because a count of seven would also pass
         // if the installation had replaced one of the six.
         for file_verb in [

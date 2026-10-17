@@ -229,6 +229,19 @@ impl AtTheDoor {
             NotDone::CouldNotInstall(_) | NotDone::CouldNotInstallHere(_) => {
                 Some(Self::NotInstalledThere)
             }
+            // **The receiving machine could not read its own shipped list.**
+            // [`Self::MachineCouldNot`] and not a word of its own: *everything
+            // permitted it and the receiving machine could not* is exactly what
+            // happened, and `alo_turn::WentWrongLooking`'s two causes are both
+            // that machine contradicting itself.
+            //
+            // A word of its own would carry across the pairing that the other
+            // machine's catalogue is broken, which is a fact about somebody
+            // else's machine — the argument [`Self::NotInstalledThere`] makes
+            // above, and it holds here with nothing changed. That machine's own
+            // record has the reason, in its own words, for the person who owns
+            // it.
+            NotDone::CouldNotLookAtTheCatalogue(_) => Some(Self::MachineCouldNot),
             NotDone::NotRecorded(_) | NotDone::TurnClosed => None,
         }
     }

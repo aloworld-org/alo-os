@@ -805,10 +805,19 @@ the camera, notifications — are granted to **applications and never to agents*
 standing over the screen, and **the approval of the sentence is the whole of the
 authority**.
 
-It is the second verb in this contract that requires no grant, for a different
-reason from the first: `install_application` needs none because there is nothing
-on the machine yet to grant over; this needs none because what a grant would be
-over is something an agent may never hold.
+It is one of **three** verbs in this contract that require no grant, and each
+has a different reason — which is why the reason is written beside the
+declaration rather than inferred from the absence:
+
+- `install_application` needs none because there is nothing on the machine yet
+  to grant over;
+- `what_can_be_installed` needs none because what it reads is a file alo OS
+  ships, identical on every machine;
+- this needs none because what a grant would be over is something an agent may
+  **never** hold (ADR 0040).
+
+A reader who saw only *requires no grant* on all three would have one fact and
+three different situations.
 
 **One approval is one picture.** An approval is never a session (ADR 0001), and
 this verb is where that rule is load-bearing rather than tidy: an agent that
@@ -827,11 +836,12 @@ taken* and never what was in it.
 agent**, in deep teal with the agent's mark and word (ADR 0010) — the same line
 an application gets, in the colour reserved for the agent.
 
-## The installing verb
+## The software verbs
 
-`docs/features.md` promises *install applications*. What an agent may
-ask for is one verb, declared in `alo-software`'s `src/verbs.rs` with a
-`pub fn declare_into`.
+`docs/features.md` promises *install applications*. What an agent may ask for is
+**two** verbs, declared in `alo-software`'s `src/verbs.rs` with a
+`pub fn declare_into`: a read that shows what a person could install, and a
+change that proposes installing one of them.
 
 **It became something an agent could really ask for on 2026-10-13, and this
 contract described it for weeks before that.** Everything below was true of the
@@ -846,10 +856,56 @@ first for which those two came apart.
 
 | Verb | Effect | Arguments | Sentence |
 |---|---|---|---|
+| `what_can_be_installed` | read | `kind_of_work` (choice of nine) | see what can be installed under {kind_of_work} |
 | `install_application` | change | `application` (application), `source` (name, at most 64) | install {application} from {source} |
 
-**It is a change, and it requires no grant** — the one verb in this contract
-that does not, with its reason in ADR 0042 and in the declaration: there is
+### `what_can_be_installed`
+
+**It is a read, so it answers inside the turn and nobody is asked** (ADR 0001
+§5). The sentence above is what the record keeps, not something a person
+approves — and `alo_capability::Proposal::checked` refuses this verb if anything
+tries to put it to a person, which
+`crates/alo-protocol/tests/what_a_person_could_install_as_a_client_sees_it.rs`
+asserts from the outside.
+
+**The nine choices are `everything` and the eight kinds of work** —
+`pictures`, `painting`, `illustration`, `photographs`, `page_layout`, `video`,
+`audio`, `documents`. `Takes::Choice` means **the options exist before the model
+does and anything else is refused**, so there is no free text here: a kind of
+work nobody offered never becomes a call. *Everything* is the ninth choice
+rather than an absent argument, because alo OS has no optional arguments —
+`alo_capability::Arg` says why.
+
+**What it answers is the catalogue this machine ships**, one entry per
+application with its identifier, the place it comes from, the release and the
+licence. The licence is there because it is the field somebody choosing between
+two of these actually weighs.
+
+**It requires no grant, and the reason is its own.** The catalogue is a file
+compiled into alo OS, byte-identical on every machine of a given release. There
+is nothing on this machine for a grant to be over, and nothing about the person
+in the answer.
+
+**It cannot say what is installed, and that is enforced by a type.**
+`alo_software::WhatTheCatalogueHolds` — the only thing this read can answer with
+— has no constructor taking an `Installed` or a `Tool`, so there is no way to
+put a scan of somebody's machine into it. **A verb that listed a person's
+applications is still refused**, for the reason it always was: it would be the
+background reader `CLAUDE.md` calls a bug, and a fingerprint of who they are.
+The two questions were refused in one sentence until 2026-10-17 and the reason
+given was only ever about the first.
+
+**So an agent cannot know whether a person already has something.** That is a
+real cost rather than a free win: an agent may propose installing an application
+the person already has, and what happens then is that the installation itself
+refuses before anything leaves the machine, in words the person reads. One
+wasted sentence is the price of not enumerating somebody's software.
+
+### `install_application`
+
+**It is a change, and it requires no grant** — one of three in this contract
+that do not, each for its own reason, with this one's in ADR 0042 and in the
+declaration: there is
 nothing on the machine for a grant to be over, the application arrives granted
 nothing, and the approval of the sentence naming the application and the place
 installs once.
@@ -860,11 +916,18 @@ signature checking is refused at the moment of installation, in words, whatever
 was approved; and the installation goes on the egress indicator as
 *alo OS is installing an application from* the place's host.
 
-**Updating, removing and listing applications are not verbs.** An agent only
-proposes an installation; a person updates and removes applications themselves.
+**Updating and removing applications are not verbs, and neither is listing what
+is installed.** An agent proposes an installation and may be shown the
+catalogue; a person updates and removes applications themselves, and what is on
+their machine is nobody's to enumerate.
 
-**Declared and carried out, and not yet offered by a turn**, for the reason the
-printing verb is not.
+**Both are offered by a turn.** This section said *declared and carried out, and
+not yet offered by a turn* until 2026-10-17, two paragraphs after saying the
+opposite — the 2026-10-13 change that made the installation reachable added its
+own paragraph and left this sentence behind. `alo_turn::Machine`'s
+`every_verb_this_machine_offers_is_named_here_and_no_other` is the test that
+holds this contract to the code, and it reads the table above rather than this
+line, which is how the two came apart.
 
 ## The verb classes
 
@@ -875,7 +938,7 @@ printing verb is not.
 | **Measurements** | Search the index, what is running, what is filling — over the granted folder each reads | `alo-agentd`, as the person; declared, not yet offered by a turn |
 | **Printing** | Print a granted document on this machine's printer | `alo-agentd`, as the person; declared, not yet offered by a turn |
 | **Converting** | Convert a granted document into a PDF copy in a granted folder, saying what the copy could not carry | `alo-agentd`, as the person, through `alo-convertd`; declared, not yet offered by a turn |
-| **Software** | Propose installing an application from a place this machine installs from | `alo-agentd`, as the person; declared, not yet offered by a turn |
+| **Software** | See what can be installed, and propose installing one of them from a place this machine installs from | `alo-agentd`, as the person |
 | **Context** | The focused window, the selection, the open document | Offered at invocation only |
 | **Adapters** | An installed application's own verbs — `text_editor.open_document`, named under their adapter | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, not yet offered by a turn. See `app-adapters.md` |
 | **Accessibility fallback** | For a granted application with no adapter: read what its windows show (`accessible.read_window`, a read), and press one control named by its kind and the name it shows (`accessible.activate_control`, a change). Never a password field's contents, never a position | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, not yet offered by a turn. See `app-adapters.md` |

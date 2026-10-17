@@ -66,6 +66,7 @@ use alo_strings::{Filling, Said, Strings};
 
 use crate::unbounded::NoBoundary;
 use crate::went_wrong_installing::WentWrongInstalling;
+use crate::went_wrong_looking::WentWrongLooking;
 use crate::words;
 
 /// Why a turn did not do what it was asked.
@@ -132,6 +133,14 @@ pub enum NotDone {
     /// English for whoever administers the machine, and the sentence a person
     /// reads carries none of it.
     CouldNotInstallHere(WentWrongInstalling),
+    /// A look at the catalogue alo OS could not answer through a fault of its
+    /// own.
+    ///
+    /// [`Self::CouldNotInstallHere`] for the read beside the installation, and
+    /// [`WentWrongLooking`]'s header says what is different: this verb has no
+    /// refusals that are not faults, because nothing in the world can stop it
+    /// — it parses a string compiled into this binary.
+    CouldNotLookAtTheCatalogue(WentWrongLooking),
 }
 
 impl NotDone {
@@ -158,6 +167,10 @@ impl NotDone {
             Self::CouldNotInstallHere(_) => {
                 strings.say(&words::COULD_NOT_INSTALL_HERE.key(), &Filling::nothing())
             }
+            Self::CouldNotLookAtTheCatalogue(_) => strings.say(
+                &words::COULD_NOT_LOOK_AT_THE_CATALOGUE.key(),
+                &Filling::nothing(),
+            ),
         }
     }
 
@@ -247,8 +260,13 @@ mod tests {
     /// says nothing to anybody else — [`crate::words`] is the argument. The
     /// third arrived with the second verb family on 2026-10-13, and this test
     /// is what noticed, which is what it is for.
+    ///
+    /// **The fourth arrived on 2026-10-17** with the read beside the
+    /// installation, and this test noticed again: alo OS unable to read its own
+    /// shipped catalogue is a mechanism failing and says nothing to anybody
+    /// else, which is the same argument the third makes.
     #[test]
-    fn the_only_sentences_this_crate_says_of_its_own_are_its_own_three() {
+    fn the_only_sentences_this_crate_says_of_its_own_are_its_own_four() {
         let ours = Strings::of(words::turn_words().unwrap());
         let mut said_by_us = 0;
         for not_done in everything_that_can_come_back() {
@@ -257,7 +275,7 @@ mod tests {
             }
         }
         assert_eq!(
-            said_by_us, 3,
+            said_by_us, 4,
             "this crate has started saying something somebody else already says"
         );
         assert!(!NotDone::TurnClosed.said(&ours).is_a_bug());
@@ -302,7 +320,10 @@ mod tests {
                 | NotDone::NotBounded(_)
                 // alo OS contradicting itself: not the grants, not the world,
                 // and not the end of the turn either.
-                | NotDone::CouldNotInstallHere(_) => {
+                | NotDone::CouldNotInstallHere(_)
+                // And alo OS unable to read its own shipped catalogue, which
+                // is the same kind of fact one verb along.
+                | NotDone::CouldNotLookAtTheCatalogue(_) => {
                     assert!(!refused && !over);
                 }
             }

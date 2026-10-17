@@ -163,6 +163,7 @@ pub mod tool;
 pub mod updating;
 pub mod verbs;
 pub mod web_address;
+pub mod what_the_catalogue_holds;
 pub mod what_this_machine_has;
 pub mod whether_it_is_sandboxed;
 pub mod words;
@@ -190,7 +191,11 @@ pub use source::{Configured, Source, SourceName};
 pub use the_applications_arrived::TheApplicationsArrived;
 pub use tool::{Failed, Tool};
 pub use updating::{Offer, Updated, apply, applying, looking_for_updates, offered};
-pub use verbs::{Declaring, INSTALL_APPLICATION, NotAnInstallation, approved, software_verbs};
+pub use verbs::{
+    Declaring, INSTALL_APPLICATION, NotALook, NotAnInstallation, WHAT_CAN_BE_INSTALLED, approved,
+    looked_at, software_verbs,
+};
 pub use web_address::{NotAWebAddress, WebAddress};
+pub use what_the_catalogue_holds::WhatTheCatalogueHolds;
 pub use whether_it_is_sandboxed::Sandboxing;
 pub use words::{Word, WordsError, declare_into, software_words};

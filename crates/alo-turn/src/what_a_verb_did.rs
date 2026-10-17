@@ -26,7 +26,7 @@
 //! record or the authorisation, never this.
 
 use alo_files::Answer;
-use alo_software::Installed;
+use alo_software::{Installed, WhatTheCatalogueHolds};
 
 use crate::acting_on_an_application::Reached;
 
@@ -46,6 +46,14 @@ pub enum WhatAVerbDid {
     /// *which* application had *what* asked of it is the whole of what
     /// happened — the compositor's answer on success is one word, `acted`.
     AnApplicationWasReached(Reached),
+    /// What the catalogue holds, under one kind of work or all of them.
+    ///
+    /// **The first arm here that is a read rather than a change**, which is
+    /// what it is for: `install_application` beside it waits for an approval
+    /// and this answers inside the turn (ADR 0001 §5). Nothing on the machine
+    /// moved because of it, and `alo_software::WhatTheCatalogueHolds`' own
+    /// header is why nothing about the person is in it either.
+    WhatCanBeInstalled(WhatTheCatalogueHolds),
 }
 
 impl WhatAVerbDid {
@@ -58,7 +66,9 @@ impl WhatAVerbDid {
     pub const fn to_files(&self) -> Option<&Answer> {
         match self {
             Self::ToFiles(answer) => Some(answer),
-            Self::AnApplicationInstalled(_) | Self::AnApplicationWasReached(_) => None,
+            Self::AnApplicationInstalled(_)
+            | Self::AnApplicationWasReached(_)
+            | Self::WhatCanBeInstalled(_) => None,
         }
     }
 
@@ -67,7 +77,20 @@ impl WhatAVerbDid {
     pub const fn installed(&self) -> Option<&Installed> {
         match self {
             Self::AnApplicationInstalled(installed) => Some(installed),
-            Self::ToFiles(_) | Self::AnApplicationWasReached(_) => None,
+            Self::ToFiles(_) | Self::AnApplicationWasReached(_) | Self::WhatCanBeInstalled(_) => {
+                None
+            }
+        }
+    }
+
+    /// What the catalogue holds, when it was looked at.
+    #[must_use]
+    pub const fn what_can_be_installed(&self) -> Option<&WhatTheCatalogueHolds> {
+        match self {
+            Self::WhatCanBeInstalled(holds) => Some(holds),
+            Self::ToFiles(_)
+            | Self::AnApplicationInstalled(_)
+            | Self::AnApplicationWasReached(_) => None,
         }
     }
 
@@ -76,7 +99,9 @@ impl WhatAVerbDid {
     pub const fn reached(&self) -> Option<&Reached> {
         match self {
             Self::AnApplicationWasReached(reached) => Some(reached),
-            Self::ToFiles(_) | Self::AnApplicationInstalled(_) => None,
+            Self::ToFiles(_) | Self::AnApplicationInstalled(_) | Self::WhatCanBeInstalled(_) => {
+                None
+            }
         }
     }
 }
@@ -96,6 +121,12 @@ impl From<Installed> for WhatAVerbDid {
 impl From<Reached> for WhatAVerbDid {
     fn from(reached: Reached) -> Self {
         Self::AnApplicationWasReached(reached)
+    }
+}
+
+impl From<WhatTheCatalogueHolds> for WhatAVerbDid {
+    fn from(holds: WhatTheCatalogueHolds) -> Self {
+        Self::WhatCanBeInstalled(holds)
     }
 }
 

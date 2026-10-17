@@ -176,17 +176,39 @@ pub const COULD_NOT_INSTALL_HERE: Word = Word::saying(
      in English for whoever administers the machine, and must not be worked into this one.",
 );
 
+/// Said to a person whose agent asked what they could install and was answered
+/// nothing, because alo OS found its own working inconsistent.
+///
+/// [`COULD_NOT_INSTALL_HERE`]'s sentence for a read, and the differences are
+/// the two that matter to the person reading it: **nothing was going to happen
+/// to the machine anyway**, so there is nothing to reassure them about; and the
+/// question can simply be asked again, because looking at the catalogue does
+/// not use anything up.
+pub const COULD_NOT_LOOK_AT_THE_CATALOGUE: Word = Word::saying(
+    "turn.could-not-look-at-the-catalogue",
+    "your agent could not be shown what you can install: the fault is in alo OS rather than in \
+     anything you or your agent asked for — ask whoever set this machine up to look at it",
+)
+.noting(
+    "Shown to a person whose agent asked what applications they could install and was not \
+     answered. Nothing was going to be installed by the question and nothing was: alo OS found \
+     its own working inconsistent and answered nothing rather than guess. The technical reason is \
+     a separate sentence kept in English for whoever administers the machine, and must not be \
+     worked into this one.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 6] = [
+pub const EVERY_WORD: [Word; 7] = [
     TURN_CLOSED,
     NOT_BOUNDED,
     NOT_GRANTED_HERE,
     GRANT_HERE_EXPIRED,
     NO_LONGER_PAIRED,
     COULD_NOT_INSTALL_HERE,
+    COULD_NOT_LOOK_AT_THE_CATALOGUE,
 ];
 
 /// Why this crate's own list could not be declared.

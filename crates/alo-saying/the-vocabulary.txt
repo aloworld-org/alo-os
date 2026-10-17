@@ -1628,6 +1628,9 @@ software.verb.install-application.application	the application to install, by its
 software.verb.install-application.purpose	install an application from a place this machine installs applications from
 software.verb.install-application.sentence	install {application} from {source}
 software.verb.install-application.source	the place to install it from, by the name this machine gives that place
+software.verb.what-can-be-installed.kind-of-work	the kind of work to look under, or everything
+software.verb.what-can-be-installed.purpose	see what can be installed on this machine, and what kind of work each one is for
+software.verb.what-can-be-installed.sentence	see what can be installed under {kind_of_work}
 software.web.nothing-opens	No application on this machine opens web addresses, so nothing was opened. Install a web browser, and it opens them
 software.web.nothing-opens.choice-gone	{chosen}, which you chose to open web addresses, is not installed, and nothing else on this machine opens them. Install it again, or install another web browser
 software.web.opens.chosen	{application} opens web addresses, because you chose it
@@ -1693,6 +1696,7 @@ terminal.who.system	system
 terminal.who.you	you
 turn.closed	this turn has stopped, because what happened on it could not be written down
 turn.could-not-install-here	nothing was installed: this machine could not carry the installation out, and the fault is in alo OS rather than in anything you or your agent asked for — ask whoever set this machine up to look at it
+turn.could-not-look-at-the-catalogue	your agent could not be shown what you can install: the fault is in alo OS rather than in anything you or your agent asked for — ask whoever set this machine up to look at it
 turn.grant-here-expired	{machine} was permitted {reach} on this machine, and that has expired, so it cannot reach {wanted} — nothing granted on another machine stands in for it
 turn.no-longer-paired	this machine is no longer paired with {machine}, so nothing more it asked for is considered
 turn.not-bounded	nothing was done: this machine cannot hold an agent inside what you granted it, so it will not let one act at all — ask whoever set this machine up to look at it
