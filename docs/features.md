@@ -990,6 +990,24 @@ seconds.
 - ★ **Printers, solved.** The agent finds it, sets it up, and fixes it when it stops. The most hated object in computing, and a small feature people tell other people about
 - ★ **"I can't open this file."** A `.pages`, a `.heic`, a `.dwg`: the system converts it where it can, and where it cannot says plainly what will open it, instead of shrugging
 - ★ **Undo what the agent did.** Every execution is already recorded with its origin and the image already rolls back — together they make *"undo everything the agent did this afternoon"* real. An agent you can reverse is an agent people let do more, and no other system offers it
+  **The bracket is taken, 2026-10-17, and measured on a real filesystem.**
+  `alo_turn::the_bracket_a_turn_takes` makes the two read-only snapshots either
+  side of a changing turn and writes down what it did, which ADR 0045 called
+  *the missing middle* — both ends of this feature were built and nothing took a
+  bracket. Measured as root on a loopback `btrfs`: the snapshot is made by the
+  base's own program, `btrfs subvolume list` names it, `property get -ts` says
+  `ro=true`, a write into it is refused, and the two sides really differ. **No
+  capability is needed and none is held** — ADR 0045's seventh term, and the
+  guard on it is a test in `alo-letting-go`.
+  **A turn that could not be bracketed still runs**, which is ADR 0045's third
+  term and is structural rather than remembered: the taking answers *why not*
+  instead of an error, so no `?` can turn *there was no room* into *the turn
+  failed*. The snapshot is read-only because #752 says the agent may **neither
+  alter nor destroy** a bracket.
+  **What is still owed: nothing calls it.** The daemon learns who the person is
+  from `SO_PEERCRED` in `listening.rs` and the turn does not, so carrying the
+  person and their home to the turn is the next change — and it is plumbing
+  rather than a decision or a mechanism.
 - **Updates that never interrupt.** Atomic images mean an update can be genuinely invisible and instantly reversible. On the system people are leaving, this is the single most hated behaviour there is
 - ★ **"Make this machine like my old one."** Configuration as a document, pointed at a person rather than an administrator: a replacement machine that is actually yours, not a week of rebuilding
 - **A new colleague working on day one** — a managed machine that arrives with the right applications, policy and grants already in place

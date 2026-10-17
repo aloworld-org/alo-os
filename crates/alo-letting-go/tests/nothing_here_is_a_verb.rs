@@ -129,14 +129,74 @@ fn nothing_here_can_be_asked_for() {
 /// nothing in `alo-turn` asks for one and nothing in this crate hands it one.
 #[test]
 fn alo_turn_gains_no_capability() {
+    for never in ["caps", "capctl", "capsh", "alo-letting-go"] {
+        assert!(
+            !what_alo_turn_depends_on().contains(never),
+            "alo-turn names {never}, and it holds no capability"
+        );
+    }
+}
+
+/// `alo-turn`'s manifest with its comments taken out.
+///
+/// **Comments go, and this test exists because one broke the check above.**
+/// `alo-turn` gained `alo-kept-undo` on 2026-10-17 with a comment saying *the
+/// undo folder's layout, and nothing else: `alo-letting-go` holds the
+/// privileged remover* — true, useful, and exactly the sentence a reader of
+/// that manifest needs. A search over the whole file read it as a dependency
+/// and failed.
+///
+/// A guard that cannot be explained beside the thing it guards makes the thing
+/// undocumentable, which is the fault this repository met four times on the day
+/// this was written: *a pattern matching the text of a thing rather than the
+/// thing.* So the comments are cut first, and
+/// [`a_comment_naming_the_remover_is_not_a_dependency`] holds the cut.
+fn what_alo_turn_depends_on() -> String {
     let theirs = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../alo-turn/Cargo.toml");
     let manifest = std::fs::read_to_string(&theirs).unwrap_or_else(|why| {
         panic!("{} could not be read: {why}", theirs.display());
     });
-    for never in ["caps", "capctl", "capsh", "alo-letting-go"] {
-        assert!(
-            !manifest.contains(never),
-            "alo-turn names {never}, and it holds no capability"
-        );
-    }
+    without_comments(&manifest)
+}
+
+/// A manifest's lines that are not comments.
+fn without_comments(manifest: &str) -> String {
+    manifest
+        .lines()
+        .filter(|line| !line.trim_start().starts_with('#'))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// **A comment naming the remover is not a dependency on it**, and a real one
+/// still is.
+///
+/// Both directions on the same name, because a cut that removed everything
+/// would make the check above pass for ever and nobody would know.
+#[test]
+fn a_comment_naming_the_remover_is_not_a_dependency() {
+    let commented =
+        "# alo-letting-go holds the privileged remover\nalo-kept-undo = { path = \"x\" }";
+    assert!(
+        !without_comments(commented).contains("alo-letting-go"),
+        "a comment was read as a dependency"
+    );
+
+    let real = "alo-letting-go = { path = \"../alo-letting-go\" }";
+    assert!(
+        without_comments(real).contains("alo-letting-go"),
+        "a real dependency was cut away with the comments, so the check above cannot fail"
+    );
+
+    // And the manifest this guards really does carry such a comment, so the cut
+    // is load-bearing rather than defensive.
+    let theirs = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../alo-turn/Cargo.toml");
+    let manifest = std::fs::read_to_string(&theirs).unwrap_or_else(|why| {
+        panic!("{} could not be read: {why}", theirs.display());
+    });
+    assert!(
+        manifest.contains("alo-letting-go"),
+        "alo-turn's manifest no longer explains why it may not reach the remover, so this test \
+         is about nothing"
+    );
 }

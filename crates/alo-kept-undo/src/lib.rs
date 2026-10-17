@@ -204,6 +204,24 @@ impl Theirs {
         &self.settings
     }
 
+    /// This file's text, to write.
+    ///
+    /// **The writer lives beside the reader on purpose.** This crate is *the
+    /// shape of the two files*, and a caller that serialised these itself would
+    /// be a second place that knows the shape — which is how the two come to
+    /// disagree about the `format` number the reader checks first.
+    ///
+    /// # Errors
+    /// [`NotWhatItSays::NotItsShape`], which the list of fields above cannot
+    /// cause: every one of them serialises.
+    pub fn as_text(&self, at: &Path) -> Result<String, NotWhatItSays> {
+        serde_json::to_string_pretty(self).map_err(|why| NotWhatItSays::NotItsShape {
+            at: at.to_owned(),
+            what: THEIRS,
+            why: why.to_string(),
+        })
+    }
+
     /// This file's text, read — the one door, so nothing reaches a reader
     /// without having been through every refusal above.
     ///
@@ -246,6 +264,20 @@ impl TheTurn {
     #[must_use]
     pub fn taken(&self) -> SystemTime {
         SystemTime::UNIX_EPOCH + Duration::from_secs(self.taken)
+    }
+
+    /// This file's text, to write.
+    ///
+    /// Beside the reader, for [`Theirs::as_text`]'s reason.
+    ///
+    /// # Errors
+    /// [`NotWhatItSays::NotItsShape`], which this type's fields cannot cause.
+    pub fn as_text(&self, at: &Path) -> Result<String, NotWhatItSays> {
+        serde_json::to_string_pretty(self).map_err(|why| NotWhatItSays::NotItsShape {
+            at: at.to_owned(),
+            what: THE_TURN,
+            why: why.to_string(),
+        })
     }
 
     /// What it did, in the words the person approved.

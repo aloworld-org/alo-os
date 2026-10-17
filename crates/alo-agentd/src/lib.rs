@@ -310,6 +310,8 @@ pub mod stopping;
 pub mod surface;
 #[cfg(target_os = "linux")]
 pub mod terms;
+#[cfg(target_os = "linux")]
+pub mod the_bracket_this_turn_takes;
 #[cfg(all(test, target_os = "linux"))]
 mod the_proxy_on_the_road_a_question_takes;
 #[cfg(target_os = "linux")]
@@ -328,7 +330,6 @@ mod two_machines_with_no_ipv4;
 mod two_machines_with_no_ipv4_find_each_other_again;
 #[cfg(target_os = "linux")]
 pub mod unhosted;
-#[cfg(target_os = "linux")]
 pub mod unix;
 #[cfg(target_os = "linux")]
 mod what_a_client_is_told_a_verb_did;
