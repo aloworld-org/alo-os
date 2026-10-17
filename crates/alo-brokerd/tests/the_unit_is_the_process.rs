@@ -16,11 +16,15 @@
 use alo_broker::{THE_DOOR, THE_KEY};
 use alo_brokerd::THE_RECORD;
 use alo_networks::proxy_file::{THE_MACHINES_PROXY, THE_WANTED_PROXY};
+use std::path::Path;
 
 /// The unit, beside this crate's manifest.
 fn the_unit() -> String {
-    std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/alo-brokerd.service"))
-        .expect("the unit is beside the manifest")
+    std::fs::read_to_string(
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../image/usr/lib/systemd/system/alo-brokerd.service"),
+    )
+    .expect("the unit is beside the manifest")
 }
 
 /// Every `key=value` line in the unit, comments left out.

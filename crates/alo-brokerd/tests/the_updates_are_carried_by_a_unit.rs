@@ -20,20 +20,41 @@
 )]
 
 use std::collections::BTreeSet;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use alo_brokerd::units::TheUnit;
 use alo_brokerd::{EVERY_UNIT, THE_MACHINES_RECORD, THE_WANTED_UPDATE};
 
-/// The crate's own directory.
-fn here() -> &'static Path {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
+/// The crate's own directory, for reading this crate's own source.
+fn here() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf()
 }
 
-/// One unit file, beside this crate's manifest.
+/// Where the image keeps the units it ships.
+///
+/// **These units moved out of this crate on 2026-10-17, when they began to
+/// ship.** A unit the image installs lives in exactly one place — the image —
+/// and the crate's own tests read that copy, which is the shape
+/// `alo-sessiond`'s `this_crate_cannot_do_what_its_unit_forbids.rs` already
+/// has. Two copies of a unit is two units that can disagree, and the one a
+/// machine runs would be the one no test read.
+///
+/// Kept apart from [`here`] deliberately: that one is still this crate's own
+/// directory, and three of the tests below read source files through it. *The
+/// first version of this change pointed `here` at the image and broke both of
+/// them, which is what said these are two different questions.*
+fn shipped() -> PathBuf {
+    here().join("../../image/usr/lib/systemd/system")
+}
+
+/// One unit file, as the image ships it.
 fn the_unit(unit: TheUnit) -> String {
-    std::fs::read_to_string(here().join(unit.named()))
-        .unwrap_or_else(|why| panic!("{} is beside the manifest: {why}", unit.named()))
+    std::fs::read_to_string(shipped().join(unit.named())).unwrap_or_else(|why| {
+        panic!(
+            "{} is shipped by the image and could not be read: {why}",
+            unit.named()
+        )
+    })
 }
 
 /// Every `key=value` line in a unit, comments left out.
@@ -244,7 +265,7 @@ fn only_the_unit_that_fetches_a_build_waits_for_a_network() {
 #[test]
 fn the_brokers_own_unit_still_holds_no_capability() {
     let unit = lines(
-        &std::fs::read_to_string(here().join("alo-brokerd.service"))
+        &std::fs::read_to_string(shipped().join("alo-brokerd.service"))
             .expect("the broker's unit is beside the manifest"),
     );
     assert_eq!(only(&unit, "CapabilityBoundingSet"), "");
