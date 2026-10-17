@@ -46,32 +46,32 @@ because a reader starting from it would conclude this goal is unreachable.*
 | ★ | scopes one command | **blocked** — a per-command narrowing is `alo-capability`, another lane's |
 | ★ | finds a command by what it did | the record can answer it; **nothing can ask it**, and giving it a surface is scope |
 | ★ | bisects the machine | **nothing**, and waits on a bracket |
-| ★ | reads output that is not a character grid | **nothing** |
+| ★ | reads output that is not a character grid | **the first rich view is usable** — a test result, #761. Two more are unspecified in the design |
 | ★ | hands somebody a session to replay | **nothing**, and waits on rich results |
 | | asks what a command will do first | the answer is built (#759); **nothing can ask**, because alo does not know what was typed — **blocked** |
 
-**Four of thirteen are usable today. One more is reachable and unseen.** Of the
-remaining eight, counted against the rows above rather than against the order:
+**Where the thirteen stand at the end of 2026-10-17**, each row read rather
+than counted by a pattern — a first pass with a crude classifier misread two of
+them, which is this document's own lesson about mentions and declarations:
 
-- **one is startable right now** — *reads output that is not a character grid*,
-  and two more open up behind it;
-- **two are behind this lane's own earlier steps** — *bisects the machine* and
-  *hands somebody a session to replay*;
-- **four are blocked or need a decision this lane may not take** — *decides
-  whether alo may use it* and *scopes one command*, both on `alo-capability`,
-  whose ownership ADR 0111 leaves to the integration owner; *finds a command by
-  what it did*, which needs a decision about which surface asks it; and *asks
-  what a command will do first*, whose answer #759 built and whose asking needs
-  shell integration. All four are measured at the foot of the order;
-- **one is nobody's** — *run a command touching nothing*, available to the
-  desktop lane since 2026-10-17 and taken by no lane.
+| | how many | which |
+|---|---|---|
+| **usable** — all four conditions | **4** | opens a terminal and types; reads who is speaking; sees measured apart from worked-out; scrolls back |
+| **built and reachable, never seen on a machine** | **2** | asks why a command is waiting (#755); reads output that is not a character grid (#761) |
+| waiting on this lane's own earlier steps | **2** | bisects the machine, behind a bracket; hands somebody a session to replay, behind the rest of rich results |
+| **blocked on a decision or another lane** | **4** | decides whether alo may use it; scopes one command; finds a command by what it did; asks what a command will do first |
+| unowned | **1** | runs a command touching nothing |
 
-*That is three of thirteen behind a question rather than behind work, and all
-three were read as startable this morning.* The owner said that day
-that the development PC is off and its work can be done by the desktop lane; the
-desktop lane has read that and **has not taken it**, for a stated reason. So it
-is available and unclaimed, which is not the same as assigned. The table near the
-foot of this file carries all four readings and what changed between them.
+**The two in the second row are what tomorrow evening's boot is for.** Both are
+built, both are reachable, and nobody has watched either on a machine — which is
+the one condition a green suite says nothing about and the reason step 1 of this
+order is a boot rather than a task.
+
+*Four of thirteen were usable this morning and four still are. What changed is
+that **one promise gained a working view** and **four were found to be blocked
+rather than merely unbuilt** — which is worth more than it sounds, because a
+lane that believes four blocked things are startable spends four days finding
+out.*
 
 ## The order, and it is ordered by that bar rather than by size
 
@@ -102,12 +102,25 @@ command a lane runs:
 | 7 | press `Ctrl`+`D` to end `cat`, then `Ctrl`+`Alt`+`W` again | the line **goes**, because there is nothing waiting now |
 | 8 | type `sleep 30`, Enter, then `Ctrl`+`Alt`+`W` | *nobody can tell* — a clock is none of the five, and this is the honest answer rather than a wrong confident one |
 | 9 | scroll up with the wheel, then back down | the transcript moves and stops at both ends |
+| 10 | type `printf 'test result: ok. %d passed; %d failed; %d ignored;\n' 23 1 0` | **two lines under the output**: `Tests · 23 tests passed · 1 test failed`, and under it `Source: cargo test output · Not independently verified`. **`program` in the gutter beside both**, not `alo` |
+| 11 | look at the gutter beside those two lines again | still `program`. This is the design's *PROGRAM includes parsed rich results*, and it is the one thing in the walk that is easy to get wrong and hard to notice |
+| 12 | run `ls` | the two lines **stay**, because the summary is still on the screen above. Not a fault: what is recognised is what the screen holds |
+| 13 | run `clear` | the two lines **go**, because the line they were read from is gone |
 
 **Step 6 is the measurement.** Steps 3, 4 and 9 are things believed to work that
 nobody has watched either, so they cost nothing to read while the machine is on.
 Step 8 is the one most likely to be wrong, because it is the answer a careless
 table gets wrong — a first version of that table answered *waiting for another
 program* about `sleep`.
+
+**Steps 10 to 13 were added 2026-10-17, after #761.** They are the second of
+the two things that are built, reachable and have never been seen. Step 10's
+command is **`printf` and not `echo` deliberately**: an echoed command carrying
+a summary is counted along with its output, so `echo` would show 46 passed
+across two suites. With `printf '…%d passed…' 23 1 0` the echoed line's token
+before `passed` is `%d`, which is not a number, so it is refused **by
+construction** rather than by luck. `a_test_result_a_program_printed.rs` has the
+measurement and a test that fails if that ever stops being true.
 
 **Any step failing is worth more than the rest of this document.** What to send
 back: which step, what was on the screen, and `journalctl -b 0 -u alo-compositor`
@@ -122,63 +135,146 @@ fault — check `main` first and skip to walk step 7.
 has steps and so does the order below. A bare "step 6" could mean either, and one
 cross-reference in this file was already stale for exactly that reason.*
 
-### 2. Task 6, rich results — **the only startable task in the plan, and three wait on it**
+### 2. The bracket, if it is still nobody's — **what three blocked tasks wait on**
 
-**Measured 2026-10-17, by walking all ten of the plan's tasks rather than
-taking the next one.** This order spent the day promoting a step, measuring it,
-and finding it blocked — three times. So the tenth task was read with the other
-nine instead of after them:
+**The source qualifier was step 2 for about an hour, and it was already done.**
+Task 2 of the plan asks for a caption inside the transcript reading *Source:
+cargo test output · Not independently verified*; #761 draws exactly that
+sentence, in exactly that place, from the same frame of the design. Satisfying
+task 6 satisfied it outright, and nobody read it before promoting it. *A task
+whose whole content is one sentence of another task's output is a task to check
+off rather than to schedule* — and this is the fourth time in one day that this
+document promoted something it had not read, which is the fault its own
+headline lesson is about.
 
-| task | state |
+**So the bracket is next, and it is next because three things wait on it**:
+*bisect the machine*, *your files as they were*, and the *what each one
+changed* half of a replayable session. ADR 0045 puts it in `alo-turn` and #752
+settled what the agent may do with one — *take a bracket, and neither alter nor
+destroy one*.
+
+**#751 removed the first thing in the way** and **#752 recorded the measurement
+it rests on**, both landed today.
+
+**Who owns it: this lane, measured rather than assumed.** ADR 0045 says
+`crates/alo-turn` is *lane A's*, which is retired naming, and the charter lists
+`alo-turn` only for `the-local-network-plan`'s **pairing** parts. So the
+charter's own method 2 was applied — every recent landing in `crates/alo-turn`
+resolved to its branch — and **six of six are `task/mac/…`**: #750, #682, #679,
+#670, #667, #662. The bracket is not pairing, and it is this lane's.
+
+**Everything it needs is in place, and this is the first step all day that is
+unambiguously startable:**
+
+| | |
 |---|---|
-| 1. *why is it waiting* reaches a person | **done**, #755 |
-| 2. the source qualifier | waits on task 6 |
-| **6. rich results** | **startable, and nothing outside the plan blocks it** |
-| 7. replay a session | waits on task 6 |
-| 3. explain a command before it runs | **blocked** — shell integration, found today; #759 built the answer half |
-| 4. find a command by what it did | **blocked** — which surface asks is a scope decision |
-| 5. scope one command | **blocked** — `alo-capability`, another lane's |
-| 8. bisect the machine | blocked on a bracket, *and the plan says so* |
-| 9. try a command touching nothing | blocked on the kernel boundary, *and the plan says so* |
-| 10. *your files as they were* | blocked on a bracket, *and the plan says so* |
+| the decision | ADR 0045's terms, amended 2026-10-16, plus #752 — *the agent can take a bracket and can neither alter nor destroy one* |
+| the privilege | **none needed.** `btrfs subvolume snapshot -r` of a subvolume the person owns, as the person with no `sudo`, **exits 0** — measured twice, 2026-09-21 and 2026-10-16 |
+| the folder | **made at first sign-in**, by `alo-giving-a-folder`, this lane's own work of 2026-10-17 (ADR 0120 moved it, ADR 0121 wired the caller). ADR 0045's amendment recorded that *nothing creates it at all*; that is no longer true |
+| the layout | `alo-kept-undo` — `THE_TURN`, `BEFORE`, `AFTER`, `BOTH_SNAPSHOTS`, `Theirs`, `TheTurn`. **#751 moved it out of `alo-letting-go` for exactly this**, because nothing a turn runs inside may ship that crate |
+| the remover | `alo-letting-go`, and it is measured on a real loopback `btrfs` in `tests/on_a_real_btrfs_machine.rs` |
+| how to invoke it | the base's own program, as the remover does: one `Command::new(THE_PROGRAM)`, with a source-reading test asserting there is exactly one |
 
-**The plan was honest about the last three and not about tasks 3, 4 and 5**,
-which each read *Depends on: nothing in this plan* — true, and not the question
-anybody was asking. Four of ten are blocked, one is done, and **task 6 is the
-only one that can be started**. It also unblocks the most: tasks 2 and 7 both
-sit behind it.
+**So both ends are built and the middle is absent**, in ADR 0045's own words.
 
-*So this is not a judgement that rich results is the most valuable thing. It is
-the measured fact that it is the only thing, which is a stronger reason and took
-four attempts to find. The lesson is in the method: **walk the whole list before
-picking from it**, because a list read one item at a time hides its shape.*
+**The two things to settle before writing code, and neither is large:**
 
-**What it is.** `docs/features.md`, starred: *Output that is not stuck in a
-character grid. A benchmark draws a chart you can zoom; a long error becomes
-something you keep beside your editor and come back to tomorrow.* The design
-reserves the room — the gutter was measured against a node named *Rich test
-result / untrusted program data*, and the annotation says *PROGRAM includes
-parsed rich results*.
+1. **Where a turn begins — settled 2026-10-17, and it is one place.**
+   `Turning::beginning` in `crates/alo-turn/src/turning.rs`, and it has
+   **exactly one production caller: `crates/alo-agentd/src/serving.rs:436`.**
 
-**Untrusted is the load-bearing word.** This parses what a stranger's program
-printed, so it is as much about what it refuses to render as what it renders —
-and the input is the one thing this lane certainly has, which is what separates
-it from task 3.
+   That number was wrong twice before it was right, and how is worth keeping:
 
-### 3. The bracket, if it is still nobody's
+   | counting | answer | what was wrong with it |
+   |---|---|---|
+   | `grep -n '::beginning('` | **56** | three different types have one — `Turn`, `Arriving` and `Archive` in `alo-files` |
+   | `grep -n 'Turning::beginning('`, minus doc comments and `tests/` | **17** | still counts call sites **inside `#[cfg(test)]` blocks in production files** — `turning.rs` is 1903 lines and its test module starts at 904 |
+   | each site's line against its own file's `#[cfg(test)]` line | **1** | — |
 
-ADR 0045 puts it in `alo-turn`. #751 removed the first thing in the way and #752
-recorded the measurement it rests on. **Only if nothing else has taken it** —
-that crate is the workspace's most central and a collision in it costs a day
-where asking costs a message.
+   *Fifty-six against one. Each refinement removed a different kind of false
+   positive, and the last one is invisible to any per-file classifier, which is
+   this document's lesson about mentions and declarations in its third costume
+   of the day.*
 
-### 4. Then bisect the machine, and *your files as they were*
+   **And the one caller is the right one**, which is what makes this tractable:
+   the daemon knows **who the person is** — `SO_PEERCRED` on the socket — and
+   `Turning::beginning` does not. It takes a context, an agent name, a duration,
+   the grants and the machine, and carries neither a person nor a path. So a
+   bracket needs the person and their subvolume from somewhere, and the daemon
+   already has both. **No signature has to change.**
+
+2. **What happens to a turn whose bracket cannot be taken.** ADR 0045 does not
+   say, and this is the one thing still open. ADR 0015 says of its own boundary
+   that *a turn whose boundary cannot be applied does not run*, and `CLAUDE.md`
+   forbids a silent fallback — so the candidate answer is that the turn refuses
+   and the person is told. **It is a decision and not an inference**, and the
+   honest reading of ADR 0045's own shape is that it belongs in an amendment
+   beside the others rather than in a lane's judgement.
+
+### 3. What is still owed on rich results
+
+**The first view landed as #761**: a test result, which is the one view the
+design specifies. What is left under that task, in the order it is worth doing:
+
+- **the three `Ask alo` actions** the design draws under the summary. The
+  agent's road exists (`what_a_person_asked_goes_to_the_agent.rs`) but addresses
+  a task window rather than a terminal, so it needs a *who asked* that can be
+  either. **That part is this lane's and is buildable.** What is not is **what
+  the three actions say** — see below;
+- ***a thing on your desk that outlives the scroll*** — the promise's own
+  words, and a window rather than a line. A promise of its own;
+- **the benchmark and the diff**, which are blocked on the same thing the three
+  actions are blocked on — see below. It is one cause, not three.
+
+### 4. One cause blocks three things, and it is the owner's to unblock — measured 2026-10-17
+
+**The design snapshots in this repository record where a component is placed and
+never what is inside it.** Measured across every `.xml` in
+`docs/design/figma-snapshot/`:
+
+| | |
+|---|---|
+| component instances with **no** children | **4718** |
+| component instances **with** children | **1** — `Choice / Your name`, in `the-first-start-sheets.xml` |
+
+So an `<instance>` is a name, an x, a y, a width and a height. The most
+numerous are `Canvas / Window title` (1813), `Terminal / Source region` (451),
+`Terminal / Settings choice` (200), `Action / Keep`, `Action / Adjust` and
+`Action / Reject` (178 each) and **`Ask alo / Action` (176)**.
+
+**This is not *unknowable*, and an earlier note of mine implied it was.**
+Component definitions *are* captured where somebody captured the node holding
+them: **56 `<symbol>` nodes across six snapshots** — `Canvas / Window title`,
+`Canvas / Icon control / Close` and others are there in full. `ROOTS.md` says
+the library lives at node **`9:2` alo OS UI primitives** and that the
+components are in the tree whatever the plan tier limits.
+
+**Three of them have simply never been captured**, and all three block work
+that is otherwise ready:
+
+| not captured | what it blocks |
+|---|---|
+| `Ask alo / Action` | the three actions under a rich test result — the mechanism is this lane's and buildable, the wording is not |
+| `Terminal / View / Benchmark comparison` | the benchmark rich view |
+| `Terminal / View / File diff` | the diff rich view |
+
+**What would unblock all three, in one line:** capture node `9:2` — or those
+three components — into `docs/design/figma-snapshot/`, the way the other 56
+were. **It needs the Figma connector authorised**, which cannot be done from a
+session running unattended; the lane that measured the gutter's type got it by
+asking the live file for the label node itself, which is the same road.
+
+*Until then, building any of the three means inventing the inside of a component
+the design already has — which is the one thing `CLAUDE.md` forbids outright:
+the design is followed, not approximated.*
+
+### 5. Then bisect the machine, and *your files as they were*
 
 Both wait on a bracket and on nothing else, so **taking the bracket step above
 makes these two this lane's** — which is why the corrected table below no longer lists them as
 unfinishable. If the bracket turns out to be another lane's, these go with it.
 
-### 5. Explain a command before it runs — **blocked on shell integration, measured 2026-10-17**
+### 6. Explain a command before it runs — **blocked on shell integration, measured 2026-10-17**
 
 **This was step 2 of this order for part of 2026-10-17, on the plan's word that
 it was the cheapest of the remaining six.** #759 built the answer and found the
@@ -213,7 +309,7 @@ work teaches a person a road and then takes it away, which
 **What would unblock it**, in one sentence: a decision on shell integration —
 the sequence, its contract, and what stops a program forging it.
 
-### 6. Terminal tasks 4 and 5 — **both need a scope decision, measured 2026-10-17**
+### 7. Terminal tasks 4 and 5 — **both need a scope decision, measured 2026-10-17**
 
 **The plan says of each: *Depends on: nothing in this plan.* That is true, and I
 read it as *unblocked*, which it does not say.** Both depend on something
@@ -250,7 +346,7 @@ unanswered ownership question, as the step below.
 the record a narrowed question, given that the one window that shows the record
 refuses to narrow by design.
 
-### 7. The choice of whether alo may use the terminal — **blocked, measured 2026-10-17**
+### 8. The choice of whether alo may use the terminal — **blocked, measured 2026-10-17**
 
 **This was step 2 of this order for part of 2026-10-17, described as "the
 shortest distance from *built* to *usable* of anything on the list after #755".
