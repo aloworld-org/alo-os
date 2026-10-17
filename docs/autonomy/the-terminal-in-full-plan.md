@@ -64,6 +64,32 @@ were*, which is the snapshot half and waits on a bracket.
   in `docs/design/the-first-start.md`.
 - **A new task goes at the end**, numbered in order.
 
+## Where the ten stand, 2026-10-17
+
+**Two are done and eight are blocked. No task in this plan is startable**, and
+each is blocked by one of five causes — four of which are another lane's or the
+owner's:
+
+| | task | blocked by |
+|---|---|---|
+| 1 | *why is it waiting* reaches a person | **done**, #755 |
+| 2 | the source qualifier | **done**, by #761 |
+| 6 | rich results | **the first view is done**, #761; the other two need a design component captured |
+| 3 | explain a command before it runs | **shell integration** — alo does not know what was typed |
+| 7 | hand somebody a session to replay | **shell integration**, and **the comparer** |
+| 4 | find a command by what it did | **a scope decision** — which surface asks |
+| 5 | scope one command | **`alo-capability`**, another lane's |
+| 8 | bisect the machine | **the comparer** — the third PC's |
+| 10 | *your files as they were* | **the comparer** |
+| 9 | try a command touching nothing | **the kernel boundary** — the kernel plan's |
+
+**So the five causes are:** shell integration (2 tasks), the privileged comparer
+(3), a design component nobody has captured (part of 1), `alo-capability`'s
+ownership (1), the kernel boundary (1), and one scope decision (1).
+
+*Three of the five are named in ADRs as belonging to another lane or to the
+owner. None of the eight is waiting on work this lane could do and has not.*
+
 ## Tasks
 
 ### 1. The answer to *why is it waiting* reaches a person
@@ -235,11 +261,31 @@ is as much about what it refuses to render as what it renders.
 
 ### 7. Hand somebody a session they can replay
 
-**Status:** not started. **Depends on:** task 6, for the same reason task 2
-does.
+**Status:** **blocked on two causes already known, measured 2026-10-17.**
+**Depends on:** shell integration, and the privileged comparer — neither in this
+plan, and task 6 is no longer the obstacle.
 
-A transcript somebody else can step through — which needs the transcript to be
-more than cells, so it follows rich results rather than preceding them.
+A transcript somebody else can step through. Task 6 was the recorded
+dependency and it is built, so this read as the next startable task. It is not,
+and the promise says why: *not a transcript — the commands **and what each one
+changed**, replayed on their machine.* Both halves are blocked, and each by
+something another task here is already blocked by:
+
+- **the commands.** alo does not know what a person typed — task 3's blocker.
+  Measured again from the other side: `alo-terminal` does not depend on
+  `alo-record` (**0** mentions in its manifest), no terminal file in `alo-shell`
+  names `alo_record` (**0**), and `Happened::RanACommand` **always carries an
+  `agent`** — it is a command an agent ran, under whose authority, by
+  construction. A person's own typed command is recorded nowhere.
+- **what each one changed.** The two sides of a bracket, compared. The bracket
+  is taken as of 2026-10-17, and **nothing compares the two sides**: ADR 0045
+  puts the comparing in the privileged path with the base's own tools, which
+  `the-broker-and-the-disk-plan.md` gives to the third PC.
+
+*The status said "not started" because its only recorded dependency had been
+satisfied. That is the fourth time in this plan that a status true about what
+somebody foresaw read as a statement about what is possible — tasks 3, 4 and 5
+each said* Depends on: nothing in this plan *and were blocked outside it.*
 
 ### 8. Bisect the machine, not the repository
 
