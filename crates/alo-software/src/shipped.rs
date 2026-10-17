@@ -39,6 +39,7 @@ use alo_applications::Application;
 use alo_capability::is_a_persons_own;
 use serde::Deserialize;
 
+use crate::fields::{is_a_licence, is_a_release};
 use crate::installing::Wanted;
 use crate::role::Role;
 use crate::source::SourceName;
@@ -353,23 +354,6 @@ fn checked(entry: Entry) -> Result<Pinned, NotShipped> {
         version: entry.version,
         licence: entry.licence,
     })
-}
-
-/// Whether this is a release number: digits in groups, separated by single dots.
-fn is_a_release(version: &str) -> bool {
-    !version.is_empty()
-        && version
-            .split('.')
-            .all(|group| !group.is_empty() && group.chars().all(|c| c.is_ascii_digit()))
-}
-
-/// Whether this reads as a licence expression: letters, digits and the
-/// punctuation such an expression uses, on one line.
-fn is_a_licence(licence: &str) -> bool {
-    !licence.trim().is_empty()
-        && licence
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '+' | ' ' | '(' | ')'))
 }
 
 #[cfg(test)]
