@@ -126,7 +126,10 @@ fn a_machine_with_nothing_installed_is_pinned_to_settings_and_nothing_else() {
     let pinned: Vec<&ADockEntry> = server.what_the_dock_is_pinned_to().each_pinned().collect();
     assert_eq!(
         pinned,
-        vec![&ADockEntry::Native(ANativeAction::Settings)],
+        vec![
+            &ADockEntry::Native(ANativeAction::Settings),
+            &ADockEntry::Native(ANativeAction::Applications)
+        ],
         "a machine with no applications pinned an application, or lost the one entry that needs \
          none"
     );
@@ -190,8 +193,9 @@ fn what_is_pinned_reaches_both_the_draw_and_the_keyboard() {
     );
     assert_eq!(
         grid.len(),
-        2,
-        "the grid is not the browser and the Settings entry, so the count above proves nothing"
+        3,
+        "the grid is not the browser, the Settings entry and the market, so the count above \
+         proves nothing"
     );
     assert!(across > 0, "a grid of no items wide");
 }
@@ -259,8 +263,9 @@ fn a_fresh_machine_owes_the_write_it_just_drew() {
         vec![
             ADockEntry::Application(app("org.kde.dolphin")),
             ADockEntry::Native(ANativeAction::Settings),
+            ADockEntry::Native(ANativeAction::Applications),
         ],
-        "the fresh defaults are not Files then Settings"
+        "the fresh defaults are not Files, Settings then the market"
     );
 }
 
@@ -307,8 +312,8 @@ fn typing_narrows_the_grid_and_the_keyboard_walks_what_is_left() {
     server.the_dock_was_asked_for = Asked::MoreApps { focused: None };
     assert_eq!(
         server.what_this_persons_more_apps_holds().len(),
-        3,
-        "the premise: two applications and the Settings entry"
+        4,
+        "the premise: two applications, the Settings entry and the market"
     );
 
     for letter in "fire".chars() {
@@ -354,6 +359,12 @@ fn the_settings_entry_is_searchable_by_its_label() {
     }
 
     let left = server.what_this_persons_more_apps_holds();
+    // **One, not two.** This found two rows on 2026-10-17 when the market
+    // joined the fresh Dock: `Server::what_it_is_called` answered the Settings
+    // label for **any** entry with no application, so the market was searched
+    // under Settings' name. The market has a label of its own now, and this
+    // session is never told it — so a search for *ustaw* finds the one row
+    // whose name this test set.
     assert_eq!(left.len(), 1, "the Polish label did not find the entry");
     assert_eq!(
         left.first().and_then(alo_dock::OnTheDock::native),
@@ -394,7 +405,7 @@ fn closing_the_overview_clears_what_was_typed() {
     );
     assert_eq!(
         server.what_this_persons_more_apps_holds().len(),
-        2,
+        3,
         "the grid is still narrowed after the surface closed and opened again"
     );
 }

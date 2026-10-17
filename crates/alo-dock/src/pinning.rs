@@ -64,6 +64,32 @@ pub enum ARole {
     /// installed applications could ever find, which is why
     /// [`crate::pinning::Discovery`] is about the other two.
     Settings,
+    /// The window of what a person can install.
+    ///
+    /// **Not an application either**, for [`Self::Settings`]' reason exactly:
+    /// it opens the compositor's own surface, so it has no identifier and no
+    /// bus endpoint and none is invented for it. So a scan of installed
+    /// applications could never fill it, and it is filled from the role itself.
+    ///
+    /// # It was removed on 2026-10-12 and the owner put it back on 2026-10-17
+    ///
+    /// The removal's own words were *it named the application store, nothing on
+    /// this machine provides one*, and it ended: **removing the default neither
+    /// creates nor cancels an application-store feature — it records that there
+    /// was no role to fill.** There is one now, so the record changes.
+    ///
+    /// What provides it is not an application store either, which is why the
+    /// substitution that sentence warned about is still wrong: *More apps* is
+    /// the **pinned-and-open** grid and is not this. This is
+    /// `alo_shell::MarketWindow` over `alo_software::Catalogue` — a decided
+    /// list this machine ships.
+    ///
+    /// **And it is last, which is the owner's order and not a consequence of
+    /// anything.** Asked on 2026-10-17 what a fresh Dock starts with, they
+    /// answered: *File, browser, settings and application market.* It sat third
+    /// in the four this list had before 2026-10-12; it is fourth now because
+    /// that is what was said.
+    Applications,
 }
 
 impl ARole {
@@ -71,8 +97,9 @@ impl ARole {
     /// there**.
     ///
     /// The order is the owner's and is part of the ruling rather than a
-    /// consequence of how the enum is written: *Files, Browser, Settings*. A
-    /// person reads their Dock left to right and this is that reading.
+    /// consequence of how the enum is written: *Files, Browser, Settings,
+    /// Applications*. A person reads their Dock left to right and this is that
+    /// reading.
     ///
     /// # It was four until 2026-10-12
     ///
@@ -86,7 +113,12 @@ impl ARole {
     ///
     /// Removing the default **neither creates nor cancels** an
     /// application-store feature. It records that there was no role to fill.
-    pub const EVERY: [Self; 3] = [Self::Files, Self::Browser, Self::Settings];
+    pub const EVERY: [Self; 4] = [
+        Self::Files,
+        Self::Browser,
+        Self::Settings,
+        Self::Applications,
+    ];
 }
 
 /// A person's pins, and whether they have ever been set.
@@ -268,6 +300,11 @@ fn what_a_fresh_machine_pins(installed: &[(ARole, AppId)]) -> Vec<ADockEntry> {
         .into_iter()
         .filter_map(|role| match role {
             ARole::Settings => Some(ADockEntry::Native(ANativeAction::Settings)),
+            // **Unconditionally, like Settings and for the same reason**: there
+            // is nothing here that could be missing. A machine with no network
+            // and none of its seven applications still has this one, which is
+            // the point of it — it is the door to getting the others.
+            ARole::Applications => Some(ADockEntry::Native(ANativeAction::Applications)),
             ARole::Files | ARole::Browser => installed
                 .iter()
                 .find(|(filled, _)| *filled == role)
@@ -329,18 +366,36 @@ mod tests {
         ]
     }
 
-    /// **Files, Browser, Settings — in that order, whatever order they were
-    /// discovered in.**
+    /// **Files, Browser, Settings, Applications — in that order, whatever
+    /// order they were discovered in.**
+    ///
+    /// The owner's words of 2026-10-17, asked what a fresh Dock starts with:
+    /// *File, browser, settings and application market.* The market is last
+    /// because that is what was said, not because of where it sits in the enum.
     #[test]
     fn a_fresh_machine_pins_every_default_role_in_the_owners_order() {
         let pinned = what_a_fresh_machine_pins(&a_full_machine());
         assert_eq!(
             names(&pinned),
-            ["org.gnome.Nautilus", "org.mozilla.firefox", "Settings"],
-            "the Dock a person first sees does not read Files, Browser, Settings"
+            [
+                "org.gnome.Nautilus",
+                "org.mozilla.firefox",
+                "Settings",
+                "Applications"
+            ],
+            "the Dock a person first sees does not read Files, Browser, Settings, Applications"
         );
+        // **Both of the last two are native actions**, and each is checked:
+        // either reaching the launch path would ask the bus to start an
+        // application that does not exist, and the failure would read as a bus
+        // problem rather than a category error.
         assert_eq!(
             pinned.last().and_then(ADockEntry::native),
+            Some(ANativeAction::Applications),
+            "the market pin is not a native action, so pressing it would reach the launch path"
+        );
+        assert_eq!(
+            pinned.get(pinned.len() - 2).and_then(ADockEntry::native),
             Some(ANativeAction::Settings),
             "the Settings pin is not a native action, so pressing it would reach the launch path"
         );
@@ -357,18 +412,20 @@ mod tests {
         let pinned = what_a_fresh_machine_pins(&no_browser);
         assert_eq!(
             names(&pinned),
-            ["org.gnome.Nautilus", "Settings"],
+            ["org.gnome.Nautilus", "Settings", "Applications"],
             "a machine with no browser pinned something in its place, or left a hole"
         );
 
-        // **A machine with nothing installed still has Settings**, because
-        // Settings is not installed: it is this compositor's own surface, so
-        // there is nothing that could be missing. A fresh machine before
-        // `alo-shipping` has run is exactly this case.
+        // **A machine with nothing installed still has Settings and the
+        // market**, because neither is installed: each is this compositor's own
+        // surface, so there is nothing that could be missing. A fresh machine
+        // before `alo-shipping` has run is exactly this case — and on that
+        // machine the market is the **only** entry, which is the point of it
+        // being a default: it is the door to getting the rest.
         assert_eq!(
             names(&what_a_fresh_machine_pins(&[])),
-            ["Settings"],
-            "a machine with no applications lost the one entry that needs none"
+            ["Settings", "Applications"],
+            "a machine with no applications lost the entries that need none"
         );
     }
 
@@ -391,10 +448,15 @@ mod tests {
         // And the other state, on the same machine, does fill it — so this test
         // cannot pass by the defaults never applying at all.
         let fresh = ThePins::NeverSet.what_to_pin(&found);
-        assert_eq!(fresh.to_draw().len(), 3);
+        assert_eq!(fresh.to_draw().len(), 4);
         assert_eq!(
             names(fresh.to_draw()),
-            ["org.gnome.Nautilus", "org.mozilla.firefox", "Settings"]
+            [
+                "org.gnome.Nautilus",
+                "org.mozilla.firefox",
+                "Settings",
+                "Applications"
+            ]
         );
         assert!(fresh.should_be_written_down());
     }
@@ -428,8 +490,8 @@ mod tests {
             })
             .collect();
         let kept = ThePins::Chosen(without_the_browser).what_to_pin(&found);
-        // Three defaults less the one they took off.
-        assert_eq!(kept.to_draw().len(), 2);
+        // Four defaults less the one they took off.
+        assert_eq!(kept.to_draw().len(), 3);
         assert!(
             !names(kept.to_draw()).contains(&"org.mozilla.firefox".to_owned()),
             "an application the person removed was restored by the defaults"
@@ -449,13 +511,15 @@ mod tests {
         let without_a_browser = vec![(ARole::Files, app("org.gnome.Nautilus"))];
         let first = ThePins::NeverSet.what_to_pin(&Discovery::Completed(without_a_browser));
         let first: Vec<ADockEntry> = first.to_draw().to_vec();
-        assert_eq!(first.len(), 2, "the premise: the browser was not there");
+        // Files, Settings and the market: three, because the browser was the
+        // only one of the four that had to be found.
+        assert_eq!(first.len(), 3, "the premise: the browser was not there");
 
         // The store arrives. The person's pins are what they were.
         let now = ThePins::Chosen(first).what_to_pin(&Discovery::Completed(a_full_machine()));
         assert_eq!(
             now.to_draw().len(),
-            2,
+            3,
             "installing an application pinned it"
         );
         assert!(!now.should_be_written_down());
@@ -501,7 +565,7 @@ mod tests {
         // every default once discovery completes — so this test cannot pass by the
         // defaults never applying at all.
         let completed = ThePins::NeverSet.what_to_pin(&Discovery::Completed(a_full_machine()));
-        assert_eq!(completed.to_draw().len(), 3);
+        assert_eq!(completed.to_draw().len(), 4);
         assert!(completed.should_be_written_down());
     }
 
@@ -526,8 +590,8 @@ mod tests {
         let nothing_installed = ThePins::NeverSet.what_to_pin(&Discovery::Completed(Vec::new()));
         assert_eq!(
             names(nothing_installed.to_draw()),
-            ["Settings"],
-            "a machine with no applications did not pin the one entry that needs none"
+            ["Settings", "Applications"],
+            "a machine with no applications did not pin the entries that need none"
         );
         assert!(
             nothing_installed.should_be_written_down(),
@@ -601,10 +665,20 @@ mod tests {
         let pinned: Vec<ADockEntry> = holding.each_pinned().cloned().collect();
         assert_eq!(
             names(&pinned),
-            ["org.gnome.Nautilus", "org.mozilla.firefox", "Settings"]
+            [
+                "org.gnome.Nautilus",
+                "org.mozilla.firefox",
+                "Settings",
+                "Applications"
+            ]
         );
         assert_eq!(
             pinned.last().and_then(ADockEntry::native),
+            Some(ANativeAction::Applications),
+            "the last pin is an application, so an identifier was invented for the market"
+        );
+        assert_eq!(
+            pinned.get(2).and_then(ADockEntry::native),
             Some(ANativeAction::Settings),
             "the third pin is an application, so an identifier was invented for Settings"
         );

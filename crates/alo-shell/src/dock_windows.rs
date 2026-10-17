@@ -330,16 +330,49 @@ impl crate::Server {
         self.the_settings_entry_is_called = called;
     }
 
+    /// Tell this session what its Applications entry is called.
+    ///
+    /// Said once at sign-in, like the Settings label beside it and for the same
+    /// reasons: the label does not change for the life of a session, and the
+    /// `Server` has no vocabulary to say it with. The field's own note says what
+    /// a session that never says costs, and what one string for both native
+    /// entries cost before this existed — the market was drawn and searched
+    /// under Settings' name.
+    pub fn its_applications_entry_is_called(&mut self, called: String) {
+        self.the_applications_entry_is_called = called;
+    }
+
     /// The name this row is drawn and searched by.
     ///
     /// **One answer for both**, which is the whole of a search field being
     /// trustworthy: a row that matched on something a person cannot see is a
-    /// row they cannot explain. An application is its own identifier; the
-    /// Settings entry is the translated label this session was told at
-    /// sign-in.
+    /// row they cannot explain. An application is its own identifier; a native
+    /// entry is the translated label this session was told at sign-in.
+    ///
+    /// **Matched on what the row is, not on the absence of an application.**
+    /// This read `on.app().map_or(the_settings_label, …)` until 2026-10-17 —
+    /// *no application* meant Settings, which was true while Settings was the
+    /// only native entry. The market joined the fresh Dock and was immediately
+    /// drawn and searched under Settings' name.
+    ///
+    /// **Over `OnTheDock::what` rather than over `app` and `native`
+    /// separately**, so the match is exhaustive and there is no fourth case to
+    /// invent a name for. Asking the two accessors needs an arm for *neither*,
+    /// which cannot happen and which I first filled with an empty string —
+    /// `tests/desktop_source.rs` refused it, and the guard was right twice
+    /// over: the line held a string, and an unreachable arm holding a value is
+    /// a place a real row can one day land. A row added to `ADockEntry` is a
+    /// compile error here now.
     pub(crate) fn what_it_is_called<'a>(&'a self, on: &'a alo_dock::OnTheDock) -> &'a str {
-        on.app()
-            .map_or(self.the_settings_entry_is_called.as_str(), |app| app.name())
+        match on.what() {
+            alo_dock::ADockEntry::Application(app) => app.name(),
+            alo_dock::ADockEntry::Native(alo_dock::ANativeAction::Settings) => {
+                self.the_settings_entry_is_called.as_str()
+            }
+            alo_dock::ADockEntry::Native(alo_dock::ANativeAction::Applications) => {
+                self.the_applications_entry_is_called.as_str()
+            }
+        }
     }
 }
 

@@ -80,12 +80,25 @@ fn what_is_installed() -> Vec<(ARole, AppId)> {
     ]
 }
 
-/// The order the owner gave: Files, Browser, Settings.
+/// The order the owner gave: Files, Browser, Settings, the application market.
 ///
 /// It was four until 2026-10-12, when the owner removed `Apps`: it named an
 /// application store, nothing provides one, and *More apps* is the
 /// pinned-and-open grid rather than a substitute for it.
-const THE_AGREED_ORDER: [&str; 3] = ["org.gnome.Nautilus", "org.mozilla.firefox", "Settings"];
+///
+/// **Four again from 2026-10-17**, because something provides one now — and the
+/// removal's own note said it *records that there was no role to fill* rather
+/// than cancelling the feature. Asked what a fresh Dock starts with, the owner
+/// answered *File, browser, settings and application market*, so the market is
+/// **last** rather than third where `Apps` sat. What fills it is still not an
+/// application store: it is the compositor's own window over the decided
+/// catalogue this machine ships.
+const THE_AGREED_ORDER: [&str; 4] = [
+    "org.gnome.Nautilus",
+    "org.mozilla.firefox",
+    "Settings",
+    "Applications",
+];
 
 /// Where the pins are kept between sessions.
 ///
@@ -283,8 +296,8 @@ fn a_machine_with_no_applications_is_still_a_machine_that_has_been_asked() {
     let first = store.a_session(&found_nothing);
     assert_eq!(
         names(first.to_draw()),
-        ["Settings"],
-        "a machine with no applications lost the one entry that needs none"
+        ["Settings", "Applications"],
+        "a machine with no applications lost the entries that need none"
     );
     assert_eq!(
         store.writes, 1,
@@ -298,7 +311,7 @@ fn a_machine_with_no_applications_is_still_a_machine_that_has_been_asked() {
     let later = store.a_session(&Discovery::Completed(what_is_installed()));
     assert_eq!(
         names(later.to_draw()),
-        ["Settings"],
+        ["Settings", "Applications"],
         "applications installed after the first run pinned themselves"
     );
     assert!(!later.should_be_written_down());
