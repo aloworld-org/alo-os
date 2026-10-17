@@ -406,6 +406,12 @@ mod tests {
                 &mut Holding::ATurn {
                     turning: &mut *turning,
                     questions: &mut questions,
+                    bracket: &mut crate::the_bracket_this_turn_takes::TheTurnsBracket::none_yet(
+                        None,
+                        std::time::SystemTime::UNIX_EPOCH,
+                        0,
+                        0,
+                    ),
                 },
                 &mut WhatIsGranted::of(&mut Grants::default(), &NothingIsRemembered),
                 &Nearby {

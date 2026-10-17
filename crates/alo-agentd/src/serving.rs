@@ -443,6 +443,19 @@ impl<'a> Serving<'a> {
             .map_err(|why| NotServed::NoTurn { why })?;
             served.turns = served.turns.saturating_add(1);
 
+            // **The bracket this turn may take**, beside the turn so the two
+            // begin and end together. A turn that only answers questions never
+            // takes one, and `crate::the_bracket_this_turn_takes` says why that
+            // is a constraint rather than a tidiness: a read-only snapshot
+            // cannot be removed by the person's own session, so one per question
+            // would leave the machine unable to clear them.
+            let mut bracket = crate::the_bracket_this_turn_takes::TheTurnsBracket::none_yet(
+                crate::the_bracket_this_turn_takes::WhereBracketsGo::for_this_session(),
+                this_moment(),
+                std::process::id(),
+                served.turns,
+            );
+
             // Every road out of this loop ends the turn, including the ones
             // that are about to fail: a grant an invocation made is the
             // machine's until something takes it back, and a service that
@@ -458,6 +471,7 @@ impl<'a> Serving<'a> {
                     &mut Holding::ATurn {
                         turning: &mut turning,
                         questions: &mut *questions,
+                        bracket: &mut bracket,
                     },
                     granted,
                     strings,
@@ -490,6 +504,11 @@ impl<'a> Serving<'a> {
                     break;
                 }
             }
+            // **The other side of the bracket, as the turn ends.** ADR 0045 is
+            // two snapshots either side of a changing turn; this is the second,
+            // and the note saying what the turn did goes beside it. A turn that
+            // took no bracket does nothing here, which is most of them.
+            bracket.as_the_turn_ends(this_moment());
             let _gave_a_grant_back = turning.ending(granted.holding_mut());
             held.agent = None;
 

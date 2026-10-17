@@ -199,7 +199,16 @@ mod tests {
         let mut grants = Grants::default();
         what_a_person_said(
             line,
-            &mut Holding::ATurn { turning, questions },
+            &mut Holding::ATurn {
+                turning,
+                questions,
+                bracket: &mut crate::the_bracket_this_turn_takes::TheTurnsBracket::none_yet(
+                    None,
+                    SystemTime::UNIX_EPOCH,
+                    0,
+                    0,
+                ),
+            },
             &mut WhatIsGranted::of(&mut grants, &NothingIsRemembered),
             &Nearby {
                 network,

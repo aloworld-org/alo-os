@@ -182,7 +182,13 @@ pub fn what_a_person_said(
             Ok(if let Some((arriving, network)) = holding.remote() {
                 reaching::answered_to(answered, arriving, network, granted.holding(), strings, now)
             } else {
-                answered_to(answered, holding.turning(), granted.holding(), strings, now)
+                answered_to(
+                    answered,
+                    holding.approving(),
+                    granted.holding(),
+                    strings,
+                    now,
+                )
             })
         }
         Err(why) => Ok(ToAPerson::refused(&why.said(strings))),
@@ -220,12 +226,15 @@ fn what_is_granted_changed(
 /// one.
 fn answered_to(
     answered: FromAPerson,
-    turning: Option<&mut Turning<'_, '_>>,
+    underway: Option<(
+        &mut Turning<'_, '_>,
+        &mut crate::the_bracket_this_turn_takes::TheTurnsBracket,
+    )>,
     grants: &Grants,
     strings: &Strings,
     now: SystemTime,
 ) -> ToAPerson {
-    let Some(turning) = turning else {
+    let Some((turning, bracket)) = underway else {
         return match answered.number() {
             Some(number) => nothing_is_waiting(number, strings),
             None => ToAPerson::waiting(std::iter::empty(), strings, now),
@@ -256,10 +265,29 @@ fn answered_to(
         | FromAPerson::OpenWorkspace { .. }
         | FromAPerson::Advertised => ToAPerson::refused(&rereading::what_to_say(strings)),
         FromAPerson::Approve { number } => match under(turning, number, now) {
-            Some(waiting) => match turning.approving(waiting, grants, now) {
-                Ok(answer) => ToAPerson::did(as_a_client_sees_it(&answer)),
-                Err(why) => ToAPerson::refused(&why.said(strings)),
-            },
+            Some(waiting) => {
+                // **The bracket, before the change runs.** ADR 0045 takes the
+                // first snapshot before a changing turn, and an approval is the
+                // moment a turn is known to be one — it is redeemed here and
+                // only then run. The sentence read now is the one the person
+                // approved, which is what `kept.json` keeps for them to read
+                // months later.
+                //
+                // Nothing is answered and nothing can fail the approval: ADR
+                // 0045's third term is that a machine too full to snapshot still
+                // runs the turn, and `crate::the_bracket_this_turn_takes` makes
+                // that structural rather than remembered.
+                let said = turning
+                    .proposed(waiting)
+                    .map(|change| change.proposal.sentence(strings).into_text());
+                if let Some(said) = said {
+                    bracket.before_a_change(&said);
+                }
+                match turning.approving(waiting, grants, now) {
+                    Ok(answer) => ToAPerson::did(as_a_client_sees_it(&answer)),
+                    Err(why) => ToAPerson::refused(&why.said(strings)),
+                }
+            }
             None => nothing_is_waiting(number, strings),
         },
         FromAPerson::Decline { number } => match under(turning, number, now) {
@@ -316,6 +344,21 @@ mod tests {
     ///
     /// Nothing in these is about the grants file, so the file they are given is
     /// the one a machine has on its first morning.
+    /// A bracket that holds nothing, for the tests here that are not about one.
+    ///
+    /// Every test in this module answers a person; none of them approves a
+    /// change against a real home, so a bracket with nowhere to go is the
+    /// honest fixture — and `TheTurnsBracket::none_yet(None, …)` is exactly
+    /// what a session with no home has.
+    fn no_bracket() -> crate::the_bracket_this_turn_takes::TheTurnsBracket {
+        crate::the_bracket_this_turn_takes::TheTurnsBracket::none_yet(
+            None,
+            SystemTime::UNIX_EPOCH,
+            0,
+            0,
+        )
+    }
+
     fn said_in_a_turn(
         line: &str,
         turning: &mut Turning<'_, '_>,
@@ -328,6 +371,7 @@ mod tests {
             &mut Holding::ATurn {
                 turning,
                 questions: &mut nothing_has_been_chosen(),
+                bracket: &mut no_bracket(),
             },
             &mut WhatIsGranted::of(grants, &NothingIsRemembered),
             &Nearby {

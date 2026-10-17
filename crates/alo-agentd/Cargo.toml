@@ -51,6 +51,13 @@ alo-context = { path = "../alo-context" }
 alo-protocol = { path = "../alo-protocol" }
 alo-strings = { path = "../alo-strings" }
 alo-turn = { path = "../alo-turn" }
+# The undo folder's layout, and the words a person reads about what a turn kept.
+# Neither reaches the privileged remover, which
+# `alo-changing-undo/tests/a_turn_cannot_arrive_at_this_pane.rs` forbids a turn
+# to ship: `alo-keeping-up` names only egress, strings, saying, declared and
+# capability.
+alo-kept-undo = { path = "../alo-kept-undo" }
+alo-keeping-up = { path = "../alo-keeping-up" }
 # The three acts and the one-word answers the compositor's door speaks
 # (ADR 0108). `crate::at_the_compositors_door` is the one implementation that
 # reaches a real socket; the trait is `alo-turn`'s.
@@ -227,6 +234,10 @@ path = "src/main.rs"
 workspace = true
 
 [dev-dependencies]
+# A person's home and undo folder, for the bracket's tests. A temporary
+# directory is not a subvolume, so every bracket in those tests is *not* taken —
+# which is the case they are about; `alo-turn` measures a real one as root.
+tempfile = "3"
 # The loop this crate's door exists to answer. A dev-dependency only: nothing
 # `alo-agentd` ships reaches the agent, and the agent is another process.
 alo-agent = { path = "../alo-agent" }

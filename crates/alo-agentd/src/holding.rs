@@ -38,6 +38,14 @@ pub enum Holding<'a, 'm, 't> {
         turning: &'a mut Turning<'m, 't>,
         /// What a question in this turn is put to, found once and held.
         questions: &'a mut Questions,
+        /// The bracket this turn has taken, or has not taken yet.
+        ///
+        /// Beside the turn for the reason the two above are: it begins and ends
+        /// with the turn, so a round cannot be handed one belonging to another.
+        /// A turn that only answers questions never takes one — see
+        /// `crate::the_bracket_this_turn_takes` for why that is a constraint
+        /// rather than a tidiness.
+        bracket: &'a mut crate::the_bracket_this_turn_takes::TheTurnsBracket,
     },
     /// Nobody is, so the machine itself is here.
     Nobody(&'a mut Machine<'m>),
@@ -92,6 +100,27 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
         }
     }
 
+    /// The turn and the bracket it may take, when there is one.
+    ///
+    /// **One call rather than two**, for [`Holding::underway`]'s reason: a
+    /// caller that took the turn and then reached for a bracket could be holding
+    /// one belonging to another turn. `crate::answering` needs both at the
+    /// moment an approval is redeemed, because the snapshot has to be taken
+    /// before the change runs.
+    pub fn approving(
+        &mut self,
+    ) -> Option<(
+        &mut Turning<'m, 't>,
+        &mut crate::the_bracket_this_turn_takes::TheTurnsBracket,
+    )> {
+        match self {
+            Self::ATurn {
+                turning, bracket, ..
+            } => Some((turning, bracket)),
+            Self::Nobody(_) | Self::TheNetwork { .. } => None,
+        }
+    }
+
     /// The turn and where a question in it goes, when there is one.
     ///
     /// What `crate::doing` needs, and it is one call rather than two so that a
@@ -99,7 +128,9 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
     /// one.
     pub fn underway(&mut self) -> Option<(&mut Turning<'m, 't>, &mut Questions)> {
         match self {
-            Self::ATurn { turning, questions } => Some((turning, questions)),
+            Self::ATurn {
+                turning, questions, ..
+            } => Some((turning, questions)),
             Self::Nobody(_) | Self::TheNetwork { .. } => None,
         }
     }
