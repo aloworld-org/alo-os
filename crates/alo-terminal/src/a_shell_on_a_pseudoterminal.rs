@@ -25,6 +25,7 @@
 //! bytes yet* as *finished* would close a terminal the moment a program paused
 //! to think. [`WhatArrived`] is those three, by name.
 
+use crate::why_a_command_is_waiting::WhyItIsWaiting;
 use std::collections::HashMap;
 use std::io::{Read as _, Write as _};
 use std::path::PathBuf;
@@ -250,6 +251,70 @@ impl AShellOnAPseudoterminal {
         let who = rustix::termios::tcgetpgrp(self.pty.file()).ok()?;
         u32::try_from(who.as_raw_nonzero().get()).ok()
     }
+
+    /// Why the command in front is waiting, from what this machine can find
+    /// out about it.
+    ///
+    /// `docs/features.md`: *a command looks stuck; **ask**, and get waiting for
+    /// the keyboard, for the network, for another process or a lock, still
+    /// computing, or unknown with the evidence available — instead of killing
+    /// something that was nearly done.*
+    ///
+    /// # This is the asking, and it is three calls nothing was making
+    ///
+    /// [`Self::the_command_in_front`] knew which process to ask about,
+    /// [`crate::what_the_kernel_says::what_can_be_found_out_about`] knew how to
+    /// gather the evidence, and [`crate::why_it_is_waiting`] knew how to read
+    /// it. All three were built, tested against real processes, and **joined by
+    /// nothing** — so a person could not ask, which is the whole of what that
+    /// promise is.
+    ///
+    /// # When there is nothing to answer
+    ///
+    /// [`None`] in three cases, none of which is a fault:
+    ///
+    /// - **the person is at a prompt**, so the shell itself is in front and no
+    ///   command is waiting for anything. Asking about the shell would answer
+    ///   *waiting for the keyboard* every time, which
+    ///   [`Self::the_command_in_front`] explains at length;
+    /// - the terminal would not say which process is in front;
+    /// - the machine would not say anything about that process, which happens
+    ///   to a command that finished between the two questions.
+    ///
+    /// A caller shows nothing in all three. *Nothing is waiting* and *nothing
+    /// could be found out* are different, and the second is
+    /// [`WhyItIsWaiting::NobodyCanTell`] — which is an answer and arrives as
+    /// `Some`.
+    #[cfg(target_os = "linux")]
+    #[must_use]
+    pub fn why_the_command_in_front_is_waiting(&self) -> Option<WhatIsWaiting> {
+        let process = self.the_command_in_front()?;
+        if process == self.the_shell_itself() {
+            return None;
+        }
+        let evidence = crate::what_the_kernel_says::what_can_be_found_out_about(process)?;
+        Some(WhatIsWaiting {
+            process,
+            why: crate::why_it_is_waiting(&evidence),
+        })
+    }
+}
+
+/// A command that looks stuck, and why it is waiting.
+///
+/// **Carries which process the answer is about**, because the promise does not
+/// stop at the answer: *then show the prompt, inspect the connection, reveal
+/// what is blocking it, or stop.* Every one of those four acts on something, and
+/// this is the something. What it is called is
+/// [`crate::what_the_kernel_says::what_this_process_is_called`], asked when a
+/// surface needs the name rather than carried here where most callers would not
+/// read it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WhatIsWaiting {
+    /// The process the answer is about: the one the terminal has in front.
+    pub process: u32,
+    /// Why it is waiting, which is one of the five and never a guess.
+    pub why: WhyItIsWaiting,
 }
 
 /// How big one cell is, in whole pixels.

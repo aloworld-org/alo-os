@@ -44,6 +44,7 @@ pub mod who_is_speaking;
 pub mod why_a_command_is_waiting;
 pub mod words;
 
+pub use a_shell_on_a_pseudoterminal::WhatIsWaiting;
 pub use a_shell_on_a_pseudoterminal::{
     ACellInPixels, AShellOnAPseudoterminal, NoShell, WhatArrived,
 };
