@@ -37,24 +37,35 @@
 //! once, because the press that closes the window is the last one this window
 //! takes.
 //!
-//! # What this file deliberately does not do
+//! # What this file does with an ask, and what it refuses to do
 //!
-//! `MarketPressed::AskedToInstall` is handed back and **nothing here acts on
-//! it.** A person pressing Enter has said what they want; carrying it out means
-//! reaching the machine, which `alo_software::install` refuses to do unless the
-//! errand is on the egress indicator, and that is the host's errand rather than
-//! a key's. The window holds what was asked for and waits to be told what
-//! became of it — `MarketWindow::it_arrived` and `it_was_refused` are the two
-//! answers, and the road that gives them is its own change.
+//! `MarketPressed::AskedToInstall` is **recorded on the `Server` and carried
+//! out nowhere near here.** A person pressing Enter has said what they want;
+//! carrying it out means reaching the machine over a network, and a key handler
+//! that did it would be the frame loop waiting on a download.
 //!
-//! Saying so is the point. A key that silently did nothing would read as a
-//! finished install path to anybody grepping for one.
+//! So the press becomes `Server::asked_to_install`, the lane takes it once, and
+//! `crate::what_a_person_installs` does the work on a thread of its own with
+//! the errand on the egress indicator — which `alo_software::install` refuses
+//! to run without. `MarketWindow::it_arrived` and `it_was_refused` are the two
+//! answers, and the lane gives them when the thread posts back.
+//!
+//! **This paragraph said *nothing here acts on it* until 2026-10-17**, when
+//! the road that acts on it was built. The claim that mattered is unchanged:
+//! nothing in this file reaches the machine.
 
 use std::io;
 
 use smithay::backend::input::KeyState;
 
 use crate::{InputError, InputUpdate, MarketPressed, Server};
+
+// **`MarketPressed::AskedToInstall` is acted on after all**, which this file's
+// header said it was not. What is unchanged is the claim that mattered: nothing
+// *here* reaches the machine. The press is recorded on the `Server` and
+// `crate::what_a_person_installs` is what carries it out, on a thread, with the
+// errand on the indicator — because reaching the machine from a key handler
+// would be the frame loop waiting on a download.
 
 impl Server {
     /// Whether this seat's keys belong to the window of what a person can
@@ -66,6 +77,16 @@ impl Server {
     #[must_use]
     pub fn the_market_is_taking_the_keys(&self) -> bool {
         self.market.is_open()
+    }
+
+    /// What a person pressed Install on, waiting to be started.
+    ///
+    /// **Taken rather than read**, so one press starts one installation however
+    /// many frames pass before the lane asks — `Server::take_what_was_asked_of_alo`
+    /// keeps the same rule at the other end of the same kind of road, and says
+    /// why at length.
+    pub fn take_what_was_asked_to_install(&mut self) -> Option<alo_software::Listed> {
+        self.asked_to_install.take()
     }
 
     /// Hand one key to the window, and say what it did.
@@ -99,6 +120,19 @@ impl Server {
             Ok(Some(key)) => {
                 let mut window = std::mem::take(&mut self.market);
                 let did = window.pressed(key);
+                // **An ask is recorded here, where the press is known.** The
+                // window holds what was asked for so it can draw the row; this
+                // is the *event*, which is what the lane needs — see
+                // `Server::asked_to_install` for why reading the window's state
+                // instead would start the same installation every frame.
+                //
+                // Cloned out of the window rather than moved, because the
+                // window goes on showing it: `MarketWindow::asked` is cleared
+                // by `it_arrived` or `it_was_refused`, and until one of those
+                // the row says *installing it*.
+                if did == MarketPressed::AskedToInstall {
+                    self.asked_to_install = window.what_they_asked_for().cloned();
+                }
                 self.market = window;
                 Ok(Some(did))
             }

@@ -72,7 +72,20 @@ fn a_program_that_prints_its_environment(named: &str) -> PathBuf {
     use std::io::Write as _;
     use std::os::unix::fs::PermissionsExt as _;
 
-    let program = std::env::temp_dir().join(format!("{named}-{}.sh", std::process::id()));
+    // **A name of this call's own, not of this process's.** The path was
+    // `{named}-{pid}.sh`, and on 2026-10-17 this test failed once with *Text
+    // file busy* — the kernel's refusal to exec a file somebody is writing.
+    // Three reruns passed, so the cause is **not proven**: what is proven is
+    // that two runs of this binary with the same recycled pid, or two calls
+    // that were ever given the same `named`, would write and exec one path.
+    // A counter removes that collision mode. It is a mitigation and not a
+    // diagnosis, and it is said so here rather than left to read as a fix.
+    static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+    let program = std::env::temp_dir().join(format!(
+        "{named}-{}-{}.sh",
+        std::process::id(),
+        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    ));
     let mut written = std::fs::File::create(&program).expect("a program to start");
     written
         .write_all(b"#!/bin/sh\nexec /usr/bin/env\n")

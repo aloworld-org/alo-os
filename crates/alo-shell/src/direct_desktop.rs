@@ -77,6 +77,32 @@ pub trait TheDesktop {
     /// cannot, because it does not know what a repeat means to the surface.
     fn the_pointer_is_now(&mut self, _on: crate::which_preview_the_pointer_is_on::OnThePanel) {}
 
+    /// **What this machine is doing on its own**, lent for the acts that change
+    /// it.
+    ///
+    /// There is **one indicator on a machine** and the thing that draws it owns
+    /// it, which is why this is lent rather than held here:
+    /// `alo_egress::Indicator`'s own header is the argument, and
+    /// `alo_turn::Machine` borrows one for exactly the same reason.
+    ///
+    /// The lane needs it for the one errand a person starts from a window this
+    /// shell draws: installing an application. The line goes up before the
+    /// fetching begins and comes down when it ends, both on this thread, and
+    /// `crate::what_a_person_installs` is where that order is argued.
+    ///
+    /// **`None` by default**, like [`Self::the_panel`] and for the same reason:
+    /// a desktop with no indicator is a real one — the display probe and every
+    /// test are in that position — and a default that invented one would be a
+    /// surface claiming nothing is leaving on a machine that cannot know.
+    ///
+    /// **A desktop that answers `None` installs nothing**, and that is the
+    /// honest consequence rather than a gap: law 1 says an errand is visible at
+    /// the moment it happens, so a machine with nowhere to show one may not
+    /// start one. The lane refuses the ask and the window says so.
+    fn the_indicator(&mut self) -> Option<&mut alo_egress::Indicator> {
+        None
+    }
+
     /// The panel this desktop keeps, for the one act that has to change it.
     ///
     /// **Lent mutably, and only here.** Every other seam in this trait hands the compositor
@@ -489,6 +515,32 @@ impl crate::DirectSession {
                             asking:
                                 crate::what_a_person_asked_goes_to_the_agent::TheAgentsDoor::default(
                                 ),
+                            // **The tool that ships, under no organisation's
+                            // rule yet.** `alo_software::TheRentedTool` is the
+                            // one this product installs with, and
+                            // `Bound::Nobodys` is the honest answer on a
+                            // machine whose description nothing here has read:
+                            // the bound comes off `[applications]` in a file a
+                            // root wrote, `alo-agentd` is what reads it, and a
+                            // compositor that opened that file would be a
+                            // compositor deciding what an organisation
+                            // permits. **So a managed machine's rule does not
+                            // reach this road yet** — written down rather than
+                            // left to be discovered, because the consequence
+                            // is that an organisation's limit on where
+                            // applications come from is not applied to an
+                            // install a person starts from this window. The
+                            // places themselves still are: `Enabled::read`
+                            // refuses one switched off or set up without
+                            // signature checking whatever the bound says.
+                            installing: Some(
+                                crate::what_a_person_installs::TheInstallingThatIsAsked::with(
+                                    std::sync::Arc::new(
+                                        alo_software::TheRentedTool::on_this_machine(),
+                                    ),
+                                    alo_software::Bound::Nobodys,
+                                ),
+                            ),
                             labels,
                             strings,
                             left,
@@ -543,6 +595,21 @@ struct Desk<'a> {
     /// thing with a *frame* to drain an answer into, and ADR 0109's whole point
     /// is that nothing waits.
     asking: crate::what_a_person_asked_goes_to_the_agent::TheAgentsDoor,
+    /// The road from *a person asked for this application* to *it is here*.
+    ///
+    /// **Owned by the loop for `asking`'s reason exactly**: it holds threads
+    /// and a channel, the `Server` is handed out as `&mut` all over this crate,
+    /// and the loop is the thing with a frame to drain an answer into.
+    ///
+    /// **`None` on a session with nothing to install with.** The sign-in
+    /// screen, the display probe and every test are in that position, and a
+    /// road built without a tool would be a road that refuses every ask with a
+    /// sentence about the tool rather than one about the machine. A person on
+    /// such a session cannot open the market either, because
+    /// `Catalogue::decided` is the only thing that opens it and the Dock entry
+    /// is theirs to pin — so this being `None` is not a surface a person can
+    /// reach and be puzzled by.
+    installing: Option<crate::what_a_person_installs::TheInstallingThatIsAsked>,
     /// The bundled font every word on the desktop is laid out with.
     labels: &'a mut WindowControlLabels,
     /// This machine's own sentences, for the names a reader is told.
@@ -859,6 +926,64 @@ impl LoopInput for Desk<'_> {
                 // returns at once — a frame loop that waited here would stop
                 // every window on the machine drawing until a model answered.
                 self.asking.ask(which, &request);
+            }
+        }
+        // **What a person pressed Install on becomes an installation, here,
+        // once a frame — and before the frame**, for the reason the ask above
+        // is: starting one needs the desktop mutably (for its indicator) and
+        // `now()` borrows it immutably for as long as the frame lives.
+        //
+        // **Taken rather than read**, so one press starts one installation
+        // however many frames pass. `Server::asked_to_install` carries the
+        // whole argument, and the short of it is that the window goes on
+        // showing what was asked for until the host answers — so a lane reading
+        // the window's state would start the same download every frame.
+        if let Some(listed) = server.take_what_was_asked_to_install() {
+            let refused = match (self.installing.as_ref(), self.desktop.the_indicator()) {
+                (Some(road), Some(indicator)) => road
+                    .asked_for(&listed, indicator, std::time::SystemTime::now())
+                    .err(),
+                // **A session with no road or nowhere to show the errand
+                // installs nothing**, and the person is told rather than left
+                // watching a row say *installing it* for ever. Law 1 is why
+                // the missing indicator refuses rather than proceeds: an
+                // errand that cannot be shown may not happen.
+                //
+                // Worded by `alo-software` like every other refusal here. The
+                // tool answering nothing is the truest of the shapes it has
+                // for *this machine could not*, and the English beside it says
+                // which half was missing.
+                (None, _) | (_, None) => Some(alo_software::Stopped::Refused(
+                    alo_software::NotDone::DidNotAnswer {
+                        said: "this session has no tool to install with, or nowhere to show the \
+                               errand on"
+                            .to_owned(),
+                    },
+                )),
+            };
+            if let Some(why) = refused {
+                server
+                    .market
+                    .it_was_refused(listed.application().identifier(), why);
+            }
+        }
+        // **And whatever has become of the installations already going.**
+        // Drained once a frame, each taking its own line off the indicator, and
+        // the window told so a row stops saying *installing it*.
+        //
+        // The borrow is taken and dropped around the loop rather than held
+        // across it, because the indicator is the desktop's and the window is
+        // the server's — and nothing here needs both at the same moment.
+        let became = match (self.installing.as_ref(), self.desktop.the_indicator()) {
+            (Some(road), Some(indicator)) => road.whatever_became_of_them(indicator),
+            (None, _) | (_, None) => Vec::new(),
+        };
+        for what in became {
+            match what.outcome {
+                Ok(installed) => server
+                    .market
+                    .it_arrived(installed.application().identifier()),
+                Err(why) => server.market.it_was_refused(&what.identifier, why),
             }
         }
         // **And whatever has come back since the last frame**, which is why

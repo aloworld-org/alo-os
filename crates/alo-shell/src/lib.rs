@@ -398,6 +398,8 @@ mod their_displays;
 mod top_controls_region;
 /// What a person typed, on its way to their agent and back (ADR 0109).
 pub mod what_a_person_asked_goes_to_the_agent;
+/// From *a person asked for this application* to *it is here*.
+pub mod what_a_person_installs;
 /// Which window each of the three acts asks for, decided without a compositor.
 mod what_an_application_act_asks_for;
 #[cfg(test)]
@@ -624,7 +626,7 @@ pub use frame_handle::the_names_band;
 pub use frame_name::FrameName;
 pub use keyboard::InputError;
 pub use market_keys::MarketKey;
-pub use market_window::{Browsing, MarketPressed, MarketShows, MarketWindow};
+pub use market_window::{Browsing, HowItIsGoing, MarketPressed, MarketShows, MarketWindow};
 pub use nested::Nested;
 pub use nested_approval::ApprovalFrame;
 pub use nested_control_input::NestedControlInput;
