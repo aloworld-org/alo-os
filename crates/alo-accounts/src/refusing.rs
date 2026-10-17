@@ -239,6 +239,48 @@ pub enum NotSignedIn {
     },
 }
 
+/// Why a forgotten password was not set again.
+///
+/// **Two refusals, and both sentences already exist.** Nothing here declares a
+/// new word: an unknown name is answered with the one
+/// [`NotSignedIn::Refused`] gives, and a password this machine would not take
+/// is answered with [`NotCreated`]'s own. A new sentence for this door would
+/// be a new way for a screen to say something it can already say.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NotSetAgain {
+    /// This machine has no account of that name.
+    ///
+    /// **The same refusal a wrong password gets**, for the reason this file's
+    /// header gives: which of the two it was must not be knowable from the
+    /// value, the words, or the time taken. A door that said *no such account*
+    /// here while sign-in said *refused* would hand back, at the recovery
+    /// screen, exactly the distinction sign-in spends work to withhold.
+    Refused,
+
+    /// The new password is one this machine would not take.
+    ///
+    /// [`NotCreated::NoPassword`] for an empty one, and
+    /// [`NotCreated::CouldNotHash`] when the machine's randomness is
+    /// unreachable. The account is as it was in both.
+    NotTaken(NotCreated),
+}
+
+impl NotSetAgain {
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub const fn word(&self) -> words::Word {
+        match self {
+            Self::Refused => words::NOT_SIGNED_IN,
+            Self::NotTaken(why) => why.word(),
+        }
+    }
+
+    /// What a person is told, in their own language.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        strings.say(&self.word().key(), &Filling::nothing())
+    }
+}
 impl NotCreated {
     /// The string this crate declares for this refusal.
     ///

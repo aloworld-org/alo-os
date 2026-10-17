@@ -24,7 +24,7 @@
 
 use crate::account::Account;
 use crate::hashing::Hashed;
-use crate::refusing::{CannotHash, NotCreated, NotKept, NotSignedIn};
+use crate::refusing::{CannotHash, NotCreated, NotKept, NotSetAgain, NotSignedIn};
 use crate::session::SignedIn;
 
 /// Every account this machine has, and the decoy that keeps time.
@@ -103,6 +103,48 @@ impl Accounts {
         Ok(())
     }
 
+    /// Set this account's password again, for somebody who has forgotten it.
+    ///
+    /// # What this is for
+    ///
+    /// `ROADMAP.md` makes it a launch item in the owner's words: *a forgotten
+    /// password never loses a person's data.* Nothing was ever lost — the
+    /// password is an Argon2id hash and not a key — so a person stands at
+    /// their own sign-in screen with every byte intact on a disk that opens,
+    /// and cannot get in. It is a wall, not a loss.
+    ///
+    /// # What this does not check, and why that is not a hole
+    ///
+    /// **It does not ask who is calling.** The authority is the recovery key
+    /// from ADR 0054, and it is checked before this is reached. Whoever holds
+    /// that key can already read the whole root filesystem by opening the
+    /// disk, so setting a new password grants them nothing they did not have
+    /// — which is the argument `ROADMAP.md` records, and the reason this is a
+    /// door rather than a danger.
+    ///
+    /// A caller that reaches this without having checked the key has made the
+    /// mistake; this store knows about names, numbers and hashes and
+    /// deliberately nothing about authority.
+    ///
+    /// # Errors
+    ///
+    /// [`NotSetAgain::Refused`] when this machine has no account of that name
+    /// — **the same refusal a wrong password gets**, for the reason
+    /// [`Self::signs_in`] gives: which of the two it was must not be knowable
+    /// from the value, the words, or the time taken.
+    ///
+    /// [`NotSetAgain::NotTaken`] carrying [`NotCreated::NoPassword`] for
+    /// an empty new password, and [`NotCreated::CouldNotHash`] when the
+    /// machine's randomness is unreachable. **The store is as it was in every
+    /// one of them.**
+    pub fn password_set_again(&mut self, name: &str, password: &str) -> Result<(), NotSetAgain> {
+        let Some(account) = self.everybody.iter_mut().find(|one| one.name() == name) else {
+            return Err(NotSetAgain::Refused);
+        };
+        account
+            .password_set_again(password)
+            .map_err(NotSetAgain::NotTaken)
+    }
     /// Sign in: this name, this password, or one refusal.
     ///
     /// # Errors

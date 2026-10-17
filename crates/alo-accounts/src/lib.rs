@@ -62,7 +62,7 @@ pub use account::Account;
 #[cfg(unix)]
 pub use keeping::{found, kept};
 pub use place::THE_ACCOUNTS;
-pub use refusing::{CannotHash, NotCreated, NotKept, NotSignedIn};
+pub use refusing::{CannotHash, NotCreated, NotKept, NotSetAgain, NotSignedIn};
 pub use session::{Session, SignedIn};
 pub use store::Accounts;
 pub use words::{
