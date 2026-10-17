@@ -1,6 +1,8 @@
 //! The sign-in screen against real accounts and a door that counts its knocks.
 #![expect(
     clippy::unwrap_used,
+    clippy::indexing_slicing,
+    clippy::panic,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
@@ -86,6 +88,40 @@ fn handed_over(signing: Signing<CountingDoor>) -> Session {
 /// A name and a password, typed the way a person does and entered.
 fn signs_in(
     screen: SignInScreen<CountingDoor>,
+    _name: &str,
+    password: &str,
+) -> Signing<CountingDoor> {
+    // **A returning person types a password and nothing else.**
+    //
+    // `a_screen` makes a machine that already has an account, so this is the
+    // screen a person comes back to: it draws one field, `Enter your PIN`,
+    // over a name it already knows, and the name reaching `signs_in` is
+    // `whose_name` rather than anything typed.
+    //
+    // This typed the name first, then Enter, then the password -- the
+    // interaction of the screen that *asks* for a name, driven at a screen
+    // that does not draw one. Eleven tests held that shape, and on a booted
+    // machine on 2026-10-16 a person typing their PIN at this screen watched
+    // nothing happen, because the keys were going into a field they could
+    // not see. The tests passed throughout.
+    //
+    // `_name` stays in the signature so each caller still reads as the
+    // account it means, and so a screen that one day asks for one again is a
+    // change here rather than at every call.
+    let screen = typed(screen, password);
+    screen.pressed(SignInKey::Enter)
+}
+
+/// Sign in at a screen that **asks for a name**, typing both fields.
+///
+/// `a_screen(PERSON + 1, …)` is that screen: the store holds an account at
+/// `PERSON`, so `whose_name` for `PERSON + 1` is `None`, the machine cannot
+/// say whose it is, and both fields are drawn and asked for.
+///
+/// [`signs_in`] is the other screen — the one a person comes back to, which
+/// knows the name and asks only for a password.
+fn signs_in_with_a_name(
+    screen: SignInScreen<CountingDoor>,
     name: &str,
     password: &str,
 ) -> Signing<CountingDoor> {
@@ -94,7 +130,6 @@ fn signs_in(
     let screen = typed(screen, password);
     screen.pressed(SignInKey::Enter)
 }
-
 /// The sentence a screen shows under its fields.
 fn sentence(screen: &SignInScreen<CountingDoor>) -> Option<String> {
     match screen.shows() {
@@ -121,22 +156,23 @@ fn the_right_password_opens_a_session_and_the_screen_hands_over() {
 }
 
 /// **A wrong password says what `alo-greeting` says, and nothing more**: the
-/// same sentence every time, the same sentence as a name nobody has, no
-/// number in it, and no knock at all.
+/// same sentence every time, no number in it, and no knock at all.
+///
+/// **The name is not among the things tried, and that is the change.** This
+/// test used to type `nobody-by-this-name` to prove that an unknown name says
+/// what a wrong password says. The screen a person comes back to **draws no
+/// name field** — it knows whose machine it is — so a name cannot be offered
+/// to it at all, and the property is now structural rather than behavioural.
+/// `a_name_cannot_be_offered_to_the_screen_that_knows_whose_it_is` holds that
+/// half, and the screen that *does* ask for a name holds the other.
 #[test]
-fn a_wrong_password_says_what_the_greeting_says_and_never_how_many_or_whether_the_name_exists() {
+fn a_wrong_password_says_what_the_greeting_says_and_never_how_many() {
     let (door, heard) = a_door(Ok(Answered::Opened));
     let mut screen = a_screen(PERSON, door);
 
     let mut sentences = Vec::new();
-    for (name, password) in [
-        (NAME, "not-the-password"),
-        (NAME, "still-not-it"),
-        ("nobody-by-this-name", PASSWORD),
-        ("", ""),
-        (NAME, "third-time"),
-    ] {
-        screen = still(signs_in(screen, name, password));
+    for password in ["not-the-password", "still-not-it", "", "third-time"] {
+        screen = still(signs_in(screen, NAME, password));
         sentences.push(sentence(&screen).unwrap());
     }
 
@@ -147,29 +183,104 @@ fn a_wrong_password_says_what_the_greeting_says_and_never_how_many_or_whether_th
             !said.chars().any(|letter| letter.is_ascii_digit()),
             "the refusal counts something: {said}"
         );
-        assert!(!said.contains("nobody-by-this-name"), "{said}");
     }
     assert!(heard.borrow().is_empty(), "a refused sign-in knocked");
     assert_eq!(screen.for_the_maintainer(), None);
 }
 
+/// **A name nobody has says what a wrong password says**, at the screen that
+/// asks for one.
+///
+/// `PERSON + 1` is nobody this machine can name, so it draws both fields and
+/// a name can be offered. This is where enumeration would show itself, and
+/// the two sentences must be the one sentence.
+#[test]
+fn an_unknown_name_says_what_a_wrong_password_says_where_a_name_can_be_typed() {
+    let (door, heard) = a_door(Ok(Answered::Opened));
+    let mut screen = a_screen(PERSON + 1, door);
+
+    let mut sentences = Vec::new();
+    for (name, password) in [
+        (NAME, "not-the-password"),
+        ("nobody-by-this-name", PASSWORD),
+    ] {
+        screen = still(signs_in_with_a_name(screen, name, password));
+        sentences.push(sentence(&screen).unwrap());
+    }
+
+    assert_eq!(
+        sentences[0], sentences[1],
+        "a name nobody has is told apart from a password nobody typed"
+    );
+    for said in &sentences {
+        assert!(!said.contains("nobody-by-this-name"), "{said}");
+    }
+    assert!(heard.borrow().is_empty(), "a refused sign-in knocked");
+}
+
+/// **A name cannot be offered to the screen that knows whose machine it is.**
+///
+/// It draws one field and `Tab` does not reach a second, so every key a
+/// person presses goes into the password they can see. This is the structural
+/// half of the property above, and the fault it closes: on a booted machine
+/// on 2026-10-16 a returning person typed their PIN into a name field that
+/// was not on the screen and watched nothing happen.
+#[test]
+fn a_name_cannot_be_offered_to_the_screen_that_knows_whose_it_is() {
+    let (door, _heard) = a_door(Ok(Answered::Opened));
+    let mut screen = a_screen(PERSON, door);
+
+    screen = still(screen.pressed(SignInKey::OtherField));
+    screen = typed(screen, "nobody-by-this-name");
+
+    let SignInShows::Fields { name, field, .. } = screen.shows() else {
+        panic!("the screen a person comes back to stopped showing fields")
+    };
+    assert_eq!(
+        name, "",
+        "a name reached a screen that draws no field for one"
+    );
+    assert_eq!(
+        field,
+        SignInField::Password,
+        "Tab moved the waiting field away from the only field drawn"
+    );
+}
+
 /// **What was typed is forgotten straight after it is asked about**, whatever
-/// the answer: the password field is empty and the name field waiting, so
-/// nothing a refused attempt typed is on the screen for the next person.
+/// the answer, and the screen comes back to **the field it draws**.
+///
+/// Nothing a refused attempt typed is left for the next person to see.
+///
+/// **This asserted `SignInField::Name` until 2026-10-16, and that was the
+/// bug.** `a_screen` is the screen a person comes back to: it draws one
+/// field, `Enter your PIN`, over a name it already knows. Returning to the
+/// name after a refusal sent every attempt but the first into a field nobody
+/// can see — so a person who mistyped their PIN once could never sign in
+/// again, and this test held that behaviour in place.
 #[test]
 fn what_was_typed_is_forgotten_once_it_is_asked_about() {
     let (door, _) = a_door(Ok(Answered::Opened));
     let screen = still(signs_in(a_screen(PERSON, door), NAME, "wrong"));
-    assert!(matches!(
-        screen.shows(),
-        SignInShows::Fields {
-            whose: _,
-            name: "",
-            password_typed: false,
-            field: SignInField::Name,
-            said: Some(_),
-        }
-    ));
+
+    let SignInShows::Fields {
+        name,
+        password_typed,
+        field,
+        said,
+        ..
+    } = screen.shows()
+    else {
+        panic!("the screen stopped showing fields after a refusal")
+    };
+    assert_eq!(name, "", "a refused name was left on the screen");
+    assert!(!password_typed, "a refused password was left on the screen");
+    assert_eq!(
+        field,
+        SignInField::Password,
+        "a second attempt would go into a field this screen does not draw"
+    );
+    assert!(said.is_some(), "a refusal said nothing");
 }
 
 /// **Editing never asks anybody anything**: typing, erasing and moving
@@ -178,23 +289,35 @@ fn what_was_typed_is_forgotten_once_it_is_asked_about() {
 #[test]
 fn editing_asks_nobody_anything() {
     let (door, heard) = a_door(Ok(Answered::Opened));
-    let mut screen = typed(a_screen(PERSON, door), "adx");
+    // **To the name field first.** The returning screen starts on the
+    // password it draws; this test is about editing both fields, and a person
+    // reaches the other one the same way.
+    // The screen that asks for a name: `PERSON + 1` is nobody this machine
+    // can name, so both fields are drawn and this test can edit both.
+    let mut screen = typed(a_screen(PERSON + 1, door), "adx");
     screen = still(screen.pressed(SignInKey::Erase));
     screen = typed(screen, "a");
     screen = still(screen.pressed(SignInKey::Enter));
     screen = typed(screen, "pw");
     screen = still(screen.pressed(SignInKey::OtherField));
     screen = still(screen.pressed(SignInKey::Nothing));
-    assert!(matches!(
-        screen.shows(),
-        SignInShows::Fields {
-            whose: _,
-            name: "ada",
-            password_typed: true,
-            field: SignInField::Name,
-            said: None,
-        }
-    ));
+    // **Named one at a time rather than through `matches!`.** A `matches!`
+    // that fails says only that it failed, which costs whoever reads it the
+    // work of finding out which field moved.
+    let SignInShows::Fields {
+        name,
+        password_typed,
+        field,
+        said,
+        ..
+    } = screen.shows()
+    else {
+        panic!("a screen with two fields stopped showing fields")
+    };
+    assert_eq!(name, "ada", "the name field");
+    assert!(password_typed, "the password field");
+    assert_eq!(field, SignInField::Name, "which field is waiting");
+    assert!(said.is_none(), "editing said something: {said:?}");
     assert!(heard.borrow().is_empty());
 }
 
@@ -248,7 +371,11 @@ fn a_door_nobody_is_behind_says_so_and_tells_the_maintainer_where() {
 #[test]
 fn a_machine_described_for_somebody_else_knocks_for_nobody() {
     let (door, heard) = a_door(Ok(Answered::Opened));
-    let screen = still(signs_in(a_screen(PERSON + 1, door), NAME, PASSWORD));
+    let screen = still(signs_in_with_a_name(
+        a_screen(PERSON + 1, door),
+        NAME,
+        PASSWORD,
+    ));
     assert_eq!(
         sentence(&screen).unwrap(),
         alo_accounts::NOT_THIS_MACHINES_PERSON.says()
@@ -389,7 +516,12 @@ fn every_sentence_the_screen_can_show_is_collected_and_none_is_written_here() {
     let (door, _) = a_door(Ok(Answered::Opened));
     collect(&still(signs_in(a_screen(PERSON, door), NAME, "wrong")));
     let (door, _) = a_door(Ok(Answered::Opened));
-    collect(&still(signs_in(a_screen(PERSON + 1, door), NAME, PASSWORD)));
+    // `PERSON + 1` is nobody this machine can name, so it asks for one.
+    collect(&still(signs_in_with_a_name(
+        a_screen(PERSON + 1, door),
+        NAME,
+        PASSWORD,
+    )));
     // Refused at the door, every way it can.
     for word in alo_sessiond::EVERY_WORD {
         let (door, _) = a_door(Ok(Answered::Refused(word.key())));
