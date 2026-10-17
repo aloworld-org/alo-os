@@ -93,11 +93,11 @@ fn both_examples_the_contract_shows_read_as_what_it_says_they_are() {
     let shown = fenced("json");
     assert_eq!(shown.len(), 2, "the contract shows both files");
 
-    let at = Path::new("/var/lib/alo/undo/ada/theirs.json");
+    let at = Path::new("/var/lib/alo-undo/ada/theirs.json");
     let theirs = Theirs::read(&shown[0], at).expect("the contract's theirs.json reads");
     assert_eq!(theirs.settings(), Path::new("/var/home/ada/.config/alo"));
 
-    let at = Path::new("/var/lib/alo/undo/ada/4f1c8a/kept.json");
+    let at = Path::new("/var/lib/alo-undo/ada/4f1c8a/kept.json");
     let turn = TheTurn::read(&shown[1], at).expect("the contract's kept.json reads");
     assert_eq!(turn.did(), "move March.pdf into Invoices");
     assert_eq!(
@@ -135,7 +135,7 @@ fn the_folder_the_contract_draws_reads_back_as_what_it_draws() {
 /// the sentence nobody can act on.
 #[test]
 fn another_format_is_refused_before_anything_else_is_judged() {
-    let at = Path::new("/var/lib/alo/undo/ada/4f1c8a/kept.json");
+    let at = Path::new("/var/lib/alo-undo/ada/4f1c8a/kept.json");
     let from_a_later_release = r#"{"format":2,"when":1760000000}"#;
     assert!(
         matches!(

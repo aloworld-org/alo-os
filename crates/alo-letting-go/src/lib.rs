@@ -64,11 +64,18 @@
 //!
 //! **And nothing takes one yet** — measured 2026-10-16, which is worth saying
 //! here because this sentence reads as a description of a machine that exists.
-//! `alo-turn` names no bracket and no snapshot; nothing in the workspace creates
-//! a `btrfs` subvolume snapshot; and nothing creates `/var/lib/alo/undo` at all,
-//! there being no tmpfiles entry, no `StateDirectory=` and no line in the image.
-//! So the window, the person's surface and this remover are built, and the thing
-//! that would give them something to work on is not.
+//! `alo-turn` names no bracket and no snapshot, and nothing in the workspace
+//! creates a `btrfs` subvolume snapshot. So the window, the person's surface and
+//! this remover are built, and the thing that would give them something to work
+//! on is not.
+//!
+//! **The folder itself is no longer among the missing**, as of 2026-10-17:
+//! `alo-giving-a-folder` makes `/var/lib/alo-undo` and each person's directory
+//! inside it, through a unit holding `CAP_CHOWN` and nothing else
+//! ([ADR 0119](../../../docs/decisions/0119-the-capability-to-give-a-directory-away-goes-to-the-smallest-thing-that-can-hold-it.md),
+//! [ADR 0120](../../../docs/decisions/0120-the-undo-folder-is-roots-own-and-not-inside-the-persons.md)).
+//! What is still absent is a **caller** — nothing starts that unit yet — and the
+//! bracket.
 //!
 //! *Taking one was also impossible until that day*, and not for want of a
 //! capability: `docs/contracts/kept-undo-folder.md` gave the folder as

@@ -399,7 +399,8 @@ the person with no `sudo`, **exits 0 and produces the snapshot**. So the
 operation is not the obstacle and the amendment of 2026-09-21 stands. The mode
 was.
 
-**What was also found:** nothing creates `/var/lib/alo/undo` at all. There is no
+**What was also found:** nothing creates `/var/lib/alo/undo` at all — the path
+it had then; ADR 0120 moved it to `/var/lib/alo-undo` on 2026-10-17. There is no
 tmpfiles entry, no `StateDirectory=`, and no line in the image — measured by
 searching `image/` for the path and finding none. Three crates read the folder
 and none of them, nor anything else, makes it. **Both ends of this feature are
@@ -409,12 +410,14 @@ exist.
 
 ### 8. The folder is traversable, each person's directory is their own
 
-- `/var/lib/alo/undo` is **`0711 root:root`** — every person may traverse it,
+- `/var/lib/alo-undo` is **`0711 root:root`** — every person may traverse it,
   nobody but root may list it. Traversal is what a session needs to reach its
   own directory; listing would tell one person who else uses the machine, which
   is nobody's business and is not needed by anything.
-- `/var/lib/alo/undo/<person>` is **`0700 <person>:<person>`**, so each person
-  reaches their own brackets and no other person's.
+- `/var/lib/alo-undo/<person>` is **`0700 <person>`**, so each person reaches
+  their own brackets and no other person's. *This said
+  `0700 <person>:<person>` until 2026-10-17; term 10 is the amendment, and
+  the mode is unchanged, so nobody's access moved.*
 - **A privileged step makes both**, at the moment a person first signs in, which
   is where the machine already learns a person exists. It is not made by the
   session, because a session cannot make a directory in a root-owned folder, and
@@ -451,3 +454,53 @@ so root confirms the person owns what they chose.
   where the terms put it. This amendment does not build it. It removes the
   reason it could not be built.
 - **The remover gains one refusal** and no new privilege.
+
+## Amendment of 2026-10-17 — term 10: the owner is set and the group is left alone
+
+**What changed.** Term 8 promised each person's directory as
+`0700 <person>:<person>`. It is made `0700` and owned by that person, and its
+**group is not set at all** — which on a `root:root` folder leaves it `root`. The
+mode is unchanged, so this moves nobody's access: at `0700` the group bits grant
+nothing to anybody. What it changes is what the document claims, which is why it
+is written here rather than left in a diff.
+
+**Why, with what was measured.** `crates/alo-giving-a-folder` is the privileged
+step term 8 asked for, built on 2026-10-17 under
+[ADR 0119](0119-the-capability-to-give-a-directory-away-goes-to-the-smallest-thing-that-can-hold-it.md).
+Setting the group was tried first, and the three findings are in the order they
+bear on it:
+
+1. **It was achievable on the image, and this amendment does not pretend
+   otherwise.** `image/usr/lib/sysusers.d/alo.conf` declares the person as
+   `u alo 1000` with no group number. `systemd-sysusers --root` on that one line,
+   measured into an empty scratch root, writes `alo:x:1000:1000` to `passwd` and
+   creates a group `alo:x:1000:`; a control run with no line produced neither. So
+   on a certified machine a person's primary group *is* their account number, and
+   `chown(uid, uid)` would have made term 8 exactly true.
+2. **It is false off the image.** The same call was refused with `EPERM` where
+   the account's primary group is not its account number — measured on the
+   development machine, account 501 — because a process may not give a file to a
+   group it does not belong to. So the assumption would hold on the product and
+   fail in the gate, and a privileged step that takes a different road in a test
+   than on a machine is the fault this repository keeps finding under other
+   names.
+3. **Reading the real group costs a dependency.** The primary group is a field of
+   the user database. ADR 0119 chose a component of its own for this *because it
+   is small* — a hundred lines against 113,587 and 2,160 — and a user-database
+   call inside the one program on the machine that may give a directory away, in
+   order to write a number into bits that grant nobody anything, spends the
+   argument that put it there.
+
+**What this does not change.** Term 9 rests on *the person can write below their
+own directory*, and that is the owner, not the group. The remover's refusals and
+the contract's rules about links and opaque names are untouched.
+[ADR 0118](0118-more-than-one-person-on-a-machine.md)'s second road, for a person
+who is not the first, is untouched too: the giver puts the mode and the owner
+back on every call, so both roads may ask for the same person.
+
+**Where it is checked.** `docs/contracts/kept-undo-folder.md` carries the same
+amendment, and
+`crates/alo-giving-a-folder/tests/the_contract_describes_where_an_undo_keeps.rs`
+reads that contract for the path and both modes rather than comparing one crate's
+constant with another's — two constants agreeing with each other pass while both
+are wrong together.

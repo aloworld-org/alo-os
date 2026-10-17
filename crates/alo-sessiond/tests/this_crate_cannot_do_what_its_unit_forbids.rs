@@ -65,7 +65,7 @@ const BECOMING_SOMEBODY_ELSE: [&str; 3] = [".uid(", ".gid(", "setuid"];
 ///
 /// **This was missing, and the list above would not have caught it.** On
 /// 2026-10-16 this crate was nearly taught to give a person their own directory
-/// under `/var/lib/alo/undo` with `rustix::fs::chown(at, Some(uid), None)` —
+/// under `/var/lib/alo-undo` with `rustix::fs::chown(at, Some(uid), None)` —
 /// which needs `CAP_CHOWN`, which this unit grants no more than any other
 /// capability. It compiled and the modes were tested; what stopped it was this
 /// test firing on a `.uid()` **read** in a neighbouring test file, which is a

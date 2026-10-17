@@ -1,6 +1,9 @@
 # ADR 0119 — The capability to give a directory away goes to the smallest thing that can hold it
 
-**Status:** accepted
+**Status:** accepted — **its second measurement named a parent the then-specified
+path did not have**, and
+[ADR 0120](0120-the-undo-folder-is-roots-own-and-not-inside-the-persons.md) moved
+the path rather than widening the grant. The one capability stands.
 **Date:** 2026-10-17
 **Context:** [ADR 0118](0118-more-than-one-person-on-a-machine.md) (more than one
 person on a machine) left this as *the next record*, and said how to write it:
@@ -69,6 +72,20 @@ capsh --caps="cap_chown+eip" -- -c "mkdir <0711 root dir>/ada
 made. **So the grant is one capability and not a set**, and that is a
 measurement rather than an aspiration: there is no second capability to argue
 about.
+
+**Read the parent in that transcript.** It is `<0711 root dir>` — root-owned and
+root-writable — and that is load-bearing. `/var/lib/alo/undo`, the path ADR 0045
+term 8 specified when this was written, had no such parent: `/var/lib/alo` is
+`0700` and the **person's**, so the first thing the built helper did on a real
+machine was fail with `Permission denied` **as root**, because this bounding set
+drops `CAP_DAC_OVERRIDE`. The sentence above is true of what it measured and was
+not true of where the folder was going to be, which is the gap between a correct
+measurement and the right one.
+[ADR 0120](0120-the-undo-folder-is-roots-own-and-not-inside-the-persons.md) has
+the failure and the four readbacks, and it moved the folder to a parent root owns
+instead of granting a second capability — so *one capability and not a set* came
+out of it intact, and the transcript above is now a measurement of where the
+folder actually lives.
 
 ## Why a new helper rather than either component that is already root
 
@@ -140,7 +157,18 @@ So the helper is started from **both** roads and widens neither:
 1. the first account, from `makes_an_account`;
 2. a person added later, from whatever ADR 0118's route becomes.
 
-**It is idempotent, and that is what makes two callers safe.** Making a
+*Two corrections to what follows, both dated 2026-10-17 and both from building
+it: there is **one** caller rather than two — `made_an_account` refuses when any
+account exists, so ADR 0118's later route is unwritten and which road calls this
+is still open. And the idempotence below
+**was not true when it was written**: the second call failed with `EPERM`,
+because setting a mode needs ownership or `CAP_FOWNER` and this unit holds
+neither by then. It was fixed by taking the directory back first, which
+`CAP_CHOWN` permits, so the sentence is true now and the one capability still
+stands.*
+
+**It is idempotent, and that is what makes a caller that asks every time
+safe.** Making a
 directory that is already there is not a failure; what it does then is put the
 mode and the owner back, so a folder somebody widened by hand is narrowed again
 at the next call. *Measured while building this: a `DirBuilder`'s own `mode` is

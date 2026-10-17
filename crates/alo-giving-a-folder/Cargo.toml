@@ -1,0 +1,25 @@
+[package]
+name = "alo-giving-a-folder"
+version = "0.0.1"
+description = "The one thing on this machine that may give a directory to a person, and nothing else."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Everything here is a directory, a mode and an owner, which exist on this one
+# kind of host. On any other it compiles to nothing at all rather than to a
+# version of itself that pretends — `alo-bounding`'s argument, and the same one.
+[target.'cfg(target_os = "linux")'.dependencies]
+# `chown` is the whole of this crate's privileged work and `std` has no spelling
+# for it. Nothing else is rented, deliberately: ADR 0119 chose this component
+# because it is small enough to read in a minute, and a dependency list is part
+# of what a reader has to read.
+rustix = { workspace = true, features = ["fs"] }
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "alo-giving-a-folder"
+path = "src/bin/alo-giving-a-folder.rs"
