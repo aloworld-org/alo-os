@@ -125,6 +125,30 @@ off.*
 > somebody's machine rather than by these three workflows. If one does, check it
 > for `alo-terminal` before trusting it — the question is what is *in* the image,
 > not when it was made.
+>
+> **Step 0, and it takes ten seconds.** `image.yml` labels every image it builds
+> with the commit it was built from, so the image can be asked directly rather
+> than guessed at from a date:
+>
+> ```text
+> podman inspect --format '{{ index .Labels "org.opencontainers.image.revision" }}' \
+>     ghcr.io/aloworld-org/alo-os@sha256:…
+> ```
+>
+> Then ask this repository whether that commit had a terminal in it:
+>
+> ```text
+> git cat-file -e <that commit>:crates/alo-terminal/src/lib.rs && echo "it has a terminal"
+> git rev-list --count <that commit>..origin/main
+> ```
+>
+> **If the first prints nothing, stop and do not walk.** Every step from 2
+> onwards will fail, and what you would be measuring is the age of an image. The
+> second number is how far behind the walk's own expectations that image is.
+>
+> *Asking the artefact rather than the calendar is the whole point: an image
+> built this morning from a stale branch is as wrong as one built last week, and
+> a date cannot tell them apart.*
 
 
 **The smallest step to the largest change in confidence.** #755 made *why is it
