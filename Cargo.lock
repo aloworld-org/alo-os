@@ -1644,6 +1644,7 @@ dependencies = [
  "alo-sessiond",
  "alo-setting-up",
  "alo-shortcuts",
+ "alo-software",
  "alo-sound",
  "alo-strings",
  "alo-tasks",

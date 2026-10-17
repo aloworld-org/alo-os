@@ -91,6 +91,25 @@ impl Category {
         }
     }
 
+    /// The word this category is drawn through.
+    ///
+    /// **Never [`Category::named`]** — that is the spelling `catalogue.toml`
+    /// uses and the one a refusal quotes, and it is English that nothing
+    /// translates. This is the sentence a person reads, which the vocabulary
+    /// owns like every other.
+    #[must_use]
+    pub const fn word(self) -> crate::words::Word {
+        match self {
+            Self::Pictures => crate::words::PICTURES,
+            Self::Painting => crate::words::PAINTING,
+            Self::Illustration => crate::words::ILLUSTRATION,
+            Self::Photographs => crate::words::PHOTOGRAPHS,
+            Self::PageLayout => crate::words::PAGE_LAYOUT,
+            Self::Video => crate::words::VIDEO,
+            Self::Audio => crate::words::AUDIO,
+            Self::Documents => crate::words::DOCUMENTS,
+        }
+    }
     /// Where this category is in [`Category::EVERY`].
     pub(crate) const fn place(self) -> usize {
         match self {
@@ -115,6 +134,27 @@ mod tests {
         for (at, category) in Category::EVERY.into_iter().enumerate() {
             assert_eq!(category.place(), at, "{}", category.named());
         }
+    }
+
+    /// **Every category has its own word, and no two share one.** A category
+    /// added without a word would be drawn as nothing at all, which looks like
+    /// an empty shelf rather than a missing translation.
+    #[test]
+    fn every_category_is_drawn_through_a_word_of_its_own() {
+        let mut keys = Vec::new();
+        for category in Category::EVERY {
+            let key = category.word().named().to_owned();
+            assert!(
+                !keys.contains(&key),
+                "{} shares a word with another category",
+                category.named()
+            );
+            keys.push(key);
+        }
+        assert_eq!(keys.len(), 8, "the loop read every category");
+        // `Everything` narrows nothing and so is not a `Category`, but the
+        // window draws it beside them and the vocabulary carries all nine.
+        assert_eq!(crate::words::EVERY_CATEGORY.len(), keys.len() + 1);
     }
 
     /// **No category is named after a product**, and no category is named for
