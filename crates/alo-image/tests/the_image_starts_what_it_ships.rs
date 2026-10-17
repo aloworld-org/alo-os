@@ -21,6 +21,27 @@
 //! already right and these two were simply missed, which is exactly the kind of
 //! thing a person does not notice by reading a recipe.
 //!
+//! # A third one, and it was in the blind spot of both checks above
+//!
+//! `alo-giving-a-folder@.service` shipped on 2026-10-17 and **nothing started
+//! it**. The unit was right, the binary was on the image, the capability was
+//! right, and the folder it exists to make was absent on every machine.
+//!
+//! It got past both tests here, and the reason is worth reading twice: it has
+//! **no `[Install]` section at all**, so
+//! `every_unit_that_asks_to_be_wanted_is_enabled` skips it — it is not asking to
+//! be wanted. And its `ExecStart` program *is* put there by the recipe, so
+//! `every_unit_starts_a_file_this_image_puts_there` passes. A unit asking for
+//! nothing and starting a file that exists is a unit both of these call correct.
+//!
+//! It was found by a person thinking about it, which is not a mechanism.
+//! `every_unit_with_no_install_section_is_started_by_something` is, and it knows
+//! the three ways such a unit can be reachable: another unit names it, an
+//! activator of the same stem exists (`alo-asking.socket` →
+//! `alo-asking@.service`, by systemd's convention and not by being written
+//! down), or a program builds the name — which is [`STARTED_BY_A_PROGRAM`],
+//! because no reading of unit files can see it.
+//!
 //! # It needs no image build
 //!
 //! Both questions are answered by reading the unit files and the recipe as text,
@@ -111,6 +132,31 @@ fn what_is_enabled(recipe: &str) -> String {
     );
     enabling.join(" ")
 }
+
+/// Units with no `[Install]` section that a **program** starts, and the file
+/// that does it.
+///
+/// The third of the three ways a unit without an `[Install]` section can be
+/// reachable, and the only one no amount of reading unit files can establish:
+/// something in this workspace builds the name and asks systemd to start it.
+///
+/// **It is a list because the alternative was a weak grep.** Searching Rust for
+/// a unit's stem finds doc comments, crate names and task reports —
+/// `alo-giving-a-folder` appears as a *crate* name in a test that has nothing to
+/// do with starting it. A list names the file, and
+/// `every_unit_said_to_be_started_by_a_program_is_named_in_that_program` reads
+/// that file for the name, so the claim is checked rather than taken.
+const STARTED_BY_A_PROGRAM: [(&str, &str); 3] = [
+    (
+        "alo-applying-an-update.service",
+        "crates/alo-brokerd/src/units.rs",
+    ),
+    ("alo-going-back.service", "crates/alo-brokerd/src/units.rs"),
+    (
+        "alo-giving-a-folder@.service",
+        "crates/alo-sessiond/src/making_a_folder.rs",
+    ),
+];
 
 /// **A unit that asks to be wanted is a unit the recipe enables.**
 ///
@@ -225,4 +271,145 @@ fn a_unit_that_names_a_pam_stack_ships_that_stack() {
             "{THE_STACKS}/{file} is shipped and no unit names it with PAMName=, so nothing on the machine will ever read it"
         );
     }
+}
+
+/// **A unit with no `[Install]` section is a unit something else starts.**
+///
+/// The direction the two tests above cannot see. `WantedBy=` is a request the
+/// recipe has to grant, and that is checked; **a unit with no `[Install]` at all
+/// is not making a request**, so it is skipped by that test entirely — and its
+/// `ExecStart` program is on the image, so it is skipped by the other one too.
+/// It ships, it loads, `systemctl status` shows it as a perfectly ordinary
+/// inactive unit, and nothing will ever start it.
+///
+/// This is not hypothetical. `alo-giving-a-folder@.service` shipped in that
+/// state: the unit, its binary and its capability were all correct, and nothing
+/// on the machine asked for it, so the folder it exists to make was absent on
+/// every machine. It was found by a person thinking about it rather than by any
+/// check, which is why this one exists.
+///
+/// # The three ways a unit without an `[Install]` can be reachable
+///
+/// 1. **Another unit names it** — `Unit=`, `Wants=`, `Requires=`, `Also=`. A
+///    timer's or a path unit's service is this.
+/// 2. **A socket, path or timer of the same stem activates it by convention.**
+///    `alo-asking.socket` starts `alo-asking@.service` without naming it
+///    anywhere: systemd's rule is the socket's name plus `@`. A check that
+///    demanded the name be written down would fail on the one unit in this image
+///    that is correct by convention.
+/// 3. **A program builds the name and asks systemd**, which is
+///    [`STARTED_BY_A_PROGRAM`] because no reading of unit files can see it.
+///
+/// A unit covered by none of the three fails here, and the message says what to
+/// do: start it, or add it to the list with the program that does.
+#[test]
+fn every_unit_with_no_install_section_is_started_by_something() {
+    let units = the_units();
+    let shipped: Vec<&String> = units.iter().map(|(name, _)| name).collect();
+
+    let mut without = 0_usize;
+    let mut unreachable = Vec::new();
+    for (name, text) in &units {
+        if text.contains("[Install]") {
+            continue;
+        }
+        without += 1;
+
+        // 1. another unit names it exactly.
+        if units
+            .iter()
+            .any(|(other, body)| other != name && body.contains(name.as_str()))
+        {
+            continue;
+        }
+
+        // 2. an activator of the same stem ships beside it.
+        let stem = name
+            .strip_suffix(".service")
+            .unwrap_or(name)
+            .trim_end_matches('@');
+        if [".socket", ".path", ".timer"]
+            .iter()
+            .any(|kind| shipped.iter().any(|it| *it == &format!("{stem}{kind}")))
+        {
+            continue;
+        }
+
+        // 3. a program starts it, which is written down.
+        if STARTED_BY_A_PROGRAM
+            .iter()
+            .any(|(listed, _)| listed == name)
+        {
+            continue;
+        }
+
+        unreachable.push(name.clone());
+    }
+
+    assert!(
+        without >= 3,
+        "only {without} units ship without an `[Install]` section, and this image had four on \
+         2026-10-17 — so this test is reading less than it thinks"
+    );
+    assert!(
+        unreachable.is_empty(),
+        "these units ship with no `[Install]` section and nothing starts them, so they load on \
+         a machine and never run:\n  {}\n\n\
+         A unit like this is invisible to `every_unit_that_asks_to_be_wanted_is_enabled` — it \
+         asks for nothing — and to `every_unit_starts_a_file_this_image_puts_there`, whose \
+         program is present. Either have something start it (another unit, a socket of the same \
+         stem, or a program) or add it to `STARTED_BY_A_PROGRAM` in this file with the file that \
+         does.",
+        unreachable.join("\n  ")
+    );
+}
+
+/// **Every unit said to be started by a program is named in that program.**
+///
+/// What makes [`STARTED_BY_A_PROGRAM`] a check rather than an assertion. A line
+/// in that list is a claim about a file, and a claim nobody reads is how the
+/// not-yet-shipped lists elsewhere in this repository would rot if they were not
+/// each held to the disk.
+///
+/// A template is matched on its stem, because the program builds the instance —
+/// `format!("{THE_UNIT}@{person}.service")` — and never writes `@.service`.
+#[test]
+fn every_unit_said_to_be_started_by_a_program_is_named_in_that_program() {
+    let root = the_repository();
+    for (unit, by) in STARTED_BY_A_PROGRAM {
+        let at = root.join(by);
+        let said = std::fs::read_to_string(&at)
+            .unwrap_or_else(|why| panic!("{} could not be read: {why}", at.display()));
+
+        let looked_for = unit.strip_suffix("@.service").map_or(unit, |stem| stem);
+        assert!(
+            said.contains(looked_for),
+            "{by} is named as what starts {unit}, and it does not mention {looked_for:?} at all"
+        );
+    }
+}
+
+/// **And nothing in that list has grown an `[Install]` section.**
+///
+/// The other half, and the same rule the unshipped lists follow: an entry that
+/// has stopped being true is an entry somebody will read as current. A unit that
+/// gained `WantedBy=` is enabled by the recipe and checked by the first test in
+/// this file, so its line here is then about nothing.
+#[test]
+fn nothing_started_by_a_program_has_grown_an_install_section() {
+    let units = the_units();
+    let mut asking = Vec::new();
+    for (unit, _) in STARTED_BY_A_PROGRAM {
+        let Some((_, text)) = units.iter().find(|(name, _)| name == unit) else {
+            panic!("{unit} is named in `STARTED_BY_A_PROGRAM` and the image does not ship it");
+        };
+        if text.contains("[Install]") {
+            asking.push(unit);
+        }
+    }
+    assert!(
+        asking.is_empty(),
+        "these are listed as started by a program and now have an `[Install]` section, so the \
+         recipe is what must enable them and the lines here are about nothing: {asking:?}"
+    );
 }
