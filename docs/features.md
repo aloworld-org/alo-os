@@ -468,6 +468,31 @@ file carries it with a tier.*
   `/proc` that needs no decision, and a presentation that is a surface and needs
   one. **No surface asks yet**, which is why the answer is public API rather than
   anything a screen depends on.
+  **Three of the four mechanisms are built, 2026-10-17**, and the fourth
+  already existed. *Stop* sends `SIGINT` to the foreground process group —
+  what this terminal's own interrupt key does, and deliberately not a kill,
+  because the promise above is *instead of killing something that was nearly
+  done*; to the group so a pipeline stops rather than half of one; and refusing
+  the shell, since a person at a prompt has nothing to stop. *Reveal what is
+  blocking it* names the process holding a lock, feeding an idle pipe, or being
+  waited for as a child. *Inspect the connection* says which socket the command
+  reads and where it goes. *Show the prompt* is `back_to_the_newest`, which
+  scrolling already gave.
+  **Two encodings were measured before they were written**, both wrong in ways
+  that look right: `/proc/locks` pairs a holder with its blocked waiter and the
+  `->` shifts every field by one, so counting positions reads a lock mode as a
+  pid; and `/proc/net/tcp` writes the address little-endian and the port
+  big-endian, so reading either the other way gives a real address or a real
+  port that is somewhere else. The inode is token ten although the header lists
+  eleven columns, because two pairs of columns share a token — counting them
+  reads the uid as an inode. Both wrong orders are controls in the tests.
+  **A control test found a real fault**: the pipe reader named a process about a
+  busy loop whose input happened to be an inherited pipe. *Who holds this thing*
+  is not *what is holding this process up*, so a process the kernel has on a
+  processor is now blocked by nothing, asked before any reader runs.
+  **Still owed: the surface**, and the mapping — five answers, four actions, and
+  this list pairs none of them, which is the owner's to settle rather than a
+  lane's to infer.
 - ★ **Try a command without letting it touch anything.** Paste the install
   script from a README and run it in a box that sees the project and nothing
   else, with no network except what you approved, thrown away after. See what it
