@@ -360,6 +360,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 },
                 None,
                 None,
+                None,
             )?
             .len();
         let mapped = server.mapped_surfaces().count();

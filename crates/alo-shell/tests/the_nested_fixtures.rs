@@ -92,6 +92,8 @@
 //! unverified* these fixtures print is still true and no owed screenshot of a
 //! real machine is discharged by a green run.
 
+#[path = "../examples/support/a_terminal_check.rs"]
+mod a_terminal_check;
 #[path = "support/application.rs"]
 mod application;
 #[path = "../examples/support/default_cursor_check.rs"]
@@ -296,9 +298,14 @@ use std::path::Path;
 /// second for the same reason and a sharper one: it is the only check anywhere
 /// that measures what the canvas's zoom actually drew, and it found two faults
 /// in the canvas's first landing that the whole rest of the workspace passed.
-const EVERY_SUBMODE: [&str; 9] = [
+const EVERY_SUBMODE: [&str; 10] = [
     "offscreen",
     "walk",
+    // **alo's own terminal, which no nested fixture drew until 2026-10-17** —
+    // `submit_with_desktop` passed `None` where `direct_desktop` passed a
+    // picture, so the terminal was reachable on certified hardware and by no
+    // gate anywhere.
+    "terminal",
     "canvas-walk",
     "grabs",
     "pointer-release-grabs",
@@ -331,6 +338,7 @@ fn the_submode(named: &str) -> Result<(), Box<dyn std::error::Error>> {
     match named {
         "offscreen" => offscreen_check::run(),
         "walk" => the_walk_check::run(),
+        "terminal" => a_terminal_check::run(),
         "canvas-walk" => the_canvas_walk_check::run(),
         "grabs" => grab_check::run(false, false),
         "pointer-release-grabs" => grab_check::run(false, true),
