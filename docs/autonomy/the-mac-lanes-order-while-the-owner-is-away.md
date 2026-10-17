@@ -166,16 +166,37 @@ unambiguously startable:**
 
 **The two things to settle before writing code, and neither is large:**
 
-1. **Where a turn begins.** The caller is what makes this real rather than a
-   third uncalled module — and `turning.rs` has no `pub fn began`, so the entry
-   point has to be found rather than assumed. *This is the only reason the
-   bracket was not started on 2026-10-17: the taker is an afternoon, and a taker
-   nothing calls is what this lane declined to land twice that day.*
+1. **Where a turn begins — settled 2026-10-17, and it is one place.**
+   `Turning::beginning` in `crates/alo-turn/src/turning.rs`, and it has
+   **exactly one production caller: `crates/alo-agentd/src/serving.rs:436`.**
+
+   That number was wrong twice before it was right, and how is worth keeping:
+
+   | counting | answer | what was wrong with it |
+   |---|---|---|
+   | `grep -n '::beginning('` | **56** | three different types have one — `Turn`, `Arriving` and `Archive` in `alo-files` |
+   | `grep -n 'Turning::beginning('`, minus doc comments and `tests/` | **17** | still counts call sites **inside `#[cfg(test)]` blocks in production files** — `turning.rs` is 1903 lines and its test module starts at 904 |
+   | each site's line against its own file's `#[cfg(test)]` line | **1** | — |
+
+   *Fifty-six against one. Each refinement removed a different kind of false
+   positive, and the last one is invisible to any per-file classifier, which is
+   this document's lesson about mentions and declarations in its third costume
+   of the day.*
+
+   **And the one caller is the right one**, which is what makes this tractable:
+   the daemon knows **who the person is** — `SO_PEERCRED` on the socket — and
+   `Turning::beginning` does not. It takes a context, an agent name, a duration,
+   the grants and the machine, and carries neither a person nor a path. So a
+   bracket needs the person and their subvolume from somewhere, and the daemon
+   already has both. **No signature has to change.**
+
 2. **What happens to a turn whose bracket cannot be taken.** ADR 0045 does not
-   say. ADR 0015 says of its own boundary that *a turn whose boundary cannot be
-   applied does not run*, and `CLAUDE.md` forbids a silent fallback — so the
-   candidate answer is that the turn refuses and the person is told, but it is a
-   decision and not an inference.
+   say, and this is the one thing still open. ADR 0015 says of its own boundary
+   that *a turn whose boundary cannot be applied does not run*, and `CLAUDE.md`
+   forbids a silent fallback — so the candidate answer is that the turn refuses
+   and the person is told. **It is a decision and not an inference**, and the
+   honest reading of ADR 0045's own shape is that it belongs in an amendment
+   beside the others rather than in a lane's judgement.
 
 ### 3. What is still owed on rich results
 
