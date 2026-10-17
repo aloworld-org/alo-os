@@ -10,6 +10,14 @@ repository.workspace = true
 # Everything here is a directory, a mode and an owner, which exist on this one
 # kind of host. On any other it compiles to nothing at all rather than to a
 # version of itself that pretends — `alo-bounding`'s argument, and the same one.
+[dependencies]
+# Where the folder is, which this makes and `alo-letting-go` removes from. One
+# value in one place: this crate declared it a second time until 2026-10-17,
+# because the crate that owned it is the privileged remover and ADR 0119 keeps
+# this one away from that. `alo-kept-undo` can do nothing, so it is safe to
+# depend on and the second copy is gone.
+alo-kept-undo = { path = "../alo-kept-undo" }
+
 [target.'cfg(target_os = "linux")'.dependencies]
 # `chown` is the whole of this crate's privileged work and `std` has no spelling
 # for it. Nothing else is rented, deliberately: ADR 0119 chose this component

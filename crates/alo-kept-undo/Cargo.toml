@@ -1,0 +1,20 @@
+[package]
+name = "alo-kept-undo"
+version = "0.0.1"
+description = "Where an undo keeps what it keeps, and the shape of the two files in it."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The two files on the disk are JSON, because a person's own session writes one of
+# them and a root unit reads it: a format with one reader and one writer in two
+# processes is a format worth having a parser for rather than a convention.
+serde = { workspace = true }
+serde_json = { workspace = true }
+# A refusal says which file and why, and this derives the sentence.
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

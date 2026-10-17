@@ -22,6 +22,12 @@ alo-keeping-up = { path = "../alo-keeping-up" }
 # How a file in a person's own folder is kept (ADR 0038). `undo.toml` is this
 # crate's to declare and nobody else's to write.
 alo-kept = { path = "../alo-kept" }
+# Where the folder is and what the two files in it look like. **A dependency
+# rather than a module of this crate**, because `alo-turn` has to reach the same
+# layout to take a bracket and `tests/a_turn_cannot_arrive_at_this_road.rs`
+# forbids it ever linking this one. That crate can do nothing; this one can
+# remove a person's history, and the split is between those two facts.
+alo-kept-undo = { path = "../alo-kept-undo" }
 # The sentences Settings says when that file did not read. Nothing the unit
 # itself prints is one of these: what it says goes to the journal in English,
 # for whoever administers the machine.

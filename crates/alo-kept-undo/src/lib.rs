@@ -1,17 +1,40 @@
 //! Where a machine keeps what an undo would put back, and the two small files
 //! that say what is in it.
 //!
-//! [ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md) chose the
+//! [ADR 0045](../../docs/decisions/0045-what-undoing-rewinds-to.md) chose the
 //! base's own read-only snapshots, *kept outside every grant under
 //! `/var/lib/alo`*, and named who takes them — `alo-turn`, at the moment a
 //! changing turn begins and again when it ends. It did not say how they are laid
 //! out, because nothing had to read them yet. **Something does now**, and this
-//! module is that layout, written down as
-//! [the contract](../../../docs/contracts/kept-undo-folder.md) and held to it by
-//! `tests/the_contract_describes_this_folder.rs`.
+//! crate is that layout, written down as
+//! [the contract](../../docs/contracts/kept-undo-folder.md) and held to it by
+//! `alo-letting-go`'s `tests/the_contract_describes_this_folder.rs`.
+//!
+//! # Why this is a crate of its own, and not a module of `alo-letting-go`
+//!
+//! Because **three things need this layout and only one of them may link that
+//! crate.** `alo-letting-go` holds the machine's one privileged remover, and
+//! `alo-letting-go/tests/a_turn_cannot_arrive_at_this_road.rs` holds that
+//! nothing a turn runs inside may ship it — *"a second crate reaching for a
+//! type, a constant or a function of this one fails here"* — with `alo-saying`
+//! exempt because it is the machine's one vocabulary.
+//!
+//! So the layout had nowhere to live that all three could reach:
+//!
+//! - **`alo-letting-go`** removes from the folder, as root on a timer.
+//! - **`alo-giving-a-folder`** makes the folder, and **declared `THE_FOLDER` a
+//!   second time** rather than depend on the remover — two constants kept in
+//!   step only by a test reading the contract.
+//! - **`alo-turn`** is where ADR 0045 puts the taking of a bracket, and it is
+//!   named in `WHERE_A_TURN_RUNS`, so it may never link the remover at all.
+//!
+//! This crate is that place. It holds the names, the two file shapes and the
+//! format number, and **it can do nothing**: no privilege, no act, no path it
+//! was handed. A turn may reach it, which is the point; the remover is still
+//! unreachable from a turn, which is also the point.
 //!
 //! ```text
-//! /var/lib/alo-undo/                 the machine's, 0700 root, outside every grant
+//! /var/lib/alo-undo/                 0711 root:root, outside every grant
 //!   ada/                             one directory per person
 //!     theirs.json                    where that person's settings folder is
 //!     4f1c…/                         one directory per kept changing turn
@@ -51,7 +74,9 @@
 //!
 //! # Nothing here touches a disk
 //!
-//! This module is the shapes and their refusals. [`crate::found`] is what reads
+//! This crate is the shapes and their refusals. The crate that *reads* them as
+//! root — `alo-letting-go`, named with its hyphen because the Rust path form is
+//! itself forbidden here — is what reads
 //! them, and it is the only place in this crate that opens one.
 
 use std::path::{Path, PathBuf};
@@ -244,7 +269,7 @@ impl TheTurn {
     }
 
     /// How many whole days ago this was, counted **down** from `now`, the way
-    /// [`alo_keeping_up::HowFarBack`] counts: a turn made six days and
+    /// `alo_keeping_up::HowFarBack` counts: a turn made six days and
     /// twenty-three hours ago is six days ago.
     ///
     /// A moment in the future is nought days ago rather than an error. A clock
