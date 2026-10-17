@@ -1631,7 +1631,7 @@ impl FrameTarget for Layered<'_> {
 /// `desktop_source`'s `the_desktop_adds_no_number_of_its_own` holds that file
 /// to *no string a person could read*. The sentence below has nowhere to live
 /// there, and the rule is right: words belong where words are owned.
-fn drawn_terminal(
+pub(crate) fn drawn_terminal(
     server: &Server,
     labels: &mut crate::WindowControlLabels,
     size: (i32, i32),

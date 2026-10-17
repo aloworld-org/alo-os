@@ -29,6 +29,28 @@ use crate::{
     Server, WindowControlLabels,
 };
 
+/// Where a nested frame reads alo's own terminal from, when one should be drawn.
+///
+/// **This exists because the nested backend drew no terminal at all until
+/// 2026-10-17.** [`Nested::submit_with_desktop`] passed `None` for the terminal
+/// picture, so a terminal a chord had opened was taking keys and never reaching
+/// a frame — while `direct_desktop` drew it from the same helper. The effect was
+/// that **no gate could ever see alo's own terminal**, because the only backend
+/// a build machine can run is this one, and the four promises the terminal keeps
+/// were checkable on real hardware and nowhere else.
+///
+/// The terminal is read from the [`Server`] rather than handed in as a picture
+/// because the picture type is this crate's own: a caller outside it could not
+/// build one, which is why the parameter could not simply be opened up.
+pub struct TheTerminalToDraw<'a> {
+    /// The server whose chord opened the terminal.
+    pub server: &'a crate::Server,
+    /// The display this frame is for, as its appearance names it. A terminal is
+    /// laid out against one display's size and scale, so the name is not
+    /// decoration.
+    pub display: &'a str,
+}
+
 /// What a frame needs to draw the ordinary desktop.
 #[derive(Clone, Copy)]
 pub struct DesktopFrame<'a> {
@@ -320,9 +342,30 @@ impl Nested {
         desktop: DesktopFrame<'_>,
         record: Option<RecordFrame<'_>>,
         approval: Option<ApprovalFrame<'_>>,
+        alos_terminal: Option<TheTerminalToDraw<'_>>,
     ) -> Result<Vec<WlSurface>, RenderError> {
         let size = self.size();
-        let pictures = frame_pictures(desktop, record, approval, labels, (size.w, size.h), None)?;
+        // **Built before the rest of the pictures**, because both want `labels`
+        // mutably and `direct_desktop` orders them the same way for the same
+        // reason.
+        let terminal = alos_terminal.and_then(|read| {
+            crate::direct_desktop::drawn_terminal(
+                read.server,
+                labels,
+                (size.w, size.h),
+                read.display,
+                desktop,
+                desktop.strings,
+            )
+        });
+        let pictures = frame_pictures(
+            desktop,
+            record,
+            approval,
+            labels,
+            (size.w, size.h),
+            terminal,
+        )?;
         self.submit_native_layers(
             roots,
             popups,

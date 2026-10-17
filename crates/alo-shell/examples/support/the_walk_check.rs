@@ -427,6 +427,7 @@ fn the_desktop(
         desk.frame(None, &[]),
         None,
         None,
+        None,
     )?;
     met.push(Step::of(
         "a second display docked, and the desktop after it",
@@ -459,6 +460,7 @@ fn the_desktop(
             }),
             &[],
         ),
+        None,
         None,
         None,
     )?;
@@ -501,6 +503,7 @@ fn the_desktop(
         &[],
         &mut labels,
         desk.frame(None, &showing),
+        None,
         None,
         None,
     )?;

@@ -628,7 +628,7 @@ pub use market_window::{Browsing, MarketPressed, MarketShows, MarketWindow};
 pub use nested::Nested;
 pub use nested_approval::ApprovalFrame;
 pub use nested_control_input::NestedControlInput;
-pub use nested_desktop::DesktopFrame;
+pub use nested_desktop::{DesktopFrame, TheTerminalToDraw};
 pub use nested_egress_status::EgressStatusFrame;
 pub use nested_pointer::NestedPointerEvent;
 pub use nested_reader_frame::NestedReaderFrame;
