@@ -1547,6 +1547,7 @@ ruling says work may be sequenced — only excluded-by-tier is gone.
 | [`putting-a-window-aside.md`](docs/autonomy/putting-a-window-aside.md) | the development PC | the minimised panel, and a panel out of view costing nothing |
 | [`more-than-one-display-plan.md`](docs/autonomy/more-than-one-display-plan.md) | the Mac, after access-and-language and models | the compositor substrate *every screen is a view onto the canvas* turned out to need — discovery, globals, presentation, frames, layout, popups, then a camera per viewport |
 | [`the-dock-more-apps-and-the-minimised-panel.md`](docs/autonomy/the-dock-more-apps-and-the-minimised-panel.md) | the Mac | the Dock, *More apps* and the minimised-window panel as three distinct connected surfaces — membership, clicking, the window picker, the overview, dismissal and the keyboard, and a press reaching inside the two surfaces |
+| [`the-terminal-in-full-plan.md`](docs/autonomy/the-terminal-in-full-plan.md) | the Mac | every promise `docs/features.md` makes about alo OS's own terminal, eleven of them starred — the five answers to *why is it waiting* reaching a person, rich results, finding a command by what it did, scoping one command, explaining one before it runs, and a session somebody can replay; three of its ten tasks wait on a bracket or the kernel box |
 
 - [ ] ★ **A Place remembers time** — drag the ribbon and the canvas is as it was
       on Tuesday, from the snapshots undo already takes. **Was `[v1.1]`**, the
