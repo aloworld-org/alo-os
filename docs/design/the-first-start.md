@@ -1650,3 +1650,51 @@ than invented.
 *Explicit setup action. Named labels; 48 logical pixel target. Secondary actions
 retain equal reachability.* The last clause is a rule, not a note — `Back` is the
 same size as `Continue`.
+
+## The owner decided the quiet labels are lower case, 2026-10-17
+
+**The decision.** Every eyebrow, and every other small supplementary label, is
+**lower case** in the product — `make it yours`, not `MAKE IT YOURS`. The owner
+said so in as many words: *"We should not use upper case letters but low case."*
+
+**This overrides what the file draws.** The frames read above draw eyebrows in
+capitals — `NO AI`, `MY PROVIDER`, `ON THIS COMPUTER`, `YOUR COMPUTER. YOUR
+WAY.`, `MAKE IT YOURS`, `CONTROL ALWAYS` — and the tables in this document
+record them that way because that is what was measured. They are kept as
+measured; what changed is what the product says. `CLAUDE.md` puts the design
+right until a decision says otherwise, and this is that decision, recorded where
+the next person looks rather than left in a diff.
+
+**It applies to the ones not yet built as well as the two that are.** Only
+`make it yours` and `feel at home` had reached the code; the rest arrive with
+their screens, and they arrive lower case.
+
+**And there is a reason beyond preference, which is why this is not only a
+matter of taste.** Nothing in `alo-shell` upper-cases anything — searched for
+`to_uppercase` and `to_ascii_uppercase`, nought hits — so the capitals were
+**inside the translatable string** and drawn literally. That makes them an
+English-only artefact shipped to 24 languages:
+
+- upper-casing is wrong or meaningless in several of them, and the rules differ
+  per language — a dotless `i`, an `ß`, a final sigma;
+- so a translator receiving `MAKE IT YOURS` has to decide whether to shout in
+  their own language, which is a decision about English typography that nobody
+  should be asking them to make.
+
+**Both entries' own translator notes admitted it.** One read *"The upper case is
+this phrase's own; use whatever your language does for a quiet label rather than
+upper-casing a translation that should not be"* — a note explaining away a
+problem rather than fixing it. The notes now say *lower case, like every quiet
+label in alo OS*, and have nothing to explain away.
+
+**If capitals are ever wanted on screen**, they are a drawing's business — a
+style applied where the text is laid out, per the display's own language — and
+never characters in a string a translator receives. That road is open and nothing
+takes it today.
+
+**Where this was checked.** Every `Word` in the workspace was read for runs of
+capitals: 380 words a person reads, nine hits, seven of them format and connector
+names that are correctly capitalised — `DVI`, `VGA`, `GIF`, `AVI`, `WAVE`,
+`FLAC` — and the two eyebrows. `SET UP · 2 OF 5` appears only in two doc comments
+recording that the label was removed, so it is not in the product.
+
