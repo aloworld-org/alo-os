@@ -1571,8 +1571,11 @@ software.category.photographs	Photographs
 software.category.pictures	Pictures
 software.category.video	Video
 software.each-arrives-with-nothing	Each one installs from the place it is published, and arrives able to reach nothing
+software.install-it	Install
 software.installed	{application} is installed. It has been given nothing: it asks when it needs a file, the camera or anything else, and you answer
 software.installed-reaching-everything	{application} is installed, and you chose to let it reach your files and the network without asking you first. Anything else you install has to ask; this one does not
+software.installing-it	Installing…
+software.open-it	Open
 software.refused.already-installed	{application} is already installed on this machine, so it was not installed again. Updates for it are offered in Software
 software.refused.did-not-answer	The part of this machine that installs applications did not respond, so nothing was changed. Restarting this machine starts it again
 software.refused.not-enabled	{source} is not a place this machine installs applications from, so nothing was installed. Choose one of the places listed under Software in Settings

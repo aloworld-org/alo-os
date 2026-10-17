@@ -1,0 +1,263 @@
+//! What the window of what a person can install actually draws.
+//!
+//! **These read the pixels.** A test that checked the shapes were pushed into
+//! the right vectors would pass over the fault `crate::dock_surface`'s header
+//! records — the Dock's badges were pushed correctly, the code was right, and
+//! *"a pixel sample under every badge found nothing at all"*, because the panel
+//! was painted over them. Only the raster says what a person sees.
+
+#![expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+
+use alo_appearance::{Scheme, TextScale};
+use alo_software::Catalogue;
+use alo_strings::Strings;
+
+use super::*;
+use crate::market_window::MarketWindow;
+
+/// A window of the decided catalogue, at the size the design draws it.
+fn a_window() -> (MarketWindow, TheMarketsWords, Rectangle<i32, Physical>) {
+    let mut window = MarketWindow::closed();
+    window.opened(Catalogue::decided().unwrap(), Vec::new());
+    let words = TheMarketsWords::said(&Strings::of(
+        alo_saying::everything_this_machine_can_say().unwrap(),
+    ));
+    let at = box_at(
+        40,
+        40,
+        i32::try_from(m::THE_WINDOW_IS_WIDE).unwrap(),
+        i32::try_from(m::the_window_is_tall(2)).unwrap(),
+    );
+    (window, words, at)
+}
+
+fn drawn(
+    window: &MarketWindow,
+    words: &TheMarketsWords,
+    at: Rectangle<i32, Physical>,
+) -> MarketPicture {
+    let mut fonts = cosmic_text::FontSystem::new();
+    picture(
+        at,
+        window.shows(),
+        words,
+        MarketLook {
+            scheme: Scheme::Light,
+            scale: TextScale::ordinary(),
+        },
+        &mut fonts,
+    )
+    .unwrap()
+}
+
+/// What is at this point of the panel's raster, as red, green, blue and alpha.
+fn pixel_at(panel: &crate::painted::Washed, x: i32, y: i32) -> [u8; 4] {
+    let across = x - panel.area.loc.x;
+    let down = y - panel.area.loc.y;
+    assert!(
+        across >= 0 && down >= 0 && across < panel.area.size.w && down < panel.area.size.h,
+        "({x}, {y}) is outside the panel"
+    );
+    let at = (down * panel.area.size.w + across) as usize * 4;
+    // **Four bytes asked for rather than indexed**, and turned into an array
+    // rather than read out one subscript at a time: a panel whose pixels do not
+    // fill its own box then fails on the ask instead of on the fourth index.
+    let four: [u8; 4] = panel.pixels.get(at..at + 4).unwrap().try_into().unwrap();
+    four
+}
+
+/// A role's colour, to compare a sampled pixel against.
+fn role(which: Role) -> [u8; 3] {
+    let it = which.colour();
+    [it.red(), it.green(), it.blue()]
+}
+
+/// Near enough, allowing for the rasteriser blending at an edge.
+///
+/// **Zipped rather than indexed**, so the comparison reads over the three
+/// channels the two have in common and cannot reach past either.
+fn close_to(got: [u8; 4], want: [u8; 3], within: i32) -> bool {
+    got.iter()
+        .zip(want.iter())
+        .all(|(a, b)| (i32::from(*a) - i32::from(*b)).abs() <= within)
+}
+
+#[test]
+fn a_closed_window_draws_nothing() {
+    let window = MarketWindow::closed();
+    let words = TheMarketsWords::said(&Strings::of(
+        alo_saying::everything_this_machine_can_say().unwrap(),
+    ));
+    let mut fonts = cosmic_text::FontSystem::new();
+    let nothing = picture(
+        box_at(0, 0, 600, 400),
+        window.shows(),
+        &words,
+        MarketLook {
+            scheme: Scheme::Light,
+            scale: TextScale::ordinary(),
+        },
+        &mut fonts,
+    );
+    assert!(nothing.is_none());
+}
+
+/// **The middle of the window is its surface colour**, which is the first
+/// thing a person sees and the thing a panel that failed to rasterise would
+/// get wrong.
+#[test]
+fn the_window_is_drawn_in_the_surface_colour() {
+    let (window, words, at) = a_window();
+    let picture = drawn(&window, &words, at);
+    let middle = pixel_at(
+        &picture.panel,
+        at.loc.x + at.size.w / 2,
+        at.loc.y + at.size.h / 2,
+    );
+    assert_eq!(middle[3], 255, "the middle of the window is see-through");
+    assert!(
+        close_to(middle, role(Role::BgSurface), 2),
+        "the middle is {middle:?}, not the surface colour"
+    );
+}
+
+/// **The corners are rounded**, which is the whole reason this is a raster and
+/// not a rectangle: the very corner pixel is mostly what is behind the window.
+#[test]
+fn the_corners_are_rounded_and_not_square() {
+    let (window, words, at) = a_window();
+    let picture = drawn(&window, &words, at);
+    let corner = pixel_at(&picture.panel, at.loc.x, at.loc.y);
+    assert!(
+        corner[3] < 128,
+        "the top-left corner is {corner:?}: a square corner, not a radius"
+    );
+    // And one radius in from it is solidly the window. **Eighteen, the Dock's
+    // own corner**, because `a_panel` takes no radius — see this module's
+    // header and `market_measures`'. The design asks 28; a point 18 in is
+    // inside the window under either, which is what this needs.
+    let within = pixel_at(&picture.panel, at.loc.x + 18, at.loc.y + 18);
+    assert_eq!(within[3], 255);
+}
+
+/// **The search field is a cooler ground than the window**, so a person can
+/// see where to type without a border round it.
+#[test]
+fn the_search_field_is_a_well_in_the_surface() {
+    let (window, words, at) = a_window();
+    let picture = drawn(&window, &words, at);
+    let measure = Measure::of(TextScale::ordinary());
+    let px = |of: u32| measure.px(i32::try_from(of).unwrap());
+    // The middle of the field, which is one margin in and under the title bar.
+    let x = at.loc.x + px(m::BESIDE) + px(m::the_body_is_wide()) / 2;
+    let y = at.loc.y + px(m::THE_TITLE_BAR_IS_TALL) + px(m::ABOVE) + px(m::THE_SEARCH_IS_TALL) / 2;
+    let got = pixel_at(&picture.panel, x, y);
+    assert!(
+        close_to(got, role(Role::BgCool), 2),
+        "the search field is {got:?}, not the cool ground"
+    );
+}
+
+/// **The chosen kind of work is filled, and the others are not.** Selection is
+/// carried by contrast and not by hue, which is what ADR 0010's reasoning asks
+/// of every signal — around one man in twelve cannot rely on hue.
+#[test]
+fn the_chosen_kind_of_work_is_filled_and_the_rest_are_wells() {
+    let (window, words, at) = a_window();
+    let picture = drawn(&window, &words, at);
+    let measure = Measure::of(TextScale::ordinary());
+    let px = |of: u32| measure.px(i32::try_from(of).unwrap());
+    let y = at.loc.y
+        + px(m::THE_TITLE_BAR_IS_TALL)
+        + px(m::ABOVE)
+        + px(m::THE_SEARCH_IS_TALL)
+        + px(m::A_GAP)
+        + px(m::A_CHIP_IS_TALL) / 2;
+    // A few pixels into the first chip, which is *everything* and is chosen
+    // because the window opens narrowed to nothing.
+    let x = at.loc.x + px(m::BESIDE) + px(4);
+    let got = pixel_at(&picture.panel, x, y);
+    assert!(
+        close_to(got, role(Role::TextPrimary), 6),
+        "the chosen chip is {got:?}, not filled in the primary ink"
+    );
+}
+
+/// **Deep teal is nowhere on this window.** `Role::AccentDefault` is alo's own
+/// (ADR 0067), and a control drawn in it would say *alo is doing this* about
+/// something the person chose.
+#[test]
+fn the_agents_colour_is_not_used_anywhere() {
+    let (window, words, at) = a_window();
+    let picture = drawn(&window, &words, at);
+    let teal = role(Role::AccentDefault);
+    let mut sampled = 0;
+    let mut found = 0;
+    // **Through `pixel_at` rather than a second reader**, so the sweep and the
+    // single samples above cannot disagree about where a pixel is.
+    for down in (0..picture.panel.area.size.h).step_by(3) {
+        for across in (0..picture.panel.area.size.w).step_by(3) {
+            let got = pixel_at(
+                &picture.panel,
+                picture.panel.area.loc.x + across,
+                picture.panel.area.loc.y + down,
+            );
+            let opaque = got.last().copied().unwrap_or(0);
+            sampled += 1;
+            if opaque > 200 && close_to(got, teal, 8) {
+                found += 1;
+            }
+        }
+    }
+    assert!(
+        sampled > 1000,
+        "only {sampled} pixels read, which is not a sweep"
+    );
+    assert_eq!(
+        found, 0,
+        "{found} pixels of the agent's deep teal on this window"
+    );
+}
+
+/// **Every word the window shows is inked**, and none of them is empty — an
+/// empty label draws cleanly and says nothing, which is the failure a reader
+/// cannot see.
+#[test]
+fn every_word_on_the_window_has_ink_in_it() {
+    let (window, words, at) = a_window();
+    let picture = drawn(&window, &words, at);
+    assert!(
+        picture.inked.len() > 10,
+        "only {} inked blocks, which is fewer than the chips alone",
+        picture.inked.len()
+    );
+    for one in &picture.inked {
+        assert!(one.area.size.w > 0 && one.area.size.h > 0);
+        assert_eq!(
+            one.pixels.len(),
+            (one.area.size.w * one.area.size.h) as usize,
+            "an inked block whose pixels do not fill its box"
+        );
+    }
+}
+
+/// **A window too small to hold anything is refused rather than drawn badly.**
+#[test]
+fn a_window_with_no_room_in_it_is_not_drawn() {
+    let (window, words, _) = a_window();
+    let mut fonts = cosmic_text::FontSystem::new();
+    let nothing = picture(
+        box_at(0, 0, 4, 4),
+        window.shows(),
+        &words,
+        MarketLook {
+            scheme: Scheme::Light,
+            scale: TextScale::ordinary(),
+        },
+        &mut fonts,
+    );
+    assert!(nothing.is_none(), "a four-pixel window was drawn");
+}

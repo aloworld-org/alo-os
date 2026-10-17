@@ -426,7 +426,7 @@ pub const WEB_NOTHING_GRANTED: Word = Word::saying(
 pub const THE_NAMES: [Word; 3] = [VERB_PURPOSE, VERB_APPLICATION, VERB_SOURCE];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 38] = [
+pub const THE_SENTENCES: [Word; 41] = [
     INSTALLED,
     INSTALLED_UNSANDBOXED,
     UPDATE_OFFERED,
@@ -456,6 +456,9 @@ pub const THE_SENTENCES: [Word; 38] = [
     WEB_NOTHING_GRANTED,
     THE_APPLICATIONS,
     EACH_ARRIVES_WITH_NOTHING,
+    INSTALL_IT,
+    INSTALLING_IT,
+    OPEN_IT,
     EVERYTHING,
     PICTURES,
     PAINTING,
@@ -509,6 +512,30 @@ pub const EACH_ARRIVES_WITH_NOTHING: Word = Word::saying(
     "Stands under the list of applications a person can install. Two promises in one line: each \
      application comes from somewhere this machine can name, and a new one can reach no file, \
      camera, microphone or network until the person allows it.",
+);
+
+/// What a person presses to have an application installed.
+pub const INSTALL_IT: Word = Word::saying("software.install-it", "Install").noting(
+    "The control a person presses on an application they have not got. One word where the \
+     language has one. It asks for the installation; it is not a promise that it has happened.",
+);
+
+/// What the control says while the machine is doing it.
+///
+/// **Not a progress figure.** How far an installation has got is the rented
+/// tool's business and this machine does not translate its numbers; what a
+/// person needs here is that it is going, and the indicator says what is
+/// leaving while it does.
+pub const INSTALLING_IT: Word = Word::saying("software.installing-it", "Installing…").noting(
+    "Replaces the install control while an application is arriving. The ellipsis is the \
+     ordinary one for work in progress; use whatever a reader of this language expects, or \
+     nothing if the language does not use one.",
+);
+
+/// What the control says once the application is on the machine.
+pub const OPEN_IT: Word = Word::saying("software.open-it", "Open").noting(
+    "Replaces the install control once an application is on this machine. One word where the \
+     language has one. It opens what is already here and installs nothing.",
 );
 
 /// The kind of work that narrows nothing.
@@ -583,7 +610,7 @@ pub const EVERY_CATEGORY: [Word; 9] = [
 ];
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 41] = [
+pub const EVERY_WORD: [Word; 44] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
@@ -616,6 +643,9 @@ pub const EVERY_WORD: [Word; 41] = [
     WEB_NOTHING_GRANTED,
     THE_APPLICATIONS,
     EACH_ARRIVES_WITH_NOTHING,
+    INSTALL_IT,
+    INSTALLING_IT,
+    OPEN_IT,
     EVERYTHING,
     PICTURES,
     PAINTING,

@@ -412,6 +412,7 @@ pub(crate) fn frame_pictures(
             display_scale: desktop.display_scale,
             on_the_dock: desktop.on_the_dock,
             in_more_apps: desktop.in_more_apps,
+            market: None,
             tasks: desktop.tasks,
         },
         &mut labels.fonts,

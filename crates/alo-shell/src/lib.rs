@@ -232,6 +232,8 @@ mod lock_raster;
 mod lock_surface;
 mod lock_texture;
 mod market_keys;
+mod market_measures;
+mod market_raster;
 mod market_window;
 mod nested;
 mod nested_approval;
@@ -367,6 +369,7 @@ mod the_edge_takes_the_keyboard;
 mod the_keyboard_a_person_chose;
 pub mod the_languages_offered;
 pub mod the_machines_keyboard;
+pub mod the_markets_words;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;
 mod the_session_holds_its_screens;
@@ -646,6 +649,7 @@ pub use scanout_frame::XrgbFrame;
 pub use scene_replacement::SceneReplacement;
 pub use scene_scanout::ActiveScene;
 pub use screens::{ScreenPlace, Screens, TheRoom};
+pub use the_markets_words::TheMarketsWords;
 
 // **The types a desktop needs to answer `their_displays`, re-exported so that
 // answering costs it no new crate edge** — `more-than-one-display-plan.md`
