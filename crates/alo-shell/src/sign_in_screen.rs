@@ -190,15 +190,52 @@ impl<K: Knocking> SignInScreen<K> {
                 Standing::SignIn => Stands::SignIn(greeting),
             },
         };
+        // **The field a person can see is the field their keys go into.**
+        // The returning screen draws one field, `Enter your PIN`, above a name
+        // it already knows; starting on the name there would send every
+        // keystroke somewhere invisible. The account screen asks for a name
+        // and starts on one.
+        let entry = match &stands {
+            // **Only when the machine can say whose it is.** Then it draws one
+            // field over a name it already knows, and that is the field keys
+            // must go into.
+            //
+            // When `whose_name` is `None` the machine has accounts and cannot
+            // name its own person — `agentd.toml` and `accounts.toml`
+            // disagreeing — and there is a name to be asked for. Starting on
+            // the password there would leave nobody able to supply it.
+            Stands::SignIn(greeting) if greeting.whose_name().is_some() => {
+                SignInEntry::waiting_for_a_password()
+            }
+            Stands::SignIn(_)
+            | Stands::ChooseLanguage(_, _, _)
+            | Stands::MakeAnAccount(_, _)
+            | Stands::Unreadable(_, _) => SignInEntry::empty(),
+        };
         Self {
             stands,
             strings,
-            entry: SignInEntry::empty(),
+            entry,
             said: None,
             trouble: None,
         }
     }
 
+    /// Whether this screen draws a single field.
+    ///
+    /// True for the screen a person comes back to: it knows whose machine it
+    /// is, says so, and asks only for a password. `sign_in_raster` draws that
+    /// screen with `let _ = field;` — it has no second field to put a cursor
+    /// in — and this is the same condition, named once so the two cannot
+    /// drift apart again.
+    fn draws_one_field(&self) -> bool {
+        match &self.stands {
+            Stands::SignIn(greeting) => greeting.whose_name().is_some(),
+            Stands::ChooseLanguage(_, _, _)
+            | Stands::MakeAnAccount(_, _)
+            | Stands::Unreadable(_, _) => false,
+        }
+    }
     /// One key press, and what became of the screen.
     ///
     /// Letters, erasing and moving between the two fields edit what is typed.
@@ -216,6 +253,15 @@ impl<K: Knocking> SignInScreen<K> {
         if matches!(self.stands, Stands::ChooseLanguage(_, _, _)) {
             return self.on_the_language_sheet(key);
         }
+        // **A screen with one field has no other field to move to.** The
+        // returning screen draws a single `Enter your PIN` over a name it
+        // already knows, and `sign_in_raster` discards `field` entirely for
+        // it. A Tab that moved the waiting field to a name nobody can see
+        // would put every key after it somewhere invisible -- which is the
+        // fault this whole change is about, reachable one keystroke later.
+        if matches!(key, SignInKey::OtherField) && self.draws_one_field() {
+            return Signing::Still(Box::new(self));
+        }
         if !self.entry.pressed(key) {
             return Signing::Still(Box::new(self));
         }
@@ -227,7 +273,21 @@ impl<K: Knocking> SignInScreen<K> {
         let password = self.entry.password().to_owned();
         self.entry.forgotten();
         let greeted = match &mut self.stands {
-            Stands::SignIn(greeting) => greeting.signs_in(&name, &password),
+            Stands::SignIn(greeting) => {
+                // **The name is the one this machine already knows.** The
+                // returning screen draws no name field -- it says *alo,
+                // disan* above a single `Enter your PIN` -- so there is
+                // nobody to type one, and the entry starts on the password
+                // for that reason. `whose_name` is what the screen is
+                // already showing.
+                //
+                // `name` is the fallback for a machine that has accounts and
+                // cannot say whose, which `alo-greeting` answers `None` for:
+                // asking is then the honest thing, and the field is one Tab
+                // away.
+                let whose = greeting.whose_name().unwrap_or(&name).to_owned();
+                greeting.signs_in(&whose, &password)
+            }
             // **The first account on this machine.** `makes_an_account`
             // refuses when the store is not empty, writes before it signs
             // anybody in, and signs in through `signs_in` rather than opening

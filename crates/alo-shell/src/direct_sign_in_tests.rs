@@ -149,9 +149,8 @@ fn two_different_passwords_are_the_same_frame() {
 /// finished, and submits nothing if asked again.
 #[test]
 fn nothing_is_drawn_once_a_session_has_opened() {
-    let mut keys = typing("ada");
-    keys.push(SignInKey::Enter);
-    keys.extend(typing("the-one-they-typed"));
+    // The screen a person comes back to: the password alone.
+    let mut keys = typing("the-one-they-typed");
     keys.push(SignInKey::Enter);
     let mut opened = after(&keys);
     assert!(
@@ -231,11 +230,18 @@ fn after_a_click(
 }
 
 /// Everything typed to reach a password waiting to be submitted.
+///
+/// **The password and nothing else.** `a_screen` is the screen a person comes
+/// back to: it knows whose machine it is, draws one field -- `Enter your PIN`
+/// -- and the name reaching `signs_in` is `whose_name` rather than anything
+/// typed.
+///
+/// This typed the name, then Enter, then the password until 2026-10-16: the
+/// interaction of the screen that *asks* for a name, driven at one that draws
+/// no name field. It passed, because the keys all went somewhere -- into a
+/// field a person cannot see.
 fn ready_to_submit() -> Vec<SignInKey> {
-    let mut keys = typing("ada");
-    keys.push(SignInKey::Enter);
-    keys.extend(typing("the-one-they-typed"));
-    keys
+    typing("the-one-they-typed")
 }
 
 /// **A click on the submit arrow signs somebody in.**

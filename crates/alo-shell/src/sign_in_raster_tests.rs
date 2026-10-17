@@ -32,11 +32,22 @@ fn light() -> SignInLook {
 }
 
 /// A screen with `name` typed, then `password` typed in the password field.
+///
+/// **The greeting is for 1001 and the account is 1000**, so `whose_name` is
+/// `None`: this machine has an account and cannot say whose, which is the
+/// screen that **asks for a name** and draws both fields. These tests type a
+/// name and cross to the password, which is that screen's interaction.
+///
+/// It was 1000 until 2026-10-16, which made it the screen a person comes
+/// back to -- one field, no name asked for. Every name typed went into the
+/// password, so `typed("ada", "")` and `typed("ada", "x")` both read as
+/// *something typed*, drew the same picture, and the test that says a typed
+/// password is visible compared a thing with itself.
 fn typed(name: &str, password: &str) -> SignInScreen<NoDoor> {
     let mut store = Accounts::none().unwrap();
     store.created("ada", 1000, "irrelevant").unwrap();
     let words = crate::what_this_machine_can_say().unwrap();
-    let mut screen = SignInScreen::of(Ok(Greeting::of(store, 1000, NoDoor)), words);
+    let mut screen = SignInScreen::of(Ok(Greeting::of(store, 1001, NoDoor)), words);
     let mut keys: Vec<SignInKey> = name.chars().map(SignInKey::Letter).collect();
     keys.push(SignInKey::OtherField);
     keys.extend(password.chars().map(SignInKey::Letter));
