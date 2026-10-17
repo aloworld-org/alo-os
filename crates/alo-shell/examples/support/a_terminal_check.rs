@@ -169,6 +169,25 @@ fn key(server: &mut Server, code: u32, at: u32) -> Result<(), Box<dyn std::error
     Ok(())
 }
 
+/// How much ink a frame has inside one band of rows.
+///
+/// **The band is measured, never written down.** It comes from where the answer
+/// to *why is it waiting* appeared, so this fixture needs no y-coordinate of its
+/// own — which would be a figure that holds at one display size and nowhere
+/// else.
+fn ink_in_band(frame: &[u8], bare: &[u8], top: usize, bottom: usize) -> usize {
+    let (frame, _) = frame.as_chunks::<4>();
+    let (bare, _) = bare.as_chunks::<4>();
+    let wide = HOW_BIG.0 as usize;
+    (top..=bottom)
+        .flat_map(|y| (0..wide).map(move |x| y * wide + x))
+        .filter(|at| match (frame.get(*at), bare.get(*at)) {
+            (Some(here), Some(there)) => here != there,
+            _ => false,
+        })
+        .count()
+}
+
 /// How many rows of the screen hold something the bare desktop does not.
 ///
 /// A row is a band of pixels: a line of text lights several of them, so this
@@ -721,17 +740,63 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         .into());
     }
 
-    // **Walk steps 10 and 11: a result the terminal recognises in a stranger's
-    // output.** `cat` is ended first, then one `echo` of the line
-    // `alo_terminal::a_test_result_in` knows how to read. What should appear is
-    // a summary and, under it, the line saying nobody checked it — both in the
-    // **program's** region, which is the design's *PROGRAM includes parsed rich
-    // results*.
+    // The rows alo's answer occupies, measured rather than written down, so the
+    // step below can ask whether it went away without knowing where it was.
+    let (_, alos_top, _, alos_bottom, _) =
+        where_they_differ(&answered, &waiting, HOW_BIG.0 as usize)
+            .ok_or("the answer's own rows could not be measured")?;
+    let while_waiting = ink_in_band(&answered, &without, alos_top, alos_bottom);
+
+    // **Walk step 7: `Ctrl`+`D` ends `cat`, and asking again must take the line
+    // away.** A reply about a command that has gone would sit on the screen
+    // looking current, which is what `WhatAloSaid::nothing_to_say` exists to
+    // prevent — and nothing had ever checked that it does on a screen.
     key(&mut server, LEFT_CONTROL, 80)?;
     key(&mut server, THE_D_KEY, 81)?;
     server.keyboard_key(THE_D_KEY, KeyState::Released, 82)?;
     server.keyboard_key(LEFT_CONTROL, KeyState::Released, 83)?;
     until_the_shell_is_quiet(&mut server);
+
+    key(&mut server, LEFT_CONTROL, 84)?;
+    key(&mut server, LEFT_ALT, 85)?;
+    key(&mut server, THE_W_KEY, 86)?;
+    server.keyboard_key(THE_W_KEY, KeyState::Released, 87)?;
+    server.keyboard_key(LEFT_ALT, KeyState::Released, 88)?;
+    server.keyboard_key(LEFT_CONTROL, KeyState::Released, 89)?;
+    let _ = server.the_terminal_was_written_to();
+
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let nothing_waiting = frame_just_drawn(&nested, "the terminal after `cat` ended")?;
+    let after_it_ended = ink_in_band(&nothing_waiting, &without, alos_top, alos_bottom);
+    if after_it_ended >= while_waiting {
+        return Err(format!(
+            "`cat` ended and asking again left {after_it_ended} pixels of ink where the answer \
+             was, against {while_waiting} while it really was waiting. The reply is still on the \
+             screen for a command that has gone, which is worse than no reply: a person reads it \
+             as current."
+        )
+        .into());
+    }
+
+    // **Walk steps 10 and 11: a result the terminal recognises in a stranger's
+    // output.** One `echo` of the line `alo_terminal::a_test_result_in` knows
+    // how to read. What should appear is a summary and, under it, the line
+    // saying nobody checked it — both in the **program's** region, which is the
+    // design's *PROGRAM includes parsed rich results*.
 
     // **Quoted, and the quotes are the point.** Typed bare, bash reads every `;`
     // as the end of a command: the screen fills with `1: command not found` and
@@ -773,7 +838,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     // test failed` and `Source: cargo test output · Not independently verified`,
     // beneath the grid where alo's own lines go. Walk steps 10 and 11 are about
     // those two.
-    let rows_before = rows_with_ink(&answered, &without);
+    let rows_before = rows_with_ink(&nothing_waiting, &without);
     let rows_after = rows_with_ink(&recognised, &without);
     if rows_after < rows_before + 4 {
         return Err(format!(
@@ -786,13 +851,60 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     let _ = said;
 
+    // **Walk step 8: a clock, which is none of the five answers.** `sleep 30`
+    // waits on a timer rather than on the keyboard, the network, another
+    // process or the processor, and the walk's pass is the honest *waiting for
+    // something alo cannot identify* rather than a confident wrong one. What is
+    // asserted here is only that **an answer came back and reached the screen**
+    // — which of the five it is belongs to `alo-terminal`'s own tests, and
+    // asserting it from pixels would be this fixture reading English out of
+    // glyphs.
+    let at = typing(&mut server, "sleep 30", 300)?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    until_the_shell_is_quiet(&mut server);
+    std::thread::sleep(LONG_ENOUGH_TO_START);
+    let _ = server.the_terminal_was_written_to();
+
+    key(&mut server, LEFT_CONTROL, 400)?;
+    key(&mut server, LEFT_ALT, 401)?;
+    key(&mut server, THE_W_KEY, 402)?;
+    server.keyboard_key(THE_W_KEY, KeyState::Released, 403)?;
+    server.keyboard_key(LEFT_ALT, KeyState::Released, 404)?;
+    server.keyboard_key(LEFT_CONTROL, KeyState::Released, 405)?;
+    let _ = server.the_terminal_was_written_to();
+
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let about_a_clock = frame_just_drawn(&nested, "the terminal with a clock waiting")?;
+    if rows_with_ink(&about_a_clock, &without) <= rows_with_ink(&recognised, &without) {
+        return Err(
+            "asking why a clock is waiting added no row of text, so alo answered nothing where \
+             the walk expects it to say plainly that it cannot tell. A command this machine \
+             cannot classify is the case the fifth answer exists for; silence is not it."
+                .into(),
+        );
+    }
+
     // **Written out only when somebody asks**, the way `saving_frames` guards
     // itself: a gate that wrote a file every run would be a gate that fills a
     // disk, and nothing here is the screenshot promise.
     if let Ok(into) = std::env::var("ALO_TERMINAL_CHECK_WRITE") {
         let header = format!("P6\n{} {}\n255\n", HOW_BIG.0, HOW_BIG.1);
         let mut out = header.into_bytes();
-        let (whole, _) = recognised.as_chunks::<4>();
+        let (whole, _) = about_a_clock.as_chunks::<4>();
         for pixel in whole {
             out.extend_from_slice(&[pixel[2], pixel[1], pixel[0]]);
         }
