@@ -455,7 +455,7 @@ really says; it cannot check that a step describes something the machine really
 draws. **Looking is what found this**, and a pixel count would not have: the
 first version of #775's check asserted on area and failed a working terminal.
 
-### 8c. Nine of the thirteen steps were driven before the boot — **2026-10-17**
+### 8c. Eleven of the thirteen steps were driven before the boot — **2026-10-17**
 
 **This changes what the boot is for. It does not replace it.** The parent is
 `weston --backend=headless` and the renderer is llvmpipe, so nothing below says
@@ -477,15 +477,26 @@ Driven against a real `bash` under a real compositor by
 | 8 | **`alo  waiting for something alo cannot identify`** for `sleep 30` |
 | 10 | `Tests · 23 tests passed · 1 test failed`, and under it `Source: cargo test output · Not independently verified` |
 | 11 | both of those in the **program's** region, labelled `program` |
+| 12 | `ls` runs and the two lines **stay** — what is recognised is what the screen holds |
+| 13 | `clear` takes the line away and the two lines **go** with it |
 
 **Step 10's wording is the old one** and becomes `Tests · 23 passed · 1 failed`
 when #766 lands, which is what that change is for. A walker on a machine built
 before it should expect the longer form and not report a fault.
 
-**Four steps are still unseen**: 1 (sign in), 9 (scrolling with a wheel), 12 and
-13 (what a recognised result does when more output arrives and when the screen
-is cleared). A wheel and a sign-in are what a person and a machine have and this
+**Two steps are still unseen**: 1 (sign in) and 9 (scrolling with a wheel). A
+wheel and a sign-in are what a person and a machine have and a nested fixture
 does not.
+
+**Step 13 failed the first time it was driven, and the cause was not the
+summary.** `clear` answered *TERM environment variable not set.* — alo's own
+terminal started every shell with an empty environment, so `clear`, `less`,
+`vim`, `top` and everything else built on curses refused. **A terminal that
+cannot clear its own screen is not a working terminal**, and that had been true
+of every terminal alo has ever opened. Fixed in the same change; the shell is
+now told `xterm-256color`, and the constant's own doc says why that name. *A
+walker would have found this tomorrow, at step 13, with nobody awake to fix
+it.*
 
 **Two of the nine were only checkable because they were broken first.** Steps 6,
 10 and 11 drew their gutter word and no sentence until #778 — alo's answer and
