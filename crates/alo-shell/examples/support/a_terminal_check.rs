@@ -44,6 +44,24 @@
 //!   carrying ink. That is why this file measures the *extent* of the difference
 //!   and not its area.
 //!
+//! # And then a person used it
+//!
+//! Since 2026-10-17 this also types `echo hello`, waits for the shell, and draws
+//! again. The frame holds the prompt, the command, `hello` under it and a fresh
+//! prompt with the cursor on it — so **keys reach a shell through the seat and
+//! what the shell answers reaches the grid and then a frame**, which is the
+//! whole of the terminal working and had never been shown anywhere.
+//!
+//! **The gutter says `program` for all of it, including the line the person
+//! typed**, and that is correct rather than a fault. A pseudoterminal echoes
+//! what is typed, so those bytes arrive from the program like any others, and
+//! [ADR 0113] forbids reading bytes to decide who spoke. Telling a person's own
+//! line from a program's output needs the shell to say so, which is
+//! [ADR 0123]'s subject and is not built. A fixture that expected `you` here
+//! would be asking the terminal to guess.
+//!
+//! [ADR 0123]: ../../../docs/decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md
+//!
 //! [ADR 0113]: ../../../docs/decisions/0113-the-terminal-owns-a-gutter-that-says-who-is-speaking.md
 //!
 //! # Not a certified machine
@@ -150,6 +168,67 @@ fn key(server: &mut Server, code: u32, at: u32) -> Result<(), Box<dyn std::error
     Ok(())
 }
 
+/// How many pixels of a frame differ from the bare desktop — the terminal's own
+/// ink, however little of the screen it covers.
+fn painted_ink(frame: &[u8], bare: &[u8]) -> usize {
+    let (frame, _) = frame.as_chunks::<4>();
+    let (bare, _) = bare.as_chunks::<4>();
+    frame.iter().zip(bare).filter(|(a, b)| a != b).count()
+}
+
+/// `echo hello`, as Linux evdev numbers the keys.
+const ECHO_HELLO: [u32; 10] = [18, 46, 35, 24, 57, 35, 18, 38, 38, 24];
+
+/// `Enter`.
+const THE_ENTER_KEY: u32 = 28;
+
+/// How long this fixture waits for a shell to say anything.
+///
+/// **Generous on purpose.** A build machine under load starts `bash` slowly, and
+/// the failure this bound is meant to catch is *nothing ever arrives*, not *it
+/// took a while*.
+const PATIENCE: std::time::Duration = std::time::Duration::from_secs(10);
+
+/// Read the pseudoterminal until the shell says something, and answer whether
+/// it did.
+///
+/// **This is the road `direct_desktop` takes once a frame**, and the nested
+/// backend takes it nowhere, which is why no nested check had ever seen a
+/// character a shell wrote.
+fn until_the_shell_writes(server: &mut Server) -> bool {
+    let until = std::time::Instant::now() + PATIENCE;
+    while std::time::Instant::now() < until {
+        if server.the_terminal_was_written_to() {
+            return true;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    false
+}
+
+/// Keep reading until the shell has been quiet for a moment, so a frame is
+/// drawn after the whole of a command's output rather than the first chunk of
+/// it.
+fn until_the_shell_is_quiet(server: &mut Server) {
+    let until = std::time::Instant::now() + PATIENCE;
+    let mut quiet_since = std::time::Instant::now();
+    while std::time::Instant::now() < until {
+        if server.the_terminal_was_written_to() {
+            quiet_since = std::time::Instant::now();
+        } else if quiet_since.elapsed() > std::time::Duration::from_millis(300) {
+            return;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+}
+
+/// Type one key and release it.
+fn typed(server: &mut Server, code: u32, at: u32) -> Result<(), Box<dyn std::error::Error>> {
+    server.keyboard_key(code, KeyState::Pressed, at)?;
+    server.keyboard_key(code, KeyState::Released, at + 1)?;
+    Ok(())
+}
+
 /// A Dock whose words nobody has said, for a fixture that is not about them.
 ///
 /// A static rather than a temporary, because the frame borrows it.
@@ -227,6 +306,19 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     server.keyboard_key(THE_T_KEY, KeyState::Released, 4)?;
     server.keyboard_key(LEFT_ALT, KeyState::Released, 5)?;
     server.keyboard_key(LEFT_CONTROL, KeyState::Released, 6)?;
+
+    // **Wait for the shell to say something before drawing anything.** Without
+    // this the terminal is drawn with an empty grid and the whole check is
+    // about its chrome. With it, the frames below hold a real prompt.
+    if !until_the_shell_writes(&mut server) {
+        return Err(
+            "no shell wrote anything within the time allowed, so either Ctrl+Alt+T opened no \
+             terminal or this machine has no usable shell. `open_alos_own_terminal` prints its \
+             own reason on the error stream above this line."
+                .into(),
+        );
+    }
+    until_the_shell_is_quiet(&mut server);
 
     let division = alo_dividing::Division::of(a_screen);
     let nothing_offered = alo_dividing::Offer::Nothing;
@@ -336,20 +428,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         .into());
     }
 
-    // **Written out only when somebody asks**, the way `saving_frames` guards
-    // itself: a gate that wrote a file every run would be a gate that fills a
-    // disk, and nothing here is the screenshot promise.
-    if let Ok(into) = std::env::var("ALO_TERMINAL_CHECK_WRITE") {
-        let header = format!("P6\n{} {}\n255\n", HOW_BIG.0, HOW_BIG.1);
-        let mut out = header.into_bytes();
-        let (whole, _) = with.as_chunks::<4>();
-        for pixel in whole {
-            out.extend_from_slice(&[pixel[2], pixel[1], pixel[0]]);
-        }
-        std::fs::write(&into, out)?;
-        eprintln!("terminal: the frame with the terminal was written to {into}");
-    }
-
     let (left, top, right, bottom, how_many) =
         where_they_differ(&with, &without, HOW_BIG.0 as usize)
             .ok_or("the frames differ as byte slices but no pixel differs, which cannot happen")?;
@@ -381,10 +459,86 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         .into());
     }
 
+    // **And now something a person did.** Everything above is the terminal
+    // existing; this is the terminal *working* — keys reaching a shell through
+    // the seat, and what the shell answers reaching the grid and then a frame.
+    for (which, code) in ECHO_HELLO.into_iter().enumerate() {
+        let at = 10 + u32::try_from(which)? * 2;
+        typed(&mut server, code, at)?;
+    }
+    typed(&mut server, THE_ENTER_KEY, 40)?;
+    if !until_the_shell_writes(&mut server) {
+        return Err(
+            "nothing came back from the shell after `echo hello` and Enter, so either the keys \
+             did not reach it or it did not answer. The terminal drew, so the first is the more \
+             likely: `the_terminal_is_taking_the_keys` decides that, and it is false when no \
+             shell is running."
+                .into(),
+        );
+    }
+    until_the_shell_is_quiet(&mut server);
+
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let typed_in = frame_just_drawn(&nested, "the terminal after `echo hello`")?;
+
+    if typed_in == with {
+        return Err(
+            "the frame after typing `echo hello` and Enter is byte-identical to the frame \
+             before, so nothing a person did reached the screen. The shell answered — this \
+             check got past that — so what did not happen is the answer reaching the grid or \
+             the grid reaching the frame."
+                .into(),
+        );
+    }
+    let (_, _, _, _, after_typing) = where_they_differ(&typed_in, &with, HOW_BIG.0 as usize)
+        .ok_or("the frames differ as byte slices but no pixel differs, which cannot happen")?;
+
+    // **More ink than before, not merely different.** A cursor moving one cell
+    // changes a frame too; two lines of a command and its answer cannot be
+    // mistaken for that.
+    if painted_ink(&typed_in, &without) <= painted_ink(&with, &without) {
+        return Err(format!(
+            "the terminal has no more ink after `echo hello` than before it ({} against {}), so \
+             what arrived was not a command and its answer",
+            painted_ink(&typed_in, &without),
+            painted_ink(&with, &without)
+        )
+        .into());
+    }
+
+    // **Written out only when somebody asks**, the way `saving_frames` guards
+    // itself: a gate that wrote a file every run would be a gate that fills a
+    // disk, and nothing here is the screenshot promise.
+    if let Ok(into) = std::env::var("ALO_TERMINAL_CHECK_WRITE") {
+        let header = format!("P6\n{} {}\n255\n", HOW_BIG.0, HOW_BIG.1);
+        let mut out = header.into_bytes();
+        let (whole, _) = typed_in.as_chunks::<4>();
+        for pixel in whole {
+            out.extend_from_slice(&[pixel[2], pixel[1], pixel[0]]);
+        }
+        std::fs::write(&into, out)?;
+        eprintln!("terminal: the frame with the terminal was written to {into}");
+    }
+
     eprintln!(
         "terminal: Ctrl+Alt+T opened one and it reached the frame — ink across a {wide}x{tall} \
          extent from ({left}, {top}), {how_many} pixels differing from the same desktop drawn \
-         twice identically without it"
+         twice identically without it; then `echo hello` and Enter changed {after_typing} more \
+         pixels, so keys reached the shell and its answer reached the screen"
     );
     Ok(())
 }
