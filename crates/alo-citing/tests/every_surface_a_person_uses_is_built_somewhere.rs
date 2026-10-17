@@ -90,7 +90,7 @@ enum Reach {
 /// types. A sweep reports error types reached through `?`, which never name
 /// themselves — noise that would make this check unreadable and therefore
 /// unread. These are things `docs/features.md` promises a person can *do*.
-const EVERY_SURFACE_A_PERSON_USES: [(&str, &str, Reach); 7] = [
+const EVERY_SURFACE_A_PERSON_USES: [(&str, &str, Reach); 8] = [
     // **Paid, 2026-10-10**, and the entry it replaces called itself *the one
     // entry here that must not be 'fixed'*. It was right on 2026-10-05 and its
     // reason had gone stale twice over by the time the draw reached it:
@@ -158,6 +158,30 @@ const EVERY_SURFACE_A_PERSON_USES: [(&str, &str, Reach); 7] = [
     // one, which is this check working in the direction that matters — debt
     // cannot be paid silently any more than it can grow silently.
     ("alo_shell", "SettingsWindow", Reach::AMachineCan),
+    // **Added 2026-10-17, and it was missing rather than paid.** The record is
+    // promised in `docs/features.md` and has a published contract,
+    // `docs/contracts/native-record-window.md`, and this list did not name it —
+    // so the one check that asks *can a machine reach this* had never been asked
+    // about it.
+    (
+        "alo_shell",
+        "RecordWindow",
+        Reach::OnlyATestDoes {
+            why: "the window lays out, routes keys and refuses correctly in every \
+                  tested case, and nothing on a running machine builds one. \
+                  Measured 2026-10-17 across 3938 production files of this \
+                  workspace: `RecordWindow::` appears nought times outside tests, \
+                  against one each for `SettingsWindow` (alo-shell/server.rs), \
+                  `FillingWindow` and `RunningWindow` (alo-desktop/main.rs) — which \
+                  is the control, since a search finding nothing everywhere would \
+                  say this about every window. Its two doors are named in \
+                  alo-shell/tests/record_source.rs with the same measurement: \
+                  `opened_by_hand`'s only call is inside nested_record.rs's test \
+                  module, and `asked_what_it_did` has none at all because an \
+                  agent's answer is addressed to a task window by `WhichTask` and \
+                  there is no who-asked that can be a record",
+        },
+    ),
     (
         "alo_capturing",
         "Screenshot",

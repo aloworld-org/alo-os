@@ -356,3 +356,203 @@ fn the_plain_road_passes_through_no_agent() {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Whether anything a machine runs walks each of the two roads
+// ---------------------------------------------------------------------------
+
+/// Every production `.rs` of this crate, as (name, code), with unit tests,
+/// comments and string literals already taken out by [`the_code_of`].
+///
+/// Wider than [`the_record_files`] on purpose: a caller of the window can be
+/// any file in the crate, and reading only the record's own files would answer
+/// *nothing calls this* about a road walked from the dock.
+fn every_production_file() -> Vec<(String, Vec<(usize, String)>)> {
+    let mut read = Vec::new();
+    for entry in std::fs::read_dir(src()).unwrap() {
+        let at = entry.unwrap().path();
+        if at.extension().is_none_or(|it| it != "rs") {
+            continue;
+        }
+        let named = at.file_name().unwrap().to_string_lossy().into_owned();
+        if named.ends_with("_tests.rs") || named.ends_with("_testing.rs") {
+            continue;
+        }
+        read.push((named, the_code_of(&std::fs::read_to_string(&at).unwrap())));
+    }
+    assert!(
+        read.len() > 50,
+        "only {} production files were read, which is not this crate",
+        read.len()
+    );
+    read
+}
+
+/// Calls to a door, outside the file that declares it.
+///
+/// **`opened_by_hand` is a method on two windows** — `RecordWindow` takes a
+/// `Recounting`, `SettingsWindow` takes places and a moment — and a search on
+/// the bare name cannot tell them apart. So a call counts as the record
+/// window's only when `recounting` is in it, and this is the weakness of the
+/// instrument rather than of the roads: a caller that bound the recounting to a
+/// differently-named variable first would not be seen. `asked_what_it_did` is
+/// `RecordWindow`'s alone and needs no such discriminator.
+fn calls_to(door: &str, discriminator: Option<&str>) -> Vec<String> {
+    let mut found = Vec::new();
+    for (named, code) in every_production_file() {
+        if named == "record_window.rs" {
+            continue;
+        }
+        for (which, line) in code {
+            if !line.contains(&format!(".{door}(")) {
+                continue;
+            }
+            if discriminator.is_some_and(|it| !line.contains(it)) {
+                continue;
+            }
+            found.push(format!("{named}:{which}"));
+        }
+    }
+    found
+}
+
+/// A door nothing a machine runs calls, and why.
+///
+/// **Every line here is a measurement with a date, not an excuse.** A road
+/// bound to a surface nothing reaches teaches a person a way in and then takes
+/// it away, which is what `the_road_every_action_takes.rs` refuses for the
+/// keyboard's actions; this is the same rule for the record window's two doors.
+const CALLED_BY_NOTHING: [(&str, &str); 2] = [
+    (
+        "opened_by_hand",
+        "The person's road, and **nothing on a running machine walks it**. Measured \
+         2026-10-17: the only call is `nested_record.rs:196`, which is inside that \
+         file's `#[cfg(test)]` block — it begins at line 162. The two production \
+         calls of this name in the crate, `a_press_on_the_dock.rs:565` and \
+         `settings_command.rs:121`, are the **settings** window's door of the same \
+         name. So `docs/features.md`'s record — *explain what it did* — has a \
+         window that lays out, refuses correctly, and that no person can open.",
+    ),
+    (
+        "asked_what_it_did",
+        "The agent's road, and nothing walks it either. Measured 2026-10-17: zero \
+         calls anywhere outside tests. Nothing is wrong with the door — what is \
+         missing is that an agent's answer cannot reach this window. \
+         `what_a_person_asked_goes_to_the_agent.rs` addresses an answer to a task \
+         window, by `WhichTask`, and there is no *who asked* that can also be a \
+         record or a terminal.",
+    ),
+];
+
+/// **Each of the window's two doors is called by something a machine runs, or
+/// is named above as one that is not.**
+#[test]
+fn each_road_to_the_record_is_walked_or_named_as_unwalked() {
+    for (door, discriminator) in [
+        ("opened_by_hand", Some("recounting")),
+        ("asked_what_it_did", None),
+    ] {
+        let walked = calls_to(door, discriminator);
+        let named = CALLED_BY_NOTHING.iter().any(|(which, _)| *which == door);
+        assert!(
+            !walked.is_empty() || named,
+            "{door} is called by nothing a machine runs and is not named in \
+             CALLED_BY_NOTHING. Either wire it, or write down why it is not wired — a door \
+             nothing reaches is a promise of a road."
+        );
+    }
+}
+
+/// **Nothing named as unwalked has quietly got a caller.**
+///
+/// The other half, and the reason the list is a constant rather than a comment:
+/// a reason that has stopped being true is one somebody reads as current.
+#[test]
+fn nothing_named_as_unwalked_is_walked_after_all() {
+    for (door, _) in CALLED_BY_NOTHING {
+        let discriminator = if door == "opened_by_hand" {
+            Some("recounting")
+        } else {
+            None
+        };
+        let walked = calls_to(door, discriminator);
+        assert!(
+            walked.is_empty(),
+            "{door} is named as called by nothing and is called at {walked:?} — take it out of \
+             CALLED_BY_NOTHING"
+        );
+    }
+}
+
+/// **The search can see a production call**, which is the control.
+///
+/// Without it every assertion above would pass on a walker that found nothing
+/// anywhere, and *nothing calls this* would be indistinguishable from *this
+/// test cannot see calls* — the shape where an empty result and a negative
+/// result look the same.
+///
+/// The call it is shown is the **settings** window's `opened_by_hand`, because
+/// that is the one production call of either name in the crate. So this control
+/// is also the measurement behind both entries above: the name is called, and
+/// never on the record.
+#[test]
+fn the_search_can_see_a_production_call() {
+    let any = calls_to("opened_by_hand", None);
+    assert!(
+        !any.is_empty(),
+        "the walker found no call of `opened_by_hand` anywhere in production, so it cannot see \
+         calls at all and every assertion in this file about there being none is vacuous"
+    );
+    assert!(
+        any.iter()
+            .any(|at| at.starts_with("a_press_on_the_dock.rs:")
+                || at.starts_with("settings_command.rs:")),
+        "the production calls of this name should be the settings window's, and they are \
+         {any:?}"
+    );
+}
+
+/// **And a call inside a `#[cfg(test)]` block is not a production call.**
+///
+/// The control for the control, and it is here because **I got this wrong
+/// today.** `nested_record.rs` calls `opened_by_hand` at line 196 and its test
+/// module begins at 162, and I read that call as the production road and wrote
+/// it into a report. [`the_code_of`] was right all along — it cuts at the test
+/// module — and what was wrong was my reasoning about a per-file search.
+///
+/// So this asserts the cut really happens, on the file that fooled me.
+#[test]
+fn a_call_below_a_test_module_is_not_counted() {
+    let code = the_code_of(&std::fs::read_to_string(src().join("nested_record.rs")).unwrap());
+    assert!(
+        !code
+            .iter()
+            .any(|(_, line)| line.contains(".opened_by_hand(")),
+        "nested_record.rs's call to opened_by_hand survived the cut at its test module, so \
+         every count in this file includes tests"
+    );
+    // And the raw file does hold it, so the assertion above is about a cut and
+    // not about a file that never had one.
+    assert!(
+        std::fs::read_to_string(src().join("nested_record.rs"))
+            .unwrap()
+            .contains(".opened_by_hand("),
+        "nested_record.rs no longer calls opened_by_hand at all, so this test is about nothing"
+    );
+}
+
+/// **And the search does not count the settings window's door of the same
+/// name**, which is the second control and the one the discriminator exists for.
+#[test]
+fn the_settings_windows_door_of_the_same_name_is_not_counted() {
+    let without = calls_to("opened_by_hand", None);
+    let with = calls_to("opened_by_hand", Some("recounting"));
+    assert!(
+        without.len() > with.len(),
+        "the undiscriminated search found {} and the discriminated one {}, so either the \
+         settings window no longer has a door of this name or the discriminator has stopped \
+         discriminating — and this test is then about nothing",
+        without.len(),
+        with.len()
+    );
+}

@@ -8,6 +8,17 @@ itself, every refusal — is `alo-recounting`'s; this document describes only th
 window that puts that account in front of a person and carries their keys back.
 Nothing here is reachable by an agent, and nothing here writes to the record.
 
+**Nothing in alo OS opens this window yet, measured 2026-10-17.** This document
+describes the window's surface and that surface is built, routed and tested —
+and a reader building against it should know that the product itself does not
+yet walk either road described below. `RecordWindow::` appears **nought** times
+in the 3938 production files of this workspace, against one each for the
+settings, running and filling windows, which is the control; and both doors
+below are named in `crates/alo-shell/tests/record_source.rs` as called by
+nothing a machine runs. **Nothing about the surface changes**, which is why this
+is a note rather than a status change: what it affects is what a reader may
+assume about a running machine.
+
 ## Values
 
 `RecordWindow` is the window. It implements `alo_recounting::Compositor`
