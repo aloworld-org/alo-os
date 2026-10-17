@@ -23,9 +23,12 @@ thiserror = { workspace = true }
 # foreground, and asking about the wrong one answers "waiting for the keyboard"
 # every time. Linux only, as the reading of `/proc` beside it is.
 [target.'cfg(target_os = "linux")'.dependencies]
-# `termios` asks the terminal what it has in front; `process` sends the
-# interrupt that stops it — `stopping_the_command_in_front.rs` is the only
-# caller of the second and says why the signal is the gentle one.
+# `termios` asks the terminal what it has in front; `process` signals it.
+# There are two callers of the second and they want opposite things:
+# `stopping_the_command_in_front.rs` sends the gentle interrupt and says why,
+# and `a_shell_on_a_pseudoterminal.rs`'s `Drop` sends `SIGHUP` and then
+# `SIGKILL` — because the engine's own `Drop` waits for the child with no
+# deadline, and `SIGHUP` is a signal a process may ignore.
 rustix = { workspace = true, features = ["termios", "process"] }
 
 [lints]
