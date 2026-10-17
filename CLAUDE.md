@@ -6,8 +6,12 @@ customer owns. It is built by a very small team with big-tech
 discipline. You are that team. Everything here is absolute;
 everything else is judgment.
 
-The workspace that runs on it — mail, files, chat, documents and the
-product agents — lives in `alo-workplace`. The rendering engine is
+The workplace that runs on it lives in `alo-workplace`, and it is
+three products over one platform — **mail, meet and sites** — which
+**ship as separate applications**, each installed, updated, granted
+and opened on its own ([ADR 0122](docs/decisions/0122-the-workplace-ships-as-separate-applications.md)).
+*Projects instead of applications* is the layer above them, not the
+thing that packages them together. The rendering engine is
 `alo-engine`, and it is **started**: it is the repository
 `aloworld-org/alo-browser`, which already renders an alo screen. Its
 first stage needs no operating system and no hardware, so it does not
@@ -227,10 +231,17 @@ cannot demonstrate.
   the machine, and where a question can be settled by authorised
   investigation, settle it rather than wait.
   `docs/autonomy/SHARED_MAIN.md` carries the limits and the order.
-- **One language: Rust.** The workspace above is TypeScript and lives
-  in another repository. Here, a language that is not Rust is a bug.
+- **One language: Rust.** The workplace above is Rust too, in its
+  own repository. Here, a language that is not Rust is a bug.
   Pinned engines are the exception, and an engine is configured,
-  never written in.
+  never written in. **This rule called it *the workspace* and said
+  it was TypeScript until 2026-10-17**, and both had stopped being
+  true: `alo-workplace` is 27 MB of Rust, and *workspace* in this
+  repository means Cargo's crate set or the canvas a person's
+  windows sit on. It is corrected rather than deleted because the
+  false clause cost an answer — asked whether our own applications
+  should be web wrappers or native, a lane read this line and
+  reasoned from it, when they are native already (ADR 0122).
 - **Engines are configured, never patched.** Linux, Mesa, systemd,
   the model runtime and the fine-tuning stack run as pinned upstream
   components behind our own interfaces. A source patch to any of them
