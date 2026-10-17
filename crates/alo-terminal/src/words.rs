@@ -225,34 +225,42 @@ impl Counted {
 pub const SO_MANY_PASSED: Counted = Counted {
     named: "terminal.result.passed",
     number: "passed",
-    one: "{passed} test passed",
-    other: "{passed} tests passed",
+    one: "{passed} passed",
+    other: "{passed} passed",
     note: "Part of the summary above a test result a program printed, beside how many failed and \
-           how many were ignored. {passed} is the number. It reports what the output said and not \
-           what this machine checked - the sentence under it says so - so a translation must not \
-           read like a verdict.",
+           how many were ignored. {passed} is the number. **The two English forms are the same, \
+           and that is deliberate**: the design draws \"Tests · 23 passed · 1 failed\" and English \
+           does not inflect \"passed\", so adding a noun would put a word on the screen the design \
+           does not have. A language where the number governs the sentence should differ here, \
+           which is the whole reason this is a counted string rather than a plain one. It reports \
+           what the output said and not what this machine checked - the sentence under it says so \
+           - so a translation must not read like a verdict.",
 };
 
 /// How many tests the output said failed.
 pub const SO_MANY_FAILED: Counted = Counted {
     named: "terminal.result.failed",
     number: "failed",
-    one: "{failed} test failed",
-    other: "{failed} tests failed",
+    one: "{failed} failed",
+    other: "{failed} failed",
     note: "Part of the summary above a test result a program printed. {failed} is the number, and \
-           it is often nought - \"0 tests failed\" must read naturally, because that is the case a \
-           person sees most. It reports what the output said rather than what this machine found.",
+           it is often nought - \"0 failed\" must read naturally, because that is the case a person \
+           sees most. The two English forms are the same for the reason given on the passed count: \
+           the design draws no noun here. It reports what the output said rather than what this \
+           machine found.",
 };
 
 /// How many tests the output said were ignored.
 pub const SO_MANY_IGNORED: Counted = Counted {
     named: "terminal.result.ignored",
     number: "ignored",
-    one: "{ignored} test ignored",
-    other: "{ignored} tests ignored",
-    note: "Part of the summary above a test result a program printed. An ignored test is one that \
-           was deliberately not run - skipped rather than failed - and the distinction matters, so \
-           a word meaning \"failed\" or \"missing\" would say something this does not.",
+    one: "{ignored} ignored",
+    other: "{ignored} ignored",
+    note: "Part of the summary above a test result a program printed, and shown only when the \
+           number is not nought. An ignored test is one that was deliberately not run - skipped \
+           rather than failed - and the distinction matters, so a word meaning \"failed\" or \
+           \"missing\" would say something this does not. The two English forms are the same for \
+           the reason given on the passed count.",
 };
 
 /// The label above a recognised test result.

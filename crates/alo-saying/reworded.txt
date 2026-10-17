@@ -35,3 +35,28 @@ key: dock.windows.put-aside
 now: Minimised
 why: The same answer as `dock.windows.open` above and for the same reason: added on 2026-10-11, reworded the same day before it reached main, never translated into anything. A correct translation of "Minimised · {place}" would carry a Place this does not have, so under ADR 0068 this would be a new key if the old one had ever been published — and it has not. The Place is still owed and is named in the word's own note, so the next reader looks for a missing fact rather than a missing separator.
 
+
+key: terminal.result.passed#one
+now: {passed} passed
+why: Yes. The claim is the same number of the same thing, and the only word that left is the noun — which did not disappear, it moved into the `Tests ·` label the design draws immediately beside this count. A correct translation of "{passed} test passed" states exactly the fact "{passed} passed" states; read beside the label it simply said "tests" twice. Nothing a translator asserted about the old sentence becomes untrue of this one. **And the singular is still a form translators are given**: English no longer distinguishes it from the plural here, but `Plural` still carries both, so a language that inflects on one keeps the slot to inflect in. Dropping a distinction from the English is not dropping it from the vocabulary.
+
+key: terminal.result.passed#other
+now: {passed} passed
+why: The same answer as `terminal.result.passed#one`, for the same reason: the noun moved into the `Tests ·` label beside the count rather than out of the sentence's meaning, and a translation of "{passed} tests passed" remains a true statement of what this says. This form is recorded separately only because the snapshot keys each counted form on its own, which is what lets a language that needs more than two forms be checked at all.
+
+key: terminal.result.failed#one
+now: {failed} failed
+why: Yes, and identically to `terminal.result.passed#one`. The sentence counts the same thing it counted before and makes the same claim about it; the noun is carried by the `Tests ·` label the design puts in front of the whole run of counts, so repeating it here was duplication rather than meaning. A correct translation of "{failed} test failed" is a correct statement of "{failed} failed".
+
+key: terminal.result.failed#other
+now: {failed} failed
+why: As `terminal.result.failed#one`. Recorded on its own because the snapshot keys each counted form separately, and the English for the two forms being equal is a fact about English rather than a collapse of the distinction — a translator still receives both forms to fill.
+
+key: terminal.result.ignored#one
+now: {ignored} ignored
+why: Yes, and for the reason given under `terminal.result.passed#one`. The count and what is counted are unchanged; the noun now sits once, in the label beside the counts, instead of once per count. No translation of the old English is made false by this.
+
+key: terminal.result.ignored#other
+now: {ignored} ignored
+why: As `terminal.result.ignored#one`. Separate only because each counted form is keyed and checked on its own.
+
