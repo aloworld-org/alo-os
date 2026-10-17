@@ -134,6 +134,47 @@ is worse than an empty cell: this table is *the one place somebody checks* befor
 deciding a crate is abandoned, and the note above this one exists because a lane read
 a row and told the owner something false.
 
+### The development PC is off from 2026-10-17, and the desktop lane may take its work
+
+**The owner's words, that day:** *development pc is off now so it's tasks can be
+done by desktop.* So every row below that names the development PC as its owner
+is a row the desktop lane may pick up, and a lane reading one of them should not
+conclude the work is held by a machine that will come back to it.
+
+**Which rows that reaches, counted rather than remembered.** The development PC
+is the sole declared owner of **eight** plans — `applications-people-already-use`,
+`kernel-enforcement-plan`, `accounts-and-session-entry-plan`,
+`providers-and-models-plan`, `the-machine-measured-plan`, `the-local-network-plan`,
+`where-a-persons-settings-are-kept-plan` and `hands-on-the-desktop-plan` — and a
+share of two more, `the-canvas-and-its-places` with the Mac and
+`putting-a-window-aside` within the third PC's.
+
+**The desktop lane has been told, and has taken none of them.** Asked on
+2026-10-17, it answered that the owner had given it a direct instruction that
+day — the application market, reachable from the dock and by asking alo,
+installed and tested end to end — and that *a relayed message about plan
+ownership does not outrank an instruction they typed to me*. That is the right
+reading. **So the eight are available and unclaimed**, and a lane wanting one
+should put it to the owner rather than infer consent from this section.
+
+**The rows are not rewritten here, deliberately.** Editing eight cells to say
+*the desktop lane* would make this table assert an owner for work that lane has
+not started, which is what the note above this one calls worse than an empty
+cell. A machine being available is not the same fact as a machine having taken
+something. **So each row is the desktop lane's to amend as it takes that plan**,
+and until then the honest reading of a development-PC row is *available, owner
+unchanged*.
+
+**The count above was wrong the first time it was taken, and how it was wrong is
+worth keeping.** Searching each Machine cell for the words *development PC*
+answered six sole owners and six shared, because four cells name another machine
+in their prose — one says *the Mac lane is told not to edit them*, another
+*taken ahead of its queue because `alo-keyboards` is what the Mac's tasks wait
+on*. Reading only the bolded assertion at the head of each cell answered eight
+and two. *A cell's owner and the machines its cell mentions are different
+populations*, which is the same fault as counting mentions of a keyboard action
+and calling it dispatched.
+
 | Plan | Machine | Crates it owns |
 |---|---|---|
 | `the-models-measured-plan.md` | **the Mac** — stated outright: `a-loop-on-a-mac.md` says *the plan a Mac lane runs is `docs/autonomy/the-models-measured-plan.md`* | `alo-models`, `alo-driving`, `alo-choosing`, `alo-answering`, `alo-telling`, `alo-asking`'s hosted and served doors |
