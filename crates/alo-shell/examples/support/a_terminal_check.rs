@@ -183,6 +183,22 @@ const ECHO_HELLO: [u32; 10] = [18, 46, 35, 24, 57, 35, 18, 38, 38, 24];
 /// `Enter`.
 const THE_ENTER_KEY: u32 = 28;
 
+/// `cat`, as Linux evdev numbers the keys — a command that waits on the
+/// keyboard and prints nothing, which is walk step 5's whole point.
+const THE_WORD_CAT: [u32; 3] = [46, 30, 20];
+
+/// `W`, for *why is it waiting*.
+const THE_W_KEY: u32 = 17;
+
+/// Long enough for a shell to have started a command.
+///
+/// **A fixed wait, and the only one here.** Everything else waits for something
+/// it can observe; `cat` prints nothing, so there is nothing to observe and no
+/// honest way to wait for it. If this is ever too short the symptom is the
+/// waiting answer saying the command is not waiting at all, which the check
+/// below reports rather than passing.
+const LONG_ENOUGH_TO_START: std::time::Duration = std::time::Duration::from_millis(600);
+
 /// How long this fixture waits for a shell to say anything.
 ///
 /// **Generous on purpose.** A build machine under load starts `bash` slowly, and
@@ -521,13 +537,108 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         .into());
     }
 
+    // **Walk step 5 and step 6: a command that waits, and alo saying why.**
+    //
+    // `cat` with no arguments reads the keyboard and prints nothing, so nothing
+    // arrives to wait for and the only honest wait is a fixed one. Then
+    // `Ctrl`+`Alt`+`W`, which is alo's own answer rather than anything the
+    // shell said — the first time that answer has been drawn anywhere.
+    for (which, code) in THE_WORD_CAT.into_iter().enumerate() {
+        let at = 50 + u32::try_from(which)? * 2;
+        typed(&mut server, code, at)?;
+    }
+    typed(&mut server, THE_ENTER_KEY, 60)?;
+    until_the_shell_is_quiet(&mut server);
+    std::thread::sleep(LONG_ENOUGH_TO_START);
+    let _ = server.the_terminal_was_written_to();
+
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let waiting = frame_just_drawn(&nested, "the terminal with `cat` waiting")?;
+
+    key(&mut server, LEFT_CONTROL, 70)?;
+    key(&mut server, LEFT_ALT, 71)?;
+    key(&mut server, THE_W_KEY, 72)?;
+    server.keyboard_key(THE_W_KEY, KeyState::Released, 73)?;
+    server.keyboard_key(LEFT_ALT, KeyState::Released, 74)?;
+    server.keyboard_key(LEFT_CONTROL, KeyState::Released, 75)?;
+    let _ = server.the_terminal_was_written_to();
+
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let answered = frame_just_drawn(&nested, "the terminal after Ctrl+Alt+W")?;
+
+    if answered == waiting {
+        return Err(
+            "pressing Ctrl+Alt+W changed nothing on the screen, so the answer to *why is it \
+             waiting* reached no frame. The chord is bound to Action::WhyIsItWaiting in \
+             alo-shortcuts' shipped defaults, and `cat` was running, so what did not happen is \
+             the answer being drawn."
+                .into(),
+        );
+    }
+    let said = painted_ink(&answered, &without);
+    if said <= painted_ink(&waiting, &without) {
+        return Err(format!(
+            "Ctrl+Alt+W left no more ink than before it ({said} against {}), so whatever changed \
+             was not a line of text being added",
+            painted_ink(&waiting, &without)
+        )
+        .into());
+    }
+
+    // **And the answer is beside the gutter word, not inside it.**
+    //
+    // This is the assertion the whole fixture earned. Until 2026-10-17 alo's
+    // sentence was drawn into the gutter's own 80-pixel label box and then
+    // painted over by the word `alo`, so the picture held both runs, a person
+    // saw `alo` beside nothing, and every count-based check passed. A chord
+    // whose answer lands only in the gutter column is that fault returning.
+    let (_, _, right, _, _) = where_they_differ(&answered, &waiting, HOW_BIG.0 as usize)
+        .ok_or("the frames differ as byte slices but no pixel differs, which cannot happen")?;
+    let the_gutter_ends_by = HOW_BIG.0 as usize / 4;
+    if right < the_gutter_ends_by {
+        return Err(format!(
+            "everything Ctrl+Alt+W changed is left of x={the_gutter_ends_by} — the gutter column \
+             — ending at x={right}. The word saying who spoke was drawn and the sentence it \
+             labels was not, which is what a person reads as alo answering with nothing."
+        )
+        .into());
+    }
+
     // **Written out only when somebody asks**, the way `saving_frames` guards
     // itself: a gate that wrote a file every run would be a gate that fills a
     // disk, and nothing here is the screenshot promise.
     if let Ok(into) = std::env::var("ALO_TERMINAL_CHECK_WRITE") {
         let header = format!("P6\n{} {}\n255\n", HOW_BIG.0, HOW_BIG.1);
         let mut out = header.into_bytes();
-        let (whole, _) = typed_in.as_chunks::<4>();
+        let (whole, _) = answered.as_chunks::<4>();
         for pixel in whole {
             out.extend_from_slice(&[pixel[2], pixel[1], pixel[0]]);
         }
@@ -539,7 +650,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         "terminal: Ctrl+Alt+T opened one and it reached the frame — ink across a {wide}x{tall} \
          extent from ({left}, {top}), {how_many} pixels differing from the same desktop drawn \
          twice identically without it; then `echo hello` and Enter changed {after_typing} more \
-         pixels, so keys reached the shell and its answer reached the screen"
+         pixels, so keys reached the shell and its answer reached the screen; then `cat` and \
+         Ctrl+Alt+W drew alo's own answer to *why is it waiting*, {said} pixels of ink in all"
     );
     Ok(())
 }
