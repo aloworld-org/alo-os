@@ -169,6 +169,15 @@ With it, two things that are not separable from it:
   and nothing here forecloses it: the store already holds accounts rather than
   an account.
 
+  **Superseded 2026-10-16 by [ADR
+  0118](0118-more-than-one-person-on-a-machine.md)**, on the owner's decision:
+  *"we need multi-person"*. The sentence above stood for five weeks and was
+  right about the model — the store really does hold accounts, and nothing in
+  this record had to be undone. What it deferred was the **route**, and 0118
+  measures what that route costs: a Unix user made while the machine runs, a
+  number allocated rather than named, a greeter that greets more than one
+  person, and a capability no unit in `image/` grants.
+
 ## The measurement, taken
 
 **2026-09-11.** This ADR said it did not know whether `logind` would open a
