@@ -176,6 +176,7 @@ pub mod next_request;
 pub mod places;
 pub mod refusing;
 pub mod shortening;
+pub mod the_bracket_a_turn_takes;
 mod the_door_the_compositor_serves;
 mod the_sentence_is_about_something;
 pub mod the_verbs_would_not_declare;

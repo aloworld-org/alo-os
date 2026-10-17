@@ -48,6 +48,10 @@ alo-instructing = { path = "../alo-instructing" }
 # Where a turn writes down what happened, when the machine has somewhere
 # durable to write it.
 alo-keeping = { path = "../alo-keeping" }
+# The undo folder's layout, and nothing else: `alo-letting-go` holds the
+# privileged remover and `a_turn_cannot_arrive_at_this_pane.rs` forbids a turn
+# reaching it, which is why #751 split the layout out into its own crate.
+alo-kept-undo = { path = "../alo-kept-undo" }
 # Where a question may be answered, the rule this machine is under, and the
 # runtime alo OS ships.
 alo-models = { path = "../alo-models" }
@@ -65,6 +69,9 @@ alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+# A person's own undo directory, for the bracket's tests. The real snapshots
+# need a real filesystem and are measured in `tests/a_bracket_on_a_real_btrfs_machine.rs`.
+tempfile = "3"
 # Reading a request a test served back as JSON, so that what an agent's next
 # request was held to is compared as a value rather than as a spelling.
 serde_json = { workspace = true }

@@ -1809,6 +1809,7 @@ dependencies = [
  "alo-files",
  "alo-instructing",
  "alo-keeping",
+ "alo-kept-undo",
  "alo-models",
  "alo-nearby",
  "alo-record",
@@ -1816,6 +1817,7 @@ dependencies = [
  "alo-strings",
  "ring",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.20",
 ]
 
