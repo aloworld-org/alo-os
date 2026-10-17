@@ -52,8 +52,10 @@ because a reader starting from it would conclude this goal is unreachable.*
 
 **Four of thirteen are usable today. One more is reachable and unseen.** Of the
 remaining eight, **seven are this lane's to build** and one — *run a command
-touching nothing* — is the development PC's by its own plan. The table near the
-foot of this file says why that changed on review.
+touching nothing* — is **the desktop lane's as of 2026-10-17**, when the owner
+said the development PC is off and its work can be done by the desktop lane. It
+was the development PC's by its own plan until then. The table near the foot of
+this file carries both readings and what changed between them.
 
 ## The order, and it is ordered by that bar rather than by size
 
@@ -160,7 +162,7 @@ belongs to a different lane than implied.
 
 | | the honest position |
 |---|---|
-| *run a command touching nothing* | **the development PC's**, not the desktop lane's — `kernel-enforcement-plan.md` says so in its own words: *who can take it — the development PC, inside a KVM guest with a real login*. And **this lane's machine could technically run it**: `CONFIG_BPF_LSM=y` and `bpf` is in the active LSM list, measured 2026-10-17. So it is **ownership, not capability** — which is a thing to ask about rather than a wall |
+| *run a command touching nothing* | **the desktop lane's, by the owner's decision of 2026-10-17** — *development pc is off now so it's tasks can be done by desktop*. Until that message it was the development PC's by `kernel-enforcement-plan.md`'s own words: *who can take it — the development PC, inside a KVM guest with a real login*. **It was never a capability wall**: this lane's machine has `CONFIG_BPF_LSM=y` and `bpf` in the active LSM list, measured 2026-10-17. So it was ownership, it was a question, and the owner answered it — **not this lane's, and no longer parked** |
 | *bisect the machine*, *your files as they were* | **downstream of this lane's own step 5**, not out of reach. Step 5 above is *the bracket, if it is still nobody's*. If this lane takes the bracket, both of these become its to build — so listing them as unfinishable **contradicted the order four headings above it**, and that was an inconsistency in this document rather than a fact about the work |
 | *ask what a command will do first* | **buildable and testable here.** The promise is *plain words for what it does, with anything destructive, anything needing elevated rights and anything leaving the machine marked* — it does not say which model, and a **provider key is present on this machine** (mode 600, measured 2026-10-17). The first version said *a model on this machine is an environment this lane cannot test in*, which was true of a **local** model and false of the promise |
 
@@ -173,8 +175,14 @@ thing today that a dated reading corrected — after `alo-turn`'s *nothing reach
 it*, the evidence document's *nothing has booted*, and the plan's inverted
 dependency between the source qualifier and rich results.
 
-**So one of the thirteen is genuinely another lane's**, and it is a question
-rather than a wall. The other two are this lane's, in the order above.
+**So one of the thirteen is genuinely another lane's**, and the question it
+raised has an answer: the owner moved it to the desktop lane on 2026-10-17. The
+other two are this lane's, in the order above.
+
+*The row above is the third reading of this one promise in a day — out of
+reach, then the development PC's, then the desktop lane's — and only the last
+came from the owner. The first two came from this lane, and the first was
+wrong. A row that changes this often is a row to cite rather than remember.*
 
 ## Standing, and the owner's
 
