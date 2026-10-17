@@ -169,6 +169,36 @@ fn key(server: &mut Server, code: u32, at: u32) -> Result<(), Box<dyn std::error
     Ok(())
 }
 
+/// Which way a wheel notch goes.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Back {
+    /// Pushed away from the person, into what is remembered.
+    Yes,
+    /// Pulled towards them, back to the newest line.
+    No,
+}
+
+/// How many notches this fixture will send before calling a scroll endless.
+const AT_MOST_NOTCHES: u32 = 200;
+
+/// One wheel notch.
+///
+/// **What comes back is not the assertion, and a first version of this read it
+/// as one.** `Server::pointer_axis` answers `true` when *something* consumed the
+/// scroll, and with a pointer enabled and nothing focused the canvas consumes
+/// whatever the terminal does not — so it answered `true` two hundred notches
+/// past the oldest line. Whether the transcript moved is a question only the
+/// drawn frame can answer.
+fn a_notch(server: &mut Server, back: Back, time: u32) -> Result<bool, Box<dyn std::error::Error>> {
+    /// A wheel notch, in the units an axis frame carries.
+    const A_NOTCH: f64 = 15.0;
+    let how_far = if back == Back::Yes { -A_NOTCH } else { A_NOTCH };
+    let frame = smithay::input::pointer::AxisFrame::new(time)
+        .source(smithay::backend::input::AxisSource::Wheel)
+        .value(smithay::backend::input::Axis::Vertical, how_far);
+    Ok(server.pointer_axis(frame)?)
+}
+
 /// How much ink a frame has inside one band of rows.
 ///
 /// **The band is measured, never written down.** It comes from where the answer
@@ -280,6 +310,8 @@ const fn a_key_for(letter: char) -> Option<(u32, bool)> {
         '1' => (2, false),
         '2' => (3, false),
         '3' => (4, false),
+        '4' => (5, false),
+        'q' => (16, false),
         ' ' => (57, false),
         '.' => (52, false),
         ';' => (39, false),
@@ -923,6 +955,112 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         .into());
     }
 
+    // **Walk step 9: scrollback moves, and stops at both ends.**
+    //
+    // `seq 1 40` puts more lines on the screen than the grid holds, so there is
+    // something to scroll back into. A notch is 15 units of the vertical axis
+    // and moves three lines, and `pointer_axis` answers whether alo's terminal
+    // took it — which is the whole of *a notch that moves nothing is not
+    // consumed*: at either end the scroll falls through instead of being
+    // swallowed.
+    server.enable_pointer()?;
+    let at = typing(&mut server, "seq 1 40", 700)?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    until_the_shell_writes(&mut server);
+    until_the_shell_is_quiet(&mut server);
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let at_the_newest = frame_just_drawn(&nested, "the terminal at the newest line")?;
+
+    // **Notch by notch, drawing each time, until the picture stops changing.**
+    // That is the only honest reading of *stops at both ends*: the question is
+    // whether the transcript moved, and the frame is what knows.
+    let drawn = |nested: &mut Nested,
+                 server: &Server,
+                 labels: &mut WindowControlLabels|
+     -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        nested.pump()?;
+        nested.submit_with_desktop(
+            &[],
+            &[],
+            &alo_shell::Cursor::Default,
+            &[],
+            labels,
+            desktop(),
+            None,
+            None,
+            Some(TheTerminalToDraw {
+                server,
+                display: THE_DISPLAY,
+            }),
+        )?;
+        frame_just_drawn(nested, "a frame while scrolling")
+    };
+
+    let mut back = at_the_newest.clone();
+    let mut notches = 0;
+    loop {
+        a_notch(&mut server, Back::Yes, 800 + notches)?;
+        let now = drawn(&mut nested, &server, &mut labels)?;
+        if now == back {
+            break;
+        }
+        back = now;
+        notches += 1;
+        if notches > AT_MOST_NOTCHES {
+            return Err(format!(
+                "the transcript moved for {AT_MOST_NOTCHES} notches without reaching the oldest \
+                 line it remembers. It should stop, and a terminal at the end of its scrollback \
+                 does not swallow scrolls."
+            )
+            .into());
+        }
+    }
+    if notches == 0 {
+        return Err(
+            "a wheel notch back moved nothing at all, so a thousand remembered lines cannot be \
+             reached. The design's own words: a terminal that remembers and cannot show has \
+             forgotten, as far as a person is concerned."
+                .into(),
+        );
+    }
+
+    let mut forward = 0;
+    let mut here = back;
+    loop {
+        a_notch(&mut server, Back::No, 900 + forward)?;
+        let now = drawn(&mut nested, &server, &mut labels)?;
+        if now == here {
+            break;
+        }
+        here = now;
+        forward += 1;
+        if forward > AT_MOST_NOTCHES {
+            return Err("the transcript moved forward without reaching the newest line".into());
+        }
+    }
+    let back_at_the_newest = here;
+    if back_at_the_newest != at_the_newest {
+        return Err(format!(
+            "scrolling back {notches} notches and forward {forward} did not return the \
+             transcript to where it started, so one end is not where the other thinks it is"
+        )
+        .into());
+    }
+
     // **Walk step 8: a clock, which is none of the five answers.** `sleep 30`
     // waits on a timer rather than on the keyboard, the network, another
     // process or the processor, and the walk's pass is the honest *waiting for
@@ -961,7 +1099,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         }),
     )?;
     let about_a_clock = frame_just_drawn(&nested, "the terminal with a clock waiting")?;
-    if rows_with_ink(&about_a_clock, &without) <= rows_with_ink(&after_clear, &without) {
+    if rows_with_ink(&about_a_clock, &without) <= rows_with_ink(&back_at_the_newest, &without) {
         return Err(
             "asking why a clock is waiting added no row of text, so alo answered nothing where \
              the walk expects it to say plainly that it cannot tell. A command this machine \
