@@ -504,3 +504,62 @@ amendment, and
 reads that contract for the path and both modes rather than comparing one crate's
 constant with another's — two constants agreeing with each other pass while both
 are wrong together.
+
+## Amendment of 2026-10-17 — term 11: the agent can take a bracket and can neither alter nor destroy one
+
+**What this adds.** Nothing is decided here that was not decided before. What is
+added is a **measurement against the subject that matters**, and the one
+sentence it supports:
+
+> The agent, acting as the person, can **create** a bracket and can neither
+> **alter** nor **destroy** one.
+
+That is the whole reason a bracket may be taken by `alo-turn`, which runs as the
+person and holds no capability, while letting one go is a privileged unit's. It
+is the seventh term — *an agent that can forget an undo can erase the evidence
+of what it did* — enforced by the filesystem rather than promised by our own
+code.
+
+**Why it needed measuring again.** The measurements above were taken with
+`capsh --drop=cap_sys_admin`, which is **root with one capability removed**. That
+is a neighbour of the subject: an agent does not run as root with a capability
+dropped, it runs as the person. The two can differ, and on the question that
+matters here — *can the thing that made a snapshot undo its own evidence* — only
+the second is the subject. One line of this ADR already records the creating half
+against a real person (*the person with no `sudo`, exits 0 and produces the
+snapshot*); the altering and destroying halves were recorded only against root.
+
+**What was measured** (2026-10-17, a 1 GiB loop file, `mkfs.btrfs`, mounted and
+`statfs`-confirmed as `btrfs`; a subvolume standing for the person's home, owned
+by them; every step run as the person through `runuser`, never as root):
+
+| asked of the person | answer |
+|---|---|
+| take a read-only snapshot of their own subvolume | `Create a readonly snapshot of …` — **it exists** |
+| read what it holds | `original` — the content at the moment it was taken |
+| write into their own snapshot | **refused**: `cannot create …: Read-only file system` |
+| read it again afterwards | `original` — unchanged |
+| delete their own snapshot | **refused**: `ERROR: Could not destroy subvolume/snapshot: Operation not permitted` |
+| is it still there afterwards | **yes** |
+
+**The asymmetry is the point.** A person — and therefore an agent acting as
+them, at **any** of ADR 0064's three levels, including full trust — can write the
+evidence and cannot touch it afterwards. No capability is granted to achieve
+that, and none is withheld: it is what `btrfs` does with a read-only snapshot
+owned by somebody who is not root.
+
+**What this changes in the code: nothing yet.** Nothing takes a bracket.
+`alo-turn` is still where the terms put it, and this amendment does not build it
+— it records that the thing the design assumed is true of the subject the design
+is about. The first step toward writing it is moving the folder's layout **out of
+`alo-letting-go`**, because that crate owns it, nothing a turn runs inside may
+link it, and `alo-turn` is named in that prohibition — so the crate holding the
+layout is the one crate the bracket-taker cannot reach. That move is in flight at
+the time of writing and is not assumed here.
+
+**And the reason this is written down rather than left in a task report.**
+Because the next person to ask *can a turn really take a bracket without a
+capability* would otherwise re-measure it, or worse, find the `capsh`
+measurements above, read them as settling the question, and ship an agent that
+can delete its own evidence on the strength of a measurement about root.
+
