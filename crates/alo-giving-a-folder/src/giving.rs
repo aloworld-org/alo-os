@@ -22,7 +22,7 @@
 
 use std::{
     fs, io,
-    os::unix::fs::{DirBuilderExt as _, PermissionsExt as _},
+    os::unix::fs::{DirBuilderExt as _, MetadataExt as _, PermissionsExt as _},
     path::{Path, PathBuf},
 };
 
@@ -47,6 +47,26 @@ pub const THE_FOLDERS_MODE: u32 = 0o711;
 
 /// The mode one person's directory gets: theirs and nobody else's.
 pub const A_PERSONS_MODE: u32 = 0o700;
+
+/// Whether the directory has to be taken back before its mode can be set.
+///
+/// **Setting a mode needs ownership**, or `CAP_FOWNER`, which this unit
+/// deliberately does not hold. So a directory this program has already given to
+/// somebody has to be taken back first — which `CAP_CHOWN` permits — and a
+/// directory this program still owns does not.
+///
+/// A function rather than the condition written at the call site, because it is
+/// the whole of the decision and it is arithmetic on two numbers: it can
+/// therefore be held to every case in the gate, on a host where nobody is root
+/// and the road it guards never runs.
+///
+/// It is also what keeps the capability unexercised when it is not needed. The
+/// first call for a person creates the directory and owns it, so nothing is
+/// taken back; only a repeat call reaches the `chown`.
+#[must_use]
+const fn taken_back_first(whose: u32, us: u32) -> bool {
+    whose != us
+}
 
 /// Something that should exist, with the mode and owner it should have.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -90,14 +110,22 @@ pub fn what_to_make(under: &Path, person: u32) -> [ToMake; 2] {
 ///
 /// # Making one that is already there is not a failure
 ///
-/// A person signs in more than once, and ADR 0118 adds a second road that may
-/// ask for the same person twice. What this does on a second call is put the
-/// **mode and the owner back**, so a folder somebody widened by hand is
-/// narrowed again rather than staying wide for ever.
+/// A person signs in more than once, and whatever starts this will start it
+/// again. What it does on a second call is put the **mode and the owner back**,
+/// so a folder somebody widened by hand is narrowed again rather than staying
+/// wide for ever.
 ///
-/// **That is what makes two callers safe**, which ADR 0119 relies on: the first
-/// account's road and the later route both start this, and neither has to know
-/// whether the other already did.
+/// **That is what lets a caller ask every time** rather than having to remember
+/// whether it already has — which is what a sign-in road needs, since the
+/// alternative is a privileged component keeping a list of who has a folder.
+///
+/// *The second call failed with `EPERM` until 2026-10-17*, and the test that
+/// catches it is `a_second_call_puts_a_widened_mode_back`. Setting the mode on a
+/// directory this program has already given away needs `CAP_FOWNER`, which the
+/// unit does not hold; the fix is to take it back first, which `CAP_CHOWN`
+/// permits. The property was documented before it was true — in this comment,
+/// in ADR 0120 and in the unit — which is why the test is named after the second
+/// call rather than after the mode.
 ///
 /// # Errors
 /// [`NotMade`], which is always the machine being unable rather than a rule
@@ -119,11 +147,45 @@ pub fn made_for(under: &Path, person: u32) -> Result<PathBuf, NotMade> {
                 why,
             })?;
 
-        // **Set after creating, not only in the builder.** A `DirBuilder`'s
-        // `mode` is masked by the process `umask` and is **ignored entirely for
-        // a directory that already exists** — and the second case is every call
-        // after the first. Without this, a folder somebody widened by hand would
-        // stay wide for ever.
+        // **Taken back before the mode is set, and given away after.**
+        //
+        // A `DirBuilder`'s `mode` is masked by the process `umask` and is
+        // **ignored entirely for a directory that already exists**, so the mode
+        // has to be set explicitly — and the second call for a person is a
+        // directory that already exists *and is already theirs*. `chmod` on a
+        // file you do not own needs `CAP_FOWNER`, which this unit deliberately
+        // does not hold, so the second call was refused with `EPERM` until this
+        // took the directory back first.
+        //
+        // `CAP_CHOWN` permits giving a file to anybody, including back to
+        // oneself, so all three steps are inside the one capability
+        // [ADR 0119](../../../docs/decisions/0119-the-capability-to-give-a-directory-away-goes-to-the-smallest-thing-that-can-hold-it.md)
+        // grants. Measured: a `0777` directory owned by the person was narrowed
+        // to `0700` and returned, holding `cap_chown` with `cap_fowner`,
+        // `cap_dac_override` and `cap_dac_read_search` dropped — and with
+        // `cap_chown` dropped as well the first step is refused and the
+        // directory stays as it was.
+        //
+        // The window in which the folder is root's is why the order is this way
+        // round rather than mode-then-owner: for those three syscalls the
+        // person cannot reach their own directory, which is strictly safer than
+        // the alternative window, in which it is theirs and still wide.
+        if what.owner.is_some() {
+            let whose = fs::metadata(&what.at)
+                .map_err(|why| NotMade::TheFolder {
+                    at: what.at.clone(),
+                    why,
+                })?
+                .uid();
+            let us = rustix::process::geteuid().as_raw();
+            if taken_back_first(whose, us) {
+                given_to(&what.at, us).map_err(|why| NotMade::NotTheirs {
+                    at: what.at.clone(),
+                    why,
+                })?;
+            }
+        }
+
         fs::set_permissions(&what.at, fs::Permissions::from_mode(what.mode)).map_err(|why| {
             NotMade::TheFolder {
                 at: what.at.clone(),

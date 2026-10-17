@@ -118,12 +118,14 @@ which holds `CAP_CHOWN` and no other capability
 ([ADR 0119](../decisions/0119-the-capability-to-give-a-directory-away-goes-to-the-smallest-thing-that-can-hold-it.md)).
 The unit asks systemd for the directory with `StateDirectory=alo-undo` at mode
 `0711`, and the program puts the mode and the owner back on every call, so a
-second call for the same person repairs rather than refuses. **Nothing starts
-that unit yet**: the two callers
-[ADR 0118](../decisions/0118-more-than-one-person-on-a-machine.md) names — the
-first account's road and the later route for a person who is not the first — are
-not built, so on a machine today the folder is still absent at runtime even
-though the thing that makes it exists.
+second call for the same person repairs rather than refuses — it takes the
+directory back, sets the mode and gives it away again, because setting a mode
+needs ownership and the unit holds no `CAP_FOWNER`. **Nothing starts that unit
+yet**, so on a machine today the folder is still absent at runtime even though
+the thing that makes it exists. The road that will start it must be one every
+person reaches rather than only a person being created — `alo-greeting`'s
+`made_an_account` refuses when any account already exists — and that is the next
+record rather than this one.
 
 **Nothing takes a bracket** — `alo-turn` is where ADR 0045 puts it and names no
 snapshot, unchanged since 2026-10-16. So the sections below about what a bracket

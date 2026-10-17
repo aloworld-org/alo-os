@@ -134,16 +134,34 @@ already owned — right about the capability, taken about the wrong subject.
   `StateDirectoryMode=0711`, not `ReadWritePaths=`. A `ReadWritePaths=` on a path
   that does not exist is not a loose end — it is `226/NAMESPACE` and a unit that
   never runs, which is the first failure above.
-- **The program still puts the mode and the owner back on every call**, which is
-  what lets ADR 0118's second road and the first-account road both ask for the
-  same person. `StateDirectory=` sets the mode when the directory is created; the
-  program sets it again, so a folder somebody widened by hand is narrowed.
+- **The program puts the mode and the owner back on every call, and that was
+  false when this was written.** `StateDirectory=` sets the mode when the
+  directory is created and the program sets it again, so a folder somebody
+  widened by hand is narrowed. **The second call failed with `EPERM`** until it
+  was fixed on the same day: setting a mode needs ownership or `CAP_FOWNER`,
+  this unit holds only `CAP_CHOWN`, and by the second call the directory belongs
+  to the person. It now takes the directory back, sets the mode and gives it
+  away again — all three inside `CAP_CHOWN`, measured, with `cap_fowner`,
+  `cap_dac_override` and `cap_dac_read_search` dropped.
+  *This paragraph claimed the property before anybody had called the unit twice,
+  and the test that existed widened the folder above the person's directory —
+  the one with no owner, which is never given away and so can always be
+  `chmod`'d. The right measurement of the wrong subject, for the third time in
+  one day.*
 - **A refused `chown` leaves a directory nobody has been given.** The control
   above left `/var/lib/alo-undo/1002` as `root:root`: the program made it and
   then could not give it away. It reports the failure and the next call repairs
   it. This is written down rather than fixed by removing the directory, because a
   half-made directory a person cannot write is visible and inert, and a remover
   running on a failure path is a second thing that can go wrong.
+- **There is one caller, not two, and this document said two.** ADR 0118 names
+  the first account's road and a later route for a person who is not the first,
+  but `alo-greeting`'s `made_an_account` refuses outright when any account
+  exists, so the later route **is not written**. Pointed out by the desktop
+  lane, which owns ADR 0118. **So the caller is still an open question**, and a
+  road reached only by account creation would never reach a person whose account
+  already exists — which is every person on every machine that has been switched
+  on once. The next record is where that is settled.
 - **The path is a published surface and this moves it.** It is named by ADR 0045,
   ADR 0088, ADR 0118, `docs/contracts/kept-undo-folder.md` and six crates, and
   all of them move in the change that carries this decision — 21 references in

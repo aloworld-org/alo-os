@@ -199,3 +199,84 @@ fn an_account_number_that_is_not_a_number_is_said() {
     assert!(said.contains("ada"), "{said}");
     assert!(said.contains("nobody to give a folder to"), "{said}");
 }
+
+/// **A second call narrows the *person's own* directory, not only the folder
+/// above it.**
+///
+/// `signing_in_again_narrows_a_folder_somebody_widened` widens `under`, which is
+/// the folder with **no owner** — this program never gives that one away, so
+/// `chmod` on it always works and that test could never have caught what this
+/// one is about. This widens `under/<person>`, the directory that *is* given
+/// away.
+///
+/// # What this caught
+///
+/// On a machine, the second call failed with `EPERM`: setting a mode needs
+/// ownership or `CAP_FOWNER`, the unit holds only `CAP_CHOWN`, and the directory
+/// belonged to the person by then. Measured in the journal of
+/// `alo-giving-a-folder@1000.service` on 2026-10-17, on the second start. The
+/// property *puts the mode and the owner back on every call* was written in this
+/// crate's documentation, in ADR 0120 and in the unit **before it was true**.
+///
+/// # Why this test passes where the machine failed
+///
+/// Because a gate runs as somebody who is not root, so the person this makes a
+/// directory for is the account running the test — and
+/// [`super::taken_back_first`] answers false, so the `chown` never happens. That
+/// is honest rather than convenient: it is the first-call road, and it is the
+/// road a developer's machine has. **The repeat road with a different owner can
+/// only be exercised as root**, which is why
+/// `the_decision_to_take_it_back_covers_both_owners` holds the decision itself
+/// to every case, and why the machine measurement is written down in this
+/// change's task report rather than claimed as a test.
+#[test]
+fn a_second_call_puts_a_widened_mode_back() {
+    let under = a_folder("theirs-again");
+    let me = whoever_is_running_this();
+    let theirs = made_for(&under, me).unwrap();
+
+    fs::set_permissions(&theirs, fs::Permissions::from_mode(0o777)).unwrap();
+    assert_eq!(
+        fs::metadata(&theirs).unwrap().permissions().mode() & 0o777,
+        0o777,
+        "the test did not manage to widen the person's own directory"
+    );
+
+    let again = made_for(&under, me).unwrap();
+    assert_eq!(
+        again, theirs,
+        "a second call answered with a different directory"
+    );
+    assert_eq!(
+        fs::metadata(&theirs).unwrap().permissions().mode() & 0o777,
+        A_PERSONS_MODE,
+        "a second call left the person's own directory wider than the decision allows"
+    );
+
+    drop(fs::remove_dir_all(&under));
+}
+
+/// **The decision to take a directory back covers both owners, and is not
+/// always true.**
+///
+/// [`super::taken_back_first`] is the whole of what decides whether the
+/// capability is used at all, and it is two numbers. A version that answered
+/// *always* would work on a machine and refuse in every gate — a non-root
+/// process cannot give a file to root — and a version that answered *never*
+/// would be the `EPERM` this fixed. So both answers are asserted rather than
+/// only the interesting one.
+#[test]
+fn the_decision_to_take_it_back_covers_both_owners() {
+    assert!(
+        super::taken_back_first(1000, 0),
+        "root finding a directory owned by the person must take it back"
+    );
+    assert!(
+        !super::taken_back_first(501, 501),
+        "a process that already owns the directory must not spend the capability"
+    );
+    assert!(
+        super::taken_back_first(0, 1000),
+        "the question is whether they differ, not which is root"
+    );
+}

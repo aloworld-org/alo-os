@@ -188,15 +188,58 @@ was, which is `root`. ADR 0045 term 8 and the contract both said
 
 ## What is still owed, and by whom
 
-- **Nothing starts the unit.** The two callers ADR 0118 names — the first
-  account's road and the later route for a person who is not the first — are not
-  built. Until one exists, the folder is still absent at runtime on a real
-  machine even though the thing that makes it now ships. **This is the next
-  task**, and it is in `alo-accounts`/`alo-sessiond` territory rather than here.
+- **Nothing starts the unit.** This is the next task. *An earlier draft said ADR
+  0118 names two callers and both are unbuilt; the desktop lane, which owns that
+  ADR, pointed out that only one is even possible — `alo-greeting`'s
+  `made_an_account` refuses outright when any account exists, so the later route
+  is unwritten.* Which matters more than the count: **a road reached only by
+  account creation would never reach a person whose account already exists**,
+  which is every person on every machine that has been switched on once. The
+  caller has to be a road everybody takes.
 - **Nothing takes a bracket.** `alo-turn`'s, unchanged, and ADR 0045 still puts
   it there.
 - **`alo-letting-go`'s four units are still unshipped**, reported 2026-10-16.
   They must not ship later than the bracket-taking.
+
+## What was found after the first gate passed, and fixed here
+
+**The second call failed with `EPERM`.** Measured by installing the unit and
+starting it twice:
+
+```
+alo-giving-a-folder: /var/lib/alo-undo/1000 could not be made, so nothing of
+  this person's files can be kept for an undo: Operation not permitted (os error 1)
+```
+
+Setting a mode needs **ownership or `CAP_FOWNER`**, the unit holds only
+`CAP_CHOWN`, and by the second call the directory belongs to the person. So
+*puts the mode and the owner back on every call* — written in this crate's
+rustdoc, in ADR 0119, in ADR 0120 and in the unit's own comment — **was false on
+the day it was written**.
+
+The fix keeps one capability: take the directory back, set the mode, give it
+away again. `CAP_CHOWN` permits giving a file to anybody including oneself.
+Measured in isolation with `cap_fowner`, `cap_dac_override` and
+`cap_dac_read_search` dropped — a `0777` directory owned by the person was
+narrowed to `0700` and returned — and the control with `cap_chown` **also**
+dropped was refused at the first step and left the directory as it was. Then
+through the real unit: first, second and third starts all `Result=success`, a
+hand-widened `0777` back to `0700 alo`, `CapabilityBoundingSet=cap_chown`.
+
+**Why no test caught it, which is the part worth keeping.** There was a test
+called `signing_in_again_narrows_a_folder_somebody_widened`, and it passed. It
+widens `under` — the folder **above** the person's directory, the one with no
+owner, which this program never gives away and can therefore always `chmod`. The
+directory that broke is the one *with* an owner. The right measurement of the
+wrong subject, for the third time in this one change.
+
+What now runs forever: `a_second_call_puts_a_widened_mode_back`, which widens
+the person's own directory; and `the_decision_to_take_it_back_covers_both_owners`,
+which holds the two-number decision to both answers — because *always take it
+back* would work on a machine and fail in every gate, since a non-root process
+cannot give a file to root, and *never* is the bug that was just fixed. **The
+repeat road with a different owner can only run as root**, so that half is the
+hand measurement above and is not claimed as a test.
 
 ## The gate
 

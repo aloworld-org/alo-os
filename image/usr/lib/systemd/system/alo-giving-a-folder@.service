@@ -51,9 +51,16 @@ NoNewPrivileges=yes
 # and a second person could not reach their own directory inside it. ADR 0120 is
 # the decision, with what was measured.
 #
-# The mode is declared here as well as in the program. The program puts it back on
-# every call, which is how a folder somebody widened by hand is narrowed again;
-# this is what the folder is created with before the program has run at all.
+# The mode is declared here as well as in the program. This is what the folder is
+# created with before the program has run at all; the program sets it again on
+# every call, which is how a folder somebody widened by hand is narrowed.
+#
+# **That second part needs the program to take the directory back first**, and
+# it did not until 2026-10-17: `chmod` on a file you do not own needs
+# `CAP_FOWNER`, which is not on the list above and is not going to be, so the
+# second call for a person was refused with `EPERM`. Taking it back is a `chown`,
+# which `CAP_CHOWN` already permits — so the repair works and the list above is
+# still one line long.
 ProtectSystem=strict
 ProtectHome=yes
 StateDirectory=alo-undo

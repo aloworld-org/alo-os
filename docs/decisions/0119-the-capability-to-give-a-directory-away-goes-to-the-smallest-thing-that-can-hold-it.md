@@ -157,7 +157,18 @@ So the helper is started from **both** roads and widens neither:
 1. the first account, from `makes_an_account`;
 2. a person added later, from whatever ADR 0118's route becomes.
 
-**It is idempotent, and that is what makes two callers safe.** Making a
+*Two corrections to what follows, both dated 2026-10-17 and both from building
+it: there is **one** caller rather than two — `made_an_account` refuses when any
+account exists, so ADR 0118's later route is unwritten and which road calls this
+is still open. And the idempotence below
+**was not true when it was written**: the second call failed with `EPERM`,
+because setting a mode needs ownership or `CAP_FOWNER` and this unit holds
+neither by then. It was fixed by taking the directory back first, which
+`CAP_CHOWN` permits, so the sentence is true now and the one capability still
+stands.*
+
+**It is idempotent, and that is what makes a caller that asks every time
+safe.** Making a
 directory that is already there is not a failure; what it does then is put the
 mode and the owner back, so a folder somebody widened by hand is narrowed again
 at the next call. *Measured while building this: a `DirBuilder`'s own `mode` is
