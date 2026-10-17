@@ -66,6 +66,15 @@ const REWORDED: &str = "reworded.txt";
 /// Setting this regenerates [`SNAPSHOT`], refusing any undeclared rewording.
 const UPDATE: &str = "UPDATE_VOCABULARY_SNAPSHOT";
 
+/// What marks a counted sentence's singular in [`SNAPSHOT`].
+///
+/// A `#` cannot appear in a key, so a row's key column is unambiguous: whatever
+/// follows the `#` is the form and never part of the name.
+const ONE_OF_THEM: &str = "#one";
+
+/// What marks a counted sentence's other form in [`SNAPSHOT`].
+const ANY_OTHER_NUMBER: &str = "#other";
+
 /// The question ADR 0068 turns on, printed wherever this fails.
 const THE_QUESTION: &str =
     "Would a correct translation of the OLD English still be a correct translation of the NEW one?";
@@ -92,6 +101,44 @@ fn what_this_machine_says() -> BTreeMap<String, String> {
             "{key} is said twice by one vocabulary"
         );
     }
+    // **And every counted sentence, which was missing until 2026-10-17.**
+    //
+    // This walked `phrases()` only, so *a published sentence changes by getting
+    // a new key* held for no plural anywhere in the workspace — seventeen
+    // crates declare them. The control that showed it rather than argued it:
+    // `finding.not-whole` is a declared plural and appeared **0** times in the
+    // snapshot, while 106 sibling `finding.`/`files.`/`egress.` phrase keys
+    // were in it.
+    //
+    // **Two rows per plural, because a plural is two published sentences.** Its
+    // singular and its plural reword independently, and ADR 0068's question —
+    // *would a correct translation of the old English still be a correct
+    // translation of the new one?* — is asked of a sentence, so it has to be
+    // askable of each form.
+    //
+    // The form is appended after a `#`, which **cannot occur in a key**: a key
+    // is dot-separated parts of `[a-z][a-z0-9-]*`, so `…#one` is unambiguously
+    // a form and never part of a name. A row still begins with the key, so the
+    // reader that skips comment lines starting with `#` is unaffected.
+    for plural in vocabulary.counted() {
+        for (form, suffix) in [
+            (alo_strings::Form::One, ONE_OF_THEM),
+            (alo_strings::Form::Other, ANY_OTHER_NUMBER),
+        ] {
+            let key = format!("{}{suffix}", plural.key().as_str());
+            let english = plural.source(form).as_written().to_owned();
+            assert!(
+                !english.contains('\t') && !english.contains('\n'),
+                "{key} holds a tab or a newline, which this snapshot's \
+                 one-line-per-key shape cannot record"
+            );
+            assert!(
+                said.insert(key.clone(), english).is_none(),
+                "{key} is said twice by one vocabulary"
+            );
+        }
+    }
+
     assert!(
         said.len() > 400,
         "only {} keys were read, which is not this machine's vocabulary",
@@ -299,4 +346,48 @@ fn write_the_snapshot(live: &BTreeMap<String, String>) {
     fs::write(&at, text)
         .unwrap_or_else(|why| panic!("{} could not be written: {why}", at.display()));
     println!("wrote {} with {} keys", at.display(), live.len());
+}
+
+/// **Every counted sentence is in the snapshot, in both of its forms.**
+///
+/// The guard on the guard, and it reads the **file** rather than the map built
+/// above. That is the whole point: deleting the `counted()` loop from
+/// [`what_this_machine_says`] and regenerating would make
+/// [`the_snapshot_is_what_this_machine_says`] pass again, with every plural
+/// quietly back outside ADR 0068. This test fails in that case, because the
+/// rows would be gone from the file while the vocabulary still declares them.
+///
+/// **It exists because of how this gap was found.** The snapshot's refusal
+/// message is unusually good — it names every added and retired key, says
+/// neither needs a declaration and why, and gives the exact command to run. A
+/// refusal that good is one a reader stops auditing, so nobody asked what it
+/// walked. *The quality of the check was the camouflage*, which is a worse
+/// shape than a weak check: a weak check invites a second look.
+#[test]
+fn every_counted_sentence_is_in_the_snapshot() {
+    let vocabulary = alo_saying::everything_this_machine_can_say().expect("alo OS's own words");
+    let declared = as_last_declared();
+
+    let mut checked = 0_usize;
+    for plural in vocabulary.counted() {
+        for suffix in [ONE_OF_THEM, ANY_OTHER_NUMBER] {
+            let key = format!("{}{suffix}", plural.key().as_str());
+            assert!(
+                declared.contains_key(&key),
+                "{key} is declared by this machine and is not in {SNAPSHOT}, so ADR 0068 does not \
+                 reach it. Regenerate with `{UPDATE}=1 cargo test -p alo-saying --test \
+                 a_published_sentence_keeps_its_key`."
+            );
+            checked = checked.saturating_add(1);
+        }
+    }
+
+    // The control. An empty walk would pass every assertion above while
+    // checking nothing — which is exactly the fault this test is about, and it
+    // would be unforgivable here. Nineteen plurals were declared when this was
+    // written, in ten crates.
+    assert!(
+        checked >= 30,
+        "only {checked} counted rows were checked, so this test did not reach what it is about"
+    );
 }
