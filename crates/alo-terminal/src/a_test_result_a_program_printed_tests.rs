@@ -241,3 +241,58 @@ fn the_counts_are_read_by_name_rather_than_by_position() {
     assert_eq!(found.it_said_failed(), 1);
     assert_eq!(found.it_said_ignored(), 3);
 }
+
+/// **The same summary twice is summed twice**, which is the honest reading of a
+/// screen and is asserted so it is deliberate rather than noticed later.
+///
+/// A real workspace run prints one summary per test binary and two suites may
+/// print identical lines — `44 passed; 0 failed; 0 ignored` twice is two
+/// suites, not one printed twice. So refusing duplicates would break the case
+/// this exists for, and telling a typed line from a printed one means reading
+/// the bytes to decide who spoke, which ADR 0113 forbids.
+#[test]
+fn the_same_summary_twice_is_two_suites() {
+    let twice =
+        a_test_result_in(&lines(&[A_REAL_FAILING_ONE, A_REAL_FAILING_ONE])).expect("a test result");
+    assert_eq!(twice.it_said_passed(), 46);
+    assert_eq!(twice.it_said_failed(), 2);
+    assert_eq!(twice.across_this_many_suites(), 2);
+}
+
+/// **A shell's echo of a command carrying a summary is counted too**, where the
+/// echoed line parses — and the quoting decides whether it does.
+///
+/// Measured rather than reasoned about, because the answer surprised me: the
+/// quoted form reads correctly **by luck**, since the echoed line's last token
+/// is `ignored;'` and not `ignored`, so it fails the all-three test. The
+/// unquoted form has nothing to save it and doubles.
+///
+/// This is here so nobody builds a demonstration on the quoted form believing
+/// it is designed behaviour, which is exactly what I was about to do when
+/// writing a walk for a booted machine.
+#[test]
+fn an_echoed_command_counts_where_it_parses() {
+    let quoted = a_test_result_in(&lines(&[
+        "$ echo 'test result: ok. 23 passed; 1 failed; 0 ignored;'",
+        "test result: ok. 23 passed; 1 failed; 0 ignored;",
+    ]))
+    .expect("a test result");
+    assert_eq!(
+        quoted.across_this_many_suites(),
+        1,
+        "the quoted echo was counted, which this test says it is not — and only because of \
+         where the quote falls"
+    );
+
+    let unquoted = a_test_result_in(&lines(&[
+        "$ echo test result: ok. 23 passed 1 failed 0 ignored",
+        "test result: ok. 23 passed 1 failed 0 ignored",
+    ]))
+    .expect("a test result");
+    assert_eq!(
+        unquoted.across_this_many_suites(),
+        2,
+        "the unquoted echo was not counted, so the quoting no longer decides this and the \
+         module's header is out of date"
+    );
+}

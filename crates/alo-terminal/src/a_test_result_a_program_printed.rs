@@ -79,6 +79,38 @@
 //!   labelled `program`.
 //! - **the summary cannot be forged either**, for the same reason: it is built
 //!   from numbers that were parsed, never from a line that was matched.
+//!
+//! # What it sums is the screen, which is a limit rather than a bug
+//!
+//! Every `test result:` line on the screen contributes. For a real run that is
+//! right — `cargo` prints one per test binary, so a workspace run is one result
+//! across many suites, which is what [`ATestResult::across_this_many_suites`]
+//! says. **But a screen holding the same summary twice is summed twice**, and
+//! there are two ways that happens. Measured 2026-10-17:
+//!
+//! | what is on the screen | what this answers |
+//! |---|---|
+//! | a shell's echo of `echo 'test result: ok. 23 passed; 1 failed; 0 ignored;'`, then its output | 23 passed, **1 suite** |
+//! | the same typed without quotes, so the echoed line's last token is bare | 46 passed, **2 suites** |
+//! | a program printing its own summary twice | 46 passed, **2 suites** |
+//!
+//! **The first reads correctly by luck and not by design**, and nothing should
+//! be read into it: the quote leaves the echoed line's last token as
+//! `ignored;'`, which is not `ignored`, so that line fails the all-three test
+//! and is refused. Arrange a walk around it and it will mislead somebody.
+//!
+//! **It cannot be fixed by parsing harder, and it must not be.** Telling a line
+//! the person typed from a line a program printed means deciding who spoke from
+//! the bytes, which is what ADR 0113 forbids and what
+//! `tests/nothing_reads_the_bytes_to_decide_who_spoke.rs` guards. And refusing
+//! duplicate summaries would break the real case: two different suites
+//! legitimately print identical lines, so `44 passed; 0 failed; 0 ignored`
+//! twice is two suites rather than one printed twice.
+//!
+//! So the honest statement is the one the design already draws underneath —
+//! ***Not independently verified***. That sentence is for this among other
+//! things, and it is why [`ATestResult::and_nobody_checked`] takes no argument
+//! and no shape of the type is without it.
 
 use crate::words;
 
