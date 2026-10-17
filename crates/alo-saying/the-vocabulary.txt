@@ -249,6 +249,8 @@ capability.argument.not-on-the-list	{argument} has to be one of: {options}
 capability.argument.not-one-name	{argument} is one name, not a path — give the name on its own, without folders in it
 capability.argument.not-printable	{argument} contains a character that cannot be shown — retype it in ordinary text
 capability.argument.out-of-range	give {argument} as a number between {least} and {most}
+capability.argument.too-long#one	{argument} is longer than one character — shorten it
+capability.argument.too-long#other	{argument} is longer than {longest} characters — shorten it
 capability.argument.wanted-number	give {argument} as a number, not as text
 capability.argument.wanted-text	give {argument} as text, not as a number
 capability.call.missing	{verb} needs {argument} — {purpose}
@@ -437,6 +439,8 @@ context.document.not-a-full-path	{document} is not a full path — offer the who
 context.document.nothing-named	there is no document to offer — offer the file that is open, or offer nothing
 context.document.the-whole-machine	{document} is the whole machine rather than a document — offer the file that is open, because what is offered at invocation becomes a grant over exactly that file
 context.nothing-offered	nothing from your screen was offered with this question
+context.selection-shortened#one	{characters} character of what you selected was left out — only the first part of it was offered
+context.selection-shortened#other	{characters} characters of what you selected were left out — only the first part of it was offered
 context.the-document	the document you have open: {document}
 context.the-selection	the text you had selected
 context.the-window	the window in front of you: {window}
@@ -691,6 +695,8 @@ files.failed.not-a-folder	{path} is not a folder — read it if it is a file, or
 files.failed.not-a-zip-name	call the archive something ending in .zip — alo OS makes zip archives, and a name saying otherwise would be a file whose name lies about what is in it
 files.failed.not-text	{path} is not text — this verb answers with what a person could read, and reading this one needs an application that knows what it is
 files.failed.the-machine-said-no	{path} could not be {doing} ({why}) — nothing else was attempted
+files.failed.too-big#one	{path} holds one byte and a verb reads at most {most} — open it in an application, or ask for part of the folder instead
+files.failed.too-big#other	{path} holds {bytes} bytes and a verb reads at most {most} — open it in an application, or ask for part of the folder instead
 files.failed.too-many	{folder} holds more than {most} things — archive one of the folders inside it instead, so that what is in the archive is something a person can still recognise
 files.failed.too-much	{folder} holds more than {most} bytes and one archive holds at most that — archive one of the folders inside it instead
 files.real.nothing	there is nothing at {path} — a verb reaches what is there, so name something that exists
@@ -753,11 +759,21 @@ finding.not-removed	The index at {at} could not be removed: {why}
 finding.not-searched.elsewhere	{below} is on another disk, so nothing in it was searched.
 finding.not-searched.file-unread	{below} could not be read, so it was not searched: {why}
 finding.not-searched.folder-unread	{below} could not be read, so nothing in it was searched: {why}
+finding.not-searched.no-reader#one	One file is of a kind whose words cannot be read, so it was not searched by its words.
+finding.not-searched.no-reader#other	{files} files are of kinds whose words cannot be read, so they were not searched by their words.
+finding.not-searched.not-all-kept#one	One file holds more different words than an index keeps, so not all of its words were searched.
+finding.not-searched.not-all-kept#other	{files} files hold more different words than an index keeps, so not all of their words were searched.
 finding.not-searched.not-entered	The index stopped before it had finished {below}, so not all of it was searched.
 finding.not-searched.outside	Nothing outside {folder} was searched.
+finding.not-searched.too-big#one	One file is larger than an index reads, so it was not searched by its words.
+finding.not-searched.too-big#other	{files} files are larger than an index reads, so they were not searched by their words.
 finding.not-the-same-folder	The index at hand is of {indexed}, not of {asked}.
 finding.not-walked	{at} could not be indexed. {why}
+finding.not-whole#one	A folder under it holds more than one thing at a single level, so the index is not the whole of the folder.
+finding.not-whole#other	A folder under it holds more than {most} things at a single level, so the index is not the whole of the folder.
 finding.nowhere-to-keep-it	There is no home directory to keep an index in.
+finding.unnamed#one	One thing whose name cannot be shown is not indexed.
+finding.unnamed#other	{unnamed} things whose names cannot be shown are not indexed.
 finding.verb.missing	{verb} was performed without {argument}, which it declares — this is a verb to write again, not a call to make again
 finding.verb.not-this-crates	nothing in the index does {verb} — it searches, and anything else is somewhere else's to do
 finding.verb.search-files.argument.folder	the folder whose index to search
@@ -795,6 +811,8 @@ in-use.the-agent	{agent}, the agent on this machine
 in-use.the-camera	The camera is in use by {who}
 in-use.the-microphone	The microphone is in use by {who}
 in-use.the-screen	The screen is in use by {who}
+indicator.how-many-are-leaving#one	One thing is leaving this machine right now
+indicator.how-many-are-leaving#other	{how_many} things are leaving this machine right now
 indicator.no-compositor	What is leaving this machine cannot be shown: the desktop is not running. Sign in to the desktop, and the indicator appears with it
 indicator.nothing-is-leaving	Nothing is leaving this machine right now
 indicator.nothing-to-show-on	What is leaving this machine cannot be shown: no screen is connected. Connect a screen, and the indicator appears on it
@@ -1021,6 +1039,8 @@ keeping.damage.unreadable	part of what was written here cannot be read, so this 
 keeping.damaged	nothing was removed from the record at {path}, because part of it cannot be read — a record with something wrong in it is looked at before it is shortened, not tidied up
 keeping.disagreement.before-it-begins	this record is not what it says it is — something in it happened before the moment it says it starts at, and a shortening never leaves anything from before where it cut
 keeping.disagreement.runs-backwards	this record is not what it says it is — what is written in it does not run in the order it happened, and this machine only ever writes down what happened next
+keeping.for-days#one	what this machine's agent has done is kept for one day, and then removed
+keeping.for-days#other	what this machine's agent has done is kept for {days} days, and then removed
 keeping.forever	everything this machine's agent has done is kept
 keeping.from-a-newer-alo	the record at {path} was written by a newer alo OS than this one, so nothing has been written to it — adding to a record in a shape this version does not know would leave one neither version can read
 keeping.no-days-at-all	say how many days this record is kept for, or that it is kept for good — no days at all is a machine that keeps no evidence of what its agent did
@@ -1083,9 +1103,15 @@ looking.nothing-came-back	The place this machine's updates come from did not ans
 looking.nothing-is-offered	The place this machine's updates come from is offering no version of this system, so nothing on this machine has changed
 measuring.filling.another-filesystem	On another filesystem, so what is inside it is not counted here.
 measuring.filling.counted-elsewhere	Counted under another of its names, {at}.
+measuring.filling.cut-short#one	A folder under it holds more than one thing at a single level, so these sizes are not the whole of it.
+measuring.filling.cut-short#other	A folder under it holds more than {most} things at a single level, so these sizes are not the whole of it.
 measuring.filling.not-counted	What is filling {at} could not be counted. {why}
 measuring.filling.not-finished	The count stopped before everything inside it was seen.
 measuring.filling.not-read	Could not be read, so nothing inside it is counted.
+measuring.filling.unnamed#one	One thing whose name cannot be shown is not counted.
+measuring.filling.unnamed#other	{unnamed} things whose names cannot be shown are not counted.
+measuring.network.shared#one	Network traffic counted together with one other process.
+measuring.network.shared#other	Network traffic counted together with {others} other processes.
 measuring.network.this-process-alone	Network traffic counted for this process alone.
 measuring.no-interval	Two readings need time between them.
 measuring.not-on-this-host	What is running can only be read on alo OS itself.
@@ -1289,7 +1315,11 @@ overlay.answers.something	{model} answers, {where}
 overlay.at-rest.nothing-chosen	Nothing has been chosen to answer questions yet. Choose a model to run on this machine, or add a provider to send questions to, and the agent can start
 overlay.at-rest.nothing-granted	The agent can reach nothing on this machine yet. Grant it a folder, and it can work with what is in that folder and with nothing else
 overlay.at-rest.ready	Ask the agent anything
+overlay.egress.how-many-are-leaving#one	one thing is leaving this machine right now
+overlay.egress.how-many-are-leaving#other	{how_many} things are leaving this machine right now
 overlay.egress.nothing-is-leaving	nothing is leaving this machine
+overlay.granted.how-many#one	one thing is granted
+overlay.granted.how-many#other	{how_many} things are granted
 overlay.granted.nothing	nothing is granted
 overlay.summon.no-compositor	The agent has nowhere to appear: the desktop is not running. Sign in to the desktop and press the key again
 overlay.summon.nothing-to-show-on	The agent has nowhere to appear: no screen is connected. Connect a screen and press the key again
@@ -1333,6 +1363,8 @@ portals.portal.trash	Lets an application move a file you have granted it to the 
 portals.portal.wallpaper	Lets an application set the desktop background
 portals.read-back.asked-by	Asked by {application}
 portals.read-back.file-not-read	The file could not be read, so nothing was opened
+portals.read-back.lines-not-read#one	One line of what applications were answered could not be read, and is kept as it was
+portals.read-back.lines-not-read#other	{lines} lines of what applications were answered could not be read, and are kept as they were
 portals.read-back.nobody-named	an application that could not be named
 portals.read-back.not-a-kind-anything-opens	The file was not a kind anything opens — a program, empty, damaged, protected with a password or not recognised — so nothing was opened
 portals.read-back.shortened	What applications on this machine were answered does not go all the way back — older answers were removed under how long this machine keeps its record
@@ -1637,8 +1669,14 @@ terminal.explained.destructive	it destroys something
 terminal.explained.elevated	it needs more than your own rights
 terminal.explained.leaves	something leaves this machine
 terminal.explained.not-a-guarantee	an explanation, not a guarantee
+terminal.result.failed#one	{failed} test failed
+terminal.result.failed#other	{failed} tests failed
 terminal.result.from-cargo-test	cargo test output
+terminal.result.ignored#one	{ignored} test ignored
+terminal.result.ignored#other	{ignored} tests ignored
 terminal.result.not-verified	Source: {what} · Not independently verified
+terminal.result.passed#one	{passed} test passed
+terminal.result.passed#other	{passed} tests passed
 terminal.result.tests	Tests
 terminal.waiting.another-process	waiting for another program, or for a lock
 terminal.waiting.computing	still computing
