@@ -169,6 +169,32 @@ fn key(server: &mut Server, code: u32, at: u32) -> Result<(), Box<dyn std::error
     Ok(())
 }
 
+/// How many rows of the screen hold something the bare desktop does not.
+///
+/// A row is a band of pixels: a line of text lights several of them, so this
+/// counts bands that hold any difference and not pixels. What it is for is
+/// telling *two more lines appeared* from *more ink appeared*, which a pixel
+/// count cannot do.
+fn rows_with_ink(frame: &[u8], bare: &[u8]) -> usize {
+    let (frame, _) = frame.as_chunks::<4>();
+    let (bare, _) = bare.as_chunks::<4>();
+    let wide = HOW_BIG.0 as usize;
+    let mut rows = 0;
+    let mut lit = false;
+    for y in 0..HOW_BIG.1 as usize {
+        let any = (0..wide).any(|x| {
+            frame
+                .get(y * wide + x)
+                .is_some_and(|here| bare.get(y * wide + x).is_some_and(|there| here != there))
+        });
+        if any && !lit {
+            rows += 1;
+        }
+        lit = any;
+    }
+    rows
+}
+
 /// How many pixels of a frame differ from the bare desktop — the terminal's own
 /// ink, however little of the screen it covers.
 fn painted_ink(frame: &[u8], bare: &[u8]) -> usize {
@@ -198,6 +224,69 @@ const THE_W_KEY: u32 = 17;
 /// waiting answer saying the command is not waiting at all, which the check
 /// below reports rather than passing.
 const LONG_ENOUGH_TO_START: std::time::Duration = std::time::Duration::from_millis(600);
+
+/// `D`, which with `Ctrl` ends a command reading the keyboard.
+const THE_D_KEY: u32 = 32;
+
+/// `Shift`.
+const LEFT_SHIFT: u32 = 42;
+
+/// The characters this fixture types, and the evdev key and shift for each.
+///
+/// **Only the characters it needs.** A general keyboard map belongs in
+/// `alo-keyboards` and is not what a drawing fixture is for; this is the
+/// smallest table that can type one `echo` of a line the result recogniser
+/// knows, and a character outside it is a compile error rather than a silent
+/// substitution.
+const fn a_key_for(letter: char) -> Option<(u32, bool)> {
+    Some(match letter {
+        'a' => (30, false),
+        'c' => (46, false),
+        'd' => (32, false),
+        'e' => (18, false),
+        'f' => (33, false),
+        'g' => (34, false),
+        'h' => (35, false),
+        'i' => (23, false),
+        'k' => (37, false),
+        'l' => (38, false),
+        'n' => (49, false),
+        'o' => (24, false),
+        'p' => (25, false),
+        'r' => (19, false),
+        's' => (31, false),
+        't' => (20, false),
+        'u' => (22, false),
+        '0' => (11, false),
+        '1' => (2, false),
+        '2' => (3, false),
+        '3' => (4, false),
+        ' ' => (57, false),
+        '.' => (52, false),
+        ';' => (39, false),
+        ':' => (39, true),
+        '\'' => (40, false),
+        _ => return None,
+    })
+}
+
+/// Type a line, a character at a time, with `Shift` held where it is needed.
+fn typing(server: &mut Server, line: &str, from: u32) -> Result<u32, Box<dyn std::error::Error>> {
+    let mut at = from;
+    for letter in line.chars() {
+        let (code, shifted) =
+            a_key_for(letter).ok_or_else(|| format!("this fixture has no key for {letter:?}"))?;
+        if shifted {
+            server.keyboard_key(LEFT_SHIFT, KeyState::Pressed, at)?;
+        }
+        typed(server, code, at + 1)?;
+        if shifted {
+            server.keyboard_key(LEFT_SHIFT, KeyState::Released, at + 3)?;
+        }
+        at += 4;
+    }
+    Ok(at)
+}
 
 /// How long this fixture waits for a shell to say anything.
 ///
@@ -632,13 +721,78 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         .into());
     }
 
+    // **Walk steps 10 and 11: a result the terminal recognises in a stranger's
+    // output.** `cat` is ended first, then one `echo` of the line
+    // `alo_terminal::a_test_result_in` knows how to read. What should appear is
+    // a summary and, under it, the line saying nobody checked it — both in the
+    // **program's** region, which is the design's *PROGRAM includes parsed rich
+    // results*.
+    key(&mut server, LEFT_CONTROL, 80)?;
+    key(&mut server, THE_D_KEY, 81)?;
+    server.keyboard_key(THE_D_KEY, KeyState::Released, 82)?;
+    server.keyboard_key(LEFT_CONTROL, KeyState::Released, 83)?;
+    until_the_shell_is_quiet(&mut server);
+
+    // **Quoted, and the quotes are the point.** Typed bare, bash reads every `;`
+    // as the end of a command: the screen fills with `1: command not found` and
+    // what reaches the recogniser is a truncated line rather than the one the
+    // walk types. Measured on 2026-10-17 by typing it both ways and reading the
+    // screen back.
+    let at = typing(&mut server, "echo 'test result", 100)?;
+    let at = typing(&mut server, ": ok. 23 passed; 1 failed; 0 ignored;'", at)?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    if !until_the_shell_writes(&mut server) {
+        return Err("nothing came back from the shell after the result line".into());
+    }
+    until_the_shell_is_quiet(&mut server);
+
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let recognised = frame_just_drawn(&nested, "the terminal with a recognised result")?;
+
+    // **Rows of text, not pixels of ink.** One `echo` of a quoted line puts two
+    // rows on the screen — the command and its output — and a result the
+    // terminal recognises adds two more: the summary and the line saying nobody
+    // checked it. A pixel count cannot tell four new rows from a shell printing
+    // three errors, and both grow the ink.
+    //
+    // **What is drawn, read back on 2026-10-17**: `Tests · 23 tests passed · 1
+    // test failed` and `Source: cargo test output · Not independently verified`,
+    // beneath the grid where alo's own lines go. Walk steps 10 and 11 are about
+    // those two.
+    let rows_before = rows_with_ink(&answered, &without);
+    let rows_after = rows_with_ink(&recognised, &without);
+    if rows_after < rows_before + 4 {
+        return Err(format!(
+            "the screen gained {} row(s) of text where a recognised result gives four — the \
+             command, its output, the summary and the line under it. Either the shell did not \
+             print the line, or nothing was recognised in what it printed.",
+            rows_after - rows_before
+        )
+        .into());
+    }
+    let _ = said;
+
     // **Written out only when somebody asks**, the way `saving_frames` guards
     // itself: a gate that wrote a file every run would be a gate that fills a
     // disk, and nothing here is the screenshot promise.
     if let Ok(into) = std::env::var("ALO_TERMINAL_CHECK_WRITE") {
         let header = format!("P6\n{} {}\n255\n", HOW_BIG.0, HOW_BIG.1);
         let mut out = header.into_bytes();
-        let (whole, _) = answered.as_chunks::<4>();
+        let (whole, _) = recognised.as_chunks::<4>();
         for pixel in whole {
             out.extend_from_slice(&[pixel[2], pixel[1], pixel[0]]);
         }
