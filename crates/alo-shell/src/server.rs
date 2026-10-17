@@ -294,6 +294,21 @@ pub struct Server {
     /// wrong and silent — the alternative, falling back to some identifier,
     /// would be the invented name again.
     pub(crate) the_settings_entry_is_called: String,
+    /// What the Applications entry is called, in this person's language.
+    ///
+    /// **A second field rather than one, because there are two native entries
+    /// now and one string cannot be both.** Until 2026-10-17
+    /// `Server::what_it_is_called` answered *the Settings label* for any entry
+    /// with no application, which was true while Settings was the only one — and
+    /// the moment the market joined the fresh Dock, the market was **drawn and
+    /// searched under Settings' name**. A test looking for the Polish
+    /// *Ustawienia* found two rows, which is how it was caught.
+    ///
+    /// The same family as every *replaced rule with callers left behind*:
+    /// `app().is_none()` used to mean Settings and does not any more.
+    ///
+    /// **Empty until it is told**, for the field above's reason exactly.
+    pub(crate) the_applications_entry_is_called: String,
     /// The task windows this person has open.
     ///
     /// **Empty until somebody asks for something**, which is the honest state
@@ -525,6 +540,7 @@ impl Server {
             which_area_has_the_keyboard: None,
             which_slot_on_the_bar: None,
             the_settings_entry_is_called: String::new(),
+            the_applications_entry_is_called: String::new(),
             the_tasks: crate::the_tasks_a_person_opened::TheTasks::none_yet(),
             the_composer: crate::the_composer_a_person_types_in::TheComposer::empty(),
             asked_alo: Vec::new(),

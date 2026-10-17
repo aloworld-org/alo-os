@@ -142,6 +142,18 @@ pub fn stand_the_desktop_up(
             )
             .into_text(),
     );
+    // **And the market's, which is the other native entry.** One of these
+    // without the other is a Dock row a search cannot find — and before
+    // 2026-10-17 it was worse than that: the market borrowed this label, so
+    // typing *Settings* matched two rows.
+    server.its_applications_entry_is_called(
+        strings
+            .say(
+                &alo_dock::words::APPLICATIONS_ON_THE_DOCK.key(),
+                &alo_strings::Filling::nothing(),
+            )
+            .into_text(),
+    );
     let mut session = DirectSession::new(display.display.to_owned())?;
     let stood = session.desktop(&mut server, desktop, &mut labels, &strings, &mut next)?;
     Ok(StoodUp {

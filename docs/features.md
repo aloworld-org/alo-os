@@ -123,11 +123,15 @@ Nothing here is a differentiator. All of it is required.
   set here before any of it is built, because `CLAUDE.md` binds building to this
   file.*
 - **What a Dock a person has never touched starts with** — **Files,
-  Browser and Settings, in that order.** Files and Browser are resolved to
-  applications that are **actually installed**; Settings opens the compositor's
-  own Settings surface and **is not an application** — it has no identifier and
-  no bus endpoint, and none is invented for it. **An application that is not
-  there is left out rather than drawn as a button that does nothing.** The
+  Browser, Settings and the application market, in that order.** Files and
+  Browser are resolved to applications that are **actually installed**;
+  Settings and the market each open one of the compositor's own surfaces and
+  **neither is an application** — neither has an identifier or a bus endpoint,
+  and none is invented for either. So both are filled from the role itself and
+  neither can be missing, which is what makes the market the one entry a
+  machine with no network still has: it is the door to getting the rest.
+  **An application that is not there is left out rather than drawn as a button
+  that does nothing.** The
   defaults are written once, and only **after application discovery has
   succeeded** — an unfinished scan and a failed one are not evidence that an
   application is absent. After that the person owns the list: additions,

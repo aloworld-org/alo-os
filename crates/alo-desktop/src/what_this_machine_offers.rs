@@ -134,8 +134,11 @@ fn filled_by(
         let wanted = match role {
             ARole::Files => Role::FileManager,
             ARole::Browser => Role::WebBrowser,
-            // Not an application. See this module's header.
-            ARole::Settings => continue,
+            // **Neither is an application.** See this module's header: a
+            // `(role, AppId)` pair for either would be inventing the identifier
+            // the owner's ruling forbids, and `alo_dock::pinning` fills both
+            // from the role itself.
+            ARole::Settings | ARole::Applications => continue,
         };
         let identifier = ships.the(wanted).application().identifier();
         if !has.installed().has(identifier) {

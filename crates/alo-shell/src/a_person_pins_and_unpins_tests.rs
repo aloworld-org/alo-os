@@ -25,6 +25,10 @@ fn app(named: &str) -> AppId {
 }
 
 /// A Dock already holding Files and the Settings entry.
+///
+/// **Four entries since 2026-10-17**, not two: the fresh defaults are Files,
+/// Browser, Settings and the market, and only Browser has to be found. So a
+/// machine with Files installed gets three.
 fn a_dock_with_files_and_settings(named: &str) -> (tempfile::TempDir, Server) {
     let (directory, mut server) = server(named);
     server.its_dock_is_filled_from(&Discovery::Completed(vec![(
@@ -62,7 +66,12 @@ fn pinning_an_application_adds_it_and_owes_a_write() {
 
     assert_eq!(
         pinned(&server),
-        vec!["org.kde.dolphin", "Settings", "org.mozilla.firefox"],
+        vec![
+            "org.kde.dolphin",
+            "Settings",
+            "Applications",
+            "org.mozilla.firefox"
+        ],
         "pinning did not put the application at the end of what the person had"
     );
     assert_eq!(
@@ -104,8 +113,8 @@ fn unpinning_an_application_takes_it_off_and_owes_a_write() {
         .this_entry_is_unpinned(&ADockEntry::Application(app("org.kde.dolphin")))
         .expect("unpinning something pinned owes a write");
 
-    assert_eq!(pinned(&server), vec!["Settings"]);
-    assert_eq!(owed.len(), 1);
+    assert_eq!(pinned(&server), vec!["Settings", "Applications"]);
+    assert_eq!(owed.len(), 2);
 }
 
 /// **The Settings entry comes off exactly as an application does.**
@@ -126,8 +135,24 @@ fn the_settings_entry_can_be_unpinned_like_anything_else() {
         .this_entry_is_unpinned(&ADockEntry::Native(ANativeAction::Settings))
         .expect("a native entry refused to come off, so it is permanent");
 
-    assert_eq!(pinned(&server), vec!["org.kde.dolphin"]);
-    assert_eq!(owed.len(), 1);
+    assert_eq!(pinned(&server), vec!["org.kde.dolphin", "Applications"]);
+    assert_eq!(owed.len(), 2);
+}
+
+/// **And the market entry comes off too**, which is the same clause one entry
+/// along and worth its own assertion for the same reason: it is a default now,
+/// and *native describes the implementation; it does not mean permanent*. A
+/// person who does not want a market on their Dock takes it off.
+#[test]
+fn the_market_entry_can_be_unpinned_like_anything_else() {
+    let (_directory, mut server) = a_dock_with_files_and_settings("unpinning-the-market");
+
+    let owed = server
+        .this_entry_is_unpinned(&ADockEntry::Native(ANativeAction::Applications))
+        .expect("a native entry refused to come off, so it is permanent");
+
+    assert_eq!(pinned(&server), vec!["org.kde.dolphin", "Settings"]);
+    assert_eq!(owed.len(), 2);
 }
 
 /// **Unpinning what is not pinned changes nothing and owes nothing.**
@@ -157,6 +182,9 @@ fn emptying_the_dock_owes_a_write_of_the_empty_list() {
     server
         .this_entry_is_unpinned(&ADockEntry::Application(app("org.kde.dolphin")))
         .expect("the first comes off");
+    server
+        .this_entry_is_unpinned(&ADockEntry::Native(ANativeAction::Applications))
+        .expect("the market comes off like anything else");
     let owed = server
         .this_entry_is_unpinned(&ADockEntry::Native(ANativeAction::Settings))
         .expect("the last one off owes a write like any other");
@@ -215,6 +243,7 @@ fn two_changes_before_a_frame_leave_one_write_of_the_end_state() {
         owed,
         vec![
             ADockEntry::Native(ANativeAction::Settings),
+            ADockEntry::Native(ANativeAction::Applications),
             ADockEntry::Application(app("org.mozilla.firefox")),
         ],
         "what is written is not the Dock as it stands after both changes"
