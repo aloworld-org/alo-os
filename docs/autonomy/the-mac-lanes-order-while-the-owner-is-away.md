@@ -143,11 +143,39 @@ destroy one*.
 **#751 removed the first thing in the way** and **#752 recorded the measurement
 it rests on**, both landed today.
 
-**Only if nothing else has taken it.** `alo-turn` is the workspace's most
-central crate and the charter gives parts of it to `the-local-network-plan`
-for pairing, so a collision costs a day where asking costs a message. This
-lane already holds a branch named for the question — check whether anything is
-on it before starting.
+**Who owns it: this lane, measured rather than assumed.** ADR 0045 says
+`crates/alo-turn` is *lane A's*, which is retired naming, and the charter lists
+`alo-turn` only for `the-local-network-plan`'s **pairing** parts. So the
+charter's own method 2 was applied — every recent landing in `crates/alo-turn`
+resolved to its branch — and **six of six are `task/mac/…`**: #750, #682, #679,
+#670, #667, #662. The bracket is not pairing, and it is this lane's.
+
+**Everything it needs is in place, and this is the first step all day that is
+unambiguously startable:**
+
+| | |
+|---|---|
+| the decision | ADR 0045's terms, amended 2026-10-16, plus #752 — *the agent can take a bracket and can neither alter nor destroy one* |
+| the privilege | **none needed.** `btrfs subvolume snapshot -r` of a subvolume the person owns, as the person with no `sudo`, **exits 0** — measured twice, 2026-09-21 and 2026-10-16 |
+| the folder | **made at first sign-in**, by `alo-giving-a-folder`, this lane's own work of 2026-10-17 (ADR 0120 moved it, ADR 0121 wired the caller). ADR 0045's amendment recorded that *nothing creates it at all*; that is no longer true |
+| the layout | `alo-kept-undo` — `THE_TURN`, `BEFORE`, `AFTER`, `BOTH_SNAPSHOTS`, `Theirs`, `TheTurn`. **#751 moved it out of `alo-letting-go` for exactly this**, because nothing a turn runs inside may ship that crate |
+| the remover | `alo-letting-go`, and it is measured on a real loopback `btrfs` in `tests/on_a_real_btrfs_machine.rs` |
+| how to invoke it | the base's own program, as the remover does: one `Command::new(THE_PROGRAM)`, with a source-reading test asserting there is exactly one |
+
+**So both ends are built and the middle is absent**, in ADR 0045's own words.
+
+**The two things to settle before writing code, and neither is large:**
+
+1. **Where a turn begins.** The caller is what makes this real rather than a
+   third uncalled module — and `turning.rs` has no `pub fn began`, so the entry
+   point has to be found rather than assumed. *This is the only reason the
+   bracket was not started on 2026-10-17: the taker is an afternoon, and a taker
+   nothing calls is what this lane declined to land twice that day.*
+2. **What happens to a turn whose bracket cannot be taken.** ADR 0045 does not
+   say. ADR 0015 says of its own boundary that *a turn whose boundary cannot be
+   applied does not run*, and `CLAUDE.md` forbids a silent fallback — so the
+   candidate answer is that the turn refuses and the person is told, but it is a
+   decision and not an inference.
 
 ### 3. What is still owed on rich results
 
