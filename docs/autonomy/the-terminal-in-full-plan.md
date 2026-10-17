@@ -297,8 +297,12 @@ each said* Depends on: nothing in this plan *and were blocked outside it.*
 
 ### 8. Bisect the machine, not the repository
 
-**Status:** blocked. **Depends on:** a bracket, which is `alo-turn`'s and
-unbuilt.
+**Status:** blocked, and **no longer on the bracket**. **Depends on:** the same
+decision task 10 does — see below. The bracket landed in #767 on 2026-10-17, so
+the dependency this task recorded is met; what it now waits on is *what gets
+bracketed*, because walking snapshots to find when something broke needs
+snapshots of the person's own working day, not only of the turns an agent
+changed something in.
 
 *It worked yesterday* becomes a question the machine can answer, by stepping
 back through snapshots. There are no snapshots: nothing in the workspace takes
@@ -316,16 +320,44 @@ does not exist**, and not something a surface can paper over.
 
 ### 10. *Choose one, and your files are as they were*
 
-**Status:** blocked. **Depends on:** a bracket, as task 8 does.
+**Status:** blocked on a decision, **measured 2026-10-17 after the bracket
+landed**. **Depends on:** whether a command the *person* runs is bracketed.
 
 The snapshot half of *scrollback you can move along*. The scrolling is built; what
 is missing is putting the files back, which no amount of scrolling can supply.
 
+**The bracket landed (#767) and did not unblock this**, which is worth stating
+because this plan said a bracket was all it needed. The promise's own words are
+*every **command** in the session is a place you can return to … your files are
+as they were **before it ran***, and what landed brackets **a changing agent
+turn**: `TheTurnsBracket` is taken in `alo-agentd`'s serving loop at an approval,
+and measured across `main` at `e7d57ae8` **nothing in `alo-terminal` or
+`alo-shell` takes one**. A person's own `make`, `git commit` or `rm` is not a
+place they can return to.
+
+**And the gap is a decision rather than a missing caller**, which is why it is
+not simply built here under *work a task needs is part of that task*:
+
+- [ADR 0045](../decisions/0045-what-undoing-rewinds-to.md) term 5 is **only a
+  turn that changes files is bracketed**, and alo cannot tell whether an opaque
+  program changed anything — so for a person's command the choice is *snapshot
+  before every one* or *none*, and the filter the term relies on does not exist;
+- term 1's window — seven days or **fifty changing turns** — was sized for agent
+  turns and accepted by the owner *after they asked whether the machines would
+  fill up*. A shell session reaches fifty commands in an afternoon;
+- so extending the bracket to the person's commands changes the cost of the one
+  term the owner priced personally. **That makes it theirs**, not a caller this
+  task may add quietly.
+
 ## What this plan is waiting on, in one place
 
-- **A bracket** — tasks 8 and 10. `alo-turn`'s under ADR 0045; nothing takes one;
-  the layout it would write was moved somewhere a turn can reach it on
-  2026-10-17, which was the first thing in the way.
+- **Whether a command the person runs is bracketed** — tasks 8 and 10. **The
+  bracket itself is built and landed** (#767, 2026-10-17): `alo-turn` takes one
+  either side of a changing agent turn, measured on a real `btrfs` filesystem.
+  What neither task can start without is a decision on bracketing the person's
+  own commands, which ADR 0045 does not make and whose disk cost is the question
+  the owner asked when they accepted it. *This bullet said "a bracket" until the
+  bracket arrived and the tasks stayed shut.*
 - **The kernel box** — task 9. ADR 0013's and ADR 0015's.
 - **The owner, on the pairing of five answers to four actions** — `docs/features.md`
   records it as theirs. Task 1 does not need it; offering the actions does.
