@@ -86,11 +86,18 @@ pub struct AShellOnAPseudoterminal {
 ///
 /// **Why `xterm-256color` and not a name of ours.** A name here is a claim about
 /// which escape sequences this terminal understands, and a program believes it.
-/// `xterm-256color` is in every terminfo database a machine will have, and what
-/// it promises is what the engine behind this really implements. That engine's
-/// upstream ships an `alacritty` terminfo and names itself that; this repository
-/// ships no terminfo, and a name no machine can look up leaves a program falling
-/// back to something far poorer than this.
+/// What `xterm-256color` promises is what the engine behind this really
+/// implements. That engine's upstream ships an `alacritty` terminfo and names
+/// itself that; this repository ships no terminfo, and a name no machine can
+/// look up leaves a program falling back to something far poorer.
+///
+/// **And the image really carries it**, which is the half this crate cannot
+/// check: a terminfo database belongs to an installed system. Measured by hand
+/// on 2026-10-17 against the pinned base — it has
+/// `/usr/share/terminfo/x/xterm-256color` and `/usr/sbin/clear`. That
+/// measurement does not run again; what does is
+/// `alo-image`'s `what_the_image_owes_the_terminal.rs`, which fails if the base
+/// is changed under it or stops being pinned by digest.
 ///
 /// **It is not a setting, and a person can still change it**: this is what the
 /// child *starts* with, and a line in their own shell startup replaces it.
