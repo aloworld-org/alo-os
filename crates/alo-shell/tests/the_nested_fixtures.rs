@@ -325,6 +325,24 @@ const SUBMODE: &str = "ALO_NESTED_SUBMODE";
 /// something usable*, and only one of those is a gate.
 const INHERIT: &str = "ALO_NESTED_INHERIT_DISPLAY";
 
+/// Set this where a parent is not optional, and a missing one fails instead of
+/// skipping.
+///
+/// **A skip is the same colour as a pass, and this file's own header says so.**
+/// Without a `weston` on the host these fixtures print *skipped* and return
+/// success, which is right on a contributor's laptop and wrong in the gate: the
+/// gate installs a compositor on purpose, so a run there that finds none has
+/// lost something rather than lacked it, and the only honest colour for that is
+/// red.
+///
+/// `.github/workflows/gate.yml` sets this beside the step that installs
+/// `weston`. It declined to assert a skip *count* for a good reason — the right
+/// count is a property of the suite on the day, and a number invented without a
+/// runner to measure on is a guess dressed as a check. This asserts the thing
+/// the count was a proxy for instead: **the parent the gate paid for was
+/// there.**
+const PARENT_REQUIRED: &str = "ALO_NESTED_PARENT_REQUIRED";
+
 /// What this binary calls itself when something asks it to list its tests.
 ///
 /// One name for all eight sub-modes, because that is honestly what this is: the
@@ -438,6 +456,15 @@ fn main() -> std::process::ExitCode {
     let parent = a_parent();
     let runtime = match &parent {
         Parent::None(why) => {
+            if std::env::var_os(PARENT_REQUIRED).is_some() {
+                eprintln!(
+                    "the nested fixtures need a Wayland parent, {PARENT_REQUIRED} says this run \
+                     must have one, and there is none — {why}. Every GLES fixture in this binary \
+                     has been skipped, which on any other run would have been the same colour as \
+                     a pass."
+                );
+                return std::process::ExitCode::FAILURE;
+            }
             eprintln!(
                 "skipped: the nested fixtures need a Wayland parent and there is none — {why}"
             );
