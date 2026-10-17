@@ -57,10 +57,11 @@
 //! what is typed, so those bytes arrive from the program like any others, and
 //! [ADR 0113] forbids reading bytes to decide who spoke. Telling a person's own
 //! line from a program's output needs the shell to say so, which is
-//! [ADR 0123]'s subject and is not built. A fixture that expected `you` here
-//! would be asking the terminal to guess.
-//!
-//! [ADR 0123]: ../../../docs/decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md
+//! the subject of the shell-integration decision this lane proposed on
+//! 2026-10-17, which has not landed and so is deliberately not cited by number
+//! here — `alo-citing` refuses a pointer to a decision that is not in the tree,
+//! and it is right to. A fixture that expected `you` here would be asking the
+//! terminal to guess.
 //!
 //! [ADR 0113]: ../../../docs/decisions/0113-the-terminal-owns-a-gutter-that-says-who-is-speaking.md
 //!
