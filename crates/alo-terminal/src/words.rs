@@ -155,11 +155,138 @@ pub const AN_EXPLANATION_AND_NOT_A_GUARANTEE: Word = Word::saying(
      which would defeat the only thing it is for.",
 );
 
+/// One string whose wording depends on a number.
+///
+/// Three of this crate's strings count something, and a count is not a
+/// substitution: *1 test passed* and *2 tests passed* differ in English by one
+/// letter and in several EU languages by more than that, so the number governs
+/// the sentence rather than filling a hole in it. `alo_strings::Plural` is the
+/// mechanism and this is the shape seventeen other crates already declare it
+/// in.
+pub struct Counted {
+    /// What names it.
+    named: &'static str,
+    /// The gap the number goes in.
+    number: &'static str,
+    /// What it says about one thing.
+    one: &'static str,
+    /// What it says about any other number of things.
+    other: &'static str,
+    /// What a translator needs to know.
+    note: &'static str,
+}
+
+impl Counted {
+    /// What names it.
+    ///
+    /// `unchecked` because a key written in this file is checked **by a test**
+    /// rather than at every call — `no_plural_shares_a_key` and
+    /// `every_counted_key_is_a_key` in this module's tests — which is the
+    /// shape `alo-finding` already uses for the same reason: a `Result` here
+    /// would be an error every caller must handle about a mistake only this
+    /// file can make.
+    #[must_use]
+    pub fn key(&self) -> alo_strings::Key {
+        alo_strings::Key::unchecked(self.named)
+    }
+
+    /// What names it, as written.
+    #[must_use]
+    pub const fn named(&self) -> &'static str {
+        self.named
+    }
+
+    /// The gap the number goes in.
+    #[must_use]
+    pub const fn number(&self) -> &'static str {
+        self.number
+    }
+
+    /// What it says about one thing.
+    #[must_use]
+    pub const fn says_of_one(&self) -> &'static str {
+        self.one
+    }
+
+    /// What it says about any other number of things.
+    #[must_use]
+    pub const fn says_of_others(&self) -> &'static str {
+        self.other
+    }
+
+    /// What a translator needs to know.
+    #[must_use]
+    pub const fn note(&self) -> &'static str {
+        self.note
+    }
+}
+
+/// How many tests the output said passed.
+pub const SO_MANY_PASSED: Counted = Counted {
+    named: "terminal.result.passed",
+    number: "passed",
+    one: "{passed} test passed",
+    other: "{passed} tests passed",
+    note: "Part of the summary above a test result a program printed, beside how many failed and \
+           how many were ignored. {passed} is the number. It reports what the output said and not \
+           what this machine checked - the sentence under it says so - so a translation must not \
+           read like a verdict.",
+};
+
+/// How many tests the output said failed.
+pub const SO_MANY_FAILED: Counted = Counted {
+    named: "terminal.result.failed",
+    number: "failed",
+    one: "{failed} test failed",
+    other: "{failed} tests failed",
+    note: "Part of the summary above a test result a program printed. {failed} is the number, and \
+           it is often nought - \"0 tests failed\" must read naturally, because that is the case a \
+           person sees most. It reports what the output said rather than what this machine found.",
+};
+
+/// How many tests the output said were ignored.
+pub const SO_MANY_IGNORED: Counted = Counted {
+    named: "terminal.result.ignored",
+    number: "ignored",
+    one: "{ignored} test ignored",
+    other: "{ignored} tests ignored",
+    note: "Part of the summary above a test result a program printed. An ignored test is one that \
+           was deliberately not run - skipped rather than failed - and the distinction matters, so \
+           a word meaning \"failed\" or \"missing\" would say something this does not.",
+};
+
+/// The label above a recognised test result.
+pub const TESTS: Word = Word::saying("terminal.result.tests", "Tests").noting(
+    "The one-word label above the summary of a test result a program printed, as the design \
+     draws it. It names what the numbers beside it are about. One word if the language has one.",
+);
+
+/// What printed a recognised test result.
+pub const FROM_A_CARGO_TEST_RUN: Word =
+    Word::saying("terminal.result.from-cargo-test", "cargo test output").noting(
+        "Names where a recognised test result was read from. \"cargo test\" is the name of a \
+         program and is never translated; the word \"output\" around it is. It appears inside the \
+         sentence that says the result was not independently verified.",
+    );
+
+/// That a recognised result is the program's claim and nobody checked it.
+pub const NOT_INDEPENDENTLY_VERIFIED: Word = Word::saying(
+    "terminal.result.not-verified",
+    "Source: {what} · Not independently verified",
+)
+.noting(
+    "Shown directly under the summary of every test result a program printed, always, and never \
+     on its own. {what} names where the numbers came from. It warns that alo OS read these \
+     numbers out of a stranger's output and did not run the tests or check the arithmetic - the \
+     design's own words for the rule are \"formatted output is not system evidence\". Keep it \
+     short: it is under every such summary.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 13] = [
+pub const EVERY_WORD: [Word; 16] = [
     A_PROGRAM,
     ALO,
     THE_SYSTEM,
@@ -173,7 +300,16 @@ pub const EVERY_WORD: [Word; 13] = [
     IT_NEEDS_MORE_THAN_YOUR_RIGHTS,
     SOMETHING_LEAVES_THIS_MACHINE,
     AN_EXPLANATION_AND_NOT_A_GUARANTEE,
+    TESTS,
+    FROM_A_CARGO_TEST_RUN,
+    NOT_INDEPENDENTLY_VERIFIED,
 ];
+
+/// Everything this crate can say about a number of things.
+///
+/// The array [`declare_into`] walks, as [`EVERY_WORD`] is for the rest: a
+/// plural declared above and left out here is a string nothing can look up.
+pub const EVERY_COUNTED: [Counted; 3] = [SO_MANY_PASSED, SO_MANY_FAILED, SO_MANY_IGNORED];
 
 /// Why this crate's own list could not be declared.
 ///
@@ -185,6 +321,9 @@ pub enum WordsError {
     /// could not be attached.
     #[error(transparent)]
     Word(#[from] alo_strings::WordError),
+    /// A countable string that is not one.
+    #[error(transparent)]
+    Counted(#[from] alo_strings::PluralError),
     /// A key the vocabulary already has.
     #[error(transparent)]
     List(#[from] alo_strings::VocabularyError),
@@ -212,6 +351,17 @@ pub fn terminal_words() -> Result<Vocabulary, WordsError> {
 pub fn declare_into(vocabulary: &mut Vocabulary) -> Result<(), WordsError> {
     for word in EVERY_WORD {
         vocabulary.says(word.phrase()?)?;
+    }
+    for counted in EVERY_COUNTED {
+        vocabulary.counts(
+            alo_strings::Plural::counting(
+                counted.key(),
+                counted.number,
+                counted.one,
+                counted.other,
+            )?
+            .noting(counted.note)?,
+        )?;
     }
     Ok(())
 }

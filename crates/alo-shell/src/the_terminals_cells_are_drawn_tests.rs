@@ -53,6 +53,7 @@ fn picture_with_a_shell_called(
         super::Shows {
             screen,
             what_alo_said: &alo_terminal::WhatAloSaid::nothing(),
+            a_test_result: None,
         },
         size,
         scale,
@@ -81,6 +82,7 @@ fn picture(
         super::Shows {
             screen,
             what_alo_said: &alo_terminal::WhatAloSaid::nothing(),
+            a_test_result: None,
         },
         size,
         scale,
@@ -1285,5 +1287,167 @@ fn the_note_is_drawn_muted_rather_than_as_output() {
     assert_eq!(
         darkest, muted,
         "the note's darkest pixel is {darkest:?} where `text/muted` is {muted:?}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// A recognised test result, which the design draws in the program's own region
+// ---------------------------------------------------------------------------
+
+/// The drawing, with a recognised result supplied.
+fn picture_showing_a_result(
+    fonts: &mut FontSystem,
+    screen: &TerminalOutput,
+    result: Option<&alo_terminal::ATestResult>,
+) -> Result<TerminalPicture, NothingToDrawWith> {
+    super::picture(
+        fonts,
+        super::Shows {
+            screen,
+            what_alo_said: &alo_terminal::WhatAloSaid::nothing(),
+            a_test_result: result,
+        },
+        A_DISPLAY,
+        1.0,
+        Scheme::Light,
+        &the_words(),
+        None,
+    )
+}
+
+/// A screen holding what `cargo test` prints at the end of a failing run.
+fn a_screen_showing_a_test_run() -> TerminalOutput {
+    let mut screen = TerminalOutput::of(HowBig::of(120, 12, 200).expect("a screen"));
+    screen.was_written(b"   Running tests/a_thing.rs\r\n");
+    screen.was_written(
+        b"test result: FAILED. 23 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out;\r\n",
+    );
+    screen
+}
+
+/// How far down the lowest ink on a picture reaches.
+fn the_lowest_ink(drawn: &TerminalPicture) -> i32 {
+    drawn
+        .inked
+        .iter()
+        .map(|inked| inked.area.loc.y + inked.area.size.h)
+        .max()
+        .unwrap_or_default()
+}
+
+/// **The grid's own lines are what the recogniser reads**, which is the join
+/// between the two halves of this feature.
+///
+/// Asserted through `TerminalOutput` rather than on a list of strings written
+/// here, because the thing that could be wrong is the seam: the engine
+/// rewrites what it is given — wrapping, scrolling, consuming escapes — and a
+/// recogniser tested only on hand-written lines would never meet that.
+#[test]
+fn a_test_run_on_a_real_grid_is_recognised() {
+    let screen = a_screen_showing_a_test_run();
+    let found =
+        alo_terminal::a_test_result_in(&screen.lines()).expect("the summary the grid is holding");
+    assert_eq!(found.it_said_passed(), 23);
+    assert_eq!(found.it_said_failed(), 1);
+}
+
+/// **A recognised result puts lines under the transcript**, which is the whole
+/// of what a person sees.
+///
+/// Measured as ink reaching further down the picture, not as a count of items:
+/// `docs/decisions/0114`'s fault is that a missing face lays out a box of
+/// exactly the right size with nothing in it, so a test that counted placed
+/// items would pass on two empty boxes.
+#[test]
+fn a_recognised_result_is_drawn_under_the_transcript() {
+    let mut fonts = the_shells_own_fonts();
+    let screen = a_screen_showing_a_test_run();
+    let found =
+        alo_terminal::a_test_result_in(&screen.lines()).expect("the summary on this screen");
+
+    let without = picture_showing_a_result(&mut fonts, &screen, None).expect("a picture");
+    let with = picture_showing_a_result(&mut fonts, &screen, Some(&found)).expect("a picture");
+
+    assert!(
+        the_lowest_ink(&with) > the_lowest_ink(&without),
+        "a recognised result added no ink below the transcript: {} against {}",
+        the_lowest_ink(&with),
+        the_lowest_ink(&without)
+    );
+    let drawn: usize = with.inked.iter().map(|inked| inked.pixels.len()).sum();
+    let plain: usize = without.inked.iter().map(|inked| inked.pixels.len()).sum();
+    assert!(
+        drawn > plain,
+        "the result's two lines laid out no glyphs: {drawn} pixels against {plain}"
+    );
+}
+
+/// **A screen with no result draws exactly what it drew before**, which is the
+/// ordinary case and must cost nothing.
+///
+/// The control for the test above. Without it, that one would pass on a drawing
+/// that added two lines to every terminal on the machine.
+#[test]
+fn a_screen_with_no_result_is_unchanged() {
+    let mut fonts = the_shells_own_fonts();
+    let mut screen = TerminalOutput::of(HowBig::of(120, 12, 200).expect("a screen"));
+    screen.was_written(b"$ ls\r\nCargo.toml  src  tests\r\n");
+    assert!(
+        alo_terminal::a_test_result_in(&screen.lines()).is_none(),
+        "ordinary output was recognised, so this test is about the wrong thing"
+    );
+
+    let one = picture_showing_a_result(&mut fonts, &screen, None).expect("a picture");
+    let again = picture_showing_a_result(&mut fonts, &screen, None).expect("a picture");
+    assert_eq!(
+        the_lowest_ink(&one),
+        the_lowest_ink(&again),
+        "the drawing is not stable for a screen with nothing recognised"
+    );
+}
+
+/// **The result's lines are in the program's region, not alo's.**
+///
+/// The design's annotation is *PROGRAM includes parsed rich results*, and the
+/// mechanism is that the program's line count grows by the result's lines
+/// before the gutter's regions are worked out. So alo's own remark moves down
+/// by exactly that many lines when a result appears beside it — which is the
+/// one observable consequence of getting the region right.
+#[test]
+fn a_result_pushes_alos_line_down_rather_than_sharing_its_region() {
+    let mut fonts = the_shells_own_fonts();
+    let screen = a_screen_showing_a_test_run();
+    let found =
+        alo_terminal::a_test_result_in(&screen.lines()).expect("the summary on this screen");
+
+    let mut said = alo_terminal::WhatAloSaid::nothing();
+    said.says(
+        alo_terminal::why_a_command_is_waiting::WhyItIsWaiting::StillComputing
+            .the_word()
+            .key(),
+    );
+
+    let drawn = |result: Option<&alo_terminal::ATestResult>, fonts: &mut FontSystem| {
+        super::picture(
+            fonts,
+            super::Shows {
+                screen: &screen,
+                what_alo_said: &said,
+                a_test_result: result,
+            },
+            A_DISPLAY,
+            1.0,
+            Scheme::Light,
+            &the_words(),
+            None,
+        )
+        .expect("a picture")
+    };
+
+    let alone = the_lowest_ink(&drawn(None, &mut fonts));
+    let beside = the_lowest_ink(&drawn(Some(&found), &mut fonts));
+    assert!(
+        beside > alone,
+        "alo's line did not move down when a result appeared above it: {beside} against {alone}"
     );
 }

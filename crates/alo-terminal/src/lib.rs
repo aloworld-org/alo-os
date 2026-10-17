@@ -33,6 +33,7 @@
 //! which needs a compositor and is the next change.
 
 mod a_shell_on_a_pseudoterminal;
+pub mod a_test_result_a_program_printed;
 mod how_big_the_grid_is;
 pub mod measures;
 #[cfg(target_os = "linux")]
@@ -53,6 +54,7 @@ pub use a_shell_on_a_pseudoterminal::WhatIsWaiting;
 pub use a_shell_on_a_pseudoterminal::{
     ACellInPixels, AShellOnAPseudoterminal, NoShell, WhatArrived,
 };
+pub use a_test_result_a_program_printed::{ATestResult, a_test_result_in};
 pub use how_big_the_grid_is::{HowBig, NotASize};
 pub use stopping_the_command_in_front::NotStopped;
 pub use terminal_output_becomes_a_grid::{

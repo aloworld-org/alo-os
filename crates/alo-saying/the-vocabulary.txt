@@ -1637,6 +1637,9 @@ terminal.explained.destructive	it destroys something
 terminal.explained.elevated	it needs more than your own rights
 terminal.explained.leaves	something leaves this machine
 terminal.explained.not-a-guarantee	an explanation, not a guarantee
+terminal.result.from-cargo-test	cargo test output
+terminal.result.not-verified	Source: {what} · Not independently verified
+terminal.result.tests	Tests
 terminal.waiting.another-process	waiting for another program, or for a lock
 terminal.waiting.computing	still computing
 terminal.waiting.keyboard	waiting for the keyboard
