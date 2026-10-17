@@ -21,11 +21,10 @@ pub const STAGE: Word = Word::saying("shell.first-start.stage", "alo OS").noting
 );
 
 /// The small line above the heading on the name sheet.
-pub const NAME_EYEBROW: Word = Word::saying("shell.first-start.name.eyebrow", "MAKE IT YOURS")
+pub const NAME_EYEBROW: Word = Word::saying("shell.first-start.name.eyebrow", "make it yours")
     .noting(
         "A short line above the heading, telling a person which part of setting up they are in. \
-         The upper case is this phrase's own; use whatever your language does for a quiet label \
-         rather than upper-casing a translation that should not be.",
+         Lower case, like every quiet label in alo OS; use whatever your language does for one.",
     );
 
 /// The name sheet's heading.
@@ -115,11 +114,11 @@ pub const FOOTER: Word = Word::saying(
 
 /// The small line above the heading on the language sheet.
 pub const LANGUAGE_EYEBROW: Word =
-    Word::saying("shell.first-start.language.eyebrow", "FEEL AT HOME").noting(
+    Word::saying("shell.first-start.language.eyebrow", "feel at home").noting(
         "A short line above the heading on the screen where a person picks the language alo OS \
-         speaks to them in. Read from the design file, frame `09b`. Upper case in English; use \
-         whatever register your language gives a small heading, and do not translate it as an \
-         instruction - it describes the step, it does not ask for anything.",
+         speaks to them in. Lower case, like every quiet label in alo OS; use whatever your \
+         language does for one. Do not translate it as an instruction - it describes the step, \
+         it does not ask for anything.",
     );
 
 /// The heading on the language sheet.
