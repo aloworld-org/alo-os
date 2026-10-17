@@ -311,12 +311,40 @@ is not this plan's to build.
 
 ### 9. Try a command without letting it touch anything
 
-**Status:** blocked. **Depends on:** the kernel boundary, ADR 0013 and ADR 0015.
+**Status:** **the box is built and demonstrated; nothing calls it, and the
+surface is the owner's.** **Depends on:** a decision on how a person asks for a
+sealed-box run.
 
-The sealed box of ADR 0064. `alo-running` is the runner and the record, built
-2026-10-17; the box the kernel locks down is not built, so a machine at the
-default level runs nothing. **Honest behaviour for a default whose enforcement
-does not exist**, and not something a surface can paper over.
+**This task's status was wrong on the day it was written.** It said *the box the
+kernel locks down is not built* while citing `alo-running`, the crate that
+contains it: #729, *a sealed box runs a command, and the kernel refuses the
+rest*, landed 2026-10-16. The kernel boundary it named as a dependency landed
+2026-09-04. *A claim about a module, written from the date of the crate around
+it.*
+
+**Measured 2026-10-17 on this lane's VM.** `alo_running::a_run_inside_a_box`
+runs ADR 0064's box in seven steps — ask the boundary it is still there, make a
+control group, put its id and places into the boundary's map, start
+`alo-enter-the-box`, wait, remove the entry, remove the group — with steps 6 and
+7 on every road out. 20 tests pass as the person; the two that need root pass as
+root, one reading the file the box was given and one refused the file it was
+not. They fail rather than skip without a writable `/sys/fs/bpf`.
+
+**What is owed, and it is the fault this plan exists to stop, a sixth time:**
+
+| | |
+|---|---|
+| crates depending on `alo-running` | **none** |
+| readers of `alo_capability::HowCodeRuns` outside it | **none**, so the level a person chooses decides nothing |
+| what the design says about how a person asks | **nothing** — the only match for *box* in `docs/design/the-terminal-window.md` is a label's bounding box |
+| what ADR 0064 says about it | **nothing** — no prefix, command or chord |
+
+So a caller cannot be built without inventing the surface it is called from, and
+`CLAUDE.md` sends a design that is silent to the owner. **One sentence on the
+scope judgement**: wiring the level to the box *makes an existing promise true*
+and would be this lane's, but *how a person asks* is a surface the design does
+not specify, which is the owner's — so the task stops here rather than guessing
+a prefix.
 
 ### 10. *Choose one, and your files are as they were*
 
@@ -358,6 +386,10 @@ not simply built here under *work a task needs is part of that task*:
   own commands, which ADR 0045 does not make and whose disk cost is the question
   the owner asked when they accepted it. *This bullet said "a bracket" until the
   bracket arrived and the tasks stayed shut.*
-- **The kernel box** — task 9. ADR 0013's and ADR 0015's.
+- **How a person asks for a sealed-box run** — task 9. **Not the box**: that is
+  built (#729, 2026-10-16) and passes on a real kernel. What is missing is a
+  caller and the surface it would be called from, and the design file and ADR
+  0064 are both silent on the surface. *This bullet said "the kernel box" and
+  pointed at two ADRs that had already been built against.*
 - **The owner, on the pairing of five answers to four actions** — `docs/features.md`
   records it as theirs. Task 1 does not need it; offering the actions does.
