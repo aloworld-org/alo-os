@@ -149,6 +149,23 @@ off.*
 > *Asking the artefact rather than the calendar is the whole point: an image
 > built this morning from a stale branch is as wrong as one built last week, and
 > a date cannot tell them apart.*
+>
+> **And for the image `docs/booting.md` sends a person to, the answer is already
+> written down here.** That page installs the published release by digest, and
+> `image/pinned.toml` records what it was built from:
+>
+> ```text
+> version  = "0.0.6"
+> revision = "77db91c64e590be259b48a162091425213e28728"
+> ```
+>
+> That is the commit measured above as having no `crates/alo-terminal`. **So
+> following `docs/booting.md` tonight installs a machine with no terminal in
+> it**, and no registry needs to be asked to know that — the repository records
+> it. `booting.md` is not wrong: it describes how a person installs the
+> **released** machine, and the terminal is not in a release yet. The walk wants
+> something else, and the two have to be told apart before the evening rather
+> than during it.
 
 
 **The smallest step to the largest change in confidence.** #755 made *why is it
