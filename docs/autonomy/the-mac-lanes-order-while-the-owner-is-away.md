@@ -56,7 +56,7 @@ touching nothing* — is **nobody's as of 2026-10-17**. The owner said that day
 that the development PC is off and its work can be done by the desktop lane; the
 desktop lane has read that and **has not taken it**, for a stated reason. So it
 is available and unclaimed, which is not the same as assigned. The table near the
-foot of this file carries all three readings and what changed between them.
+foot of this file carries all four readings and what changed between them.
 
 ## The order, and it is ordered by that bar rather than by size
 
@@ -100,10 +100,28 @@ back: which step, what was on the screen, and `journalctl -b 0 -u alo-compositor
 journal separates them.
 
 **And the chord may not be bound yet**: #755 is gating at the time of writing. If
-it has not landed, step 6 does nothing and that is correct rather than a fault —
-check `main` first and skip to 7.
+it has not landed, **walk step 6** does nothing and that is correct rather than a
+fault — check `main` first and skip to walk step 7.
 
-### 2. Terminal tasks 4 and 5
+*Numbered twice in this document on purpose, and so said twice: the walk above
+has steps and so does the order below. A bare "step 6" could mean either, and one
+cross-reference in this file was already stale for exactly that reason.*
+
+### 2. The choice of whether alo may use the terminal needs a surface
+
+Row two of the thirteen: the three levels of ADR 0064 are built and a person
+cannot see or change them. It is in `alo-shell`, which this lane holds, and it is
+**the shortest distance from *built* to *usable* of anything on the list after
+#755** — which is why it is second and not fourth.
+
+*It was fourth until 2026-10-17, behind two steps whose rows read "nothing". That
+contradicted this section's own heading — ordered by that bar rather than by size
+— and the sentence naming it the shortest distance to usable was sitting inside
+the step it was ordering behind. The third contradiction between this document's
+order and its own stated rule in one day, and the second found by re-reading
+rather than by a check.*
+
+### 3. Terminal tasks 4 and 5
 
 `docs/autonomy/the-terminal-in-full-plan.md` is the truth about these. Both are
 startable today, need no machine this lane lacks, and each ends in something a
@@ -114,7 +132,7 @@ person does:
 - **scope one command** — one command under a narrower grant than the session
   has, without touching what the person chose for everything else.
 
-### 3. Task 6, rich results
+### 4. Task 6, rich results
 
 The largest, and **tasks 2 and 7 both wait on it** — the source qualifier is
 provenance for a parsed result and has nothing to qualify until one exists, and a
@@ -123,11 +141,6 @@ replayable session needs a transcript that is more than cells.
 **Untrusted is the load-bearing word.** This parses what a stranger's program
 printed, so it is as much about what it refuses to render as what it renders.
 
-### 4. The choice of whether alo may use the terminal needs a surface
-
-Row two above: the three levels of ADR 0064 are built and a person cannot see or
-change them. It is in `alo-shell`, which this lane holds, and it is the shortest
-distance from *built* to *usable* of anything on the list after #755.
 
 ### 5. Explain a command before it runs
 
@@ -150,8 +163,8 @@ where asking costs a message.
 
 ### 7. Then bisect the machine, and *your files as they were*
 
-Both wait on a bracket and on nothing else, so **taking step 6 makes these two
-this lane's** — which is why the corrected table below no longer lists them as
+Both wait on a bracket and on nothing else, so **taking the bracket step above
+makes these two this lane's** — which is why the corrected table below no longer lists them as
 unfinishable. If the bracket turns out to be another lane's, these go with it.
 
 ## What this lane cannot finish — corrected 2026-10-17, because the first version was wrong about all three
@@ -164,7 +177,7 @@ belongs to a different lane than implied.
 | | the honest position |
 |---|---|
 | *run a command touching nothing* | **available to the desktop lane and taken by nobody**, as of 2026-10-17. The owner that day: *development pc is off now so it's tasks can be done by desktop*. Until then it was the development PC's by `kernel-enforcement-plan.md`'s own words: *who can take it — the development PC, inside a KVM guest with a real login*. The desktop lane was told, and answered that it is **not taking the eight plans on a relayed message** — the owner had given it a direct instruction about the application market, and a forwarded sentence does not outrank an instruction the owner typed to that lane. **It was never a capability wall**: this lane's machine has `CONFIG_BPF_LSM=y` and `bpf` in the active LSM list, measured 2026-10-17. So it was ownership all along, the owner has made it available, and **it is still nobody's** |
-| *bisect the machine*, *your files as they were* | **downstream of this lane's own step 5**, not out of reach. Step 5 above is *the bracket, if it is still nobody's*. If this lane takes the bracket, both of these become its to build — so listing them as unfinishable **contradicted the order four headings above it**, and that was an inconsistency in this document rather than a fact about the work |
+| *bisect the machine*, *your files as they were* | **downstream of this lane's own bracket step**, not out of reach — the step headed *the bracket, if it is still nobody's*. **This cell cited "step 5" until 2026-10-17 and the bracket had become step 6**, because a step was inserted above it and the number here was not followed; the cross-references in this file now name steps instead of numbering them, which is why. If this lane takes the bracket, both of these become its to build — so listing them as unfinishable **contradicted the bracket step in the order above**, and that was an inconsistency in this document rather than a fact about the work. *This cell said "four headings above it" until the order was renumbered, at which point it was three — a positional count is the same trap as a step number and is gone for the same reason.* |
 | *ask what a command will do first* | **buildable and testable here.** The promise is *plain words for what it does, with anything destructive, anything needing elevated rights and anything leaving the machine marked* — it does not say which model, and a **provider key is present on this machine** (mode 600, measured 2026-10-17). The first version said *a model on this machine is an environment this lane cannot test in*, which was true of a **local** model and false of the promise |
 
 **Why all three were wrong in the same direction.** Each was written from what
