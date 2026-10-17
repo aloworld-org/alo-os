@@ -96,6 +96,37 @@ off.*
 
 ### 1. See the five answers on a booted machine — **the boot is 2026-10-18, evening**
 
+> **STOP — no image that has ever been built contains a terminal.** Measured
+> 2026-10-18, 00:10 local, against every workflow that produces one:
+>
+> | workflow | last success | commit | has `alo-terminal` |
+> |---|---|---|---|
+> | `image.yml` | 2026-10-07 | `77db91c6` | **no** |
+> | `release.yml` | 2026-10-07 | `08e64019` | **no** |
+> | `installer-candidate.yml` | 2026-10-08 | `dd356660` | **no** |
+>
+> `main` is **208 commits** ahead of the newest of those, and neither
+> `crates/alo-terminal/` nor `alo-shell`'s `a_chord_opens_a_terminal.rs` exists
+> in any of those trees. The digest `docs/booting.md` tells a person to pull —
+> `sha256:fcc732bb…` — is from that era.
+>
+> **So booting what exists tonight would fail at step 2 and every step after
+> it**, and the walker would report that the terminal does not work. It would be
+> the most expensive report this repository can produce, and it would be about
+> an image rather than about the terminal: the thing they booted never had one.
+>
+> **What has to happen first:** an image built from a `main` that includes #778,
+> and ideally #782. `image.yml` is `workflow_dispatch` and runs only on `main`,
+> so it is one deliberate dispatch. **This lane has not run it**: it publishes to
+> `ghcr.io` and that is the owner's to start, not a thing to do unprompted at
+> midnight.
+>
+> **What was not measured:** whether an image exists that was built by hand on
+> somebody's machine rather than by these three workflows. If one does, check it
+> for `alo-terminal` before trusting it — the question is what is *in* the image,
+> not when it was made.
+
+
 **The smallest step to the largest change in confidence.** #755 made *why is it
 waiting* reachable; nothing has watched a person use it. One boot, one terminal,
 one `cat`, one chord — and either it says *waiting for the keyboard* on a screen
