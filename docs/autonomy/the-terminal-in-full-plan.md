@@ -104,8 +104,25 @@ a real pseudoterminal.
 
 ### 2. The source qualifier beside the gutter label
 
-**Status:** blocked. **Depends on:** task 6, and **this plan had the dependency
-the wrong way round when it was written.**
+**Status:** **done, by #761** — the same change that built the first rich view,
+because the qualifier *is* that view's provenance line and not a second thing
+beside it.
+
+**This task was declared startable in the order document before anybody read
+it**, hours after the same document was corrected twice for the same mistake.
+What it asks for is a caption inside the transcript region reading *Source:
+cargo test output · Not independently verified*; what #761 draws, under the
+summary and inside the region, is `Source: {what} · Not independently
+verified` with `{what}` filled by *cargo test output*. The same sentence, in
+the same place, from the same frame of the design.
+
+*So the dependency this plan recorded was right, the correction to it was
+right, and the thing neither noticed is that satisfying task 6 satisfies this
+one outright. A task whose whole content is one sentence of another task's
+output is a task to check off rather than to schedule.*
+
+**Depends on:** task 6, and **this plan had the dependency the wrong way round
+when it was written.**
 
 The qualifier is a caption inside the transcript region — the design's own
 example is `Source: cargo test output · Not independently verified` — and

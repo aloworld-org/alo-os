@@ -122,16 +122,32 @@ fault — check `main` first and skip to walk step 7.
 has steps and so does the order below. A bare "step 6" could mean either, and one
 cross-reference in this file was already stale for exactly that reason.*
 
-### 2. The source qualifier beside the gutter label — **unblocked today**
+### 2. The bracket, if it is still nobody's — **what three blocked tasks wait on**
 
-Task 2 of the plan, and it waited on rich results because *the source qualifier
-is provenance for a parsed result and has nothing to qualify until one exists*.
-**One exists now** (#761), so this is the next thing and the only one of the
-plan's ten that became startable rather than blocked today.
+**The source qualifier was step 2 for about an hour, and it was already done.**
+Task 2 of the plan asks for a caption inside the transcript reading *Source:
+cargo test output · Not independently verified*; #761 draws exactly that
+sentence, in exactly that place, from the same frame of the design. Satisfying
+task 6 satisfied it outright, and nobody read it before promoting it. *A task
+whose whole content is one sentence of another task's output is a task to check
+off rather than to schedule* — and this is the fourth time in one day that this
+document promoted something it had not read, which is the fault its own
+headline lesson is about.
 
-It is `alo-terminal` and `alo-shell`, both this lane's, and the input is a value
-this lane just built — which is what separates it from the three tasks at the
-foot of this order.
+**So the bracket is next, and it is next because three things wait on it**:
+*bisect the machine*, *your files as they were*, and the *what each one
+changed* half of a replayable session. ADR 0045 puts it in `alo-turn` and #752
+settled what the agent may do with one — *take a bracket, and neither alter nor
+destroy one*.
+
+**#751 removed the first thing in the way** and **#752 recorded the measurement
+it rests on**, both landed today.
+
+**Only if nothing else has taken it.** `alo-turn` is the workspace's most
+central crate and the charter gives parts of it to `the-local-network-plan`
+for pairing, so a collision costs a day where asking costs a message. This
+lane already holds a branch named for the question — check whether anything is
+on it before starting.
 
 ### 3. What is still owed on rich results
 
@@ -149,20 +165,13 @@ design specifies. What is left under that task, in the order it is worth doing:
   repository contains. These cannot be built from what is written down, and
   that is a question for the owner rather than a gap to fill by invention.
 
-### 4. The bracket, if it is still nobody's
-
-ADR 0045 puts it in `alo-turn`. #751 removed the first thing in the way and #752
-recorded the measurement it rests on. **Only if nothing else has taken it** —
-that crate is the workspace's most central and a collision in it costs a day
-where asking costs a message.
-
-### 5. Then bisect the machine, and *your files as they were*
+### 4. Then bisect the machine, and *your files as they were*
 
 Both wait on a bracket and on nothing else, so **taking the bracket step above
 makes these two this lane's** — which is why the corrected table below no longer lists them as
 unfinishable. If the bracket turns out to be another lane's, these go with it.
 
-### 6. Explain a command before it runs — **blocked on shell integration, measured 2026-10-17**
+### 5. Explain a command before it runs — **blocked on shell integration, measured 2026-10-17**
 
 **This was step 2 of this order for part of 2026-10-17, on the plan's word that
 it was the cheapest of the remaining six.** #759 built the answer and found the
@@ -197,7 +206,7 @@ work teaches a person a road and then takes it away, which
 **What would unblock it**, in one sentence: a decision on shell integration —
 the sequence, its contract, and what stops a program forging it.
 
-### 7. Terminal tasks 4 and 5 — **both need a scope decision, measured 2026-10-17**
+### 6. Terminal tasks 4 and 5 — **both need a scope decision, measured 2026-10-17**
 
 **The plan says of each: *Depends on: nothing in this plan.* That is true, and I
 read it as *unblocked*, which it does not say.** Both depend on something
@@ -234,7 +243,7 @@ unanswered ownership question, as the step below.
 the record a narrowed question, given that the one window that shows the record
 refuses to narrow by design.
 
-### 8. The choice of whether alo may use the terminal — **blocked, measured 2026-10-17**
+### 7. The choice of whether alo may use the terminal — **blocked, measured 2026-10-17**
 
 **This was step 2 of this order for part of 2026-10-17, described as "the
 shortest distance from *built* to *usable* of anything on the list after #755".
