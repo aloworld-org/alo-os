@@ -18,6 +18,13 @@ repository.workspace = true
 alo-bounding = { path = "../alo-bounding" }
 # Which of ADR 0064's three levels the person chose. Read, never decided here.
 alo-capability = { path = "../alo-capability" }
+# Where a run is written down. ADR 0064 keeps the record on at every level, and
+# `somewhere_to_write.rs` is what makes that unskippable rather than remembered.
+alo-record = { path = "../alo-record" }
+alo-keeping = { path = "../alo-keeping" }
+# The sentences a person reads when a command did not run. The words themselves
+# are `alo-capability`'s, and `failing.rs` says why they are not this crate's.
+alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
 
 [lints]
@@ -29,3 +36,8 @@ workspace = true
 [[bin]]
 name = "alo-enter-the-box"
 path = "src/bin/alo-enter-the-box.rs"
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+# The tests write an entry down and read it back as JSON, which is how an
+# absence is held to being an absence.
+serde_json = { workspace = true }

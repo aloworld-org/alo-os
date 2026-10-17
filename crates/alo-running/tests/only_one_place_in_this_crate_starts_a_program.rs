@@ -55,19 +55,42 @@ const THE_ONE_THAT_SPAWNS: &str = "a_run_inside_a_box.rs";
 ///
 /// Spelled as the call, so that starting anything else — above all
 /// `what.program()`, the command itself — is a different string and fails.
-const ONLY_THE_HELPER: &str = "Command::new(helper)";
+///
+/// *It was `Command::new(helper)` until the helper became a field of
+/// [`alo_running::WhereCommandsRun`], and this test failed on the rename, which
+/// is what it is for: the literal is the guard, so the guard notices when the
+/// call it is guarding moves.*
+const ONLY_THE_HELPER: &str = "Command::new(self.helper)";
 
 /// Which way of starting a program a line names, if it names one.
 ///
-/// `alo-bounding`'s list, kept deliberately identical: the two tests are two
-/// halves of one rule and a matcher that drifted would make them disagree about
-/// what starting a program even is. The four letters of `exec` on their own are
-/// in *execution*, which is what a turn does, so these are the spellings that
-/// are a syscall.
+/// `alo-bounding`'s list, with **one deliberate difference**: `Command::`
+/// rather than `Command`. The two tests are two halves of one rule and a
+/// matcher that drifted would make them disagree about what starting a program
+/// even is, so the difference is written down rather than left to be noticed.
+///
+/// **`Command` on its own matches `WhereCommandsRun`**, which is this crate's
+/// own type and starts nothing. The test found it by failing on `lib.rs`, where
+/// the only mention is a `pub use`. That is the identical shape `alo-bounding`
+/// already records about the four letters of `exec` being inside *execution* —
+/// this repository's own vocabulary colliding with a syscall's name — and the
+/// fix is the same one: match the call rather than the word. `Command::` still
+/// catches `Command::new` and `std::process::Command::new` alike.
+///
+/// `alo-bounding` has no such collision and is left alone; widening a test in
+/// another crate to fix a name in this one would be the gate weakened to pass
+/// it, backwards.
 fn starts_a_program(line: &str) -> Option<&'static str> {
-    ["Command", "fork(", "exec(", "execv", "execl", "posix_spawn"]
-        .into_iter()
-        .find(|starting| line.contains(starting))
+    [
+        "Command::",
+        "fork(",
+        "exec(",
+        "execv",
+        "execl",
+        "posix_spawn",
+    ]
+    .into_iter()
+    .find(|starting| line.contains(starting))
 }
 
 /// Whether a line says something to a reader rather than to the machine.
@@ -83,6 +106,7 @@ fn the_matcher_finds_a_program_being_started() {
         "let child = Command::new(\"sh\").spawn()?;",
         "std::process::Command::new(what).status()",
         "Command::new(program).args(arguments).exec()",
+        "let mut it = std::process::Command::new(what);",
         "libc::fork()",
         "posix_spawn(&mut pid, path, ...)",
     ] {
@@ -99,6 +123,10 @@ fn the_matcher_finds_a_program_being_started() {
         "/// One approval, one execution, which is ADR 0001 §5.",
         "let executed = what_happened.the_command_was_happy();",
         "pub fn enter_the_box_and_become(",
+        // The collision this matcher was tightened for: a type of this crate's
+        // whose name contains the word and which starts nothing.
+        "pub use a_run_inside_a_box::{THE_HELPER, WhereCommandsRun};",
+        "let mut where_they_run = WhereCommandsRun::new(boundary, boxes, record);",
     ] {
         assert!(
             starts_a_program(ordinary).is_none(),

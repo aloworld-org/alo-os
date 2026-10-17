@@ -294,8 +294,12 @@ capability.running.always.record	every command and what it printed is written do
 capability.running.always.snapshot	your files are copied before each run, so it can be undone
 capability.running.asking-each-time	after showing you the command and waiting for you
 capability.running.full-trust	straight away, without asking
+capability.running.no-box	nothing ran, because this machine could not build the box it runs commands in
+capability.running.not-a-command	nothing ran, because what was asked for was not a command this machine could run
+capability.running.not-that-way	nothing ran, because running a command this way is not what you chose
 capability.running.sealed-box	in a sealed box that sees only this project
 capability.running.what-full-trust-costs	text in a web page, an email or a downloaded project can steer the agent, and at this level whatever it steers the agent to run, runs
+capability.running.would-not-start	nothing ran, because the command could not be started
 capturing.another-persons-window	That window belongs to somebody else signed in on this machine, so a picture of it cannot be taken. Take a picture of your own screen instead
 capturing.copied	A picture of your screen was copied, ready to paste
 capturing.mark.arrow	Arrow

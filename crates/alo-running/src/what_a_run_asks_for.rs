@@ -118,6 +118,26 @@ impl ARun {
     pub fn may_reach(&self) -> &[PathBuf] {
         &self.may_reach
     }
+
+    /// This run, as an account of what happened, given how it ended.
+    ///
+    /// One place rather than two, because `WhereCommandsRun::ran` builds it on
+    /// two different roads — the command ending, and the command ending beside
+    /// a box that would not come away — and two copies of this would be two
+    /// accounts able to disagree about one run.
+    ///
+    /// `the_kernel_was_holding_it` is true because this crate runs nothing it
+    /// cannot bound. [`crate::WhatHappened`] says why it is a field at all.
+    #[must_use]
+    pub fn as_it_ended(&self, ended: std::process::ExitStatus) -> crate::WhatHappened {
+        crate::WhatHappened {
+            program: self.program.clone(),
+            arguments: self.arguments.clone(),
+            was_allowed: self.may_reach.clone(),
+            ended,
+            the_kernel_was_holding_it: true,
+        }
+    }
 }
 
 #[cfg(test)]

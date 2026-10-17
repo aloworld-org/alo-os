@@ -7,8 +7,11 @@
 //!
 //! | | |
 //! |---|---|
-//! | [`ARun`] | A command and everywhere it may reach, checked before anything happens |
-//! | [`ran`] | One command, run inside a box the kernel closes, start to finish |
+//! | [`AskedToRun`] | A command somebody asked to run, as asked, before anything judged it |
+//! | [`WhereCommandsRun`] | Where commands run and where that is written down — the one road in |
+//! | [`checked_and_written_down`] | Its first half: a request judged, and a refusal recorded |
+//! | [`SomewhereToWrite`] | Somewhere a run can be written down, which a run cannot happen without |
+//! | [`ARun`] | A request that has been checked, which is what the checking produces |
 //! | [`WhatHappened`] | What a run did, in a form the record can take |
 //! | [`NotRun`] | Why a command was not run, which is always a refusal |
 //! | [`enter_the_box_and_become`] | What `alo-enter-the-box` does: admit itself, then become the command |
@@ -35,26 +38,35 @@
 //! list does not gain `exec`, a shell, or anything else; this is reached
 //! through the person's own grant and no agent can call it.
 //!
-//! # What this crate does not do, said plainly
+//! # The record is kept here, and cannot be skipped
 //!
 //! `alo_capability::AlwaysOn` lists the three protections ADR 0064 keeps on at
-//! every level. This crate keeps **none** of them, and that is not a gap in it
-//! — they are kept by whoever calls it, and two of them cannot be kept here:
+//! every level. **This crate keeps the first of them**, and keeps it
+//! structurally: [`WhereCommandsRun`] takes somewhere to write and there is no
+//! constructor that does not, so a caller cannot reach a run holding nothing to
+//! record it in. Every run and **every refusal** is written down, which is
+//! `CLAUDE.md`'s gate in its own words.
 //!
-//! - **The record** is `alo-record`'s. [`WhatHappened`] exists so a caller can
-//!   write one, and carries what ran, what it was allowed to reach and how it
-//!   ended, because a caller that cannot say what ran cannot record it.
-//! - **The snapshot before each run** is `alo-keeping`'s, taken *before* [`ran`]
-//!   is called. It has to be: a snapshot taken from in here would be taken
-//!   after the box was built and would be a snapshot of a machine already
-//!   changed.
+//! *This file said the opposite until 2026-10-16* — that the record was the
+//! caller's. That was correct about ownership and wrong about where the promise
+//! lives: a protection every level keeps is not one a caller may forget. The
+//! shape is `alo_turn::Machine`'s, which takes an `alo_turn::Kept` for exactly
+//! this reason, and [`SomewhereToWrite`] says why it is not that trait.
+//!
+//! **And a failure to write is a refusal.** A run whose record could not be
+//! written does not happen, because a protection ADR 0064 calls always on is
+//! not one that may be skipped because a disk was full.
+//!
+//! The other two are not this crate's and cannot be:
+//!
+//! - **The snapshot before each run** is taken *before* a run is asked for, so
+//!   it cannot be taken from in here: one taken after the box was built would be
+//!   a snapshot of a machine already changed. It is also **not built** — nothing
+//!   creates `/var/lib/alo/undo` and nothing takes a bracket, measured
+//!   2026-10-16, and ADR 0045 terms 8 and 9 are what unblocked it.
 //! - **The egress indicator** is `alo-egress`'s, and what this crate owes it is
 //!   the bound: a box built with no approved destination cannot connect
 //!   anywhere, which the kernel enforces on `socket_connect`.
-//!
-//! So a caller that calls [`ran`] and writes nothing down has run a command in
-//! a box and broken a promise. That sentence is here rather than in a commit
-//! because this is the file somebody wiring it up will read.
 //!
 //! # What is still owed before a person can use this
 //!
@@ -64,17 +76,24 @@
 //! on, and the wiring from the terminal are not built, and this crate makes
 //! none of them look built: it is reached by a caller passing a level, and
 //! nothing passes one yet.
+//!
+//! What is no longer owed is the record, which is why this paragraph is shorter
+//! than it was.
 
 #![cfg(target_os = "linux")]
 
 mod a_run_inside_a_box;
 mod entering;
 mod failing;
+mod somewhere_to_write;
 mod what_a_run_asks_for;
 mod what_happened_in_the_box;
+mod what_was_asked;
 
-pub use a_run_inside_a_box::{THE_HELPER, ran, ran_with_the_helper_at};
+pub use a_run_inside_a_box::{THE_HELPER, WhereCommandsRun, checked_and_written_down};
 pub use entering::{MEANING_ME, THE_PROCESSES, enter_the_box_and_become};
 pub use failing::NotRun;
+pub use somewhere_to_write::SomewhereToWrite;
 pub use what_a_run_asks_for::ARun;
 pub use what_happened_in_the_box::WhatHappened;
+pub use what_was_asked::AskedToRun;
