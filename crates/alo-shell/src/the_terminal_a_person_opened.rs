@@ -401,7 +401,21 @@ impl crate::Server {
     /// Take whatever the terminal's shell has written, once a frame.
     ///
     /// Answers whether anything changed, so a caller can leave the frame alone.
-    pub(crate) fn the_terminal_was_written_to(&mut self) -> bool {
+    ///
+    /// # Why this is public, and what it is not
+    ///
+    /// **A backend that never calls this draws an empty terminal whatever the
+    /// shell has said.** Nothing else reads the pseudoterminal: `direct_desktop`
+    /// calls it once a frame and is the only caller on a real machine, so a
+    /// fixture driving the nested backend has to call the same road or watch a
+    /// grid that never fills. It was crate-private until 2026-10-17, which is
+    /// why no nested check had ever seen a character the shell wrote.
+    ///
+    /// It is **not** a way to wait for output. It takes what has already
+    /// arrived and answers whether that was anything; a caller that wants to see
+    /// a command's result calls it until it says so, with its own bound on how
+    /// long it is prepared to wait.
+    pub fn the_terminal_was_written_to(&mut self) -> bool {
         self.alos_own_terminal
             .as_mut()
             .is_some_and(TheTerminal::what_the_shell_wrote)
