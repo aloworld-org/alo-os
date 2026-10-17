@@ -40,13 +40,13 @@ because a reader starting from it would conclude this goal is unreachable.*
 | ★ | decides whether alo may use it | built as types; **nothing stores either choice**, so not reachable — and **blocked**, not merely unbuilt |
 | ★ | reads who is speaking | **usable** — `you`, `alo`, `system`, `program` in the gutter |
 | ★ | sees measured apart from worked-out | **usable** — the same gutter's `system` against `alo` |
-| ★ | asks why a command is waiting | **built and reachable** as of #755, `Ctrl`+`Alt`+`W`. **Never seen on a machine** |
+| ★ | asks why a command is waiting | **built, reachable, and drawing nothing a person could read** until #778 on 2026-10-17: the chord put `alo` in the gutter and the sentence it labels went into the gutter's own 80-pixel box, under the word. Now drawn, and **seen under a nested compositor** (step 8c); **still never seen on a machine** |
 | ★ | scrolls back through output | **usable** |
 | ★ | runs a command touching nothing | **the box exists and works on a kernel** (#729); **nothing calls it** and the surface is unspecified — not usable. *This cell said "the kernel box does not" until 2026-10-17* |
 | ★ | scopes one command | **blocked** — a per-command narrowing is `alo-capability`, another lane's |
 | ★ | finds a command by what it did | the record can answer it; **nothing can ask it**, and giving it a surface is scope |
 | ★ | bisects the machine | **nothing**, and waits on a bracket |
-| ★ | reads output that is not a character grid | **the first rich view is usable** — a test result, #761. Two more are unspecified in the design |
+| ★ | reads output that is not a character grid | the first rich view is a test result, #761 — **and its two lines were cropped into the gutter's label box** the same way, until #778. This row said *usable* and the summary was not readable. Now drawn, and **seen under a nested compositor**; two more views are unspecified in the design |
 | ★ | hands somebody a session to replay | **nothing**, and waits on rich results |
 | | asks what a command will do first | the answer is built (#759); **nothing can ask**, because alo does not know what was typed — **blocked on ADR 0123 being accepted** |
 
@@ -57,10 +57,22 @@ them, which is this document's own lesson about mentions and declarations:
 | | how many | which |
 |---|---|---|
 | **usable** — all four conditions | **4** | opens a terminal and types; reads who is speaking; sees measured apart from worked-out; scrolls back |
-| **built and reachable, never seen on a machine** | **2** | asks why a command is waiting (#755); reads output that is not a character grid (#761) |
+| **built and reachable, never seen on a machine** | **2** | asks why a command is waiting (#755); reads output that is not a character grid (#761). **Both were also broken on screen until 2026-10-17** — see the two rows above and step 8c. The count is unchanged because a nested compositor is not a machine |
 | waiting on this lane's own earlier steps | **1** | hands somebody a session to replay, behind the rest of rich results |
 | **blocked on a decision or another lane** | **6** | decides whether alo may use it; scopes one command; finds a command by what it did; asks what a command will do first; **bisects the machine**, moved here at 2026-10-17 when the bracket landed and did not open it (step 5); **runs a command touching nothing**, moved here the same day when the box turned out to be built and the missing piece turned out to be a surface the design does not specify |
 | unowned | **0** | — *this row held* **runs a command touching nothing** *until 2026-10-17, when measuring found the box built (#729, 2026-10-16) and demonstrated on a real kernel. It moved to the row above: what it waits on is a surface, and the design is silent, which makes it the owner's* |
+
+**And what *built and reachable* turned out to mean.** Both rows above said a
+promise was built and reachable, and both were — the mechanism ran, a chord
+reached it, and **a person would have seen a gutter word beside nothing**. The
+sentence and the summary were being drawn into the gutter's own 80-pixel label
+box and painted over by the word. Every check of either counted drawn runs and
+passed, because both runs existed, one on top of the other.
+
+*So the three conditions this table tracks were all true and the feature did not
+work.* That is the strongest argument for the fourth that this lane has found,
+and it was found a day early only because somebody drew the thing and looked at
+the pixels. Fixed in #778.
 
 **The two in the second row are what tomorrow evening's boot is for.** Both are
 built, both are reachable, and nobody has watched either on a machine — which is
