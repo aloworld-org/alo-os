@@ -29,7 +29,7 @@ use alo_files::Answer;
 use serde::{Deserialize, Serialize};
 
 use crate::naming::{all_shown, shown};
-use alo_software::{Installed, Sandboxing};
+use alo_software::{Category, Installed, Sandboxing, WhatTheCatalogueHolds};
 
 use crate::thing::Thing;
 
@@ -119,6 +119,53 @@ pub enum Done {
         /// The application it was asked of.
         application: String,
     },
+    /// What the catalogue holds, under one kind of work or all of them.
+    ///
+    /// **The first answer here to a read that is not about the person's own
+    /// disk.** `alo_software::WhatTheCatalogueHolds`' header is why there is
+    /// nothing of the person in it: the catalogue is a file this repository
+    /// ships, byte-identical on every alo machine, and there is no constructor
+    /// anywhere that could put what somebody has installed into this shape.
+    CanBeInstalled {
+        /// The kind of work it was looked at under, as a verb's option names
+        /// it, and [`None`] for all of them.
+        ///
+        /// **The option's name and never the word a person reads.** This is a
+        /// wire, and `crate::naming`'s rule one level along: what crosses is
+        /// the identity, and what a person reads is looked up where a person is
+        /// — which for an option is `alo_capability::Offered`'s own key.
+        kind_of_work: Option<String>,
+        /// Each one, in the order the catalogue keeps.
+        applications: Vec<CanBeInstalled>,
+    },
+}
+
+/// One application a person could install, as it goes back to a client.
+///
+/// **Four fields and no fifth.** Each is one a client needs to say something
+/// true about the entry: the identifier to propose installing it, the place so
+/// the proposal names where it comes from, the release so a person can see what
+/// they would get, and the licence — which is the field somebody choosing
+/// between two of these actually weighs, and the one
+/// `alo_software::Catalogue` refuses an entry without.
+///
+/// **What is deliberately not here: whether it is already installed.** No
+/// constructor could put it here, because [`Done::of_a_catalogue_read`] takes
+/// only what the catalogue holds. See `alo_software::what_the_catalogue_holds`
+/// for the whole of that argument.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct CanBeInstalled {
+    /// What it is called where it comes from.
+    pub application: String,
+    /// The place it is installed from, by the name this machine gives it.
+    pub source: String,
+    /// The upstream release the catalogue lists it at.
+    pub version: String,
+    /// Its licence, as its upstream states it.
+    pub licence: String,
+    /// What a person would make with it, as a verb's option names it.
+    pub kind_of_work: String,
 }
 
 impl Done {
@@ -169,6 +216,36 @@ impl Done {
         Self::Reached {
             act: act.to_owned(),
             application: application.to_owned(),
+        }
+    }
+
+    /// What a look at the catalogue answered, as it goes on the wire.
+    ///
+    /// **Takes what the catalogue holds and nothing else**, which is where this
+    /// crate's half of the privacy line is: a constructor that also took an
+    /// `Installed` would make it possible to answer this read with a scan of
+    /// somebody's machine, and no amount of documentation would stop somebody
+    /// doing it one day.
+    ///
+    /// Nothing is put through this crate's `naming`, for
+    /// [`Done::of_an_installation`]'s reason: an identifier, a source name, a
+    /// version and an SPDX licence are each already held to their own shape by
+    /// `alo_software::Catalogue`, which refuses an entry missing any of them.
+    #[must_use]
+    pub fn of_a_catalogue_read(holds: &WhatTheCatalogueHolds) -> Self {
+        Self::CanBeInstalled {
+            kind_of_work: holds.kind().map(Category::as_an_option),
+            applications: holds
+                .shown()
+                .iter()
+                .map(|one| CanBeInstalled {
+                    application: one.application().identifier().to_owned(),
+                    source: one.source().as_str().to_owned(),
+                    version: one.version().to_owned(),
+                    licence: one.licence().to_owned(),
+                    kind_of_work: one.category().as_an_option(),
+                })
+                .collect(),
         }
     }
 
@@ -242,6 +319,23 @@ impl Done {
             // as well, which omit nothing at all — and a caveat on everything
             // is a caveat on nothing.
             Self::Reached { .. } => false,
+            // **A catalogue read leaves nothing out, and this is the arm where
+            // that claim has to be earned rather than assumed.**
+            //
+            // Everything else that answers a list here is bounded, because
+            // `alo-files` reads a disk and a disk can hold anything: *a bounded
+            // answer that does not say it was bounded reads exactly like a
+            // complete one.* This one is not reading a disk. The catalogue is
+            // `include_str!` of a file in this repository, so its size is
+            // decided at build time by whoever reviewed the commit that changed
+            // it, and `alo_software::Catalogue` refuses an empty shelf.
+            //
+            // **What would make this a lie**, written down so it is a decision
+            // and not an oversight: a catalogue fetched from somewhere, or one
+            // a person or an organisation can add to. Either turns this into a
+            // list of unknown length, and then the answer needs a `cut_short`
+            // of its own and this arm has to stop saying `false`.
+            Self::CanBeInstalled { .. } => false,
         }
     }
 }

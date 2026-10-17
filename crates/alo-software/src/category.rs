@@ -110,6 +110,29 @@ impl Category {
             Self::Documents => crate::words::DOCUMENTS,
         }
     }
+    /// The category as a verb's option names it.
+    ///
+    /// **Underscores, where [`Category::named`] has a hyphen**, and the two
+    /// spellings are each right for their own surface rather than a drift:
+    ///
+    /// - `catalogue.toml` is a file a person edits, and `page-layout` is how
+    ///   that file is written throughout — `a_category_is_named_in_the_spelling_the_file_uses`
+    ///   holds it to that.
+    /// - A verb's option is **what a model sends and what the record keeps**,
+    ///   and `alo_capability` refuses anything else in as many words: *name the
+    ///   option in lower-case words joined by underscores, like `left_half`.*
+    ///   That rule exists because a model has to be able to send the name back
+    ///   exactly.
+    ///
+    /// So the mapping is one function with a test either side of it, rather
+    /// than a second list somebody has to remember to extend. Derived from
+    /// [`Category::named`] and never typed again, so a category renamed in one
+    /// place is renamed in both.
+    #[must_use]
+    pub fn as_an_option(self) -> String {
+        self.named().replace('-', "_")
+    }
+
     /// Where this category is in [`Category::EVERY`].
     pub(crate) const fn place(self) -> usize {
         match self {
@@ -155,6 +178,60 @@ mod tests {
         // `Everything` narrows nothing and so is not a `Category`, but the
         // window draws it beside them and the vocabulary carries all nine.
         assert_eq!(crate::words::EVERY_CATEGORY.len(), keys.len() + 1);
+    }
+
+    /// **Every category's option name is one a verb will accept, and no two
+    /// collide.**
+    ///
+    /// `alo_capability::Verb::checked` refuses an option that is not an
+    /// identifier — lower-case, starting with a letter, underscores and digits
+    /// — and refuses two options of one name. Both refusals happen at
+    /// declaration time, so a category added with a name a verb will not take
+    /// would stop the daemon declaring its verbs at all rather than failing
+    /// later.
+    ///
+    /// **This test is why the rule is a function.** `page-layout` was passed
+    /// straight to `Offered::called` and every software verb test failed at
+    /// once: *name the option in lower-case words joined by underscores.*
+    #[test]
+    fn every_category_is_an_option_a_verb_will_take() {
+        let mut names = Vec::new();
+        for category in Category::EVERY {
+            let option = category.as_an_option();
+            assert!(
+                option.starts_with(|c: char| c.is_ascii_lowercase()),
+                "{option} does not start with a lower-case letter"
+            );
+            assert!(
+                option
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_'),
+                "{option} is not an identifier a model can send back"
+            );
+            assert!(!names.contains(&option), "{option} is offered twice");
+            names.push(option);
+        }
+        assert_eq!(names.len(), 8, "the loop read every category");
+    }
+
+    /// **The option name round-trips to the category it came from**, which is
+    /// what `alo_software::looked_at` relies on: it matches what a model sent
+    /// against this same function, so an option offered and an option
+    /// understood cannot be two different sets.
+    #[test]
+    fn an_option_name_finds_its_own_category_again() {
+        for category in Category::EVERY {
+            let option = category.as_an_option();
+            let found = Category::EVERY
+                .into_iter()
+                .find(|other| other.as_an_option() == option);
+            assert_eq!(
+                found,
+                Some(category),
+                "{option} did not find its way back to {}",
+                category.named()
+            );
+        }
     }
 
     /// **No category is named after a product**, and no category is named for

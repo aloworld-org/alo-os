@@ -471,6 +471,29 @@ fn before_the_door(at_the_door: AtTheDoor) -> Judged {
 /// rather than left to an `unreachable!()` because the match is where a third
 /// family gets noticed, and a door that panicked on a shape it did not expect
 /// would be a worse answer than one that carries it.
+///
+/// # The catalogue arm is the first that *is* reachable here
+///
+/// `what_can_be_installed` is a read, so a paired machine really can ask it and
+/// really does get an answer. Three arms were unreachable and the fourth is
+/// not, which is worth stating because the paragraph above could otherwise be
+/// read as a property of this function rather than of the verbs it has seen so
+/// far.
+///
+/// **What crosses, and why it is not a fingerprint of the other machine.** The
+/// catalogue is `include_str!` of a file in this repository, byte-identical on
+/// every alo machine of a given release, so the answer says nothing about what
+/// is installed over there, what the person has, or what their organisation
+/// permits — the three things [`Door::NotInstalledThere`](crate::AtTheDoor)
+/// refuses to carry.
+///
+/// What it *does* narrow is which release that machine runs, because the
+/// catalogue lists the upstream versions it was built against. Said rather than
+/// left to be noticed: a pairing is deliberate on both machines (ADR 0003) and
+/// a paired machine can already propose installations and read what it was
+/// granted, so this adds nothing a pairing did not already imply. If a release
+/// ever ships a catalogue a person or an organisation can add to, that stops
+/// being true and this arm needs a grant.
 fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> alo_protocol::Done {
     match did {
         alo_turn::WhatAVerbDid::ToFiles(answer) => alo_protocol::Done::of_a_file_verb(answer),
@@ -488,6 +511,9 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> alo_protocol::
                 reached.acting().on_the_wire(),
                 reached.acting().application().identifier(),
             )
+        }
+        alo_turn::WhatAVerbDid::WhatCanBeInstalled(holds) => {
+            alo_protocol::Done::of_a_catalogue_read(holds)
         }
     }
 }

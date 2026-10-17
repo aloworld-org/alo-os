@@ -63,6 +63,7 @@ use crate::acting_on_an_application::acting_on_an_application;
 use crate::arriving::worded_here;
 use crate::bounding::Doing;
 use crate::installing_an_application::installing_an_application;
+use crate::looking_at_the_catalogue::looking_at_the_catalogue;
 use crate::machine::Machine;
 use crate::refusing::NotDone;
 use crate::what_a_verb_did::WhatAVerbDid;
@@ -106,6 +107,15 @@ pub(crate) fn carrying_out(
     if authorised.verb() == alo_software::INSTALL_APPLICATION {
         let (entry, installed) = installing_an_application(machine, authorised, now);
         return (entry, installed.map(WhatAVerbDid::from));
+    }
+    // **The read, routed by name like the rest.** It is asked before the
+    // boundary is worked out rather than after, because there is nothing for a
+    // boundary to be made of: ADR 0013's is built from resolved paths and this
+    // verb reaches none. Taking `&*machine` rather than `&mut` says in the
+    // signature what the file says in prose — nothing on the machine moves.
+    if authorised.verb() == alo_software::WHAT_CAN_BE_INSTALLED {
+        let (entry, holds) = looking_at_the_catalogue(machine, authorised);
+        return (entry, holds.map(WhatAVerbDid::from));
     }
     // **The three application acts, routed by name for the same reason.** The
     // fourth, `arrange_application`, is not declared by the constructor that

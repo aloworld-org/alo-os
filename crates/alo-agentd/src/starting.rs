@@ -478,7 +478,7 @@ mod tests {
     /// than a capability that is missing, so the absence is as much a property
     /// as the presences.
     #[test]
-    fn this_daemon_offers_the_six_the_installation_and_the_three_application_acts() {
+    fn this_daemon_offers_the_six_the_two_software_verbs_and_the_three_application_acts() {
         let described = an_ordinary_machine();
         let loaded = what_this_machine_says().unwrap();
         let strings = loaded.strings();
@@ -505,12 +505,20 @@ mod tests {
             .collect();
         assert_eq!(
             offered.len(),
-            10,
+            11,
             "the daemon offers these and nothing else: {offered:?}"
         );
         assert!(
             offered.contains(&alo_software::INSTALL_APPLICATION),
             "an agent on this machine cannot install an application: {offered:?}"
+        );
+        // **And be shown what there is to install**, which arrived on
+        // 2026-10-17. Without it an agent can propose installing something it
+        // has no way of knowing exists, which is a capability that only works
+        // for somebody who already knew the answer.
+        assert!(
+            offered.contains(&alo_software::WHAT_CAN_BE_INSTALLED),
+            "an agent on this machine cannot be shown what to install: {offered:?}"
         );
         // The three with a road.
         for act in ["open_application", "focus_application", "close_application"] {

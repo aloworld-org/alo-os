@@ -40,6 +40,16 @@ pub const SOURCE: &str = "source";
 /// The gap holding the identifier of the application a person chose.
 pub const CHOSEN: &str = "chosen";
 
+/// The gap holding the kind of work a person is looking under.
+///
+/// **Filled with the word a person reads, not with the identifier.**
+/// `alo_capability::Takes::Choice` holds `Offered`s — a name a model sends and
+/// a word a person reads — and `crate::Category`'s own header is blunt about
+/// which goes where: *a market screen may not draw it … a screen that drew
+/// `page-layout` at somebody would be the hardcoded-English bug wearing a data
+/// file.* The same holds for a sentence in a record.
+pub const KIND_OF_WORK: &str = "kind_of_work";
+
 // ---------------------------------------------------------------------------
 // What became of it.
 // ---------------------------------------------------------------------------
@@ -252,6 +262,44 @@ pub const DID_NOT_ANSWER: Word = Word::saying(
 );
 
 // ---------------------------------------------------------------------------
+// The verb an agent is shown the catalogue through.
+// ---------------------------------------------------------------------------
+
+/// What the read is for.
+pub const READ_PURPOSE: Word = Word::saying(
+    "software.verb.what-can-be-installed.purpose",
+    "see what can be installed on this machine, and what kind of work each one is for",
+)
+.noting(
+    "What an assistant's ability to look at the catalogue is for, shown in a list of what it can \
+     do. It is the list this machine ships and is the same on every machine: it says nothing \
+     about what this person has installed, and there is no way for an assistant to ask that.",
+);
+
+/// The argument naming the kind of work.
+pub const READ_KIND_OF_WORK: Word = Word::saying(
+    "software.verb.what-can-be-installed.kind-of-work",
+    "the kind of work to look under, or everything",
+)
+.noting(
+    "Describes the one part of this request: which shelf of the catalogue to look at. The choices \
+     are the kinds of work a person can make something with, plus everything, and nothing else is \
+     accepted.",
+);
+
+/// The sentence the record keeps.
+pub const READ_SENTENCE: Word = Word::saying(
+    "software.verb.what-can-be-installed.sentence",
+    "see what can be installed under {kind_of_work}",
+)
+.noting(
+    "What the record says an assistant did when it looked at the catalogue. {kind_of_work} is one \
+     of the kinds of work, or the word for everything, and IS translated — unlike an \
+     application's identifier. A person does not approve this sentence: looking at the catalogue \
+     changes nothing and answers inside the turn.",
+);
+
+// ---------------------------------------------------------------------------
 // The verb an agent proposes an installation through.
 // ---------------------------------------------------------------------------
 
@@ -423,10 +471,17 @@ pub const WEB_NOTHING_GRANTED: Word = Word::saying(
 );
 
 /// Every word that names something, read inside another sentence.
-pub const THE_NAMES: [Word; 3] = [VERB_PURPOSE, VERB_APPLICATION, VERB_SOURCE];
+pub const THE_NAMES: [Word; 5] = [
+    VERB_PURPOSE,
+    VERB_APPLICATION,
+    VERB_SOURCE,
+    READ_PURPOSE,
+    READ_KIND_OF_WORK,
+];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 41] = [
+pub const THE_SENTENCES: [Word; 42] = [
+    READ_SENTENCE,
     INSTALLED,
     INSTALLED_UNSANDBOXED,
     UPDATE_OFFERED,
@@ -610,10 +665,13 @@ pub const EVERY_CATEGORY: [Word; 9] = [
 ];
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 44] = [
+pub const EVERY_WORD: [Word; 47] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
+    READ_PURPOSE,
+    READ_KIND_OF_WORK,
+    READ_SENTENCE,
     INSTALLED,
     INSTALLED_UNSANDBOXED,
     UPDATE_OFFERED,
@@ -769,7 +827,7 @@ mod tests {
             assert!(word.note().is_some(), "{}", word.named());
             for gap in word.phrase().unwrap().source().gaps() {
                 assert!(
-                    [APPLICATION, SOURCE, CHOSEN].contains(&gap.as_str()),
+                    [APPLICATION, SOURCE, CHOSEN, KIND_OF_WORK].contains(&gap.as_str()),
                     "{} has a gap called {gap}",
                     word.named()
                 );

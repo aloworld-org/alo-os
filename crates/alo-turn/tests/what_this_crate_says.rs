@@ -53,10 +53,14 @@ fn in_finnish() -> Strings {
         .says(
             Key::named("turn.could-not-install-here").expect("a key"),
             "mitään ei asennettu: tämä kone ei pystynyt suorittamaan asennusta, ja vika on alo              OS:ssä eikä missään, mitä sinä tai agenttisi pyysi",
+        )
+        .says(
+            Key::named("turn.could-not-look-at-the-catalogue").expect("a key"),
+            "agentillesi ei voitu näyttää, mitä voit asentaa: vika on alo OS:ssä eikä missään,              mitä sinä tai agenttisi pyysi",
         );
     let speaking = vocabulary
         .check(translation)
-        .expect("a translation of six sentences with the gaps the code fills");
+        .expect("a translation of seven sentences with the gaps the code fills");
     let mut strings = Strings::of(vocabulary);
     strings.speaks(speaking).expect("a checked translation");
     strings.prefers(&[finnish]);

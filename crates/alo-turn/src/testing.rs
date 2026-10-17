@@ -569,6 +569,11 @@ pub(crate) fn everything_that_can_come_back() -> Vec<NotDone> {
         NotDone::CouldNotInstallHere(crate::WentWrongInstalling::NotAnInstallation(
             alo_software::NotAnInstallation::NotApproved,
         )),
+        // The read beside it, and the mirror of the one above: an authority
+        // that came from an **approval** reaching a read's executor.
+        NotDone::CouldNotLookAtTheCatalogue(crate::WentWrongLooking::NotALook(
+            alo_software::NotALook::Approved,
+        )),
     ]
 }
 

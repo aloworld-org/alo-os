@@ -34,5 +34,11 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid) -> Done {
             reached.acting().on_the_wire(),
             reached.acting().application().identifier(),
         ),
+        // The fourth family, and **the first that is a read**. Every one before
+        // it answered a person who had approved something; this one answers
+        // inside the turn, so the two files named in this header are not the
+        // only ones that reach it — `crate::doing` does, which is the whole
+        // point of a read.
+        WhatAVerbDid::WhatCanBeInstalled(holds) => Done::of_a_catalogue_read(holds),
     }
 }
