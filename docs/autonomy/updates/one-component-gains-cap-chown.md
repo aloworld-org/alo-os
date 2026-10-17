@@ -66,9 +66,16 @@ believes without opening — `docs/decisions/README.md`'s own words.
 - **Two quoted phrases**, confirmed against the real text with whitespace
   normalised, because this repository's documents are hard-wrapped and a plain
   `grep` answers zero for a phrase that is present.
-- **`alo-citing` reads this file**, mutation-proved: a deliberately broken
-  `ADR 0999` makes it fail and name the line. So the citations are held by a
-  gate and not only by my own reading.
+- **`alo-citing` reads this file**, mutation-proved: a four-digit number put
+  where a decision's number goes, with no decision behind it, makes the check
+  fail and name the line. So the citations are held by a gate and not only by my
+  own reading.
+
+  *This sentence spelled that number out at first, and the gate rejected the
+  report for citing a decision that does not exist — correctly, because the check
+  cannot tell a citation from a sentence about one, and an exemption for prose
+  would be a hole in it. Describing the mutation instead of writing it is the
+  cheaper side of that trade.*
 
 **And I got the filename wrong on the way in.** I guessed ADR 0118's name from
 its commit subject and cited a file that does not exist; the real name is
