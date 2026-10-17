@@ -141,29 +141,41 @@ impl ARegion {
     }
 }
 
-/// The regions of a transcript this many lines tall, all of them a program's.
+/// The regions of a transcript: the program's output, and anything alo has said
+/// beneath it.
 ///
-/// **The whole display, as one region.** A pseudoterminal is the only writer
-/// today, so there is exactly one origin on screen and splitting it would be
-/// inventing a boundary nobody drew.
+/// **Two counts and nothing else.** It cannot see what the program wrote, so a
+/// program printing `alo` or `system` changes nothing — which is the rule at the
+/// top of this file expressed in a signature. A function given the text could be
+/// changed to look at it; this one has nothing to look at, and
+/// `tests/nothing_reads_the_bytes_to_decide_who_spoke.rs` holds it to that.
 ///
-/// It takes the line count rather than reading the screen, because nothing
-/// about the answer depends on what the screen says — which is the rule at the
-/// top of this file, expressed in a signature. A function given the text could
-/// be changed to look at it; this one has nothing to look at.
+/// **alo's lines come after the program's**, because a person asked and alo
+/// answered: the reply belongs under what it is about. So the program's region
+/// starts at the top and alo's starts where the program's ends.
 ///
 /// Answers an empty list for an empty display, so a caller drawing labels draws
-/// none rather than one beside a line that is not there.
+/// none rather than one beside a line that is not there — and leaves out either
+/// region that is nought lines tall, because a label beside nothing is worse
+/// than no label.
 #[must_use]
-pub fn regions_of(lines: usize) -> Vec<ARegion> {
-    if lines == 0 {
-        return Vec::new();
+pub fn regions_of(the_programs: usize, alos: usize) -> Vec<ARegion> {
+    let mut found = Vec::new();
+    if the_programs > 0 {
+        found.push(ARegion {
+            who: WhoIsSpeaking::AProgram,
+            from: 0,
+            lines: the_programs,
+        });
     }
-    vec![ARegion {
-        who: WhoIsSpeaking::AProgram,
-        from: 0,
-        lines,
-    }]
+    if alos > 0 {
+        found.push(ARegion {
+            who: WhoIsSpeaking::Alo,
+            from: the_programs,
+            lines: alos,
+        });
+    }
+    found
 }
 
 #[cfg(test)]

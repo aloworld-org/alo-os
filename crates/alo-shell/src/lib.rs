@@ -71,6 +71,9 @@
 
 #![cfg(target_os = "linux")]
 
+/// The chord that asks why a command is waiting, which was the only road to an
+/// answer that was already built.
+mod a_chord_asks_why_a_command_is_waiting;
 mod a_chord_brings_up_the_agent;
 mod a_chord_moves_between_applications;
 mod a_chord_moves_the_keyboard_between_areas;

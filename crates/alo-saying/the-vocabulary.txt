@@ -1496,6 +1496,7 @@ shortcuts.action.terminal	Open a terminal
 shortcuts.action.the-agent	Ask the agent
 shortcuts.action.the-next-area	Move the keyboard to the next part of the screen
 shortcuts.action.the-previous-area	Move the keyboard to the previous part of the screen
+shortcuts.action.why-is-it-waiting	Ask why a command is waiting
 shortcuts.action.window-options	Show the window's options
 shortcuts.action.zoom-the-canvas-in	Zoom the canvas in
 shortcuts.action.zoom-the-canvas-out	Zoom the canvas out

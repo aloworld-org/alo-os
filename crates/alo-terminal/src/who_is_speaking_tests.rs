@@ -37,7 +37,7 @@ fn a_program_printing_alos_own_words_is_still_the_program() {
         // this loop exists to make that a measured fact rather than an
         // argument about a signature.
         let lines = forgery.lines().count().max(1);
-        let regions = regions_of(lines);
+        let regions = regions_of(lines, 0);
         assert_eq!(
             regions.len(),
             1,
@@ -73,7 +73,8 @@ fn the_origin_cannot_be_got_from_the_bytes() {
     // `regions_of` takes a count. A function that cannot see the text cannot
     // be fooled by it, and this is that signature asserted rather than
     // described: the same count gives the same answer whatever is on screen.
-    assert_eq!(regions_of(7), regions_of(7));
+    assert_eq!(regions_of(7, 0), regions_of(7, 0));
+    assert_eq!(regions_of(7, 1), regions_of(7, 1));
 }
 
 /// **Every origin has its own word**, and no two share one.
@@ -143,17 +144,24 @@ fn a_region_holds_its_own_lines_and_no_others() {
 /// because an off-by-one at a boundary is what this would actually be.
 #[test]
 fn every_line_belongs_to_exactly_one_region() {
-    for height in [1_usize, 2, 24, 40, 706 / 22] {
-        let regions = regions_of(height);
-        for line in 0..height {
-            let holding = regions.iter().filter(|region| region.holds(line)).count();
+    for the_programs in [1_usize, 2, 24, 40, 706 / 22] {
+        for alos in 0..3_usize {
+            let regions = regions_of(the_programs, alos);
+            let altogether = the_programs + alos;
+            for line in 0..altogether {
+                let holding = regions.iter().filter(|region| region.holds(line)).count();
+                assert_eq!(
+                    holding, 1,
+                    "line {line} of {altogether} ({the_programs} the program's, {alos} alo's) \
+                     is in {holding} regions, not one"
+                );
+            }
+            let covered: usize = regions.iter().map(|region| region.lines).sum();
             assert_eq!(
-                holding, 1,
-                "line {line} of {height} is in {holding} regions, not one"
+                covered, altogether,
+                "the regions cover {covered} of {altogether}"
             );
         }
-        let covered: usize = regions.iter().map(|region| region.lines).sum();
-        assert_eq!(covered, height, "the regions cover {covered} of {height}");
     }
 }
 
@@ -161,7 +169,22 @@ fn every_line_belongs_to_exactly_one_region() {
 /// that is not there.
 #[test]
 fn an_empty_display_has_no_regions() {
-    assert!(regions_of(0).is_empty());
+    assert!(regions_of(0, 0).is_empty());
+
+    // And a display with nothing of the program's but a remark of alo's is one
+    // region, not two with an empty one in front of it.
+    // Asserted whole rather than field by field, so a second region appearing
+    // in front of alo's — one of nought lines, which would be labelled —
+    // fails here rather than being skipped over by an index.
+    assert_eq!(
+        regions_of(0, 1),
+        vec![ARegion {
+            who: WhoIsSpeaking::Alo,
+            from: 0,
+            lines: 1,
+        }],
+        "a display with nothing of the program's is not one region of alo's"
+    );
 }
 
 /// **A region never covers no lines.**
@@ -170,9 +193,14 @@ fn an_empty_display_has_no_regions() {
 /// while holding nothing, which is a label in the gutter for nothing at all.
 #[test]
 fn no_region_is_empty() {
-    for height in [1_usize, 3, 24, 100] {
-        for region in regions_of(height) {
-            assert!(region.lines > 0, "a region of no lines was produced");
+    for the_programs in [0_usize, 1, 3, 24, 100] {
+        for alos in 0..3_usize {
+            for region in regions_of(the_programs, alos) {
+                assert!(
+                    region.lines > 0,
+                    "a region of no lines was produced for {the_programs} and {alos}"
+                );
+            }
         }
     }
 }

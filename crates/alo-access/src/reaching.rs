@@ -137,7 +137,20 @@ pub const fn the_tab_stop_for(action: Action) -> Surface {
         // close, minimise and the two halves, which are the other things done to
         // it. It is not reached on the canvas even though a Place is the canvas's,
         // because the thing being acted on is the window.
-        | Action::MoveTheWindowToTheNextPlace => Surface::WindowControls,
+        | Action::MoveTheWindowToTheNextPlace
+        // **Asking why a command is waiting is done to the window in front**,
+        // because what it acts on is the command that window is running — so a
+        // keyboard reaches it where that window's own controls are, by the
+        // reasoning that puts the three above there: the thing being acted on is
+        // what decides the surface.
+        //
+        // **And nothing on a terminal's controls does it today.** Said plainly
+        // for `Action::Terminal`'s reason a few lines up: a person told *it is on
+        // the window's controls* would look and not find it, and that gap is why
+        // the chord exists at all. When a terminal's own controls gain a way to
+        // ask, this arm becomes true as written and nothing here has to change.
+        // Until then it names where this is going rather than where it is.
+        | Action::WhyIsItWaiting => Surface::WindowControls,
         // The canvas is the surface the windows sit on, and in this compositor
         // that surface *is* the desktop — `Surface::Desktop` is documented as
         // "the desktop itself, and the windows on it". So zooming it and fitting

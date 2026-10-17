@@ -75,6 +75,18 @@ pub const TERMINAL: Word = Word::saying("shortcuts.action.terminal", "Open a ter
      every other system spells it, so a translator should not make it definite.",
 );
 
+/// What [`crate::Action::WhyIsItWaiting`] does.
+pub const WHY_IS_IT_WAITING: Word = Word::saying(
+    "shortcuts.action.why-is-it-waiting",
+    "Ask why a command is waiting",
+)
+.noting(
+    "A person has run something in a terminal and it seems to have stopped. This asks alo to \
+         look at it and say why it is waiting - for them to type, for a network, for another \
+         program, or because it is still working. \"A command\" and not \"the command\": it is \
+         whichever one that terminal is running, so a translator should not make it definite.",
+);
+
 /// What [`crate::Action::Settings`] does.
 pub const SETTINGS: Word = Word::saying("shortcuts.action.settings", "Open Settings").noting(
     "Settings is where a person changes what their own machine does — the one place, not a \
@@ -493,11 +505,12 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// the shortcuts do, what is held down, the keys that print a word, why a
 /// combination was refused, what one chord wanted twice says, and then what is
 /// said about the person's own file.
-pub const EVERY_WORD: [Word; 56] = [
+pub const EVERY_WORD: [Word; 57] = [
     THE_AGENT,
     LAUNCHER,
     SETTINGS,
     TERMINAL,
+    WHY_IS_IT_WAITING,
     WINDOW_OPTIONS,
     CLOSE_WINDOW,
     MINIMISE_WINDOW,

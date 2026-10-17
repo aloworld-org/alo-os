@@ -43,7 +43,7 @@ const NOTHING: Modifiers = Modifiers::none();
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 21] = [
+const SHIPPED: [(Action, Chord); 22] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::Settings, Chord::shipped(SUPER, Key::I)),
@@ -60,6 +60,15 @@ const SHIPPED: [(Action, Chord); 21] = [
     // `alo_keyboards::switching::the_chord` is Alt+Space, which this does not
     // touch.
     (Action::Terminal, Chord::shipped(CTRL_ALT, Key::T)),
+    // **Ctrl+Alt+W, beside Ctrl+Alt+T which opens the terminal this asks about.**
+    // `W` for *waiting*, and it is the pair a person learns together: the chord
+    // that gives you a terminal and the chord that explains what it is doing.
+    //
+    // `Ctrl+Alt` for the terminal's own reason — nothing else wants it, and
+    // `Chord::checked` admits it because `the_clipboard` refuses C, X and V only
+    // when Ctrl is held alone. `W` is deliberately not `Ctrl+W`, which closes a
+    // tab in every browser a person has ever used.
+    (Action::WhyIsItWaiting, Chord::shipped(CTRL_ALT, Key::W)),
     // **Alt+F3, beside Alt+F4 which closes.** `docs/features.md` promises the
     // habits people arrive with still work, and KDE spells *the window's own
     // operations menu* exactly this way.
