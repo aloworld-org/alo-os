@@ -71,6 +71,14 @@ pub(crate) struct DesktopPicture {
     /// with it, including the Dock the person needs in order to do anything
     /// about it. `crate::task_raster::furniture` says what it refuses.
     pub(crate) tasks: Vec<crate::task_raster::TaskPicture>,
+    /// The window of what a person can install, where one is open and could be
+    /// drawn.
+    ///
+    /// **A window that refuses is left out rather than refusing the frame**,
+    /// for the reason the task windows above give: one window too small for
+    /// its own layout is one window's problem, and taking the desktop down
+    /// with it would take the Dock down too.
+    pub(crate) market: Option<crate::market_raster::MarketPicture>,
     /// The window of what is running.
     pub(crate) running: ListPicture,
     /// The window of what is filling the disk.
@@ -103,6 +111,8 @@ pub(crate) struct Shown<'a> {
     pub(crate) filling: &'a ListShows,
     /// The task windows open on this display, already placed.
     pub(crate) tasks: &'a [crate::task_raster::ATaskOnTheDisplay<'a>],
+    /// The window of what a person can install, where one is open.
+    pub(crate) market: Option<crate::market_raster::AMarketOnTheDisplay<'a>>,
     /// How this display is divided.
     pub(crate) division: &'a alo_dividing::Division,
     /// What letting go of a dragged window would do.
@@ -225,6 +235,7 @@ pub(crate) fn picture(
 ) -> Result<DesktopPicture, RenderError> {
     let Shown {
         tasks,
+        market,
         running,
         filling,
         division,
@@ -358,8 +369,24 @@ pub(crate) fn picture(
         })
         .collect();
 
+    // **The market window, left out if it refuses** — the same rule as the
+    // task windows above and for the same reason.
+    let market = market.and_then(|open| {
+        crate::market_raster::picture(
+            open.at,
+            open.showing,
+            open.words,
+            crate::market_raster::MarketLook {
+                scheme: look.scheme(),
+                scale: look.scale(),
+            },
+            fonts,
+        )
+    });
+
     Ok(DesktopPicture {
         tasks,
+        market,
         top_controls,
         size,
         dock: match showing {

@@ -52,6 +52,7 @@ fn drawn_with(
         dock,
         look,
         crate::desktop_raster::Shown {
+            market: None,
             tasks: &[],
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
             the_docks_words: crate::desktop_testing::no_words(),
@@ -106,6 +107,7 @@ fn drawn_with_an_open_list(
         &dock,
         noon_look(&an_appearance(), reading),
         crate::desktop_raster::Shown {
+            market: None,
             tasks: &[],
             the_dock_has_open: &crate::what_the_dock_has_open::MORE_APPS,
             the_docks_words: crate::desktop_testing::no_words(),
@@ -149,6 +151,7 @@ fn drawn_at(
         dock,
         look,
         crate::desktop_raster::Shown {
+            market: None,
             tasks: &[],
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
             the_docks_words: crate::desktop_testing::no_words(),
@@ -572,6 +575,7 @@ fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
             &Dock::shipped(),
             look,
             crate::desktop_raster::Shown {
+                market: None,
                 tasks: &[],
                 the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
                 the_docks_words: crate::desktop_testing::no_words(),
@@ -1035,6 +1039,7 @@ fn a_task_window_reaches_the_desktop_picture_and_is_painted() {
             look,
             crate::desktop_raster::Shown {
                 tasks,
+                market: None,
                 the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
                 the_docks_words: crate::desktop_testing::no_words(),
                 running: &running_shows(&running, &strings),
@@ -1117,6 +1122,7 @@ fn a_task_window_too_small_is_left_out_rather_than_refusing_the_frame() {
         &dock,
         look,
         crate::desktop_raster::Shown {
+            market: None,
             tasks: &impossible,
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
             the_docks_words: crate::desktop_testing::no_words(),
