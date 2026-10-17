@@ -286,3 +286,68 @@ fn every_counted_key_is_a_key() {
         );
     }
 }
+
+/// **The summary reads what the design draws**, assembled from the words this
+/// crate declares.
+///
+/// The design's frame `Rich test result / untrusted program data` in
+/// `485-28999.xml` holds the text **`Tests · 23 passed · 1 failed`**, and that
+/// string is the expectation here rather than a description of it.
+///
+/// **This exists because the first version added a word the design does not
+/// have.** The counted forms were `{passed} tests passed`, so the summary read
+/// *Tests · 23 tests passed · 1 test failed* — which says "tests" twice and is
+/// not the design's line. Nothing caught it: every test asserted the plurals
+/// were declarable, carried notes and had unique keys, and none asserted what
+/// they *say*.
+///
+/// The ignored count is left out when it is nought, which is why the design's
+/// own line has two parts and not three.
+#[test]
+fn the_summary_reads_what_the_design_draws() {
+    let strings = alo_strings::Strings::of(terminal_words().unwrap());
+    let nothing = alo_strings::Filling::nothing();
+    let counted = |which: &Counted, how_many: u64| {
+        strings
+            .count(&which.key(), &alo_strings::Counting::of(how_many), &nothing)
+            .text()
+            .to_owned()
+    };
+
+    assert_eq!(strings.say(&TESTS.key(), &nothing).text(), "Tests");
+    assert_eq!(counted(&SO_MANY_PASSED, 23), "23 passed");
+    assert_eq!(counted(&SO_MANY_FAILED, 1), "1 failed");
+
+    // The whole line, against the design's own text. The separator is the
+    // drawing's and is a middle dot with a space either side, read off the
+    // frame.
+    let drawn = [
+        strings.say(&TESTS.key(), &nothing).text().to_owned(),
+        counted(&SO_MANY_PASSED, 23),
+        counted(&SO_MANY_FAILED, 1),
+    ]
+    .join(" · ");
+    assert_eq!(drawn, "Tests · 23 passed · 1 failed");
+}
+
+/// **And the singular reads naturally too**, which is the other half of a
+/// counted string and the half a test of one number cannot see.
+///
+/// `1 passed` and `0 failed` are the two a person meets most, and English
+/// inflects neither — so both forms are the same here deliberately. A language
+/// that does inflect should differ, which is what the notes ask for.
+#[test]
+fn one_and_nought_read_naturally() {
+    let strings = alo_strings::Strings::of(terminal_words().unwrap());
+    let nothing = alo_strings::Filling::nothing();
+    let counted = |which: &Counted, how_many: u64| {
+        strings
+            .count(&which.key(), &alo_strings::Counting::of(how_many), &nothing)
+            .text()
+            .to_owned()
+    };
+
+    assert_eq!(counted(&SO_MANY_PASSED, 1), "1 passed");
+    assert_eq!(counted(&SO_MANY_FAILED, 0), "0 failed");
+    assert_eq!(counted(&SO_MANY_IGNORED, 1), "1 ignored");
+}

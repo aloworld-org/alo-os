@@ -1673,14 +1673,14 @@ terminal.explained.destructive	it destroys something
 terminal.explained.elevated	it needs more than your own rights
 terminal.explained.leaves	something leaves this machine
 terminal.explained.not-a-guarantee	an explanation, not a guarantee
-terminal.result.failed#one	{failed} test failed
-terminal.result.failed#other	{failed} tests failed
+terminal.result.failed#one	{failed} failed
+terminal.result.failed#other	{failed} failed
 terminal.result.from-cargo-test	cargo test output
-terminal.result.ignored#one	{ignored} test ignored
-terminal.result.ignored#other	{ignored} tests ignored
+terminal.result.ignored#one	{ignored} ignored
+terminal.result.ignored#other	{ignored} ignored
 terminal.result.not-verified	Source: {what} · Not independently verified
-terminal.result.passed#one	{passed} test passed
-terminal.result.passed#other	{passed} tests passed
+terminal.result.passed#one	{passed} passed
+terminal.result.passed#other	{passed} passed
 terminal.result.tests	Tests
 terminal.waiting.another-process	waiting for another program, or for a lock
 terminal.waiting.computing	still computing
