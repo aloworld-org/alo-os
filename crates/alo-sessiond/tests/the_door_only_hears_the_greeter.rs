@@ -91,7 +91,7 @@ fn the_greeter_knocking_over_a_real_socket_opens_a_session() {
     let Ok(listening) = Listening::at(&at, ours) else {
         panic!("the door would not open at {}", at.display());
     };
-    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default());
+    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default(), Giving);
 
     let knocking = std::thread::spawn({
         let at = at.clone();
@@ -122,7 +122,7 @@ fn a_caller_the_kernel_puts_in_another_group_is_refused() {
     // Accounts that hold this person and a logind that would open anything: if
     // either were reached, the answer below would be a session rather than a
     // refusal, so the assertion is also that neither was.
-    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default());
+    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default(), Giving);
 
     let knocking = std::thread::spawn({
         let at = at.clone();
@@ -153,7 +153,7 @@ fn a_line_that_is_not_a_knock_is_answered_and_told_nothing() {
     let Ok(listening) = Listening::at(&at, ours) else {
         panic!("the door would not open at {}", at.display());
     };
-    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default());
+    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default(), Giving);
 
     let knocking = std::thread::spawn({
         let at = at.clone();
@@ -191,7 +191,7 @@ fn a_real_door_refuses_a_stranger_and_a_second_sign_in() {
     let Ok(listening) = Listening::at(&at, ours) else {
         panic!("the door would not open at {}", at.display());
     };
-    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default());
+    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default(), Giving);
 
     for (knock, expected) in [
         (
@@ -216,4 +216,18 @@ fn a_real_door_refuses_a_stranger_and_a_second_sign_in() {
     }
 
     drop(std::fs::remove_file(&at));
+}
+
+/// A way of making a folder that always manages it.
+///
+/// These tests are about the door and the session, not about the folder, so the
+/// folder is the uninteresting answer here. `crates/alo-sessiond/src/opening.rs`
+/// is where a folder that could not be made is held to refusing nobody.
+#[derive(Debug, Clone, Copy, Default)]
+struct Giving;
+
+impl alo_sessiond::TheirFolder for Giving {
+    fn made_for(&self, _person: u32) -> Result<(), alo_sessiond::NotTheirs> {
+        Ok(())
+    }
 }

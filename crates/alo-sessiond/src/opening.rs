@@ -16,9 +16,15 @@
 //!    anything at all.
 //! 3. **Is somebody signed in already?** A second session nobody asked for is a
 //!    machine with two of everything.
-//! 4. **Then, and only then, open one.**
+//! 4. **Their place for what an undo would put back**, which only a privileged
+//!    process can make ([ADR 0121](../../../docs/decisions/0121-the-thing-that-opens-a-session-makes-the-persons-folder.md)).
+//!    After 3, so a knock nobody asked for causes no work; before 5, because
+//!    the session is what writes into the folder. **The only step whose failure
+//!    is not a refusal** — `crate::their_folder` says why, at length, and
+//!    `CLAUDE.md` law 5 is the reason that decides it.
+//! 5. **Then, and only then, open one.**
 //!
-//! Reversing any two of those would give something away. Asking `logind` first
+//! Reversing any two of 1, 2, 3 and 5 would give something away. Asking `logind` first
 //! would let an unauthorised caller start a session for a number and be refused
 //! afterwards; asking about the accounts before asking who is knocking would
 //! answer *is there an account numbered 1000* to whatever managed to connect.
@@ -35,28 +41,33 @@ use crate::accounts::TheAccounts;
 use crate::asking::{Answered, Knock};
 use crate::door::Door;
 use crate::logind::Logind;
+use crate::their_folder::TheirFolder;
 use crate::words::{ALREADY_SIGNED_IN, NOBODY_HERE, NOT_OPENED, NOT_YOURS_TO_ASK};
 
 /// The decision this privileged component makes, and the only one it makes.
 #[derive(Debug)]
-pub struct Opening<A: TheAccounts, L: Logind> {
+pub struct Opening<A: TheAccounts, L: Logind, F: TheirFolder> {
     /// Who may knock.
     door: Door,
     /// The accounts this machine has.
     accounts: A,
     /// What opens a session, and what holds it open once it is.
     logind: L,
+    /// What makes a person their place for what an undo would put back.
+    folders: F,
     /// Whether one is open, which is the whole of this component's memory.
     signed_in: bool,
 }
 
-impl<A: TheAccounts, L: Logind> Opening<A, L> {
-    /// This door, these accounts, and this way of opening a session.
-    pub const fn at(door: Door, accounts: A, logind: L) -> Self {
+impl<A: TheAccounts, L: Logind, F: TheirFolder> Opening<A, L, F> {
+    /// This door, these accounts, this way of opening a session, and this way
+    /// of making a person their folder.
+    pub const fn at(door: Door, accounts: A, logind: L, folders: F) -> Self {
         Self {
             door,
             accounts,
             logind,
+            folders,
             signed_in: false,
         }
     }
@@ -93,6 +104,23 @@ impl<A: TheAccounts, L: Logind> Opening<A, L> {
         if self.signed_in {
             return Answered::Refused(ALREADY_SIGNED_IN.key());
         }
+
+        // **Their folder, between the two, and a failure here refuses nobody.**
+        //
+        // Here rather than after, because the session is what writes into it and
+        // a session that opens first would have a window in which it could not.
+        // Here rather than before `signed_in`, because a second knock nobody
+        // asked for should not reach the machine at all.
+        //
+        // `crate::their_folder` carries the three reasons the person signs in
+        // anyway, and `CLAUDE.md` law 5 is the one that decides: refusing the
+        // sign-in would take the machine away from its owner to protect a
+        // feature nothing yet writes to. The journal is where this goes, and
+        // `a_folder_that_was_not_made_refuses_nobody` is what holds it.
+        if let Err(why) = self.folders.made_for(knock.person()) {
+            eprintln!("alo-sessiond: {why}");
+        }
+
         match self.logind.open_a_session_for(knock.person()) {
             Ok(()) => {
                 self.signed_in = true;
@@ -117,8 +145,58 @@ mod tests {
 
     use alo_strings::Key;
 
-    use crate::refusing::{NotAsked, NotOpened};
+    use crate::refusing::{NotAsked, NotOpened, NotTheirs};
     use crate::words::Word;
+
+    /// A way of making a folder that always manages it.
+    ///
+    /// The default in every test but the one about a failure, because *the
+    /// folder was made* is the uninteresting case and a test that had to say so
+    /// each time would bury the one that matters.
+    #[derive(Debug, Clone, Copy, Default)]
+    struct Giving;
+
+    impl TheirFolder for Giving {
+        fn made_for(&self, _person: u32) -> Result<(), NotTheirs> {
+            Ok(())
+        }
+    }
+
+    /// A way of making a folder that counts how often it was asked.
+    ///
+    /// `Rc<RefCell<_>>` rather than a field, because the trait takes `&self` —
+    /// which is itself the honest signature, since making a directory leaves
+    /// this value holding nothing. A test that needed `&mut self` to count
+    /// would be a test asking for a worse signature.
+    #[derive(Debug, Clone, Default)]
+    struct Counting(std::rc::Rc<RefCell<usize>>);
+
+    impl Counting {
+        fn how_many(&self) -> usize {
+            *self.0.borrow()
+        }
+    }
+
+    impl TheirFolder for Counting {
+        fn made_for(&self, _person: u32) -> Result<(), NotTheirs> {
+            *self.0.borrow_mut() += 1;
+            Ok(())
+        }
+    }
+
+    /// A way of making a folder that never manages it.
+    #[derive(Debug, Clone, Copy, Default)]
+    struct NotGiving;
+
+    impl TheirFolder for NotGiving {
+        fn made_for(&self, person: u32) -> Result<(), NotTheirs> {
+            Err(NotTheirs::NotFinished {
+                person,
+                unit: "alo-giving-a-folder@test.service".to_owned(),
+                said: "a test said so".to_owned(),
+            })
+        }
+    }
 
     /// The greeter's group, on the image this repository ships.
     const THE_GREETER: u32 = 60990;
@@ -179,7 +257,12 @@ mod tests {
     /// authenticated, and a session is open.
     #[test]
     fn the_surface_knocking_for_a_person_here_opens_a_session() {
-        let mut opening = Opening::at(the_door(), Numbered(vec![THE_PERSON]), Willing::default());
+        let mut opening = Opening::at(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            Giving,
+        );
 
         let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
 
@@ -194,7 +277,7 @@ mod tests {
     #[test]
     fn a_caller_that_is_not_the_surface_is_refused_before_anything_is_asked() {
         let logind = Willing::default();
-        let mut opening = Opening::at(the_door(), Unreadable, logind);
+        let mut opening = Opening::at(the_door(), Unreadable, logind, Giving);
 
         for knocker in [0, THE_PERSON, 60989, THE_GREETER + 1] {
             let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), knocker);
@@ -217,7 +300,12 @@ mod tests {
     /// across a process boundary rather than only inside one.
     #[test]
     fn a_number_this_machine_has_no_account_for_is_refused() {
-        let mut opening = Opening::at(the_door(), Numbered(vec![THE_PERSON]), Willing::default());
+        let mut opening = Opening::at(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            Giving,
+        );
 
         for nobody in [0, 1, 999, 1001, 60989, u32::MAX] {
             let answered = opening.heard(Knock::on_behalf_of(nobody), THE_GREETER);
@@ -239,7 +327,12 @@ mod tests {
     /// — there is no branch here that treats a small number differently.
     #[test]
     fn root_is_refused_like_anybody_else_this_machine_has_no_account_for() {
-        let mut opening = Opening::at(the_door(), Numbered(vec![THE_PERSON]), Willing::default());
+        let mut opening = Opening::at(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            Giving,
+        );
         assert_eq!(
             opening.heard(Knock::on_behalf_of(0), THE_GREETER),
             Answered::Refused(NOBODY_HERE.key())
@@ -250,7 +343,12 @@ mod tests {
     /// in the one sentence here a person can act on.
     #[test]
     fn a_second_knock_while_somebody_is_signed_in_is_refused() {
-        let mut opening = Opening::at(the_door(), Numbered(vec![THE_PERSON]), Willing::default());
+        let mut opening = Opening::at(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            Giving,
+        );
         assert_eq!(
             opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER),
             Answered::Opened
@@ -271,7 +369,12 @@ mod tests {
     /// says so.
     #[test]
     fn a_machine_that_refuses_is_answered_with_the_machines_sentence() {
-        let mut opening = Opening::at(the_door(), Numbered(vec![THE_PERSON]), Unwilling::default());
+        let mut opening = Opening::at(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Unwilling::default(),
+            Giving,
+        );
 
         let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
 
@@ -285,7 +388,12 @@ mod tests {
     /// is answered with *already signed in* for ever.
     #[test]
     fn a_machine_that_refused_once_can_be_asked_again() {
-        let mut opening = Opening::at(the_door(), Numbered(vec![THE_PERSON]), Unwilling::default());
+        let mut opening = Opening::at(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Unwilling::default(),
+            Giving,
+        );
         drop(opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER));
 
         let again = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
@@ -299,7 +407,7 @@ mod tests {
     /// asked, and nobody is told they do not exist.
     #[test]
     fn accounts_that_will_not_read_are_the_machines_failure_and_not_a_persons() {
-        let mut opening = Opening::at(the_door(), Unreadable, Willing::default());
+        let mut opening = Opening::at(the_door(), Unreadable, Willing::default(), Giving);
 
         let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
 
@@ -312,7 +420,12 @@ mod tests {
     #[test]
     fn every_answer_is_a_sentence_this_crate_declares() {
         let ours: Vec<Key> = crate::EVERY_WORD.iter().map(Word::key).collect();
-        let mut opening = Opening::at(the_door(), Numbered(vec![THE_PERSON]), Unwilling::default());
+        let mut opening = Opening::at(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Unwilling::default(),
+            Giving,
+        );
 
         for (knock, knocker) in [
             (Knock::on_behalf_of(THE_PERSON), 0),
@@ -324,5 +437,131 @@ mod tests {
                 Answered::Refused(key) => assert!(ours.contains(&key), "{key} is nobody's"),
             }
         }
+    }
+
+    /// **A folder that could not be made refuses nobody**, which is the one
+    /// decision in this file that is not a refusal.
+    ///
+    /// `crate::their_folder` carries the three reasons, and `CLAUDE.md` law 5 is
+    /// the one that decides: a sign-in turned away over a directory for a
+    /// feature nothing yet writes to would take the machine away from its owner
+    /// to protect a feature. **This is the test that keeps that true**, because
+    /// the obvious way to write the call site — `?`, or a match that returns a
+    /// refusal — is one character from being the opposite.
+    #[test]
+    fn a_folder_that_was_not_made_refuses_nobody() {
+        let mut opening = Opening::at(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            NotGiving,
+        );
+
+        let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
+
+        assert_eq!(
+            answered,
+            Answered::Opened,
+            "a person was turned away because their undo folder could not be made"
+        );
+        assert!(
+            opening.is_signed_in(),
+            "the session was not opened, so the failure did more than it was allowed to"
+        );
+    }
+
+    /// **And the folder is asked for exactly once per knock that gets that far.**
+    ///
+    /// One approval, one execution, in the shape this component has it: a retry
+    /// loop or a second call site would mean a person signing in once causing
+    /// two privileged acts, and the unit is `Type=oneshot` so a second start is
+    /// a second job on the machine.
+    #[test]
+    fn the_folder_is_asked_for_once_for_one_knock() {
+        let counted = Counting::default();
+        let mut opening = Opening::at(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            counted.clone(),
+        );
+
+        assert_eq!(
+            opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER),
+            Answered::Opened
+        );
+        assert_eq!(
+            counted.how_many(),
+            1,
+            "one knock asked for {} folders",
+            counted.how_many()
+        );
+    }
+
+    /// **A knock that is refused before the folder does not ask for one.**
+    ///
+    /// The order is the design, and this is the half of it the new step added:
+    /// a caller that may not knock, and a number nobody here has, must cause no
+    /// privileged act at all. A component that made a directory for every number
+    /// anybody asked about would be answering *is there an account numbered
+    /// this* on the disk.
+    #[test]
+    fn a_refused_knock_asks_for_no_folder() {
+        for (knocked_by, person, what) in [
+            (THE_PERSON, THE_PERSON, "a caller who may not knock"),
+            (THE_GREETER, THE_PERSON + 7, "a number nobody here has"),
+        ] {
+            let counted = Counting::default();
+            let mut opening = Opening::at(
+                the_door(),
+                Numbered(vec![THE_PERSON]),
+                Willing::default(),
+                counted.clone(),
+            );
+
+            let answered = opening.heard(Knock::on_behalf_of(person), knocked_by);
+
+            assert!(
+                matches!(answered, Answered::Refused(_)),
+                "{what} was not refused"
+            );
+            assert_eq!(
+                counted.how_many(),
+                0,
+                "{what} caused a folder to be asked for"
+            );
+        }
+    }
+
+    /// **And a second knock, once somebody is signed in, asks for no folder
+    /// either.**
+    ///
+    /// The reason the step sits after the `signed_in` check rather than before
+    /// it. Written as its own test because the two orderings are both plausible
+    /// and only one of them is what this file does.
+    #[test]
+    fn a_second_knock_asks_for_no_second_folder() {
+        let counted = Counting::default();
+        let mut opening = Opening::at(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            counted.clone(),
+        );
+
+        assert_eq!(
+            opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER),
+            Answered::Opened
+        );
+        assert!(matches!(
+            opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER),
+            Answered::Refused(_)
+        ));
+        assert_eq!(
+            counted.how_many(),
+            1,
+            "two knocks asked for {} folders",
+            counted.how_many()
+        );
     }
 }

@@ -158,10 +158,12 @@ already owned — right about the capability, taken about the wrong subject.
   the first account's road and a later route for a person who is not the first,
   but `alo-greeting`'s `made_an_account` refuses outright when any account
   exists, so the later route **is not written**. Pointed out by the desktop
-  lane, which owns ADR 0118. **So the caller is still an open question**, and a
-  road reached only by account creation would never reach a person whose account
-  already exists — which is every person on every machine that has been switched
-  on once. The next record is where that is settled.
+  lane, which owns ADR 0118. A road reached only by account creation would never
+  reach a person whose account already exists — which is every person on every
+  machine that has been switched on once —
+  so [ADR 0121](0121-the-thing-that-opens-a-session-makes-the-persons-folder.md)
+  puts the call in the road that **opens a session** instead, which everybody
+  takes.
 - **The path is a published surface and this moves it.** It is named by ADR 0045,
   ADR 0088, ADR 0118, `docs/contracts/kept-undo-folder.md` and six crates, and
   all of them move in the change that carries this decision — 21 references in

@@ -93,6 +93,73 @@ pub enum NotOpened {
     },
 }
 
+/// Why a person's place for what an undo would put back was not made.
+///
+/// Separate from [`NotOpened`] because **nobody is turned away for it**:
+/// [`crate::their_folder::TheirFolder`] says at length why, and the short
+/// version is that a person came to use their machine rather than to acquire a
+/// directory. Every variant goes to the journal and the sign-in continues.
+///
+/// It is its own type rather than a `String` so that the three ways this fails
+/// can be told apart by whoever reads the journal — *the unit is missing* and
+/// *the unit ran and refused* are a packaging fault and a machine fault, and
+/// they are fixed by different people.
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+pub enum NotTheirs {
+    /// There is no system bus to ask, or this process could not reach it.
+    #[error(
+        "alo-sessiond could not reach this machine's system bus, so account {person} has no place \
+         for what an undo would put back: {why}"
+    )]
+    NoBus {
+        /// The number a folder was asked for.
+        person: u32,
+        /// What the bus library said.
+        why: String,
+    },
+
+    /// systemd would not start the unit, or the bus refused the call.
+    ///
+    /// **An access-denied here is a unit file that stopped running as root**,
+    /// the same reading [`NotOpened::Refused`] has: what authorises starting a
+    /// unit is the caller's uid, not a capability, which is why this component
+    /// can hold none and still do it. A *not found* is the image missing
+    /// `alo-giving-a-folder@.service`, which `crates/alo-image` is what holds.
+    #[error(
+        "systemd would not start {unit} for account {person}: {named} — {why} — the person is \
+         signed in anyway and nothing of theirs is kept until this works"
+    )]
+    Refused {
+        /// The number a folder was asked for.
+        person: u32,
+        /// The unit that was asked for, so the journal names it.
+        unit: String,
+        /// The D-Bus error name, or empty where the failure carried none.
+        named: String,
+        /// What the bus said, in its own words.
+        why: String,
+    },
+
+    /// It started and did not finish well.
+    ///
+    /// The unit is `Type=oneshot`, so there is an answer to wait for and a
+    /// result to read. A started-but-failed unit is the case where the
+    /// capability was dropped or the disk refused, and the journal of
+    /// `alo-giving-a-folder@<person>.service` is where the reason is.
+    #[error(
+        "{unit} ran for account {person} and did not finish: {said} — its own journal says why, \
+         and the person is signed in anyway"
+    )]
+    NotFinished {
+        /// The number a folder was asked for.
+        person: u32,
+        /// The unit that ran.
+        unit: String,
+        /// What systemd said the result was.
+        said: String,
+    },
+}
+
 /// Why this machine could not say who it has accounts for.
 ///
 /// Separate from [`NotOpened`] because it happens before anything is asked of

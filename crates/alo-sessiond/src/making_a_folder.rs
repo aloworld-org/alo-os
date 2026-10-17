@@ -1,0 +1,250 @@
+//! The half of a person's folder that is really systemd, over the system bus.
+//!
+//! `crate::their_folder` is the decision — whether the folder is asked for and
+//! in what order — and runs on any host. This is the part that needs a machine,
+//! and it is `cfg(target_os = "linux")` for `crate::machine`'s reason: there is
+//! no unit to start anywhere else.
+//!
+//! # Its own file, because `machine.rs` had gained a second reason to change
+//!
+//! `crate::machine` is `logind` and the accounts file. This is systemd's
+//! manager, a different service with different methods and a different reason
+//! to be edited. `CLAUDE.md` law 4 — *a file that gains a second reason to
+//! change gets split in the same change that discovered it* — and this is that
+//! split, made when the two were briefly in one file and it was 475 lines.
+//!
+//! # What it may say to systemd, and why that is a list
+//!
+//! Three methods, all of them read-or-start, in [`EVERY_METHOD`]. **Nothing
+//! here stops, kills, masks, reloads, enables or writes a unit.** The list is a
+//! constant and [`call`] refuses anything not on it, so the list cannot fall
+//! out of date with the code beneath it — and
+//! `tests/this_component_only_starts_one_unit.rs` reads this file for the verbs
+//! that are missing.
+//!
+//! This is `alo-brokerd/src/units.rs`' shape, deliberately. That component made
+//! the same decision for the same reason, and two privileged components talking
+//! to systemd in two different shapes is one of them being reviewed less
+//! carefully than the other.
+
+use zbus::blocking::Connection;
+use zbus::zvariant::{OwnedObjectPath, OwnedValue};
+
+/// systemd itself, which is what starts the unit that makes a person's folder.
+const SYSTEMD: &str = "org.freedesktop.systemd1";
+
+/// The object systemd's manager is at.
+const SYSTEMDS_MANAGER: &str = "/org/freedesktop/systemd1";
+
+/// The interface the two methods are on.
+const SYSTEMDS_INTERFACE: &str = "org.freedesktop.systemd1.Manager";
+
+/// Reading one property of one object.
+const PROPERTIES: &str = "org.freedesktop.DBus.Properties";
+
+/// The interface a service's own result is on.
+const SERVICE: &str = "org.freedesktop.systemd1.Service";
+
+/// Starting a unit.
+const START_UNIT: &str = "StartUnit";
+
+/// Finding a started unit's object, so its result can be read.
+const GET_UNIT: &str = "GetUnit";
+
+/// Reading one property.
+const GET: &str = "Get";
+
+/// Every method this component calls on systemd, and there is no other.
+///
+/// Three, all of them read-or-start. **Nothing here stops, kills, masks,
+/// reloads, enables or writes a unit**, and
+/// `tests/this_component_only_starts_one_unit.rs` reads this file and holds it
+/// to that — the same shape `alo-brokerd/src/units.rs` uses, for the same
+/// reason: a privileged component that could be talked into *any* systemd verb
+/// is a privileged component with a shell in it.
+pub const EVERY_METHOD: [&str; 3] = [START_UNIT, GET_UNIT, GET];
+
+/// The one unit this component starts, before the `@` that carries the number.
+///
+/// **A constant of this repository and not a name from anywhere.**
+/// [`TheirFolder::made_for`](crate::TheirFolder::made_for) builds the instance
+/// from a `u32` here, so there
+/// is no spelling of *start whatever unit this caller happens to name* — which
+/// would be `CLAUDE.md` law 2 by the back door, this component running an
+/// arbitrary command because systemd was willing to look the name up.
+///
+/// `crates/alo-image` is what holds this against the unit the image actually
+/// ships, because a constant agreeing with another constant proves nothing.
+pub const THE_UNIT: &str = "alo-giving-a-folder";
+
+/// How systemd is asked to enqueue the job: fail rather than disturb anything
+/// already going on.
+const MODE: &str = "fail";
+
+/// How long one bus call may take.
+const ANSWERING: std::time::Duration = std::time::Duration::from_secs(10);
+
+/// How long the whole thing may take before the person is signed in regardless.
+///
+/// The unit makes two directories and changes one owner. Ten seconds is three
+/// orders of magnitude more than that needs, and it is a **ceiling on how long
+/// a person waits at a sign-in screen** rather than an estimate of the work —
+/// which is why it is short and why running out of it is not an error about the
+/// folder, it is a decision not to keep somebody standing there.
+const LONGEST_A_PERSON_WAITS: std::time::Duration = std::time::Duration::from_secs(10);
+
+/// How often systemd is asked whether the unit has finished.
+const ASKED_AGAIN_EVERY: std::time::Duration = std::time::Duration::from_millis(50);
+
+/// systemd, asked to make a person their place for what an undo would put back.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct TheMachinesFolders;
+
+impl crate::their_folder::TheirFolder for TheMachinesFolders {
+    fn made_for(&self, person: u32) -> Result<(), crate::refusing::NotTheirs> {
+        let named = format!("{THE_UNIT}@{person}.service");
+        let bus = zbus::blocking::connection::Builder::system()
+            .map(|building| building.method_timeout(ANSWERING))
+            .and_then(zbus::blocking::connection::Builder::build)
+            .map_err(|why| crate::refusing::NotTheirs::NoBus {
+                person,
+                why: why.to_string(),
+            })?;
+
+        let _job: OwnedObjectPath = call(
+            &bus,
+            SYSTEMDS_MANAGER,
+            SYSTEMDS_INTERFACE,
+            START_UNIT,
+            &(named.as_str(), MODE),
+        )
+        .map_err(|why| refused_to_start(person, &named, &why))?;
+
+        waited_for(&bus, person, &named)
+    }
+}
+
+/// Wait for the unit to finish and read what it did.
+///
+/// **Waited for rather than fired and forgotten**, because the folder has to
+/// exist before the session that writes into it: `StartUnit` answers as soon as
+/// the job is enqueued, which says nothing at all about whether a directory is
+/// there.
+fn waited_for(
+    bus: &Connection,
+    person: u32,
+    named: &str,
+) -> Result<(), crate::refusing::NotTheirs> {
+    let at: OwnedObjectPath = call(
+        bus,
+        SYSTEMDS_MANAGER,
+        SYSTEMDS_INTERFACE,
+        GET_UNIT,
+        &(named,),
+    )
+    .map_err(|why| refused_to_start(person, named, &why))?;
+
+    let until = std::time::Instant::now() + LONGEST_A_PERSON_WAITS;
+    loop {
+        let state: String = property(bus, &at, "org.freedesktop.systemd1.Unit", "ActiveState")
+            .map_err(|why| not_finished(person, named, &why))?;
+        // `oneshot` with `RemainAfterExit=no` ends as `inactive` on success and
+        // `failed` on anything else, so those two are the only resting states
+        // and everything else means it is still going.
+        if state != "activating" && state != "deactivating" && state != "reloading" {
+            let result: String = property(bus, &at, SERVICE, "Result")
+                .map_err(|why| not_finished(person, named, &why))?;
+            return if result == "success" {
+                Ok(())
+            } else {
+                Err(crate::refusing::NotTheirs::NotFinished {
+                    person,
+                    unit: named.to_owned(),
+                    said: result,
+                })
+            };
+        }
+        if std::time::Instant::now() >= until {
+            return Err(crate::refusing::NotTheirs::NotFinished {
+                person,
+                unit: named.to_owned(),
+                said: format!(
+                    "it was still {state} after {} seconds, and a person is not kept waiting \
+                     longer than that",
+                    LONGEST_A_PERSON_WAITS.as_secs()
+                ),
+            });
+        }
+        std::thread::sleep(ASKED_AGAIN_EVERY);
+    }
+}
+
+/// One property of one object, as `T`.
+fn property<T>(
+    bus: &Connection,
+    at: &OwnedObjectPath,
+    interface: &str,
+    named: &str,
+) -> Result<T, String>
+where
+    T: TryFrom<OwnedValue>,
+{
+    let value: OwnedValue = call(bus, at.as_str(), PROPERTIES, GET, &(interface, named))?;
+    T::try_from(value).map_err(|_| format!("{named} was not what systemd says it is"))
+}
+
+/// Call one of [`EVERY_METHOD`], and read its answer as `T`.
+///
+/// The guard is not decoration: it is what makes [`EVERY_METHOD`] the whole
+/// list rather than a comment that fell out of date. A method not on it cannot
+/// be sent from here even by a mistake in this file.
+fn call<T, B>(
+    bus: &Connection,
+    at: &str,
+    interface: &str,
+    method: &str,
+    body: &B,
+) -> Result<T, String>
+where
+    T: for<'d> zbus::export::serde::Deserialize<'d> + zbus::zvariant::Type,
+    B: zbus::export::serde::Serialize + zbus::zvariant::DynamicType,
+{
+    if !EVERY_METHOD.contains(&method) {
+        return Err(format!("{method} is not a method alo-sessiond calls"));
+    }
+    bus.call_method(Some(SYSTEMD), at, Some(interface), method, body)
+        .map_err(|why| format!("{method}: {why}"))?
+        .body()
+        .deserialize::<T>()
+        .map_err(|why| format!("{method}: {why}"))
+}
+
+/// A unit systemd would not start, with the name to decide on beside the
+/// sentence to read.
+fn refused_to_start(person: u32, named: &str, why: &str) -> crate::refusing::NotTheirs {
+    // The D-Bus error name, where the failure carried one. `call` folds the
+    // method into the sentence, so the name is recovered from the text rather
+    // than from the error — which is why this looks for the prefix every
+    // `zbus::Error::MethodError` sentence begins with.
+    let name = why
+        .split_whitespace()
+        .find(|word| word.starts_with("org.freedesktop.DBus.Error."))
+        .unwrap_or_default()
+        .trim_end_matches(':')
+        .to_owned();
+    crate::refusing::NotTheirs::Refused {
+        person,
+        unit: named.to_owned(),
+        named: name,
+        why: why.to_owned(),
+    }
+}
+
+/// A unit that started and whose result could not be read, or was not success.
+fn not_finished(person: u32, named: &str, why: &str) -> crate::refusing::NotTheirs {
+    crate::refusing::NotTheirs::NotFinished {
+        person,
+        unit: named.to_owned(),
+        said: why.to_owned(),
+    }
+}

@@ -41,7 +41,8 @@ mod running {
 
     use alo_sessiond::listening::Listening;
     use alo_sessiond::{
-        Answered, Door, Opening, THE_DOOR, TheMachinesAccounts, TheMachinesLogind, our_group,
+        Answered, Door, Opening, THE_DOOR, TheMachinesAccounts, TheMachinesFolders,
+        TheMachinesLogind, our_group,
     };
 
     /// Open the door and answer whoever knocks, until this service is stopped.
@@ -77,7 +78,12 @@ mod running {
              this process holds no capability, and what it can do is open one session"
         );
 
-        let mut opening = Opening::at(door, TheMachinesAccounts, TheMachinesLogind::default());
+        let mut opening = Opening::at(
+            door,
+            TheMachinesAccounts,
+            TheMachinesLogind::default(),
+            TheMachinesFolders,
+        );
         loop {
             match listening.answer_one(&mut opening) {
                 Ok(answered) => said(&answered),
