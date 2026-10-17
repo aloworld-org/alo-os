@@ -418,6 +418,82 @@ have not chosen**.
 where a capability *level* is kept, given that grants are folders and this is not
 one.
 
+### 8b. What the walker will actually see — **drawn and looked at, 2026-10-17**
+
+**alo's own terminal was drawn on a compositor for the first time on
+2026-10-17** (#775), under a headless parent in this lane's VM, and the frame was
+written out and looked at rather than counted. Two of the walk's thirteen steps
+described something the walker will not see, and both are now reworded above.
+
+| | |
+|---|---|
+| what is drawn | the gutter word **`program`** in lower case with its cursor beside it, and **`bash · UTF-8`** along the foot — which are steps 3 and 4, correct and in place |
+| what is **not** drawn | **any ground.** The terminal's window and its transcript are both painted `alo_appearance::Token::Cream`, which is `bg/canvas` `#faf7f2` — the same colour as the desktop behind them |
+| measured | every pixel sampled across the terminal's area is `(250, 247, 242)`. The only pixels of `bg/cool` `#eef2f4` or `bg/surface` `#ffffff` anywhere in the frame are the dock's, in `(465, 877)-(974, 950)` |
+
+**This is not a bug to fix and must not be filed as one.**
+`docs/design/the-terminal-window.md` says so itself, under *Colour*: the
+surrounding page's roles are known, but *the transcript's own ground and ink are
+not among them, so they are **owed** before the transcript is drawn and are
+deliberately absent here rather than guessed.* The `Cream` in the code is a
+placeholder standing in for a value the design has not given up, and the two
+grounds recorded in that file — `program ground #eef2f4`, `gutter ground
+#ffffff` — were measured off a **label** node, not off the window's regions. A
+lane that wired those two into the window's two solids would be approximating a
+design that says in writing it is silent.
+
+**It is the owner's, and it is the same blocker as step 4**: the transcript's
+ground and ink come off the design file, which needs the Figma connector
+authorised.
+
+**Why it is written here rather than left to be discovered tomorrow.** A walker
+told to look for *a terminal window* who sees text on a bare desktop reports
+that the terminal did not open — and that report is the most expensive thing
+this repository can produce, which is the walk guard's whole reason for
+existing. The guard in `alo-citing` checks that a step quotes words the machine
+really says; it cannot check that a step describes something the machine really
+draws. **Looking is what found this**, and a pixel count would not have: the
+first version of #775's check asserted on area and failed a working terminal.
+
+### 8c. Nine of the thirteen steps were driven before the boot — **2026-10-17**
+
+**This changes what the boot is for. It does not replace it.** The parent is
+`weston --backend=headless` and the renderer is llvmpipe, so nothing below says
+a word about a real display, a real keyboard, a real GPU or a machine that
+booted. What it removes is the case where the evening of the 18th is the *first*
+time anybody finds out.
+
+Driven against a real `bash` under a real compositor by
+`ALO_NESTED_SUBMODE=terminal`, and read back off the pixels:
+
+| step | what was read back |
+|---|---|
+| 2 | a prompt and a cursor — **and no window**, which is why that step is reworded above |
+| 3 | `program`, lower case, in the gutter |
+| 4 | `bash · UTF-8` along the foot |
+| 5 | `cat` waits, printing nothing |
+| 6 | **`alo  waiting for the keyboard`** |
+| 7 | after `Ctrl`+`D`, that line **goes** |
+| 8 | **`alo  waiting for something alo cannot identify`** for `sleep 30` |
+| 10 | `Tests · 23 tests passed · 1 test failed`, and under it `Source: cargo test output · Not independently verified` |
+| 11 | both of those in the **program's** region, labelled `program` |
+
+**Step 10's wording is the old one** and becomes `Tests · 23 passed · 1 failed`
+when #766 lands, which is what that change is for. A walker on a machine built
+before it should expect the longer form and not report a fault.
+
+**Four steps are still unseen**: 1 (sign in), 9 (scrolling with a wheel), 12 and
+13 (what a recognised result does when more output arrives and when the screen
+is cleared). A wheel and a sign-in are what a person and a machine have and this
+does not.
+
+**Two of the nine were only checkable because they were broken first.** Steps 6,
+10 and 11 drew their gutter word and no sentence until #778 — alo's answer and
+the result's lines were being cropped into the gutter's own 80-pixel label box
+and painted over. Every check of them counted drawn runs and passed, because
+both runs existed, one on top of the other. *A count cannot see a thing that was
+drawn in the wrong place.*
+
 ### 9. Try a command without letting it touch anything — **the box is built; the surface is the owner's, measured 2026-10-17**
 
 **This document listed it as *unowned* and the plan listed it as *blocked on the
