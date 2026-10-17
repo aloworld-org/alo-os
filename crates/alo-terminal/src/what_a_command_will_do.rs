@@ -17,9 +17,9 @@
 //!
 //! | what was looked for | what is there |
 //! |---|---|
-//! | anything holding the typed line | nothing. [`crate::what_a_person_typed`] turns a key into bytes and [`crate::a_shell_on_a_pseudoterminal`]'s `a_person_typed` writes them to the pseudoterminal, keeping none |
+//! | anything holding the typed line | nothing. [`crate::what_a_person_typed`] turns a key into bytes and `a_shell_on_a_pseudoterminal.rs`'s `a_person_typed` writes them to the pseudoterminal, keeping none |
 //! | the command in front | a **process id**, from which `/proc` gives the command line of something **already running** |
-//! | shell integration | none. The grid is `alacritty_terminal` with a `VoidListener`, and [`crate::terminal_output_becomes_a_grid`] says so in its own words: *nothing is listening* |
+//! | shell integration | none. The grid is `alacritty_terminal` with a `VoidListener`, and `terminal_output_becomes_a_grid.rs` says so in its own words: *nothing is listening* |
 //!
 //! So the three roads to the text of a command nobody has run are each a
 //! decision rather than a morning's work:
