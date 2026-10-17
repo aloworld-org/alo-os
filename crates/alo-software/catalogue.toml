@@ -1,0 +1,149 @@
+# What a person can find and install: the decided list, by what they would
+# make with it.
+#
+# `shipped.toml` is what a machine has so it is not helpless — one application
+# for each thing a person needs before they have installed anything. This file
+# is the next question: **what does a person work in all day?** A machine that
+# can browse, read and look at pictures and cannot make any of them is not a
+# workstation, and a fresh machine could do nothing else until this list
+# existed.
+#
+# It is data for the same reason `shipped.toml` is: a market screen, the agent's
+# installing verb and anything that audits what we recommend all read one list
+# rather than three that could disagree.
+#
+# `alo_software::Catalogue::decided` refuses it unless every entry names an
+# identifier the rented tool could be handed, a source by a name it could be
+# handed, the upstream release it was listed at and its licence — and three
+# things more:
+#
+# - **nothing already shipped.** Offering to install Firefox on a machine that
+#   has Firefox is a lie the screen would tell, so an identifier `shipped.toml`
+#   already names is refused here.
+# - **no application twice**, under one category or two. A list that offers one
+#   thing twice is a list a person cannot count.
+# - **nothing a person's own** (`alo_capability::A_PERSONS_OWN`, ADR 0043). Every
+#   category here is a making-category and none of them is a terminal; a
+#   terminal reaches a machine through `shipped.toml`, which is where a reader
+#   looks for it. This does not stop anybody installing one — `Wanted::by_hand`
+#   takes any identifier, and a curated list is not the only road.
+#
+# And **no key this reader does not know**, refused rather than ignored, for the
+# reason `shipped.toml` gives: a key meaning *recommended* or *cannot be
+# removed* would be a promise nothing here keeps.
+#
+# ## There is no English in this file
+#
+# No name, no summary, no description. A market screen shows a person their own
+# language, and the name and summary of an application are the **source's**,
+# already translated by the people who publish it — fetched when a person
+# browses, which is also why the egress indicator matters on that screen. An
+# English summary written here would be a hardcoded string in twenty-four
+# languages' way. What this file holds is only what the machine has to *decide*
+# with.
+#
+# ## What each category is called, and what it is not
+#
+# Each category names **a thing a person makes**, never a product it replaces.
+# These applications are the honest answers to "what do I use instead of
+# Photoshop" and this repository is not the place that sentence belongs: a
+# category called `photoshop-alternative` would age into a lie the day either
+# program changed, and it would describe our list by somebody else's catalogue
+# rather than by what a person is doing.
+#
+# ## Pinning, and the same weaker pin for the same reason
+#
+# `version` is the upstream's own release as its source listed it on the date
+# this list was decided (2026-10-16), read from Flathub's own appstream answer
+# rather than from memory. It is a weaker pin than `image/pinned.toml`'s
+# digests, and that is ADR 0073's decision rather than an oversight — the
+# reasoning is in `shipped.toml`'s own note and has not changed. A newer release
+# reaches a machine as an offered update, like any application's.
+#
+# Each is installed the way a person installs one — from `source`, through the
+# rented tool, arriving granted nothing.
+
+format = 1
+
+# Edit a picture that already exists: crop it, correct it, cut something out of
+# it, put two together. The thing most people mean by an image editor, and the
+# only one of these with three decades of other people's tutorials behind it,
+# which is what somebody arriving from a proprietary tool actually needs.
+[[application]]
+category = "pictures"
+identifier = "org.gimp.GIMP"
+source = "flathub"
+version = "3.2.6"
+licence = "GPL-3.0+ AND LGPL-3.0+"
+
+# Make a picture that does not exist yet, with a brush. Chosen beside the
+# picture editor rather than instead of it because painting and correcting are
+# different work: a brush engine built for pressure and tilt is the whole
+# product here, not a tool inside a larger one.
+[[application]]
+category = "painting"
+identifier = "org.kde.krita"
+source = "flathub"
+version = "5.3.4.1"
+licence = "GPL-3.0-only"
+
+# Draw something that has to stay sharp at any size — a logo, a sign, a
+# diagram, a cut file. Vectors are a different thing from pixels and no amount
+# of a picture editor substitutes for them.
+[[application]]
+category = "illustration"
+identifier = "org.inkscape.Inkscape"
+source = "flathub"
+version = "1.4.4"
+licence = "GPL-2.0-or-later"
+
+# Develop what a camera recorded: a shoot of raw files, graded and exported
+# without altering the originals. The library-and-develop shape, which a
+# picture editor opening one file at a time cannot be.
+[[application]]
+category = "photographs"
+identifier = "org.darktable.Darktable"
+source = "flathub"
+version = "5.6.2"
+licence = "GPL-3.0+"
+
+# Arrange a page that will be printed: a leaflet, a booklet, a poster, with the
+# colour and bleed a printer asks for. A word processor laying out a page for
+# print is the commonest way a job comes back from the printer wrong.
+[[application]]
+category = "page-layout"
+identifier = "net.scribus.Scribus"
+source = "flathub"
+version = "1.6.5"
+licence = "GPL-2.0+"
+
+# Cut video: clips on a timeline, with sound, titles and an export that plays
+# somewhere else.
+[[application]]
+category = "video"
+identifier = "org.kde.kdenlive"
+source = "flathub"
+version = "26.08.2"
+licence = "GPL-3.0-only"
+
+# Record and edit sound: an interview, a voice-over, a podcast — trimmed,
+# levelled and exported.
+[[application]]
+category = "audio"
+identifier = "org.audacityteam.Audacity"
+source = "flathub"
+version = "3.7.8"
+licence = "GPL-3.0-only"
+
+# Write, calculate and present. **One category for three things**, the way
+# `shipped.toml` has two roles for one developer's file manager: these arrive as
+# one application from one upstream, and three categories pointing at one
+# identifier would be a list offering the same thing three times. The shipped
+# text editor is plain text and the shipped document viewer only reads; this is
+# the first thing on the machine that writes a document somebody else can open.
+[[application]]
+category = "documents"
+identifier = "org.libreoffice.LibreOffice"
+source = "flathub"
+version = "26.8.1.1"
+licence = "MPL-2.0"
