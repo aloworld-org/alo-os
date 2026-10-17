@@ -46,32 +46,32 @@ because a reader starting from it would conclude this goal is unreachable.*
 | ★ | scopes one command | **blocked** — a per-command narrowing is `alo-capability`, another lane's |
 | ★ | finds a command by what it did | the record can answer it; **nothing can ask it**, and giving it a surface is scope |
 | ★ | bisects the machine | **nothing**, and waits on a bracket |
-| ★ | reads output that is not a character grid | **nothing** |
+| ★ | reads output that is not a character grid | **the first rich view is usable** — a test result, #761. Two more are unspecified in the design |
 | ★ | hands somebody a session to replay | **nothing**, and waits on rich results |
 | | asks what a command will do first | the answer is built (#759); **nothing can ask**, because alo does not know what was typed — **blocked** |
 
-**Four of thirteen are usable today. One more is reachable and unseen.** Of the
-remaining eight, counted against the rows above rather than against the order:
+**Where the thirteen stand at the end of 2026-10-17**, each row read rather
+than counted by a pattern — a first pass with a crude classifier misread two of
+them, which is this document's own lesson about mentions and declarations:
 
-- **one is startable right now** — *reads output that is not a character grid*,
-  and two more open up behind it;
-- **two are behind this lane's own earlier steps** — *bisects the machine* and
-  *hands somebody a session to replay*;
-- **four are blocked or need a decision this lane may not take** — *decides
-  whether alo may use it* and *scopes one command*, both on `alo-capability`,
-  whose ownership ADR 0111 leaves to the integration owner; *finds a command by
-  what it did*, which needs a decision about which surface asks it; and *asks
-  what a command will do first*, whose answer #759 built and whose asking needs
-  shell integration. All four are measured at the foot of the order;
-- **one is nobody's** — *run a command touching nothing*, available to the
-  desktop lane since 2026-10-17 and taken by no lane.
+| | how many | which |
+|---|---|---|
+| **usable** — all four conditions | **4** | opens a terminal and types; reads who is speaking; sees measured apart from worked-out; scrolls back |
+| **built and reachable, never seen on a machine** | **2** | asks why a command is waiting (#755); reads output that is not a character grid (#761) |
+| waiting on this lane's own earlier steps | **2** | bisects the machine, behind a bracket; hands somebody a session to replay, behind the rest of rich results |
+| **blocked on a decision or another lane** | **4** | decides whether alo may use it; scopes one command; finds a command by what it did; asks what a command will do first |
+| unowned | **1** | runs a command touching nothing |
 
-*That is three of thirteen behind a question rather than behind work, and all
-three were read as startable this morning.* The owner said that day
-that the development PC is off and its work can be done by the desktop lane; the
-desktop lane has read that and **has not taken it**, for a stated reason. So it
-is available and unclaimed, which is not the same as assigned. The table near the
-foot of this file carries all four readings and what changed between them.
+**The two in the second row are what tomorrow evening's boot is for.** Both are
+built, both are reachable, and nobody has watched either on a machine — which is
+the one condition a green suite says nothing about and the reason step 1 of this
+order is a boot rather than a task.
+
+*Four of thirteen were usable this morning and four still are. What changed is
+that **one promise gained a working view** and **four were found to be blocked
+rather than merely unbuilt** — which is worth more than it sounds, because a
+lane that believes four blocked things are startable spends four days finding
+out.*
 
 ## The order, and it is ordered by that bar rather than by size
 
@@ -122,63 +122,47 @@ fault — check `main` first and skip to walk step 7.
 has steps and so does the order below. A bare "step 6" could mean either, and one
 cross-reference in this file was already stale for exactly that reason.*
 
-### 2. Task 6, rich results — **the only startable task in the plan, and three wait on it**
+### 2. The source qualifier beside the gutter label — **unblocked today**
 
-**Measured 2026-10-17, by walking all ten of the plan's tasks rather than
-taking the next one.** This order spent the day promoting a step, measuring it,
-and finding it blocked — three times. So the tenth task was read with the other
-nine instead of after them:
+Task 2 of the plan, and it waited on rich results because *the source qualifier
+is provenance for a parsed result and has nothing to qualify until one exists*.
+**One exists now** (#761), so this is the next thing and the only one of the
+plan's ten that became startable rather than blocked today.
 
-| task | state |
-|---|---|
-| 1. *why is it waiting* reaches a person | **done**, #755 |
-| 2. the source qualifier | waits on task 6 |
-| **6. rich results** | **startable, and nothing outside the plan blocks it** |
-| 7. replay a session | waits on task 6 |
-| 3. explain a command before it runs | **blocked** — shell integration, found today; #759 built the answer half |
-| 4. find a command by what it did | **blocked** — which surface asks is a scope decision |
-| 5. scope one command | **blocked** — `alo-capability`, another lane's |
-| 8. bisect the machine | blocked on a bracket, *and the plan says so* |
-| 9. try a command touching nothing | blocked on the kernel boundary, *and the plan says so* |
-| 10. *your files as they were* | blocked on a bracket, *and the plan says so* |
+It is `alo-terminal` and `alo-shell`, both this lane's, and the input is a value
+this lane just built — which is what separates it from the three tasks at the
+foot of this order.
 
-**The plan was honest about the last three and not about tasks 3, 4 and 5**,
-which each read *Depends on: nothing in this plan* — true, and not the question
-anybody was asking. Four of ten are blocked, one is done, and **task 6 is the
-only one that can be started**. It also unblocks the most: tasks 2 and 7 both
-sit behind it.
+### 3. What is still owed on rich results
 
-*So this is not a judgement that rich results is the most valuable thing. It is
-the measured fact that it is the only thing, which is a stronger reason and took
-four attempts to find. The lesson is in the method: **walk the whole list before
-picking from it**, because a list read one item at a time hides its shape.*
+**The first view landed as #761**: a test result, which is the one view the
+design specifies. What is left under that task, in the order it is worth doing:
 
-**What it is.** `docs/features.md`, starred: *Output that is not stuck in a
-character grid. A benchmark draws a chart you can zoom; a long error becomes
-something you keep beside your editor and come back to tomorrow.* The design
-reserves the room — the gutter was measured against a node named *Rich test
-result / untrusted program data*, and the annotation says *PROGRAM includes
-parsed rich results*.
+- **the three `Ask alo` actions** the design draws under the summary. They are
+  the agent's road, which exists (`what_a_person_asked_goes_to_the_agent.rs`)
+  but addresses a task window rather than a terminal, so this needs a *who
+  asked* that can be either;
+- ***a thing on your desk that outlives the scroll*** — the promise's own
+  words, and a window rather than a line. A promise of its own;
+- **the benchmark and the diff**, which are **not specified anywhere**:
+  `479:29079` and `479:29140` are instances of components no snapshot in this
+  repository contains. These cannot be built from what is written down, and
+  that is a question for the owner rather than a gap to fill by invention.
 
-**Untrusted is the load-bearing word.** This parses what a stranger's program
-printed, so it is as much about what it refuses to render as what it renders —
-and the input is the one thing this lane certainly has, which is what separates
-it from task 3.
-
-### 3. The bracket, if it is still nobody's
+### 4. The bracket, if it is still nobody's
 
 ADR 0045 puts it in `alo-turn`. #751 removed the first thing in the way and #752
 recorded the measurement it rests on. **Only if nothing else has taken it** —
 that crate is the workspace's most central and a collision in it costs a day
 where asking costs a message.
 
-### 4. Then bisect the machine, and *your files as they were*
+### 5. Then bisect the machine, and *your files as they were*
 
 Both wait on a bracket and on nothing else, so **taking the bracket step above
 makes these two this lane's** — which is why the corrected table below no longer lists them as
 unfinishable. If the bracket turns out to be another lane's, these go with it.
 
-### 5. Explain a command before it runs — **blocked on shell integration, measured 2026-10-17**
+### 6. Explain a command before it runs — **blocked on shell integration, measured 2026-10-17**
 
 **This was step 2 of this order for part of 2026-10-17, on the plan's word that
 it was the cheapest of the remaining six.** #759 built the answer and found the
@@ -213,7 +197,7 @@ work teaches a person a road and then takes it away, which
 **What would unblock it**, in one sentence: a decision on shell integration —
 the sequence, its contract, and what stops a program forging it.
 
-### 6. Terminal tasks 4 and 5 — **both need a scope decision, measured 2026-10-17**
+### 7. Terminal tasks 4 and 5 — **both need a scope decision, measured 2026-10-17**
 
 **The plan says of each: *Depends on: nothing in this plan.* That is true, and I
 read it as *unblocked*, which it does not say.** Both depend on something
@@ -250,7 +234,7 @@ unanswered ownership question, as the step below.
 the record a narrowed question, given that the one window that shows the record
 refuses to narrow by design.
 
-### 7. The choice of whether alo may use the terminal — **blocked, measured 2026-10-17**
+### 8. The choice of whether alo may use the terminal — **blocked, measured 2026-10-17**
 
 **This was step 2 of this order for part of 2026-10-17, described as "the
 shortest distance from *built* to *usable* of anything on the list after #755".

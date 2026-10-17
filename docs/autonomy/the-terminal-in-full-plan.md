@@ -129,7 +129,25 @@ approximated.*
 
 ### 3. Explain a command before it runs
 
-**Status:** not started. **Depends on:** nothing in this plan.
+**Status:** **the answer is built (#759); the asking is blocked.**
+**Depends on:** a decision on shell integration — outside this plan.
+
+**alo does not know what a person has typed**, measured 2026-10-17: nothing
+keeps the typed line, `the_command_in_front` is a process already running, and
+the grid is `alacritty_terminal` with a `VoidListener`. Reading it off the
+screen would decide what the *person* typed from what a *program* printed;
+keeping our own copy of forwarded bytes diverges the first time somebody
+presses Up, silently. Shell integration is the real road and is a new
+mechanism, a published contract, and a decision about a sequence any program
+can forge.
+
+**`alo_terminal::WhatACommandWillDo` is built** — the plain words, the three
+marks and a disclaimer no shape of the type can omit. **No chord was bound**,
+because one bound to a surface that cannot work is what
+`alo-shell`'s `tests/the_road_every_action_takes.rs` refuses.
+
+*This task was called the cheapest of the remaining six. It priced the asking
+and assumed the input was free.*
 
 A person types a command and asks what it will do before running it. The model is
 asked; `alo-asking`, `alo-answering` and `alo-instructing` exist and a turn
@@ -138,7 +156,20 @@ it is the cheapest of the remaining six.
 
 ### 4. Find a command by what it did
 
-**Status:** not started. **Depends on:** nothing in this plan.
+**Status:** **blocked on a scope decision.** **Depends on:** which surface asks
+the question — outside this plan.
+
+The record can answer it: an entry carries `What`, whose `effect` says whether
+a call **changed** or only **answered**, and `What::touched(path)` already
+matches on recorded arguments rather than on text. What is missing is anywhere
+to ask from. The record window refuses by design (`record_keys.rs`: *no
+letters… nothing that hides a line*); no verb exists for the record in
+`docs/contracts/agent-verbs.md`; and `alo-ask` asks the **model**, not the
+record. Each road is a new promise.
+
+*One finding on the way: `RanACommand` records `allowed` — the folders the
+kernel let it reach. That is **permitted, not changed**, so for a raw command
+the record cannot say what it changed. For a verb it can.*
 
 *The command that changed my git config* rather than a substring of what was
 typed. `alo-record` already holds what every run did; this is a question put to
@@ -146,7 +177,9 @@ that record and a surface to ask it from.
 
 ### 5. Scope one command without changing a setting
 
-**Status:** not started. **Depends on:** nothing in this plan.
+**Status:** **blocked.** **Depends on:** `alo-capability`, which is another
+lane's — and ADR 0111 leaves whose change it is to the integration owner, in
+its own words, *and that question was never answered*.
 
 One command run under a narrower grant than the session has, without touching
 what the person chose for everything else. `alo-capability` has grants and
@@ -154,8 +187,27 @@ what the person chose for everything else. `alo-capability` has grants and
 
 ### 6. Output that is not stuck in a character grid
 
-**Status:** not started. **Depends on:** nothing in this plan. **Task 2 depends
-on this**, not the other way round.
+**Status:** **the first rich view is built (#761).** **Depends on:** nothing in
+this plan. **Task 2 depends on this**, not the other way round — and task 2 is
+therefore startable now.
+
+**A test result is the one rich view the design specifies.** The frame `Rich
+test result / untrusted program data` in `485-28999.xml` gives four children at
+measured positions, and every figure is now in
+`docs/design/the-terminal-window.md`. The benchmark and diff views are
+`<instance>` elements whose components are **in no snapshot in this
+repository**, so their insides cannot be checked against anything and were not
+built.
+
+Three of the design's own sentences became tests: *formatted output is not
+system evidence* (every accessor is named `it_said_…`), *text reveals original
+bytes* (a result never replaces what the program printed), and *PROGRAM
+includes parsed rich results* (the lines extend the program's gutter region,
+not alo's).
+
+**What is still owed under this task:** the three `Ask alo` actions, which are
+the agent's road; *a thing on your desk that outlives the scroll*, which is a
+window rather than a line; and the two unspecified views.
 
 Rich results — a table a person can sort, a file name they can open — parsed from
 what a program printed. The design already reserves the room: the gutter was
