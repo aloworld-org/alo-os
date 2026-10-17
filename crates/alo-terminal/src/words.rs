@@ -106,11 +106,60 @@ pub const NOBODY_CAN_TELL: Word = Word::saying(
      this does not.",
 );
 
+/// A command the answer said destroys something.
+pub const IT_DESTROYS_SOMETHING: Word =
+    Word::saying("terminal.explained.destructive", "it destroys something").noting(
+        "A mark beside an explanation of a command a person has not run yet. It says the \
+         explanation claimed the command destroys something — deletes, overwrites or wipes. It \
+         is what the answer said and not what this machine checked, so a translation must not \
+         read like a verdict the system reached: \"warning: dangerous command\" would claim far \
+         more than this says.",
+    );
+
+/// A command the answer said needs rights beyond the person's own.
+pub const IT_NEEDS_MORE_THAN_YOUR_RIGHTS: Word = Word::saying(
+    "terminal.explained.elevated",
+    "it needs more than your own rights",
+)
+.noting(
+    "A mark beside an explanation of a command a person has not run yet. It says the explanation \
+     claimed the command needs rights beyond the person's own — what other systems call \
+     administrator or root. Address the person as the owner of the machine rather than as \
+     somebody lacking permission: they have the rights, and the point is that this command \
+     reaches for them.",
+);
+
+/// A command the answer said sends something off the machine.
+pub const SOMETHING_LEAVES_THIS_MACHINE: Word = Word::saying(
+    "terminal.explained.leaves",
+    "something leaves this machine",
+)
+.noting(
+    "A mark beside an explanation of a command a person has not run yet. It says the explanation \
+     claimed something goes off this machine — uploaded, sent, or fetched from somewhere that \
+     then knows it was asked. On a system sold on sovereignty this is the mark people look for, \
+     so the translation should be plain and concrete rather than technical: \"network access\" \
+     is weaker than the thing being said.",
+);
+
+/// The sentence every explanation carries, whatever it says.
+pub const AN_EXPLANATION_AND_NOT_A_GUARANTEE: Word = Word::saying(
+    "terminal.explained.not-a-guarantee",
+    "an explanation, not a guarantee",
+)
+.noting(
+    "Shown with every explanation of a command, always, and never on its own. It warns that the \
+     explanation may be wrong about what the command will do, because a script, an alias or \
+     something the command downloads can change what happens. Keep it short — it sits under the \
+     explanation every single time, so a long sentence becomes noise a person stops reading, \
+     which would defeat the only thing it is for.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 9] = [
+pub const EVERY_WORD: [Word; 13] = [
     A_PROGRAM,
     ALO,
     THE_SYSTEM,
@@ -120,6 +169,10 @@ pub const EVERY_WORD: [Word; 9] = [
     WAITING_FOR_ANOTHER_PROCESS,
     STILL_COMPUTING,
     NOBODY_CAN_TELL,
+    IT_DESTROYS_SOMETHING,
+    IT_NEEDS_MORE_THAN_YOUR_RIGHTS,
+    SOMETHING_LEAVES_THIS_MACHINE,
+    AN_EXPLANATION_AND_NOT_A_GUARANTEE,
 ];
 
 /// Why this crate's own list could not be declared.

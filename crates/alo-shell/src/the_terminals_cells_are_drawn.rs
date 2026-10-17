@@ -946,18 +946,36 @@ pub(crate) fn picture(
     // The word is resolved through the vocabulary, because `CLAUDE.md` makes
     // hardcoded English a bug and these four are read by every person who uses
     // the machine.
-    // **alo's own line, beneath what the program wrote.** One line, drawn in the
-    // transcript's own type at the transcript's own inset, so it reads as part
+    // **alo's own lines, beneath what the program wrote.** Drawn in the
+    // transcript's own type at the transcript's own inset, so they read as part
     // of the conversation rather than as chrome bolted beside it. The gutter
-    // below labels it `alo`, which is the design's own word for interpretation.
+    // below labels them `alo`, which is the design's own word for
+    // interpretation.
     //
-    // Resolved through the vocabulary, because what is kept is a key and never a
-    // sentence — so a person reads it in the language they chose.
-    if let Some(key) = what_alo_said.said() {
-        let said = says.say(key, &alo_strings::Filling::nothing());
-        let beneath = screen.size().lines();
-        if let Some(line) = a_regions_label(fonts, said.text(), goes, beneath, (ground, ink)) {
-            placed.push(line);
+    // **Two kinds of line, and the difference is not cosmetic.** One of alo's
+    // own words arrives as a key and is resolved through the vocabulary, because
+    // `CLAUDE.md` makes hardcoded English a bug and what is kept is a key rather
+    // than a sentence. A model's explanation of a command arrives as prose and
+    // is drawn as it came back: there is no key for a sentence nobody here
+    // wrote, and looking one up would be claiming authorship of it.
+    //
+    // `alo_terminal::AloSLine` carries that distinction all the way here rather
+    // than flattening to text, which is why this matches rather than resolving
+    // everything. An explanation is its words, then each mark, then *an
+    // explanation, not a guarantee* — and the count below is the same count the
+    // gutter's regions are worked out from, which `what_alo_said_tests.rs`
+    // asserts cannot disagree with these lines.
+    for (which, line) in what_alo_said.the_lines().into_iter().enumerate() {
+        let text = match &line {
+            alo_terminal::AloSLine::InOurWords(key) => says
+                .say(key, &alo_strings::Filling::nothing())
+                .text()
+                .to_owned(),
+            alo_terminal::AloSLine::AsTheModelSaidIt(prose) => prose.clone(),
+        };
+        let beneath = screen.size().lines() + which;
+        if let Some(drawn) = a_regions_label(fonts, &text, goes, beneath, (ground, ink)) {
+            placed.push(drawn);
         }
     }
 

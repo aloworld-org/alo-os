@@ -114,7 +114,7 @@ fn a_prompt_has_nothing_waiting_so_alo_says_nothing() {
         terminal.what_alo_said().lines(),
         0,
         "alo answered about a shell sitting at a prompt: {:?}",
-        terminal.what_alo_said().said()
+        terminal.what_alo_said().remark()
     );
 }
 
@@ -162,8 +162,11 @@ fn a_command_that_waits_for_the_keyboard_is_answered_through_the_chord() {
             .alos_own_terminal()
             .expect("it is open")
             .what_alo_said()
-            .said()
-            .cloned();
+            .remark()
+            .and_then(|remark| match remark {
+                alo_terminal::AloSRemark::InOurWords(key) => Some(key.clone()),
+                alo_terminal::AloSRemark::AnExplanation(_) => None,
+            });
         if said.as_ref() == Some(&wanted) {
             break;
         }
