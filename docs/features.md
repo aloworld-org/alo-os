@@ -509,11 +509,28 @@ file carries it with a tier.*
   always on* is a test rather than a sentence. Law 5's real exposure is a later
   change adding a wall, so a guard reads the module's own source and refuses a
   road that could decline a level; it was checked by planting one.
-  **Still not built: the box.** The lock is the kernel's
-  ([ADR 0013](decisions/0013-the-grant-is-enforced-by-the-kernel.md)) and that
-  boundary does not exist, so a machine at the default runs nothing — which is
-  the honest behaviour of a default whose enforcement is owed, and not a reason
-  to make some other level the default.
+  **The box is built too, and this line said otherwise until 2026-10-17.** It
+  read *still not built: the box … that boundary does not exist*, and both halves
+  were false when written: the boundary landed on 2026-09-04
+  (`alo-bounding`, `alo-bounding-kernel`, `alo-boundaryd`) and the box landed in
+  #729 on **2026-10-16**, the day before. `alo_running::a_run_inside_a_box`
+  makes a control group, puts its id and the places it may reach into the
+  boundary's map, starts `alo-enter-the-box`, waits, and removes both **on every
+  road out including the ones where the command never started**. Measured on
+  this lane's VM on 2026-10-17: 20 tests pass as the person, and the two that
+  need root pass as root — a command inside the box reads the file it was given,
+  and `cat` is refused the file it was not. The tests **fail rather than skip**
+  when `/sys/fs/bpf` is not writable, so a green run on a machine that could not
+  test it is not available.
+  **What is actually owed is a caller and a surface.** Measured the same day:
+  **no crate depends on `alo-running`**, and `alo_capability::HowCodeRuns` — the
+  three levels a person chooses between — is read nowhere outside it. So the
+  level a person picks decides nothing yet, and nothing anywhere asks for a run.
+  **And the surface is the owner's**: this promise says *paste the install
+  script from a README and run it*, and neither the design file nor
+  [ADR 0064](decisions/0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md)
+  says how a person asks — no prefix, no command, no chord. `CLAUDE.md` sends a
+  silent design to the owner rather than to a lane.
 - ★ **Scope one command without changing a setting.** `--only-here` so it may
   not write outside this folder; `--offline` so it may not reach the network,
   and the indicator shows that it did not. **A process cannot credibly restrict

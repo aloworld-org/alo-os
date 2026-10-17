@@ -42,7 +42,7 @@ because a reader starting from it would conclude this goal is unreachable.*
 | ★ | sees measured apart from worked-out | **usable** — the same gutter's `system` against `alo` |
 | ★ | asks why a command is waiting | **built and reachable** as of #755, `Ctrl`+`Alt`+`W`. **Never seen on a machine** |
 | ★ | scrolls back through output | **usable** |
-| ★ | runs a command touching nothing | the runner and record exist; the kernel box does not — **not usable** |
+| ★ | runs a command touching nothing | **the box exists and works on a kernel** (#729); **nothing calls it** and the surface is unspecified — not usable. *This cell said "the kernel box does not" until 2026-10-17* |
 | ★ | scopes one command | **blocked** — a per-command narrowing is `alo-capability`, another lane's |
 | ★ | finds a command by what it did | the record can answer it; **nothing can ask it**, and giving it a surface is scope |
 | ★ | bisects the machine | **nothing**, and waits on a bracket |
@@ -59,8 +59,8 @@ them, which is this document's own lesson about mentions and declarations:
 | **usable** — all four conditions | **4** | opens a terminal and types; reads who is speaking; sees measured apart from worked-out; scrolls back |
 | **built and reachable, never seen on a machine** | **2** | asks why a command is waiting (#755); reads output that is not a character grid (#761) |
 | waiting on this lane's own earlier steps | **1** | hands somebody a session to replay, behind the rest of rich results |
-| **blocked on a decision or another lane** | **5** | decides whether alo may use it; scopes one command; finds a command by what it did; asks what a command will do first; **bisects the machine**, moved here at 2026-10-17 when the bracket landed and did not open it (step 5) |
-| unowned | **1** | runs a command touching nothing |
+| **blocked on a decision or another lane** | **6** | decides whether alo may use it; scopes one command; finds a command by what it did; asks what a command will do first; **bisects the machine**, moved here at 2026-10-17 when the bracket landed and did not open it (step 5); **runs a command touching nothing**, moved here the same day when the box turned out to be built and the missing piece turned out to be a surface the design does not specify |
+| unowned | **0** | — *this row held* **runs a command touching nothing** *until 2026-10-17, when measuring found the box built (#729, 2026-10-16) and demonstrated on a real kernel. It moved to the row above: what it waits on is a surface, and the design is silent, which makes it the owner's* |
 
 **The two in the second row are what tomorrow evening's boot is for.** Both are
 built, both are reachable, and nobody has watched either on a machine — which is
@@ -418,6 +418,45 @@ have not chosen**.
 where a capability *level* is kept, given that grants are folders and this is not
 one.
 
+### 9. Try a command without letting it touch anything — **the box is built; the surface is the owner's, measured 2026-10-17**
+
+**This document listed it as *unowned* and the plan listed it as *blocked on the
+kernel boundary*. Both were wrong, and the crate that disproves them was already
+in `main`.**
+
+| Asked | Answer |
+|---|---|
+| the kernel boundary ADR 0013 wants | **landed 2026-09-04** — `alo-bounding`, `alo-bounding-kernel`, `alo-boundaryd` |
+| the sealed box of ADR 0064 | **landed 2026-10-16**, #729, *a sealed box runs a command, and the kernel refuses the rest* |
+| does it work on a kernel | **yes**, measured on this VM 2026-10-17: 20 tests as the person, and the two needing root pass as root — a command reads the file its box was given and `cat` is refused the file it was not. They **fail rather than skip** without a writable `/sys/fs/bpf` |
+| crates depending on `alo-running` | **none** |
+| readers of `HowCodeRuns` outside it | **none** — the three levels a person chooses between decide nothing anywhere |
+| what the design says about how a person asks | **nothing**. The only match for *box* in `docs/design/the-terminal-window.md` is a label's bounding box, which is the word and not the thing |
+| what ADR 0064 says about it | **nothing** — no prefix, no command, no chord |
+
+**So this is the sixth mechanism on this list that nobody can call**, and it is
+the one where the mechanism is furthest along: kernel-enforced, recorded,
+torn down on every road out, and reachable from nothing.
+
+**Why the caller is not simply built here.** Wiring `HowCodeRuns` to the box
+makes an existing promise true and would be this lane's under *work a task needs
+is part of that task*. But the promise is *paste the install script from a README
+and **run it***, and nothing says how a person does that — so a caller cannot be
+written without inventing the surface that calls it, and `CLAUDE.md` sends a
+design that is silent to the owner rather than to a lane. Guessing a prefix here
+would also collide with the neighbouring promise, *scope one command without
+changing a setting*, which **is** specified as a prefix (`--only-here`,
+`--offline`): two prefixes confining one command, invented a day apart by the
+same lane, is the kind of surface nobody decided.
+
+**What would unblock it**, in one line: how a person asks for a sealed-box run —
+and whether that is the same gesture as scoping one command or a different one.
+
+*The lesson this one adds to the four above: **a status can be wrong about a
+module while citing the crate that contains it.** Task 9 said the box was not
+built and named `alo-running` in the same sentence. The date it carried was the
+crate's, not the module's.*
+
 ## What this lane cannot finish — corrected 2026-10-17, because the first version was wrong about all three
 
 **The owner asked whether these three were the desktop lane's. They are not, and
@@ -427,7 +466,7 @@ belongs to a different lane than implied.
 
 | | the honest position |
 |---|---|
-| *run a command touching nothing* | **available to the desktop lane and taken by nobody**, as of 2026-10-17. The owner that day: *development pc is off now so it's tasks can be done by desktop*. Until then it was the development PC's by `kernel-enforcement-plan.md`'s own words: *who can take it — the development PC, inside a KVM guest with a real login*. The desktop lane was told, and answered that it is **not taking the eight plans on a relayed message** — the owner had given it a direct instruction about the application market, and a forwarded sentence does not outrank an instruction the owner typed to that lane. **It was never a capability wall**: this lane's machine has `CONFIG_BPF_LSM=y` and `bpf` in the active LSM list, measured 2026-10-17. So it was ownership all along, the owner has made it available, and **it is still nobody's** |
+| *run a command touching nothing* | **available to the desktop lane and taken by nobody**, as of 2026-10-17. The owner that day: *development pc is off now so it's tasks can be done by desktop*. Until then it was the development PC's by `kernel-enforcement-plan.md`'s own words: *who can take it — the development PC, inside a KVM guest with a real login*. The desktop lane was told, and answered that it is **not taking the eight plans on a relayed message** — the owner had given it a direct instruction about the application market, and a forwarded sentence does not outrank an instruction the owner typed to that lane. **It was never a capability wall**: this lane's machine has `CONFIG_BPF_LSM=y` and `bpf` in the active LSM list, measured 2026-10-17. So it was ownership all along, the owner has made it available, and **it is still nobody's**. **And then a fifth reading, the same day, which is not an ownership claim at all**: the thing everybody was deciding who should build **had already been built** — #729 landed the sealed box on 2026-10-16 and it passes on a real kernel. What is unowned is not the box but a caller, and what blocks the caller is a surface neither the design file nor ADR 0064 specifies. See step 9. *Four of the five readings of this row were about who should build it; none of them had asked whether it was built* |
 | *bisect the machine*, *your files as they were* | **downstream of this lane's own bracket step**, not out of reach — the step headed *the bracket, if it is still nobody's*. **This cell cited "step 5" until 2026-10-17 and the bracket had become step 6**, because a step was inserted above it and the number here was not followed; the cross-references in this file now name steps instead of numbering them, which is why. If this lane takes the bracket, both of these become its to build — so listing them as unfinishable **contradicted the bracket step in the order above**, and that was an inconsistency in this document rather than a fact about the work. *This cell said "four headings above it" until the order was renumbered, at which point it was three — a positional count is the same trap as a step number and is gone for the same reason.* |
 | *ask what a command will do first* | **buildable and testable here.** The promise is *plain words for what it does, with anything destructive, anything needing elevated rights and anything leaving the machine marked* — it does not say which model, and a **provider key is present on this machine** (mode 600, measured 2026-10-17). The first version said *a model on this machine is an environment this lane cannot test in*, which was true of a **local** model and false of the promise |
 
@@ -443,6 +482,13 @@ dependency between the source qualifier and rich results.
 **So one of the thirteen is not this lane's**, and it is now unowned rather than
 held: the owner made it available on 2026-10-17 and no lane has picked it up.
 The other two are this lane's, in the order above.
+
+**And the ownership question turned out to be the wrong question.** Measuring
+the promise rather than its lane table found the box built and demonstrated, and
+the gap somewhere else entirely — a caller, and a surface the owner has to name.
+Whoever that promise belongs to, **nobody can finish it today**, and a day spent
+settling who should start would have ended there. *Ask what is built before
+asking whose it is.*
 
 *The row above is the fourth reading of this one promise in a day — out of
 reach, then the development PC's, then the desktop lane's, then nobody's. Only
