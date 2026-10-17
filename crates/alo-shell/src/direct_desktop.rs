@@ -1578,13 +1578,15 @@ fn drawn_terminal(
     frame: crate::DesktopFrame<'_>,
     says: &alo_strings::Strings,
 ) -> Option<crate::the_terminals_cells_are_drawn::TerminalPicture> {
-    let screen = server
-        .alos_own_terminal()
-        .map(crate::the_terminal_a_person_opened::TheTerminal::screen)?;
+    let terminal = server.alos_own_terminal()?;
+    let screen = terminal.screen();
     let scale = f64::from(server.the_scale_of_display(named)) / 100.0;
     match crate::the_terminals_cells_are_drawn::picture(
         &mut labels.fonts,
-        screen,
+        crate::the_terminals_cells_are_drawn::Shows {
+            screen,
+            what_alo_said: terminal.what_alo_said(),
+        },
         size,
         scale,
         frame.look.scheme(),

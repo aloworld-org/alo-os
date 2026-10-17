@@ -75,6 +75,18 @@ pub(crate) struct TheTerminal {
     /// irreversible and a reader that asked again after the far end closed
     /// would be asking a question whose answer it already had.
     finished: bool,
+    /// What alo has said into this transcript, beneath what the shell wrote.
+    ///
+    /// Empty until a person asks. `docs/features.md`'s *a command looks stuck;
+    /// **ask**, and get …* — the answers were built and nothing could ask, so
+    /// this is where an answer goes once one has.
+    ///
+    /// **Held by the terminal and not by the drawing**, because it outlives a
+    /// frame: a person asks once and reads the answer for as long as it is true.
+    /// A drawing that worked it out each frame would be asking the kernel about a
+    /// process sixty times a second, which is the background reader
+    /// `CLAUDE.md` calls a bug.
+    what_alo_said: alo_terminal::WhatAloSaid,
 }
 
 impl TheTerminal {
@@ -88,6 +100,7 @@ impl TheTerminal {
             shell: AShellOnAPseudoterminal::the_persons_own(size)?,
             screen: TerminalOutput::of(size),
             finished: false,
+            what_alo_said: alo_terminal::WhatAloSaid::nothing(),
         })
     }
 
@@ -213,6 +226,40 @@ impl TheTerminal {
     }
 
     /// The screen, for whatever draws it.
+    /// **A person asked why the command in front is waiting, so alo looks and
+    /// says.**
+    ///
+    /// `docs/features.md` promises *a command looks stuck; **ask**, and get
+    /// **waiting for the keyboard**, **for the network**, **for another process
+    /// or a lock**, **still computing**, or **unknown with the evidence
+    /// available***. The five answers were built on 2026-10-14, the asking was
+    /// wired on 2026-10-17, and **nothing called it**. This is the call.
+    ///
+    /// Answers whether anything changed, so a caller redraws only when it did —
+    /// the rule every other method here follows.
+    ///
+    /// # Nothing waiting is an answer, and it clears the last one
+    ///
+    /// A person at a prompt has nothing to ask about, and a command that has
+    /// finished since they last asked has no answer either. Both empty what alo
+    /// said rather than leaving it, because **a reply about a command that has
+    /// gone would sit on screen looking current** — and a person would act on
+    /// it. `crate::alos_terminal_was_asked_why_tests` holds that.
+    pub(crate) fn asked_why_the_command_in_front_is_waiting(&mut self) -> bool {
+        let before = self.what_alo_said.clone();
+        match self.shell.why_the_command_in_front_is_waiting() {
+            Some(waiting) => self.what_alo_said.says(waiting.why.the_word().key()),
+            None => self.what_alo_said.nothing_to_say(),
+        }
+        before != self.what_alo_said
+    }
+
+    /// What alo has said into this transcript.
+    pub(crate) const fn what_alo_said(&self) -> &alo_terminal::WhatAloSaid {
+        &self.what_alo_said
+    }
+
+    /// The screen, for whatever draws it.
     pub(crate) fn screen(&self) -> &TerminalOutput {
         &self.screen
     }
@@ -296,6 +343,20 @@ impl crate::Server {
         self.alos_own_terminal
             .as_mut()
             .is_some_and(|terminal| terminal.look_back(lines))
+    }
+
+    /// **A person asked why the command in front is waiting.**
+    ///
+    /// Answers whether what alo said changed, so a caller leaves the frame alone
+    /// when it did not — the shape `alos_own_terminal_scrolled` above has, for
+    /// the same reason.
+    ///
+    /// Answers `false` when no terminal is open: there is nothing to ask about
+    /// and nothing to redraw.
+    pub(crate) fn alos_terminal_was_asked_why(&mut self) -> bool {
+        self.alos_own_terminal
+            .as_mut()
+            .is_some_and(TheTerminal::asked_why_the_command_in_front_is_waiting)
     }
 
     /// What alo's own terminal's shell is called, if one is open.

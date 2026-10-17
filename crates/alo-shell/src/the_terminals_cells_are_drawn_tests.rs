@@ -50,7 +50,10 @@ fn picture_with_a_shell_called(
 ) -> Result<TerminalPicture, NothingToDrawWith> {
     super::picture(
         fonts,
-        screen,
+        super::Shows {
+            screen,
+            what_alo_said: &alo_terminal::WhatAloSaid::nothing(),
+        },
         size,
         scale,
         scheme,
@@ -73,7 +76,18 @@ fn picture(
     scale: f64,
     scheme: Scheme,
 ) -> Result<TerminalPicture, NothingToDrawWith> {
-    super::picture(fonts, screen, size, scale, scheme, &the_words(), None)
+    super::picture(
+        fonts,
+        super::Shows {
+            screen,
+            what_alo_said: &alo_terminal::WhatAloSaid::nothing(),
+        },
+        size,
+        scale,
+        scheme,
+        &the_words(),
+        None,
+    )
 }
 
 /// The font system this machine really builds.

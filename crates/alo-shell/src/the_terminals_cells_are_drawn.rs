@@ -831,6 +831,22 @@ fn the_cursor(
     )
 }
 
+/// What a terminal has on it: the program's grid, and anything alo has said
+/// beneath it.
+///
+/// **Two things that arrive together and are drawn together**, grouped because
+/// they are one answer to *what is on this terminal* rather than two arguments
+/// that happen to be adjacent. `picture` was at clippy's limit of seven and this
+/// is the honest way under it: the alternative was passing the terminal itself,
+/// which the drawing's own tests cannot build without a pseudoterminal.
+#[derive(Clone, Copy)]
+pub(crate) struct Shows<'a> {
+    /// What the program has written, as a grid of cells.
+    pub(crate) screen: &'a TerminalOutput,
+    /// What alo has said into this transcript, beneath it.
+    pub(crate) what_alo_said: &'a alo_terminal::WhatAloSaid,
+}
+
 /// Draw alo's own terminal onto a display this size.
 ///
 /// # Errors
@@ -838,13 +854,17 @@ fn the_cursor(
 /// has no room for a terminal.
 pub(crate) fn picture(
     fonts: &mut FontSystem,
-    screen: &TerminalOutput,
+    shows: Shows<'_>,
     size: (i32, i32),
     scale: f64,
     scheme: Scheme,
     says: &alo_strings::Strings,
     the_shell_is_called: Option<&str>,
 ) -> Result<TerminalPicture, NothingToDrawWith> {
+    let Shows {
+        screen,
+        what_alo_said,
+    } = shows;
     let (window, transcript) =
         where_the_window_goes(size, scale).ok_or(NothingToDrawWith::TheresNoRoom)?;
     let metrics = the_designs_metrics(scale);
@@ -926,7 +946,22 @@ pub(crate) fn picture(
     // The word is resolved through the vocabulary, because `CLAUDE.md` makes
     // hardcoded English a bug and these four are read by every person who uses
     // the machine.
-    for region in alo_terminal::regions_of(screen.size().lines()) {
+    // **alo's own line, beneath what the program wrote.** One line, drawn in the
+    // transcript's own type at the transcript's own inset, so it reads as part
+    // of the conversation rather than as chrome bolted beside it. The gutter
+    // below labels it `alo`, which is the design's own word for interpretation.
+    //
+    // Resolved through the vocabulary, because what is kept is a key and never a
+    // sentence — so a person reads it in the language they chose.
+    if let Some(key) = what_alo_said.said() {
+        let said = says.say(key, &alo_strings::Filling::nothing());
+        let beneath = screen.size().lines();
+        if let Some(line) = a_regions_label(fonts, said.text(), goes, beneath, (ground, ink)) {
+            placed.push(line);
+        }
+    }
+
+    for region in alo_terminal::regions_of(screen.size().lines(), what_alo_said.lines()) {
         let said = says.say(
             &region.who.the_word().key(),
             &alo_strings::Filling::nothing(),

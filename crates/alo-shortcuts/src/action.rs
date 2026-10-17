@@ -88,6 +88,28 @@ pub enum Action {
     /// promised, keyboard shortcuts are promised, and what was missing was a
     /// road between them.
     Terminal,
+    /// Ask alo why the command in front of a terminal is waiting.
+    ///
+    /// **The only road to an answer that was already built, which is why it
+    /// exists.** `docs/features.md` promises *a command looks stuck; **ask**, and
+    /// get **waiting for the keyboard**, **for the network**, **for another
+    /// process or a lock**, **still computing**, or **unknown with the evidence
+    /// available***. The five answers are built, measured against real processes
+    /// on a real kernel, each with a control; all four things to do about them
+    /// are built. **Nothing could ask.** The promise's own word was *ask*, and
+    /// there was no asking.
+    ///
+    /// **This makes an existing promise true rather than adding one**, which is
+    /// the judgement `CLAUDE.md` asks a change to state: the answers are
+    /// promised, keyboard shortcuts are promised, and what was missing was a
+    /// road between them. It is the same judgement
+    /// [`Self::Terminal`] was added under, for the same shape of gap.
+    ///
+    /// **Which key is an implementation and not a promise.** `docs/features.md`
+    /// says *ask* and names no chord; the design file is silent; a person can
+    /// rebind or clear this in Settings like any other. What is promised is that
+    /// asking works.
+    WhyIsItWaiting,
     /// Open Settings.
     ///
     /// **The road that needs no pointer**, which is why it is a shortcut as well
@@ -191,6 +213,7 @@ impl Action {
         Self::Launcher,
         Self::Settings,
         Self::Terminal,
+        Self::WhyIsItWaiting,
         Self::CloseWindow,
         Self::WindowOptions,
         Self::MinimiseWindow,
@@ -219,6 +242,7 @@ impl Action {
             Self::Launcher => words::LAUNCHER,
             Self::Settings => words::SETTINGS,
             Self::Terminal => words::TERMINAL,
+            Self::WhyIsItWaiting => words::WHY_IS_IT_WAITING,
             Self::CloseWindow => words::CLOSE_WINDOW,
             Self::WindowOptions => words::WINDOW_OPTIONS,
             Self::MinimiseWindow => words::MINIMISE_WINDOW,

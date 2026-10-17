@@ -102,7 +102,11 @@ pub const fn side_for(action: Action) -> Option<Side> {
         //
         // The file refused to compile a third time, which is the third time
         // that comment has earned itself.
-        | Action::Terminal => None,
+        | Action::Terminal
+        // Asking why a command is waiting divides nothing: it puts one line of
+        // alo's into a terminal's own transcript, inside a window that is
+        // already wherever the person left it.
+        | Action::WhyIsItWaiting => None,
     }
 }
 

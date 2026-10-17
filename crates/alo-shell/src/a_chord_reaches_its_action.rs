@@ -219,6 +219,21 @@ impl Server {
             self.shortcuts = Some(shortcuts);
             return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
         }
+        // **Asking why a command is waiting, answered beside the chord that
+        // opens the terminal it asks about, and for the same reason: it borrows
+        // nothing.** One question put to the terminal already open — no window,
+        // no places, no clock — so the layers below never see it.
+        //
+        // **This answer was built and nothing could ask for it.** The five
+        // answers landed 2026-10-14 and all four things to do about them on
+        // 2026-10-17, measured against real processes on a real kernel, each with
+        // a control — and the promise's own word is *ask*.
+        // `crate::a_chord_asks_why_a_command_is_waiting`'s header has the
+        // judgement.
+        if self.a_chord_asks_why_a_command_is_waiting(&shortcuts, chord) {
+            self.shortcuts = Some(shortcuts);
+            return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
+        }
         // **The agent, answered here for the third time the same reason: it
         // borrows nothing.** One flag on the composer — no window, no places,
         // no clock — so the layers below never see it.
