@@ -344,6 +344,32 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         },
                         said: said.to_vec(),
                     }];
+                    // **One market window, so there is one to look at.** The
+                    // model was built with no caller, the raster was built with
+                    // no caller, and 36 pixel tests passed over a window **no
+                    // person and no fixture had ever seen**. This fixture's own
+                    // header is the reason that matters: *it needs eyes, and
+                    // eyes need pictures.*
+                    //
+                    // Open on the decided catalogue — the real eight entries
+                    // from `catalogue.toml`, not invented rows — so what is on
+                    // the screen is what a person would meet.
+                    let mut the_market = alo_shell::MarketWindow::closed();
+                    the_market.opened(alo_software::Catalogue::decided()?, Vec::new());
+                    let the_markets_words = alo_shell::TheMarketsWords::said(&strings);
+                    // **Placed by hand, and the figure is written down**, for
+                    // the task window above's reason exactly:
+                    // `where_the_market_opens` does this cutting in production
+                    // and is not reachable from an example. The design's width
+                    // is 632 and four rows of cards fit this output; drawing it
+                    // at the bottom right leaves the Dock and the task window
+                    // visible beside it, which is the point of one picture
+                    // holding all three.
+                    let the_market_window = alo_shell::market_raster::AMarketOnTheDisplay {
+                        at: smithay::utils::Rectangle::new((700, 40).into(), (632, 688).into()),
+                        showing: the_market.shows(),
+                        words: &the_markets_words,
+                    };
                     let until = Instant::now() + Duration::from_millis(60);
                     while Instant::now() < until {
                         nested.pump()?;
@@ -355,6 +381,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             &mut labels,
                             DesktopFrame {
                                 tasks: &a_task_window,
+                                market: Some(the_market_window),
                                 display_scale: 100,
                                 // **Three applications, so there is a Dock to
                                 // look at.** This held nothing until

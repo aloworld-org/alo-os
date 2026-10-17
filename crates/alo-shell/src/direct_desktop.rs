@@ -641,6 +641,15 @@ impl LoopInput for Desk<'_> {
                         server, update, extent, strings,
                     );
                 }
+                // **Then the window of what a person can install.** Behind
+                // Settings and in front of the Dock, which is the order the
+                // layers are drawn in rather than an order chosen here —
+                // `crate::a_key_reaches_the_market`'s header carries the
+                // argument. The question is false unless a person has the
+                // window open, so an ordinary frame pays one `is_open`.
+                if server.the_market_is_taking_the_keys() {
+                    return crate::a_key_reaches_the_market::routed_or_io(server, update, extent);
+                }
                 // **Escape closes what the Dock has open**, and only then.
                 // Asked after Settings because Settings is in front of the
                 // Dock when both are up: a person pressing Escape at a
@@ -893,6 +902,50 @@ impl LoopInput for Desk<'_> {
             self.strings,
         );
         let the_task_windows = the_tasks_words.as_displayed();
+        // **A copy of the market window for the frame, and only while it is
+        // open.**
+        //
+        // `MarketShows` borrows the window, which lives on the `Server`, and
+        // this lane calls `&mut server` again after the frame is drawn — so a
+        // borrow taken here would stop those calls compiling. The task words
+        // above answer the same problem the same way: the lane holds something
+        // it owns and the frame borrows that.
+        //
+        // **Copied rather than taken out and put back.** Taking it would put a
+        // person's open window on a local for the length of a draw, and any `?`
+        // between the take and the put-back would lose it — the window would
+        // close itself on a frame that failed to render. A copy cannot do that
+        // whatever goes wrong below.
+        //
+        // **And nothing is copied on an ordinary frame.** `is_open` is false
+        // until a person presses the Applications entry on their own Dock,
+        // which is most machines most of the time.
+        let the_market_window = server.market.is_open().then(|| server.market.clone());
+        // **Said once a frame and kept alive as long as the frame is**, for the
+        // task words' reason exactly: the raster borrows these strings.
+        let the_markets_words = crate::TheMarketsWords::said(self.strings);
+        let the_market = the_market_window.as_ref().and_then(|window| {
+            let showing = window.shows();
+            crate::where_the_market_opens::where_the_market_opens(
+                // **The same rectangle as the task windows are placed in, told
+                // in the pixels a frame draws into.**
+                // `where_a_task_window_opens::as_a_frame_draws_it` is one
+                // number to one number and says why: nothing in this shell
+                // applies a display scale yet, and a conversion invented here
+                // would be the single scaled figure in an unscaled geometry.
+                // Reusing it rather than building a second rectangle of the
+                // same numbers, so there is one place to change when the shell
+                // does scale.
+                crate::where_a_task_window_opens::as_a_frame_draws_it(the_view),
+                &showing,
+                frame.look.scale(),
+            )
+            .map(|at| crate::market_raster::AMarketOnTheDisplay {
+                at,
+                showing,
+                words: &the_markets_words,
+            })
+        });
         what_only_the_server_knows(
             &mut frame,
             server,
@@ -903,6 +956,7 @@ impl LoopInput for Desk<'_> {
                 the_dock_has_open: &the_dock_has_open,
                 the_docks_words: &the_docks_words,
                 tasks: &the_task_windows,
+                market: the_market,
             },
             &named,
         );
@@ -1091,6 +1145,13 @@ impl LoopInput for Desk<'_> {
                     // belong to a display is a change to what `TheTasks`
                     // stores, and it is written down rather than guessed at.
                     tasks: &[],
+                    // **None on an extra display**, for the reason above and
+                    // one more: there is exactly one of these windows per seat,
+                    // so drawing it on every display would put a person's
+                    // window on two screens at once with one of them
+                    // unreachable. It is on the display the loop holds, which
+                    // is where Settings is for the same reason.
+                    market: None,
                 },
                 &named,
             );

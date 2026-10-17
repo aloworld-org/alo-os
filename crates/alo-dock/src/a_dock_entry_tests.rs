@@ -69,3 +69,55 @@ fn entries_match_their_own_kind_and_value() {
     assert_ne!(files, browser);
     assert_ne!(files, settings);
 }
+
+/// **The two actions are not each other**, which is what stops a press on one
+/// carrying out the other and what stops pinning the market unpinning Settings.
+///
+/// `Holding::pin_entry` refuses a duplicate with `contains` and `unpin_entry`
+/// removes one with `retain`, so both ask this question. Until 2026-10-17 the
+/// enum had one variant and nothing could have failed it; the first moment it
+/// could is the moment to write it down.
+#[test]
+fn the_two_native_actions_are_not_each_other() {
+    let settings = ADockEntry::Native(ANativeAction::Settings);
+    let applications = ADockEntry::Native(ANativeAction::Applications);
+
+    assert_ne!(settings, applications);
+    assert_eq!(settings.native(), Some(ANativeAction::Settings));
+    assert_eq!(applications.native(), Some(ANativeAction::Applications));
+    assert_eq!(
+        applications.application(),
+        None,
+        "the market was carried out as an application, and there is no application"
+    );
+}
+
+/// **Each action's spelling in `dock.toml` is the one its documentation
+/// claims**, read from TOML and written back.
+///
+/// The spelling is a **public surface**: a person hand-writes it, and
+/// `CLAUDE.md` holds config keys to changing additively. It was documented in
+/// this file and tested nowhere — a renamed variant would have silently stopped
+/// reading every arrangement that named it, and the symptom would be a Dock
+/// quietly one entry shorter.
+#[test]
+fn each_native_action_is_spelt_in_a_persons_file_the_way_it_is_documented() {
+    for (spelt, action) in [
+        ("settings", ANativeAction::Settings),
+        ("applications", ANativeAction::Applications),
+    ] {
+        let written = format!("native = \"{spelt}\"\n");
+        let read: ADockEntry = toml::from_str(&written).expect("a pin naming one of alo's actions");
+
+        assert_eq!(
+            read,
+            ADockEntry::Native(action),
+            "`native = \"{spelt}\"` did not read as {action:?}"
+        );
+        assert_eq!(
+            toml::to_string(&read).expect("an entry this crate made"),
+            written,
+            "{action:?} does not write back the way a person wrote it"
+        );
+    }
+}

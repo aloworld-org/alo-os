@@ -33,6 +33,7 @@ fn a_desktop_that_will_not_start<'a>(
 ) -> DesktopFrame<'a> {
     DesktopFrame {
         tasks: &[],
+        market: None,
         the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
         the_docks_words: crate::desktop_testing::no_words(),
         in_use: &[],

@@ -175,6 +175,7 @@ fn what_is_drawn_on_two_desktops_carries_the_indicator_and_the_question() {
             let pictures = crate::nested_desktop::frame_pictures(
                 DesktopFrame {
                     tasks: &[],
+                    market: None,
                     the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
                     the_docks_words: crate::desktop_testing::no_words(),
                     dock: &dock,

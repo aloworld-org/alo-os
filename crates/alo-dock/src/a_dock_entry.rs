@@ -28,8 +28,15 @@
 //! The second law: *no code runs unless the person chose it*, and every
 //! capability is an enumerated verb with typed arguments. A native entry that
 //! carried a command, a path or a name to look up would be the escape hatch
-//! that law exists to refuse. [`ANativeAction`] has one variant, takes no
-//! arguments, and a host maps it to something it already knew how to do.
+//! that law exists to refuse. Every [`ANativeAction`] variant takes no
+//! arguments, and a host maps each to something it already knew how to do.
+//!
+//! **It had one variant until 2026-10-17 and now has two**, which is the first
+//! evidence that the shape holds: the window of what a person can install
+//! joined it without a field, without an argument and without a name to look
+//! up. An enum that could only ever describe Settings would have been a
+//! special case wearing a type's clothes; one that took a second verb
+//! unchanged is the capability model working rather than being asserted.
 
 use serde::{Deserialize, Serialize};
 
@@ -89,10 +96,16 @@ impl ADockEntry {
 
 /// What the compositor itself can be asked to do from the Dock.
 ///
-/// **One variant, no arguments.** A native action is an enumerated verb in the
-/// capability model's sense: a host matches on it and does something it already
-/// knew how to do. Nothing here carries a command, a path or a name to be
-/// looked up, because that is the escape hatch the second law refuses.
+/// **No arguments, on any variant.** A native action is an enumerated verb in
+/// the capability model's sense: a host matches on it and does something it
+/// already knew how to do. Nothing here carries a command, a path or a name to
+/// be looked up, because that is the escape hatch the second law refuses.
+///
+/// **And nothing here is permanent.** The owner's ruling this type exists for
+/// says *native describes the implementation; it does not mean permanent*, so
+/// both variants are removed, reordered and restored by exactly the same
+/// operations an application entry is. A person who does not want the market on
+/// their Dock unpins it like anything else.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ANativeAction {
@@ -103,6 +116,20 @@ pub enum ANativeAction {
     /// is one way in rather than two — and a person who hides the Dock's entry
     /// still has the keyboard's.
     Settings,
+    /// Open the window of what a person can install.
+    ///
+    /// The compositor's own surface too, so it belongs here rather than as an
+    /// [`ADockEntry::Application`]: there is no application to name.
+    /// `alo_software::Catalogue` is a list this machine reads and the window
+    /// that shows it is one the shell draws.
+    ///
+    /// **This is the only way in, and that is said rather than left to be
+    /// found.** [`Self::Settings`] above can afford *a person who hides the
+    /// Dock's entry still has the keyboard's*; this one cannot, because no
+    /// chord opens the market. Unpinning it leaves asking alo, which is a
+    /// different road built separately — so a person can still get there, and
+    /// the Dock is not the last door.
+    Applications,
 }
 
 /// One entry as `dock.toml` writes it, which a person types as often as a panel
@@ -114,7 +141,15 @@ pub enum ANativeAction {
 ///
 /// [[pins]]
 /// native = "settings"
+///
+/// [[pins]]
+/// native = "applications"
 /// ```
+///
+/// **The spelling is the variant's name, kebab-cased**, which the `serde`
+/// attribute below decides rather than this documentation — so a variant added
+/// without a thought spared for TOML still has a spelling, and it is the one a
+/// person would have guessed.
 ///
 /// **A table with one key rather than a tagged enum**, because serde's own
 /// enum shapes are either unreadable in TOML or impossible to hand-write: an

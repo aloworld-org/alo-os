@@ -79,6 +79,8 @@ pub struct TheDocksWords {
     /// label there is an application's own name as its source reports it; this
     /// one is alo OS's word for its own surface.
     pub settings: String,
+    /// What the Applications entry on the Dock is called.
+    pub applications: String,
     /// What one application's window list says, when one is open.
     ///
     /// [`None`] when no picker is open, which is almost every frame. **Not
@@ -167,6 +169,7 @@ impl TheDocksWords {
             show_all: say(&alo_dock::words::SHOW_ALL),
             history: say(&alo_dock::words::HISTORY),
             settings: say(&alo_dock::words::SETTINGS_ON_THE_DOCK),
+            applications: say(&alo_dock::words::APPLICATIONS_ON_THE_DOCK),
             // Said by the caller, which is the only place that holds both the
             // text and whether anything matched it.
             typed: None,

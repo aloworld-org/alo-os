@@ -1158,6 +1158,17 @@ pub(crate) fn picture(
                 palette.badge,
                 palette.badge_ink,
             ),
+            // **The same badge as Settings', from the translated name**, and
+            // the arm is written out rather than folded in with it: the two
+            // actions read different words, and a match that took either and
+            // then chose the word inside would be the place a third action gets
+            // Settings' label by accident.
+            alo_dock::places::WhatIsHere::ANativeAction(alo_dock::ANativeAction::Applications) => (
+                alo_dock::window::the_first_letter_of(&words.applications),
+                initial,
+                palette.badge,
+                palette.badge_ink,
+            ),
             alo_dock::places::WhatIsHere::TheOverflow => (
                 &*THE_OVERFLOWS_MARK.encode_utf8(&mut one_character),
                 utility,

@@ -706,3 +706,119 @@ fn a_window_far_from_the_view_is_focused_rather_than_travelled_to() {
         );
     }
 }
+
+/// A Dock holding `how_many` applications and the Applications entry last.
+fn with_the_market_last(how_many: usize) -> Vec<alo_dock::OnTheDock> {
+    let patch = alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 1, 1).expect("one by one is a patch");
+    let mut windows = alo_dock::Windows::none();
+    let mut holding = alo_dock::Holding::nothing();
+    for number in 0..how_many {
+        let named = format!("app-{number}");
+        let app = alo_dock::AppId::named(&named).expect("a named application");
+        windows.opened(alo_dock::Window::of(
+            alo_dock::WindowId::numbered(number as u64),
+            Some(app.clone()),
+            &named,
+            patch,
+            alo_dock::HowItSits::OnTheCanvas,
+        ));
+        holding.pin(app);
+    }
+    holding.pin_entry(alo_dock::ADockEntry::Native(
+        alo_dock::ANativeAction::Applications,
+    ));
+    holding.showing(&windows)
+}
+
+/// **Pressing the Applications entry asks for the market, not for Settings.**
+///
+/// Written beside the Settings test rather than folded into it: the two actions
+/// read different words and reach different windows, and a layout that gave
+/// either slot the other's action would pass a test that only knew *some*
+/// native action was asked for.
+#[test]
+fn a_press_on_the_market_entry_asks_for_the_market() {
+    for edge in Edge::EVERY {
+        let mut dock = Dock::shipped();
+        dock.set_edge(edge);
+        let shown = with_the_market_last(3);
+        let dock = where_the_dock_is(&dock, (1920, 1080), &shown)
+            .unwrap_or_else(|why| panic!("{edge:?} would not lay out: {why:?}"));
+
+        let place = dock
+            .places
+            .each()
+            .iter()
+            .find(|place| place.native().is_some())
+            .unwrap_or_else(|| panic!("{edge:?}: the one native slot is there"));
+        let middle = place.from_the_start() + place.across() / 2;
+
+        assert_eq!(
+            what_a_press_on_the_dock_does(&dock, at(&dock, middle)),
+            WhatAPressOnTheDockDoes::Do(alo_dock::ANativeAction::Applications),
+            "{edge:?}: pressing the Applications entry did not ask for the market"
+        );
+    }
+}
+
+/// **And carrying that action out opens the window.**
+///
+/// The one test on this road that needs a `Server`, because the window lives on
+/// one. This is the assertion that `crate::MarketWindow`'s production mention
+/// count is no longer zero: it was zero when the model landed, zero when its
+/// raster landed, and a surface no person can reach is the fault five other
+/// shell windows were found in on 2026-10-16.
+#[test]
+fn carrying_out_the_market_action_opens_the_window() {
+    let (_runtime, mut server) = a_session("market-opens");
+
+    assert!(
+        !server.market.is_open(),
+        "a fresh session has the market open"
+    );
+    server.do_this_native_action(alo_dock::ANativeAction::Applications);
+    assert!(
+        server.market.is_open(),
+        "the Applications entry was pressed and no window opened"
+    );
+    // **And it is showing the decided catalogue**, not an empty window: a
+    // window that opened on nothing would draw its furniture and no
+    // applications, which is the failure a person would read as *there is
+    // nothing to install*.
+    let crate::MarketShows::Browsing(browsing) = server.market.shows() else {
+        panic!("the window opened and is showing nothing");
+    };
+    assert!(
+        browsing.how_many() >= 8,
+        "the window opened on {} applications",
+        browsing.how_many()
+    );
+}
+
+/// **Pressing Settings does not open the market, and the other way round.**
+///
+/// Two one-line handlers beside each other is exactly where a copied `match`
+/// arm goes wrong, and the symptom would be a person pressing Applications and
+/// getting their settings — which looks like a layout fault rather than a
+/// dispatch one.
+#[test]
+fn each_native_action_opens_only_its_own_window() {
+    let (_runtime, mut server) = a_session("market-only-its-own");
+
+    server.do_this_native_action(alo_dock::ANativeAction::Settings);
+    assert!(
+        !server.market.is_open(),
+        "pressing Settings opened the market"
+    );
+
+    server.do_this_native_action(alo_dock::ANativeAction::Applications);
+    assert!(server.market.is_open());
+    // Settings cannot be asserted shut here for a reason worth saying: a
+    // session nobody has told where settings are kept opens none, and this
+    // one is in that position. What **is** asserted is that the market
+    // action did not reach it, which is the question.
+    assert!(
+        !server.settings.is_open(),
+        "pressing Applications opened Settings"
+    );
+}

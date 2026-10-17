@@ -769,6 +769,12 @@ mod running {
         fn now(&self) -> DesktopFrame<'_> {
             DesktopFrame {
                 tasks: &[],
+                // **The lane fills this**, like the two below it and for the
+                // same reason: whether a person has the market open is decided
+                // by a press, and presses reach the `Server`.
+                // `what_only_the_server_knows` sets it at the one site that
+                // builds a frame.
+                market: None,
                 // **The lane fills both of these before it draws.** A
                 // desktop's own state cannot know whether a person has opened
                 // the overflow list — a press turns it over and presses reach
