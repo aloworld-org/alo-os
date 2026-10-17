@@ -410,3 +410,34 @@ fn when_the_command_finishes_there_is_nothing_waiting_again() {
         "the command finished and the terminal still reports something waiting"
     );
 }
+
+/// **A shell started here is told what terminal it is on.**
+///
+/// Until 2026-10-17 it was told nothing, and `clear` answered *TERM environment
+/// variable not set.* — so alo's own terminal could not clear its own screen,
+/// and `less`, `vim` and `top` would have refused in the same way. It was found
+/// by typing `clear` into a terminal on a compositor and reading the screen
+/// back, which is step 13 of the boot walk; a unit test of this crate could not
+/// have found it, because the fault was an empty map that every type agreed
+/// with.
+///
+/// **What this cannot check** is that the name resolves on the machine the
+/// terminal runs on: a terminfo database is a property of an installed system,
+/// not of this crate, and a test that read `/usr/share/terminfo` would pass or
+/// fail for reasons that have nothing to do with the code. What it holds is
+/// that a name is given at all and that it is shaped like one.
+#[test]
+fn a_shell_is_told_what_terminal_it_is_on() {
+    let told = super::what_the_child_is_told();
+    let name = told
+        .get("TERM")
+        .expect("a shell is told what terminal it is on");
+    assert!(
+        !name.is_empty(),
+        "TERM is set to nothing, which curses reads the same way as unset"
+    );
+    assert!(
+        !name.chars().any(char::is_whitespace),
+        "TERM is {name:?}, which is not a name a terminfo database can be asked for"
+    );
+}

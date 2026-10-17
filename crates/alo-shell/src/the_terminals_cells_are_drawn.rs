@@ -702,6 +702,51 @@ fn a_regions_label(
     shaped.placed(across, down, bottom)
 }
 
+/// One line alo said, drawn where the transcript's own text goes.
+///
+/// **Not [`a_regions_label`], which drew these until 2026-10-17.** That one
+/// places at `WhereTheCellsGo::the_label_at` and crops to the label's room, so
+/// alo's sentence was drawn *inside the gutter's 80-pixel box* and then painted
+/// over by the gutter word for the same region. The picture held both runs, at
+/// one rectangle, and a person pressing `Ctrl`+`Alt`+`W` saw `alo` beside
+/// nothing. Every check of it counted runs and passed.
+///
+/// Found by drawing the terminal on a compositor and reading the pixels back —
+/// `crates/alo-shell/examples/support/a_terminal_check.rs` — and held here by
+/// `saying_something_draws_the_sentence_and_not_only_its_gutter_word`, which
+/// asserts no two inked runs share a rectangle.
+fn alos_own_line(
+    fonts: &mut FontSystem,
+    said: &str,
+    goes: WhereTheCellsGo,
+    line: usize,
+    colours: ([u8; 3], [u8; 3]),
+) -> Option<Inked> {
+    let (ground, ink) = colours;
+    let (across, down) = goes.the_cell_at(0, line);
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a line height is two digits of pixels on any display this product lays out for"
+    )]
+    let tall = goes.metrics.line_height.ceil() as i32;
+    // **What the transcript leaves after the gutter**, rather than a measure of
+    // its own: the sentence starts where the cells start and runs to the
+    // transcript's far inset, so it is the same room a line of output has.
+    let room = goes.transcript.loc.x + goes.transcript.size.w - goes.inset.0 - across;
+    if room <= 0 || tall <= 0 {
+        return None;
+    }
+
+    let mut buffer = Buffer::new(fonts, goes.label_metrics());
+    buffer.set_wrap(fonts, Wrap::None);
+    buffer.set_size(fonts, None, None);
+    buffer.set_text(fonts, said, &alos_own_text(), Shaping::Advanced);
+    buffer.shape_until_scroll(fonts, false);
+    let shaped = inked(fonts, &buffer, (room, tall), 0, ground, ink);
+    let bottom = goes.transcript.loc.y + goes.transcript.size.h;
+    shaped.placed(across, down, bottom)
+}
+
 /// A colour a cell asked for, or the one this machine uses when it asked for
 /// nothing.
 ///
@@ -1023,7 +1068,7 @@ pub(crate) fn picture(
     });
     for (which, line) in the_results_lines.iter().enumerate() {
         let beneath = screen.size().lines() + which;
-        if let Some(drawn) = a_regions_label(fonts, line, goes, beneath, (ground, ink)) {
+        if let Some(drawn) = alos_own_line(fonts, line, goes, beneath, (ground, ink)) {
             placed.push(drawn);
         }
     }
@@ -1056,7 +1101,7 @@ pub(crate) fn picture(
             alo_terminal::AloSLine::AsTheModelSaidIt(prose) => prose.clone(),
         };
         let beneath = screen.size().lines() + the_results_lines.len() + which;
-        if let Some(drawn) = a_regions_label(fonts, &text, goes, beneath, (ground, ink)) {
+        if let Some(drawn) = alos_own_line(fonts, &text, goes, beneath, (ground, ink)) {
             placed.push(drawn);
         }
     }

@@ -1406,6 +1406,141 @@ fn a_screen_with_no_result_is_unchanged() {
     );
 }
 
+/// **alo's remark reaches the picture as its own line, not only as a gutter
+/// word.**
+///
+/// The existing test above moves *the lowest ink* down and passes on the gutter
+/// label alone, so it says nothing about whether the sentence beside that label
+/// was ever drawn. This asks the question directly: saying something must add
+/// **two** inked runs — the `alo` in the gutter and the sentence it labels — and
+/// one is the shape of a remark whose words went nowhere.
+#[test]
+fn saying_something_draws_the_sentence_and_not_only_its_gutter_word() {
+    let mut fonts = the_shells_own_fonts();
+    let screen = a_screen_showing_a_test_run();
+
+    let drawn = |said: &alo_terminal::WhatAloSaid, fonts: &mut FontSystem| {
+        super::picture(
+            fonts,
+            super::Shows {
+                screen: &screen,
+                what_alo_said: said,
+                a_test_result: None,
+            },
+            A_DISPLAY,
+            1.0,
+            Scheme::Light,
+            &the_words(),
+            None,
+        )
+        .expect("a picture")
+        .inked
+    };
+
+    let quiet = drawn(&alo_terminal::WhatAloSaid::nothing(), &mut fonts).len();
+    let mut said = alo_terminal::WhatAloSaid::nothing();
+    said.says(
+        alo_terminal::why_a_command_is_waiting::WhyItIsWaiting::ForTheKeyboard
+            .the_word()
+            .key(),
+    );
+    let runs = drawn(&said, &mut fonts);
+
+    assert!(
+        runs.len() >= quiet + 2,
+        "saying `waiting for the keyboard` added {} inked run(s), not two: the gutter word drew \
+         and the sentence it labels did not, so a person pressing Ctrl+Alt+W sees `alo` beside \
+         nothing",
+        runs.len() - quiet
+    );
+
+    // **And the two are not in the same place**, which is the half a count
+    // cannot see. Two runs at one rectangle means the second paints over the
+    // first, and the one drawn second is the gutter word — so the sentence
+    // exists in the picture, is never visible, and every count-based check goes
+    // on passing. Measured on a compositor 2026-10-17: `alo` with nothing beside
+    // it.
+    for (which, run) in runs.iter().enumerate() {
+        for other in runs.iter().skip(which + 1) {
+            assert!(
+                run.area != other.area,
+                "two inked runs share the rectangle {:?}, so one is painted over the other and \
+                 cannot be read",
+                run.area
+            );
+        }
+    }
+}
+
+/// **A recognised result's lines reach past the gutter, as alo's do.**
+///
+/// The same fault as the test above and the same morning: `the_results_lines`
+/// were drawn with the gutter's own label function, so `Tests · 23 passed · 1
+/// failed` and the source line under it were cropped into an 80-pixel box at
+/// the left margin. Walk steps 10 and 11 of
+/// `docs/autonomy/the-mac-lanes-order-while-the-owner-is-away.md` are about
+/// reading those two lines, and nothing would have been there to read.
+#[test]
+fn a_recognised_results_lines_are_drawn_where_the_transcripts_text_goes() {
+    let mut fonts = the_shells_own_fonts();
+    let screen = a_screen_showing_a_test_run();
+    let found =
+        alo_terminal::a_test_result_in(&screen.lines()).expect("the summary on this screen");
+    let said = alo_terminal::WhatAloSaid::nothing();
+
+    let drawn = |result: Option<&alo_terminal::ATestResult>, fonts: &mut FontSystem| {
+        super::picture(
+            fonts,
+            super::Shows {
+                screen: &screen,
+                what_alo_said: &said,
+                a_test_result: result,
+            },
+            A_DISPLAY,
+            1.0,
+            Scheme::Light,
+            &the_words(),
+            None,
+        )
+        .expect("a picture")
+        .inked
+    };
+
+    let without = drawn(None, &mut fonts);
+    let with = drawn(Some(&found), &mut fonts);
+    let widest_without = without
+        .iter()
+        .map(|run| run.area.loc.x + run.area.size.w)
+        .max()
+        .unwrap_or(0);
+    let widest_with = with
+        .iter()
+        .map(|run| run.area.loc.x + run.area.size.w)
+        .max()
+        .unwrap_or(0);
+
+    assert!(
+        with.len() > without.len(),
+        "a recognised result added no inked runs at all"
+    );
+    assert!(
+        widest_with >= widest_without,
+        "the recognised result's lines are narrower than everything already drawn, which is what \
+         cropping them into the gutter's label box looks like: {widest_with} against \
+         {widest_without}"
+    );
+    for run in &with {
+        if without.iter().all(|had| had.area != run.area) {
+            assert!(
+                u32::try_from(run.area.size.w).unwrap_or(0) > super::measures::THE_LABELS_ROOM,
+                "a line the result added is {} wide, which fits inside the gutter's label box — \
+                 so it was drawn there rather than where the transcript's text goes",
+                run.area.size.w
+            );
+        }
+    }
+}
+
 /// **The result's lines are in the program's region, not alo's.**
 ///
 /// The design's annotation is *PROGRAM includes parsed rich results*, and the

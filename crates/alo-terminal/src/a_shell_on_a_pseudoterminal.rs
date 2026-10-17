@@ -75,6 +75,44 @@ pub struct AShellOnAPseudoterminal {
     pty: Pty,
 }
 
+/// What this terminal calls itself to the programs it runs.
+///
+/// **`clear`, `less`, `vim`, `top` and everything else built on curses reads
+/// this and will not run without it.** Until 2026-10-17 the child was given no
+/// environment at all, so `clear` answered *TERM environment variable not set.*
+/// and a person's terminal could not clear its own screen. Found by typing
+/// `clear` into one on a compositor and reading the screen back — which is step
+/// 13 of the boot walk, and would have been found there tomorrow instead.
+///
+/// **Why `xterm-256color` and not a name of ours.** A name here is a claim about
+/// which escape sequences this terminal understands, and a program believes it.
+/// What `xterm-256color` promises is what the engine behind this really
+/// implements. That engine's upstream ships an `alacritty` terminfo and names
+/// itself that; this repository ships no terminfo, and a name no machine can
+/// look up leaves a program falling back to something far poorer.
+///
+/// **And the image really carries it**, which is the half this crate cannot
+/// check: a terminfo database belongs to an installed system. Measured by hand
+/// on 2026-10-17 against the pinned base — it has
+/// `/usr/share/terminfo/x/xterm-256color` and `/usr/sbin/clear`. That
+/// measurement does not run again; what does is
+/// `alo-image`'s `what_the_image_owes_the_terminal.rs`, which fails if the base
+/// is changed under it or stops being pinned by digest.
+///
+/// **It is not a setting, and a person can still change it**: this is what the
+/// child *starts* with, and a line in their own shell startup replaces it.
+const WHAT_THIS_TERMINAL_IS_CALLED: &str = "xterm-256color";
+
+/// The environment a shell started here is given.
+///
+/// Its own function so a test can read it without starting a shell, which needs
+/// a pseudoterminal and a machine to put one on.
+fn what_the_child_is_told() -> HashMap<String, String> {
+    let mut env = HashMap::new();
+    env.insert("TERM".to_owned(), WHAT_THIS_TERMINAL_IS_CALLED.to_owned());
+    env
+}
+
 impl AShellOnAPseudoterminal {
     /// Start the person's own shell.
     ///
@@ -121,7 +159,7 @@ impl AShellOnAPseudoterminal {
             // program said; this is a library, and whoever owns the terminal
             // decides that.
             drain_on_exit: false,
-            env: HashMap::new(),
+            env: what_the_child_is_told(),
         };
         let pty =
             tty::new(&options, how_the_child_is_told(size), 0).map_err(NoShell::ItWouldNotStart)?;

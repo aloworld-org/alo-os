@@ -169,6 +169,81 @@ fn key(server: &mut Server, code: u32, at: u32) -> Result<(), Box<dyn std::error
     Ok(())
 }
 
+/// Which way a wheel notch goes.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Back {
+    /// Pushed away from the person, into what is remembered.
+    Yes,
+    /// Pulled towards them, back to the newest line.
+    No,
+}
+
+/// How many notches this fixture will send before calling a scroll endless.
+const AT_MOST_NOTCHES: u32 = 200;
+
+/// One wheel notch.
+///
+/// **What comes back is not the assertion, and a first version of this read it
+/// as one.** `Server::pointer_axis` answers `true` when *something* consumed the
+/// scroll, and with a pointer enabled and nothing focused the canvas consumes
+/// whatever the terminal does not — so it answered `true` two hundred notches
+/// past the oldest line. Whether the transcript moved is a question only the
+/// drawn frame can answer.
+fn a_notch(server: &mut Server, back: Back, time: u32) -> Result<bool, Box<dyn std::error::Error>> {
+    /// A wheel notch, in the units an axis frame carries.
+    const A_NOTCH: f64 = 15.0;
+    let how_far = if back == Back::Yes { -A_NOTCH } else { A_NOTCH };
+    let frame = smithay::input::pointer::AxisFrame::new(time)
+        .source(smithay::backend::input::AxisSource::Wheel)
+        .value(smithay::backend::input::Axis::Vertical, how_far);
+    Ok(server.pointer_axis(frame)?)
+}
+
+/// How much ink a frame has inside one band of rows.
+///
+/// **The band is measured, never written down.** It comes from where the answer
+/// to *why is it waiting* appeared, so this fixture needs no y-coordinate of its
+/// own — which would be a figure that holds at one display size and nowhere
+/// else.
+fn ink_in_band(frame: &[u8], bare: &[u8], top: usize, bottom: usize) -> usize {
+    let (frame, _) = frame.as_chunks::<4>();
+    let (bare, _) = bare.as_chunks::<4>();
+    let wide = HOW_BIG.0 as usize;
+    (top..=bottom)
+        .flat_map(|y| (0..wide).map(move |x| y * wide + x))
+        .filter(|at| match (frame.get(*at), bare.get(*at)) {
+            (Some(here), Some(there)) => here != there,
+            _ => false,
+        })
+        .count()
+}
+
+/// How many rows of the screen hold something the bare desktop does not.
+///
+/// A row is a band of pixels: a line of text lights several of them, so this
+/// counts bands that hold any difference and not pixels. What it is for is
+/// telling *two more lines appeared* from *more ink appeared*, which a pixel
+/// count cannot do.
+fn rows_with_ink(frame: &[u8], bare: &[u8]) -> usize {
+    let (frame, _) = frame.as_chunks::<4>();
+    let (bare, _) = bare.as_chunks::<4>();
+    let wide = HOW_BIG.0 as usize;
+    let mut rows = 0;
+    let mut lit = false;
+    for y in 0..HOW_BIG.1 as usize {
+        let any = (0..wide).any(|x| {
+            frame
+                .get(y * wide + x)
+                .is_some_and(|here| bare.get(y * wide + x).is_some_and(|there| here != there))
+        });
+        if any && !lit {
+            rows += 1;
+        }
+        lit = any;
+    }
+    rows
+}
+
 /// How many pixels of a frame differ from the bare desktop — the terminal's own
 /// ink, however little of the screen it covers.
 fn painted_ink(frame: &[u8], bare: &[u8]) -> usize {
@@ -182,6 +257,87 @@ const ECHO_HELLO: [u32; 10] = [18, 46, 35, 24, 57, 35, 18, 38, 38, 24];
 
 /// `Enter`.
 const THE_ENTER_KEY: u32 = 28;
+
+/// `cat`, as Linux evdev numbers the keys — a command that waits on the
+/// keyboard and prints nothing, which is walk step 5's whole point.
+const THE_WORD_CAT: [u32; 3] = [46, 30, 20];
+
+/// `W`, for *why is it waiting*.
+const THE_W_KEY: u32 = 17;
+
+/// Long enough for a shell to have started a command.
+///
+/// **A fixed wait, and the only one here.** Everything else waits for something
+/// it can observe; `cat` prints nothing, so there is nothing to observe and no
+/// honest way to wait for it. If this is ever too short the symptom is the
+/// waiting answer saying the command is not waiting at all, which the check
+/// below reports rather than passing.
+const LONG_ENOUGH_TO_START: std::time::Duration = std::time::Duration::from_millis(600);
+
+/// `D`, which with `Ctrl` ends a command reading the keyboard.
+const THE_D_KEY: u32 = 32;
+
+/// `Shift`.
+const LEFT_SHIFT: u32 = 42;
+
+/// The characters this fixture types, and the evdev key and shift for each.
+///
+/// **Only the characters it needs.** A general keyboard map belongs in
+/// `alo-keyboards` and is not what a drawing fixture is for; this is the
+/// smallest table that can type one `echo` of a line the result recogniser
+/// knows, and a character outside it is a compile error rather than a silent
+/// substitution.
+const fn a_key_for(letter: char) -> Option<(u32, bool)> {
+    Some(match letter {
+        'a' => (30, false),
+        'c' => (46, false),
+        'd' => (32, false),
+        'e' => (18, false),
+        'f' => (33, false),
+        'g' => (34, false),
+        'h' => (35, false),
+        'i' => (23, false),
+        'k' => (37, false),
+        'l' => (38, false),
+        'n' => (49, false),
+        'o' => (24, false),
+        'p' => (25, false),
+        'r' => (19, false),
+        's' => (31, false),
+        't' => (20, false),
+        'u' => (22, false),
+        '0' => (11, false),
+        '1' => (2, false),
+        '2' => (3, false),
+        '3' => (4, false),
+        '4' => (5, false),
+        'q' => (16, false),
+        ' ' => (57, false),
+        '.' => (52, false),
+        ';' => (39, false),
+        ':' => (39, true),
+        '\'' => (40, false),
+        _ => return None,
+    })
+}
+
+/// Type a line, a character at a time, with `Shift` held where it is needed.
+fn typing(server: &mut Server, line: &str, from: u32) -> Result<u32, Box<dyn std::error::Error>> {
+    let mut at = from;
+    for letter in line.chars() {
+        let (code, shifted) =
+            a_key_for(letter).ok_or_else(|| format!("this fixture has no key for {letter:?}"))?;
+        if shifted {
+            server.keyboard_key(LEFT_SHIFT, KeyState::Pressed, at)?;
+        }
+        typed(server, code, at + 1)?;
+        if shifted {
+            server.keyboard_key(LEFT_SHIFT, KeyState::Released, at + 3)?;
+        }
+        at += 4;
+    }
+    Ok(at)
+}
 
 /// How long this fixture waits for a shell to say anything.
 ///
@@ -521,13 +677,444 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         .into());
     }
 
+    // **Walk step 5 and step 6: a command that waits, and alo saying why.**
+    //
+    // `cat` with no arguments reads the keyboard and prints nothing, so nothing
+    // arrives to wait for and the only honest wait is a fixed one. Then
+    // `Ctrl`+`Alt`+`W`, which is alo's own answer rather than anything the
+    // shell said — the first time that answer has been drawn anywhere.
+    for (which, code) in THE_WORD_CAT.into_iter().enumerate() {
+        let at = 50 + u32::try_from(which)? * 2;
+        typed(&mut server, code, at)?;
+    }
+    typed(&mut server, THE_ENTER_KEY, 60)?;
+    until_the_shell_is_quiet(&mut server);
+    std::thread::sleep(LONG_ENOUGH_TO_START);
+    let _ = server.the_terminal_was_written_to();
+
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let waiting = frame_just_drawn(&nested, "the terminal with `cat` waiting")?;
+
+    key(&mut server, LEFT_CONTROL, 70)?;
+    key(&mut server, LEFT_ALT, 71)?;
+    key(&mut server, THE_W_KEY, 72)?;
+    server.keyboard_key(THE_W_KEY, KeyState::Released, 73)?;
+    server.keyboard_key(LEFT_ALT, KeyState::Released, 74)?;
+    server.keyboard_key(LEFT_CONTROL, KeyState::Released, 75)?;
+    let _ = server.the_terminal_was_written_to();
+
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let answered = frame_just_drawn(&nested, "the terminal after Ctrl+Alt+W")?;
+
+    if answered == waiting {
+        return Err(
+            "pressing Ctrl+Alt+W changed nothing on the screen, so the answer to *why is it \
+             waiting* reached no frame. The chord is bound to Action::WhyIsItWaiting in \
+             alo-shortcuts' shipped defaults, and `cat` was running, so what did not happen is \
+             the answer being drawn."
+                .into(),
+        );
+    }
+    let said = painted_ink(&answered, &without);
+    if said <= painted_ink(&waiting, &without) {
+        return Err(format!(
+            "Ctrl+Alt+W left no more ink than before it ({said} against {}), so whatever changed \
+             was not a line of text being added",
+            painted_ink(&waiting, &without)
+        )
+        .into());
+    }
+
+    // **And the answer is beside the gutter word, not inside it.**
+    //
+    // This is the assertion the whole fixture earned. Until 2026-10-17 alo's
+    // sentence was drawn into the gutter's own 80-pixel label box and then
+    // painted over by the word `alo`, so the picture held both runs, a person
+    // saw `alo` beside nothing, and every count-based check passed. A chord
+    // whose answer lands only in the gutter column is that fault returning.
+    let (_, _, right, _, _) = where_they_differ(&answered, &waiting, HOW_BIG.0 as usize)
+        .ok_or("the frames differ as byte slices but no pixel differs, which cannot happen")?;
+    let the_gutter_ends_by = HOW_BIG.0 as usize / 4;
+    if right < the_gutter_ends_by {
+        return Err(format!(
+            "everything Ctrl+Alt+W changed is left of x={the_gutter_ends_by} — the gutter column \
+             — ending at x={right}. The word saying who spoke was drawn and the sentence it \
+             labels was not, which is what a person reads as alo answering with nothing."
+        )
+        .into());
+    }
+
+    // The rows alo's answer occupies, measured rather than written down, so the
+    // step below can ask whether it went away without knowing where it was.
+    let (_, alos_top, _, alos_bottom, _) =
+        where_they_differ(&answered, &waiting, HOW_BIG.0 as usize)
+            .ok_or("the answer's own rows could not be measured")?;
+    let while_waiting = ink_in_band(&answered, &without, alos_top, alos_bottom);
+
+    // **Walk step 7: `Ctrl`+`D` ends `cat`, and asking again must take the line
+    // away.** A reply about a command that has gone would sit on the screen
+    // looking current, which is what `WhatAloSaid::nothing_to_say` exists to
+    // prevent — and nothing had ever checked that it does on a screen.
+    key(&mut server, LEFT_CONTROL, 80)?;
+    key(&mut server, THE_D_KEY, 81)?;
+    server.keyboard_key(THE_D_KEY, KeyState::Released, 82)?;
+    server.keyboard_key(LEFT_CONTROL, KeyState::Released, 83)?;
+    until_the_shell_is_quiet(&mut server);
+
+    key(&mut server, LEFT_CONTROL, 84)?;
+    key(&mut server, LEFT_ALT, 85)?;
+    key(&mut server, THE_W_KEY, 86)?;
+    server.keyboard_key(THE_W_KEY, KeyState::Released, 87)?;
+    server.keyboard_key(LEFT_ALT, KeyState::Released, 88)?;
+    server.keyboard_key(LEFT_CONTROL, KeyState::Released, 89)?;
+    let _ = server.the_terminal_was_written_to();
+
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let nothing_waiting = frame_just_drawn(&nested, "the terminal after `cat` ended")?;
+    let after_it_ended = ink_in_band(&nothing_waiting, &without, alos_top, alos_bottom);
+    if after_it_ended >= while_waiting {
+        return Err(format!(
+            "`cat` ended and asking again left {after_it_ended} pixels of ink where the answer \
+             was, against {while_waiting} while it really was waiting. The reply is still on the \
+             screen for a command that has gone, which is worse than no reply: a person reads it \
+             as current."
+        )
+        .into());
+    }
+
+    // **Walk steps 10 and 11: a result the terminal recognises in a stranger's
+    // output.** One `echo` of the line `alo_terminal::a_test_result_in` knows
+    // how to read. What should appear is a summary and, under it, the line
+    // saying nobody checked it — both in the **program's** region, which is the
+    // design's *PROGRAM includes parsed rich results*.
+
+    // **Quoted, and the quotes are the point.** Typed bare, bash reads every `;`
+    // as the end of a command: the screen fills with `1: command not found` and
+    // what reaches the recogniser is a truncated line rather than the one the
+    // walk types. Measured on 2026-10-17 by typing it both ways and reading the
+    // screen back.
+    let at = typing(&mut server, "echo 'test result", 100)?;
+    let at = typing(&mut server, ": ok. 23 passed; 1 failed; 0 ignored;'", at)?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    if !until_the_shell_writes(&mut server) {
+        return Err("nothing came back from the shell after the result line".into());
+    }
+    until_the_shell_is_quiet(&mut server);
+
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let recognised = frame_just_drawn(&nested, "the terminal with a recognised result")?;
+
+    // **Rows of text, not pixels of ink.** One `echo` of a quoted line puts two
+    // rows on the screen — the command and its output — and a result the
+    // terminal recognises adds two more: the summary and the line saying nobody
+    // checked it. A pixel count cannot tell four new rows from a shell printing
+    // three errors, and both grow the ink.
+    //
+    // **What is drawn, read back on 2026-10-17**: `Tests · 23 tests passed · 1
+    // test failed` and `Source: cargo test output · Not independently verified`,
+    // beneath the grid where alo's own lines go. Walk steps 10 and 11 are about
+    // those two.
+    let rows_before = rows_with_ink(&nothing_waiting, &without);
+    let rows_after = rows_with_ink(&recognised, &without);
+    if rows_after < rows_before + 4 {
+        return Err(format!(
+            "the screen gained {} row(s) of text where a recognised result gives four — the \
+             command, its output, the summary and the line under it. Either the shell did not \
+             print the line, or nothing was recognised in what it printed.",
+            rows_after - rows_before
+        )
+        .into());
+    }
+    let _ = said;
+
+    // **Walk steps 12 and 13: what a recognised result does afterwards.**
+    //
+    // The band is the one alo's answer used at step 6, which is where the
+    // result's first line now sits — so this asks about the summary without
+    // ever naming a row. Step 12: another command runs and the summary
+    // **stays**, because what is recognised is what the screen holds. Step 13:
+    // `clear` takes the line it was read from away, and the summary **goes**
+    // with it.
+    let summary_showing = ink_in_band(&recognised, &without, alos_top, alos_bottom);
+    if summary_showing == 0 {
+        return Err("the recognised summary is not in the band this step measures".into());
+    }
+
+    let at = typing(&mut server, "ls", 500)?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    until_the_shell_writes(&mut server);
+    until_the_shell_is_quiet(&mut server);
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let after_more_output = frame_just_drawn(&nested, "the terminal after `ls`")?;
+    if ink_in_band(&after_more_output, &without, alos_top, alos_bottom) == 0 {
+        return Err(
+            "the recognised summary went away when another command ran, though the line it was \
+             read from is still on the screen above. What is recognised is what the screen \
+             holds, and this screen still holds it."
+                .into(),
+        );
+    }
+
+    let at = typing(&mut server, "clear", 600)?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    until_the_shell_writes(&mut server);
+    until_the_shell_is_quiet(&mut server);
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let after_clear = frame_just_drawn(&nested, "the terminal after `clear`")?;
+    let left_behind = ink_in_band(&after_clear, &without, alos_top, alos_bottom);
+    if left_behind >= summary_showing {
+        return Err(format!(
+            "`clear` took the line away and the summary stayed: {left_behind} pixels of ink in \
+             its band against {summary_showing} before. A summary read out of a line that is no \
+             longer on the screen is a claim about nothing."
+        )
+        .into());
+    }
+
+    // **Walk step 9: scrollback moves, and stops at both ends.**
+    //
+    // `seq 1 40` puts more lines on the screen than the grid holds, so there is
+    // something to scroll back into. A notch is 15 units of the vertical axis
+    // and moves three lines, and `pointer_axis` answers whether alo's terminal
+    // took it — which is the whole of *a notch that moves nothing is not
+    // consumed*: at either end the scroll falls through instead of being
+    // swallowed.
+    server.enable_pointer()?;
+    let at = typing(&mut server, "seq 1 40", 700)?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    until_the_shell_writes(&mut server);
+    until_the_shell_is_quiet(&mut server);
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let at_the_newest = frame_just_drawn(&nested, "the terminal at the newest line")?;
+
+    // **Notch by notch, drawing each time, until the picture stops changing.**
+    // That is the only honest reading of *stops at both ends*: the question is
+    // whether the transcript moved, and the frame is what knows.
+    let drawn = |nested: &mut Nested,
+                 server: &Server,
+                 labels: &mut WindowControlLabels|
+     -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        nested.pump()?;
+        nested.submit_with_desktop(
+            &[],
+            &[],
+            &alo_shell::Cursor::Default,
+            &[],
+            labels,
+            desktop(),
+            None,
+            None,
+            Some(TheTerminalToDraw {
+                server,
+                display: THE_DISPLAY,
+            }),
+        )?;
+        frame_just_drawn(nested, "a frame while scrolling")
+    };
+
+    let mut back = at_the_newest.clone();
+    let mut notches = 0;
+    loop {
+        a_notch(&mut server, Back::Yes, 800 + notches)?;
+        let now = drawn(&mut nested, &server, &mut labels)?;
+        if now == back {
+            break;
+        }
+        back = now;
+        notches += 1;
+        if notches > AT_MOST_NOTCHES {
+            return Err(format!(
+                "the transcript moved for {AT_MOST_NOTCHES} notches without reaching the oldest \
+                 line it remembers. It should stop, and a terminal at the end of its scrollback \
+                 does not swallow scrolls."
+            )
+            .into());
+        }
+    }
+    if notches == 0 {
+        return Err(
+            "a wheel notch back moved nothing at all, so a thousand remembered lines cannot be \
+             reached. The design's own words: a terminal that remembers and cannot show has \
+             forgotten, as far as a person is concerned."
+                .into(),
+        );
+    }
+
+    let mut forward = 0;
+    let mut here = back;
+    loop {
+        a_notch(&mut server, Back::No, 900 + forward)?;
+        let now = drawn(&mut nested, &server, &mut labels)?;
+        if now == here {
+            break;
+        }
+        here = now;
+        forward += 1;
+        if forward > AT_MOST_NOTCHES {
+            return Err("the transcript moved forward without reaching the newest line".into());
+        }
+    }
+    let back_at_the_newest = here;
+    if back_at_the_newest != at_the_newest {
+        return Err(format!(
+            "scrolling back {notches} notches and forward {forward} did not return the \
+             transcript to where it started, so one end is not where the other thinks it is"
+        )
+        .into());
+    }
+
+    // **Walk step 8: a clock, which is none of the five answers.** `sleep 30`
+    // waits on a timer rather than on the keyboard, the network, another
+    // process or the processor, and the walk's pass is the honest *waiting for
+    // something alo cannot identify* rather than a confident wrong one. What is
+    // asserted here is only that **an answer came back and reached the screen**
+    // — which of the five it is belongs to `alo-terminal`'s own tests, and
+    // asserting it from pixels would be this fixture reading English out of
+    // glyphs.
+    let at = typing(&mut server, "sleep 30", 300)?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    until_the_shell_is_quiet(&mut server);
+    std::thread::sleep(LONG_ENOUGH_TO_START);
+    let _ = server.the_terminal_was_written_to();
+
+    key(&mut server, LEFT_CONTROL, 400)?;
+    key(&mut server, LEFT_ALT, 401)?;
+    key(&mut server, THE_W_KEY, 402)?;
+    server.keyboard_key(THE_W_KEY, KeyState::Released, 403)?;
+    server.keyboard_key(LEFT_ALT, KeyState::Released, 404)?;
+    server.keyboard_key(LEFT_CONTROL, KeyState::Released, 405)?;
+    let _ = server.the_terminal_was_written_to();
+
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let about_a_clock = frame_just_drawn(&nested, "the terminal with a clock waiting")?;
+    if rows_with_ink(&about_a_clock, &without) <= rows_with_ink(&back_at_the_newest, &without) {
+        return Err(
+            "asking why a clock is waiting added no row of text, so alo answered nothing where \
+             the walk expects it to say plainly that it cannot tell. A command this machine \
+             cannot classify is the case the fifth answer exists for; silence is not it."
+                .into(),
+        );
+    }
+
     // **Written out only when somebody asks**, the way `saving_frames` guards
     // itself: a gate that wrote a file every run would be a gate that fills a
     // disk, and nothing here is the screenshot promise.
     if let Ok(into) = std::env::var("ALO_TERMINAL_CHECK_WRITE") {
         let header = format!("P6\n{} {}\n255\n", HOW_BIG.0, HOW_BIG.1);
         let mut out = header.into_bytes();
-        let (whole, _) = typed_in.as_chunks::<4>();
+        let (whole, _) = about_a_clock.as_chunks::<4>();
         for pixel in whole {
             out.extend_from_slice(&[pixel[2], pixel[1], pixel[0]]);
         }
@@ -539,7 +1126,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         "terminal: Ctrl+Alt+T opened one and it reached the frame — ink across a {wide}x{tall} \
          extent from ({left}, {top}), {how_many} pixels differing from the same desktop drawn \
          twice identically without it; then `echo hello` and Enter changed {after_typing} more \
-         pixels, so keys reached the shell and its answer reached the screen"
+         pixels, so keys reached the shell and its answer reached the screen; then `cat` and \
+         Ctrl+Alt+W drew alo's own answer to *why is it waiting*, {said} pixels of ink in all"
     );
     Ok(())
 }
