@@ -135,81 +135,44 @@ fault — check `main` first and skip to walk step 7.
 has steps and so does the order below. A bare "step 6" could mean either, and one
 cross-reference in this file was already stale for exactly that reason.*
 
-### 2. The bracket, if it is still nobody's — **what three blocked tasks wait on**
+### 2. The bracket — **built and wired, 2026-10-17; what it unblocked and what it did not**
 
-**The source qualifier was step 2 for about an hour, and it was already done.**
-Task 2 of the plan asks for a caption inside the transcript reading *Source:
-cargo test output · Not independently verified*; #761 draws exactly that
-sentence, in exactly that place, from the same frame of the design. Satisfying
-task 6 satisfied it outright, and nobody read it before promoting it. *A task
-whose whole content is one sentence of another task's output is a task to check
-off rather than to schedule* — and this is the fourth time in one day that this
-document promoted something it had not read, which is the fault its own
-headline lesson is about.
+**Done, and measured on a real filesystem.** `alo_turn::the_bracket_a_turn_takes`
+makes the two read-only snapshots and writes the note; `alo-agentd`'s
+`the_bracket_this_turn_takes` takes one before the first change a person
+approves and closes it as the turn ends. Three tests run as root on a loopback
+`btrfs`: `btrfs subvolume list` names the snapshot, `property get -ts` says
+`ro=true`, a write into it is refused, and the two sides differ.
 
-**So the bracket is next, and it is next because three things wait on it**:
-*bisect the machine*, *your files as they were*, and the *what each one
-changed* half of a replayable session. ADR 0045 puts it in `alo-turn` and #752
-settled what the agent may do with one — *take a bracket, and neither alter nor
-destroy one*.
+**It needed no owner decision after all.** This document said it waited on *what
+happens to a turn whose bracket cannot be taken*. ADR 0045's third term already
+answers it, in the opposite direction to the guess recorded here: *a machine too
+full to snapshot still runs the turn… a verb that refused to run for want of an
+undo would be a machine that stopped working to protect a feature.* The taking
+therefore answers *why not* rather than failing, and the type is not a `Result`
+so no `?` can turn one into the other.
 
-**#751 removed the first thing in the way** and **#752 recorded the measurement
-it rests on**, both landed today.
+**Two things it did not unblock, and both are somebody else's:**
 
-**Who owns it: this lane, measured rather than assumed.** ADR 0045 says
-`crates/alo-turn` is *lane A's*, which is retired naming, and the charter lists
-`alo-turn` only for `the-local-network-plan`'s **pairing** parts. So the
-charter's own method 2 was applied — every recent landing in `crates/alo-turn`
-resolved to its branch — and **six of six are `task/mac/…`**: #750, #682, #679,
-#670, #667, #662. The bracket is not pairing, and it is this lane's.
+- **Nothing compares the two sides.** `alo_keeping_up::WhatWasKept`'s fourth
+  variant carries the *answer to comparing* them, and ADR 0045 puts the
+  comparing in the privileged path with the base's own tools —
+  `the-broker-and-the-disk-plan.md`, which the charter gives to the **third PC**.
+  So *bisect the machine* and *your files as they were* still wait, on a lane
+  rather than on this one.
+- **There is no variant for *kept but not yet compared***, which is exactly what
+  a machine is now. An empty `Bracket` is not that: `changed: []` says **the turn
+  changed nothing**, so handing one back would assert the opposite of what
+  happened. `alo-agentd` answers its own three-way `WhatThisTurnKept` instead and
+  the mapping waits. **Adding the variant is a change to another lane's published
+  enum and is recorded here rather than taken.**
 
-**Everything it needs is in place, and this is the first step all day that is
-unambiguously startable:**
-
-| | |
-|---|---|
-| the decision | ADR 0045's terms, amended 2026-10-16, plus #752 — *the agent can take a bracket and can neither alter nor destroy one* |
-| the privilege | **none needed.** `btrfs subvolume snapshot -r` of a subvolume the person owns, as the person with no `sudo`, **exits 0** — measured twice, 2026-09-21 and 2026-10-16 |
-| the folder | **made at first sign-in**, by `alo-giving-a-folder`, this lane's own work of 2026-10-17 (ADR 0120 moved it, ADR 0121 wired the caller). ADR 0045's amendment recorded that *nothing creates it at all*; that is no longer true |
-| the layout | `alo-kept-undo` — `THE_TURN`, `BEFORE`, `AFTER`, `BOTH_SNAPSHOTS`, `Theirs`, `TheTurn`. **#751 moved it out of `alo-letting-go` for exactly this**, because nothing a turn runs inside may ship that crate |
-| the remover | `alo-letting-go`, and it is measured on a real loopback `btrfs` in `tests/on_a_real_btrfs_machine.rs` |
-| how to invoke it | the base's own program, as the remover does: one `Command::new(THE_PROGRAM)`, with a source-reading test asserting there is exactly one |
-
-**So both ends are built and the middle is absent**, in ADR 0045's own words.
-
-**The two things to settle before writing code, and neither is large:**
-
-1. **Where a turn begins — settled 2026-10-17, and it is one place.**
-   `Turning::beginning` in `crates/alo-turn/src/turning.rs`, and it has
-   **exactly one production caller: `crates/alo-agentd/src/serving.rs:436`.**
-
-   That number was wrong twice before it was right, and how is worth keeping:
-
-   | counting | answer | what was wrong with it |
-   |---|---|---|
-   | `grep -n '::beginning('` | **56** | three different types have one — `Turn`, `Arriving` and `Archive` in `alo-files` |
-   | `grep -n 'Turning::beginning('`, minus doc comments and `tests/` | **17** | still counts call sites **inside `#[cfg(test)]` blocks in production files** — `turning.rs` is 1903 lines and its test module starts at 904 |
-   | each site's line against its own file's `#[cfg(test)]` line | **1** | — |
-
-   *Fifty-six against one. Each refinement removed a different kind of false
-   positive, and the last one is invisible to any per-file classifier, which is
-   this document's lesson about mentions and declarations in its third costume
-   of the day.*
-
-   **And the one caller is the right one**, which is what makes this tractable:
-   the daemon knows **who the person is** — `SO_PEERCRED` on the socket — and
-   `Turning::beginning` does not. It takes a context, an agent name, a duration,
-   the grants and the machine, and carries neither a person nor a path. So a
-   bracket needs the person and their subvolume from somewhere, and the daemon
-   already has both. **No signature has to change.**
-
-2. **What happens to a turn whose bracket cannot be taken.** ADR 0045 does not
-   say, and this is the one thing still open. ADR 0015 says of its own boundary
-   that *a turn whose boundary cannot be applied does not run*, and `CLAUDE.md`
-   forbids a silent fallback — so the candidate answer is that the turn refuses
-   and the person is told. **It is a decision and not an inference**, and the
-   honest reading of ADR 0045's own shape is that it belongs in an amendment
-   beside the others rather than in a lane's judgement.
+**And one thing about the prescribed build environment**, because it cost an
+hour and will cost the next lane the same: `TMPDIR=$HOME/alo-tmp` makes a Unix
+socket path exceed `SUN_LEN`, and `alo-agentd`'s failures go **32 → 22** with
+`TMPDIR=/tmp` on the same tree. One of the ten is in `serving`, which a bracket
+change touches, and reads exactly like *your change broke serving*. The
+remaining 22 all need root and all pass under `sudo`.
 
 ### 3. What is still owed on rich results
 

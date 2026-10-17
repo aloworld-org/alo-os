@@ -64,8 +64,8 @@ fn a_session_with_nowhere_says_nothing_on_this_machine() {
     bracket.before_a_change("archive march's invoices");
 
     assert_eq!(
-        bracket.what_was_kept(),
-        alo_keeping_up::WhatWasKept::NothingOnThisMachine
+        bracket.what_this_turn_kept(),
+        WhatThisTurnKept::NowhereToKeepIt
     );
     assert!(bracket.taken_at().is_none());
 }
@@ -82,8 +82,8 @@ fn a_bracket_that_could_not_be_taken_says_not_this_turn() {
     bracket.before_a_change("archive march's invoices");
 
     assert_eq!(
-        bracket.what_was_kept(),
-        alo_keeping_up::WhatWasKept::NotThisTurn,
+        bracket.what_this_turn_kept(),
+        WhatThisTurnKept::NotThisTurn,
         "a temporary directory was snapshotted, which this test is not about"
     );
     assert!(
@@ -134,8 +134,8 @@ fn a_turn_that_changed_nothing_leaves_nothing() {
         "a turn that approved nothing made the person's directory"
     );
     assert_eq!(
-        bracket.what_was_kept(),
-        alo_keeping_up::WhatWasKept::NotThisTurn,
+        bracket.what_this_turn_kept(),
+        WhatThisTurnKept::NotThisTurn,
         "a turn that never asked for a bracket should not claim one"
     );
 }

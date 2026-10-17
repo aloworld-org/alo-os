@@ -115,6 +115,28 @@ impl WhereBracketsGo {
     }
 }
 
+/// What one turn kept, as the daemon knows it.
+///
+/// **Three answers, and deliberately not four.** `alo_keeping_up::WhatWasKept`
+/// has a fourth — the answer to *comparing* the two kept sides — and nothing on
+/// a machine compares them yet. [`TheTurnsBracket::what_this_turn_kept`] says
+/// why handing back an empty comparison would assert that the turn changed
+/// nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WhatThisTurnKept {
+    /// The session had nowhere to snapshot — no absolute home.
+    ///
+    /// `alo_keeping_up::WhatWasKept::NothingOnThisMachine` is the sentence a
+    /// person reads for this.
+    NowhereToKeepIt,
+    /// It was attempted and not taken, which ADR 0045's third term allows: the
+    /// turn still ran and cannot be undone.
+    NotThisTurn,
+    /// Both sides are kept. **Nothing has compared them**, so what the turn
+    /// changed is not known here.
+    BothSidesAreKept,
+}
+
 /// A name for one turn's directory, unique on this machine.
 ///
 /// The contract: *a kept turn's name is whatever the process that took the
@@ -185,7 +207,7 @@ impl TheTurnsBracket {
     /// 0045's third term: *a machine too full to snapshot still runs the turn*,
     /// and *a verb that refused to run for want of an undo would be a machine
     /// that stopped working to protect a feature.* What the outcome is good for
-    /// is [`Self::what_was_kept`], which a person reads.
+    /// is [`Self::what_this_turn_kept`], which a person's sentence is built from.
     pub fn before_a_change(&mut self, said: &str) {
         if self.did.is_none() {
             self.did = Some(said.to_owned());
@@ -226,24 +248,32 @@ impl TheTurnsBracket {
         }
     }
 
-    /// What this turn kept, in the words a person reads.
+    /// What this turn kept, as far as this crate can honestly say.
     ///
-    /// `NothingOnThisMachine` where the session had no home to snapshot;
-    /// `NotThisTurn` where it was attempted and not taken — ADR 0045's third
-    /// term; `EitherSideOfTheTurn` where both sides are there.
+    /// **Not `alo_keeping_up::WhatWasKept`, and that is a finding rather than a
+    /// preference.** That enum is what a *person* reads, and its fourth variant
+    /// is `EitherSideOfTheTurn(Bracket)` — a bracket being the **answer to
+    /// comparing** the two sides. An empty `Bracket` is not *nobody has
+    /// compared them*: it says `changed: []`, which means **the turn changed
+    /// nothing**. Handing one back for a turn that did change something would be
+    /// this crate asserting the opposite of what happened.
     ///
-    /// **The comparing is somebody else's**, which is why the bracket handed
-    /// back is empty: `alo-keeping-up`'s own words are *made by whoever compared
-    /// them, which is not this crate*, and the comparing is the privileged
-    /// path's with the base's own tools.
+    /// There is no variant for *both sides are kept and nothing has compared
+    /// them*, which is exactly the state of a machine the moment a bracket is
+    /// taken and before a comparer exists. Adding one is a change to another
+    /// lane's published enum — `alo-keeping-up`'s own words are *made by whoever
+    /// compared them, which is not this crate* — and the comparing is ADR 0045's
+    /// privileged path, which `the-broker-and-the-disk-plan.md` gives to the
+    /// third PC.
+    ///
+    /// So this answers what it knows, and the mapping waits for whoever can
+    /// compare.
     #[must_use]
-    pub fn what_was_kept(&self) -> alo_keeping_up::WhatWasKept {
-        match (&self.taken, self.goes.as_ref()) {
-            (Some(_), _) => {
-                alo_keeping_up::WhatWasKept::EitherSideOfTheTurn(alo_keeping_up::Bracket::default())
-            }
-            (None, None) => alo_keeping_up::WhatWasKept::NothingOnThisMachine,
-            (None, Some(_)) => alo_keeping_up::WhatWasKept::NotThisTurn,
+    pub const fn what_this_turn_kept(&self) -> WhatThisTurnKept {
+        match (&self.taken, &self.goes) {
+            (Some(_), _) => WhatThisTurnKept::BothSidesAreKept,
+            (None, None) => WhatThisTurnKept::NowhereToKeepIt,
+            (None, Some(_)) => WhatThisTurnKept::NotThisTurn,
         }
     }
 
