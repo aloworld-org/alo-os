@@ -451,12 +451,23 @@ file carries it with a tier.*
   `sleep`, because it reached for the file when the kernel had already said the
   command was waiting on a clock. It now consults the file only where the
   kernel has said nothing or said only *parked*. Checked against real processes
-  on a real kernel, each with its control. **Not built**: *show the prompt*,
-  *inspect the connection*, *reveal what is blocking it* and *stop* — the four
-  actions, which are a surface and need one. **So nothing in the shell asks
-  yet**, and the answer lives as public API of `alo-terminal` rather than as a
-  method with no caller: an uncalled method is a claim that something is wired
-  when it is not.
+  on a real kernel, each with its control.
+  **The asking is wired, 2026-10-17.**
+  `AShellOnAPseudoterminal::why_the_command_in_front_is_waiting` is the
+  question, and what was missing was only the joining: which process the
+  terminal has in front, what the machine says about it, and what that reads as
+  were three public pieces built and tested weeks apart that **nothing called
+  together** — so the promise's *ask* had no ask. Measured on a real
+  pseudoterminal: `cat` answers *waiting for the keyboard*, and when it finishes
+  there is nothing waiting again. Mutation-proved — made to ask about the shell
+  instead, which is the fault its own documentation warns about, and both tests
+  fail. It carries which process the answer is about, because all four actions
+  below act on something.
+  **Still not built**: *show the prompt*, *inspect the connection*, *reveal what
+  is blocking it* and *stop*. Each is two halves — a mechanism answerable from
+  `/proc` that needs no decision, and a presentation that is a surface and needs
+  one. **No surface asks yet**, which is why the answer is public API rather than
+  anything a screen depends on.
 - ★ **Try a command without letting it touch anything.** Paste the install
   script from a README and run it in a box that sees the project and nothing
   else, with no network except what you approved, thrown away after. See what it

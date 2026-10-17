@@ -23,6 +23,7 @@ use std::time::{Duration, Instant};
 use super::{AShellOnAPseudoterminal, WhatArrived};
 use crate::how_big_the_grid_is::HowBig;
 use crate::terminal_output_becomes_a_grid::TerminalOutput;
+use crate::why_a_command_is_waiting::WhyItIsWaiting;
 
 /// Long enough for a process to start and print on a loaded machine, short
 /// enough that a failure is reported rather than waited for.
@@ -293,5 +294,119 @@ fn a_resize_reaches_a_shell_that_is_already_running() {
         screen_says(&screen, "43 132"),
         "a shell that was already running never saw the new size. The screen held: {:?}",
         screen.lines()
+    );
+}
+
+/// **A command reading the terminal is waiting for the keyboard**, and the
+/// terminal can now say so.
+///
+/// `cat` with no argument reads its standard input, which inside a
+/// pseudoterminal **is** the terminal. So the honest answer is the keyboard, and
+/// a person who was about to kill something learns it is waiting for them.
+///
+/// This is the three calls joined: which process is in front, what the machine
+/// says about it, and what that reads as. Each was tested on its own before
+/// this and nothing asked the question.
+#[test]
+fn a_command_reading_the_terminal_is_waiting_for_the_keyboard() {
+    let mut shell = AShellOnAPseudoterminal::running(
+        HowBig::of(80, 24, 100).expect("a terminal"),
+        "/bin/sh",
+        &["-s"],
+    )
+    .expect("a shell starts on a pseudoterminal");
+    let mut screen = a_screen();
+
+    // Nothing is running yet, so there is nothing to ask about.
+    assert_eq!(
+        shell.why_the_command_in_front_is_waiting(),
+        None,
+        "a person at a prompt has no command waiting for anything"
+    );
+
+    shell
+        .a_person_typed(b"cat\n")
+        .expect("what a person types reaches the shell");
+
+    // Wait until `cat` is really in front, rather than guessing at a delay.
+    let mut waiting = None;
+    for _ in 0..200 {
+        drop(shell.what_it_wrote(&mut screen));
+        if let Some(what) = shell.why_the_command_in_front_is_waiting() {
+            waiting = Some(what);
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(25));
+    }
+
+    let what = waiting.expect("`cat` reaches the front of the terminal");
+    assert_ne!(
+        what.process,
+        shell.the_shell_itself(),
+        "the answer is about the shell rather than the command in front of it"
+    );
+    assert_eq!(
+        what.why,
+        WhyItIsWaiting::ForTheKeyboard,
+        "a command reading the terminal is waiting for the person, and this said {:?}",
+        what.why
+    );
+
+    // And the sentence a person reads is words rather than a key.
+    assert!(
+        !what.why.the_word().key().as_str().is_empty(),
+        "the answer carries no word for a person to read"
+    );
+}
+
+/// **And when the command finishes, there is nothing to answer again.**
+///
+/// The control for the test above: a reader that answered *waiting for the
+/// keyboard* about the shell would pass that one and fail this one, because the
+/// shell is always reading its terminal.
+#[test]
+fn when_the_command_finishes_there_is_nothing_waiting_again() {
+    let mut shell = AShellOnAPseudoterminal::running(
+        HowBig::of(80, 24, 100).expect("a terminal"),
+        "/bin/sh",
+        &["-s"],
+    )
+    .expect("a shell starts on a pseudoterminal");
+    let mut screen = a_screen();
+
+    shell
+        .a_person_typed(b"cat\n")
+        .expect("what a person types reaches the shell");
+    let mut reached = false;
+    for _ in 0..200 {
+        drop(shell.what_it_wrote(&mut screen));
+        if shell.why_the_command_in_front_is_waiting().is_some() {
+            reached = true;
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(25));
+    }
+    assert!(
+        reached,
+        "`cat` never reached the front, so this proves nothing"
+    );
+
+    // End of input: `cat` reads it and exits, and the shell is in front again.
+    shell
+        .a_person_typed(&[0x04])
+        .expect("what a person types reaches the shell");
+
+    let mut back = false;
+    for _ in 0..200 {
+        drop(shell.what_it_wrote(&mut screen));
+        if shell.why_the_command_in_front_is_waiting().is_none() {
+            back = true;
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(25));
+    }
+    assert!(
+        back,
+        "the command finished and the terminal still reports something waiting"
     );
 }
