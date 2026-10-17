@@ -48,20 +48,21 @@ because a reader starting from it would conclude this goal is unreachable.*
 | ★ | bisects the machine | **nothing**, and waits on a bracket |
 | ★ | reads output that is not a character grid | **nothing** |
 | ★ | hands somebody a session to replay | **nothing**, and waits on rich results |
-| | asks what a command will do first | **nothing built, and next** — both its surfaces exist, from #755 |
+| | asks what a command will do first | the answer is built (#759); **nothing can ask**, because alo does not know what was typed — **blocked** |
 
 **Four of thirteen are usable today. One more is reachable and unseen.** Of the
 remaining eight, counted against the rows above rather than against the order:
 
-- **four are this lane's and startable** — *asks what a command will do first*,
-  *reads output that is not a character grid*, and the two that sit behind this
-  lane's own earlier steps, *bisects the machine* and *hands somebody a session
-  to replay*;
-- **three are blocked or need a decision this lane may not take** — *decides
+- **one is startable right now** — *reads output that is not a character grid*,
+  and two more open up behind it;
+- **two are behind this lane's own earlier steps** — *bisects the machine* and
+  *hands somebody a session to replay*;
+- **four are blocked or need a decision this lane may not take** — *decides
   whether alo may use it* and *scopes one command*, both on `alo-capability`,
-  whose ownership ADR 0111 leaves to the integration owner; and *finds a command
-  by what it did*, which needs a scope decision about which surface asks it. All
-  three are measured at the foot of the order;
+  whose ownership ADR 0111 leaves to the integration owner; *finds a command by
+  what it did*, which needs a decision about which surface asks it; and *asks
+  what a command will do first*, whose answer #759 built and whose asking needs
+  shell integration. All four are measured at the foot of the order;
 - **one is nobody's** — *run a command touching nothing*, available to the
   desktop lane since 2026-10-17 and taken by no lane.
 
@@ -121,60 +122,96 @@ fault — check `main` first and skip to walk step 7.
 has steps and so does the order below. A bare "step 6" could mean either, and one
 cross-reference in this file was already stale for exactly that reason.*
 
-### 2. Explain a command before it runs
+### 2. Task 6, rich results — **the only startable task in the plan, and three wait on it**
 
-**The cheapest of the remaining six, by the plan's own words, and the only one
-of the thirteen not marked ★.** A person types a command and asks what it will
-do before running it.
+**Measured 2026-10-17, by walking all ten of the plan's tasks rather than
+taking the next one.** This order spent the day promoting a step, measuring it,
+and finding it blocked — three times. So the tenth task was read with the other
+nine instead of after them:
 
-**It is next because its two surfaces already exist.** The asking is a chord, on
-the road `a_chord_asks_why_a_command_is_waiting` laid in #755 — which added
-`alo_shortcuts::Action::WhyIsItWaiting` under ADR 0085's rule that *`alo-shortcuts`
-is this lane's crate, so the action is this lane's to add*. The answering is an
-`alo` line in the transcript, through `alo_terminal::WhatAloSaid`, also #755's.
-So this is a third caller of machinery that works rather than anything new, and
-it stacks on #755 rather than waiting for it.
+| task | state |
+|---|---|
+| 1. *why is it waiting* reaches a person | **done**, #755 |
+| 2. the source qualifier | waits on task 6 |
+| **6. rich results** | **startable, and nothing outside the plan blocks it** |
+| 7. replay a session | waits on task 6 |
+| 3. explain a command before it runs | **blocked** — shell integration, found today; #759 built the answer half |
+| 4. find a command by what it did | **blocked** — which surface asks is a scope decision |
+| 5. scope one command | **blocked** — `alo-capability`, another lane's |
+| 8. bisect the machine | blocked on a bracket, *and the plan says so* |
+| 9. try a command touching nothing | blocked on the kernel boundary, *and the plan says so* |
+| 10. *your files as they were* | blocked on a bracket, *and the plan says so* |
 
-**What it needs that is not built:** the question put to a model through
-`alo-asking`, and the marking the promise asks for — *anything destructive,
-anything needing elevated rights and anything leaving the machine*.
+**The plan was honest about the last three and not about tasks 3, 4 and 5**,
+which each read *Depends on: nothing in this plan* — true, and not the question
+anybody was asking. Four of ten are blocked, one is done, and **task 6 is the
+only one that can be started**. It also unblocks the most: tasks 2 and 7 both
+sit behind it.
 
-**The promise names no model**, which is why this is testable on this machine: a
-provider key is present (mode 600, measured 2026-10-17). An earlier version of
-this document called it out of reach because *a model on this machine* is an
-environment this lane cannot test in — true of a **local** model and false of the
-promise.
+*So this is not a judgement that rich results is the most valuable thing. It is
+the measured fact that it is the only thing, which is a stronger reason and took
+four attempts to find. The lesson is in the method: **walk the whole list before
+picking from it**, because a list read one item at a time hides its shape.*
 
-**And it is an explanation, not a guarantee**, in the promise's own words: a
-script, an alias or something a command downloads can change what happens, so the
-surface says so rather than implying certainty.
-
-*This step was *Terminal tasks 4 and 5* until 2026-10-17. See the two steps at
-the foot of this order for why both were moved, and what the plan's own status
-lines hid.*
-
-### 3. Task 6, rich results
-
-The largest, and **tasks 2 and 7 both wait on it** — the source qualifier is
-provenance for a parsed result and has nothing to qualify until one exists, and a
-replayable session needs a transcript that is more than cells.
+**What it is.** `docs/features.md`, starred: *Output that is not stuck in a
+character grid. A benchmark draws a chart you can zoom; a long error becomes
+something you keep beside your editor and come back to tomorrow.* The design
+reserves the room — the gutter was measured against a node named *Rich test
+result / untrusted program data*, and the annotation says *PROGRAM includes
+parsed rich results*.
 
 **Untrusted is the load-bearing word.** This parses what a stranger's program
-printed, so it is as much about what it refuses to render as what it renders.
+printed, so it is as much about what it refuses to render as what it renders —
+and the input is the one thing this lane certainly has, which is what separates
+it from task 3.
 
-
-### 4. The bracket, if it is still nobody's
+### 3. The bracket, if it is still nobody's
 
 ADR 0045 puts it in `alo-turn`. #751 removed the first thing in the way and #752
 recorded the measurement it rests on. **Only if nothing else has taken it** —
 that crate is the workspace's most central and a collision in it costs a day
 where asking costs a message.
 
-### 5. Then bisect the machine, and *your files as they were*
+### 4. Then bisect the machine, and *your files as they were*
 
 Both wait on a bracket and on nothing else, so **taking the bracket step above
 makes these two this lane's** — which is why the corrected table below no longer lists them as
 unfinishable. If the bracket turns out to be another lane's, these go with it.
+
+### 5. Explain a command before it runs — **blocked on shell integration, measured 2026-10-17**
+
+**This was step 2 of this order for part of 2026-10-17, on the plan's word that
+it was the cheapest of the remaining six.** #759 built the answer and found the
+asking impossible. The plan priced the asking and assumed the input was free.
+
+**alo does not know what a person has typed, and the three roads to it are each
+a decision:**
+
+| | |
+|---|---|
+| anything keeping the typed line | **nothing** — `a_person_typed` writes the bytes to the pseudoterminal and keeps none |
+| `the_command_in_front` | a process id, so `/proc` describes something **already running** — not a command before it runs |
+| shell integration | **none**; the grid is `alacritty_terminal` with a `VoidListener`, which that module already calls *nothing is listening* |
+
+- **read it off the screen** — decides what the *person* typed from what a
+  *program* printed, which is `nothing_reads_the_bytes_to_decide_who_spoke`'s
+  fault one storey up, and then sends the result to a model;
+- **keep our own copy of the forwarded bytes** — diverges the first time
+  somebody presses Up, and diverges **silently**, because a shell's line editor
+  changes the line without telling anyone;
+- **shell integration** — the real road, and how every other terminal answers
+  it. A new mechanism, a published contract, and a decision about a sequence
+  **any program can forge**, which is ADR 0113's question again.
+
+**What landed anyway, and what deliberately did not.** #759 landed the
+explanation value, the second kind of `alo` remark, and the guard test that
+`what_alo_said.rs` had been citing while it did not exist. It did **not** land
+the action or the chord written for it: a chord bound to a surface that cannot
+work teaches a person a road and then takes it away, which
+`tests/the_road_every_action_takes.rs` exists to refuse.
+
+**What would unblock it**, in one sentence: a decision on shell integration —
+the sequence, its contract, and what stops a program forging it.
 
 ### 6. Terminal tasks 4 and 5 — **both need a scope decision, measured 2026-10-17**
 
