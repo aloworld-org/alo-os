@@ -356,6 +356,80 @@ fn how_the_child_is_told(size: HowBig) -> WindowSize {
     }
 }
 
+/// How long the shell is given to go on its own before it is made to.
+///
+/// Forty polls of five milliseconds. Long enough that a shell honouring
+/// `SIGHUP` finishes its exit hooks — measured at one or two polls for `zsh` and
+/// `bash` — and short enough that a person closing a window does not notice.
+/// **It is a bound and not a wait**: the common case returns on the first poll
+/// that finds the child gone.
+#[cfg(target_os = "linux")]
+const POLLS_BEFORE_IT_IS_MADE_TO: usize = 40;
+
+/// How long one of those polls is.
+#[cfg(target_os = "linux")]
+const BETWEEN_POLLS: std::time::Duration = std::time::Duration::from_millis(5);
+
+#[cfg(target_os = "linux")]
+impl Drop for AShellOnAPseudoterminal {
+    /// **Make sure the shell is gone before the engine waits for it, because
+    /// the engine waits for ever.**
+    ///
+    /// `alacritty_terminal`'s own `Drop for Pty` is three statements: send
+    /// `SIGHUP`, unregister its signal handler, and `let _ = self.child.wait()`.
+    /// That last one has **no deadline**, and `SIGHUP` is a signal a process may
+    /// ignore — a shell started from a process that was itself ignoring it
+    /// inherits that disposition and never dies. The wait then never returns.
+    ///
+    /// **This is a hang in the product and not only in a test.** A terminal is
+    /// dropped when a person closes its window, on the thread that draws every
+    /// window on the machine, so a shell that ignores `SIGHUP` would stop the
+    /// whole desktop — not slow it, stop it. It was found as a test hanging for
+    /// ten minutes in CI and killed by the harness, which is the shape
+    /// `CLAUDE.md` warns about: *a test that hangs is not a test that fails*, so
+    /// it reported no assertion and named nothing.
+    ///
+    /// # What this does, in the order it matters
+    ///
+    /// 1. **`SIGHUP` first**, because that is what closing a terminal means and
+    ///    a shell that honours it runs its exit hooks. Nothing here takes that
+    ///    away from a well-behaved shell.
+    /// 2. **Reap it as it goes**, with `WNOHANG` so no call can block, for at
+    ///    most [`POLLS_BEFORE_IT_IS_MADE_TO`] polls.
+    /// 3. **`SIGKILL` if it is still there.** `SIGKILL` cannot be caught,
+    ///    blocked or ignored, which is the whole reason it is the one used at the
+    ///    end rather than a second `SIGHUP`.
+    ///
+    /// The engine's `Drop` then runs, signals a process that has gone, and its
+    /// `wait` returns at once with an error it already ignores.
+    ///
+    /// **Every failure here is deliberately dropped.** This is a destructor: a
+    /// child that has already gone, a pid that will not convert and a signal
+    /// that cannot be sent are all *the shell is not running*, which is the
+    /// outcome being asked for. There is nobody to report to and nothing to
+    /// retry.
+    fn drop(&mut self) {
+        let Ok(raw) = i32::try_from(self.the_shell_itself()) else {
+            return;
+        };
+        let Some(which) = rustix::process::Pid::from_raw(raw) else {
+            return;
+        };
+
+        let _ = rustix::process::kill_process(which, rustix::process::Signal::HUP);
+        for _ in 0..POLLS_BEFORE_IT_IS_MADE_TO {
+            match rustix::process::waitpid(Some(which), rustix::process::WaitOptions::NOHANG) {
+                // Reaped, or there is no such child any more. Either way the
+                // engine's wait has nothing to wait for.
+                Ok(Some(_)) | Err(_) => return,
+                // Still running. The engine would block here for ever.
+                Ok(None) => std::thread::sleep(BETWEEN_POLLS),
+            }
+        }
+        let _ = rustix::process::kill_process(which, rustix::process::Signal::KILL);
+    }
+}
+
 #[cfg(test)]
 #[path = "a_shell_on_a_pseudoterminal_tests.rs"]
 mod tests;
