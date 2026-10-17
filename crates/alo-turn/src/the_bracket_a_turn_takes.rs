@@ -155,15 +155,24 @@ impl ASideOfTheTurn {
 
 /// Whether this could be a directory under a person's own.
 ///
-/// Hex and nothing else, bounded. **A separator, a dot or an empty name is
-/// refused**, which is what keeps a caller's turn identity from reaching outside
-/// the person's directory.
+/// ASCII letters, digits and `-`, bounded, and not empty. **A separator, a dot
+/// or an empty name is refused**, which is what keeps a caller's turn identity
+/// from reaching outside the person's directory — and refusing dots is what
+/// refuses `..`.
+///
+/// **Deliberately the safe subset and not a format**, because
+/// `docs/contracts/kept-undo-folder.md` says *a kept turn's name is whatever the
+/// process that took the bracket chose*. A stricter rule here — hex only, which
+/// this was first — would refuse a caller whose turn identity had a dash or a
+/// capital in it, and refuse **every** bracket on that machine without anything
+/// saying why. A validator narrower than the contract it serves is a feature that
+/// never works and cannot be seen not working.
 fn a_turns_name(offered: &str) -> bool {
     !offered.is_empty()
         && offered.len() <= THE_LONGEST_NAME
         && offered
             .chars()
-            .all(|it| it.is_ascii_digit() || it.is_ascii_lowercase())
+            .all(|it| it.is_ascii_alphanumeric() || it == '-')
 }
 
 /// One changing turn's place in a person's own undo directory.

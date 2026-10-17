@@ -45,10 +45,11 @@ fn a_name_that_could_leave_the_persons_directory_is_refused() {
         "/etc",
         ".",
         "",
-        "4F1C8A",
-        "four-f-one",
         "4f1c8a.",
         "with space",
+        "has\0a null",
+        "~",
+        "a:b",
     ] {
         let refused = WhereThisTurnIsKept::made(whose.path(), offered)
             .expect_err(&format!("{offered:?} was accepted as a turn's name"));
@@ -73,7 +74,18 @@ fn a_name_that_could_leave_the_persons_directory_is_refused() {
 #[test]
 fn an_ordinary_turn_name_is_accepted() {
     let whose = a_persons_directory();
-    for offered in ["4f1c8a", "0", "deadbeef", &"a".repeat(64)] {
+    // Hex, a bare number, a dash, a capital and a UUID without its braces —
+    // because the contract lets the taker choose the name and a validator
+    // narrower than that refuses every bracket on the machine.
+    for offered in [
+        "4f1c8a",
+        "0",
+        "deadbeef",
+        "4F1C8A",
+        "four-f-one",
+        "3f2504e0-4f89-11d3-9a0c-0305e82c3301",
+        &"a".repeat(64),
+    ] {
         assert!(
             WhereThisTurnIsKept::made(whose.path(), offered).is_ok(),
             "{offered:?} was refused and it is a turn's name"

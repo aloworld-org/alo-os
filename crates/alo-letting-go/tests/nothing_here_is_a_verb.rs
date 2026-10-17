@@ -175,7 +175,8 @@ fn without_comments(manifest: &str) -> String {
 /// would make the check above pass for ever and nobody would know.
 #[test]
 fn a_comment_naming_the_remover_is_not_a_dependency() {
-    let commented = "# alo-letting-go holds the privileged remover\nalo-kept-undo = { path = \"x\" }";
+    let commented =
+        "# alo-letting-go holds the privileged remover\nalo-kept-undo = { path = \"x\" }";
     assert!(
         !without_comments(commented).contains("alo-letting-go"),
         "a comment was read as a dependency"
@@ -190,7 +191,9 @@ fn a_comment_naming_the_remover_is_not_a_dependency() {
     // And the manifest this guards really does carry such a comment, so the cut
     // is load-bearing rather than defensive.
     let theirs = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../alo-turn/Cargo.toml");
-    let manifest = std::fs::read_to_string(&theirs).unwrap();
+    let manifest = std::fs::read_to_string(&theirs).unwrap_or_else(|why| {
+        panic!("{} could not be read: {why}", theirs.display());
+    });
     assert!(
         manifest.contains("alo-letting-go"),
         "alo-turn's manifest no longer explains why it may not reach the remover, so this test \
