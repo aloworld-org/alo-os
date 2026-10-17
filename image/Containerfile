@@ -149,6 +149,8 @@ RUN cargo build --release --target ${THE_TARGET} \
       --package alo-software \
       --package alo-converting \
       --package alo-running \
+      --package alo-brokerd \
+      --package alo-looking-once \
       --package alo-agent
 
 # ---------------------------------------------------------------------------
@@ -302,6 +304,34 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-agentd /usr/bin/alo-a
 # `the_helper_is_the_program_this_crate_builds` is the test that keeps the
 # constant and the binary's name one fact rather than two.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-enter-the-box /usr/libexec/alo-enter-the-box
+
+# **The broker, and the one look this machine takes on its way up.** Both in
+# libexec for the reason the loader and the opener are there: nobody runs either
+# by hand.
+#
+# The broker is ADR 0001 §2's privileged broker, which carries out a change to
+# the whole machine that a person approved — *set up this printer*, *join this
+# network* — and without it the agent can read a machine and not change one. Its
+# two other binaries are the halves that apply an update and go back to the
+# build before, started by the broker rather than enabled. `alo-brokerd`'s
+# `[[bin]]` names only the first; the other two are **auto-discovered from
+# `src/bin/`**, which is the arrangement the comment above the build already
+# warns about for `alo-software`.
+#
+# The one look is `alo_looking::Because`'s second occasion, *this machine
+# started*. Its own header records what its absence came to: *every piece of
+# updates that never interrupt was built and nothing on any alo OS machine had
+# ever looked, which from where the person sits is indistinguishable from a
+# machine that has no updates.*
+#
+# **None of this reached a machine until 2026-10-17.** Eight units lived in
+# three crates and the image installed none of them; `alo-image`'s
+# `every_unit_a_crate_keeps_reaches_the_machine.rs` is what found it and holds
+# the rest.
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-brokerd /usr/libexec/alo-brokerd
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-applying-an-update /usr/libexec/alo-applying-an-update
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-going-back /usr/libexec/alo-going-back
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-looking-once /usr/libexec/alo-looking-once
 
 # **The agent itself, in `bin` rather than `libexec`, because something other
 # than systemd runs it.**
@@ -756,6 +786,10 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                      alo-asking.socket \
                      alo-compositor.service alo-portald.service \
                      alo-shipping.service alo-desktop.service \
+                     # The broker and the one look. The broker's other two units declare no
+                     # `[Install]` and are started by the broker, which is how
+                     # `alo-convertd.service` is already handled.
+                     alo-brokerd.service alo-looking-once.service \
  && bootc container lint
 
 # The logins, made here rather than only at boot — and then checked, which is

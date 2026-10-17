@@ -58,7 +58,7 @@ const A_UNIT_IS: [&str; 4] = ["service", "timer", "path", "socket"];
 /// **Every line here is a decision somebody has to make, not a fault to fix.**
 /// Shipping a privileged service changes what runs on a machine, so none of
 /// these is added by a lane that merely noticed it.
-const NOT_YET_SHIPPED: [(&str, &str); 8] = [
+const NOT_YET_SHIPPED: [(&str, &str); 4] = [
     (
         "alo-letting-go.service",
         "ADR 0045 term 7's privileged remover. Its window and the person's screen \
@@ -78,24 +78,6 @@ const NOT_YET_SHIPPED: [(&str, &str); 8] = [
     (
         "alo-forgetting.path",
         "What notices the person asked. Ships with the act above.",
-    ),
-    (
-        "alo-brokerd.service",
-        "The broker that carries out a change to the whole machine (ADR 0001 §2). \
-         Waiting on: whether the broker is meant to ship in this release.",
-    ),
-    (
-        "alo-applying-an-update.service",
-        "The broker's half that applies an update. Ships with the broker.",
-    ),
-    (
-        "alo-going-back.service",
-        "The broker's half that goes back to the build before. Ships with the \
-         broker.",
-    ),
-    (
-        "alo-looking-once.service",
-        "Waiting on: whether this component is meant to ship in this release.",
     ),
 ];
 
@@ -144,13 +126,26 @@ fn every_unit_a_crate_keeps_is_shipped_or_named_as_not() {
     let root = the_repository();
     let kept = units_kept_in_crates(&root);
 
-    // **The control.** A walk that found nothing would satisfy every assertion
-    // below, and this test would be green about a repository it never read.
+    // **The control: that the walk read the repository**, not that it found a
+    // particular number of units.
+    //
+    // *It counted units until 2026-10-17, and four of them shipped that day —
+    // so the control failed on the very change it should have been indifferent
+    // to.* A number that has to be edited whenever the thing it measures
+    // legitimately moves is not a control; it is a second copy of the answer.
+    //
+    // What makes finding nothing impossible is that the walk looked at the
+    // crates, and there are a hundred of those whatever happens to any unit.
+    // Each unit named below is separately held to existing, by
+    // `every_unit_named_as_unshipped_is_a_unit_that_exists`, so the lower bound
+    // this used to assert is covered where it belongs.
+    let crates = std::fs::read_dir(root.join("crates"))
+        .expect("this repository has a crates directory")
+        .count();
     assert!(
-        kept.len() >= 8,
-        "only {} unit files were found beside crates, and there were eight on \
-         2026-10-17 — so this test is reading less than it thinks",
-        kept.len()
+        crates >= 50,
+        "only {crates} crates were walked, so this test is reading less of the repository \
+         than it thinks"
     );
 
     // **The other control**: the comparison has to be able to say yes. If the

@@ -115,18 +115,27 @@ pub use record::IntoTheRecord;
 pub use refusing::DidNotLook;
 pub use road::{NoRoad, the_road_out};
 
-/// The unit that runs it, as this crate hands it over.
+/// The unit that runs it, read from where the image ships it.
 ///
-/// **The installation is not this crate's.** The plan that owns this work reads
-/// `image/` and never edits it; the lane that owns the image installs this file
-/// at `/usr/lib/systemd/system/alo-looking-once.service`, builds the program
-/// into `/usr/libexec/alo-looking-once` and enables the unit. What is here is
-/// the decision written down where a test can hold it — where it runs, as whom,
-/// and with what — rather than a paragraph somebody has to be trusted to have
-/// read.
+/// **It is installed as of 2026-10-17, and the file moved when it was.** This
+/// said *the installation is not this crate's* and described a lane that would
+/// one day install it; until that day nothing did, and an alo OS machine had
+/// never looked for an update on its own — which this crate's own header calls
+/// indistinguishable from a machine that has no updates.
+///
+/// So the file now lives at
+/// `image/usr/lib/systemd/system/alo-looking-once.service`, which is where
+/// every shipped unit lives, and this reads **that** copy at compile time. The
+/// decision is still held by this crate's tests through this constant; what
+/// changed is that the thing they hold is also the thing a machine runs.
+///
+/// **One copy, deliberately.** Keeping the crate's own and installing a second
+/// would be two units free to disagree, and the one a machine ran would be the
+/// one no test had read. `alo-sessiond` and `alo-brokerd` read their shipped
+/// units for the same reason.
 pub const THE_UNIT: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/alo-looking-once.service"
+    "/../../image/usr/lib/systemd/system/alo-looking-once.service"
 ));
 
 /// What the unit is called once it is installed.
