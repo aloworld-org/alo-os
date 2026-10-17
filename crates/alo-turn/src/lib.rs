@@ -9,7 +9,22 @@
 //! [`alo_asking`], [`alo_answering`], [`alo_egress`] and [`alo_models`]. Since
 //! 2026-10-13 it also reaches [`alo_software`], because a turn learned to carry
 //! out a second family of verbs and installing an application is the one in it.
-//! Nothing reaches it.
+//!
+//! **And since 2026-10-14, something reaches it.** This line read *nothing
+//! reaches it* until 2026-10-17, which was true when it was written and stopped
+//! being true three days later without anybody editing it: `alo-agent`'s
+//! `driving` module is the loop — a person's
+//! words, a model asked what to do, and the machine doing it — and `alo-agent`
+//! ships, as `--package alo-agent` in the recipe and
+//! `/usr/bin/alo-agent` on the image. `alo-agentd` reaches it as well, from
+//! `doing.rs`, and eleven crates name it in their manifests.
+//!
+//! *The sentence is kept and corrected rather than deleted, because it is the
+//! kind of claim a reader leans on: anybody who believed it would conclude that
+//! no turn ever happens on a machine, and plan around a gap that has been filled.
+//! An absence claim is only safe to write with the date it was true on —
+//! `alo-shell`'s `where_a_window_opens` does that, and is still accurate for
+//! exactly that reason.*
 //!
 //! # The order, and why each step is where it is
 //!
