@@ -481,9 +481,13 @@ Driven against a real `bash` under a real compositor by
 | 12 | `ls` runs and the two lines **stay** — what is recognised is what the screen holds |
 | 13 | `clear` takes the line away and the two lines **go** with it |
 
-**Step 10's wording is the old one** and becomes `Tests · 23 passed · 1 failed`
-when #766 lands, which is what that change is for. A walker on a machine built
-before it should expect the longer form and not report a fault.
+**Step 10's wording in the row above is the old one**, read off a tree that did
+not yet have #766. **#766 has since landed**, so a machine built from `main`
+now draws `Tests · 23 passed · 1 failed` — the shorter form, which is what the
+walk asks for and what that change was for. The row is left as it was read
+rather than rewritten to what it would say now: *a reading is a record of what
+was on a screen at a moment, and editing one to match a later tree is how a
+measurement becomes a claim.*
 
 **One step is still unseen: 1, signing in.** That needs a machine, and it is
 what the evening of the 18th is for.
