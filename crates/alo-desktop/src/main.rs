@@ -272,6 +272,29 @@ mod running {
         strings: alo_strings::Strings,
         /// What the machine's indicator has said about what is leaving.
         egress: EgressStatus,
+        /// **What this machine is doing on its own**, which is the indicator
+        /// itself rather than the picture of it.
+        ///
+        /// There is one of these on a machine, and until 2026-10-17 this binary
+        /// held none: it told the status area *nothing is leaving* once before
+        /// the first frame, from an `Indicator::default()` that was dropped on
+        /// the next line, and never told it anything again. So law 1's surface
+        /// was honest about a machine on which nothing this binary did could
+        /// ever leave — and the moment one errand could, it had to become real.
+        ///
+        /// The errand is an installation a person starts from the market
+        /// window. `alo_shell::what_a_person_installs` puts the line up before
+        /// it fetches and takes it off when it ends, and
+        /// [`Self::refreshed`] is what turns this into the picture the status
+        /// area draws, once a frame and before the readings' own throttle.
+        indicator: alo_egress::Indicator,
+        /// The picture the status area was last given.
+        ///
+        /// Held beside the indicator because they are different things:
+        /// `alo_indicator::Indicating` remembers what the compositor was told
+        /// so it can leave it alone when nothing has changed, which is what
+        /// stops every frame rewriting the same row.
+        indicating: alo_indicator::Indicating,
         /// Shut, because nothing on a machine opens it yet.
         running: RunningWindow,
         /// The same.
@@ -307,8 +330,17 @@ mod running {
             // area that could not say what is leaving is the one thing this
             // product may not put on a screen.
             let mut egress = EgressStatus::on_an_output();
-            alo_indicator::Indicating::nowhere()
-                .show(Some(&mut egress), &alo_egress::Indicator::default());
+            // **The machine's own indicator, kept rather than thrown away.**
+            // This line built an `Indicator::default()` and an `Indicating` on
+            // the spot and dropped both, which was honest while nothing this
+            // binary did could leave: the status area was told *nothing* once
+            // and nothing ever changed it. An installation a person starts from
+            // the market window is the first errand that can, so both are
+            // fields now and `refreshed` shows the one through the other every
+            // frame.
+            let indicator = alo_egress::Indicator::default();
+            let mut indicating = alo_indicator::Indicating::nowhere();
+            indicating.show(Some(&mut egress), &indicator);
             // Where the canvas layout lives, if this person has a folder to
             // keep one in. Read from the environment rather than assumed: the
             // same two variables `alo-choosing` is given everywhere else.
@@ -388,6 +420,8 @@ mod running {
                 ),
                 strings,
                 egress,
+                indicator,
+                indicating,
                 running: RunningWindow::closed(),
                 filling: FillingWindow::closed(),
                 status: readings,
@@ -738,6 +772,15 @@ mod running {
             }
         }
 
+        /// **This machine's own indicator**, lent for the acts that change it.
+        ///
+        /// `Some`, because this desktop has one — the field above. The trait
+        /// defaults to `None` for a desktop with nowhere to show an errand, and
+        /// the display probe is one of those.
+        fn the_indicator(&mut self) -> Option<&mut alo_egress::Indicator> {
+            Some(&mut self.indicator)
+        }
+
         /// The panel this desktop keeps, lent for the one act that changes it.
         ///
         /// **`Some`, because this desktop has a panel** — the field above. The trait defaults
@@ -754,6 +797,15 @@ mod running {
         /// does change is the next successful reading, which is the truth
         /// arriving late rather than an absence arriving early.
         fn refreshed(&mut self) {
+            // **What is leaving is shown on every frame, before the throttle.**
+            // The readings below are a clock and four numbers and are worth
+            // taking a few times a second; a line on the egress indicator is
+            // law 1's surface and must appear on the **next** frame rather than
+            // up to `HOW_OFTEN` later. `Indicating::show` leaves the compositor
+            // alone when nothing has changed, so the frames where nothing is
+            // leaving cost one comparison.
+            self.indicating
+                .show(Some(&mut self.egress), &self.indicator);
             if self.read_at.elapsed() < HOW_OFTEN {
                 return;
             }

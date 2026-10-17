@@ -454,6 +454,24 @@ pub struct Server {
     /// wrong, and it is visibly wrong rather than quietly wrong: the install
     /// itself refuses, and the window says so.
     pub(crate) what_this_machine_has: Vec<String>,
+    /// **What a person pressed Install on**, waiting for the lane to start it.
+    ///
+    /// Held here for [`Self::asked_alo`]'s reason exactly: the press arrives at
+    /// the seat, the work is somebody else's, and until this field existed
+    /// `MarketPressed::AskedToInstall` was handed back to a caller that dropped
+    /// it — which `crate::a_key_reaches_the_market`'s header says out loud.
+    ///
+    /// **The press is the event, never the window's state.**
+    /// `MarketWindow::what_they_asked_for` stays answered until the host says
+    /// what became of it, so a lane that read *that* would start the same
+    /// installation on every frame until it finished. One press is one
+    /// installation, which is the capability model's *one approval causes
+    /// exactly one execution* applied to a person's own keypress.
+    ///
+    /// **One at a time**, because the window refuses a second ask while one is
+    /// going — so this is an `Option` and not a queue, and a second press
+    /// replacing an unstarted first cannot happen.
+    pub(crate) asked_to_install: Option<alo_software::Listed>,
 }
 
 impl Server {
@@ -525,6 +543,8 @@ impl Server {
             market: crate::MarketWindow::closed(),
             // Nobody has told this seat what the machine already has.
             what_this_machine_has: Vec::new(),
+            // Nobody has asked for anything to be installed.
+            asked_to_install: None,
             // Nothing has been kept yet, so no Place remembers anything.
             remembered: alo_arranging::Arrangement::fresh(),
             // Nobody is walking backwards through anything yet.

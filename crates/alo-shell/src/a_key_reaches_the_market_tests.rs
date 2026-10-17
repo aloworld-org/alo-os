@@ -19,6 +19,8 @@ const KEY_DOWN: u32 = 108;
 const KEY_RIGHT: u32 = 106;
 /// `k`, which this window has no use for.
 const KEY_K: u32 = 37;
+/// Enter, the one above the right Shift — which is Install here.
+const KEY_ENTER: u32 = 28;
 
 /// A session with a keyboard on a US layout, in a private directory of its own.
 fn a_session(what: &str) -> (tempfile::TempDir, Server) {
@@ -202,4 +204,74 @@ fn a_strange_code_is_not_a_failure_and_a_missing_keyboard_is() {
         bare.the_market_takes_this_key(KEY_ESC, KeyState::Pressed, 1),
         Err(InputError::Unavailable)
     ));
+}
+
+/// **Pressing Install records the ask for the lane, once.**
+///
+/// The press is the event and the window's state is not: `MarketWindow` goes on
+/// showing what was asked for until the host answers, so a lane that read the
+/// window instead would start the same download on every frame.
+/// `Server::asked_to_install` carries the whole argument; this is the test of
+/// it.
+#[test]
+fn pressing_install_records_one_ask_for_the_lane() {
+    let (_runtime, mut server) = with_the_market_open("market-asks");
+
+    assert!(
+        server.take_what_was_asked_to_install().is_none(),
+        "a window nobody has pressed Install on has an ask waiting"
+    );
+
+    // Enter is Install, through the seat like every other key here.
+    assert_eq!(
+        server
+            .the_market_takes_this_key(KEY_ENTER, KeyState::Pressed, 1)
+            .expect("a seat with a keyboard"),
+        Some(MarketPressed::AskedToInstall)
+    );
+
+    let asked = server
+        .take_what_was_asked_to_install()
+        .expect("the press was recorded for the lane");
+    assert!(
+        !asked.application().identifier().is_empty(),
+        "the ask names no application"
+    );
+    assert_eq!(
+        server.take_what_was_asked_to_install(),
+        None,
+        "one press was taken twice, so the lane would install it twice"
+    );
+
+    // **And the window still shows it**, which is why the ask is taken from the
+    // server rather than from the window: the row says *installing it* until
+    // the host answers.
+    assert_eq!(
+        server
+            .market
+            .what_they_asked_for()
+            .map(|one| one.application().identifier().to_owned()),
+        Some(asked.application().identifier().to_owned()),
+        "the window forgot what it is showing when the lane took the ask"
+    );
+}
+
+/// **A key that is not Install records nothing**, so a person moving through
+/// the list does not start downloads.
+#[test]
+fn moving_through_the_list_records_no_ask() {
+    let (_runtime, mut server) = with_the_market_open("market-no-asks");
+
+    for code in [KEY_DOWN, KEY_RIGHT, KEY_K] {
+        server
+            .the_market_takes_this_key(code, KeyState::Pressed, 1)
+            .expect("a seat with a keyboard");
+        server
+            .the_market_takes_this_key(code, KeyState::Released, 2)
+            .expect("a seat with a keyboard");
+        assert!(
+            server.take_what_was_asked_to_install().is_none(),
+            "moving through the list asked for an installation"
+        );
+    }
 }
