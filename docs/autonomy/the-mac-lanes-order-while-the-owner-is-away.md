@@ -203,24 +203,65 @@ unambiguously startable:**
 **The first view landed as #761**: a test result, which is the one view the
 design specifies. What is left under that task, in the order it is worth doing:
 
-- **the three `Ask alo` actions** the design draws under the summary. They are
-  the agent's road, which exists (`what_a_person_asked_goes_to_the_agent.rs`)
-  but addresses a task window rather than a terminal, so this needs a *who
-  asked* that can be either;
+- **the three `Ask alo` actions** the design draws under the summary. The
+  agent's road exists (`what_a_person_asked_goes_to_the_agent.rs`) but addresses
+  a task window rather than a terminal, so it needs a *who asked* that can be
+  either. **That part is this lane's and is buildable.** What is not is **what
+  the three actions say** — see below;
 - ***a thing on your desk that outlives the scroll*** — the promise's own
   words, and a window rather than a line. A promise of its own;
-- **the benchmark and the diff**, which are **not specified anywhere**:
-  `479:29079` and `479:29140` are instances of components no snapshot in this
-  repository contains. These cannot be built from what is written down, and
-  that is a question for the owner rather than a gap to fill by invention.
+- **the benchmark and the diff**, which are blocked on the same thing the three
+  actions are blocked on — see below. It is one cause, not three.
 
-### 4. Then bisect the machine, and *your files as they were*
+### 4. One cause blocks three things, and it is the owner's to unblock — measured 2026-10-17
+
+**The design snapshots in this repository record where a component is placed and
+never what is inside it.** Measured across every `.xml` in
+`docs/design/figma-snapshot/`:
+
+| | |
+|---|---|
+| component instances with **no** children | **4718** |
+| component instances **with** children | **1** — `Choice / Your name`, in `the-first-start-sheets.xml` |
+
+So an `<instance>` is a name, an x, a y, a width and a height. The most
+numerous are `Canvas / Window title` (1813), `Terminal / Source region` (451),
+`Terminal / Settings choice` (200), `Action / Keep`, `Action / Adjust` and
+`Action / Reject` (178 each) and **`Ask alo / Action` (176)**.
+
+**This is not *unknowable*, and an earlier note of mine implied it was.**
+Component definitions *are* captured where somebody captured the node holding
+them: **56 `<symbol>` nodes across six snapshots** — `Canvas / Window title`,
+`Canvas / Icon control / Close` and others are there in full. `ROOTS.md` says
+the library lives at node **`9:2` alo OS UI primitives** and that the
+components are in the tree whatever the plan tier limits.
+
+**Three of them have simply never been captured**, and all three block work
+that is otherwise ready:
+
+| not captured | what it blocks |
+|---|---|
+| `Ask alo / Action` | the three actions under a rich test result — the mechanism is this lane's and buildable, the wording is not |
+| `Terminal / View / Benchmark comparison` | the benchmark rich view |
+| `Terminal / View / File diff` | the diff rich view |
+
+**What would unblock all three, in one line:** capture node `9:2` — or those
+three components — into `docs/design/figma-snapshot/`, the way the other 56
+were. **It needs the Figma connector authorised**, which cannot be done from a
+session running unattended; the lane that measured the gutter's type got it by
+asking the live file for the label node itself, which is the same road.
+
+*Until then, building any of the three means inventing the inside of a component
+the design already has — which is the one thing `CLAUDE.md` forbids outright:
+the design is followed, not approximated.*
+
+### 5. Then bisect the machine, and *your files as they were*
 
 Both wait on a bracket and on nothing else, so **taking the bracket step above
 makes these two this lane's** — which is why the corrected table below no longer lists them as
 unfinishable. If the bracket turns out to be another lane's, these go with it.
 
-### 5. Explain a command before it runs — **blocked on shell integration, measured 2026-10-17**
+### 6. Explain a command before it runs — **blocked on shell integration, measured 2026-10-17**
 
 **This was step 2 of this order for part of 2026-10-17, on the plan's word that
 it was the cheapest of the remaining six.** #759 built the answer and found the
@@ -255,7 +296,7 @@ work teaches a person a road and then takes it away, which
 **What would unblock it**, in one sentence: a decision on shell integration —
 the sequence, its contract, and what stops a program forging it.
 
-### 6. Terminal tasks 4 and 5 — **both need a scope decision, measured 2026-10-17**
+### 7. Terminal tasks 4 and 5 — **both need a scope decision, measured 2026-10-17**
 
 **The plan says of each: *Depends on: nothing in this plan.* That is true, and I
 read it as *unblocked*, which it does not say.** Both depend on something
@@ -292,7 +333,7 @@ unanswered ownership question, as the step below.
 the record a narrowed question, given that the one window that shows the record
 refuses to narrow by design.
 
-### 7. The choice of whether alo may use the terminal — **blocked, measured 2026-10-17**
+### 8. The choice of whether alo may use the terminal — **blocked, measured 2026-10-17**
 
 **This was step 2 of this order for part of 2026-10-17, described as "the
 shortest distance from *built* to *usable* of anything on the list after #755".
