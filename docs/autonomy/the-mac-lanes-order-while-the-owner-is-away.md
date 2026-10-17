@@ -293,6 +293,41 @@ themselves.
 person runs in the terminal is bracketed, and under what window — which is an
 amendment to ADR 0045 rather than a new decision.
 
+### What that decision costs, measured 2026-10-17 so it is not decided on a guess
+
+**The owner's question when they accepted ADR 0045 was whether the machines
+would fill up.** It was the right question and nobody had answered it with a
+number. This is the number, taken on a real `btrfs` filesystem on a loop device
+in this lane's VM: a 300 MiB project, a 200 MiB build directory, and ten builds
+— a working day — with the brackets arranged three ways.
+
+| | held afterwards |
+|---|---|
+| **no brackets at all**, ten builds | **0 MiB** — each build frees the last one's output |
+| **ten brackets**, one before each build *(today's rule)* | **2007 MiB** |
+| **fifty brackets**, one before every command, ten builds among them | **2008 MiB** |
+
+**The forty extra brackets cost one mebibyte.** A snapshot holds what is
+rewritten underneath it, and a command that changes nothing diverges by nothing,
+so it is free. *The cost is the bytes rewritten under a live snapshot, not the
+number of snapshots.* Forty `ls`, `cd` and `git status` calls in a row cost
+nothing to bracket.
+
+**So the disk argument against bracketing every command does not survive
+measurement, and the real cost is somewhere else.** ADR 0045's window is seven
+days **or fifty changing turns, whichever ends first**. Bracketing every command
+reaches fifty in an afternoon, so the window stops being seven days and becomes
+*this afternoon*. **What a person loses is not disk, it is how far back undo
+reaches.** That is the trade to decide, and it is a different question from the
+one the term was written against.
+
+**Said once, and it does not run again.** This needed root, a loop device and
+about four minutes; no gate has those. The rule it establishes — cost follows
+bytes rewritten, not snapshot count — is what generalises; the figures are one
+workload, and a day spent rewriting a larger tree would hold proportionally
+more. Nothing re-measures this, and a reader a month from now should treat the
+table as a dated reading rather than a property of the product.
+
 *Recorded rather than guessed, and recorded the minute it was found rather than
 at the end of the day, because two tasks in two documents read as startable on
 the strength of a dependency that had just been met.*
