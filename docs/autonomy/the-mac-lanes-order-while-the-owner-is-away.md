@@ -58,8 +58,8 @@ them, which is this document's own lesson about mentions and declarations:
 |---|---|---|
 | **usable** — all four conditions | **4** | opens a terminal and types; reads who is speaking; sees measured apart from worked-out; scrolls back |
 | **built and reachable, never seen on a machine** | **2** | asks why a command is waiting (#755); reads output that is not a character grid (#761) |
-| waiting on this lane's own earlier steps | **2** | bisects the machine, behind a bracket; hands somebody a session to replay, behind the rest of rich results |
-| **blocked on a decision or another lane** | **4** | decides whether alo may use it; scopes one command; finds a command by what it did; asks what a command will do first |
+| waiting on this lane's own earlier steps | **1** | hands somebody a session to replay, behind the rest of rich results |
+| **blocked on a decision or another lane** | **5** | decides whether alo may use it; scopes one command; finds a command by what it did; asks what a command will do first; **bisects the machine**, moved here at 2026-10-17 when the bracket landed and did not open it (step 5) |
 | unowned | **1** | runs a command touching nothing |
 
 **The two in the second row are what tomorrow evening's boot is for.** Both are
@@ -72,6 +72,13 @@ that **one promise gained a working view** and **four were found to be blocked
 rather than merely unbuilt** — which is worth more than it sounds, because a
 lane that believes four blocked things are startable spends four days finding
 out.*
+
+*A fifth joined them later the same day, and it is the instructive one: it was
+blocked by the step that was supposed to unblock it. The bracket landed, and
+`main` then said plainly that nothing brackets a command a person runs. **A
+dependency being met is not the same as a task being open**, and the only way to
+tell them apart is to measure after the dependency lands rather than to cross it
+off.*
 
 ## The order, and it is ordered by that bar rather than by size
 
@@ -148,6 +155,11 @@ has steps and so does the order below. A bare "step 6" could mean either, and on
 cross-reference in this file was already stale for exactly that reason.*
 
 ### 2. The bracket — **built and wired, 2026-10-17; what it unblocked and what it did not**
+
+**It unblocked one of the three things that waited on it and not the other two.**
+See step 5: *bisect the machine* and *your files as they were* both wait on a
+decision the bracket did not settle, found by measuring `main` after it landed
+rather than by assuming the dependency list was complete.
 
 **Done, and measured on a real filesystem.** `alo_turn::the_bracket_a_turn_takes`
 makes the two read-only snapshots and writes the note; `alo-agentd`'s
@@ -243,11 +255,35 @@ asking the live file for the label node itself, which is the same road.
 the design already has — which is the one thing `CLAUDE.md` forbids outright:
 the design is followed, not approximated.*
 
-### 5. Then bisect the machine, and *your files as they were*
+### 5. Bisect the machine, and *your files as they were* — **the bracket landed and neither opened, measured 2026-10-17**
 
-Both wait on a bracket and on nothing else, so **taking the bracket step above
-makes these two this lane's** — which is why the corrected table below no longer lists them as
-unfinishable. If the bracket turns out to be another lane's, these go with it.
+**This step said both wait on a bracket and on nothing else. That was wrong, and
+the bracket landing is what proved it.**
+
+The promise's words are *every **command** in the session is a place you can
+return to … your files are as they were **before it ran***. What #767 brackets
+is **a changing agent turn** — `TheTurnsBracket` is taken in `alo-agentd`'s
+serving loop at an approval — and across `main` at `e7d57ae8` **nothing in
+`alo-terminal` or `alo-shell` takes a bracket at all.** A person's own `make` or
+`rm` is not a place they can return to, and no amount of scrolling supplies one.
+
+**Why this is the owner's and not a caller this lane may add.**
+[ADR 0045](../decisions/0045-what-undoing-rewinds-to.md) term 5 brackets *only a
+turn that changes files*, and alo cannot tell whether an opaque program changed
+anything — so for a person's command the choice is *before every one* or *none*.
+Term 1's window is seven days or **fifty changing turns**, accepted by the owner
+immediately after they asked whether the machines would fill up with snapshots;
+a shell session reaches fifty commands in an afternoon. Extending the bracket to
+the person's commands changes the cost of the one term the owner priced
+themselves.
+
+**What would unblock both**, in one line: a decision on whether a command the
+person runs in the terminal is bracketed, and under what window — which is an
+amendment to ADR 0045 rather than a new decision.
+
+*Recorded rather than guessed, and recorded the minute it was found rather than
+at the end of the day, because two tasks in two documents read as startable on
+the strength of a dependency that had just been met.*
 
 ### 6. Explain a command before it runs — **measured blocked and then decided, 2026-10-17**
 
