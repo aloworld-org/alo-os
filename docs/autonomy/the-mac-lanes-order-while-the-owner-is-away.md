@@ -48,7 +48,7 @@ because a reader starting from it would conclude this goal is unreachable.*
 | ★ | bisects the machine | **nothing**, and waits on a bracket |
 | ★ | reads output that is not a character grid | **the first rich view is usable** — a test result, #761. Two more are unspecified in the design |
 | ★ | hands somebody a session to replay | **nothing**, and waits on rich results |
-| | asks what a command will do first | the answer is built (#759); **nothing can ask**, because alo does not know what was typed — **blocked** |
+| | asks what a command will do first | the answer is built (#759); **nothing can ask**, because alo does not know what was typed — **blocked on ADR 0123 being accepted** |
 
 **Where the thirteen stand at the end of 2026-10-17**, each row read rather
 than counted by a pattern — a first pass with a crude classifier misread two of
@@ -249,7 +249,7 @@ Both wait on a bracket and on nothing else, so **taking the bracket step above
 makes these two this lane's** — which is why the corrected table below no longer lists them as
 unfinishable. If the bracket turns out to be another lane's, these go with it.
 
-### 6. Explain a command before it runs — **blocked on shell integration, measured 2026-10-17**
+### 6. Explain a command before it runs — **measured blocked and then decided, 2026-10-17**
 
 **This was step 2 of this order for part of 2026-10-17, on the plan's word that
 it was the cheapest of the remaining six.** #759 built the answer and found the
@@ -283,6 +283,21 @@ work teaches a person a road and then takes it away, which
 
 **What would unblock it**, in one sentence: a decision on shell integration —
 the sequence, its contract, and what stops a program forging it.
+
+**So it was written, the same day.**
+[ADR 0123](../decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md)
+answers all three, under the rule that a machine unblocks itself rather than
+leaving a decision for somebody with less context: OSC 133 for the cycle, a mark
+the person's own line editor emits when they ask for it, and a declared length
+that makes a truncated command refusable. The third question has no clean answer
+and the ADR says so plainly — **nothing stops a program forging a mark**, and
+what bounds the harm is that a mark grants nothing: it cannot run anything,
+hold a grant, approve a change or relabel the gutter.
+
+**This row stays in the blocked count of four.** The ADR is *proposed*; the
+owner rules. What changed is the reason — from *nobody has written the
+decision* to *the decision is written and waiting* — and this document warns
+two sections below against reading the second as the first.
 
 ### 7. Terminal tasks 4 and 5 — **both need a scope decision, measured 2026-10-17**
 

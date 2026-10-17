@@ -45,8 +45,8 @@ a date on it:
 | ★ | Find a command by what it did | **nothing** |
 | ★ | Bisect the machine, not the repository | **nothing** |
 | ★ | Output that is not stuck in a character grid | **nothing** |
-| ★ | Hand somebody a session they can replay | **nothing** |
-| | Explain a command before it runs | **nothing** |
+| ★ | Hand somebody a session they can replay | **nothing** — the commands wait on ADR 0123, what each changed on ADR 0045 |
+| | Explain a command before it runs | **the answer half is built** — `WhatACommandWillDo`; the asking waits on ADR 0123 |
 
 Two smaller gaps inside promises otherwise kept: the source qualifier
 `· cargo test` beside a gutter label, and *choose one, and your files are as they
@@ -172,8 +172,12 @@ approximated.*
 
 ### 3. Explain a command before it runs
 
-**Status:** **the answer is built (#759); the asking is blocked.**
-**Depends on:** a decision on shell integration — outside this plan.
+**Status:** **the answer is built (#759); the asking waits on a decision now
+written.** **Depends on:**
+[ADR 0123](../decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md),
+proposed 2026-10-17 by this lane under the rule that a machine unblocks itself
+rather than waiting for somebody with less context. It was *outside this plan*
+until somebody wrote it; that phrasing was the blocker, not the decision.
 
 **alo does not know what a person has typed**, measured 2026-10-17: nothing
 keeps the typed line, `the_command_in_front` is a process already running, and
@@ -262,8 +266,12 @@ is as much about what it refuses to render as what it renders.
 ### 7. Hand somebody a session they can replay
 
 **Status:** **blocked on two causes already known, measured 2026-10-17.**
-**Depends on:** shell integration, and the privileged comparer — neither in this
-plan, and task 6 is no longer the obstacle.
+**Depends on:** shell integration — which is no longer only a gap, it is written
+as [ADR 0123](../decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md),
+proposed the same day — and the privileged comparer. Neither is in this plan,
+and task 6 is no longer the obstacle. The commands come from that decision;
+*what each one changed* is
+[ADR 0045](../decisions/0045-what-undoing-rewinds-to.md)'s bracket.
 
 A transcript somebody else can step through. Task 6 was the recorded
 dependency and it is built, so this read as the next startable task. It is not,
