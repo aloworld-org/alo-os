@@ -572,7 +572,11 @@ file carries it with a tier.*
   `docs/design/the-terminal-window.md`
 - ★ **Hand somebody a session they can replay.** Not a transcript — the
   commands **and what each one changed**, replayed on their machine. The
-  reproducible bug report
+  reproducible bug report.
+  **Two halves, two decisions**: the commands and their exit codes come from
+  [ADR 0123](decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md)
+  (proposed), and *what each one changed* is
+  [ADR 0045](decisions/0045-what-undoing-rewinds-to.md)'s bracket
 - **Explain a command before it runs.** Plain words for what it does, with
   anything destructive, anything needing elevated rights and anything leaving
   the machine marked. Edit it, or try it in the box first. **Called an
@@ -592,7 +596,13 @@ file carries it with a tier.*
   *program* printed; keeping our own copy diverges the first time somebody
   presses Up. The real road is **shell integration**, which is a new mechanism,
   a published contract, and a decision about a sequence any program can forge —
-  so no shortcut was bound to a surface that cannot work
+  so no shortcut was bound to a surface that cannot work.
+  **The road is proposed, 2026-10-17**:
+  [ADR 0123](decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md)
+  — the shell reports its own line editor when the person asks it to, and alo
+  reads a mark rather than the screen. No hook runs while somebody types, so
+  there is nothing for alo to watch between a prompt and an asking. **Proposed,
+  not accepted**: the owner rules, and nothing is built until they do
 - **Say up front whether it can be undone.** *This can be put back* and *this
   cannot* are different sentences, and the second is the one worth seeing before
   you press Enter rather than after
