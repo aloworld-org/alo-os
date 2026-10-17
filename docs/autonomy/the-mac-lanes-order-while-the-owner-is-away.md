@@ -37,7 +37,7 @@ because a reader starting from it would conclude this goal is unreachable.*
 | | what a person does | state |
 |---|---|---|
 | | opens a terminal and types | **usable** — a chord opens it, the compositor draws it, typing reaches the shell |
-| ★ | decides whether alo may use it | built; the choice has no surface, so **not reachable** |
+| ★ | decides whether alo may use it | built as types; **nothing stores either choice**, so not reachable — and **blocked**, not merely unbuilt |
 | ★ | reads who is speaking | **usable** — `you`, `alo`, `system`, `program` in the gutter |
 | ★ | sees measured apart from worked-out | **usable** — the same gutter's `system` against `alo` |
 | ★ | asks why a command is waiting | **built and reachable** as of #755, `Ctrl`+`Alt`+`W`. **Never seen on a machine** |
@@ -51,8 +51,11 @@ because a reader starting from it would conclude this goal is unreachable.*
 | | asks what a command will do first | **nothing** |
 
 **Four of thirteen are usable today. One more is reachable and unseen.** Of the
-remaining eight, **seven are this lane's to build** and one — *run a command
-touching nothing* — is **nobody's as of 2026-10-17**. The owner said that day
+remaining eight: **six are this lane's and startable**; one — *decides whether
+alo may use it* — is this lane's **surface** but **blocked**, because nothing
+stores either choice and the crate that would is another lane's (measured
+2026-10-17, the last step of the order); and one — *run a command touching
+nothing* — is **nobody's as of 2026-10-17**. The owner said that day
 that the development PC is off and its work can be done by the desktop lane; the
 desktop lane has read that and **has not taken it**, for a stated reason. So it
 is available and unclaimed, which is not the same as assigned. The table near the
@@ -107,21 +110,7 @@ fault — check `main` first and skip to walk step 7.
 has steps and so does the order below. A bare "step 6" could mean either, and one
 cross-reference in this file was already stale for exactly that reason.*
 
-### 2. The choice of whether alo may use the terminal needs a surface
-
-Row two of the thirteen: the three levels of ADR 0064 are built and a person
-cannot see or change them. It is in `alo-shell`, which this lane holds, and it is
-**the shortest distance from *built* to *usable* of anything on the list after
-#755** — which is why it is second and not fourth.
-
-*It was fourth until 2026-10-17, behind two steps whose rows read "nothing". That
-contradicted this section's own heading — ordered by that bar rather than by size
-— and the sentence naming it the shortest distance to usable was sitting inside
-the step it was ordering behind. The third contradiction between this document's
-order and its own stated rule in one day, and the second found by re-reading
-rather than by a check.*
-
-### 3. Terminal tasks 4 and 5
+### 2. Terminal tasks 4 and 5
 
 `docs/autonomy/the-terminal-in-full-plan.md` is the truth about these. Both are
 startable today, need no machine this lane lacks, and each ends in something a
@@ -132,7 +121,7 @@ person does:
 - **scope one command** — one command under a narrower grant than the session
   has, without touching what the person chose for everything else.
 
-### 4. Task 6, rich results
+### 3. Task 6, rich results
 
 The largest, and **tasks 2 and 7 both wait on it** — the source qualifier is
 provenance for a parsed result and has nothing to qualify until one exists, and a
@@ -142,7 +131,7 @@ replayable session needs a transcript that is more than cells.
 printed, so it is as much about what it refuses to render as what it renders.
 
 
-### 5. Explain a command before it runs
+### 4. Explain a command before it runs
 
 Back in the order, because the first version of this document had it out of
 reach for a reason that did not hold: `docs/features.md` asks for *plain words
@@ -154,18 +143,64 @@ this machine, so the asking is testable here.
 because a script, an alias or something it downloads can change what happens —
 so the surface says that rather than implying certainty.
 
-### 6. The bracket, if it is still nobody's
+### 5. The bracket, if it is still nobody's
 
 ADR 0045 puts it in `alo-turn`. #751 removed the first thing in the way and #752
 recorded the measurement it rests on. **Only if nothing else has taken it** —
 that crate is the workspace's most central and a collision in it costs a day
 where asking costs a message.
 
-### 7. Then bisect the machine, and *your files as they were*
+### 6. Then bisect the machine, and *your files as they were*
 
 Both wait on a bracket and on nothing else, so **taking the bracket step above
 makes these two this lane's** — which is why the corrected table below no longer lists them as
 unfinishable. If the bracket turns out to be another lane's, these go with it.
+
+### 7. The choice of whether alo may use the terminal — **blocked, measured 2026-10-17**
+
+**This was step 2 of this order for part of 2026-10-17, described as "the
+shortest distance from *built* to *usable* of anything on the list after #755".
+That was wrong, and measuring it rather than believing it is what found out.**
+It is last, and it is not startable.
+
+Row two of the thirteen: the two choices of ADR 0111 — whether alo may **open** a
+terminal, and how code it writes **runs** — are built as types and a person can
+neither see nor change them. Three measurements against `main` at `e236c8d1`:
+
+| what was measured | answer |
+|---|---|
+| crates mentioning `HowCodeRuns` | **two** — `alo-capability`, which defines it, and `alo-running`, the sealed box. **Zero in `alo-shell`** |
+| crates mentioning `ATerminalForTheAgent` | **one** — `alo-capability` alone, six files, none outside it |
+| `alo_changing::Row` variants | **two** — `Grant(Seen)` and `Pairing(SeenPairing)`, and `Changing::granted` takes a `Granting` and a `Chosen`, which is a **folder** grant |
+
+**So nothing stores either choice, and the machinery that stores a person's
+grants cannot express a level.** Giving it one needs a third `Row` variant, in
+`alo-changing`, or a new kind of grant in `alo-capability`. Both are another
+lane's crate: `alo-changing` belongs to `where-a-persons-settings-are-kept-plan`
+and `alo-capability` to `applications-and-what-they-expect-plan`.
+
+**And ADR 0111 flags that exact ownership question as unanswered**, in its own
+words: a change to `alo-capability` here is *a question for the integration
+owner*, because ADR 0043 held a built change back on the ground that *`alo-capability`
+is the applications plan's, and a lane does not widen its own partition* — *and
+that question was never answered*. So this is not a question this lane may settle
+by investigating; the charter's *write the ADR yourself* rule has two exceptions
+and **what needs the owner personally** is one of them.
+
+**What is left that is this lane's: showing, not choosing.** A Settings section
+could display both choices, the three levels, the plain-words cost of full trust
+and the three protections that stay on at every level, all from `alo-capability`'s
+own words, in `alo-shell` alone. It was not built, for a reason with a precedent:
+ADR 0038 records that the shell deliberately *does not draw a control that changes*
+a setting it cannot keep, and a row showing `HowCodeRuns::default()` would be
+showing **a default dressed as a person's choice** — nobody has chosen anything,
+because there is nowhere for a choice to go. *Absent is stronger than defaulted*,
+and features.md already says of the other half that **the default is that they
+have not chosen**.
+
+**What would unblock it**, in one sentence for whoever takes it: a decision on
+where a capability *level* is kept, given that grants are folders and this is not
+one.
 
 ## What this lane cannot finish — corrected 2026-10-17, because the first version was wrong about all three
 
