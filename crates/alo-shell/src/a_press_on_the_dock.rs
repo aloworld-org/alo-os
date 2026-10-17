@@ -566,7 +566,45 @@ impl crate::Server {
                 self.settings = window;
                 self.settings_places = Some(places);
             }
+            alo_dock::ANativeAction::Applications => self.the_market_opens(),
         }
+    }
+
+    /// Open the window of what a person can install.
+    ///
+    /// **This is the first production caller `crate::MarketWindow` has ever
+    /// had.** The model landed with none, its raster landed with none, and
+    /// `market: None` was passed at every site that built a frame — a window
+    /// that laid itself out, refused correctly and could not be reached by any
+    /// person. Five surfaces in this crate were found in that state in one day.
+    ///
+    /// **The catalogue is read on each open rather than held on the seat**, for
+    /// `MarketWindow::opened`'s own reason: it takes ownership and `close`
+    /// drops it, so holding a second copy would be two answers to *what can a
+    /// person install* with nothing keeping them in step. It is a file this
+    /// crate ships, parsed into eight entries; the cost is not what a person
+    /// pressing an icon would notice.
+    ///
+    /// **A catalogue this machine cannot read opens no window, and the press is
+    /// still taken.** There is nowhere here to say why: `do_this_native_action`
+    /// is on the Dock's road and this crate's `desktop_source` guard holds that
+    /// road to no sentence of its own. A press that fell through to the canvas
+    /// would move the view when a person aimed at an icon, which is worse than
+    /// a press that appears to do nothing. The refusal is
+    /// `alo_software::NotCatalogued` and it is a fault in a file this
+    /// repository ships, not in anything a person did — so it cannot happen on
+    /// a machine whose tests ran, and `alo-software`'s own suite is what says
+    /// so.
+    fn the_market_opens(&mut self) {
+        let Ok(catalogue) = alo_software::Catalogue::decided() else {
+            return;
+        };
+        // **What the machine has, as somebody told this seat** — never read
+        // here. Reading it runs the sandbox's own tool and waits for it, and
+        // this is the compositor's input loop; `Server::what_this_machine_has`
+        // carries the argument and what an untold seat costs.
+        let already = self.what_this_machine_has.clone();
+        self.market.opened(catalogue, already);
     }
 
     /// Close the overflow list, if it is open.

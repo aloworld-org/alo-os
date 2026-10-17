@@ -312,6 +312,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 &mut labels,
                 DesktopFrame {
                     tasks: &[],
+                    // **No market window here.** This example runs a real
+                    // application against a real compositor; the market is the
+                    // shell's own window and `desktop_check` is the fixture
+                    // that puts eyes on it.
+                    market: None,
                     the_dock_has_open: &alo_shell::NOTHING,
                     the_docks_words: no_words(),
                     // **The Dock is told what is open, which is the chain two

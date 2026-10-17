@@ -166,7 +166,20 @@ pub enum MarketPressed {
 }
 
 /// The window of what a person can install.
-#[derive(Debug, Default)]
+///
+/// # Why this is `Clone`, and what a copy of it is not
+///
+/// **A copy is a reading, never a second window.** `crate::direct_desktop`
+/// copies an open one once a frame so the drawing can borrow something the lane
+/// owns rather than borrowing the `Server` it writes to a moment later. That
+/// copy is read and dropped inside one draw.
+///
+/// It is **not** a way to have two of these on a machine. There is one per seat,
+/// which is what makes `MarketWindow::asked`'s *one at a time* true and what
+/// makes `where_the_market_opens` able to centre it. A second long-lived copy
+/// would be two windows disagreeing about what a person asked for, and the one
+/// a person could see would not be the one the host answered.
+#[derive(Debug, Default, Clone)]
 pub struct MarketWindow {
     /// The decided list, while the window shows it.
     catalogue: Option<Catalogue>,

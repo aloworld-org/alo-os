@@ -42,6 +42,7 @@ fn pinned(server: &Server) -> Vec<String> {
         .map(|entry| match entry {
             ADockEntry::Application(app) => app.name().to_owned(),
             ADockEntry::Native(ANativeAction::Settings) => "Settings".to_owned(),
+            ADockEntry::Native(ANativeAction::Applications) => "Applications".to_owned(),
         })
         .collect()
 }

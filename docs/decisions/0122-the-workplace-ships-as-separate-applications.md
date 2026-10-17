@@ -94,11 +94,21 @@ beside the new one so a reader can see what changed rather than only what is.
 
 ## What follows
 
-- **The products' own names.** The owner's words are *alo-mails,
-  alo-meets*; the repository spells them `mail`, `meet` and `sites`. One
-  spelling has to give and this record does not choose it — whoever does the
-  split asks the owner once and writes the answer here. What **is** settled is
-  the collective noun: *workplace*, above.
+- **The products' own names are `alo-mails` and `alo-meets`.** Asked on
+  2026-10-17, the owner answered in their own words: *"Mails our own, alo
+  mails."* The owner's spelling is therefore the one that stands and the
+  repository's `mail` and `meet` are the ones that give: plural, hyphenated,
+  carrying the system's name. `sites` has not been named by the owner and
+  keeps the repository's spelling until it is asked for, which is the same
+  rule applied to a question that has not been put rather than a different
+  one.
+- **And *mails our own* settles something larger than a spelling.** It means
+  alo's mail client is a thing this company builds, not a third-party client
+  packaged with the machine. Any plan to ship an existing mail application as
+  the machine's mail — Thunderbird was the obvious candidate and was under
+  consideration on 2026-10-17 — is closed by that answer. It does not stop a
+  person installing one: the market is everybody's catalogue and refuses
+  nothing on the grounds of who wrote it. It decides what alo OS *ships*.
 - **They reach a machine the way anything does.** Each becomes an application
   with an identifier, a source, a release and a licence — the four fields
   `alo_software::Catalogue` refuses an entry without. Whether alo's own

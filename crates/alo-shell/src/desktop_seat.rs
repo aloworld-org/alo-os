@@ -14,7 +14,7 @@ use smithay::{
     utils::SERIAL_COUNTER,
 };
 
-use crate::{FillingKey, InputError, RunningKey, Server};
+use crate::{FillingKey, InputError, MarketKey, RunningKey, Server};
 
 impl Server {
     /// One key from a trusted backend, as the window of what is running
@@ -51,6 +51,25 @@ impl Server {
         self.desktop_key(code, state, time, |symbol, held| {
             FillingKey::of(symbol, held, reading)
         })
+    }
+
+    /// One key from a trusted backend, as the window of what a person can
+    /// install understands it.
+    ///
+    /// **The same road as the two windows above**, which is the whole reason
+    /// this file is shaped around one private reader: one XKB state, one
+    /// reading of what a person pressed, and a window added later cannot
+    /// disagree with the others about whether a key was held down.
+    ///
+    /// # Errors
+    /// As [`Server::running_key`].
+    pub fn market_key(
+        &mut self,
+        code: u32,
+        state: KeyState,
+        time: u32,
+    ) -> Result<Option<MarketKey>, InputError> {
+        self.desktop_key(code, state, time, MarketKey::of)
     }
 
     /// One key from a trusted backend, as *More apps*' search field

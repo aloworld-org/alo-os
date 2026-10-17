@@ -86,6 +86,7 @@ mod a_frame_per_display;
 pub mod a_key_reaches_a_task_window;
 mod a_key_reaches_settings;
 mod a_key_reaches_the_docks_surfaces;
+mod a_key_reaches_the_market;
 mod a_key_types_into_more_apps;
 mod a_new_window_is_placed;
 mod a_person_pins_and_unpins;
@@ -233,7 +234,12 @@ mod lock_surface;
 mod lock_texture;
 mod market_keys;
 mod market_measures;
-mod market_raster;
+/// How the window of what a person can install is drawn.
+///
+/// **Public for `task_raster`'s reason exactly**: a caller builds
+/// [`market_raster::AMarketOnTheDisplay`] and hands it to a frame, so the
+/// description has to be nameable from outside this crate.
+pub mod market_raster;
 mod market_window;
 mod nested;
 mod nested_approval;
@@ -405,6 +411,7 @@ mod what_the_server_tells_a_frame;
 mod where_a_task_window_opens;
 mod where_a_window_opens;
 mod where_the_dock_is;
+mod where_the_market_opens;
 pub mod which_area_has_the_keyboard;
 mod which_card_the_seat_holds;
 mod which_display_a_window_is_on;

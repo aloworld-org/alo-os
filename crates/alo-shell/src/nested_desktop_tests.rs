@@ -54,6 +54,7 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                 let dock = Dock::shipped();
                 let frame = |egress| DesktopFrame {
                     tasks: &[],
+                    market: None,
                     the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
                     the_docks_words: crate::desktop_testing::no_words(),
                     in_use: &[],
@@ -176,6 +177,7 @@ fn a_desktop_frame_whose_indicator_was_never_told_is_refused_whole() {
     let never_told = EgressStatus::on_an_output();
     let frame = DesktopFrame {
         tasks: &[],
+        market: None,
         the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
         the_docks_words: crate::desktop_testing::no_words(),
         in_use: &[],
@@ -227,6 +229,7 @@ fn the_record_window_sits_in_the_desktop_frame() {
     );
     let desktop = DesktopFrame {
         tasks: &[],
+        market: None,
         the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
         the_docks_words: crate::desktop_testing::no_words(),
         in_use: &[],
@@ -291,6 +294,7 @@ fn the_frame_carries_whether_the_panel_is_revealed() {
         frame_pictures(
             DesktopFrame {
                 tasks: &[],
+                market: None,
                 the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
                 the_docks_words: crate::desktop_testing::no_words(),
                 in_use: &[],

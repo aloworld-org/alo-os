@@ -422,6 +422,38 @@ pub struct Server {
     /// time, and a second would be two answers to one person's fingers. What a
     /// swipe does with what it answers is `crate::desktop_swipes`.
     pub(crate) gestures: alo_desktops::gestures::Gestures,
+    /// **The window of what a person can install**, shut until they open it.
+    ///
+    /// Held here for [`Self::settings`]' reason exactly: a press arrives at the
+    /// Dock, where no desktop is in scope, and until this field existed there
+    /// was nowhere on a running machine for the window to live. `MarketWindow`
+    /// had **zero production mentions** when it was written and when its raster
+    /// landed — the model was built, the drawing was built, and no person could
+    /// reach either.
+    ///
+    /// **Not an `Option`**, for the same reason Settings is not: *shut* is a
+    /// state a `MarketWindow` already has, and a second spelling of it would be
+    /// a branch no caller can act on differently.
+    pub(crate) market: crate::MarketWindow,
+    /// **What this machine already has installed**, as whoever holds the
+    /// machine last told this seat.
+    ///
+    /// Told rather than read, which is [`Self::settings_places`]' own rule and
+    /// holds here for a harder reason: reading it means running the sandbox's
+    /// tool and waiting for it, and this is the compositor's input loop. A
+    /// press that waited on a subprocess would stop every window on the machine
+    /// drawing — the shape of fault the terminal's own `Drop` was found to have
+    /// on 2026-10-16. `alo_software::what_this_machine_has` is the reader, and
+    /// it belongs in the process that can afford to block.
+    ///
+    /// **Empty until something says otherwise, and what that costs is bounded.**
+    /// `alo_software::Catalogue::decided` already refuses anything in
+    /// `shipped.toml`, so an untold seat cannot offer a person the seven
+    /// applications their machine came with. What it can do is offer *Install*
+    /// for something installed from the market on an earlier boot. That is
+    /// wrong, and it is visibly wrong rather than quietly wrong: the install
+    /// itself refuses, and the window says so.
+    pub(crate) what_this_machine_has: Vec<String>,
 }
 
 impl Server {
@@ -489,6 +521,10 @@ impl Server {
             settings: crate::SettingsWindow::closed(),
             // Nobody has told this seat where a person's settings are kept.
             settings_places: None,
+            // Shut, and a press on the person's own Dock is what opens it.
+            market: crate::MarketWindow::closed(),
+            // Nobody has told this seat what the machine already has.
+            what_this_machine_has: Vec::new(),
             // Nothing has been kept yet, so no Place remembers anything.
             remembered: alo_arranging::Arrangement::fresh(),
             // Nobody is walking backwards through anything yet.

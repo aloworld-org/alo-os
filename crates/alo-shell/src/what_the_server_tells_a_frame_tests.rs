@@ -9,13 +9,17 @@
 /// Named here rather than derived, because the question is whether anything
 /// sets one of them *somewhere else* — which a list of names can ask and the
 /// compiler cannot.
-const THE_SERVERS_HALF: [&str; 6] = [
+const THE_SERVERS_HALF: [&str; 7] = [
     "windows",
     "filling_the_screen",
     "display_scale",
     "on_the_dock",
     "the_dock_has_open",
     "the_docks_words",
+    // **Added 2026-10-17 with the window itself.** A field set at each of
+    // `direct_desktop`'s two sites is a field that drifts between them, and
+    // this one decides whether a person's open window is on the screen at all.
+    "market",
 ];
 
 /// `direct_desktop.rs`, as text.

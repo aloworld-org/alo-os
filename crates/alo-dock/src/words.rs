@@ -285,6 +285,29 @@ pub const SETTINGS_ON_THE_DOCK: Word = Word::saying("dock.entry.settings", "Sett
      follow it, because the settings surface is not a window this machine counts.",
 );
 
+/// The name of the Applications entry, shown on the Dock and read out for it.
+///
+/// **One word for both jobs**, for [`SETTINGS_ON_THE_DOCK`]'s reason exactly:
+/// what this entry is called is one fact, and two keys for it is two things a
+/// translator has to keep in step for no difference a person could hear.
+///
+/// # Why *Applications* rather than *Market* or *Store*
+///
+/// It is what a person is looking for. *Store* is wrong twice over — nothing
+/// here is sold, and ADR 0005 has applications arriving from a place the person
+/// or their organisation chose rather than from one shop — and *Market* names
+/// the mechanism rather than the thing a person wants. The window's own heading
+/// is `alo_software::words::THE_APPLICATIONS` and this says the same word, so a
+/// person pressing the entry arrives somewhere whose title matches the label
+/// they pressed.
+pub const APPLICATIONS_ON_THE_DOCK: Word = Word::saying("dock.entry.applications", "Applications")
+    .noting(
+        "The name of the dock entry that opens the window of what a person can install. It is \
+         not an application, so like \"Settings\" and unlike every other dock icon this name IS \
+         translated: there is no vendor name behind it. Shown beside the icon and read aloud \
+         when a reader reaches it.",
+    );
+
 /// Said after the application's name when one of its windows has the keyboard.
 pub const ANNOUNCED_FOCUSED: Word = Word::saying("dock.announced.focused", "focused").noting(
     "Added to what is read for an icon when one of that application's windows currently has the \
@@ -560,7 +583,7 @@ pub const RETIRED: [&str; 2] = ["dock.labels.under", "dock.labels.gave-way"];
 /// beside the other settings' words because this list's order is the order a
 /// translator meets them in, and a translator who has already done this file
 /// should find the new ones together rather than hunting a diff.
-pub const EVERY_WORD: [Word; 41] = [
+pub const EVERY_WORD: [Word; 42] = [
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
     NAMES_BESIDE,
@@ -602,6 +625,7 @@ pub const EVERY_WORD: [Word; 41] = [
     SHOW_ALL,
     HISTORY,
     SETTINGS_ON_THE_DOCK,
+    APPLICATIONS_ON_THE_DOCK,
 ];
 
 /// Why this crate's own words could not be declared.

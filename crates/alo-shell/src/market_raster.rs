@@ -79,13 +79,13 @@ pub(crate) struct MarketPicture {
 /// lane knows which display this is and what scale puts a window in its
 /// pixels. This file draws what it is handed.
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct AMarketOnTheDisplay<'a> {
+pub struct AMarketOnTheDisplay<'a> {
     /// Where the window is.
-    pub(crate) at: Rectangle<i32, Physical>,
+    pub at: Rectangle<i32, Physical>,
     /// What it is showing.
-    pub(crate) showing: MarketShows<'a>,
+    pub showing: MarketShows<'a>,
     /// Its words, already said.
-    pub(crate) words: &'a TheMarketsWords,
+    pub words: &'a TheMarketsWords,
 }
 
 /// How this window is drawn at this moment.

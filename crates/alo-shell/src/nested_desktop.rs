@@ -42,6 +42,14 @@ pub struct DesktopFrame<'a> {
     /// the same reason: only the caller knows which display's windows these
     /// are.
     pub tasks: &'a [crate::task_raster::ATaskOnTheDisplay<'a>],
+    /// The window of what a person can install, when it is open on this
+    /// display.
+    ///
+    /// **[`None`] is a shut window and also a display it is not on**, and the
+    /// two are the same thing to a drawing: there is one of these windows per
+    /// seat, so at most one display shows it. Which one is the caller's to
+    /// know, exactly as `tasks` and `windows` above are.
+    pub market: Option<crate::market_raster::AMarketOnTheDisplay<'a>>,
     /// The person's appearance at this moment, and the way they read.
     pub look: DesktopLook,
     /// The vocabulary the person reads.
