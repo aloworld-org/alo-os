@@ -40,13 +40,13 @@ because a reader starting from it would conclude this goal is unreachable.*
 | ★ | decides whether alo may use it | built as types; **nothing stores either choice**, so not reachable — and **blocked**, not merely unbuilt |
 | ★ | reads who is speaking | **usable** — `you`, `alo`, `system`, `program` in the gutter |
 | ★ | sees measured apart from worked-out | **usable** — the same gutter's `system` against `alo` |
-| ★ | asks why a command is waiting | **built and reachable** as of #755, `Ctrl`+`Alt`+`W`. **Never seen on a machine** |
+| ★ | asks why a command is waiting | **built, reachable, and drawing nothing a person could read** until #778 on 2026-10-17: the chord put `alo` in the gutter and the sentence it labels went into the gutter's own 80-pixel box, under the word. Now drawn, and **seen under a nested compositor** (step 8c); **still never seen on a machine** |
 | ★ | scrolls back through output | **usable** |
 | ★ | runs a command touching nothing | **the box exists and works on a kernel** (#729); **nothing calls it** and the surface is unspecified — not usable. *This cell said "the kernel box does not" until 2026-10-17* |
 | ★ | scopes one command | **blocked** — a per-command narrowing is `alo-capability`, another lane's |
 | ★ | finds a command by what it did | the record can answer it; **nothing can ask it**, and giving it a surface is scope |
 | ★ | bisects the machine | **nothing**, and waits on a bracket |
-| ★ | reads output that is not a character grid | **the first rich view is usable** — a test result, #761. Two more are unspecified in the design |
+| ★ | reads output that is not a character grid | the first rich view is a test result, #761 — **and its two lines were cropped into the gutter's label box** the same way, until #778. This row said *usable* and the summary was not readable. Now drawn, and **seen under a nested compositor**; two more views are unspecified in the design |
 | ★ | hands somebody a session to replay | **nothing**, and waits on rich results |
 | | asks what a command will do first | the answer is built (#759); **nothing can ask**, because alo does not know what was typed — **blocked on ADR 0123 being accepted** |
 
@@ -57,10 +57,22 @@ them, which is this document's own lesson about mentions and declarations:
 | | how many | which |
 |---|---|---|
 | **usable** — all four conditions | **4** | opens a terminal and types; reads who is speaking; sees measured apart from worked-out; scrolls back |
-| **built and reachable, never seen on a machine** | **2** | asks why a command is waiting (#755); reads output that is not a character grid (#761) |
+| **built and reachable, never seen on a machine** | **2** | asks why a command is waiting (#755); reads output that is not a character grid (#761). **Both were also broken on screen until 2026-10-17** — see the two rows above and step 8c. The count is unchanged because a nested compositor is not a machine |
 | waiting on this lane's own earlier steps | **1** | hands somebody a session to replay, behind the rest of rich results |
 | **blocked on a decision or another lane** | **6** | decides whether alo may use it; scopes one command; finds a command by what it did; asks what a command will do first; **bisects the machine**, moved here at 2026-10-17 when the bracket landed and did not open it (step 5); **runs a command touching nothing**, moved here the same day when the box turned out to be built and the missing piece turned out to be a surface the design does not specify |
 | unowned | **0** | — *this row held* **runs a command touching nothing** *until 2026-10-17, when measuring found the box built (#729, 2026-10-16) and demonstrated on a real kernel. It moved to the row above: what it waits on is a surface, and the design is silent, which makes it the owner's* |
+
+**And what *built and reachable* turned out to mean.** Both rows above said a
+promise was built and reachable, and both were — the mechanism ran, a chord
+reached it, and **a person would have seen a gutter word beside nothing**. The
+sentence and the summary were being drawn into the gutter's own 80-pixel label
+box and painted over by the word. Every check of either counted drawn runs and
+passed, because both runs existed, one on top of the other.
+
+*So the three conditions this table tracks were all true and the feature did not
+work.* That is the strongest argument for the fourth that this lane has found,
+and it was found a day early only because somebody drew the thing and looked at
+the pixels. Fixed in #778.
 
 **The two in the second row are what tomorrow evening's boot is for.** Both are
 built, both are reachable, and nobody has watched either on a machine — which is
@@ -281,6 +293,41 @@ themselves.
 person runs in the terminal is bracketed, and under what window — which is an
 amendment to ADR 0045 rather than a new decision.
 
+### What that decision costs, measured 2026-10-17 so it is not decided on a guess
+
+**The owner's question when they accepted ADR 0045 was whether the machines
+would fill up.** It was the right question and nobody had answered it with a
+number. This is the number, taken on a real `btrfs` filesystem on a loop device
+in this lane's VM: a 300 MiB project, a 200 MiB build directory, and ten builds
+— a working day — with the brackets arranged three ways.
+
+| | held afterwards |
+|---|---|
+| **no brackets at all**, ten builds | **0 MiB** — each build frees the last one's output |
+| **ten brackets**, one before each build *(today's rule)* | **2007 MiB** |
+| **fifty brackets**, one before every command, ten builds among them | **2008 MiB** |
+
+**The forty extra brackets cost one mebibyte.** A snapshot holds what is
+rewritten underneath it, and a command that changes nothing diverges by nothing,
+so it is free. *The cost is the bytes rewritten under a live snapshot, not the
+number of snapshots.* Forty `ls`, `cd` and `git status` calls in a row cost
+nothing to bracket.
+
+**So the disk argument against bracketing every command does not survive
+measurement, and the real cost is somewhere else.** ADR 0045's window is seven
+days **or fifty changing turns, whichever ends first**. Bracketing every command
+reaches fifty in an afternoon, so the window stops being seven days and becomes
+*this afternoon*. **What a person loses is not disk, it is how far back undo
+reaches.** That is the trade to decide, and it is a different question from the
+one the term was written against.
+
+**Said once, and it does not run again.** This needed root, a loop device and
+about four minutes; no gate has those. The rule it establishes — cost follows
+bytes rewritten, not snapshot count — is what generalises; the figures are one
+workload, and a day spent rewriting a larger tree would hold proportionally
+more. Nothing re-measures this, and a reader a month from now should treat the
+table as a dated reading rather than a property of the product.
+
 *Recorded rather than guessed, and recorded the minute it was found rather than
 at the end of the day, because two tasks in two documents read as startable on
 the strength of a dependency that had just been met.*
@@ -417,6 +464,106 @@ have not chosen**.
 **What would unblock it**, in one sentence for whoever takes it: a decision on
 where a capability *level* is kept, given that grants are folders and this is not
 one.
+
+### 8b. What the walker will actually see — **drawn and looked at, 2026-10-17**
+
+**alo's own terminal was drawn on a compositor for the first time on
+2026-10-17** (#775), under a headless parent in this lane's VM, and the frame was
+written out and looked at rather than counted. Two of the walk's thirteen steps
+described something the walker will not see, and both are now reworded above.
+
+| | |
+|---|---|
+| what is drawn | the gutter word **`program`** in lower case with its cursor beside it, and **`bash · UTF-8`** along the foot — which are steps 3 and 4, correct and in place |
+| what is **not** drawn | **any ground.** The terminal's window and its transcript are both painted `alo_appearance::Token::Cream`, which is `bg/canvas` `#faf7f2` — the same colour as the desktop behind them |
+| measured | every pixel sampled across the terminal's area is `(250, 247, 242)`. The only pixels of `bg/cool` `#eef2f4` or `bg/surface` `#ffffff` anywhere in the frame are the dock's, in `(465, 877)-(974, 950)` |
+
+**This is not a bug to fix and must not be filed as one.**
+`docs/design/the-terminal-window.md` says so itself, under *Colour*: the
+surrounding page's roles are known, but *the transcript's own ground and ink are
+not among them, so they are **owed** before the transcript is drawn and are
+deliberately absent here rather than guessed.* The `Cream` in the code is a
+placeholder standing in for a value the design has not given up, and the two
+grounds recorded in that file — `program ground #eef2f4`, `gutter ground
+#ffffff` — were measured off a **label** node, not off the window's regions. A
+lane that wired those two into the window's two solids would be approximating a
+design that says in writing it is silent.
+
+**It is the owner's, and it is the same blocker as step 4**: the transcript's
+ground and ink come off the design file, which needs the Figma connector
+authorised.
+
+**Why it is written here rather than left to be discovered tomorrow.** A walker
+told to look for *a terminal window* who sees text on a bare desktop reports
+that the terminal did not open — and that report is the most expensive thing
+this repository can produce, which is the walk guard's whole reason for
+existing. The guard in `alo-citing` checks that a step quotes words the machine
+really says; it cannot check that a step describes something the machine really
+draws. **Looking is what found this**, and a pixel count would not have: the
+first version of #775's check asserted on area and failed a working terminal.
+
+### 8c. Twelve of the thirteen steps were driven before the boot — **2026-10-17**
+
+**This changes what the boot is for. It does not replace it.** The parent is
+`weston --backend=headless` and the renderer is llvmpipe, so nothing below says
+a word about a real display, a real keyboard, a real GPU or a machine that
+booted. What it removes is the case where the evening of the 18th is the *first*
+time anybody finds out.
+
+Driven against a real `bash` under a real compositor by
+`ALO_NESTED_SUBMODE=terminal`, and read back off the pixels:
+
+| step | what was read back |
+|---|---|
+| 2 | a prompt and a cursor — **and no window**, which is why that step is reworded above |
+| 3 | `program`, lower case, in the gutter |
+| 4 | `bash · UTF-8` along the foot |
+| 5 | `cat` waits, printing nothing |
+| 6 | **`alo  waiting for the keyboard`** |
+| 7 | after `Ctrl`+`D`, that line **goes** |
+| 8 | **`alo  waiting for something alo cannot identify`** for `sleep 30` |
+| 10 | `Tests · 23 tests passed · 1 test failed`, and under it `Source: cargo test output · Not independently verified` |
+| 9 | `seq 1 40`, then wheel notches: the transcript moves, **stops at the oldest line**, comes forward, **stops at the newest**, and the last frame is byte-identical to the first |
+| 11 | both of those in the **program's** region, labelled `program` |
+| 12 | `ls` runs and the two lines **stay** — what is recognised is what the screen holds |
+| 13 | `clear` takes the line away and the two lines **go** with it |
+
+**Step 10's wording in the row above is the old one**, read off a tree that did
+not yet have #766. **#766 has since landed**, so a machine built from `main`
+now draws `Tests · 23 passed · 1 failed` — the shorter form, which is what the
+walk asks for and what that change was for. The row is left as it was read
+rather than rewritten to what it would say now: *a reading is a record of what
+was on a screen at a moment, and editing one to match a later tree is how a
+measurement becomes a claim.*
+
+**One step is still unseen: 1, signing in.** That needs a machine, and it is
+what the evening of the 18th is for.
+
+**Step 9 was nearly checked the wrong way**, and the shape is worth knowing
+because this document is read by people writing checks. `Server::pointer_axis`
+answers whether the scroll was consumed, so the obvious loop sends notches while
+it keeps saying yes — and it said yes two hundred times, far past the oldest
+line, because with a pointer enabled and nothing focused **the canvas consumes
+whatever the terminal does not**. The answer was true about the machine and said
+nothing about the transcript. The loop draws a frame after every notch now and
+stops when the picture repeats.
+
+**Step 13 failed the first time it was driven, and the cause was not the
+summary.** `clear` answered *TERM environment variable not set.* — alo's own
+terminal started every shell with an empty environment, so `clear`, `less`,
+`vim`, `top` and everything else built on curses refused. **A terminal that
+cannot clear its own screen is not a working terminal**, and that had been true
+of every terminal alo has ever opened. Fixed in the same change; the shell is
+now told `xterm-256color`, and the constant's own doc says why that name. *A
+walker would have found this tomorrow, at step 13, with nobody awake to fix
+it.*
+
+**Two of the nine were only checkable because they were broken first.** Steps 6,
+10 and 11 drew their gutter word and no sentence until #778 — alo's answer and
+the result's lines were being cropped into the gutter's own 80-pixel label box
+and painted over. Every check of them counted drawn runs and passed, because
+both runs existed, one on top of the other. *A count cannot see a thing that was
+drawn in the wrong place.*
 
 ### 9. Try a command without letting it touch anything — **the box is built; the surface is the owner's, measured 2026-10-17**
 
