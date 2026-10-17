@@ -455,7 +455,7 @@ really says; it cannot check that a step describes something the machine really
 draws. **Looking is what found this**, and a pixel count would not have: the
 first version of #775's check asserted on area and failed a working terminal.
 
-### 8c. Eleven of the thirteen steps were driven before the boot — **2026-10-17**
+### 8c. Twelve of the thirteen steps were driven before the boot — **2026-10-17**
 
 **This changes what the boot is for. It does not replace it.** The parent is
 `weston --backend=headless` and the renderer is llvmpipe, so nothing below says
@@ -476,6 +476,7 @@ Driven against a real `bash` under a real compositor by
 | 7 | after `Ctrl`+`D`, that line **goes** |
 | 8 | **`alo  waiting for something alo cannot identify`** for `sleep 30` |
 | 10 | `Tests · 23 tests passed · 1 test failed`, and under it `Source: cargo test output · Not independently verified` |
+| 9 | `seq 1 40`, then wheel notches: the transcript moves, **stops at the oldest line**, comes forward, **stops at the newest**, and the last frame is byte-identical to the first |
 | 11 | both of those in the **program's** region, labelled `program` |
 | 12 | `ls` runs and the two lines **stay** — what is recognised is what the screen holds |
 | 13 | `clear` takes the line away and the two lines **go** with it |
@@ -484,9 +485,17 @@ Driven against a real `bash` under a real compositor by
 when #766 lands, which is what that change is for. A walker on a machine built
 before it should expect the longer form and not report a fault.
 
-**Two steps are still unseen**: 1 (sign in) and 9 (scrolling with a wheel). A
-wheel and a sign-in are what a person and a machine have and a nested fixture
-does not.
+**One step is still unseen: 1, signing in.** That needs a machine, and it is
+what the evening of the 18th is for.
+
+**Step 9 was nearly checked the wrong way**, and the shape is worth knowing
+because this document is read by people writing checks. `Server::pointer_axis`
+answers whether the scroll was consumed, so the obvious loop sends notches while
+it keeps saying yes — and it said yes two hundred times, far past the oldest
+line, because with a pointer enabled and nothing focused **the canvas consumes
+whatever the terminal does not**. The answer was true about the machine and said
+nothing about the transcript. The loop draws a frame after every notch now and
+stops when the picture repeats.
 
 **Step 13 failed the first time it was driven, and the cause was not the
 summary.** `clear` answered *TERM environment variable not set.* — alo's own
