@@ -120,7 +120,7 @@ mod tests {
     fn a_machine_that_keeps() -> WhatIsKept {
         let node = alo_measuring::Node {
             name: "undo".to_owned(),
-            at: std::path::PathBuf::from("/var/lib/alo/undo"),
+            at: std::path::PathBuf::from("/var/lib/alo-undo"),
             kind: alo_files::Kind::Folder,
             own: 0,
             size: 4096,

@@ -14,7 +14,7 @@
 //! `believing.rs` believes a file that belongs to *root or to the login reading
 //! it*, which it asks of the open file as a **uid**. Keyed by uid, the path and
 //! that check compare the same number. The other per-person path on this
-//! machine, `/var/lib/alo/undo/<name>/…`, keys by the name a person was given —
+//! machine, `/var/lib/alo-undo/<name>/…`, keys by the name a person was given —
 //! and `alo-shell`'s `settings_places.rs` records what that would cost here:
 //! *a login with no folder … has no places for the person's own sections at
 //! all. The grants and pairings are the machine's rather than the person's

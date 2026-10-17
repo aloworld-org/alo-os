@@ -1,6 +1,9 @@
 # ADR 0119 — The capability to give a directory away goes to the smallest thing that can hold it
 
-**Status:** accepted
+**Status:** accepted — **its second measurement named a parent the then-specified
+path did not have**, and
+[ADR 0120](0120-the-undo-folder-is-roots-own-and-not-inside-the-persons.md) moved
+the path rather than widening the grant. The one capability stands.
 **Date:** 2026-10-17
 **Context:** [ADR 0118](0118-more-than-one-person-on-a-machine.md) (more than one
 person on a machine) left this as *the next record*, and said how to write it:
@@ -69,6 +72,20 @@ capsh --caps="cap_chown+eip" -- -c "mkdir <0711 root dir>/ada
 made. **So the grant is one capability and not a set**, and that is a
 measurement rather than an aspiration: there is no second capability to argue
 about.
+
+**Read the parent in that transcript.** It is `<0711 root dir>` — root-owned and
+root-writable — and that is load-bearing. `/var/lib/alo/undo`, the path ADR 0045
+term 8 specified when this was written, had no such parent: `/var/lib/alo` is
+`0700` and the **person's**, so the first thing the built helper did on a real
+machine was fail with `Permission denied` **as root**, because this bounding set
+drops `CAP_DAC_OVERRIDE`. The sentence above is true of what it measured and was
+not true of where the folder was going to be, which is the gap between a correct
+measurement and the right one.
+[ADR 0120](0120-the-undo-folder-is-roots-own-and-not-inside-the-persons.md) has
+the failure and the four readbacks, and it moved the folder to a parent root owns
+instead of granting a second capability — so *one capability and not a set* came
+out of it intact, and the transcript above is now a measurement of where the
+folder actually lives.
 
 ## Why a new helper rather than either component that is already root
 

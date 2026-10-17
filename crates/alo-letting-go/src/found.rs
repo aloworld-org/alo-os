@@ -31,7 +31,7 @@ use crate::the_folder::{THE_TURN, THEIRS, TheTurn, Theirs};
 
 /// Whether the person who owns `directory` also owns `settings`.
 ///
-/// `directory` is one person's directory under `/var/lib/alo/undo`, whose owner
+/// `directory` is one person's directory under `/var/lib/alo-undo`, whose owner
 /// is who that directory belongs to; `settings` is the folder their own
 /// `theirs.json` named. `docs/contracts/kept-undo-folder.md` requires them to be
 /// the same person, and this is the requirement.
@@ -421,7 +421,7 @@ mod tests {
     /// the same fixture in both places.
     #[test]
     fn a_settings_folder_somebody_else_owns_is_refused() {
-        let under = Path::new("/var/lib/alo/undo/ada");
+        let under = Path::new("/var/lib/alo-undo/ada");
         let named = Path::new("/root/.config/alo");
 
         let refused = super::whether_the_same_person_owns(under, 1000, named, 0).unwrap_err();

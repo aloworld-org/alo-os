@@ -117,7 +117,7 @@ const THE_PERSONS_HOME: &str = "/var/home/ada";
 const THE_MACHINES_OWN: &str = "/var/lib/alo";
 
 /// The read-only snapshot an undo would rewind from, taken before the update.
-const THE_SNAPSHOT: &str = "/var/lib/alo/undo/before-the-update";
+const THE_SNAPSHOT: &str = "/var/lib/alo-undo/before-the-update";
 
 /// How long the machine may take, over all three starts.
 ///

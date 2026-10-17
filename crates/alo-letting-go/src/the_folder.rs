@@ -11,7 +11,7 @@
 //! `tests/the_contract_describes_this_folder.rs`.
 //!
 //! ```text
-//! /var/lib/alo/undo/                 the machine's, 0700 root, outside every grant
+//! /var/lib/alo-undo/                 the machine's, 0700 root, outside every grant
 //!   ada/                             one directory per person
 //!     theirs.json                    where that person's settings folder is
 //!     4f1c…/                         one directory per kept changing turn
@@ -60,7 +60,7 @@ use std::time::{Duration, SystemTime};
 use serde::{Deserialize, Serialize};
 
 /// Where a machine keeps what an undo would put back.
-pub const THE_FOLDER: &str = "/var/lib/alo/undo";
+pub const THE_FOLDER: &str = "/var/lib/alo-undo";
 
 /// What says where one person's settings folder is, inside their directory.
 pub const THEIRS: &str = "theirs.json";
@@ -298,7 +298,7 @@ mod tests {
 
     /// The file a test pretends it read.
     fn at() -> PathBuf {
-        PathBuf::from("/var/lib/alo/undo/ada/4f1c/kept.json")
+        PathBuf::from("/var/lib/alo-undo/ada/4f1c/kept.json")
     }
 
     /// A moment far enough from the epoch to read as a real one.

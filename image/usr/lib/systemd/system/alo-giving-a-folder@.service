@@ -1,0 +1,72 @@
+# The one unit on this machine that may give a directory to a person.
+#
+# ADR 0119 chose a component of its own for this rather than granting the
+# capability to something already running as root, and the measurements are in
+# that decision: `CAP_CHOWN` is necessary and, on its own, sufficient for the
+# whole job; and the two candidates already running as root are 113,587 and
+# 2,160 lines against this one's hundred.
+#
+# Started as `alo-giving-a-folder@1000.service`, where the instance name is the
+# account number. The caller may be root with no capabilities at all — what
+# authorises starting a unit is who you are, not what you hold — so the power
+# lives here and reaches only this program.
+[Unit]
+Description=alo OS: give account %i their place for what an undo would put back
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0119-the-capability-to-give-a-directory-away-goes-to-the-smallest-thing-that-can-hold-it.md
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+ExecStart=/usr/libexec/alo-giving-a-folder %i
+User=root
+Group=root
+
+# **One capability, and it is a measurement rather than a preference.**
+# `CAP_CHOWN` is necessary: with every capability except it, root cannot give a
+# directory away. And it is sufficient for the whole job: making the directory
+# and setting its mode need nothing, because this process owns what it has just
+# made. So there is no second capability to argue about.
+#
+# The bounding set means it can never hold another; the ambient set is what
+# makes this one reach the program.
+CapabilityBoundingSet=CAP_CHOWN
+AmbientCapabilities=CAP_CHOWN
+NoNewPrivileges=yes
+
+# It writes in one place and reads nothing else. `ProtectSystem=strict` makes
+# the whole filesystem read-only and `StateDirectory=` opens the one directory
+# this exists to write in, so a fault in it cannot reach anything else.
+#
+# **`StateDirectory=` and not `ReadWritePaths=`, and that was measured.** A
+# `ReadWritePaths=` on a path that does not exist is not a loose end, it is a unit
+# that cannot start: systemd fails the mount namespace with `226/NAMESPACE` before
+# the program runs. `StateDirectory=` makes the directory first and then opens it,
+# so the first start on a fresh machine is the same as every later one.
+#
+# **And the directory is root's own, one level above the person's.** It is
+# `/var/lib/alo-undo` and not `/var/lib/alo/undo`, because `/var/lib/alo` is
+# `0700` and the **person's** (`image/usr/lib/tmpfiles.d/alo.conf`), which made
+# two of ADR 0045's own terms false — the person could move the whole folder away,
+# and a second person could not reach their own directory inside it. ADR 0120 is
+# the decision, with what was measured.
+#
+# The mode is declared here as well as in the program. The program puts it back on
+# every call, which is how a folder somebody widened by hand is narrowed again;
+# this is what the folder is created with before the program has run at all.
+ProtectSystem=strict
+ProtectHome=yes
+StateDirectory=alo-undo
+StateDirectoryMode=0711
+PrivateTmp=yes
+PrivateNetwork=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictSUIDSGID=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+
+StandardOutput=journal
+StandardError=journal

@@ -32,8 +32,15 @@ forget an undo can erase the evidence of what it did.
 ## Where it is
 
 ```
-/var/lib/alo/undo
+/var/lib/alo-undo
 ```
+
+**It was `/var/lib/alo/undo` until 2026-10-17**, inside a directory that is
+`0700` and the **person's** — which meant a person could rename the whole folder
+away, and a second person could not traverse into it at all. Both were measured.
+[ADR 0120](../decisions/0120-the-undo-folder-is-roots-own-and-not-inside-the-persons.md)
+is the decision, and it carries the readbacks. The folder is now root's own
+directory under `/var/lib`, where root makes it holding no capability at all.
 
 `0711 root:root`. Outside every grant — there is no grant to `/` and none to
 this, and a person's agent cannot name a path under it because no verb takes a
@@ -54,8 +61,8 @@ else uses this machine, which is nobody's business and which nothing needs.
 ## The shape
 
 ```
-/var/lib/alo/undo/                 0711 root:root
-  ada/                             0700 ada:ada — one directory per person
+/var/lib/alo-undo/                 0711 root:root
+  ada/                             0700 ada — one directory per person
     theirs.json                    where that person's settings folder is
     4f1c8a…/                       one directory per kept changing turn
       kept.json                    when it ran, and what it did in their words
@@ -66,6 +73,36 @@ else uses this machine, which is nobody's business and which nothing needs.
 A directory directly under the folder is one person's. A directory directly
 under that is one kept changing turn.
 
+**It said `0700 ada:ada` until 2026-10-17, and the group half is now not set at
+all.** The owner is set and the group is left as it was, which on this layout is
+`root` — so a person's directory reads `ada root` to `ls -l`. The mode is `0700`,
+so the group bits grant nobody anything either way, and this is a change to what
+the document claims rather than to what anybody may reach.
+
+Three measurements, in the order they bear on it:
+
+- **It was achievable.** `image/usr/lib/sysusers.d/alo.conf` declares the person
+  as `u alo 1000` with no group number, and `systemd-sysusers --root` on that one
+  line writes `alo:x:1000:1000` to `passwd` and a group `alo:x:1000:` — so on
+  this image a person's primary group *is* their account number, and
+  `chown(uid, uid)` would have made the old line exactly true. The amendment is
+  not *we could not*.
+- **It does not hold off the image.** The same call was refused with `EPERM` on
+  the machine this was written on, where account 501's primary group is not 501:
+  a process may not give a file to a group it is not in. So setting the group to
+  the account number would run one way on a certified machine and another way in
+  a gate, which is the one difference worth avoiding here.
+- **Reading the real group costs a dependency.** The primary group is a field of
+  the user database, and
+  [ADR 0119](../decisions/0119-the-capability-to-give-a-directory-away-goes-to-the-smallest-thing-that-can-hold-it.md)
+  chose a separate component for this *because it is small*. A user-database call
+  in the one program on the machine that may give a directory away, in order to
+  write a number into bits that grant nothing, is the wrong trade.
+
+`crates/alo-giving-a-folder` is what makes this folder, and
+`tests/the_contract_describes_where_an_undo_keeps.rs` reads the lines above
+rather than agreeing with another crate's constant.
+
 **Who makes what.** The folder and each person's directory inside it are made by
 a **privileged step at the moment a person first signs in** — the session cannot
 make a directory in a root-owned folder, and image build time does not know who
@@ -73,13 +110,27 @@ the people will be. Everything below a person's directory is made by **that
 person's own session**, which is what takes the bracket and needs no capability
 to do it.
 
-**Neither of those is built, measured 2026-10-16.** Nothing creates this folder:
-no tmpfiles entry, no `StateDirectory=`, no line in the image. Nothing takes a
-bracket either — `alo-turn` is where ADR 0045 puts it and names no snapshot. So
-this section is the design and not a description of a running machine, and it is
-marked as such here rather than leaving a reader to discover that the folder
-their code is about has never existed. What *is* built is everything that reads
-the folder: the window, the person's surface, and the privileged remover.
+**One of those is built and one is not, measured 2026-10-17.**
+
+**The folder and each person's directory are made** by
+`crates/alo-giving-a-folder`, through `alo-giving-a-folder@<account>.service`,
+which holds `CAP_CHOWN` and no other capability
+([ADR 0119](../decisions/0119-the-capability-to-give-a-directory-away-goes-to-the-smallest-thing-that-can-hold-it.md)).
+The unit asks systemd for the directory with `StateDirectory=alo-undo` at mode
+`0711`, and the program puts the mode and the owner back on every call, so a
+second call for the same person repairs rather than refuses. **Nothing starts
+that unit yet**: the two callers
+[ADR 0118](../decisions/0118-more-than-one-person-on-a-machine.md) names — the
+first account's road and the later route for a person who is not the first — are
+not built, so on a machine today the folder is still absent at runtime even
+though the thing that makes it exists.
+
+**Nothing takes a bracket** — `alo-turn` is where ADR 0045 puts it and names no
+snapshot, unchanged since 2026-10-16. So the sections below about what a bracket
+holds remain the design and not a description of a running machine, and they are
+marked as such here rather than leaving a reader to discover that the directories
+their code is about have never been written to. What *is* built is everything that
+reads the folder: the window, the person's surface, and the privileged remover.
 
 **So everything below a person's directory is that person's own writing, and the
 remover reads it as root.** That is the whole reason for the three rules that

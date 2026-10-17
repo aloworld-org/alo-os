@@ -177,7 +177,7 @@ fn what_undo_is_holding_is_a_line_of_its_own_and_goes_down_after_the_unit_runs()
 /// can never come to mean two different places.
 #[test]
 fn the_folder_counted_is_the_folder_swept() {
-    assert_eq!(THE_FOLDER, "/var/lib/alo/undo");
+    assert_eq!(THE_FOLDER, "/var/lib/alo-undo");
     assert!(
         Path::new(THE_FOLDER).is_absolute(),
         "a person's window is pointed at an absolute folder"

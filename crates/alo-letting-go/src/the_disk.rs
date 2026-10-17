@@ -178,7 +178,7 @@ mod tests {
             }
         }
 
-        let at = Path::new("/var/lib/alo/undo");
+        let at = Path::new("/var/lib/alo-undo");
         assert!(!WithFree(THE_FLOOR).below_the_floor(at).unwrap_or(true));
         assert!(WithFree(THE_FLOOR - 1).below_the_floor(at).unwrap_or(false));
     }

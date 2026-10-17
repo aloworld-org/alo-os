@@ -13,7 +13,7 @@ ending, not a design being undone.
 
 - **`alo_accounts::Accounts` holds accounts, plural.** `signs_in` finds a
   person by name; `name_of` answers by number; the file format is a list.
-- **`/var/lib/alo/undo` is `0711`** ([ADR
+- **`/var/lib/alo-undo` is `0711`** ([ADR
   0045](0045-what-undoing-rewinds-to.md) term 8) *precisely* so that listing
   cannot tell one person who else uses the machine. That mode exists for a
   case the sign-in screen cannot yet reach.

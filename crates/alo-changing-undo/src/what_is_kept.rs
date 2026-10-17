@@ -212,7 +212,7 @@ mod tests {
     fn a_node(bytes: u64, counted: Counted) -> Node {
         Node {
             name: "undo".to_owned(),
-            at: std::path::PathBuf::from("/var/lib/alo/undo"),
+            at: std::path::PathBuf::from("/var/lib/alo-undo"),
             kind: alo_files::Kind::Folder,
             own: 0,
             size: bytes,

@@ -73,7 +73,7 @@ theirs.*
    person's own sections at all. **The grants and pairings are the machine's
    rather than the person's folder's, so they are still read.*** A person with
    no home directory still has grants. The other per-person path on this
-   machine, `/var/lib/alo/undo/<name>/…`, keys by **name** and would have taken
+   machine, `/var/lib/alo-undo/<name>/…`, keys by **name** and would have taken
    that away silently. *This argument came from the applications lane.*
 
 ### Why a flat name rather than a folder

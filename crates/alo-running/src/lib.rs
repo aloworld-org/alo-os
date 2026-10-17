@@ -62,8 +62,10 @@
 //! - **The snapshot before each run** is taken *before* a run is asked for, so
 //!   it cannot be taken from in here: one taken after the box was built would be
 //!   a snapshot of a machine already changed. It is also **not built** — nothing
-//!   creates `/var/lib/alo/undo` and nothing takes a bracket, measured
-//!   2026-10-16, and ADR 0045 terms 8 and 9 are what unblocked it.
+//!   takes a bracket, measured 2026-10-16, and ADR 0045 terms 8 and 9 are what
+//!   unblocked it. *The folder it would go in is built as of 2026-10-17 —
+//!   `alo-giving-a-folder` makes `/var/lib/alo-undo` — and nothing starts that
+//!   unit yet either.*
 //! - **The egress indicator** is `alo-egress`'s, and what this crate owes it is
 //!   the bound: a box built with no approved destination cannot connect
 //!   anywhere, which the kernel enforces on `socket_connect`.

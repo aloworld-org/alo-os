@@ -852,6 +852,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-giving-a-folder"
+version = "0.0.1"
+dependencies = [
+ "rustix 1.1.4",
+]
+
+[[package]]
 name = "alo-granted"
 version = "0.0.1"
 dependencies = [
