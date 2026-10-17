@@ -110,14 +110,14 @@ pub fn what_to_make(under: &Path, person: u32) -> [ToMake; 2] {
 ///
 /// # Making one that is already there is not a failure
 ///
-/// A person signs in more than once, and whatever starts this will start it
-/// again. What it does on a second call is put the **mode and the owner back**,
-/// so a folder somebody widened by hand is narrowed again rather than staying
-/// wide for ever.
+/// A person signs in more than once, and this is started at **every** sign-in
+/// ([ADR 0121](../../../docs/decisions/0121-the-thing-that-opens-a-session-makes-the-persons-folder.md)). What it does on a second call is put the **mode and the owner
+/// back**, so a folder somebody widened by hand is narrowed again rather than
+/// staying wide for ever.
 ///
-/// **That is what lets a caller ask every time** rather than having to remember
-/// whether it already has — which is what a sign-in road needs, since the
-/// alternative is a privileged component keeping a list of who has a folder.
+/// **That is what lets the one caller ask every time** rather than having to
+/// remember whether it already has — the alternative is a privileged component
+/// keeping a list of who has a folder, which is a second record of who exists.
 ///
 /// *The second call failed with `EPERM` until 2026-10-17*, and the test that
 /// catches it is `a_second_call_puts_a_widened_mode_back`. Setting the mode on a

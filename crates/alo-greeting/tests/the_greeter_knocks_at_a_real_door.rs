@@ -106,6 +106,7 @@ fn a_correct_password_opens_a_session_through_a_real_door() {
         Door::handed_to(ours),
         Numbered(vec![person]),
         Willing::default(),
+        Giving,
     );
 
     let greeting = Greeting::of(
@@ -139,6 +140,7 @@ fn a_refusal_comes_back_as_the_openers_own_sentence() {
         Door::handed_to(ours),
         Numbered(Vec::new()),
         Willing::default(),
+        Giving,
     );
 
     let greeting = Greeting::of(
@@ -340,4 +342,18 @@ fn a_store_that_will_not_be_believed_is_refused_rather_than_read_as_first_boot()
     assert!(!said.is_a_bug(), "{said}");
     assert!(said.text().contains("Nobody can sign in here"), "{said}");
     drop(std::fs::remove_file(&store));
+}
+
+/// A way of making a folder that always manages it.
+///
+/// This test is about the wire between the greeter and the opener, not about
+/// the folder. `crates/alo-sessiond/src/opening.rs` is where a folder that
+/// could not be made is held to refusing nobody.
+#[derive(Debug, Clone, Copy, Default)]
+struct Giving;
+
+impl alo_sessiond::TheirFolder for Giving {
+    fn made_for(&self, _person: u32) -> Result<(), alo_sessiond::NotTheirs> {
+        Ok(())
+    }
 }

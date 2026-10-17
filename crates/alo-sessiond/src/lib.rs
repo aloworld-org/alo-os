@@ -33,9 +33,15 @@
 //!   carrying one number. There is no field for a password and no field for a
 //!   name, so there is no shape in which this component could authenticate
 //!   anybody even if somebody later wished it would.
-//! - **No path reaches it.** It is handed nothing to open, write, or run. The
-//!   two paths it knows — its own door and the accounts file — are constants of
-//!   this repository, not arguments.
+//! - **No path reaches it, and the one thing it runs it cannot be told the name
+//!   of.** It is handed nothing to open or write. The paths it knows — its own
+//!   door and the accounts file — are constants of this repository, not
+//!   arguments. *It does ask systemd to start one unit*, added 2026-10-17 under
+//!   [ADR 0121](../../../docs/decisions/0121-the-thing-that-opens-a-session-makes-the-persons-folder.md),
+//!   and that sentence used to read *nothing to open, write, or run*: the unit's
+//!   name is [`THE_UNIT`] plus a number this component has already checked
+//!   against the accounts file, so there is still no shape in which a caller
+//!   names something to be run.
 //! - **It cannot be asked for a number nobody here could have signed in as.**
 //!   The number on the wire is checked against the accounts this machine has
 //!   ([`TheAccounts`]) before anything else happens. That file is the one the
@@ -87,9 +93,12 @@ mod door;
 mod logind;
 #[cfg(target_os = "linux")]
 mod machine;
+#[cfg(target_os = "linux")]
+mod making_a_folder;
 mod opening;
 mod place;
 mod refusing;
+mod their_folder;
 #[cfg(unix)]
 mod unix;
 pub mod words;
@@ -103,9 +112,12 @@ pub use door::Door;
 pub use logind::Logind;
 #[cfg(target_os = "linux")]
 pub use machine::{TheMachinesAccounts, TheMachinesLogind};
+#[cfg(target_os = "linux")]
+pub use making_a_folder::{EVERY_METHOD, THE_UNIT, TheMachinesFolders};
 pub use opening::Opening;
 pub use place::{THE_DOOR, THE_DOORS_DIRECTORY};
-pub use refusing::{NotADoor, NotAKnock, NotAnAnswer, NotAsked, NotOpened};
+pub use refusing::{NotADoor, NotAKnock, NotAnAnswer, NotAsked, NotOpened, NotTheirs};
+pub use their_folder::TheirFolder;
 #[cfg(unix)]
 pub use unix::our_group;
 pub use words::{

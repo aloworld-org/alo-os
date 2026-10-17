@@ -40,6 +40,7 @@ use crate::accounts::TheAccounts;
 use crate::asking::{Answered, Knock};
 use crate::logind::Logind;
 use crate::opening::Opening;
+use crate::their_folder::TheirFolder;
 use crate::words::NOT_YOURS_TO_ASK;
 
 /// How long one read or one write at the door may take.
@@ -103,9 +104,9 @@ impl Listening {
     /// Whatever the machine said about accepting, reading or writing. A caller
     /// that went away mid-sentence is one of these and is not a refusal: there
     /// is nobody left to refuse.
-    pub fn answer_one<A: TheAccounts, L: Logind>(
+    pub fn answer_one<A: TheAccounts, L: Logind, F: TheirFolder>(
         &self,
-        opening: &mut Opening<A, L>,
+        opening: &mut Opening<A, L, F>,
     ) -> Result<Answered, std::io::Error> {
         let (connection, _) = self.socket.accept()?;
         connection.set_read_timeout(Some(PATIENCE))?;
@@ -124,9 +125,9 @@ impl Listening {
 /// knock, are both answered with the one refusal that gives nothing away.
 /// Neither is a failure of this machine — they are somebody at the door who is
 /// not the sign-in surface — and neither may learn anything more than that.
-fn what_to_say<A: TheAccounts, L: Logind>(
+fn what_to_say<A: TheAccounts, L: Logind, F: TheirFolder>(
     connection: &UnixStream,
-    opening: &mut Opening<A, L>,
+    opening: &mut Opening<A, L, F>,
 ) -> Answered {
     let Ok(group) = crate::unix::the_group_of(connection) else {
         return Answered::Refused(NOT_YOURS_TO_ASK.key());

@@ -120,12 +120,14 @@ The unit asks systemd for the directory with `StateDirectory=alo-undo` at mode
 `0711`, and the program puts the mode and the owner back on every call, so a
 second call for the same person repairs rather than refuses — it takes the
 directory back, sets the mode and gives it away again, because setting a mode
-needs ownership and the unit holds no `CAP_FOWNER`. **Nothing starts that unit
-yet**, so on a machine today the folder is still absent at runtime even though
-the thing that makes it exists. The road that will start it must be one every
-person reaches rather than only a person being created — `alo-greeting`'s
-`made_an_account` refuses when any account already exists — and that is the next
-record rather than this one.
+needs ownership and the unit holds no `CAP_FOWNER`. **It is started at every
+sign-in** by `alo-sessiond`
+([ADR 0121](../decisions/0121-the-thing-that-opens-a-session-makes-the-persons-folder.md)),
+after that component has checked the account exists and before it opens the
+session — a road every person reaches, rather than only a person being created,
+because `alo-greeting`'s `made_an_account` refuses when any account already
+exists. **A failure there is written to the journal and does not refuse the
+sign-in**, for the three reasons ADR 0121 gives.
 
 **Nothing takes a bracket** — `alo-turn` is where ADR 0045 puts it and names no
 snapshot, unchanged since 2026-10-16. So the sections below about what a bracket
