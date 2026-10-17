@@ -59,8 +59,11 @@ fn main() -> std::process::ExitCode {
     ) {
         Forgotten::NotOnThisMachine => {
             eprintln!(
-                "alo-forgetting: this machine keeps nothing an undo could put back, so there was \
-                 nothing to forget"
+                "alo-forgetting: this machine's filesystem cannot keep an undo at all, so there \
+                 is nothing to forget. **It is not that nothing is kept — it is that nothing can \
+                 be**, until this machine is reinstalled on a filesystem with snapshots \
+                 (ADR 0045 term 6). Whoever asked to be forgotten has had their asking answered \
+                 truthfully: there was never anything to forget."
             );
             std::process::ExitCode::SUCCESS
         }

@@ -49,8 +49,11 @@ fn main() -> std::process::ExitCode {
     ) {
         Swept::NotOnThisMachine => {
             eprintln!(
-                "alo-letting-go: this machine keeps nothing an undo could put back, so there was \
-                 nothing to let go of"
+                "alo-letting-go: this machine's filesystem cannot keep an undo at all, so there \
+                 is nothing to let go of. **It is not that nothing is kept — it is that nothing \
+                 can be**, until this machine is reinstalled on a filesystem with snapshots \
+                 (ADR 0045 term 6). A machine that keeps nothing *yet* says so differently, and \
+                 that difference is the point of this sentence."
             );
             std::process::ExitCode::SUCCESS
         }

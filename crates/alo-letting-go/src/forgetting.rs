@@ -60,8 +60,23 @@ use crate::writing_it_down::WritingItDown;
 /// What one asking did.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Forgotten {
-    /// This machine keeps nothing an undo could put back, so there was nothing
-    /// to forget — ADR 0045's sixth term, said rather than pretended.
+    /// **This machine's filesystem cannot keep an undo at all**, so there was
+    /// nothing to forget. ADR 0045's sixth term, and the honest answer on every
+    /// machine installed before the filesystem was decided.
+    ///
+    /// # It is not *nothing is kept*, and the wording used to blur the two
+    ///
+    /// This variant means **nothing can be kept, ever, until the machine is
+    /// reinstalled**. A machine that keeps nothing *yet* is
+    /// [`Self::Done`] with nothing found, which is a different fact and leads a
+    /// person to a different action — none, rather than a reinstall.
+    ///
+    /// Until 2026-10-17 both roads were reported to the journal as *"this
+    /// machine keeps nothing an undo could put back"*, which is the sentence a
+    /// person would read as the second while it meant the first. The binaries'
+    /// own sentences now say which it is, and
+    /// `tests/the_two_answers_a_person_reads_are_not_the_same_sentence.rs`
+    /// holds them apart.
     NotOnThisMachine,
     /// It read what was asked and did what follows.
     Done(WhatWasForgotten),
