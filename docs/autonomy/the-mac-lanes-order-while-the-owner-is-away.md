@@ -52,10 +52,11 @@ because a reader starting from it would conclude this goal is unreachable.*
 
 **Four of thirteen are usable today. One more is reachable and unseen.** Of the
 remaining eight, **seven are this lane's to build** and one — *run a command
-touching nothing* — is **the desktop lane's as of 2026-10-17**, when the owner
-said the development PC is off and its work can be done by the desktop lane. It
-was the development PC's by its own plan until then. The table near the foot of
-this file carries both readings and what changed between them.
+touching nothing* — is **nobody's as of 2026-10-17**. The owner said that day
+that the development PC is off and its work can be done by the desktop lane; the
+desktop lane has read that and **has not taken it**, for a stated reason. So it
+is available and unclaimed, which is not the same as assigned. The table near the
+foot of this file carries all three readings and what changed between them.
 
 ## The order, and it is ordered by that bar rather than by size
 
@@ -162,7 +163,7 @@ belongs to a different lane than implied.
 
 | | the honest position |
 |---|---|
-| *run a command touching nothing* | **the desktop lane's, by the owner's decision of 2026-10-17** — *development pc is off now so it's tasks can be done by desktop*. Until that message it was the development PC's by `kernel-enforcement-plan.md`'s own words: *who can take it — the development PC, inside a KVM guest with a real login*. **It was never a capability wall**: this lane's machine has `CONFIG_BPF_LSM=y` and `bpf` in the active LSM list, measured 2026-10-17. So it was ownership, it was a question, and the owner answered it — **not this lane's, and no longer parked** |
+| *run a command touching nothing* | **available to the desktop lane and taken by nobody**, as of 2026-10-17. The owner that day: *development pc is off now so it's tasks can be done by desktop*. Until then it was the development PC's by `kernel-enforcement-plan.md`'s own words: *who can take it — the development PC, inside a KVM guest with a real login*. The desktop lane was told, and answered that it is **not taking the eight plans on a relayed message** — the owner had given it a direct instruction about the application market, and a forwarded sentence does not outrank an instruction the owner typed to that lane. **It was never a capability wall**: this lane's machine has `CONFIG_BPF_LSM=y` and `bpf` in the active LSM list, measured 2026-10-17. So it was ownership all along, the owner has made it available, and **it is still nobody's** |
 | *bisect the machine*, *your files as they were* | **downstream of this lane's own step 5**, not out of reach. Step 5 above is *the bracket, if it is still nobody's*. If this lane takes the bracket, both of these become its to build — so listing them as unfinishable **contradicted the order four headings above it**, and that was an inconsistency in this document rather than a fact about the work |
 | *ask what a command will do first* | **buildable and testable here.** The promise is *plain words for what it does, with anything destructive, anything needing elevated rights and anything leaving the machine marked* — it does not say which model, and a **provider key is present on this machine** (mode 600, measured 2026-10-17). The first version said *a model on this machine is an environment this lane cannot test in*, which was true of a **local** model and false of the promise |
 
@@ -175,14 +176,26 @@ thing today that a dated reading corrected — after `alo-turn`'s *nothing reach
 it*, the evidence document's *nothing has booted*, and the plan's inverted
 dependency between the source qualifier and rich results.
 
-**So one of the thirteen is genuinely another lane's**, and the question it
-raised has an answer: the owner moved it to the desktop lane on 2026-10-17. The
-other two are this lane's, in the order above.
+**So one of the thirteen is not this lane's**, and it is now unowned rather than
+held: the owner made it available on 2026-10-17 and no lane has picked it up.
+The other two are this lane's, in the order above.
 
-*The row above is the third reading of this one promise in a day — out of
-reach, then the development PC's, then the desktop lane's — and only the last
-came from the owner. The first two came from this lane, and the first was
-wrong. A row that changes this often is a row to cite rather than remember.*
+*The row above is the fourth reading of this one promise in a day — out of
+reach, then the development PC's, then the desktop lane's, then nobody's. Only
+the owner's message was new information; the rest came from this lane, and the
+first was wrong. A row that moves this often is a row to cite rather than
+remember.*
+
+**And the third reading was this lane's own fault, of the exact kind it had just
+written a paragraph against.** The commit that said *the desktop lane's* also
+added a note to the lane charter explaining why the charter's eight rows must
+**not** be rewritten to say *the desktop lane*: a row asserting an owner for
+work nobody has started is worse than an empty cell, because the next lane reads
+it and concludes the work is spoken for. **Then this row did that very thing**,
+one table away, in the same change. *A machine being available and a machine
+having taken something are different facts* — and knowing that in one paragraph
+did not stop it being got wrong in the next. It was caught because the desktop
+lane said plainly that it had not started, not by any check here.
 
 ## Standing, and the owner's
 

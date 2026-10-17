@@ -149,6 +149,14 @@ is the sole declared owner of **eight** plans — `applications-people-already-u
 share of two more, `the-canvas-and-its-places` with the Mac and
 `putting-a-window-aside` within the third PC's.
 
+**The desktop lane has been told, and has taken none of them.** Asked on
+2026-10-17, it answered that the owner had given it a direct instruction that
+day — the application market, reachable from the dock and by asking alo,
+installed and tested end to end — and that *a relayed message about plan
+ownership does not outrank an instruction they typed to me*. That is the right
+reading. **So the eight are available and unclaimed**, and a lane wanting one
+should put it to the owner rather than infer consent from this section.
+
 **The rows are not rewritten here, deliberately.** Editing eight cells to say
 *the desktop lane* would make this table assert an owner for work that lane has
 not started, which is what the note above this one calls worse than an empty
