@@ -632,7 +632,14 @@ jobs:
           # case it exists for.
           set -o pipefail
           code=0
+          # **And a parent is not optional here.** `weston` is installed above on
+          # purpose, so a run that finds none has lost a compositor rather than
+          # lacked one — and without this the nested fixtures would print
+          # *skipped*, return success, and cover 23 GLES fixtures fewer in a
+          # green run. The skip count printed after the gates says the same
+          # thing to a reader who looks; this says it to the gate.
           sudo -E env "PATH=$gates_path" "HOME=$HOME" \
+            "ALO_NESTED_PARENT_REQUIRED=1" \
             dbus-run-session -- bash -c '
               printf "" | gnome-keyring-daemon --unlock --components=secrets >/dev/null 2>&1 || true
               ./tools/kernel-loop/target/debug/alo-kernel-loop gates 2>&1
