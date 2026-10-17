@@ -35,18 +35,28 @@ a date on it:
 | | promise | state |
 |---|---|---|
 | | A terminal | **reaches a person** — a chord opens it, the compositor draws it, typing arrives |
-| ★ | You decide whether alo may use it | **built** — the three levels of ADR 0064 |
+| ★ | You decide whether alo may use it | **built as types and stored nowhere** — the three levels of ADR 0064 exist in `alo-capability`; measured 2026-10-17, no crate outside it reads them and the machinery that keeps a person's grants cannot express a level. A person can neither see nor change either choice |
 | ★ | You can tell who is speaking | **built** — `you`, `alo`, `system`, `program` in the gutter |
 | ★ | alo says what it measured apart from what it worked out | **built** — the same gutter's `system` against `alo` |
-| ★ | Why is it waiting? | **five answers and four mechanisms built; no surface** |
+| ★ | Why is it waiting? | **built and drawn** — `Ctrl`+`Alt`+`W` draws `alo  waiting for the keyboard`, and `waiting for something alo cannot identify` for a clock. This row said *no surface* until 2026-10-17; the surface was there and **drew nothing a person could read**, which #778 fixed |
 | ★ | Scrollback you can move along | **built** — back, forward, and it stops at both ends |
-| ★ | Try a command without letting it touch anything | the record and the runner exist; **the kernel box does not** |
+| ★ | Try a command without letting it touch anything | **the box is built** — #729, 2026-10-16, and it passes on a real kernel. This row said it did not exist. **Nothing calls it**, and how a person asks is a surface the design does not specify |
 | ★ | Scope one command without changing a setting | **nothing** |
 | ★ | Find a command by what it did | **nothing** |
 | ★ | Bisect the machine, not the repository | **nothing** |
-| ★ | Output that is not stuck in a character grid | **nothing** |
+| ★ | Output that is not stuck in a character grid | **the first rich view is built and drawn** — a recognised test result, #761, and its two lines were cropped into the gutter's label box until #778. This row said *nothing*. Two more views are unspecified in the design |
 | ★ | Hand somebody a session they can replay | **nothing** — the commands wait on ADR 0123, what each changed on ADR 0045 |
 | | Explain a command before it runs | **the answer half is built** — `WhatACommandWillDo`; the asking waits on ADR 0123 |
+
+**Four of these rows were wrong on 2026-10-17 and all four in the same
+direction** — they understated what was built, because nobody had drawn the
+thing and looked. *Why is it waiting* and *output that is not stuck in a
+character grid* both had a surface that drew its gutter word and no sentence,
+and the box for *try a command without letting it touch anything* had been built
+a day before the row saying it did not exist. **A row that reads worse than the
+truth is as expensive as one that reads better**: it sends a lane to build what
+is already there, and it hid two defects that a person would have met on the
+first boot.
 
 Two smaller gaps inside promises otherwise kept: the source qualifier
 `· cargo test` beside a gutter label, and *choose one, and your files are as they
@@ -94,9 +104,19 @@ owner. None of the eight is waiting on work this lane could do and has not.*
 
 ### 1. The answer to *why is it waiting* reaches a person
 
-**Status:** done, 2026-10-17. Report:
+**Status:** done, 2026-10-17 — **and it drew nothing a person could read until
+#778 the same day.** Report:
 [`updates/the-answer-reaches-a-person.md`](updates/the-answer-reaches-a-person.md).
 **Depends on:** nothing.
+
+**What *done* did not cover.** The chord was bound, the five answers were built,
+every test passed, and pressing `Ctrl`+`Alt`+`W` put `alo` in the gutter with
+**nothing beside it**: the sentence was being drawn inside the gutter's own
+80-pixel label box and painted over by the word. Three of this plan's four
+conditions held and the feature did not work. It was found by drawing the
+terminal on a compositor and reading the pixels back, not by a test — every
+check counted drawn runs and passed, because both runs existed, one on top of
+the other.
 
 **What it also found.** `alo_shell::the_road_every_action_takes` was cited by
 `alo_shortcuts::Action::Launcher`'s own documentation as the thing naming it the
@@ -234,7 +254,9 @@ what the person chose for everything else. `alo-capability` has grants and
 
 ### 6. Output that is not stuck in a character grid
 
-**Status:** **the first rich view is built (#761).** **Depends on:** nothing in
+**Status:** **the first rich view is built (#761), and its two lines were
+cropped into the gutter's label box until #778** on 2026-10-17 — the same fault
+as task 1 and found the same way. **Depends on:** nothing in
 this plan. **Task 2 depends on this**, not the other way round — and task 2 is
 therefore startable now.
 
