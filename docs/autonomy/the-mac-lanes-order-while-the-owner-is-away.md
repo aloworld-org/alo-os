@@ -100,9 +100,9 @@ command a lane runs:
 | 5 | type `cat` and press Enter | nothing happens, which is the point: it is waiting |
 | 6 | press `Ctrl`+`Alt`+`W` | **a line saying *waiting for the keyboard*, with `alo` beside it in the gutter** |
 | 7 | press `Ctrl`+`D` to end `cat`, then `Ctrl`+`Alt`+`W` again | the line **goes**, because there is nothing waiting now |
-| 8 | type `sleep 30`, Enter, then `Ctrl`+`Alt`+`W` | *nobody can tell* — a clock is none of the five, and this is the honest answer rather than a wrong confident one |
+| 8 | type `sleep 30`, Enter, then `Ctrl`+`Alt`+`W` | **`waiting for something alo cannot identify`** — a clock is none of the other four, and this is the honest answer rather than a wrong confident one. *The sentence, not the name:* `NobodyCanTell` is what the code calls this answer and **not what the screen says** |
 | 9 | scroll up with the wheel, then back down | the transcript moves and stops at both ends |
-| 10 | type `printf 'test result: ok. %d passed; %d failed; %d ignored;\n' 23 1 0` | **two lines under the output**: `Tests · 23 tests passed · 1 test failed`, and under it `Source: cargo test output · Not independently verified`. **`program` in the gutter beside both**, not `alo` |
+| 10 | type `printf 'test result: ok. %d passed; %d failed; %d ignored;\n' 23 1 0` | **two lines under the output**: `Tests · 23 passed · 1 failed`, and under it `Source: cargo test output · Not independently verified`. **`program` in the gutter beside both**, not `alo` |
 | 11 | look at the gutter beside those two lines again | still `program`. This is the design's *PROGRAM includes parsed rich results*, and it is the one thing in the walk that is easy to get wrong and hard to notice |
 | 12 | run `ls` | the two lines **stay**, because the summary is still on the screen above. Not a fault: what is recognised is what the screen holds |
 | 13 | run `clear` | the two lines **go**, because the line they were read from is gone |
@@ -121,6 +121,18 @@ across two suites. With `printf '…%d passed…' 23 1 0` the echoed line's toke
 before `passed` is `%d`, which is not a number, so it is refused **by
 construction** rather than by luck. `a_test_result_a_program_printed.rs` has the
 measurement and a test that fails if that ever stops being true.
+
+**Two steps quoted the wrong words until 2026-10-17, and both would have been
+reported as faults that were not.** Step 8 told a walker to look for *nobody can
+tell*, which is what the **code** calls the fifth answer; the screen says
+`waiting for something alo cannot identify`. Step 10 expected
+`Tests · 23 tests passed · 1 test failed`, and #766 corrects the summary to the
+design's own `Tests · 23 passed · 1 failed`.
+
+Both came from writing a step against an identifier instead of against the
+string a person reads. `crates/alo-citing/tests/the_walk_expects_what_the_machine_says.rs`
+now holds every step that quotes a vocabulary sentence to that sentence, so the
+next rewording fails a build rather than a walk.
 
 **Any step failing is worth more than the rest of this document.** What to send
 back: which step, what was on the screen, and `journalctl -b 0 -u alo-compositor`
