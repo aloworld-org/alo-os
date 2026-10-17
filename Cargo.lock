@@ -855,6 +855,7 @@ dependencies = [
 name = "alo-giving-a-folder"
 version = "0.0.1"
 dependencies = [
+ "alo-kept-undo",
  "rustix 1.1.4",
 ]
 
@@ -1045,6 +1046,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-kept-undo"
+version = "0.0.1"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-keyboards"
 version = "0.0.1"
 dependencies = [
@@ -1093,6 +1103,7 @@ dependencies = [
  "alo-keeping",
  "alo-keeping-up",
  "alo-kept",
+ "alo-kept-undo",
  "alo-measuring",
  "alo-record",
  "alo-recounting",

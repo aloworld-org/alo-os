@@ -134,7 +134,23 @@ pub mod keeping;
 pub mod removing;
 pub mod sweeping;
 pub mod the_disk;
-pub mod the_folder;
+/// Where the folder is and what the two files in it look like.
+///
+/// **Re-exported rather than defined here**, and it moved out on 2026-10-17:
+/// `alo-turn` has to reach the same layout to take a bracket, and
+/// `tests/a_turn_cannot_arrive_at_this_road.rs` forbids it ever linking this
+/// crate. `alo-kept-undo` is where it lives now, and `alo-giving-a-folder`'s
+/// second copy of `THE_FOLDER` is gone with it.
+///
+/// This path is kept so that every caller and every test that already said
+/// `alo_letting_go::the_folder::…` still does. A re-export is not a second
+/// copy.
+pub mod the_folder {
+    pub use alo_kept_undo::{
+        AFTER, BEFORE, BOTH_SNAPSHOTS, NotWhatItSays, THE_FOLDER, THE_FORMAT, THE_TURN, THEIRS,
+        TheTurn, Theirs,
+    };
+}
 pub mod unkept;
 pub mod whose;
 pub mod words;

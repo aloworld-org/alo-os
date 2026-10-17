@@ -30,17 +30,19 @@ use crate::failing::NotMade;
 
 /// Where a machine keeps what an undo would put back.
 ///
-/// `alo-letting-go` declares the same path and owns the layout. **This crate
-/// does not depend on it**, because that crate carries the machine's one
-/// privileged remover, and ADR 0119 chose this component for being small: a
-/// giver that could reach a remover would be two powers in the place chosen to
-/// hold one.
+/// **One value, in `alo-kept-undo`, as of 2026-10-17.** This crate declared the
+/// path a second time until then — not carelessly: `alo-letting-go` owned the
+/// layout and carries the machine's one privileged remover, and ADR 0119 chose
+/// this component for being small, so a giver that could reach a remover would
+/// have been two powers in the place chosen to hold one. The second copy was the
+/// price of that, and it was held to one value by a test reading the published
+/// contract rather than the other crate's constant.
 ///
-/// So the fact is in two places and held to one value by
-/// `tests/the_contract_describes_where_an_undo_keeps.rs`, which reads the
-/// published contract rather than the other crate's constant — two constants
-/// compared against each other pass while both are wrong together.
-pub const THE_FOLDER: &str = "/var/lib/alo-undo";
+/// `alo-kept-undo` is the place both may reach, so the price is no longer worth
+/// paying. The re-export keeps this name working for every caller here, and
+/// `tests/the_contract_describes_where_an_undo_keeps.rs` still reads the
+/// contract — which is the stronger check and is not what changed.
+pub use alo_kept_undo::THE_FOLDER;
 
 /// The mode the folder itself gets: traverse for everybody, list for root.
 pub const THE_FOLDERS_MODE: u32 = 0o711;
