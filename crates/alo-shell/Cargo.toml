@@ -158,6 +158,10 @@ alo-setting-up = { path = "../alo-setting-up" }
 # handed them by: the compositor a machine boots to, which must word a refusal
 # at a sign-in screen before any session exists to carry words into it.
 alo-saying = { path = "../alo-saying" }
+# The decided list of what a person can install, for the window that shows it.
+# The same shape as `alo-measuring` above: the crate that owns a subject owns
+# its types and its sentences, and this shell draws what it is handed.
+alo-software = { path = "../alo-software" }
 alo-shortcuts = { path = "../alo-shortcuts" }
 alo-strings = { path = "../alo-strings" }
 # The turn a question was asked inside, borrowed for the length of one call so

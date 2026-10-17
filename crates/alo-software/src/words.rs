@@ -426,7 +426,7 @@ pub const WEB_NOTHING_GRANTED: Word = Word::saying(
 pub const THE_NAMES: [Word; 3] = [VERB_PURPOSE, VERB_APPLICATION, VERB_SOURCE];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 27] = [
+pub const THE_SENTENCES: [Word; 38] = [
     INSTALLED,
     INSTALLED_UNSANDBOXED,
     UPDATE_OFFERED,
@@ -454,6 +454,17 @@ pub const THE_SENTENCES: [Word; 27] = [
     WEB_CARRIES_A_PASSWORD,
     WEB_NOT_AN_APPLICATION,
     WEB_NOTHING_GRANTED,
+    THE_APPLICATIONS,
+    EACH_ARRIVES_WITH_NOTHING,
+    EVERYTHING,
+    PICTURES,
+    PAINTING,
+    ILLUSTRATION,
+    PHOTOGRAPHS,
+    PAGE_LAYOUT,
+    VIDEO,
+    AUDIO,
+    DOCUMENTS,
 ];
 
 /// Every refusal, so that a test can hold each of them to saying what did not
@@ -478,8 +489,101 @@ pub const THE_REFUSALS: [Word; 17] = [
     WEB_NOTHING_GRANTED,
 ];
 
+// ---------------------------------------------------------------------------
+// The window of what a person can install.
+// ---------------------------------------------------------------------------
+
+/// What the window of what a person can install is called.
+pub const THE_APPLICATIONS: Word = Word::saying("software.the-applications", "Applications")
+    .noting(
+        "The name of the window a person opens to find something to install. One word, and it \
+         names what the window holds rather than what it is for.",
+    );
+
+/// The line under the list, which is the promise the list keeps.
+pub const EACH_ARRIVES_WITH_NOTHING: Word = Word::saying(
+    "software.each-arrives-with-nothing",
+    "Each one installs from the place it is published, and arrives able to reach nothing",
+)
+.noting(
+    "Stands under the list of applications a person can install. Two promises in one line: each \
+     application comes from somewhere this machine can name, and a new one can reach no file, \
+     camera, microphone or network until the person allows it.",
+);
+
+/// The kind of work that narrows nothing.
+///
+/// **A category is a thing a person makes, never a product it replaces.**
+/// `crate::Category` says why, and these are the words that enum is drawn
+/// through — never `Category::named`, which is the spelling the data file uses
+/// and is not translated.
+pub const EVERYTHING: Word = Word::saying("software.category.everything", "Everything").noting(
+    "The first of the kinds of work a person can narrow the applications by, and the one that \
+     narrows nothing. Shown chosen while no kind has been chosen.",
+);
+
+/// Applications for changing a picture that exists already.
+pub const PICTURES: Word = Word::saying("software.category.pictures", "Pictures").noting(
+    "A kind of work: changing a picture that already exists — cropping it, correcting it, \
+     cutting something out, putting two together.",
+);
+
+/// Applications for making a picture with a brush.
+pub const PAINTING: Word = Word::saying("software.category.painting", "Painting")
+    .noting("A kind of work: making a picture that does not exist yet, with a brush.");
+
+/// Applications for drawing lines that stay sharp at any size.
+pub const ILLUSTRATION: Word = Word::saying("software.category.illustration", "Illustration")
+    .noting(
+        "A kind of work: drawing something that stays sharp at any size — a logo, a sign, a \
+         shape to be cut out.",
+    );
+
+/// Applications for developing what a camera recorded.
+pub const PHOTOGRAPHS: Word = Word::saying("software.category.photographs", "Photographs").noting(
+    "A kind of work: developing what a camera recorded, graded and exported without altering \
+     the originals.",
+);
+
+/// Applications for arranging a page to be printed.
+pub const PAGE_LAYOUT: Word = Word::saying("software.category.page-layout", "Page layout").noting(
+    "A kind of work: arranging a page that will be printed, with the colour a printer asks for. \
+     Two words in English; one word in languages that have one.",
+);
+
+/// Applications for cutting video.
+pub const VIDEO: Word = Word::saying("software.category.video", "Video").noting(
+    "A kind of work: cutting video — clips in order, with sound, exported to play elsewhere.",
+);
+
+/// Applications for recording and editing sound.
+pub const AUDIO: Word = Word::saying("software.category.audio", "Audio").noting(
+    "A kind of work: recording and editing sound — an interview, a voice over, a recording to \
+     publish.",
+);
+
+/// Applications for writing something somebody else can open.
+pub const DOCUMENTS: Word = Word::saying("software.category.documents", "Documents").noting(
+    "A kind of work: writing, calculating or presenting something somebody else can open. This \
+     machine can read such a document before anything is installed; this is the kind of \
+     application that writes one.",
+);
+
+/// Every kind of work, in the order the window shows them.
+pub const EVERY_CATEGORY: [Word; 9] = [
+    EVERYTHING,
+    PICTURES,
+    PAINTING,
+    ILLUSTRATION,
+    PHOTOGRAPHS,
+    PAGE_LAYOUT,
+    VIDEO,
+    AUDIO,
+    DOCUMENTS,
+];
+
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 30] = [
+pub const EVERY_WORD: [Word; 41] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
@@ -510,6 +614,17 @@ pub const EVERY_WORD: [Word; 30] = [
     WEB_CARRIES_A_PASSWORD,
     WEB_NOT_AN_APPLICATION,
     WEB_NOTHING_GRANTED,
+    THE_APPLICATIONS,
+    EACH_ARRIVES_WITH_NOTHING,
+    EVERYTHING,
+    PICTURES,
+    PAINTING,
+    ILLUSTRATION,
+    PHOTOGRAPHS,
+    PAGE_LAYOUT,
+    VIDEO,
+    AUDIO,
+    DOCUMENTS,
 ];
 
 /// Why this crate's own words could not be declared.
