@@ -395,7 +395,7 @@ impl Drop for AShellOnAPseudoterminal {
     ///    a shell that honours it runs its exit hooks. Nothing here takes that
     ///    away from a well-behaved shell.
     /// 2. **Reap it as it goes**, with `WNOHANG` so no call can block, for at
-    ///    most [`POLLS_BEFORE_IT_IS_MADE_TO`] polls.
+    ///    most `POLLS_BEFORE_IT_IS_MADE_TO` polls — forty of five milliseconds.
     /// 3. **`SIGKILL` if it is still there.** `SIGKILL` cannot be caught,
     ///    blocked or ignored, which is the whole reason it is the one used at the
     ///    end rather than a second `SIGHUP`.
