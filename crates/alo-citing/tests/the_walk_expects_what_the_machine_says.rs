@@ -32,7 +32,21 @@
 //! backticked phrase would report all of those and be ignored within a week.
 //!
 //! So the steps that quote a sentence this machine can say are named here with
-//! the key they must match, and the rest are left alone. A step added later that
+//! the key they must match, and the rest are left alone. A step appears once
+//! per sentence, because step 10 quotes four.
+//!
+//! # What this catches, and what it does not
+//!
+//! It asks whether the step **contains** what the machine says, so it catches a
+//! sentence being **replaced** — `passed` becoming `succeeded` leaves the walk
+//! telling a walker to look for a word no machine says, and that fails here.
+//!
+//! **It does not catch a word gaining neighbours.** `{passed} tests passed`
+//! becoming `{passed} passed` is the rewording #766 really made, and a step
+//! still reading *23 tests passed* would contain `passed` and pass this check.
+//! Stated rather than left for somebody to discover: the direction that makes a
+//! walker report a fault that is not one is the replacement, and that is the
+//! one held. A step added later that
 //! quotes a sentence and is not listed is not caught — which is a real limit,
 //! said plainly rather than papered over, and the reason
 //! [`every_named_step_is_really_in_the_walk`] exists is to stop the list
@@ -58,7 +72,7 @@ const THE_VOCABULARY: &str = "crates/alo-saying/the-vocabulary.txt";
 /// The number is the step, the key is what it must quote. **Only the steps that
 /// quote a vocabulary sentence** — see this file's header for why this is a
 /// named list.
-const WHAT_EACH_STEP_QUOTES: [(u32, &str); 4] = [
+const WHAT_EACH_STEP_QUOTES: [(u32, &str); 7] = [
     // Step 3 reads the gutter beside a program's output.
     (3, "terminal.who.program"),
     // Step 6 asks why a command is waiting and reads the answer.
@@ -68,6 +82,15 @@ const WHAT_EACH_STEP_QUOTES: [(u32, &str); 4] = [
     (8, "terminal.waiting.not-known"),
     // Step 10 reads the provenance under a recognised test result.
     (10, "terminal.result.not-verified"),
+    // **And the summary above that line, which this list did not cover until
+    // 2026-10-17.** The step quotes four sentences and only one of them was
+    // held. #766 then reworded three of the other four — `{passed} tests
+    // passed` became `{passed} passed` — and nothing here would have noticed if
+    // the walk had been left behind. A step is listed once per sentence it
+    // quotes, not once per step.
+    (10, "terminal.result.tests"),
+    (10, "terminal.result.passed#other"),
+    (10, "terminal.result.failed#one"),
 ];
 
 /// The repository's root, from this crate's own place in it.
@@ -115,6 +138,34 @@ fn the_step(number: u32) -> String {
     panic!("the walk has no step {number} in {THE_ORDER}");
 }
 
+/// What the walk says counts as a pass for one step, and nothing else of its
+/// row.
+///
+/// **The row is not the pass, and reading the whole row is how this check came
+/// to check nothing.** A row is `| N | what a person does | what counts as a
+/// pass |`, and for step 10 what a person does is
+/// `printf 'test result: ok. %d passed; %d failed…'` — which contains `passed`
+/// and `failed` itself. Asking whether the *row* contained them was answered by
+/// the command being typed rather than by the output expected, so replacing
+/// `23 passed` with `23 succeeded` in the pass left this test green. Found by
+/// mutating it on 2026-10-17, not by reading it.
+fn the_steps_pass(number: u32) -> String {
+    let row = the_step(number);
+    let cells: Vec<&str> = row.split('|').collect();
+    assert_eq!(
+        cells.len(),
+        5,
+        "walk step {number} has {} cells rather than the three of `| N | do | pass |`, so the \
+         pass cannot be told from the rest of the row: {row:?}",
+        cells.len().saturating_sub(2)
+    );
+    cells
+        .get(3)
+        .unwrap_or_else(|| panic!("walk step {number} has no pass column"))
+        .to_owned()
+        .to_owned()
+}
+
 /// **Every named step quotes the sentence the machine really says.**
 ///
 /// The sentence is read from the generated vocabulary snapshot rather than from
@@ -132,7 +183,7 @@ fn every_named_step_quotes_what_the_machine_says() {
                 continue;
             }
             assert!(
-                the_step(number).contains(part),
+                the_steps_pass(number).contains(part),
                 "walk step {number} does not quote {part:?}, which is what {key} says on a \
                  machine. A walker told to look for anything else reports a fault that is not \
                  one."
