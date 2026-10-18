@@ -113,6 +113,9 @@ pub struct Asking {
     under_grant: Option<u64>,
     /// From which approval.
     from_approval: Option<u64>,
+    /// Which path was touched, matched against the arguments that were
+    /// recorded.
+    touching: Option<String>,
 }
 
 impl Asking {
@@ -174,6 +177,24 @@ impl Asking {
         self
     }
 
+    /// Only entries that touched this path.
+    ///
+    /// **Answered from the arguments that were recorded**, never from the
+    /// sentence — [`crate::What::touched`] says why, and it is the reason this
+    /// can be asked at all: *the command that made the invoice* is a question
+    /// about what a call was given, and a description of it is a guess.
+    ///
+    /// **An exact path, not a prefix and not a word in a name.** A folder's own
+    /// entries are the ones naming that folder; a file inside it names the
+    /// file. Matching loosely would answer *which command touched this* with
+    /// commands that touched something else with a similar name, which is worse
+    /// than answering nothing.
+    #[must_use]
+    pub fn touching(mut self, path: &str) -> Self {
+        self.touching = Some(path.to_owned());
+        self
+    }
+
     /// Whether one entry is part of the answer.
     ///
     /// Every part that was set has to match. Adding one narrows the answer and
@@ -193,6 +214,10 @@ impl Asking {
             && self
                 .from_approval
                 .is_none_or(|approval| entry.happened().from_approval() == Some(approval))
+            && self
+                .touching
+                .as_ref()
+                .is_none_or(|path| entry.what().is_some_and(|what| what.touched(path)))
     }
 }
 
@@ -612,6 +637,97 @@ mod tests {
         assert_eq!(
             how_many(&record, &from_elsewhere.under_grant(afternoon.grant)),
             1
+        );
+    }
+
+    /// **The question this exists for: which command touched this file.**
+    ///
+    /// `docs/features.md`: *find a command by what it did — the command that
+    /// made the PDF.* Answered from the arguments that were recorded, which is
+    /// the only way it can be answered without guessing.
+    #[test]
+    fn a_path_narrows_to_the_entries_that_touched_it() {
+        let afternoon = afternoon();
+
+        let moved = how_many(
+            &afternoon.record,
+            &Asking::anything().touching("/home/anna/Invoices/march.pdf"),
+        );
+        assert_eq!(moved, 1, "one entry named that file");
+
+        let listed = how_many(
+            &afternoon.record,
+            &Asking::anything().touching("/home/anna/Invoices"),
+        );
+        assert!(listed >= 1, "the folder was named by at least the read");
+    }
+
+    /// **A path nothing touched answers nothing**, rather than everything.
+    ///
+    /// The failure worth refusing: a filter that fell back to matching all
+    /// entries would answer *which command made this* with the whole record,
+    /// and a person would believe the first one.
+    #[test]
+    fn a_path_nothing_touched_answers_nothing() {
+        let afternoon = afternoon();
+        assert_eq!(
+            how_many(
+                &afternoon.record,
+                &Asking::anything().touching("/home/anna/never-existed.pdf")
+            ),
+            0
+        );
+    }
+
+    /// **It is an exact path, not a prefix and not a word in a name.**
+    ///
+    /// `/home/anna/Invoices` must not answer with entries about
+    /// `/home/anna/Invoices/march.pdf`, and the other way round. Matching
+    /// loosely would answer a question about one file with commands that
+    /// touched another, which is worse than answering nothing.
+    #[test]
+    fn a_path_does_not_match_by_prefix() {
+        let afternoon = afternoon();
+        let under = how_many(
+            &afternoon.record,
+            &Asking::anything().touching("/home/anna/Invoices/march.pdf"),
+        );
+        let folder = how_many(
+            &afternoon.record,
+            &Asking::anything().touching("/home/anna/Invoices"),
+        );
+        assert_ne!(under, 0, "the file itself is found");
+        assert_ne!(folder, 0, "the folder itself is found");
+        let both = how_many(
+            &afternoon.record,
+            &Asking::anything().touching("/home/anna"),
+        );
+        assert_eq!(
+            both, 0,
+            "a parent nobody named answers nothing, because this matches a path and not a prefix"
+        );
+    }
+
+    /// **A path narrows together with everything else**, rather than replacing
+    /// it.
+    #[test]
+    fn a_path_narrows_alongside_the_other_parts() {
+        let afternoon = afternoon();
+        let everything = how_many(&afternoon.record, &Asking::anything());
+        let one_file = how_many(
+            &afternoon.record,
+            &Asking::anything().touching("/home/anna/Invoices/march.pdf"),
+        );
+        let that_file_refused = how_many(
+            &afternoon.record,
+            &Asking::anything()
+                .touching("/home/anna/Invoices/march.pdf")
+                .only(Only::Refusals),
+        );
+        assert!(one_file < everything, "a path narrows");
+        assert!(
+            that_file_refused <= one_file,
+            "and narrows further with a kind beside it"
         );
     }
 }
