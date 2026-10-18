@@ -108,9 +108,22 @@ pub(crate) fn what_a_press_on_the_dock_does(
     };
     match dock.places.at(along).map(alo_dock::places::APlace::what) {
         None => WhatAPressOnTheDockDoes::Nothing,
-        Some(WhatIsHere::TheOverflow) => WhatAPressOnTheDockDoes::TurnTheOverflowOver,
-        Some(WhatIsHere::Application(app)) => WhatAPressOnTheDockDoes::GoTo(app.clone()),
-        Some(WhatIsHere::ANativeAction(action)) => WhatAPressOnTheDockDoes::Do(*action),
+        Some(what) => what_this_slot_does(what),
+    }
+}
+
+/// What one slot of the bar does, whoever asked.
+///
+/// **Split from the hit test on 2026-10-18**, so that the keyboard reaches it
+/// too: a press finds the slot by where the pointer is and Enter finds it by
+/// which one the keyboard is on, and *what that slot means* must not be two
+/// answers. It was one answer only because there was one caller — the bar had
+/// no keyboard performer at all.
+pub(crate) fn what_this_slot_does(what: &WhatIsHere) -> WhatAPressOnTheDockDoes {
+    match what {
+        WhatIsHere::TheOverflow => WhatAPressOnTheDockDoes::TurnTheOverflowOver,
+        WhatIsHere::Application(app) => WhatAPressOnTheDockDoes::GoTo(app.clone()),
+        WhatIsHere::ANativeAction(action) => WhatAPressOnTheDockDoes::Do(*action),
         // **Taken and not yet acted on**, like `GoTo` above and for the same
         // reason: each is a surface somebody has to build — *Show all* lays
         // every window out, and History opens what they did before. Returning
@@ -123,7 +136,7 @@ pub(crate) fn what_a_press_on_the_dock_does(
         // `TheDivider` cannot arrive here at all — `Places::at` refuses it, so
         // a press on the rule between the applications and the commands reaches
         // nothing, which is what a line a person cannot press should do.
-        Some(WhatIsHere::TheComposer) => WhatAPressOnTheDockDoes::TypeIntoTheComposer,
+        WhatIsHere::TheComposer => WhatAPressOnTheDockDoes::TypeIntoTheComposer,
         // **`ShowAll` is answered; `History` is not, and that is a gap rather
         // than a decision.**
         //
@@ -144,8 +157,8 @@ pub(crate) fn what_a_press_on_the_dock_does(
         //
         // `TheDivider` cannot arrive here at all — `Places::at` refuses it — so
         // it is kept in this arm only because the match must be exhaustive.
-        Some(WhatIsHere::ShowAll) => WhatAPressOnTheDockDoes::ShowEveryWindow,
-        Some(WhatIsHere::History | WhatIsHere::TheDivider) => WhatAPressOnTheDockDoes::Nothing,
+        WhatIsHere::ShowAll => WhatAPressOnTheDockDoes::ShowEveryWindow,
+        WhatIsHere::History | WhatIsHere::TheDivider => WhatAPressOnTheDockDoes::Nothing,
     }
 }
 
@@ -338,6 +351,42 @@ impl crate::Server {
             .sum()
     }
 
+    /// Do what the keyboard's own slot on the bar asks for, and say whether
+    /// anything was done.
+    ///
+    /// **Enter, when the keyboard is on the bar and no Dock surface is open.**
+    /// The pointer's road is [`Self::the_dock_takes_this_press`]; this is the
+    /// same act reached the other way, through the one performer both share.
+    ///
+    /// **The index is counted the way Tab counts it** — only slots
+    /// `WhatIsHere::can_be_pressed` answers for, so the rule between the
+    /// applications and the commands is skipped by both. A keyboard that
+    /// counted the divider would land one short of every icon after it, and
+    /// nothing on the screen would say why.
+    ///
+    /// **The fewest across every display**, for `how_many_controls_the_bar_has`'s
+    /// reason exactly: which display the keyboard is on is not something this
+    /// shell tracks, and stopping short of an icon is recoverable where
+    /// pressing a slot that is not drawn is not.
+    pub(crate) fn the_keyboard_takes_the_slot_it_is_on(&mut self) -> bool {
+        let Some(which) = self.which_slot_on_the_bar else {
+            return false;
+        };
+        let answer = self
+            .dock_as_drawn
+            .values()
+            .filter_map(|dock| {
+                dock.places
+                    .each()
+                    .iter()
+                    .filter(|place| place.what().can_be_pressed())
+                    .nth(which)
+                    .map(|place| what_this_slot_does(place.what()))
+            })
+            .find(|answer| *answer != WhatAPressOnTheDockDoes::Nothing);
+        self.carry_out_what_the_bar_was_asked_for(answer)
+    }
+
     /// Let the Dock answer this press, and say whether it did.
     ///
     /// **`true` means the Dock took it**, and the caller stops: a press that
@@ -361,6 +410,32 @@ impl crate::Server {
             .values()
             .map(|dock| what_a_press_on_the_dock_does(dock, at))
             .find(|answer| *answer != WhatAPressOnTheDockDoes::Nothing);
+        self.carry_out_what_the_bar_was_asked_for(answer)
+    }
+
+    /// Carry out what a slot on the bar was asked for, and say whether
+    /// anything was.
+    ///
+    /// **One performer for the pointer and the keyboard**, which is the rule
+    /// `crate::the_keyboard_on_the_docks_surfaces` states for the Dock's open
+    /// surfaces and which the bar itself did not keep. Until 2026-10-18 the
+    /// bar had **no** keyboard performer at all:
+    /// `Server::which_slot_on_the_bar` was written by F6 and by Tab and read
+    /// by nothing but Tab, so a person could walk the Dock with the keyboard
+    /// and press nothing on it. `docs/design/the-shortcuts-and-the-edges.md`
+    /// says *activate a focused control — Enter*, and the market's entry is on
+    /// that bar: with the pointer road broken on a booted machine, the Dock
+    /// could not be reached at all.
+    ///
+    /// Split out rather than copied, because two performers is how a keyboard
+    /// and a pointer come to do different things to one slot —
+    /// `crate::window_control_input` records what that cost once: only the
+    /// keyboard was migrated and the button stayed broken while a keyboard
+    /// test passed.
+    fn carry_out_what_the_bar_was_asked_for(
+        &mut self,
+        answer: Option<WhatAPressOnTheDockDoes>,
+    ) -> bool {
         match answer {
             None | Some(WhatAPressOnTheDockDoes::Nothing) => false,
             Some(WhatAPressOnTheDockDoes::TurnTheOverflowOver) => {
