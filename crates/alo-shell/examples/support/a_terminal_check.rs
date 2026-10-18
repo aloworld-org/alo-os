@@ -866,10 +866,27 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     // checked it. A pixel count cannot tell four new rows from a shell printing
     // three errors, and both grow the ink.
     //
-    // **What is drawn, read back on 2026-10-17**: `Tests · 23 tests passed · 1
-    // test failed` and `Source: cargo test output · Not independently verified`,
-    // beneath the grid where alo's own lines go. Walk steps 10 and 11 are about
-    // those two.
+    // **What was drawn when this was read back on 2026-10-17**: `Tests · 23 tests
+    // passed · 1 test failed` and `Source: cargo test output · Not independently
+    // verified`, beneath the grid where alo's own lines go. Walk steps 10 and 11
+    // are about those two.
+    //
+    // **That first line is no longer what is drawn, and this check cannot tell.**
+    // #766 shortened the summary to the design's own `Tests · 23 passed · 1
+    // failed` — `alo_terminal::words` carries it as `{passed} passed`, with a note
+    // saying the two English plural forms are deliberately identical. The
+    // assertion below counts **rows of ink** and never compares a string, so it
+    // passed before #766 and passes after it. Measured 2026-10-18 by grepping
+    // this file: the only mentions of the summary's words are the `echo` above
+    // and this comment.
+    //
+    // **So no reading of the shorter form off pixels exists.** The row in
+    // `docs/autonomy/the-mac-lanes-order-while-the-owner-is-away.md` records the
+    // 2026-10-17 reading, correctly, and the sentence beside it saying a machine
+    // from `main` now draws the shorter form is a reading of the **vocabulary**
+    // rather than of a screen. Asserting the words here would need a reference
+    // draw of the expected string to compare the band against; that is worth
+    // doing and is not done, so it is named rather than implied.
     let rows_before = rows_with_ink(&nothing_waiting, &without);
     let rows_after = rows_with_ink(&recognised, &without);
     if rows_after < rows_before + 4 {

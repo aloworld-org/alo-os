@@ -166,6 +166,23 @@ off.*
 > **released** machine, and the terminal is not in a release yet. The walk wants
 > something else, and the two have to be told apart before the evening rather
 > than during it.
+>
+> **The precondition in this block is now met, re-measured 2026-10-18 at
+> 07:46Z.** This block asked for *an image built from a `main` that includes
+> #778, and ideally #782*. Both merged on 2026-10-17 and both are ancestors of
+> `main`, checked with `git merge-base --is-ancestor` on their merge commits
+> rather than read off a date. The rest of the block still holds and got worse
+> with time: the newest `image.yml` success is still **2026-10-07 `77db91c6`**,
+> it still has no `crates/alo-terminal/src/lib.rs`, and `main` is now **234
+> commits** ahead of it rather than 208. A build takes about **fifteen minutes**
+> — the 2026-10-07 run went 12:37:19Z to 12:52:50Z.
+>
+> **So nothing is waiting on this lane and one dispatch is the whole of it.**
+> `alo-shell` depends on `alo-terminal` at `crates/alo-shell/Cargo.toml:108`, so
+> the terminal reaches the image through the package the recipe already builds;
+> `alo-ask` is named four times in `image/Containerfile`. *What is not checked by
+> anything: the recipe's `test -x target/release/alo-compositor`, which is
+> `CLAUDE.md`'s first named example of a check standing in for the thing.*
 
 
 **The smallest step to the largest change in confidence.** #755 made *why is it
@@ -310,8 +327,21 @@ design specifies. What is left under that task, in the order it is worth doing:
 - **the three `Ask alo` actions** the design draws under the summary. The
   agent's road exists (`what_a_person_asked_goes_to_the_agent.rs`) but addresses
   a task window rather than a terminal, so it needs a *who asked* that can be
-  either. **That part is this lane's and is buildable.** What is not is **what
-  the three actions say** — see below;
+  either. What is not is **what the three actions say** — see below;
+
+  > **This read *that part is this lane's and is buildable* until 2026-10-18.
+  > It is this lane's and it cannot be built on its own**, which is a different
+  > thing and the distinction is this plan's whole subject. Measured:
+  > `TheAgentsDoor::ask` takes `WhichTask`, a newtype over an index whose only
+  > real constructor is `TheTasks::and_now_this_one` — deliberately, so a named
+  > task has been opened. Widening it to a *who asked* that is either a task or
+  > a terminal is an afternoon. **Nothing would ever construct the terminal
+  > arm**: the only thing that would is one of the three actions, and their
+  > words are blocked one heading below. So the honest form of this bullet is
+  > *buildable together with its caller, and its caller is the owner's*, and
+  > doing the widening alone leaves an enum variant nobody constructs — **the
+  > fault this plan exists to stop, in miniature, found a sixth time and this
+  > time in this document's own order.**
 - ***a thing on your desk that outlives the scroll*** — the promise's own
   words, and a window rather than a line. A promise of its own;
 - **the benchmark and the diff**, which are blocked on the same thing the three
@@ -628,6 +658,24 @@ rather than rewritten to what it would say now: *a reading is a record of what
 was on a screen at a moment, and editing one to match a later tree is how a
 measurement becomes a claim.*
 
+> **And that sentence is a reading of the vocabulary, not of a screen — checked
+> 2026-10-18.** The walk was re-driven on `59a9c2e2` and passed; it does not
+> prove the wording. `a_terminal_check.rs` asserts **rows of ink**
+> (`rows_after < rows_before + 4`) and compares no string at all: grepped that
+> day, the only mentions of the summary's words in the whole file are the `echo`
+> that types the input and the comment recording the 2026-10-17 reading. **So it
+> passed before #766 and passes after it**, and the shorter form has been read
+> off `alo_terminal::words` — where it is `{passed} passed` — and off no pixels
+> anywhere.
+>
+> **What this costs tonight: nothing, and that is why it is only written down.**
+> Step 10's pass is a person reading two lines on a screen, and a person reads
+> words. What it costs is later: the one automated thing that draws this summary
+> cannot fail if the wording regresses. Asserting it needs a reference draw of
+> the expected string to compare the band against. *Named rather than implied,
+> and not built — the comment in the check now says the same thing in the place
+> somebody editing it will look.*
+
 **One step is still unseen: 1, signing in.** That needs a machine, and it is
 what the evening of the 18th is for.
 
@@ -695,6 +743,55 @@ and whether that is the same gesture as scoping one command or a different one.
 module while citing the crate that contains it.** Task 9 said the box was not
 built and named `alo-running` in the same sentence. The date it carried was the
 crate's, not the module's.*
+
+### 10. Law 1 has no road out of a command — found 2026-10-18, and it is larger than one task
+
+**Found while giving `alo-ask` the provider road, which `docs/features.md`
+already promises and ADR 0008 already decided.** The transport is all there, so
+this looked like a caller nobody had written. It is not.
+
+| asked | answer |
+|---|---|
+| what is `alo_egress::Indicator` | a `Vec<Shown>` and a counter, **in process memory** |
+| who turns one into something a person sees | `alo-indicator` makes a `Drawn`; `alo-shell` draws it on an output |
+| is there a road for another process to report an egress | **no.** `docs/contracts/native-egress-indicator.md`: *no protocol, agent capability, D-Bus interface or stored format changes … this document describes only the drawing surface* |
+| is there a road to the record file | **no.** `docs/contracts/record-file.md` names the services that append to it, not a road a command may use |
+
+So a command that asked a provider would build its own indicator, show the
+departure **to itself**, and drop it when the process exited. **That is a law 1
+violation wearing the API that exists to prevent one**: the call compiles, the
+type is right, and no person sees anything. Law 1 wants an egress *visible at
+the moment it happens **and** afterwards in a record*, and a command can
+discharge neither half.
+
+**Law 1 is satisfiable today only inside the compositor and the agent daemon.**
+`alo-ask` is the first person-facing command in this product that would cause
+egress and the first to find that out. Every later one meets the same wall —
+fetching a model, testing a provider, anything a person types that leaves this
+machine.
+
+**What is needed is a decision, not a caller.** How a process that is neither
+the compositor nor the agent daemon reports an egress and keeps an entry is a
+public surface — `CLAUDE.md`'s *contracts outlive code* — so an ADR comes before
+a line of code. Drafting it is the next move and it is not the task.
+
+**Two traps on the way, both of which this lane fell into**, recorded because
+the second is the expensive one:
+
+- `alo-ask`'s own crate documentation said *where a machine's record lives is a
+  decision nobody has made in this repository*. **False.** The contract exists,
+  ADR 0029 fixes the shape, and 14 crates name `record.jsonl` — `alo-keeping` in
+  nine files, against a control of 2886 `.rs` files scanned. Believing it would
+  have blocked the provider road on the wrong thing entirely.
+- **Having the door is not having the duties.** `Asking::to_a_provider` also
+  demands the address be resolved and registered before the boundary (ADR 0020)
+  and the key out of the keyring. A task was written up as *startable* on the
+  strength of the transport existing, and corrected within the hour — the five
+  duties were listed correctly and nobody asked whether anything could discharge
+  two of them. See task 11 of `the-terminal-in-full-plan.md`, where both drafts
+  are left visible.
+
+*Corrected in #793. The finding is this lane's; the decision is the owner's.*
 
 ## What this lane cannot finish — corrected 2026-10-17, because the first version was wrong about all three
 
