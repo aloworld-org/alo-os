@@ -537,10 +537,27 @@ later one meets the same wall: *the command that fetches a model, the command
 that tests a provider, anything a person types that leaves this machine.*
 
 **What is needed is a decision, not a caller:** how a process that is neither
-the compositor nor the agent daemon reports an egress and keeps an entry. That
-is a public surface — `CLAUDE.md`'s *contracts outlive code* — so it needs an
-ADR before a line of it is written. **Drafting that ADR is the next move on this
-task**, and it is not the task.
+the compositor nor the agent daemon reports an egress and keeps an entry.
+
+**That ADR is now drafted — [ADR 0125](../decisions/0125-a-command-does-not-report-an-egress-it-asks-a-service-that-can-show-one.md),
+proposed, the owner decides — and writing it changed the answer.** It needs **no
+new public surface on the indicator**, because the precedent already exists and
+is load-bearing: `alo-agent` is a short-lived process that needs a model, names
+`Indicator` zero times across 7 files and 1070 lines, does not depend on
+`alo-egress` at all, and **asks the daemon over a socket** instead. The daemon
+holds the one live indicator (`alo-agentd/src/starting.rs:250`, in
+`pub fn until_stopped`, whose doc calls it *the single one law 1's surface is
+drawn from*), and its socket is already one per signed-in person.
+
+**And a *report your egress* interface turns out to be refused by design rather
+than merely missing.** `alo_egress::Indicator::beginning`: *the two are one call
+because they must not be two … the `Departing` that comes back is what a caller
+must hold to open the connection, and it is the only thing that means so.*
+Permission to open the connection **is** what the indicator hands back, so
+reporting afterwards would split the permission from the showing — the one
+failure the type was shaped to refuse. *`native-egress-indicator.md` saying it
+adds no protocol was read here as a gap. It is a decision, and ADR 0125 agrees
+with it.*
 
 *Nothing in the local road is affected: it causes no egress, which is why
 `alo-ask` works today and why the gap went unnoticed until something had to
