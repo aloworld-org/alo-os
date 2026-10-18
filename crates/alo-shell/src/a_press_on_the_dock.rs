@@ -324,6 +324,20 @@ impl crate::Server {
         )
     }
 
+    /// How many slots every display's Dock has told this seat it drew.
+    ///
+    /// **Read by what the machine says about its own input**, because nought
+    /// here and a Dock on the screen are the same picture and opposite faults.
+    /// The slots are computed in the draw and recorded from it, so a seat that
+    /// has none has either not drawn yet or has drawn without recording —
+    /// and the second is a Dock a person cannot press.
+    pub(crate) fn how_many_dock_slots_were_drawn(&self) -> usize {
+        self.dock_as_drawn
+            .values()
+            .map(|dock| dock.places.each().len())
+            .sum()
+    }
+
     /// Let the Dock answer this press, and say whether it did.
     ///
     /// **`true` means the Dock took it**, and the caller stops: a press that

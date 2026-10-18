@@ -263,15 +263,32 @@ impl<K: Knocking> SignInScreen<K> {
             return Signing::Still(Box::new(self));
         }
         if !self.entry.pressed(key) {
+            // **Typing starts a new attempt, so the last one stops speaking.**
+            // A refusal describes the attempt that produced it and nothing
+            // else. Measured on a booted machine on 2026-10-18: an empty
+            // secret was refused, the person typed their name again and went
+            // on to the PIN row, and *an account needs a password, and an
+            // empty one is not one* was still sitting under it — a sentence
+            // about a sheet they had already left.
+            self.said = None;
             return Signing::Still(Box::new(self));
         }
-        // **Both fields are forgotten the moment either road is taken**, and
-        // before the answer is looked at, which is the rule that already held
-        // for signing in and holds no less for making an account: a refusal
-        // that left a password in memory would be a refusal that kept it.
+        // **The secret is forgotten the moment either road is taken**, and
+        // before the answer is looked at: a refusal that left a password in
+        // memory would be a refusal that kept it.
+        //
+        // **The name goes with it when somebody is signing in, and stays when
+        // this is the machine's first account.** `Entry::the_secret_is_forgotten`
+        // carries the argument: clearing the name protects the *last* person
+        // at a shared screen, and the first-account sheet is reached only when
+        // there is no last person.
         let name = self.entry.name().to_owned();
         let password = self.entry.password().to_owned();
-        self.entry.forgotten();
+        if matches!(self.stands, Stands::MakeAnAccount(_, _)) {
+            self.entry.the_secret_is_forgotten();
+        } else {
+            self.entry.forgotten();
+        }
         let greeted = match &mut self.stands {
             Stands::SignIn(greeting) => {
                 // **The name is the one this machine already knows.** The

@@ -71,12 +71,32 @@ pub struct WhatTheSeatMadeOfIt {
     ///
     /// The control the other two are read against; see this file's header.
     pub key_presses: usize,
+    /// Pointer button presses that landed on this compositor's own furniture.
+    ///
+    /// **The number that says which of two faults a machine has.** A press
+    /// that arrives, is not refused, and changes nothing is either a press
+    /// that reached a control and the control did nothing, or a press that
+    /// reached no control at all. Those need different fixes, and until this
+    /// existed a machine could report only that the press had arrived.
+    ///
+    /// Measured on 2026-10-18: three presses arrived, none was refused, and
+    /// the Dock did not move.
+    pub furniture_presses: usize,
     /// Pointer button presses this seat routed somewhere.
     ///
     /// **Routed, which includes a press this compositor's own furniture took.**
     /// A click the panel claimed is a click the seat made sense of, and a
     /// number that excluded it would answer *did my click arrive* with no.
     pub button_presses: usize,
+    /// Slots the Dock has told this seat it drew, across every display.
+    ///
+    /// **Nought is a machine whose Dock cannot be pressed at all**, however
+    /// well it draws — the press road reads what the draw recorded, and a
+    /// record nothing wrote answers *nothing is here* for every point on the
+    /// screen. It is reported because the two are indistinguishable to a
+    /// person: a Dock drawn from one list and hit-tested against another looks
+    /// exactly like a Dock that ignores them.
+    pub dock_slots_recorded: usize,
     /// Input events this seat could not make sense of and went on anyway.
     ///
     /// `InputError::is_about_one_event` is what decides a refusal is
@@ -106,6 +126,16 @@ impl Server {
             self.button_presses_this_seat_routed.saturating_add(1);
     }
 
+    /// **One press landed on something this compositor draws itself.**
+    ///
+    /// Called where the press is taken, not where it is routed, so the two
+    /// numbers answer different questions: one says the event reached this
+    /// machine, the other says it reached something on it.
+    pub fn a_press_landed_on_the_furniture(&mut self) {
+        self.presses_that_landed_on_the_furniture =
+            self.presses_that_landed_on_the_furniture.saturating_add(1);
+    }
+
     /// **One input event was refused and the machine went on.**
     ///
     /// Called by a lane that met an `InputError::is_about_one_event` and chose
@@ -133,11 +163,17 @@ impl Server {
     /// **Saturating rather than wrapping**, all three, because a machine that
     /// refused `usize::MAX + 1` events and reports 0 would be the one reading
     /// this cannot afford.
+    ///
+    /// **Not `const`**, because the Dock's slots are counted from the map the
+    /// draw records into rather than kept as a second number beside it: one
+    /// place that knows how many there are, rather than two that can disagree.
     #[must_use]
-    pub const fn what_the_seat_made_of_its_input(&self) -> WhatTheSeatMadeOfIt {
+    pub fn what_the_seat_made_of_its_input(&self) -> WhatTheSeatMadeOfIt {
         WhatTheSeatMadeOfIt {
             key_presses: self.key_presses_this_seat_routed,
             button_presses: self.button_presses_this_seat_routed,
+            furniture_presses: self.presses_that_landed_on_the_furniture,
+            dock_slots_recorded: self.how_many_dock_slots_were_drawn(),
             refused: self.input_it_could_not_make_sense_of,
         }
     }

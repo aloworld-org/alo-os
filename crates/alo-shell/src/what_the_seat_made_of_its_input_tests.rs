@@ -272,3 +272,393 @@ fn a_press_the_panel_took_is_counted_as_one_the_seat_routed() -> Result<(), Inpu
     assert_eq!(made.refused, 0);
     Ok(())
 }
+
+/// **A press that reached nothing is counted as arriving and not as landing.**
+///
+/// The two numbers answer different questions and the whole point of having
+/// both is that a machine can tell them apart. Measured on 2026-10-18: three
+/// presses arrived, none was refused, and the Dock did not move — at which
+/// point *it arrived* was all the machine could say, and *it arrived and hit
+/// nothing* and *it hit something that then did nothing* need different fixes.
+///
+/// A seat with no Dock recorded is the simplest machine where a press can
+/// reach nothing, which is what this uses.
+#[test]
+fn a_press_that_reached_nothing_arrives_without_landing() -> Result<(), InputError> {
+    let (_runtime, mut server) = a_seat("reached-nothing");
+
+    button(&mut server, BTN_LEFT, ButtonState::Pressed, 1)?;
+
+    let made = server.what_the_seat_made_of_its_input();
+    assert_eq!(made.button_presses, 1, "the press did not arrive");
+    assert_eq!(
+        made.furniture_presses, 0,
+        "a press that reached nothing was counted as landing on something, so the one \
+         reading that tells the two faults apart cannot"
+    );
+    assert_eq!(made.refused, 0);
+    Ok(())
+}
+
+/// **A press the Dock takes is counted as landing.**
+///
+/// The other side of the test above, because a number that is always nought
+/// distinguishes nothing. The Dock is laid out by the same function the draw
+/// uses, and the press is aimed at the middle of the slot that layout says is
+/// its first — asked of the geometry rather than assumed from the design.
+#[test]
+fn a_press_the_dock_takes_is_counted_as_landing() -> Result<(), InputError> {
+    use crate::where_the_dock_is::where_the_dock_is;
+
+    let (_runtime, mut server) = a_seat("landed-on-the-dock");
+
+    // **The two entries a fresh machine has before anything is installed**,
+    // pinned rather than assumed: `Holding::nothing()` pins nothing, and a
+    // Dock with no entries lays out only its fixed controls — which is a Dock
+    // this test would press at and learn nothing from.
+    let dock = alo_dock::Dock::shipped();
+    let mut holding = alo_dock::Holding::nothing();
+    holding.pin_entry(alo_dock::ADockEntry::Native(
+        alo_dock::ANativeAction::Settings,
+    ));
+    holding.pin_entry(alo_dock::ADockEntry::Native(
+        alo_dock::ANativeAction::Applications,
+    ));
+    let on_the_dock = holding.showing(&alo_dock::Windows::none());
+    let places =
+        where_the_dock_is(&dock, EXTENT, &on_the_dock).expect("a dock this display can hold");
+    let first = places
+        .places
+        .each()
+        .first()
+        .expect("a dock with at least one slot");
+    // **A slot says where it starts along the bar, not where it is on the
+    // screen.** Measured the hard way: read as absolute, the first slot's
+    // middle came out at x=180 on a bar that starts at 384, so the press
+    // landed off the Dock entirely and the test failed for its own reason
+    // rather than the code's.
+    let middle = first.from_the_start() + first.across() / 2;
+    let at_x = places.band.loc.x + i32::try_from(middle).expect("a place on a bar fits in an i32");
+    let at_y = places.band.loc.y + places.band.size.h / 2;
+    server.the_docks_slots_were_drawn("a-display", places);
+
+    server.direct_seat(
+        true,
+        EXTENT,
+        DirectSeatEvent::Pointer(DirectPointerEvent::Absolute {
+            x: f64::from(at_x) / f64::from(EXTENT.0),
+            y: f64::from(at_y) / f64::from(EXTENT.1),
+            time: 14,
+        }),
+    )?;
+    button(&mut server, BTN_LEFT, ButtonState::Pressed, 1)?;
+
+    let made = server.what_the_seat_made_of_its_input();
+    assert_eq!(made.button_presses, 1);
+    assert_eq!(
+        made.furniture_presses, 1,
+        "the Dock took the press and the machine reports it reached nothing"
+    );
+    Ok(())
+}
+
+/// **A press on the market's own entry opens the market.**
+///
+/// The whole road, end to end, through the seat: `direct_seat` validates the
+/// button, `direct_pointer` routes it, `pointer_button` offers it to the Dock,
+/// the Dock reads its own geometry and answers `Do(Applications)`, and
+/// `the_market_opens` opens the window.
+///
+/// **Written because reading that road proved nothing.** On 2026-10-18 a
+/// booted machine took three presses on that entry, refused none of them, and
+/// opened no window — and every link above, read twice, looked correct. A test
+/// that walks the whole of it at the size that machine draws at is what says
+/// whether the fault is in this code or in something around it.
+///
+/// It presses the slot the layout says is the market's, rather than a pixel
+/// from the design: a test that tells the geometry where to press cannot find
+/// a geometry that is wrong.
+#[test]
+fn a_press_on_the_markets_entry_opens_the_market() -> Result<(), InputError> {
+    use crate::where_the_dock_is::where_the_dock_is;
+    use alo_dock::places::WhatIsHere;
+
+    let (_runtime, mut server) = a_seat("the-market-opens");
+
+    let dock = alo_dock::Dock::shipped();
+    let mut holding = alo_dock::Holding::nothing();
+    holding.pin_entry(alo_dock::ADockEntry::Native(
+        alo_dock::ANativeAction::Settings,
+    ));
+    holding.pin_entry(alo_dock::ADockEntry::Native(
+        alo_dock::ANativeAction::Applications,
+    ));
+    let on_the_dock = holding.showing(&alo_dock::Windows::none());
+    let places =
+        where_the_dock_is(&dock, EXTENT, &on_the_dock).expect("a dock this display can hold");
+
+    // The slot the layout itself calls the market's.
+    let market = places
+        .places
+        .each()
+        .iter()
+        .find(|place| {
+            matches!(
+                place.what(),
+                WhatIsHere::ANativeAction(alo_dock::ANativeAction::Applications)
+            )
+        })
+        .expect("a dock holding the market's entry");
+    let middle = market.from_the_start() + market.across() / 2;
+    let at_x = places.band.loc.x + i32::try_from(middle).expect("a place on a bar fits in an i32");
+    let at_y = places.band.loc.y + places.band.size.h / 2;
+    server.the_docks_slots_were_drawn("a-display", places);
+
+    assert!(!server.market.is_open(), "the premise: the market is shut");
+
+    server.direct_seat(
+        true,
+        EXTENT,
+        DirectSeatEvent::Pointer(DirectPointerEvent::Absolute {
+            x: f64::from(at_x) / f64::from(EXTENT.0),
+            y: f64::from(at_y) / f64::from(EXTENT.1),
+            time: 15,
+        }),
+    )?;
+    button(&mut server, BTN_LEFT, ButtonState::Pressed, 1)?;
+
+    assert!(
+        server.market.is_open(),
+        "a press on the market's own entry, at the middle of the slot the layout gives it, \
+         opened nothing"
+    );
+    Ok(())
+}
+
+/// **The machine's own construction, end to end: a fresh Dock, filled the way
+/// a fresh machine fills it, pressed where its market entry is drawn.**
+///
+/// The test above pins the two native entries **by hand**, which is how every
+/// press test in this crate builds a Dock. A booted machine does not: it calls
+/// `Server::its_dock_is_filled_from_what_they_kept` once, with nobody's kept
+/// pins and a discovery that completed with nothing — *the Dock's default
+/// roles resolve to `Completed([])`*, in that machine's own words on
+/// 2026-10-18.
+///
+/// **That difference is the only one left between a test that passes and a
+/// machine that does nothing**, so it is the one a test has to close. A seam a
+/// caller has to remember to connect is a seam that will be found
+/// disconnected — this crate has measured that once already, when three call
+/// sites each supplied `Holding::nothing()` and 854 of 854 tests passed with
+/// the draw reading a constant.
+#[test]
+fn a_dock_filled_the_way_a_fresh_machine_fills_it_opens_the_market() -> Result<(), InputError> {
+    use crate::where_the_dock_is::where_the_dock_is;
+    use alo_dock::pinning::{Discovery, ThePins};
+    use alo_dock::places::WhatIsHere;
+
+    let (_runtime, mut server) = a_seat("a-fresh-machines-dock");
+
+    // Nobody's kept pins, and a discovery that found nothing — the two the
+    // booted machine had.
+    let _owed = server
+        .its_dock_is_filled_from_what_they_kept(&ThePins::NeverSet, &Discovery::Completed(vec![]));
+
+    let on_the_dock = server.what_this_persons_dock_holds();
+    assert!(
+        !on_the_dock.is_empty(),
+        "a fresh machine's Dock came out empty, so nothing it draws can be pressed"
+    );
+
+    let places = where_the_dock_is(&alo_dock::Dock::shipped(), EXTENT, &on_the_dock)
+        .expect("a dock this display can hold");
+    let market = places
+        .places
+        .each()
+        .iter()
+        .find(|place| {
+            matches!(
+                place.what(),
+                WhatIsHere::ANativeAction(alo_dock::ANativeAction::Applications)
+            )
+        })
+        .expect("a fresh machine's Dock holds the market's entry");
+    let middle = market.from_the_start() + market.across() / 2;
+    let at_x = places.band.loc.x + i32::try_from(middle).expect("a place on a bar fits in an i32");
+    let at_y = places.band.loc.y + places.band.size.h / 2;
+    server.the_docks_slots_were_drawn("a-display", places);
+
+    server.direct_seat(
+        true,
+        EXTENT,
+        DirectSeatEvent::Pointer(DirectPointerEvent::Absolute {
+            x: f64::from(at_x) / f64::from(EXTENT.0),
+            y: f64::from(at_y) / f64::from(EXTENT.1),
+            time: 16,
+        }),
+    )?;
+    button(&mut server, BTN_LEFT, ButtonState::Pressed, 1)?;
+
+    assert!(
+        server.market.is_open(),
+        "a fresh machine's own Dock, pressed where its own layout puts the market, opened \
+         nothing"
+    );
+    Ok(())
+}
+
+/// **An empty panel must not claim a press meant for the Dock.**
+///
+/// `crate::direct_seat` offers every button to the panel before routing it, and
+/// a claimed press never reaches `pointer_button` — so it never reaches the
+/// Dock either. Every other press test in this crate runs with **no panel
+/// drawn**, where `what_the_pointer_is_to_the_panel` answers [`None`] and the
+/// press passes straight on. A booted machine always has one, and on
+/// 2026-10-18 it had an **empty** one: nothing had been put aside, because
+/// nothing had been opened.
+///
+/// That combination — a panel drawn, holding nothing, and a press aimed at the
+/// Dock — is the one no test covered, and it is the last difference between a
+/// machine that does nothing and a suite that passes.
+#[test]
+fn an_empty_panel_does_not_claim_a_press_meant_for_the_dock() -> Result<(), InputError> {
+    use crate::desktop_testing::{an_appearance, noon_look};
+    use crate::panel_raster::{WhetherRevealed, picture};
+    use crate::where_the_dock_is::where_the_dock_is;
+    use crate::which_preview_the_pointer_is_on::ThePanelAsDrawn;
+    use alo_dock::pinning::{Discovery, ThePins};
+    use alo_dock::places::WhatIsHere;
+    use alo_put_aside::Panel;
+    use alo_put_aside::the_region_the_panel_claims::WhichEdge;
+    use alo_strings::Direction;
+
+    let (_runtime, mut server) = a_seat("an-empty-panel");
+
+    // **The panel a fresh desktop has: drawn, and holding nothing.**
+    let panel = Panel::new();
+    let drawn = ThePanelAsDrawn::of(
+        &panel,
+        picture(
+            &panel,
+            noon_look(&an_appearance(), Direction::LeftToRight),
+            EXTENT,
+            WhichEdge::Right,
+            WhetherRevealed::Concealed,
+        )
+        .expect("a panel this display can hold"),
+    );
+    server.the_panel_was_drawn(drawn);
+
+    // The Dock a fresh machine fills for itself.
+    let _owed = server
+        .its_dock_is_filled_from_what_they_kept(&ThePins::NeverSet, &Discovery::Completed(vec![]));
+    let on_the_dock = server.what_this_persons_dock_holds();
+    let places = where_the_dock_is(&alo_dock::Dock::shipped(), EXTENT, &on_the_dock)
+        .expect("a dock this display can hold");
+    let market = places
+        .places
+        .each()
+        .iter()
+        .find(|place| {
+            matches!(
+                place.what(),
+                WhatIsHere::ANativeAction(alo_dock::ANativeAction::Applications)
+            )
+        })
+        .expect("a fresh machine's Dock holds the market's entry");
+    let middle = market.from_the_start() + market.across() / 2;
+    let at_x = places.band.loc.x + i32::try_from(middle).expect("a place on a bar fits in an i32");
+    let at_y = places.band.loc.y + places.band.size.h / 2;
+    server.the_docks_slots_were_drawn("a-display", places);
+
+    server.direct_seat(
+        true,
+        EXTENT,
+        DirectSeatEvent::Pointer(DirectPointerEvent::Absolute {
+            x: f64::from(at_x) / f64::from(EXTENT.0),
+            y: f64::from(at_y) / f64::from(EXTENT.1),
+            time: 17,
+        }),
+    )?;
+    button(&mut server, BTN_LEFT, ButtonState::Pressed, 1)?;
+
+    assert!(
+        server.market.is_open(),
+        "an empty panel claimed a press aimed at the Dock, so it never reached the Dock at all"
+    );
+    Ok(())
+}
+
+/// **A market that opened must also have somewhere to be drawn.**
+///
+/// `MarketWindow::opened` cannot fail — it sets a flag — so every press test in
+/// this crate ends at *the window is open* and stops. The frame is a second
+/// question: `where_the_market_opens` answers [`None`] three different ways,
+/// each silent, and a `None` there is a window that is open and draws nothing.
+///
+/// A person meets exactly what a press that was ignored looks like. So this
+/// asks the placement, at the size the booted machine of 2026-10-18 draws at,
+/// with the catalogue that machine ships.
+#[test]
+fn the_market_has_somewhere_to_be_drawn_on_the_size_a_machine_draws() {
+    use crate::where_the_market_opens::where_the_market_opens;
+
+    let mut window = crate::MarketWindow::closed();
+    window.opened(
+        alo_software::Catalogue::decided().expect("the catalogue this machine ships"),
+        Vec::new(),
+    );
+    assert!(window.is_open(), "the premise: the window is open");
+
+    let showing = window.shows();
+    let view = smithay::utils::Rectangle::new(
+        smithay::utils::Point::from((0, 0)),
+        smithay::utils::Size::from((1280, 800)),
+    );
+
+    assert!(
+        where_the_market_opens(view, &showing, alo_appearance::Appearance::shipped().text())
+            .is_some(),
+        "the market is open and has nowhere to be drawn, so a person who pressed its entry \
+         sees exactly what an ignored press looks like"
+    );
+}
+
+/// **A seat that has recorded no Dock reports none, and one that has reports
+/// its slots.**
+///
+/// Nought and a Dock on the screen are the same picture and opposite faults: a
+/// Dock drawn from one list and hit-tested against another looks exactly like
+/// a Dock that ignores presses. So the number is reported, and both sides of
+/// it are held here — a number that is always nought distinguishes nothing.
+#[test]
+fn a_seat_says_how_many_dock_slots_were_recorded() {
+    use crate::where_the_dock_is::where_the_dock_is;
+    use alo_dock::pinning::{Discovery, ThePins};
+
+    let (_runtime, mut server) = a_seat("slots-recorded");
+    assert_eq!(
+        server.what_the_seat_made_of_its_input().dock_slots_recorded,
+        0,
+        "the premise: nothing has drawn a Dock yet"
+    );
+
+    let _owed = server
+        .its_dock_is_filled_from_what_they_kept(&ThePins::NeverSet, &Discovery::Completed(vec![]));
+    let on_the_dock = server.what_this_persons_dock_holds();
+    let places = where_the_dock_is(&alo_dock::Dock::shipped(), EXTENT, &on_the_dock)
+        .expect("a dock this display can hold");
+    let how_many = places.places.each().len();
+    server.the_docks_slots_were_drawn("a-display", places);
+
+    assert_eq!(
+        server.what_the_seat_made_of_its_input().dock_slots_recorded,
+        how_many,
+        "a Dock was recorded and the seat still reports none, so the one reading that tells \
+         a Dock nobody recorded from a Dock that ignores presses cannot"
+    );
+    assert!(
+        how_many > 0,
+        "a fresh machine's Dock laid out no slots at all"
+    );
+}
