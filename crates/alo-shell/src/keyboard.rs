@@ -39,6 +39,67 @@ pub enum InputError {
     InvalidPointer,
 }
 
+impl InputError {
+    /// Whether this is about **one event** rather than about the seat.
+    ///
+    /// # Why anything needs to ask
+    ///
+    /// A lane driving libinput turns every refusal into the end of the display
+    /// loop, so **one event nobody could route takes a person's whole desktop
+    /// away.** That is not a hypothetical: on 2026-10-17 a booted machine drew
+    /// its Dock, was sent its first pointer event, and ended —
+    /// `PointerUnavailable`, because nothing in production had enabled the
+    /// pointer. The missing call is fixed; *one event ending a session* is the
+    /// fault underneath it, and `direct_seat` holds a second instance of the
+    /// same shape: a button code outside `0x110..=0x117` answers
+    /// [`Self::InvalidPointer`], so a mouse with a button above `BTN_TASK`
+    /// would do it again.
+    ///
+    /// # What this is **not**
+    ///
+    /// It is not permission to swallow a refusal. A pointer that silently did
+    /// nothing for ever is **worse** than a desktop that ends loudly — it is
+    /// what would have hidden the bug above — so a caller that treats one of
+    /// these as survivable must also **count it** and be able to say so.
+    /// `Server::an_input_event_was_refused` is that counter, and the count is
+    /// what a lane reports.
+    ///
+    /// # The split
+    ///
+    /// **About one event**, because the next one may be fine:
+    ///
+    /// - [`Self::InvalidKey`] and [`Self::InvalidPointer`] — a code this
+    ///   machine does not have. `crate::direct_sign_in`'s own reason: *a
+    ///   keyboard with a code evdev does not have is not a reason to take a
+    ///   person's window away.*
+    /// - [`Self::Unmapped`] — focus was asked for a window that is not live.
+    ///   The window went; the seat did not.
+    /// - [`Self::PointerUnavailable`] and [`Self::Unavailable`] — the seat has
+    ///   no such capability. **These are the awkward two**, because no later
+    ///   event can fix them and a lane that keeps going keeps refusing. They
+    ///   are counted as *one event* anyway, and the argument is the measured
+    ///   one: a machine whose pointer was never enabled should draw a desktop
+    ///   a person can look at and read the count in its record, rather than
+    ///   have no desktop at all.
+    ///
+    /// **About the seat**, and the loop should end:
+    ///
+    /// - [`Self::Socket`] and [`Self::Keymap`] — the display or its keymap
+    ///   could not be made. Both happen while standing up, never mid-session,
+    ///   and a lane that met one at dispatch has a display it cannot use.
+    #[must_use]
+    pub const fn is_about_one_event(&self) -> bool {
+        match self {
+            Self::InvalidKey
+            | Self::InvalidPointer
+            | Self::Unmapped
+            | Self::PointerUnavailable
+            | Self::Unavailable => true,
+            Self::Socket(_) | Self::Keymap(_) => false,
+        }
+    }
+}
+
 /// The seat owns its protocol resources; the cloned handle drives XKB state.
 pub(crate) struct Keyboard {
     /// Shared seat for keyboard and optional pointer capability.

@@ -703,10 +703,18 @@ impl LoopInput for Desk<'_> {
         self.input.owner.dispatch(
             || poll().map_err(std::io::Error::other),
             |update| {
-                if server.settings_is_taking_the_keys() {
-                    return crate::a_key_reaches_settings::routed_or_io(
+                // **Which road this event takes**, decided first and refused
+                // in one place below. It was four places each mapping its own
+                // refusal straight to an `io::Error` — and an `io::Error` out
+                // of this closure **ends the display loop**, so every one of
+                // the four could take a person's desktop away over a single
+                // event. `InputError::is_about_one_event` is the judgement
+                // and it is made once, here, because four copies of it is
+                // four chances to disagree about what is survivable.
+                let went = if server.settings_is_taking_the_keys() {
+                    crate::a_key_reaches_settings::a_key_reaches_settings(
                         server, update, extent, strings,
-                    );
+                    )
                 }
                 // **Then the window of what a person can install.** Behind
                 // Settings and in front of the Dock, which is the order the
@@ -714,8 +722,10 @@ impl LoopInput for Desk<'_> {
                 // `crate::a_key_reaches_the_market`'s header carries the
                 // argument. The question is false unless a person has the
                 // window open, so an ordinary frame pays one `is_open`.
-                if server.the_market_is_taking_the_keys() {
-                    return crate::a_key_reaches_the_market::routed_or_io(server, update, extent);
+                else if server.the_market_is_taking_the_keys() {
+                    crate::a_key_reaches_the_market::a_key_reaches_the_market(
+                        server, update, extent,
+                    )
                 }
                 // **Escape closes what the Dock has open**, and only then.
                 // Asked after Settings because Settings is in front of the
@@ -726,15 +736,28 @@ impl LoopInput for Desk<'_> {
                 // The question is false unless a Dock surface is open, so on
                 // an ordinary frame this costs one `matches!` and the keys go
                 // where they went before this existed.
-                if server.the_dock_is_taking_the_keys() {
-                    return crate::a_key_reaches_the_docks_surfaces::a_key_reaches_the_docks_surfaces(
+                else if server.the_dock_is_taking_the_keys() {
+                    crate::a_key_reaches_the_docks_surfaces::a_key_reaches_the_docks_surfaces(
                         server, update, extent,
                     )
-                    .map_err(std::io::Error::other);
+                } else {
+                    server.libinput_update(update, extent)
+                };
+                match went {
+                    Ok(()) => Ok(()),
+                    // **The machine did not understand one event and goes on
+                    // drawing.** Counted, never swallowed: a refusal nobody
+                    // can see is what hid the missing `enable_pointer` call
+                    // until a machine was booted and its desktop died on the
+                    // first pointer event.
+                    Err(why) if why.is_about_one_event() => {
+                        server.an_input_event_was_refused();
+                        Ok(())
+                    }
+                    // **The seat itself.** The display or its keymap could not
+                    // be made, which is not something the next event mends.
+                    Err(why) => Err(std::io::Error::other(why)),
                 }
-                server
-                    .libinput_update(update, extent)
-                    .map_err(std::io::Error::other)
             },
         )?;
         // **Nothing before the first draw**, because the panel has no geometry until then —
