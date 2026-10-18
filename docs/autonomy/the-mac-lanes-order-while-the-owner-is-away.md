@@ -695,6 +695,39 @@ measurement becomes a claim.*
 **One step is still unseen: 1, signing in.** That needs a machine, and it is
 what the evening of the 18th is for.
 
+### Eight of the thirteen rows were re-read before the boot — 2026-10-18, on `009343a5`
+
+**Because a row of this table is what the walker will expect, and one of them
+was already stale.** Step 10's was — #766 reworded the summary and the check
+counts rows of ink, so nothing caught it. That raised the obvious question about
+the other twelve, and the only way to answer it is to open the frames.
+
+Three frames were written out and looked at. **They agree with the table**:
+
+| row | re-read as |
+|---|---|
+| 3 | `program`, lower case, in the gutter |
+| 4 | `bash · UTF-8` along the foot |
+| 5 | `cat` waits, printing nothing |
+| 6 | gutter `alo`, text **`waiting for the keyboard`** |
+| 8 | gutter `alo`, text **`waiting for something alo cannot identify`** |
+| 9 | `seq 1 40`'s output, 20 to 40 on the screen |
+| 10 | **`Tests · 23 passed · 1 failed`** and `Source: cargo test output · Not independently verified` — the shorter form, which is the correction |
+| 11 | both of those inside the region the gutter labels `program` |
+
+**Rows 2, 7, 12 and 13 were not re-read**: they are about a frame changing
+between two moments rather than about what one frame holds, and no frame was
+written for them. *Said because eight is not thirteen, and a reader skimming
+this would otherwise take the table as wholly re-confirmed.*
+
+**This is still a nested compositor** — headless weston, llvmpipe — and says
+nothing about a real display, a real keyboard or a machine that booted. What it
+removes is the walker arriving with an expectation the tree stopped meeting.
+
+*Row 6 is the one worth the trouble: the order above says the whole boot is
+`one terminal, one `cat`, one chord — and either it says waiting for the
+keyboard on a screen or it does not`. It does, on this tree, in those words.*
+
 **Step 9 was nearly checked the wrong way**, and the shape is worth knowing
 because this document is read by people writing checks. `Server::pointer_axis`
 answers whether the scroll was consumed, so the obvious loop sends notches while

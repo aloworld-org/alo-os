@@ -1176,6 +1176,16 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             &format!("{into}.recognised.ppm"),
             "the frame with a recognised test result",
         )?;
+        // **Step 6's frame, which is the one the boot exists for.** The lane
+        // order: *one boot, one terminal, one `cat`, one chord — and either it
+        // says `waiting for the keyboard` on a screen or it does not.* That
+        // sentence is a person reading words, so the frame holding them is
+        // written out beside the other two.
+        written_out(
+            &answered,
+            &format!("{into}.answered.ppm"),
+            "the frame with alo's answer to why a command is waiting",
+        )?;
     }
 
     eprintln!(
