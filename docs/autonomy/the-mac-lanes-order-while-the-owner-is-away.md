@@ -754,7 +754,7 @@ None of these blocks the order above.
 |---|---|
 | Pair five answers to four actions | `docs/features.md` records it as the owner's in as many words. #755 did not need it; offering the four actions does |
 | Ship `alo-letting-go`'s four units | the owner's. This lane's advice is **ship**: measured on real `btrfs`, the units load and start, and #749 means a unit shipping with nothing to start it now fails the build |
-| 32 tests only a person can start | the owner's; a gap between what the gate promises and what it enforces |
+| Tests only a person can start | the owner's; a gap between what the gate promises and what it enforces. **This row said *32* and nothing here said where that came from.** Measured 2026-10-18: `git grep -c '#\[ignore' -- 'crates/*/tests/*.rs' 'crates/*/src/*.rs'` counts **128** across the workspace, and 32 could not be reproduced from anything in this repository. The largest groups are a real Windows install (11), a real registry (5), a real `btrfs` machine (5 and 4), a session that really ended (4) and a virtual machine (4). **An evening at a machine is the rare chance to run some**, and which ones are worth the evening is the owner's to pick |
 
 ## How to check this document rather than believe it
 
