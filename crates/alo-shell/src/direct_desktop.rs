@@ -51,6 +51,27 @@ pub trait TheDesktop {
     /// display probe is exactly that.
     fn refreshed(&mut self) {}
 
+    /// What this seat has made of a person's input, offered every frame.
+    ///
+    /// **Offered rather than printed**, because this crate is a compositor and
+    /// what a machine says to whoever is watching it is the binary's to decide.
+    /// `alo-desktop` prints it when it changes; the display probe wants
+    /// nothing. The same shape as [`Self::the_indicator`] and
+    /// [`Self::the_panel`], and for the same reason.
+    ///
+    /// **Every frame rather than when the session ends.** It was the session's
+    /// end until 2026-10-18, and that is exactly how much use it was: on a
+    /// machine with no shell — `serial-getty@ttyS0` is masked in the image on
+    /// purpose — a press that opened nothing could not be told apart from a
+    /// press that never arrived, because the one number separating them was
+    /// printed after the desktop was already gone.
+    /// [`crate::WhatTheSeatMadeOfIt`] carries that measurement.
+    ///
+    /// Three field reads, so a lane may ask on every frame without weighing it.
+    ///
+    /// Nothing by default, for the reason above.
+    fn what_the_seat_made_of_its_input(&mut self, _made: crate::WhatTheSeatMadeOfIt) {}
+
     /// Where the pointer is, as far as the put-aside panel is concerned.
     ///
     /// **The classification, never the coordinate.** This crate laid the panel out, so this
@@ -871,6 +892,14 @@ impl LoopInput for Desk<'_> {
         // Asked before the frame is made, never after: a frame drawn from
         // readings taken after it would show a person the moment before.
         self.desktop.refreshed();
+        // **And what this seat has made of their input, on the same frame.**
+        // Beside the readings because it is one of them: how much of its own
+        // input a machine understood is a reading about that machine, and the
+        // one a person has when a press does nothing. It changes only when
+        // somebody presses something, so whoever acts on it is not woken by a
+        // moving clock.
+        self.desktop
+            .what_the_seat_made_of_its_input(server.what_the_seat_made_of_its_input());
         // **Every frame that has arrived is offered the place it was left in.**
         // Before the frame is drawn, so a window appears where the person left
         // it rather than being moved a frame later under their eyes. A window

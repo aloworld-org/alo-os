@@ -66,26 +66,6 @@ use crate::{InputError, InputUpdate, MarketPressed, Server};
 // would be the frame loop waiting on a download.
 
 impl Server {
-    /// **One input event was refused and the machine went on.**
-    ///
-    /// Called by a lane that met an `InputError::is_about_one_event` and chose
-    /// to keep drawing. See that method for why the choice exists and why the
-    /// counting is not optional.
-    pub fn an_input_event_was_refused(&mut self) {
-        self.input_it_could_not_make_sense_of =
-            self.input_it_could_not_make_sense_of.saturating_add(1);
-    }
-
-    /// How many input events this seat could not make sense of.
-    ///
-    /// **Saturating rather than wrapping**, because a machine that refused
-    /// `usize::MAX + 1` events and reports 0 would be the one reading this
-    /// cannot afford.
-    #[must_use]
-    pub const fn how_much_input_was_refused(&self) -> usize {
-        self.input_it_could_not_make_sense_of
-    }
-
     /// Whether this seat's keys belong to the window of what a person can
     /// install rather than to a client.
     ///
