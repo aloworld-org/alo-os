@@ -297,6 +297,15 @@ fn a_key_for(letter: char) -> Option<(u32, bool)> {
         ':' => return Some((39, true)),
         '(' => return Some((10, true)),
         ')' => return Some((11, true)),
+        // **A diff is made of these three**, and none of them is a letter:
+        // `+++ b/file`, `@@ -12,4 +12,4 @@`, and the `+` on every added line.
+        '+' => return Some((13, true)),
+        '@' => return Some((3, true)),
+        '/' => return Some((53, false)),
+        ',' => return Some((51, false)),
+        '=' => return Some((13, false)),
+        '{' => return Some((26, true)),
+        '}' => return Some((27, true)),
         _ => {}
     }
     // **The whole alphabet and the ten digits, rather than the handful a
@@ -1263,6 +1272,48 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         }),
     )?;
     let a_benchmark = frame_just_drawn(&nested, "the terminal with a recognised benchmark")?;
+
+    // **A file diff, recognised and drawn.** Printed rather than produced by
+    // `git`, so the step measures the recogniser and the drawing rather than
+    // whatever `git` happens to be installed here — and so it reads the same
+    // on a machine with no repository in front of it.
+    let at = typing(&mut server, "clear", 630)?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    until_the_shell_writes(&mut server);
+    until_the_shell_is_quiet(&mut server);
+    let at = typing(
+        &mut server,
+        "echo '+++ b/src/auth.ts'; echo '@@ -12,4 +12,4 @@'; echo ' export async function \
+         signIn() {'; echo '   const response = await login();'; echo '-  return \
+         response.user.name;'; echo '+  return response.user name;'; echo ' }'",
+        660,
+    )?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    until_the_shell_writes(&mut server);
+    until_the_shell_is_quiet(&mut server);
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let a_diff = frame_just_drawn(&nested, "the terminal with a recognised diff")?;
+    if let Ok(into) = std::env::var("ALO_TERMINAL_CHECK_WRITE") {
+        written_out(
+            &a_diff,
+            &format!("{into}.diff.ppm"),
+            "the frame with a recognised diff",
+        )?;
+    }
     if let Ok(into) = std::env::var("ALO_TERMINAL_CHECK_WRITE") {
         written_out(
             &a_benchmark,

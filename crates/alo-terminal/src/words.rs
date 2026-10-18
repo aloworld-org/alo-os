@@ -311,6 +311,26 @@ pub const SAME_LINEAR_SCALE: Word = Word::saying(
      something — see this crate's benchmark module for why.",
 );
 
+/// What printed a recognised file diff.
+pub const FROM_A_GIT_DIFF: Word = Word::saying("terminal.diff.from-git-diff", "git diff output")
+    .noting(
+        "Names where a recognised diff was read from. \"git diff\" is the name of a command \
+         somebody ran and is never translated; the word \"output\" around it is.",
+    );
+
+/// That looking at a recognised diff applies nothing.
+pub const NO_CHANGES_APPLIED_BY_THIS_VIEW: Word = Word::saying(
+    "terminal.diff.nothing-applied",
+    "Source: {what} \u{b7} No changes applied by this view",
+)
+.noting(
+    "The provenance under a recognised file diff. {what} is where it was read from and arrives \
+     already in the reader's language. **The second clause is the point of the sentence**: a \
+     diff is the one recognised result whose subject a person might fear alo could act on, and \
+     this says it does not. The design's own wording. Do not soften it into \"read only\" — \
+     what it promises is about this view and not about the file.",
+);
+
 /// That a recognised result is the program's claim and nobody checked it.
 pub const NOT_INDEPENDENTLY_VERIFIED: Word = Word::saying(
     "terminal.result.not-verified",
@@ -328,7 +348,7 @@ pub const NOT_INDEPENDENTLY_VERIFIED: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 19] = [
+pub const EVERY_WORD: [Word; 21] = [
     A_PROGRAM,
     ALO,
     THE_SYSTEM,
@@ -345,16 +365,44 @@ pub const EVERY_WORD: [Word; 19] = [
     TESTS,
     FROM_A_CARGO_TEST_RUN,
     FROM_A_HYPERFINE_RUN,
+    FROM_A_GIT_DIFF,
+    NO_CHANGES_APPLIED_BY_THIS_VIEW,
     LOWER_IN_THIS_COMPARISON,
     SAME_LINEAR_SCALE,
     NOT_INDEPENDENTLY_VERIFIED,
 ];
 
+/// How many lines a recognised diff took away.
+pub const SO_MANY_REMOVALS: Counted = Counted {
+    named: "terminal.diff.removals",
+    number: "removals",
+    one: "{removals} removal",
+    other: "{removals} removals",
+    note: "Part of the summary above a recognised file diff, beside how many lines were added. \
+           {removals} is the number. The design draws \"src/auth.ts \u{b7} 1 removal, 1 addition\".",
+};
+
+/// How many lines a recognised diff put there.
+pub const SO_MANY_ADDITIONS: Counted = Counted {
+    named: "terminal.diff.additions",
+    number: "additions",
+    one: "{additions} addition",
+    other: "{additions} additions",
+    note: "Part of the summary above a recognised file diff, beside how many lines were removed. \
+           {additions} is the number.",
+};
+
 /// Everything this crate can say about a number of things.
 ///
 /// The array [`declare_into`] walks, as [`EVERY_WORD`] is for the rest: a
 /// plural declared above and left out here is a string nothing can look up.
-pub const EVERY_COUNTED: [Counted; 3] = [SO_MANY_PASSED, SO_MANY_FAILED, SO_MANY_IGNORED];
+pub const EVERY_COUNTED: [Counted; 5] = [
+    SO_MANY_PASSED,
+    SO_MANY_FAILED,
+    SO_MANY_IGNORED,
+    SO_MANY_REMOVALS,
+    SO_MANY_ADDITIONS,
+];
 
 /// Why this crate's own list could not be declared.
 ///

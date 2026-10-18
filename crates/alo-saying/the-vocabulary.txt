@@ -1675,6 +1675,12 @@ telling.the-agent-cannot-answer	The agent cannot answer right now
 terminal.benchmark.from-hyperfine	hyperfine output
 terminal.benchmark.lower	{what} · {percent}% lower in this comparison
 terminal.benchmark.scale	Same linear scale · Lower is faster
+terminal.diff.additions#one	{additions} addition
+terminal.diff.additions#other	{additions} additions
+terminal.diff.from-git-diff	git diff output
+terminal.diff.nothing-applied	Source: {what} · No changes applied by this view
+terminal.diff.removals#one	{removals} removal
+terminal.diff.removals#other	{removals} removals
 terminal.explained.destructive	it destroys something
 terminal.explained.elevated	it needs more than your own rights
 terminal.explained.leaves	something leaves this machine

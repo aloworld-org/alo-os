@@ -105,6 +105,8 @@ pub(crate) struct TheTerminal {
     /// the screen, so doing it in the drawing would walk it every frame to
     /// answer a question that changes only when a program writes.
     a_benchmark: Option<alo_terminal::ABenchmark>,
+    /// A file diff recognised in what the program printed, if there is one.
+    a_diff: Option<alo_terminal::ADiff>,
 }
 
 impl TheTerminal {
@@ -121,6 +123,7 @@ impl TheTerminal {
             what_alo_said: alo_terminal::WhatAloSaid::nothing(),
             a_test_result: None,
             a_benchmark: None,
+            a_diff: None,
         })
     }
 
@@ -176,6 +179,7 @@ impl TheTerminal {
             let lines = self.screen.lines();
             self.a_test_result = alo_terminal::a_test_result_in(&lines);
             self.a_benchmark = alo_terminal::a_benchmark_in(&lines);
+            self.a_diff = alo_terminal::a_diff_in(&lines);
         }
         changed
     }
@@ -183,6 +187,11 @@ impl TheTerminal {
     /// A run of tests recognised in what the program printed, if there is one.
     ///
     /// [`None`] for nearly everything, which is the ordinary case.
+    /// A file diff recognised in what the program printed, if there is one.
+    pub(crate) const fn a_diff(&self) -> Option<&alo_terminal::ADiff> {
+        self.a_diff.as_ref()
+    }
+
     /// A benchmark comparison recognised in what the program printed, if there
     /// is one.
     pub(crate) const fn a_benchmark(&self) -> Option<&alo_terminal::ABenchmark> {

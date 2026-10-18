@@ -61,6 +61,7 @@ fn every_word_in_a_group() -> impl Iterator<Item = Word> {
         .chain(ABOUT_A_COMMAND_NOBODY_HAS_RUN)
         .chain(ABOUT_A_RESULT_A_PROGRAM_PRINTED)
         .chain(ABOUT_A_BENCHMARK_A_PROGRAM_PRINTED)
+        .chain(ABOUT_A_DIFF_A_PROGRAM_PRINTED)
 }
 
 /// **Every word in the array is in exactly one group.**
@@ -154,6 +155,15 @@ const ABOUT_A_BENCHMARK_A_PROGRAM_PRINTED: [Word; 3] = [
     SAME_LINEAR_SCALE,
 ];
 
+/// The words around a file diff recognised in a program's output.
+///
+/// A group of their own rather than rows on the benchmark's, because the
+/// provenance here promises something the other two views do not: **no changes
+/// are applied by looking**. That is a different kind of sentence from *nobody
+/// checked this*, and a group is where a kind gets a rule.
+const ABOUT_A_DIFF_A_PROGRAM_PRINTED: [Word; 2] =
+    [FROM_A_GIT_DIFF, NO_CHANGES_APPLIED_BY_THIS_VIEW];
+
 /// **Each gutter label is one word**, because the design gives it 80 of the
 /// gutter's 96 and a phrase has nowhere to go.
 ///
@@ -191,7 +201,8 @@ fn the_groups_are_the_whole_list() {
             + ABOUT_A_COMMAND_THAT_WAITS.len()
             + ABOUT_A_COMMAND_NOBODY_HAS_RUN.len()
             + ABOUT_A_RESULT_A_PROGRAM_PRINTED.len()
-            + ABOUT_A_BENCHMARK_A_PROGRAM_PRINTED.len(),
+            + ABOUT_A_BENCHMARK_A_PROGRAM_PRINTED.len()
+            + ABOUT_A_DIFF_A_PROGRAM_PRINTED.len(),
         EVERY_WORD.len(),
         "a word is declared and in no group, so no rule is applied to it"
     );

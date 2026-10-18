@@ -33,6 +33,7 @@
 //! which needs a compositor and is the next change.
 
 pub mod a_benchmark_a_program_printed;
+pub mod a_diff_a_program_printed;
 mod a_shell_on_a_pseudoterminal;
 pub mod a_test_result_a_program_printed;
 mod how_big_the_grid_is;
@@ -54,6 +55,7 @@ pub mod why_a_command_is_waiting;
 pub mod words;
 
 pub use a_benchmark_a_program_printed::{ABenchmark, ARun, a_benchmark_in};
+pub use a_diff_a_program_printed::{ADiff, ADiffLine, HowItChanged, a_diff_in};
 pub use a_shell_on_a_pseudoterminal::WhatIsWaiting;
 pub use a_shell_on_a_pseudoterminal::{
     ACellInPixels, AShellOnAPseudoterminal, NoShell, WhatArrived,

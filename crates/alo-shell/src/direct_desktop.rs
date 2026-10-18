@@ -1826,6 +1826,7 @@ pub(crate) fn drawn_terminal(
             what_alo_said: terminal.what_alo_said(),
             a_test_result: terminal.a_test_result(),
             a_benchmark: terminal.a_benchmark(),
+            a_diff: terminal.a_diff(),
         },
         size,
         scale,
