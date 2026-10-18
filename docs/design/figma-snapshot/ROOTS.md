@@ -28,6 +28,8 @@ refreshed  2026-10-07, by the development PC at the owner's instruction
 | `372:30292` | section | 11400×3580 | 03 — Start working | yes, `70-28.xml` |
 | `383:26066` | section | 8500×8700 | 04 — AI choice | yes, `70-28.xml` |
 | `479:28965` | section | 4480×1180 | Terminal · Rich results by default | yes, `479-28965.xml` |
+| `479:28967` | component | 990×320 | Terminal / View / Benchmark comparison | yes, `the-terminal-view-components.xml` |
+| `479:28986` | component | 990×320 | Terminal / View / File diff | yes, `the-terminal-view-components.xml` |
 | `485:28999` | — | — | Terminal · Current behaviour, source labels, autonomy, recovery | yes, `485-28999.xml` |
 | `493:29344` | — | — | Terminal settings · permission levels and model selection | yes, `493-29344.xml` |
 | `498:29475` | component | 48×48 | Terminal / Settings / Owner-approved gear | yes, `498-29475.xml` |
@@ -261,6 +263,14 @@ appears in it. So the plan tier limits the **library listing**, not the inventor
 is worth knowing before anybody concludes the components are unreachable.
 
 ## A note for whoever refreshes this
+
+**An `<instance>` with no children here is this capture's limit, not the design's.**
+Measured 2026-10-18: `get_metadata` on a live instance node returns its whole subtree —
+asked for `479:29079` it answered ten descendants, and the component behind it was reached
+the same way. Across these files 4718 instances have no children and exactly one has any,
+and that count was read as *the components cannot be captured*, which sent a lane to
+`9:2` — a node that holds Button, Presence Chip and Notification / Card, and none of what
+was wanted. **Expand the instance; do not go looking for its component by guesswork.**
 
 **Write a small document here whole; do not patch it.** Building this file the first time,
 a patch script inserted the *A frame's number does not identify it* section **twice**: the

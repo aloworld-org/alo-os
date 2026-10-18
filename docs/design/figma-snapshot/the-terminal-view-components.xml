@@ -1,0 +1,113 @@
+<!--
+  Terminal / View / Benchmark comparison and Terminal / View / File diff —
+  read from the live file on 2026-10-18.
+
+  WHY THESE TWO ARE IN ONE FILE
+
+  They are the two components the terminal's rich-result frames instantiate and
+  that nothing in this directory held. `479-28965.xml` captures the frames and
+  shows each as a childless `<instance>`; these are what is inside them. They
+  are siblings on the same parent, both 990x320, and they are read together or
+  not at all, so one file follows `the-first-start-sheets.xml` rather than
+  splitting a pair.
+
+  THE CHILDLESS INSTANCES ELSEWHERE ARE A CAPTURE LIMIT, NOT A DESIGN GAP
+
+  **This is the correction that produced this file.** Across this directory
+  4718 `<instance>` elements have no children and exactly one has any, and that
+  was read as the components being uncapturable — `9:2` was named as the node
+  whose capture would unblock all three terminal views.
+
+  Both halves were wrong. `get_metadata` on a live **instance** node returns its
+  subtree: asked for `479:29079` it answered ten descendants. And `9:2` holds
+  Button, Presence Chip, Notification / Card and the behaviour notes — no
+  terminal views at all. Whoever refreshes this directory can expand any
+  instance in it the same way.
+
+  WHAT THIS FILE VOUCHES FOR, AND WHAT IT DOES NOT
+
+  Every id, name, x, y, width and height below is as `get_metadata` returned it.
+
+  **The labels of the three `Ask alo / Action` instances are not in this file,
+  because they are not in the design's layer names.** Expanding one gives a
+  single text child named `Quiet`, which is the Button style variant. Read off a
+  render they are **Text**, **Expand**, **Open on canvas**, left to right, in
+  both components and in `488:29287`.
+
+  **The removal marker in the diff body is not byte-verified.** It renders as a
+  long centred dash aligned with the plus's crossbar and is plainly not an ASCII
+  hyphen; `U+2212 MINUS SIGN` is the obvious reading and is an **inference**. A
+  connector returns text, and a character retyped through an agent measures the
+  retyping rather than the file — so a test wanting the exact codepoint must
+  read `479:28989` in Figma. *Distinct from the addition marker, and neither is
+  `U+002D`* is what was actually measured.
+
+  THE BENCHMARK ROW IS A RULE, NOT FIVE NUMBERS
+
+  Each row is `label(110) | 16 | bar | 16 | value(110)`, one 16 px gutter
+  throughout — the label follows the bar's end, so a value pinned at x=622 is
+  right for 240 ms and wrong for everything else.
+
+  The bar is **2 px per ms**: 480 for 240, 360 for 180, both from x=126. That is
+  an absolute scale and not *longest bar fills the track*, which is settled
+  rather than assumed — the fixed parts take 252 of the 958-wide row leaving
+  706, and the longest bar is 480, ending the content at x=732 with 226 px of
+  slack.
+
+  **Two things the design does not answer, recorded as gaps:**
+
+  At 2 px per ms the bar overflows once a value passes **353 ms** (706 px of
+  room). Clamp, rescale both bars, or wrap — the design shows 240 and 180 and
+  nothing near the edge, and nobody has chosen.
+
+  The actions disagree between these components and `488:29287` in
+  `485-28999.xml`, which is the same three labels at different sizes: 100/100/160
+  there against 120/120/176 here. **No rule recovers it.** The frame ratio
+  990/894 = 1.1074 would give 110.7 and 177, so two of the three do not follow
+  the width; and they are not hug-content, or identical labels would hug to
+  identical widths. One set is stale.
+
+  The **8 px gap** between buttons and the **48 height** agree in both and are
+  safe. What differs and matters more than the widths is the layout mode: the
+  row **hugs** in `488:29291` (376 wide, 216+160, no slack) and **fills** here
+  (958 wide, contents ending at 432, 526 px of slack). Those are two behaviours,
+  and the one a 24-language promise walks into.
+
+  AND WHAT `485:28999` IS AND IS NOT AUTHORITATIVE FOR
+
+  Its note defers for the **source gutter, autonomy and recovery** and for
+  preserving original output and shell input. `ROOTS.md`'s headline — *485:28999
+  is the contract; 479:28965 is only rendering* — is broader than the note, and
+  its own next sentence scopes it to *provenance rules*. Nothing in either text
+  reaches a button's width, so the disagreement above is not settled by it.
+-->
+<symbol id="479:28967" name="Terminal / View / Benchmark comparison" x="0" y="0" width="990" height="320">
+  <text id="479:28968" name="Build time · 25% lower in this comparison" x="17" y="17" width="958" height="22" />
+  <text id="479:28969" name="bench-014 + bench-015 · Saved at 13:04 · Illustrative data" x="17" y="51" width="958" height="22" />
+  <frame id="479:28970" name="Frame" x="17" y="85" width="958" height="40">
+    <text id="479:28971" name="Previous" x="0" y="9" width="110" height="22" />
+    <rounded-rectangle id="479:28972" name="Rectangle" x="126" y="12" width="480" height="16" />
+    <text id="479:28973" name="240 ms" x="622" y="9" width="110" height="22" />
+  </frame>
+  <frame id="479:28974" name="Frame" x="17" y="137" width="958" height="40">
+    <text id="479:28975" name="Current" x="0" y="9" width="110" height="22" />
+    <rounded-rectangle id="479:28976" name="Rectangle" x="126" y="12" width="360" height="16" />
+    <text id="479:28977" name="180 ms" x="502" y="9" width="110" height="22" />
+  </frame>
+  <text id="479:28978" name="Same linear scale · Lower is faster · Inspect values when focused" x="17" y="189" width="958" height="22" />
+  <frame id="479:28979" name="Frame" x="17" y="223" width="958" height="48">
+    <instance id="479:28980" name="Ask alo / Action" x="0" y="0" width="120" height="48" />
+    <instance id="479:28982" name="Ask alo / Action" x="128" y="0" width="120" height="48" />
+    <instance id="479:28984" name="Ask alo / Action" x="256" y="0" width="176" height="48" />
+  </frame>
+</symbol>
+<symbol id="479:28986" name="Terminal / View / File diff" x="1050" y="0" width="990" height="320">
+  <text id="479:28987" name="src/auth.ts · 1 removal, 1 addition" x="17" y="17" width="958" height="22" />
+  <text id="479:28988" name="Saved diff · Source: git diff · No changes applied by this view" x="17" y="51" width="958" height="22" />
+  <text id="479:28989" name="12 export async function signIn() { 13 const response = await login(); − 14 return response.user.name; + 14 return response.user?.name ?? &quot;&quot;; 15 }" x="17" y="85" width="958" height="110" />
+  <frame id="479:28990" name="Frame" x="17" y="207" width="958" height="48">
+    <instance id="479:28991" name="Ask alo / Action" x="0" y="0" width="120" height="48" />
+    <instance id="479:28993" name="Ask alo / Action" x="128" y="0" width="120" height="48" />
+    <instance id="479:28995" name="Ask alo / Action" x="256" y="0" width="176" height="48" />
+  </frame>
+</symbol>
