@@ -822,3 +822,112 @@ fn each_native_action_opens_only_its_own_window() {
         "pressing Applications opened Settings"
     );
 }
+
+/// **Where the letters are drawn is where the presses land.**
+///
+/// # Why the tests above cannot answer this
+///
+/// Every press test in this file asks `TheDocksPlaces` where a slot is and then
+/// presses there:
+///
+/// ```ignore
+/// let middle = place.from_the_start() + place.across() / 2;
+/// ```
+///
+/// That passes whether or not the **raster draws the badge in that place**. A
+/// test that asks the geometry where to press cannot find a geometry that is
+/// wrong — the same shape as the fault of 2026-10-12, where the keyboard walked
+/// a different list from the grid a person was looking at and 854 of 854 tests
+/// passed.
+///
+/// So this one takes each position from `DockPicture::inked` — the letter's own
+/// box, the thing a person aims at — and presses at its centre. It was written
+/// on 2026-10-18 after a booted machine drew `S` and `A` on its Dock and a
+/// click inside the `A`'s slot opened nothing.
+///
+/// **A machine with no applications installed, because that is the machine the
+/// market matters most on**: two native entries and nothing else, which is
+/// exactly what the booted machine showed.
+#[test]
+fn a_press_where_each_letter_is_drawn_reaches_that_letters_entry() {
+    use alo_access::TurnedOn;
+    use alo_appearance::{Accent, Appearance, TimeOfDay};
+    use alo_dock::{ADockEntry, ANativeAction};
+    use alo_strings::Direction;
+
+    let mut appearance = Appearance::shipped();
+    appearance.set_accent(Accent::Indigo);
+    let look = crate::desktop_look::DesktopLook::of(
+        &appearance,
+        &TurnedOn::nothing(),
+        TimeOfDay::checked(10, 0).expect("ten in the morning"),
+        Direction::LeftToRight,
+        &crate::desktop_testing::a_display(),
+    );
+    let mut fonts = cosmic_text::FontSystem::new();
+    fonts
+        .db_mut()
+        .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+
+    // The two entries a fresh machine has before anything is installed.
+    let mut holding = alo_dock::Holding::nothing();
+    holding.pin_entry(ADockEntry::Native(ANativeAction::Settings));
+    holding.pin_entry(ADockEntry::Native(ANativeAction::Applications));
+    let on_the_dock = holding.showing(&alo_dock::Windows::none());
+
+    // The size the machine really draws at.
+    let picture = crate::dock_raster::picture(
+        &Dock::shipped(),
+        look,
+        (1280, 800),
+        &on_the_dock,
+        &[],
+        (
+            &crate::what_the_dock_has_open::NOTHING,
+            &crate::the_docks_words::TheDocksWords::default(),
+        ),
+        &mut fonts,
+    )
+    .expect("a Dock of two entries lays out on a 1280 x 800 display");
+
+    // **At least the two badges**, and more besides: the bar's fixed controls
+    // are inked too — *Show all*, the composer's prompt and the key beside it.
+    // So this walks every inked block and asks what a press on it reaches,
+    // rather than assuming which is which.
+    assert!(
+        picture.inked.len() >= 2,
+        "the Dock drew {} inked blocks, so there are not even two badges to press",
+        picture.inked.len()
+    );
+
+    // **Each letter's own middle**, in the output pixels a pointer is in.
+    let mut reached = Vec::new();
+    for ink in &picture.inked {
+        let middle = smithay::utils::Point::<i32, smithay::utils::Physical>::from((
+            ink.area.loc.x + ink.area.size.w / 2,
+            ink.area.loc.y + ink.area.size.h / 2,
+        ));
+        reached.push((
+            middle,
+            what_a_press_on_the_dock_does(&picture.standing, middle),
+        ));
+    }
+    let what: Vec<&WhatAPressOnTheDockDoes> = reached.iter().map(|(_, did)| did).collect();
+    assert!(
+        !what
+            .iter()
+            .all(|did| **did == WhatAPressOnTheDockDoes::Nothing),
+        "every inked block on this Dock reaches nothing, so no icon a person can see is \
+         pressable: {reached:?}"
+    );
+
+    assert!(
+        what.contains(&&WhatAPressOnTheDockDoes::Do(ANativeAction::Settings)),
+        "no letter on this Dock reaches Settings: {reached:?}"
+    );
+    assert!(
+        what.contains(&&WhatAPressOnTheDockDoes::Do(ANativeAction::Applications)),
+        "no letter on this Dock reaches the market, so a person pressing the icon they can see \
+         opens nothing: {reached:?}"
+    );
+}
