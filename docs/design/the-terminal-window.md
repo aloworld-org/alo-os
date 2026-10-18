@@ -497,7 +497,8 @@ is 480, not 706** — so it is not filling the track, 226 px are slack, and
 #### Where a tall rich view goes, which the design does not say
 
 **A benchmark is seven of alo's lines** — a summary, a provenance, two rows of
-two lines each, and the scale note — where a recognised test result is two.
+two lines each, and the scale note — and **a diff is two plus a line per changed
+line**, where a recognised test result is two.
 alo's lines are drawn **beneath the grid**, after all the terminal's rows, and
 on a transcript this size there is not room for seven.
 

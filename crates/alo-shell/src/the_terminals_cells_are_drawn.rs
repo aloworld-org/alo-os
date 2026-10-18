@@ -1022,6 +1022,10 @@ pub(crate) struct Shows<'a> {
     /// — *PROGRAM includes parsed rich results*. A chart drawn from a
     /// stranger's numbers is still that stranger's claim.
     pub(crate) a_benchmark: Option<&'a alo_terminal::ABenchmark>,
+    /// A file diff recognised in what the program printed.
+    ///
+    /// In the program's own region, under the same rule as the two above.
+    pub(crate) a_diff: Option<&'a alo_terminal::ADiff>,
 }
 
 /// What joins the parts of a recognised result's summary.
@@ -1051,6 +1055,7 @@ pub(crate) fn picture(
         what_alo_said,
         a_test_result,
         a_benchmark,
+        a_diff,
     } = shows;
     let (window, transcript) =
         where_the_window_goes(size, scale).ok_or(NothingToDrawWith::TheresNoRoom)?;
@@ -1270,6 +1275,75 @@ pub(crate) fn picture(
         line - a_benchmarks_first_line
     });
 
+    // **A recognised file diff**, in the order `479:28986` draws it: the
+    // summary from the counts, the sentence saying nothing is applied, and the
+    // body with each line's mark in a gutter left of its number.
+    //
+    // **The body is drawn a line at a time** where the design draws it as one
+    // text node 110 tall. The design's node renders as five rows; these are
+    // those rows, in the line grid everything else beneath the transcript uses.
+    let a_diffs_first_line = a_benchmarks_first_line + how_tall_the_benchmark_is;
+    let how_tall_the_diff_is = a_diff.map_or(0, |diff| {
+        let mut line = a_diffs_first_line;
+        let counted = |which: &alo_terminal::words::Counted, how_many: usize| {
+            says.count(
+                &which.key(),
+                &alo_strings::Counting::of(how_many as u64),
+                &alo_strings::Filling::nothing(),
+            )
+            .text()
+            .to_owned()
+        };
+        // **The file, then the two counts** — `src/auth.ts · 1 removal, 1
+        // addition`. The dot separates the file from the counts and a comma
+        // separates the counts, which is what the design draws and is
+        // punctuation rather than language.
+        let summary = format!(
+            "{}{BETWEEN_THE_SUMMARYS_PARTS}{}, {}",
+            diff.it_said_file(),
+            counted(
+                &alo_terminal::words::SO_MANY_REMOVALS,
+                diff.it_said_removals()
+            ),
+            counted(
+                &alo_terminal::words::SO_MANY_ADDITIONS,
+                diff.it_said_additions()
+            ),
+        );
+        if let Some(drawn) = alos_own_line(fonts, &summary, goes, line, (ground, ink)) {
+            placed.push(drawn);
+        }
+        line += 1;
+
+        let printed_it = says.say(
+            &diff.what_printed_it().key(),
+            &alo_strings::Filling::nothing(),
+        );
+        let provenance = says.say(
+            &diff.and_nothing_is_applied().key(),
+            &alo_strings::Filling::of("what", printed_it.text()),
+        );
+        if let Some(drawn) = alos_own_line(fonts, provenance.text(), goes, line, (ground, ink)) {
+            placed.push(drawn);
+        }
+        line += 1;
+
+        for its in diff.it_said_lines() {
+            let row = format!(
+                "{} {}  {}",
+                its.it_said_how().the_mark(),
+                its.it_said_number(),
+                its.it_said_text()
+            );
+            if let Some(drawn) = alos_own_line(fonts, &row, goes, line, (ground, ink)) {
+                placed.push(drawn);
+            }
+            line += 1;
+        }
+
+        line - a_diffs_first_line
+    });
+
     // **alo's own lines, beneath what the program wrote.** Drawn in the
     // transcript's own type at the transcript's own inset, so they read as part
     // of the conversation rather than as chrome bolted beside it. The gutter
@@ -1297,7 +1371,7 @@ pub(crate) fn picture(
                 .to_owned(),
             alo_terminal::AloSLine::AsTheModelSaidIt(prose) => prose.clone(),
         };
-        let beneath = a_benchmarks_first_line + how_tall_the_benchmark_is + which;
+        let beneath = a_diffs_first_line + how_tall_the_diff_is + which;
         if let Some(drawn) = alos_own_line(fonts, &text, goes, beneath, (ground, ink)) {
             placed.push(drawn);
         }
@@ -1308,7 +1382,7 @@ pub(crate) fn picture(
     // results*. A summary drawn in alo's region would label a stranger's
     // arithmetic as alo's interpretation.
     for region in alo_terminal::regions_of(
-        a_benchmarks_first_line + how_tall_the_benchmark_is,
+        a_diffs_first_line + how_tall_the_diff_is,
         what_alo_said.lines(),
     ) {
         let said = says.say(
