@@ -596,7 +596,7 @@ file carries it with a tier.*
   reproducible bug report.
   **Two halves, two decisions**: the commands and their exit codes come from
   [ADR 0123](decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md)
-  (proposed), and *what each one changed* is
+  (**accepted 2026-10-18**), and *what each one changed* is
   [ADR 0045](decisions/0045-what-undoing-rewinds-to.md)'s bracket
 - **Explain a command before it runs.** Plain words for what it does, with
   anything destructive, anything needing elevated rights and anything leaving
@@ -618,12 +618,14 @@ file carries it with a tier.*
   presses Up. The real road is **shell integration**, which is a new mechanism,
   a published contract, and a decision about a sequence any program can forge —
   so no shortcut was bound to a surface that cannot work.
-  **The road is proposed, 2026-10-17**:
+  **The road is decided, accepted by the owner 2026-10-18**:
   [ADR 0123](decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md)
   — the shell reports its own line editor when the person asks it to, and alo
   reads a mark rather than the screen. No hook runs while somebody types, so
-  there is nothing for alo to watch between a prompt and an asking. **Proposed,
-  not accepted**: the owner rules, and nothing is built until they do
+  there is nothing for alo to watch between a prompt and an asking. **Accepted
+  2026-10-18**, so this is buildable. Three later terms and the gesture are the
+  lane's drafts and are marked in the ADR as awaiting the owner; nothing built
+  may rest on those until they are accepted
 - **Say up front whether it can be undone.** *This can be put back* and *this
   cannot* are different sentences, and the second is the one worth seeing before
   you press Enter rather than after

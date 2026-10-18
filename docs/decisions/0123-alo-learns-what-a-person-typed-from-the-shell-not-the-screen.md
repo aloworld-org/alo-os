@@ -1,9 +1,19 @@
 # ADR 0123 — alo learns what a person typed from the shell, never from the screen
 
-**Status:** **proposed, 2026-10-17**, by the Mac lane under
-`docs/autonomy/a-new-machine-becomes-a-lane.md`'s rule for a blocker that is a
-decision, following [ADR 0085](0085-how-a-person-reaches-settings.md)'s
-precedent. The owner rules; nothing here is built until they do.
+**Status:** **accepted, 2026-10-18, by the owner.** Proposed 2026-10-17 by the
+Mac lane under `docs/autonomy/a-new-machine-becomes-a-lane.md`'s rule for a
+blocker that is a decision, following
+[ADR 0085](0085-how-a-person-reaches-settings.md)'s precedent.
+
+**What was accepted is the three roads and terms 1 to 7, as they were proposed.**
+
+**Terms 8 to 10, and *The gesture*, were drafted afterwards by the Mac lane** on
+the owner's instruction to draft and let them review — not by the owner, and not
+yet accepted. Each is marked where it appears. **Nothing built may rely on a
+marked term until the owner accepts or corrects it.** They are here rather than
+in a report because a decision and the holes somebody later found in it belong
+in one file; a reader a month from now should not have to assemble this ADR from
+two places.
 
 ## The question
 
@@ -129,6 +139,67 @@ through a second parser whose `Perform` implements `osc_dispatch` and nothing
 else. One extra pass over bytes already in cache; no fork, no source patch,
 `VoidListener` keeps its job. *Engines are configured, never written in.*
 
+**8. The command a person typed can leave this machine, and that is law 1's
+business.** *Drafted by the lane, 2026-10-18, awaiting the owner.*
+
+Terms 1 to 7 get the typed line to alo and stop there. What *explain a command
+before it runs* then does with it is **ask a model** — and when that model is a
+provider, **the line a person typed leaves the machine.** A command line carries
+arguments, and arguments carry tokens, passwords and paths that say who somebody
+is. Nothing above said so.
+
+So: the typed command is ordinary egress and is treated as such. It appears in
+the egress indicator at the moment it happens, it is in the record afterwards,
+and **the explanation says where it was answered** — on this machine, on this
+network, or with a provider — before a person reads the answer, not after. A
+person who would not paste a command into a web form has not agreed to send it
+to a provider because they pressed a key in their own terminal.
+
+**And there is never a silent fallback.** If the local model cannot answer, alo
+says it cannot rather than quietly asking a provider — which is the standing
+rule and bears repeating here because this is a road that makes the fallback
+tempting.
+
+**9. A mark is good for the turn it arrived in, and alo never reuses the last
+one.** *Drafted by the lane, 2026-10-18, awaiting the owner.*
+
+The marks can stop arriving at any moment and for ordinary reasons: a person
+edits their shell startup, opens a shell that has no snippet, or `ssh`es
+somewhere. **Absence must read as absence.** If alo kept the last mark it saw,
+an explanation would describe a command from three commands ago with complete
+confidence — the wrong-answer fault this whole decision exists to avoid, arriving
+through the back door. When no mark has come for the line in front, alo says it
+does not know what was typed.
+
+**10. The words a person reads when they install it are vocabulary, not English
+in a snippet.** *Drafted by the lane, 2026-10-18, awaiting the owner.*
+
+Term 6 quotes the sentence — *every command you run, to alo, on this machine* —
+and a sentence a person reads is a published sentence under
+[ADR 0068](0068-a-published-sentence-changes-by-getting-a-new-key.md). It gets a
+key like any other. *Hardcoded English is a bug* does not stop being true because
+the English is in a shell snippet rather than in Rust.
+
+## The gesture — drafted by the lane, 2026-10-18, awaiting the owner
+
+The proposal declined to decide what a person presses, and left it to ADR 0085's
+subject matter. On the owner's instruction, this lane drafts it rather than
+leaving the decision open.
+
+**`Ctrl`+`Alt`+`E`, for *explain*, bound by the snippet in the shell's own line
+editor.** It joins a family a person learns together:
+`Ctrl`+`Alt`+`T` gives you a terminal, `Ctrl`+`Alt`+`W` says what it is waiting
+for, and `Ctrl`+`Alt`+`E` says what the line you have typed will do. `Ctrl`+`Alt`
+is free for the reason `alo-shortcuts`' defaults already give, and `E` is not
+taken.
+
+**The wrinkle, named rather than hidden.** alo's other chords are bound on the
+compositor's seat; this one is bound in the shell, because while a foreground
+child owns the terminal the keys are the child's (ADR 0113). So one keypress is
+handled in two different places depending on who holds the terminal. **Without
+the snippet it does nothing**, which is consistent with term 6 and with the
+feature saying it needs shell integration rather than guessing.
+
 ## What this does not decide
 
 - **Which surface asks for an explanation, and what the chord is.** Separate,
@@ -162,4 +233,15 @@ Written here because they are the ADR's falsifiable half:
 - a payload longer than the parser's cap is **refused**, not explained;
 - a declared length that disagrees with the decoded payload is **refused**;
 - with no snippet installed, nothing in the product claims to know the typed
-  line.
+  line;
+- **a mark that has gone stale is not used** — after a command runs, asking again
+  without a new mark answers *I do not know what was typed* rather than
+  describing the last one *(term 9)*;
+- **a command sent to a provider to be explained appears in the egress
+  indicator**, and the explanation names where it was answered *(term 8)*.
+
+**And one of these is not a test a gate can run.** A person at a machine has to
+press the key and read what comes back: the mechanism working, something calling
+it, a person reaching it and **somebody having seen it** are four different
+facts, and a green suite speaks to the first three. This ADR is not finished when
+the tests above pass.

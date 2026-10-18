@@ -48,7 +48,7 @@ because a reader starting from it would conclude this goal is unreachable.*
 | ★ | bisects the machine | **nothing**, and waits on a bracket |
 | ★ | reads output that is not a character grid | the first rich view is a test result, #761 — **and its two lines were cropped into the gutter's label box** the same way, until #778. This row said *usable* and the summary was not readable. Now drawn, and **seen under a nested compositor**; two more views are unspecified in the design |
 | ★ | hands somebody a session to replay | **nothing**, and waits on rich results |
-| | asks what a command will do first | the answer is built (#759); **nothing can ask**, because alo does not know what was typed — **blocked on ADR 0123 being accepted** |
+| | asks what a command will do first | the answer is built (#759); **nothing can ask**, because alo does not know what was typed — **unblocked: ADR 0123 was accepted on 2026-10-18** and the asking is buildable |
 
 **Where the thirteen stand at the end of 2026-10-17**, each row read rather
 than counted by a pattern — a first pass with a crude classifier misread two of
@@ -58,8 +58,8 @@ them, which is this document's own lesson about mentions and declarations:
 |---|---|---|
 | **usable** — all four conditions | **4** | opens a terminal and types; reads who is speaking; sees measured apart from worked-out; scrolls back |
 | **built and reachable, never seen on a machine** | **2** | asks why a command is waiting (#755); reads output that is not a character grid (#761). **Both were also broken on screen until 2026-10-17** — see the two rows above and step 8c. The count is unchanged because a nested compositor is not a machine |
-| waiting on this lane's own earlier steps | **1** | hands somebody a session to replay, behind the rest of rich results |
-| **blocked on a decision or another lane** | **6** | decides whether alo may use it; scopes one command; finds a command by what it did; asks what a command will do first; **bisects the machine**, moved here at 2026-10-17 when the bracket landed and did not open it (step 5); **runs a command touching nothing**, moved here the same day when the box turned out to be built and the missing piece turned out to be a surface the design does not specify |
+| waiting on this lane's own earlier steps | **2** | hands somebody a session to replay, behind the rest of rich results; **asks what a command will do first**, moved here 2026-10-18 when the owner accepted ADR 0123 and it stopped being blocked |
+| **blocked on a decision or another lane** | **5** | decides whether alo may use it; scopes one command; finds a command by what it did; **bisects the machine**, moved here at 2026-10-17 when the bracket landed and did not open it (step 5); **runs a command touching nothing**, moved here the same day when the box turned out to be built and the missing piece turned out to be a surface the design does not specify |
 | unowned | **0** | — *this row held* **runs a command touching nothing** *until 2026-10-17, when measuring found the box built (#729, 2026-10-16) and demonstrated on a real kernel. It moved to the row above: what it waits on is a surface, and the design is silent, which makes it the owner's* |
 
 **And what *built and reachable* turned out to mean.** Both rows above said a
