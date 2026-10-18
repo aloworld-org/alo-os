@@ -675,6 +675,22 @@ measurement becomes a claim.*
 > the expected string to compare the band against. *Named rather than implied,
 > and not built — the comment in the check now says the same thing in the place
 > somebody editing it will look.*
+>
+> **And then it was read, later the same day.** The check was run on `009343a5`,
+> the recognised-result frame was written out and opened, and the band at
+> y 620..860 of a 1440x960 frame holds two lines:
+>
+> ```text
+> Tests · 23 passed · 1 failed
+> Source: cargo test output · Not independently verified
+> ```
+>
+> **So the row above is superseded by a reading rather than by a claim**, and
+> step 10's pass is confirmed on a drawn frame for the first time. The 2026-10-17
+> row is still left as it was read. *The assertion is unchanged and still counts
+> rows of ink: this is a measurement of one frame on one day, not a guard. The
+> check now writes that frame on request so the next person re-reads it instead
+> of trusting this paragraph.*
 
 **One step is still unseen: 1, signing in.** That needs a machine, and it is
 what the evening of the 18th is for.

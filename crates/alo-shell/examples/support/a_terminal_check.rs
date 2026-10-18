@@ -401,6 +401,28 @@ fn nothing_put_aside() -> &'static alo_put_aside::Panel {
     EMPTY.get_or_init(alo_put_aside::Panel::new)
 }
 
+/// **One frame as a PPM, for somebody to look at rather than count.**
+///
+/// Guarded by its caller the way `saving_frames` guards itself: a gate that
+/// wrote a file every run would be a gate that fills a disk, and nothing here
+/// is the screenshot promise.
+///
+/// The frames arrive as `BGRx`, so the three bytes are reordered on the way
+/// out. **Looking is not a nice-to-have in this file**: the width assertion
+/// this check used to make was wrong for a working terminal and no pixel count
+/// would have found it — somebody opening the frame did.
+fn written_out(frame: &[u8], into: &str, moment: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let header = format!("P6\n{} {}\n255\n", HOW_BIG.0, HOW_BIG.1);
+    let mut out = header.into_bytes();
+    let (whole, _) = frame.as_chunks::<4>();
+    for pixel in whole {
+        out.extend_from_slice(&[pixel[2], pixel[1], pixel[0]]);
+    }
+    std::fs::write(into, out)?;
+    eprintln!("terminal: {moment} written to {into}");
+    Ok(())
+}
+
 /// Open a terminal by its chord and draw the desktop twice: with it and without.
 pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut nested = Nested::new("alo — a terminal on a real compositor", HOW_BIG)?;
@@ -880,13 +902,28 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     // this file: the only mentions of the summary's words are the `echo` above
     // and this comment.
     //
-    // **So no reading of the shorter form off pixels exists.** The row in
-    // `docs/autonomy/the-mac-lanes-order-while-the-owner-is-away.md` records the
-    // 2026-10-17 reading, correctly, and the sentence beside it saying a machine
-    // from `main` now draws the shorter form is a reading of the **vocabulary**
-    // rather than of a screen. Asserting the words here would need a reference
-    // draw of the expected string to compare the band against; that is worth
-    // doing and is not done, so it is named rather than implied.
+    // **The shorter form has now been read off the pixels, 2026-10-18.** This
+    // check was run on `009343a5` and the frame below was written out and
+    // opened, and the band at y 620..860 of a 1440x960 frame holds, in two
+    // lines:
+    //
+    // ```text
+    // Tests · 23 passed · 1 failed
+    // Source: cargo test output · Not independently verified
+    // ```
+    //
+    // *That is what walk step 10 asks for, and until that frame was opened
+    // nobody had confirmed it: the sentence in the lane order saying a machine
+    // from `main` draws the shorter form was a reading of `alo_terminal::words`
+    // and not of a screen.*
+    //
+    // **The assertion below still counts rows and still cannot see a word**, so
+    // it would not catch the wording going back. Making it see one needs a
+    // reference draw of the expected string to compare the band against; that
+    // is still worth doing and is still not done. What changed is that the
+    // claim is now a measurement — and a measurement of one frame on one day,
+    // which is why `written_out` exists: the next person re-reads it rather
+    // than trusting this comment.
     let rows_before = rows_with_ink(&nothing_waiting, &without);
     let rows_after = rows_with_ink(&recognised, &without);
     if rows_after < rows_before + 4 {
@@ -1129,14 +1166,16 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     // itself: a gate that wrote a file every run would be a gate that fills a
     // disk, and nothing here is the screenshot promise.
     if let Ok(into) = std::env::var("ALO_TERMINAL_CHECK_WRITE") {
-        let header = format!("P6\n{} {}\n255\n", HOW_BIG.0, HOW_BIG.1);
-        let mut out = header.into_bytes();
-        let (whole, _) = about_a_clock.as_chunks::<4>();
-        for pixel in whole {
-            out.extend_from_slice(&[pixel[2], pixel[1], pixel[0]]);
-        }
-        std::fs::write(&into, out)?;
-        eprintln!("terminal: the frame with the terminal was written to {into}");
+        written_out(&about_a_clock, &into, "the frame with the terminal")?;
+        // **The frame step 10 is about**, written beside the other one because
+        // the assertion above it counts rows of ink and cannot read a word. The
+        // walk's pass for that step is two particular sentences, and the only
+        // way anybody has confirmed which sentences are drawn is by looking.
+        written_out(
+            &recognised,
+            &format!("{into}.recognised.ppm"),
+            "the frame with a recognised test result",
+        )?;
     }
 
     eprintln!(
