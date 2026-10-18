@@ -154,6 +154,31 @@ impl SignInEntry {
         self.field = self.starts_on;
     }
 
+    /// Forget the secret and **keep the name**.
+    ///
+    /// For the first account on a machine, and for nothing else. The sibling
+    /// above clears the name too, and its reason is a real one — *a screen
+    /// that kept a refused name on it would hand the next person at this
+    /// machine a hint about the last*. **On this road there is no last
+    /// person**: `Greeting::makes_an_account` refuses outright when the
+    /// accounts store is not empty, so a name on this sheet can only be the
+    /// name of whoever is standing there typing it.
+    ///
+    /// What clearing it costs was measured on a booted machine on 2026-10-18.
+    /// Enter on the name field moves to the secret; a second Enter submits an
+    /// empty one; the refusal — *an account needs a password, and an empty one
+    /// is not one* — is correct, and it arrived **with the name field wiped**.
+    /// A person's first act on their own machine was to type their name twice
+    /// because they pressed Enter once too often.
+    ///
+    /// The secret still goes, here as everywhere, for the reason the caller
+    /// gives: a refusal that left a password in memory would be a refusal that
+    /// kept it.
+    pub(crate) fn the_secret_is_forgotten(&mut self) {
+        self.password.forgotten();
+        self.field = self.starts_on;
+    }
+
     /// The name as typed.
     pub(crate) fn name(&self) -> &str {
         &self.name

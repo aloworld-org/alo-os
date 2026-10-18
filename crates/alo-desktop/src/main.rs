@@ -198,8 +198,13 @@ mod running {
                 // a line printed only here was a line nobody ever read.
                 eprintln!(
                     "alo-desktop: this seat took {} key presses and {} button presses, \
-                     and could not make sense of {} events",
-                    stood.input.key_presses, stood.input.button_presses, stood.input.refused
+                     {} of which landed on something it draws, and could not make \
+                     sense of {} events; its Dock had {} slots recorded",
+                    stood.input.key_presses,
+                    stood.input.button_presses,
+                    stood.input.furniture_presses,
+                    stood.input.refused,
+                    stood.input.dock_slots_recorded
                 );
                 eprintln!("alo-desktop: the display has ended: {:?}", stood.display);
                 ExitCode::SUCCESS
@@ -867,8 +872,13 @@ mod running {
             self.said = made;
             eprintln!(
                 "alo-desktop: this seat has taken {} key presses and {} button presses, \
-                 and could not make sense of {} events",
-                made.key_presses, made.button_presses, made.refused
+                 {} of which landed on something it draws, and could not make sense \
+                 of {} events; its Dock has {} slots recorded",
+                made.key_presses,
+                made.button_presses,
+                made.furniture_presses,
+                made.refused,
+                made.dock_slots_recorded
             );
         }
 

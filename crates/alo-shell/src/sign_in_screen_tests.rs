@@ -613,3 +613,89 @@ fn a_submission_leaves_no_screen_to_submit_again() {
         }
     ));
 }
+
+/// A screen at the first-account sheet, with a name typed and nothing else.
+///
+/// The two Enters at the front are the language sheet's: one chooses the row
+/// under the cursor, one takes *Use this language*. Both are a person's own
+/// presses and neither is hidden, which is why the fixture makes them rather
+/// than reaching past them.
+fn at_the_first_account_sheet() -> SignInScreen<CountingDoor> {
+    let (door, _heard) = a_door(Ok(Answered::Opened));
+    let mut screen = SignInScreen::of(
+        Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
+        the_machines_words(),
+    );
+    for key in [SignInKey::Enter, SignInKey::Enter] {
+        screen = still(screen.pressed(key));
+    }
+    for key in [
+        SignInKey::Letter('d'),
+        SignInKey::Letter('i'),
+        SignInKey::Letter('s'),
+    ] {
+        screen = still(screen.pressed(key));
+    }
+    screen
+}
+
+/// **A refused first account keeps the name the person typed.**
+///
+/// Measured on a booted machine on 2026-10-18 and it cost a person their
+/// typing: Enter on the name moves to the secret, a second Enter submits an
+/// empty one, and the refusal arrived with the name field wiped.
+///
+/// **The secret still goes**, which is the half that must not regress — a
+/// refusal that left a password in memory would be a refusal that kept it.
+/// Both are asserted, because keeping the name is only right while the secret
+/// is still forgotten.
+#[test]
+fn a_refused_first_account_keeps_the_name_and_forgets_the_secret() {
+    let mut screen = at_the_first_account_sheet();
+    assert_eq!(screen.entry.name(), "dis", "the premise: a name is typed");
+
+    // Enter moves to the secret; Enter again submits an empty one.
+    screen = still(screen.pressed(SignInKey::Enter));
+    screen = still(screen.pressed(SignInKey::Enter));
+
+    assert!(
+        sentence(&screen).is_some(),
+        "an empty secret was not refused, so this test is not about a refusal"
+    );
+    assert_eq!(
+        screen.entry.name(),
+        "dis",
+        "a refusal took the name away, so a person types it again because they \
+         pressed Enter once too often"
+    );
+    assert!(
+        !screen.entry.has_password(),
+        "a refusal kept the secret in memory"
+    );
+}
+
+/// **A refusal stops speaking the moment the person types again.**
+///
+/// A refusal describes the attempt that produced it and nothing else. On the
+/// booted machine of 2026-10-18 it outlived its attempt: the empty secret was
+/// refused, the person typed their name again, went on to the PIN row, and
+/// *an account needs a password, and an empty one is not one* was still under
+/// it — a sentence about a sheet they had already left.
+#[test]
+fn a_refusal_does_not_follow_the_person_to_the_next_thing_they_type() {
+    let mut screen = at_the_first_account_sheet();
+    screen = still(screen.pressed(SignInKey::Enter));
+    screen = still(screen.pressed(SignInKey::Enter));
+    assert!(
+        sentence(&screen).is_some(),
+        "the premise: something was refused and the screen is saying so"
+    );
+
+    screen = still(screen.pressed(SignInKey::Letter('a')));
+
+    assert!(
+        sentence(&screen).is_none(),
+        "a refusal about an attempt the person has already moved on from is \
+         still on their screen"
+    );
+}

@@ -250,6 +250,14 @@ impl Server {
         {
             let at = (location.x as i32, location.y as i32).into();
             if self.the_dock_takes_this_press(at) {
+                // **Counted where it was taken**, so *three clicks and nothing
+                // happened* can be told from *three clicks and none of them was
+                // on anything*. Those need different fixes and a machine that
+                // reports only the arrival cannot say which it met — measured
+                // on 2026-10-18, when three presses arrived, none was refused,
+                // and the Dock did not move.
+                // See `crate::what_the_seat_made_of_its_input`.
+                self.a_press_landed_on_the_furniture();
                 return Ok(false);
             }
             self.the_overflow_closes();

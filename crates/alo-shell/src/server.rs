@@ -522,6 +522,13 @@ pub struct Server {
     ///
     /// A count and never reset, for the two reasons the refusal field gives.
     pub(crate) button_presses_this_seat_routed: usize,
+    /// **How many presses landed on something this compositor draws itself.**
+    ///
+    /// Beside the field above and deliberately separate from it: one says a
+    /// press reached this machine, the other says it reached something on it.
+    /// A machine that could only report the first spent 2026-10-18 unable to
+    /// say which of two faults it had.
+    pub(crate) presses_that_landed_on_the_furniture: usize,
 }
 
 impl Server {
@@ -601,6 +608,7 @@ impl Server {
             // And nothing has been routed either, for the same reason.
             key_presses_this_seat_routed: 0,
             button_presses_this_seat_routed: 0,
+            presses_that_landed_on_the_furniture: 0,
             // Nothing has been kept yet, so no Place remembers anything.
             remembered: alo_arranging::Arrangement::fresh(),
             // Nobody is walking backwards through anything yet.
