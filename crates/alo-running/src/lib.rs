@@ -99,7 +99,8 @@ pub use failing::NotRun;
 pub use somewhere_to_write::SomewhereToWrite;
 pub use what_a_run_asks_for::ARun;
 pub use what_a_try_may_reach::{
-    NoPlacesForIt, WHERE_PROGRAMS_ARE, what_a_try_may_reach, where_the_libraries_are,
+    NoPlacesForIt, THE_EMPTY_DEVICE, WHERE_PROGRAMS_ARE, what_a_try_may_reach,
+    what_only_here_may_reach, where_the_libraries_are,
 };
 pub use what_happened_in_the_box::WhatHappened;
 pub use what_was_asked::AskedToRun;

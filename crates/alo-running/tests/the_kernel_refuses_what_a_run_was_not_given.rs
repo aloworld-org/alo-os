@@ -241,6 +241,73 @@ fn the_same_script_reads_the_secret_when_the_folder_is_granted() {
     );
 }
 
+/// **`--only-here` may write where the person is standing, and nowhere else.**
+///
+/// `docs/features.md`: *`--only-here` so it may not write outside this folder.*
+/// Both halves in one run, read from the exit status: the script writes a file
+/// in its own folder and then tries to write one outside it, and exits 0 only
+/// if the first worked and the second did not.
+///
+/// Run by hand as an ordinary person on 2026-10-18 before this test existed,
+/// which is how the place set was settled; this is that run, kept.
+#[test]
+fn only_here_may_write_in_the_folder_and_not_outside_it() {
+    let folder = std::env::temp_dir().join(format!("alo-only-here-{}", std::process::id()));
+    drop(fs::remove_dir_all(&folder));
+    fs::create_dir_all(&folder).expect("a temporary folder can be made");
+
+    let outside = std::env::temp_dir().join(format!("alo-outside-{}", std::process::id()));
+    drop(fs::remove_file(&outside));
+
+    // **Both paths are written in full, and the folder arrives as an
+    // argument.** `alo_running::WhereCommandsRun` sets no working directory, so
+    // a box inherits its caller's — which for `alo-try` is the folder the
+    // person is standing in, and for this test is wherever cargo ran it. A
+    // first version wrote `./made-inside` and failed for that reason, which is
+    // a fact about the test and not about the bound.
+    let script = folder.join("build.sh");
+    fs::write(
+        &script,
+        b"#!/bin/sh\ntouch \"$1/made-inside\" || exit 3\ntouch \"$1/../made-outside\" && exit 4\nexit 0\n",
+    )
+    .expect("a file can be written");
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut how = fs::metadata(&script).expect("it is there").permissions();
+        how.set_mode(0o755);
+        fs::set_permissions(&script, how).expect("it can be made runnable");
+    }
+
+    let came_of_it = running_a_script(
+        "only-here",
+        &script,
+        &folder,
+        alo_running::what_only_here_may_reach(&folder).expect("this machine has a library folder"),
+    )
+    .expect("a script bound to its own folder should have run");
+
+    assert!(
+        came_of_it.happy,
+        "the script exited non-zero: 3 means it could not write in the folder it was given, \
+         which would make `--only-here` useless; 4 means it wrote outside that folder, which is \
+         the promise broken"
+    );
+    assert!(
+        folder.join("made-inside").is_file(),
+        "the script reported writing in its folder and the file is not there"
+    );
+    let beside = folder
+        .parent()
+        .expect("a temporary folder has a parent")
+        .join("made-outside");
+    assert!(
+        !beside.is_file(),
+        "a file was written outside the one granted folder: {}",
+        beside.display()
+    );
+    drop(outside);
+}
+
 /// A folder of this test's own with one file in it, and the file's path.
 fn a_folder_with_a_file_in_it(what: &str) -> (PathBuf, PathBuf) {
     let folder = std::env::temp_dir().join(format!("alo-running-{}-{what}", std::process::id()));

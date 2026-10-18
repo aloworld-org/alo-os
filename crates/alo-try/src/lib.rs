@@ -17,6 +17,7 @@
 //! | [`where_the_box_goes`] | the control group a person's box is made under, which `docs/quirks.md` had open |
 //! | [`the_cgroup_this_process_is_in`] | the one it is made under, read from `/proc/self/cgroup` |
 //! | [`the_record_a_person_keeps`] | where a person's own runs are written down |
+//! | [`what_was_asked_for`] | the flags in front of the command, and the command after them |
 //! | [`found_on_the_path`] | the command, resolved the way a shell resolves one |
 //! | `src/main.rs` | the order: resolve, places, record, boundary, box, run |
 //!
@@ -140,6 +141,60 @@ pub fn the_record_a_person_keeps(home: &Path) -> PathBuf {
         .join("alo")
         .join("commands.jsonl")
 }
+
+/// What a person asked for in front of the command.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HowNarrow {
+    /// `try ./install.sh` — the command and nothing of the person's.
+    NothingOfTheirs,
+    /// `try --only-here ./build.sh` — and the folder they are standing in.
+    ///
+    /// **A loosening**, which the flag's name does not suggest: it adds the
+    /// folder to a box that had none of their files. What they are narrowing is
+    /// their session down to one folder, not the box down from something.
+    AndTheFolderTheyAreIn,
+}
+
+/// What the person asked for, and the command left after the flags.
+///
+/// **Flags are read only before the command.** `try --only-here ./build.sh
+/// --only-here` passes the second one to the script, because everything after
+/// the command is the command's — the rule every `--` taking program keeps, and
+/// the one a person relies on when the thing they are running has flags of its
+/// own.
+///
+/// [`None`] when nothing is left after the flags, which is a person who typed
+/// only a flag.
+#[must_use]
+pub fn what_was_asked_for<A: AsRef<std::ffi::OsStr>>(
+    arguments: &[A],
+) -> Option<(HowNarrow, Vec<std::ffi::OsString>)> {
+    let mut how = HowNarrow::NothingOfTheirs;
+    let mut rest = arguments
+        .iter()
+        .map(|one| one.as_ref().to_owned())
+        .peekable();
+    while let Some(next) = rest.peek() {
+        match next.to_str() {
+            Some(ONLY_HERE) => {
+                how = HowNarrow::AndTheFolderTheyAreIn;
+                rest.next();
+            }
+            // **`--` ends the flags and is not passed on**, so a command whose
+            // own name begins with a dash can still be run.
+            Some("--") => {
+                rest.next();
+                break;
+            }
+            _ => break,
+        }
+    }
+    let left: Vec<std::ffi::OsString> = rest.collect();
+    (!left.is_empty()).then_some((how, left))
+}
+
+/// The flag a person types to be allowed to work where they are standing.
+pub const ONLY_HERE: &str = "--only-here";
 
 /// The command, resolved to a full path the way a shell resolves one.
 ///

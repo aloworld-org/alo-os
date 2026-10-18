@@ -158,3 +158,87 @@ fn the_places_do_not_change_between_two_asks() {
     let twice = what_a_try_may_reach(Path::new("/usr/bin/true")).expect("a library folder");
     assert_eq!(once, twice);
 }
+
+/// **`--only-here` grants the folder and not the command.**
+///
+/// A swap, not an addition: four places is the kernel's bound, and the command
+/// needs no place of its own when it lives in the folder.
+#[test]
+fn only_here_grants_the_folder_in_place_of_the_command() {
+    let places =
+        what_only_here_may_reach(Path::new("/home/anna/project")).expect("a library folder");
+
+    assert_eq!(places.len(), 4, "{places:?}");
+    assert_eq!(places[0], Path::new("/home/anna/project"));
+    assert_eq!(places[1], Path::new(WHERE_PROGRAMS_ARE));
+    assert_eq!(places[3], Path::new(THE_EMPTY_DEVICE));
+}
+
+/// **It is a loosening of `try`, and the test says so in an assertion.**
+///
+/// The flag's name suggests a tightening. What it actually does is add the
+/// person's folder to a box that had none of their files at all — so a reader
+/// who assumes otherwise is contradicted here rather than in a comment.
+#[test]
+fn only_here_is_looser_than_try_alone() {
+    let folder = Path::new("/home/anna/project");
+    let command = folder.join("build.sh");
+
+    let sealed = what_a_try_may_reach(&command).expect("a library folder");
+    let only_here = what_only_here_may_reach(folder).expect("a library folder");
+
+    assert!(
+        !sealed.iter().any(|place| place == folder),
+        "`try` alone granted the folder, so there is nothing for `--only-here` to add: {sealed:?}"
+    );
+    assert!(
+        only_here.iter().any(|place| place == folder),
+        "`--only-here` did not grant the folder it is named for: {only_here:?}"
+    );
+}
+
+/// **Nothing of the person's outside that one folder is granted.**
+#[test]
+fn only_here_grants_nothing_above_or_beside_the_folder() {
+    let places =
+        what_only_here_may_reach(Path::new("/home/anna/project")).expect("a library folder");
+
+    for theirs in [
+        "/home",
+        "/home/anna",
+        "/home/anna/other-project",
+        "/",
+        "/tmp",
+        "/dev",
+    ] {
+        assert!(
+            !places.iter().any(|place| place == Path::new(theirs)),
+            "{theirs} is granted, and only the one folder should be: {places:?}"
+        );
+    }
+}
+
+/// **A folder that is not a full path is refused**, for the same reason a
+/// command is: only the caller knows where the person was standing.
+#[test]
+fn only_here_refuses_a_folder_that_is_not_a_full_path() {
+    let refused = what_only_here_may_reach(Path::new("project")).expect_err("not a full path");
+    assert_eq!(
+        refused,
+        NoPlacesForIt::NotAFullPath {
+            named: "project".to_owned()
+        }
+    );
+}
+
+/// **It fits the kernel's bound too**, which is the whole reason it is a swap.
+#[test]
+fn only_here_fits_the_bound_the_kernel_imposes() {
+    let places = what_only_here_may_reach(Path::new("/home/anna")).expect("a library folder");
+    assert!(
+        places.len() <= alo_bounding::PLACES,
+        "{} places asked for and the kernel holds {}",
+        places.len(),
+        alo_bounding::PLACES
+    );
+}
