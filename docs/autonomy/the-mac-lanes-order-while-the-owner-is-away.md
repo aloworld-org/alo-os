@@ -42,8 +42,8 @@ because a reader starting from it would conclude this goal is unreachable.*
 | ★ | sees measured apart from worked-out | **usable** — the same gutter's `system` against `alo` |
 | ★ | asks why a command is waiting | **built, reachable, and drawing nothing a person could read** until #778 on 2026-10-17: the chord put `alo` in the gutter and the sentence it labels went into the gutter's own 80-pixel box, under the word. Now drawn, and **seen under a nested compositor** (step 8c); **still never seen on a machine** |
 | ★ | scrolls back through output | **usable** |
-| ★ | runs a command touching nothing | **the box exists and works on a kernel** (#729); **nothing calls it.** On 2026-10-18 the owner chose the surface — a word plus alo offering — and it is **still blocked**, on where a person's own boxed run writes the record a run cannot happen without (step 9). *This cell said "the kernel box does not" until 2026-10-17, "the surface is unspecified" until 2026-10-18, and "unbuilt rather than blocked" for one commit the same day* |
-| ★ | scopes one command | **blocked** — a per-command narrowing is `alo-capability`, another lane's |
+| ★ | runs a command touching nothing | **built**, #817 — `try ./install.sh` runs sealed on a real kernel and is refused what it was not given. **Never seen on a machine.** *This cell said* the kernel box does not *until 2026-10-17,* the surface is unspecified *until 2026-10-18, and* still blocked on where a person's own run writes its record *for part of 2026-10-18 — which ADR 0125 settled* |
+| ★ | scopes one command | **built**, #818 — `try --only-here` works on a kernel, and `--offline` turned out to be already true of any boxed run. **Never seen on a machine.** *This cell said* blocked — a per-command narrowing is `alo-capability`, another lane's *until 2026-10-18, and all three parts of that were wrong: see task 5 of* the-terminal-in-full-plan.md |
 | ★ | finds a command by what it did | **the verb is built and offered**, #812 on 2026-10-18, after the owner chose the surface. Reachable by the agent, which is what *a question to alo* means; **never seen on a machine** |
 | ★ | bisects the machine | **nothing**, and waits on a bracket |
 | ★ | reads output that is not a character grid | the first rich view is a test result, #761 — **and its two lines were cropped into the gutter's label box** the same way, until #778. This row said *usable* and the summary was not readable. Now drawn, and **seen under a nested compositor**; two more views are unspecified in the design |
@@ -60,14 +60,14 @@ is in each row:*
 | | how many | which |
 |---|---|---|
 | **usable** — all four conditions | **4** | opens a terminal and types; reads who is speaking; sees measured apart from worked-out; scrolls back |
-| **built and reachable, never seen on a machine** | **4**, and it was **2** | asks why a command is waiting (#755); reads output that is not a character grid (#761). **Both were also broken on screen until 2026-10-17** — see the two rows above and step 8c; a nested compositor is not a machine. **Two joined on 2026-10-18**: asks what a command will do first (#805) and finds a command by what it did (#812). **Both of those are landing rather than landed as this was written** — #805 in the merge queue, #812 gating — which is said here because *built* has to mean *in `main`* and on the evening of 2026-10-18 it did not yet |
+| **built and reachable, never seen on a machine** | **6**, and it was **2** at the start of 2026-10-18 | asks why a command is waiting (#755); reads output that is not a character grid (#761); asks what a command will do first (#805) — **these three are in `main`**. And three more **landing rather than landed as this was written**: finds a command by what it did (#812), runs a command touching nothing (#817), scopes one command (#818). *Built* has to mean *in `main`*, so the split is named rather than averaged. **The first two were also broken on screen until 2026-10-17** — see the rows above and step 8c; a nested compositor is not a machine, and neither is a kernel test |
 | waiting on this lane's own earlier steps | **1**, and it was **2** | hands somebody a session to replay, behind the rest of rich results |
-| **blocked on a decision or another lane** | **4**, and it was **5** | decides whether alo may use it; scopes one command, which is the only one of the owner's five answers that did **not** settle its question — see *answer 3 is the one to read twice* below; **bisects the machine**, moved here at 2026-10-17 when the bracket landed and did not open it (step 5); and **runs a command touching nothing**, whose *surface* the owner chose on 2026-10-18 and which is **still blocked on a second thing nobody had looked for** — see step 9 |
+| **blocked on a decision or another lane** | **2**, and it was **5** | decides whether alo may use it; **bisects the machine**, moved here at 2026-10-17 when the bracket landed and did not open it (step 5). **Three left this row on 2026-10-18**: *finds a command by what it did*, when the owner chose the surface; *runs a command touching nothing*, when they chose the gesture and ADR 0125 settled the record; and *scopes one command*, which turned out never to have been blocked — its stated dependency on `alo-capability` was a claim about a different ADR's work, and the owner's permission to widen that crate was not needed |
 | unowned | **0** | — *this row held* **runs a command touching nothing** *until 2026-10-17, when measuring found the box built (#729, 2026-10-16) and demonstrated on a real kernel. It moved to* blocked*, and on 2026-10-18 to its own row above, when the owner chose the surface it was waiting on* |
 
-*The four counts are **4 + 4 + 1 + 4 = 13**, which is the whole list. Stated as
-a sum because this table was edited twice on 2026-10-18 and the first edit left
-it summing to eleven: two promises were taken out of* blocked *and only one was
+*The four counts are **4 + 6 + 1 + 2 = 13**, which is the whole list. Stated as
+a sum because this table was edited three times across 2026-10-18 and -19, and
+the first edit left it summing to eleven: two promises were taken out of* blocked *and only one was
 put anywhere. **A row that moves has to arrive somewhere**, and a table of
 counts is the one place that can be checked by adding up.*
 
@@ -562,7 +562,7 @@ owner rules. What changed is the reason — from *nobody has written the
 decision* to *the decision is written and waiting* — and this document warns
 two sections below against reading the second as the first.
 
-### 7. Terminal tasks 4 and 5 — **task 4 was decided and built on 2026-10-18; task 5 still needs a decision**
+### 7. Terminal tasks 4 and 5 — **both built on 2026-10-18, and task 5 was never blocked at all**
 
 **The plan says of each: *Depends on: nothing in this plan.* That is true, and I
 read it as *unblocked*, which it does not say.** Both depend on something
@@ -594,6 +594,27 @@ record cannot say what it changed; for a verb it can.*
 **Task 5, *scope one command without changing a setting*.** A per-command
 narrowing of a grant, which is `alo-capability` — the same crate, and the same
 unanswered ownership question, as the step below.
+
+> **Built on 2026-10-18 as #818, and the paragraph above is wrong in every
+> part.** It is kept because being wrong three ways about one dependency is the
+> instructive thing, and because the owner was asked for a permission on the
+> strength of it.
+>
+> | it said | measured while building it |
+> |---|---|
+> | a narrowing **of a grant** | a person running their own command holds no grant — law 2 binds the agent, never the person. It is a narrowing of the **kernel's bound**, which is `alo-running`'s |
+> | which is `alo-capability` | **nothing in `alo-capability` was touched** |
+> | the same unanswered ownership question as the step below | the step below is ADR 0111, *the person chooses whether their agent may use the terminal* — a **different promise**, row two of the thirteen. Its `alo-capability` item is the terminal grant |
+>
+> **The owner approved widening `alo-capability` on 2026-10-19. It was not
+> needed and was not used.**
+>
+> What is built: `try --only-here ./build.sh` works in the folder the person is
+> standing in and nowhere else, measured on a kernel. And `--offline` was
+> **already true of any boxed run** — `Bounds` begins as nowhere, so a boxed
+> `curl` to an IP answered `http=000` where an unboxed one answered `301`. What
+> is still owed of that promise is *and the indicator shows that it did not*,
+> which is the compositor's and not reachable from a command.
 
 **What would unblock task 4**, in one sentence: a decision on which surface asks
 the record a narrowed question, given that the one window that shows the record
@@ -867,7 +888,7 @@ and painted over. Every check of them counted drawn runs and passed, because
 both runs existed, one on top of the other. *A count cannot see a thing that was
 drawn in the wrong place.*
 
-### 9. Try a command without letting it touch anything — **the box is built, the owner chose the surface on 2026-10-18, and it is still blocked on where a person's own run writes its record**
+### 9. Try a command without letting it touch anything — **built on 2026-10-18, #817, after the owner chose the surface and ADR 0125 settled the record**
 
 **This document listed it as *unowned* and the plan listed it as *blocked on the
 kernel boundary*. Both were wrong, and the crate that disproves them was already
@@ -942,10 +963,21 @@ and whether that is the same gesture as scoping one command or a different one.
 > file is the promise a record makes; two files is a different promise. ADR 0001
 > §7 is the settled ground and says nothing about this case.
 >
-> **What would unblock it now**, in one sentence: whether a command a person
-> runs in a box writes into the machine's one record — which needs something
-> privileged to write it — or into a record of the person's own, and if the
-> latter, what law 1 then promises.
+> **Answered, and built — 2026-10-18, #817.** The owner took this lane's
+> recommendation and ADR 0125 carries it: a person's own boxed run writes its
+> own record file, and `try` runs the box as a child of their shell.
+>
+> **The reason this lane gave for asking was itself false**, and the ADR keeps
+> both: the record file is `/var/lib/alo`, owned by `alo` — which *is* the
+> person's login, uid 1000, and what `alo-agentd` and `alo-desktop` run as. The
+> permission was never the obstacle. The one-writer rule was, and that
+> contract's own answer to a new writer is a new file.
+>
+> **And two more things only running it found**, both in #817: a box needs
+> `/dev/null` granted or `>/dev/null` is refused and almost no script runs; and
+> `cgroup.procs` asks about the *common ancestor* of where a process is and
+> where it is going, so a `mkdir` probe proved nothing and the first box path
+> was wrong. `alo-desktop.service` now carries `Delegate=yes`.
 >
 > *This block said *not blocked* for the length of one commit. It was corrected
 > by its own author before it landed, by asking what else the task needed
@@ -1080,8 +1112,8 @@ paraphrase of a decision is a second decision.
 |---|---|---|---|
 | 1 | where the explanation of a command comes from — the agent, or the desktop asking a model directly | *"but our agent should be smart enough to know it's an action or just a question?"* | **the agent.** The objection to routing a question through the agent was that it wraps approvals and grants around a read; the owner's answer dissolves it, because ADR 0124 term 4 means that machinery only fires for a change. Built as #805 |
 | 2 | where a person goes to ask *which command made this file* — the record window, a question to alo, or the file manager | *"B and C"* — a question to alo, **and** the file manager later | **terminal task 4**, which this document had recorded as *blocked on a scope decision* since 2026-10-17. The verb is #812; the file manager's *what made this?* is a second surface and a separate change |
-| 3 | who adds a per-command narrowing to `alo-capability` — this lane, or the lane that owns it | *"I go with your recommendation"* | this lane's recommendation was *tell me yes and I'll do it, or name the lane*, which is **not a decision either way** — see the row below. Terminal task 5 is still blocked |
-| 4 | how a person says *run this, but don't let it touch anything* — a word, a key, a setting, or alo offering | *"I go with your recommendation"* — a word **plus** alo offering | **terminal task 9's surface, and not task 9.** A word (`try …`) for the person who already worries, and alo offering for the person who did not think — deliberately **not** a setting as a default, because a setting decides on their behalf. **The task is still blocked**, on a second thing step 9 had not looked for: where a person's own boxed run writes the record a run cannot happen without. *This cell said the answer unblocked the task until it was checked the same evening* |
+| 3 | who adds a per-command narrowing to `alo-capability` — this lane, or the lane that owns it | *"I go with your recommendation"*, and then **"Yes"** on 2026-10-19 when asked again | **nothing, because the question was not real.** The first answer was not a decision either way — the recommendation had been *tell me yes or name the lane* — so it was put again plainly and answered. **Then building terminal task 5 showed it needed no capability change at all**: a person running their own command holds no grant, so the narrowing is the kernel's bound. The permission is banked and unspent, and task 5 is built (#818). *The question itself rested on a status that was wrong three ways — see step 7* |
+| 4 | how a person says *run this, but don't let it touch anything* — a word, a key, a setting, or alo offering | *"I go with your recommendation"* — a word **plus** alo offering | **terminal task 9's surface, and not task 9.** A word (`try …`) for the person who already worries, and alo offering for the person who did not think — deliberately **not** a setting as a default, because a setting decides on their behalf. **The task is built — #817.** This cell said the answer unblocked the task; then that it did not, because of a second thing step 9 had not looked for — where a person's own boxed run writes its record; then ADR 0125 settled that the same evening and the word was built. **Three readings of one cell in one day, and only the last was reached by running the thing** |
 | 5 | what `alo-ask` does in the gap before the provider road exists | *"it should be in the settings if the users allows the alo to use the other models or apis if one is not available"* | **the first row of the table below**, which was the only standing item blocking anything. The answer is a **setting the person sets**, not a default this repository picks — which is `CLAUDE.md`'s *we ship the mechanism, never a default that decides for them* |
 
 **Answer 3 is the one to read twice.** *I go with your recommendation* is a real

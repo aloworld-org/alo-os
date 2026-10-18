@@ -92,7 +92,7 @@ causes, five of which are another lane's or the owner's:
 | 3 | explain a command before it runs | **built**, #805 — the owner chose the agent's road on 2026-10-18 |
 | 7 | hand somebody a session to replay | **the comparer** — the third PC's; shell integration stopped being its other blocker on 2026-10-18 |
 | 4 | find a command by what it did | **the verb is built**, #812 — the owner chose the surface on 2026-10-18; the file manager's half is a second surface |
-| 5 | scope one command | **`alo-capability`**, another lane's |
+| 5 | scope one command | **`--only-here` is built**, #818 — and `--offline` was already true of a boxed run. It never depended on `alo-capability` |
 | 8 | bisect the machine | **the comparer** — the third PC's |
 | 10 | *your files as they were* | **the comparer** |
 | 9 | try a command touching nothing | **the kernel boundary** — the kernel plan's |
@@ -398,13 +398,62 @@ what is missing is the record's permission.**
 
 ### 5. Scope one command without changing a setting
 
-**Status:** **blocked.** **Depends on:** `alo-capability`, which is another
-lane's — and ADR 0111 leaves whose change it is to the integration owner, in
-its own words, *and that question was never answered*.
+**Status:** **`--only-here` is built — #818, 2026-10-18. `--offline` was
+already true and needs no code.** **Depends on:** nothing. It never depended on
+`alo-capability`.
 
-One command run under a narrower grant than the session has, without touching
-what the person chose for everything else. `alo-capability` has grants and
-`ADR 0064` has the levels; this is a per-command narrowing and the words for it.
+One command run under a narrower bound than the person's session has, without
+touching what they chose for everything else. `try` is the word (#817) and these
+are its narrowings: `try --only-here ./build.sh` may work in the folder the
+person is standing in and nowhere else.
+
+**`--offline` was already the behaviour of a boxed run, and nothing had said
+so.** `alo_bounding_map::Bounds` holds where a turn may connect to and *begins
+as nowhere* — default-deny. Measured on 2026-10-18, the same `curl` to an IP
+address with one difference between the runs:
+
+| | |
+|---|---|
+| unboxed | `http=301`, exit 0 |
+| in a box | `http=000`, exit 7 — could not connect |
+
+So a flag for it would be a flag that does nothing. **What the promise asks
+beyond this is *and the indicator shows that it did not***, which is the
+compositor's surface and is not reachable from a command — the same gap ADR 0125
+settles for an egress that happens, pointing the other way. That half is still
+owed and is the owner's road rather than this one's.
+
+**And `--only-here` is a loosening**, which the flag's name does not suggest:
+`try` alone grants the command and nothing of the person's, and this adds their
+folder. It is also **stricter than the promise says** — the promise is *may not
+write outside this folder*, and a place in `alo-bounding` is read and write
+together, so what it gives is *may not touch outside this folder*.
+
+### What this status said until 2026-10-18, and why all three parts were wrong
+
+> **Status:** **blocked.** **Depends on:** `alo-capability`, which is another
+> lane's — and ADR 0111 leaves whose change it is to the integration owner, in
+> its own words, *and that question was never answered*.
+
+Kept because the reasoning is the instructive part, and because the owner was
+asked for a permission on the strength of it.
+
+| it said | measured while building it |
+|---|---|
+| depends on `alo-capability` | **it does not.** A person running their own command needs no grant — law 2 binds the agent, never the person — so the narrowing is `alo-running`'s bound. **Nothing in `alo-capability` was touched** |
+| `alo-capability` is another lane's | it is **this lane's**, through `applications-and-what-they-expect-plan.md` in `a-new-machine-becomes-a-lane.md`'s crate table. The real objection in ADR 0111 is different and better: *a lane does not widen its own partition* |
+| ADR 0111 leaves whose change it is | **ADR 0111 is *the person chooses whether their agent may use the terminal*** — a different promise, row two of the thirteen. Its `alo-capability` item is the terminal grant. The two were conflated |
+
+**The owner was asked to approve widening `alo-capability` and said yes on
+2026-10-19. The permission was not needed and was not used**, which is recorded
+here so that a later reader does not take this task as the precedent for one.
+
+*This is the same shape as task 4's correction the same day: there, the status
+listed *a verb the agent calls* among roads that cannot be taken, under* there is
+no such verb *— a true statement about `main` and not a reason. Here, *depends on
+`alo-capability`* was a true statement about a different ADR's work. **A status
+that names a dependency is making a claim, and a claim is worth measuring before
+a lane spends a day on it or an owner spends a decision.***
 
 ### 6. Output that is not stuck in a character grid
 
