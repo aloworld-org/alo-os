@@ -96,7 +96,7 @@ causes, five of which are another lane's or the owner's:
 | 8 | bisect the machine | **the comparer** — the third PC's |
 | 10 | *your files as they were* | **the comparer** |
 | 9 | try a command touching nothing | **the kernel boundary** — the kernel plan's |
-| 11 | ask alo where the person chose, not only here | **law 1 out of a process** — no road to the indicator or the record |
+| 11 | ask alo where the person chose, not only here | **two**: law 1 out of a process, and a trade the owner owns — today it answers where nobody chose |
 
 **So the five causes are:** shell integration (2 tasks), the privileged comparer
 (3), a design component nobody has captured (part of 1), `alo-capability`'s
@@ -408,12 +408,73 @@ not simply built here under *work a task needs is part of that task*:
 
 ### 11. Ask alo where the person chose, and not only this machine
 
-**Blocked, and the block is the finding.** *This was written up as startable on
+**Blocked twice, and both blocks are the finding.** One is law 1, below. The
+other was found by running the command rather than reading it, and it is not a
+missing feature at all: **what it does today is answer somewhere the person did
+not choose.** *This was written up as startable on
 2026-10-18 and corrected the same hour. The first draft is quoted because the
 mistake is worth more than the correction:* **nothing in this task waits on
 anybody — this one is a caller that does not exist for doors that do.** Two of
 the five duties below cannot be discharged by any command, and I listed them as
 duties without asking whether a road to them exists.
+
+### What a person gets today is worse than a missing feature — run, not read, 2026-10-18
+
+**It answers somewhere they did not choose, and does not say so.** A settings
+file naming a provider exactly as `docs/contracts/person-settings.md` documents
+it:
+
+```toml
+[answers]
+provider = { name = "Mistral", model = "mistral-small-latest" }
+```
+
+```text
+$ alo-ask may the tenant sublet
+"May the tenant sublet" is a bit of a colloquialism, but more commonly…
+on this machine
+```
+
+The only model installed on that machine is `smollm2:1.7b`. **So a person who
+asked for `mistral-small-latest` from Mistral was answered by a 1.7B local
+model and was never told their choice was not used.** *on this machine* is the
+only hint, and it reads as confirmation.
+
+[ADR 0008](../decisions/0008-where-inference-happens.md) is explicit: *a hosted
+API is a supported first-class option and **never a silent fallback***.
+
+**The sharpest evidence is a contrast.** `alo_choosing::what_answers_here` is
+the function that answers *what answers questions on this machine*.
+`alo-desktop` calls it. **`alo-ask` never does** — grepped across `crates/`, the
+only callers are `alo-choosing` itself and `alo-desktop`.
+
+**With no local weights, or several, it refuses instead** with *choose a model
+for this question to be answered by* — also false, since the person did choose.
+*That path is **read** in `main.rs` and `the_only_one`'s two arms and was not
+run; the one above was run.*
+
+**No existing sentence can carry the honest refusal**, checked rather than
+assumed: `models.policy.not-this-machine` says *this machine is set to answer
+only on itself*, which would be a **second falsehood** — the restriction is a
+constant inside `alo-ask`, and `THE_STRICTEST_RULE`'s own doc says it *is not a
+reading of the organisation's policy and does not pretend to be one*.
+`answering.wrong.sent-somewhere-else` is about an HTTP redirect.
+
+**And the fix is the owner's, because refusing takes something away.** A person
+with a provider configured and one local model installed gets answers today;
+refusing would stop that, and law 5 says *the person chooses; alo never takes
+the choice away*. So this is a trade between ADR 0008's *never silent* and law
+5's *never withdraw*, and the three options are: refuse and say so; answer
+locally but say plainly that the chosen provider was not used; or leave it until
+the provider road exists. **The second takes nothing away and is this lane's
+recommendation**, and it still needs a sentence nobody has written.
+
+*The crate documented this behaviour as correct — "nothing is silent about
+typing a command named for the place it asks" — and that argument was corrected
+in #793 before this was measured: the command is called `alo-ask` and names no
+place.*
+
+### The transport, and what it is missing
 
 **What a person gets today**, measured 2026-10-18: `alo-ask` holds
 `SourcePolicy::ThisMachineOnly` and calls `Asking::to_this_machine` and nothing
