@@ -37,6 +37,25 @@ After=alo-compositor.service
 # It stays, and the desktop stays with it. A oneshot would draw one frame.
 Type=exec
 
+# **The cgroup is the person's, so `try` has somewhere to make a box.**
+#
+# `alo-try` is the word a person puts before a command to run it sealed
+# (ADR 0064), and it is a child of their shell, which is a child of this. It
+# makes the box in a child of its **own** cgroup, because cgroup v2 asks
+# whether the *common ancestor* of here and there may be written — not whether
+# the destination may. Without this line that ancestor is this unit's cgroup,
+# which is root's, and every `try` is refused with `Permission denied` from the
+# helper.
+#
+# Measured on 2026-10-18 by running it rather than reasoning about it; the
+# finding is in `docs/quirks.md` under *where a box goes*, which had this
+# question open.
+#
+# The hierarchy and no resource policy, which is `alo-agentd.service`'s wording
+# and its reason: nothing is written into `cgroup.subtree_control` here, because
+# a box is a boundary rather than a budget.
+Delegate=yes
+
 # **The person, not root.** The greeter is the machine's and runs as root
 # because a seat lends a card to a privileged caller before anybody is there;
 # this is the person's own desktop and runs as them. `alo-desktop`'s own header

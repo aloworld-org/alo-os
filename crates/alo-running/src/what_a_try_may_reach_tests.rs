@@ -1,0 +1,160 @@
+//! **The test that matters is the one about what is *not* granted**, because
+//! that is the whole of the promise: a boxed command reaches the system it
+//! needs and nothing anybody wrote.
+
+use super::*;
+
+/// **The three places, in order, for a command named in full.**
+#[test]
+fn a_command_gets_itself_the_programs_folder_and_the_libraries() {
+    let places = what_a_try_may_reach(Path::new("/home/anna/install.sh"))
+        .expect("a machine that runs things has a library folder");
+
+    assert_eq!(places.len(), 4, "{places:?}");
+    assert_eq!(places[0], Path::new("/home/anna/install.sh"));
+    assert_eq!(places[1], Path::new(WHERE_PROGRAMS_ARE));
+    assert_eq!(
+        places[2],
+        where_the_libraries_are().expect("the same folder, asked twice")
+    );
+    assert_eq!(places[3], Path::new(THE_EMPTY_DEVICE));
+}
+
+/// **The empty device is granted by name and the folder holding it is not.**
+///
+/// `/dev` holds the disks, the memory and every input device on the machine,
+/// and the boundary grants a place and everything under it — so granting the
+/// folder would hand a boxed command the raw disk.
+#[test]
+fn the_device_folder_is_not_granted_only_the_empty_device() {
+    let places = what_a_try_may_reach(Path::new("/usr/bin/true")).expect("a library folder");
+
+    assert!(
+        places.iter().any(|place| place == Path::new("/dev/null")),
+        "without it, `>/dev/null` is refused and almost no script runs: {places:?}"
+    );
+    assert!(
+        !places.iter().any(|place| place == Path::new("/dev")),
+        "the whole device folder is granted, which hands a boxed command the raw disk: {places:?}"
+    );
+}
+
+/// **The set is exactly as large as the kernel's bound allows.**
+///
+/// `alo_bounding::PLACES` is the most places one box can be bound to. A
+/// fifth would be dropped or refused by the boundary rather than quietly
+/// ignored here, so this asserts the fit rather than leaving it to be found on
+/// a kernel.
+#[test]
+fn the_places_fit_the_bound_the_kernel_imposes() {
+    let places = what_a_try_may_reach(Path::new("/usr/bin/true")).expect("a library folder");
+    assert!(
+        places.len() <= alo_bounding::PLACES,
+        "{} places asked for and the kernel holds {}",
+        places.len(),
+        alo_bounding::PLACES
+    );
+}
+
+/// **Nothing of the person's is granted**, which is the promise.
+///
+/// Asserted as an absence over the places a person's things are in, rather than
+/// by counting: a fourth place added without a reason fails the test above, and
+/// a fourth place that is somebody's home fails this one with its name.
+#[test]
+fn nothing_a_person_wrote_is_granted() {
+    let places =
+        what_a_try_may_reach(Path::new("/home/anna/project/install.sh")).expect("a library folder");
+
+    for theirs in [
+        "/home",
+        "/home/anna",
+        "/home/anna/project",
+        "/root",
+        "/var/home",
+        "/",
+        "/tmp",
+        "/dev",
+    ] {
+        assert!(
+            !places.iter().any(|place| place == Path::new(theirs)),
+            "{theirs} is granted, and a boxed command must reach nothing anybody wrote: {places:?}"
+        );
+    }
+}
+
+/// **The folder the command is in is not granted, only the command.**
+///
+/// The sharpest one. Granting the folder would be the easy mistake — the
+/// kernel permits at or under a place, so a box given `/home/anna/project`
+/// could read every file in the project it was told to touch nothing of.
+#[test]
+fn the_folder_the_command_sits_in_is_not_granted() {
+    let places =
+        what_a_try_may_reach(Path::new("/home/anna/project/install.sh")).expect("a library folder");
+
+    assert!(
+        !places
+            .iter()
+            .any(|place| place == Path::new("/home/anna/project")),
+        "the command's own folder is granted, so the box can read the whole project: {places:?}"
+    );
+    assert!(
+        places
+            .iter()
+            .any(|place| place == Path::new("/home/anna/project/install.sh")),
+        "the command itself is not granted, so it cannot be read to be run: {places:?}"
+    );
+}
+
+/// **A command that is not a full path is refused, and says so.**
+///
+/// Resolving it here would resolve it against this process's folder, which is
+/// not the folder the person was standing in.
+#[test]
+fn a_command_that_is_not_a_full_path_is_refused() {
+    for named in ["install.sh", "./install.sh", "../install.sh", "bin/thing"] {
+        let refused = what_a_try_may_reach(Path::new(named)).expect_err(named);
+        assert_eq!(
+            refused,
+            NoPlacesForIt::NotAFullPath {
+                named: named.to_owned()
+            }
+        );
+        assert!(
+            refused.to_string().contains("from the root of the machine"),
+            "{refused}"
+        );
+    }
+}
+
+/// **The library folder is resolved, not taken as written.**
+///
+/// The boundary compares a device and an inode, so `/lib` as a link to
+/// `/usr/lib` is a different place from its target — and granting the link
+/// grants nothing the loader opens. This asserts the property rather than the
+/// path, because which of the two a machine has is the machine's business.
+#[test]
+fn the_library_folder_is_a_resolved_directory() {
+    let libraries = where_the_libraries_are().expect("a machine that runs things");
+
+    assert!(libraries.is_absolute(), "{libraries:?}");
+    assert!(libraries.is_dir(), "{libraries:?}");
+    assert_eq!(
+        libraries
+            .canonicalize()
+            .expect("a folder that is there resolves"),
+        libraries,
+        "the folder was taken as written rather than resolved, so a link would be granted \
+         instead of what the loader opens"
+    );
+}
+
+/// **Asking twice answers the same**, so two runs of one command are bound the
+/// same way.
+#[test]
+fn the_places_do_not_change_between_two_asks() {
+    let once = what_a_try_may_reach(Path::new("/usr/bin/true")).expect("a library folder");
+    let twice = what_a_try_may_reach(Path::new("/usr/bin/true")).expect("a library folder");
+    assert_eq!(once, twice);
+}

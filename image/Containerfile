@@ -152,7 +152,8 @@ RUN cargo build --release --target ${THE_TARGET} \
       --package alo-brokerd \
       --package alo-looking-once \
       --package alo-giving-a-folder \
-      --package alo-agent
+      --package alo-agent \
+      --package alo-try
 
 # ---------------------------------------------------------------------------
 # The office engine, fetched pinned and checked before it is trusted
@@ -305,6 +306,20 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-agentd /usr/bin/alo-a
 # `the_helper_is_the_program_this_crate_builds` is the test that keeps the
 # constant and the binary's name one fact rather than two.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-enter-the-box /usr/libexec/alo-enter-the-box
+
+# **The word a person puts before a command**, and the one binary here a person
+# types themselves. In `/usr/bin` and not `/usr/libexec` for exactly that
+# reason: everything in libexec above is run by something else, and this is run
+# by somebody.
+#
+# `crates/alo-terminal/shell-integration/alo.bash` defines `try` only if this
+# is on the path, so an image without it has no `try` rather than a `try` that
+# reports a command not found from inside itself.
+#
+# It needs no unit. It is a child of the person's own shell, which is the whole
+# reason the box is made here rather than by the daemon — ADR 0125's amendment
+# of 2026-10-18 has the measurement.
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-try /usr/bin/alo-try
 
 # **The broker, and the one look this machine takes on its way up.** Both in
 # libexec for the reason the loader and the opener are there: nobody runs either
@@ -773,10 +788,31 @@ COPY --chmod=0644 image/signing/alo-os.pub /etc/containers/alo-os.pub
 # ships a terminal, *because a system that does not trust its owner with a
 # shell is a toy*, and a machine whose shell has crashed must still be
 # reachable.
+# **`alo-try` is run, not tested for.** `CLAUDE.md` names the alternative by
+# name: *`test -x` on a converter binary stood in for the converter starting.
+# Three releases shipped one that died at launch on eleven missing libraries.*
+#
+# With no arguments it says *nothing ran, because what was asked for was not a
+# command this machine could run* and exits 1 — so a run that **fails** is the
+# pass, and a binary that cannot load its libraries fails differently and is
+# caught. This is the final stage, so the architecture is the one it will run
+# on.
+#
+# What this does not check: that a box closes, which needs a kernel with the
+# BPF LSM started and is `alo-running`'s own integration test, not an image
+# build step.
+RUN set -e; \
+    if /usr/bin/alo-try; then \
+      echo "alo-try with no command should have refused and did not" >&2; exit 1; \
+    fi; \
+    /usr/bin/alo-try 2>&1 | grep -q 'not a command' \
+      || { echo "alo-try started but did not say why it refused" >&2; exit 1; }
+
 RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/libexec/alo-convertd /usr/libexec/alo-portald \
                /usr/libexec/alo-shipping \
-               /usr/bin/alo-agentd /usr/bin/alo-agent /usr/bin/ollama \
+               /usr/bin/alo-agentd /usr/bin/alo-agent /usr/bin/alo-try \
+               /usr/bin/ollama \
  && chmod 0644 /usr/lib/systemd/system/alo-boundaryd.service \
                /usr/lib/systemd/system/alo-agentd.service \
                /usr/lib/systemd/system/alo-sessiond.service \

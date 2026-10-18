@@ -8191,9 +8191,52 @@ review, and refuses every command.
 **What follows.** `alo-running` takes the folder its boxes live in as an
 argument rather than deriving it from `Turns`, and its own kernel test makes an
 ordinary group at the root of the hierarchy — which is what `alo-bounding`'s
-kernel tests already did, for this reason. **Where that folder is on a machine
-running alo OS is still open**: it depends on what systemd delegates to the
-service, and nothing has measured it on a booted image yet.
+kernel tests already did, for this reason.
+
+**Answered on 2026-10-18, by running it on a real kernel as an ordinary
+person** — this read *where that folder is on a machine running alo OS is still
+open: it depends on what systemd delegates to the service, and nothing has
+measured it on a booted image yet.*
+
+**It is a child of the cgroup the caller is already in**, and the unit the
+caller descends from has to be `Delegate=`. `alo-try`'s
+`where_the_box_goes` is that, and `alo-desktop.service` now carries the line.
+
+## `cgroup.procs` asks about the common ancestor, not the destination (2026-10-18)
+
+**What was expected.** A box made somewhere a person may write is a box a
+person's process may enter. The first version of `alo-try` composed the path
+`user.slice/user-<uid>.slice/user@<uid>.service/alo-try`, having probed that
+`mkdir` succeeds there and that `cgroup.type` comes out `domain`.
+
+**What happens.** The box is made, and then `alo-enter-the-box` fails writing
+`cgroup.procs` with `Permission denied` — reported to the person as *nothing
+ran, because this machine could not build the box it runs commands in*.
+
+**Why.** Moving a process between cgroups in cgroup v2 needs write access to
+the **common ancestor** of where it is and where it is going, as well as to the
+destination. A command typed in a login session is in `session-N.scope`; the
+destination was under `user@<uid>.service`; their common ancestor is
+`user-<uid>.slice`, which is `root root`. So **a `mkdir` probe proves nothing**
+— both ends were writable and the move was still refused.
+
+```text
+$ ls -ld /sys/fs/cgroup/user.slice/user-501.slice/user@501.service
+drwxr-xr-x 2 me me   <- mkdir here succeeds
+$ ls -ld /sys/fs/cgroup/user.slice/user-501.slice
+drwxr-xr-x 2 root root   <- and this is the common ancestor
+```
+
+**What follows.** A box goes in a child of the caller's **own** cgroup, which
+makes the common ancestor that cgroup itself — so the only question left is the
+one delegation answers. Measured inside a delegated subtree: `mkdir` succeeds,
+`cgroup.type` is `domain`, writing `0` to the child's `cgroup.procs` succeeds,
+and `alo-try /usr/bin/true` exits 0 while `alo-try /usr/bin/cat <a file it was
+not given>` is refused by the kernel.
+
+**And the lesson is the probe, not the path.** The first probe was real, correct
+and about the wrong question — this repository's own fault family, met in a new
+place. The question a probe has to ask is the one the kernel asks.
 
 ## A dynamically linked command needs its libraries inside the boundary (2026-10-16)
 

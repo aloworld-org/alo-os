@@ -1799,6 +1799,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-try"
+version = "0.0.1"
+dependencies = [
+ "alo-bounding",
+ "alo-capability",
+ "alo-keeping",
+ "alo-running",
+ "alo-strings",
+ "rustix 1.1.4",
+]
+
+[[package]]
 name = "alo-turn"
 version = "0.0.1"
 dependencies = [

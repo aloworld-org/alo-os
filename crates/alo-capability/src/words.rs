@@ -666,8 +666,9 @@ pub const NOTHING_RAN_NOT_A_COMMAND: Word = Word::saying(
     "nothing ran, because what was asked for was not a command this machine could run",
 )
 .noting(
-    "Read in a record, and shown to a person, when the agent asked to run something and nothing \
-     ran. The request itself was the problem rather than the machine: no full path to a program, \
+    "Read in a record, and shown to a person, when something asked to run a command and nothing \
+     ran — the person's agent, or the person themselves, who may put the word \"try\" before a \
+     command to run it in a box. The request itself was the problem rather than the machine: no full path to a program, \
      or no such program on this machine, or nowhere named that the command would be allowed to \
      reach. Nothing was attempted.",
 );
@@ -678,8 +679,9 @@ pub const NOTHING_RAN_NO_BOX: Word = Word::saying(
     "nothing ran, because this machine could not build the box it runs commands in",
 )
 .noting(
-    "Read in a record, and shown to a person, when the agent asked to run something and nothing \
-     ran. The \"box\" is a confinement the operating system itself holds, so that a command can \
+    "Read in a record, and shown to a person, when something asked to run a command and nothing \
+     ran — the person's agent, or the person themselves, who may put the word \"try\" before a \
+     command. The \"box\" is a confinement the operating system itself holds, so that a command can \
      reach only what the person chose. The machine could not build one and would not run the \
      command without it. It is a fault in the machine, not a refusal by any rule, and nothing \
      was attempted.",

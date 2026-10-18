@@ -1,0 +1,27 @@
+[package]
+name = "alo-try"
+version = "0.0.1"
+description = "The word a person puts before a command to run it in a sealed box (ADR 0064)."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The box, the places a try may reach, and why a run did not happen.
+alo-running = { path = "../alo-running" }
+# The boundary the kernel holds, opened from the pin `alo-boundaryd` left.
+alo-bounding = { path = "../alo-bounding" }
+# `HowCodeRuns`, and the four sentences `NotRun::the_word` answers with.
+alo-capability = { path = "../alo-capability" }
+# The record a run cannot happen without.
+alo-keeping = { path = "../alo-keeping" }
+# What a person reads, in their own language. This crate declares no words of
+# its own: every sentence it prints is `alo-capability`'s or `alo-keeping`'s.
+alo-strings = { path = "../alo-strings" }
+# `getuid`, to ask which person this is. Nothing else, and safely — every
+# other crate in this workspace that asks uses the same spelling.
+rustix = { workspace = true }
+
+[lints]
+workspace = true

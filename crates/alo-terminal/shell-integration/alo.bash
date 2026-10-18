@@ -70,3 +70,25 @@ __alo_typed() {
 # commands — Ctrl+X Ctrl+E opens the current line in an editor — and a prefix
 # sequence is not a chord any compositor can take before the shell sees it.
 bind -x '"\C-x\C-a": __alo_typed' 2>/dev/null
+
+# ---------------------------------------------------------------------------
+# try — run one command without letting it touch anything of yours.
+# ---------------------------------------------------------------------------
+
+# `try ./install.sh` runs the command inside a box the kernel holds shut. It can
+# read itself, /usr/bin and the system libraries, so it starts; it can reach no
+# file anybody wrote, including yours, and it has nowhere to write. A script
+# that needs to write will say so and stop, which is the thing you asked for.
+#
+# The word is yours to type and nothing types it for you. alo never puts a
+# command in a box you did not ask about.
+#
+# A function and not an alias, so that `try` with no arguments is still `try`
+# and quoting works the way it does for any command. It is defined only if
+# `alo-try` is really installed: a `try` that reported "command not found" from
+# inside itself would be worse than no `try` at all.
+if command -v alo-try >/dev/null 2>&1; then
+	try() {
+		command alo-try "$@"
+	}
+fi
