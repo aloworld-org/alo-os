@@ -184,12 +184,34 @@ impl TheTerminal {
         changed
     }
 
-    /// A run of tests recognised in what the program printed, if there is one.
+    /// A file diff recognised in what the program printed, if there is one.
     ///
     /// [`None`] for nearly everything, which is the ordinary case.
-    /// A file diff recognised in what the program printed, if there is one.
     pub(crate) const fn a_diff(&self) -> Option<&alo_terminal::ADiff> {
         self.a_diff.as_ref()
+    }
+
+    /// **What the shell has said about its prompt since this was last asked.**
+    ///
+    /// Drained, so one mark reaches one caller once.
+    pub(crate) fn what_the_shell_said(
+        &mut self,
+    ) -> Vec<
+        Result<
+            alo_terminal::what_the_shell_says_about_the_prompt::AShellSaid,
+            alo_terminal::what_the_shell_says_about_the_prompt::NotRead,
+        >,
+    > {
+        self.shell.what_the_shell_said()
+    }
+
+    /// **Put alo's explanation of a command beneath the transcript.**
+    ///
+    /// Replaces whatever alo last said in this terminal, which is the same rule
+    /// the waiting answer keeps: alo has one voice here and the newest thing it
+    /// said is the thing that is true.
+    pub(crate) fn alo_explains(&mut self, what: alo_terminal::WhatACommandWillDo) {
+        self.what_alo_said.explains(what);
     }
 
     /// A benchmark comparison recognised in what the program printed, if there
@@ -445,6 +467,35 @@ impl crate::Server {
         self.alos_own_terminal
             .as_mut()
             .is_some_and(TheTerminal::what_the_shell_wrote)
+    }
+
+    /// **What alo's own terminal's shell has said about its prompt.**
+    ///
+    /// Empty when there is no terminal, which is the ordinary case, and empty
+    /// on nearly every frame when there is one: a shell with no integration
+    /// snippet installed never sends a mark.
+    pub fn what_the_shell_said(
+        &mut self,
+    ) -> Vec<
+        Result<
+            alo_terminal::what_the_shell_says_about_the_prompt::AShellSaid,
+            alo_terminal::what_the_shell_says_about_the_prompt::NotRead,
+        >,
+    > {
+        self.alos_own_terminal
+            .as_mut()
+            .map(TheTerminal::what_the_shell_said)
+            .unwrap_or_default()
+    }
+
+    /// **Put alo's explanation of a command into its own terminal.**
+    ///
+    /// Does nothing when there is no terminal, which is what happens to an
+    /// answer that arrives after the person closed it.
+    pub fn alo_explains(&mut self, what: alo_terminal::WhatACommandWillDo) {
+        if let Some(terminal) = self.alos_own_terminal.as_mut() {
+            terminal.alo_explains(what);
+        }
     }
 
     /// Make alo's own terminal the size its window has room for.

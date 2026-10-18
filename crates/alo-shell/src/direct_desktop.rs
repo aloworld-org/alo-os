@@ -819,6 +819,26 @@ impl LoopInput for Desk<'_> {
         // what a later change will use to skip redrawing a terminal nobody has
         // typed in.
         let _ = server.the_terminal_was_written_to();
+
+        // **And what its shell said about its prompt**, drained in the same
+        // breath because the marks arrive in the bytes that read took.
+        //
+        // Empty on nearly every frame: a shell with no integration snippet
+        // installed never sends a mark, and one that has it sends a handful per
+        // command rather than per frame.
+        //
+        // **A typed line is a person asking what a command will do**, and the
+        // only thing that produces one is their own key press — `alo` is not
+        // watching the line editor, and there is no mark between a prompt and
+        // somebody asking. `docs/contracts/shell-integration-marks.md`.
+        for request in
+            crate::what_alo_asks_about_a_command::the_requests_in(&server.what_the_shell_said())
+        {
+            self.asking.ask(
+                crate::what_a_person_asked_goes_to_the_agent::WhoAsked::TheTerminal,
+                &request,
+            );
+        }
         server.meet_what_was_pressed_on_an_edge();
         // **And the applications a person asked to start**, met here for
         // `asked_to_put_aside`'s reason and one of its own: sending `Activate`
@@ -977,7 +997,10 @@ impl LoopInput for Desk<'_> {
                 // that was the end of the road. `ask` hands it to a thread and
                 // returns at once — a frame loop that waited here would stop
                 // every window on the machine drawing until a model answered.
-                self.asking.ask(which, &request);
+                self.asking.ask(
+                    crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(which),
+                    &request,
+                );
             }
         }
         // **What a person pressed Install on becomes an installation, here,
@@ -1042,15 +1065,37 @@ impl LoopInput for Desk<'_> {
         // asking could return at once. Drained rather than read, so one answer
         // reaches one window once.
         for came in self.asking.whatever_came_back() {
-            if let Some(task) = server.tasks_mut().the_mut(came.which) {
-                // The machine failing and the agent answering are told apart,
-                // because a person reads them differently: an answer belongs in
-                // the conversation and *this machine could not be asked*
-                // belongs beside it as something wrong with the machine.
-                if came.the_machines_fault {
-                    task.and_then(alo_tasks::Act::done(came.said));
-                } else {
-                    task.alo_says(alo_tasks::Turn::from_alo(came.said));
+            match came.who {
+                crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(which) => {
+                    if let Some(task) = server.tasks_mut().the_mut(which) {
+                        // The machine failing and the agent answering are told
+                        // apart, because a person reads them differently: an
+                        // answer belongs in the conversation and *this machine
+                        // could not be asked* belongs beside it as something
+                        // wrong with the machine.
+                        if came.the_machines_fault {
+                            task.and_then(alo_tasks::Act::done(came.said));
+                        } else {
+                            task.alo_says(alo_tasks::Turn::from_alo(came.said));
+                        }
+                    }
+                }
+                // **An explanation of a command, into the terminal that asked.**
+                //
+                // A machine that could not be asked draws **nothing**, rather
+                // than a sentence about the machine where a person expects a
+                // sentence about their command. The terminal has no second
+                // place to put it — a task window has `Act::done` beside the
+                // conversation and this does not — and an error wearing the
+                // shape of an explanation is worse than silence here, because
+                // the person is deciding whether to press Enter.
+                crate::what_a_person_asked_goes_to_the_agent::WhoAsked::TheTerminal => {
+                    if !came.the_machines_fault
+                        && let Some(what) =
+                            crate::what_alo_asks_about_a_command::what_came_back(&came.said)
+                    {
+                        server.alo_explains(what);
+                    }
                 }
             }
         }
