@@ -760,8 +760,8 @@ fn the_keyboard_alone_opens_the_market() -> Result<(), InputError> {
 /// as an open window, through `direct_seat`, `direct_pointer`, `pointer_button`
 /// and the Dock, with nothing in between supplied by hand.
 #[test]
-fn the_real_raster_recorded_the_way_the_draw_records_it_opens_the_market()
--> Result<(), InputError> {
+fn the_real_raster_recorded_the_way_the_draw_records_it_opens_the_market() -> Result<(), InputError>
+{
     use crate::desktop_look::DesktopLook;
     use alo_access::TurnedOn;
     use alo_appearance::{Accent, Appearance, TimeOfDay};
