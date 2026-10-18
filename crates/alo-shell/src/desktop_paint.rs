@@ -64,6 +64,11 @@ impl DesktopPicture {
         self.tasks
             .iter()
             .map(|task| &task.panel)
+            // **The market, straight after the tasks and before the Dock's
+            // own surface**, so that both ends of this positional read agree:
+            // `Self::paint` takes the tasks off by count and then takes one
+            // more exactly when there is a market.
+            .chain(self.market.as_ref().map(|market| &market.panel))
             .chain(dock.and_then(|dock| dock.surface.as_ref()))
             .chain(dock.into_iter().flat_map(|dock| dock.panels.iter()))
     }
@@ -88,6 +93,9 @@ impl DesktopPicture {
         let tasks: Vec<_> = (0..self.tasks.len())
             .filter_map(|_| washed.next())
             .collect();
+        // **One more exactly when there is a market**, which is what
+        // `Self::washed` yielded in this position.
+        let market = self.market.as_ref().and_then(|_| washed.next());
         let dock_surface = washed.next();
 
         // The division first: its rules and the outline a drop would take sit
@@ -134,6 +142,30 @@ impl DesktopPicture {
         // its own header: *it needs eyes, and eyes need pictures.*
         for task in &self.tasks {
             crate::painted::paint(frame, &[], &task.inked)?;
+        }
+        // **The market, and until 2026-10-18 nothing painted it at all.**
+        //
+        // `DesktopPicture::market` was laid out by
+        // `crate::where_the_market_opens`, rastered by
+        // `crate::market_raster::picture` and carried on every frame — and
+        // this file read `dock`, `panel` and `tasks` and never read it. So a
+        // person who pressed the market's entry on their Dock opened a window
+        // that was drawn nowhere, and what they saw was a press that did
+        // nothing.
+        //
+        // **Measured on a booted machine**, because no test could say it: the
+        // press arrived, landed on the Dock, refused nothing, and the market
+        // took the keys afterwards — an Escape went to it instead of closing
+        // the overflow, which is how an invisible open window was caught. The
+        // same shape as the task windows' own words, which were shaped,
+        // measured, asserted at twelve and never reached a frame either.
+        //
+        // Above the tasks, because it is the window a person just asked for.
+        if let Some(picture) = self.market.as_ref() {
+            if let Some((texture, area)) = market {
+                crate::painted::wash(frame, texture, *area)?;
+            }
+            crate::painted::paint(frame, &[], &picture.inked)?;
         }
         for window in [&self.running, &self.filling] {
             if !window.is_empty() {
