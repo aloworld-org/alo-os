@@ -261,6 +261,11 @@ picks; this lane's recommendation is the second.*
 
 - `docs/contracts/` gains the sequence: what alo reads, what an adapter must
   emit, how the length is declared. A public surface, so additive and versioned.
+  **Written 2026-10-18, before the reader**, as
+  [`shell-integration-marks.md`](../contracts/shell-integration-marks.md). It
+  rests on terms 1 to 3 alone — the accepted ones — so the gesture and terms 8
+  and 9 can still change without touching a byte of it, and it says in its own
+  first lines that nothing reads it yet.
 - `alo-terminal` gains the second parser and a reader for the two marks.
 - *Explain a command before it runs* and *hand somebody a session they can
   replay* become buildable; both are **nothing** in

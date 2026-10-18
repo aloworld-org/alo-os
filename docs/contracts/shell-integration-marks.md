@@ -1,0 +1,131 @@
+# Shell integration marks
+
+Status: new public surface, 2026-10-18.
+[ADR 0123](../decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md)
+terms 1 to 3, which the owner accepted that day. No agent verb, no D-Bus
+interface and no stored format changes; this is a byte sequence a shell writes
+to its own pseudoterminal and alo OS reads.
+
+**Nothing in alo OS reads these yet, measured 2026-10-18.** The decision is
+accepted and the reader is not built: `alo-terminal` runs one `vte` parser and
+ADR 0123 term 7 calls for a second. A reader building a snippet against this
+document should know that the product does not yet act on what it emits —
+**nothing about the sequence changes**, which is why this is published now
+rather than after.
+
+## Why a shell has to say it
+
+alo cannot know what a person typed by looking. Reading it off the screen decides
+what the **person** typed from what a **program** printed, and keeping a copy of
+the bytes alo forwards diverges silently the first time somebody presses `Up`,
+because the shell owns the line editor. ADR 0123 has the measurements. The only
+component that knows what is in the line editor is the one that owns it, so the
+shell says.
+
+## The cycle: OSC 133, which is not ours
+
+alo reads the semantic prompt marks every other terminal already reads:
+
+| sequence | means |
+|---|---|
+| `OSC 133 ; A ST` | a prompt is about to be drawn |
+| `OSC 133 ; B ST` | the prompt has ended; what follows is what the person types |
+| `OSC 133 ; C ST` | the command is running; what follows is its output |
+| `OSC 133 ; D ; <exit code> ST` | the command has finished, with that status |
+
+`ST` is the string terminator — `ESC \` or `BEL`; both are read.
+
+**A person who already has shell integration for kitty, iTerm2, WezTerm or VS
+Code needs to do nothing.** Those emit these marks already. That is the whole
+reason this is not an alo-specific sequence: an adapter author learns one
+format, and somebody who has configured a terminal before keeps their
+configuration.
+
+Unknown parameters after the letter are ignored, which is how other terminals
+already extend these marks. A sequence alo does not recognise is dropped and
+changes nothing.
+
+## The typed line: `alo-typed`
+
+The cycle cannot carry a command **before it runs**. `B` fires when the prompt is
+drawn, before there is anything to report, and `C` fires after `Enter`, when an
+explanation is a history note rather than a warning. **No shell hook runs while
+somebody is typing**, so the line has to be sent when the person asks for it:
+
+```text
+OSC 133 ; alo-typed ; <base64 of the command> ; <length in bytes> ST
+```
+
+- **`alo-typed`** is a namespaced token where a conforming reader expects `A` to
+  `D`, so no reader can mistake it for a cycle mark, and the `alo-` prefix
+  cannot collide with a key another terminal defines later. This is additive to
+  OSC 133, not a number taken from somebody else's range.
+- **the second parameter** is the line as it stands in the editor, base64
+  encoded. Encoded because a command may contain `;`, `ESC`, or bytes that are
+  not text at all.
+- **the third parameter** is the length **of the decoded command, in bytes**,
+  written in decimal — not the length of the base64.
+
+### The length is not belt and braces, it is the whole check
+
+`vte` caps an OSC payload at 1024 bytes and — measured in its own suite —
+**dispatches the truncated payload rather than dropping it**. Without a declared
+length a long command would arrive as a fragment and be explained as though it
+were whole, which is the same wrong answer as reading the screen, arriving by a
+different door.
+
+So **a payload that does not decode to exactly the declared length is refused**,
+and the person is told the command was too long to read. They are never shown an
+explanation of its first half.
+
+*A single number cannot be caught being wrong. Two that must agree can.*
+
+## What alo will not do with a mark
+
+- **It never touches the gutter.** [ADR 0113](../decisions/0113-the-terminal-owns-a-gutter-that-says-who-is-speaking.md)
+  stands: who is speaking is decided by where bytes came from, never by what
+  they say. A mark says where a prompt and a command are. It does not say who
+  spoke, and a forged one cannot relabel anything.
+- **A mark grants nothing.** It cannot run anything, cannot change or hold a
+  grant, and cannot approve a change. Any program in the session can print this
+  sequence, and that is survivable precisely because the sequence buys no
+  authority: a forged mark can make alo explain a command nobody typed, and it
+  cannot make alo *do* anything.
+- **A mark is a claim, not a fact alo established.** Anything built on it carries
+  that standing to the person, in the same words the recognised test result
+  already uses: *Not independently verified*.
+- **alo reads; it does not watch.** There is no mark between a prompt and a
+  person asking, so there is nothing for alo to read while they type. That is
+  the charter's *context is offered, never watched* holding by construction
+  rather than by policy.
+
+## What a snippet must do, and what it must not
+
+A snippet emits the cycle marks from the shell's own prompt hooks, and emits
+`alo-typed` from a line-editor widget bound to a key — `zle` in zsh,
+`bind -x` in bash.
+
+**It is installed by the person, never by alo.** alo OS ships the snippet, the
+sentence saying plainly what it reveals — every command you run, to alo, on this
+machine — and a one-press way to add it. alo does not write to anybody's shell
+startup unprompted. Without it, the terminal works exactly as it does today and
+the features that need it say so rather than guessing.
+
+## What this document does not settle
+
+**Which key the person presses.** That is still open in ADR 0123 and does not
+belong here: the binding lives in the snippet, and this document describes what
+goes on the wire. Any key that reaches a line editor produces the same bytes.
+
+**What alo does with a command once it has read it** — which model answers,
+where, and what the person is told about that — is ADR 0123's terms 8 and 9 and
+`docs/features.md`'s promise, not this surface. The owner ruled on 2026-10-18
+that all three places may answer: on this machine, on this network, or with a
+provider.
+
+## Changing this
+
+A public surface, so it changes additively and a break needs versioning and
+deprecation. A new parameter is a new `alo-` key that older readers ignore. The
+cycle marks are not ours to change at all; they are read as everybody else emits
+them.
