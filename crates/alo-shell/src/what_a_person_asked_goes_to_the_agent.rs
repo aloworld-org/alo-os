@@ -64,11 +64,29 @@ pub const WHERE_WORDS_GO: &str = "/run/alo-asking/socket";
 /// model may take, which is `alo-models`' to decide.
 const PATIENCE: Duration = Duration::from_secs(330);
 
+/// Who asked, so an answer reaches the thing waiting for it.
+///
+/// **Two, since 2026-10-18.** It was `WhichTask` alone, and the order recorded
+/// that widening it *cannot be built alone* because nothing would ever
+/// construct a second arm. The owner's decision that an explanation comes
+/// through the agent is what constructs it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WhoAsked {
+    /// A task window the person opened from the Dock's composer.
+    ATaskWindow(crate::the_tasks_a_person_opened::WhichTask),
+    /// alo's own terminal, which asked what a command would do before it ran.
+    ///
+    /// **No identifier, because there is one terminal.** When there are more,
+    /// this takes one — and a variant that carried a number nothing could check
+    /// would be worse than adding it then.
+    TheTerminal,
+}
+
 /// What came back for one request.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WhatCameBack {
-    /// Which task asked, so an answer reaches the window it belongs to.
-    pub which: crate::the_tasks_a_person_opened::WhichTask,
+    /// Who asked, so an answer reaches the thing waiting for it.
+    pub who: WhoAsked,
     /// What the agent said, in the person's own language already — every
     /// sentence it carries was worded by the crate that owns it.
     pub said: String,
@@ -124,7 +142,7 @@ impl TheAgentsDoor {
     /// is a machine where nothing is listening for a person's words, which is
     /// what a desktop with no daemon running looks like. It comes back as an
     /// answer saying so.
-    pub fn ask(&self, which: crate::the_tasks_a_person_opened::WhichTask, request: &str) {
+    pub fn ask(&self, who: WhoAsked, request: &str) {
         let socket = self.socket.clone();
         let request = request.to_owned();
         let posting = self.posting.clone();
@@ -135,11 +153,11 @@ impl TheAgentsDoor {
             .name("alo-asking".to_owned())
             .spawn(move || {
                 let came_back = ask_and_wait(&socket, &request);
-                drop(posting.send(came_back.into_what_came_back(which)));
+                drop(posting.send(came_back.into_what_came_back(who)));
             });
         if let Err(why) = started {
             drop(self.posting.send(WhatCameBack {
-                which,
+                who,
                 said: format!("this machine could not ask: {why}"),
                 the_machines_fault: true,
             }));
@@ -171,19 +189,16 @@ enum Said {
 }
 
 impl Said {
-    /// The same thing, addressed to a task.
-    fn into_what_came_back(
-        self,
-        which: crate::the_tasks_a_person_opened::WhichTask,
-    ) -> WhatCameBack {
+    /// The same thing, addressed to whoever asked.
+    fn into_what_came_back(self, who: WhoAsked) -> WhatCameBack {
         match self {
             Self::TheAgent(said) => WhatCameBack {
-                which,
+                who,
                 said,
                 the_machines_fault: false,
             },
             Self::TheMachine(said) => WhatCameBack {
-                which,
+                who,
                 said,
                 the_machines_fault: true,
             },

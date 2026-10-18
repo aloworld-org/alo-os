@@ -17,6 +17,7 @@ use std::os::unix::net::UnixListener;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
+use super::WhoAsked;
 use super::{TheAgentsDoor, WHERE_WORDS_GO, WhatCameBack};
 use crate::the_tasks_a_person_opened::WhichTask;
 
@@ -75,13 +76,16 @@ fn what_a_person_typed_goes_out_and_the_answer_comes_back() {
     let heard = an_agent_answering(&at, "Three are unpaid.\n");
     let door = TheAgentsDoor::at(&at);
 
-    door.ask(WhichTask::numbered(0), "how many invoices are unpaid?");
+    door.ask(
+        WhoAsked::ATaskWindow(WhichTask::numbered(0)),
+        "how many invoices are unpaid?",
+    );
 
     assert_eq!(heard.recv().unwrap(), "how many invoices are unpaid?\n");
     let came = one_answer(&door);
     assert_eq!(came.said, "Three are unpaid.");
     assert!(!came.the_machines_fault);
-    assert_eq!(came.which, WhichTask::numbered(0));
+    assert_eq!(came.who, WhoAsked::ATaskWindow(WhichTask::numbered(0)));
 
     let _ = std::fs::remove_dir_all(at.parent().unwrap());
 }
@@ -103,7 +107,10 @@ fn a_waiting_change_keeps_the_sentence_a_person_approves() {
     );
     let door = TheAgentsDoor::at(&at);
 
-    door.ask(WhichTask::numbered(3), "rename the march invoice");
+    door.ask(
+        WhoAsked::ATaskWindow(WhichTask::numbered(3)),
+        "rename the march invoice",
+    );
     assert_eq!(heard.recv().unwrap(), "rename the march invoice\n");
 
     let came = one_answer(&door);
@@ -129,7 +136,7 @@ fn a_machine_with_nothing_listening_says_so_and_keeps_going() {
     let _ = std::fs::remove_file(&at);
     let door = TheAgentsDoor::at(&at);
 
-    door.ask(WhichTask::numbered(1), "anything");
+    door.ask(WhoAsked::ATaskWindow(WhichTask::numbered(1)), "anything");
 
     let came = one_answer(&door);
     assert!(came.the_machines_fault, "{:?}", came.said);
@@ -150,7 +157,7 @@ fn an_agent_that_says_nothing_is_the_machines_fault() {
     let _heard = an_agent_answering(&at, "");
     let door = TheAgentsDoor::at(&at);
 
-    door.ask(WhichTask::numbered(2), "anything");
+    door.ask(WhoAsked::ATaskWindow(WhichTask::numbered(2)), "anything");
 
     let came = one_answer(&door);
     assert!(came.the_machines_fault, "{:?}", came.said);
@@ -180,7 +187,7 @@ fn asking_comes_back_at_once_however_slow_the_agent_is() {
     let door = TheAgentsDoor::at(&at);
 
     let began = Instant::now();
-    door.ask(WhichTask::numbered(0), "anything");
+    door.ask(WhoAsked::ATaskWindow(WhichTask::numbered(0)), "anything");
     let took = began.elapsed();
     assert!(
         took < Duration::from_millis(200),
@@ -200,7 +207,7 @@ fn an_answer_is_handed_over_once() {
     let _heard = an_agent_answering(&at, "done\n");
     let door = TheAgentsDoor::at(&at);
 
-    door.ask(WhichTask::numbered(0), "anything");
+    door.ask(WhoAsked::ATaskWindow(WhichTask::numbered(0)), "anything");
     let came = one_answer(&door);
     assert_eq!(came.said, "done");
     assert!(
