@@ -113,7 +113,7 @@ fn carried_out(
     match asked {
         FromAnAgent::Read { verb, .. } => {
             match turning.reading(verb, &asked.given(), grants, now) {
-                Ok(answer) => ToAnAgent::did(as_a_client_sees_it(&answer)),
+                Ok(answer) => ToAnAgent::did(as_a_client_sees_it(&answer, now)),
                 Err(why) => not_done(&why, strings),
             }
         }
@@ -1886,6 +1886,11 @@ endpoint = \"https://{other}\"
                 path: "/var/lib/alo/record.jsonl".to_owned(),
                 why: "no space left on device".to_owned(),
             })
+        }
+        /// Nothing was written down, because every write failed — so the
+        /// honest answer is an empty record rather than a refusal.
+        fn written_down(&self) -> Result<alo_record::Record, alo_keeping::NotKept> {
+            Ok(alo_record::Record::default())
         }
     }
 

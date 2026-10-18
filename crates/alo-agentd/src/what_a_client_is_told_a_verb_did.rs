@@ -19,11 +19,13 @@
 //! answered with something the wire cannot carry would be the same fault as a
 //! verb nothing can execute, one level along, and this is where it is caught.
 
+use std::time::SystemTime;
+
 use alo_protocol::Done;
 use alo_turn::WhatAVerbDid;
 
 /// What a verb did, as the wire carries it.
-pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid) -> Done {
+pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
     match did {
         WhatAVerbDid::ToFiles(answer) => Done::of_a_file_verb(answer),
         WhatAVerbDid::AnApplicationInstalled(installed) => Done::of_an_installation(installed),
@@ -40,5 +42,14 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid) -> Done {
         // only ones that reach it — `crate::doing` does, which is the whole
         // point of a read.
         WhatAVerbDid::WhatCanBeInstalled(holds) => Done::of_a_catalogue_read(holds),
+        // The fifth family, and the second read. **The first whose subject is
+        // the person themselves**, which is why it takes `now`: what crosses
+        // is how long ago each thing happened, not a moment, so what a person
+        // reads does not depend on two clocks agreeing.
+        //
+        // It goes to a client on the machine whose record it is and nowhere
+        // else — `alo_turn::Arriving::reading` refuses the verb across a
+        // pairing, and `alo_corridor::doorway` answers nothing for this arm.
+        WhatAVerbDid::WhatTouchedAFile(found) => Done::of_a_record_read(found, now),
     }
 }

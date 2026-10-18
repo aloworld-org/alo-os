@@ -25,7 +25,11 @@
 //! telling a client it failed would be telling it something untrue about the
 //! disk. [`crate::naming`] is where the rule and its reasons are.
 
+use std::time::SystemTime;
+
+use alo_capability::Effect;
 use alo_files::Answer;
+use alo_record::WhatTouchedIt;
 use serde::{Deserialize, Serialize};
 
 use crate::naming::{all_shown, shown};
@@ -138,6 +142,67 @@ pub enum Done {
         /// Each one, in the order the catalogue keeps.
         applications: Vec<CanBeInstalled>,
     },
+    /// What the record says was done to one file.
+    ///
+    /// **The first answer here out of what already happened** rather than out
+    /// of the machine as it stands — and the first whose subject is the person
+    /// themselves, which is why `alo_turn::Arriving::reading` refuses the verb
+    /// across a pairing and this shape never crosses a corridor. It goes to a
+    /// client on the machine whose record it is, and nowhere else.
+    TouchedThatFile {
+        /// The file the question was about, as the call named it.
+        file: String,
+        /// What was found, oldest first. Empty is an ordinary answer — read
+        /// `nothing_names_it` with it.
+        done: Vec<OneThingDoneToIt>,
+        /// The key of the sentence saying nothing in the record names the
+        /// file, where nothing does.
+        ///
+        /// **A key and never the sentence**, which is this enum's rule one
+        /// level along: what crosses is the identity and a person reads it
+        /// where a person is. It is [`None`] when something was found, so a
+        /// client cannot draw *nothing names it* over a list of things that
+        /// do.
+        nothing_names_it: Option<String>,
+        /// The key of the sentence saying this is what alo did, which is
+        /// always here.
+        ///
+        /// Not an [`Option`]: `alo_record::WhatTouchedIt` has no shape that
+        /// omits it, and neither has this. An empty answer means the agent did
+        /// nothing to the file and never that nothing did, and a client that
+        /// could leave the sentence out could leave a person to conclude the
+        /// second.
+        only_what_alo_did: String,
+    },
+}
+
+/// One thing the record says was done to a file, as it goes back to a client.
+///
+/// **Three fields and no fourth.** What was shown, how long ago, and whether
+/// it changed anything — which is what a person asking *what happened to this*
+/// is actually asking.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct OneThingDoneToIt {
+    /// The sentence the person was shown at the time, as they were shown it.
+    ///
+    /// **The one place in this enum where words cross rather than a key**, and
+    /// it is not an exception to the rule: a record keeps what a person was
+    /// *told*, in the language they were told it in, and re-wording it now
+    /// would make the record and the screen two different accounts of one
+    /// moment. `alo_record::Line` is that already-worded sentence.
+    pub said: String,
+    /// How long before the question it happened, in seconds.
+    ///
+    /// **A duration and not a moment**, which is every other time on this
+    /// wire: a moment would make what a person reads depend on two clocks
+    /// agreeing, and the client works the moment out from its own.
+    pub seconds_ago: u64,
+    /// Whether it changed the machine or only answered a question.
+    ///
+    /// The distinction a person wants: a `read_file` named the file and
+    /// altered nothing.
+    pub changed_something: bool,
 }
 
 /// One application a person could install, as it goes back to a client.
@@ -249,6 +314,35 @@ impl Done {
         }
     }
 
+    /// What the record answered about a file, as it goes on the wire.
+    ///
+    /// `now` is taken rather than read, as everywhere else in this workspace:
+    /// what a client is told is arithmetic a test can check rather than a
+    /// clock it has to wait for. An entry recorded after `now` — two clocks
+    /// on one machine disagreeing — answers zero seconds ago rather than
+    /// panicking or wrapping.
+    #[must_use]
+    pub fn of_a_record_read(found: &WhatTouchedIt, now: SystemTime) -> Self {
+        Self::TouchedThatFile {
+            file: found.file().to_owned(),
+            done: found
+                .found()
+                .iter()
+                .map(|one| OneThingDoneToIt {
+                    said: one.said().as_str().to_owned(),
+                    seconds_ago: now
+                        .duration_since(one.at())
+                        .map_or(0, |since| since.as_secs()),
+                    changed_something: one.effect() == Effect::Change,
+                })
+                .collect(),
+            nothing_names_it: found
+                .and_nothing_names_it()
+                .map(|word| word.named().to_owned()),
+            only_what_alo_did: found.and_only_what_alo_did().named().to_owned(),
+        }
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -336,6 +430,34 @@ impl Done {
             // list of unknown length, and then the answer needs a `cut_short`
             // of its own and this arm has to stop saying `false`.
             Self::CanBeInstalled { .. } => false,
+            // **A record read leaves nothing out *that this flag means*, and
+            // the reasoning matters more here than the answer.**
+            //
+            // This flag means *partial relative to its own subject*: a bound
+            // was reached, a name could not be shown. The record read imposes
+            // no bound — it answers every entry that named the file — so
+            // `false` is the honest answer to the question asked.
+            //
+            // **It is not a claim that the answer is the whole history**, and
+            // two things narrow it. One is already said on every answer and
+            // cannot be left off: `only_what_alo_did`, because a command a
+            // person typed leaves an entry that does not say which files it
+            // changed.
+            //
+            // The other is **not said anywhere yet, and is written down here
+            // so it is a known gap rather than a discovery.** A record is
+            // shortened under a keeping rule (`alo_turn::Shortening`), so
+            // entries older than that rule are gone — and an answer out of a
+            // shortened record looks exactly like an answer out of a complete
+            // one. `alo_record::WhatTouchedIt` cannot tell: nothing records
+            // that a shortening removed something matching. Closing it needs
+            // either a count kept by the shortening or the rule's own horizon
+            // carried into the answer, and either is a change to
+            // `alo-keeping`. Reported as sub-work on 2026-10-18 rather than
+            // folded into this flag, because *a caveat on everything is a
+            // caveat on nothing* and this one would be on every answer while
+            // being right about almost none of them.
+            Self::TouchedThatFile { .. } => false,
         }
     }
 }

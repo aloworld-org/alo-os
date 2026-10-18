@@ -242,6 +242,14 @@ impl AtTheDoor {
             // record has the reason, in its own words, for the person who owns
             // it.
             NotDone::CouldNotLookAtTheCatalogue(_) => Some(Self::MachineCouldNot),
+            // **Unreachable through this door**, because the record's verb is
+            // refused by name in `alo_turn::Arriving::reading` and never
+            // carried out for another machine. [`Self::MachineCouldNot`] if it
+            // ever were, on `CouldNotLookAtTheCatalogue`'s argument one arm up:
+            // *everything permitted it and the receiving machine could not* is
+            // what happened, and why is a fact about somebody else's machine
+            // that a pairing does not carry.
+            NotDone::CouldNotAskTheRecord(_) => Some(Self::MachineCouldNot),
             NotDone::NotRecorded(_) | NotDone::TurnClosed => None,
         }
     }

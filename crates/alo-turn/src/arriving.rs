@@ -182,6 +182,25 @@ impl<'a, 'm> Arriving<'a, 'm> {
         now: SystemTime,
     ) -> Result<WhatAVerbDid, NotDone> {
         self.turning.still_open()?;
+        // **The record never answers across a pairing**, and this is where
+        // that is enforced rather than drawn.
+        //
+        // `alo_software::WHAT_CAN_BE_INSTALLED` crosses because the catalogue
+        // is `include_str!` of a file identical on every alo machine of a
+        // release: the answer says nothing about the person. The record is the
+        // exact opposite — it is *only* about this person, the sentences their
+        // agent was shown, the times and the files — so an answer out of it
+        // would carry one person's history to another machine on the strength
+        // of a pairing they made to share a model.
+        //
+        // A pairing permits `Models` and `Workspace`
+        // (`alo_nearby::EVERYTHING_A_PAIRING_MAY_PERMIT`), and neither is
+        // this. Refused by name here, before a call is built, so no grant and
+        // no boundary is consulted for a question that is not going to be
+        // answered.
+        if verb == alo_record::what_touched_a_file::THE_VERB {
+            return Err(self.turning.not_for_another_machine(verb, now));
+        }
         let call = self.turning.calling(verb, given, now)?;
         if let Some(said) = self.pairing_ended(pairings, now) {
             let refused = Refused::worded_elsewhere(call, said);

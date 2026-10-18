@@ -197,11 +197,30 @@ pub const COULD_NOT_LOOK_AT_THE_CATALOGUE: Word = Word::saying(
      worked into this one.",
 );
 
+/// A question of the record that was not answered.
+///
+/// **Worded differently from [`COULD_NOT_LOOK_AT_THE_CATALOGUE`] beside it,
+/// and the difference is load-bearing.** That one can only mean alo OS is
+/// inconsistent with itself, so it says the fault is in alo OS. This one has
+/// two causes and the common one is a disk — so it says what is true of both,
+/// *the record could not be read*, and does not blame a machine that may be
+/// perfectly well.
+///
+/// What a person can act on is the same as there: nothing happened because of
+/// the question, and asking again costs nothing.
+pub const COULD_NOT_ASK_THE_RECORD: Word = Word::saying(
+    "turn.could-not-ask-the-record",
+    "your agent could not be told what was done to that file: the record could not be read.      Nothing was changed by asking, and asking again is safe",
+)
+.noting(
+    "Shown to a person whose agent asked what the record says was done to one of their files      and was not answered. Usually the file the record is kept in could not be read. It does      not say that nothing was done to the file — nothing was found out either way, which is      what this sentence has to leave open.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 7] = [
+pub const EVERY_WORD: [Word; 8] = [
     TURN_CLOSED,
     NOT_BOUNDED,
     NOT_GRANTED_HERE,
@@ -209,6 +228,7 @@ pub const EVERY_WORD: [Word; 7] = [
     NO_LONGER_PAIRED,
     COULD_NOT_INSTALL_HERE,
     COULD_NOT_LOOK_AT_THE_CATALOGUE,
+    COULD_NOT_ASK_THE_RECORD,
 ];
 
 /// Why this crate's own list could not be declared.

@@ -48,6 +48,28 @@ pub trait Kept {
     /// answers `Ok` when it did not write is an implementation that turns off
     /// the guarantee this trait exists for.
     fn keep(&mut self, entry: Entry) -> Result<(), NotKept>;
+
+    /// Everything written down so far, read back so it can be asked a
+    /// question.
+    ///
+    /// **This trait's own header already promised it**: *the thing that keeps
+    /// it is the thing that can answer questions about it afterwards.* It was
+    /// a sentence of prose until 2026-10-18, when the record gained a verb an
+    /// agent can ask, and it became a method.
+    ///
+    /// Owned rather than borrowed, because a record on a disk is not held in
+    /// memory at all: the implementation for one reads the file. An
+    /// implementation that keeps its entries hands back a copy, and a copy is
+    /// the honest thing in both cases — what comes back is the record *as of
+    /// this moment*, and the next entry written does not change it.
+    ///
+    /// # Errors
+    /// [`NotKept`] when the machine could not read it back — the file is gone,
+    /// the disk refused, or a line in it is not one this version understands.
+    /// **Never an empty record in place of a refusal**: *nothing was written
+    /// down* and *what was written down could not be read* are different
+    /// facts, and only one of them is an answer.
+    fn written_down(&self) -> Result<Record, NotKept>;
 }
 
 /// The record a process holds, which forgets everything when it stops.
@@ -63,6 +85,11 @@ impl Kept for Record {
         Record::keep(self, entry);
         Ok(())
     }
+
+    /// A copy of what is on the list, which cannot fail.
+    fn written_down(&self) -> Result<Record, NotKept> {
+        Ok(self.clone())
+    }
 }
 
 /// The record on a disk, which is what a daemon writes to.
@@ -74,6 +101,17 @@ impl Kept for Record {
 impl Kept for Writing {
     fn keep(&mut self, entry: Entry) -> Result<(), NotKept> {
         Writing::keep(self, &entry)
+    }
+
+    /// The file read back from its own path.
+    ///
+    /// **`Reading::at` rather than `believed_at`**: the strict reader, which
+    /// refuses a record whose head does not check rather than answering out of
+    /// one it does not believe. A question answered from a record this machine
+    /// cannot vouch for is the kind of answer this repository exists not to
+    /// give, and the caller reports the refusal instead.
+    fn written_down(&self) -> Result<Record, NotKept> {
+        Ok(alo_keeping::Reading::at(self.path())?.into_record())
     }
 }
 

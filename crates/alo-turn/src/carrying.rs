@@ -61,6 +61,7 @@ use alo_record::Entry;
 
 use crate::acting_on_an_application::acting_on_an_application;
 use crate::arriving::worded_here;
+use crate::asking_the_record::asking_the_record;
 use crate::bounding::Doing;
 use crate::installing_an_application::installing_an_application;
 use crate::looking_at_the_catalogue::looking_at_the_catalogue;
@@ -116,6 +117,16 @@ pub(crate) fn carrying_out(
     if authorised.verb() == alo_software::WHAT_CAN_BE_INSTALLED {
         let (entry, holds) = looking_at_the_catalogue(machine, authorised);
         return (entry, holds.map(WhatAVerbDid::from));
+    }
+    // **The record's question, routed by name like the rest.** It is asked
+    // before the boundary is worked out, for `WHAT_CAN_BE_INSTALLED`'s reason
+    // one arm up: ADR 0013's boundary is built from resolved paths and this
+    // verb opens none — the path it carries is matched against what was
+    // written down, as text. Taking `&*machine` rather than `&mut` says in the
+    // signature what the file says in prose: nothing on the machine moves.
+    if authorised.verb() == alo_record::what_touched_a_file::THE_VERB {
+        let (entry, found) = asking_the_record(machine, authorised);
+        return (entry, found.map(WhatAVerbDid::from));
     }
     // **The three application acts, routed by name for the same reason.** The
     // fourth, `arrange_application`, is not declared by the constructor that

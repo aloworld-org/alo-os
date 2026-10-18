@@ -355,9 +355,20 @@ impl<'a, 'm> Doorway<'a, 'm> {
                 };
                 let given = carried.given();
                 if door == Door::Read {
-                    arriving
-                        .reading(carried.verb(), &given, pairings, grants, now)
-                        .map(|answer| Answered::Did(as_the_asking_machine_sees_it(&answer)))
+                    match arriving.reading(carried.verb(), &given, pairings, grants, now) {
+                        Ok(answer) => match as_the_asking_machine_sees_it(&answer) {
+                            Some(done) => Ok(Answered::Did(done)),
+                            // **Unreachable, and nothing crosses.**
+                            // `Arriving::reading` refuses the record's verb by
+                            // name before a call is built, so an answer of a
+                            // kind that must not leave cannot reach here — and
+                            // if one ever did, this says *that was not a verb*
+                            // and sends nothing, rather than inventing a shape
+                            // to carry it in.
+                            None => return before_the_door(AtTheDoor::NotAVerb),
+                        },
+                        Err(why) => Err(why),
+                    }
                 } else {
                     arriving
                         .proposing(carried.verb(), &given, pairings, grants, changes_wait, now)
@@ -494,8 +505,18 @@ fn before_the_door(at_the_door: AtTheDoor) -> Judged {
 /// granted, so this adds nothing a pairing did not already imply. If a release
 /// ever ships a catalogue a person or an organisation can add to, that stops
 /// being true and this arm needs a grant.
-fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> alo_protocol::Done {
-    match did {
+/// **And the one answer that does not cross**, which is why this returns an
+/// [`Option`]. [`None`] means *nothing goes back*, the same thing it means in
+/// [`Door::of`](crate::AtTheDoor::of) for the two refusals that send nothing:
+/// the caller treats it as a body that was not a verb.
+///
+/// `alo_turn::Arriving::reading` refuses the record's question by name before
+/// a call is ever built, so this arm is unreachable through this door — and it
+/// is written out, and answers [`None`], rather than mapping to a `Done` that
+/// would be a shape for carrying one person's history to another machine. The
+/// protocol has no such shape, and it must not gain one by this road.
+fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_protocol::Done> {
+    Some(match did {
         alo_turn::WhatAVerbDid::ToFiles(answer) => alo_protocol::Done::of_a_file_verb(answer),
         alo_turn::WhatAVerbDid::AnApplicationInstalled(installed) => {
             alo_protocol::Done::of_an_installation(installed)
@@ -515,7 +536,11 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> alo_protocol::
         alo_turn::WhatAVerbDid::WhatCanBeInstalled(holds) => {
             alo_protocol::Done::of_a_catalogue_read(holds)
         }
-    }
+        // **Unreachable, and nothing crosses if it ever is.** See this
+        // function's own doc comment, and `alo_turn::Arriving::reading`, which
+        // refuses this verb by name.
+        alo_turn::WhatAVerbDid::WhatTouchedAFile(_) => return None,
+    })
 }
 
 #[cfg(test)]

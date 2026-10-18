@@ -970,6 +970,11 @@ mod tests {
                 why: "no space left on device".to_owned(),
             })
         }
+        /// Nothing was written down, because every write failed — so the
+        /// honest answer is an empty record rather than a refusal.
+        fn written_down(&self) -> Result<alo_record::Record, alo_keeping::NotKept> {
+            Ok(alo_record::Record::default())
+        }
     }
 
     /// Nothing here is shortened: these tests are about a turn that cannot
@@ -1002,6 +1007,12 @@ mod tests {
         fn keep(&mut self, entry: alo_record::Entry) -> Result<(), alo_keeping::NotKept> {
             self.kept.keep(entry);
             Ok(())
+        }
+
+        /// What it was handed, because this double really does keep it — a
+        /// machine that will not shorten its record still writes one.
+        fn written_down(&self) -> Result<alo_record::Record, alo_keeping::NotKept> {
+            Ok(self.kept.clone())
         }
     }
 

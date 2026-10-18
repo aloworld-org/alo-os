@@ -26,6 +26,13 @@ alo-files = { path = "../alo-files" }
 # turn is, and `Done` therefore has one constructor per family rather than one
 # taking `alo_turn::WhatAVerbDid`.
 alo-software = { path = "../alo-software" }
+# What the record answered about a file. Here for `alo-files`' and
+# `alo-software`' reason — this crate turns what a verb did into what crosses
+# the wire, so it has to know the shapes — and light for the same reason:
+# `alo-record` holds `alo-capability`, `alo-egress` and `alo-strings`, all
+# leaves. It was a dev-dependency until 2026-10-18, when the record gained a
+# verb and its answer had to cross.
+alo-record = { path = "../alo-record" }
 # Every refusal in this crate is read by somebody, so none of them is English.
 alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
@@ -41,7 +48,6 @@ workspace = true
 [dev-dependencies]
 alo-context = { path = "../alo-context" }
 alo-egress = { path = "../alo-egress" }
-alo-record = { path = "../alo-record" }
 alo-turn = { path = "../alo-turn" }
 # What an application is. Used only by
 # `tests/an_installation_as_a_client_sees_it.rs`, which has to really install

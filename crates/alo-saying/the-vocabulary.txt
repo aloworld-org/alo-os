@@ -1464,6 +1464,13 @@ proxy.set-by.this-person	You set this
 proxy.the-proxy.automatic	This machine asks the network where each connection should go
 proxy.the-proxy.manual	This machine reaches the network through the proxy set here
 proxy.the-proxy.none	This machine reaches the network directly
+record.nothing-touched-it	Nothing in the record names {file}.
+record.only-what-alo-did	This is what alo did. Commands you ran yourself are not in it.
+record.verb.missing	{verb} was performed without {argument}, which it declares — this is a verb to write again, not a call to make again
+record.verb.not-this-crates	nothing in the record does {verb} — it answers what was done, and anything else is somewhere else's to do
+record.verb.what-touched-this-file.argument.file	the file to look for in the record
+record.verb.what-touched-this-file.purpose	look in the record for what was done to a file
+record.verb.what-touched-this-file.sentence	look in the record for what was done to {file}
 recounting.description-not-read	What this machine did cannot be shown to you: what this machine says about itself could not be read. Ask whoever set it up
 recounting.no-compositor	What this machine's record says cannot be put in front of you: the desktop is not running. Sign in to the desktop, and ask again
 recounting.no-description	What this machine did cannot be shown to you: this machine does not say where it keeps a record of what its agent has done. Ask whoever set it up
@@ -1706,6 +1713,7 @@ terminal.who.program	program
 terminal.who.system	system
 terminal.who.you	you
 turn.closed	this turn has stopped, because what happened on it could not be written down
+turn.could-not-ask-the-record	your agent could not be told what was done to that file: the record could not be read.      Nothing was changed by asking, and asking again is safe
 turn.could-not-install-here	nothing was installed: this machine could not carry the installation out, and the fault is in alo OS rather than in anything you or your agent asked for — ask whoever set this machine up to look at it
 turn.could-not-look-at-the-catalogue	your agent could not be shown what you can install: the fault is in alo OS rather than in anything you or your agent asked for — ask whoever set this machine up to look at it
 turn.grant-here-expired	{machine} was permitted {reach} on this machine, and that has expired, so it cannot reach {wanted} — nothing granted on another machine stands in for it

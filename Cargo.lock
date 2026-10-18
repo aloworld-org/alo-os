@@ -1417,10 +1417,12 @@ version = "0.0.1"
 dependencies = [
  "alo-capability",
  "alo-egress",
+ "alo-files",
  "alo-models",
  "alo-strings",
  "serde",
  "serde_json",
+ "thiserror 2.0.20",
 ]
 
 [[package]]
@@ -1540,6 +1542,7 @@ dependencies = [
  "alo-printing",
  "alo-protocol",
  "alo-proxy",
+ "alo-record",
  "alo-recounting",
  "alo-sessiond",
  "alo-setting-up",

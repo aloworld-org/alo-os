@@ -138,6 +138,7 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-printing",
     "alo-protocol",
     "alo-proxy",
+    "alo-record",
     "alo-recounting",
     "alo-sessiond",
     "alo-setting-up",
@@ -364,6 +365,7 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
     declare(&mut vocabulary, "alo-printing", alo_printing::declare_into)?;
     declare(&mut vocabulary, "alo-protocol", alo_protocol::declare_into)?;
     declare(&mut vocabulary, "alo-proxy", alo_proxy::declare_into)?;
+    declare(&mut vocabulary, "alo-record", alo_record::declare_into)?;
     declare(
         &mut vocabulary,
         "alo-recounting",
@@ -494,6 +496,7 @@ mod tests {
         ("alo-printing", "printing.stopped.jammed"),
         ("alo-protocol", "protocol.too-long"),
         ("alo-proxy", "proxy.the-proxy.none"),
+        ("alo-record", "record.only-what-alo-did"),
         ("alo-recounting", "recounting.nothing-to-tell"),
         ("alo-sessiond", "signing-in.not-opened"),
         ("alo-setting-up", "setup.the-question"),
@@ -616,6 +619,7 @@ mod tests {
             alo_printing::printing_words().unwrap().how_many(),
             alo_protocol::protocol_words().unwrap().how_many(),
             alo_proxy::proxy_words().unwrap().how_many(),
+            alo_record::record_words().unwrap().how_many(),
             alo_recounting::recounting_words().unwrap().how_many(),
             alo_sessiond::sessiond_words().unwrap().how_many(),
             alo_setting_up::setting_up_words().unwrap().how_many(),

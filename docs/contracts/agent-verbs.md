@@ -601,6 +601,70 @@ executor and adding to the offered list is one edit there, and it has not been
 made. Until it is, an agent on a shipped machine cannot reach these — which is
 the honest state of a verb that exists and is not on the list a machine offers.
 
+## The record verb
+
+`docs/features.md` promises, starred, *Find a command by what it did. The
+command that made the PDF… **where nothing connects them it says so** rather
+than inventing a link.* The owner decided on 2026-10-18 which surface asks it:
+**a question to alo**, which alo answers from the record. So the agent needs a
+verb, and this is it — declared in `alo-record`'s `src/verbs.rs` with a
+`pub fn declare_into`, and carried out by `alo-turn`'s
+`asking_the_record`.
+
+| Verb | Effect | Arguments | Sentence |
+|---|---|---|---|
+| `what_touched_this_file` | read | `file` (path) | look in the record for what was done to {file} |
+
+**It is a read**: it runs inside the turn, nobody is asked to approve it, and
+the record's entry for it has no approval to name. The asking is itself written
+down, like every execution and every refusal — a person looking at what their
+agent did should see the questions it asked about their files.
+
+**It requires a grant over the file it is asked about.** The verb is the
+*agent's* road to the record and not the person's: a person reads their record
+in the record window, which shows all of it. An agent that could ask about any
+path would learn whether a path appears in the record by asking about a guess,
+and that is an answer about a place nobody granted it. Revoking a folder stops
+this question the same instant it stops `read_file`.
+
+**The answer carries two sentences, and neither is optional.**
+
+- *this is what alo did; commands you ran yourself are not in it* — on every
+  answer. The record matches a path against the **recorded arguments of a
+  call**, so what comes back is every verb call that named the file. A command
+  a person typed leaves an entry saying it ran and the folders the kernel let
+  it reach, which is **permitted, not changed** — so for a typed command the
+  record cannot say what it changed. **An empty answer therefore means the
+  agent did nothing to the file, and never that nothing did**, and a client
+  that could leave this sentence out could leave a person to conclude the
+  second;
+- *nothing in the record names {file}* — instead of an empty list, where
+  nothing does. This is the feature's own *where nothing connects them it says
+  so*: an empty list drawn as an empty list reads as a claim about the file
+  that nobody made.
+
+**The path is matched exactly, and nothing is resolved.** A prefix is not a
+match, so neither the folder above nor a longer path below answers. Resolving
+would compare a path this machine works out now against one written down
+before, and the two can differ for reasons that have nothing to do with the
+question.
+
+**It never answers across a pairing**, and that is enforced rather than
+documented: `alo_turn::Arriving::reading` refuses the verb by name before a
+call is built, and the corridor has no shape to carry the answer in.
+`what_can_be_installed` crosses because the catalogue is a file identical on
+every alo machine of a release and says nothing about the person; the record is
+the opposite — it is only about this person, the sentences their agent was
+shown, the times and the files. A pairing permits *models* and *workspace*
+(ADR 0003), and neither is this.
+
+**A known gap, stated rather than discovered.** A record is shortened under a
+keeping rule, so entries older than that rule are gone — and an answer out of a
+shortened record looks exactly like an answer out of a complete one. Nothing
+records that a shortening removed something matching, so the answer cannot say
+so. Closing it needs either a count kept by the shortening or the rule's own
+horizon carried into the answer, and both are changes to `alo-keeping`.
+
 ## The printing verb
 
 `docs/features.md` promises printing, and ★ *Printers, solved*. What an

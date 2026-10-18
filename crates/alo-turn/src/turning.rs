@@ -779,6 +779,33 @@ impl<'a, 'm> Turning<'a, 'm> {
         }
     }
 
+    /// Turn a verb away by name, before it is ever built into a call.
+    ///
+    /// **To the machine that asked, the verb does not exist** — which is the
+    /// true thing to say, because on this road it does not. The refusal is
+    /// `alo_capability::CallError::NoSuchVerb`, the same one a name nobody
+    /// declared gets, so one sentence covers both and a translator renders no
+    /// new case.
+    ///
+    /// It is written down, like every refusal: `CLAUDE.md`'s gate asks for
+    /// *every execution and every refusal leaves a record*, and a question
+    /// another machine put and did not get answered is exactly the kind a
+    /// person should be able to see.
+    ///
+    /// `pub(crate)` for [`crate::Arriving`], which is the only road where a
+    /// verb can be this machine's and not be another machine's.
+    pub(crate) fn not_for_another_machine(&mut self, verb: &str, now: SystemTime) -> NotDone {
+        let why = alo_capability::CallError::NoSuchVerb {
+            name: verb.to_owned(),
+        };
+        let said = why.said(self.machine.strings()).into_text();
+        let entry = Entry::turned_away(verb, &said, self.turn.grantee(), now);
+        if let Err(not_recorded) = self.writing_down(entry) {
+            return not_recorded;
+        }
+        NotDone::TurnedAway(why)
+    }
+
     /// Carry the call out inside the boundary this machine imposes, or say
     /// there was none.
     ///
@@ -941,6 +968,11 @@ mod tests {
                 path: "/var/lib/alo/record.jsonl".to_owned(),
                 why: "no space left on device".to_owned(),
             })
+        }
+        /// Nothing was written down, because every write failed — so the
+        /// honest answer is an empty record rather than a refusal.
+        fn written_down(&self) -> Result<alo_record::Record, NotKept> {
+            Ok(alo_record::Record::default())
         }
     }
 
