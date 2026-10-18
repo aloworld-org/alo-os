@@ -8,7 +8,11 @@ blocker that is a decision, following
 **What was accepted is the three roads and terms 1 to 7, as they were proposed.**
 
 **Terms 8 and 9, and *The gesture*, were drafted afterwards by the Mac lane** on
-the owner's instruction to draft and let them review — not by the owner, and not
+the owner's instruction to draft and let them review. **One ruling has since
+come back**: term 8 asked whether a typed command may be explained anywhere but
+this machine, and the owner answered on 2026-10-18 — **all three places, and
+never local-only**. That answer is the owner's; the term around it is still the
+lane's draft — not by the owner, and not
 yet accepted. Each is marked where it appears. **Nothing built may rely on a
 marked passage until the owner accepts or corrects it.** They are here rather
 than in a report because a decision and the holes somebody later found in it
@@ -149,8 +153,9 @@ else. One extra pass over bytes already in cache; no fork, no source patch,
 `VoidListener` keeps its job. *Engines are configured, never written in.*
 
 **8. A command line is not composed for sharing, and explaining one may send it
-away.** *Drafted by the lane, revised 2026-10-18 after reviewing its first
-draft, awaiting the owner.*
+away.** *Drafted by the lane and revised 2026-10-18; **its one open question was
+answered by the owner the same day** and that answer is marked below. The rest
+of the term still awaits them.*
 
 Terms 1 to 7 get the typed line to alo and stop. What *explain a command before
 it runs* does next is **ask a model**, and when that model is a provider the line
@@ -172,12 +177,32 @@ an ADR that restates the charter is noise. It is two narrower things:
 rather than quietly asking a provider. That is the standing rule, repeated here
 only because this is the road that makes breaking it tempting.
 
-**The question this term does not answer, and it is the owner's.** The draft
-above assumes a typed command *may* go to a provider so long as it is shown.
-**The stricter default is local-only** — a provider explains your command lines
-only once you have said it may, for this feature, in as many words. This lane
-recommends the stricter one and did not write it in, because narrowing a promise
-is the owner's and not a lane's to infer.
+**Which of those may explain a command — decided by the owner, 2026-10-18.**
+This lane asked whether the default should be local-only, and recommended that
+it should. **The owner ruled otherwise: all three, and never local-only.** A
+command line may be explained
+
+- **on this machine**, by a local model;
+- **on this network**, by alo services;
+- **with a provider**, by a third party's model API.
+
+**This is not a new trichotomy, it is the one already published.** The task
+window's *Model and location* area promises exactly these three — *which model
+answered, and whether the processing was on this machine, on this network, or
+with a provider* — and says law 1 is why it is a permanent area rather than a
+disclosure somebody goes looking for. An explanation of a typed command is
+answered somewhere, like any other question, and it says where.
+
+**Why the owner is right and the recommendation was wrong.** A default of
+local-only would have been a wall rather than a default: on a machine with no
+local model — which is every machine since image 0.0.6, because
+[ADR 0095](0095-the-release-carries-no-model-and-a-person-brings-their-own.md)
+ships no weights — it would mean *explain a command before it runs* simply never
+worked, and the person would not have been offered the choice that would make it
+work. **Law 5: the person chooses, and alo never takes the choice away.** The
+protection a local-only default was reaching for is not a restriction at all; it
+is the indicator, the record, and saying where the answer came from before it is
+read. Those stay, at every one of the three.
 
 **9. A mark is spent by the explanation it produces.** *Drafted by the lane,
 revised 2026-10-18, awaiting the owner.*
