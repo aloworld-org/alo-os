@@ -46,7 +46,7 @@ a date on it:
 | ★ | Bisect the machine, not the repository | **nothing** |
 | ★ | Output that is not stuck in a character grid | **the first rich view is built and drawn** — a recognised test result, #761, and its two lines were cropped into the gutter's label box until #778. This row said *nothing*. Two more views are unspecified in the design |
 | ★ | Hand somebody a session they can replay | **nothing** — the commands wait on ADR 0123, what each changed on ADR 0045 |
-| | Explain a command before it runs | **the answer half is built** — `WhatACommandWillDo`; the asking waits on ADR 0123 |
+| | Explain a command before it runs | **the answer half is built** — `WhatACommandWillDo`; the asking is decided by ADR 0123, **accepted 2026-10-18**, and is buildable |
 
 **Four of these rows were wrong on 2026-10-17 and all four in the same
 direction** — they understated what was built, because nobody had drawn the
@@ -196,8 +196,10 @@ approximated.*
 written.** **Depends on:**
 [ADR 0123](../decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md),
 proposed 2026-10-17 by this lane under the rule that a machine unblocks itself
-rather than waiting for somebody with less context. It was *outside this plan*
-until somebody wrote it; that phrasing was the blocker, not the decision.
+rather than waiting for somebody with less context, and **accepted by the owner
+on 2026-10-18**. It was *outside this plan* until somebody wrote it; that
+phrasing was the blocker, not the decision. **This task is now buildable** — the
+terms it rests on are 1 to 7, which are the accepted half.
 
 **alo does not know what a person has typed**, measured 2026-10-17: nothing
 keeps the typed line, `the_command_in_front` is a process already running, and

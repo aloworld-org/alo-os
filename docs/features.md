@@ -362,6 +362,24 @@ file carries it with a tier.*
 - File associations — what opens what, changeable by a person
 - A text editor and an image viewer, so a fresh machine is not helpless
 - **A terminal.** Law 2 forbids the *agent* running arbitrary commands; it says nothing about a person, and an operating system that does not trust its owner with a shell is a toy
+- ★ **Ask alo from the command line, and it acts.** One command, typed at your
+  own prompt like any other: it answers a question, and when you ask for
+  something done it finds what you meant, **proposes the command**, says **what
+  grant the work needs**, and waits for your approval before anything happens.
+  *Ask alo means the same thing here as it does in the dock and the composer —
+  it acts. A terminal where alo could only chat would be the one place in the
+  product where asking did nothing.* **There is one command, not two**: an
+  answer-only road beside an acting one makes a person learn which is the real
+  one. **And you never say which you meant** — alo works out whether a sentence
+  wants an answer or a change. Nothing acts without the approval, so a question
+  read as a request costs you reading one sentence rather than an action
+  **Decided by the owner 2026-10-18**
+  ([ADR 0124](decisions/0124-one-command-asks-alo-from-the-terminal-and-asking-means-acting.md)).
+  **Not built**: `alo-ask` is the command and it only answers — measured the
+  same day, it names the agent, the broker, a proposal and an approval **zero**
+  times. *The owner ruled three times on 2026-10-18 — that it acts, that there
+  is one of it, and that it works out which you meant — so the promise is
+  theirs; the wording of this line is the lane's*
 - ★ **And you decide whether alo may use it.** **alo can open a terminal for
   you** — that is an ordinary thing to ask an assistant for, and it hands alo
   nothing: a terminal window opens onto a prompt waiting for a keystroke, and
@@ -596,7 +614,7 @@ file carries it with a tier.*
   reproducible bug report.
   **Two halves, two decisions**: the commands and their exit codes come from
   [ADR 0123](decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md)
-  (proposed), and *what each one changed* is
+  (**accepted 2026-10-18**), and *what each one changed* is
   [ADR 0045](decisions/0045-what-undoing-rewinds-to.md)'s bracket
 - **Explain a command before it runs.** Plain words for what it does, with
   anything destructive, anything needing elevated rights and anything leaving
@@ -618,12 +636,14 @@ file carries it with a tier.*
   presses Up. The real road is **shell integration**, which is a new mechanism,
   a published contract, and a decision about a sequence any program can forge —
   so no shortcut was bound to a surface that cannot work.
-  **The road is proposed, 2026-10-17**:
+  **The road is decided, accepted by the owner 2026-10-18**:
   [ADR 0123](decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md)
   — the shell reports its own line editor when the person asks it to, and alo
   reads a mark rather than the screen. No hook runs while somebody types, so
-  there is nothing for alo to watch between a prompt and an asking. **Proposed,
-  not accepted**: the owner rules, and nothing is built until they do
+  there is nothing for alo to watch between a prompt and an asking. **Accepted
+  2026-10-18**, so this is buildable. Three later terms and the gesture are the
+  lane's drafts and are marked in the ADR as awaiting the owner; nothing built
+  may rest on those until they are accepted
 - **Say up front whether it can be undone.** *This can be put back* and *this
   cannot* are different sentences, and the second is the one worth seeing before
   you press Enter rather than after

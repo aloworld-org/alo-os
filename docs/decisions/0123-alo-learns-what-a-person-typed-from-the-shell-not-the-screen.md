@@ -1,9 +1,32 @@
 # ADR 0123 — alo learns what a person typed from the shell, never from the screen
 
-**Status:** **proposed, 2026-10-17**, by the Mac lane under
-`docs/autonomy/a-new-machine-becomes-a-lane.md`'s rule for a blocker that is a
-decision, following [ADR 0085](0085-how-a-person-reaches-settings.md)'s
-precedent. The owner rules; nothing here is built until they do.
+**Status:** **accepted, 2026-10-18, by the owner.** Proposed 2026-10-17 by the
+Mac lane under `docs/autonomy/a-new-machine-becomes-a-lane.md`'s rule for a
+blocker that is a decision, following
+[ADR 0085](0085-how-a-person-reaches-settings.md)'s precedent.
+
+**What was accepted is the three roads and terms 1 to 7, as they were proposed.**
+
+**Terms 8 and 9, and *The gesture*, were drafted afterwards by the Mac lane** on
+the owner's instruction to draft and let them review. **One ruling has since
+come back**: term 8 asked whether a typed command may be explained anywhere but
+this machine, and the owner answered on 2026-10-18 — **all three places, and
+never local-only**. That answer is the owner's; the term around it is still the
+lane's draft — not by the owner, and not
+yet accepted. Each is marked where it appears. **Nothing built may rely on a
+marked passage until the owner accepts or corrects it.** They are here rather
+than in a report because a decision and the holes somebody later found in it
+belong in one file; a reader a month from now should not have to assemble this
+ADR from two places.
+
+**All three were revised once, on 2026-10-18, by the lane reviewing its own
+first draft** — the owner asked what it thought of them and it thought two were
+loose and one was wrong. Term 8 stopped restating law 1 and named the question
+it had ducked; term 9 stopped borrowing the word *turn* from agent turns, which
+means nothing in a shell; and the gesture was withdrawn outright, because the
+argument for it was also the reason it would one day be captured. The first
+drafts are not preserved — **what each one got wrong is written into the passage
+that replaced it**, which is the part worth keeping.
 
 ## The question
 
@@ -129,6 +152,101 @@ through a second parser whose `Perform` implements `osc_dispatch` and nothing
 else. One extra pass over bytes already in cache; no fork, no source patch,
 `VoidListener` keeps its job. *Engines are configured, never written in.*
 
+**8. A command line is not composed for sharing, and explaining one may send it
+away.** *Drafted by the lane and revised 2026-10-18; **its one open question was
+answered by the owner the same day** and that answer is marked below. The rest
+of the term still awaits them.*
+
+Terms 1 to 7 get the typed line to alo and stop. What *explain a command before
+it runs* does next is **ask a model**, and when that model is a provider the line
+leaves the machine.
+
+**What is new here is not that egress is shown** — law 1 already says that, and
+an ADR that restates the charter is noise. It is two narrower things:
+
+- **A command line is different from a question.** A person composing a question
+  in a composer is choosing what to send. A command line was written to be *run*,
+  not read by anyone, and it carries arguments: tokens, paths, hostnames, the
+  name of a client. The same bytes that are unremarkable on your own machine are
+  a disclosure the moment they leave it.
+- **Where it was answered is said *before* the answer, not after.** An
+  explanation a person has already read cannot be un-read. The provenance line
+  that the rich result puts *under* its summary belongs *above* this one.
+
+**And never a silent fallback.** If the local model cannot answer, alo says so
+rather than quietly asking a provider. That is the standing rule, repeated here
+only because this is the road that makes breaking it tempting.
+
+**Which of those may explain a command — decided by the owner, 2026-10-18.**
+This lane asked whether the default should be local-only, and recommended that
+it should. **The owner ruled otherwise: all three, and never local-only.** A
+command line may be explained
+
+- **on this machine**, by a local model;
+- **on this network**, by alo services;
+- **with a provider**, by a third party's model API.
+
+**This is not a new trichotomy, it is the one already published.** The task
+window's *Model and location* area promises exactly these three — *which model
+answered, and whether the processing was on this machine, on this network, or
+with a provider* — and says law 1 is why it is a permanent area rather than a
+disclosure somebody goes looking for. An explanation of a typed command is
+answered somewhere, like any other question, and it says where.
+
+**Why the owner is right and the recommendation was wrong.** A default of
+local-only would have been a wall rather than a default: on a machine with no
+local model — which is every machine since image 0.0.6, because
+[ADR 0095](0095-the-release-carries-no-model-and-a-person-brings-their-own.md)
+ships no weights — it would mean *explain a command before it runs* simply never
+worked, and the person would not have been offered the choice that would make it
+work. **Law 5: the person chooses, and alo never takes the choice away.** The
+protection a local-only default was reaching for is not a restriction at all; it
+is the indicator, the record, and saying where the answer came from before it is
+read. Those stay, at every one of the three.
+
+**9. A mark is spent by the explanation it produces.** *Drafted by the lane,
+revised 2026-10-18, awaiting the owner.*
+
+The first draft said a mark was "good for the turn it arrived in", which borrowed
+a word from agent turns that means nothing in a shell — there are prompts and
+commands there, not turns — and it invited a question it did not answer: *how
+does alo know the line changed?* It does not. That is why the mark exists.
+
+So the rule is counted rather than timed: **one press, one mark, one answer.** A
+second explanation needs a second press. alo never answers from a mark it has
+already used, and when no unspent mark is in hand it says it does not know what
+was typed.
+
+What that prevents is concrete: without it, asking again after a command has run
+would describe a command from three commands ago, with complete confidence. That
+is the wrong-answer fault this whole decision exists to avoid, arriving through
+the back door.
+
+## The gesture — withdrawn and redrafted, 2026-10-18, awaiting the owner
+
+**This lane first drafted `Ctrl`+`Alt`+`E`, and then withdrew it.** The argument
+for it was family resemblance: it would sit beside `Ctrl`+`Alt`+`T`, which gives
+you a terminal, and `Ctrl`+`Alt`+`W`, which says what it is waiting for.
+
+**That argument is also the trap.** Those two chords live in the compositor's
+seat; this one has to live in the shell, because while a foreground child owns
+the terminal the keys are the child's (ADR 0113). When alo's seat matches a
+chord it **intercepts it and never forwards it**. Measured 2026-10-18:
+`alo-shortcuts` has no binding on `Key::E`, so `Ctrl`+`Alt`+`E` does reach a
+shell today. But the very reasoning that makes it memorable — *it belongs with T
+and W* — is the reasoning that would put it into `alo-shortcuts` one day, and on
+that day the feature stops working with nothing to say why.
+
+**So the binding belongs in the shell's own idiom, where no compositor chord can
+reach it.** `readline` and `zle` both already put line-editor commands behind the
+`Ctrl`+`X` prefix — `Ctrl`+`X` `Ctrl`+`E` opens the current line in an editor in
+every bash a person has used. A second key in that family is unsurprising to
+anybody who already edits a long command line, and a prefix sequence is not a
+chord any compositor matches.
+
+*Less memorable than `Ctrl`+`Alt`+`E`, and it cannot be captured. The owner
+picks; this lane's recommendation is the second.*
+
 ## What this does not decide
 
 - **Which surface asks for an explanation, and what the chord is.** Separate,
@@ -143,12 +261,24 @@ else. One extra pass over bytes already in cache; no fork, no source patch,
 
 - `docs/contracts/` gains the sequence: what alo reads, what an adapter must
   emit, how the length is declared. A public surface, so additive and versioned.
+  **Written 2026-10-18, before the reader**, as
+  [`shell-integration-marks.md`](../contracts/shell-integration-marks.md). It
+  rests on terms 1 to 3 alone — the accepted ones — so the gesture and terms 8
+  and 9 can still change without touching a byte of it, and it says in its own
+  first lines that nothing reads it yet.
 - `alo-terminal` gains the second parser and a reader for the two marks.
 - *Explain a command before it runs* and *hand somebody a session they can
   replay* become buildable; both are **nothing** in
   `docs/autonomy/the-terminal-in-full-plan.md` today and blocked on this and
   nothing else.
 - A person without the snippet sees no change at all.
+- **The sentence shown when a person installs the snippet is a published
+  sentence** and gets a key like any other (ADR 0068). *A lane's note rather than
+  a term: it is only the standing i18n rule applying, and it is here because the
+  English lives in a shell snippet, which is exactly where the checks for
+  hardcoded English do not look.* This began as a numbered term and was demoted
+  on 2026-10-18 — a decision should not restate the charter and call it a
+  finding.
 
 ## The tests that decide whether this works
 
@@ -162,4 +292,15 @@ Written here because they are the ADR's falsifiable half:
 - a payload longer than the parser's cap is **refused**, not explained;
 - a declared length that disagrees with the decoded payload is **refused**;
 - with no snippet installed, nothing in the product claims to know the typed
-  line.
+  line;
+- **a mark that has gone stale is not used** — after a command runs, asking again
+  without a new mark answers *I do not know what was typed* rather than
+  describing the last one *(term 9)*;
+- **a command sent to a provider to be explained appears in the egress
+  indicator**, and the explanation names where it was answered *(term 8)*.
+
+**And one of these is not a test a gate can run.** A person at a machine has to
+press the key and read what comes back: the mechanism working, something calling
+it, a person reaching it and **somebody having seen it** are four different
+facts, and a green suite speaks to the first three. This ADR is not finished when
+the tests above pass.
