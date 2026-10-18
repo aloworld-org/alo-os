@@ -442,6 +442,156 @@ recorded anywhere a reader can check. `479-28965.xml` says so itself: *the
 components themselves are not in this capture.* That is why a test result is
 the rich view that exists: it is the one the design describes.
 
+## The other two rich views, measured off the live file 2026-10-18
+
+**Measured by the desktop lane, which has Figma access this one does not**, at
+the owner's instruction. Recorded here beside the test-result view so the three
+can be compared; the capture itself goes into `docs/design/figma-snapshot/` by
+that lane, not this one.
+
+Both are symbols, both **990x320**, and both sit in `479:28965` — so both are
+**rendering references** rather than specifications, the same standing this
+document already gives that node.
+
+### `479:28967` — Terminal / View / Benchmark comparison
+
+| | x | y | w | h |
+|---|---|---|---|---|
+| the summary — `Build time · 25% lower in this comparison` | 17 | 17 | 958 | 22 |
+| the provenance — `bench-014 + bench-015 · Saved at 13:04 · Illustrative data` | 17 | 51 | 958 | 22 |
+| the first row | 17 | 85 | 958 | 40 |
+| the second row | 17 | 137 | 958 | 40 |
+| the scale note — `Same linear scale · Lower is faster · Inspect values when focused` | 17 | 189 | 958 | 22 |
+| the actions row | 17 | 223 | 958 | 48 |
+
+**A row is a rule, not four positions**, and the rule is the thing to build to:
+
+```text
+label(110) | 16 | bar(value x scale) | 16 | value(110)
+```
+
+One 16 px gutter throughout. **The value label follows the bar and is not at a
+fixed x** — measured: the label ends at 110 and the bar starts at 126; the
+240 ms bar ends at 606 and its value sits at 622; the 180 ms bar ends at 486 and
+its value sits at 502. *A value pinned at 622 would be right for exactly this
+data and wrong for all other data, and would look right in review — which is the
+dangerous kind of wrong.*
+
+**The bars are a scale and not two numbers:**
+
+| | value | bar |
+|---|---|---|
+| Previous | 240 ms | 480 |
+| Current | 180 ms | 360 |
+
+**Exactly 2 px per ms, from a shared origin at x 126**, and that is an
+*absolute* scale rather than *the longest bar fills the track*. Two points
+cannot tell those apart, so the track was measured: the fixed parts are
+110+16+16+110 = **252** of the 958-wide row, leaving **706**. **The longest bar
+is 480, not 706** — so it is not filling the track, 226 px are slack, and
+2 px per ms fits both points exactly.
+
+**So a bar is its value against the scale, never two constants**, which
+`CLAUDE.md`'s *nothing is built to one screen size* requires anyway.
+
+#### The gap this exposes, recorded rather than chosen
+
+**At 2 px per ms a bar overflows once its value passes 353 ms** — 706 px of room
+divided by two. The design shows 240 and 180 and nothing near the edge, so
+**what a slow benchmark does is unspecified**: clamp, rescale both bars, wrap, or
+something else.
+
+*Left open deliberately. This is exactly the sort of thing that gets invented
+once and then cited as the design.*
+
+### `479:28986` — Terminal / View / File diff
+
+| | x | y | w | h |
+|---|---|---|---|---|
+| the summary — `src/auth.ts · 1 removal, 1 addition` | 17 | 17 | 958 | 22 |
+| the provenance — `Saved diff · Source: git diff · No changes applied by this view` | 17 | 51 | 958 | 22 |
+| the diff body | 17 | 85 | 958 | 110 |
+| the actions row | 17 | 207 | 958 | 48 |
+
+**The body is one text node, not one per line**, rendering as five rows — 12,
+13, −14, +14, 15 — with the signs in a gutter left of the numbers.
+
+**The removal marker is not an ASCII hyphen**, and that is as far as the
+measurement goes. What was observed is the glyph as the connector returned the
+layer name and as it rendered: a long centred dash, aligned with the plus's
+crossbar, visibly not `U+002D HYPHEN-MINUS` in that mono face.
+
+**It was not byte-verified, and *exactly U+2212* is an inference rather than a
+reading.** The lane that measured it said so unprompted: a connector hands back
+text, and anything retyped through a person or an agent is a measurement of the
+retyping. *So the thing worth holding in a test is that the two markers are
+distinct and that neither is the ASCII hyphen* — not a codepoint nobody read off
+the file. If the exact codepoint ever matters, read it from `479:28989` or from
+the committed snapshot, and say in the test which of those it came from.
+
+### The two sources disagree about the actions row, and nothing here settles it
+
+| source | x positions | widths | row | contents end | layout |
+|---|---|---|---|---|---|
+| `485:28999`'s `Rich test result` (`488:29291`) | 0, 108, 216 | 100, 100, 160 | 376 | 376 | **hugs** |
+| `479:28967` and `479:28986` (`479:28979`) | 0, 128, 256 | 120, 120, 176 | 958 | 432 | **fills** |
+
+> **An earlier version of this section said the specification wins, and that was
+> an over-reading.** *Corrected 2026-10-18 after the desktop lane pushed back on
+> it.* `ROOTS.md` does say **`485:28999` is the contract; `479:28965` is only
+> rendering** — and its very next sentence scopes that: the frames defer **for
+> the source gutter, autonomy and recovery**, and *a reader taking **provenance
+> rules** from the rendering node has taken them from the wrong one*. **Nothing
+> in either text claims authority over a button's width.** The headline is
+> broader than the body, two readers took it differently, and the body binds.
+
+**They are the same three actions, not two sets.** `488:29287` renders *Text ·
+Expand · Open on canvas*, identical to the 479 frames.
+
+**And the difference follows no scale**, which is what rules out *a different
+frame at a different width*:
+
+```text
+frame ratio 990 / 894 = 1.1074
+  100 x 1.1074 = 110.74   measured 120   does not fit
+  100 x 1.1074 = 110.74   measured 120   does not fit
+  160 x 1.1074 = 177.18   measured 176   fits
+```
+
+Two of three do not follow the frame width. They are not hug-content either —
+the labels are identical, so hugging would give identical widths, and 100 is not
+120. **They are fixed widths set differently in two places, and one of them is
+stale.** There is no rule to recover.
+
+**What does agree, and is safe to build to:** the **8 px** gap between buttons
+and the **48** height, in both.
+
+#### The layout mode is the disagreement that changes code
+
+The specification's row **hugs** — 216+160 = 376, exactly its contents, no
+slack. The rendering's row **fills** — 958 wide with the buttons ending at 432
+and **526 px of empty frame** after them.
+
+**That is not a number, it is a behaviour**, and it is the one that matters:
+a hugging row and a filling row do different things the moment a label is
+translated into a longer language, which this repository promises for 24 of
+them.
+
+**Left for the owner.** Either lane could pick one and be plausible, and that is
+the reason not to: this is better visible as an inconsistency than settled by
+reading authority into a note that was scoped to something else.
+
+### The three labels are in no layer name
+
+**Text · Expand · Open on canvas**, left to right. Expanding the instance gives
+one text child named `Quiet`, which is the Button's style variant and not its
+label — so these were read off a render, the same road this document used for
+the gutter's type and the walk used for step 10's summary.
+
+**What the three actions *do* is not unblocked by having their words.** That
+needs a road from the terminal to the agent which nothing constructs yet, and it
+is written down in `docs/autonomy/the-terminal-in-full-plan.md`.
+
 ## The type, asked of the live file
 
 The snapshot has no type information, so these came from the file's own variable

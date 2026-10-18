@@ -379,15 +379,54 @@ that is otherwise ready:
 | `Terminal / View / Benchmark comparison` | the benchmark rich view |
 | `Terminal / View / File diff` | the diff rich view |
 
-**What would unblock all three, in one line:** capture node `9:2` — or those
-three components — into `docs/design/figma-snapshot/`, the way the other 56
-were. **It needs the Figma connector authorised**, which cannot be done from a
-session running unattended; the lane that measured the gutter's type got it by
-asking the live file for the label node itself, which is the same road.
-
-*Until then, building any of the three means inventing the inside of a component
-the design already has — which is the one thing `CLAUDE.md` forbids outright:
-the design is followed, not approximated.*
+> **Unblocked 2026-10-18 by the desktop lane, and two sentences here were
+> wrong.** The owner sent this question to them; they have Figma access and this
+> lane does not. What they measured corrects the section above as much as it
+> answers it.
+>
+> **The first wrong sentence was *capture node `9:2`*.** They pulled `9:2` live.
+> It holds Button (3 variants), Presence Chip (2), Notification / Card (17) and
+> the behaviour notes — **no benchmark and no diff**. Capturing it would have
+> cost somebody an authorised session and returned nothing of what is wanted.
+> The two terminal views are at **`479:28967`** and **`479:28986`**.
+>
+> **The second is the premise of the table above.** *The design snapshots record
+> where a component is placed and never what is inside it* is true of
+> `docs/design/figma-snapshot/`, and **the 4718 is a fact about the capture
+> rather than about the file**: `get_metadata` on a live instance node returns
+> its subtree, measured on `479:29079`, which answered with ten descendants. So
+> *not captured* and *not knowable* were run together here, and only the first
+> was ever true.
+>
+> **What they measured**, now the design's own figures for the two views:
+>
+> | | |
+> |---|---|
+> | `479:28967` | *Terminal / View / Benchmark comparison*, 990x320 |
+> | `479:28986` | *Terminal / View / File diff*, 990x320 |
+>
+> Three findings worth more than the coordinates, each of which would have been
+> got wrong by building from a screenshot:
+>
+> - **the bars are a scale, not two numbers.** 480px for 240 ms and 360px for
+>   180 ms is exactly **2 px per ms**, from a shared origin at x=126 — which is
+>   the frame's own *same linear scale* line asserting itself. It becomes a
+>   proportion here, never two constants (`CLAUDE.md`: *nothing is built to one
+>   screen size*).
+> - **the diff body is one text node**, five rendered rows, and the removal
+>   marker is **U+2212 MINUS SIGN** and not a hyphen. The two are
+>   indistinguishable in review and only one is right.
+> - **the three `Ask alo / Action` labels are in no layer name.** They are
+>   **Text · Expand · Open on canvas**, read off a render — the same road this
+>   lane used for the gutter's type and for step 10's summary.
+>
+> *The desktop lane is committing the capture to `docs/design/figma-snapshot/`
+> so neither machine needs Figma again; this lane is not writing that file.*
+>
+> **What is still blocked is what the three actions *do***, which was never the
+> wording: a road from the terminal to the agent that nothing constructs. The
+> views can draw the buttons before they work, and the code will say which half
+> is which rather than leaving something that looks live.
 
 ### 5. Bisect the machine, and *your files as they were* — **the bracket landed and neither opened, measured 2026-10-17**
 
