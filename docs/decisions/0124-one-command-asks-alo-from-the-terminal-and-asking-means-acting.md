@@ -3,8 +3,9 @@
 **Status:** **accepted, 2026-10-18, by the owner**, ruling on a disagreement
 between the design and the code that the Mac lane found while writing
 [ADR 0123](0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md).
-The owner's words: *we should have only one … and also it should be the one for
-acting and answering.*
+The owner's words, in two rulings the same day: *we should have only one … and
+also it should be the one for acting and answering*, and then *it should be
+smart enough to know if the question needs answering or acting.*
 
 ## The question
 
@@ -56,6 +57,40 @@ reason better than the 151 files it would cost to change: **the mismatch was
 behavioural, not lexical.** `alo-ask` read wrongly only because it could not do
 what *Ask alo* does. Once it acts, the name is simply correct.
 
+**4. The command decides which it is; the person never says.** The owner: *it
+should be smart enough to know if the question needs answering or acting.* So
+there is no flag, no subcommand and no quoting convention that means *this one
+is a request*. A person types a sentence at their own prompt, and working out
+whether it wants an answer or a change is the command's job, not theirs. This
+settles what an earlier draft of this ADR listed as undecided.
+
+### Why a classifier may be wrong here without this being a hole
+
+**Because the classifier is not what protects the person — the approval is.**
+That distinction is the whole reason this ruling is safe to build on, so it is
+written out rather than assumed:
+
+| it was | read as | what the person gets | cost |
+|---|---|---|---|
+| a question | a question | an answer | — |
+| a request | a request | a proposal, a grant, a prompt | — |
+| a question | a request | **a proposal nobody has approved** | reading one sentence |
+| a request | a question | an answer instead of the thing | asking again |
+
+Both mistakes cost a sentence, because **nothing in the bottom two rows runs.**
+A misread question does not become an action; it becomes a proposal the person
+declines by not approving it. So the thing doing the reading may be a model, and
+a model may be wrong, and the guarantee this repository makes — *reads answer,
+changes wait* — does not rest on it being right.
+
+**What would make it a hole**, and is therefore forbidden: acting without a
+proposal because the classification was confident. Confidence is not approval,
+and there is no threshold above which it becomes one. The approval gate is
+unconditional or it is not a gate.
+
+*The table and the paragraph under it are the lane's reasoning from the owner's
+ruling, not the owner's words.*
+
 ## The departure this records
 
 `CLAUDE.md`: *the design is followed, not approximated. Where code and design
@@ -70,11 +105,13 @@ here so the next person reading that transcript is not left to wonder.
 
 ## What this does not decide
 
-- **Whether the person can tell, before pressing Enter, that a line will act
-  rather than answer.** They cannot, and under term 2 above they do not need to:
-  nothing happens without an approval, so a question misread as a request costs
-  a sentence rather than an action. Said here because it is the obvious worry
-  and the answer is structural.
+- **What alo does when it cannot tell.** Term 4 says the command decides; it does
+  not say what happens when the request is genuinely ambiguous — *clean up this
+  directory* is a question or a deletion depending on what the person meant.
+  **The lane's reading is that it asks**, because the standing rule is *never a
+  silent fallback* and guessing between two readings is a silent choice between
+  them. *Marked as the lane's: if the owner means it should pick the answering
+  reading and let the person ask again, that is cheaper and it is theirs to say.*
 - **What the follow-up prompt is.** ADR 0113 says `alo ❯` means the
   conversation. Whether this command opens one, and what owns the line while it
   does, is that decision's and not this one's.
@@ -101,5 +138,9 @@ here so the next person reading that transcript is not left to wonder.
 
 A person types the command with a request, is shown a proposal and the grant it
 needs, approves it, and the thing happens — **on a machine**, not in a fixture.
+Then they type a question **at the same prompt, in the same shape, with nothing
+marking it as a question**, and are answered. Term 4 is only demonstrated by the
+second of those: one that acts is a feature, and one that knows which to do is
+the ruling.
 The mechanism working, something calling it, a person reaching it and somebody
 having seen it are four facts, and a green suite speaks to three.

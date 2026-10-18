@@ -370,8 +370,9 @@ file carries it with a tier.*
   it acts. A terminal where alo could only chat would be the one place in the
   product where asking did nothing.* **There is one command, not two**: an
   answer-only road beside an acting one makes a person learn which is the real
-  one. Nothing acts without the approval, so a question read as a request costs
-  a sentence rather than an action
+  one. **And you never say which you meant** — alo works out whether a sentence
+  wants an answer or a change. Nothing acts without the approval, so a question
+  read as a request costs you reading one sentence rather than an action
   **Decided by the owner 2026-10-18**
   ([ADR 0124](decisions/0124-one-command-asks-alo-from-the-terminal-and-asking-means-acting.md)).
   **Not built**: `alo-ask` is the command and it only answers — measured the
