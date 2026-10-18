@@ -8,6 +8,7 @@
 //! The figures and their provenance are in
 //! `docs/design/the-terminal-window.md`; this is where they meet arithmetic.
 
+use super::a_bars_length;
 use super::{
     A_BORDER, A_LETTER, A_LINE, A_NOTE, A_STRIP, AN_INSET, BELOW_THE_NOTE, CONTENT_BELOW_THE_TOP,
     THE_WEIGHT, a_source_region_inside, lines_that_fit, transcript_height_in,
@@ -202,4 +203,62 @@ fn the_content_insets_are_not_assumed_symmetric() {
         "these two are measured separately and happen to differ; a file that set one from the \
          other would have been wrong by four"
     );
+}
+
+/// **The design's own two bars come back at the design's own two lengths.**
+///
+/// 240 ms and 180 ms on a 706-wide track, which is what `479:28967` has after
+/// its label, its value and the two gutters. If this ever stops answering 480
+/// and 360, either a measure moved or the scale did.
+#[test]
+fn the_designs_two_bars_are_the_designs_two_lengths() {
+    let longest = 240_000;
+    assert_eq!(a_bars_length(240_000, longest, 706), 480);
+    assert_eq!(a_bars_length(180_000, longest, 706), 360);
+}
+
+/// **A bar never leaves its track.**
+#[test]
+fn a_bar_past_the_track_is_held_to_it() {
+    let longest = 10_000_000;
+    assert_eq!(
+        a_bars_length(longest, longest, 706),
+        706,
+        "the slowest run fills the track exactly and does not pass it"
+    );
+}
+
+/// **Rescaling keeps the ratio**, which is what makes two bars comparable.
+///
+/// A comparison that overflowed and then clamped would draw two full bars for
+/// two different durations — a chart that says the opposite of the numbers
+/// beside it.
+#[test]
+fn rescaling_past_the_track_keeps_the_ratio_between_bars() {
+    let (slow, fast) = (1_000_000, 500_000);
+    let long = a_bars_length(slow, slow, 706);
+    let short = a_bars_length(fast, slow, 706);
+    assert_eq!(long, 706);
+    assert_eq!(
+        short * 2,
+        long,
+        "half the duration is half the bar, whatever the scale"
+    );
+}
+
+/// **A comparison of equal runs draws equal bars**, and neither is zero.
+#[test]
+fn two_equal_durations_draw_two_equal_bars() {
+    assert_eq!(
+        a_bars_length(240_000, 240_000, 706),
+        a_bars_length(240_000, 240_000, 706)
+    );
+    assert!(a_bars_length(240_000, 240_000, 706) > 0);
+}
+
+/// **Nothing to scale against draws nothing**, rather than dividing by zero.
+#[test]
+fn a_longest_of_nothing_or_a_track_of_nothing_draws_nothing() {
+    assert_eq!(a_bars_length(240_000, 0, 706), 0);
+    assert_eq!(a_bars_length(240_000, 240_000, 0), 0);
 }

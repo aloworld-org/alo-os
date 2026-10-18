@@ -290,6 +290,117 @@ pub const fn transcript_height_in(body_height: u32) -> u32 {
         .saturating_sub(BELOW_THE_NOTE)
 }
 
+/// How wide a benchmark row's label column is.
+///
+/// From `479:28967` — *Terminal / View / Benchmark comparison* — measured off
+/// the live file 2026-10-18 and recorded in
+/// `docs/design/the-terminal-window.md`. The row there is
+/// `label(110) | 16 | bar | 16 | value(110)`.
+///
+/// **A logical measure, and it goes through the display's scale**, like every
+/// other figure in this file. The row's *bar* is not here and cannot be: it is
+/// whatever the row has left after these, which is a runtime question.
+pub const A_BENCHMARKS_LABEL: u32 = 110;
+
+/// How wide a benchmark row's value column is.
+///
+/// The same 110 as [`A_BENCHMARKS_LABEL`] in the design, and a separate
+/// constant because they answer different questions. A single figure serving
+/// both would silently tie a label's room to a duration's room, and the first
+/// language that needs a longer word for *Previous* would shorten every
+/// number.
+pub const A_BENCHMARKS_VALUE: u32 = 110;
+
+/// The gap on either side of a benchmark's bar.
+///
+/// One gutter throughout the row, measured three times in the design: the label
+/// ends at 110 and the bar starts at 126; the longer bar ends at 606 and its
+/// value sits at 622; the shorter ends at 486 and its value at 502.
+pub const A_BENCHMARKS_GUTTER: u32 = 16;
+
+/// How tall one row of a benchmark comparison is.
+///
+/// The design's rows are at y 85 and y 137 — a step of 52 — and each frame is
+/// 40 tall. The step is the row plus the space under it, and this is the row.
+pub const A_BENCHMARKS_ROW: u32 = 40;
+
+/// How tall a benchmark's bar is inside its row.
+///
+/// The design's bar is at y 12 within a 40-tall row and is 16 tall, so it sits
+/// centred with 12 above and 12 below. **Separate from the row** for the same
+/// reason [`A_LETTER`] is separate from [`A_LINE`]: how tall a thing is drawn
+/// and how much room it is given are different questions.
+pub const A_BENCHMARKS_BAR: u32 = 16;
+
+/// How many pixels a millisecond is worth on a benchmark's shared scale.
+///
+/// **Measured, not chosen**: the design's bars are 480 and 360 for 240 ms and
+/// 180 ms, which is exactly two, from a shared origin. The frame's own note
+/// says *Same linear scale*, and this is that note as a number.
+///
+/// **It was checked against the alternative**, because two points cannot tell
+/// an absolute scale from *the longest bar fills the track*. The row is 958
+/// wide with 252 of it fixed, leaving a track of 706 — and the longest bar is
+/// 480, not 706. So the bars are not stretched to fit and the scale is
+/// absolute.
+///
+/// *What happens past the track is not the design's. At two pixels a
+/// millisecond a bar reaches 706 at 353 ms, and the design draws nothing near
+/// it. `docs/design/the-terminal-window.md` records that as a gap rather than
+/// an answer; the drawing keeps the design's scale until it would overflow and
+/// then holds every bar to one smaller scale, which is the frame's own
+/// `Same linear scale` rule applied where the frame is silent.*
+pub const PIXELS_PER_MILLISECOND: u32 = 2;
+
+/// How long a benchmark's bar is, in logical pixels.
+///
+/// **The design's scale while it fits, and one smaller shared scale when it
+/// does not.** Both bars always sit on the same scale, which is the frame's own
+/// `Same linear scale` rule and the only thing that makes two lengths
+/// comparable at a glance.
+///
+/// # Why this is not simply `value x two`
+///
+/// At [`PIXELS_PER_MILLISECOND`] a bar reaches a 706-wide track at 353 ms, and
+/// the design draws nothing near that. Rather than invent a behaviour, this
+/// keeps the design's scale **exactly** for everything the design could have
+/// drawn, and past that holds every bar to whatever scale makes the longest one
+/// fill the track. A comparison never overflows and never stops being a
+/// comparison.
+///
+/// *`docs/design/the-terminal-window.md` records the overflow as a gap in the
+/// design. This is the narrowest thing that can be done while it stays open.*
+///
+/// # The arguments
+///
+/// `longest` is the slowest run in the same comparison, which is what a shared
+/// scale has to fit. `track` is the room the row has left after its label, its
+/// value and the two gutters.
+#[must_use]
+pub fn a_bars_length(microseconds: u64, longest: u64, track: u32) -> u32 {
+    if longest == 0 || track == 0 {
+        return 0;
+    }
+    let per_millisecond = u64::from(PIXELS_PER_MILLISECOND);
+    let at_the_designs_scale = longest.saturating_mul(per_millisecond) / A_MILLISECOND;
+    let length = if at_the_designs_scale <= u64::from(track) {
+        microseconds.saturating_mul(per_millisecond) / A_MILLISECOND
+    } else {
+        // **The longest fills the track and the rest follow it**, so every bar
+        // is still one scale and the ratio between any two is unchanged.
+        microseconds.saturating_mul(u64::from(track)) / longest
+    };
+    u32::try_from(length).unwrap_or(track).min(track)
+}
+
+/// How many microseconds are in a millisecond.
+///
+/// Named here because [`a_bars_length`] works in microseconds and
+/// [`PIXELS_PER_MILLISECOND`] is per millisecond, and a bare `1_000` between
+/// them is exactly where a benchmark ends up wrong by a factor of a thousand
+/// while looking entirely reasonable.
+const A_MILLISECOND: u64 = 1_000;
+
 #[cfg(test)]
 #[path = "measures_tests.rs"]
 mod tests;
