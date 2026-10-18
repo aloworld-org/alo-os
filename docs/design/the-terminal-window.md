@@ -529,18 +529,57 @@ distinct and that neither is the ASCII hyphen* — not a codepoint nobody read o
 the file. If the exact codepoint ever matters, read it from `479:28989` or from
 the committed snapshot, and say in the test which of those it came from.
 
-### The two sources disagree about the actions row, and the specification wins
+### The two sources disagree about the actions row, and nothing here settles it
 
-| source | x positions | widths |
-|---|---|---|
-| `485:28999`'s `Rich test result` — a **specification** | 0, 108, 216 | 100, 100, 160 |
-| `479:28967` and `479:28986` — **rendering references** | 0, 128, 256 | 120, 120, 176 |
+| source | x positions | widths | row | contents end | layout |
+|---|---|---|---|---|---|
+| `485:28999`'s `Rich test result` (`488:29291`) | 0, 108, 216 | 100, 100, 160 | 376 | 376 | **hugs** |
+| `479:28967` and `479:28986` (`479:28979`) | 0, 128, 256 | 120, 120, 176 | 958 | 432 | **fills** |
 
-**This document already settles which governs**: the node in `485:28999` is the
-authoritative one, and `479:28965` is a rendering reference. So the row is
-100/100/160 at 0/108/216 wherever the two differ. *Recorded rather than
-reconciled, because a reader finding the other numbers in the snapshot should
-know they are not wrong — they are a different frame at a different width.*
+> **An earlier version of this section said the specification wins, and that was
+> an over-reading.** *Corrected 2026-10-18 after the desktop lane pushed back on
+> it.* `ROOTS.md` does say **`485:28999` is the contract; `479:28965` is only
+> rendering** — and its very next sentence scopes that: the frames defer **for
+> the source gutter, autonomy and recovery**, and *a reader taking **provenance
+> rules** from the rendering node has taken them from the wrong one*. **Nothing
+> in either text claims authority over a button's width.** The headline is
+> broader than the body, two readers took it differently, and the body binds.
+
+**They are the same three actions, not two sets.** `488:29287` renders *Text ·
+Expand · Open on canvas*, identical to the 479 frames.
+
+**And the difference follows no scale**, which is what rules out *a different
+frame at a different width*:
+
+```text
+frame ratio 990 / 894 = 1.1074
+  100 x 1.1074 = 110.74   measured 120   does not fit
+  100 x 1.1074 = 110.74   measured 120   does not fit
+  160 x 1.1074 = 177.18   measured 176   fits
+```
+
+Two of three do not follow the frame width. They are not hug-content either —
+the labels are identical, so hugging would give identical widths, and 100 is not
+120. **They are fixed widths set differently in two places, and one of them is
+stale.** There is no rule to recover.
+
+**What does agree, and is safe to build to:** the **8 px** gap between buttons
+and the **48** height, in both.
+
+#### The layout mode is the disagreement that changes code
+
+The specification's row **hugs** — 216+160 = 376, exactly its contents, no
+slack. The rendering's row **fills** — 958 wide with the buttons ending at 432
+and **526 px of empty frame** after them.
+
+**That is not a number, it is a behaviour**, and it is the one that matters:
+a hugging row and a filling row do different things the moment a label is
+translated into a longer language, which this repository promises for 24 of
+them.
+
+**Left for the owner.** Either lane could pick one and be plausible, and that is
+the reason not to: this is better visible as an inconsistency than settled by
+reading authority into a note that was scoped to something else.
 
 ### The three labels are in no layer name
 
