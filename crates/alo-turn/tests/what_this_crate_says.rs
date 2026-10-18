@@ -57,10 +57,14 @@ fn in_finnish() -> Strings {
         .says(
             Key::named("turn.could-not-look-at-the-catalogue").expect("a key"),
             "agentillesi ei voitu näyttää, mitä voit asentaa: vika on alo OS:ssä eikä missään,              mitä sinä tai agenttisi pyysi",
+        )
+        .says(
+            Key::named("turn.could-not-ask-the-record").expect("a key"),
+            "agentillesi ei voitu kertoa, mitä tiedostolle tehtiin: tapahtumien kirjaa ei voitu              lukea. Kysyminen ei muuttanut mitään, ja voit kysyä uudelleen turvallisesti",
         );
     let speaking = vocabulary
         .check(translation)
-        .expect("a translation of seven sentences with the gaps the code fills");
+        .expect("a translation of every sentence this crate says, with the gaps the code fills");
     let mut strings = Strings::of(vocabulary);
     strings.speaks(speaking).expect("a checked translation");
     strings.prefers(&[finnish]);

@@ -651,6 +651,7 @@ dependencies = [
  "alo-finding",
  "alo-measuring",
  "alo-printing",
+ "alo-record",
  "alo-software",
  "thiserror 2.0.20",
 ]
