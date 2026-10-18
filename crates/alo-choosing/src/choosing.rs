@@ -183,6 +183,42 @@ impl Choosing {
         self.apply(changed)
     }
 
+    /// **Whether alo may use another model or API** when the one they chose
+    /// cannot be reached.
+    ///
+    /// `docs/features.md`, starred: *Unless the person says otherwise, in
+    /// Settings* — the owner's instruction of 2026-10-18. The door a settings
+    /// surface calls, and the only thing besides reading a file that sets it.
+    ///
+    /// [`None`] puts them back to not having said, which is a thing a person
+    /// may want: it is not the same as saying no, and the section leaves their
+    /// file entirely rather than being written as `false`.
+    ///
+    /// **It changes nothing else.** What answers their questions, what they
+    /// brought, their providers, their languages and their setup are carried
+    /// through untouched — which is `Self::with`'s job, and the comment there
+    /// says what goes wrong when a door forgets.
+    ///
+    /// # Errors
+    ///
+    /// The two ways the file itself does not happen. The settings are as they
+    /// were.
+    pub fn may_use_another(
+        &mut self,
+        said: Option<crate::MayUseAnother>,
+    ) -> Result<(), NotWritten> {
+        let changed = self
+            .with(
+                self.settings.chosen().cloned(),
+                self.settings.brought().clone(),
+                self.settings.providers().clone(),
+                self.settings.languages().to_vec(),
+                self.settings.setup(),
+            )?
+            .and_may_use_another(said);
+        self.apply(changed)
+    }
+
     /// **A machine this person is paired with answers their questions** —
     /// chosen only if a pairing permits asking its models at `now`.
     ///
@@ -494,16 +530,24 @@ impl Choosing {
         languages: Vec<Language>,
         setup: Setup,
     ) -> Result<Settings, NotWritten> {
-        Settings::of(chosen, brought, providers, languages, setup).map_err(|why| match why {
-            Unresolved::Weights(model) => NotWritten::NotBrought {
-                at: self.at.clone(),
-                model,
-            },
-            Unresolved::Provider(provider) => NotWritten::NoSuchProvider {
-                at: self.at.clone(),
-                provider,
-            },
-        })
+        Settings::of(chosen, brought, providers, languages, setup)
+            // **Carried forward, and this is the one line that keeps it.**
+            // Every door on this type goes through here, and `Settings::of`
+            // builds a fresh value — so without this, a person who changed
+            // which model answers them would have their *may alo use another*
+            // setting quietly deleted from their own file. Found by reading
+            // the write path after the read path was already working.
+            .map(|settings| settings.and_may_use_another(self.settings.may_use_another()))
+            .map_err(|why| match why {
+                Unresolved::Weights(model) => NotWritten::NotBrought {
+                    at: self.at.clone(),
+                    model,
+                },
+                Unresolved::Provider(provider) => NotWritten::NoSuchProvider {
+                    at: self.at.clone(),
+                    provider,
+                },
+            })
     }
 
     /// Write these settings, and hold them only once they are on the disk.
@@ -533,6 +577,68 @@ mod tests {
     use crate::chosen::{Chosen, Which};
     use crate::testing::a_folder_of_our_own;
     use alo_models::{Driving, Region};
+
+    /// **Changing which model answers does not erase what they said about
+    /// using another.**
+    ///
+    /// The bug this test exists for, found by reading the write path after the
+    /// read path already worked: every door goes through `Self::with`, which
+    /// builds a fresh `Settings` — so without one line there, a person who
+    /// changed their model would have this setting silently deleted from their
+    /// own file. **Nothing about the feature looks wrong from the outside**,
+    /// which is why it is a test and not a comment.
+    #[test]
+    fn choosing_a_model_does_not_erase_what_they_said_about_using_another() {
+        let at = a_machine_nobody_has_configured("keeps-may-use-another");
+        let mut choosing = Choosing::at(&at).unwrap();
+
+        choosing
+            .may_use_another(Some(crate::MayUseAnother::No))
+            .unwrap();
+        assert_eq!(
+            choosing.settings().may_use_another(),
+            Some(crate::MayUseAnother::No)
+        );
+
+        // Now they change their mind about what answers them, which is a
+        // different setting entirely.
+        choosing.answered_by(None).unwrap();
+        assert_eq!(
+            choosing.settings().may_use_another(),
+            Some(crate::MayUseAnother::No),
+            "changing the model erased what they said about using another"
+        );
+
+        // And it is still on the disk, not only in memory.
+        let read_again = Choosing::at(&at).unwrap();
+        assert_eq!(
+            read_again.settings().may_use_another(),
+            Some(crate::MayUseAnother::No),
+            "it survived in memory and not in the file"
+        );
+    }
+
+    /// **Putting it back to nothing leaves no section in the file.**
+    ///
+    /// Not the same as saying no: a person who clears it has gone back to not
+    /// having been asked, and the file says nothing rather than `false`.
+    #[test]
+    fn clearing_it_writes_no_section_rather_than_false() {
+        let at = a_machine_nobody_has_configured("clears-may-use-another");
+        let mut choosing = Choosing::at(&at).unwrap();
+
+        choosing
+            .may_use_another(Some(crate::MayUseAnother::Yes))
+            .unwrap();
+        choosing.may_use_another(None).unwrap();
+
+        assert_eq!(choosing.settings().may_use_another(), None);
+        let text = std::fs::read_to_string(&at).unwrap();
+        assert!(
+            !text.contains("may-use-another"),
+            "clearing it wrote a value instead of leaving the section out: {text}"
+        );
+    }
 
     /// A settings file under a folder these tests own, with nothing in it yet.
     fn a_machine_nobody_has_configured(what: &str) -> PathBuf {
