@@ -210,6 +210,20 @@ person actually gets while `Ctrl`+`X` `Ctrl`+`E` is `edit-and-execute-command`.
 | the wiring | `AShellOnAPseudoterminal` feeds it the same bytes it hands the grid and drains through `what_the_shell_said()` |
 | proven with a real shell | three tests start `/bin/sh` on a real pseudoterminal; the seam was mutated and cutting it fails exactly those |
 | the display | `WhatAloSaid::explains()` and `WhatACommandWillDo` were already built (#759) |
+| the snippet | `crates/alo-terminal/shell-integration/alo.bash`, bound to `Ctrl`+`X` `Ctrl`+`A`, held to **a real interactive `bash`** — three tests source it, press the key, and assert what alo reads back |
+
+**So the input half is end to end and proven on a real shell.** A person with
+the snippet installed presses the key and `rm -rf /important` reaches alo
+**without being run**. That is three of the bar's four: the mechanism works,
+something calls it, and a person can reach it by pressing a key. *Nobody has
+seen it on a machine, because nothing draws it yet — which is the half below.*
+
+**Two faults the real-shell tests caught that a reading would not have.** The
+snippet first declared `${#line}`, which counts **characters**; `echo café` is
+nine characters and ten bytes, so the reader's own length check refused it. It
+would have worked perfectly for every ASCII user. And removing the `bind -x`
+line fails both key tests while leaving the cycle-mark test green, which is the
+shape of *declared is not dispatched*.
 
 **What is left is one question: where does the explanation come from?** The
 answer must carry **plain words and the three marks** — destructive, needs
