@@ -89,9 +89,9 @@ causes, five of which are another lane's or the owner's:
 | 1 | *why is it waiting* reaches a person | **done**, #755 |
 | 2 | the source qualifier | **done**, by #761 |
 | 6 | rich results | **the first view is done**, #761; the other two need a design component captured |
-| 3 | explain a command before it runs | **where the explanation comes from** — the owner's; the input half is built and proven on a real shell |
+| 3 | explain a command before it runs | **built**, #805 — the owner chose the agent's road on 2026-10-18 |
 | 7 | hand somebody a session to replay | **the comparer** — the third PC's; shell integration stopped being its other blocker on 2026-10-18 |
-| 4 | find a command by what it did | **a scope decision** — which surface asks |
+| 4 | find a command by what it did | **the verb is built**, #812 — the owner chose the surface on 2026-10-18; the file manager's half is a second surface |
 | 5 | scope one command | **`alo-capability`**, another lane's |
 | 8 | bisect the machine | **the comparer** — the third PC's |
 | 10 | *your files as they were* | **the comparer** |
@@ -286,8 +286,53 @@ it is the cheapest of the remaining six.
 
 ### 4. Find a command by what it did
 
-**Status:** **blocked on a scope decision.** **Depends on:** which surface asks
-the question — outside this plan.
+**Status:** **the verb is built — #812, 2026-10-18.** **Depends on:** nothing;
+the scope decision it waited on was made by the owner the same day.
+
+The owner was asked where a person goes to ask *which command made this file*
+— the record window, a question to alo, or the file manager — and answered
+*"B and C"*: a question to alo, and the file manager later. So the agent needed
+a verb, and `docs/contracts/agent-verbs.md` had none.
+
+`what_touched_this_file` is that verb: a **read** over a **granted file**,
+declared in `alo-record`'s `src/verbs.rs`, carried out by `alo-turn`'s
+`asking_the_record`, offered by `the_verbs_a_whole_machine_offers`, and in the
+published contract. The grant is required because the verb is the *agent's*
+road to the record rather than the person's — a person reads the record in the
+record window, which shows all of it — and an agent that could ask about any
+path would learn whether a path appears in the record by asking about a guess.
+
+**It never answers across a pairing**, enforced in `Arriving::reading` rather
+than documented: the catalogue read crosses because the catalogue is identical
+on every alo machine, and the record is the opposite.
+
+**Two sentences no shape of the answer can omit**, which is the feature's own
+*where nothing connects them it says so*: *this is what alo did, commands you
+ran yourself are not in it*, and, where nothing names the file, *nothing in the
+record names it* instead of an empty list. The first is load-bearing — see the
+finding below, which was already in this section and is why.
+
+**What is still owed under this task:**
+
+- **the file manager's *what made this?***, which is the owner's *C* and a
+  second surface. Not started;
+- **a shortened record answers narrowly and invisibly.** Entries older than the
+  keeping rule are gone, and nothing records that a shortening removed
+  something matching, so the answer cannot say so. Stated in the contract and
+  beside `Done::left_something_out` rather than left to be discovered.
+  **Closing it is a change to `alo-keeping`, which is not this lane's**, and it
+  is reported here the minute it was found;
+- **nothing a person can press yet.** The verb is reachable by the agent, which
+  is what *a question to alo* means — a person asks alo and alo calls it. That
+  road exists. What has not been watched is a person doing it on a machine,
+  which is the fourth condition and the one a green suite says nothing about.
+
+*The paragraph below is the section as it stood while this was blocked, kept
+because its finding is still true and is the reason for the first of the two
+sentences above.*
+
+**Status, as it read until 2026-10-18:** **blocked on a scope decision.**
+**Depends on:** which surface asks the question — outside this plan.
 
 The record can answer it: an entry carries `What`, whose `effect` says whether
 a call **changed** or only **answered**, and `What::touched(path)` already
