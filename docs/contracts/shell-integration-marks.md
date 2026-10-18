@@ -64,7 +64,12 @@ OSC 133 ; alo-typed ; <base64 of the command> ; <length in bytes> ST
   encoded. Encoded because a command may contain `;`, `ESC`, or bytes that are
   not text at all.
 - **the third parameter** is the length **of the decoded command, in bytes**,
-  written in decimal — not the length of the base64.
+  written in decimal — not the length of the base64. **Bytes, not characters**:
+  in `bash`, `${#line}` counts characters and the two differ for anything
+  outside ASCII, so a snippet declaring a character count has every accented
+  command refused — and works perfectly in every ASCII test anybody writes.
+  alo's own snippet uses `wc -c`, and a test with an accent in it fails if that
+  changes.
 
 ### Why the length is there
 
@@ -120,11 +125,32 @@ machine — and a one-press way to add it. alo does not write to anybody's shell
 startup unprompted. Without it, the terminal works exactly as it does today and
 the features that need it say so rather than guessing.
 
+**alo OS ships one for `bash`, since 2026-10-18**, at
+`crates/alo-terminal/shell-integration/alo.bash`, reached in code through
+`alo_terminal::the_snippet_a_person_installs::for_the_shell_called`. **There is
+no `zsh` snippet yet and that function answers `None` for it** — handing a `zsh`
+user the `bash` one would be worse than nothing, because `bind -x` is not a
+`zsh` builtin and the error would arrive on every terminal they opened.
+
+**The one-press way to add it is not built.** What surface offers it is a
+decision nobody has made, and it is named here rather than left to be
+discovered.
+
+*The snippet is held to a real interactive `bash` on a real pseudoterminal
+rather than to a reading of itself: three tests source it, press the key, and
+assert what alo reads back.*
+
 ## What this document does not settle
 
-**Which key the person presses.** That is still open in ADR 0123 and does not
-belong here: the binding lives in the snippet, and this document describes what
-goes on the wire. Any key that reaches a line editor produces the same bytes.
+**Which key the person presses** is not part of this format, and still is not:
+the binding lives in the snippet and this document describes what goes on the
+wire. Any key that reaches a line editor produces the same bytes.
+
+*For the record rather than as a requirement: the owner chose the shell's
+`Ctrl`+`X` prefix family on 2026-10-18, and alo's own `bash` snippet binds
+`Ctrl`+`X` `Ctrl`+`A` — measured unbound that day, while `Ctrl`+`X` `Ctrl`+`E` is
+`edit-and-execute-command`. **A snippet somebody else writes may bind anything**
+and alo reads it the same.*
 
 **What alo does with a command once it has read it** — which model answers,
 where, and what the person is told about that — is ADR 0123's terms 8 and 9 and

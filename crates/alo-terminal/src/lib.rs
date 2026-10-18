@@ -40,6 +40,7 @@ pub mod measures;
 mod stopping_the_command_in_front;
 mod terminal_output_becomes_a_grid;
 pub mod the_connection_it_is_waiting_on;
+pub mod the_snippet_a_person_installs;
 pub mod what_a_cell_looks_like;
 pub mod what_a_command_will_do;
 pub mod what_a_person_typed;
