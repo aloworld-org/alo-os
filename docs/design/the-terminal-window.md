@@ -442,6 +442,83 @@ recorded anywhere a reader can check. `479-28965.xml` says so itself: *the
 components themselves are not in this capture.* That is why a test result is
 the rich view that exists: it is the one the design describes.
 
+## The other two rich views, measured off the live file 2026-10-18
+
+**Measured by the desktop lane, which has Figma access this one does not**, at
+the owner's instruction. Recorded here beside the test-result view so the three
+can be compared; the capture itself goes into `docs/design/figma-snapshot/` by
+that lane, not this one.
+
+Both are symbols, both **990x320**, and both sit in `479:28965` — so both are
+**rendering references** rather than specifications, the same standing this
+document already gives that node.
+
+### `479:28967` — Terminal / View / Benchmark comparison
+
+| | x | y | w | h |
+|---|---|---|---|---|
+| the summary — `Build time · 25% lower in this comparison` | 17 | 17 | 958 | 22 |
+| the provenance — `bench-014 + bench-015 · Saved at 13:04 · Illustrative data` | 17 | 51 | 958 | 22 |
+| the first row | 17 | 85 | 958 | 40 |
+| the second row | 17 | 137 | 958 | 40 |
+| the scale note — `Same linear scale · Lower is faster · Inspect values when focused` | 17 | 189 | 958 | 22 |
+| the actions row | 17 | 223 | 958 | 48 |
+
+Each row holds a label at x **0** (110 wide), a bar at x **126**, and a value
+after it.
+
+**The bars are a scale and not two numbers**, which is the figure worth keeping:
+
+| | value | bar |
+|---|---|---|
+| Previous | 240 ms | 480 |
+| Current | 180 ms | 360 |
+
+**Exactly 2 px per ms, from a shared origin at x 126.** That is the frame's own
+*same linear scale* line asserting itself in the geometry. **So this becomes a
+proportion and never two constants** — a bar's length is its value against the
+scale, and `CLAUDE.md`'s *nothing is built to one screen size* forbids the
+alternative.
+
+### `479:28986` — Terminal / View / File diff
+
+| | x | y | w | h |
+|---|---|---|---|---|
+| the summary — `src/auth.ts · 1 removal, 1 addition` | 17 | 17 | 958 | 22 |
+| the provenance — `Saved diff · Source: git diff · No changes applied by this view` | 17 | 51 | 958 | 22 |
+| the diff body | 17 | 85 | 958 | 110 |
+| the actions row | 17 | 207 | 958 | 48 |
+
+**The body is one text node, not one per line**, rendering as five rows — 12,
+13, −14, +14, 15 — with the signs in a gutter left of the numbers.
+
+**The removal marker is U+2212 MINUS SIGN, not a hyphen.** The two are
+indistinguishable in a review and only one is the design's.
+
+### The two sources disagree about the actions row, and the specification wins
+
+| source | x positions | widths |
+|---|---|---|
+| `485:28999`'s `Rich test result` — a **specification** | 0, 108, 216 | 100, 100, 160 |
+| `479:28967` and `479:28986` — **rendering references** | 0, 128, 256 | 120, 120, 176 |
+
+**This document already settles which governs**: the node in `485:28999` is the
+authoritative one, and `479:28965` is a rendering reference. So the row is
+100/100/160 at 0/108/216 wherever the two differ. *Recorded rather than
+reconciled, because a reader finding the other numbers in the snapshot should
+know they are not wrong — they are a different frame at a different width.*
+
+### The three labels are in no layer name
+
+**Text · Expand · Open on canvas**, left to right. Expanding the instance gives
+one text child named `Quiet`, which is the Button's style variant and not its
+label — so these were read off a render, the same road this document used for
+the gutter's type and the walk used for step 10's summary.
+
+**What the three actions *do* is not unblocked by having their words.** That
+needs a road from the terminal to the agent which nothing constructs yet, and it
+is written down in `docs/autonomy/the-terminal-in-full-plan.md`.
+
 ## The type, asked of the live file
 
 The snapshot has no type information, so these came from the file's own variable
