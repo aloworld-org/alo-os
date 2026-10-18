@@ -92,10 +92,23 @@
 //! capability, D-Bus interface or stored format**; and `docs/contracts/record-file.md`
 //! names services that append. **The code to append exists** —
 //! `alo_keeping::Writing` implements `SomewhereToWrite` and puts one line on a
-//! disk at a time — and what a command lacks is the **permission**, because the
-//! file is under `/var/lib` and belongs to a service. *This read “not a road a
-//! command may use” until 2026-10-18, which would have sent somebody to write an
-//! API that is already there.* So a command that
+//! disk at a time — **and so does the permission.**
+//!
+//! *This paragraph has been wrong twice in one day, and both are kept because
+//! each sent a reader somewhere different.* It read “not a road a command may
+//! use”, which would have sent somebody to write an API that is already there;
+//! then “what a command lacks is the permission, because the file is under
+//! `/var/lib` and belongs to a service”, which is false on the shipped image.
+//! Measured: `d /var/lib/alo 0700 alo alo` and
+//! `u alo 1000 "alo OS" /home/alo /bin/bash`, with `alo-agentd` and
+//! `alo-desktop` both `User=alo` — **`alo` is the person's login, uid 1000**, so
+//! the service and the person are one account and that second version described
+//! a machine this image is not.
+//!
+//! **What a run actually has to settle is which file it appends to**, because
+//! `docs/contracts/record-file.md` says a record file has one writer — and
+//! that contract's own answer to a new writer is a new file. ADR 0125 carries
+//! the decision and the measurement. So a command that
 //! asked a provider would show the departure **to itself** and drop it on exit
 //! — a law 1 violation wearing the very API that exists to prevent one, which
 //! compiles and type-checks and shows nobody anything.
