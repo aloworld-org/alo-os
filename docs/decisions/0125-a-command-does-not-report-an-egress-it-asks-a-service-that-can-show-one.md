@@ -45,31 +45,67 @@ So the person's choice decides **whether** a question leaves and **where it
 goes**. This ADR decides **who shows it and who writes it down**, which is a
 different question and is not theirs to have to think about.
 
-### And it settles where a person's own sealed-box run writes its record
+### Where a person's own sealed-box run writes its record — asked, delegated, and answered on corrected facts
 
-Asked separately where a command a person runs in a sealed box writes the record
-it cannot run without — the machine's one record, which needs something
-privileged, or a record of the person's own — the owner took this lane's
-recommendation: **the machine's one record, by this ADR's principle.**
+The owner was asked separately where a command a person runs in a sealed box
+writes the record it cannot run without: **the machine's one record, which needs
+something privileged, or a record of the person's own.** They answered *your
+recommendation*, which delegates it.
 
-The two questions are the same shape, and this ADR's one-line decision already
-covers it: *it asks a long-lived service … and that service shows it **and keeps
-the record**.* So `try ./install.sh` asks `alo-agentd`, the daemon creates the
-box, runs the command, and writes the record — rather than a second record file
-in the person's home directory.
+**The recommendation they were given rested on a measurement that was wrong, and
+the corrected measurement reverses it.** Both are recorded, because a decision
+whose reason turned out to be false is worth more to the next reader than a
+decision.
 
-**What that keeps.** `docs/contracts/record-file.md`'s rule, *two files, because
-a record file has one writer*: a person's run joins the record that already has
-a writer instead of starting a fourth. And law 1's record stays one thing to
-read rather than one thing per process.
+| what they were told | what is true, measured against `image/` on 2026-10-18 |
+|---|---|
+| the record file is under `/var/lib` and **belongs to a service, not to the person** | `d /var/lib/alo 0700 alo alo` (`tmpfiles.d/alo.conf`), and `u alo 1000 "alo OS" /home/alo /bin/bash` (`sysusers.d/alo.conf`). **`alo` is the person's login, uid 1000**, and `alo-agentd` and `alo-desktop` both run as it. The service and the person are the same account |
+| so a person's own run cannot write a record and needs a privileged writer | it can. **There is no privilege problem to solve** |
 
-**What it costs**, which is the honest half: the command's output has to travel
-back from the daemon to the person's terminal, and `try` cannot run anything
-while the daemon is down — the same cost this ADR already accepts for a
-provider. **And the daemon runs it *for the person*, never as the agent**, which
-is the distinction law 2 turns on: *the law binds the agent, never the person*.
-This ADR's own *what this does not decide* already says a person's question must
-not become an agent turn, and a person's command must not either.
+**So the obstacle was never permission.** It is
+`docs/contracts/record-file.md`'s rule that *two files, because a record file has
+one writer* — a rule about two processes appending in the same second. And that
+contract's **own answer to a new writer is a new file**: the letting-go and
+forgetting records are two files for exactly this reason.
+
+**The decision, as this lane's under the owner's delegation:** a person's
+sealed-box run **writes its own record file**, and `try` runs the box itself as
+a child of the person's shell.
+
+Why this and not the daemon, stated so it can be overruled in one sentence:
+
+- **It is the pattern this contract already prescribes.** A second writer gets a
+  second file. Nothing new is invented.
+- **The process that did the work writes it down.** That is this ADR's own
+  argument against a *report your egress* interface, honoured rather than
+  worked around: a process asking a service to write a record for work the
+  service did not do is an assertion, and the record would stop being evidence.
+  **Routing a person's run through the daemon and having the daemon record it is
+  only sound if the daemon also runs it** — which brings the next two costs.
+- **Output.** `WhereCommandsRun` spawns with `Command::spawn` and no stdio
+  configuration, so the command inherits its parent's. If the daemon runs it,
+  the output goes to the journal and the person sees nothing. Fixing that means
+  handing the person's terminal descriptors across the socket —
+  `alo-converting/src/passing.rs` and ADR 0039 §A are the precedent, so it is
+  possible and it is a new mechanism on the one socket a person's process may
+  open.
+- **Trust is not gained.** The daemon runs as uid 1000, the same account as the
+  person's shell. A record kept by it is exactly as trustworthy as one kept by
+  the person's own process, because it is the same authority. Law 2 is explicit
+  that the law binds the agent and never the person.
+
+**What is given up**, said plainly: law 1's record becomes four files rather than
+three, and a reader has to read the person's as well as the machine's. The
+record window is the surface that has to show both, and it shows one today.
+
+**What stays true either way:** the run is recorded or it does not happen —
+`WhereCommandsRun` takes somewhere to write and there is no constructor that
+does not. The person's file is not a weaker promise about *whether* a run is
+recorded, only about *where*.
+
+*If the owner prefers the daemon shape after reading this, the cost is the two
+bullets above and nothing else is wasted: the stdio and the default places are
+needed by both.*
 
 ## The question
 
@@ -155,7 +191,9 @@ with it.**
   answer. This ADR specifies a request the daemon answers *for the person*,
   beside the agent road rather than through it. **The owner's answer about a
   sealed-box run puts a second thing on that road**, and the same rule holds
-  for it: a command a person runs is not an agent acting either. **Marked because it is the part
+  for it: a command a person runs is not an agent acting either. **And the
+  answer above takes it further** — a person's own run does not go on that road
+  at all, because it needs nothing only a service can do. **Marked because it is the part
   most likely to be got wrong by whoever builds it.**
 - **What `alo-ask` does today, which is worse than refusing.** Measured the same
   day: with a provider in their settings and one local model installed, a person
