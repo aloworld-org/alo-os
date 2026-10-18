@@ -277,7 +277,17 @@ fn everything_the_writer_says_is_something_the_machine_can_say() {
             word.named()
         );
     }
-    assert_eq!(EVERY_WORD.len(), 19);
+    // **What the loop above needs in order to mean anything**, which is that
+    // the list is not empty: a vacuous walk passes without checking a thing.
+    //
+    // *This line read `assert_eq!(EVERY_WORD.len(), 19)` until 2026-10-18.* A
+    // number here catches nothing the loop does not — it is edited whenever a
+    // word is added, which makes it a step in a procedure rather than a check,
+    // and an edit only ever made to keep a test quiet is not a check at all.
+    assert!(
+        !EVERY_WORD.is_empty(),
+        "an empty list would make the walk above pass without reading anything"
+    );
 }
 
 /// **What a person reads is theirs to read in their own language**, and the

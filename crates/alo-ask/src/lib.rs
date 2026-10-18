@@ -108,8 +108,10 @@
 //! `docs/autonomy/the-terminal-in-full-plan.md` — written there as work and a
 //! named block, rather than left here as a justification.
 
+pub mod beside_an_answer;
 pub mod saying;
 pub mod which_model;
 
+pub use beside_an_answer::beside_an_answer;
 pub use saying::{NoVocabulary, what_it_can_say};
 pub use which_model::{the_only_one, the_persons_model};
