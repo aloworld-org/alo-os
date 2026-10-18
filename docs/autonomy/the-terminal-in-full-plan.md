@@ -305,6 +305,52 @@ the record cannot say what it changed. For a verb it can.*
 typed. `alo-record` already holds what every run did; this is a question put to
 that record and a surface to ask it from.
 
+### Tasks 5 and 9 are one surface, and three of the owner's five wait on one answer
+
+*Found 2026-10-18 while costing task 9's surface, after the owner decided it.*
+
+**`try`, `--only-here` and `--offline` are the same thing with different
+restrictions.** `docs/features.md` draws all three as a **prefix** on a command
+a person runs, and says why in its own words: *a process cannot credibly
+restrict itself — the kernel has to, which is why no other terminal offers this
+as a prefix.* So they are one surface asking the kernel for three different
+boundaries, not two tasks.
+
+**And all three run through `alo_running::WhereCommandsRun`, which records every
+run before it runs.** `new(boundary, boxes_live_in, record)` takes the record,
+and `ran` opens with `checked_and_written_down`. That is ADR 0001 §7 —
+*everything executed is a record with an origin* — as working code, and it is
+not optional.
+
+**So the question is who writes that record**, and it is the same question
+[ADR 0125](../decisions/0125-a-command-does-not-report-an-egress-it-asks-a-service-that-can-show-one.md)
+asks about an egress. A command has the code to append one
+(`alo_keeping::Writing`) and not the permission, because the file is under
+`/var/lib`. Either a prefix command runs with privileges, or it asks a service
+that has them — which is exactly what that ADR proposes, and it is **proposed and
+not accepted**.
+
+| the owner's decision | waits on |
+|---|---|
+| **1** the explanation comes through the agent | nothing — built |
+| **2** a question to alo asks the record | an addition to `docs/contracts/agent-verbs.md` |
+| **3** `--only-here` scopes one command | **ADR 0125** |
+| **4** `try` runs a command in a box | **ADR 0125** |
+| **5** a stand-in when the chosen model cannot be reached | **ADR 0125** |
+
+**Three of five wait on one answer.** Accepting or rejecting that ADR is worth
+more than any of them individually, and it is why this is written down rather
+than built around.
+
+**What task 5 said was its blocker is not one.** It read *depends on
+`alo-capability`, which is another lane's*, and under it that giving a grant a
+level *needs a third `Row` variant*. **The level is ADR 0111's and belongs to
+order item 8, not here.** A per-command narrowing needs neither: `Grant` already
+carries a `Reach` and an expiry, `Reach::Folder` is one of four, and
+`Reach::File`'s own comment names this exact pattern — *a grant with a very
+short life rather than a special case (ADR 0001 §4)*. **The mechanism is there;
+what is missing is the record's permission.**
+
 ### 5. Scope one command without changing a setting
 
 **Status:** **blocked.** **Depends on:** `alo-capability`, which is another
