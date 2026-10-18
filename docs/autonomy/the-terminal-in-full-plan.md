@@ -230,8 +230,9 @@ approximated.*
 
 ### 3. Explain a command before it runs
 
-**Status, 2026-10-18 evening: the input half is built and the asking is one
-decision away.** The owner chose the key that day — the shell's `Ctrl`+`X`
+**Status, 2026-10-18 evening: the input half is built, and the asking was
+decided the same day — see *Where the explanation comes from* below.** The owner
+chose the key that day — the shell's `Ctrl`+`X`
 family — and `Ctrl`+`X` `Ctrl`+`A` is the pair, measured unbound in the bash a
 person actually gets while `Ctrl`+`X` `Ctrl`+`E` is `edit-and-execute-command`.
 
@@ -258,28 +259,47 @@ would have worked perfectly for every ASCII user. And removing the `bind -x`
 line fails both key tests while leaving the cycle-mark test green, which is the
 shape of *declared is not dispatched*.
 
-**What is left is one question: where does the explanation come from?** The
-answer must carry **plain words and the three marks** — destructive, needs
-elevated rights, leaves the machine — and the marks are what make the road a
-choice rather than a detail.
+**Where the explanation comes from — decided by the owner, 2026-10-18: through
+the agent.** One AI road, which is their earlier ruling that `alo-ask` is *the
+centre or ai command* carried into the terminal.
 
-- **Through the agent daemon**, reusing `TheAgentsDoor`, which already writes a
-  line to a socket and posts an answer back. It holds the one live indicator and
-  the record. **But it makes a person's request for an explanation an agent
-  turn**, with grants and approval around what is a *read* — and
-  [ADR 0125](../decisions/0125-a-command-does-not-report-an-egress-it-asks-a-service-that-can-show-one.md)
-  marked that as the part most likely to be got wrong. It also posts back a
-  plain `String`, so the marks would have to be parsed out of prose.
-- **The shell asks a model directly** through `alo-asking`. It stays a read,
-  *reads answer, changes wait*, and the compositor **does** hold the indicator
-  so the egress is lawful. But it puts model-asking — settings, runtime,
-  the key, the record — inside the compositor, and a model call is seconds in a
-  process that must not block a frame.
+**The lane recommended the other road and was wrong about why.** The objection
+was that going through the agent *makes a person's request for an explanation an
+agent turn, with grants and approval around what is a read*. The owner's answer:
+**our agent should be smart enough to know it's an action or just a question** —
+which is
+[ADR 0124](../decisions/0124-one-command-asks-alo-from-the-terminal-and-asking-means-acting.md)
+term 4, already accepted, and it **dissolves** the objection rather than trading
+against it. *The machinery only fires for a change.* A question classified as a
+question is answered; nothing is granted and nothing waits for approval, because
+*reads answer, changes wait* is the rule the classification feeds.
 
-**This lane's recommendation is the second**, because an explanation is a read
-and a read should not acquire an agent's machinery. *Marked as a recommendation:
-it is the owner's, and `CLAUDE.md`'s rule is that when the answer is not obvious
-it is scope.*
+> **This answers the caution ADR 0125 marked.** That ADR said a person's
+> question should not become an agent turn and named it *the part most likely to
+> be got wrong*. It was written before this was asked and is now answered: the
+> turn is how the question travels, and the approval gate the caution was about
+> does not fire for a read. **ADR 0125's own decision is untouched** — it is
+> about a *command* reporting an egress, which is a different road.
+
+**And it unblocks something else that was stuck for the opposite reason.** The
+order recorded that the three `Ask alo` actions need a *who asked* that is
+either a task window or a terminal, and that the widening *cannot be built
+alone* because nothing would ever construct the terminal arm. **The explanation
+constructs it.** One change now builds both.
+
+**What is still owed in the answer**, and it is the shape rather than the road:
+the agent's door posts back a plain `String`, and the view needs **plain words
+and the three marks** — destructive, needs elevated rights, leaves the machine.
+So the reply needs a shape that carries four things, not one.
+
+> **This decision was made on 2026-10-18 and reached `main` on 2026-10-21**,
+> because it was written onto a branch for which **no pull request was ever
+> opened**. For three days this section read *the asking is one decision away*
+> and two further sections read *blocked*, while the answer sat on a pushed
+> branch nobody could see. `CLAUDE.md` names the fault — *a branch pushed at
+> 07:37Z was gated four times … no pull request had ever been opened* — and it
+> is cheaper to find than this: `gh pr list --head <branch>` answers it in one
+> call, and **three** of this lane's branches answered *none ever opened*.
 
 **What that decision also settles** and should be answered with it: whether the
 explanation says **where it was answered** — on this machine, on this network,

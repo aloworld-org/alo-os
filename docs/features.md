@@ -517,7 +517,13 @@ file carries it with a tier.*
   lane's to infer.
 - ★ **Try a command without letting it touch anything.** Paste the install
   script from a README and run it in a box that sees the project and nothing
-  else, with no network except what you approved, thrown away after. See what it
+  else, with no network except what you approved, thrown away after. **You ask
+  for it by putting one word first — `try ./install.sh` — and alo offers it
+  when it sees a command worth boxing**, because the person who did not think to
+  ask is the one who gets hurt. *There is no setting that boxes things for you:
+  a protection with a cost is offered, never imposed (law 5).* **Decided by the
+  owner 2026-10-18**; the word `try` landed the same day (#817) and the kernel
+  bounding it uses on 2026-09-04. **alo offering is not built.** See what it
   **tried** to do, then keep it or discard it. *This is the sealed box of
   [ADR 0064](decisions/0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md),
   which was a decision and not yet a thing: the three level names appeared in
