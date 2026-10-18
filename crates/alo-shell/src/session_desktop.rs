@@ -92,6 +92,29 @@ pub fn stand_the_desktop_up(
             ..XkbConfig::default()
         },
     )?;
+    // **And a pointer on the same seat, which nothing in production did until
+    // 2026-10-17.**
+    //
+    // Measured on a booted machine: the desktop drew its Dock, the first
+    // pointer event arrived, and the display loop **ended** —
+    // `DirectLoopResult { outcome: Err(Input(InputDispatchError { error:
+    // PointerUnavailable })) }` at 759.98 s, 113 seconds after it came up. A
+    // person who moved the mouse lost their desktop.
+    //
+    // `Server::enable_pointer` has existed and been tested all along. Every one
+    // of its callers was an **example or a test** — seven of them — and no
+    // shipping binary called it, so `surfaces.pointer` was `None` on every real
+    // machine and `direct_pointer` refused the first motion it was handed.
+    //
+    // This is the shape this lane keeps meeting: finished, tested code that
+    // nothing calls. A passing test cannot tell you whether anything reaches
+    // the code; `examples/a_real_application` enabled the pointer and proved
+    // the pointer worked, which is what made the gap invisible.
+    //
+    // **Here rather than in the binary**, because this function is where the
+    // seat is stood up and where the keyboard is bound: a caller that had to
+    // remember one of the two would be a caller that forgets.
+    server.enable_pointer()?;
     // **How this machine starts an application, handed in rather than built.**
     // `alo_portals::activated` is the implementation and `alo-portals` is a
     // dev-dependency here, so the caller supplies it — see
