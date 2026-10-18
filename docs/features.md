@@ -362,6 +362,22 @@ file carries it with a tier.*
 - File associations — what opens what, changeable by a person
 - A text editor and an image viewer, so a fresh machine is not helpless
 - **A terminal.** Law 2 forbids the *agent* running arbitrary commands; it says nothing about a person, and an operating system that does not trust its owner with a shell is a toy
+- ★ **Ask alo from the command line, and it acts.** One command, typed at your
+  own prompt like any other: it answers a question, and when you ask for
+  something done it finds what you meant, **proposes the command**, says **what
+  grant the work needs**, and waits for your approval before anything happens.
+  *Ask alo means the same thing here as it does in the dock and the composer —
+  it acts. A terminal where alo could only chat would be the one place in the
+  product where asking did nothing.* **There is one command, not two**: an
+  answer-only road beside an acting one makes a person learn which is the real
+  one. Nothing acts without the approval, so a question read as a request costs
+  a sentence rather than an action
+  **Decided by the owner 2026-10-18**
+  ([ADR 0124](decisions/0124-one-command-asks-alo-from-the-terminal-and-asking-means-acting.md)).
+  **Not built**: `alo-ask` is the command and it only answers — measured the
+  same day, it names the agent, the broker, a proposal and an approval **zero**
+  times. *This line was drafted by the Mac lane on the owner's ruling and awaits
+  their acceptance; scope is gated, and a promise is the owner's to make*
 - ★ **And you decide whether alo may use it.** **alo can open a terminal for
   you** — that is an ordinary thing to ask an assistant for, and it hands alo
   nothing: a terminal window opens onto a prompt waiting for a keystroke, and

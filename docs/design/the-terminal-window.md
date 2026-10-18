@@ -273,6 +273,14 @@ which is why these are recorded as measured rather than as read:
 
 ### Labelled once per region, which the design draws plainly
 
+**The command in the sample below is `alo`, and the command alo OS ships is
+`alo-ask`.** That is a deliberate departure, decided by the owner on 2026-10-18
+and recorded in
+[ADR 0124](../decisions/0124-one-command-asks-alo-from-the-terminal-and-asking-means-acting.md):
+there is one command, it both answers and acts, and the name was not the
+question. Everything else the sample draws — the proposal, the grant, the
+approval before anything runs — is what that command becomes.
+
 The transcript node renders as:
 
 ```
