@@ -98,6 +98,13 @@ pub(crate) struct TheTerminal {
     /// ordinary case rather than a failure — the design draws its text fallback
     /// first and says so in its own words.
     a_test_result: Option<alo_terminal::ATestResult>,
+    /// A benchmark comparison recognised in what the program printed, if there
+    /// is one.
+    ///
+    /// Recognised beside the test result and for the same reason: this walks
+    /// the screen, so doing it in the drawing would walk it every frame to
+    /// answer a question that changes only when a program writes.
+    a_benchmark: Option<alo_terminal::ABenchmark>,
 }
 
 impl TheTerminal {
@@ -113,6 +120,7 @@ impl TheTerminal {
             finished: false,
             what_alo_said: alo_terminal::WhatAloSaid::nothing(),
             a_test_result: None,
+            a_benchmark: None,
         })
     }
 
@@ -165,7 +173,9 @@ impl TheTerminal {
         // three paths is the shape of fault where a result appears for a running
         // command and vanishes when it exits.
         if changed {
-            self.a_test_result = alo_terminal::a_test_result_in(&self.screen.lines());
+            let lines = self.screen.lines();
+            self.a_test_result = alo_terminal::a_test_result_in(&lines);
+            self.a_benchmark = alo_terminal::a_benchmark_in(&lines);
         }
         changed
     }
@@ -173,6 +183,13 @@ impl TheTerminal {
     /// A run of tests recognised in what the program printed, if there is one.
     ///
     /// [`None`] for nearly everything, which is the ordinary case.
+    /// A benchmark comparison recognised in what the program printed, if there
+    /// is one.
+    pub(crate) const fn a_benchmark(&self) -> Option<&alo_terminal::ABenchmark> {
+        self.a_benchmark.as_ref()
+    }
+
+    /// A run of tests recognised in what the program printed, if there is one.
     pub(crate) const fn a_test_result(&self) -> Option<&alo_terminal::ATestResult> {
         self.a_test_result.as_ref()
     }

@@ -571,6 +571,22 @@ impl WhereTheCellsGo {
         )
     }
 
+    /// A logical measure in this display's pixels.
+    ///
+    /// **The one road a figure from `alo_terminal::measures` takes to a
+    /// screen.** `CLAUDE.md`: a measure is declared once with what it answers
+    /// to and converted for each display through that display's scale, and a
+    /// figure that reaches a display without passing through here is the fault
+    /// that rule names.
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a logical measure of this terminal is three digits at most, and a scale is \
+                  small and positive on every display this product lays out for"
+    )]
+    fn scaled(self, measure: u32) -> i32 {
+        (f64::from(measure) * self.scale).round() as i32
+    }
+
     /// The type the gutter's label is drawn at, on this display.
     fn label_metrics(self) -> Metrics {
         the_labels_metrics(self.scale)
@@ -700,6 +716,108 @@ fn a_regions_label(
     let shaped = inked(fonts, &buffer, (room, tall), 0, ground, ink);
     let bottom = goes.transcript.loc.y + goes.transcript.size.h;
     shaped.placed(across, down, bottom)
+}
+
+/// How many transcript lines one benchmark row takes.
+///
+/// The design's row is 40 tall and a transcript line is 22, so two lines is 44
+/// — the closest the line grid comes to the design's row, and the alternative
+/// was a 16-tall bar crowded into a 22-tall line. **A deliberate fit, not a
+/// measurement**, recorded here because the next person will compare it with
+/// `479:28967` and find 40.
+const A_BENCHMARKS_ROW_IN_LINES: usize = 2;
+
+/// One row of a benchmark: its label, its bar and its value.
+///
+/// The design's rule, from `docs/design/the-terminal-window.md`:
+///
+/// ```text
+/// label(110) | 16 | bar(value x scale) | 16 | value(110)
+/// ```
+///
+/// **The value follows the bar and is not at a fixed place.** A value pinned
+/// where the design's own data put it would be right for 240 ms and wrong for
+/// every other number, and would look right in review.
+fn a_benchmarks_row(
+    fonts: &mut FontSystem,
+    run: &alo_terminal::ARun,
+    longest: u64,
+    goes: WhereTheCellsGo,
+    line: usize,
+    colours: ([u8; 3], [u8; 3]),
+) -> (Vec<Inked>, Option<Solid>) {
+    let (ground, ink) = colours;
+    let scaled = |measure: u32| goes.scaled(measure);
+    let (across, down) = goes.the_cell_at(0, line);
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a line height is two digits of pixels on any display this product lays out for"
+    )]
+    let a_line = goes.metrics.line_height.ceil() as i32;
+    let tall = a_line.saturating_mul(i32::try_from(A_BENCHMARKS_ROW_IN_LINES).unwrap_or(1));
+    let label_wide = scaled(alo_terminal::measures::A_BENCHMARKS_LABEL);
+    let value_wide = scaled(alo_terminal::measures::A_BENCHMARKS_VALUE);
+    let gutter = scaled(alo_terminal::measures::A_BENCHMARKS_GUTTER);
+    let room = goes.transcript.loc.x + goes.transcript.size.w - goes.inset.0 - across;
+
+    // **The track is what the row has left**, which is why it is not a measure:
+    // it depends on the display, not on the design.
+    let track = room
+        .saturating_sub(label_wide)
+        .saturating_sub(value_wide)
+        .saturating_sub(gutter.saturating_mul(2));
+    if room <= 0 || tall <= 0 || track <= 0 {
+        return (Vec::new(), None);
+    }
+
+    let mut pieces = Vec::new();
+    let bottom = goes.transcript.loc.y + goes.transcript.size.h;
+    let text_at = |fonts: &mut FontSystem, what: &str, x: i32, wide: i32| -> Option<Inked> {
+        let mut buffer = Buffer::new(fonts, goes.label_metrics());
+        buffer.set_wrap(fonts, Wrap::None);
+        buffer.set_size(fonts, None, None);
+        buffer.set_text(fonts, what, &alos_own_text(), Shaping::Advanced);
+        buffer.shape_until_scroll(fonts, false);
+        let shaped = inked(fonts, &buffer, (wide, a_line), 0, ground, ink);
+        shaped.placed(x, down, bottom)
+    };
+
+    if let Some(label) = text_at(fonts, run.it_said_called(), across, label_wide) {
+        pieces.push(label);
+    }
+
+    let bar_wide = i32::try_from(alo_terminal::measures::a_bars_length(
+        run.it_said_microseconds(),
+        longest,
+        u32::try_from(track).unwrap_or(0),
+    ))
+    .unwrap_or(0);
+    let bar_tall = scaled(alo_terminal::measures::A_BENCHMARKS_BAR);
+    let bar_at = across.saturating_add(label_wide).saturating_add(gutter);
+    let bar_down = down.saturating_add((tall.saturating_sub(bar_tall)) / 2);
+    let bar = (bar_wide > 0 && bar_tall > 0).then(|| Solid {
+        area: Rectangle::new((bar_at, bar_down).into(), (bar_wide, bar_tall).into()),
+        colour: ink,
+    });
+
+    // **The value follows the bar**, one gutter after where it ends.
+    let value_at = bar_at.saturating_add(bar_wide).saturating_add(gutter);
+    let said = a_duration_in_words(run.it_said_microseconds());
+    if let Some(value) = text_at(fonts, &said, value_at, value_wide) {
+        pieces.push(value);
+    }
+
+    (pieces, bar)
+}
+
+/// A duration as the design writes one: a whole number and `ms`.
+///
+/// **Not a vocabulary string.** `ms` is the symbol for a millisecond and is the
+/// same in every language this ships in, the way `·` is — and the number is a
+/// number. A sentence *about* the duration would be a string; this is a
+/// quantity with its unit.
+fn a_duration_in_words(microseconds: u64) -> String {
+    format!("{} ms", microseconds / 1_000)
 }
 
 /// One line alo said, drawn where the transcript's own text goes.
@@ -898,6 +1016,12 @@ pub(crate) struct Shows<'a> {
     /// out of a stranger's output is still that stranger's claim, which is also
     /// why the line under it says nobody checked it.
     pub(crate) a_test_result: Option<&'a alo_terminal::ATestResult>,
+    /// A benchmark comparison recognised in what the program printed.
+    ///
+    /// **In the program's own region, for the same reason the test result is**
+    /// — *PROGRAM includes parsed rich results*. A chart drawn from a
+    /// stranger's numbers is still that stranger's claim.
+    pub(crate) a_benchmark: Option<&'a alo_terminal::ABenchmark>,
 }
 
 /// What joins the parts of a recognised result's summary.
@@ -926,6 +1050,7 @@ pub(crate) fn picture(
         screen,
         what_alo_said,
         a_test_result,
+        a_benchmark,
     } = shows;
     let (window, transcript) =
         where_the_window_goes(size, scale).ok_or(NothingToDrawWith::TheresNoRoom)?;
@@ -1073,6 +1198,78 @@ pub(crate) fn picture(
         }
     }
 
+    // **A recognised benchmark, in the program's own region**, under the same
+    // rule as the test result above and drawn in the order `479:28967` draws
+    // it: the summary, the sentence saying nobody checked it, the rows, and the
+    // note saying how to read them.
+    //
+    // **The three `Ask alo / Action` buttons the frame also holds are not
+    // drawn.** Their widths disagree between the design's two nodes and what
+    // they do is not built, so a button here would look live and reach nothing
+    // — which is worse than one that is plainly absent, because somebody would
+    // later measure it and conclude the road is broken rather than missing.
+    // `docs/design/the-terminal-window.md` records both.
+    let a_benchmarks_first_line = screen.size().lines() + the_results_lines.len();
+    let how_tall_the_benchmark_is = a_benchmark.map_or(0, |benchmark| {
+        let Some(longest) = benchmark.the_longest() else {
+            return 0;
+        };
+        let slowest = longest.it_said_microseconds();
+        let fastest = benchmark
+            .it_said_runs()
+            .iter()
+            .min_by_key(|run| run.it_said_microseconds());
+        let mut line = a_benchmarks_first_line;
+
+        if let Some(fastest) = fastest
+            && slowest > 0
+        {
+            // **The design's own sample checks this**: 240 ms against 180 ms is
+            // 25% lower, and that is the number its summary draws.
+            let lower = (slowest - fastest.it_said_microseconds()).saturating_mul(100) / slowest;
+            let summary = says.say(
+                &alo_terminal::words::LOWER_IN_THIS_COMPARISON.key(),
+                &alo_strings::Filling::of("what", fastest.it_said_called())
+                    .and("percent", lower.to_string()),
+            );
+            if let Some(drawn) = alos_own_line(fonts, summary.text(), goes, line, (ground, ink)) {
+                placed.push(drawn);
+            }
+            line += 1;
+        }
+
+        let printed_it = says.say(
+            &benchmark.what_printed_it().key(),
+            &alo_strings::Filling::nothing(),
+        );
+        let provenance = says.say(
+            &benchmark.and_nobody_checked().key(),
+            &alo_strings::Filling::of("what", printed_it.text()),
+        );
+        if let Some(drawn) = alos_own_line(fonts, provenance.text(), goes, line, (ground, ink)) {
+            placed.push(drawn);
+        }
+        line += 1;
+
+        for run in benchmark.it_said_runs() {
+            let (pieces, bar) = a_benchmarks_row(fonts, run, slowest, goes, line, (ground, ink));
+            placed.extend(pieces);
+            behind.extend(bar);
+            line += A_BENCHMARKS_ROW_IN_LINES;
+        }
+
+        let note = says.say(
+            &alo_terminal::words::SAME_LINEAR_SCALE.key(),
+            &alo_strings::Filling::nothing(),
+        );
+        if let Some(drawn) = alos_own_line(fonts, note.text(), goes, line, (ground, ink)) {
+            placed.push(drawn);
+        }
+        line += 1;
+
+        line - a_benchmarks_first_line
+    });
+
     // **alo's own lines, beneath what the program wrote.** Drawn in the
     // transcript's own type at the transcript's own inset, so they read as part
     // of the conversation rather than as chrome bolted beside it. The gutter
@@ -1100,7 +1297,7 @@ pub(crate) fn picture(
                 .to_owned(),
             alo_terminal::AloSLine::AsTheModelSaidIt(prose) => prose.clone(),
         };
-        let beneath = screen.size().lines() + the_results_lines.len() + which;
+        let beneath = a_benchmarks_first_line + how_tall_the_benchmark_is + which;
         if let Some(drawn) = alos_own_line(fonts, &text, goes, beneath, (ground, ink)) {
             placed.push(drawn);
         }
@@ -1111,7 +1308,7 @@ pub(crate) fn picture(
     // results*. A summary drawn in alo's region would label a stranger's
     // arithmetic as alo's interpretation.
     for region in alo_terminal::regions_of(
-        screen.size().lines() + the_results_lines.len(),
+        a_benchmarks_first_line + how_tall_the_benchmark_is,
         what_alo_said.lines(),
     ) {
         let said = says.say(
