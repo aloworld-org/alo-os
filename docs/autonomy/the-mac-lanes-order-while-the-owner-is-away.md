@@ -658,6 +658,24 @@ rather than rewritten to what it would say now: *a reading is a record of what
 was on a screen at a moment, and editing one to match a later tree is how a
 measurement becomes a claim.*
 
+> **And that sentence is a reading of the vocabulary, not of a screen — checked
+> 2026-10-18.** The walk was re-driven on `59a9c2e2` and passed; it does not
+> prove the wording. `a_terminal_check.rs` asserts **rows of ink**
+> (`rows_after < rows_before + 4`) and compares no string at all: grepped that
+> day, the only mentions of the summary's words in the whole file are the `echo`
+> that types the input and the comment recording the 2026-10-17 reading. **So it
+> passed before #766 and passes after it**, and the shorter form has been read
+> off `alo_terminal::words` — where it is `{passed} passed` — and off no pixels
+> anywhere.
+>
+> **What this costs tonight: nothing, and that is why it is only written down.**
+> Step 10's pass is a person reading two lines on a screen, and a person reads
+> words. What it costs is later: the one automated thing that draws this summary
+> cannot fail if the wording regresses. Asserting it needs a reference draw of
+> the expected string to compare the band against. *Named rather than implied,
+> and not built — the comment in the check now says the same thing in the place
+> somebody editing it will look.*
+
 **One step is still unseen: 1, signing in.** That needs a machine, and it is
 what the evening of the 18th is for.
 
