@@ -80,14 +80,28 @@
 //! place, which is a reason to say where an answer came from — not a reason to
 //! have one door.
 //!
-//! Every part of the other road already exists:
+//! Every transport part of the other road already exists:
 //! `alo_choosing::Settings::provider`, `alo_choosing::what_answers_here` and
-//! `alo_asking::Asking::to_a_provider`. What is missing is this command acting
-//! as that door's caller — resolving and registering the address before the
-//! boundary (ADR 0020), fetching the key from the keyring rather than a settings
-//! file, showing the egress at the moment it happens, and keeping the entry.
-//! **That is written down as work rather than left here as a justification**, in
-//! `docs/autonomy/the-terminal-in-full-plan.md`.
+//! `alo_asking::Asking::to_a_provider`.
+//!
+//! **And it still cannot be called from here, for a reason worth more than this
+//! crate.** Law 1 wants an egress *visible at the moment it happens and
+//! afterwards in a record*. `alo_egress::Indicator` is a `Vec` in process
+//! memory; `docs/contracts/native-egress-indicator.md` says in as many words
+//! that it is *only the drawing surface* and adds **no protocol, agent
+//! capability, D-Bus interface or stored format**; and `docs/contracts/record-file.md`
+//! names services that append, not a road a command may use. So a command that
+//! asked a provider would show the departure **to itself** and drop it on exit
+//! — a law 1 violation wearing the very API that exists to prevent one, which
+//! compiles and type-checks and shows nobody anything.
+//!
+//! Law 1 is satisfiable today only inside the compositor and the agent daemon.
+//! This is the first person-facing command that would cause egress and the
+//! first to find that out; the next one meets the same wall. **How a process
+//! that is neither of those reports an egress and keeps an entry is a public
+//! surface and needs an ADR**, which is recorded as task 11 of
+//! `docs/autonomy/the-terminal-in-full-plan.md` — written there as work and a
+//! named block, rather than left here as a justification.
 
 pub mod saying;
 pub mod which_model;

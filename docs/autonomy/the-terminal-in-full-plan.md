@@ -76,11 +76,13 @@ were*, which is the snapshot half and waits on a bracket.
 
 ## Where the eleven stand, 2026-10-18
 
-**Two are done, eight are blocked and one is startable.** *This read "no task in
-this plan is startable" until 2026-10-18*, when the owner's three rulings on
+**Two are done and nine are blocked.** Task 11 was added on 2026-10-18 from the
+owner's three rulings on
 [ADR 0124](../decisions/0124-one-command-asks-alo-from-the-terminal-and-asking-means-acting.md)
-added task 11 and nothing blocked it. The other eight are each blocked by one of
-five causes — four of which are another lane's or the owner's:
+and **written up as startable, which it is not** — corrected within the hour,
+below, and left visible because the reason is a sixth cause this plan did not
+have: **law 1 has no road out of a command.** The nine are blocked by one of six
+causes, five of which are another lane's or the owner's:
 
 | | task | blocked by |
 |---|---|---|
@@ -94,7 +96,7 @@ five causes — four of which are another lane's or the owner's:
 | 8 | bisect the machine | **the comparer** — the third PC's |
 | 10 | *your files as they were* | **the comparer** |
 | 9 | try a command touching nothing | **the kernel boundary** — the kernel plan's |
-| 11 | ask alo where the person chose, not only here | **startable** — nothing is waiting on anybody |
+| 11 | ask alo where the person chose, not only here | **law 1 out of a process** — no road to the indicator or the record |
 
 **So the five causes are:** shell integration (2 tasks), the privileged comparer
 (3), a design component nobody has captured (part of 1), `alo-capability`'s
@@ -406,9 +408,12 @@ not simply built here under *work a task needs is part of that task*:
 
 ### 11. Ask alo where the person chose, and not only this machine
 
-**Startable. Nothing in this task waits on anybody**, which is why it is here:
-every other task in this plan is blocked, and this one is a caller that does not
-exist for doors that do.
+**Blocked, and the block is the finding.** *This was written up as startable on
+2026-10-18 and corrected the same hour. The first draft is quoted because the
+mistake is worth more than the correction:* **nothing in this task waits on
+anybody — this one is a caller that does not exist for doors that do.** Two of
+the five duties below cannot be discharged by any command, and I listed them as
+duties without asking whether a road to them exists.
 
 **What a person gets today**, measured 2026-10-18: `alo-ask` holds
 `SourcePolicy::ThisMachineOnly` and calls `Asking::to_this_machine` and nothing
@@ -446,6 +451,40 @@ than warns), and a settings file naming a provider on a machine with no network.
 Each is a different sentence to a person and none of them may be *answered
 locally instead*.
 
+### What blocks it: law 1 cannot be satisfied from a command
+
+**Measured 2026-10-18, after the table above was written.** Two of those five
+duties are law 1 itself — *visible at the moment it happens and afterwards in a
+record* — and a command can discharge neither:
+
+| asked | answer |
+|---|---|
+| what is `alo_egress::Indicator` | a `Vec<Shown>` and a counter, **in process memory** |
+| who turns one into something a person sees | `alo-indicator` makes a `Drawn` from one, and `alo-shell` draws it on an output |
+| is there a road for another process to report an egress | **no.** `docs/contracts/native-egress-indicator.md`: *no protocol, agent capability, D-Bus interface or stored format changes … this document describes only the drawing surface* |
+| is there a road to the record file | **no.** `docs/contracts/record-file.md` names the paths and the services that append to them; nothing offers a command a way in |
+
+So an `alo-ask` that reached a provider would create its own `Indicator`, show
+the egress to itself, and drop it when the process exited. **That is a law 1
+violation wearing the API that exists to prevent one** — the call compiles, the
+type is right, and no person sees anything.
+
+**This is larger than this task.** Law 1 is satisfiable today only inside the
+compositor and the agent daemon. `alo-ask` is the first person-facing command in
+this product that would cause egress, and the first to find that out. Every
+later one meets the same wall: *the command that fetches a model, the command
+that tests a provider, anything a person types that leaves this machine.*
+
+**What is needed is a decision, not a caller:** how a process that is neither
+the compositor nor the agent daemon reports an egress and keeps an entry. That
+is a public surface — `CLAUDE.md`'s *contracts outlive code* — so it needs an
+ADR before a line of it is written. **Drafting that ADR is the next move on this
+task**, and it is not the task.
+
+*Nothing in the local road is affected: it causes no egress, which is why
+`alo-ask` works today and why the gap went unnoticed until something had to
+leave.*
+
 **What this task must not do:** choose a place on anybody's behalf, or widen
 `THE_STRICTEST_RULE` for the local road. The rule exists so this command cannot
 be where a policy gets loosened; the provider road needs its own policy from the
@@ -471,5 +510,13 @@ left in place is how a gap stops being read as one.*
   caller and the surface it would be called from, and the design file and ADR
   0064 are both silent on the surface. *This bullet said "the kernel box" and
   pointed at two ADRs that had already been built against.*
+- **How a process that is not the compositor reports an egress and keeps an
+  entry** — task 11, and every later command that leaves this machine. Law 1 is
+  satisfiable today only inside the compositor and the agent daemon:
+  `alo_egress::Indicator` is a `Vec` in process memory and
+  `docs/contracts/native-egress-indicator.md` adds *no protocol, agent
+  capability, D-Bus interface or stored format*. A public surface, so an ADR
+  comes before a caller. *Found 2026-10-18, in the hour after task 11 was
+  written up as startable.*
 - **The owner, on the pairing of five answers to four actions** — `docs/features.md`
   records it as theirs. Task 1 does not need it; offering the actions does.
