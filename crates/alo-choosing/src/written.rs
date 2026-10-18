@@ -72,7 +72,7 @@ use alo_models::{
 use crate::chosen::{Chosen, Picked, Which};
 use crate::paired::AMachine;
 use crate::refusing::NotSet;
-use crate::settings::{Settings, Unresolved};
+use crate::settings::{MayUseAnother, Settings, Unresolved};
 use crate::setup::Setup;
 use crate::unreadable::NotToml;
 
@@ -167,6 +167,43 @@ pub(crate) struct AsWritten {
     /// choice.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) setup: Option<TheSetup>,
+    /// What they said about using something else when what they chose is not
+    /// available, where they have said anything.
+    ///
+    /// **Absent on every file written before 2026-10-19**, and absent is not
+    /// `false`: a person who has not been asked has not refused. `crate::settings`
+    /// keeps the three apart and says what each one means.
+    ///
+    /// **Renamed explicitly.** `AsWritten` has no `rename_all`, because every
+    /// other section here is one word and needed none — so a multi-word field
+    /// serialises as `when_mine_is_unavailable` unless it says otherwise, and
+    /// the published contract says the section is `[when-mine-is-unavailable]`.
+    /// Caught by this crate's own writing test asserting the name in the
+    /// contract rather than the name Rust happened to produce.
+    #[serde(
+        rename = "when-mine-is-unavailable",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub(crate) when_mine_is_unavailable: Option<WhenMineIsUnavailable>,
+}
+
+/// What a person said about alo using something else.
+///
+/// A section with one key rather than a bare `may-use-another = true`, for
+/// [`TheSetup`]'s reason: what this records can grow — *which* others are
+/// permitted, an order to try them in — without the key that exists today
+/// changing shape.
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub(crate) struct WhenMineIsUnavailable {
+    /// Whether another model or API may answer instead.
+    ///
+    /// `false` is **not** the same as the section being absent, and is read as
+    /// what it says: a person who turned this off has decided, and a question
+    /// that cannot reach the place they chose is refused rather than answered
+    /// somewhere else. Somebody who has never seen the setting has decided
+    /// nothing.
+    pub(crate) may_use_another: bool,
 }
 
 /// Whether setup was answered.
@@ -478,16 +515,29 @@ impl AsWritten {
 
         // Last, because it is the only question that needs two halves of the
         // file: a choice into a list has to name something on that list.
-        Settings::of(chosen, brought, providers, languages, setup).map_err(|why| match why {
-            Unresolved::Weights(model) => NotSet::NotBrought {
-                at: at.to_owned(),
-                model,
-            },
-            Unresolved::Provider(provider) => NotSet::NoSuchProvider {
-                at: at.to_owned(),
-                provider,
-            },
-        })
+        // What they said about using something else, where they said anything.
+        // **Absent is not `No`** — `crate::settings::MayUseAnother` says why at
+        // length, and this is the one place the distinction is read off a disk.
+        let may_use_another = self.when_mine_is_unavailable.map(|said| {
+            if said.may_use_another {
+                MayUseAnother::Yes
+            } else {
+                MayUseAnother::No
+            }
+        });
+
+        Settings::of(chosen, brought, providers, languages, setup)
+            .map(|settings| settings.and_may_use_another(may_use_another))
+            .map_err(|why| match why {
+                Unresolved::Weights(model) => NotSet::NotBrought {
+                    at: at.to_owned(),
+                    model,
+                },
+                Unresolved::Provider(provider) => NotSet::NoSuchProvider {
+                    at: at.to_owned(),
+                    provider,
+                },
+            })
     }
 }
 

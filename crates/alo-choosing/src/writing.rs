@@ -58,12 +58,12 @@ use alo_strings::Language;
 
 use crate::chosen::{Picked, Which};
 use crate::holding::every_provider_holds;
-use crate::settings::Settings;
+use crate::settings::{MayUseAnother, Settings};
 use crate::setup::Setup;
 use crate::unwritten::NotWritten;
 use crate::written::{
     AsWritten, ProviderAsWritten, ProviderChosen, THE_FORMAT, TheAnswers, TheReading, TheSetup,
-    WeightsAsWritten, read,
+    WeightsAsWritten, WhenMineIsUnavailable, read,
 };
 
 /// These settings as the text of a settings file.
@@ -146,6 +146,15 @@ fn as_written(settings: &Settings) -> AsWritten {
             Setup::Answered => Some(TheSetup { answered: true }),
             Setup::NotAnswered => None,
         },
+        // **Absent when they have not said**, for the same reason setup is: a
+        // section written to mean *and nobody has been asked* would be alo OS
+        // putting a value in the one file ADR 0016 keeps for the person. `No`
+        // is written, because it is a thing they said.
+        when_mine_is_unavailable: settings
+            .may_use_another()
+            .map(|said| WhenMineIsUnavailable {
+                may_use_another: matches!(said, MayUseAnother::Yes),
+            }),
     }
 }
 
@@ -238,6 +247,69 @@ mod tests {
         languages: Vec<Language>,
     ) -> Settings {
         Settings::of(chosen, brought, providers, languages, Setup::NotAnswered).unwrap()
+    }
+
+    /// **A person who has not been asked writes no section at all.**
+    ///
+    /// The one that matters most: a section saying *and nobody has been asked*
+    /// would be alo OS putting a value in the one file ADR 0016 keeps for the
+    /// person, and a later reader would find a `false` nobody typed.
+    #[test]
+    fn a_person_who_has_not_said_writes_no_section() {
+        let text = written(
+            &settings(None, Brought::default(), Providers::default(), Vec::new()),
+            &somewhere(),
+        )
+        .unwrap();
+        assert!(
+            !text.contains("when-mine-is-unavailable"),
+            "a person who has not been asked had a section written for them: {text}"
+        );
+        assert!(!text.contains("may-use-another"), "{text}");
+    }
+
+    /// **Yes and no are both written, and they are different text.**
+    #[test]
+    fn what_they_said_about_using_another_is_written_as_they_said_it() {
+        for (said, expected) in [
+            (MayUseAnother::Yes, "may-use-another = true"),
+            (MayUseAnother::No, "may-use-another = false"),
+        ] {
+            let theirs = settings(None, Brought::default(), Providers::default(), Vec::new())
+                .and_may_use_another(Some(said));
+            let text = written(&theirs, &somewhere()).unwrap();
+            assert!(
+                text.contains("[when-mine-is-unavailable]"),
+                "{said:?}: {text}"
+            );
+            assert!(text.contains(expected), "{said:?}: {text}");
+        }
+    }
+
+    /// **It reads back as what was written, all three ways.**
+    ///
+    /// A setting that writes and does not read back is worse than no setting:
+    /// a person turns it off, the file says so, and the machine goes on
+    /// behaving as though they had never been asked. So the round trip is the
+    /// test, and `None` is in it because that is the state the other two have
+    /// to be told apart from.
+    #[test]
+    fn what_they_said_survives_being_written_and_read_again() {
+        for said in [None, Some(MayUseAnother::Yes), Some(MayUseAnother::No)] {
+            let theirs = settings(None, Brought::default(), Providers::default(), Vec::new())
+                .and_may_use_another(said);
+            let text = written(&theirs, &somewhere()).unwrap();
+            // `unwrap` and not a message: an `Err` here means this crate
+            // wrote settings it cannot read again, and the text is printed by
+            // the assertion below either way.
+            let again = read(&text, &somewhere()).unwrap();
+            assert_eq!(
+                again.may_use_another(),
+                said,
+                "written as {said:?} and read back as {:?}: {text}",
+                again.may_use_another()
+            );
+        }
     }
 
     /// One set of weights on somebody's own list.

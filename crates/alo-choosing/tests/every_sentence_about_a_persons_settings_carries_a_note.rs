@@ -122,7 +122,7 @@ fn every_sentence_about_a_file_names_which_file() {
         let at_a_line = phrase(&vocabulary, &format!("{area}.kept.not-understood-at"));
         assert!(at_a_line.source().has("line"), "{}", at_a_line.key());
     }
-    // Every `choosing` sentence but three is about a person's settings file and
+    // Every `choosing` sentence but five is about a person's settings file and
     // names it. The crate's own `is_about_the_file` holds the same exemption
     // over the same three keys, so **a fourth pathless sentence fails both** —
     // which is the property this list is kept by hand for.
@@ -136,10 +136,12 @@ fn every_sentence_about_a_file_names_which_file() {
     // *The last two arrived on 2026-10-18.* They are the first sentences in
     // this crate that report something other than what became of the file,
     // and that is why both guards had to be widened rather than one.
-    const PATHLESS_ON_PURPOSE: [&str; 3] = [
+    const PATHLESS_ON_PURPOSE: [&str; 5] = [
         "choosing.session.no-folder",
         "choosing.not-the-provider-you-chose",
         "choosing.not-the-machine-you-chose",
+        "choosing.nothing-else-may-answer",
+        "choosing.nothing-else-may-answer-machine",
     ];
     let mut exempted = 0_u8;
     for phrase in phrases_of(&vocabulary, "choosing") {

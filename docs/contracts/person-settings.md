@@ -472,6 +472,49 @@ and has nothing answering questions; a person who typed their own settings file
 and never saw setup has something answering questions and has not been asked.
 Both are true sentences about a machine, and both are expressible here.
 
+## `[when-mine-is-unavailable]` — whether alo may use something else
+
+`docs/features.md`, starred: *Unless the person says otherwise, in Settings.*
+Asked for by the owner on 2026-10-18, in these words: *it should be in the
+settings if the users allows the alo to use the other models or apis if one is
+not available.*
+
+| Key | Meaning |
+|---|---|
+| `may-use-another` | Whether another model or API may answer when the one in `[answers]` cannot be reached. Additive; format 3 unchanged. |
+
+```toml
+format = 3
+
+[answers]
+provider = { name = "Mistral", model = "mistral-small-latest" }
+
+[when-mine-is-unavailable]
+may-use-another = true
+```
+
+**Three states, and the absent one is not `false`.**
+
+| the file | what it means | what a person gets |
+|---|---|---|
+| no section | they have not been asked | answered where alo can, **and told plainly that the place they chose was not used** |
+| `may-use-another = false` | they said no | **not answered**, and told which of their own settings decided it |
+| `may-use-another = true` | they said yes | answered somewhere else, **and the answer still says where it came from** |
+
+- **Absent is not `false`.** A person who has never seen this setting has not
+  refused anything, and reading the two as one would stop somebody getting
+  answers they get today — which law 5 calls taking a choice away. It is the
+  one distinction this section exists to carry.
+- **`true` does not switch off where the answer came from.** That sentence is
+  beside every answer and this key does not reach it: `docs/features.md` says so
+  in the promise itself, and an `alo_asking::Answer` has no shape without a
+  source. This key decides **who chooses**, never what alo says afterwards.
+- **A section with no key does not read**, like every other section here.
+- **It is written only when they have said something.** A section saying *and
+  nobody has been asked* would be alo OS putting a value in the one file
+  ADR 0016 keeps for the person, and a later reader would find a `false` nobody
+  typed.
+
 ## `[reading]` — what this person reads
 
 | Key | Meaning |

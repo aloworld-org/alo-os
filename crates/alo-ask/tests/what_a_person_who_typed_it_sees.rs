@@ -47,6 +47,87 @@ fn run(arguments: &[&str], home: &Path) -> (bool, String) {
     )
 }
 
+/// A login whose settings name a provider, with this text in them.
+///
+/// Written to a real file under a real `HOME`, because what is being tested is
+/// the command reading a person's settings — a fixture that handed it a
+/// `Settings` would test the decision, which `alo-choosing` already tests.
+fn a_login_whose_settings_say(what: &str, text: &str) -> std::path::PathBuf {
+    let home = std::env::temp_dir().join(format!("alo-ask-{}-{what}", std::process::id()));
+    let folder = home.join(".config").join("alo");
+    std::fs::create_dir_all(&folder).expect("a temporary folder can be made");
+    std::fs::write(folder.join("settings.toml"), text).expect("settings can be written");
+    home
+}
+
+/// **A person who chose a provider and said nothing else may answer is not
+/// answered, and is told which setting did it.**
+///
+/// The whole road, through the real binary: their file is read, the setting in
+/// it is honoured, and the sentence names their own provider and model so they
+/// can change their mind. `docs/features.md`: *Unless the person says
+/// otherwise, in Settings* — the owner's instruction of 2026-10-18.
+#[test]
+fn a_person_who_forbade_anything_else_is_not_answered_from_this_machine() {
+    let home = a_login_whose_settings_say(
+        "forbade",
+        "format = 3\n\n\
+         [answers]\n\
+         provider = { name = \"Mistral\", model = \"mistral-small-latest\" }\n\n\
+         [[provider]]\n\
+         name = \"Mistral\"\n\
+         endpoint = \"https://api.mistral.ai\"\n\
+         region = \"the EU\"\n\n\
+         [when-mine-is-unavailable]\n\
+         may-use-another = false\n",
+    );
+
+    let (ok, said) = run(&["may the tenant sublet"], &home);
+
+    assert!(!ok, "a question nothing may answer succeeded: {said}");
+    assert!(
+        said.contains("told alo not to use anything else"),
+        "the person was not told which of their settings decided it: {said}"
+    );
+    assert!(
+        said.contains("mistral-small-latest") && said.contains("Mistral"),
+        "the sentence did not name what they chose, so they cannot find it: {said}"
+    );
+    assert!(
+        !said.contains("on this machine"),
+        "it answered from this machine anyway: {said}"
+    );
+}
+
+/// **And a person who has not been asked is still answered.**
+///
+/// The sharp one. Reading *nobody has decided* as *they refused* would stop
+/// somebody getting answers they get today, which law 5 calls taking a choice
+/// away — so the same settings **without** the section must not refuse.
+///
+/// It asserts on what it does *not* say, because whether an answer arrives
+/// depends on a model runtime this test has no business needing.
+#[test]
+fn a_person_who_has_not_been_asked_is_not_refused() {
+    let home = a_login_whose_settings_say(
+        "not-asked",
+        "format = 3\n\n\
+         [answers]\n\
+         provider = { name = \"Mistral\", model = \"mistral-small-latest\" }\n\n\
+         [[provider]]\n\
+         name = \"Mistral\"\n\
+         endpoint = \"https://api.mistral.ai\"\n\
+         region = \"the EU\"\n",
+    );
+
+    let (_ok, said) = run(&["may the tenant sublet"], &home);
+
+    assert!(
+        !said.contains("told alo not to use anything else"),
+        "a person who has never seen the setting was refused as though they had said no: {said}"
+    );
+}
+
 /// **Nothing typed is answered before the machine is touched.**
 ///
 /// The order this pins is the one that was wrong first: the model used to be

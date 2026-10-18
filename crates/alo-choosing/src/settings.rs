@@ -102,6 +102,38 @@ pub struct Settings {
     /// [`Setup::Answered`] is ADR 0009's fourth choice rather than a person
     /// nobody has asked yet.
     setup: Setup,
+    /// What they said about alo using something else when what they chose is
+    /// not available.
+    ///
+    /// [`None`] is **not** `No`. See [`Settings::may_use_another`].
+    may_use_another: Option<MayUseAnother>,
+}
+
+/// What a person said about alo using something else when their choice is not
+/// available.
+///
+/// `docs/features.md`, starred: *Unless the person says otherwise, in
+/// Settings.* Asked for by the owner on 2026-10-18.
+///
+/// **Two states, and the third is the absence of this type.** A person who has
+/// never seen the setting has not refused anything, and
+/// [`Settings::may_use_another`] answers [`None`] for them — which is why this
+/// is not a `bool`. *Absent is stronger than defaulted*: a default can be
+/// failed to override, and an absence cannot be overridden wrongly.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MayUseAnother {
+    /// They turned it on: another model or API may answer instead.
+    ///
+    /// **It does not switch off the sentence saying where the answer came
+    /// from.** That sentence is beside every answer and is not a thing this
+    /// choice reaches — `docs/features.md` says so in the promise itself, and
+    /// `alo_asking::Answer` has no shape without a source.
+    Yes,
+    /// They turned it off: nothing else may answer.
+    ///
+    /// A question that cannot reach the place they chose is **refused**, which
+    /// is a thing they asked for rather than something taken from them.
+    No,
 }
 
 impl Settings {
@@ -134,6 +166,10 @@ impl Settings {
             Some(_) | None => {}
         }
         Ok(Self {
+            // **Nothing here decides it.** `crate::written` reads it from the
+            // file and `and_may_use_another` puts it on; a person who has not
+            // been asked arrives as `None` and stays that way.
+            may_use_another: None,
             chosen,
             brought,
             providers,
@@ -150,6 +186,7 @@ impl Settings {
     #[must_use]
     pub fn untouched() -> Self {
         Self {
+            may_use_another: None,
             chosen: None,
             brought: Brought::default(),
             providers: Providers::default(),
@@ -189,6 +226,34 @@ impl Settings {
     #[must_use]
     pub fn chosen(&self) -> Option<&Picked> {
         self.chosen.as_ref()
+    }
+
+    /// What they said about alo using something else when their choice is not
+    /// available.
+    ///
+    /// **Three answers and not two.** [`None`] is a person who has not been
+    /// asked, [`MayUseAnother::No`] is one who said no, and reading them as the
+    /// same thing would turn *nobody has decided* into *they refused* — which
+    /// would refuse answers somebody gets today, and law 5 calls that taking a
+    /// choice away.
+    ///
+    /// What each means where it is acted on is `alo-ask`'s, and
+    /// `docs/features.md` carries the promise.
+    #[must_use]
+    pub const fn may_use_another(&self) -> Option<MayUseAnother> {
+        self.may_use_another
+    }
+
+    /// The same settings, with what they said about using something else.
+    ///
+    /// A builder rather than a sixth argument to [`Settings::of`], which
+    /// fifteen call sites would otherwise all have to pass [`None`] to — and a
+    /// sixth argument nobody has an opinion about is a sixth chance to pass the
+    /// wrong one.
+    #[must_use]
+    pub const fn and_may_use_another(mut self, said: Option<MayUseAnother>) -> Self {
+        self.may_use_another = said;
+        self
     }
 
     /// The weights this person brought to this machine themselves.
