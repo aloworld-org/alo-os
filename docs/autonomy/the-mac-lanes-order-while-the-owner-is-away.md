@@ -675,9 +675,83 @@ measurement becomes a claim.*
 > the expected string to compare the band against. *Named rather than implied,
 > and not built — the comment in the check now says the same thing in the place
 > somebody editing it will look.*
+>
+> **And then it was read, later the same day.** The check was run on `009343a5`,
+> the recognised-result frame was written out and opened, and the band at
+> y 620..860 of a 1440x960 frame holds two lines:
+>
+> ```text
+> Tests · 23 passed · 1 failed
+> Source: cargo test output · Not independently verified
+> ```
+>
+> **So the row above is superseded by a reading rather than by a claim**, and
+> step 10's pass is confirmed on a drawn frame for the first time. The 2026-10-17
+> row is still left as it was read. *The assertion is unchanged and still counts
+> rows of ink: this is a measurement of one frame on one day, not a guard. The
+> check now writes that frame on request so the next person re-reads it instead
+> of trusting this paragraph.*
 
 **One step is still unseen: 1, signing in.** That needs a machine, and it is
 what the evening of the 18th is for.
+
+### Eight of the thirteen rows were re-read before the boot — 2026-10-18, on `009343a5`
+
+**Because a row of this table is what the walker will expect, and one of them
+was already stale.** Step 10's was — #766 reworded the summary and the check
+counts rows of ink, so nothing caught it. That raised the obvious question about
+the other twelve, and the only way to answer it is to open the frames.
+
+Three frames were written out and looked at. **They agree with the table**:
+
+| row | re-read as |
+|---|---|
+| 3 | `program`, lower case, in the gutter |
+| 4 | `bash · UTF-8` along the foot |
+| 5 | `cat` waits, printing nothing |
+| 6 | gutter `alo`, text **`waiting for the keyboard`** |
+| 8 | gutter `alo`, text **`waiting for something alo cannot identify`** |
+| 9 | `seq 1 40`'s output, 20 to 40 on the screen |
+| 10 | **`Tests · 23 passed · 1 failed`** and `Source: cargo test output · Not independently verified` — the shorter form, which is the correction |
+| 11 | both of those inside the region the gutter labels `program` |
+
+**Rows 2, 7, 12 and 13 were not re-read**: they are about a frame changing
+between two moments rather than about what one frame holds, and no frame was
+written for them.
+
+**And they are the four the check already guards**, which is why the split falls
+where it does rather than by chance. `a_terminal_check.rs` holds **22
+assertions that can fail**, and each of those four has one: row 2 at lines 493,
+595 and 598, row 7 at 840, row 12 at 974, row 13 at 1004. Every one is about ink
+appearing or going away between two frames — a thing a pixel count *can* see.
+
+> **With one half-row that nothing guards, found while checking that claim.**
+> Row 2's pass is *a prompt and a cursor — **and no window***. The first half is
+> asserted three times over. **The second is not asserted at all.** The nearest
+> thing, line 632, is a **lower** bound on the difference's height — *is this
+> tall enough to be a terminal* — and a window frame would make the extent
+> **larger**, so it passes straight through. *Not built, and small: the step was
+> reworded above precisely because alo's terminal draws on the desktop's own
+> ground and has no window. A guard for it would be an upper bound beside the
+> lower one, and the reason to write it down rather than add it is that nobody
+> has decided what the upper bound should be.*
+
+**The eight that were re-read are the ones whose content is words**, and no
+assertion in that file compares a string. Line 789 comes closest and asks where
+the gutter column ends rather than what it says.
+
+So the table is covered twice over and never once: **a row is either guarded by
+an assertion that fails if it changes, or it was read by eye on 2026-10-18 — and
+the two sets do not overlap because they cannot.** *That is a better statement
+than "eight of thirteen", and it is the same measurement.*
+
+**This is still a nested compositor** — headless weston, llvmpipe — and says
+nothing about a real display, a real keyboard or a machine that booted. What it
+removes is the walker arriving with an expectation the tree stopped meeting.
+
+*Row 6 is the one worth the trouble: the order above says the whole boot is
+`one terminal, one `cat`, one chord — and either it says waiting for the
+keyboard on a screen or it does not`. It does, on this tree, in those words.*
 
 **Step 9 was nearly checked the wrong way**, and the shape is worth knowing
 because this document is read by people writing checks. `Server::pointer_axis`
