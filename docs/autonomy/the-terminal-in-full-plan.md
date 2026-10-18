@@ -74,11 +74,13 @@ were*, which is the snapshot half and waits on a bracket.
   in `docs/design/the-first-start.md`.
 - **A new task goes at the end**, numbered in order.
 
-## Where the ten stand, 2026-10-17
+## Where the eleven stand, 2026-10-18
 
-**Two are done and eight are blocked. No task in this plan is startable**, and
-each is blocked by one of five causes — four of which are another lane's or the
-owner's:
+**Two are done, eight are blocked and one is startable.** *This read "no task in
+this plan is startable" until 2026-10-18*, when the owner's three rulings on
+[ADR 0124](../decisions/0124-one-command-asks-alo-from-the-terminal-and-asking-means-acting.md)
+added task 11 and nothing blocked it. The other eight are each blocked by one of
+five causes — four of which are another lane's or the owner's:
 
 | | task | blocked by |
 |---|---|---|
@@ -92,6 +94,7 @@ owner's:
 | 8 | bisect the machine | **the comparer** — the third PC's |
 | 10 | *your files as they were* | **the comparer** |
 | 9 | try a command touching nothing | **the kernel boundary** — the kernel plan's |
+| 11 | ask alo where the person chose, not only here | **startable** — nothing is waiting on anybody |
 
 **So the five causes are:** shell integration (2 tasks), the privileged comparer
 (3), a design component nobody has captured (part of 1), `alo-capability`'s
@@ -400,6 +403,59 @@ not simply built here under *work a task needs is part of that task*:
 - so extending the bracket to the person's commands changes the cost of the one
   term the owner priced personally. **That makes it theirs**, not a caller this
   task may add quietly.
+
+### 11. Ask alo where the person chose, and not only this machine
+
+**Startable. Nothing in this task waits on anybody**, which is why it is here:
+every other task in this plan is blocked, and this one is a caller that does not
+exist for doors that do.
+
+**What a person gets today**, measured 2026-10-18: `alo-ask` holds
+`SourcePolicy::ThisMachineOnly` and calls `Asking::to_this_machine` and nothing
+else. A person whose settings name a provider is answered by **nothing at all**,
+and since
+[ADR 0095](../decisions/0095-the-release-carries-no-model-and-a-person-brings-their-own.md)
+ships no weights, that is the ordinary state of a fresh machine rather than an
+edge case. `docs/features.md` promises *a provider they have an account with*,
+and [ADR 0008](../decisions/0008-where-inference-happens.md) says outright *it
+assumed everybody runs a model. Most people will not.*
+
+**This makes an existing promise true rather than adding one**, which is the
+sentence `CLAUDE.md` asks for: the three places are ADR 0008's and already
+published, and the owner ruled on 2026-10-18 that all three may answer and never
+local only. No line of `docs/features.md` gains a capability here; one stops
+being false on a machine without weights.
+
+**The road is built. The caller is not.** `alo_choosing::Settings::provider`,
+`alo_choosing::what_answers_here` and `alo_asking::Asking::to_a_provider` all
+exist. What `alo-ask` must become is that door's caller, and each of these is a
+duty the door pushes onto it rather than something to invent:
+
+| owed | by whom, and why |
+|---|---|
+| resolve the address and register it before the boundary | `to_a_provider`'s own doc: *resolved and registered by the caller before any boundary was entered* (ADR 0020). A request to an address nobody registered reaches somewhere nobody was shown |
+| the key out of the keyring | `docs/features.md`: *the key goes to the keyring, never into a settings file, so it cannot leak through a backup or a support bundle* |
+| show the egress **at the moment it happens** | law 1, and it is half the law. A command that printed the place afterwards has reported an egress, not surfaced one |
+| keep the entry | law 1's other half. `docs/contracts/record-file.md` names the file and `alo-keeping` writes it; this command has no road to it |
+| **never fall back** | ADR 0008: *never a silent fallback*. If the chosen place cannot answer, the person is told — the other place is not tried |
+
+**The refusal paths are the work, not the happy path.** A provider configured
+with no key, a key the provider rejects, an address that will not resolve, an
+`http` address that is not on this machine (`docs/features.md` refuses rather
+than warns), and a settings file naming a provider on a machine with no network.
+Each is a different sentence to a person and none of them may be *answered
+locally instead*.
+
+**What this task must not do:** choose a place on anybody's behalf, or widen
+`THE_STRICTEST_RULE` for the local road. The rule exists so this command cannot
+be where a policy gets loosened; the provider road needs its own policy from the
+person's settings, not a relaxation of that constant.
+
+*Added 2026-10-18 by the Mac lane, from ADR 0124's consequence that `alo-ask`
+grows a road it does not have. Two false sentences in `alo-ask`'s own crate
+documentation were corrected in the same change — they claimed where a record
+lives is undecided, and that ADR 0008 permits one door — because a justification
+left in place is how a gap stops being read as one.*
 
 ## What this plan is waiting on, in one place
 
