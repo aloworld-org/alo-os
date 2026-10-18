@@ -63,6 +63,23 @@ pub struct StoodUp {
     /// Everything the display lifetime reported: the loop's outcome, input
     /// cleanup, both flushes and retirement, each independent of the others.
     pub display: crate::DirectLoopResult,
+    /// **How many input events this seat could not make sense of**, over the
+    /// whole session.
+    ///
+    /// Carried out because a lane that survives a refusal has to be able to say
+    /// it happened — `InputError::is_about_one_event` is where that is argued,
+    /// and the short of it is that a pointer silently doing nothing for ever is
+    /// worse than a desktop that ends loudly.
+    ///
+    /// **It is also the one question a booted machine can be asked.** There is
+    /// no shell on an alo machine by design, so what the compositor knows
+    /// reaches a person only if something hands it out. On 2026-10-18 a click
+    /// measured inside a Dock icon's slot opened nothing and there was no way
+    /// to tell *the button never arrived* from *the button arrived and was
+    /// refused*. This is that number: **nought** says the event never reached
+    /// the compositor and the fault is below it, in libinput or the device;
+    /// **anything else** says it arrived and something here would not have it.
+    pub input_refused: usize,
 }
 
 /// Put this person's desktop on the display, and keep it there.
@@ -179,8 +196,13 @@ pub fn stand_the_desktop_up(
     );
     let mut session = DirectSession::new(display.display.to_owned())?;
     let stood = session.desktop(&mut server, desktop, &mut labels, &strings, &mut next)?;
+    // **Read after the loop, from the seat that did the refusing.** The count
+    // lives on the `Server` rather than in the loop's result because it belongs
+    // to the seat and outlives any one lifetime of the display.
+    let input_refused = server.how_much_input_was_refused();
     Ok(StoodUp {
         display: stood.outcome,
+        input_refused,
     })
 }
 
