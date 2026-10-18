@@ -377,8 +377,9 @@ file carries it with a tier.*
   ([ADR 0124](decisions/0124-one-command-asks-alo-from-the-terminal-and-asking-means-acting.md)).
   **Not built**: `alo-ask` is the command and it only answers — measured the
   same day, it names the agent, the broker, a proposal and an approval **zero**
-  times. *This line was drafted by the Mac lane on the owner's ruling and awaits
-  their acceptance; scope is gated, and a promise is the owner's to make*
+  times. *The owner ruled three times on 2026-10-18 — that it acts, that there
+  is one of it, and that it works out which you meant — so the promise is
+  theirs; the wording of this line is the lane's*
 - ★ **And you decide whether alo may use it.** **alo can open a terminal for
   you** — that is an ordinary thing to ask an assistant for, and it hands alo
   nothing: a terminal window opens onto a prompt waiting for a keystroke, and
