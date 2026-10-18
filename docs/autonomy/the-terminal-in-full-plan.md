@@ -74,11 +74,15 @@ were*, which is the snapshot half and waits on a bracket.
   in `docs/design/the-first-start.md`.
 - **A new task goes at the end**, numbered in order.
 
-## Where the ten stand, 2026-10-17
+## Where the eleven stand, 2026-10-18
 
-**Two are done and eight are blocked. No task in this plan is startable**, and
-each is blocked by one of five causes — four of which are another lane's or the
-owner's:
+**Two are done and nine are blocked.** Task 11 was added on 2026-10-18 from the
+owner's three rulings on
+[ADR 0124](../decisions/0124-one-command-asks-alo-from-the-terminal-and-asking-means-acting.md)
+and **written up as startable, which it is not** — corrected within the hour,
+below, and left visible because the reason is a sixth cause this plan did not
+have: **law 1 has no road out of a command.** The nine are blocked by one of six
+causes, five of which are another lane's or the owner's:
 
 | | task | blocked by |
 |---|---|---|
@@ -92,6 +96,7 @@ owner's:
 | 8 | bisect the machine | **the comparer** — the third PC's |
 | 10 | *your files as they were* | **the comparer** |
 | 9 | try a command touching nothing | **the kernel boundary** — the kernel plan's |
+| 11 | ask alo where the person chose, not only here | **law 1 out of a process** — no road to the indicator or the record |
 
 **So the five causes are:** shell integration (2 tasks), the privileged comparer
 (3), a design component nobody has captured (part of 1), `alo-capability`'s
@@ -401,6 +406,96 @@ not simply built here under *work a task needs is part of that task*:
   term the owner priced personally. **That makes it theirs**, not a caller this
   task may add quietly.
 
+### 11. Ask alo where the person chose, and not only this machine
+
+**Blocked, and the block is the finding.** *This was written up as startable on
+2026-10-18 and corrected the same hour. The first draft is quoted because the
+mistake is worth more than the correction:* **nothing in this task waits on
+anybody — this one is a caller that does not exist for doors that do.** Two of
+the five duties below cannot be discharged by any command, and I listed them as
+duties without asking whether a road to them exists.
+
+**What a person gets today**, measured 2026-10-18: `alo-ask` holds
+`SourcePolicy::ThisMachineOnly` and calls `Asking::to_this_machine` and nothing
+else. A person whose settings name a provider is answered by **nothing at all**,
+and since
+[ADR 0095](../decisions/0095-the-release-carries-no-model-and-a-person-brings-their-own.md)
+ships no weights, that is the ordinary state of a fresh machine rather than an
+edge case. `docs/features.md` promises *a provider they have an account with*,
+and [ADR 0008](../decisions/0008-where-inference-happens.md) says outright *it
+assumed everybody runs a model. Most people will not.*
+
+**This makes an existing promise true rather than adding one**, which is the
+sentence `CLAUDE.md` asks for: the three places are ADR 0008's and already
+published, and the owner ruled on 2026-10-18 that all three may answer and never
+local only. No line of `docs/features.md` gains a capability here; one stops
+being false on a machine without weights.
+
+**The road is built. The caller is not.** `alo_choosing::Settings::provider`,
+`alo_choosing::what_answers_here` and `alo_asking::Asking::to_a_provider` all
+exist. What `alo-ask` must become is that door's caller, and each of these is a
+duty the door pushes onto it rather than something to invent:
+
+| owed | by whom, and why |
+|---|---|
+| resolve the address and register it before the boundary | `to_a_provider`'s own doc: *resolved and registered by the caller before any boundary was entered* (ADR 0020). A request to an address nobody registered reaches somewhere nobody was shown |
+| the key out of the keyring | `docs/features.md`: *the key goes to the keyring, never into a settings file, so it cannot leak through a backup or a support bundle* |
+| show the egress **at the moment it happens** | law 1, and it is half the law. A command that printed the place afterwards has reported an egress, not surfaced one |
+| keep the entry | law 1's other half. `docs/contracts/record-file.md` names the file and `alo-keeping` writes it; this command has no road to it |
+| **never fall back** | ADR 0008: *never a silent fallback*. If the chosen place cannot answer, the person is told — the other place is not tried |
+
+**The refusal paths are the work, not the happy path.** A provider configured
+with no key, a key the provider rejects, an address that will not resolve, an
+`http` address that is not on this machine (`docs/features.md` refuses rather
+than warns), and a settings file naming a provider on a machine with no network.
+Each is a different sentence to a person and none of them may be *answered
+locally instead*.
+
+### What blocks it: law 1 cannot be satisfied from a command
+
+**Measured 2026-10-18, after the table above was written.** Two of those five
+duties are law 1 itself — *visible at the moment it happens and afterwards in a
+record* — and a command can discharge neither:
+
+| asked | answer |
+|---|---|
+| what is `alo_egress::Indicator` | a `Vec<Shown>` and a counter, **in process memory** |
+| who turns one into something a person sees | `alo-indicator` makes a `Drawn` from one, and `alo-shell` draws it on an output |
+| is there a road for another process to report an egress | **no.** `docs/contracts/native-egress-indicator.md`: *no protocol, agent capability, D-Bus interface or stored format changes … this document describes only the drawing surface* |
+| is there a road to the record file | **no.** `docs/contracts/record-file.md` names the paths and the services that append to them; nothing offers a command a way in |
+
+So an `alo-ask` that reached a provider would create its own `Indicator`, show
+the egress to itself, and drop it when the process exited. **That is a law 1
+violation wearing the API that exists to prevent one** — the call compiles, the
+type is right, and no person sees anything.
+
+**This is larger than this task.** Law 1 is satisfiable today only inside the
+compositor and the agent daemon. `alo-ask` is the first person-facing command in
+this product that would cause egress, and the first to find that out. Every
+later one meets the same wall: *the command that fetches a model, the command
+that tests a provider, anything a person types that leaves this machine.*
+
+**What is needed is a decision, not a caller:** how a process that is neither
+the compositor nor the agent daemon reports an egress and keeps an entry. That
+is a public surface — `CLAUDE.md`'s *contracts outlive code* — so it needs an
+ADR before a line of it is written. **Drafting that ADR is the next move on this
+task**, and it is not the task.
+
+*Nothing in the local road is affected: it causes no egress, which is why
+`alo-ask` works today and why the gap went unnoticed until something had to
+leave.*
+
+**What this task must not do:** choose a place on anybody's behalf, or widen
+`THE_STRICTEST_RULE` for the local road. The rule exists so this command cannot
+be where a policy gets loosened; the provider road needs its own policy from the
+person's settings, not a relaxation of that constant.
+
+*Added 2026-10-18 by the Mac lane, from ADR 0124's consequence that `alo-ask`
+grows a road it does not have. Two false sentences in `alo-ask`'s own crate
+documentation were corrected in the same change — they claimed where a record
+lives is undecided, and that ADR 0008 permits one door — because a justification
+left in place is how a gap stops being read as one.*
+
 ## What this plan is waiting on, in one place
 
 - **Whether a command the person runs is bracketed** — tasks 8 and 10. **The
@@ -415,5 +510,13 @@ not simply built here under *work a task needs is part of that task*:
   caller and the surface it would be called from, and the design file and ADR
   0064 are both silent on the surface. *This bullet said "the kernel box" and
   pointed at two ADRs that had already been built against.*
+- **How a process that is not the compositor reports an egress and keeps an
+  entry** — task 11, and every later command that leaves this machine. Law 1 is
+  satisfiable today only inside the compositor and the agent daemon:
+  `alo_egress::Indicator` is a `Vec` in process memory and
+  `docs/contracts/native-egress-indicator.md` adds *no protocol, agent
+  capability, D-Bus interface or stored format*. A public surface, so an ADR
+  comes before a caller. *Found 2026-10-18, in the hour after task 11 was
+  written up as startable.*
 - **The owner, on the pairing of five answers to four actions** — `docs/features.md`
   records it as theirs. Task 1 does not need it; offering the actions does.
