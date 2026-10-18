@@ -487,6 +487,24 @@ pub struct Server {
     /// going — so this is an `Option` and not a queue, and a second press
     /// replacing an unstarted first cannot happen.
     pub(crate) asked_to_install: Option<alo_software::Listed>,
+    /// **How many input events this seat could not make sense of.**
+    ///
+    /// Kept because a lane that survives a refusal must be able to say it
+    /// happened: `InputError::is_about_one_event` is what decides a refusal is
+    /// survivable, and its own note is that swallowing one silently is worse
+    /// than ending loudly — a pointer that does nothing for ever is what hid
+    /// the missing `enable_pointer` call until a machine was booted.
+    ///
+    /// **A count and not the events**, because the events are a person's
+    /// keystrokes and pointer and this crate keeps none of them. What a reader
+    /// needs is *how many times this machine did not understand its own
+    /// input*, which a number answers and a log of keys would not.
+    ///
+    /// Never reset. A session that refused a thousand events in its first
+    /// minute and none since is a different machine from one refusing them
+    /// now, and nothing here can tell those apart — so it counts, and whoever
+    /// reads it reads it beside the moment it is read.
+    pub(crate) input_it_could_not_make_sense_of: usize,
 }
 
 impl Server {
@@ -561,6 +579,8 @@ impl Server {
             what_this_machine_has: Vec::new(),
             // Nobody has asked for anything to be installed.
             asked_to_install: None,
+            // Nothing has been refused, because nothing has arrived.
+            input_it_could_not_make_sense_of: 0,
             // Nothing has been kept yet, so no Place remembers anything.
             remembered: alo_arranging::Arrangement::fresh(),
             // Nobody is walking backwards through anything yet.

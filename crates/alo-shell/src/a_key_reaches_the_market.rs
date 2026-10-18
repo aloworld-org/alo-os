@@ -54,8 +54,6 @@
 //! the road that acts on it was built. The claim that mattered is unchanged:
 //! nothing in this file reaches the machine.
 
-use std::io;
-
 use smithay::backend::input::KeyState;
 
 use crate::{InputError, InputUpdate, MarketPressed, Server};
@@ -68,6 +66,26 @@ use crate::{InputError, InputUpdate, MarketPressed, Server};
 // would be the frame loop waiting on a download.
 
 impl Server {
+    /// **One input event was refused and the machine went on.**
+    ///
+    /// Called by a lane that met an `InputError::is_about_one_event` and chose
+    /// to keep drawing. See that method for why the choice exists and why the
+    /// counting is not optional.
+    pub fn an_input_event_was_refused(&mut self) {
+        self.input_it_could_not_make_sense_of =
+            self.input_it_could_not_make_sense_of.saturating_add(1);
+    }
+
+    /// How many input events this seat could not make sense of.
+    ///
+    /// **Saturating rather than wrapping**, because a machine that refused
+    /// `usize::MAX + 1` events and reports 0 would be the one reading this
+    /// cannot afford.
+    #[must_use]
+    pub const fn how_much_input_was_refused(&self) -> usize {
+        self.input_it_could_not_make_sense_of
+    }
+
     /// Whether this seat's keys belong to the window of what a person can
     /// install rather than to a client.
     ///
@@ -176,19 +194,6 @@ pub(crate) fn a_key_reaches_the_market(
     // says is the host's and not a key's.
     let _did = server.the_market_takes_this_key(key.code, key.state, key.time)?;
     Ok(())
-}
-
-/// The same routing, with the seat's own refusals turned into the lane's.
-///
-/// `crate::direct_desktop` drives libinput through a closure that answers
-/// [`io::Error`], so the conversion lives beside the road rather than in the
-/// lane — `crate::a_key_reaches_settings::routed_or_io`'s reason exactly.
-pub(crate) fn routed_or_io(
-    server: &mut Server,
-    update: InputUpdate<'_>,
-    extent: (i32, i32),
-) -> io::Result<()> {
-    a_key_reaches_the_market(server, update, extent).map_err(io::Error::other)
 }
 
 #[cfg(test)]

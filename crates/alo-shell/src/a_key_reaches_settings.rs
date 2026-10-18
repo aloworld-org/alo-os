@@ -57,7 +57,6 @@
 //!   change is already on the disk by then. A door is made per press rather
 //!   than held: one connection, one line, one answer.
 
-use std::io;
 use std::time::SystemTime;
 
 use alo_strings::Strings;
@@ -183,20 +182,6 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
     {
         server.the_shortcuts_are(bound);
     }
-}
-
-/// The same routing, with the seat's own refusals turned into the lane's.
-///
-/// `crate::direct_desktop` drives libinput through a closure that answers
-/// [`io::Error`], exactly as `crate::direct_sign_in` does, so the conversion
-/// lives beside the road rather than in the lane.
-pub(crate) fn routed_or_io(
-    server: &mut Server,
-    update: InputUpdate<'_>,
-    extent: (i32, i32),
-    strings: &Strings,
-) -> io::Result<()> {
-    a_key_reaches_settings(server, update, extent, strings).map_err(io::Error::other)
 }
 
 #[cfg(test)]

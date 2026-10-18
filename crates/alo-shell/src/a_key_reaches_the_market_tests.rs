@@ -275,3 +275,79 @@ fn moving_through_the_list_records_no_ask() {
         );
     }
 }
+
+/// **An event this machine cannot make sense of does not end the session, and
+/// is counted.**
+///
+/// The fault this holds shut was measured on a booted machine on 2026-10-17: a
+/// desktop drew its Dock, was sent its first pointer event, and **ended** —
+/// because the lane turned every `InputError` into an `io::Error` and an
+/// `io::Error` out of its closure is the end of the display loop.
+///
+/// Both halves are asserted, and the second is the one that matters: a refusal
+/// nobody can see is **worse** than a loud end, because it is what hid the
+/// missing `enable_pointer` call for as long as nobody booted a machine. So the
+/// count is part of the behaviour, not a diagnostic beside it.
+#[test]
+fn an_event_this_machine_cannot_read_is_counted_rather_than_fatal() {
+    let (_runtime, mut server) = with_the_market_open("market-refused");
+
+    assert_eq!(server.how_much_input_was_refused(), 0, "the premise");
+
+    // A code outside evdev's range: `the_market_takes_this_key` answers
+    // `InvalidKey`, which is about this one event.
+    for code in [0, 0x300, u32::MAX - 8] {
+        let why = server
+            .market_key(code, KeyState::Pressed, 1)
+            .expect_err("a code evdev does not have is refused");
+        assert!(
+            why.is_about_one_event(),
+            "{why:?} would end the display loop, so one impossible code takes the desktop away"
+        );
+        server.an_input_event_was_refused();
+    }
+
+    assert_eq!(
+        server.how_much_input_was_refused(),
+        3,
+        "a refusal was survived without being counted, which is how a pointer that does nothing \
+         for ever goes unnoticed"
+    );
+    assert!(
+        server.market.is_open(),
+        "the window closed because the machine met a key it could not read"
+    );
+}
+
+/// **A seat that cannot be made is not one event**, so the two are told apart.
+///
+/// `InputError::Socket` and `Keymap` happen while a display is stood up and
+/// mean it cannot be used at all. A lane that treated those as survivable would
+/// keep drawing against a display it does not have.
+#[test]
+fn a_display_that_could_not_be_made_is_not_one_event() {
+    use crate::InputError;
+
+    for about_the_seat in [
+        InputError::Keymap("no such layout".to_owned()),
+        InputError::Socket(crate::SocketError::InvalidName),
+    ] {
+        assert!(
+            !about_the_seat.is_about_one_event(),
+            "{about_the_seat:?} would be survived, so a lane would keep drawing against a \
+             display it could not make"
+        );
+    }
+
+    // And the five that are, named rather than counted, so adding a variant is
+    // a decision somebody writes down here.
+    for about_one_event in [
+        InputError::InvalidKey,
+        InputError::InvalidPointer,
+        InputError::Unmapped,
+        InputError::PointerUnavailable,
+        InputError::Unavailable,
+    ] {
+        assert!(about_one_event.is_about_one_event(), "{about_one_event:?}");
+    }
+}
