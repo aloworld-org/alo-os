@@ -35,9 +35,14 @@ fn a_key_already_taken_is_not_replaced() {
 /// The array is what [`declare_into`] walks, so a word declared above it and
 /// left out is a string nothing can look up — which looks exactly like a
 /// missing translation at the far end.
+/// *This walked two of the four groups and then asserted a hardcoded length.
+/// The length was the only thing covering the other two, and it had to be
+/// edited every time a word was added — so it caught "somebody changed the
+/// count" rather than anything about the words. It now walks every group, and
+/// the pairing below says each word is in exactly one.*
 #[test]
 fn every_word_declared_is_in_the_array() {
-    for word in IN_THE_GUTTER.into_iter().chain(ABOUT_A_COMMAND_THAT_WAITS) {
+    for word in every_word_in_a_group() {
         assert!(
             EVERY_WORD
                 .iter()
@@ -46,7 +51,37 @@ fn every_word_declared_is_in_the_array() {
             word.named()
         );
     }
-    assert_eq!(EVERY_WORD.len(), 16);
+}
+
+/// Every word any group holds, which is what the groups are for.
+fn every_word_in_a_group() -> impl Iterator<Item = Word> {
+    IN_THE_GUTTER
+        .into_iter()
+        .chain(ABOUT_A_COMMAND_THAT_WAITS)
+        .chain(ABOUT_A_COMMAND_NOBODY_HAS_RUN)
+        .chain(ABOUT_A_RESULT_A_PROGRAM_PRINTED)
+        .chain(ABOUT_A_BENCHMARK_A_PROGRAM_PRINTED)
+}
+
+/// **Every word in the array is in exactly one group.**
+///
+/// The invariant the groups exist for, stated once instead of as a number
+/// somebody keeps in step by hand: a word in no group has no rule applied to
+/// it, and a word in two is ruled twice and will one day be ruled
+/// contradictorily.
+#[test]
+fn every_word_in_the_array_is_in_exactly_one_group() {
+    for word in EVERY_WORD {
+        let groups = every_word_in_a_group()
+            .filter(|grouped| grouped.named() == word.named())
+            .count();
+        assert_eq!(
+            groups,
+            1,
+            "{} is in {groups} groups, and every word belongs to exactly one",
+            word.named()
+        );
+    }
 }
 
 /// **No key appears twice.**
@@ -102,6 +137,23 @@ const ABOUT_A_COMMAND_NOBODY_HAS_RUN: [Word; 4] = [
 const ABOUT_A_RESULT_A_PROGRAM_PRINTED: [Word; 3] =
     [TESTS, FROM_A_CARGO_TEST_RUN, NOT_INDEPENDENTLY_VERIFIED];
 
+/// The words around a benchmark comparison recognised in a program's output.
+///
+/// A fourth group rather than three more rows in the one above, which is what
+/// that group's own history asks for: *it was two groups until the explanation
+/// words landed, and this test is the reason the third group exists rather than
+/// the four words going unruled.*
+///
+/// Two of these are a stranger's arithmetic under the same rule as the group
+/// above. **`SAME_LINEAR_SCALE` is not** — it is alo's own sentence about how to
+/// read two bars, and it is the only one here that may speak in this machine's
+/// voice. That difference is why they are grouped apart rather than appended.
+const ABOUT_A_BENCHMARK_A_PROGRAM_PRINTED: [Word; 3] = [
+    FROM_A_HYPERFINE_RUN,
+    LOWER_IN_THIS_COMPARISON,
+    SAME_LINEAR_SCALE,
+];
+
 /// **Each gutter label is one word**, because the design gives it 80 of the
 /// gutter's 96 and a phrase has nowhere to go.
 ///
@@ -138,7 +190,8 @@ fn the_groups_are_the_whole_list() {
         IN_THE_GUTTER.len()
             + ABOUT_A_COMMAND_THAT_WAITS.len()
             + ABOUT_A_COMMAND_NOBODY_HAS_RUN.len()
-            + ABOUT_A_RESULT_A_PROGRAM_PRINTED.len(),
+            + ABOUT_A_RESULT_A_PROGRAM_PRINTED.len()
+            + ABOUT_A_BENCHMARK_A_PROGRAM_PRINTED.len(),
         EVERY_WORD.len(),
         "a word is declared and in no group, so no rule is applied to it"
     );
