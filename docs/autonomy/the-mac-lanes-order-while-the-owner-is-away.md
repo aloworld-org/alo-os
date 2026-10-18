@@ -773,7 +773,19 @@ machine.
 **What is needed is a decision, not a caller.** How a process that is neither
 the compositor nor the agent daemon reports an egress and keeps an entry is a
 public surface — `CLAUDE.md`'s *contracts outlive code* — so an ADR comes before
-a line of code. Drafting it is the next move and it is not the task.
+a line of code.
+
+**Drafted the same day as
+[ADR 0125](../decisions/0125-a-command-does-not-report-an-egress-it-asks-a-service-that-can-show-one.md),
+proposed, and writing it changed the answer.** No new surface on the indicator
+is needed: `alo-agent` is already a short-lived process that needs a model, has
+no indicator and no `alo-egress` dependency, and asks the daemon instead — the
+daemon holding the one live indicator, on a socket that is already one per
+signed-in person. A *report your egress* interface is refused by design rather
+than missing, because `Indicator::beginning` hands back the permission to open
+the connection: reporting afterwards would split the permission from the
+showing. **So this row is a decision to accept or reject, not a design to
+invent.**
 
 **Two traps on the way, both of which this lane fell into**, recorded because
 the second is the expensive one:
