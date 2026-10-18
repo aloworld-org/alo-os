@@ -190,6 +190,16 @@ mod running {
             offers.terminal.clone(),
         ) {
             Ok(stood) => {
+                // **What the seat could not make sense of, said out loud.**
+                // A machine with no shell can only tell somebody what a
+                // program prints, and on 2026-10-18 a click inside a Dock
+                // icon's slot opened nothing with no way to tell whether the
+                // button had arrived at all. Nought here means it never
+                // reached the compositor.
+                eprintln!(
+                    "alo-desktop: input this seat could not make sense of: {}",
+                    stood.input_refused
+                );
                 eprintln!("alo-desktop: the display has ended: {:?}", stood.display);
                 ExitCode::SUCCESS
             }
