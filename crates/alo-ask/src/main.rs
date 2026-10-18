@@ -53,7 +53,7 @@
 use std::process::ExitCode;
 
 use alo_answering::Answering;
-use alo_ask::{the_only_one, the_persons_model, what_it_can_say};
+use alo_ask::{beside_an_answer, the_only_one, the_persons_model, what_it_can_say};
 use alo_asking::{Asking, NotAQuestion, NotAnswered, Question};
 use alo_capability::Grantee;
 use alo_choosing::{Settings, the_persons_folder};
@@ -246,7 +246,14 @@ fn main() -> ExitCode {
     match asking.to_this_machine(&question, &runtime) {
         Ok(answer) => {
             println!("{}", answer.text());
-            eprintln!("{}", answer.came_from(&strings));
+            // **Where it came from, and when the person chose somewhere else,
+            // that this is not it.** Composed in `alo_ask::beside_an_answer`
+            // rather than printed as two lines here, because the answered path
+            // cannot be reached by a test on a machine with no model runtime —
+            // so a second line written here would be a caller nothing checks.
+            for line in beside_an_answer(answer.source(), settings.chosen(), &strings) {
+                eprintln!("{line}");
+            }
             ExitCode::SUCCESS
         }
         Err(NotAnswered::DidNotAnswer(failed)) => {

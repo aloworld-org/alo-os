@@ -414,6 +414,8 @@ choosing.change.not-kept	your settings at {path} could not be written, so nothin
 choosing.change.not-paired-to-answer	your settings at {path} would say the machine {machine} answers your questions, and no pairing with it lets it answer them at the moment, so nothing in your settings has been changed
 choosing.change.nothing-to-change	your settings at {path} list no provider called {provider} to change, so nothing in your settings has been changed
 choosing.change.nothing-to-measure	your settings at {path} list no weights called {model} to write a measurement beside, so nothing in your settings has been changed
+choosing.not-the-machine-you-chose	you chose the model on {machine}, and this answer did not come from there
+choosing.not-the-provider-you-chose	you chose {model} from {provider}, and this answer did not come from there
 choosing.session.no-folder	this session has no home directory; changes take effect now, but nothing you change now will be kept once you sign out
 choosing.settings.another-format	your settings at {path} were written by a newer alo OS than this one, so nothing in the file has been used
 choosing.settings.no-model	your settings at {path} name a list of models and no model in it, so nothing has been chosen to answer questions

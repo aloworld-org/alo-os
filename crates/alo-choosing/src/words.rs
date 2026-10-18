@@ -328,8 +328,36 @@ pub const SESSION_NO_FOLDER: Word = Word::saying(
      name.",
 );
 
+// ---------------------------------------------------------------------------
+// An answer that did not come from where the person chose —
+// [`crate::Picked::not_the_place_you_chose`].
+// ---------------------------------------------------------------------------
+
+/// A provider was chosen and the answer came from this machine.
+pub const NOT_THE_PROVIDER_YOU_CHOSE: Word = Word::saying(
+    "choosing.not-the-provider-you-chose",
+    "you chose {model} from {provider}, and this answer did not come from there",
+)
+.noting(
+    "Shown beside an answer, after the line saying where the answer did come from, when the      person's settings name a provider and the answer was produced somewhere else. {provider} is      the name the person gave it in their own list and {model} is what they asked that provider      for, exactly as they wrote it; neither is translated. It says only that their choice was not      used, and deliberately not why — the reason is a property of the machine at that moment and      not of anything they did.",
+);
+
+/// A paired machine was chosen and the answer came from this one.
+pub const NOT_THE_MACHINE_YOU_CHOSE: Word = Word::saying(
+    "choosing.not-the-machine-you-chose",
+    "you chose the model on {machine}, and this answer did not come from there",
+)
+.noting(
+    "Shown beside an answer, after the line saying where the answer did come from, when the \
+     person's settings name another machine they are paired with and the answer was produced \
+     on this one instead. {machine} is that machine's identity, which is data and is never \
+     translated. It names no model, because which model answers on another machine is that \
+     machine's person's setting. Like its neighbour, it says only that their choice was not \
+     used, and deliberately not why.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 19] = [
+pub const EVERY_WORD: [Word; 21] = [
     SETTINGS_NOT_READ,
     SETTINGS_NOT_UNDERSTOOD,
     SETTINGS_FROM_A_NEWER_ALO_OS,
@@ -349,6 +377,8 @@ pub const EVERY_WORD: [Word; 19] = [
     CHANGE_NOT_KEPT,
     CHANGE_NOT_PAIRED_TO_ANSWER,
     SESSION_NO_FOLDER,
+    NOT_THE_PROVIDER_YOU_CHOSE,
+    NOT_THE_MACHINE_YOU_CHOSE,
 ];
 
 /// Why this crate's own list could not be declared.
@@ -460,33 +490,62 @@ mod tests {
         }
     }
 
-    /// The one sentence here that is not about the settings file.
+    /// The three sentences here that are not about the settings file.
     ///
     /// Both rules below are about sentences that report what became of a
     /// person's file: they name it, and they say what the machine did with it.
-    /// [`SESSION_NO_FOLDER`] is neither. It is said by a session that has
-    /// nowhere to keep a change *at all*, before any change is made — so there
-    /// is no file to name, and nothing has yet been done for it to report. Its
-    /// whole purpose is to be said in advance, which is what makes it useful.
+    /// These three are not that, and each is exempted for its own stated
+    /// reason — which is what the test below this one exists to force.
     ///
-    /// Exempted by name rather than by a pattern — *sentences with no path in
-    /// them*, say — so that a second sentence cannot quietly join it by
+    /// [`SESSION_NO_FOLDER`] is said by a session that has nowhere to keep a
+    /// change *at all*, before any change is made — so there is no file to
+    /// name, and nothing has yet been done for it to report. Its whole purpose
+    /// is to be said in advance, which is what makes it useful.
+    ///
+    /// [`NOT_THE_PROVIDER_YOU_CHOSE`] and [`NOT_THE_MACHINE_YOU_CHOSE`]
+    /// arrived on 2026-10-18 and are a **different kind of sentence from
+    /// everything else in this file**: they are shown beside an *answer*
+    /// rather than on a settings surface, and what they report is that the
+    /// choice in the file was read correctly and not used. So there is nothing
+    /// wrong with the file, naming it would send a person to edit something
+    /// that is right, and *what the machine did about it* is not a thing they
+    /// can act on — ADR 0008's *never a silent fallback* is satisfied by
+    /// saying their choice was not used, and why is a property of the machine
+    /// at that moment.
+    ///
+    /// Each is exempted **by name** rather than by a pattern — *sentences with
+    /// no path in them*, say — so that a fourth cannot quietly join them by
     /// happening to leave the file out.
     fn is_about_the_file(word: &Word) -> bool {
-        word.named() != SESSION_NO_FOLDER.named()
+        ![
+            SESSION_NO_FOLDER.named(),
+            NOT_THE_PROVIDER_YOU_CHOSE.named(),
+            NOT_THE_MACHINE_YOU_CHOSE.named(),
+        ]
+        .contains(&word.named())
     }
 
-    /// **The exemption stays one sentence wide.** If a later word is added to
-    /// [`is_about_the_file`], this fails until somebody has said here why that
-    /// sentence is also not about the file.
+    /// **The exemption stays exactly as wide as it has been argued for.** If a
+    /// later word is added to [`is_about_the_file`], this fails until somebody
+    /// has said there why that sentence is also not about the file.
+    ///
+    /// *It was one sentence wide until 2026-10-18, and this test is why the
+    /// two that joined it carry a reason apiece rather than a shrug.*
     #[test]
-    fn the_only_sentence_exempted_is_the_one_a_session_says_before_anything_is_changed() {
+    fn every_exempted_sentence_is_one_whose_reason_is_written_down() {
         let exempt: Vec<&str> = EVERY_WORD
             .iter()
             .filter(|word| !is_about_the_file(word))
             .map(Word::named)
             .collect();
-        assert_eq!(exempt, ["choosing.session.no-folder"]);
+        assert_eq!(
+            exempt,
+            [
+                "choosing.session.no-folder",
+                "choosing.not-the-provider-you-chose",
+                "choosing.not-the-machine-you-chose",
+            ]
+        );
     }
 
     /// **Every sentence about the file names the file.** A person who has been
