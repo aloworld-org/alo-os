@@ -9,6 +9,7 @@ members = [
   "crates/alo-giving-a-folder",
   "crates/alo-kept-undo",
   "crates/alo-running",
+  "crates/alo-try",
   "crates/alo-access",
   "crates/alo-acting",
   "crates/alo-agent",

@@ -97,6 +97,19 @@ fn every_command_it_promises_is_started_rather_than_stat_ed() {
 /// it is shorter, it looks equivalent, and it passes on a binary that cannot
 /// run. Scoped to the toolchain's own `RUN` block rather than the whole recipe,
 /// so other blocks that legitimately stat a file are untouched.
+///
+/// # Comments are not commands, and this read them as commands until 2026-10-19
+///
+/// The check was a substring search over the block, so **a comment explaining
+/// why not to use `test -x` failed it.** That happened: a `RUN` added for
+/// `alo-try` carried `CLAUDE.md`'s own sentence — *`test -x` on a converter
+/// binary stood in for the converter starting* — and the guard refused the
+/// change that was doing the right thing for the right reason.
+///
+/// So the lines beginning `#` are dropped before looking. That is not a
+/// loosening of what this forbids: it still forbids the command, and a
+/// `test -x` anywhere a shell would run it is still caught. **The mutation
+/// test below says so**, rather than this comment saying so.
 #[test]
 fn the_toolchain_block_does_not_stand_in_an_executable_bit_for_a_run() {
     let recipe = the_recipe();
@@ -105,8 +118,40 @@ fn the_toolchain_block_does_not_stand_in_an_executable_bit_for_a_run() {
         .find(|block| block.contains("a developer who opens the terminal can clone and build"))
         .expect("the recipe still has the block that installs a developer's toolchain");
     assert!(
-        !block.contains("test -x"),
+        !what_a_shell_would_run(block).contains("test -x"),
         "the toolchain block stats a binary again instead of starting it: {block}"
+    );
+}
+
+/// A recipe's lines with its comments taken out.
+///
+/// A Containerfile comment is a line whose first non-blank character is `#`;
+/// there is no inline comment syntax, so nothing after a command is dropped.
+fn what_a_shell_would_run(block: &str) -> String {
+    block
+        .lines()
+        .filter(|line| !line.trim_start().starts_with('#'))
+        .collect::<Vec<&str>>()
+        .join("\n")
+}
+
+/// **And the comment-stripping does not let a real `test -x` through.**
+///
+/// The test above would pass on a recipe that had stopped checking anything,
+/// and the only thing that tells the two apart is putting one back. So this
+/// does, in a fixture rather than in the recipe.
+#[test]
+fn a_command_that_stats_a_binary_is_still_caught_after_the_comments_go() {
+    let pretending = "# test -x is what this comment is about\n                      RUN cargo build \\\n && test -x target/release/a-thing\n";
+    assert!(
+        what_a_shell_would_run(pretending).contains("test -x"),
+        "stripping comments also stripped a command, so the guard above checks nothing"
+    );
+
+    let only_prose = "# test -x on a converter binary stood in for the converter starting\n                      RUN cargo build --release\n";
+    assert!(
+        !what_a_shell_would_run(only_prose).contains("test -x"),
+        "a comment about `test -x` is still read as a command"
     );
 }
 

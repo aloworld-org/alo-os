@@ -52,6 +52,7 @@
 #![cfg(target_os = "linux")]
 #![expect(
     clippy::expect_used,
+    clippy::indexing_slicing,
     clippy::panic,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
@@ -93,6 +94,151 @@ fn where_the_libraries_are() -> PathBuf {
         }
     }
     panic!("this machine has no library folder, so no dynamically linked command can run");
+}
+
+/// A folder holding a script and a secret the script tries to read.
+///
+/// The script exits `3` if it could read the secret and `0` if it could not, so
+/// what the box did is readable from the exit status alone —
+/// `alo_running::WhatHappened` carries no output, and a test that needed the
+/// output would be testing something this crate does not answer.
+fn a_folder_with_a_script_and_a_secret(what: &str) -> (PathBuf, PathBuf, PathBuf) {
+    let folder = std::env::temp_dir().join(format!("alo-try-{}-{what}", std::process::id()));
+    drop(fs::remove_dir_all(&folder));
+    fs::create_dir_all(&folder).expect("a temporary folder can be made");
+
+    let secret = folder.join("a-secret");
+    fs::write(&secret, b"nobody boxed should read this\n").expect("a file can be written");
+
+    let script = folder.join("install.sh");
+    fs::write(
+        &script,
+        // **No redirection anywhere in it, and that is the point.** The first
+        // version wrote `cat "$1" >/dev/null 2>&1`, and the box refused
+        // `/dev/null` — so the redirect failed, `cat` never ran, the script
+        // exited 0 and the test passed **without measuring the secret at
+        // all**. Found by reading the one line the run printed.
+        b"#!/bin/sh\ncat \"$1\" && exit 3\nexit 0\n",
+    )
+    .expect("a file can be written");
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut how = fs::metadata(&script).expect("it is there").permissions();
+        how.set_mode(0o755);
+        fs::set_permissions(&script, how).expect("it can be made runnable");
+    }
+
+    (folder, script, secret)
+}
+
+/// Runs `script` with `argument`, in a box bound to `may_reach`.
+fn running_a_script(
+    named: &str,
+    script: &Path,
+    argument: &Path,
+    may_reach: Vec<PathBuf>,
+) -> Result<WhatCameOfIt, NotRun> {
+    let _order = on_this_kernel::one_at_a_time();
+    let mut machine = AsAMachineHasIt::on_this_kernel(named);
+    let boxes = where_boxes_go();
+
+    let mut vocabulary = alo_strings::Vocabulary::empty();
+    alo_capability::declare_into(&mut vocabulary).expect("the capability words declare");
+    let strings = Strings::of(vocabulary);
+
+    let asked = AskedToRun {
+        chose: HowCodeRuns::InASealedBox,
+        program: script.to_path_buf(),
+        arguments: vec![argument.as_os_str().to_owned()],
+        may_reach,
+    };
+
+    let mut kept = Record::default();
+    let what_happened = {
+        let mut where_they_run = WhereCommandsRun::with_the_helper_at(
+            &mut machine.boundary,
+            &boxes,
+            &mut kept,
+            Path::new(HELPER),
+        );
+        where_they_run.ran(
+            &alo_capability::Grantee::named("alo-try"),
+            named,
+            &asked,
+            &strings,
+            SystemTime::now(),
+        )
+    };
+
+    what_happened.map(|what| WhatCameOfIt {
+        happy: what.the_command_was_happy(),
+        kept,
+    })
+}
+
+/// **The places `what_a_try_may_reach` gives are enough to run a script**, and
+/// the script cannot read the file beside it.
+///
+/// This is the empirical half of the word the owner chose on 2026-10-18.
+/// `alo_running::what_a_try_may_reach` grants the command **itself** rather
+/// than the folder it is in, which is stricter than the bound this file's other
+/// tests use and than the one `docs/quirks.md` describes — so whether a script
+/// can still start under it is a question for a kernel and not for a reader.
+///
+/// The script exits `0` only if it was refused the file beside it, so one run
+/// measures both halves: it started, and it reached nothing of the person's.
+#[test]
+fn a_try_reaches_enough_to_run_and_nothing_of_the_persons() {
+    let (_folder, script, secret) = a_folder_with_a_script_and_a_secret("sealed");
+
+    let came_of_it = running_a_script(
+        "sealed",
+        &script,
+        &secret,
+        alo_running::what_a_try_may_reach(&script).expect("this machine has a library folder"),
+    )
+    .expect("a script bound to itself, /usr/bin and the libraries should have run");
+
+    assert!(
+        came_of_it.happy,
+        "the script exited non-zero, which means either it never started — so granting the \
+         command itself rather than its folder is not enough to run one — or it read the file \
+         beside it, which a sealed box must refuse"
+    );
+    assert_eq!(
+        came_of_it.kept.len(),
+        1,
+        "the run was not written down exactly once"
+    );
+}
+
+/// **The control: with the folder granted, the same script reads the secret.**
+///
+/// Without this, the test above would pass on a box that refused everything,
+/// or on a script that never ran — both of which exit non-zero for reasons
+/// that have nothing to do with the bound. The two runs differ **only** in
+/// whether the folder is in the bound.
+#[test]
+fn the_same_script_reads_the_secret_when_the_folder_is_granted() {
+    let (folder, script, secret) = a_folder_with_a_script_and_a_secret("granted-folder");
+
+    // **The folder in place of the file, not as well as it.** The set is
+    // exactly `alo_bounding::PLACES` long, and a fifth place is refused by the
+    // kernel — measured: `TooManyPlaces { asked: 5, most: 4 }`. Swapping is
+    // also what makes this a control: the two runs differ in **which** place is
+    // granted and in nothing else.
+    let mut generous =
+        alo_running::what_a_try_may_reach(&script).expect("this machine has a library folder");
+    generous[0] = folder;
+
+    let came_of_it = running_a_script("granted-folder", &script, &secret, generous)
+        .expect("a script bound to its own folder should have run");
+
+    assert!(
+        !came_of_it.happy,
+        "the script exited 0 with its folder granted, so it did not read the file beside it — \
+         which means the test above measures nothing about the bound"
+    );
 }
 
 /// A folder of this test's own with one file in it, and the file's path.

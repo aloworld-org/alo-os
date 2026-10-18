@@ -89,6 +89,7 @@ mod entering;
 mod failing;
 mod somewhere_to_write;
 mod what_a_run_asks_for;
+mod what_a_try_may_reach;
 mod what_happened_in_the_box;
 mod what_was_asked;
 
@@ -97,5 +98,8 @@ pub use entering::{MEANING_ME, THE_PROCESSES, enter_the_box_and_become};
 pub use failing::NotRun;
 pub use somewhere_to_write::SomewhereToWrite;
 pub use what_a_run_asks_for::ARun;
+pub use what_a_try_may_reach::{
+    NoPlacesForIt, WHERE_PROGRAMS_ARE, what_a_try_may_reach, where_the_libraries_are,
+};
 pub use what_happened_in_the_box::WhatHappened;
 pub use what_was_asked::AskedToRun;

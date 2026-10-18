@@ -77,6 +77,115 @@ fn drain(shell: &mut AShellOnAPseudoterminal, screen: &mut TerminalOutput, how_l
     }
 }
 
+/// An interactive bash with the snippet sourced and a fake `alo-try` on its
+/// path, so that `try` is defined.
+///
+/// The fake is a shell script that prints what it was given. Nothing here runs
+/// a real box — what is being tested is whether the **word** reaches a command
+/// at all, which is the half the snippet decides.
+fn a_bash_that_can_find_alo_try() -> (AShellOnAPseudoterminal, TerminalOutput, tempish::Dir) {
+    let dir = tempish::Dir::new();
+    let snippet = dir.path().join("alo.bash");
+    std::fs::write(
+        &snippet,
+        for_the_shell_called("/bin/bash").expect("alo ships integration for bash"),
+    )
+    .expect("the snippet is written");
+
+    let fake = dir.path().join("alo-try");
+    std::fs::write(&fake, b"#!/bin/sh\necho \"a box would have run: $*\"\n")
+        .expect("the stand-in is written");
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut how = std::fs::metadata(&fake)
+            .expect("the stand-in is there")
+            .permissions();
+        how.set_mode(0o755);
+        std::fs::set_permissions(&fake, how).expect("the stand-in can be made runnable");
+    }
+
+    let mut shell = AShellOnAPseudoterminal::running(
+        HowBig::of(80, 24, 100).expect("a terminal"),
+        "/bin/bash",
+        &["--norc", "-i"],
+    )
+    .expect("this machine can start an interactive bash on a pseudoterminal");
+    let mut screen = TerminalOutput::of(HowBig::of(80, 24, 100).expect("a terminal"));
+
+    drain(&mut shell, &mut screen, Duration::from_millis(400));
+    // The folder holding the stand-in goes on the path **before** the snippet
+    // is sourced, because the snippet asks once whether the command is there.
+    shell
+        .a_person_typed(format!("export PATH={}:$PATH\n", dir.path().display()).as_bytes())
+        .expect("the shell takes what was typed");
+    drain(&mut shell, &mut screen, Duration::from_millis(200));
+    shell
+        .a_person_typed(format!("source {}\n", snippet.display()).as_bytes())
+        .expect("the shell takes what was typed");
+    drain(&mut shell, &mut screen, Duration::from_millis(800));
+
+    (shell, screen, dir)
+}
+
+/// **`try` reaches `alo-try`, and the word is a function.**
+///
+/// The caller-side half of the sealed box: the owner chose *a word before the
+/// command* on 2026-10-18, and this is the evidence that typing the word
+/// reaches the command rather than the shell saying *command not found*.
+#[test]
+fn the_word_try_reaches_the_command_when_it_is_installed() {
+    let (mut shell, mut screen, _dir) = a_bash_that_can_find_alo_try();
+
+    shell
+        .a_person_typed(b"type -t try\n")
+        .expect("the shell takes what was typed");
+    drain(&mut shell, &mut screen, Duration::from_millis(600));
+
+    let said = screen.lines().join("\n");
+    assert!(
+        said.contains("function"),
+        "`try` is not a function, so the word reaches nothing: {said}"
+    );
+
+    shell
+        .a_person_typed(b"try ./install.sh\n")
+        .expect("the shell takes what was typed");
+    drain(&mut shell, &mut screen, Duration::from_millis(600));
+
+    let said = screen.lines().join("\n");
+    assert!(
+        said.contains("a box would have run: ./install.sh"),
+        "the word did not carry the command to `alo-try`: {said}"
+    );
+}
+
+/// **And `try` is not defined at all when `alo-try` is not installed.**
+///
+/// The sharper half. A `try` defined unconditionally would answer *alo-try:
+/// command not found* from inside itself, which tells a person their shell is
+/// broken when what is true is that the feature is not installed. The snippet
+/// asks before it defines.
+#[test]
+fn the_word_try_is_absent_when_the_command_is_not_installed() {
+    let (mut shell, mut screen, _dir) = a_bash_with_the_snippet();
+
+    shell
+        .a_person_typed(b"type -t try; echo done-asking\n")
+        .expect("the shell takes what was typed");
+    drain(&mut shell, &mut screen, Duration::from_millis(600));
+
+    let said = screen.lines().join("\n");
+    assert!(
+        said.contains("done-asking"),
+        "the question never finished, so the answer below means nothing: {said}"
+    );
+    assert!(
+        !said.contains("function"),
+        "`try` is defined on a machine with no `alo-try`, so typing it would report a command \
+         not found from inside itself: {said}"
+    );
+}
+
 /// **The snippet makes a real bash tell alo where its prompt is.**
 ///
 /// The four cycle marks are the industry format, and a person who already has
