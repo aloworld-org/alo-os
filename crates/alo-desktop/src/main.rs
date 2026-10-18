@@ -190,15 +190,16 @@ mod running {
             offers.terminal.clone(),
         ) {
             Ok(stood) => {
-                // **What the seat could not make sense of, said out loud.**
+                // **What the seat made of a person's input, said out loud.**
                 // A machine with no shell can only tell somebody what a
-                // program prints, and on 2026-10-18 a click inside a Dock
-                // icon's slot opened nothing with no way to tell whether the
-                // button had arrived at all. Nought here means it never
-                // reached the compositor.
+                // program prints. The same sentence the session said while it
+                // ran, which is where it is of use — this one is the last
+                // word, because on 2026-10-18 nothing handled `SIGTERM` and so
+                // a line printed only here was a line nobody ever read.
                 eprintln!(
-                    "alo-desktop: input this seat could not make sense of: {}",
-                    stood.input_refused
+                    "alo-desktop: this seat took {} key presses and {} button presses, \
+                     and could not make sense of {} events",
+                    stood.input.key_presses, stood.input.button_presses, stood.input.refused
                 );
                 eprintln!("alo-desktop: the display has ended: {:?}", stood.display);
                 ExitCode::SUCCESS
@@ -318,6 +319,17 @@ mod running {
         region: alo_formats::Regionally,
         /// When the readings were last taken.
         read_at: std::time::Instant,
+        /// What the seat had made of this person's input when it was last said
+        /// out loud.
+        ///
+        /// Kept so the sentence is printed **when it changes** and not on every
+        /// frame: a machine drawing sixty frames a second would otherwise write
+        /// sixty identical lines a second, and a reader looking for the moment
+        /// a press arrived would be looking for it in all of them.
+        ///
+        /// The numbers only move when somebody presses something, so this
+        /// compares equal on every frame of an idle machine.
+        said: alo_shell::WhatTheSeatMadeOfIt,
     }
 
     impl ThisPersonsDesktop {
@@ -438,6 +450,9 @@ mod running {
                 division: a_display_nobody_has_divided()?,
                 region: the_region()?,
                 read_at: std::time::Instant::now(),
+                // Nothing has been said because nothing has arrived, and the
+                // seat's own three numbers start here too.
+                said: alo_shell::WhatTheSeatMadeOfIt::default(),
             })
         }
     }
@@ -826,6 +841,35 @@ mod running {
             if let Ok((readings, _)) = crate::readings::taken(&at, &self.region) {
                 self.status = readings;
             }
+        }
+
+        /// Say what this seat has made of a person's input, when it changes.
+        ///
+        /// **This is the only way this machine can say it.** There is no shell
+        /// on an alo machine — `serial-getty@ttyS0` is masked in the image, and
+        /// the reason is that a diagnostic facility quietly adding a way in is
+        /// a worse bargain than no diagnostics — so a number nobody prints is a
+        /// number nobody has.
+        ///
+        /// **Three numbers and not one**, because one of them cannot be read.
+        /// *Could not make sense of: 0* means **nothing arrived** or
+        /// **everything worked**, which are opposites, and a person whose
+        /// clicks do nothing learns nothing from it. The keys beside it are the
+        /// control: buttons standing still while keys climb is a reading about
+        /// that person's mouse, and both standing still is a reading about this
+        /// machine's seat.
+        ///
+        /// On change, for the reason [`ThisPersonsDesktop::said`] gives.
+        fn what_the_seat_made_of_its_input(&mut self, made: alo_shell::WhatTheSeatMadeOfIt) {
+            if made == self.said {
+                return;
+            }
+            self.said = made;
+            eprintln!(
+                "alo-desktop: this seat has taken {} key presses and {} button presses, \
+                 and could not make sense of {} events",
+                made.key_presses, made.button_presses, made.refused
+            );
         }
 
         fn now(&self) -> DesktopFrame<'_> {

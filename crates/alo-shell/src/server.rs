@@ -505,6 +505,23 @@ pub struct Server {
     /// now, and nothing here can tell those apart — so it counts, and whoever
     /// reads it reads it beside the moment it is read.
     pub(crate) input_it_could_not_make_sense_of: usize,
+    /// **How many key presses this seat routed somewhere.**
+    ///
+    /// The control the other two are read against:
+    /// `crate::what_the_seat_made_of_its_input` carries the argument, which is
+    /// that *buttons: 0* means one thing beside keys that are standing still
+    /// and the opposite beside keys that are climbing.
+    ///
+    /// A count and never reset, for the two reasons the field above gives.
+    pub(crate) key_presses_this_seat_routed: usize,
+    /// **How many pointer button presses this seat routed somewhere.**
+    ///
+    /// The number that was missing on 2026-10-18, when a press landing on a
+    /// Dock entry opened nothing and no reading on the machine could say
+    /// whether the press had arrived at all.
+    ///
+    /// A count and never reset, for the two reasons the refusal field gives.
+    pub(crate) button_presses_this_seat_routed: usize,
 }
 
 impl Server {
@@ -581,6 +598,9 @@ impl Server {
             asked_to_install: None,
             // Nothing has been refused, because nothing has arrived.
             input_it_could_not_make_sense_of: 0,
+            // And nothing has been routed either, for the same reason.
+            key_presses_this_seat_routed: 0,
+            button_presses_this_seat_routed: 0,
             // Nothing has been kept yet, so no Place remembers anything.
             remembered: alo_arranging::Arrangement::fresh(),
             // Nobody is walking backwards through anything yet.

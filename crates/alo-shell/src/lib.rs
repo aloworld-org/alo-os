@@ -409,6 +409,7 @@ mod what_the_dock_has_open;
 /// terminal's keyboard, where the keymap is. `alo_terminal` turns the answer
 /// into the bytes a shell receives, where no keymap is needed.
 mod what_the_keyboard_said;
+mod what_the_seat_made_of_its_input;
 mod what_the_server_tells_a_frame;
 mod where_a_task_window_opens;
 mod where_a_window_opens;
@@ -488,6 +489,7 @@ pub use status_items::StatusItems;
 /// its caller must hold the view and the person's reading direction, and
 /// `Surfaces` holds neither — see the file's header for where it belongs.
 pub use what_the_dock_has_open::{MORE_APPS, NOTHING, WhatTheDockHasOpen};
+pub use what_the_seat_made_of_its_input::WhatTheSeatMadeOfIt;
 pub use where_a_window_opens::{A_DELIBERATE_OFFSET, A_SMALL_GAP, where_a_window_opens};
 pub use which_card_the_seat_holds::which_card_the_seat_holds;
 pub use window_activation::WindowActivationError;

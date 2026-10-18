@@ -53,6 +53,14 @@ impl Server {
                 }
                 if count == u32::from(event.state == KeyState::Pressed) {
                     self.direct_keyboard(true, Some(event))?;
+                    // **Counted after it was routed, not before.** An event
+                    // that refused on the way is not one this seat made
+                    // anything of, and the lane counts that as a refusal —
+                    // counting it here as well would have one event in two
+                    // numbers. See `crate::what_the_seat_made_of_its_input`.
+                    if event.state == KeyState::Pressed {
+                        self.a_key_press_was_routed();
+                    }
                 }
             }
             DirectSeatEvent::Button {
@@ -71,14 +79,25 @@ impl Server {
                     // refuses them. Before, because `direct_pointer` is what reaches a client,
                     // and a click on a compositor surface must not also land on whatever is
                     // behind it. See `crate::a_click_brings_a_window_back`.
-                    if self.the_panel_took_this_click(code, state) {
-                        return Ok(());
+                    //
+                    // **A branch rather than the early return it was**, so that the counting
+                    // below is reached down both roads. The two are the same otherwise: this
+                    // arm is the last thing in the `match` and the function answers `Ok` after
+                    // it either way.
+                    if !self.the_panel_took_this_click(code, state) {
+                        self.direct_pointer(
+                            true,
+                            extent,
+                            Some(DirectPointerEvent::Button { code, state, time }),
+                        )?;
                     }
-                    self.direct_pointer(
-                        true,
-                        extent,
-                        Some(DirectPointerEvent::Button { code, state, time }),
-                    )?;
+                    // **Counted whichever of the two took it, and only once it has.** A click
+                    // this compositor's own furniture claimed is a click the seat made sense
+                    // of, and a number that left it out would answer *did my click arrive*
+                    // with no. See `crate::what_the_seat_made_of_its_input`.
+                    if state == ButtonState::Pressed {
+                        self.a_button_press_was_routed();
+                    }
                 }
             }
             DirectSeatEvent::Pointer(event) => self.direct_pointer(true, extent, Some(event))?,

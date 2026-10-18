@@ -292,7 +292,11 @@ fn moving_through_the_list_records_no_ask() {
 fn an_event_this_machine_cannot_read_is_counted_rather_than_fatal() {
     let (_runtime, mut server) = with_the_market_open("market-refused");
 
-    assert_eq!(server.how_much_input_was_refused(), 0, "the premise");
+    assert_eq!(
+        server.what_the_seat_made_of_its_input().refused,
+        0,
+        "the premise"
+    );
 
     // A code outside evdev's range: `the_market_takes_this_key` answers
     // `InvalidKey`, which is about this one event.
@@ -308,7 +312,7 @@ fn an_event_this_machine_cannot_read_is_counted_rather_than_fatal() {
     }
 
     assert_eq!(
-        server.how_much_input_was_refused(),
+        server.what_the_seat_made_of_its_input().refused,
         3,
         "a refusal was survived without being counted, which is how a pointer that does nothing \
          for ever goes unnoticed"
