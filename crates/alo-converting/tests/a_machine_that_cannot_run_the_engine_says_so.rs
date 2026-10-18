@@ -130,6 +130,26 @@ const THE_ASK: &str = "if asking::this_machine_cannot_run_the_engine() {";
 struct AFolder {
     /// Where it is.
     at: PathBuf,
+    /// Held for as long as the folder is, so that no two tests in this binary
+    /// are writing a program and running one at the same moment.
+    ///
+    /// **`ETXTBSY`, and it is not about the engine.** `execve` refuses a file
+    /// that any process has open for writing. No test here leaves one open —
+    /// `fs::write` closes it — but these tests run in parallel threads, and a
+    /// `fork` in one thread inherits every writable descriptor open in another
+    /// at that instant. The child holds it until it execs, and a program
+    /// exec'd meanwhile answers *Text file busy*.
+    ///
+    /// Measured 2026-10-18: one run in five of
+    /// `an_engine_that_never_answers_is_stopped_and_is_a_reason` failed that
+    /// way, with `NotStarted { said: "Text file busy (os error 26)" }` where
+    /// `DidNotAnswer` belonged. **A gate that refuses work for a reason the
+    /// work did not cause is worse than a slow one**, and these tests are a
+    /// second apiece.
+    ///
+    /// The lock is held by the folder rather than taken in each test, so a
+    /// test added later cannot forget it.
+    _one_at_a_time: std::sync::MutexGuard<'static, ()>,
 }
 
 impl AFolder {
@@ -137,6 +157,14 @@ impl AFolder {
     fn made() -> Self {
         /// So that two folders in one run never collide.
         static NEXT: AtomicU32 = AtomicU32::new(0);
+        /// What [`AFolder::_one_at_a_time`] holds.
+        static ONE_AT_A_TIME: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        // A poisoned lock is another test having panicked while holding it,
+        // which is a failure already being reported; this one still needs the
+        // exclusion, so it takes the guard either way.
+        let held = ONE_AT_A_TIME
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let at = std::env::temp_dir().join(format!(
             "alo-converting-no-engine-{}-{}",
             std::process::id(),
@@ -144,7 +172,10 @@ impl AFolder {
         ));
         drop(fs::remove_dir_all(&at));
         fs::create_dir_all(&at).unwrap();
-        Self { at }
+        Self {
+            at,
+            _one_at_a_time: held,
+        }
     }
 
     /// A file in it holding `text`, made runnable or left as it is.
