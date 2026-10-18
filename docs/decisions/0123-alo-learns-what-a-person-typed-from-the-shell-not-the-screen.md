@@ -113,15 +113,37 @@ is a stronger guarantee than any setting, and it is the main argument for this
 road over A and B, both of which require alo to watch continuously and then be
 trusted not to.
 
-**3. The declared length is what makes a truncated command refusable.** `vte`
-caps an OSC payload at `MAX_OSC_RAW` = 1024 bytes and, measured in its own suite
-at `src/lib.rs:1020`, **dispatches the truncated payload rather than dropping
-it**. A long command would therefore arrive as a fragment and be explained as
-though whole — the same wrong-answer fault as road A, arriving by a different
-door. So the snippet declares the command's byte length, and **a payload that
-does not decode to exactly that length is refused**, with the person told the
-command was too long to read rather than shown an explanation of its first half.
-*A single number cannot be caught being wrong; two that must agree can.*
+**3. The declared length is what makes a truncated command refusable.** The
+snippet declares the command's byte length, and **a payload that does not decode
+to exactly that length is refused**, with the person told the command was too
+long to read rather than shown an explanation of its first half. *A single
+number cannot be caught being wrong; two that must agree can.*
+
+> **The reason this term first gave was wrong, and the term survives it.**
+> *Corrected 2026-10-18 by the lane that wrote it, when the reader was built and
+> the claim was tested.* It said `vte` caps an OSC payload at `MAX_OSC_RAW` =
+> 1024 bytes and dispatches the fragment. **It does not.** A 2005-byte command
+> inside a 2699-byte payload came back whole, in one read and in 64-byte reads
+> alike, because of two lines of `vte`'s own `Parser`:
+>
+> ```text
+> #[cfg(not(feature = "std"))]
+> osc_raw: ArrayVec<u8, OSC_RAW_BUF_SIZE>,
+> #[cfg(feature = "std")]
+> osc_raw: Vec<u8>,
+> ```
+>
+> **The cap is a `no_std` cap**, and alo builds with `std`. The original claim
+> read `MAX_OSC_RAW` and the `ArrayVec` beside it without reading the `cfg`, and
+> *measured in its own suite* was a reading of somebody else's test, not a
+> measurement.
+>
+> **What the length is for, honestly:** the cap is **one cargo feature away**, a
+> `no_std` build truncates in silence with no flag to say so, and the check also
+> catches a shell that mis-encodes. That is a weaker reason than the one first
+> given and it is still sufficient, so **the decision is unchanged** — only its
+> justification is. `crates/alo-terminal/src/what_the_shell_says_about_the_prompt.rs`
+> carries the measurement and a test that fails if this ever stops being true.
 
 **4. What a mark reports is the shell's claim, not a fact alo established.**
 Any program in the session can print the sequence. Every surface built on this
