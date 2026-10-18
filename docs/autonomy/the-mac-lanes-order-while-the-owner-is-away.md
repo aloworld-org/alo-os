@@ -42,7 +42,7 @@ because a reader starting from it would conclude this goal is unreachable.*
 | ★ | sees measured apart from worked-out | **usable** — the same gutter's `system` against `alo` |
 | ★ | asks why a command is waiting | **built, reachable, and drawing nothing a person could read** until #778 on 2026-10-17: the chord put `alo` in the gutter and the sentence it labels went into the gutter's own 80-pixel box, under the word. Now drawn, and **seen under a nested compositor** (step 8c); **still never seen on a machine** |
 | ★ | scrolls back through output | **usable** |
-| ★ | runs a command touching nothing | **the box exists and works on a kernel** (#729); **nothing calls it**, and on 2026-10-18 the owner chose the surface — a word plus alo offering — so it is unbuilt rather than blocked (step 9). *This cell said "the kernel box does not" until 2026-10-17, and "the surface is unspecified" until 2026-10-18* |
+| ★ | runs a command touching nothing | **the box exists and works on a kernel** (#729); **nothing calls it.** On 2026-10-18 the owner chose the surface — a word plus alo offering — and it is **still blocked**, on where a person's own boxed run writes the record a run cannot happen without (step 9). *This cell said "the kernel box does not" until 2026-10-17, "the surface is unspecified" until 2026-10-18, and "unbuilt rather than blocked" for one commit the same day* |
 | ★ | scopes one command | **blocked** — a per-command narrowing is `alo-capability`, another lane's |
 | ★ | finds a command by what it did | **the verb is built and offered**, #812 on 2026-10-18, after the owner chose the surface. Reachable by the agent, which is what *a question to alo* means; **never seen on a machine** |
 | ★ | bisects the machine | **nothing**, and waits on a bracket |
@@ -62,15 +62,24 @@ is in each row:*
 | **usable** — all four conditions | **4** | opens a terminal and types; reads who is speaking; sees measured apart from worked-out; scrolls back |
 | **built and reachable, never seen on a machine** | **4**, and it was **2** | asks why a command is waiting (#755); reads output that is not a character grid (#761). **Both were also broken on screen until 2026-10-17** — see the two rows above and step 8c; a nested compositor is not a machine. **Two joined on 2026-10-18**: asks what a command will do first (#805) and finds a command by what it did (#812). **Both of those are landing rather than landed as this was written** — #805 in the merge queue, #812 gating — which is said here because *built* has to mean *in `main`* and on the evening of 2026-10-18 it did not yet |
 | waiting on this lane's own earlier steps | **1**, and it was **2** | hands somebody a session to replay, behind the rest of rich results |
-| **the surface is chosen and nothing is built** | **1** | **runs a command touching nothing.** A new row on 2026-10-18: the owner chose a word plus alo offering, so it is neither blocked nor started. The box has been kernel-enforced since #729 and still has no caller — see step 9 |
-| **blocked on a decision or another lane** | **3**, and it was **5** | decides whether alo may use it; scopes one command, which is the only one of the owner's five answers that did **not** settle its question — see *answer 3 is the one to read twice* below; **bisects the machine**, moved here at 2026-10-17 when the bracket landed and did not open it (step 5) |
+| **blocked on a decision or another lane** | **4**, and it was **5** | decides whether alo may use it; scopes one command, which is the only one of the owner's five answers that did **not** settle its question — see *answer 3 is the one to read twice* below; **bisects the machine**, moved here at 2026-10-17 when the bracket landed and did not open it (step 5); and **runs a command touching nothing**, whose *surface* the owner chose on 2026-10-18 and which is **still blocked on a second thing nobody had looked for** — see step 9 |
 | unowned | **0** | — *this row held* **runs a command touching nothing** *until 2026-10-17, when measuring found the box built (#729, 2026-10-16) and demonstrated on a real kernel. It moved to* blocked*, and on 2026-10-18 to its own row above, when the owner chose the surface it was waiting on* |
 
-*The five counts are **4 + 4 + 1 + 1 + 3 = 13**, which is the whole list. Stated
-as a sum because this table was edited on 2026-10-18 and the first edit left it
-summing to eleven: two promises were taken out of* blocked *and only one was put
-anywhere. **A row that moves has to arrive somewhere**, and a table of counts is
-the one place that can be checked by adding up.*
+*The four counts are **4 + 4 + 1 + 4 = 13**, which is the whole list. Stated as
+a sum because this table was edited twice on 2026-10-18 and the first edit left
+it summing to eleven: two promises were taken out of* blocked *and only one was
+put anywhere. **A row that moves has to arrive somewhere**, and a table of
+counts is the one place that can be checked by adding up.*
+
+***And the second edit moved one row too many.*** It created a row called *the
+surface is chosen and nothing is built* and put **runs a command touching
+nothing** in it, because the owner had answered the question step 9 said it was
+waiting on. That was wrong, and it is this document's own lesson repeated by the
+lane that wrote the lesson down: **a dependency being met is not the same as a
+task being open.** Step 9 named one blocker, the owner answered it, and nobody
+asked whether there was another. There is, and it had been measured and written
+up the same day in another branch. The row is back under* blocked*, and step 9
+now names both.*
 
 **And what *built and reachable* turned out to mean.** Both rows above said a
 promise was built and reachable, and both were — the mechanism ran, a chord
@@ -858,7 +867,7 @@ and painted over. Every check of them counted drawn runs and passed, because
 both runs existed, one on top of the other. *A count cannot see a thing that was
 drawn in the wrong place.*
 
-### 9. Try a command without letting it touch anything — **the box is built; the owner chose the surface on 2026-10-18, and nothing calls it yet**
+### 9. Try a command without letting it touch anything — **the box is built, the owner chose the surface on 2026-10-18, and it is still blocked on where a person's own run writes its record**
 
 **This document listed it as *unowned* and the plan listed it as *blocked on the
 kernel boundary*. Both were wrong, and the crate that disproves them was already
@@ -892,7 +901,7 @@ same lane, is the kind of surface nobody decided.
 **What would unblock it**, in one line: how a person asks for a sealed-box run —
 and whether that is the same gesture as scoping one command or a different one.
 
-> **Answered on 2026-10-18, and this row is now unbuilt rather than blocked.**
+> **The surface was answered on 2026-10-18. The row stayed blocked, on something else.**
 > The owner was offered four shapes — a word before the command, a key before
 > Enter, a setting, or alo noticing the risk and asking — and took the
 > recommendation: **a word, plus alo offering.** Not a setting as a default,
@@ -908,9 +917,40 @@ and whether that is the same gesture as scoping one command or a different one.
 > command that really runs may reach. One is a rehearsal and the other is a
 > narrowing, and a person asking for either is asking for a different outcome.
 >
-> **What is left is building it**, which is a word, alo's offer, and the road
-> from each to `alo_running::WhereCommandsRun`. Not started, and **not
-> blocked**.
+> **What is left is not only building it.** Measured 2026-10-18, after this
+> block was first written as *unbuilt rather than blocked* — which was wrong,
+> and wrong in this document's own words: *a dependency being met is not the
+> same as a task being open.*
+>
+> | Asked, after the surface was decided | Answer |
+> |---|---|
+> | crates depending on `alo-running` | **still none**, including daemons |
+> | does `alo-shell` depend on any daemon crate or the protocol | **no** |
+> | is there a program a person's shell could invoke to run one | **no.** `THE_HELPER` is `alo-enter-the-box`, which admits itself to a box that already exists; nothing creates one |
+> | can the person's own shell write the record a run cannot happen without | **no — and this is the blocker.** `WhereCommandsRun` takes somewhere to write and *a failure to write is a refusal*, because ADR 0064 calls the record always on. The record file is under `/var/lib` and belongs to a service, not to the person running a command |
+>
+> **So the shape of the build is clear and one piece of it is a decision.** A
+> `try` function in the shell integration snippet, invoking a program that
+> creates the box and becomes the command, is the right shape: it is a child of
+> the person's shell, so its output reaches the transcript through the
+> pseudoterminal with no new road from the compositor and no daemon.
+>
+> What that program cannot do is write the record. `SomewhereToWrite` is a
+> trait, so it *could* be handed a record of the person's own — and **whether a
+> person's own boxed run writes into the service's record or into one of their
+> own is a decision about law 1's record**, not an implementation detail. One
+> file is the promise a record makes; two files is a different promise. ADR 0001
+> §7 is the settled ground and says nothing about this case.
+>
+> **What would unblock it now**, in one sentence: whether a command a person
+> runs in a box writes into the machine's one record — which needs something
+> privileged to write it — or into a record of the person's own, and if the
+> latter, what law 1 then promises.
+>
+> *This block said *not blocked* for the length of one commit. It was corrected
+> by its own author before it landed, by asking what else the task needed
+> rather than only what the owner had just answered — which is the check this
+> whole document exists to make somebody run.*
 
 *The lesson this one adds to the four above: **a status can be wrong about a
 module while citing the crate that contains it.** Task 9 said the box was not
@@ -1041,7 +1081,7 @@ paraphrase of a decision is a second decision.
 | 1 | where the explanation of a command comes from — the agent, or the desktop asking a model directly | *"but our agent should be smart enough to know it's an action or just a question?"* | **the agent.** The objection to routing a question through the agent was that it wraps approvals and grants around a read; the owner's answer dissolves it, because ADR 0124 term 4 means that machinery only fires for a change. Built as #805 |
 | 2 | where a person goes to ask *which command made this file* — the record window, a question to alo, or the file manager | *"B and C"* — a question to alo, **and** the file manager later | **terminal task 4**, which this document had recorded as *blocked on a scope decision* since 2026-10-17. The verb is #812; the file manager's *what made this?* is a second surface and a separate change |
 | 3 | who adds a per-command narrowing to `alo-capability` — this lane, or the lane that owns it | *"I go with your recommendation"* | this lane's recommendation was *tell me yes and I'll do it, or name the lane*, which is **not a decision either way** — see the row below. Terminal task 5 is still blocked |
-| 4 | how a person says *run this, but don't let it touch anything* — a word, a key, a setting, or alo offering | *"I go with your recommendation"* — a word **plus** alo offering | **terminal task 9's surface**, which step 9 of this document records as the owner's and as the reason the sealed box has no caller. A word (`try …`) for the person who already worries, and alo offering for the person who did not think — and deliberately **not** a setting as a default, because a setting decides on their behalf |
+| 4 | how a person says *run this, but don't let it touch anything* — a word, a key, a setting, or alo offering | *"I go with your recommendation"* — a word **plus** alo offering | **terminal task 9's surface, and not task 9.** A word (`try …`) for the person who already worries, and alo offering for the person who did not think — deliberately **not** a setting as a default, because a setting decides on their behalf. **The task is still blocked**, on a second thing step 9 had not looked for: where a person's own boxed run writes the record a run cannot happen without. *This cell said the answer unblocked the task until it was checked the same evening* |
 | 5 | what `alo-ask` does in the gap before the provider road exists | *"it should be in the settings if the users allows the alo to use the other models or apis if one is not available"* | **the first row of the table below**, which was the only standing item blocking anything. The answer is a **setting the person sets**, not a default this repository picks — which is `CLAUDE.md`'s *we ship the mechanism, never a default that decides for them* |
 
 **Answer 3 is the one to read twice.** *I go with your recommendation* is a real
