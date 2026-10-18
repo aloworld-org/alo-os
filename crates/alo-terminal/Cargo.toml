@@ -12,6 +12,12 @@ repository.workspace = true
 # pinned upstream engine behind our own interface, never written here and never
 # patched. What this crate owns is the interface in front of it.
 alacritty_terminal = "0.26.0"
+# The typed line arrives base64 encoded, because a command may contain `;`,
+# `ESC`, or bytes that are not text at all (`docs/contracts/shell-integration-marks.md`).
+# **Already in `Cargo.lock` at this version under `alacritty_terminal`**, which
+# this crate already pins, so nothing new enters the tree — this only makes it a
+# dependency somebody declared rather than one inherited by accident.
+base64 = "0.22"
 # `CLAUDE.md`: user-facing strings are externalized from day one, which makes
 # hardcoded English a bug. The gutter's four words are the strings this crate
 # says, and `alo-strings` depends on nothing itself.

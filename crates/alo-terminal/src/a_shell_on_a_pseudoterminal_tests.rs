@@ -441,3 +441,109 @@ fn a_shell_is_told_what_terminal_it_is_on() {
         "TERM is {name:?}, which is not a name a terminfo database can be asked for"
     );
 }
+
+/// **A real shell's mark reaches the terminal that read it.**
+///
+/// The reader has its own fifteen tests and every one of them hands bytes
+/// straight to it. **None of them proves the terminal is wired to it** — a
+/// constant at the seam would satisfy all fifteen, which is the fault
+/// `docs/autonomy/` names as *honest fixtures are silent about wiring*. So this
+/// one starts `/bin/sh`, has it `printf` the sequence onto a real
+/// pseudoterminal, and asks the terminal what it heard.
+///
+/// `BEL` terminates rather than `ST`, because `\033\\` inside a shell string
+/// inside a Rust string is three levels of escaping to get wrong and both
+/// terminators are read.
+#[test]
+fn a_mark_a_real_shell_printed_reaches_the_terminal() {
+    use crate::what_the_shell_says_about_the_prompt::AShellSaid;
+    use base64::Engine as _;
+    use base64::engine::general_purpose::STANDARD;
+
+    let command = "git push";
+    let encoded = STANDARD.encode(command.as_bytes());
+    let script = format!(
+        "printf '\\033]133;A\\007'; printf '\\033]133;alo-typed;{encoded};{}\\007'; echo done",
+        command.len()
+    );
+
+    let mut shell = AShellOnAPseudoterminal::running(
+        HowBig::of(80, 24, 100).expect("a terminal"),
+        "/bin/sh",
+        &["-c", &script],
+    )
+    .expect("this machine can start /bin/sh on a pseudoterminal");
+
+    let mut screen = a_screen();
+    read_until(&mut shell, &mut screen, |screen| {
+        screen_says(screen, "done")
+    });
+
+    let heard = shell.what_the_shell_said();
+    assert_eq!(
+        heard,
+        vec![
+            Ok(AShellSaid::APromptIsAboutToBeDrawn),
+            Ok(AShellSaid::TheyTyped(command.to_owned())),
+        ],
+        "a real shell printed two marks onto a real pseudoterminal and the terminal heard \
+         {heard:?}. The screen held: {:?}",
+        screen.lines()
+    );
+}
+
+/// **The marks are drained, so one reaches one caller once.**
+///
+/// A caller that read without draining would explain the same command on every
+/// frame for as long as the person left it on the screen — sixty times a second
+/// for a line they typed once.
+#[test]
+fn asking_twice_what_the_shell_said_does_not_say_it_twice() {
+    let mut shell = AShellOnAPseudoterminal::running(
+        HowBig::of(80, 24, 100).expect("a terminal"),
+        "/bin/sh",
+        &["-c", "printf '\\033]133;C\\007'; echo done"],
+    )
+    .expect("this machine can start /bin/sh on a pseudoterminal");
+
+    let mut screen = a_screen();
+    read_until(&mut shell, &mut screen, |screen| {
+        screen_says(screen, "done")
+    });
+
+    assert_eq!(
+        shell.what_the_shell_said().len(),
+        1,
+        "the mark arrives once"
+    );
+    assert!(
+        shell.what_the_shell_said().is_empty(),
+        "and asking again says nothing, because the first ask drained it"
+    );
+}
+
+/// **Ordinary output carries no marks**, which is what a shell with no snippet
+/// installed produces all day.
+///
+/// The feature says plainly that without the snippet nothing happens, and this
+/// is that sentence as a test: a shell doing ordinary work leaves the reader
+/// with nothing to report.
+#[test]
+fn a_shell_with_no_snippet_says_nothing_about_the_prompt() {
+    let mut shell = AShellOnAPseudoterminal::running(
+        HowBig::of(80, 24, 100).expect("a terminal"),
+        "/bin/sh",
+        &["-c", "echo one; echo two; echo done"],
+    )
+    .expect("this machine can start /bin/sh on a pseudoterminal");
+
+    let mut screen = a_screen();
+    read_until(&mut shell, &mut screen, |screen| {
+        screen_says(screen, "done")
+    });
+
+    assert!(
+        shell.what_the_shell_said().is_empty(),
+        "a shell that printed three ordinary lines said something about the prompt"
+    );
+}

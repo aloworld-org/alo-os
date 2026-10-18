@@ -6,12 +6,12 @@ terms 1 to 3, which the owner accepted that day. No agent verb, no D-Bus
 interface and no stored format changes; this is a byte sequence a shell writes
 to its own pseudoterminal and alo OS reads.
 
-**Nothing in alo OS reads these yet, measured 2026-10-18.** The decision is
-accepted and the reader is not built: `alo-terminal` runs one `vte` parser and
-ADR 0123 term 7 calls for a second. A reader building a snippet against this
-document should know that the product does not yet act on what it emits —
-**nothing about the sequence changes**, which is why this is published now
-rather than after.
+**alo reads these, since 2026-10-18.**
+`crates/alo-terminal/src/what_the_shell_says_about_the_prompt.rs` is the reader:
+a second `vte` parser over the same bytes, as ADR 0123 term 7 calls for, leaving
+`alacritty_terminal` untouched. *This paragraph said **nothing in alo OS reads
+these yet** on the morning this document was published, and the reader was built
+that afternoon.*
 
 ## Why a shell has to say it
 
@@ -66,19 +66,28 @@ OSC 133 ; alo-typed ; <base64 of the command> ; <length in bytes> ST
 - **the third parameter** is the length **of the decoded command, in bytes**,
   written in decimal — not the length of the base64.
 
-### The length is not belt and braces, it is the whole check
+### Why the length is there
 
-`vte` caps an OSC payload at 1024 bytes and — measured in its own suite —
-**dispatches the truncated payload rather than dropping it**. Without a declared
-length a long command would arrive as a fragment and be explained as though it
-were whole, which is the same wrong answer as reading the screen, arriving by a
-different door.
-
-So **a payload that does not decode to exactly the declared length is refused**,
+**A payload that does not decode to exactly the declared length is refused**,
 and the person is told the command was too long to read. They are never shown an
 explanation of its first half.
 
 *A single number cannot be caught being wrong. Two that must agree can.*
+
+> **This section said something false when it was published, and it is corrected
+> rather than quietly rewritten.** On 2026-10-18 it read: *`vte` caps an OSC
+> payload at 1024 bytes and — measured in its own suite — dispatches the
+> truncated payload rather than dropping it.* **It does not cap it.** Building
+> the reader the same day and testing that claim found a 2005-byte command
+> inside a 2699-byte payload arriving **whole**, in one read and in 64-byte reads
+> alike. `vte`'s `Parser` holds `osc_raw` as an `ArrayVec` capped at 1024 only
+> under `#[cfg(not(feature = "std"))]`, and as a growing `Vec` under
+> `#[cfg(feature = "std")]`. **The cap is a `no_std` cap.**
+>
+> **The format is unchanged and the length stays**, for a weaker reason that is
+> true: the cap is one cargo feature away, a `no_std` build truncates in silence
+> with no flag to say so, and the check also catches a shell that mis-encodes.
+> **An adapter author who already emits this sequence needs to change nothing.**
 
 ## What alo will not do with a mark
 

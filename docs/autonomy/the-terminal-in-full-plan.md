@@ -197,8 +197,50 @@ approximated.*
 
 ### 3. Explain a command before it runs
 
-**Status:** **the answer is built (#759); the asking waits on a decision now
-written.** **Depends on:**
+**Status, 2026-10-18 evening: the input half is built and the asking is one
+decision away.** The owner chose the key that day — the shell's `Ctrl`+`X`
+family — and `Ctrl`+`X` `Ctrl`+`A` is the pair, measured unbound in the bash a
+person actually gets while `Ctrl`+`X` `Ctrl`+`E` is `edit-and-execute-command`.
+
+**What is built and proven:**
+
+| | |
+|---|---|
+| the reader | `crates/alo-terminal/src/what_the_shell_says_about_the_prompt.rs` — a second `vte` parser, term 7, `alacritty_terminal` untouched |
+| the wiring | `AShellOnAPseudoterminal` feeds it the same bytes it hands the grid and drains through `what_the_shell_said()` |
+| proven with a real shell | three tests start `/bin/sh` on a real pseudoterminal; the seam was mutated and cutting it fails exactly those |
+| the display | `WhatAloSaid::explains()` and `WhatACommandWillDo` were already built (#759) |
+
+**What is left is one question: where does the explanation come from?** The
+answer must carry **plain words and the three marks** — destructive, needs
+elevated rights, leaves the machine — and the marks are what make the road a
+choice rather than a detail.
+
+- **Through the agent daemon**, reusing `TheAgentsDoor`, which already writes a
+  line to a socket and posts an answer back. It holds the one live indicator and
+  the record. **But it makes a person's request for an explanation an agent
+  turn**, with grants and approval around what is a *read* — and
+  [ADR 0125](../decisions/0125-a-command-does-not-report-an-egress-it-asks-a-service-that-can-show-one.md)
+  marked that as the part most likely to be got wrong. It also posts back a
+  plain `String`, so the marks would have to be parsed out of prose.
+- **The shell asks a model directly** through `alo-asking`. It stays a read,
+  *reads answer, changes wait*, and the compositor **does** hold the indicator
+  so the egress is lawful. But it puts model-asking — settings, runtime,
+  the key, the record — inside the compositor, and a model call is seconds in a
+  process that must not block a frame.
+
+**This lane's recommendation is the second**, because an explanation is a read
+and a read should not acquire an agent's machinery. *Marked as a recommendation:
+it is the owner's, and `CLAUDE.md`'s rule is that when the answer is not obvious
+it is scope.*
+
+**What that decision also settles** and should be answered with it: whether the
+explanation says **where it was answered** — on this machine, on this network,
+or with a provider. `docs/features.md` makes that a permanent area in the task
+window, and a sentence drawn in the terminal is the same promise in a smaller
+space.
+
+**Depends on:**
 [ADR 0123](../decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md),
 proposed 2026-10-17 by this lane under the rule that a machine unblocks itself
 rather than waiting for somebody with less context, and **accepted by the owner

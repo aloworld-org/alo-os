@@ -9,13 +9,31 @@
 //! program at all and lets the system answer; naming one is for a test, which
 //! is why that road says so in its name.
 //!
-//! # Nothing here interprets anything
+//! # Nothing here interprets anything, with one named exception
 //!
 //! Bytes come out of a child process and go into a grid. **No byte is read for
 //! meaning, matched against a pattern, or sent anywhere.** A terminal that
 //! inspected its own output to be clever would be a terminal a person could
 //! not reason about, and `docs/features.md` promises the opposite first of
 //! everything: *ordinary commands are not reinterpreted as AI requests.*
+//!
+//! **The exception, added 2026-10-18, is the marks a shell sends on purpose.**
+//! [`crate::what_the_shell_says_about_the_prompt`] reads OSC 133 off the same
+//! bytes — see [ADR 0123](../../../docs/decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md)
+//! and `docs/contracts/shell-integration-marks.md`. **It does not weaken the
+//! sentence above**, and the boundary is worth stating because it is the one
+//! somebody will be tempted to move:
+//!
+//! - it reads **only** sequences a shell wrote in order to be read, never a
+//!   program's output, and never what the person typed;
+//! - a mark **buys nothing** — it cannot run, grant or approve anything, so a
+//!   forged one makes alo explain a command nobody typed and nothing more;
+//! - **no command is reinterpreted.** alo explains a line when the person asks
+//!   for it by pressing a key, and the mark is how the line reaches alo rather
+//!   than a reason to act on it;
+//! - **nothing happens without the person installing a snippet.** With no
+//!   snippet there are no marks and this reads nothing, which is why the
+//!   feature says so rather than guessing.
 //!
 //! # Why reading answers three things rather than two
 //!
@@ -73,6 +91,22 @@ pub enum NoShell {
 pub struct AShellOnAPseudoterminal {
     /// The engine's pseudoterminal, holding the child and the master end.
     pty: Pty,
+    /// The second parser, reading the shell's own marks off the same bytes.
+    ///
+    /// Held here rather than beside the grid because a mark is a **shell**
+    /// saying where it is, and this is the thing that has a shell. Holding it
+    /// across reads is what makes a sequence split over two reads still arrive.
+    hearing: crate::what_the_shell_says_about_the_prompt::WhatTheShellSays,
+    /// What the shell has said since a caller last asked.
+    ///
+    /// Drained rather than read, so one mark reaches one caller once — the same
+    /// rule the agent's door keeps for answers.
+    heard: Vec<
+        Result<
+            crate::what_the_shell_says_about_the_prompt::AShellSaid,
+            crate::what_the_shell_says_about_the_prompt::NotRead,
+        >,
+    >,
 }
 
 /// What this terminal calls itself to the programs it runs.
@@ -163,7 +197,11 @@ impl AShellOnAPseudoterminal {
         };
         let pty =
             tty::new(&options, how_the_child_is_told(size), 0).map_err(NoShell::ItWouldNotStart)?;
-        Ok(Self { pty })
+        Ok(Self {
+            pty,
+            hearing: crate::what_the_shell_says_about_the_prompt::WhatTheShellSays::new(),
+            heard: Vec::new(),
+        })
     }
 
     /// Take whatever the shell has written and apply it to the screen.
@@ -181,7 +219,12 @@ impl AShellOnAPseudoterminal {
             // **Zero bytes from a pseudoterminal means the far end is gone.**
             Ok(0) => Ok(WhatArrived::ItFinished),
             Ok(how_many) => {
-                onto.was_written(buffer.get(..how_many).unwrap_or_default());
+                let arrived = buffer.get(..how_many).unwrap_or_default();
+                // **The same bytes, twice, and the grid is unaffected.** The
+                // reader only looks; it consumes nothing and changes nothing,
+                // so the grid sees exactly what it saw before this existed.
+                self.heard.extend(self.hearing.reading(arrived));
+                onto.was_written(arrived);
                 Ok(WhatArrived::Bytes(how_many))
             }
             Err(why) => match why.kind() {
@@ -197,6 +240,32 @@ impl AShellOnAPseudoterminal {
                 _ => Err(NoShell::ItWouldNotAnswer(why)),
             },
         }
+    }
+
+    /// **Everything the shell has said since this was last asked**, and nothing
+    /// twice.
+    ///
+    /// Empty on the overwhelming majority of calls: a shell with no integration
+    /// snippet installed never sends a mark, and one that has it sends a handful
+    /// per command rather than per read.
+    ///
+    /// **Drained**, so one mark reaches one caller once. A caller that read
+    /// without draining would explain the same command on every frame for as
+    /// long as the person left it on the screen.
+    ///
+    /// Each item is a mark **or the reason one could not be read** — a caller
+    /// that drops the errors is throwing away the only signal that a command was
+    /// too long to read, and would show nothing where the person is owed a
+    /// sentence.
+    pub fn what_the_shell_said(
+        &mut self,
+    ) -> Vec<
+        Result<
+            crate::what_the_shell_says_about_the_prompt::AShellSaid,
+            crate::what_the_shell_says_about_the_prompt::NotRead,
+        >,
+    > {
+        std::mem::take(&mut self.heard)
     }
 
     /// Tell the child its terminal is a new size.
