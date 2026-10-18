@@ -7,13 +7,22 @@ blocker that is a decision, following
 
 **What was accepted is the three roads and terms 1 to 7, as they were proposed.**
 
-**Terms 8 to 10, and *The gesture*, were drafted afterwards by the Mac lane** on
+**Terms 8 and 9, and *The gesture*, were drafted afterwards by the Mac lane** on
 the owner's instruction to draft and let them review — not by the owner, and not
 yet accepted. Each is marked where it appears. **Nothing built may rely on a
-marked term until the owner accepts or corrects it.** They are here rather than
-in a report because a decision and the holes somebody later found in it belong
-in one file; a reader a month from now should not have to assemble this ADR from
-two places.
+marked passage until the owner accepts or corrects it.** They are here rather
+than in a report because a decision and the holes somebody later found in it
+belong in one file; a reader a month from now should not have to assemble this
+ADR from two places.
+
+**All three were revised once, on 2026-10-18, by the lane reviewing its own
+first draft** — the owner asked what it thought of them and it thought two were
+loose and one was wrong. Term 8 stopped restating law 1 and named the question
+it had ducked; term 9 stopped borrowing the word *turn* from agent turns, which
+means nothing in a shell; and the gesture was withdrawn outright, because the
+argument for it was also the reason it would one day be captured. The first
+drafts are not preserved — **what each one got wrong is written into the passage
+that replaced it**, which is the part worth keeping.
 
 ## The question
 
@@ -139,66 +148,79 @@ through a second parser whose `Perform` implements `osc_dispatch` and nothing
 else. One extra pass over bytes already in cache; no fork, no source patch,
 `VoidListener` keeps its job. *Engines are configured, never written in.*
 
-**8. The command a person typed can leave this machine, and that is law 1's
-business.** *Drafted by the lane, 2026-10-18, awaiting the owner.*
+**8. A command line is not composed for sharing, and explaining one may send it
+away.** *Drafted by the lane, revised 2026-10-18 after reviewing its first
+draft, awaiting the owner.*
 
-Terms 1 to 7 get the typed line to alo and stop there. What *explain a command
-before it runs* then does with it is **ask a model** — and when that model is a
-provider, **the line a person typed leaves the machine.** A command line carries
-arguments, and arguments carry tokens, passwords and paths that say who somebody
-is. Nothing above said so.
+Terms 1 to 7 get the typed line to alo and stop. What *explain a command before
+it runs* does next is **ask a model**, and when that model is a provider the line
+leaves the machine.
 
-So: the typed command is ordinary egress and is treated as such. It appears in
-the egress indicator at the moment it happens, it is in the record afterwards,
-and **the explanation says where it was answered** — on this machine, on this
-network, or with a provider — before a person reads the answer, not after. A
-person who would not paste a command into a web form has not agreed to send it
-to a provider because they pressed a key in their own terminal.
+**What is new here is not that egress is shown** — law 1 already says that, and
+an ADR that restates the charter is noise. It is two narrower things:
 
-**And there is never a silent fallback.** If the local model cannot answer, alo
-says it cannot rather than quietly asking a provider — which is the standing
-rule and bears repeating here because this is a road that makes the fallback
-tempting.
+- **A command line is different from a question.** A person composing a question
+  in a composer is choosing what to send. A command line was written to be *run*,
+  not read by anyone, and it carries arguments: tokens, paths, hostnames, the
+  name of a client. The same bytes that are unremarkable on your own machine are
+  a disclosure the moment they leave it.
+- **Where it was answered is said *before* the answer, not after.** An
+  explanation a person has already read cannot be un-read. The provenance line
+  that the rich result puts *under* its summary belongs *above* this one.
 
-**9. A mark is good for the turn it arrived in, and alo never reuses the last
-one.** *Drafted by the lane, 2026-10-18, awaiting the owner.*
+**And never a silent fallback.** If the local model cannot answer, alo says so
+rather than quietly asking a provider. That is the standing rule, repeated here
+only because this is the road that makes breaking it tempting.
 
-The marks can stop arriving at any moment and for ordinary reasons: a person
-edits their shell startup, opens a shell that has no snippet, or `ssh`es
-somewhere. **Absence must read as absence.** If alo kept the last mark it saw,
-an explanation would describe a command from three commands ago with complete
-confidence — the wrong-answer fault this whole decision exists to avoid, arriving
-through the back door. When no mark has come for the line in front, alo says it
-does not know what was typed.
+**The question this term does not answer, and it is the owner's.** The draft
+above assumes a typed command *may* go to a provider so long as it is shown.
+**The stricter default is local-only** — a provider explains your command lines
+only once you have said it may, for this feature, in as many words. This lane
+recommends the stricter one and did not write it in, because narrowing a promise
+is the owner's and not a lane's to infer.
 
-**10. The words a person reads when they install it are vocabulary, not English
-in a snippet.** *Drafted by the lane, 2026-10-18, awaiting the owner.*
+**9. A mark is spent by the explanation it produces.** *Drafted by the lane,
+revised 2026-10-18, awaiting the owner.*
 
-Term 6 quotes the sentence — *every command you run, to alo, on this machine* —
-and a sentence a person reads is a published sentence under
-[ADR 0068](0068-a-published-sentence-changes-by-getting-a-new-key.md). It gets a
-key like any other. *Hardcoded English is a bug* does not stop being true because
-the English is in a shell snippet rather than in Rust.
+The first draft said a mark was "good for the turn it arrived in", which borrowed
+a word from agent turns that means nothing in a shell — there are prompts and
+commands there, not turns — and it invited a question it did not answer: *how
+does alo know the line changed?* It does not. That is why the mark exists.
 
-## The gesture — drafted by the lane, 2026-10-18, awaiting the owner
+So the rule is counted rather than timed: **one press, one mark, one answer.** A
+second explanation needs a second press. alo never answers from a mark it has
+already used, and when no unspent mark is in hand it says it does not know what
+was typed.
 
-The proposal declined to decide what a person presses, and left it to ADR 0085's
-subject matter. On the owner's instruction, this lane drafts it rather than
-leaving the decision open.
+What that prevents is concrete: without it, asking again after a command has run
+would describe a command from three commands ago, with complete confidence. That
+is the wrong-answer fault this whole decision exists to avoid, arriving through
+the back door.
 
-**`Ctrl`+`Alt`+`E`, for *explain*, bound by the snippet in the shell's own line
-editor.** It joins a family a person learns together:
-`Ctrl`+`Alt`+`T` gives you a terminal, `Ctrl`+`Alt`+`W` says what it is waiting
-for, and `Ctrl`+`Alt`+`E` says what the line you have typed will do. `Ctrl`+`Alt`
-is free for the reason `alo-shortcuts`' defaults already give, and `E` is not
-taken.
+## The gesture — withdrawn and redrafted, 2026-10-18, awaiting the owner
 
-**The wrinkle, named rather than hidden.** alo's other chords are bound on the
-compositor's seat; this one is bound in the shell, because while a foreground
-child owns the terminal the keys are the child's (ADR 0113). So one keypress is
-handled in two different places depending on who holds the terminal. **Without
-the snippet it does nothing**, which is consistent with term 6 and with the
-feature saying it needs shell integration rather than guessing.
+**This lane first drafted `Ctrl`+`Alt`+`E`, and then withdrew it.** The argument
+for it was family resemblance: it would sit beside `Ctrl`+`Alt`+`T`, which gives
+you a terminal, and `Ctrl`+`Alt`+`W`, which says what it is waiting for.
+
+**That argument is also the trap.** Those two chords live in the compositor's
+seat; this one has to live in the shell, because while a foreground child owns
+the terminal the keys are the child's (ADR 0113). When alo's seat matches a
+chord it **intercepts it and never forwards it**. Measured 2026-10-18:
+`alo-shortcuts` has no binding on `Key::E`, so `Ctrl`+`Alt`+`E` does reach a
+shell today. But the very reasoning that makes it memorable — *it belongs with T
+and W* — is the reasoning that would put it into `alo-shortcuts` one day, and on
+that day the feature stops working with nothing to say why.
+
+**So the binding belongs in the shell's own idiom, where no compositor chord can
+reach it.** `readline` and `zle` both already put line-editor commands behind the
+`Ctrl`+`X` prefix — `Ctrl`+`X` `Ctrl`+`E` opens the current line in an editor in
+every bash a person has used. A second key in that family is unsurprising to
+anybody who already edits a long command line, and a prefix sequence is not a
+chord any compositor matches.
+
+*Less memorable than `Ctrl`+`Alt`+`E`, and it cannot be captured. The owner
+picks; this lane's recommendation is the second.*
 
 ## What this does not decide
 
@@ -220,6 +242,13 @@ feature saying it needs shell integration rather than guessing.
   `docs/autonomy/the-terminal-in-full-plan.md` today and blocked on this and
   nothing else.
 - A person without the snippet sees no change at all.
+- **The sentence shown when a person installs the snippet is a published
+  sentence** and gets a key like any other (ADR 0068). *A lane's note rather than
+  a term: it is only the standing i18n rule applying, and it is here because the
+  English lives in a shell snippet, which is exactly where the checks for
+  hardcoded English do not look.* This began as a numbered term and was demoted
+  on 2026-10-18 — a decision should not restate the charter and call it a
+  finding.
 
 ## The tests that decide whether this works
 
