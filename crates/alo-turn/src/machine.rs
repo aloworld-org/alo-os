@@ -233,6 +233,7 @@ pub fn the_verbs_a_whole_machine_offers() -> Result<Verbs, TheVerbsWouldNotDecla
     let mut verbs = file_verbs()?;
     alo_software::verbs::declare_into(&mut verbs)?;
     alo_applications::verbs::declare_the_three_with_a_road_into(&mut verbs)?;
+    alo_record::declare_verbs_into(&mut verbs)?;
     Ok(verbs)
 }
 
@@ -503,6 +504,21 @@ impl<'a> Machine<'a> {
         self.kept
     }
 
+    /// Everything written down so far, read back so it can be asked a
+    /// question.
+    ///
+    /// Takes `&self` where [`Self::kept`] takes `&mut self`, and the
+    /// difference is the point: asking what happened changes nothing, and a
+    /// read that needed the machine mutably would be a read a caller has to
+    /// hold exclusively.
+    ///
+    /// # Errors
+    /// [`alo_keeping::NotKept`] when the record could not be read back — see
+    /// [`Kept::written_down`], which says why that is never an empty record.
+    pub(crate) fn written_down(&self) -> Result<alo_record::Record, alo_keeping::NotKept> {
+        self.kept.written_down()
+    }
+
     /// Write down that this machine was asked to read the person's grants
     /// again and did not.
     ///
@@ -659,8 +675,8 @@ mod tests {
     ///
     /// # Why the names and not a count
     ///
-    /// A count passes when one family replaces another. These are the ten in
-    /// `docs/contracts/agent-verbs.md`, which is the published list a third
+    /// A count passes when one family replaces another. These are the twelve
+    /// in `docs/contracts/agent-verbs.md`, which is the published list a third
     /// party builds an adapter against: *a closed list; if a capability is not
     /// written here, `alo-agentd` does not have it.* So this is the contract
     /// held against the code, in the direction that matters — a verb the
@@ -672,10 +688,10 @@ mod tests {
     /// verb with nothing behind it is worse than the capability missing.
     #[test]
     fn every_verb_this_machine_offers_is_named_here_and_no_other() {
-        let offered = the_verbs_a_whole_machine_offers().expect("the eleven verbs declare");
+        let offered = the_verbs_a_whole_machine_offers().expect("the twelve verbs declare");
         let told: Vec<&str> = offered.all().map(alo_capability::Verb::name).collect();
 
-        let the_eleven = [
+        let the_twelve = [
             // `alo-files`' six.
             "list_folder",
             "read_file",
@@ -691,8 +707,10 @@ mod tests {
             "open_application",
             "focus_application",
             "close_application",
+            // `alo-record`'s one, added 2026-10-18.
+            "what_touched_this_file",
         ];
-        for name in the_eleven {
+        for name in the_twelve {
             assert!(
                 told.contains(&name),
                 "{name} is in docs/contracts/agent-verbs.md and this machine does not offer it, \
@@ -701,10 +719,10 @@ mod tests {
         }
         assert_eq!(
             told.len(),
-            the_eleven.len(),
+            the_twelve.len(),
             "this machine offers {} verbs and {} are named here: {told:?}",
             told.len(),
-            the_eleven.len()
+            the_twelve.len()
         );
         assert!(
             !told.contains(&"arrange_application"),

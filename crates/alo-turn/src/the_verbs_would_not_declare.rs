@@ -43,4 +43,10 @@ pub enum TheVerbsWouldNotDeclare {
     /// function carries the argument.
     #[error("the application verbs could not be declared: {0}")]
     TheApplicationVerbs(#[from] alo_applications::Declaring),
+    /// `alo-record`'s one, or its name colliding with one of the ten.
+    ///
+    /// The record's question, added on 2026-10-18 when the owner decided that
+    /// the surface for *find a command by what it did* is a question to alo.
+    #[error("the record verb could not be declared: {0}")]
+    TheRecordVerb(#[from] alo_record::Declaring),
 }

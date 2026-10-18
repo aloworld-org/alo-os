@@ -84,7 +84,7 @@ pub fn answered_to(
             Some(waiting) => {
                 let shared = network.locked();
                 match arriving.approving(waiting, shared.pairings(), grants, now) {
-                    Ok(answer) => ToAPerson::did(as_a_client_sees_it(&answer)),
+                    Ok(answer) => ToAPerson::did(as_a_client_sees_it(&answer, now)),
                     Err(why) => ToAPerson::refused(&why.said(strings)),
                 }
             }

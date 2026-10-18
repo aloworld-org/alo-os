@@ -65,6 +65,7 @@ use alo_keeping::NotKept;
 use alo_strings::{Filling, Said, Strings};
 
 use crate::unbounded::NoBoundary;
+use crate::went_wrong_asking::WentWrongAsking;
 use crate::went_wrong_installing::WentWrongInstalling;
 use crate::went_wrong_looking::WentWrongLooking;
 use crate::words;
@@ -141,6 +142,12 @@ pub enum NotDone {
     /// refusals that are not faults, because nothing in the world can stop it
     /// — it parses a string compiled into this binary.
     CouldNotLookAtTheCatalogue(WentWrongLooking),
+    /// A question of the record alo OS could not answer.
+    ///
+    /// Unlike [`Self::CouldNotLookAtTheCatalogue`] beside it, **one of this
+    /// one's two causes is not a fault**: a record kept on a disk is a file,
+    /// and a file can be unreadable. [`WentWrongAsking`]'s header says which.
+    CouldNotAskTheRecord(WentWrongAsking),
 }
 
 impl NotDone {
@@ -171,6 +178,9 @@ impl NotDone {
                 &words::COULD_NOT_LOOK_AT_THE_CATALOGUE.key(),
                 &Filling::nothing(),
             ),
+            Self::CouldNotAskTheRecord(_) => {
+                strings.say(&words::COULD_NOT_ASK_THE_RECORD.key(), &Filling::nothing())
+            }
         }
     }
 
@@ -323,7 +333,8 @@ mod tests {
                 | NotDone::CouldNotInstallHere(_)
                 // And alo OS unable to read its own shipped catalogue, which
                 // is the same kind of fact one verb along.
-                | NotDone::CouldNotLookAtTheCatalogue(_) => {
+                | NotDone::CouldNotLookAtTheCatalogue(_)
+                | NotDone::CouldNotAskTheRecord(_) => {
                     assert!(!refused && !over);
                 }
             }

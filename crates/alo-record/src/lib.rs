@@ -139,7 +139,10 @@ pub mod happened;
 pub mod let_go;
 pub mod line;
 pub mod record;
+pub mod verbs;
 pub mod what;
+pub mod what_touched_a_file;
+pub mod words;
 pub mod written;
 
 #[cfg(test)]
@@ -154,5 +157,8 @@ pub use happened::{Happened, Stopped};
 pub use let_go::{Forgone, WhyLetGo};
 pub use line::Line;
 pub use record::Record;
+pub use verbs::{Declaring, declare_into as declare_verbs_into, record_verbs};
 pub use what::What;
+pub use what_touched_a_file::{NotAsked, OneThingDone, WhatTouchedIt, asked_about, what_touched};
+pub use words::{EVERY_WORD, Word, WordsError, declare_into, record_words};
 pub use written::Written;

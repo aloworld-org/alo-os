@@ -68,6 +68,9 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
             reached.acting().application().identifier(),
         ),
         alo_turn::WhatAVerbDid::WhatCanBeInstalled(holds) => Done::of_a_catalogue_read(holds),
+        // The fifth family, 2026-10-18, naming this copy along with the real
+        // ones exactly as the third and fourth did.
+        alo_turn::WhatAVerbDid::WhatTouchedAFile(found) => Done::of_a_record_read(found, noon()),
     }
 }
 

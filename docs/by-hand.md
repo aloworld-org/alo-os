@@ -157,6 +157,30 @@ list is the same because it is a list of facts.
 not a number in Settings*. The tree the verb answers with is the tree the window
 draws.
 
+### what_touched_this_file
+
+**By hand:** a person opens their record and reads it — `History`, which the
+definition words as *what happened, why, and undo. Agent actions come from the
+kernel-watched record*. Every call the record answers this question from
+is already in that window, worded the way they were shown it at the time, so the
+plain way needs no grant, no agent and nobody to ask. **The verb is narrower
+than the window, not wider**: it answers about one file, and the window shows
+everything.
+
+That narrowing is the whole reason the verb exists. The record window is
+deliberately built with *no letters, so there is nowhere to type a search* and
+*nothing that hides a line, so no key could leave a refusal out* — a person
+scrolls it rather than querying it, which is right for a record somebody may be
+relying on. So *which command made this file* is a question the window will not
+answer by design, and asking alo is the nicer way to reach it that ADR 0009
+names.
+
+**And the verb sees less than the person does.** It requires a grant over the
+file it is asked about, so an agent can be told about files the person has let
+it see and no others; the window is the person's and shows all of it. The plain
+way is the complete one here, which is the opposite of the usual direction and
+is worth saying.
+
 ### print_document
 
 **By hand:** a person opens the document and prints it from the print dialogue,

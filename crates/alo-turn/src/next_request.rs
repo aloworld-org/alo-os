@@ -867,6 +867,11 @@ mod tests {
                 why: "no space left on device".to_owned(),
             })
         }
+        /// Nothing was written down, because every write failed — so the
+        /// honest answer is an empty record rather than a refusal.
+        fn written_down(&self) -> Result<alo_record::Record, NotKept> {
+            Ok(alo_record::Record::default())
+        }
     }
 
     impl crate::Shortening for ANoSpaceLeftDisk {

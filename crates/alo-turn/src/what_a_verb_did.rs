@@ -26,6 +26,7 @@
 //! record or the authorisation, never this.
 
 use alo_files::Answer;
+use alo_record::WhatTouchedIt;
 use alo_software::{Installed, WhatTheCatalogueHolds};
 
 use crate::acting_on_an_application::Reached;
@@ -54,6 +55,15 @@ pub enum WhatAVerbDid {
     /// moved because of it, and `alo_software::WhatTheCatalogueHolds`' own
     /// header is why nothing about the person is in it either.
     WhatCanBeInstalled(WhatTheCatalogueHolds),
+    /// What the record says was done to one file.
+    ///
+    /// **The second arm here that is a read**, and the first that answers out
+    /// of what already happened rather than out of the machine as it stands.
+    /// `alo_record::WhatTouchedIt` carries its own two qualifying sentences —
+    /// that this is what alo did, and where nothing names the file, that
+    /// nothing does — because an empty answer drawn as an empty list reads as
+    /// a claim about the file that nobody made.
+    WhatTouchedAFile(WhatTouchedIt),
 }
 
 impl WhatAVerbDid {
@@ -68,7 +78,8 @@ impl WhatAVerbDid {
             Self::ToFiles(answer) => Some(answer),
             Self::AnApplicationInstalled(_)
             | Self::AnApplicationWasReached(_)
-            | Self::WhatCanBeInstalled(_) => None,
+            | Self::WhatCanBeInstalled(_)
+            | Self::WhatTouchedAFile(_) => None,
         }
     }
 
@@ -77,9 +88,10 @@ impl WhatAVerbDid {
     pub const fn installed(&self) -> Option<&Installed> {
         match self {
             Self::AnApplicationInstalled(installed) => Some(installed),
-            Self::ToFiles(_) | Self::AnApplicationWasReached(_) | Self::WhatCanBeInstalled(_) => {
-                None
-            }
+            Self::ToFiles(_)
+            | Self::AnApplicationWasReached(_)
+            | Self::WhatCanBeInstalled(_)
+            | Self::WhatTouchedAFile(_) => None,
         }
     }
 
@@ -90,7 +102,20 @@ impl WhatAVerbDid {
             Self::WhatCanBeInstalled(holds) => Some(holds),
             Self::ToFiles(_)
             | Self::AnApplicationInstalled(_)
-            | Self::AnApplicationWasReached(_) => None,
+            | Self::AnApplicationWasReached(_)
+            | Self::WhatTouchedAFile(_) => None,
+        }
+    }
+
+    /// What the record says was done to a file, when it was asked.
+    #[must_use]
+    pub const fn what_touched_a_file(&self) -> Option<&WhatTouchedIt> {
+        match self {
+            Self::WhatTouchedAFile(found) => Some(found),
+            Self::ToFiles(_)
+            | Self::AnApplicationInstalled(_)
+            | Self::AnApplicationWasReached(_)
+            | Self::WhatCanBeInstalled(_) => None,
         }
     }
 
@@ -99,9 +124,10 @@ impl WhatAVerbDid {
     pub const fn reached(&self) -> Option<&Reached> {
         match self {
             Self::AnApplicationWasReached(reached) => Some(reached),
-            Self::ToFiles(_) | Self::AnApplicationInstalled(_) | Self::WhatCanBeInstalled(_) => {
-                None
-            }
+            Self::ToFiles(_)
+            | Self::AnApplicationInstalled(_)
+            | Self::WhatCanBeInstalled(_)
+            | Self::WhatTouchedAFile(_) => None,
         }
     }
 }
@@ -127,6 +153,12 @@ impl From<Reached> for WhatAVerbDid {
 impl From<WhatTheCatalogueHolds> for WhatAVerbDid {
     fn from(holds: WhatTheCatalogueHolds) -> Self {
         Self::WhatCanBeInstalled(holds)
+    }
+}
+
+impl From<WhatTouchedIt> for WhatAVerbDid {
+    fn from(found: WhatTouchedIt) -> Self {
+        Self::WhatTouchedAFile(found)
     }
 }
 
