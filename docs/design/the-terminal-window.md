@@ -464,21 +464,45 @@ document already gives that node.
 | the scale note — `Same linear scale · Lower is faster · Inspect values when focused` | 17 | 189 | 958 | 22 |
 | the actions row | 17 | 223 | 958 | 48 |
 
-Each row holds a label at x **0** (110 wide), a bar at x **126**, and a value
-after it.
+**A row is a rule, not four positions**, and the rule is the thing to build to:
 
-**The bars are a scale and not two numbers**, which is the figure worth keeping:
+```text
+label(110) | 16 | bar(value x scale) | 16 | value(110)
+```
+
+One 16 px gutter throughout. **The value label follows the bar and is not at a
+fixed x** — measured: the label ends at 110 and the bar starts at 126; the
+240 ms bar ends at 606 and its value sits at 622; the 180 ms bar ends at 486 and
+its value sits at 502. *A value pinned at 622 would be right for exactly this
+data and wrong for all other data, and would look right in review — which is the
+dangerous kind of wrong.*
+
+**The bars are a scale and not two numbers:**
 
 | | value | bar |
 |---|---|---|
 | Previous | 240 ms | 480 |
 | Current | 180 ms | 360 |
 
-**Exactly 2 px per ms, from a shared origin at x 126.** That is the frame's own
-*same linear scale* line asserting itself in the geometry. **So this becomes a
-proportion and never two constants** — a bar's length is its value against the
-scale, and `CLAUDE.md`'s *nothing is built to one screen size* forbids the
-alternative.
+**Exactly 2 px per ms, from a shared origin at x 126**, and that is an
+*absolute* scale rather than *the longest bar fills the track*. Two points
+cannot tell those apart, so the track was measured: the fixed parts are
+110+16+16+110 = **252** of the 958-wide row, leaving **706**. **The longest bar
+is 480, not 706** — so it is not filling the track, 226 px are slack, and
+2 px per ms fits both points exactly.
+
+**So a bar is its value against the scale, never two constants**, which
+`CLAUDE.md`'s *nothing is built to one screen size* requires anyway.
+
+#### The gap this exposes, recorded rather than chosen
+
+**At 2 px per ms a bar overflows once its value passes 353 ms** — 706 px of room
+divided by two. The design shows 240 and 180 and nothing near the edge, so
+**what a slow benchmark does is unspecified**: clamp, rescale both bars, wrap, or
+something else.
+
+*Left open deliberately. This is exactly the sort of thing that gets invented
+once and then cited as the design.*
 
 ### `479:28986` — Terminal / View / File diff
 
@@ -492,8 +516,18 @@ alternative.
 **The body is one text node, not one per line**, rendering as five rows — 12,
 13, −14, +14, 15 — with the signs in a gutter left of the numbers.
 
-**The removal marker is U+2212 MINUS SIGN, not a hyphen.** The two are
-indistinguishable in a review and only one is the design's.
+**The removal marker is not an ASCII hyphen**, and that is as far as the
+measurement goes. What was observed is the glyph as the connector returned the
+layer name and as it rendered: a long centred dash, aligned with the plus's
+crossbar, visibly not `U+002D HYPHEN-MINUS` in that mono face.
+
+**It was not byte-verified, and *exactly U+2212* is an inference rather than a
+reading.** The lane that measured it said so unprompted: a connector hands back
+text, and anything retyped through a person or an agent is a measurement of the
+retyping. *So the thing worth holding in a test is that the two markers are
+distinct and that neither is the ASCII hyphen* — not a codepoint nobody read off
+the file. If the exact codepoint ever matters, read it from `479:28989` or from
+the committed snapshot, and say in the test which of those it came from.
 
 ### The two sources disagree about the actions row, and the specification wins
 
