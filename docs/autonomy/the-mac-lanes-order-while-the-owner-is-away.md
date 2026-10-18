@@ -717,8 +717,33 @@ Three frames were written out and looked at. **They agree with the table**:
 
 **Rows 2, 7, 12 and 13 were not re-read**: they are about a frame changing
 between two moments rather than about what one frame holds, and no frame was
-written for them. *Said because eight is not thirteen, and a reader skimming
-this would otherwise take the table as wholly re-confirmed.*
+written for them.
+
+**And they are the four the check already guards**, which is why the split falls
+where it does rather than by chance. `a_terminal_check.rs` holds **22
+assertions that can fail**, and each of those four has one: row 2 at lines 493,
+595 and 598, row 7 at 840, row 12 at 974, row 13 at 1004. Every one is about ink
+appearing or going away between two frames — a thing a pixel count *can* see.
+
+> **With one half-row that nothing guards, found while checking that claim.**
+> Row 2's pass is *a prompt and a cursor — **and no window***. The first half is
+> asserted three times over. **The second is not asserted at all.** The nearest
+> thing, line 632, is a **lower** bound on the difference's height — *is this
+> tall enough to be a terminal* — and a window frame would make the extent
+> **larger**, so it passes straight through. *Not built, and small: the step was
+> reworded above precisely because alo's terminal draws on the desktop's own
+> ground and has no window. A guard for it would be an upper bound beside the
+> lower one, and the reason to write it down rather than add it is that nobody
+> has decided what the upper bound should be.*
+
+**The eight that were re-read are the ones whose content is words**, and no
+assertion in that file compares a string. Line 789 comes closest and asks where
+the gutter column ends rather than what it says.
+
+So the table is covered twice over and never once: **a row is either guarded by
+an assertion that fails if it changes, or it was read by eye on 2026-10-18 — and
+the two sets do not overlap because they cannot.** *That is a better statement
+than "eight of thirteen", and it is the same measurement.*
 
 **This is still a nested compositor** — headless weston, llvmpipe — and says
 nothing about a real display, a real keyboard or a machine that booted. What it
