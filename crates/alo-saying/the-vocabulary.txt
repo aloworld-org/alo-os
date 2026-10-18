@@ -416,6 +416,8 @@ choosing.change.nothing-to-change	your settings at {path} list no provider calle
 choosing.change.nothing-to-measure	your settings at {path} list no weights called {model} to write a measurement beside, so nothing in your settings has been changed
 choosing.not-the-machine-you-chose	you chose the model on {machine}, and this answer did not come from there
 choosing.not-the-provider-you-chose	you chose {model} from {provider}, and this answer did not come from there
+choosing.nothing-else-may-answer	you chose {model} from {provider}, and you have told alo not to use anything else — so this was not answered
+choosing.nothing-else-may-answer-machine	you chose the model on {machine}, and you have told alo not to use anything else — so this was not answered
 choosing.session.no-folder	this session has no home directory; changes take effect now, but nothing you change now will be kept once you sign out
 choosing.settings.another-format	your settings at {path} were written by a newer alo OS than this one, so nothing in the file has been used
 choosing.settings.no-model	your settings at {path} name a list of models and no model in it, so nothing has been chosen to answer questions

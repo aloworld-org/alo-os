@@ -30,6 +30,8 @@
 use alo_models::{InferenceSource, Providers};
 use alo_strings::{Filling, Said, Strings};
 
+use crate::settings::MayUseAnother;
+
 use crate::words;
 
 use crate::paired::{AMachine, WHAT_THAT_MACHINE_CHOSE};
@@ -287,6 +289,50 @@ impl Picked {
     /// chosen one is unavailable is **a setting the person sets**; that setting
     /// does not exist yet, and this sentence is what is true either way.
     ///
+    /// That nothing else may answer, when the person said so.
+    ///
+    /// `docs/features.md`, starred: *Unless the person says otherwise, in
+    /// Settings* — the owner's instruction of 2026-10-18. This is the *off*
+    /// half of it, and [`None`] is every other case:
+    ///
+    /// | they chose | they said | this answers |
+    /// |---|---|---|
+    /// | a model here | anything | [`None`] — there is nothing to fall back from |
+    /// | elsewhere | nothing | [`None`] — **they have not refused**, so they are answered where alo can and told their choice was not used |
+    /// | elsewhere | [`MayUseAnother::Yes`] | [`None`] — they allowed it |
+    /// | elsewhere | [`MayUseAnother::No`] | the sentence, and the caller answers nothing |
+    ///
+    /// **The second row is the one that matters.** Reading *nobody has
+    /// decided* as *they refused* would stop a person getting answers they get
+    /// today, which law 5 calls taking a choice away — and
+    /// [`crate::Settings::may_use_another`] keeps the two apart for exactly
+    /// this call.
+    ///
+    /// Never fails and never panics: a `Strings` that was never given this
+    /// crate's words through [`crate::declare_into`] answers with the key,
+    /// marked.
+    #[must_use]
+    pub fn nothing_else_may_answer(
+        &self,
+        said: Option<MayUseAnother>,
+        strings: &Strings,
+    ) -> Option<Said> {
+        if said != Some(MayUseAnother::No) {
+            return None;
+        }
+        match self {
+            Self::OnThisMachine(_) => None,
+            Self::FromAProvider { provider, model } => Some(strings.say(
+                &words::NOTHING_ELSE_MAY_ANSWER.key(),
+                &Filling::of("provider", provider.clone()).and("model", model.clone()),
+            )),
+            Self::FromAPairedMachine(machine) => Some(strings.say(
+                &words::NOTHING_ELSE_MAY_ANSWER_MACHINE.key(),
+                &Filling::of("machine", machine.machine().to_owned()),
+            )),
+        }
+    }
+
     /// # It compares, rather than assuming a substitution happened
     ///
     /// `came_from` is where the answer really came from, and this answers
@@ -429,6 +475,96 @@ mod tests {
     /// the provider's name, and the region is here because the variant has it.
     fn a_region() -> alo_models::Region {
         alo_models::Region::Unknown
+    }
+
+    /// **A person who said no is not answered, and is told which setting did
+    /// it.**
+    #[test]
+    fn a_person_who_said_no_is_told_nothing_else_may_answer() {
+        let chosen = Picked::FromAProvider {
+            provider: "Mistral".to_owned(),
+            model: "mistral-small-latest".to_owned(),
+        };
+        let said = chosen
+            .nothing_else_may_answer(Some(MayUseAnother::No), &crate::testing::in_english())
+            .expect("they turned it off, so nothing else may answer");
+
+        assert!(!said.is_a_bug(), "{said}");
+        assert!(said.unfilled().is_empty(), "{said}");
+        assert_eq!(
+            said.text(),
+            "you chose mistral-small-latest from Mistral, and you have told alo not to use \
+             anything else — so this was not answered"
+        );
+    }
+
+    /// **A person who has not been asked is not treated as having refused.**
+    ///
+    /// The one that matters. Reading *nobody has decided* as *they refused*
+    /// would stop somebody getting answers they get today, which law 5 calls
+    /// taking a choice away.
+    #[test]
+    fn a_person_who_has_not_been_asked_has_not_refused() {
+        let chosen = Picked::FromAProvider {
+            provider: "Mistral".to_owned(),
+            model: "mistral-small-latest".to_owned(),
+        };
+        assert!(
+            chosen
+                .nothing_else_may_answer(None, &crate::testing::in_english())
+                .is_none(),
+            "a person who has never seen the setting was refused an answer"
+        );
+    }
+
+    /// **A person who allowed it is not refused either.**
+    #[test]
+    fn a_person_who_allowed_it_is_not_refused() {
+        let chosen = Picked::FromAProvider {
+            provider: "Mistral".to_owned(),
+            model: "mistral-small-latest".to_owned(),
+        };
+        assert!(
+            chosen
+                .nothing_else_may_answer(Some(MayUseAnother::Yes), &crate::testing::in_english())
+                .is_none()
+        );
+    }
+
+    /// **And somebody who chose a model here has nothing to fall back from.**
+    #[test]
+    fn a_model_on_this_machine_never_refuses_for_this_reason() {
+        let chosen =
+            Picked::OnThisMachine(Chosen::of(Which::Catalogue, "smollm2-1.7b-instruct").unwrap());
+        for said in [None, Some(MayUseAnother::Yes), Some(MayUseAnother::No)] {
+            assert!(
+                chosen
+                    .nothing_else_may_answer(said, &crate::testing::in_english())
+                    .is_none(),
+                "{said:?}"
+            );
+        }
+    }
+
+    /// **A paired machine gets its own sentence, naming no model.**
+    #[test]
+    fn a_paired_machine_that_may_not_be_replaced_names_the_machine() {
+        let machine = AMachine::permitted(
+            "the studio machine",
+            &crate::testing::PairedFor::a_day("the studio machine"),
+            crate::testing::a_moment(),
+        )
+        .expect("a pairing that permits asking its models");
+        let said = Picked::FromAPairedMachine(machine)
+            .nothing_else_may_answer(Some(MayUseAnother::No), &crate::testing::in_english())
+            .expect("they turned it off");
+
+        assert!(!said.is_a_bug(), "{said}");
+        assert!(
+            said.text().contains("the studio machine"),
+            "{}",
+            said.text()
+        );
     }
 
     /// **A provider that really answered is not reported as unused.**

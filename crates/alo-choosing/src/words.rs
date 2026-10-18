@@ -356,8 +356,36 @@ pub const NOT_THE_MACHINE_YOU_CHOSE: Word = Word::saying(
      used, and deliberately not why.",
 );
 
+/// Nothing else may answer, because the person said so.
+pub const NOTHING_ELSE_MAY_ANSWER: Word = Word::saying(
+    "choosing.nothing-else-may-answer",
+    "you chose {model} from {provider}, and you have told alo not to use anything else — so \
+     this was not answered",
+)
+.noting(
+    "Said instead of an answer, when the person's settings name a provider that cannot be \
+     reached and they have turned off letting alo use another model or API. {provider} is the \
+     name they gave it in their own list and {model} is what they asked that provider for; \
+     neither is translated. It is not a fault and not a warning: it is the machine doing what \
+     they asked, and saying which of their own settings decided it so they can change it if they \
+     want to.",
+);
+
+/// Nothing else may answer, for a person who chose another machine.
+pub const NOTHING_ELSE_MAY_ANSWER_MACHINE: Word = Word::saying(
+    "choosing.nothing-else-may-answer-machine",
+    "you chose the model on {machine}, and you have told alo not to use anything else — so \
+     this was not answered",
+)
+.noting(
+    "As \"choosing.nothing-else-may-answer\", for a person whose settings name another machine \
+     they are paired with. {machine} is that machine's identity, which is data and is never \
+     translated. It names no model, because which model answers on another machine is that \
+     machine's person's setting.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 21] = [
+pub const EVERY_WORD: [Word; 23] = [
     SETTINGS_NOT_READ,
     SETTINGS_NOT_UNDERSTOOD,
     SETTINGS_FROM_A_NEWER_ALO_OS,
@@ -379,6 +407,8 @@ pub const EVERY_WORD: [Word; 21] = [
     SESSION_NO_FOLDER,
     NOT_THE_PROVIDER_YOU_CHOSE,
     NOT_THE_MACHINE_YOU_CHOSE,
+    NOTHING_ELSE_MAY_ANSWER,
+    NOTHING_ELSE_MAY_ANSWER_MACHINE,
 ];
 
 /// Why this crate's own list could not be declared.
@@ -490,7 +520,7 @@ mod tests {
         }
     }
 
-    /// The three sentences here that are not about the settings file.
+    /// The five sentences here that are not about the settings file.
     ///
     /// Both rules below are about sentences that report what became of a
     /// person's file: they name it, and they say what the machine did with it.
@@ -501,6 +531,12 @@ mod tests {
     /// change *at all*, before any change is made — so there is no file to
     /// name, and nothing has yet been done for it to report. Its whole purpose
     /// is to be said in advance, which is what makes it useful.
+    ///
+    /// [`NOTHING_ELSE_MAY_ANSWER`] and [`NOTHING_ELSE_MAY_ANSWER_MACHINE`]
+    /// arrived on 2026-10-19 and are the same kind as the two below: said
+    /// *instead of* an answer rather than on a settings surface. The file was
+    /// read correctly and a setting in it decided the outcome, so naming the
+    /// file would send a person to look for something wrong with it.
     ///
     /// [`NOT_THE_PROVIDER_YOU_CHOSE`] and [`NOT_THE_MACHINE_YOU_CHOSE`]
     /// arrived on 2026-10-18 and are a **different kind of sentence from
@@ -514,13 +550,15 @@ mod tests {
     /// at that moment.
     ///
     /// Each is exempted **by name** rather than by a pattern — *sentences with
-    /// no path in them*, say — so that a fourth cannot quietly join them by
+    /// no path in them*, say — so that a sixth cannot quietly join them by
     /// happening to leave the file out.
     fn is_about_the_file(word: &Word) -> bool {
         ![
             SESSION_NO_FOLDER.named(),
             NOT_THE_PROVIDER_YOU_CHOSE.named(),
             NOT_THE_MACHINE_YOU_CHOSE.named(),
+            NOTHING_ELSE_MAY_ANSWER.named(),
+            NOTHING_ELSE_MAY_ANSWER_MACHINE.named(),
         ]
         .contains(&word.named())
     }
@@ -544,6 +582,8 @@ mod tests {
                 "choosing.session.no-folder",
                 "choosing.not-the-provider-you-chose",
                 "choosing.not-the-machine-you-chose",
+                "choosing.nothing-else-may-answer",
+                "choosing.nothing-else-may-answer-machine",
             ]
         );
     }

@@ -144,6 +144,25 @@ fn main() -> ExitCode {
         return ExitCode::FAILURE;
     }
 
+    // **What the person forbade, before the machine is touched.**
+    //
+    // `docs/features.md`: *Unless the person says otherwise, in Settings.* A
+    // person who chose a provider and turned off letting alo use anything else
+    // is not answered from this machine — and is told which of their own
+    // settings decided it, so they can change it if they want to.
+    //
+    // Asked here rather than after the model is worked out, which is this
+    // file's own order: the answer does not depend on what is installed, and a
+    // person owed *you told alo not to use anything else* must not first be
+    // told the runtime is unreachable.
+    if let Some(chosen) = settings.chosen()
+        && let Some(forbidden) =
+            chosen.nothing_else_may_answer(settings.may_use_another(), &strings)
+    {
+        eprintln!("{forbidden}");
+        return ExitCode::FAILURE;
+    }
+
     let catalogue = match Catalogue::built_in() {
         Ok(catalogue) => catalogue,
         // Also English, and for the same audience: a catalogue that will not
