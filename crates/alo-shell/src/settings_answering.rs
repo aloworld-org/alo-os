@@ -33,7 +33,7 @@
 use std::path::Path;
 use std::time::SystemTime;
 
-use alo_choosing::{Choosing, Chosen, NotSet, Picked, Which};
+use alo_choosing::{Choosing, Chosen, MayUseAnother, NotSet, Picked, Which};
 use alo_nearby::{MayAskIts, Pairings};
 use alo_setting_up::{Offered, THE_FOUR};
 use alo_strings::Strings;
@@ -195,6 +195,59 @@ impl AnsweringSection {
                 .setup()
                 .is_answered()
                 .then_some(SettingsChoice::NotAtAll),
+        }
+    }
+
+    /// What they said about alo using another model or API, when they have
+    /// said.
+    ///
+    /// [`None`] is a person who has not said, which the rows draw as **neither
+    /// one chosen**: *absent is stronger than defaulted*, and a row ticked for
+    /// somebody who has never seen it would be a default dressed as their
+    /// choice — ADR 0038's rule.
+    pub(crate) fn may_use_another(&self) -> Option<MayUseAnother> {
+        let Some(Ok(choosing)) = &self.choosing else {
+            return None;
+        };
+        choosing.settings().may_use_another()
+    }
+
+    /// Whether the question arises at all.
+    ///
+    /// **False for a person who chose a model on this machine, or chose
+    /// nothing**, because there is nothing to cover for — and a row offered
+    /// where it changes nothing is the advertisement ADR 0009 rejects. The
+    /// rows are **absent** rather than drawn and disabled, which is this
+    /// section's own rule for the four above them.
+    pub(crate) fn another_is_a_question_at_all(&self) -> bool {
+        let Some(Ok(choosing)) = &self.choosing else {
+            return false;
+        };
+        matches!(
+            choosing.settings().chosen(),
+            Some(Picked::FromAProvider { .. } | Picked::FromAPairedMachine(_))
+        )
+    }
+
+    /// The person said whether alo may use another, through `alo-choosing`'s
+    /// door.
+    pub(crate) fn say_whether_another_may_be_used(
+        &mut self,
+        said: MayUseAnother,
+        strings: &Strings,
+    ) -> SettingsAnswered {
+        let Some(Ok(choosing)) = &mut self.choosing else {
+            return SettingsAnswered::NowhereToWrite;
+        };
+        match choosing.may_use_another(Some(said)) {
+            Ok(()) => {
+                self.told = None;
+                SettingsAnswered::Written
+            }
+            Err(refused) => {
+                self.told = Some(refused.said(strings).into_text());
+                SettingsAnswered::NotWritten
+            }
         }
     }
 

@@ -29,6 +29,8 @@ use alo_strings::{Filling, Strings};
 
 use crate::settings_answering::SettingsChoice;
 use crate::settings_keepers::{AppearanceKept, DockKept, Keeper, ShortcutsKept};
+use alo_choosing::MayUseAnother;
+
 use crate::settings_window::{Open, SettingsRow, SettingsSection};
 
 /// One line of a section.
@@ -112,6 +114,30 @@ fn answering(open: &Open, strings: &Strings, now: SystemTime) -> SectionWords {
             });
         }
     }
+
+    // **And, beneath the four, what alo may do when their choice is not
+    // available** — `docs/features.md`: *Unless the person says otherwise, in
+    // Settings*, the owner's instruction of 2026-10-18.
+    //
+    // Only for somebody who chose a provider or another machine: there is
+    // nothing to cover for otherwise, and a row offered where it changes
+    // nothing is the advertisement ADR 0009 rejects. **Absent rather than
+    // drawn and disabled**, which is this section's rule for the four above.
+    //
+    // Neither row is ticked for a person who has not said. *Absent is stronger
+    // than defaulted*: a tick for somebody who has never seen this would be a
+    // default dressed as their choice.
+    if section.another_is_a_question_at_all() {
+        let said_already = section.may_use_another();
+        for said in MayUseAnother::BOTH {
+            lines.push(LineWords {
+                chosen: said_already == Some(said),
+                row: Some(SettingsRow::UsingAnother(said)),
+                parts: vec![said.said(strings).into_text()],
+            });
+        }
+    }
+
     SectionWords {
         section: SettingsSection::Answering,
         said,

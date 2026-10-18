@@ -384,8 +384,30 @@ pub const NOTHING_ELSE_MAY_ANSWER_MACHINE: Word = Word::saying(
      machine's person's setting.",
 );
 
+// ---------------------------------------------------------------------------
+// The two rows a person picks between in Settings — `crate::MayUseAnother`.
+// ---------------------------------------------------------------------------
+
+/// The row for *yes, use another*.
+pub const ANOTHER_MAY_BE_USED: Word = Word::saying(
+    "choosing.another-may-be-used",
+    "use another model or API when mine is not available",
+)
+.noting(
+    "A row a person picks in Settings, under what answers their questions. Picking it says alo      may answer them from somewhere other than the one they chose, when the one they chose      cannot be reached — and the answer will still say where it came from. A phrase in a list      of two rather than a sentence.",
+);
+
+/// The row for *no, nothing else*.
+pub const NOTHING_ELSE_MAY_BE_USED: Word = Word::saying(
+    "choosing.nothing-else-may-be-used",
+    "use nothing else, and tell me it could not be answered",
+)
+.noting(
+    "The other of the two rows. Picking it says a question alo cannot put to the place they      chose is not answered at all, which is a thing to choose rather than a restriction placed      on them. A phrase in a list of two rather than a sentence.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 23] = [
+pub const EVERY_WORD: [Word; 25] = [
     SETTINGS_NOT_READ,
     SETTINGS_NOT_UNDERSTOOD,
     SETTINGS_FROM_A_NEWER_ALO_OS,
@@ -409,6 +431,8 @@ pub const EVERY_WORD: [Word; 23] = [
     NOT_THE_MACHINE_YOU_CHOSE,
     NOTHING_ELSE_MAY_ANSWER,
     NOTHING_ELSE_MAY_ANSWER_MACHINE,
+    ANOTHER_MAY_BE_USED,
+    NOTHING_ELSE_MAY_BE_USED,
 ];
 
 /// Why this crate's own list could not be declared.
@@ -520,7 +544,7 @@ mod tests {
         }
     }
 
-    /// The five sentences here that are not about the settings file.
+    /// The seven strings here that are not about the settings file.
     ///
     /// Both rules below are about sentences that report what became of a
     /// person's file: they name it, and they say what the machine did with it.
@@ -559,6 +583,8 @@ mod tests {
             NOT_THE_MACHINE_YOU_CHOSE.named(),
             NOTHING_ELSE_MAY_ANSWER.named(),
             NOTHING_ELSE_MAY_ANSWER_MACHINE.named(),
+            ANOTHER_MAY_BE_USED.named(),
+            NOTHING_ELSE_MAY_BE_USED.named(),
         ]
         .contains(&word.named())
     }
@@ -584,6 +610,8 @@ mod tests {
                 "choosing.not-the-machine-you-chose",
                 "choosing.nothing-else-may-answer",
                 "choosing.nothing-else-may-answer-machine",
+                "choosing.another-may-be-used",
+                "choosing.nothing-else-may-be-used",
             ]
         );
     }

@@ -407,6 +407,7 @@ changing.not-kept	The change was not saved: the file this machine keeps its gran
 changing.pairing-not-answered	This machine's agent service did not say whether the pairing was revoked. Look at the list of pairings again before relying on it
 changing.pairing-refused	The pairing was not revoked. This machine's agent service said: {told}
 changing.until-a-restart	The pairing is revoked for now, but this machine could not write that down. After a restart the pairing will stand again, and it will have to be revoked again
+choosing.another-may-be-used	use another model or API when mine is not available
 choosing.change.no-such-provider	your settings at {path} would say {provider} answers your questions and would list no provider of that name, so nothing in your settings has been changed
 choosing.change.not-brought	your settings at {path} would say {model} answers your questions and would list no weights of that name, so nothing in your settings has been changed
 choosing.change.not-expressible	this alo OS could not write that choice into settings at {path} it can read back again, so nothing in your settings has been changed
@@ -418,6 +419,7 @@ choosing.not-the-machine-you-chose	you chose the model on {machine}, and this an
 choosing.not-the-provider-you-chose	you chose {model} from {provider}, and this answer did not come from there
 choosing.nothing-else-may-answer	you chose {model} from {provider}, and you have told alo not to use anything else — so this was not answered
 choosing.nothing-else-may-answer-machine	you chose the model on {machine}, and you have told alo not to use anything else — so this was not answered
+choosing.nothing-else-may-be-used	use nothing else, and tell me it could not be answered
 choosing.session.no-folder	this session has no home directory; changes take effect now, but nothing you change now will be kept once you sign out
 choosing.settings.another-format	your settings at {path} were written by a newer alo OS than this one, so nothing in the file has been used
 choosing.settings.no-model	your settings at {path} name a list of models and no model in it, so nothing has been chosen to answer questions

@@ -53,6 +53,7 @@ use crate::settings_granted::{GrantedSection, SettingsRevoked};
 use crate::settings_keepers::{AppearanceKept, DockKept, ShortcutsKept};
 use crate::settings_kept::{KeptSection, SettingsKept};
 use crate::{SettingsKey, SettingsPlaces};
+use alo_choosing::MayUseAnother;
 
 /// The sections of Settings, in the order they are drawn.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -87,6 +88,13 @@ pub enum SettingsRow {
     Shortcut(Action),
     /// A grant or a pairing: Enter revokes it.
     Granted(Row),
+    /// Whether alo may use another model or API when the one the person chose
+    /// is not available: Enter chooses it.
+    ///
+    /// In the answering section, under the four ways, because it is a question
+    /// about the choice they made there and arises only when they chose a
+    /// provider or another machine.
+    UsingAnother(MayUseAnother),
 }
 
 impl SettingsRow {
@@ -99,6 +107,7 @@ impl SettingsRow {
             Self::Hiding(_) => SettingsSection::Dock,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
             Self::Granted(_) => SettingsSection::Granted,
+            Self::UsingAnother(_) => SettingsSection::Answering,
         }
     }
 }
@@ -320,6 +329,18 @@ impl Open {
         for (_, choices) in self.answering.offered(&pairings, now) {
             rows.extend(choices.into_iter().map(SettingsRow::Answer));
         }
+        // **Beneath the four, and in the same order they are drawn in.** This
+        // list and `crate::settings_lines` are two readers of one question, and
+        // `every_setting_the_machine_has_is_in_one_window` holds them to each
+        // other: *a row is acted on that is not drawn, or drawn and not acted
+        // on*. It caught this line being missing.
+        if self.answering.another_is_a_question_at_all() {
+            rows.extend(
+                MayUseAnother::BOTH
+                    .into_iter()
+                    .map(SettingsRow::UsingAnother),
+            );
+        }
         if self.appearance.at().is_some() {
             rows.extend(Accent::ALL.into_iter().map(SettingsRow::Accent));
         }
@@ -355,6 +376,10 @@ impl Open {
                     doors.strings,
                 ))
             }
+            SettingsRow::UsingAnother(said) => SettingsDid::Answered(
+                self.answering
+                    .say_whether_another_may_be_used(*said, doors.strings),
+            ),
             SettingsRow::Accent(accent) => {
                 let accent = *accent;
                 let kept = self.appearance.changed(
