@@ -90,7 +90,12 @@
 //! memory; `docs/contracts/native-egress-indicator.md` says in as many words
 //! that it is *only the drawing surface* and adds **no protocol, agent
 //! capability, D-Bus interface or stored format**; and `docs/contracts/record-file.md`
-//! names services that append, not a road a command may use. So a command that
+//! names services that append. **The code to append exists** —
+//! `alo_keeping::Writing` implements `SomewhereToWrite` and puts one line on a
+//! disk at a time — and what a command lacks is the **permission**, because the
+//! file is under `/var/lib` and belongs to a service. *This read “not a road a
+//! command may use” until 2026-10-18, which would have sent somebody to write an
+//! API that is already there.* So a command that
 //! asked a provider would show the departure **to itself** and drop it on exit
 //! — a law 1 violation wearing the very API that exists to prevent one, which
 //! compiles and type-checks and shows nobody anything.

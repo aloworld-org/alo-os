@@ -868,7 +868,7 @@ this looked like a caller nobody had written. It is not.
 | what is `alo_egress::Indicator` | a `Vec<Shown>` and a counter, **in process memory** |
 | who turns one into something a person sees | `alo-indicator` makes a `Drawn`; `alo-shell` draws it on an output |
 | is there a road for another process to report an egress | **no.** `docs/contracts/native-egress-indicator.md`: *no protocol, agent capability, D-Bus interface or stored format changes … this document describes only the drawing surface* |
-| is there a road to the record file | **no.** `docs/contracts/record-file.md` names the services that append to it, not a road a command may use |
+| is there a road to the record file | **the code, yes; the permission, no.** `alo_keeping::Writing` implements `SomewhereToWrite` and appends one line at a time — so nothing needs writing. The file is under `/var/lib`, which belongs to a service and not to the person running a command. *Corrected 2026-10-18: this read “no road a command may use”, which sent the next person to build an API that exists.* |
 
 So a command that asked a provider would build its own indicator, show the
 departure **to itself**, and drop it when the process exited. **That is a law 1
