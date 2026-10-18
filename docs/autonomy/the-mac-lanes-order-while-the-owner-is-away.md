@@ -198,6 +198,26 @@ command a lane runs:
 | 12 | run `ls` | the two lines **stay**, because the summary is still on the screen above. Not a fault: what is recognised is what the screen holds |
 | 13 | run `clear` | the two lines **go**, because the line they were read from is gone |
 
+**This walk was nine steps when the owner set it, and is thirteen now.** Their
+own trigger still says *nine steps, each with its pass*, and it was accurate:
+at `04310b08`, 2026-10-17 11:47, the table ended at step 9. Steps **10 to 13**
+were added by this lane the same afternoon, and all four are about the
+recognised test result — the summary, its gutter, and what becomes of it when
+more output arrives and when the screen is cleared.
+
+**Said here because the owner is expecting nine.** A longer walk is a longer
+evening and a higher bar than the one they set, and *a plan lists what somebody
+foresaw; a task is done when it works* is a licence to build the missing work,
+not to move somebody's bar without telling them.
+
+**The growth paid for itself, which is the argument for keeping it.** Steps 10
+and 11 are where the recognised result's two lines were found cropped into the
+gutter's label box — drawn, counted by every test, and unreadable. Step 13 is
+where `clear` was found answering *TERM environment variable not set*, because
+alo's terminal started every shell with an empty environment. Neither defect is
+reachable from the nine.
+
+
 **Step 6 is the measurement.** Steps 3, 4 and 9 are things believed to work that
 nobody has watched either, so they cost nothing to read while the machine is on.
 Step 8 is the one most likely to be wrong, because it is the answer a careless
