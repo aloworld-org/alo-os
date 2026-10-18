@@ -1,7 +1,8 @@
 # ADR 0125 — A command does not report an egress; it asks a service that can show one
 
-**Status:** **proposed, 2026-10-18, by the Mac lane. The owner decides.**
-Nothing is built in the change that adds this.
+**Status:** **accepted, 2026-10-18, by the owner.** Proposed the same day by the
+Mac lane. Nothing is built in the change that accepts it; what the owner's
+answer adds is in *What the owner decided* below.
 **Context:** law 1; [ADR 0008](0008-where-inference-happens.md) (*a hosted API is
 a supported first-class option and never a silent fallback*);
 [ADR 0109](0109-a-persons-words-reach-the-agent-through-a-socket-systemd-opens-as-the-agent.md)
@@ -10,6 +11,101 @@ a supported first-class option and never a silent fallback*);
 whose provider half this blocks; `docs/contracts/daemon-protocol.md`;
 `docs/contracts/native-egress-indicator.md`; `crates/alo-egress`,
 `crates/alo-ask`, `crates/alo-agentd`, `crates/alo-agent`.
+
+## What the owner decided, 2026-10-18
+
+**Accepted**, and the reason they gave widens it. Asked whether a short-lived
+command should ask the daemon, they answered about
+[ADR 0095](0095-the-release-carries-no-model-and-a-person-brings-their-own.md) —
+the release carries no model, so a fresh machine has nothing to answer with:
+
+> *if the user sets up in settings that he will use the open ai apis and then no
+> need for all these if the use chooses for himself*
+
+**Read as: the person's configured provider is to be used, and alo is not to
+deliberate about it.** That is law 5 — *the person chooses* — applied to the
+case ADR 0095 creates. A machine that ships no weights and then will not use the
+account its owner configured is a machine that answers nobody. So this road is
+not a precaution to be weighed against the person's choice; **it is how their
+choice gets honoured at all.**
+
+### What that does not change, said here because it is the obvious next step and it is wrong
+
+**The indicator stays on.** It is not a protection the answer above switches
+off, and law 5 says so in its own words: two kinds of protection stay on at
+every setting, and the first is *those that restrict nothing (the record, undo,
+the egress indicator, plain warnings)*. The indicator restricts nothing. It
+costs the person nothing, refuses them nothing, and is the one thing that makes
+*nothing leaves silently* checkable rather than promised. **A person who chose
+OpenAI has chosen that their question leaves; they have not chosen to be unable
+to see it leave**, and nobody offered them that — see law 5's own *never
+offering is not taking away*.
+
+So the person's choice decides **whether** a question leaves and **where it
+goes**. This ADR decides **who shows it and who writes it down**, which is a
+different question and is not theirs to have to think about.
+
+### Where a person's own sealed-box run writes its record — asked, delegated, and answered on corrected facts
+
+The owner was asked separately where a command a person runs in a sealed box
+writes the record it cannot run without: **the machine's one record, which needs
+something privileged, or a record of the person's own.** They answered *your
+recommendation*, which delegates it.
+
+**The recommendation they were given rested on a measurement that was wrong, and
+the corrected measurement reverses it.** Both are recorded, because a decision
+whose reason turned out to be false is worth more to the next reader than a
+decision.
+
+| what they were told | what is true, measured against `image/` on 2026-10-18 |
+|---|---|
+| the record file is under `/var/lib` and **belongs to a service, not to the person** | `d /var/lib/alo 0700 alo alo` (`tmpfiles.d/alo.conf`), and `u alo 1000 "alo OS" /home/alo /bin/bash` (`sysusers.d/alo.conf`). **`alo` is the person's login, uid 1000**, and `alo-agentd` and `alo-desktop` both run as it. The service and the person are the same account |
+| so a person's own run cannot write a record and needs a privileged writer | it can. **There is no privilege problem to solve** |
+
+**So the obstacle was never permission.** It is
+`docs/contracts/record-file.md`'s rule that *two files, because a record file has
+one writer* — a rule about two processes appending in the same second. And that
+contract's **own answer to a new writer is a new file**: the letting-go and
+forgetting records are two files for exactly this reason.
+
+**The decision, as this lane's under the owner's delegation:** a person's
+sealed-box run **writes its own record file**, and `try` runs the box itself as
+a child of the person's shell.
+
+Why this and not the daemon, stated so it can be overruled in one sentence:
+
+- **It is the pattern this contract already prescribes.** A second writer gets a
+  second file. Nothing new is invented.
+- **The process that did the work writes it down.** That is this ADR's own
+  argument against a *report your egress* interface, honoured rather than
+  worked around: a process asking a service to write a record for work the
+  service did not do is an assertion, and the record would stop being evidence.
+  **Routing a person's run through the daemon and having the daemon record it is
+  only sound if the daemon also runs it** — which brings the next two costs.
+- **Output.** `WhereCommandsRun` spawns with `Command::spawn` and no stdio
+  configuration, so the command inherits its parent's. If the daemon runs it,
+  the output goes to the journal and the person sees nothing. Fixing that means
+  handing the person's terminal descriptors across the socket —
+  `alo-converting/src/passing.rs` and ADR 0039 §A are the precedent, so it is
+  possible and it is a new mechanism on the one socket a person's process may
+  open.
+- **Trust is not gained.** The daemon runs as uid 1000, the same account as the
+  person's shell. A record kept by it is exactly as trustworthy as one kept by
+  the person's own process, because it is the same authority. Law 2 is explicit
+  that the law binds the agent and never the person.
+
+**What is given up**, said plainly: law 1's record becomes four files rather than
+three, and a reader has to read the person's as well as the machine's. The
+record window is the surface that has to show both, and it shows one today.
+
+**What stays true either way:** the run is recorded or it does not happen —
+`WhereCommandsRun` takes somewhere to write and there is no constructor that
+does not. The person's file is not a weaker promise about *whether* a run is
+recorded, only about *where*.
+
+*If the owner prefers the daemon shape after reading this, the cost is the two
+bullets above and nothing else is wasted: the stdio and the default places are
+needed by both.*
 
 ## The question
 
@@ -43,7 +139,7 @@ its first answer counted doctests as live code.
 in this product that needs a model does not report its own egress. It asks a
 service that owns the indicator.
 
-## The decision proposed, in one line
+## The decision, in one line
 
 **A short-lived process never reports an egress it caused. It asks a long-lived
 service that holds the one indicator to do the work, and that service shows it
@@ -92,16 +188,27 @@ with it.**
 - **Whether a person's question becomes an agent turn.** It should not — a
   question is not an agent acting, and routing one through the agent's turn
   machinery would put grants and an agent's record around a person reading an
-  answer. This ADR proposes a request the daemon answers *for the person*,
-  beside the agent road rather than through it. **Marked because it is the part
+  answer. This ADR specifies a request the daemon answers *for the person*,
+  beside the agent road rather than through it. **The owner's answer about a
+  sealed-box run puts a second thing on that road**, and the same rule holds
+  for it: a command a person runs is not an agent acting either. **And the
+  answer above takes it further** — a person's own run does not go on that road
+  at all, because it needs nothing only a service can do. **Marked because it is the part
   most likely to be got wrong by whoever builds it.**
 - **What `alo-ask` does today, which is worse than refusing.** Measured the same
   day: with a provider in their settings and one local model installed, a person
   is answered locally and told only *on this machine*. Whether that is corrected
   by refusing, by saying plainly that the chosen provider was not used, or by
-  waiting for this road is a trade between ADR 0008's *never silent* and law 5's
-  *never withdraw* — the owner's, and recorded as task 11 of
-  `docs/autonomy/the-terminal-in-full-plan.md`.
+  waiting for this road was a trade between ADR 0008's *never silent* and law
+  5's *never withdraw*.
+
+  > **Answered the same day.** The owner chose a **setting the person sets** for
+  > whether alo may use another model or API when the chosen one is
+  > unavailable, and the interim sentence — *you chose {model} from {provider},
+  > and this answer did not come from there* — landed as the one thing true
+  > under either answer. The setting itself is not built. Recorded as task 11 of
+  > `docs/autonomy/the-terminal-in-full-plan.md`, which this bullet still points
+  > at for the rest.
 
 ## The test that decides whether this works
 
