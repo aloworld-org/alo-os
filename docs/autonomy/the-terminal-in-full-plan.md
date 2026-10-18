@@ -89,8 +89,8 @@ causes, five of which are another lane's or the owner's:
 | 1 | *why is it waiting* reaches a person | **done**, #755 |
 | 2 | the source qualifier | **done**, by #761 |
 | 6 | rich results | **the first view is done**, #761; the other two need a design component captured |
-| 3 | explain a command before it runs | **shell integration** — alo does not know what was typed |
-| 7 | hand somebody a session to replay | **shell integration**, and **the comparer** |
+| 3 | explain a command before it runs | **where the explanation comes from** — the owner's; the input half is built and proven on a real shell |
+| 7 | hand somebody a session to replay | **the comparer** — the third PC's; shell integration stopped being its other blocker on 2026-10-18 |
 | 4 | find a command by what it did | **a scope decision** — which surface asks |
 | 5 | scope one command | **`alo-capability`**, another lane's |
 | 8 | bisect the machine | **the comparer** — the third PC's |
@@ -336,10 +336,12 @@ is as much about what it refuses to render as what it renders.
 
 ### 7. Hand somebody a session they can replay
 
-**Status:** **blocked on two causes already known, measured 2026-10-17.**
-**Depends on:** shell integration — which is no longer only a gap, it is written
-as [ADR 0123](../decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md),
-proposed the same day — and the privileged comparer. Neither is in this plan,
+**Status:** **blocked on the comparer, and on keeping what it reads.**
+*This said two causes on 2026-10-17 and one of them went away on 2026-10-18.*
+**Depends on:** the privileged comparer — and, separately, somewhere to keep a
+person's own commands, which the bullets below separate from knowing them.
+Shell integration was the other cause and is built: ADR 0123 was accepted, the
+reader landed in #798 and the snippet in #800. Neither is in this plan,
 and task 6 is no longer the obstacle. The commands come from that decision;
 *what each one changed* is
 [ADR 0045](../decisions/0045-what-undoing-rewinds-to.md)'s bracket.
@@ -350,12 +352,17 @@ and the promise says why: *not a transcript — the commands **and what each one
 changed**, replayed on their machine.* Both halves are blocked, and each by
 something another task here is already blocked by:
 
-- **the commands.** alo does not know what a person typed — task 3's blocker.
-  Measured again from the other side: `alo-terminal` does not depend on
-  `alo-record` (**0** mentions in its manifest), no terminal file in `alo-shell`
-  names `alo_record` (**0**), and `Happened::RanACommand` **always carries an
+- **the commands — no longer blocked, 2026-10-18.** This read *alo does not know
+  what a person typed, task 3's blocker*. It does now: the reader is in `main`
+  (#798) and the snippet a person installs is #800, so a shell with it sourced
+  sends the typed line and `alo-terminal` reads it back. *What stood here is kept
+  below, because the measurement is still true of the **record** and that is a
+  second gap this task has:* `alo-terminal` does not depend on `alo-record`
+  (**0** mentions in its manifest), no terminal file in `alo-shell` names
+  `alo_record` (**0**), and `Happened::RanACommand` **always carries an
   `agent`** — it is a command an agent ran, under whose authority, by
-  construction. A person's own typed command is recorded nowhere.
+  construction. **A person's own typed command is still recorded nowhere**, so
+  knowing it and keeping it are different, and this task needs both.
 - **what each one changed.** The two sides of a bracket, compared. The bracket
   is taken as of 2026-10-17, and **nothing compares the two sides**: ADR 0045
   puts the comparing in the privileged path with the base's own tools, which
