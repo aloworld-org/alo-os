@@ -494,6 +494,28 @@ is 480, not 706** — so it is not filling the track, 226 px are slack, and
 **So a bar is its value against the scale, never two constants**, which
 `CLAUDE.md`'s *nothing is built to one screen size* requires anyway.
 
+#### Where a tall rich view goes, which the design does not say
+
+**A benchmark is seven of alo's lines** — a summary, a provenance, two rows of
+two lines each, and the scale note — where a recognised test result is two.
+alo's lines are drawn **beneath the grid**, after all the terminal's rows, and
+on a transcript this size there is not room for seven.
+
+**Measured on a nested compositor, 2026-10-18**, with the screen cleared first
+so the chart had as much room as it ever gets: the summary, the provenance and
+the first row draw, and the first bar measures **480 px wide and 16 tall** — the
+design's own figures exactly. **The second row's bar is clipped at the
+transcript's foot.**
+
+The design draws its rich views *inside* the transcript at a fixed 990x320, not
+beneath it. Where a view taller than the room below the grid should go — inside
+the transcript, scrolled with it, or in a window of its own — is not answered
+anywhere, and *a thing on your desk that outlives the scroll* in
+`docs/features.md` suggests the third without specifying it.
+
+**Recorded rather than chosen**, like the overflow above. What is drawn today is
+correct as far as it reaches.
+
 #### The gap this exposes, recorded rather than chosen
 
 **At 2 px per ms a bar overflows once its value passes 353 ms** — 706 px of room

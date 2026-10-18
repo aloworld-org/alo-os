@@ -277,6 +277,40 @@ pub const FROM_A_CARGO_TEST_RUN: Word =
          sentence that says the result was not independently verified.",
     );
 
+/// What printed a recognised benchmark comparison.
+pub const FROM_A_HYPERFINE_RUN: Word =
+    Word::saying("terminal.benchmark.from-hyperfine", "hyperfine output").noting(
+        "Names where a recognised benchmark was read from. \"hyperfine\" is the name of a program \
+         somebody ran and is never translated; the word \"output\" around it is. It appears inside \
+         the sentence that says the result was not independently verified, exactly as the \
+         cargo-test one does.",
+    );
+
+/// The summary above a recognised benchmark comparison.
+pub const LOWER_IN_THIS_COMPARISON: Word = Word::saying(
+    "terminal.benchmark.lower",
+    "{what} \u{b7} {percent}% lower in this comparison",
+)
+.noting(
+    "{what} is the name the benchmarked program gave its fastest run and is never translated — \
+     it is a stranger's label. {percent} is a whole number without a sign. The design's own \
+     wording is \"Build time \u{b7} 25% lower in this comparison\"; \"in this comparison\" is \
+     load-bearing and must survive translation, because it says the figure is about these two \
+     runs and not a claim about the programs in general.",
+);
+
+/// The note under a benchmark's bars, saying how to read them.
+pub const SAME_LINEAR_SCALE: Word = Word::saying(
+    "terminal.benchmark.scale",
+    "Same linear scale \u{b7} Lower is faster",
+)
+.noting(
+    "Sits under the bars and says how to read them: both bars use one scale, so their lengths \
+     may be compared directly, and a shorter bar is a faster run. The design's frame carries a \
+     third clause, \"Inspect values when focused\", which is left out until focusing a value does \
+     something — see this crate's benchmark module for why.",
+);
+
 /// That a recognised result is the program's claim and nobody checked it.
 pub const NOT_INDEPENDENTLY_VERIFIED: Word = Word::saying(
     "terminal.result.not-verified",
@@ -294,7 +328,7 @@ pub const NOT_INDEPENDENTLY_VERIFIED: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 16] = [
+pub const EVERY_WORD: [Word; 19] = [
     A_PROGRAM,
     ALO,
     THE_SYSTEM,
@@ -310,6 +344,9 @@ pub const EVERY_WORD: [Word; 16] = [
     AN_EXPLANATION_AND_NOT_A_GUARANTEE,
     TESTS,
     FROM_A_CARGO_TEST_RUN,
+    FROM_A_HYPERFINE_RUN,
+    LOWER_IN_THIS_COMPARISON,
+    SAME_LINEAR_SCALE,
     NOT_INDEPENDENTLY_VERIFIED,
 ];
 

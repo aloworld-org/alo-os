@@ -91,6 +91,9 @@ const HOW_BIG: (u32, u32) = (1440, 960);
 /// `Ctrl`, as Linux evdev numbers keys.
 const LEFT_CONTROL: u32 = 29;
 
+/// `c`, for the `Ctrl`+`C` that ends a command still in front of the shell.
+const THE_C_KEY: u32 = 46;
+
 /// `Alt`, the same.
 const LEFT_ALT: u32 = 56;
 
@@ -287,38 +290,65 @@ const LEFT_SHIFT: u32 = 42;
 /// smallest table that can type one `echo` of a line the result recogniser
 /// knows, and a character outside it is a compile error rather than a silent
 /// substitution.
-const fn a_key_for(letter: char) -> Option<(u32, bool)> {
-    Some(match letter {
-        'a' => (30, false),
-        'c' => (46, false),
-        'd' => (32, false),
-        'e' => (18, false),
-        'f' => (33, false),
-        'g' => (34, false),
-        'h' => (35, false),
-        'i' => (23, false),
-        'k' => (37, false),
-        'l' => (38, false),
-        'n' => (49, false),
-        'o' => (24, false),
-        'p' => (25, false),
-        'r' => (19, false),
-        's' => (31, false),
-        't' => (20, false),
-        'u' => (22, false),
-        '0' => (11, false),
-        '1' => (2, false),
-        '2' => (3, false),
-        '3' => (4, false),
-        '4' => (5, false),
-        'q' => (16, false),
-        ' ' => (57, false),
-        '.' => (52, false),
-        ';' => (39, false),
-        ':' => (39, true),
-        '\'' => (40, false),
+fn a_key_for(letter: char) -> Option<(u32, bool)> {
+    // **The marks that are a shifted key rather than one of their own**, on the
+    // layout this fixture types against.
+    match letter {
+        ':' => return Some((39, true)),
+        '(' => return Some((10, true)),
+        ')' => return Some((11, true)),
+        _ => {}
+    }
+    // **The whole alphabet and the ten digits, rather than the handful a
+    // previous step happened to need.** This answered `None` for `B` until
+    // 2026-10-18, which is a fixture refusing to type a capital letter — and a
+    // step that needed one read as a product fault for a minute.
+    let code = match letter.to_ascii_lowercase() {
+        'a' => 30,
+        'b' => 48,
+        'c' => 46,
+        'd' => 32,
+        'e' => 18,
+        'f' => 33,
+        'g' => 34,
+        'h' => 35,
+        'i' => 23,
+        'j' => 36,
+        'k' => 37,
+        'l' => 38,
+        'm' => 50,
+        'n' => 49,
+        'o' => 24,
+        'p' => 25,
+        'q' => 16,
+        'r' => 19,
+        's' => 31,
+        't' => 20,
+        'u' => 22,
+        'v' => 47,
+        'w' => 17,
+        'x' => 45,
+        'y' => 21,
+        'z' => 44,
+        '1' => 2,
+        '2' => 3,
+        '3' => 4,
+        '4' => 5,
+        '5' => 6,
+        '6' => 7,
+        '7' => 8,
+        '8' => 9,
+        '9' => 10,
+        '0' => 11,
+        ' ' => 57,
+        '.' => 52,
+        ';' => 39,
+        '\'' => 40,
+        '-' => 12,
         _ => return None,
-    })
+    };
+    // A letter's own key, shifted when the letter is a capital.
+    Some((code, letter.is_ascii_uppercase()))
 }
 
 /// Type a line, a character at a time, with `Shift` held where it is needed.
@@ -1153,6 +1183,107 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         }),
     )?;
     let about_a_clock = frame_just_drawn(&nested, "the terminal with a clock waiting")?;
+
+    // **`Ctrl`+`C` first, because `sleep 30` is still in front.** The step above
+    // started it and never ended it, so a command typed now goes to *sleep*'s
+    // standard input and the shell never sees it.
+    //
+    // *Found by looking at the frame rather than by counting rows.* The first
+    // version of the step below typed four commands into a blocked terminal,
+    // drew nothing, and failed with a message offering two causes — neither of
+    // which was the one. The screen showed the commands sitting unrun under a
+    // `$ sleep 30` prompt.
+    key(&mut server, LEFT_CONTROL, 560)?;
+    key(&mut server, THE_C_KEY, 561)?;
+    server.keyboard_key(THE_C_KEY, KeyState::Released, 562)?;
+    server.keyboard_key(LEFT_CONTROL, KeyState::Released, 563)?;
+    until_the_shell_writes(&mut server);
+    until_the_shell_is_quiet(&mut server);
+
+    // **`clear` first, so the chart has room.** alo's own lines are drawn
+    // beneath the grid, and a benchmark is seven of them — a summary, a
+    // provenance, two rows of two lines each, and the scale note. On a screen
+    // already full of output the later rows are clipped at the transcript's
+    // foot, which is how the first run of this step drew one bar and not two.
+    //
+    // *That clipping is real and is not fixed here*: where alo's lines go when
+    // they do not fit is a layout question the design does not answer, and it
+    // is recorded in `docs/design/the-terminal-window.md` rather than invented.
+    let at = typing(&mut server, "clear", 570)?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    until_the_shell_writes(&mut server);
+    until_the_shell_is_quiet(&mut server);
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let before_the_benchmark = frame_just_drawn(&nested, "the terminal with a cleared screen")?;
+
+    // **A benchmark comparison, recognised and drawn.** Four lines in the shape
+    // `hyperfine` prints, typed into a real shell, so what is measured is the
+    // whole road: the program's bytes, the recogniser, the scale and the bars.
+    //
+    // *Nothing here asserts the bar lengths.* `alo_terminal::measures` holds
+    // those against the design's own figures, and a pixel count on a drawn
+    // frame cannot tell 480 from 479. What this asks is the question a unit
+    // test cannot: **did anything reach the screen at all.**
+    let at = typing(
+        &mut server,
+        "echo 'Benchmark 1: previous'; echo '  Time (mean): 240.0 ms'; echo 'Benchmark 2: \
+         current'; echo '  Time (mean): 180.0 ms'",
+        600,
+    )?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    until_the_shell_writes(&mut server);
+    until_the_shell_is_quiet(&mut server);
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let a_benchmark = frame_just_drawn(&nested, "the terminal with a recognised benchmark")?;
+    if let Ok(into) = std::env::var("ALO_TERMINAL_CHECK_WRITE") {
+        written_out(
+            &a_benchmark,
+            &format!("{into}.benchmark.ppm"),
+            "the frame with a recognised benchmark",
+        )?;
+    }
+    // **Against the frame just before it**, not against the clock's. The first
+    // version compared with a screen that still held forty lines of `seq`
+    // output, so clearing the screen made the count go *down* and the step
+    // failed while the chart was on the screen behind it.
+    if rows_with_ink(&a_benchmark, &without) <= rows_with_ink(&before_the_benchmark, &without) {
+        return Err(
+            "four lines of benchmark output added no row of text. Three things do that and \
+             the message used to name only two: nothing was recognised in them, nothing was \
+             drawn for what was recognised, or **the commands never ran at all** because \
+             something was still in front of the shell. Write the frame out with \
+             ALO_TERMINAL_CHECK_WRITE and look before believing either of the first two."
+                .into(),
+        );
+    }
     if rows_with_ink(&about_a_clock, &without) <= rows_with_ink(&back_at_the_newest, &without) {
         return Err(
             "asking why a clock is waiting added no row of text, so alo answered nothing where \
@@ -1185,6 +1316,11 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             &answered,
             &format!("{into}.answered.ppm"),
             "the frame with alo's answer to why a command is waiting",
+        )?;
+        written_out(
+            &a_benchmark,
+            &format!("{into}.benchmark.ppm"),
+            "the frame with a recognised benchmark",
         )?;
     }
 
