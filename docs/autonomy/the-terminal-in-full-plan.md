@@ -96,7 +96,7 @@ causes, five of which are another lane's or the owner's:
 | 8 | bisect the machine | **the comparer** — the third PC's |
 | 10 | *your files as they were* | **the comparer** |
 | 9 | try a command touching nothing | **the kernel boundary** — the kernel plan's |
-| 11 | ask alo where the person chose, not only here | **both blocks gone.** ADR 0125 settled law 1 out of a process; the owner settled the trade, and the setting and its Settings row are built (#820, #822). **What is left is one request on the daemon's socket** |
+| 11 | ask alo where the person chose, not only here | **both blocks gone.** ADR 0125 settled law 1 out of a process; the owner settled the trade, and the setting and its Settings row are built (#820, #822). **What is left is law 1's egress sequence gaining a caller that is not a turn**, and then a request and a sender — see task 11, where *one request on the socket* was measured and found to understate it |
 
 **So the five causes are:** shell integration (2 tasks), the privileged comparer
 (3), a design component nobody has captured (part of 1), `alo-capability`'s
@@ -717,9 +717,94 @@ down and to nothing else*.
 
 **So what `alo-ask` must become is much smaller than this page first said**: it
 sends the person's question to their own daemon socket when their settings name
-a provider, and shows what comes back. The request itself is the piece nobody
-has written — `FromAPerson` has fourteen variants and not one of them is *ask
-this*.
+a provider, and shows what comes back. `FromAPerson` has fourteen variants and
+not one of them is *ask this*.
+
+### And *one request on the socket* understates it — measured 2026-10-19
+
+*That sentence was written an hour before this one, in the same change, and it
+is the claim this page has just finished warning about: **a status that names a
+dependency is making a claim.** So it was measured.*
+
+The request and the command's half really are small. **The work is that law 1's
+sequence has no caller that is not a turn.**
+
+| piece | state |
+|---|---|
+| the protocol request, and `alo-ask` sending it | not written, and small |
+| the daemon reading the person's settings and reaching their provider | **mostly built** — `alo-agentd`'s `doing.rs` has a test that asks a real keyring for their key and connects to the address they wrote down and nothing else |
+| **a non-turn caller's road to law 1's sequence** | **does not exist, and is the task** |
+
+**What that sequence is**, in `alo-turn`'s `asking.rs`: take the boundary and
+the indicator together; impose a boundary permitting the one resolved address;
+put the question *inside* it, through a closure that is run once because one
+permission is one attempt; write `Entry::left` **before** the line comes off the
+indicator; then end the departure. Its refusals — no boundary, a boundary that
+ran nothing, held back, left and unanswered — are five more entries, spread
+across six interlocking `Turning` methods that also set the turn's `closed` flag
+and remember a lost thread.
+
+`Machine::bounding_and_indicator` is `pub(crate)`, so none of it is reachable
+from `alo-agentd` today.
+
+**So the shape of the work is: put that sequence on `Machine`, where the
+indicator and the record already live, and have `Turning` delegate to it** —
+one copy, two callers. **Not two copies.** `put_off_this_machine`'s own doc
+names the failure mode: a call that compiles, with the right types, while
+nobody sees anything. Two copies of law 1's dance is how one of them quietly
+stops showing.
+
+*Nothing here changes what ADR 0125 decided. It changes the estimate, and it
+names the file the next person should open first.*
+
+### A second sequence has to be shared too — measured 2026-10-19, by starting it
+
+**The egress sequence is not the only thing a person's road must share.**
+Measured by building the protocol half and then reading what the daemon would
+have to do next:
+
+`alo-agentd`'s `doing.rs` prepares a provider question in a **deliberate
+order**, and its own comments say why each step is where it is:
+
+1. **the organisation's rule first** — *a question the organisation's bound
+   refuses is refused before the keyring is opened, so a policy refusal never
+   reaches for the person's credential*;
+2. **then which way out of this machine** — *a question with no road to go on
+   never reaches for the person's credential*, and a road that could not be
+   decided is refused rather than quietly going straight out, because *on a
+   company network that would be a machine sending its company's traffic
+   around the company's own rule with nobody told*;
+3. **then the key**, from the keyring, by the name `SecretRef` holds;
+4. then `Hosted::taking`, and the ask.
+
+That is eighty-odd lines with **four distinct refusals**, each a different thing
+for a person to go and do. A person's road needs the same four in the same
+order — so it must **share** them, for the same reason the egress sequence is
+one copy: two orderings of *rule, road, key* is how one of them one day reaches
+for a credential to answer a question a rule had already refused.
+
+**So the task is two extractions and then three small pieces**, in this order:
+
+| | |
+|---|---|
+| 1 | law 1's egress sequence — **done**, #825 |
+| 2 | `doing.rs`'s provider preparation, shared rather than copied — **done**, `alo-agentd/src/a_provider_ready_to_be_asked.rs` |
+| 3 | the protocol message, the daemon's handler, `alo-ask` sending it — **the remainder**, and the whole of it |
+
+*The protocol message was written on 2026-10-19 and **discarded unlanded**: a
+message nothing sends is the fault this plan keeps finding, and the honest place
+to stop was before it. It is rewritten with its sender and its handler, together,
+or not at all.*
+
+**The ordering is now a test and not a comment.** Five tests in that file, two of
+them written by mutating the order and watching: asking the key first fails
+*a rule refuses before the keyring is opened* and *no road out refuses before the
+keyring is opened*; asking the road before the rule fails *a rule refuses before
+a road is asked for*, and nothing else. The instrument is
+`WhoseKeyring::Nobodys`, whose every lookup is `NotStored::Unavailable` — so a
+credential reached for out of turn shows up as **the wrong refusal** rather than
+as nothing at all, which is the only way a question about ordering can be asked
+of code that refuses either way.
 
 **The refusal paths are the work, not the happy path.** A provider configured
 with no key, a key the provider rejects, an address that will not resolve, an
