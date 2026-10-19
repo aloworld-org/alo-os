@@ -1050,6 +1050,44 @@ the second is the expensive one:
 
 *Corrected in #793. The finding is this lane's; the decision is the owner's.*
 
+### 11. One level underneath that one — found 2026-10-19, by building up to it
+
+**ADR 0125 was accepted, and two extractions were built on it the same week**:
+law 1's egress sequence became one file with two callers (#825), and the
+daemon's *rule, then road, then key* ordering became one file for the same
+reason (#826). Both landed with the ordering proved by mutation rather than
+asserted in a comment.
+
+**Then the protocol message was written, and discarded unlanded.** What stopped
+it is one level below item 10, and item 10 walked past it:
+
+| asked | answer |
+|---|---|
+| what `alo_egress::Leaving` answers *whose authority is this under* with | `alo_capability::Grantee` |
+| what a `Grantee` is | *who a grant is for: an agent, or an application* |
+| what a person's own question is | **neither**, and `crates/alo-ask/src/main.rs` says so in the comment on the grantee it carries |
+| why that cost nothing until now | its own words: *it costs nothing today precisely because this door never reads it* |
+| what reads it | **the indicator and the record** — which is the provider road, and only the provider road |
+| is there a precedent for an egress with no agent | **yes**, and it already argued this case: `alo-egress/src/underway.rs` exists because alo OS's own errands have no agent, and its header says *widening it to answer nobody would make every one of those answers an `Option`, in the crate whose whole job is saying who did what* |
+
+So the shape is not an open question — it is a **third authority**, as its own
+type, sharing the indicator — and
+[ADR 0126](../decisions/0126-a-persons-own-question-is-a-third-authority-on-the-indicator-and-in-the-record.md)
+proposes it with the three twins measured, the two contracts it touches, and the
+one asymmetry that matters: **the person's door asks the egress policy, and the
+errand door cannot.** Routing a person's question through the errand door is the
+shortcut that compiles first and sends it around an organisation's own rule.
+
+**Why item 10 did not find it.** Item 10 asked *how does a process report an
+egress*, and ADR 0125 answered it: it does not, it asks the daemon. That answer
+is right and it left this question untouched underneath, because the daemon has
+an indicator and the question is not whether there is one — it is **whose name
+goes on the line**. *A correct answer to the question above can hide the
+question below it.*
+
+*The finding and the recommendation are this lane's; accepting ADR 0126 is the
+owner's.*
+
 ## What this lane cannot finish — corrected 2026-10-17, because the first version was wrong about all three
 
 **The owner asked whether these three were the desktop lane's. They are not, and
