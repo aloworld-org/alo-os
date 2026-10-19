@@ -153,6 +153,33 @@ jobs:
             alo-installer-candidate.zip
             SHA256SUMS
 
+      # # One lane dispatches this, and the delete below is why
+      #
+      # **Not ownership — interleaving.** The step below deletes the previous
+      # candidate *before* publishing the next, so two dispatches that overlap
+      # can have one of them delete the release the other has just published,
+      # and what the person at the testing machine gets is a link that 404s.
+      # Nothing inside this workflow can see a second run of it, and nothing
+      # inside one lane's dispatch script can either.
+      #
+      # So the Mac lane holds it, by the same rule as `image.yml` and
+      # `release.yml` next door — and the handover is stated rather than
+      # implied: **if that lane is unavailable and `pinned.toml` names the
+      # release being offered, another lane takes it and says so rather than
+      # asking.** A stalled tester is worse than a coordination note.
+      #
+      # *Recorded on 2026-10-19, after two lanes each held a dispatch script
+      # for this workflow and settled it in messages. An agreement in two chat
+      # logs is not a control; the Windows lane turned theirs into a file that
+      # refuses, and this is the other half — the next person to read this
+      # workflow learns it here rather than being told.*
+      #
+      # **The guard a lane wrote for itself was about the wrong hazard**, which
+      # is worth keeping: it refused while `main` still pinned the previous
+      # release, which guards *too early*. The hazard is *two at once*, and
+      # being early is harmless — a candidate built against an unpinned image
+      # simply pulls the old one, which is control 4 below.
+      #
       # **Exactly one candidate exists at a time** — ADR 0096's sixth control.
       # Deleted before the next is published, never after: a delete that ran
       # afterwards would take the one just made. No scheduler, so there is
