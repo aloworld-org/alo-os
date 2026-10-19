@@ -850,3 +850,94 @@ fn the_real_raster_recorded_the_way_the_draw_records_it_opens_the_market() -> Re
     );
     Ok(())
 }
+
+/// **A machine says when it left a window a person opened undrawn.**
+///
+/// The other half of the input counts: those say what reached this machine,
+/// this says whether what it did could be seen. On 2026-10-18 a press on the
+/// market's entry arrived, landed on the Dock, refused nothing and opened the
+/// window — and drew none of it, and neither the person nor a screen capture
+/// could tell that from a press that never arrived.
+///
+/// **Set rather than added to**, because it is the state of one frame: a
+/// window that comes back takes the number down again. Both directions are
+/// held here, since a number that only ever climbs would report a window as
+/// undrawn for the rest of the session after one frame missed it.
+#[test]
+fn a_frame_says_how_many_open_windows_it_did_not_draw() {
+    let (_runtime, mut server) = a_seat("undrawn-windows");
+    assert_eq!(
+        server
+            .what_the_seat_made_of_its_input()
+            .opened_and_not_drawn,
+        0,
+        "the premise: nothing is open, so nothing is undrawn"
+    );
+
+    server.a_frame_left_this_many_windows_undrawn(1);
+    assert_eq!(
+        server
+            .what_the_seat_made_of_its_input()
+            .opened_and_not_drawn,
+        1,
+        "a frame left a window undrawn and the machine does not say so"
+    );
+
+    server.a_frame_left_this_many_windows_undrawn(0);
+    assert_eq!(
+        server
+            .what_the_seat_made_of_its_input()
+            .opened_and_not_drawn,
+        0,
+        "the window was drawn again and the machine still reports it undrawn, so the \
+         number is a tally rather than the state of a frame"
+    );
+}
+
+/// **A window a person cannot see does not hold their keyboard.**
+///
+/// The fault this closes was met on a booted machine on 2026-10-18 and is
+/// worse than the one it came from: a press on the market's entry opened the
+/// window, nothing of it was drawn, and from that moment **the machine took no
+/// keys at all** — every one of them went to the invisible window, Escape
+/// included, which is the way out.
+///
+/// A person pressed one icon and lost their keyboard with nothing on screen to
+/// say why. Whatever is wrong with the drawing, that must not be its
+/// consequence: an undrawn window is a control that did nothing, which is bad
+/// and visibly bad, rather than a machine nobody can type on.
+///
+/// Both directions are held, because a rule that only ever refuses the
+/// keyboard would be its own fault: a drawn window **must** still take the
+/// keys, or nothing could be typed into the market at all.
+#[test]
+fn an_undrawn_window_does_not_take_the_keyboard() {
+    let (_runtime, mut server) = a_seat("no-keyboard-trap");
+
+    server.do_this_native_action(alo_dock::ANativeAction::Applications);
+    assert!(server.market.is_open(), "the premise: the window is open");
+    assert!(
+        server.the_market_is_taking_the_keys(),
+        "a window that is open and drawn must take the keys, or nothing can be typed into it"
+    );
+
+    // The frame could not draw it.
+    server.a_frame_left_this_many_windows_undrawn(1);
+    assert!(
+        server.market.is_open(),
+        "the window is still open; what changed is that nothing drew it"
+    );
+    assert!(
+        !server.the_market_is_taking_the_keys(),
+        "a window nobody can see is holding this person's keyboard, so a press on one icon \
+         takes the machine away from them and Escape cannot bring it back"
+    );
+
+    // And when it is drawn again, it answers for its keys again.
+    server.a_frame_left_this_many_windows_undrawn(0);
+    assert!(
+        server.the_market_is_taking_the_keys(),
+        "the window was drawn again and will not take the keys, so the rule that protects a \
+         person has made the window useless instead"
+    );
+}
