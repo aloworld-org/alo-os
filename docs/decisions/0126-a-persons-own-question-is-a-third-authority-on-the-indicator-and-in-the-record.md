@@ -1,41 +1,90 @@
-# ADR 0126 — A person's own question is a third authority on the indicator and in the record
+# ADR 0126 — A person's own question shows no indicator line, because they chose where it goes
 
-**Status:** **proposed, 2026-10-19, by the Mac lane.** Nothing is built in the
-change that proposes it. It blocks the remainder of
-[ADR 0125](0125-a-command-does-not-report-an-egress-it-asks-a-service-that-can-show-one.md),
-which is task 11 of `docs/autonomy/the-terminal-in-full-plan.md`.
-**Context:** law 1; law 2 (*the law binds the agent, never the person*);
-[ADR 0016](0016-the-organisation-bounds-and-the-person-chooses.md) (an organisation's policy on machines it
-owns); ADR 0125; `docs/contracts/record-file.md`;
+**Status:** **accepted, 2026-10-19, by the owner**, who rejected the proposal
+this file was opened to make. Proposed the same day by the Mac lane as *a third
+authority on the indicator and in the record*; the owner's answer removes the
+need for one. Nothing is built in the change that records it.
+**Context:** law 1 (*every network egress **an agent causes***); law 2 (*the law
+binds the agent, never the person*); law 5 (*never offering is not taking
+away*); [ADR 0016](0016-the-organisation-bounds-and-the-person-chooses.md);
+[ADR 0125](0125-a-command-does-not-report-an-egress-it-asks-a-service-that-can-show-one.md);
 `docs/contracts/native-egress-indicator.md`; `crates/alo-egress`,
-`crates/alo-record`, `crates/alo-asking`, `crates/alo-capability`.
+`crates/alo-record`, `crates/alo-ask`.
 
-## The question
+*The filename names the proposal this began as. It keeps that name because a
+rename leaves every link to it reading exactly as it did before — see
+`README.md` in this directory, and the five days ADR 0019 spent pointing at a
+file that no longer existed.*
 
-ADR 0125 decided that a person's own question goes to their provider **through
-the daemon**, because the daemon holds the one indicator and writes the record.
-It left the message shape to the daemon contract and said nothing about this,
-which only became visible when somebody started building it:
+## What the owner decided, 2026-10-19
 
-**Who does the indicator name, and who does the record name, when the thing
-that caused the egress is the person?**
+Shown three options — no line at all, a line naming nobody, or a line saying
+*you* — they answered:
 
-Every type on law 1's road answers *whose authority is this under* with an
-`alo_capability::Grantee`, and a `Grantee` is an agent or an application. A
-person is neither. `crates/alo-ask/src/main.rs` already says so, in the comment
-on the grantee it carries and never reads:
+> *I think we should modify this adr, because users select the models themselves
+> in the settings so no need to show all those indicators*
 
-> `alo_capability::Grantee` is an agent or an application, and a command a
-> person typed is neither. It is named for itself rather than for the person,
-> because the alternative is writing a login name into a type whose two kinds
-> are both software. **That is a finding about the shape of `Asking::by` rather
-> than something to fix by inventing a third kind here**, and it costs nothing
-> today precisely because this door never reads it.
+**Read as: a person's own question causes no indicator line.** The person chose
+the provider in Settings; showing them an indicator for the thing they chose
+tells them nothing they do not already know.
 
-**The provider road is the door that reads it.** The indicator shows it and the
-record keeps it, so *costs nothing today* expires exactly here.
+They had also corrected the lane's first draft earlier the same day, and that
+correction is what dissolved the problem rather than solving it — see *What
+`{agent}` actually holds*, below.
 
-## What was measured, 2026-10-19
+## Why this is law 1's own reading, not an exception to it
+
+Law 1 in full:
+
+> **Nothing leaves silently.** Every network egress **an agent causes** is
+> visible at the moment it happens and afterwards in a record.
+
+**An agent causes.** A question a person typed at their own shell is not
+agent-caused, so the sentence that defines law 1 does not reach it. The headline
+reads wider than the body — which is the same crack `CLAUDE.md` already records
+in law 5, where *its headline is broader than its body and two careful readers
+disagreed about which bound*. Law 2 settles the direction: *the law binds the
+agent, never the person.*
+
+And law 5 covers what was not built: **never offering is not taking away.**
+Nobody was ever shown an indicator line for their own question, so not building
+one withdraws nothing. This would be a different decision if such a line existed
+and were being removed.
+
+### The sentence that most looks like it forbids this, answered
+
+Law 5 names the egress indicator in its list of protections that stay on at
+every setting:
+
+> Two kinds of protection stay on at every setting, because neither takes a
+> choice away: those that restrict nothing (the record, undo, **the egress
+> indicator**, plain warnings) …
+
+**That sentence is about a protection a person could otherwise switch off, and
+it is untouched here.** The indicator stays on, at every setting, showing
+everything it shows today. Nothing on it is being removed and no setting is
+being added to quiet it. What this ADR decides is that a surface which has only
+ever shown what *software* on this machine is doing does not grow a row for the
+person — and law 5's own clarification is the test: *never offering is not
+taking away. Withdrawing is.* `docs/features.md` is the record of what was
+offered — and **it made the promise in law 1's own scope**, which settles this
+rather than merely supporting it:
+
+> ★ **The egress indicator**: every network egress **an agent causes**, visible
+> at the moment it happens …
+
+So what a person was offered is the agent-scoped promise, and it is kept in
+full.
+
+ADR 0125 argued the other way, in one sentence — *a person who chose OpenAI has
+chosen that their question leaves; they have not chosen to be unable to see it
+leave*. **That is an argument and not the law**, and it is the sentence this ADR
+supersedes.
+
+## What was measured, 2026-10-19, before the proposal was rejected
+
+Kept because the facts hold either way, and the next person to open the
+indicator will want them.
 
 | asked | answer |
 |---|---|
@@ -45,126 +94,187 @@ record keeps it, so *costs nothing today* expires exactly here.
 | what `Showing::agent()` answers for an errand | `None`, doc'd *the honest answer rather than a placeholder … naming an authority would be inventing one* |
 | what the errand door does about policy | **nothing** — *this cannot refuse, and it can never fail to show* |
 | `Happened` variants in `alo-record` | 21, of which 10 arms name `NotBounded` and 11 name `LeftOnItsOwn` |
-| `Entry` constructors | 29 |
-| where a person's name would land | `Entry::left` does `Line::of(departing.agent().as_str())` |
+| where a person's name would have landed | `Entry::left` does `Line::of(departing.agent().as_str())` |
 
-## The precedent is already here, and it already argued this case
+## What `{agent}` actually holds — the owner's correction, and why it ended the question
 
-`crates/alo-egress/src/underway.rs` exists because alo OS's **own** errands are
-an egress with no agent behind them, and its header makes this ADR's argument
-for the second authority before a third was wanted:
+The slot a person's question could not fill is not an abstraction. It holds
+**alo chat's handles**, which is how a person addresses an app's agent in a
+channel: `@mail are we in contact with ABC?`
 
-> A `Departing` answers *whose authority is this under* with a `Grantee`, and
-> `alo-record` writes that into every entry it makes about something leaving.
-> **Widening it to answer *nobody* would make every one of those answers an
-> `Option`, in the crate whose whole job is saying who did what** — so the two
-> authorities stay two types, and the thing they share is the indicator, which
-> is the thing a person actually looks at.
+Counted in `alo-workplace`, in its tracked `.ts`, `.tsx` and `.md` files:
 
-So the shape of the answer is not an open question. It is: **a third authority,
-as its own type, sharing the indicator.**
+| handle | mentions | | handle | mentions |
+|---|---|---|---|---|
+| `@alo` | 101 | | `@sites` | 17 |
+| `@mail` | 34 | | `@docs` | 17 |
+| `@tasks` | 30 | | `@meet` | 16 |
+| `@inventory` | 29 | | `@insights` | 15 |
+| `@agenda` | 23 | | `@drive` | 14 |
+| `@sheets` | 18 | | `@chat` | 14 |
 
-## The decision proposed, in one line
+`@alo` is this machine's own agent — `alo-notifying` renders it *@alo, the agent
+on this machine*. The other eleven are `alo-workplace`'s. **`@calendar` does not
+exist**; the diary agent is `@agenda`.
 
-**A person's own question is a third authority: it goes on the same indicator,
-under no agent's name, and the record keeps it as its own kind of entry — and
-unlike alo OS's own errands, it asks the egress policy first.**
+**So the indicator is a list of what software on this machine is doing, named by
+the handles a person would type at that software.** A person is not in that
+list, cannot be `@`-mentioned, and was never granted anything — they are the one
+who does the granting. The lane read that as *so a third kind is needed*. The
+owner read it as *so a person does not belong on this surface at all*, and the
+second reading is the one law 1's text supports.
 
-## What that means, concretely
+*This repository uses `@mail` as its illustrative agent in a translator's note
+and in fixtures. It is a workspace handle borrowed as an example, not an alo OS
+agent — recorded because this ADR's first draft reasoned from it as though it
+were one, and reached the wrong conclusion by doing so.*
 
-| alo OS on its own | **a person's own question** | an agent |
-|---|---|---|
-| `Showing::Itself(OnItsOwn)` | `Showing::ThePersons(TheirOwn)` | `Showing::Agent(Leaving)` |
-| `Indicator::beginning_on_its_own` | `Indicator::beginning_for_the_person` | `Indicator::beginning` |
-| hands back an `Underway` | hands back a departure of its own | hands back a `Departing` |
-| **cannot refuse** | **can refuse** — asks `EgressPolicy` | can refuse |
-| `Happened::LeftOnItsOwn { errand, … }` | a kind naming no agent | `Happened::Left { agent, … }` |
-| `Showing::agent()` → `None` | `Showing::agent()` → `None` | `Some(&Grantee)` |
+## What this decides, in one line
 
-### The one difference that is not symmetry, and it is the important one
+**A question a person asks from their own shell causes no line on the egress
+indicator, no third authority in `alo-egress`, and no new kind of entry in
+`alo-record`.** The indicator stays exactly what it is today: what *software* on
+this machine is doing.
 
-**The person's door asks the policy; the errand door does not.** The errand door
-cannot refuse for a stated reason — a rule about where questions may be answered
-would, applied to alo OS fetching a model, stop a machine set to answer on its
-own hardware from ever obtaining the model it would answer with.
+## What is dropped
 
-**None of that reasoning transfers to a person's question.** On a machine an
-organisation manages, a rule about where inference may happen is *precisely*
-about a person's question, and law 5 says an organisation's policy on machines it
-owns may truly forbid. So:
+Everything the proposal would have built:
 
-> **Routing a person's question through the errand door would send it around the
-> organisation's own rule, and the door could not have refused it even in
-> principle.** That is the mistake this ADR exists to make unavailable, and it is
-> the cheap-looking shortcut: `beginning_on_its_own` needs no policy argument,
-> so it compiles first.
+- a third `Showing` variant, its egress type, its departure and its refusal;
+- three new `Happened` kinds and their arms in the ten-to-eleven `impl Happened`
+  matches;
+- the same treatment for `alo_asking::Asking::by`;
+- a section in `docs/contracts/native-egress-indicator.md`, and one in
+  `docs/contracts/record-file.md`;
+- a sentence in the vocabulary and its 24 translations.
 
-### Why not widen `Grantee` with a third kind
+**The day's work the proposal costed is not spent.**
 
-The owner gave this lane permission to widen `alo-capability` on 2026-10-18, so
-this is declined on its merits rather than for want of permission.
+## What stays on, and this is the part not to lose
 
-- **A person holds no grants.** `Grantee` is *who a grant is for*; the person is
-  who *makes* them. A third kind would put the grantor in the list of grantees,
-  in the crate law 2 is enforced in.
-- **`Grantee::as_str()` would have to answer something**, and the only candidates
-  are a login name — which is the thing `alo-ask`'s comment declined to write
-  into a software type — or a placeholder, which is a name invented for a person
-  who has one.
-- **Every `permitting` and `allowing` door would gain an unreachable case.** Two
-  kinds that *never answer for each other* is a property of that file; a third
-  that answers for neither and asks for nothing is a case every reader has to
-  rule out.
+**The organisation's rule is still asked, before anything leaves.** That is
+[ADR 0016](0016-the-organisation-bounds-and-the-person-chooses.md) and law 5's
+own carve-out — *Only the law, or an organisation's policy on machines it owns
+(ADR 0016), may truly forbid* — and it is **not** law 1 and **not** an
+indicator. A person
+on a machine whose organisation set *nothing leaves the building* is refused, in
+words, and nothing leaves.
 
-### Why not reuse `Happened::Left` with the person's name in `agent`
+This is a different mechanism from the one this ADR drops, and it is already
+built and already ordered correctly: `alo-agentd`'s
+`a_provider_ready_to_be_asked` asks the rule **first**, before the road and
+before the keyring, so a question a rule refuses never reaches for the person's
+credential. Landed 2026-10-19 (#826) with the ordering proved by mutation rather
+than asserted.
 
-Because then a record says an agent asked, and law 2's record is the one place
-that distinction is load-bearing. `docs/contracts/record-file.md`'s own answer to
-a new writer is a new kind, and *a new kind of `happened` is additive* is already
-the decision for the two most recent kinds.
+**Also unchanged:** nothing silently substitutes. ADR 0008's *never a silent
+fallback* and the setting the owner chose on 2026-10-18 — whether alo may use
+another model when the chosen one is unavailable — both stand, and the second
+landed in #822. A person who chose a provider and turned that off is refused and
+told which of their own settings decided it.
+
+## The record — recommended, not decided here
+
+Law 1's record clause has the same subject as its indicator clause (*an agent
+causes*), so it does not reach a person's own question either. The owner's words
+were about what is **shown**, and a record is not shown — it is kept for
+whenever somebody wants to look.
+
+**Recommended: keep a record, written by the command itself, into the person's
+own record file.** That is not a new pattern: ADR 0125 already decided exactly
+this for a person's sealed-box run, on `docs/contracts/record-file.md`'s own rule
+that *a record file has one writer* and its own answer that a new writer gets a
+new file. It costs the person nothing, refuses them nothing, and keeps *I can
+check what my machine did* true.
+
+**It is also what makes the rest cheap.** A command that writes its own record
+needs nothing only a long-lived service can do — which is the next section.
+
+## What this means for ADR 0125 — measured after the first answer was wrong
+
+**The first version of this section said `alo-ask` may now ask the provider
+directly, and that the work left was an afternoon. It was written without
+measuring and it is false.** It is kept as a heading rather than deleted
+because the reasoning that produced it is the reasoning somebody will repeat:
+with no line to show, a command appears to need nothing a service has.
+
+**It needs two things a service has, and neither is about law 1.** Measured
+2026-10-19:
+
+| what a person's question needs before it leaves | can a command do it? |
+|---|---|
+| the organisation's rule, from `[questions]` in `/etc/alo/agentd.toml` | **yes, in principle** — the file is world-readable by design (`docs/contracts/machine-description.md`: *the file may be world-readable — `0644` in `/etc` is the ordinary case*) and holds no secrets … |
+| … read with the same checks the daemon reads it with | **not without a crate that does not exist**: `describing.rs` is 1235 lines and `described.rs` 475, both inside `alo-agentd`, which **nothing depends on** (measured: 0 of 60-odd crates). A command would either pull the whole daemon in or re-implement the symlink and ownership checks on the file that names which login is the agent |
+| the destination-level egress rule, which is **not** the same check | the rule is the same rule; the *subject* is not. `Answering::chosen` asks about the provider's **stated source**, and the egress policy asks about the **resolved address**. A provider claiming the EU and resolving to Virginia passes the first and fails the second |
+| which road out the question takes, from `[proxy]` | yes — same world-readable file |
+| **signing in to a proxy that asks who this machine is** | **no.** The password is a systemd credential at `/run/credentials/alo-agentd.service` (ADR 0059), which belongs to that unit. A command run by the person cannot read another unit's credentials — and a command that went straight out instead would be repeating a fault this repository has already had and fixed. `the_road_out`'s own header: *on a company network with no other route out, a machine read its organisation's proxy off the disk and then asked a provider directly* |
+
+**So ADR 0125's route stands, and the reason is the one this ADR's own earlier
+draft named as the thing that would overrule it:** one place that holds the
+credentials. Two credentials, as it turns out — the provider's key and the
+proxy's password — and the proxy's cannot be moved, because it is systemd's
+answer to *which unit may read this*.
+
+**What ADR 0126 still changes about ADR 0125's route** is the part that was
+blocking it: the daemon answers the person **without a turn and without an
+indicator**. That was the whole difficulty, and it is gone.
+
+### So the work left, re-estimated
+
+| | |
+|---|---|
+| 1 | a door in `alo-asking` that asks a provider **with no indicator**, which still asks the egress policy about the resolved address, because that check is not the one `Answering::chosen` made — **and this is the one piece that needs care** |
+| 2 | `FromAPerson::TheirOwnQuestion` and `ToAPerson::Answered` in `alo-protocol` |
+| 3 | a handler on the person's door, reusing `a_provider_ready_to_be_asked` (#826, built) |
+| 4 | `alo-ask` opening `/run/alo/<uid>/agentd.sock` — the same one-connection-one-line-one-answer shape `alo-changing/src/door.rs` already uses (ADR 0017) |
+| 5 | `docs/contracts/daemon-protocol.md` |
+
+Still much smaller than the rejected proposal, and **not an afternoon.**
+
+*Recorded this way on purpose. The lane had just written down that its mistake
+was arguing* how *before asking* whether*, and then published an estimate in
+the same file without measuring it. The second fault is the first one wearing a
+different hat: an answer produced fluently feels measured.*
 
 ## What this costs, said plainly
 
-- **Three new kinds in `alo-record`**, not one: something left for the person, the
-  policy held it back, and there was no boundary to put it inside. Each needs an
-  arm in the ten-to-eleven `impl Happened` matches, and each arm is a judgement
-  (*was something stopped? whose authority? did it cause egress?*) rather than a
-  line to copy.
-- **A third authority in `alo-egress`**: the egress, the departure, and the
-  refusal, mirroring `itself.rs` / `underway.rs` / the agent's `NotPermitted`.
-- **`alo-asking`'s `Asking::by` takes a `Grantee`** and the person's road cannot
-  supply one, so that door needs the same treatment or a sibling.
-- **Two contracts gain a section**: the record file's new kinds, and the egress
-  indicator's third line. The indicator's **drawing surface does not change** —
-  it is one more line on the one list, naming no agent, exactly as an errand's
-  line names none today. That is what keeps this inside
-  `docs/contracts/native-egress-indicator.md`'s *this document describes only
-  the drawing surface*.
-- **It is a day's work, not an afternoon's**, and it is why ADR 0125's remainder
-  did not land on 2026-10-19. Said here rather than discovered twice.
+**A quiet indicator stops meaning *nothing left this machine*, and starts
+meaning *no software on this machine sent anything*.** That is a real narrowing
+of what a person can read off that surface, and it is the price of this decision.
 
-## What this does not decide
+**The phrase is `docs/features.md`'s own**, which is why this cost is named
+rather than argued away. Describing where the indicator sits, it says the
+indicator is placed so that
 
-- **The words on the indicator's third line.** `alo_egress::Leaving::said`
-  composes the agent's three sentences in one place on purpose; the person's
-  needs one sentence in the same place, in the vocabulary, and whether it reads
-  *a question you asked is going to …* or something else is a wording question,
-  not this one.
-- **The daemon's message shape.** Still ADR 0125's deferral to
-  `docs/contracts/daemon-protocol.md`.
-- **Whether a person's question becomes an agent turn.** Still no — ADR 0125
-  marked that *the part most likely to be got wrong*, and this ADR is what makes
-  the alternative buildable rather than only preferable.
+> *"nothing has left this machine"* sits where a person already glances rather
+> than somewhere they must learn to look
+
+— and after this decision that glance answers a narrower question than those
+words suggest. **Two sentences in one document, one scoped to an agent and one
+not**, which is the same headline-versus-body shape as the laws above. Worth a
+line in `docs/features.md` when somebody next edits it; not worth inventing a
+surface to make the looser sentence true.
+
+Three things that do *not* change, because each is sometimes offered as a reason
+to reconsider:
+
+- **The published measurement is unaffected.** Law 1's *a working day produces
+  zero inference egress* is scoped *with a local model* and measured **at the
+  network boundary**, not off the indicator. A person using a provider was never
+  inside that claim.
+- **No telemetry, either way.** Nothing about this gives alo OS a road to report
+  anything about anybody.
+- **An agent's egress is untouched.** Every line the indicator shows today it
+  shows tomorrow.
 
 ## The test that decides whether this works
 
-Three, and the second is the one worth writing first:
-
-1. A person with a provider in their settings asks a question at a shell, and the
-   egress is **on the indicator while it is in flight** with **no agent named**,
-   and in the record afterwards as its own kind.
-2. The same person on a machine whose organisation set *nothing leaves* is
-   **refused**, in words, and nothing leaves — proving the person's door asks the
-   policy that the errand door cannot.
-3. A record read back a week later can tell a question the person asked from a
-   question an agent asked, without reading anything but the entry.
+1. A person with a provider in their settings asks a question at a shell and
+   **gets an answer**, with the terminal saying where it came from — *by OpenAI,
+   in the United States* — and **no line on the indicator**.
+2. The same person on a machine whose organisation set *nothing leaves the
+   building* is **refused, in words, with nothing sent and the keyring never
+   opened**. This is the one worth writing first: it is the half that proves the
+   organisation's rule survived this decision.
+3. An agent asking the same provider on the same machine **still puts a line on
+   the indicator**, so what was dropped was dropped for the person only.

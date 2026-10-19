@@ -1085,8 +1085,50 @@ an indicator and the question is not whether there is one — it is **whose name
 goes on the line**. *A correct answer to the question above can hide the
 question below it.*
 
-*The finding and the recommendation are this lane's; accepting ADR 0126 is the
-owner's.*
+### The owner answered on 2026-10-19, and rejected the recommendation
+
+> *I think we should modify this adr, because users select the models themselves
+> in the settings so no need to show all those indicators*
+
+**So the third authority is not built, and task 11 is unblocked.** Their earlier
+correction is what made this reachable: once `{agent}` is seen for what it is —
+alo chat's address book, which a person is not in — the lane's reading was *so
+add a third kind* and the owner's was *so a person does not belong on this
+surface*. **Law 1's text supports the owner**: its body is *every network egress
+an agent causes*, and `docs/features.md` made the same promise in the same
+scope. Nothing was offered, so nothing is withdrawn.
+
+**What this lane got wrong, and it is worth naming.** The measurements were
+right, the precedent was real, the asymmetry about the policy door was real and
+still matters. **The premise was never checked.** Three sections were written
+arguing *how* to name the person before anyone asked *whether* the person goes
+on that surface at all — and the answer was one sentence of law 1, read
+carefully, in a file this lane quotes daily. *A good answer to the question
+asked is worth nothing when it is the wrong question, and measuring hard makes
+it feel like it is worth something.*
+
+**What survives:** the organisation's rule still gates a person's question, and
+that is ADR 0016 rather than law 1 — built, landed and asked first in #826.
+
+**And the lane made the same mistake twice in one hour.** Having just written
+down that it argued *how* before asking *whether*, it published an estimate in
+the same change — *`alo-ask` may ask the provider directly, an afternoon's work*
+— without measuring it. Measured straight afterwards, it is false: the
+organisation's rule is read by 1710 lines of `describing.rs` and `described.rs`
+inside `alo-agentd`, a crate **nothing** depends on (0 of 122), and a proxy that
+asks who the machine is reads a systemd credential at
+`/run/credentials/alo-agentd.service` that only that unit may read. A command
+that went straight out instead would repeat a fault already found and fixed
+here: *on a company network with no other route out, a machine read its
+organisation's proxy off the disk and then asked a provider directly*.
+
+**So ADR 0125's route stands**, for the reason the ADR's own draft had named as
+the thing that would overrule it — one place that holds the credentials, and
+there are two of them. *An answer produced fluently feels measured. That is the
+whole lesson of this item and it took two goes to learn.*
+
+*The finding was this lane's; the recommendation was this lane's and was
+rejected; the decision is the owner's.*
 
 ## What this lane cannot finish — corrected 2026-10-17, because the first version was wrong about all three
 
