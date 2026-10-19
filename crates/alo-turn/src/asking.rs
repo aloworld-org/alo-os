@@ -58,7 +58,7 @@ use std::net::{SocketAddr, ToSocketAddrs as _};
 use std::time::SystemTime;
 
 use alo_answering::Answering;
-use alo_asking::{Answer, Asked, Asking, DidNotAnswer, NotAnswered, NotAsked, Question};
+use alo_asking::{Answer, Asked, Asking, NotAnswered, NotAsked, Question};
 use alo_capability::Grantee;
 use alo_keeping::NotKept;
 use alo_record::Entry;
@@ -294,13 +294,16 @@ impl Turning<'_, '_> {
         }
     }
 
-    /// Put a question that leaves this machine from inside a boundary
-    /// permitting `to` and nothing else — on the interface `held_to` names, where
-    /// it names one — and write down what became of it.
+    /// Put a question that leaves this machine, through the one sequence law 1
+    /// has for it.
     ///
-    /// One road for a provider and a paired machine, because what law 1 and
-    /// ADR 0020 ask of the two is the same: `put` is the one attempt the
-    /// permission buys, run once inside the boundary or not at all.
+    /// **The sequence itself is
+    /// [`crate::a_question_that_leaves_this_machine`]** since 2026-10-19, and
+    /// what is left here is the two things that are a *turn's*: closing itself
+    /// when the record breaks, and remembering a thread left inside a boundary
+    /// that is over. It moved because a person's question needs the same
+    /// sequence and is not a turn (ADR 0125), and two copies of it is how one
+    /// of them quietly stops showing.
     fn put_off_this_machine(
         &mut self,
         to: &[SocketAddr],
@@ -309,116 +312,50 @@ impl Turning<'_, '_> {
         now: SystemTime,
         put: impl FnOnce(&mut alo_egress::Indicator) -> Result<Asked, NotAsked>,
     ) -> Result<Answer, NoAnswer> {
-        let (bounding, indicator) = self.machine().bounding_and_indicator();
-        // Moved into the closure once. The door takes `self` because one
-        // permission is one attempt, and this is that one attempt.
-        let mut once = Some(put);
-        let mut outcome = None;
-        let mut putting = || {
-            if let Some(put) = once.take() {
-                outcome = Some(put(indicator));
-            }
-        };
-        let bounded = match held_to {
-            Some(interface) => bounding.carrying_out_a_departure_on(to, interface, &mut putting),
-            None => bounding.carrying_out_a_departure(to, &mut putting),
-        };
-        match (bounded, outcome) {
-            (Ok(()), Some(outcome)) => self.what_a_provider_did(outcome, now),
-            // A boundary that could not be imposed is ADR 0015's rule rather
-            // than a smaller question: nothing was asked and nothing left. A
-            // boundary that was imposed and ran nothing is the same fact about
-            // this machine, said the same way — and both are written down as
-            // the machine's own refusal.
-            (Err(why), _) => Err(self.nothing_was_bounded(why, agent, now)),
-            (Ok(()), None) => Err(self.nothing_was_bounded(
-                NoBoundary::because(
-                    "the boundary was imposed and the question was not put inside it".to_owned(),
-                ),
+        let became =
+            crate::a_question_that_leaves_this_machine::a_question_that_leaves_this_machine(
+                self.machine(),
+                to,
+                held_to,
                 agent,
                 now,
-            )),
+                put,
+            );
+        if became.the_record_broke {
+            self.the_record_broke();
         }
+        if became.a_thread_was_lost {
+            self.a_thread_was_lost();
+        }
+        became.outcome
     }
 
-    /// What came back from a provider or a paired machine, written down and
-    /// then handed over.
+    /// There was no boundary to put a question inside, so it was not put.
     ///
-    /// Both roads where something left end with the departure written before
-    /// the line comes off the indicator and before the caller hears anything:
-    /// `alo_record::Entry::left` is made from the token the door hands back and
-    /// from nothing else, which is what makes an egress the indicator showed an
-    /// entry that can be written.
-    fn what_a_provider_did(
-        &mut self,
-        outcome: Result<Asked, NotAsked>,
-        now: SystemTime,
-    ) -> Result<Answer, NoAnswer> {
-        match outcome {
-            Ok(asked) => {
-                let kept = self.keeping(Entry::left(asked.departing()));
-                let answer = asked.ended(self.machine().indicator());
-                match kept {
-                    Ok(()) => Ok(answer),
-                    Err(why) => Err(after_it_left(why)),
-                }
-            }
-            Err(NotAsked::DidNotAnswer(unanswered)) => self.what_a_provider_did_not_do(*unanswered),
-            Err(NotAsked::HeldBack(refused)) => {
-                let strings = self.machine().strings();
-                let entry = Entry::held_back(&refused, strings, now);
-                match self.keeping(entry) {
-                    Ok(()) => Err(NoAnswer::HeldBack(refused)),
-                    Err(why) => Err(nothing_left(why)),
-                }
-            }
-            // Neither of these addressed anything or sent anything, and
-            // `crate::unanswered` has the argument for why neither is an entry.
-            Err(NotAsked::CannotBeShown(why)) => Err(NoAnswer::CannotBeShown(why)),
-            Err(NotAsked::Miswired(why)) => Err(why.into()),
-        }
-    }
-
-    /// It went to a provider and nothing came back.
-    ///
-    /// A road of its own because it is the one a record of successes would
-    /// lose: the question left, so law 1's *what left this machine today* has
-    /// to find it, and the failure the person is shown is handed on afterwards
-    /// without this crate reading a word of it.
-    fn what_a_provider_did_not_do(&mut self, unanswered: DidNotAnswer) -> Result<Answer, NoAnswer> {
-        let kept = self.keeping(Entry::left(unanswered.departing()));
-        let failed = unanswered.ended(self.machine().indicator());
-        match kept {
-            Ok(()) => Err(NoAnswer::DidNotAnswer(Box::new(failed))),
-            Err(why) => Err(after_it_left(why)),
-        }
-    }
-
-    /// There was no boundary to put the question inside, so it was not put —
-    /// written down, and then said.
-    ///
-    /// The same entry a file verb leaves when the machine would not bound it,
-    /// `alo_record::Entry::not_bounded`, with the sentence the person was
-    /// shown and the machine's own account of its boundary; `carrying.rs`
-    /// says why the machine's refusal is written down at all. Nothing left,
-    /// nothing was shown, and a thread lost putting the question is
-    /// remembered on the turn for the service to ask about, as it is for a
-    /// verb.
+    /// Kept on the turn because [`crate::crossing`] calls it without having
+    /// put anything: a question that never reached the door still leaves the
+    /// machine's own refusal in the record. The entry and the sentence are
+    /// [`crate::a_question_that_leaves_this_machine`]'s; the closing and the
+    /// lost thread are this turn's.
     pub(crate) fn nothing_was_bounded(
         &mut self,
         why: NoBoundary,
         agent: &Grantee,
         now: SystemTime,
     ) -> NoAnswer {
-        if why.a_thread_is_still_inside() {
+        let became = crate::a_question_that_leaves_this_machine::nothing_was_bounded(
+            self.machine(),
+            why,
+            agent,
+            now,
+        );
+        if became.the_record_broke {
+            self.the_record_broke();
+        }
+        if became.a_thread_was_lost {
             self.a_thread_was_lost();
         }
-        let said = why.said(self.machine().strings());
-        let entry = Entry::not_bounded(agent, said.text(), why.why(), now);
-        match self.keeping(entry) {
-            Ok(()) => NoAnswer::NotBounded(why),
-            Err(kept) => nothing_left(kept),
-        }
+        became.why
     }
 
     /// What came back from the runtime or from a service running here.
@@ -453,14 +390,6 @@ fn nothing_left(why: NotKept) -> NoAnswer {
     NoAnswer::NotRecorded {
         why,
         after_it_left: false,
-    }
-}
-
-/// The record broke after somebody's question had already left the machine.
-fn after_it_left(why: NotKept) -> NoAnswer {
-    NoAnswer::NotRecorded {
-        why,
-        after_it_left: true,
     }
 }
 

@@ -829,6 +829,18 @@ impl<'a, 'm> Turning<'a, 'm> {
         (entry, outcome)
     }
 
+    /// The record would not take an entry, so this turn has stopped keeping
+    /// evidence and is over.
+    ///
+    /// `pub(crate)` for [`crate::a_question_that_leaves_this_machine`], which
+    /// holds law 1's sequence for a question and is not a turn: it reports that
+    /// the record broke and this is the turn doing something about it. Written
+    /// as a method rather than the field so that the one thing that closes a
+    /// turn from outside this file is a named act.
+    pub(crate) const fn the_record_broke(&mut self) {
+        self.closed = true;
+    }
+
     /// A thread of the service is inside a boundary that is over.
     ///
     /// `pub(crate)`, for [`crate::asking`]: a question is put from inside a
