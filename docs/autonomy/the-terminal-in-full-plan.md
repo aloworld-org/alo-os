@@ -899,7 +899,10 @@ left in place is how a gap stops being read as one.*
   `btrfs` invocations are `subvolume snapshot -r` and `subvolume delete
   --commit-after`, in 122 crates. And the hard part is *when* — a home cannot be
   swapped out from under the person living in it. ADR 0127 carries the three
-  shapes and they are the owner's.
+  shapes and they are the owner's. **Both answered the same day**: a Settings row
+  under Terminal, and *a folder now, the next sign-in next, never a root helper*
+  — so task 10 **is** buildable, in that shape, and it is this lane's next task.
+  Tasks 7 and 8 are unaffected and still the comparer's.
   **Tasks 7 and 8 are not**: both need what each command *changed*, which is the
   comparer's, and the comparer is the third PC's (ADR 0045, and `alo-agentd`
   records the gap in its own words). *This bullet said "a bracket" until the

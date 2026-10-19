@@ -2,7 +2,10 @@
 
 **Status:** **accepted, 2026-10-19, by the owner.** Proposed the same day by the
 Mac lane, which laid out four options and recommended this one; the owner
-answered *I accept*. Nothing is built in the change that records it.
+answered *I accept*. **Amended the same day** with the two things this ADR had
+left open — how a person asks, and when the rewind happens — both of which the
+owner then settled; see *The two questions this left open, answered*. Nothing is
+built in the change that records it.
 **Context:** [ADR 0045](0045-what-undoing-rewinds-to.md) (what undoing rewinds
 to, and its six accepted terms); law 5 (*the person chooses*, and *never
 offering is not taking away*); `docs/features.md` ★ *scrollback you can move
@@ -96,11 +99,55 @@ of the owner about the product rather than of a person about a setting.
 the machine say the same thing. A promise narrowed in an ADR and left standing in
 the feature list is the fault law 5's own paragraph was added for.
 
+## The two questions this left open, answered 2026-10-19 by the owner
+
+Both were put to the owner with the options drawn out and a recommendation on
+each. They answered *I agree with all your recommendations*.
+
+### 1. How a person asks: a Settings row
+
+**A row in Settings, under Terminal**, reading *snapshot before each command, so
+I can go back*, which writes a line to the person's own settings file.
+
+| rejected | why |
+|---|---|
+| a word when the terminal opens (`--undoable`) | **later, not never.** It is the only shape that is genuinely *per session* — one window undoable and the rest not — and it is worth having. It is second because a person has to have decided **before** opening the window, and cannot turn it on in the one they are already in |
+| a line in the settings file as the way to ask | it is the **storage**, not the asking. A protection a person cannot find is not one, which is this file list's own stance |
+
+The row is the shape the owner has already chosen twice for this family — ADR
+0125's *may alo use another model* row landed as #822 — so it needs no new
+surface design, and the `--undoable` word later becomes an override on top of
+the same stored line rather than a second mechanism.
+
+**What it costs, said plainly:** a row is on until it is turned off, so it is
+*per machine* rather than *per session* until the word above exists. A person who
+leaves it on has ADR 0045's window churning all week. That is the owner's choice
+knowing the cost, which is law 5's test.
+
+### 2. When the rewind happens: a folder now, the next sign-in next, and never a root helper
+
+**The constraint, in one sentence:** the snapshots are read-only copies of the
+person's whole home, and the home is the thing they are living in while they ask
+to rewind it. Their shell, their editor and their applications hold files open
+in it.
+
+| | decided |
+|---|---|
+| **a folder, not the home** | **first.** Works immediately, needs no privilege and no sign-out, and is what a person actually reaches for: a codemod mangled `src/`, and nobody wants to un-download a file because a build broke |
+| **at the next sign-in**, for the whole home | **second.** Nothing holds the home then, so it is a clean swap. It is how an operating system usually does this, and it is explicitly the slower of the two |
+| **a privileged helper that swaps the subvolume** | **not at all.** It is a new privileged path whose job is *deleting the person's home*, which is the largest thing anybody could add to this product, and law 2's argument is about keeping that surface small. **It would also still not run while the person is signed in**, so it buys the danger and keeps the sign-out |
+
+**So *your files are as they were* becomes, honestly: the folder you picked, now
+— or all of them, at your next sign-in.** `docs/features.md` is narrowed a
+second time in the change that builds it, which is twice in one day for one
+starred line and is said here so that it is on the record rather than noticed
+later.
+
 ## What this does not decide
 
-- **How a person asks.** A setting, a word when the terminal opens, a line in
-  their settings file — unspecified here. It is a surface, and the design file
-  is where a surface comes from.
+- **The words on the row and the restore's sentence.** They are strings in the
+  vocabulary, and the design file is where a surface's wording comes from where
+  it has one.
 - **Whether a session's snapshots expire differently.** ADR 0045's window and its
   four rules apply unchanged until something says otherwise; a session that asked
   for snapshots is still subject to *disk pressure wins over undo* and *a machine
