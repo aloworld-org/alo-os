@@ -757,6 +757,55 @@ stops showing.
 *Nothing here changes what ADR 0125 decided. It changes the estimate, and it
 names the file the next person should open first.*
 
+### A second sequence has to be shared too — measured 2026-10-19, by starting it
+
+**The egress sequence is not the only thing a person's road must share.**
+Measured by building the protocol half and then reading what the daemon would
+have to do next:
+
+`alo-agentd`'s `doing.rs` prepares a provider question in a **deliberate
+order**, and its own comments say why each step is where it is:
+
+1. **the organisation's rule first** — *a question the organisation's bound
+   refuses is refused before the keyring is opened, so a policy refusal never
+   reaches for the person's credential*;
+2. **then which way out of this machine** — *a question with no road to go on
+   never reaches for the person's credential*, and a road that could not be
+   decided is refused rather than quietly going straight out, because *on a
+   company network that would be a machine sending its company's traffic
+   around the company's own rule with nobody told*;
+3. **then the key**, from the keyring, by the name `SecretRef` holds;
+4. then `Hosted::taking`, and the ask.
+
+That is eighty-odd lines with **four distinct refusals**, each a different thing
+for a person to go and do. A person's road needs the same four in the same
+order — so it must **share** them, for the same reason the egress sequence is
+one copy: two orderings of *rule, road, key* is how one of them one day reaches
+for a credential to answer a question a rule had already refused.
+
+**So the task is two extractions and then three small pieces**, in this order:
+
+| | |
+|---|---|
+| 1 | law 1's egress sequence — **done**, #825 |
+| 2 | `doing.rs`'s provider preparation, shared rather than copied — **done**, `alo-agentd/src/a_provider_ready_to_be_asked.rs` |
+| 3 | the protocol message, the daemon's handler, `alo-ask` sending it — **the remainder**, and the whole of it |
+
+*The protocol message was written on 2026-10-19 and **discarded unlanded**: a
+message nothing sends is the fault this plan keeps finding, and the honest place
+to stop was before it. It is rewritten with its sender and its handler, together,
+or not at all.*
+
+**The ordering is now a test and not a comment.** Five tests in that file, two of
+them written by mutating the order and watching: asking the key first fails
+*a rule refuses before the keyring is opened* and *no road out refuses before the
+keyring is opened*; asking the road before the rule fails *a rule refuses before
+a road is asked for*, and nothing else. The instrument is
+`WhoseKeyring::Nobodys`, whose every lookup is `NotStored::Unavailable` — so a
+credential reached for out of turn shows up as **the wrong refusal** rather than
+as nothing at all, which is the only way a question about ordering can be asked
+of code that refuses either way.
+
 **The refusal paths are the work, not the happy path.** A provider configured
 with no key, a key the provider rejects, an address that will not resolve, an
 `http` address that is not on this machine (`docs/features.md` refuses rather

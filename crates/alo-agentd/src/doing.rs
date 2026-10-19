@@ -40,7 +40,7 @@
 use std::time::{Duration, SystemTime};
 
 use alo_answering::Answering;
-use alo_asking::{Answer, Hosted};
+use alo_asking::Answer;
 use alo_capability::{AnswerError, Grants, ProposalId};
 use alo_models::{NotAllowed, RuntimeError};
 use alo_protocol::{Answered, FromAnAgent, ToAnAgent};
@@ -49,6 +49,7 @@ use alo_turn::{Answers, NoAnswer, NoBoundary, NotDone, Places, Turning};
 
 use alo_secrets::NotStored;
 
+use crate::a_provider_ready_to_be_asked::{NotPrepared, a_provider_ready_to_be_asked};
 use crate::corridor::{Corridor, put_down_the_corridor};
 use crate::questions::{Questions, WhatAnswers};
 use crate::rereading;
@@ -262,79 +263,42 @@ fn put_to_a_model(
             model,
             places,
         } => {
-            // **The rule is asked first, and that ordering is the point.**
-            // A question the organisation's bound refuses is refused before the
-            // keyring is opened, so a policy refusal never reaches for the
-            // person's credential — there is nothing to reach it for, and a
-            // store touched on the way to saying no is a store touched for
-            // nothing.
-            //
-            // The source is the provider's own, read off the provider the
-            // person's list resolved — never assumed, and never `ThisMachine`
-            // because the address happened to look local.
-            let permission = match Answering::chosen(provider.source(), places.policy()) {
-                Ok(permission) => permission,
-                Err(why) => {
-                    return refused_by_a_rule(turning, &why, by_an_organisation, strings, now);
-                }
-            };
-
-            // **And then which way out of this machine that road goes**, before
-            // the keyring and before anything opens. `alo_proxy::the_way`
-            // decides it for `Road::AskingAProvider`; nothing here does, and
-            // `crate::the_road_out` is the one place that asks.
-            //
-            // Asked *after* the rule and *before* the key, which is the same
-            // ordering argument twice: a question the organisation's bound
-            // refuses never reaches for a road, and a question with no road to
-            // go on never reaches for the person's credential. A road that
-            // could not be decided is **refused** rather than quietly going
-            // straight out — on a company network that would be a machine
-            // sending its company's traffic around the company's own rule with
-            // nobody told.
-            //
-            // Held out here for the reason the key below is: `Hosted::taking`
-            // borrows it, and it must outlive the ask.
-            let taking = match the_road_out.to(provider) {
-                Ok(taking) => taking,
-                Err(why) => return ToAnAgent::refused(&why.said(strings)),
-            };
-
-            // Held out here because `Hosted::provider` borrows it, and it must
-            // outlive the ask. This is the only place in the daemon where a
-            // credential exists at all, and it lives no longer than the turn.
-            let held;
-            let key = match provider.key.as_ref() {
-                None => None,
-                Some(reference) => match Questions::a_key_from(&keyring, reference) {
-                    Ok(secret) => {
-                        held = secret;
-                        Some(&held)
-                    }
-                    // Nothing was sent, and `NotStored::nothing_was_sent` is
-                    // the type's own statement of that.
-                    Err(why) => {
-                        return ToAnAgent::refused(
-                            &strings.say(&said_about(why).key(), &Filling::nothing()),
-                        );
-                    }
+            // **Rule, then road, then key** — and that ordering lives in
+            // `crate::a_provider_ready_to_be_asked`, not here, because a
+            // person's own question goes to a provider down a second road
+            // (ADR 0125) and two orderings of the three is how one of them one
+            // day reaches for a credential to answer a question a rule had
+            // already refused. This file words the refusals; it does not
+            // decide them.
+            let prepared = a_provider_ready_to_be_asked(
+                provider,
+                places.policy(),
+                &the_road_out,
+                &keyring,
+                |permission, answers| {
+                    putting(
+                        turning, answered, question, model, permission, answers, &places, now,
+                    )
                 },
-            };
+            );
 
-            match putting(
-                turning,
-                answered,
-                question,
-                model,
-                permission,
-                &Answers::Provider(Hosted::provider(provider, key).taking(&taking)),
-                &places,
-                now,
-            ) {
-                Ok(answer) => {
+            match prepared {
+                Ok(Ok(answer)) => {
                     ToAnAgent::answered(answer.text(), &answer.came_from(strings), answer.model())
                 }
-                Err(why) => ToAnAgent::refused(&nothing_answered(&why, strings)),
+                Ok(Err(why)) => ToAnAgent::refused(&nothing_answered(&why, strings)),
+                // The three refusals, each worded by whoever knows it: a rule
+                // by `alo_models::NotAllowed` through the turn's own record, a
+                // road by `crate::the_road_out`, and a key by this crate
+                // because a keyring that will not answer is this machine's
+                // fact and nobody else's.
+                Err(NotPrepared::ARuleRefused(why)) => {
+                    refused_by_a_rule(turning, &why, by_an_organisation, strings, now)
+                }
+                Err(NotPrepared::NoRoadOut(why)) => ToAnAgent::refused(&why.said(strings)),
+                Err(NotPrepared::TheKeyIsNotStored(why)) => {
+                    ToAnAgent::refused(&strings.say(&said_about(why).key(), &Filling::nothing()))
+                }
             }
         }
         WhatAnswers::OnThisMachine {
