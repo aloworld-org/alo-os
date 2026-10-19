@@ -819,5 +819,19 @@ left in place is how a gap stops being read as one.*
   capability, D-Bus interface or stored format*. A public surface, so an ADR
   comes before a caller. *Found 2026-10-18, in the hour after task 11 was
   written up as startable.*
+- **Who the indicator and the record name when the person asks** — task 11, and
+  the last thing between ADR 0125 and a working provider road.
+  [ADR 0126](../decisions/0126-a-persons-own-question-is-a-third-authority-on-the-indicator-and-in-the-record.md)
+  proposes the answer and measures the shape: **a third authority**, beside an
+  agent's and alo OS's own, going on the same indicator under no agent's name.
+  Found 2026-10-19 **by building up to it** — every type on law 1's road answers
+  *whose authority is this under* with an `alo_capability::Grantee`, which is an
+  agent or an application, and `crates/alo-ask/src/main.rs` had already written
+  down that a command a person typed is neither and that *it costs nothing today
+  precisely because this door never reads it*. The provider road is the door
+  that reads it. **The bullet above this one is the same finding a day earlier
+  and stopped one level short**: it asked how a process reports an egress, and
+  the answer (ADR 0125: it does not, it asks the daemon) left this question
+  untouched underneath.
 - **The owner, on the pairing of five answers to four actions** — `docs/features.md`
   records it as theirs. Task 1 does not need it; offering the actions does.
