@@ -23,6 +23,14 @@
 //! tidied.** The walk goes on, which is why what it stepped over is a list
 //! beside the answer rather than an error instead of it.
 
+// **Unix only, as `crate::whose` already is.** That file gives `WhoOwns` a
+// `#[cfg(unix)]` body and a `#[cfg(not(unix))]` refusal, so this crate was
+// meant to compile anywhere; this import was the one place that did not get the
+// same treatment, and it kept `alo-letting-go` from compiling for Windows at
+// all. Found 2026-10-19: the Windows installer depends on `alo-saying`, which
+// depends on every crate to collect its words, so one ungated Unix import here
+// stops the installer building.
+#[cfg(unix)]
 use std::os::unix::fs::MetadataExt as _;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
@@ -82,7 +90,38 @@ fn the_same_person_owns(directory: &Path, settings: &Path) -> Result<(), String>
             ));
         }
     };
+    the_owners(directory, &theirs, settings, &named)
+}
+
+/// The two owners, compared — on a Unix.
+#[cfg(unix)]
+fn the_owners(
+    directory: &Path,
+    theirs: &std::fs::Metadata,
+    settings: &Path,
+    named: &std::fs::Metadata,
+) -> Result<(), String> {
     whether_the_same_person_owns(directory, theirs.uid(), settings, named.uid())
+}
+
+/// Anywhere that is not a Unix, where this crate's units do not run.
+///
+/// `crate::whose::WhoOwns` answers the same way and says the same thing: there
+/// is no owner to read, so there is nothing to compare and nothing is claimed.
+/// A `Ok(())` here would be *the same person owns both*, which is a claim this
+/// cannot make.
+#[cfg(not(unix))]
+fn the_owners(
+    directory: &Path,
+    _theirs: &std::fs::Metadata,
+    settings: &Path,
+    _named: &std::fs::Metadata,
+) -> Result<(), String> {
+    Err(format!(
+        "{} names {} as a settings folder, and who owns a file is not readable on this system",
+        directory.display(),
+        settings.display()
+    ))
 }
 
 /// The comparison itself, with the two owners already read.
