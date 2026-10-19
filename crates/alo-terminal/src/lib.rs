@@ -62,6 +62,11 @@ pub use a_shell_on_a_pseudoterminal::{
 };
 pub use a_test_result_a_program_printed::{ATestResult, a_test_result_in};
 pub use how_big_the_grid_is::{HowBig, NotASize};
+// Gated with its module, for `alo-portals`' reason. Found by sweeping for the
+// shape rather than by meeting it: nothing outside this crate names
+// `NotStopped`, so it broke no caller and would have waited for whoever next
+// dispatched a Windows build.
+#[cfg(target_os = "linux")]
 pub use stopping_the_command_in_front::NotStopped;
 pub use terminal_output_becomes_a_grid::{
     ACellRun, ACursorShape, TerminalOutput, WhereTheCursorIs,

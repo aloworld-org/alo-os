@@ -148,6 +148,12 @@ mod network_monitor_portal;
 mod open_uri_portal;
 #[cfg(target_os = "linux")]
 mod opening;
+// **Gated with its module**, which it was not until 2026-10-19. The module is
+// Linux-only and this re-export was not, so `alo-portals` did not compile for
+// Windows at all from #635 until now — and the only build that targets Windows
+// is `installer-candidate.yml`, which runs on a manual dispatch. `main` was
+// green for every Linux gate in between.
+#[cfg(target_os = "linux")]
 pub use opening::activated;
 #[cfg(target_os = "linux")]
 mod secret_portal;
