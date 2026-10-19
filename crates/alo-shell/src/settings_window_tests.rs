@@ -18,7 +18,7 @@ use crate::settings_testing::{
 };
 use alo_capability::Grants;
 use alo_changing::{Changing, Gone, Stood, Unpaired};
-use alo_choosing::{Choosing, Picked};
+use alo_choosing::{Choosing, MayUseAnother, Picked};
 use alo_granted::Listing;
 use alo_shortcuts::Modifier;
 
@@ -117,6 +117,12 @@ fn every_setting_the_machine_has_is_in_one_window() {
                 model: "harbour-small".to_owned(),
             }),
             &SettingsRow::Answer(SettingsChoice::NotAtAll),
+            // **Beneath the four**, and only because this person chose a
+            // provider: *Unless the person says otherwise, in Settings*. The
+            // test below asserts they are absent for somebody who chose a
+            // model on this machine.
+            &SettingsRow::UsingAnother(MayUseAnother::Yes),
+            &SettingsRow::UsingAnother(MayUseAnother::No),
         ]
     );
     let accents: Vec<SettingsRow> = Accent::ALL.into_iter().map(SettingsRow::Accent).collect();
@@ -436,6 +442,87 @@ fn shortcuts_change_nothing_their_crate_would_not_and_refuse_in_its_words() {
     alo_shortcuts::keeping::keep(&twin_at, expected.changes()).unwrap();
     assert_eq!(bytes(&at), bytes(&twin_at));
     assert_eq!(alo_shortcuts::keeping::at_sign_in(&at), (expected, None));
+}
+
+/// **Pressing the row writes exactly what `alo-choosing`'s own door writes.**
+///
+/// The same shape as the test below it, and for the same reason: this window
+/// decides nothing about a person's settings. It presses the row, has a twin
+/// settings file call `Choosing::may_use_another` directly, and compares the
+/// two files byte for byte — so a surface that wrote its own idea of the
+/// setting fails rather than looking right.
+///
+/// And it presses **both** rows, because a surface that could only ever say
+/// yes would pass a test that only pressed yes.
+#[test]
+fn using_another_changes_nothing_alo_choosing_would_not() {
+    let machine = a_persons_machine("using-another");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let at = machine.choosing();
+    let twin = a_twin();
+    let twin_at = copied(&at, twin.path());
+    let mut twin_choosing = Choosing::at(&twin_at).unwrap();
+
+    for said in MayUseAnother::BOTH {
+        assert_eq!(
+            chosen(
+                &mut window,
+                &SettingsRow::UsingAnother(said),
+                &strings,
+                &door
+            ),
+            Some(SettingsDid::Answered(SettingsAnswered::Written)),
+            "{said:?} was not written"
+        );
+        twin_choosing.may_use_another(Some(said)).unwrap();
+        assert_eq!(
+            bytes(&at),
+            bytes(&twin_at),
+            "{said:?}: the window wrote something its crate would not"
+        );
+    }
+}
+
+/// **The rows are absent for a person with nothing to cover for.**
+///
+/// Choosing *not at all* leaves nothing a fallback could stand in for, and a
+/// row offered where it changes nothing is the advertisement ADR 0009 rejects.
+/// Absent rather than drawn and disabled, which is this section's rule for the
+/// four above them.
+#[test]
+fn using_another_is_no_question_when_nothing_answers() {
+    let machine = a_persons_machine("using-another-nothing");
+    let mut window = machine.opened();
+    let strings = words();
+    let door = CountingDoor::revoking();
+
+    assert!(
+        window
+            .rows(noon())
+            .iter()
+            .any(|row| matches!(row, SettingsRow::UsingAnother(_))),
+        "this fixture chose a provider, so the rows should be there before the change below"
+    );
+
+    assert_eq!(
+        chosen(
+            &mut window,
+            &SettingsRow::Answer(SettingsChoice::NotAtAll),
+            &strings,
+            &door
+        ),
+        Some(SettingsDid::Answered(SettingsAnswered::Written))
+    );
+
+    let rows = window.rows(noon());
+    assert!(
+        !rows
+            .iter()
+            .any(|row| matches!(row, SettingsRow::UsingAnother(_))),
+        "a person who chose that nothing answers was offered a fallback: {rows:?}"
+    );
 }
 
 /// **What answers questions changes nothing `alo-choosing` would not**: each

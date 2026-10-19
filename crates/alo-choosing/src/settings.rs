@@ -136,6 +136,36 @@ pub enum MayUseAnother {
     No,
 }
 
+impl MayUseAnother {
+    /// Both answers, in the order a person reads them in the list they pick
+    /// from.
+    ///
+    /// `Yes` first because it is the one that keeps answers coming, and a
+    /// person arriving at this row has already chosen a provider or a machine
+    /// — so the question in front of them is *may alo cover for it*, and the
+    /// affirmative is the one they came to consider.
+    pub const BOTH: [Self; 2] = [Self::Yes, Self::No];
+
+    /// The string this crate declares for this answer.
+    #[must_use]
+    pub const fn word(self) -> alo_strings::Word {
+        match self {
+            Self::Yes => crate::words::ANOTHER_MAY_BE_USED,
+            Self::No => crate::words::NOTHING_ELSE_MAY_BE_USED,
+        }
+    }
+
+    /// What this says, in the language the person reads.
+    ///
+    /// Never fails and never panics: a `Strings` that was never given this
+    /// crate's words through [`crate::declare_into`] answers with the key,
+    /// marked.
+    #[must_use]
+    pub fn said(self, strings: &alo_strings::Strings) -> alo_strings::Said {
+        strings.say(&self.word().key(), &alo_strings::Filling::nothing())
+    }
+}
+
 impl Settings {
     /// Settings holding what somebody chose, brought and reads.
     ///
