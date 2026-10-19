@@ -96,7 +96,7 @@ causes, five of which are another lane's or the owner's:
 | 8 | bisect the machine | **the comparer** — the third PC's |
 | 10 | *your files as they were* | **the comparer** |
 | 9 | try a command touching nothing | **the kernel boundary** — the kernel plan's |
-| 11 | ask alo where the person chose, not only here | **two**: law 1 out of a process, and a trade the owner owns — today it answers where nobody chose |
+| 11 | ask alo where the person chose, not only here | **both blocks gone.** ADR 0125 settled law 1 out of a process; the owner settled the trade, and the setting and its Settings row are built (#820, #822). **What is left is one request on the daemon's socket** |
 
 **So the five causes are:** shell integration (2 tasks), the privileged comparer
 (3), a design component nobody has captured (part of 1), `alo-capability`'s
@@ -695,18 +695,31 @@ published, and the owner ruled on 2026-10-18 that all three may answer and never
 local only. No line of `docs/features.md` gains a capability here; one stops
 being false on a machine without weights.
 
-**The road is built. The caller is not.** `alo_choosing::Settings::provider`,
-`alo_choosing::what_answers_here` and `alo_asking::Asking::to_a_provider` all
-exist. What `alo-ask` must become is that door's caller, and each of these is a
-duty the door pushes onto it rather than something to invent:
+**The road is built. The caller is not** — and since ADR 0125 was accepted on
+2026-10-18, **the caller is `alo-agentd` rather than `alo-ask`.** That is the
+single most important thing on this page to read before building it: the table
+below said *by whom* and meant the command, and five duties later it turned out
+the command could discharge only two of them.
 
-| owed | by whom, and why |
+`alo_choosing::Settings::provider`, `alo_choosing::what_answers_here` and
+`alo_asking::Asking::to_a_provider` all exist, and `alo-agentd` already drives
+the last of them — `doing.rs` has a test that reads the person's settings, asks
+a real keyring for their key, and opens a connection *to the address they wrote
+down and to nothing else*.
+
+| owed | by whom, after ADR 0125 |
 |---|---|
-| resolve the address and register it before the boundary | `to_a_provider`'s own doc: *resolved and registered by the caller before any boundary was entered* (ADR 0020). A request to an address nobody registered reaches somewhere nobody was shown |
-| the key out of the keyring | `docs/features.md`: *the key goes to the keyring, never into a settings file, so it cannot leak through a backup or a support bundle* |
-| show the egress **at the moment it happens** | law 1, and it is half the law. A command that printed the place afterwards has reported an egress, not surfaced one |
-| keep the entry | law 1's other half. `docs/contracts/record-file.md` names the file and `alo-keeping` writes it; this command has no road to it |
-| **never fall back** | ADR 0008: *never a silent fallback*. If the chosen place cannot answer, the person is told — the other place is not tried |
+| resolve the address and register it before the boundary | **the daemon.** `to_a_provider`'s own doc: *resolved and registered by the caller before any boundary was entered* (ADR 0020) |
+| the key out of the keyring | **the daemon**, which already does it. `docs/features.md`: *the key goes to the keyring, never into a settings file* |
+| show the egress **at the moment it happens** | **the daemon**, which holds the one live indicator. A command cannot: see the section below |
+| keep the entry | **the daemon.** ADR 0125's own line: *that service shows it **and keeps the record*** |
+| **never fall back** | **both, differently.** The daemon does not try somewhere else; and what `alo-ask` does when the chosen place is unreachable is now the person's setting — `[when-mine-is-unavailable]`, built 2026-10-19 |
+
+**So what `alo-ask` must become is much smaller than this page first said**: it
+sends the person's question to their own daemon socket when their settings name
+a provider, and shows what comes back. The request itself is the piece nobody
+has written — `FromAPerson` has fourteen variants and not one of them is *ask
+this*.
 
 **The refusal paths are the work, not the happy path.** A provider configured
 with no key, a key the provider rejects, an address that will not resolve, an
@@ -715,7 +728,13 @@ than warns), and a settings file naming a provider on a machine with no network.
 Each is a different sentence to a person and none of them may be *answered
 locally instead*.
 
-### What blocks it: law 1 cannot be satisfied from a command
+### Why law 1 cannot be satisfied from a command — decided, not blocking
+
+*This heading read **What blocks it** until 2026-10-19. It is not a blocker any
+more: the owner accepted ADR 0125 and the answer is that the command asks the
+daemon. The measurement is kept because it is the whole argument for that
+answer, and because the next person-facing command that wants to cause an
+egress will meet the same wall and should find out why here.*
 
 **Measured 2026-10-18, after the table above was written.** Two of those five
 duties are law 1 itself — *visible at the moment it happens and afterwards in a
@@ -739,11 +758,12 @@ this product that would cause egress, and the first to find that out. Every
 later one meets the same wall: *the command that fetches a model, the command
 that tests a provider, anything a person types that leaves this machine.*
 
-**What is needed is a decision, not a caller:** how a process that is neither
-the compositor nor the agent daemon reports an egress and keeps an entry.
+**What was needed was a decision, not a caller:** how a process that is neither
+the compositor nor the agent daemon reports an egress and keeps an entry. **The
+answer is that it does not** — it asks one that can.
 
-**That ADR is now drafted — [ADR 0125](../decisions/0125-a-command-does-not-report-an-egress-it-asks-a-service-that-can-show-one.md),
-proposed, the owner decides — and writing it changed the answer.** It needs **no
+**That ADR is now accepted — [ADR 0125](../decisions/0125-a-command-does-not-report-an-egress-it-asks-a-service-that-can-show-one.md),
+by the owner on 2026-10-18 — and writing it changed the answer.** It needs **no
 new public surface on the indicator**, because the precedent already exists and
 is load-bearing: `alo-agent` is a short-lived process that needs a model, names
 `Indicator` zero times across 7 files and 1070 lines, does not depend on
