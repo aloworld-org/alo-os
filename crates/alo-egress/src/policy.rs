@@ -27,6 +27,7 @@
 
 use alo_models::SourcePolicy;
 
+use crate::destination::Destination;
 use crate::leaving::Leaving;
 use crate::refusing::{NotPermitted, Refusal};
 
@@ -52,11 +53,68 @@ impl EgressPolicy {
     /// Whether this egress is permitted.
     #[must_use]
     pub fn permits(&self, leaving: &Leaving) -> bool {
+        self.permits_going_to(leaving.destination())
+    }
+
+    /// Whether anything at all may go to this destination.
+    ///
+    /// **The same decision as [`EgressPolicy::permits`], asked about the only
+    /// thing that decision reads.** Every arm of this rule is about where
+    /// something is going; none of them has ever looked at who is sending it,
+    /// and [`EgressPolicy::permits`] is this call with the destination taken
+    /// off a [`Leaving`].
+    ///
+    /// It is public because a question a **person** asked has no [`Leaving`] to
+    /// take one off — nothing shows it and nothing records it
+    /// ([ADR 0126](../../../docs/decisions/0126-a-persons-own-question-is-a-third-authority-on-the-indicator-and-in-the-record.md)),
+    /// so there is no egress value and no authority behind it. The
+    /// **organisation's rule still applies**, which is ADR 0016 rather than
+    /// law 1, and this is the door it applies through.
+    ///
+    /// # This is not a way around the indicator
+    ///
+    /// [`crate::Indicator::beginning`] asks this and shows the egress **in one
+    /// call because they must not be two**, and that stays exactly as it was:
+    /// nothing that has a `Leaving` may reach the policy except through it.
+    /// What this door serves is the case with no `Leaving` at all, where there
+    /// is nothing to show and so nothing a caller could have forgotten to
+    /// show.
+    #[must_use]
+    pub fn permits_going_to(&self, destination: &Destination) -> bool {
         match self {
             Self::Anywhere => true,
-            Self::InTheBuilding => leaving.destination().stays_in_the_building(),
-            Self::InRegion(region) => leaving.destination().is_in(region),
+            Self::InTheBuilding => destination.stays_in_the_building(),
+            Self::InRegion(region) => destination.is_in(region),
             Self::NothingLeaves => false,
+        }
+    }
+
+    /// Which rule refuses a question going to this destination, or [`None`]
+    /// where none does.
+    ///
+    /// [`EgressPolicy::refusal`]'s twin for the case above, and the refusal is
+    /// the bare [`Refusal`] rather than a [`crate::NotPermitted`] for one
+    /// reason: a `NotPermitted` carries the egress it refused, so that a record
+    /// can say what was tried, and there is no egress here to carry. The
+    /// sentence a person reads is the same one either way —
+    /// [`crate::NotPermitted::said`] fills `destination` and `region` and has
+    /// never named an agent — so the caller words this with
+    /// [`Refusal::word`] and the person reads what they would have read.
+    #[must_use]
+    pub fn refusal_going_to(&self, destination: &Destination) -> Option<Refusal> {
+        if self.permits_going_to(destination) {
+            return None;
+        }
+        match self {
+            // Unreachable while `permits_going_to` answers true for it, and
+            // answered rather than asserted for `EgressPolicy::refusal`'s own
+            // reason: a rule that permits everything refuses nothing.
+            Self::Anywhere => None,
+            Self::InTheBuilding => Some(Refusal::OutsideTheBuilding),
+            Self::InRegion(region) => Some(Refusal::OutsideTheRegion {
+                region: region.clone(),
+            }),
+            Self::NothingLeaves => Some(Refusal::NothingMayLeave),
         }
     }
 
@@ -269,3 +327,11 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+#[path = "policy_without_an_egress_tests.rs"]
+mod without_an_egress;

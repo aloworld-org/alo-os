@@ -49,7 +49,6 @@ use alo_answering::Answering;
 use alo_asking::Hosted;
 use alo_models::{NotAllowed, Provider, SourcePolicy};
 use alo_secrets::NotStored;
-use alo_turn::Answers;
 
 use crate::questions::{Questions, WhoseKeyring};
 use crate::the_road_out::{NotTaken, TheRoadOut};
@@ -84,8 +83,12 @@ pub enum NotPrepared {
 
 /// Rule, road and key, in that order, with the caller's work run inside.
 ///
-/// `then` receives what the rule permitted and the `alo_turn::Answers` the
-/// question goes to, and runs while the road and the key are still alive. It
+/// `then` receives what the rule permitted and the `alo_asking::Hosted` the
+/// question goes to, and runs while the road and the key are still alive. It is
+/// the `Hosted` rather than an `alo_turn::Answers` wrapping one, because **two
+/// roads reach this and only one of them is a turn**: an agent's caller wraps
+/// it in `Answers::Provider` and a person's does not
+/// ([ADR 0126](../../../docs/decisions/0126-a-persons-own-question-is-a-third-authority-on-the-indicator-and-in-the-record.md)). It
 /// is not called at all when any of the three refuses, and the refusal comes
 /// back as [`NotPrepared`] for the caller to word.
 ///
@@ -100,7 +103,7 @@ pub fn a_provider_ready_to_be_asked<T>(
     policy: &SourcePolicy,
     the_road_out: &TheRoadOut,
     keyring: &WhoseKeyring,
-    then: impl FnOnce(Answering, &Answers<'_>) -> T,
+    then: impl FnOnce(Answering, Hosted<'_>) -> T,
 ) -> Result<T, NotPrepared> {
     // **The rule is asked first, and that ordering is the point.** The source
     // is the provider's own, read off the provider the person's list resolved
@@ -129,7 +132,7 @@ pub fn a_provider_ready_to_be_asked<T>(
 
     Ok(then(
         permission,
-        &Answers::Provider(Hosted::provider(provider, key).taking(&taking)),
+        Hosted::provider(provider, key).taking(&taking),
     ))
 }
 
@@ -274,18 +277,22 @@ mod tests {
         )
         .expect("a provider that needs no credential");
 
-        let leaves = a_provider_ready_to_be_asked(
+        let reached = a_provider_ready_to_be_asked(
             &provider,
             &SourcePolicy::Anywhere,
             &TheRoadOut::nobodys(),
             // Nobody's, and it does not matter: a provider that names no key
-            // reaches no store, so the one machine in this product where a
+            // reaches no store, so the one place in this product where a
             // credential exists is never entered.
             &WhoseKeyring::Nobodys,
-            |_, answers| answers.leaves(),
+            |_, hosted| hosted.named_source(),
         )
         .expect("rule, road and key all said yes");
 
-        assert!(leaves, "a hosted provider is an egress");
+        assert_eq!(
+            reached,
+            provider.source(),
+            "the ask was reached, and for the provider the person's list resolved"
+        );
     }
 }

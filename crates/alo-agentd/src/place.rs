@@ -103,11 +103,15 @@ use crate::unix::give_to_group;
 
 /// The directory every person's door goes in, which the image makes at boot.
 ///
-/// Part of the daemon protocol's public surface, with ADR 0017 behind it.
-pub const THE_ROOT: &str = "/run/alo";
+/// Part of the daemon protocol's public surface, with ADR 0017 behind it — so
+/// since 2026-10-19 the value lives in `alo_protocol::where_the_door_is`, which
+/// is the crate that contract belongs to and the one a client can reach.
+/// Re-exported here because this crate's callers have always read it here.
+pub use alo_protocol::where_the_door_is::THE_ROOT;
 
-/// The socket's name. Part of the daemon protocol's public surface.
-pub const THE_SOCKET: &str = "agentd.sock";
+/// The socket's name. Part of the daemon protocol's public surface, and kept
+/// with [`THE_ROOT`] for the same reason.
+pub use alo_protocol::where_the_door_is::THE_SOCKET;
 
 /// The person owns it, the agent's group may enter it, nobody else exists.
 const THE_DIRECTORY_MODE: u32 = 0o750;
@@ -140,7 +144,9 @@ impl Place {
     #[must_use]
     pub fn beneath(root: &Path, person: Uid) -> Self {
         let directory = root.join(person.raw().to_string());
-        let socket = directory.join(THE_SOCKET);
+        // The one join, in the crate the contract belongs to, so a client and
+        // this service cannot come to disagree about where the door is.
+        let socket = alo_protocol::where_the_door_is::the_door_beneath(root, person.raw());
         Self {
             root: root.to_path_buf(),
             directory,

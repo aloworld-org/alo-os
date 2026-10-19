@@ -130,7 +130,13 @@ impl FromAnAgent {
             // What this machine tells the network is the person's to check: an
             // agent told it would be an agent reading, in the person's name,
             // what their machine says about itself.
-            | Asked::Advertised {} => Err(NotUnderstood::NotForAnAgent),
+            | Asked::Advertised {}
+            // **An agent may not ask as the person.** `Asked::Ask` is the
+            // agent's own question and goes through the turn, with grants, a
+            // record naming it and a line on the indicator. This one has none
+            // of those, which is exactly why it is refused here: an agent that
+            // could send it would have a road to a provider that nothing shows.
+            | Asked::TheirOwnQuestion { .. } => Err(NotUnderstood::NotForAnAgent),
         }
     }
 

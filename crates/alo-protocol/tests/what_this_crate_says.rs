@@ -7,14 +7,20 @@
 
 #![expect(
     clippy::unwrap_used,
+    clippy::expect_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
 use alo_protocol::{
-    EVERY_WORD, FromAPerson, FromAnAgent, NotUnderstood, ToAPerson, ToAnAgent, protocol_words,
-    words,
+    EVERY_WORD, EVERY_WORD_ABOUT_THE_DOOR, FromAPerson, FromAnAgent, NotUnderstood, ToAPerson,
+    ToAnAgent, protocol_words, words,
 };
-use alo_strings::{Filling, Language, Strings, Translation, Vocabulary};
+use alo_strings::{Language, Strings, Translation, Vocabulary};
+
+use std::path::PathBuf;
+use std::time::{Duration, SystemTime};
+
+use alo_capability::{Approvals, Given, Grant, Grantee, Grants, Proposal, Reach, Waiting};
 
 /// Every way a message can fail to be one a side can act on, made by the doors
 /// themselves rather than built by hand — so a refusal that no message can
@@ -24,8 +30,7 @@ fn every_refusal_a_door_can_make() -> Vec<NotUnderstood> {
         r#"{{"format":1,"asks":{{"ask":{{"question":"{}"}}}}}}"#,
         "a".repeat(alo_protocol::LONGEST)
     );
-    let a_sentence =
-        Strings::of(protocol_words().unwrap()).say(&words::NOT_READABLE.key(), &Filling::nothing());
+    let (approvals, strings) = a_change_waiting();
     vec![
         FromAnAgent::read(&too_long).unwrap_err(),
         FromAnAgent::read("{\"format\":1,\"asks\":{\"ask\":{\"question\":\"a\"}}}\nand again")
@@ -36,13 +41,76 @@ fn every_refusal_a_door_can_make() -> Vec<NotUnderstood> {
         FromAnAgent::read(r#"{"format":1,"asks":{"approve":{"number":7}}}"#).unwrap_err(),
         FromAPerson::read(r#"{"format":1,"asks":{"ask":{"question":"a"}}}"#).unwrap_err(),
         ToAnAgent::read(&ToAPerson::Declined.written().unwrap()).unwrap_err(),
+        // **A change that is only proposed**, which since 2026-10-19 is the
+        // one thing on the agent's side that the person's door still refuses.
+        // It used to be this and a model's answer; a person asks their own
+        // questions now (ADR 0126), so an answer reaches both doors and only a
+        // proposal does not.
         ToAPerson::read(
-            &ToAnAgent::answered("three", &a_sentence, "mistral-small-latest")
+            &ToAnAgent::proposed(the_change(&approvals), &strings, the_moment())
                 .written()
                 .unwrap(),
         )
         .unwrap_err(),
     ]
+}
+
+/// One real change waiting, built the way a door builds one.
+///
+/// The same fixture the unit tests use, written out again because theirs is
+/// `pub(crate)` and this test is outside the crate on purpose — the file's
+/// header says it checks the list *the way a shell holds it*. Nothing here
+/// touches a disk: reach is lexical (ADR 0001 §4), which is what lets a
+/// proposal be built in a test at all.
+fn a_change_waiting() -> (Approvals, Strings) {
+    let folder = PathBuf::from("/home/anna/Invoices");
+    let mut grants = Grants::default();
+    grants.grant(
+        Grant::checked(
+            "@files",
+            Reach::Folder(folder.clone()),
+            the_moment(),
+            Duration::from_secs(60 * 60),
+        )
+        .unwrap(),
+    );
+    let verbs = alo_files::file_verbs().unwrap();
+    let call = verbs
+        .call(
+            "rename_file",
+            &[
+                (
+                    "file",
+                    Given::text(folder.join("march.pdf").display().to_string()),
+                ),
+                ("name", Given::text("march-final.pdf")),
+            ],
+        )
+        .unwrap();
+    let proposal = Proposal::checked(
+        &call,
+        &Grantee::named("@files"),
+        &grants,
+        the_moment(),
+        Duration::from_secs(300),
+    )
+    .unwrap();
+    let mut approvals = Approvals::default();
+    approvals.propose(proposal);
+    (approvals, Strings::of(protocol_words().unwrap()))
+}
+
+/// The one change [`a_change_waiting`] made.
+fn the_change(approvals: &Approvals) -> &Waiting {
+    approvals
+        .waiting_at(the_moment())
+        .next()
+        .expect("the change this fixture proposed")
+}
+
+/// A fixed moment, so nothing here depends on when it ran.
+fn the_moment() -> SystemTime {
+    SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000)
 }
 
 /// German, as `alo-strings` names a language.
@@ -147,7 +215,11 @@ fn what_nobody_translated_yet_is_countable() {
     strings.speaks(speaking).unwrap();
     strings.prefers(&[german()]);
 
-    assert_eq!(strings.unanswered().len(), EVERY_WORD.len() - 1);
+    assert_eq!(
+        strings.unanswered().len(),
+        EVERY_WORD.len() + EVERY_WORD_ABOUT_THE_DOOR.len() - 1,
+        "both lists are loaded, and one of the refusals is now translated"
+    );
 }
 
 /// This crate's list goes into a vocabulary beside every other crate's without
@@ -161,7 +233,10 @@ fn this_list_sits_beside_every_other_crates_list() {
     let before = vocabulary.how_many();
 
     alo_protocol::declare_into(&mut vocabulary).unwrap();
-    assert_eq!(vocabulary.how_many(), before + EVERY_WORD.len());
+    assert_eq!(
+        vocabulary.how_many(),
+        before + EVERY_WORD.len() + EVERY_WORD_ABOUT_THE_DOOR.len()
+    );
 
     let strings = Strings::of(vocabulary);
     let said = FromAnAgent::read(r#"{"format":1,"asks":{"approve":{"number":7}}}"#)

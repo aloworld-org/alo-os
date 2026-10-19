@@ -172,6 +172,23 @@ pub fn what_a_person_said(
             opening_workspaces::opened(&machine, nearby, holding, strings, now)
         }
         Ok(FromAPerson::Advertised) => Ok(what_is_advertised::told(nearby.advertising, strings)),
+        // **The person's own question**, answered whether or not a turn holds
+        // the machine — like the knock and the pairings, and for the same
+        // reason: a person asks their machine something at any hour, and
+        // nothing about it belongs to an agent's turn (ADR 0126).
+        //
+        // `None` only where nobody holds the machine at all, which is a test's
+        // state: a running service always holds it one way or the other, and
+        // the sentence for it is the one that is true of a question this
+        // machine did not put anywhere.
+        Ok(FromAPerson::TheirOwnQuestion { question }) => {
+            Ok(match holding.what_a_question_goes_to() {
+                Some(questions) => {
+                    crate::a_persons_own_question::answered(&question, questions, strings)
+                }
+                None => ToAPerson::refused(&rereading::what_to_say(strings)),
+            })
+        }
         Ok(answered) => {
             // A pairing is neither the turn's nor the grants file's, and it
             // is answered whether or not a turn holds the machine: the
@@ -263,7 +280,10 @@ fn answered_to(
         | FromAPerson::ClearMachineName { .. }
         | FromAPerson::Workspaces
         | FromAPerson::OpenWorkspace { .. }
-        | FromAPerson::Advertised => ToAPerson::refused(&rereading::what_to_say(strings)),
+        | FromAPerson::Advertised
+        | FromAPerson::TheirOwnQuestion { .. } => {
+            ToAPerson::refused(&rereading::what_to_say(strings))
+        }
         FromAPerson::Approve { number } => match under(turning, number, now) {
             Some(waiting) => {
                 // **The bracket, before the change runs.** ADR 0045 takes the

@@ -148,6 +148,23 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
         }
     }
 
+    /// What a question is put to, mutably — which is what putting one needs.
+    ///
+    /// [`Holding::questions`]'s twin, and the difference is the whole of why
+    /// there are two: that one answers *where are this person's settings*,
+    /// which reads nothing, and this one is handed to
+    /// `crate::a_persons_own_question`, which asks `Questions::what_answers`
+    /// and so needs it mutably.
+    ///
+    /// `None` only while nobody holds the machine, which is a test's state: a
+    /// running service always holds it one way or the other.
+    pub fn what_a_question_goes_to(&mut self) -> Option<&mut Questions> {
+        match self {
+            Self::ATurn { questions, .. } | Self::TheNetwork { questions, .. } => Some(questions),
+            Self::Nobody(_) => None,
+        }
+    }
+
     /// Write down that the person's grants were not read again.
     ///
     /// The same entry either way, and neither road names an agent: this is

@@ -41,6 +41,15 @@ alo-choosing = { path = "../alo-choosing" }
 # The vocabulary the sentences are rendered from, in the languages the person's
 # settings name.
 alo-strings = { path = "../alo-strings" }
+# The daemon's door and the two sentences about it. A question that has to leave
+# this machine goes to `alo-agentd` (ADR 0125, re-measured by ADR 0126), and
+# this is the crate that holds both doors' messages and, since 2026-10-19, the
+# socket's shape — so a command and the service cannot disagree about where it
+# is. No HTTP client and no TLS stack comes with it.
+alo-protocol = { path = "../alo-protocol" }
+# `getuid`, which is how this command finds its own door. The same call
+# `alo-agentd` reads its own login number with.
+rustix = { workspace = true }
 
 # One error type for four word lists that could not be gathered — read by
 # whoever is fixing a list, never by somebody who typed a question.

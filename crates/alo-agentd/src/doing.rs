@@ -136,7 +136,7 @@ fn carried_out(
 /// compile here rather than quietly becoming whichever arm a catch-all named.
 /// `alo_secrets::NotStored` deliberately carries no words of its own — the four
 /// sentences belong beside the daemon that says them, which is here.
-const fn said_about(why: NotStored) -> Word {
+pub(crate) const fn said_about(why: NotStored) -> Word {
     match why {
         NotStored::Unavailable => NO_KEYRING_FOR_A_PROVIDER,
         NotStored::Locked => THE_KEYRING_IS_LOCKED,
@@ -159,7 +159,11 @@ const fn said_about(why: NotStored) -> Word {
 /// **no administrator to name in a refusal**, and a machine whose owner chose a
 /// strict policy for themselves is exactly that machine — so the attribution
 /// turns on where the bound came from and on nothing else.
-fn a_rule_refused(why: &NotAllowed, by_an_organisation: bool, strings: &Strings) -> Said {
+pub(crate) fn a_rule_refused(
+    why: &NotAllowed,
+    by_an_organisation: bool,
+    strings: &Strings,
+) -> Said {
     let said = why.said(strings);
     if !by_an_organisation {
         return said;
@@ -275,9 +279,21 @@ fn put_to_a_model(
                 places.policy(),
                 &the_road_out,
                 &keyring,
-                |permission, answers| {
+                // **The turn's wrapper goes on here**, not inside the shared
+                // ordering: a person's road reaches the same provider and is
+                // not a turn, so `Answers` is this caller's word for what it
+                // is putting the question to rather than something every
+                // caller has to have (ADR 0126).
+                |permission, hosted| {
                     putting(
-                        turning, answered, question, model, permission, answers, &places, now,
+                        turning,
+                        answered,
+                        question,
+                        model,
+                        permission,
+                        &Answers::Provider(hosted),
+                        &places,
+                        now,
                     )
                 },
             );

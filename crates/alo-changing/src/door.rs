@@ -143,7 +143,8 @@ impl TheDaemonsDoor {
             | ToAPerson::MachineNamed { .. }
             | ToAPerson::Workspaces { .. }
             | ToAPerson::WorkspaceOpened(_)
-            | ToAPerson::Advertised(_) => None,
+            | ToAPerson::Advertised(_)
+            | ToAPerson::Answered { .. } => None,
         }
     }
 }

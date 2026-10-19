@@ -79,7 +79,10 @@ pub fn answered_to(
         | FromAPerson::ClearMachineName { .. }
         | FromAPerson::Workspaces
         | FromAPerson::OpenWorkspace { .. }
-        | FromAPerson::Advertised => ToAPerson::refused(&rereading::what_to_say(strings)),
+        | FromAPerson::Advertised
+        | FromAPerson::TheirOwnQuestion { .. } => {
+            ToAPerson::refused(&rereading::what_to_say(strings))
+        }
         FromAPerson::Approve { number } => match under(arriving, number, now) {
             Some(waiting) => {
                 let shared = network.locked();

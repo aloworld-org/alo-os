@@ -124,6 +124,26 @@ pub enum ToAPerson {
     /// identity, the port its presence names, and the workspace it hosts, that
     /// it hosts none, or why one installed is not advertised.
     Advertised(Advertised),
+    /// A model answered the question they asked themselves.
+    ///
+    /// The same three fields `ToAnAgent`'s answer carries, and on the wire the
+    /// same `answered` message — because it is the same thing arriving at a
+    /// different door, and a second shape for it would be two things to keep
+    /// in step. What differs is which door may send it, and that is the
+    /// daemon's to decide from `SO_PEERCRED`.
+    ///
+    /// `came_from` is **rendered by the daemon**, in the language the person
+    /// reads, for the reason every refusal on this door is: the screen and the
+    /// record cannot become two accounts of one moment, and a client that
+    /// worded it would be a second place the sentence is chosen.
+    Answered {
+        /// What the model said, in its own words.
+        text: String,
+        /// Where the answer came from, in the language the person reads.
+        came_from: Wording,
+        /// Which model was asked, as it was named when the question was put.
+        model: String,
+    },
 }
 
 impl ToAPerson {
@@ -357,6 +377,35 @@ impl ToAPerson {
         Self::Granted { holding }
     }
 
+    /// A model answered the question the person asked themselves.
+    ///
+    /// `came_from` arrives **already rendered**, for
+    /// [`crate::ToAnAgent::answered`]'s reason and the same one this door gives
+    /// for every refusal: this crate does not depend on `alo-asking`, which
+    /// carries an HTTP client and a TLS stack, so the crate reading the
+    /// untrusted side of a socket stays small enough to audit.
+    #[must_use]
+    pub fn answered(text: &str, came_from: &Said, model: &str) -> Self {
+        Self::Answered {
+            text: text.to_owned(),
+            came_from: Wording::of(came_from),
+            model: model.to_owned(),
+        }
+    }
+
+    /// The answer, when that is what came back.
+    #[must_use]
+    pub fn an_answer(&self) -> Option<(&str, &Wording, &str)> {
+        match self {
+            Self::Answered {
+                text,
+                came_from,
+                model,
+            } => Some((text, came_from, model)),
+            _ => None,
+        }
+    }
+
     /// It did not happen, in the words of whoever refused it.
     #[must_use]
     pub fn refused(said: &Said) -> Self {
@@ -395,7 +444,16 @@ impl ToAPerson {
             Told::Workspaces { found } => Ok(Self::Workspaces { found }),
             Told::WorkspaceOpened(workspace) => Ok(Self::WorkspaceOpened(workspace)),
             Told::Advertised(advertised) => Ok(Self::Advertised(advertised)),
-            Told::Proposed(_) | Told::Answered { .. } => Err(NotUnderstood::NotAnAnswerForAPerson),
+            Told::Answered {
+                text,
+                came_from,
+                model,
+            } => Ok(Self::Answered {
+                text,
+                came_from,
+                model,
+            }),
+            Told::Proposed(_) => Err(NotUnderstood::NotAnAnswerForAPerson),
         }
     }
 
@@ -473,6 +531,15 @@ impl From<ToAPerson> for Told {
             ToAPerson::Workspaces { found } => Self::Workspaces { found },
             ToAPerson::WorkspaceOpened(workspace) => Self::WorkspaceOpened(workspace),
             ToAPerson::Advertised(advertised) => Self::Advertised(advertised),
+            ToAPerson::Answered {
+                text,
+                came_from,
+                model,
+            } => Self::Answered {
+                text,
+                came_from,
+                model,
+            },
         }
     }
 }
@@ -729,11 +796,21 @@ mod tests {
         assert_eq!(ToAPerson::read(&written).unwrap(), told);
     }
 
-    /// **A person's screen is not where a model's answer appears**, and neither
-    /// is it where a change that is only proposed lands: both are the agent's
-    /// side of one turn.
+    /// **A change that is only proposed is the agent's side of a turn**, and a
+    /// person's door does not read one: what is waiting for them arrives as
+    /// `ToAPerson::Waiting`, with the sentence they are answering.
+    ///
+    /// *This test also asserted that a model's answer is refused here, and
+    /// that stopped being true on 2026-10-19.* A person asks their own
+    /// questions now ([ADR 0126](../../../docs/decisions/0126-a-persons-own-question-is-a-third-authority-on-the-indicator-and-in-the-record.md)
+    /// re-measured ADR 0125's route), so an answer reaches this door too —
+    /// the same `answered` message, because it is the same thing arriving
+    /// somewhere else. What has not changed is **which door may send it**, and
+    /// that is `SO_PEERCRED`'s and the daemon's rather than this crate's. The
+    /// sentence that was here is kept above rather than deleted, because the
+    /// next reader will want to know it was a rule and not an oversight.
     #[test]
-    fn what_is_only_ever_said_to_an_agent_is_refused_here() {
+    fn a_change_only_proposed_is_refused_here() {
         let (approvals, strings) = a_change_waiting();
         let proposed = ToAnAgent::proposed(the_change(&approvals), &strings, the_moment())
             .written()
@@ -742,14 +819,33 @@ mod tests {
             ToAPerson::read(&proposed),
             Err(NotUnderstood::NotAnAnswerForAPerson)
         );
+    }
 
+    /// **One `answered` message, read the same at both doors.**
+    ///
+    /// Written by the agent's side and read by the person's, which is the shape
+    /// this deliberately has: a second message for the person's answer would be
+    /// two things to keep in step, and the thing that differs is who may send
+    /// it rather than what it says.
+    #[test]
+    fn one_answer_reads_the_same_whichever_door_it_arrives_at() {
         let answered = ToAnAgent::answered("three", &a_sentence(), "mistral-small-latest")
             .written()
             .unwrap();
-        assert_eq!(
-            ToAPerson::read(&answered),
-            Err(NotUnderstood::NotAnAnswerForAPerson)
-        );
+        let (text, came_from, model) = ToAPerson::read(&answered)
+            .unwrap()
+            .an_answer()
+            .map(|(text, came_from, model)| {
+                (
+                    text.to_owned(),
+                    came_from.text().to_owned(),
+                    model.to_owned(),
+                )
+            })
+            .unwrap();
+        assert_eq!(text, "three");
+        assert_eq!(came_from, a_sentence().text());
+        assert_eq!(model, "mistral-small-latest");
     }
 
     /// **Declining carries nothing about why**, because nothing was asked. The
@@ -779,3 +875,12 @@ mod tests {
         assert!(told.refusal().is_none());
     }
 }
+
+#[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    clippy::panic,
+    reason = "in a test, a panic on an unexpected value is the failure being reported"
+)]
+#[path = "a_persons_own_question_tests.rs"]
+mod a_persons_own_question;
