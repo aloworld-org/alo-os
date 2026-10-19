@@ -205,6 +205,57 @@ pub const EVERY_GATE: &[Gate] = &[
     // tests out of the gate in order to exclude two. It runs under
     // `--profile boundary` after a merge, with the boundary suite, on the machine
     // that can run it.
+    //
+    // # And `package(alo-agentd)` is the same mistake this file already names
+    //
+    // **The paragraph above states the principle and the filter below breaks it.**
+    // *Excluding the package would take fourteen tests out of the gate in order
+    // to exclude two* is the argument for naming a binary; `alo-agentd` is
+    // excluded whole, and the numbers are worse the other way round.
+    //
+    // Measured on the Mac lane's VM, 2026-10-19, three runs of
+    // `cargo test -p alo-agentd --lib`:
+    //
+    // | run | result |
+    // |---|---|
+    // | as the person, `TMPDIR` under `$HOME` | 534 passed, 20 failed |
+    // | as the person, `TMPDIR=/tmp` | **539 passed, 15 failed** |
+    // | **as root**, `TMPDIR=/tmp` | **554 passed, 0 failed** |
+    //
+    // So five of the twenty were the socket path length and never the kernel —
+    // `SUN_LEN` against a long `$HOME` — and **everything else passes as root.**
+    // Not one of this crate's 554 library tests needs a BPF programme attached.
+    //
+    // The fourteen that want root are four named families and nothing else:
+    // `hosting::tests` (6) and `what_is_advertised::tests` (4), which read a
+    // root-owned workspace file; `wire::a_hosted_workspace` (3), which serves
+    // one; and two `a_paired_machine_*` tests that want a network namespace.
+    //
+    // **The BPF is in the integration tests, which is where the exclusion
+    // belongs.** Five of this crate's nine test binaries name a kernel or a
+    // boundary — `a_turn_is_bounded_by_the_kernel`,
+    // `a_question_is_bounded_by_the_kernel`,
+    // `a_turn_is_refused_when_the_boundary_is_gone`,
+    // `the_agent_really_does_the_work` and `the_agent_asks_a_real_provider` —
+    // and naming those five the way the sixth binary is already named would put
+    // **539 tests back on the merge path.**
+    //
+    // **It is not changed here, deliberately.** A filter built on the wrong list
+    // turns a hole into a wall that blocks every lane, and the measurement above
+    // is of one VM: *passes as root on a kernel with `bpf` started* is not
+    // *passes on a hosted runner as the `runner` user*, and the fourteen that
+    // want root would still have to be named. What is settled is that the
+    // **package** is the wrong unit, and that the cost of it is 539 tests rather
+    // than a handful.
+    //
+    // **What it has already cost, once that anybody noticed.** `main` was red for
+    // a day on 2026-10-19: `alo-agentd`'s
+    // `this_daemon_offers_the_six_the_two_software_verbs_and_the_three_application_acts`
+    // asserted eleven verbs while the daemon offered twelve, from
+    // `what_touched_this_file` landing in #812. Two lanes pushed changes to that
+    // crate through green gates in between. The test is a plain assertion over a
+    // list of names: it needs no root, no network and no kernel, and it ran
+    // nowhere. Fixed in #831, by naming the list instead of counting it.
     Gate {
         named: "the workspace's tests",
         program: "cargo",
