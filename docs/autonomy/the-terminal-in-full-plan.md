@@ -96,7 +96,7 @@ causes, five of which are another lane's or the owner's:
 | 8 | bisect the machine | **the comparer** — the third PC's |
 | 10 | *your files as they were* | **the comparer** |
 | 9 | try a command touching nothing | **the kernel boundary** — the kernel plan's |
-| 11 | ask alo where the person chose, not only here | **both blocks gone.** ADR 0125 settled law 1 out of a process; the owner settled the trade, and the setting and its Settings row are built (#820, #822). **What is left is one request on the daemon's socket** |
+| 11 | ask alo where the person chose, not only here | **both blocks gone.** ADR 0125 settled law 1 out of a process; the owner settled the trade, and the setting and its Settings row are built (#820, #822). **What is left is law 1's egress sequence gaining a caller that is not a turn**, and then a request and a sender — see task 11, where *one request on the socket* was measured and found to understate it |
 
 **So the five causes are:** shell integration (2 tasks), the privileged comparer
 (3), a design component nobody has captured (part of 1), `alo-capability`'s
@@ -717,9 +717,45 @@ down and to nothing else*.
 
 **So what `alo-ask` must become is much smaller than this page first said**: it
 sends the person's question to their own daemon socket when their settings name
-a provider, and shows what comes back. The request itself is the piece nobody
-has written — `FromAPerson` has fourteen variants and not one of them is *ask
-this*.
+a provider, and shows what comes back. `FromAPerson` has fourteen variants and
+not one of them is *ask this*.
+
+### And *one request on the socket* understates it — measured 2026-10-19
+
+*That sentence was written an hour before this one, in the same change, and it
+is the claim this page has just finished warning about: **a status that names a
+dependency is making a claim.** So it was measured.*
+
+The request and the command's half really are small. **The work is that law 1's
+sequence has no caller that is not a turn.**
+
+| piece | state |
+|---|---|
+| the protocol request, and `alo-ask` sending it | not written, and small |
+| the daemon reading the person's settings and reaching their provider | **mostly built** — `alo-agentd`'s `doing.rs` has a test that asks a real keyring for their key and connects to the address they wrote down and nothing else |
+| **a non-turn caller's road to law 1's sequence** | **does not exist, and is the task** |
+
+**What that sequence is**, in `alo-turn`'s `asking.rs`: take the boundary and
+the indicator together; impose a boundary permitting the one resolved address;
+put the question *inside* it, through a closure that is run once because one
+permission is one attempt; write `Entry::left` **before** the line comes off the
+indicator; then end the departure. Its refusals — no boundary, a boundary that
+ran nothing, held back, left and unanswered — are five more entries, spread
+across six interlocking `Turning` methods that also set the turn's `closed` flag
+and remember a lost thread.
+
+`Machine::bounding_and_indicator` is `pub(crate)`, so none of it is reachable
+from `alo-agentd` today.
+
+**So the shape of the work is: put that sequence on `Machine`, where the
+indicator and the record already live, and have `Turning` delegate to it** —
+one copy, two callers. **Not two copies.** `put_off_this_machine`'s own doc
+names the failure mode: a call that compiles, with the right types, while
+nobody sees anything. Two copies of law 1's dance is how one of them quietly
+stops showing.
+
+*Nothing here changes what ADR 0125 decided. It changes the estimate, and it
+names the file the next person should open first.*
 
 **The refusal paths are the work, not the happy path.** A provider configured
 with no key, a key the provider rejects, an address that will not resolve, an
