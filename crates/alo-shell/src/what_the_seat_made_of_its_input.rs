@@ -97,6 +97,15 @@ pub struct WhatTheSeatMadeOfIt {
     /// person: a Dock drawn from one list and hit-tested against another looks
     /// exactly like a Dock that ignores them.
     pub dock_slots_recorded: usize,
+    /// Windows this person has open that the last frame did not draw.
+    ///
+    /// **A press that acted and showed nothing.** It belongs beside the input
+    /// counts because it is the other half of the same question: those say
+    /// what reached this machine, and this says whether what it did could be
+    /// seen. On 2026-10-18 a press on the market's entry arrived, landed on
+    /// the Dock, refused nothing, opened the window — and drew none of it, and
+    /// nothing a person or a screen capture could see told the two apart.
+    pub opened_and_not_drawn: usize,
     /// Input events this seat could not make sense of and went on anyway.
     ///
     /// `InputError::is_about_one_event` is what decides a refusal is
@@ -124,6 +133,16 @@ impl Server {
     pub fn a_button_press_was_routed(&mut self) {
         self.button_presses_this_seat_routed =
             self.button_presses_this_seat_routed.saturating_add(1);
+    }
+
+    /// **The draw says how many open windows it did not draw.**
+    ///
+    /// Set rather than added to: it is the state of one frame and not a tally
+    /// over a session, so a window that comes back takes the number down
+    /// again. The draw is the only caller because it is the only place that
+    /// knows both halves.
+    pub fn a_frame_left_this_many_windows_undrawn(&mut self, how_many: usize) {
+        self.windows_opened_and_not_drawn = how_many;
     }
 
     /// **One press landed on something this compositor draws itself.**
@@ -174,6 +193,7 @@ impl Server {
             button_presses: self.button_presses_this_seat_routed,
             furniture_presses: self.presses_that_landed_on_the_furniture,
             dock_slots_recorded: self.how_many_dock_slots_were_drawn(),
+            opened_and_not_drawn: self.windows_opened_and_not_drawn,
             refused: self.input_it_could_not_make_sense_of,
         }
     }

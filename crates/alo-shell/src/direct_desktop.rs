@@ -1168,6 +1168,22 @@ impl LoopInput for Desk<'_> {
                 words: &the_markets_words,
             })
         });
+        // **A window this person has open that this frame will not draw.**
+        //
+        // Measured 2026-10-18: a press on the market's entry arrived, landed
+        // on the Dock, refused nothing and opened the window — and nothing of
+        // it was drawn. `DesktopPicture::market` had no painter, which is
+        // fixed; it still did not appear, so the picture is not being built
+        // either. **Those two faults are the same picture to a person** and
+        // the same bytes in a screen capture, and what told them apart was
+        // that an open market takes the keys — a measurement a machine
+        // receiving no keyboard input cannot give.
+        //
+        // So the draw says it, here, where both halves are known. Nought is
+        // the ordinary answer and the healthy one.
+        server.a_frame_left_this_many_windows_undrawn(usize::from(
+            server.market.is_open() && the_market.is_none(),
+        ));
         what_only_the_server_knows(
             &mut frame,
             server,

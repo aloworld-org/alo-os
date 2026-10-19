@@ -843,6 +843,41 @@ RUN set -e; \
     /usr/bin/alo-ask 2>&1 | grep -q 'nothing to ask' \
       || { echo "alo-ask started but did not say why it refused" >&2; exit 1; }
 
+# **And `alo-compositor` is run, for `alo-try`'s reason exactly.** It was copied
+# here and made executable and **never started by this build** — found
+# 2026-10-19 by a guard that walks the binaries this recipe ships, and it is the
+# same shape as the gap that found `alo-ask` missing from the image altogether:
+# nothing was broken and nothing was red, so nothing had anything to fail.
+#
+# **A container has no seat and no DRM device, and this does not ask for one.**
+# Run with an empty environment it answers, measured 2026-10-19 rather than
+# inferred:
+#
+#   alo-compositor: this machine cannot be signed in to: this machine's login
+#   seat, seat0, holds no graphics card, so there is no screen to draw on
+#
+# exit code 1. **It gets further than reading the source suggested** — the
+# comment here first said it fails for want of `ALO_DISPLAY`, and it does not;
+# it reaches the seat and refuses for the card. That is a better proof than the
+# one intended: the binary loaded, started, read its configuration and asked
+# the machine a real question. A binary that cannot load its libraries never
+# reaches any of it and fails differently, which is the fault this kind of step
+# exists to catch.
+#
+# **The sentence is matched and not only the exit code**, which is the half that
+# tells *refused for the reason we expect* from *refused because it is broken in
+# some new way*. It is a diagnostic for whoever reads the journal, written in
+# English in the binary rather than looked up in a person's language, so it is a
+# thing a build may hold to.
+#
+# What this does not check: that it can draw. That wants a card and a seat and
+# is the boot's to answer, not this build's.
+RUN set -e; \
+    if /usr/bin/alo-compositor; then \
+      echo "alo-compositor with no session should have refused and did not" >&2; exit 1; \
+    fi; \
+    /usr/bin/alo-compositor 2>&1 | grep -q 'this machine cannot be signed in to' \
+      || { echo "alo-compositor started but did not say why it refused" >&2; exit 1; }
 RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/libexec/alo-convertd /usr/libexec/alo-portald \
                /usr/libexec/alo-shipping \

@@ -199,12 +199,13 @@ mod running {
                 eprintln!(
                     "alo-desktop: this seat took {} key presses and {} button presses, \
                      {} of which landed on something it draws, and could not make \
-                     sense of {} events; its Dock had {} slots recorded",
+                     sense of {} events; its Dock had {} slots recorded, and {} windows it opened were not drawn",
                     stood.input.key_presses,
                     stood.input.button_presses,
                     stood.input.furniture_presses,
                     stood.input.refused,
-                    stood.input.dock_slots_recorded
+                    stood.input.dock_slots_recorded,
+                    stood.input.opened_and_not_drawn
                 );
                 eprintln!("alo-desktop: the display has ended: {:?}", stood.display);
                 ExitCode::SUCCESS
@@ -873,12 +874,13 @@ mod running {
             eprintln!(
                 "alo-desktop: this seat has taken {} key presses and {} button presses, \
                  {} of which landed on something it draws, and could not make sense \
-                 of {} events; its Dock has {} slots recorded",
+                 of {} events; its Dock has {} slots recorded, and {} windows it opened were not drawn",
                 made.key_presses,
                 made.button_presses,
                 made.furniture_presses,
                 made.refused,
-                made.dock_slots_recorded
+                made.dock_slots_recorded,
+                made.opened_and_not_drawn
             );
         }
 

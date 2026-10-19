@@ -72,9 +72,29 @@ impl Server {
     /// Asked per input batch by whoever drives the lane, because the answer
     /// changes on a keystroke: the press that closes the window is the last one
     /// it takes.
+    ///
+    /// # A window a person cannot see does not hold their keyboard
+    ///
+    /// **Open is not enough; the last frame must also have drawn it.**
+    ///
+    /// Measured on a booted machine on 2026-10-18. A press on this window's
+    /// entry opened it and no part of it was drawn — and from that moment the
+    /// machine took no keys at all, because every one of them came here
+    /// instead. **Escape included**, which is the way out, so there was no
+    /// road back: a person pressed one icon and lost their keyboard, with
+    /// nothing on the screen to say why.
+    ///
+    /// Whatever is wrong with the drawing, that must not be its consequence.
+    /// This turns a window that fails to draw into a control that did nothing
+    /// — bad, and visibly bad — rather than a machine nobody can type on.
+    ///
+    /// [`Server::a_frame_left_this_many_windows_undrawn`] is the draw's own
+    /// answer, set on the frame that knew both halves. Asking it here rather
+    /// than asking whether a picture exists keeps one place deciding what
+    /// *drawn* means.
     #[must_use]
     pub fn the_market_is_taking_the_keys(&self) -> bool {
-        self.market.is_open()
+        self.market.is_open() && self.windows_opened_and_not_drawn == 0
     }
 
     /// What a person pressed Install on, waiting to be started.

@@ -529,6 +529,18 @@ pub struct Server {
     /// A machine that could only report the first spent 2026-10-18 unable to
     /// say which of two faults it had.
     pub(crate) presses_that_landed_on_the_furniture: usize,
+    /// **How many windows this person has open that the last frame did not
+    /// draw.**
+    ///
+    /// Nought on every ordinary frame. Anything else is a control that did
+    /// something and showed nothing — which a person meets as a press that did
+    /// not work, and which looks the same on a screen capture as a press that
+    /// never arrived.
+    ///
+    /// Set by the draw rather than counted here, because only the draw knows
+    /// both halves: whether the person has it open, and whether this frame
+    /// made a picture of it.
+    pub(crate) windows_opened_and_not_drawn: usize,
 }
 
 impl Server {
@@ -609,6 +621,7 @@ impl Server {
             key_presses_this_seat_routed: 0,
             button_presses_this_seat_routed: 0,
             presses_that_landed_on_the_furniture: 0,
+            windows_opened_and_not_drawn: 0,
             // Nothing has been kept yet, so no Place remembers anything.
             remembered: alo_arranging::Arrangement::fresh(),
             // Nobody is walking backwards through anything yet.
