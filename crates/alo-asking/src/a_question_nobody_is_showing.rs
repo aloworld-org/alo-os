@@ -46,8 +46,8 @@ use alo_egress::{Destination, DestinationError, EgressPolicy, Refusal};
 use alo_models::{InferenceSource, SourcePolicy};
 
 use crate::answer::Answer;
-use crate::question::Question;
 use crate::hosted::Hosted;
+use crate::question::Question;
 use crate::refusing::Miswired;
 
 /// Why a question the person asked was not put, or was put and not answered.

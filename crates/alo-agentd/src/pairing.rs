@@ -151,7 +151,8 @@ impl AboutAPairing {
             | FromAPerson::ClearMachineName { .. }
             | FromAPerson::Workspaces
             | FromAPerson::OpenWorkspace { .. }
-            | FromAPerson::Advertised => None,
+            | FromAPerson::Advertised
+            | FromAPerson::TheirOwnQuestion { .. } => None,
         }
     }
 }

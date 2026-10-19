@@ -80,6 +80,25 @@ pub(crate) enum Asked {
         #[serde(default, skip_serializing_if = "Answered::is_in_words")]
         answered: Answered,
     },
+    /// A question the **person** asked, from their own shell.
+    ///
+    /// Deliberately **not** [`Asked::Ask`], and the two are never read for each
+    /// other. That one is an agent's question inside a turn, which carries
+    /// grants, a record naming the agent and a line on the egress indicator;
+    /// this is a person asking the machine they own. ADR 0125 marked conflating
+    /// the two *the part most likely to be got wrong by whoever builds it*, and
+    /// a shared variant with a flag would be exactly that conflation with a
+    /// field to sort it out afterwards.
+    ///
+    /// **The question and nothing else.** Where it is answered is not on the
+    /// wire, for [`Asked::Ask`]'s reason: the person's settings decide that,
+    /// and a request that named a place would let whatever sent it choose. No
+    /// `answered` field either — a person reads an answer, and *as the next
+    /// request* is a thing only an agent's turn has.
+    TheirOwnQuestion {
+        /// What they asked, as they typed it.
+        question: String,
+    },
     /// The person approved the change waiting under this number.
     Approve {
         /// The number they answered.

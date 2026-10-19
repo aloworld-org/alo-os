@@ -88,7 +88,11 @@ fn a_rule_that_permits_this_destination_refuses_nothing() {
             .refusal_going_to(&to(&here))
             .is_none()
     );
-    assert!(EgressPolicy::Anywhere.refusal_going_to(&to(&here)).is_none());
+    assert!(
+        EgressPolicy::Anywhere
+            .refusal_going_to(&to(&here))
+            .is_none()
+    );
     let far = in_region("the United States");
     assert!(EgressPolicy::Anywhere.refusal_going_to(&to(&far)).is_none());
 }

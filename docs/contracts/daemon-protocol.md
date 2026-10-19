@@ -440,9 +440,67 @@ wire's own port). **None names a path, an owner or a mode** — those stay in th
 service log, for whoever installed the server. There is no field for an address, a
 hostname, a name, a model or a pairing, because the advertisement carries none.
 
+### `their-own-question` — a question the person asked themselves
+
+```json
+{"their-own-question":{"question":"what is the capital of Spain"}}
+```
+
+Added 2026-10-19, additively. **The one request on the person's door that
+reaches off this machine**, and the only road to a model in this service that is
+not an agent turn.
+
+**It is not `ask`.** That one is an agent's question inside a turn, carrying
+grants, a record naming the agent and a line on the egress indicator. This is a
+person asking the machine they own, and it has none of those: no grant is
+consulted, nothing is proposed, no bracket is taken and no agent is named in
+anything that comes of it. The two are separate requests rather than one with a
+flag, because
+[ADR 0125](../decisions/0125-a-command-does-not-report-an-egress-it-asks-a-service-that-can-show-one.md)
+marked conflating them *the part most likely to be got wrong by whoever builds
+it*. **An agent sending this is refused** in the same words as an agent trying to
+approve something — an agent that could send it would have a road to a provider
+that nothing shows.
+
+**It carries the question and nothing else.** Where it is answered is not on the
+wire, for `ask`'s reason: the person's settings decide that, and a request naming
+a place would let whatever sent it choose. There is no `answered` field either
+— *as the next request* is a thing only an agent's turn has.
+
+**Why the service answers it at all.** Not to show anything:
+[ADR 0126](../decisions/0126-a-persons-own-question-is-a-third-authority-on-the-indicator-and-in-the-record.md)
+decided a person's own question goes on **no** indicator line, because they chose
+their provider in Settings. It is here because of two things only this service
+can reach — the organisation's rule, read with the checks that guard the file
+naming which login is the agent, and signing in to a proxy that asks who this
+machine is, whose password belongs to this unit (ADR 0059). A command that went
+straight out instead would send a company's traffic around the company's own
+rule.
+
+**A local answer never comes through here.** `alo-ask` answers a model on this
+machine itself: that causes no egress, needs no credential and needs no proxy. A
+question whose settings name this machine, or a paired machine, is refused here
+rather than answered on a road built for a provider — two roads, and which one a
+question takes is the person's settings' to decide.
+
+**What is asked before anything leaves**, in this order: the organisation's rule
+about the provider's stated source; then which way out of this machine the road
+goes; then the person's key. A policy refusal never reaches for a credential.
+Then the same rule is asked about the **resolved destination**, which is a
+different subject — a provider that says it runs in the EU and resolves to
+Virginia passes the first and fails the second.
+
+**Nothing is written in the record and nothing is shown.** This is the only
+request on either door that both leaves this machine and keeps nothing, and
+ADR 0126 is the whole of why.
+
+What comes back is `answered`, or `refused` with the sentence of whoever refused
+it.
+
 ## What comes back
 
 ```json
+{"answered":{"text":"Madrid.","came_from":{"text":"by OpenAI, in the United States","came_from":"translation"},"model":"gpt-4o"}}
 {"pairing":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","side":"asking","may":[{"named":"models","sentence":{"text":"…","came_from":"translation"}}],"seconds":86400,"code":"482910","confirmed":{"here":false,"there":false},"lapses_in":600}}
 {"confirmed":{"became":"paired"}}
 {"revoked":{"became":"revoked"}}
@@ -452,6 +510,14 @@ hostname, a name, a model or a pairing, because the advertisement carries none.
 {"chosen-to-answer":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine"}}
 {"machine-named":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine","became":"kept"}}
 ```
+
+`answered` is the **same message** the agent's door sends, arriving at the
+person's — a second shape for it would be two things to keep in step, and what
+differs is which door may send it rather than what it says. `came_from` is
+rendered **by the daemon**, in the language the person reads, for the reason
+every refusal here is: the screen and the record cannot become two accounts of
+one moment, and a client that worded it would be a second place the sentence is
+chosen. `model` is what was asked for, exactly as the person's settings name it.
 
 A proposal waiting carries the **code** and the **list** — each arm as the wire
 spells it beside the sentence the person reads — because that is what the

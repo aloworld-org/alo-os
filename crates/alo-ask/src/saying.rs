@@ -61,13 +61,22 @@ pub enum NoVocabulary {
     /// its own.
     #[error("alo-choosing's words could not be declared: {0}")]
     Choosing(#[from] alo_choosing::WordsError),
+
+    /// `alo-protocol`'s, which is what is said when the service this command
+    /// asks is not there or did not finish answering.
+    ///
+    /// The fifth list, added 2026-10-19 with the provider road: a question that
+    /// has to leave goes to the daemon, and the two ways that can fail to
+    /// happen are the protocol's to word because the door is the protocol's.
+    #[error("alo-protocol's words could not be declared: {0}")]
+    Protocol(#[from] alo_protocol::WordsError),
 }
 
-/// The four lists this command renders from, in one vocabulary.
+/// The five lists this command renders from, in one vocabulary.
 ///
 /// # Errors
 ///
-/// [`NoVocabulary`] if a list could not be declared into it. None of the four
+/// [`NoVocabulary`] if a list could not be declared into it. None of the five
 /// can cause that on its own — each is tested against its own keys in its own
 /// crate — so what this catches is two of them having grown the same key, which
 /// is a thing only a reader of more than one list can find.
@@ -77,6 +86,7 @@ pub fn what_it_can_say() -> Result<Vocabulary, NoVocabulary> {
     alo_answering::declare_into(&mut vocabulary)?;
     alo_models::declare_into(&mut vocabulary)?;
     alo_choosing::declare_into(&mut vocabulary)?;
+    alo_protocol::declare_into(&mut vocabulary)?;
     Ok(vocabulary)
 }
 
@@ -88,21 +98,27 @@ pub fn what_it_can_say() -> Result<Vocabulary, NoVocabulary> {
 mod tests {
     use super::*;
 
-    /// **The four lists go in together.** Each crate proves its own keys are
-    /// distinct; nothing but a reader of all four can prove they are distinct
+    /// **The five lists go in together.** Each crate proves its own keys are
+    /// distinct; nothing but a reader of all five can prove they are distinct
     /// *between* them, and a collision would make one crate's sentence
     /// unreachable from here rather than fail anything.
+    ///
+    /// *It was four until 2026-10-19*, when a question that has to leave this
+    /// machine began going to the daemon — so `alo-protocol`'s two sentences
+    /// about that door became ones this command reads.
     #[test]
-    fn the_four_lists_have_no_key_in_common() {
-        let gathered = what_it_can_say().expect("four lists that agree on no key");
+    fn the_five_lists_have_no_key_in_common() {
+        let gathered = what_it_can_say().expect("five lists that agree on no key");
         let each = alo_asking::EVERY_WORD.len()
             + alo_answering::EVERY_WORD.len()
             + alo_models::words::EVERY_WORD.len()
-            + alo_choosing::EVERY_WORD.len();
+            + alo_choosing::EVERY_WORD.len()
+            + alo_protocol::EVERY_WORD.len()
+            + alo_protocol::EVERY_WORD_ABOUT_THE_DOOR.len();
         assert_eq!(
             gathered.how_many(),
             each,
-            "the vocabulary holds fewer strings than the four crates declare, so a key is shared"
+            "the vocabulary holds fewer strings than the five crates declare, so a key is shared"
         );
     }
 
@@ -110,8 +126,8 @@ mod tests {
     /// list, so a crate dropped from [`what_it_can_say`] fails here rather than
     /// printing a marked key on a real machine.
     #[test]
-    fn one_sentence_from_each_of_the_four_is_there() {
-        let gathered = what_it_can_say().expect("four lists");
+    fn one_sentence_from_each_of_the_five_is_there() {
+        let gathered = what_it_can_say().expect("five lists");
         for word in [
             alo_asking::words::NOTHING_TO_ASK,
             alo_asking::words::NO_MODEL_NAMED,
@@ -119,6 +135,10 @@ mod tests {
             alo_models::words::RUNTIME_UNREACHABLE,
             alo_models::words::ON_THIS_MACHINE,
             alo_choosing::SESSION_NO_FOLDER,
+            // The two this command says when the service it asks is not there
+            // or did not finish — the only road to a provider it has.
+            alo_protocol::words::NO_SERVICE_TO_ASK_WITH,
+            alo_protocol::words::THE_SERVICE_DID_NOT_ANSWER,
         ] {
             assert!(
                 gathered.phrase(&word.key()).is_some(),

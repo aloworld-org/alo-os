@@ -280,7 +280,9 @@ dependencies = [
  "alo-capability",
  "alo-choosing",
  "alo-models",
+ "alo-protocol",
  "alo-strings",
+ "rustix 1.1.4",
  "thiserror 2.0.20",
 ]
 

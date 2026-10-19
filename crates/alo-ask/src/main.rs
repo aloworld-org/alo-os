@@ -53,14 +53,17 @@
 use std::process::ExitCode;
 
 use alo_answering::Answering;
-use alo_ask::{beside_an_answer, the_only_one, the_persons_model, what_it_can_say};
+use alo_ask::{
+    TheDoor, Unanswered, beside_an_answer, the_only_one, the_persons_model, what_it_can_say,
+};
 use alo_asking::{Asking, NotAQuestion, NotAnswered, Question};
 use alo_capability::Grantee;
-use alo_choosing::{Settings, the_persons_folder};
+use alo_choosing::{Picked, Settings, the_persons_folder};
 use alo_models::{
     Catalogue, InferenceSource, ModelRuntime, SourcePolicy, ollama::Ollama,
     the_name_a_runtime_knows,
 };
+use alo_protocol::ToAPerson;
 use alo_strings::Strings;
 
 /// What this machine is set to permit, as this command holds it.
@@ -92,6 +95,45 @@ const THE_STRICTEST_RULE: SourcePolicy = SourcePolicy::ThisMachineOnly;
 /// than something to fix by inventing a third kind here**, and it costs nothing
 /// today precisely because this door never reads it.
 const WHO_IS_ASKING: &str = "alo-ask";
+
+/// Ask the daemon to put the question to the provider the person chose.
+///
+/// One connection, one line, one answer. Everything a person can read here is
+/// somebody else's sentence: the daemon's refusal in the words of whoever
+/// refused it, or `alo-protocol`'s two about the service itself. **This file
+/// words nothing**, which is the same rule `beside_an_answer`'s header states
+/// for the other road.
+fn asked_of_their_provider(question: &str, strings: &Strings) -> ExitCode {
+    match TheDoor::for_this_person().asked(question) {
+        Ok(ToAPerson::Answered {
+            text, came_from, ..
+        }) => {
+            println!("{text}");
+            // **Where it came from, beside the answer**, which is what
+            // `docs/features.md` promises and is the last place it can be lost.
+            // Rendered by the daemon, so the screen and the record cannot
+            // become two accounts of one moment.
+            eprintln!("{}", came_from.text());
+            ExitCode::SUCCESS
+        }
+        Ok(ToAPerson::Refused(wording)) => {
+            eprintln!("{}", wording.text());
+            ExitCode::FAILURE
+        }
+        // Any other answer is the service answering something this request
+        // cannot earn, which is this repository disagreeing with itself. The
+        // person is told the one thing that is true and useful rather than
+        // something inventive, and it is not their fault or theirs to fix.
+        Ok(_) => {
+            eprintln!("{}", Unanswered::NotAnswered.said(strings));
+            ExitCode::FAILURE
+        }
+        Err(why) => {
+            eprintln!("{}", why.said(strings));
+            ExitCode::FAILURE
+        }
+    }
+}
 
 fn main() -> ExitCode {
     let vocabulary = match what_it_can_say() {
@@ -161,6 +203,30 @@ fn main() -> ExitCode {
     {
         eprintln!("{forbidden}");
         return ExitCode::FAILURE;
+    }
+
+    // **A question the person's settings send to a provider goes to the
+    // daemon, and this is where the two roads part.**
+    //
+    // Not because of law 1 — a person's own question goes on no indicator,
+    // because they chose their provider in Settings (ADR 0126). Because of two
+    // things only the service can reach: the organisation's rule, read with the
+    // checks that guard the file naming which login is the agent, and signing
+    // in to a proxy that asks who this machine is, whose password belongs to
+    // the daemon's unit (ADR 0059). A command that went straight out instead
+    // would repeat a fault already found and fixed here — `alo-agentd`'s
+    // `the_road_out`: *a machine read its organisation's proxy off the disk and
+    // then asked a provider directly.*
+    //
+    // Asked **before** the catalogue and the runtime, which is this file's own
+    // order: nothing below is about a provider, and a person whose question is
+    // going to OpenAI must not first be told a local runtime is unreachable.
+    //
+    // **Nothing falls back.** If the daemon is not there the person is told so
+    // and told to start it; this does not then try a local model, because that
+    // is the silent substitution ADR 0008 forbids arriving as robustness.
+    if matches!(settings.chosen(), Some(Picked::FromAProvider { .. })) {
+        return asked_of_their_provider(&asked, &strings);
     }
 
     let catalogue = match Catalogue::built_in() {

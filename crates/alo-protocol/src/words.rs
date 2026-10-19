@@ -156,7 +156,42 @@ pub const NOT_AN_ANSWER_FOR_A_PERSON: Word = Word::saying(
      is one exchange, from the moment the person calls the agent until it is over.",
 );
 
-/// Everything this crate can say, in one list.
+/// Nothing is listening at this machine's daemon door.
+pub const NO_SERVICE_TO_ASK_WITH: Word = Word::saying(
+    "protocol.no-service-to-ask-with",
+    "alo could not ask your provider, because the alo service is not running on this machine. \
+     Start it and ask again.",
+)
+.noting(
+    "Read by a person at a shell whose question needed the service and did not get it. It names \
+     the next step on purpose: a sentence that says only that something went wrong leaves them \
+     stuck, and this is the one failure on this road they can actually do something about. The \
+     phrase names the service the way a person would, not by its unit name — and it is never \
+     translated as a brand.",
+);
+
+/// Something is listening and the conversation did not finish.
+pub const THE_SERVICE_DID_NOT_ANSWER: Word = Word::saying(
+    "protocol.the-service-did-not-answer",
+    "alo could not ask your provider: the alo service was reached and did not answer. Nothing was \
+     sent.",
+)
+.noting(
+    "The other half of the one above, and a different thing to do about it: that one means start \
+     the service, this one means it is running and something went wrong while it was. **Nothing \
+     was sent** is said because it is true and because it is the first thing a person asks when \
+     a question to a provider fails: whether it left anyway.",
+);
+
+/// Every way a message can be refused, in one list.
+///
+/// **Exactly as many as there are refusals**, which
+/// `crate::refusing`'s own test asserts both ways: a word nothing says is a
+/// translator's time spent on a string nobody reads, and a refusal nothing
+/// declares is a key on somebody's screen.
+///
+/// The two sentences about *the door* are deliberately not here — see
+/// [`EVERY_WORD_ABOUT_THE_DOOR`], and the reason is that invariant.
 pub const EVERY_WORD: [Word; 9] = [
     TOO_LONG,
     MORE_THAN_ONE_MESSAGE,
@@ -168,6 +203,21 @@ pub const EVERY_WORD: [Word; 9] = [
     NOT_AN_ANSWER_FOR_AN_AGENT,
     NOT_AN_ANSWER_FOR_A_PERSON,
 ];
+
+/// What a client says about **the door itself**, rather than about a message
+/// that came through it.
+///
+/// A separate list because [`EVERY_WORD`] holds one word per refusal and is
+/// checked that way, and these two refuse no message: nothing arrived to
+/// refuse. They are a client's two answers to *the service I needed is not
+/// answering*, and they live in this crate because the door is this crate's
+/// — as, since 2026-10-19, is the socket's shape
+/// ([`crate::where_the_door_is`]).
+///
+/// Both are declared by [`declare_into`] with the others, so nothing has to
+/// remember the second list.
+pub const EVERY_WORD_ABOUT_THE_DOOR: [Word; 2] =
+    [NO_SERVICE_TO_ASK_WITH, THE_SERVICE_DID_NOT_ANSWER];
 
 /// Why this crate's own list could not be declared.
 ///
@@ -205,7 +255,7 @@ pub fn protocol_words() -> Result<Vocabulary, WordsError> {
 /// nothing is replaced, because a key means one string and whoever declared it
 /// first said what that string is.
 pub fn declare_into(vocabulary: &mut Vocabulary) -> Result<(), WordsError> {
-    for word in EVERY_WORD {
+    for word in EVERY_WORD.into_iter().chain(EVERY_WORD_ABOUT_THE_DOOR) {
         vocabulary.says(word.phrase()?)?;
     }
     Ok(())
@@ -241,7 +291,7 @@ mod tests {
     /// machine loading eleven lists has no collision to discover at runtime.
     #[test]
     fn every_key_is_in_this_crates_own_area() {
-        for word in EVERY_WORD {
+        for word in EVERY_WORD.into_iter().chain(EVERY_WORD_ABOUT_THE_DOOR) {
             assert!(word.named().starts_with("protocol."), "{}", word.named());
         }
     }
@@ -251,7 +301,11 @@ mod tests {
     #[test]
     fn the_list_declares_once_and_refuses_a_second_time() {
         let mut vocabulary = protocol_words().unwrap();
-        assert_eq!(vocabulary.how_many(), EVERY_WORD.len());
+        assert_eq!(
+            vocabulary.how_many(),
+            EVERY_WORD.len() + EVERY_WORD_ABOUT_THE_DOOR.len(),
+            "both lists are declared, and `declare_into` is the one place that knows there are two"
+        );
         let again = declare_into(&mut vocabulary).unwrap_err();
         assert!(matches!(again, WordsError::List(_)), "{again}");
     }
@@ -261,7 +315,7 @@ mod tests {
     /// only road text off a socket could take into a sentence a person reads.
     #[test]
     fn no_sentence_here_has_a_gap_in_it() {
-        for word in EVERY_WORD {
+        for word in EVERY_WORD.into_iter().chain(EVERY_WORD_ABOUT_THE_DOOR) {
             assert!(!word.says().contains('{'), "{}", word.named());
             assert!(!word.says().contains('}'), "{}", word.named());
         }

@@ -397,7 +397,16 @@ fn nothing_left(why: NotKept) -> NoAnswer {
 ///
 /// **The first half of ADR 0020's separation.** A name is looked up here, before
 /// any boundary is entered, by the daemon — which is not a turn and never has
-/// been. What comes back is registered and handed to the door, so the request
+/// been.
+///
+/// **Public for exactly that reason.** The sentence above was true before
+/// anything outside this crate called it, and since 2026-10-19 the daemon
+/// answers a person's own question without a turn at all
+/// ([ADR 0126](../../../docs/decisions/0126-a-persons-own-question-is-a-third-authority-on-the-indicator-and-in-the-record.md)),
+/// so the road that needs this is no longer inside a `Turning`. It resolves and
+/// nothing else: no policy, no boundary, no decision about whether anything may
+/// go — a second copy of it would be a second answer to *which addresses may
+/// this request use*, which is the thing ADR 0020 separated out. What comes back is registered and handed to the door, so the request
 /// itself resolves nothing and a bounded turn needs no permission to reach a
 /// name server.
 ///
@@ -415,7 +424,7 @@ fn nothing_left(why: NotKept) -> NoAnswer {
 /// whose reading of a scope is its own: the interface is what the kernel
 /// checks the departure on (ADR 0041), so it is decided by the address the
 /// door was given and nothing else.
-fn registering(where_to: Option<(String, u16)>) -> Vec<SocketAddr> {
+pub fn registering(where_to: Option<(String, u16)>) -> Vec<SocketAddr> {
     let Some((host, port)) = where_to else {
         return Vec::new();
     };

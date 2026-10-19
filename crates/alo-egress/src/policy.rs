@@ -330,7 +330,7 @@ mod tests {
 
 #[cfg(test)]
 #[expect(
-    clippy::unwrap_used,
+    clippy::expect_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 #[path = "policy_without_an_egress_tests.rs"]

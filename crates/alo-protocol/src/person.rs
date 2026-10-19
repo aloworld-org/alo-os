@@ -229,6 +229,19 @@ pub enum FromAPerson {
     /// Carries nothing — no port, no path — and changes nothing: see this
     /// file's header.
     Advertised,
+    /// A question they asked themselves, to be put where their settings say.
+    ///
+    /// The one request on this door that reaches off this machine, and it does
+    /// so because the daemon is where the person's provider key and this
+    /// machine's proxy password are — ADR 0125, as
+    /// [ADR 0126](../../../docs/decisions/0126-a-persons-own-question-is-a-third-authority-on-the-indicator-and-in-the-record.md)
+    /// re-measured it. **Not an agent turn**: no grant is consulted, no
+    /// approval is asked for and no agent is named in anything that comes of
+    /// it.
+    TheirOwnQuestion {
+        /// What they asked, as they typed it.
+        question: String,
+    },
 }
 
 impl FromAPerson {
@@ -262,6 +275,7 @@ impl FromAPerson {
             Asked::Workspaces {} => Ok(Self::Workspaces),
             Asked::OpenWorkspace { machine } => Ok(Self::OpenWorkspace { machine }),
             Asked::Advertised {} => Ok(Self::Advertised),
+            Asked::TheirOwnQuestion { question } => Ok(Self::TheirOwnQuestion { question }),
             Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } => {
                 Err(NotUnderstood::NotForAPerson)
             }
@@ -297,7 +311,8 @@ impl FromAPerson {
             | Self::ClearMachineName { .. }
             | Self::Workspaces
             | Self::OpenWorkspace { .. }
-            | Self::Advertised => None,
+            | Self::Advertised
+            | Self::TheirOwnQuestion { .. } => None,
         }
     }
 
@@ -377,6 +392,7 @@ impl From<FromAPerson> for Asked {
             FromAPerson::Workspaces => Self::Workspaces {},
             FromAPerson::OpenWorkspace { machine } => Self::OpenWorkspace { machine },
             FromAPerson::Advertised => Self::Advertised {},
+            FromAPerson::TheirOwnQuestion { question } => Self::TheirOwnQuestion { question },
         }
     }
 }

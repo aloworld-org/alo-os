@@ -1432,12 +1432,14 @@ printing.verb.print-document.purpose	print a document on this machine's printer
 printing.verb.print-document.sentence	print {document} on this machine's printer
 protocol.from-a-newer-alo-os	that message comes from a newer alo OS than this one — update this machine
 protocol.more-than-one-message	send one message per line — that was more than one
+protocol.no-service-to-ask-with	alo could not ask your provider, because the alo service is not running on this machine. Start it and ask again.
 protocol.not-a-format	that message names a format no alo OS has ever written
 protocol.not-an-answer-for-a-person	that answer was meant for an agent, and a person's screen was given it
 protocol.not-an-answer-for-an-agent	that answer was meant for a person's screen, and an agent was given it
 protocol.not-for-a-person	that is something an agent asks during a turn, not an answer a person gives
 protocol.not-for-an-agent	an agent cannot answer a question that was put to a person
 protocol.not-readable	this machine could not read that message
+protocol.the-service-did-not-answer	alo could not ask your provider: the alo service was reached and did not answer. Nothing was sent.
 protocol.too-long	that message is longer than this machine will read — send a shorter one
 proxy.address.carries-a-password	That proxy address has a name and a password written into it. Type the address on its own, and the name and the password in their own fields — the password is then kept safely and never written into a file
 proxy.address.no-place-for-the-password	Type the name the proxy asks for, or leave both the name and the password empty
