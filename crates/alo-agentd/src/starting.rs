@@ -503,9 +503,34 @@ mod tests {
             .all()
             .map(alo_capability::Verb::name)
             .collect();
+        // **The whole list, named, rather than a count.** It was a count until
+        // 2026-10-19, and the count was 11 while the daemon offered 12: the
+        // verb `what_touched_this_file` landed in #812 and nothing here said
+        // so. `main` was red for a day, and this crate's tests run nowhere on
+        // CI (see below), so nothing caught it.
+        //
+        // A number is the weakest thing this could assert — it cannot be caught
+        // being wrong, only noticed. A named set fails with the verb that
+        // arrived printed in the message, which tells whoever reads it what to
+        // do.
+        let mut sorted = offered.clone();
+        sorted.sort_unstable();
         assert_eq!(
-            offered.len(),
-            11,
+            sorted,
+            [
+                "archive_folder",
+                "close_application",
+                "find_in_folder",
+                "focus_application",
+                "install_application",
+                "list_folder",
+                "move_file",
+                "open_application",
+                "read_file",
+                "rename_file",
+                "what_can_be_installed",
+                "what_touched_this_file",
+            ],
             "the daemon offers these and nothing else: {offered:?}"
         );
         assert!(
@@ -519,6 +544,14 @@ mod tests {
         assert!(
             offered.contains(&alo_software::WHAT_CAN_BE_INSTALLED),
             "an agent on this machine cannot be shown what to install: {offered:?}"
+        );
+        // **The verb that reads the record**, which is what a person's *which
+        // command made this file* becomes for an agent (#812, task 4 of the
+        // terminal plan). A read over a granted file, so it belongs on this
+        // list and not beside the application acts.
+        assert!(
+            offered.contains(&"what_touched_this_file"),
+            "an agent on this machine cannot be asked what touched a file: {offered:?}"
         );
         // The three with a road.
         for act in ["open_application", "focus_application", "close_application"] {
