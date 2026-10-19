@@ -554,6 +554,115 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
  && have="$(rpm --query --queryformat '%{VERSION}' wireplumber)" \
  && test "$(printf '%s\n%s\n' "${least}" "${have}" | sort --version-sort | head -1)" = "${least}" \
  && echo "WirePlumber ${have}, at or above ${least}"
+# **A machine that can join a wireless network, which no alo OS image could
+# until now.** Measured against image 0.0.7 by digest on 2026-10-19: the kernel
+# carries `iwlwifi`, `cfg80211` and `mac80211`, NetworkManager is installed and
+# enabled — and there is **no supplicant of any kind**, NetworkManager's plugin
+# directory holds **no plugins at all**, and the count of `iwlwifi-*.ucode`
+# files is **nought**. The licence for firmware that is not there is present,
+# which is the shape of the cause: these arrive as weak dependencies and every
+# `dnf install` in this file sets `install_weak_deps=False`.
+#
+# So the driver loads, finds a card it cannot feed, and nothing can
+# authenticate to an access point. Ethernet works — `r8169` and `rtl_nic`
+# firmware are both here — and is why this went unnoticed: every machine that
+# ever ran this image was on a cable.
+#
+# **It is a launch blocker rather than a gap.** `docs/features.md` promises
+# *download, click, reboot, sign in*, and the audience is developers, most of
+# whom have no cable. A machine installed over Ethernet that cannot reach a
+# network once the cable is pulled is not a machine somebody works on all day,
+# and `alo-software` cannot install anything from the market without one.
+#
+# **Intel only, and that is `certified before compatible` rather than an
+# oversight.** `docs/hardware.md`'s machine carries an Intel AC 3168, which is
+# `iwlwifi-mvm-firmware` — 274 firmware files, 66 MB installed, against a 3.55
+# GiB image. `iwlwifi-dvm-firmware` is 2 MB and covers Intel's older cards.
+# Atheros, Realtek, Broadcom and MediaTek are **deliberately not here**: adding
+# them is a decision about which machines this product says it supports, and
+# that is a decision to make on purpose with a hardware list behind it, not a
+# side effect of fixing Intel.
+#
+# The three checks below name what a person needs rather than what was asked
+# for — a `dnf install` that succeeds while a weak dependency is skipped is
+# exactly how this was missed the first time.
+#
+# **And the supplicant is RUN, not merely found.** `test -x` was this block's
+# first proof and it is the substitution this file already records twice, above
+# and below: *`test -x` on a converter binary stood in for the converter
+# starting. Three releases shipped one that died at launch on eleven missing
+# libraries.* A `wpa_supplicant` that cannot resolve its own libraries passes
+# `test -x`, and a machine would then fail to join a network for a second
+# reason while three proofs said it could. `-v` loads it, resolves its
+# libraries, prints its version and exits 0; with no arguments it exits 255, so
+# `-v` is the invocation. The prefix is grepped rather than a version, because
+# the version is the base's to change — measured here at 2.11 on the same day
+# another lane measured 2.10.
+RUN dnf install --assumeyes --setopt=install_weak_deps=False \
+      NetworkManager-wifi wpa_supplicant \
+      iwlwifi-mvm-firmware iwlwifi-dvm-firmware \
+ && dnf clean all \
+ && /usr/sbin/wpa_supplicant -v | grep -q 'wpa_supplicant v' \
+ && ls /usr/lib64/NetworkManager/*/libnm-device-plugin-wifi.so > /dev/null \
+ && test -f /usr/lib/firmware/iwlwifi-3168-29.ucode.xz \
+ && echo "wireless: a supplicant that runs, NetworkManager's Wi-Fi plugin, and the certified machine's own firmware"
+
+# **What an ordinary computer does, asserted by name — the measurement
+# [ADR 0009](../docs/decisions/0009-a-good-computer-without-the-agent.md) has
+# never had.**
+#
+# That decision is this product's own words, accepted 2026-09-02: *a system
+# whose ordinary parts are only ever experienced alongside an agent never has
+# to be good on its own… if those are only tolerable because something clever
+# sits on top, **they are not finished***. And: *with AI off, nothing essential
+# is missing.*
+#
+# **Nothing measured it, and the cost was not hypothetical.** Every image this
+# project published could not join a wireless network — no supplicant, no
+# NetworkManager plugin, nought `iwlwifi` firmware — while Ethernet worked, so
+# every machine anyone tested was on a cable. No ADR, no test and no review
+# caught it. It was found by running `ls` inside the published image on
+# 2026-10-19. A principle nothing can fail is not a principle, and this block
+# is the test ADR 0009 was owed.
+#
+# **Each capability by name**, the rule `crate::alo-playing`'s decoders already
+# follow: a recipe that inspects what it asked for learns nothing, because a
+# `dnf install` succeeds while a weak dependency is skipped. That is exactly
+# how the wireless gap survived.
+#
+# **And each daemon is proved to resolve its libraries**, not merely to exist.
+# `test -x` is the substitution this file records twice — *`test -x` on a
+# converter binary stood in for the converter starting. Three releases shipped
+# one that died at launch on eleven missing libraries.* `ldd` naming an
+# unresolved library is that failure, before a person meets it.
+#
+# **Printing is deliberately not asserted here.**
+# [ADR 0078](../docs/decisions/0078-what-printing-owes.md) says what printing
+# owes is a printer rather than a release, and `docs/features.md` says plainly
+# that no paper has come out of anything. The image carries `cups-libs` and no
+# daemon. That gap is tracked honestly, and a line here would fail the build
+# for something nobody is hiding. When CUPS ships, it gets a line.
+RUN dnf install --assumeyes --setopt=install_weak_deps=False upower \
+ && dnf clean all \
+ && for daemon in /usr/libexec/upowerd \
+                  /usr/libexec/bluetooth/bluetoothd \
+                  /usr/libexec/udisks2/udisksd \
+                  /usr/sbin/NetworkManager \
+                  /usr/sbin/wpa_supplicant \
+                  /usr/bin/pipewire; do \
+      test -x "${daemon}" || { echo "an ordinary computer is missing ${daemon}" >&2; exit 1; }; \
+      if ldd "${daemon}" | grep -q 'not found'; then \
+        echo "${daemon} is there and cannot start: unresolved libraries" >&2; \
+        ldd "${daemon}" | grep 'not found' >&2; \
+        exit 1; \
+      fi; \
+    done \
+ && test -e /usr/lib/systemd/system/systemd-suspend.service \
+ && test -e /usr/lib/systemd/system/chronyd.service \
+ && ls /usr/lib/firmware/i915 > /dev/null \
+ && ls /usr/lib/firmware/rtl_nic > /dev/null \
+ && echo "an ordinary computer: battery, bluetooth, removable media, network, wireless, audio, suspend, time, and firmware for the certified machine's own graphics and ethernet"
+
 
 # **What this machine plays, as [ADR 0058](../docs/decisions/0058-which-software-decoders-the-image-ships.md)
 # decided it** — and the decoders it may not carry, absent by name.
