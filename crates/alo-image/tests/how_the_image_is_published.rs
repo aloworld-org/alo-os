@@ -174,7 +174,7 @@ fn the_public_half_is_committed_and_the_private_half_is_not() {
     }
 }
 
-/// The digest the owner signed on 2026-09-21, for release `0.0.5`.
+/// The digest the owner signed on 2026-10-19, for release `0.0.7`.
 ///
 /// **The one place the digest is spelled rather than read, and that is
 /// deliberate.** Everywhere else it was spelled it was a *copy*, one of seven
@@ -187,8 +187,35 @@ fn the_public_half_is_committed_and_the_private_half_is_not() {
 /// *was this pin changed by somebody who verified the signature?* Answer it by
 /// verifying, then edit this line. The verification cannot live here — it needs
 /// the registry, and nothing in this crate reaches the network.
+///
+/// # The question this asked, and how it was answered on 2026-10-19
+///
+/// Moved for `0.0.7`. The owner signed the digest on a Windows machine no agent
+/// runs on, with both `cosign sign` commands from `image/pinned.toml`, and the
+/// Windows lane read both signature forms back from the registry.
+///
+/// **That was reported to this lane rather than performed by it, so this lane
+/// verified it again before writing the line** — which is what the paragraph
+/// above asks for, and a relayed *somebody verified* is not an answer to it.
+/// Four checks, in the Lima VM against `ghcr.io`, anonymously:
+///
+/// | asked | answer |
+/// |---|---|
+/// | does the signature verify against `image/signing/alo-os.pub` | **yes** — claims validated, signatures verified against the specified public key |
+/// | does the payload name this digest | **yes** — `docker-manifest-digest` is it |
+/// | **is a key that is not ours refused** | **yes** — a throwaway pair gives *accepted signatures do not match threshold, Found: 0, Expected 1*. Without this the other three prove nothing |
+/// | are **both** signature forms present | **yes** — `sha256-<digest>.sig` and `sha256-<digest>`, with `0.0.6` as a control showing the same pair |
+///
+/// The last row is the trap `image/pinned.toml` warns of, and the Windows lane
+/// hit it: the first push carried only the `.sig` form, because only the first
+/// of the two sign commands had been run. **Half signed reads as signed** to
+/// anything that looks for one form.
+///
+/// And the image agrees with the pin about where it came from: its own
+/// `org.opencontainers.image.revision` is `c7efe4d9`, which is an ancestor of
+/// `main`, and its `version` label is `0.0.7`.
 const THE_SIGNED_DIGEST: &str =
-    "sha256:fcc732bb147e02fcb8b8840ce359a3e604295f2e453c5ef52d473ee328a3f8ae";
+    "sha256:0daaa69bc1fbbbb8e228f9b9d75b52a3fcad2b5a8d6667e6e51d127766d50c80";
 
 /// **The digest an installer pulls is the one the owner signed, pinned in one
 /// file the crate reads, and the image agrees with it.**

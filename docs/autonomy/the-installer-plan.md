@@ -97,12 +97,12 @@ video decoder, no encoder and nothing to reach the media server with:
 
 | | |
 |---|---|
-| Release | `0.0.6` (`org.opencontainers.image.version`) |
-| Built from | `77db91c64e590be259b48a162091425213e28728` (`org.opencontainers.image.revision`) |
-| Pushed to | `ghcr.io/aloworld-org/alo-os:0.0.6` |
-| Digest | `sha256:fcc732bb147e02fcb8b8840ce359a3e604295f2e453c5ef52d473ee328a3f8ae` |
+| Release | `0.0.7` (`org.opencontainers.image.version`) |
+| Built from | `c7efe4d9888901ddce729d633f59e43f3c875ba1` (`org.opencontainers.image.revision`) |
+| Pushed to | `ghcr.io/aloworld-org/alo-os:0.0.7` |
+| Digest | `sha256:0daaa69bc1fbbbb8e228f9b9d75b52a3fcad2b5a8d6667e6e51d127766d50c80` |
 | Built by | **`.github/workflows/image.yml`, on a hosted runner** — the first time this project built an image anywhere but on somebody's own machine |
-| Signed | by the owner, with the private half, by digest, no transparency log (`cosign sign --use-signing-config=false --tlog-upload=false --new-bundle-format=false`, cosign 3.1.3), 2026-10-07 |
+| Signed | by the owner, with the private half, by digest, no transparency log (`cosign sign --use-signing-config=false --tlog-upload=false --new-bundle-format=false`, cosign 3.1.3, both commands), 2026-10-19 |
 | Verified | `cosign verify --key image/signing/alo-os.pub --insecure-ignore-tlog=true` passes: the claims validated, the log checked offline, and the signature verified against the public key |
 | Readable by a machine | **yes, and read back rather than assumed** — `sha256-<digest>.sig` answered 200 and `sha256-<digest>` answered 200. The first returned 404 for releases 0.0.1 to 0.0.4 |
 
