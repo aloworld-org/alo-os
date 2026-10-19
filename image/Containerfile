@@ -554,6 +554,47 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
  && have="$(rpm --query --queryformat '%{VERSION}' wireplumber)" \
  && test "$(printf '%s\n%s\n' "${least}" "${have}" | sort --version-sort | head -1)" = "${least}" \
  && echo "WirePlumber ${have}, at or above ${least}"
+# **A machine that can join a wireless network, which no alo OS image could
+# until now.** Measured against image 0.0.7 by digest on 2026-10-19: the kernel
+# carries `iwlwifi`, `cfg80211` and `mac80211`, NetworkManager is installed and
+# enabled — and there is **no supplicant of any kind**, NetworkManager's plugin
+# directory holds **no plugins at all**, and the count of `iwlwifi-*.ucode`
+# files is **nought**. The licence for firmware that is not there is present,
+# which is the shape of the cause: these arrive as weak dependencies and every
+# `dnf install` in this file sets `install_weak_deps=False`.
+#
+# So the driver loads, finds a card it cannot feed, and nothing can
+# authenticate to an access point. Ethernet works — `r8169` and `rtl_nic`
+# firmware are both here — and is why this went unnoticed: every machine that
+# ever ran this image was on a cable.
+#
+# **It is a launch blocker rather than a gap.** `docs/features.md` promises
+# *download, click, reboot, sign in*, and the audience is developers, most of
+# whom have no cable. A machine installed over Ethernet that cannot reach a
+# network once the cable is pulled is not a machine somebody works on all day,
+# and `alo-software` cannot install anything from the market without one.
+#
+# **Intel only, and that is `certified before compatible` rather than an
+# oversight.** `docs/hardware.md`'s machine carries an Intel AC 3168, which is
+# `iwlwifi-mvm-firmware` — 274 firmware files, 66 MB installed, against a 3.55
+# GiB image. `iwlwifi-dvm-firmware` is 2 MB and covers Intel's older cards.
+# Atheros, Realtek, Broadcom and MediaTek are **deliberately not here**: adding
+# them is a decision about which machines this product says it supports, and
+# that is a decision to make on purpose with a hardware list behind it, not a
+# side effect of fixing Intel.
+#
+# The three checks below name what a person needs rather than what was asked
+# for — a `dnf install` that succeeds while a weak dependency is skipped is
+# exactly how this was missed the first time.
+RUN dnf install --assumeyes --setopt=install_weak_deps=False \
+      NetworkManager-wifi wpa_supplicant \
+      iwlwifi-mvm-firmware iwlwifi-dvm-firmware \
+ && dnf clean all \
+ && test -x /usr/sbin/wpa_supplicant \
+ && ls /usr/lib64/NetworkManager/*/libnm-device-plugin-wifi.so > /dev/null \
+ && test -f /usr/lib/firmware/iwlwifi-3168-29.ucode.xz \
+ && echo "wireless: supplicant, NetworkManager's Wi-Fi plugin, and the certified machine's own firmware"
+
 
 # **What this machine plays, as [ADR 0058](../docs/decisions/0058-which-software-decoders-the-image-ships.md)
 # decided it** — and the decoders it may not carry, absent by name.
