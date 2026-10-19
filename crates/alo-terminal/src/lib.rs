@@ -34,6 +34,15 @@
 
 pub mod a_benchmark_a_program_printed;
 pub mod a_diff_a_program_printed;
+// **Linux only, because the pseudoterminal it drives is.**
+// `alacritty_terminal`'s `Pty` is a different type per platform: on Windows it
+// has no `file()` and no `child()`, and its `Options` carries an `escape_args`
+// field that does not exist on a Unix one. So this module cannot compile for
+// Windows and never could — found 2026-10-19, when the installer candidate
+// first got far enough to try, after #839 fixed the gate before it.
+//
+// Nothing outside `alo-shell` names any of it, and `alo-shell` is a compositor.
+#[cfg(target_os = "linux")]
 mod a_shell_on_a_pseudoterminal;
 pub mod a_test_result_a_program_printed;
 mod how_big_the_grid_is;
@@ -56,7 +65,9 @@ pub mod words;
 
 pub use a_benchmark_a_program_printed::{ABenchmark, ARun, a_benchmark_in};
 pub use a_diff_a_program_printed::{ADiff, ADiffLine, HowItChanged, a_diff_in};
+#[cfg(target_os = "linux")]
 pub use a_shell_on_a_pseudoterminal::WhatIsWaiting;
+#[cfg(target_os = "linux")]
 pub use a_shell_on_a_pseudoterminal::{
     ACellInPixels, AShellOnAPseudoterminal, NoShell, WhatArrived,
 };
