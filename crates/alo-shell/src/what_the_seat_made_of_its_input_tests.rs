@@ -662,3 +662,191 @@ fn a_seat_says_how_many_dock_slots_were_recorded() {
         "a fresh machine's Dock laid out no slots at all"
     );
 }
+
+/// **A person can open the market with the keyboard alone.**
+///
+/// F6 brings the keyboard to the Dock and lands it on the first slot, Tab
+/// moves along, Enter activates — `docs/design/the-shortcuts-and-the-edges.md`
+/// in as many words. **Enter did nothing on the bar until 2026-10-18**:
+/// `Server::which_slot_on_the_bar` was written by F6 and by Tab and read by
+/// nothing but Tab, so the keyboard could walk the Dock and press nothing on
+/// it.
+///
+/// That mattered more than an unfinished shortcut, because a press on the
+/// market's entry is **the only road to the market there is** — no chord
+/// reaches it, and nothing joins the composer to the agent. On a machine whose
+/// pointer presses open nothing, the keyboard is the whole of what is left.
+///
+/// This walks the keys a person presses, in order, and asks the Dock for the
+/// slot rather than counting to it: a test that told the bar which slot the
+/// market is on could not find a bar that had moved it.
+#[test]
+fn the_keyboard_alone_opens_the_market() -> Result<(), InputError> {
+    use crate::where_the_dock_is::where_the_dock_is;
+    use crate::which_area_has_the_keyboard::AnArea;
+    use alo_dock::pinning::{Discovery, ThePins};
+    use alo_dock::places::WhatIsHere;
+
+    let (_runtime, mut server) = a_seat("the-keyboard-opens-the-market");
+
+    let _owed = server
+        .its_dock_is_filled_from_what_they_kept(&ThePins::NeverSet, &Discovery::Completed(vec![]));
+    let on_the_dock = server.what_this_persons_dock_holds();
+    let places = where_the_dock_is(&alo_dock::Dock::shipped(), EXTENT, &on_the_dock)
+        .expect("a dock this display can hold");
+
+    // Which Tab stop the market is, counted the way the keyboard counts them.
+    let market = places
+        .places
+        .each()
+        .iter()
+        .filter(|place| place.what().can_be_pressed())
+        .position(|place| {
+            matches!(
+                place.what(),
+                WhatIsHere::ANativeAction(alo_dock::ANativeAction::Applications)
+            )
+        })
+        .expect("a fresh machine's Dock holds the market's entry");
+    server.the_docks_slots_were_drawn("a-display", places);
+
+    // F6: the keyboard arrives on the bar, on its first slot.
+    server.the_keyboard_is_now_in(Some(AnArea::TheDock));
+    assert_eq!(
+        server.which_slot_on_the_bar,
+        Some(0),
+        "F6 did not land the keyboard on the bar's first slot"
+    );
+
+    // Tab, as many times as it takes to reach the market's own entry.
+    for _ in 0..market {
+        assert!(
+            server.tab_moves_among_the_bars_controls(
+                crate::tab_moves_among_the_bars_controls::WhichWay::Onward
+            ),
+            "Tab was not taken while the keyboard was on the bar"
+        );
+    }
+    assert_eq!(server.which_slot_on_the_bar, Some(market));
+
+    assert!(!server.market.is_open(), "the premise: the market is shut");
+
+    // Enter.
+    assert!(
+        server.the_keyboard_takes_the_slot_it_is_on(),
+        "Enter on the market's own entry did nothing"
+    );
+    assert!(
+        server.market.is_open(),
+        "a person walked to the market's entry with the keyboard, pressed Enter, and the \
+         market did not open — which on a machine whose presses open nothing leaves no road \
+         to it at all"
+    );
+    Ok(())
+}
+
+/// **The whole road the machine takes: the real raster, recorded the way the
+/// draw records it, pressed where a letter is actually inked.**
+///
+/// Every other press test in this crate hands `TheDocksPlaces` to the server
+/// by calling `where_the_dock_is` itself. **The machine does not.** `present`
+/// draws the bar with `dock_raster::picture` and records `picture.standing`,
+/// and that is the one seam between a suite that passes and a booted machine
+/// that opens nothing.
+///
+/// #789 pressed at the inked letters too, but asked
+/// `what_a_press_on_the_dock_does` directly — the pure function, with the
+/// geometry handed to it. This goes in as a button at the seat and comes out
+/// as an open window, through `direct_seat`, `direct_pointer`, `pointer_button`
+/// and the Dock, with nothing in between supplied by hand.
+#[test]
+fn the_real_raster_recorded_the_way_the_draw_records_it_opens_the_market() -> Result<(), InputError>
+{
+    use crate::desktop_look::DesktopLook;
+    use alo_access::TurnedOn;
+    use alo_appearance::{Accent, Appearance, TimeOfDay};
+    use alo_dock::pinning::{Discovery, ThePins};
+    use alo_strings::Direction;
+
+    let (_runtime, mut server) = a_seat("the-real-raster");
+
+    let mut appearance = Appearance::shipped();
+    appearance.set_accent(Accent::Indigo);
+    let look = DesktopLook::of(
+        &appearance,
+        &TurnedOn::nothing(),
+        TimeOfDay::checked(10, 0).expect("ten in the morning"),
+        Direction::LeftToRight,
+        &crate::desktop_testing::a_display(),
+    );
+    let mut fonts = cosmic_text::FontSystem::new();
+    fonts
+        .db_mut()
+        .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+
+    // The Dock a fresh machine fills for itself, not one pinned by hand.
+    let _owed = server
+        .its_dock_is_filled_from_what_they_kept(&ThePins::NeverSet, &Discovery::Completed(vec![]));
+    let on_the_dock = server.what_this_persons_dock_holds();
+
+    let picture = crate::dock_raster::picture(
+        &alo_dock::Dock::shipped(),
+        look,
+        EXTENT,
+        &on_the_dock,
+        &[],
+        (
+            &crate::what_the_dock_has_open::NOTHING,
+            &crate::the_docks_words::TheDocksWords::default(),
+        ),
+        &mut fonts,
+    )
+    .expect("a fresh machine's Dock lays out on the display it draws on");
+
+    // **Recorded exactly as `present` records it.**
+    server.the_docks_slots_were_drawn("a-display", picture.standing.clone());
+
+    // Press the middle of every inked block in turn, until one opens the
+    // market. Asked of the ink rather than of the layout: a test that asks the
+    // geometry where to press cannot find a geometry that is wrong.
+    let mut reached = 0_usize;
+    for ink in &picture.inked {
+        if server.market.is_open() {
+            break;
+        }
+        let middle = (
+            ink.area.loc.x + ink.area.size.w / 2,
+            ink.area.loc.y + ink.area.size.h / 2,
+        );
+        server.direct_seat(
+            true,
+            EXTENT,
+            DirectSeatEvent::Pointer(DirectPointerEvent::Absolute {
+                x: f64::from(middle.0) / f64::from(EXTENT.0),
+                y: f64::from(middle.1) / f64::from(EXTENT.1),
+                time: 20,
+            }),
+        )?;
+        button(&mut server, BTN_LEFT, ButtonState::Pressed, 1)?;
+        button(&mut server, BTN_LEFT, ButtonState::Released, 0)?;
+        reached += 1;
+    }
+
+    let made = server.what_the_seat_made_of_its_input();
+    assert!(
+        made.dock_slots_recorded > 0,
+        "the draw recorded no slots at all, so every point on the screen answers *nothing \
+         is here*"
+    );
+    assert!(
+        server.market.is_open(),
+        "pressing the middle of each of the {} inked blocks in turn — {reached} of them — \
+         opened nothing. {} presses arrived, {} landed on something this compositor draws, \
+         and the Dock has {} slots recorded",
+        picture.inked.len(),
+        made.button_presses,
+        made.furniture_presses,
+        made.dock_slots_recorded
+    );
+    Ok(())
+}

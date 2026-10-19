@@ -194,7 +194,25 @@ pub(crate) fn a_key_reaches_the_docks_surfaces(
         // does nothing and is still the Dock's: a surface is open in front of
         // the application, and a key meaning *do it* that reached past the
         // thing in front would do something a person cannot see.
-        WhatWasAsked::Choose => server.the_keyboard_takes_what_is_focused(),
+        // **Enter takes what is focused, on the open surface or on the bar.**
+        //
+        // The bar had no performer at all until 2026-10-18:
+        // `Server::which_slot_on_the_bar` was written by F6 and by Tab and read
+        // by nothing but Tab, so a person could walk the Dock with the keyboard
+        // and press nothing on it. `docs/design/the-shortcuts-and-the-edges.md`
+        // says *activate a focused control — Enter*, and the bar carries the
+        // market's own entry — which is the only road to it there is.
+        //
+        // The surface is asked first because it is drawn in front of the bar,
+        // which is the order `Server::the_dock_takes_this_press` keeps for the
+        // pointer and for the same reason.
+        WhatWasAsked::Choose => {
+            if server.the_dock_was_asked_for.is_anything() {
+                server.the_keyboard_takes_what_is_focused();
+            } else {
+                let _taken = server.the_keyboard_takes_the_slot_it_is_on();
+            }
+        }
         // **Tab moves along the bar, and only the bar.** A surface the Dock
         // opened has its own walk on the arrow keys, and Tab inside one would
         // be a second way to move through the same grid — two roads to one
