@@ -580,8 +580,43 @@ a prefix.
 
 ### 10. *Choose one, and your files are as they were*
 
-**Status:** blocked on a decision, **measured 2026-10-17 after the bracket
-landed**. **Depends on:** whether a command the *person* runs is bracketed.
+**Status:** **decided and shaped, 2026-10-19 — not started.** **Depends on:**
+nothing. Both decisions it waited on are made:
+[ADR 0127](../decisions/0127-a-persons-own-commands-are-bracketed-in-a-session-they-asked-for.md)
+and its amendment — **a Settings row under Terminal**, and **a folder now, the
+next sign-in next, never a root helper.**
+
+**What it costs, measured 2026-10-19 by starting it and stopping.** The shape is
+`alo-sleeping`'s, which is the crate this would copy, and it is one piece of work
+and not five:
+
+| | lines in the crate this copies |
+|---|---|
+| `changes.rs` — the setting, off as shipped | 162 |
+| `keeping.rs` — `terminal.toml`, read and written by this crate alone (ADR 0038) | 210 |
+| `unkept.rs` — what a file that will not read says, in this crate's words | 281 |
+| `words.rs` — `alo-sleeping` declares **22**; this needs the six of the not-read family, the row, and the restore's sentences | 421 |
+| a contract test, `the_contract_describes_this_file.rs`, holding the file and `docs/contracts/person-settings.md` together | — |
+
+and then, outside the crate: a **new `SettingsSection::Terminal`** with its row
+in `alo-shell`; the snapshot itself, hooked on
+`AShellSaid::TheCommandIsRunning`, which is the mark the shell already sends and
+`alo-shell::the_terminal_a_person_opened` already reads; the restore of a chosen
+folder out of a `before/` snapshot; a section in
+`docs/contracts/person-settings.md`; `docs/features.md` narrowed a second time;
+and the vocabulary snapshot regenerated.
+
+**So it is a day, not an afternoon**, and the lane said so before writing the
+second file rather than after the twelfth. `changes.rs` was written and thrown
+away deliberately: a settings file nothing reads, with a dependency nothing uses,
+fails the cheap checks and is worse in the tree than the measurement is in this
+table.
+
+**The one thing already standing that this needs:** the hook. `AShellSaid` has
+`TheCommandIsRunning` — OSC 133 `C`, the moment a command is about to run — and
+`TheyTyped(String)`, the line as the person typed it, which is the label a
+scrollback point needs. Both landed with shell integration (#798, #800). Nothing
+has to be invented to know when to snapshot.
 
 The snapshot half of *scrollback you can move along*. The scrolling is built; what
 is missing is putting the files back, which no amount of scrolling can supply.
