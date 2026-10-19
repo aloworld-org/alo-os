@@ -155,3 +155,81 @@ fn a_folder_is_not_a_command() {
         "a directory was taken for a command"
     );
 }
+
+/// **No flag means the strict box.**
+#[test]
+fn a_command_with_no_flag_gets_nothing_of_the_persons() {
+    let (how, left) = what_was_asked_for(&["./install.sh"]).expect("a command");
+    assert_eq!(how, HowNarrow::NothingOfTheirs);
+    assert_eq!(left, vec![std::ffi::OsString::from("./install.sh")]);
+}
+
+/// **`--only-here` is read, and taken off the command line.**
+#[test]
+fn only_here_is_read_and_not_passed_to_the_command() {
+    let (how, left) = what_was_asked_for(&["--only-here", "./build.sh", "-v"]).expect("a command");
+    assert_eq!(how, HowNarrow::AndTheFolderTheyAreIn);
+    assert_eq!(
+        left,
+        vec![
+            std::ffi::OsString::from("./build.sh"),
+            std::ffi::OsString::from("-v")
+        ],
+        "the command's own flags must survive"
+    );
+}
+
+/// **A flag after the command belongs to the command.**
+///
+/// The sharp one. `try ./build.sh --only-here` is a person telling *their
+/// script* something, and a reader of flags that kept looking would take it.
+#[test]
+fn a_flag_after_the_command_is_the_commands_own() {
+    let (how, left) = what_was_asked_for(&["./build.sh", "--only-here"]).expect("a command");
+    assert_eq!(
+        how,
+        HowNarrow::NothingOfTheirs,
+        "a flag after the command was read as this program's"
+    );
+    assert_eq!(
+        left,
+        vec![
+            std::ffi::OsString::from("./build.sh"),
+            std::ffi::OsString::from("--only-here")
+        ]
+    );
+}
+
+/// **`--` ends the flags and is not passed on**, so a command whose name starts
+/// with a dash can be run.
+#[test]
+fn a_double_dash_ends_the_flags_and_is_not_passed_on() {
+    let (how, left) =
+        what_was_asked_for(&["--only-here", "--", "--weird-name"]).expect("a command");
+    assert_eq!(how, HowNarrow::AndTheFolderTheyAreIn);
+    assert_eq!(left, vec![std::ffi::OsString::from("--weird-name")]);
+}
+
+/// **Only a flag and nothing else is not a command.**
+#[test]
+fn a_flag_with_no_command_after_it_is_nothing_to_run() {
+    assert!(what_was_asked_for(&["--only-here"]).is_none());
+    assert!(what_was_asked_for::<&str>(&[]).is_none());
+    assert!(what_was_asked_for(&["--only-here", "--"]).is_none());
+}
+
+/// **An unknown flag is the command**, not a refusal.
+///
+/// A person typing `try -x` means a program called `-x`, and this program has
+/// no business deciding otherwise — it reads the flags it knows and hands the
+/// rest over.
+#[test]
+fn an_unknown_flag_is_taken_as_the_command() {
+    let (how, left) = what_was_asked_for(&["--offline", "./build.sh"]).expect("a command");
+    assert_eq!(how, HowNarrow::NothingOfTheirs);
+    assert_eq!(
+        left.first().map(std::ffi::OsString::as_os_str),
+        Some(std::ffi::OsStr::new("--offline")),
+        "an unknown flag was swallowed instead of handed over"
+    );
+}

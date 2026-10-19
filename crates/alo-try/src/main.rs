@@ -50,10 +50,11 @@ use std::time::SystemTime;
 
 use alo_bounding::{Boundary, Pinned, THE_ROOT};
 use alo_capability::{Grantee, HowCodeRuns};
-use alo_running::{AskedToRun, WhereCommandsRun, what_a_try_may_reach};
+use alo_running::{AskedToRun, WhereCommandsRun, what_a_try_may_reach, what_only_here_may_reach};
 use alo_strings::{Strings, Vocabulary};
 use alo_try::{
-    found_on_the_path, the_cgroup_this_process_is_in, the_record_a_person_keeps, where_the_box_goes,
+    HowNarrow, found_on_the_path, the_cgroup_this_process_is_in, the_record_a_person_keeps,
+    what_was_asked_for, where_the_box_goes,
 };
 
 /// Who the run is written down as having been asked by.
@@ -120,8 +121,8 @@ fn main() -> ExitCode {
     let strings = Strings::of(vocabulary);
 
     // **What the person typed, before the machine is touched.**
-    let mut asked = std::env::args_os().skip(1);
-    let Some(named) = asked.next() else {
+    let typed: Vec<std::ffi::OsString> = std::env::args_os().skip(1).collect();
+    let Some((how, mut asked)) = what_was_asked_for(&typed) else {
         eprintln!(
             "{}",
             strings.say(
@@ -131,7 +132,8 @@ fn main() -> ExitCode {
         );
         return ExitCode::FAILURE;
     };
-    let arguments: Vec<std::ffi::OsString> = asked.collect();
+    let named = asked.remove(0);
+    let arguments: Vec<std::ffi::OsString> = asked;
 
     let Ok(standing_in) = std::env::current_dir() else {
         eprintln!(
@@ -154,7 +156,15 @@ fn main() -> ExitCode {
         return ExitCode::FAILURE;
     };
 
-    let places = match what_a_try_may_reach(&program) {
+    // **Which box, decided by the word the person typed and nothing else.**
+    // `try` alone grants the command; `--only-here` grants the folder they are
+    // standing in instead — a loosening, which the flag's name does not suggest
+    // and `what_only_here_may_reach` says at length.
+    let asked_for = match how {
+        HowNarrow::NothingOfTheirs => what_a_try_may_reach(&program),
+        HowNarrow::AndTheFolderTheyAreIn => what_only_here_may_reach(&standing_in),
+    };
+    let places = match asked_for {
         Ok(places) => places,
         Err(why) => {
             the_machine_could_not(&strings, &why.to_string());

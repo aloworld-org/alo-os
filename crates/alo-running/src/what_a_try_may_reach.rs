@@ -43,9 +43,25 @@
 //! to write is a promise to add deliberately**, not a default to slip in, and
 //! `docs/features.md` says nothing about one.
 //!
-//! **The network.** A different axis, and a different promise — *`--offline` so
-//! it may not reach the network* is the neighbouring feature. A box here is
-//! bound in the filesystem only, and this file does not pretend otherwise.
+//! **The network — and it turns out there is nothing to add.** *`--offline` so
+//! it may not reach the network* is the neighbouring promise, and **a boxed
+//! command already cannot**. `alo_bounding_map::Bounds` holds where a turn may
+//! connect to and *begins as nowhere*: default-deny, so every connection is
+//! refused without anybody writing it down.
+//!
+//! **Measured on 2026-10-18 rather than taken from the comment.** The same
+//! `curl` to an IP address, one difference between the two runs:
+//!
+//! ```text
+//! unboxed   http=301   exit 0
+//! in a box  http=000   exit 7     <- curl: could not connect
+//! ```
+//!
+//! So a flag for it would be a flag that does nothing. What the promise asks
+//! for beyond this is *and the indicator shows that it did not*, which is the
+//! compositor's surface and is not reachable from a command — the same gap
+//! [ADR 0125](../../../docs/decisions/0125-a-command-does-not-report-an-egress-it-asks-a-service-that-can-show-one.md)
+//! settles for an egress that happens, pointing the other way.
 
 use std::path::{Path, PathBuf};
 
@@ -142,6 +158,50 @@ pub fn what_a_try_may_reach(program: &Path) -> Result<Vec<PathBuf>, NoPlacesForI
     }
     Ok(vec![
         program.to_path_buf(),
+        PathBuf::from(WHERE_PROGRAMS_ARE),
+        where_the_libraries_are()?,
+        PathBuf::from(THE_EMPTY_DEVICE),
+    ])
+}
+
+/// Everywhere a command a person said *try `--only-here`* may reach.
+///
+/// `docs/features.md`, starred: *Scope one command without changing a setting.
+/// `--only-here` so it may not write outside this folder.*
+///
+/// The same three system places as [`what_a_try_may_reach`], with **the folder
+/// the person is standing in** in place of the command. Four places, which is
+/// `alo_bounding::PLACES` — so this is a swap and not an addition, and the
+/// command itself needs no place of its own when it lives in that folder.
+///
+/// # It is a loosening, and `try` alone is the strict one
+///
+/// Said plainly because the flag's name suggests the opposite. `try` on its own
+/// grants the command and nothing else of the person's; `--only-here` **adds**
+/// their current folder, so a build can write its output where they are
+/// standing. A person reaching for it is asking for more, not less, and what
+/// they are narrowing is their whole session down to one folder.
+///
+/// # And it is stricter than the promise says
+///
+/// The promise is *may not **write** outside this folder*. A place in
+/// `alo-bounding` is read and write together, so what this actually gives is
+/// *may not **touch** outside this folder* — the command cannot read the
+/// person's other files either. **Stricter than promised rather than looser**,
+/// and recorded here rather than left for somebody to notice: a reader
+/// comparing the two will otherwise think one of them is wrong.
+///
+/// # Errors
+/// [`NoPlacesForIt`] — a folder that is not a full path, or a machine with no
+/// library folder.
+pub fn what_only_here_may_reach(folder: &Path) -> Result<Vec<PathBuf>, NoPlacesForIt> {
+    if !folder.is_absolute() {
+        return Err(NoPlacesForIt::NotAFullPath {
+            named: folder.display().to_string(),
+        });
+    }
+    Ok(vec![
+        folder.to_path_buf(),
         PathBuf::from(WHERE_PROGRAMS_ARE),
         where_the_libraries_are()?,
         PathBuf::from(THE_EMPTY_DEVICE),
