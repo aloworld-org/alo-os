@@ -892,7 +892,14 @@ left in place is how a gap stops being read as one.*
   alo cannot tell a changing command from a reading one, so it would snapshot
   `ls`, and ADR 0045's fifty-turn window would be spent before lunch. The starred
   promise in `docs/features.md` is narrowed to match, in the same change.
-  **Task 10 is now buildable** — restoring reads a snapshot and compares nothing.
+  **Task 10 is now *decided*, not buildable** — the lane said buildable and
+  measured it an hour later. The comparer is genuinely not needed (a bracket
+  snapshots the whole home, so *your files as they were* is a whole-home rewind),
+  but **nothing in this product can put a home back**: the repository's only two
+  `btrfs` invocations are `subvolume snapshot -r` and `subvolume delete
+  --commit-after`, in 122 crates. And the hard part is *when* — a home cannot be
+  swapped out from under the person living in it. ADR 0127 carries the three
+  shapes and they are the owner's.
   **Tasks 7 and 8 are not**: both need what each command *changed*, which is the
   comparer's, and the comparer is the third PC's (ADR 0045, and `alo-agentd`
   records the gap in its own words). *This bullet said "a bracket" until the

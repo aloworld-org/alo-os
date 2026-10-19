@@ -121,6 +121,43 @@ and `alo-agentd` already records the gap in its own words: there is deliberately
 no state for *both sides are kept and nothing has compared them*, which is
 exactly the state of a machine the moment a bracket is taken.
 
+## What *task 10 is buildable* left out — measured 2026-10-19, an hour after this was written
+
+**The lane told the owner task 10 was buildable on the strength of the table
+above, and the table is half right.** The comparer is genuinely not needed, and
+that was checked rather than assumed: a bracket is a read-only snapshot of the
+person's **whole home subvolume**, so *your files are as they were before it ran*
+is a whole-home rewind and not a per-file diff. Nothing has to say what changed.
+
+**But nothing in this product can put a home back.** Measured by listing every
+`btrfs` invocation in the repository — there are exactly two:
+
+| program arguments | where | what it does |
+|---|---|---|
+| `subvolume snapshot -r` | `alo-turn`, taking a bracket | makes one |
+| `subvolume delete --commit-after` | `alo-letting-go`, under a capability | removes an expired one |
+
+**Make and remove. No restore, by any name, in any of 122 crates.** So task 10
+needs a second thing this ADR did not decide, and the lane's *buildable* should
+have read *decided*.
+
+### And the hard part is not writing the restore, it is when
+
+A home cannot be swapped out from under the person living in it: their shell,
+their editor and their applications hold files open in it. So the shapes that
+actually work are not obvious, and they are the owner's:
+
+- **at the next sign-in** — the rewind is chosen now and happens when nothing
+  holds the home, which is how an operating system usually does this;
+- **a folder rather than the home** — narrower, works immediately, and is a
+  smaller promise than the starred sentence makes;
+- **a privileged helper that does the swap**, which is a new privileged path and
+  `the-broker-and-the-disk-plan.md`'s territory rather than this lane's.
+
+**Recorded here rather than discovered twice**, and the decision above is
+unaffected: bracketing a person's commands in a session they asked for is still
+what the owner accepted, and it is still the half that has to exist first.
+
 ## The test that decides whether this works
 
 1. In a session where the person asked for it, they run a command that writes a
