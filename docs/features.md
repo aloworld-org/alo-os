@@ -566,9 +566,9 @@ file carries it with a tier.*
   because *it forgets everything that was not an agent*, further down this file,
   is not spent on this: nothing is watched, outcomes are kept because you asked
   for them*
-- ★ **Scrollback you can move along, not only read.** Every command in the
-  session is a place you can return to: scroll up, choose one, and your files
-  are as they were before it ran. *In every other terminal scrollback is a
+- ★ **Scrollback you can move along, not only read.** In a session you asked to
+  be able to undo, every command is a place you can return to: scroll up, choose
+  one, and your files are as they were before it ran. *In every other terminal scrollback is a
   record of text. **A process cannot snapshot a filesystem it does not own**,
   and alo OS picks that filesystem at install so that it can*
   **Moving along it is built, 2026-10-15**: the transcript scrolls, by wheel —
@@ -578,9 +578,19 @@ file carries it with a tier.*
   could be reached**: a terminal that remembers and cannot show has forgotten,
   as far as a person is concerned. A notch that moves nothing is not consumed,
   so a terminal at the end of its scrollback does not swallow scrolls.
+  **Narrowed on 2026-10-19, by the owner**
+  ([ADR 0127](decisions/0127-a-persons-own-commands-are-bracketed-in-a-session-they-asked-for.md)):
+  this said *every command in the session*, with no asking. A snapshot before
+  every command means one before `ls` and one before `cd` — alo cannot tell a
+  changing command from a reading one — and ADR 0045's window of *fifty changing
+  turns* would then be spent before lunch, so the morning's real mistake would
+  have expired by the afternoon. **It is opt in per session**, which is what the
+  outcome search above it already is. The sentence is narrowed here rather than
+  only in the ADR, because a promise narrowed in a decision and left standing in
+  this file is the fault law 5's own paragraph was added for.
   **Not built**: *choose one, and your files are as they were* — that is the
-  snapshot half, which needs the filesystem this list promises and no scrolling
-  can supply.
+  snapshot half. It needs the filesystem this list promises, which no scrolling
+  can supply, and it needed that decision, which it now has.
 - ★ **Bisect the machine, not the repository.** *It worked yesterday* becomes a
   command: walk the snapshots to find when something broke, including everything
   version control never held — installed packages, caches, configuration, a

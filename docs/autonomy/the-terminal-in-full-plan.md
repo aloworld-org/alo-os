@@ -884,13 +884,20 @@ left in place is how a gap stops being read as one.*
 
 ## What this plan is waiting on, in one place
 
-- **Whether a command the person runs is bracketed** — tasks 8 and 10. **The
-  bracket itself is built and landed** (#767, 2026-10-17): `alo-turn` takes one
-  either side of a changing agent turn, measured on a real `btrfs` filesystem.
-  What neither task can start without is a decision on bracketing the person's
-  own commands, which ADR 0045 does not make and whose disk cost is the question
-  the owner asked when they accepted it. *This bullet said "a bracket" until the
-  bracket arrived and the tasks stayed shut.*
+- ~~**Whether a command the person runs is bracketed**~~ — **answered
+  2026-10-19 by the owner**, who accepted
+  [ADR 0127](../decisions/0127-a-persons-own-commands-are-bracketed-in-a-session-they-asked-for.md):
+  **in a session the person asked for, every command they run is bracketed**, and
+  an ordinary session takes no snapshots. *Every command* was not taken because
+  alo cannot tell a changing command from a reading one, so it would snapshot
+  `ls`, and ADR 0045's fifty-turn window would be spent before lunch. The starred
+  promise in `docs/features.md` is narrowed to match, in the same change.
+  **Task 10 is now buildable** — restoring reads a snapshot and compares nothing.
+  **Tasks 7 and 8 are not**: both need what each command *changed*, which is the
+  comparer's, and the comparer is the third PC's (ADR 0045, and `alo-agentd`
+  records the gap in its own words). *This bullet said "a bracket" until the
+  bracket arrived and the tasks stayed shut; it then said "a decision" until the
+  decision arrived and two of the three stayed shut anyway.*
 - **How a person asks for a sealed-box run** — task 9. **Not the box**: that is
   built (#729, 2026-10-16) and passes on a real kernel. What is missing is a
   caller and the surface it would be called from, and the design file and ADR
