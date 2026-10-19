@@ -140,7 +140,7 @@ WORKDIR /alo-os
 # and the four daemons were simply absent. It was the `COPY --from=built` below
 # that failed, two hundred lines later, with *no such file or directory*.
 #
-# Each of the six packages declares exactly one binary, so selecting the packages
+# Each of these packages declares exactly one binary, so selecting the packages
 # selects the binaries — `alo-software`'s is auto-discovered from
 # `src/bin/alo-shipping.rs`, which is why it needed no naming in the first place.
 RUN cargo build --release --target ${THE_TARGET} \
@@ -153,7 +153,8 @@ RUN cargo build --release --target ${THE_TARGET} \
       --package alo-looking-once \
       --package alo-giving-a-folder \
       --package alo-agent \
-      --package alo-try
+      --package alo-try \
+      --package alo-ask
 
 # ---------------------------------------------------------------------------
 # The office engine, fetched pinned and checked before it is trusted
@@ -320,6 +321,24 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-enter-the-box /usr/li
 # reason the box is made here rather than by the daemon — ADR 0125's amendment
 # of 2026-10-18 has the measurement.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-try /usr/bin/alo-try
+
+# **The command a person types to ask alo something**, which was absent from
+# every image built before 2026-10-19.
+#
+# [ADR 0124](../docs/decisions/0124-one-command-asks-alo-from-the-terminal-and-asking-means-acting.md)
+# measured that there is no `alo` binary and that **`alo-ask` is the only one a
+# person could type**, and named 151 files that mention it. It was named in none
+# of them here: not in the build above, not copied, not made executable. So
+# every feature reached through it — a question answered on this machine, and
+# since #829 a question answered by the person's own provider — **existed
+# nowhere a person could run it.**
+#
+# Found while checking what a tester could exercise, which is the only way a
+# gap of this shape gets found: nothing is broken, nothing is red, and the
+# command is simply not there. It needs no unit and no files of its own — it
+# reads the person's settings, and for a provider it asks `alo-agentd` on the
+# socket that service already binds.
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-ask /usr/bin/alo-ask
 
 # **The broker, and the one look this machine takes on its way up.** Both in
 # libexec for the reason the loader and the opener are there: nobody runs either
@@ -808,10 +827,27 @@ RUN set -e; \
     /usr/bin/alo-try 2>&1 | grep -q 'not a command' \
       || { echo "alo-try started but did not say why it refused" >&2; exit 1; }
 
+# **And `alo-ask` is run too, for the same reason and in the same shape.**
+# Measured 2026-10-19 rather than assumed: with no arguments it says *there is
+# nothing to ask yet — write the question first* and exits 1. So a run that
+# **fails** is the pass, and a binary that cannot load its libraries fails
+# differently and is caught here rather than by a person on a laptop.
+#
+# What this does not check: that a question reaches a model. That wants a model
+# on the machine or a provider in somebody's settings, and neither belongs in
+# an image build — ADR 0095 ships no weights at all.
+RUN set -e; \
+    if /usr/bin/alo-ask; then \
+      echo "alo-ask with no question should have refused and did not" >&2; exit 1; \
+    fi; \
+    /usr/bin/alo-ask 2>&1 | grep -q 'nothing to ask' \
+      || { echo "alo-ask started but did not say why it refused" >&2; exit 1; }
+
 RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/libexec/alo-convertd /usr/libexec/alo-portald \
                /usr/libexec/alo-shipping \
                /usr/bin/alo-agentd /usr/bin/alo-agent /usr/bin/alo-try \
+               /usr/bin/alo-ask \
                /usr/bin/ollama \
  && chmod 0644 /usr/lib/systemd/system/alo-boundaryd.service \
                /usr/lib/systemd/system/alo-agentd.service \
