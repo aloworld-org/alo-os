@@ -3,6 +3,11 @@
 **Status:** ACCEPTED, 2026-09-10 — decided by the owner: *"I do not want to use
 USB flash. I want the users to be able to install it from GitHub, website."*
 Recorded and shaped by the workstream under the owner's standing delegation.
+**Amended 2026-10-19** — removable media is added as a second road beside the
+one from Windows, because the audience named at acceptance (*the Windows 10
+fleet*) is no longer the only one and the from-Windows road does not fail
+cleanly for a developer on Wi-Fi. *ISO + USB as the primary path* stays
+rejected; see *Amended, 2026-10-19* at the end.
 **Date:** 2026-09-10
 **Context:** `ROADMAP.md` (v0.01 ships **no installer** — unchanged by this),
 `docs/features.md` (the Windows 10 fleet is the market), `image/` (the OS is a
@@ -80,3 +85,60 @@ it is simply not the front door, and the front door never requires it.
   A sovereignty product must not open by asking people to switch a protection
   off.
 - **A web page that flashes a stick via WebUSB.** Still a stick.
+
+## Amended, 2026-10-19 — removable media as a second road, not the primary one
+
+**What changed is the market, and the decision above was argued from it.**
+*Why this and not the usual ISO* opens: *the target machine already has an
+operating system on it… this product exists to catch the Windows 10 fleet
+Microsoft is abandoning; by definition, every machine we want is running
+Windows and can run a downloaded program.* On 2026-10-19 the owner named a
+different audience — **developers** — and that premise does not hold for them.
+A developer's machine may not be running Windows at all, and the ones that are
+are overwhelmingly on Wi-Fi.
+
+**The owner's words, both times.** At acceptance: *"I do not want to use USB
+flash. I want the users to be able to install it from GitHub, website."* And
+amending it: *"it was not a permanent rule but it was because we had no usb
+stick so we shall need to do both in the near future"*, and *"we are targeting
+developers and most of the developers we are targeting have no ethernet cables
+and just use wi-fi"*.
+
+**And a measurement that made it urgent rather than tidy.** The staged
+environment is wired-only: `image/installing/alo-installing.conf` adds
+`network-manager` and its own comment says it *brings a wired connection up
+from `ip=dhcp`*, and a sweep found no supplicant, no wireless firmware and
+nothing in `crates/alo-installer`'s 140 declared words naming a network. The
+Windows half shrinks the disk **before** the restart. So a Wi-Fi-only person
+does not merely fail to install — they are left with a smaller Windows,
+unallocated space, no alo OS, and no removal road, because `removing.rs`
+clears a disk alo OS has to itself and refuses the beside road. **The road from
+Windows does not fail cleanly for the audience it is now aimed at**, and that
+is what a second road answers.
+
+### What this amendment does and does not do
+
+- **The road from Windows stays the primary one.** For a person with the
+  Windows machine in front of them, *download, click, reboot, sign in* is still
+  the front door, and still the thing no competitor offers.
+- **Removable media is added beside it**, for the two machines that road cannot
+  reach: one with no Windows to start from, and one whose only network is
+  Wi-Fi and which must be installable before the carry-across lands.
+- ***ISO + USB as the primary path* stays rejected.** The entry above is
+  unchanged and still correct: primary is what it must not be. A second road is
+  not a demotion of the first.
+- **Nothing about Secure Boot, the typed consent, or the one named point of no
+  return is touched.** Those are constraints on any road, not properties of
+  this one.
+
+### What is still owed, and is not decided here
+
+- **Whether the installer may write a Wi-Fi password to the staging partition**
+  so the from-Windows road reaches Wi-Fi at all. It is a secret on a FAT volume
+  with no permissions, `tidy_up` runs only after a successful install so the
+  failure case leaves it there, and removal takes the partition out of the
+  table rather than wiping the bytes. That is its own decision and the owner's.
+- **802.1X.** Enterprise Wi-Fi cannot be carried as a pre-shared key. *Plug in
+  a cable*, said properly and before the shrink, may be the honest answer.
+- **What the removable-media road is**, in detail — it is named here as a road
+  that must exist, not specified.
