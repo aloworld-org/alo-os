@@ -114,6 +114,23 @@ struct Device {
     children: Vec<Device>,
 }
 
+/// The partition number at the end of a device's name, or [`None`].
+///
+/// `/dev/vda5` is five and `/dev/nvme0n1p12` is twelve. The trailing run of
+/// digits and nothing else — a name this cannot read is a name this refuses,
+/// because the caller's next act is removing a partition.
+fn its_number(name: &str) -> Option<u32> {
+    let digits: String = name
+        .chars()
+        .rev()
+        .take_while(char::is_ascii_digit)
+        .collect::<Vec<char>>()
+        .into_iter()
+        .rev()
+        .collect();
+    digits.parse().ok()
+}
+
 /// Whether this install may write over the system already on the disk.
 ///
 /// It exists so that no caller can pass a `true` by accident: the road that
@@ -193,15 +210,36 @@ impl Disks {
     ///
     /// Found by the label the installer gives it ([`THIS_INSTALLER`]) and by
     /// nothing else, which is the same thing [`Disks::may_receive`] refuses a
-    /// disk for. The number is the partition's place in its disk's own list,
-    /// counted from one, because that is what the partitioner takes.
+    /// disk for.
+    ///
+    /// # The number is read off the device's name, and it was counted until 2026-10-19
+    ///
+    /// **It was the partition's place in the lister's list, counted from one**,
+    /// on the reasoning that that is what the partitioner takes. The
+    /// partitioner takes a *partition number*, and a place in a list is only
+    /// the same thing while the numbers run from one with no gaps.
+    ///
+    /// **A GPT may have gaps.** Partitions 1, 2, 3 and 5 is an ordinary table
+    /// on a machine somebody removed a recovery partition from, and it is
+    /// exactly the machine this road runs on — a Windows disk somebody has
+    /// owned for a while. With a gap, the area at place four is partition five,
+    /// the counted answer is four, and `sfdisk --delete` is handed a partition
+    /// **that is not the staging area** on the disk Windows is on.
+    ///
+    /// The right number was in the value all along: the device's own name ends
+    /// in it — `/dev/vda5`, `/dev/nvme0n1p5`. So it is read rather than
+    /// counted, and a name with no trailing number yields [`None`] rather than
+    /// a guess, because every road out of here either removes a partition or
+    /// does nothing.
+    ///
+    /// *Every test passed before this change, because every fixture numbered
+    /// its partitions contiguously from one.*
     #[must_use]
     pub fn the_staging_area(&self) -> Option<(String, u32)> {
         for disk in &self.blockdevices {
-            for (at, partition) in disk.children.iter().enumerate() {
+            for partition in &disk.children {
                 if partition.label.as_deref() == Some(THIS_INSTALLER) {
-                    let number = u32::try_from(at + 1).ok()?;
-                    return Some((disk.name.clone(), number));
+                    return Some((disk.name.clone(), its_number(&partition.name)?));
                 }
             }
         }
@@ -378,6 +416,94 @@ impl Device {
 )]
 mod tests {
     use super::*;
+
+    /// **A Windows disk with a gap in its partition numbers**, which is what
+    /// somebody's machine looks like after they removed a recovery partition.
+    ///
+    /// Partitions 1, 2, 3, **5** and 6: the staging area is the fourth entry in
+    /// the lister's list and partition **five** in the table. Every other
+    /// fixture in this file numbers contiguously from one, which is why
+    /// counting the place passed for as long as it did.
+    const A_DISK_SOMEBODY_HAS_OWNED: &str = r#"{
+      "blockdevices": [
+        {"name": "/dev/vda", "type": "disk", "ro": false, "mountpoints": [null], "parttype": null, "label": null,
+          "children": [
+            {"name": "/dev/vda1", "type": "part", "ro": false, "mountpoints": [null], "parttype": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b", "label": null},
+            {"name": "/dev/vda2", "type": "part", "ro": false, "mountpoints": [null], "parttype": "e3c9e316-0b5c-4db8-817d-f92df00215ae", "label": null},
+            {"name": "/dev/vda3", "type": "part", "ro": false, "mountpoints": [null], "parttype": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7", "label": null},
+            {"name": "/dev/vda5", "type": "part", "ro": false, "mountpoints": [null], "parttype": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b", "label": "ALO-INSTALL"},
+            {"name": "/dev/vda6", "type": "part", "ro": false, "mountpoints": [null], "parttype": "0fc63daf-8483-4772-8e79-3d69d8477de4", "label": null}
+          ]}
+      ]
+    }"#;
+
+    /// A disk whose numbering gap sits **before** the area, so the counted
+    /// number names a partition that is really there and is not the area.
+    ///
+    /// Partitions 1, 2, 4 and 5. The area is 5 and the fourth entry listed.
+    const A_DISK_WHERE_COUNTING_HITS_SOMETHING: &str = r#"{
+      "blockdevices": [
+        {"name": "/dev/vda", "type": "disk", "ro": false, "mountpoints": [null], "parttype": null, "label": null,
+          "children": [
+            {"name": "/dev/vda1", "type": "part", "ro": false, "mountpoints": [null], "parttype": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b", "label": null},
+            {"name": "/dev/vda2", "type": "part", "ro": false, "mountpoints": [null], "parttype": "e3c9e316-0b5c-4db8-817d-f92df00215ae", "label": null},
+            {"name": "/dev/vda4", "type": "part", "ro": false, "mountpoints": ["/mnt/windows"], "parttype": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7", "label": null},
+            {"name": "/dev/vda5", "type": "part", "ro": false, "mountpoints": [null], "parttype": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b", "label": "ALO-INSTALL"}
+          ]}
+      ]
+    }"#;
+
+    /// **The area is removed by its own number, not by its place in a list.**
+    ///
+    /// The number goes to `sfdisk --delete`, so a wrong one removes a partition
+    /// on the disk Windows is on. Counted from the place, this answers four and
+    /// the area is five: the partition deleted would be the one the person's
+    /// own system is on.
+    #[test]
+    fn the_area_on_a_disk_with_a_gap_is_found_by_its_number() {
+        let disks = Disks::read(A_DISK_SOMEBODY_HAS_OWNED).unwrap();
+        let (disk, number) = disks.the_staging_area().unwrap();
+        assert_eq!(disk, "/dev/vda");
+        assert_eq!(
+            number, 5,
+            "the area is /dev/vda5 and the fourth entry listed; a four here names a partition this disk does not have, so the area is never removed"
+        );
+    }
+
+    /// **And the layout where counting deletes a partition that exists.**
+    ///
+    /// Partitions 1, 2, **4** and 5, with the area at five: it is the fourth
+    /// entry listed, so counting answers four — and four is Windows' own. That
+    /// number goes to `sfdisk --delete`, after a successful install, on the disk
+    /// the person is keeping.
+    ///
+    /// The fixture above shows the same fault refusing harmlessly. This one is
+    /// why it was worth fixing rather than noting, and the two are kept apart
+    /// because *a wrong number sometimes does nothing* and *a wrong number
+    /// sometimes removes your filesystem* are different sentences.
+    #[test]
+    fn counting_the_place_would_delete_a_partition_that_is_not_the_area() {
+        let disks = Disks::read(A_DISK_WHERE_COUNTING_HITS_SOMETHING).unwrap();
+        let (disk, number) = disks.the_staging_area().unwrap();
+        assert_eq!(disk, "/dev/vda");
+        assert_eq!(
+            number, 5,
+            "the area is /dev/vda5; a four here is /dev/vda4, which is Windows'"
+        );
+    }
+
+    /// Both spellings a real machine uses, and a refusal rather than a guess.
+    #[test]
+    fn a_partition_number_is_read_off_the_name_or_refused() {
+        assert_eq!(its_number("/dev/vda5"), Some(5));
+        assert_eq!(its_number("/dev/sda12"), Some(12));
+        assert_eq!(its_number("/dev/nvme0n1p5"), Some(5));
+        assert_eq!(its_number("/dev/mmcblk0p12"), Some(12));
+        // No trailing number is no answer. The caller's next act removes a
+        // partition, so a guess here is a partition removed by guess.
+        assert_eq!(its_number("/dev/mapper/cryptroot"), None);
+        assert_eq!(its_number(""), None);
+    }
 
     /// The machine the virtual-machine test builds: a first disk laid out the
     /// way Windows lays one out, with the installer staged beside it, and an
