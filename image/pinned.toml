@@ -159,6 +159,25 @@
 
 registry = "ghcr.io/aloworld-org/alo-os"
 
+# **Image 0.0.8 is declared and being built.** The candidate in flight, which
+# the recipe's label names and no installer pulls — removed again by the change
+# that pins its digest.
+#
+# Why there is a 0.0.8 eight hours after 0.0.7: **0.0.7 ships a fault its own
+# release notes disclose.** Pressing the Applications entry opened a window that
+# was never drawn, after which the machine appeared to take no keyboard, because
+# the undrawn window was holding it — Escape was the only way out. The cause was
+# one line: `frame_pictures` read nineteen fields off the frame and wrote the
+# twentieth as a literal `market: None`. Fixed in #837.
+#
+# It also carries #839, without which the Windows installer does not compile at
+# all — `alo-portals` re-exported a Linux-only module unconditionally, from #635
+# until 2026-10-19.
+#
+# **Not signed and not pinned**: the digest below is still 0.0.7's, an installer
+# still pulls 0.0.7, and this line changes nothing a person's machine does.
+next = "0.0.8"
+
 # Release 0.0.2: built from 8d2619daeb07b4b0ebbed59ded8caee722103b65, pushed and
 # signed by the owner on 2026-09-17 (cosign 3.1.3, by digest, no transparency
 # log), and verified against `signing/alo-os.pub` **by `cosign`, reading
