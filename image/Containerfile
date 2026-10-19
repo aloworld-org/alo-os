@@ -586,14 +586,26 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
 # The three checks below name what a person needs rather than what was asked
 # for — a `dnf install` that succeeds while a weak dependency is skipped is
 # exactly how this was missed the first time.
+#
+# **And the supplicant is RUN, not merely found.** `test -x` was this block's
+# first proof and it is the substitution this file already records twice, above
+# and below: *`test -x` on a converter binary stood in for the converter
+# starting. Three releases shipped one that died at launch on eleven missing
+# libraries.* A `wpa_supplicant` that cannot resolve its own libraries passes
+# `test -x`, and a machine would then fail to join a network for a second
+# reason while three proofs said it could. `-v` loads it, resolves its
+# libraries, prints its version and exits 0; with no arguments it exits 255, so
+# `-v` is the invocation. The prefix is grepped rather than a version, because
+# the version is the base's to change — measured here at 2.11 on the same day
+# another lane measured 2.10.
 RUN dnf install --assumeyes --setopt=install_weak_deps=False \
       NetworkManager-wifi wpa_supplicant \
       iwlwifi-mvm-firmware iwlwifi-dvm-firmware \
  && dnf clean all \
- && test -x /usr/sbin/wpa_supplicant \
+ && /usr/sbin/wpa_supplicant -v | grep -q 'wpa_supplicant v' \
  && ls /usr/lib64/NetworkManager/*/libnm-device-plugin-wifi.so > /dev/null \
  && test -f /usr/lib/firmware/iwlwifi-3168-29.ucode.xz \
- && echo "wireless: supplicant, NetworkManager's Wi-Fi plugin, and the certified machine's own firmware"
+ && echo "wireless: a supplicant that runs, NetworkManager's Wi-Fi plugin, and the certified machine's own firmware"
 
 
 # **What this machine plays, as [ADR 0058](../docs/decisions/0058-which-software-decoders-the-image-ships.md)
