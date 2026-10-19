@@ -261,3 +261,62 @@ fn a_window_with_no_room_in_it_is_not_drawn() {
     );
     assert!(nothing.is_none(), "a four-pixel window was drawn");
 }
+
+/// **Placed and then drawn, which nothing joined until now.**
+///
+/// Measured on a booted machine on 2026-10-19, with a control each way: the
+/// pointer on the Applications entry, a press, and
+///
+/// - `button presses` 3 → 4, so the press landed;
+/// - the screen 9323 bytes before and 9323 after, so nothing was drawn;
+/// - `key presses` 6 before a further key and 6 after, so the window that
+///   opened had taken the keyboard.
+///
+/// Two tests already stood either side of this gap and both passed.
+/// `the_market_has_somewhere_to_be_drawn_on_the_size_a_machine_draws` asks the
+/// placement and stops. [`a_window`] above hands the raster a rectangle
+/// written here by hand. **Neither gives the raster the rectangle the
+/// placement produced**, which is the one a machine uses, so a disagreement
+/// between them is exactly what no test could see.
+#[test]
+fn the_rectangle_the_placement_gives_is_one_the_raster_will_draw() {
+    use smithay::utils::{Point, Size};
+
+    let mut window = MarketWindow::closed();
+    window.opened(Catalogue::decided().unwrap(), Vec::new());
+    let words = TheMarketsWords::said(&Strings::of(
+        alo_saying::everything_this_machine_can_say().unwrap(),
+    ));
+    let scale = alo_appearance::Appearance::shipped().text();
+
+    // The display the machine of 2026-10-19 draws on, through the same call
+    // `crate::direct_desktop` makes.
+    let view = crate::where_a_task_window_opens::as_a_frame_draws_it(
+        smithay::utils::Rectangle::new(Point::from((0, 0)), Size::from((1280, 800))),
+    );
+    let placed =
+        crate::where_the_market_opens::where_the_market_opens(view, &window.shows(), scale);
+    assert!(
+        placed.is_some(),
+        "the premise: the market has somewhere to be drawn"
+    );
+    let at = placed.unwrap();
+
+    let mut fonts = cosmic_text::FontSystem::new();
+    assert!(
+        picture(
+            at,
+            window.shows(),
+            &words,
+            MarketLook {
+                scheme: Scheme::Light,
+                scale,
+            },
+            &mut fonts,
+        )
+        .is_some(),
+        "the market was placed at {at:?} and the raster refuses to draw that rectangle, \
+         so a person who pressed the Applications entry gets an open window with no \
+         picture -- and, until the guard beside this is fixed, no keyboard either"
+    );
+}

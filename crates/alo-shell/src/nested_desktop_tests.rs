@@ -337,3 +337,93 @@ fn the_frame_carries_whether_the_panel_is_revealed() {
          never reaches the draw path"
     );
 }
+
+/// **A frame carrying an open market gets a market in its picture.**
+///
+/// This function reads nineteen fields off the frame and, until 2026-10-19,
+/// wrote the twentieth as a literal `None` — so `Server::market` was carried
+/// to the frame by `crate::what_the_server_tells_a_frame` and thrown away by
+/// the one function that builds the picture for **both** roads.
+///
+/// Every fixture above passes `market: None`, which is why the whole suite
+/// stayed green: there was no frame anywhere that carried one. That is the
+/// same shape as `the_frame_carries_whether_the_panel_is_revealed` above, and
+/// its note — *without this test substituting a constant here passes the whole
+/// suite* — was measured true a second time.
+///
+/// What a person met, measured on a booted machine that day with a control
+/// each way: a press on the Applications entry took the button count from 3 to
+/// 4, the screen stayed at 9323 bytes, and a further key left the key count at
+/// 6 — the window had opened, drawn nothing, and taken the keyboard.
+#[test]
+fn the_frame_carries_the_market_a_person_opened() {
+    use smithay::utils::{Point, Rectangle, Size};
+
+    let strings = words();
+    let mut labels = WindowControlLabels::new().unwrap();
+    let dock = Dock::shipped();
+    let running = RunningWindow::closed();
+    let filling = FillingWindow::closed();
+    let mut told = EgressStatus::on_an_output();
+    assert_eq!(
+        Indicating::nowhere().show(Some(&mut told), &Indicator::default()),
+        Drew::Shown
+    );
+
+    let mut window = crate::MarketWindow::closed();
+    window.opened(alo_software::Catalogue::decided().unwrap(), Vec::new());
+    assert!(window.is_open(), "the premise: the window is open");
+    let showing = window.shows();
+    let the_markets_words = crate::TheMarketsWords::said(&strings);
+    let look = noon_look(&an_appearance(), Direction::LeftToRight);
+    let placed = crate::where_the_market_opens::where_the_market_opens(
+        crate::where_a_task_window_opens::as_a_frame_draws_it(Rectangle::new(
+            Point::from((0, 0)),
+            Size::from((1920, 1080)),
+        )),
+        &showing,
+        look.scale(),
+    );
+    assert!(
+        placed.is_some(),
+        "the premise: the market has somewhere to be drawn"
+    );
+    let at = placed.unwrap();
+
+    let desktop = DesktopFrame {
+        tasks: &[],
+        market: Some(crate::market_raster::AMarketOnTheDisplay {
+            at,
+            showing,
+            words: &the_markets_words,
+        }),
+        the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
+        the_docks_words: crate::desktop_testing::no_words(),
+        in_use: &[],
+        notifications: &[],
+        capturing: None,
+        division: crate::desktop_testing::an_undivided_display(),
+        offer: crate::desktop_testing::nothing_offered(),
+        windows: &[],
+        put_aside: crate::desktop_testing::nothing_put_aside(),
+        panel_is_revealed: true,
+        filling_the_screen: false,
+        display_scale: 100,
+        on_the_dock: &[],
+        in_more_apps: &[],
+        dock: &dock,
+        look,
+        strings: &strings,
+        egress: &told,
+        running: &running,
+        filling: &filling,
+    };
+
+    let pictures = frame_pictures(desktop, None, None, &mut labels, (1920, 1080), None).unwrap();
+    assert!(
+        pictures.desktop.market.is_some(),
+        "a person had the market open and the frame's picture holds no market, \
+         so nothing will be painted and -- because an open window takes the keys -- \
+         they lose the keyboard with nothing on screen to say why"
+    );
+}

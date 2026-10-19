@@ -463,7 +463,20 @@ pub(crate) fn frame_pictures(
             display_scale: desktop.display_scale,
             on_the_dock: desktop.on_the_dock,
             in_more_apps: desktop.in_more_apps,
-            market: None,
+            // **Read off the frame, and a literal `None` until 2026-10-19.**
+            //
+            // Every other field in this block is taken from the frame; this
+            // one was written `None` here, so `Server::market` reached
+            // `crate::what_the_server_tells_a_frame`, was set on the frame
+            // with care, and was then dropped by the one function that builds
+            // the picture for both roads.
+            //
+            // Measured on a booted machine the same day: a press on the
+            // Applications entry took the button, opened the window, drew
+            // nothing, and from that moment the machine answered no keys at
+            // all -- because an open window takes them and the open window was
+            // invisible. Three tests passed either side of this line.
+            market: desktop.market,
             tasks: desktop.tasks,
         },
         &mut labels.fonts,

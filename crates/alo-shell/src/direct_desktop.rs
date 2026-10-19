@@ -1168,22 +1168,6 @@ impl LoopInput for Desk<'_> {
                 words: &the_markets_words,
             })
         });
-        // **A window this person has open that this frame will not draw.**
-        //
-        // Measured 2026-10-18: a press on the market's entry arrived, landed
-        // on the Dock, refused nothing and opened the window — and nothing of
-        // it was drawn. `DesktopPicture::market` had no painter, which is
-        // fixed; it still did not appear, so the picture is not being built
-        // either. **Those two faults are the same picture to a person** and
-        // the same bytes in a screen capture, and what told them apart was
-        // that an open market takes the keys — a measurement a machine
-        // receiving no keyboard input cannot give.
-        //
-        // So the draw says it, here, where both halves are known. Nought is
-        // the ordinary answer and the healthy one.
-        server.a_frame_left_this_many_windows_undrawn(usize::from(
-            server.market.is_open() && the_market.is_none(),
-        ));
         what_only_the_server_knows(
             &mut frame,
             server,
@@ -1315,6 +1299,27 @@ impl LoopInput for Desk<'_> {
             (size.w, size.h),
             terminal,
         )?;
+        // **A window this person has open that this frame did not draw.**
+        //
+        // **Here, and not where the placement is made.** It stood beside
+        // `where_the_market_opens` until 2026-10-19 and asked whether the
+        // *placement* was missing — one step too early. The picture is built
+        // further down, by `frame_pictures`, which can refuse on its own and
+        // which until this change dropped the market outright. So a window
+        // that opened, placed, and was never drawn reported **nought windows
+        // undrawn**, and `Server::the_market_is_taking_the_keys` read that
+        // nought and let the invisible window keep the keyboard.
+        //
+        // Measured on a booted machine that day, with a control each way: the
+        // press took the button count from 3 to 4, the screen stayed at 9323
+        // bytes, a further key left the key count at 6 — and the sentence
+        // still said nought. A guard that cannot see the fault it was written
+        // for is worse than none, because it reads as evidence.
+        //
+        // `pictures.desktop.market` is what the painter reads, so it is what
+        // this asks. Nought is the ordinary answer and the healthy one.
+        let open_and_undrawn = server.market.is_open() && pictures.desktop.market.is_none();
+        server.a_frame_left_this_many_windows_undrawn(usize::from(open_and_undrawn));
         // **Every open window's edge, which nothing on a machine drew until
         // now.** Built after the pictures because both want the font system
         // mutably and neither outlives this frame. See
