@@ -54,6 +54,19 @@ impl TheMachine for OnlyReading {
         Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied))
     }
 
+    // **Refused like its siblings, and it is a read.** Nothing in this test
+    // asks for it -- `check` does not -- but the fake answers the whole trait
+    // the same way: anything this file does not need is refused rather than
+    // delegated, so a check that quietly started asking would fail here loudly
+    // instead of reaching the real Windows this runs on.
+    //
+    // **It was simply missing.** `TheMachine` gained `this_program` after this
+    // file was written, and because no workflow builds this crate for Windows,
+    // a test that cannot compile looked exactly like a test that passes.
+    fn this_program(&mut self) -> std::io::Result<PathBuf> {
+        Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied))
+    }
+
     fn read(&mut self, _file: &Path) -> std::io::Result<Vec<u8>> {
         Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied))
     }
