@@ -580,8 +580,43 @@ a prefix.
 
 ### 10. *Choose one, and your files are as they were*
 
-**Status:** blocked on a decision, **measured 2026-10-17 after the bracket
-landed**. **Depends on:** whether a command the *person* runs is bracketed.
+**Status:** **decided and shaped, 2026-10-19 — not started.** **Depends on:**
+nothing. Both decisions it waited on are made:
+[ADR 0127](../decisions/0127-a-persons-own-commands-are-bracketed-in-a-session-they-asked-for.md)
+and its amendment — **a Settings row under Terminal**, and **a folder now, the
+next sign-in next, never a root helper.**
+
+**What it costs, measured 2026-10-19 by starting it and stopping.** The shape is
+`alo-sleeping`'s, which is the crate this would copy, and it is one piece of work
+and not five:
+
+| | lines in the crate this copies |
+|---|---|
+| `changes.rs` — the setting, off as shipped | 162 |
+| `keeping.rs` — `terminal.toml`, read and written by this crate alone (ADR 0038) | 210 |
+| `unkept.rs` — what a file that will not read says, in this crate's words | 281 |
+| `words.rs` — `alo-sleeping` declares **22**; this needs the six of the not-read family, the row, and the restore's sentences | 421 |
+| a contract test, `the_contract_describes_this_file.rs`, holding the file and `docs/contracts/person-settings.md` together | — |
+
+and then, outside the crate: a **new `SettingsSection::Terminal`** with its row
+in `alo-shell`; the snapshot itself, hooked on
+`AShellSaid::TheCommandIsRunning`, which is the mark the shell already sends and
+`alo-shell::the_terminal_a_person_opened` already reads; the restore of a chosen
+folder out of a `before/` snapshot; a section in
+`docs/contracts/person-settings.md`; `docs/features.md` narrowed a second time;
+and the vocabulary snapshot regenerated.
+
+**So it is a day, not an afternoon**, and the lane said so before writing the
+second file rather than after the twelfth. `changes.rs` was written and thrown
+away deliberately: a settings file nothing reads, with a dependency nothing uses,
+fails the cheap checks and is worse in the tree than the measurement is in this
+table.
+
+**The one thing already standing that this needs:** the hook. `AShellSaid` has
+`TheCommandIsRunning` — OSC 133 `C`, the moment a command is about to run — and
+`TheyTyped(String)`, the line as the person typed it, which is the label a
+scrollback point needs. Both landed with shell integration (#798, #800). Nothing
+has to be invented to know when to snapshot.
 
 The snapshot half of *scrollback you can move along*. The scrolling is built; what
 is missing is putting the files back, which no amount of scrolling can supply.
@@ -884,13 +919,30 @@ left in place is how a gap stops being read as one.*
 
 ## What this plan is waiting on, in one place
 
-- **Whether a command the person runs is bracketed** — tasks 8 and 10. **The
-  bracket itself is built and landed** (#767, 2026-10-17): `alo-turn` takes one
-  either side of a changing agent turn, measured on a real `btrfs` filesystem.
-  What neither task can start without is a decision on bracketing the person's
-  own commands, which ADR 0045 does not make and whose disk cost is the question
-  the owner asked when they accepted it. *This bullet said "a bracket" until the
-  bracket arrived and the tasks stayed shut.*
+- ~~**Whether a command the person runs is bracketed**~~ — **answered
+  2026-10-19 by the owner**, who accepted
+  [ADR 0127](../decisions/0127-a-persons-own-commands-are-bracketed-in-a-session-they-asked-for.md):
+  **in a session the person asked for, every command they run is bracketed**, and
+  an ordinary session takes no snapshots. *Every command* was not taken because
+  alo cannot tell a changing command from a reading one, so it would snapshot
+  `ls`, and ADR 0045's fifty-turn window would be spent before lunch. The starred
+  promise in `docs/features.md` is narrowed to match, in the same change.
+  **Task 10 is now *decided*, not buildable** — the lane said buildable and
+  measured it an hour later. The comparer is genuinely not needed (a bracket
+  snapshots the whole home, so *your files as they were* is a whole-home rewind),
+  but **nothing in this product can put a home back**: the repository's only two
+  `btrfs` invocations are `subvolume snapshot -r` and `subvolume delete
+  --commit-after`, in 122 crates. And the hard part is *when* — a home cannot be
+  swapped out from under the person living in it. ADR 0127 carries the three
+  shapes and they are the owner's. **Both answered the same day**: a Settings row
+  under Terminal, and *a folder now, the next sign-in next, never a root helper*
+  — so task 10 **is** buildable, in that shape, and it is this lane's next task.
+  Tasks 7 and 8 are unaffected and still the comparer's.
+  **Tasks 7 and 8 are not**: both need what each command *changed*, which is the
+  comparer's, and the comparer is the third PC's (ADR 0045, and `alo-agentd`
+  records the gap in its own words). *This bullet said "a bracket" until the
+  bracket arrived and the tasks stayed shut; it then said "a decision" until the
+  decision arrived and two of the three stayed shut anyway.*
 - **How a person asks for a sealed-box run** — task 9. **Not the box**: that is
   built (#729, 2026-10-16) and passes on a real kernel. What is missing is a
   caller and the surface it would be called from, and the design file and ADR

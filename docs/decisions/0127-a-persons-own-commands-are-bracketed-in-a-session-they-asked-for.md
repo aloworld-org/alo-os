@@ -1,0 +1,219 @@
+# ADR 0127 — A person's own commands are bracketed in a session they asked for
+
+**Status:** **accepted, 2026-10-19, by the owner.** Proposed the same day by the
+Mac lane, which laid out four options and recommended this one; the owner
+answered *I accept*. **Amended the same day** with the two things this ADR had
+left open — how a person asks, and when the rewind happens — both of which the
+owner then settled; see *The two questions this left open, answered*. Nothing is
+built in the change that records it.
+**Context:** [ADR 0045](0045-what-undoing-rewinds-to.md) (what undoing rewinds
+to, and its six accepted terms); law 5 (*the person chooses*, and *never
+offering is not taking away*); `docs/features.md` ★ *scrollback you can move
+along*; tasks 7, 8 and 10 of `docs/autonomy/the-terminal-in-full-plan.md`;
+`crates/alo-turn/src/the_bracket_a_turn_takes.rs`,
+`crates/alo-agentd/src/the_bracket_this_turn_takes.rs`.
+
+## What the owner decided
+
+Shown four options for whether a command the **person** types is bracketed —
+every command, none, a session they ask for, or only ones they mark — they
+accepted the third.
+
+**Read as: a person turns snapshots on for a session, and for that session every
+command they run is a place they can return to.** An ordinary session takes no
+snapshots and costs nothing.
+
+*If that reading is wrong, this ADR is the thing to correct, and one sentence
+does it.*
+
+## The question this answers
+
+`docs/features.md` promises, with a star:
+
+> ★ **Scrollback you can move along, not only read.** Every command in the
+> session is a place you can return to: scroll up, choose one, and your files
+> are as they were before it ran.
+
+The scrolling landed on 2026-10-15. **Putting the files back did not**, and
+could not, because nothing takes a snapshot of a person's own work.
+
+## What was measured, 2026-10-19
+
+| asked | answer |
+|---|---|
+| what a bracket is | two read-only snapshots, from `btrfs subvolume snapshot -r` of a subvolume the person owns |
+| who takes one | `alo-agentd`, at the moment an agent's change is approved — `TheTurnsBracket` is named in **7** files, all of them in `alo-agentd` |
+| does anything in `alo-terminal` or `alo-shell` take one | **no** |
+| what ADR 0045 term 5 says | *Only a turn that changes files is bracketed* |
+| can alo tell whether `make` changed anything | **no** — ADR 0045 is explicit, and that is why this is a decision rather than a caller |
+
+## Why *every command* was not chosen, although it is what the promise says
+
+Because the four rules the owner set on 2026-09-16 do not survive it, and they
+were set in answer to the owner's own question:
+
+> *if the system takes snapshots every turn, will the machines not get fuller
+> with them?*
+
+ADR 0045's window is *the last seven days or the last fifty changing turns,
+whichever ends first*. **An agent turn is a handful a day; a shell command is
+hundreds.** With every command bracketed, fifty is spent before lunch — so by
+the afternoon the morning's real mistake has already expired, and the feature
+fails exactly when it is wanted. And since alo cannot tell a changing command
+from a reading one, `ls` and `cd` would each take a pair of snapshots.
+
+**So *every command* is honest to the sentence and unusable as a machine.**
+
+## Why *only commands they mark* was not chosen
+
+It protects what a person predicted. The commands that ruin a day are the ones
+nobody thought twice about, and **a command cannot be marked after it has run.**
+It is also the cheapest to build, which is the usual reason a weaker answer gets
+taken.
+
+## Why a session, and why that is not a new idea here
+
+The feature **directly above this one** in `docs/features.md` is already
+
+> **Opt in, per session or per project**
+
+so this is the shape the owner has already chosen for this family. It also fits
+when a person actually wants it: the moments worth protecting — a codemod across
+four hundred files, somebody else's migration script, a `make install` into a
+real prefix — are moments known **in advance**.
+
+## What this narrows, said plainly because it is a published promise
+
+**The promise said *every command in the session*. It now means every command in
+a session the person asked for.** That is a narrowing of a starred line in
+`docs/features.md`, and it is recorded here rather than left for a reader to
+notice.
+
+Law 5's *never offering is not taking away* does **not** excuse it: the sentence
+was offered, in the file that is the record of what was offered. What makes this
+not a law 5 violation is that the owner decided it, knowing the cost, which is
+the law's own test — *can the person choose this, knowing what it costs?* — asked
+of the owner about the product rather than of a person about a setting.
+
+**`docs/features.md` is edited in the change that builds this**, so the file and
+the machine say the same thing. A promise narrowed in an ADR and left standing in
+the feature list is the fault law 5's own paragraph was added for.
+
+## The two questions this left open, answered 2026-10-19 by the owner
+
+Both were put to the owner with the options drawn out and a recommendation on
+each. They answered *I agree with all your recommendations*.
+
+### 1. How a person asks: a Settings row
+
+**A row in Settings, under Terminal**, reading *snapshot before each command, so
+I can go back*, which writes a line to the person's own settings file.
+
+| rejected | why |
+|---|---|
+| a word when the terminal opens (`--undoable`) | **later, not never.** It is the only shape that is genuinely *per session* — one window undoable and the rest not — and it is worth having. It is second because a person has to have decided **before** opening the window, and cannot turn it on in the one they are already in |
+| a line in the settings file as the way to ask | it is the **storage**, not the asking. A protection a person cannot find is not one, which is this file list's own stance |
+
+The row is the shape the owner has already chosen twice for this family — ADR
+0125's *may alo use another model* row landed as #822 — so it needs no new
+surface design, and the `--undoable` word later becomes an override on top of
+the same stored line rather than a second mechanism.
+
+**What it costs, said plainly:** a row is on until it is turned off, so it is
+*per machine* rather than *per session* until the word above exists. A person who
+leaves it on has ADR 0045's window churning all week. That is the owner's choice
+knowing the cost, which is law 5's test.
+
+### 2. When the rewind happens: a folder now, the next sign-in next, and never a root helper
+
+**The constraint, in one sentence:** the snapshots are read-only copies of the
+person's whole home, and the home is the thing they are living in while they ask
+to rewind it. Their shell, their editor and their applications hold files open
+in it.
+
+| | decided |
+|---|---|
+| **a folder, not the home** | **first.** Works immediately, needs no privilege and no sign-out, and is what a person actually reaches for: a codemod mangled `src/`, and nobody wants to un-download a file because a build broke |
+| **at the next sign-in**, for the whole home | **second.** Nothing holds the home then, so it is a clean swap. It is how an operating system usually does this, and it is explicitly the slower of the two |
+| **a privileged helper that swaps the subvolume** | **not at all.** It is a new privileged path whose job is *deleting the person's home*, which is the largest thing anybody could add to this product, and law 2's argument is about keeping that surface small. **It would also still not run while the person is signed in**, so it buys the danger and keeps the sign-out |
+
+**So *your files are as they were* becomes, honestly: the folder you picked, now
+— or all of them, at your next sign-in.** `docs/features.md` is narrowed a
+second time in the change that builds it, which is twice in one day for one
+starred line and is said here so that it is on the record rather than noticed
+later.
+
+## What this does not decide
+
+- **The words on the row and the restore's sentence.** They are strings in the
+  vocabulary, and the design file is where a surface's wording comes from where
+  it has one.
+- **Whether a session's snapshots expire differently.** ADR 0045's window and its
+  four rules apply unchanged until something says otherwise; a session that asked
+  for snapshots is still subject to *disk pressure wins over undo* and *a machine
+  too full to snapshot still runs the command*.
+- **Anything about the comparer**, which is the next section.
+
+## What this unblocks, and what it does not
+
+| task | what it needed | after this |
+|---|---|---|
+| 10 — *choose one, and your files are as they were* | the bracket only — restoring reads a snapshot and compares nothing | **buildable** |
+| 8 — bisect the machine | the bracket **and** the comparer — stepping back needs to know what each step changed | still waiting on the comparer |
+| 7 — hand somebody a session they can replay | the bracket **and** the comparer — the promise is *the commands **and what each one changed*** | still waiting on the comparer |
+
+**The comparer is not this lane's and is not this decision.** ADR 0045 gives the
+privileged comparing path to the third PC in `the-broker-and-the-disk-plan.md`,
+and `alo-agentd` already records the gap in its own words: there is deliberately
+no state for *both sides are kept and nothing has compared them*, which is
+exactly the state of a machine the moment a bracket is taken.
+
+## What *task 10 is buildable* left out — measured 2026-10-19, an hour after this was written
+
+**The lane told the owner task 10 was buildable on the strength of the table
+above, and the table is half right.** The comparer is genuinely not needed, and
+that was checked rather than assumed: a bracket is a read-only snapshot of the
+person's **whole home subvolume**, so *your files are as they were before it ran*
+is a whole-home rewind and not a per-file diff. Nothing has to say what changed.
+
+**But nothing in this product can put a home back.** Measured by listing every
+`btrfs` invocation in the repository — there are exactly two:
+
+| program arguments | where | what it does |
+|---|---|---|
+| `subvolume snapshot -r` | `alo-turn`, taking a bracket | makes one |
+| `subvolume delete --commit-after` | `alo-letting-go`, under a capability | removes an expired one |
+
+**Make and remove. No restore, by any name, in any of 122 crates.** So task 10
+needs a second thing this ADR did not decide, and the lane's *buildable* should
+have read *decided*.
+
+### And the hard part is not writing the restore, it is when
+
+A home cannot be swapped out from under the person living in it: their shell,
+their editor and their applications hold files open in it. So the shapes that
+actually work are not obvious, and they are the owner's:
+
+- **at the next sign-in** — the rewind is chosen now and happens when nothing
+  holds the home, which is how an operating system usually does this;
+- **a folder rather than the home** — narrower, works immediately, and is a
+  smaller promise than the starred sentence makes;
+- **a privileged helper that does the swap**, which is a new privileged path and
+  `the-broker-and-the-disk-plan.md`'s territory rather than this lane's.
+
+**Recorded here rather than discovered twice**, and the decision above is
+unaffected: bracketing a person's commands in a session they asked for is still
+what the owner accepted, and it is still the half that has to exist first.
+
+## The test that decides whether this works
+
+1. In a session where the person asked for it, they run a command that writes a
+   file, scroll up, choose the line before it, and **the file is as it was** — on
+   a real `btrfs` machine.
+2. In a session where they did **not** ask, the same command takes **no
+   snapshot**, and `alo-measuring`'s answer about what is filling the disk is
+   unchanged by running it. This is the half worth writing first: it is the one
+   that proves an ordinary day costs nothing.
+3. A machine with no room takes no snapshot, **runs the command anyway**, and
+   says the command cannot be undone — ADR 0045 term 3, which this does not get
+   to weaken.
