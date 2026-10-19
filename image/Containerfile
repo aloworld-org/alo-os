@@ -607,6 +607,62 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
  && test -f /usr/lib/firmware/iwlwifi-3168-29.ucode.xz \
  && echo "wireless: a supplicant that runs, NetworkManager's Wi-Fi plugin, and the certified machine's own firmware"
 
+# **What an ordinary computer does, asserted by name — the measurement
+# [ADR 0009](../docs/decisions/0009-a-good-computer-without-the-agent.md) has
+# never had.**
+#
+# That decision is this product's own words, accepted 2026-09-02: *a system
+# whose ordinary parts are only ever experienced alongside an agent never has
+# to be good on its own… if those are only tolerable because something clever
+# sits on top, **they are not finished***. And: *with AI off, nothing essential
+# is missing.*
+#
+# **Nothing measured it, and the cost was not hypothetical.** Every image this
+# project published could not join a wireless network — no supplicant, no
+# NetworkManager plugin, nought `iwlwifi` firmware — while Ethernet worked, so
+# every machine anyone tested was on a cable. No ADR, no test and no review
+# caught it. It was found by running `ls` inside the published image on
+# 2026-10-19. A principle nothing can fail is not a principle, and this block
+# is the test ADR 0009 was owed.
+#
+# **Each capability by name**, the rule `crate::alo-playing`'s decoders already
+# follow: a recipe that inspects what it asked for learns nothing, because a
+# `dnf install` succeeds while a weak dependency is skipped. That is exactly
+# how the wireless gap survived.
+#
+# **And each daemon is proved to resolve its libraries**, not merely to exist.
+# `test -x` is the substitution this file records twice — *`test -x` on a
+# converter binary stood in for the converter starting. Three releases shipped
+# one that died at launch on eleven missing libraries.* `ldd` naming an
+# unresolved library is that failure, before a person meets it.
+#
+# **Printing is deliberately not asserted here.**
+# [ADR 0078](../docs/decisions/0078-what-printing-owes.md) says what printing
+# owes is a printer rather than a release, and `docs/features.md` says plainly
+# that no paper has come out of anything. The image carries `cups-libs` and no
+# daemon. That gap is tracked honestly, and a line here would fail the build
+# for something nobody is hiding. When CUPS ships, it gets a line.
+RUN dnf install --assumeyes --setopt=install_weak_deps=False upower \
+ && dnf clean all \
+ && for daemon in /usr/libexec/upowerd \
+                  /usr/libexec/bluetooth/bluetoothd \
+                  /usr/libexec/udisks2/udisksd \
+                  /usr/sbin/NetworkManager \
+                  /usr/sbin/wpa_supplicant \
+                  /usr/bin/pipewire; do \
+      test -x "${daemon}" || { echo "an ordinary computer is missing ${daemon}" >&2; exit 1; }; \
+      if ldd "${daemon}" | grep -q 'not found'; then \
+        echo "${daemon} is there and cannot start: unresolved libraries" >&2; \
+        ldd "${daemon}" | grep 'not found' >&2; \
+        exit 1; \
+      fi; \
+    done \
+ && test -e /usr/lib/systemd/system/systemd-suspend.service \
+ && test -e /usr/lib/systemd/system/chronyd.service \
+ && ls /usr/lib/firmware/i915 > /dev/null \
+ && ls /usr/lib/firmware/rtl_nic > /dev/null \
+ && echo "an ordinary computer: battery, bluetooth, removable media, network, wireless, audio, suspend, time, and firmware for the certified machine's own graphics and ethernet"
+
 
 # **What this machine plays, as [ADR 0058](../docs/decisions/0058-which-software-decoders-the-image-ships.md)
 # decided it** — and the decoders it may not carry, absent by name.
