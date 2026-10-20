@@ -12,6 +12,26 @@
 //! the behaviour under test: not known is never read as off.
 //!
 //! Compiled on Windows only; on any other host there is no Windows to read.
+//!
+//! # Which is why it went stale, and how that is caught now
+//!
+//! `TheMachine` gained `this_program` and this file's own machine never
+//! implemented it, so this test **did not compile** — on 2026-10-20, measured by
+//! cross-checking `alo-installer` for `x86_64-pc-windows-gnu` from Linux. It was
+//! not noticed because nothing compiled it: it is `#![cfg(windows)]`, the gate
+//! has no Windows, and `installer-candidate.yml` built the installer without
+//! building its tests.
+//!
+//! So a file whose whole purpose is to say *the scripts parse and the cmdlets
+//! exist on a real Windows* had not been able to say anything for as long as
+//! that method had existed. The two things that now hold it:
+//!
+//! - the candidate workflow **runs** this test, rather than only building the
+//!   program beside it;
+//! - the gate **cross-checks** `alo-installer --all-targets` for Windows from
+//!   its Linux runner, which is what found this. `--all-targets` is the part
+//!   that matters: without it the check reaches 17 of the 122 crates here and
+//!   not this test; with it, 87 and this test.
 
 #![cfg(windows)]
 #![expect(
@@ -51,6 +71,15 @@ impl TheMachine for OnlyReading {
     }
 
     fn downloaded_into(&mut self) -> std::io::Result<PathBuf> {
+        Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied))
+    }
+
+    // **Refused, like every other road out of this machine that is not a
+    // read.** Where this program is, is only ever asked so a copy of it can be
+    // left where a person finds it (`crate::switching`), and this test changes
+    // nothing. Refusing is the same answer the three below give and for the
+    // same reason.
+    fn this_program(&mut self) -> std::io::Result<PathBuf> {
         Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied))
     }
 
