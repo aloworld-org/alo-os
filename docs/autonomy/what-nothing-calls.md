@@ -193,7 +193,92 @@ grep-based audit. So the figure is worth having only with its controls printed
 beside it — and a reader who finds one of these numbers implausible should
 disbelieve the number rather than the code.
 
-## One triaged, and deliberately not fixed
+## A triage pass, 2026-10-20 at 23:00 — six examined, one finding
+
+**The list is a candidate list and this is what triaging it costs and yields.**
+Six of the forty-four were taken apart. **Five are not faults.** Written down
+with their reasons so nobody repeats the hour.
+
+| | verdict |
+|---|---|
+| `alo-corridor::where_it_listens` | **not a fault** |
+| `alo-nearby::where_it_listens` | **not a fault** |
+| `alo-elsewhere::as_number`, `alo-notifying::as_number` | **not a fault** |
+| `alo-acting::could_answer`, `::is_this_machines_fault` | **false positives** (see hole six) |
+| `alo-adapters::of_this_person` | **a finding** |
+
+### The two `where_it_listens` are near-duplicates, and the live road is elsewhere
+
+Both answer *where this machine listens, for the presence that advertises the
+port*, with identical doc comments and bodies differing only in how they build
+the error — `why.to_string()` against `because(&why)`. One crate copied the
+other.
+
+**The reason it is not a fault is the part worth keeping.** A port advertised
+that nothing listens on would be a real bug, so the question is where the
+advertised number comes from. `alo-agentd/src/wire.rs` builds
+`Presence::of(here, listeners.port())` — from the listener's **own** accessor, not
+from either of these. So the advertised port is the bound port, and these two are
+redundant rather than load-bearing.
+
+### `as_number` in two crates is ordinary surface
+
+*The number, for whoever has to write one into a surface's own bookkeeping.* An
+accessor on a newtype, which callers outside this workspace are the point of.
+Nothing to fix and nothing to report.
+
+### `alo-adapters::of_this_person` — the finding, bounded carefully
+
+`alo-adapters` is reached from every other crate in the workspace by exactly
+**two** names, measured with test modules split out and comments stripped:
+
+| | |
+|---|---|
+| `alo_adapters::verbs` | from `alo-declared` — declares its verbs into the catalogue |
+| `alo_adapters::words` | from `alo-saying` — collects its sentences |
+
+**And nothing else.** `Tree::of_this_person`, which finds the signed-in person's
+accessibility bus, is called only by `Tree::at` inside its own file;
+`announced_on` and `asks_as` have no product caller either; and
+`accessibility_tree.rs` says in its own header that *a test hands in a tree of
+its own*. So the machinery for reading an application's accessibility tree is
+reached by nothing, while that crate's verbs and sentences do reach a person.
+
+**What this is not.** It is **not** *the application verbs reach nothing* — they
+have an execution road, and this page nearly said otherwise. See below.
+
+`alo-shell/src/access_bus.rs` is the **other side** of the same bus — it serves
+the shell's own tree to a screen reader — and says so in a comment that a
+reference search counts as a use if it does not strip prose.
+
+## Hole seven, found while triaging: a qualified-path search under-reports
+
+**The six earlier holes all made the count too high or too low by misclassifying
+*code*. This one misclassifies a *reference*, and it is the mirror image.**
+
+Scanning for `alo_acting::` found nothing in `alo-agentd`'s product code, and
+`alo-agentd` depends on `alo-acting`. The conclusion forming was that
+application verbs have no execution road in the daemon — a serious claim about
+the capability model.
+
+**It is false.** `at_the_compositors_door.rs` carries
+`use alo_acting::{Answer, Request};` and then writes `Answer` and `Request`
+bare. The verbs are dispatched: the daemon sends a `Request` to the compositor's
+door and reads an `Answer`.
+
+**So a search for `crate::name` sees only the callers who spell it that way**,
+and idiomatic Rust callers do not. Any claim of the form *this crate is not used
+there* must search the `use` statements too — which is what the `alo-adapters`
+table above does, and why that finding survived while this one did not.
+
+**And a limit that no amount of grepping fixes:** dispatch through a trait
+object or a function pointer is invisible to all of this. Thirteen crates
+declare verbs and the daemon's product code names none of their `*_verbs()`
+functions, because the catalogue is assembled elsewhere and dispatched
+dynamically. **This method cannot settle whether a verb executes.** It can only
+say which names nothing mentions.
+
+## One triaged earlier, and deliberately not fixed
 
 `alo-dock`'s `full_screen_ended` looked like the best candidate in the list: a
 `Revealing` state nothing constructs, while full screen exists in `alo-shell`
