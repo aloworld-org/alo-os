@@ -71,6 +71,7 @@ mod sequence;
 mod tidying;
 mod told;
 mod verifying;
+mod what_a_person_typed;
 mod what_display_there_is;
 mod where_a_screen_goes;
 mod which_disks_may_be_offered;
@@ -79,7 +80,8 @@ mod words;
 mod writing;
 
 pub use a_key_reaches_here::{
-    ONE_EVENT, Pressed, WHERE_THE_KEYS_ARE, has_key, is_a_keyboard, what_was_pressed,
+    ONE_EVENT, Pressed, Said, WHERE_THE_KEYS_ARE, has_key, is_a_keyboard, what_an_event_said,
+    what_was_pressed,
 };
 pub use a_surface_to_draw_on::{
     Grey, NoSurface, TheSurface, WHERE_THE_DEPTH_IS, WHERE_THE_PIXELS_GO, WHERE_THE_SIZE_IS,
@@ -111,6 +113,7 @@ pub use told::{
     Beside, NotTold, REPLACING, THE_CHOICE, THE_EFI, THE_PARTITION, THE_REPLACING, Told,
 };
 pub use verifying::{Verified, Verifying};
+pub use what_a_person_typed::{Typed, WhatAPersonTyped};
 pub use what_display_there_is::{
     Glass, WhatDisplayThereIs, from_a_connector, is_connected, the_glass, the_mode,
 };
