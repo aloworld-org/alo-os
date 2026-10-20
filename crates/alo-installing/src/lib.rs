@@ -53,6 +53,7 @@
 //! file system on that partition, and without it a command line staged wrongly
 //! would be the end of somebody's Windows.
 
+mod a_surface_to_draw_on;
 mod complaint;
 mod console;
 mod disk;
@@ -74,6 +75,15 @@ mod why_there_is_no_network;
 mod words;
 mod writing;
 
+pub use a_surface_to_draw_on::{
+    Grey, NoSurface, TheSurface, WHERE_THE_DEPTH_IS, WHERE_THE_PIXELS_GO, WHERE_THE_SIZE_IS,
+    WHERE_THE_STRIDE_IS,
+};
+// Gated with the item it names, which `alo-citing`'s own guard requires: a
+// `pub use` of a `cfg`-gated item, without the same `cfg`, is what stopped
+// `alo-portals` compiling for Windows from #635 to #839.
+#[cfg(unix)]
+pub use a_surface_to_draw_on::fill;
 pub use complaint::{Complaint, THE_LAST_LINES};
 pub use console::{ACTIVE, every_console, every_serial_line};
 pub use disk::{BY_ID, DiskName, NotADisk, NotAPartition, PartitionName};
