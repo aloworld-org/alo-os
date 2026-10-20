@@ -71,7 +71,7 @@
 use std::ffi::{OsStr, OsString};
 use std::path::PathBuf;
 
-use alo_choosing::{AMachine, CONFIG_HOME, Chosen, HOME, NotSet, where_it_is};
+use alo_choosing::{AMachine, Chosen, NotSet, where_it_is};
 use alo_models::{Catalogue, Provider, Secret, SecretRef, SourcePolicy, found_on_this_machine};
 use alo_secrets::{NotStored, TheBus, TheKeyring};
 use alo_turn::Places;
@@ -287,13 +287,20 @@ pub enum WhatAnswers<'a> {
 impl Questions {
     /// What the person this process runs as has chosen, once they ask.
     ///
-    /// Nothing is read here: the environment is copied, and
+    /// No file is read here: the environment is copied, and
     /// [`Questions::what_answers`] is what opens a file.
+    ///
+    /// **The two variables come from `settings::this_sessions_own` rather than
+    /// from `var_os` here**, which is ADR 0019 §3's condition: one reader, so
+    /// the day a process serves two people the change is in one place. This
+    /// function read them itself until 2026-10-20, which made two readers while
+    /// `settings`'s own documentation said there was one.
     #[must_use]
     pub fn of_this_process(catalogue: Catalogue, bound: TheBound) -> Self {
+        let (config_home, home) = crate::settings::this_sessions_own();
         Self::of_a_session(
-            std::env::var_os(CONFIG_HOME),
-            std::env::var_os(HOME),
+            config_home,
+            home,
             catalogue,
             bound,
             WhoseKeyring::ThisProcess,
