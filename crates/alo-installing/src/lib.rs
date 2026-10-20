@@ -62,6 +62,7 @@ mod disks;
 mod ended;
 mod entries;
 mod environment;
+mod joining_a_network;
 mod machine;
 mod program;
 #[cfg(target_os = "linux")]
@@ -98,6 +99,7 @@ pub use disks::{
 pub use ended::{Ended, Refusal};
 pub use entries::{Entries, Entry, THE_ENTRYS_NAME, THE_LOADER_THE_BASE_INSTALLS};
 pub use environment::{Environment, WHERE_IT_IS};
+pub use joining_a_network::{ANetwork, NotJoined, TEMPORARY, every_network, why_not_joined};
 pub use machine::{BEFORE_RESTARTING, STILL_EVERY, THE_DISK_APPEARS_WITHIN, TheMachine};
 pub use program::{EVERY_PROGRAM, Program, Ran};
 #[cfg(target_os = "linux")]
