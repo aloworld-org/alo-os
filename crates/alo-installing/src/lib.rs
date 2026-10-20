@@ -68,6 +68,7 @@ mod sequence;
 mod tidying;
 mod told;
 mod verifying;
+mod which_disks_may_be_offered;
 mod why_there_is_no_network;
 mod words;
 mod writing;
@@ -76,8 +77,8 @@ pub use complaint::{Complaint, THE_LAST_LINES};
 pub use console::{ACTIVE, every_console, every_serial_line};
 pub use disk::{BY_ID, DiskName, NotADisk, NotAPartition, PartitionName};
 pub use disks::{
-    ANOTHER_SYSTEMS, Disks, NotKeeping, Replacing, THE_SPACE_THE_INSTALLER_MADE, THE_START_UP_AREA,
-    THIS_INSTALLER, Unsuitable,
+    ANOTHER_SYSTEMS, AWholeDisk, Disks, NotKeeping, Replacing, THE_SPACE_THE_INSTALLER_MADE,
+    THE_START_UP_AREA, THIS_INSTALLER, Unsuitable,
 };
 pub use ended::{Ended, Refusal};
 pub use entries::{Entries, Entry, THE_ENTRYS_NAME, THE_LOADER_THE_BASE_INSTALLS};
@@ -92,6 +93,9 @@ pub use told::{
     Beside, NotTold, REPLACING, THE_CHOICE, THE_EFI, THE_PARTITION, THE_REPLACING, Told,
 };
 pub use verifying::{Verified, Verifying};
+pub use which_disks_may_be_offered::{
+    NotOffered, Offered, TheMedium, WhatToShow, what_may_be_offered,
+};
 pub use why_there_is_no_network::WhyThereIsNoNetwork;
 pub use words::{EVERY_WORD, WordsError, declare_into, installing_words};
 pub use writing::{A_WATCHED_LINE, THE_PERSONS_SCREEN, TheConsole, Writing};
