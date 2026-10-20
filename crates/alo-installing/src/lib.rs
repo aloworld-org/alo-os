@@ -53,6 +53,7 @@
 //! file system on that partition, and without it a command line staged wrongly
 //! would be the end of somebody's Windows.
 
+mod a_surface_to_draw_on;
 mod complaint;
 mod console;
 mod disk;
@@ -74,6 +75,10 @@ mod why_there_is_no_network;
 mod words;
 mod writing;
 
+pub use a_surface_to_draw_on::{
+    Grey, NoSurface, TheSurface, WHERE_THE_DEPTH_IS, WHERE_THE_PIXELS_GO, WHERE_THE_SIZE_IS,
+    WHERE_THE_STRIDE_IS, fill,
+};
 pub use complaint::{Complaint, THE_LAST_LINES};
 pub use console::{ACTIVE, every_console, every_serial_line};
 pub use disk::{BY_ID, DiskName, NotADisk, NotAPartition, PartitionName};
