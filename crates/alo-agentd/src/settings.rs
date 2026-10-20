@@ -6,7 +6,7 @@
 //! there is only one honest answer: **the environment this process was started
 //! with**.
 //!
-//! # Why the environment is the person (ADR 0019 §3)
+//! # Why the environment is the person
 //!
 //! `alo-agentd` runs as the person, one instance per login, started by
 //! `systemd` inside their session — so `$XDG_CONFIG_HOME` and `$HOME` as this
@@ -14,12 +14,42 @@
 //! its own settings rather than reaching into somebody's home directory.
 //!
 //! **That is a condition, not an assumption, and it is written down as one.**
-//! ADR 0019 records it: the day something serves two people from one process,
+//! `alo-agentd.service` sets `User=alo` and `image/usr/lib/tmpfiles.d/alo.conf`
+//! says *alo-agentd — which runs as the person, holding nothing*; ADR 0088
+//! quotes that comment. **This paragraph cited "ADR 0019 §3" until 2026-10-20
+//! and that was wrong** — ADR 0019 is `a-runtime-is-found-not-configured`. The
+//! citation sat here unchecked because `alo-citing`'s test reads *links*, and a
+//! bare number in prose is not one. The day something serves two people from
+//! one process,
 //! this becomes one person reading another's choices, and it becomes so
 //! silently. [`of_a_session`] therefore takes both variables as arguments and
-//! [`what_this_person_chose`] is the only thing that reads the environment, so
-//! the fix that day is a caller's change rather than a rewrite of whatever grew
-//! on top of it.
+//! [`this_sessions_own`] is the only thing on **the settings road** that reads
+//! the environment, so the fix that day is a caller's change rather than a
+//! rewrite of whatever grew on top of it.
+//!
+//! **That had stopped being true, and the claim was wider than it should ever
+//! have been.** Measured 2026-10-20. `what_this_person_chose` — which this
+//! paragraph named as the single reader — was called by **nothing**, while
+//! `Questions::of_this_process` read the same two variables itself and is the
+//! road production takes, from `starting.rs`. That duplicate is gone:
+//! [`this_sessions_own`] is the one reader and both roads go through it.
+//!
+//! **But *nowhere else in this crate* was never true, and three different
+//! spellings are why nobody noticed.** The other readers each name a variable
+//! that points at the person's own directories:
+//!
+//! | | reads | why |
+//! |---|---|---|
+//! | `starting.rs` | `"HOME"`, `"XDG_DATA_HOME"`, `"XDG_DATA_DIRS"` as **literals** | the desktop-entry specification's answer for where applications live *is* the environment, and that file says so |
+//! | `the_bracket_this_turn_takes.rs` | `alo_choosing::HOME`, **fully qualified** | the bracket road, whose own header claims only *nowhere else in this crate's bracket road* — which is narrower and is true |
+//!
+//! A bare constant, a string literal and a qualified path: no single search
+//! finds all three, which is the whole reason the claim above went unchallenged.
+//! So this file's claim is now about **the settings road** rather than the
+//! crate, and `tests/the_person_is_read_in_named_places.rs` holds the real
+//! invariant — every read of a variable naming the person's own directories is
+//! on a list that says why — and it fails when a new one appears in any
+//! spelling.
 //!
 //! # A login with no home has chosen nothing
 //!
@@ -30,13 +60,32 @@
 //! home directory would be refusing reads and changes over a model nobody
 //! asked it about.
 
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 
 use alo_choosing::{CONFIG_HOME, HOME, NotSet, Settings, where_it_is};
 
+/// The two variables this process was started with, which are the person.
+///
+/// **The settings road reads the environment here and nowhere else**, and
+/// `tests/the_person_is_read_in_named_places.rs` fails if that stops being so.
+/// Both roads that need them — this file's [`what_this_person_chose`] and
+/// `Questions::of_this_process` — call this, so the day one process serves two
+/// people the change is here and the callers are already asking a function
+/// rather than a global. The module header names the two other roads in this
+/// crate that read the person's directories for reasons of their own.
+///
+/// Owned rather than borrowed because `var_os` returns an owned value and a
+/// caller that wants `&OsStr` can take one; the reverse needs a temporary that
+/// outlives the call, which is the shape that invites a reader to inline
+/// `var_os` again and quietly make two.
+#[must_use]
+pub fn this_sessions_own() -> (Option<OsString>, Option<OsString>) {
+    (std::env::var_os(CONFIG_HOME), std::env::var_os(HOME))
+}
+
 /// What the person this process runs as has chosen.
 ///
-/// The environment is read here and nowhere else in this crate.
+/// Reads the environment through [`this_sessions_own`] and not directly.
 ///
 /// # Errors
 ///
@@ -45,10 +94,8 @@ use alo_choosing::{CONFIG_HOME, HOME, NotSet, Settings, where_it_is};
 /// an empty one, because *you have chosen nothing* would be false and would
 /// send them to a settings panel that already says otherwise.
 pub fn what_this_person_chose() -> Result<Settings, NotSet> {
-    of_a_session(
-        std::env::var_os(CONFIG_HOME).as_deref(),
-        std::env::var_os(HOME).as_deref(),
-    )
+    let (config_home, home) = this_sessions_own();
+    of_a_session(config_home.as_deref(), home.as_deref())
 }
 
 /// The same, for a session named rather than inherited.

@@ -417,7 +417,7 @@ pub use serving::{Served, Serving};
 #[cfg(target_os = "linux")]
 pub use session::in_the_persons_session;
 #[cfg(target_os = "linux")]
-pub use settings::{of_a_session, what_this_person_chose};
+pub use settings::{of_a_session, this_sessions_own, what_this_person_chose};
 #[cfg(target_os = "linux")]
 pub use side::{Side, Sides};
 #[cfg(target_os = "linux")]
