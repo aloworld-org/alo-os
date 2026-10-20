@@ -12,6 +12,8 @@
 //! |---|---|
 //! | [`Program::ListingTheDisks`] | reads what the disks hold; writes nothing |
 //! | [`Program::WaitingForTheNetwork`] | waits for a wired connection; writes nothing |
+//! | [`Program::AskingAboutTheNetworkCards`] | asks the kernel what cards there are and
+//!   whether the wire is live, after the wait above failed; writes nothing |
 //! | [`Program::Verifying`] | checks the download is the owner's; writes nothing |
 //! | [`Program::MakingTheRoot`] | makes a file system on **one partition** |
 //! | [`Program::Mounting`] | mounts a partition, so a root can be handed over |
@@ -59,6 +61,18 @@ pub enum Program {
     ListingTheDisks,
     /// Wait until the network manager says the machine is connected.
     WaitingForTheNetwork,
+    /// Ask the kernel what network cards there are and what state they are in.
+    ///
+    /// Run **only after the wait above has failed**, so that a refusal can name
+    /// which of three things went wrong rather than offering one sentence that
+    /// is impossible to act on for one of them
+    /// (`crate::why_there_is_no_network`).
+    ///
+    /// The kernel's own answer rather than the network manager's, because
+    /// `nmcli` prints a device's state as a translated string and a person
+    /// chooses their language at first boot. `flags`, `operstate` and
+    /// `link_type` are iproute2's constants.
+    AskingAboutTheNetworkCards,
     /// Check that the pinned release is signed by the pinned key.
     Verifying(Verifying),
     /// Make the file system alo OS lives in, on one partition.
@@ -142,9 +156,14 @@ pub struct Ran {
 /// to carrying every one of them: a program the environment runs and the
 /// initramfs does not hold is a refusal nobody sees until a machine restarts
 /// into it.
-pub const EVERY_PROGRAM: [&str; 9] = [
+pub const EVERY_PROGRAM: [&str; 10] = [
     "/usr/bin/lsblk",
     "/usr/bin/nm-online",
+    // **Named rather than inherited.** It is already in the initramfs —
+    // dracut's own `network` module brings it, and the shipped candidate of
+    // 2026-10-20 has it at this path — but nothing asked for it, and relying on
+    // another module's transitive choice is what this list exists to stop.
+    "/usr/bin/ip",
     "/usr/bin/cosign",
     "/usr/bin/bootc",
     "/usr/bin/systemctl",
@@ -167,6 +186,7 @@ impl Program {
         match self {
             Self::ListingTheDisks => "/usr/bin/lsblk",
             Self::WaitingForTheNetwork => "/usr/bin/nm-online",
+            Self::AskingAboutTheNetworkCards => "/usr/bin/ip",
             Self::Verifying(_) => "/usr/bin/cosign",
             Self::MakingTheRoot { .. } => "/usr/sbin/mkfs.btrfs",
             Self::Mounting { .. } => "/usr/bin/mount",
@@ -195,6 +215,12 @@ impl Program {
             Self::WaitingForTheNetwork => ["--timeout", THE_NETWORK_WITHIN_SECONDS, "--quiet"]
                 .map(str::to_owned)
                 .to_vec(),
+            // `-json` so the answer is a shape rather than a layout, and
+            // `link` rather than `addr` because the question is whether there
+            // is a card and whether the wire is live, not what address it has.
+            Self::AskingAboutTheNetworkCards => {
+                ["-json", "link", "show"].map(str::to_owned).to_vec()
+            }
             Self::Verifying(verifying) => verifying.arguments(),
             // `--force` because the partition the Windows installer just made
             // is empty and the maker otherwise asks whether it may use a disk
@@ -254,6 +280,7 @@ impl Program {
         match self {
             Self::ListingTheDisks
             | Self::Verifying(_)
+            | Self::AskingAboutTheNetworkCards
             | Self::ListingTheStartEntries
             | Self::NamingTheEntry { .. } => true,
             Self::WaitingForTheNetwork
@@ -293,6 +320,7 @@ impl Program {
             Self::Writing(_) | Self::MakingTheRoot { .. } | Self::RemovingTheArea { .. } => true,
             Self::ListingTheDisks
             | Self::WaitingForTheNetwork
+            | Self::AskingAboutTheNetworkCards
             | Self::Verifying(_)
             | Self::Mounting { .. }
             | Self::Restarting

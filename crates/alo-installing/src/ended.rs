@@ -46,7 +46,23 @@ pub enum Refusal {
     /// The chosen disk is read-only or in use.
     CannotBeWritten(DiskName),
     /// The download could not be reached.
+    ///
+    /// Kept for the case where there **is** a live network card and the
+    /// download still did not arrive — which is the one this sentence was
+    /// always right about. The two below took the cases it could not be acted
+    /// on for (`crate::why_there_is_no_network`).
     NotReachable,
+    /// There is no network card at all — only the loopback.
+    ///
+    /// A driver that did not load, or one whose firmware is not there. Said
+    /// apart from [`Refusal::NotReachable`] because *check the cable* is advice
+    /// this person cannot take: there is nowhere to plug one in.
+    NoNetworkCard,
+    /// There is a network card and nothing on the wire.
+    ///
+    /// The case the one old sentence was right about, now said on its own so
+    /// it is not also said to the two it was wrong for.
+    NothingConnected,
     /// The download is not the owner's.
     NotGenuine,
     /// On the road that keeps what is there: the space the installer made for
@@ -95,6 +111,8 @@ impl Refusal {
             }
             Self::CannotBeWritten(disk) => (words::CANNOT_BE_WRITTEN, the_disk(disk.as_str())),
             Self::NotReachable => (words::NOT_REACHABLE, Filling::nothing()),
+            Self::NoNetworkCard => (words::NO_NETWORK_CARD, Filling::nothing()),
+            Self::NothingConnected => (words::NOTHING_CONNECTED, Filling::nothing()),
             Self::NotGenuine => (words::NOT_GENUINE, Filling::nothing()),
             Self::NotTheSpaceTheInstallerMade(disk) => (
                 words::NOT_THE_SPACE_THE_INSTALLER_MADE,

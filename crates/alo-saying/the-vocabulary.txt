@@ -983,11 +983,13 @@ installing.installed	alo OS is installed. This computer restarts in a few second
 installing.installing	Installing alo OS onto {disk}. Everything that was on that disk is being replaced. This takes a while, and this screen will say when it is done
 installing.looking-for-the-disk	Looking for the disk you chose: {disk}
 installing.no-disk-chosen	No disk was chosen for alo OS, so nothing was changed
+installing.no-network-card	This computer's network card was not found, so nothing was changed and alo OS was not installed. Windows is still there and starts as it did before. This needs a computer whose network card this version of alo OS knows
 installing.not-a-whole-disk	{disk} is part of a disk rather than a whole disk, so nothing was changed
 installing.not-genuine	This download is not a genuine alo OS, so nothing was changed
 installing.not-installed	alo OS could not be installed onto {disk}. That disk may now hold part of alo OS; nothing else on this computer was changed. Restart to try again
 installing.not-reachable	alo OS could not be downloaded, so nothing was changed. Check that this computer is connected to the internet by a network cable, then restart to try again
 installing.not-the-space-the-installer-made	The space for alo OS on the disk {disk} is not there, so nothing was changed. Start Windows and run the alo OS installer again
+installing.nothing-connected	No network cable is plugged in, so nothing was changed and alo OS was not installed. Plug in a network cable, then restart to try again
 installing.reading-the-choice	Reading which disk you chose before the restart
 installing.replacing-what-is-there	Everything on {disk} is being replaced, including the system that was on it. This is the road you agreed to twice, and there is no way back from here
 installing.restart-when-ready	You can turn this computer off or restart it now

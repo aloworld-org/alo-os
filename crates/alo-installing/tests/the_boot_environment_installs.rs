@@ -1016,25 +1016,91 @@ fn every_word_is_in_the_vocabulary_alo_saying_collects() {
     }
 }
 
-/// **With no wired connection nothing is checked or written**, and the person
-/// is told to look at the cable rather than that the download is not genuine.
+/// The loopback and a card, as the kernel printed them on 2026-10-20.
+const A_CARD_WITH_NOTHING_ON_IT: &str = r#"[{"ifindex":1,"ifname":"lo","flags":["LOOPBACK","UP","LOWER_UP"],"link_type":"loopback"},{"ifindex":2,"ifname":"eth0","flags":["NO-CARRIER","BROADCAST","MULTICAST","UP","M-DOWN"],"operstate":"LOWERLAYERDOWN","link_type":"ether"}]"#;
+
+/// The same card with the wire live.
+const A_LIVE_CARD: &str = r#"[{"ifindex":1,"ifname":"lo","flags":["LOOPBACK","UP","LOWER_UP"],"link_type":"loopback"},{"ifindex":2,"ifname":"eth0","flags":["BROADCAST","MULTICAST","UP","LOWER_UP"],"operstate":"UP","link_type":"ether"}]"#;
+
+/// A machine with no card at all — a driver that did not load, or one whose
+/// firmware is not there.
+const ONLY_A_LOOPBACK: &str =
+    r#"[{"ifindex":1,"ifname":"lo","flags":["LOOPBACK","UP","LOWER_UP"],"link_type":"loopback"}]"#;
+
+/// **With no connection nothing is checked or written, and the refusal names
+/// which of three things went wrong.**
+///
+/// There was one sentence for all three until 2026-10-20, and it was impossible
+/// to act on for one of them: *check that this computer is connected to the
+/// internet by a network cable*, said to a machine with no network card at all.
+///
+/// Each case is held to its own sentence, and to the two programs that ran and
+/// no others — the reading is asked **only** on this road, after the wait has
+/// already failed.
 #[test]
-fn with_no_connection_nothing_is_checked_or_written() {
-    let mut machine = Scripted::choosing("virtio-alo-target").answering(succeeded(THE_DISKS));
-    machine.connects = false;
+fn with_no_connection_the_refusal_names_which_of_three() {
+    for (cards, refusal, key) in [
+        (
+            A_CARD_WITH_NOTHING_ON_IT,
+            Refusal::NothingConnected,
+            "installing.nothing-connected",
+        ),
+        (
+            ONLY_A_LOOPBACK,
+            Refusal::NoNetworkCard,
+            "installing.no-network-card",
+        ),
+        // A live card and still nothing: the one case the old sentence was
+        // always right about, and it keeps it.
+        (
+            A_LIVE_CARD,
+            Refusal::NotReachable,
+            "installing.not-reachable",
+        ),
+    ] {
+        let mut machine = Scripted::choosing("virtio-alo-target")
+            .answering(succeeded(THE_DISKS))
+            .answering(succeeded(cards));
+        machine.connects = false;
 
-    let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+        let ended = install(&mut machine, &strings(), Ok(&the_environment()));
 
-    refused_with(
-        &machine,
-        &ended,
-        &Refusal::NotReachable,
-        word("installing.not-reachable").says(),
-    );
-    assert_eq!(
-        machine.ran,
-        [Program::ListingTheDisks, Program::WaitingForTheNetwork]
-    );
+        refused_with(&machine, &ended, &refusal, word(key).says());
+        assert_eq!(
+            machine.ran,
+            [
+                Program::ListingTheDisks,
+                Program::WaitingForTheNetwork,
+                Program::AskingAboutTheNetworkCards
+            ],
+            "{key}"
+        );
+    }
+}
+
+/// **A reading that did not happen is the sentence that asks for nothing
+/// impossible.**
+///
+/// `ip` not running, or printing something this cannot read, must not become
+/// *your card is missing* or *plug in a cable* — both would be claims about a
+/// machine nobody asked. It falls back to the sentence that was always there.
+#[test]
+fn a_reading_that_did_not_happen_says_only_what_is_known() {
+    for cards in [failed(""), succeeded("not json at all"), succeeded("[]")] {
+        let mut machine = Scripted::choosing("virtio-alo-target")
+            .answering(succeeded(THE_DISKS))
+            .answering(cards);
+        machine.connects = false;
+
+        let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+
+        refused_with(
+            &machine,
+            &ended,
+            &Refusal::NotReachable,
+            word("installing.not-reachable").says(),
+        );
+    }
 }
 
 // ---------------------------------------------------------------------------
