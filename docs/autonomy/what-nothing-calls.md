@@ -278,6 +278,63 @@ functions, because the catalogue is assembled elsewhere and dispatched
 dynamically. **This method cannot settle whether a verb executes.** It can only
 say which names nothing mentions.
 
+## Holes eight and nine, and the control I had already written down and not applied
+
+*Added 2026-10-20 at 23:30. **Every figure above this line is superseded**, and
+they are left in place because the sequence is the point.*
+
+Triaging the list meant checking entries one at a time, and two of them turned
+out to be called. Each exposed a different way the script **drops text**, and
+both are the same family as hole six: text that goes missing is attributed to
+whatever unit swallowed it, and a call inside it then reads as a self-reference.
+
+**Hole eight: only `pub fn` bounded a unit.** `pub(crate) fn` and private `fn`
+bodies were absorbed into the preceding `pub fn`'s unit, so a call they made to
+that neighbour was discounted. `alo_models::tried_on` is called on line 105 by
+`pub(crate) fn what_is_wrong_with_it` and was reported as called by nothing.
+Units are now bounded by **every** `fn` and reported on only for `pub fn`.
+
+**Hole nine: units were keyed by `(file, name)`.** Two `impl` blocks in one file
+can define the same method name — `alo-installer/src/ended.rs` has `pub fn
+said_as` at line 161 **and** line 219 — so the second silently overwrote the
+first, and the first's text vanished from both `units` and `leftover`. It
+contained the only two callers of `alo_installer::sizes::in_megabytes`, which
+was therefore reported as an orphan. Keyed by position now.
+
+**That one also moved the denominator**: collapsing same-named methods had been
+under-counting the workspace's `pub fn` by **293**.
+
+### The control that closes the class, which I wrote down this morning
+
+> **assert the partition is total** — the halves sum to the whole, or the count
+> of inputs that should have matched equals the count that did
+
+Units plus leftover must account for **every byte** of each file's product half.
+That check is now in the script and refuses the run otherwise. It catches holes
+six, eight and nine at once, and it would have caught all three on the day each
+was introduced. **It was already written in this lane's own notes, from the
+earlier holes, and was not applied to the very script that produced them** —
+which is a better argument for a control than any of the reasoning above it.
+
+### The figures, and this time something other than me agrees
+
+| | |
+|---|---|
+| `pub fn` under `crates/**/src` | **7,125** |
+| no live caller and no test, to a fixed point | **40** |
+
+`alo-shell` 18, `alo-dock` 3, and two each in `alo-adapters`, `alo-corridor`,
+`alo-tasks`, `alo-agentd`, `alo-models` and `alo-notifying`, then one each in
+seven more. `alo-installer` and `alo-acting` are **off the list entirely**.
+
+**All forty were then verified by a separate script sharing no code with the
+sweep**: for each, count every occurrence of its name across the workspace's
+product halves with comments and `use` statements removed, subtract *every*
+definition of that name anywhere — so a name two crates share is not read as a
+mention — and require zero, plus zero mentions in any test text. **Forty of
+forty passed.** That is the first figure on this page with corroboration rather
+than a single tool's word.
+
 ## One triaged earlier, and deliberately not fixed
 
 `alo-dock`'s `full_screen_ended` looked like the best candidate in the list: a
