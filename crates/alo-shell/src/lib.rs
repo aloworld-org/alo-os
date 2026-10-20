@@ -74,10 +74,10 @@
 /// The chord that asks why a command is waiting, which was the only road to an
 /// answer that was already built.
 mod a_chord_asks_why_a_command_is_waiting;
-mod a_chord_brings_up_the_agent;
 mod a_chord_moves_between_applications;
 mod a_chord_moves_the_keyboard_between_areas;
 mod a_chord_opens_a_terminal;
+mod a_chord_opens_the_bar;
 mod a_chord_reaches_its_action;
 mod a_click_brings_a_window_back;
 mod a_display_has_gone;
