@@ -363,23 +363,6 @@ fn the_overflow_list(
     // needs them again — so the one that shaped the heading would make the one
     // that shapes a name a borrow error. Passing them in says the same thing
     // and lends them a line at a time.
-    /// The ring that marks keyboard focus on `item`: the item's own rectangle,
-    /// grown by the measured stand-off on every side.
-    ///
-    /// **One function for both faces.** A cell in the grid and a row in a window
-    /// list are different shapes and the ring around them is the same rule, and
-    /// the rule is a measurement — `docs/design/the-first-start.md` read it off
-    /// the design's `Keyboard focus / not selected` node. Written out at each of
-    /// the two sites it would be two chances to get the sign of the offset
-    /// wrong, and a ring four pixels *inside* an item looks like a border the
-    /// item grew rather than a ring around it.
-    fn a_focus_ring(item: Rectangle<i32, Physical>) -> Rectangle<i32, Physical> {
-        let off = i32::try_from(alo_dock::measures::THE_FOCUS_RING_STANDS_OFF).unwrap_or(4);
-        Rectangle::new(
-            (item.loc.x - off, item.loc.y - off).into(),
-            (item.size.w + 2 * off, item.size.h + 2 * off).into(),
-        )
-    }
 
     #[expect(
         clippy::too_many_arguments,
@@ -882,13 +865,37 @@ fn the_overflow_list(
     }
 }
 
+/// The ring that marks keyboard focus on `item`: the item's own rectangle,
+/// grown by the measured stand-off on every side.
+///
+/// **One function for all three faces.** A cell in the grid, a row in a window
+/// list and a slot on the bar are different shapes and the ring around them is
+/// the same rule, and the rule is a measurement — `docs/design/the-first-start.md`
+/// read it off the design's `Keyboard focus / not selected` node. Written out
+/// at each site it would be three chances to get the sign of the offset wrong,
+/// and a ring four pixels *inside* an item looks like a border the item grew
+/// rather than a ring around it.
+///
+/// **It was nested inside `the_overflow_list` until 2026-10-20**, where the
+/// bar could not reach it — which is why the bar had no ring and why its own
+/// note said *when it does, the rule is `a_focus_ring`'s*. Lifted here rather
+/// than copied, which is what that note asked for.
+fn a_focus_ring(item: Rectangle<i32, Physical>) -> Rectangle<i32, Physical> {
+    let off = i32::try_from(alo_dock::measures::THE_FOCUS_RING_STANDS_OFF).unwrap_or(4);
+    Rectangle::new(
+        (item.loc.x - off, item.loc.y - off).into(),
+        (item.size.w + 2 * off, item.size.h + 2 * off).into(),
+    )
+}
+
 /// Where one slot's 48 × 48 target sits on the screen.
 ///
 /// **Centred across the bar's thickness, `along` down its edge** — the rule
 /// `a_letter_sits_on_the_bars_centre_line_on_every_edge` holds, written once
-/// now that two things need it: the draw that inks an initial, and the badge
+/// now that three things need it: the draw that inks an initial, the badge
 /// placement that has to agree with it exactly or a letter would sit beside its
-/// own circle.
+/// own circle, and the focus ring, which has to sit round the same target a
+/// press lands on.
 fn a_slot_at(
     band: Rectangle<i32, Physical>,
     edge: alo_dock::Edge,
@@ -929,6 +936,22 @@ fn a_slot_at(
 /// out on, or one larger than any this dock is laid out for;
 /// [`RenderError::AccentRefused`] for a look whose accent is not one a person
 /// can choose.
+// **Eight arguments, and the eighth is where the keyboard is.** The seven
+// before it were already the bar's whole subject — the dock, the look, the
+// display, what is on it, what is in *More apps*, what the overflow holds and
+// the fonts. Folding the new one into the overflow pair would put two
+// unrelated questions in one tuple: what a person opened, and where their next
+// key press lands.
+//
+// **The reason below is one line and says little**, which is not carelessness:
+// `tests/desktop_source.rs` holds that no line of a `dock_*` file may carry a
+// readable string unless it begins `reason = `, and a wrapped string's
+// continuation lines do not. So the argument lives in this comment and the
+// attribute carries the short form.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the eighth is where the keyboard is"
+)]
 pub(crate) fn picture(
     dock: &Dock,
     look: DesktopLook,
@@ -939,6 +962,12 @@ pub(crate) fn picture(
         &crate::WhatTheDockHasOpen,
         &crate::the_docks_words::TheDocksWords,
     ),
+    // Which slot on the bar the keyboard is on, counted the way
+    // `crate::the_bars_pressable_slots` counts them. `None` is a session whose
+    // keyboard is somewhere else, which is every frame of a session driven by a
+    // pointer — and `crate::screens_raster`'s preview, which has no keyboard on
+    // it at all.
+    the_keyboard_is_on: Option<usize>,
     fonts: &mut FontSystem,
 ) -> Result<DockPicture, RenderError> {
     let (width, height) = size;
@@ -1056,15 +1085,34 @@ pub(crate) fn picture(
             corner: alo_dock::measures::THE_COMPOSERS_CORNER,
         })
         .collect();
+    // **The ring round the slot the keyboard is on.**
+    //
+    // This was `&[]` until 2026-10-20 under a note saying the keyboard did not
+    // reach the bar's own slots. It had reached them since 2026-10-18, when the
+    // bar gained a keyboard performer — so F6 moved the keyboard onto the Dock
+    // and **the screen did not change by one byte**, which from the chair is
+    // indistinguishable from a key that does nothing. Four presses were
+    // reported as *F6 does not reach the Dock* for exactly that reason.
+    //
+    // **The rectangle is the slot's own**, from the same `Places` the hit test
+    // reads, with `crate::the_bars_pressable_slots` doing the counting that
+    // Enter also does — so the control that lights up is the control that runs.
+    let rings: Vec<Rectangle<i32, Physical>> = the_keyboard_is_on
+        .and_then(|which| crate::the_bars_pressable_slots::the_one_at(&places, which))
+        .map(|place| {
+            let along = i32::try_from(place.from_the_start()).unwrap_or(i32::MAX);
+            let (left, top) = a_slot_at(band, layout.edge(), along, icon);
+            let across = i32::try_from(place.across()).unwrap_or(icon);
+            a_focus_ring(Rectangle::new((left, top).into(), (across, icon).into()))
+        })
+        .into_iter()
+        .collect();
     let surface = crate::dock_surface::surface(crate::dock_surface::ADocksSurface {
-        // **No focus ring on the bar itself, and that is a gap and not a
-        // decision.** The keyboard reaches the two surfaces the bar opens; it
-        // does not yet reach the bar's own slots, so there is nothing here for
-        // a ring to mark. When it does, the rectangle is the slot's and the
-        // rule is `a_focus_ring`'s — the measurement is already in
-        // `alo_dock::measures`.
-        rings: &[],
-        ring_is: [0, 0, 0],
+        // **Drawn last of all on the panel**, which `ADocksSurface::rings` is
+        // specified to do: the one mark that says where the next key press
+        // lands is not covered by anything.
+        rings: &rings,
+        ring_is: palette.ink,
         // **The bar's own marks are still flat**, and visibly so: the Dock's
         // surface is painted before `solids`, so a mark pushed there lands on
         // top of it. That is why the bar's indicators have always been visible
@@ -1511,6 +1559,7 @@ mod tests {
                 &apps,
                 &apps,
                 (&open, crate::desktop_testing::no_words()),
+                None,
                 &mut fonts(),
             )
             .expect("a Dock with its overview open");
@@ -1546,6 +1595,123 @@ mod tests {
             "a 2px ring around one 94x88 cell should add roughly 780 ink pixels; \
              nothing focused drew {without} and focusing the first cell drew {with}, \
              which is {extra} more — a filled cell would be about 9,792"
+        );
+    }
+
+    /// **The bar draws a ring round the slot the keyboard is on**, measured the
+    /// way the popover's is: in pixels of the raster, with the same picture and
+    /// no keyboard on the bar as the control.
+    ///
+    /// # The fault this is about
+    ///
+    /// The bar passed `rings: &[]` under a note saying the keyboard did not
+    /// reach its own slots. It had reached them since 2026-10-18 — F6 moves it
+    /// there and Enter carries out what it lands on — so **pressing F6 moved
+    /// the keyboard and changed nothing on the screen.** Four presses on a real
+    /// machine were reported as *F6 does not reach the Dock*, and the keyboard
+    /// had arrived every time.
+    ///
+    /// The control is what makes this a test rather than a count: the bar's
+    /// letters, its marks and the composer's two words are ink-coloured too.
+    #[test]
+    fn the_bar_draws_a_ring_round_the_slot_the_keyboard_is_on() {
+        let look = noon_look(&an_appearance(), alo_strings::Direction::LeftToRight);
+        let palette = look.palette().expect("a palette at noon");
+        let apps = on_the_dock(4);
+        assert_ne!(
+            palette.ink, palette.dock,
+            "the premise: the ring's colour is not the band's ground"
+        );
+
+        let ink_on_the_band = |the_keyboard_is_on: Option<usize>| -> usize {
+            let drawn = picture(
+                &Dock::shipped(),
+                look,
+                (1920, 1080),
+                &apps,
+                &apps,
+                closed(),
+                the_keyboard_is_on,
+                &mut fonts(),
+            )
+            .expect("a Dock of four applications lays out on a 1920 x 1080 display");
+            // **The bar's own raster**, which is `DockPicture::surface` and not
+            // `panels`: the band is rasterised once with its shadow, its
+            // corners and now its ring, and `panels` is where an **open
+            // surface** goes. A count over `panels` reads nought on a Dock with
+            // nothing open, which is what this fixture is.
+            let washed = drawn.surface.expect("the bar is drawn on every frame");
+            let mut ink = 0;
+            for pixel in washed.pixels.chunks(4) {
+                let Some([r, g, b, a]) = pixel.first_chunk::<4>() else {
+                    continue;
+                };
+                if *a > 200 && [*r, *g, *b] == palette.ink {
+                    ink += 1;
+                }
+            }
+            ink
+        };
+
+        let without = ink_on_the_band(None);
+        let with = ink_on_the_band(Some(0));
+        let extra = with.saturating_sub(without);
+        // A 48-square icon stood off by 4 is a 56-square ring: a 2px outline
+        // round it is 4 × 56 × 2 = 448 pixels, less what the rounded corners
+        // take off. The ceiling is the half that earns its keep — the same
+        // rectangle **filled** is 3,136, so a focus treatment that quietly
+        // became a plate over the icon would fail here rather than pass.
+        assert!(
+            (200..=1_400).contains(&extra),
+            "a 2px ring round one 48x48 slot should add roughly 448 ink pixels; \
+             no keyboard on the bar drew {without} and the keyboard on its first slot drew \
+             {with}, which is {extra} more — a filled slot would be about 3,136"
+        );
+    }
+
+    /// **And no ring when the keyboard is somewhere else**, which is every
+    /// frame of a session driven by a pointer.
+    ///
+    /// Written as its own test rather than folded into the control above,
+    /// because the control there is a *baseline* and this is an *assertion*:
+    /// the two read the same and only one of them fails if a ring is drawn for
+    /// a session that never pressed F6.
+    #[test]
+    fn a_bar_nobody_has_reached_by_keyboard_draws_no_ring() {
+        let look = noon_look(&an_appearance(), alo_strings::Direction::LeftToRight);
+        let apps = on_the_dock(4);
+        let drawn = |the_keyboard_is_on| {
+            picture(
+                &Dock::shipped(),
+                look,
+                (1920, 1080),
+                &apps,
+                &apps,
+                closed(),
+                the_keyboard_is_on,
+                &mut fonts(),
+            )
+            .expect("a Dock of four applications lays out on a 1920 x 1080 display")
+            .surface
+            .expect("the bar is drawn on every frame")
+        };
+        let quiet = drawn(None);
+        let reached = drawn(Some(0));
+        let pixels = |washed: &crate::painted::Washed| -> Vec<u8> { washed.pixels.clone() };
+        // **The control, and it is the whole test's licence.** Without it a
+        // pass would also be what two identical pictures look like — which is
+        // exactly what this file is here to stop being true of the bar.
+        assert_ne!(
+            pixels(&reached),
+            pixels(&quiet),
+            "the keyboard on the bar's first slot drew the same pixels as a bar nobody has \
+             reached, so the ring is not drawn at all"
+        );
+        assert_eq!(
+            pixels(&drawn(None)),
+            pixels(&quiet),
+            "two pictures of the same bar with no keyboard on it differ, so this comparison \
+             cannot say anything about the ring"
         );
     }
 
@@ -1618,6 +1784,7 @@ mod tests {
                 &apps,
                 &apps,
                 (open, words),
+                None,
                 &mut fonts(),
             )
             .expect("a Dock with a surface open");
@@ -1730,6 +1897,7 @@ mod tests {
                 &on_the_dock(4),
                 &on_the_dock(4),
                 closed(),
+                None,
                 &mut fonts(),
             )
             .unwrap();
@@ -1785,6 +1953,7 @@ mod tests {
                 &on_the_dock(holding),
                 &on_the_dock(holding),
                 closed(),
+                None,
                 &mut fonts(),
             )
             .unwrap();
@@ -1826,6 +1995,7 @@ mod tests {
             &held,
             &held,
             closed(),
+            None,
             &mut fonts(),
         )
         .unwrap();
@@ -1891,7 +2061,17 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn = picture(&dock, look, size, &held, &held, closed(), &mut fonts()).unwrap();
+            let drawn = picture(
+                &dock,
+                look,
+                size,
+                &held,
+                &held,
+                closed(),
+                None,
+                &mut fonts(),
+            )
+            .unwrap();
 
             // Within the edge it runs along, less the room either side.
             let (ran, edge_length) = if edge.runs_across() {
@@ -1981,6 +2161,7 @@ mod tests {
                 &crowded,
                 &crowded,
                 how,
+                None,
                 &mut fonts(),
             )
             .unwrap()
@@ -2029,6 +2210,7 @@ mod tests {
             &crowded,
             &crowded,
             closed(),
+            None,
             &mut fonts(),
         )
         .unwrap();
@@ -2039,6 +2221,7 @@ mod tests {
             &crowded,
             &crowded,
             open,
+            None,
             &mut fonts(),
         )
         .unwrap();
@@ -2085,6 +2268,7 @@ mod tests {
             &on_the_dock(4),
             &on_the_dock(4),
             open,
+            None,
             &mut fonts(),
         )
         .unwrap();
@@ -2095,6 +2279,7 @@ mod tests {
             &on_the_dock(4),
             &on_the_dock(4),
             closed(),
+            None,
             &mut fonts(),
         )
         .unwrap();
@@ -2122,6 +2307,7 @@ mod tests {
             &[],
             &[],
             open,
+            None,
             &mut fonts(),
         )
         .unwrap();
@@ -2155,6 +2341,7 @@ mod tests {
                 &crowded,
                 &crowded,
                 opened(),
+                None,
                 &mut fonts(),
             )
             .unwrap();
@@ -2213,6 +2400,7 @@ mod tests {
                 &on_the_dock(3),
                 &on_the_dock(3),
                 closed(),
+                None,
                 &mut fonts(),
             )
             .unwrap();
@@ -2222,8 +2410,17 @@ mod tests {
                 holding.pin(alo_dock::AppId::named(&format!("app-{number}")).unwrap());
             }
             let pinned = holding.showing(&alo_dock::Windows::none());
-            let shut =
-                picture(&dock, look, size, &pinned, &pinned, closed(), &mut fonts()).unwrap();
+            let shut = picture(
+                &dock,
+                look,
+                size,
+                &pinned,
+                &pinned,
+                closed(),
+                None,
+                &mut fonts(),
+            )
+            .unwrap();
 
             let wide = i32::try_from(alo_dock::measures::AN_OPEN_MARK_IS_WIDE).unwrap();
             let tall = i32::try_from(alo_dock::measures::A_RUNNING_MARK_IS_TALL).unwrap();
@@ -2270,6 +2467,7 @@ mod tests {
             &on_the_dock(3),
             &on_the_dock(3),
             closed(),
+            None,
             &mut fonts(),
         )
         .unwrap();
@@ -2351,6 +2549,7 @@ mod tests {
                 &on_the_dock(3),
                 &on_the_dock(3),
                 closed(),
+                None,
                 &mut fonts(),
             )
             .unwrap();
@@ -2443,6 +2642,7 @@ mod tests {
             &held,
             &held,
             closed(),
+            None,
             &mut fonts(),
         )
         .unwrap();
@@ -2482,6 +2682,7 @@ mod tests {
             &on_the_dock(4),
             &on_the_dock(4),
             closed(),
+            None,
             &mut fonts(),
         )
         .unwrap();
@@ -2492,6 +2693,7 @@ mod tests {
             &on_the_dock(4),
             &on_the_dock(4),
             closed(),
+            None,
             &mut fonts(),
         )
         .unwrap();
@@ -2502,6 +2704,7 @@ mod tests {
             &on_the_dock(4),
             &on_the_dock(4),
             closed(),
+            None,
             &mut fonts(),
         )
         .unwrap();
@@ -2546,6 +2749,7 @@ mod tests {
                         &on_the_dock(4),
                         &on_the_dock(4),
                         closed(),
+                        None,
                         &mut fonts()
                     ),
                     Err(RenderError::DesktopScene)
@@ -2573,6 +2777,7 @@ mod tests {
             &held,
             &held,
             closed(),
+            None,
             &mut fonts(),
         )
         .unwrap();
@@ -2640,7 +2845,17 @@ mod tests {
         for edge in Edge::EVERY {
             let mut dock = Dock::shipped();
             dock.set_edge(edge);
-            let drawn = picture(&dock, look, size, &held, &held, closed(), &mut fonts()).unwrap();
+            let drawn = picture(
+                &dock,
+                look,
+                size,
+                &held,
+                &held,
+                closed(),
+                None,
+                &mut fonts(),
+            )
+            .unwrap();
             assert_eq!(applications(&drawn), held.len(), "{edge:?}");
 
             // The band's centre across its thickness, and each letter's.
@@ -2689,6 +2904,7 @@ mod tests {
             &[],
             &[],
             closed(),
+            None,
             &mut fonts(),
         )
         .unwrap();
@@ -2733,6 +2949,7 @@ mod tests {
             &held,
             &held,
             closed(),
+            None,
             &mut fonts(),
         )
         .unwrap();

@@ -596,6 +596,7 @@ impl<'a> TheDesk<'a> {
             display_scale: 100,
             on_the_dock: &[],
             in_more_apps: &[],
+            the_keyboard_is_on_the_bar: None,
         }
     }
 }

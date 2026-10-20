@@ -219,6 +219,8 @@ fn with_night_light_off_the_dock_is_drawn_exactly_as_it_was_decided() {
                 &crate::what_the_dock_has_open::NOTHING,
                 &crate::the_docks_words::TheDocksWords::default(),
             ),
+            // No keyboard on this bar: this test is about where a press lands.
+            None,
             &mut fonts(),
         )
         .unwrap();

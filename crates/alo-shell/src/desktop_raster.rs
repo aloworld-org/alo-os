@@ -184,6 +184,9 @@ pub(crate) struct Shown<'a> {
     /// What *More apps* lists, from
     /// [`crate::nested_desktop::DesktopFrame::in_more_apps`].
     pub(crate) in_more_apps: &'a [OnTheDock],
+    /// Which slot on the bar the keyboard is on, from
+    /// [`crate::nested_desktop::DesktopFrame::the_keyboard_is_on_the_bar`].
+    pub(crate) the_keyboard_is_on_the_bar: Option<usize>,
 }
 
 /// What the running window shows, as a panel.
@@ -249,6 +252,7 @@ pub(crate) fn picture(
         in_more_apps,
         the_dock_has_open,
         the_docks_words,
+        the_keyboard_is_on_the_bar,
     } = shown;
     // **The count the desktop handed over, not a constant.** This passed a
     // literal `0` until 2026-10-09, with a comment saying a bar holding nothing
@@ -264,6 +268,7 @@ pub(crate) fn picture(
         on_the_dock,
         in_more_apps,
         (the_dock_has_open, the_docks_words),
+        the_keyboard_is_on_the_bar,
         fonts,
     )?;
 

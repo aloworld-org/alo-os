@@ -400,11 +400,11 @@ impl crate::Server {
             .dock_as_drawn
             .values()
             .filter_map(|dock| {
-                dock.places
-                    .each()
-                    .iter()
-                    .filter(|place| place.what().can_be_pressed())
-                    .nth(which)
+                // **Counted by `crate::the_bars_pressable_slots` and not here**,
+                // because `crate::dock_raster` draws the focus ring round the
+                // same index and a second `filter` is how the control that
+                // lights up stops being the control that runs.
+                crate::the_bars_pressable_slots::the_one_at(&dock.places, which)
                     .map(|place| what_this_slot_does(place.what()))
             })
             .find(|answer| *answer != WhatAPressOnTheDockDoes::Nothing);

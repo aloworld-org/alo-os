@@ -246,6 +246,14 @@ pub struct DesktopFrame<'a> {
     /// The owner's ruling of 2026-10-11, ADR 0103: *More apps is now an
     /// application overview, not merely a list of icons that overflowed.*
     pub in_more_apps: &'a [alo_dock::OnTheDock],
+    /// Which slot on the Dock's bar the keyboard is on, if it is on the bar.
+    ///
+    /// **Server state, like `market`**: it is written by F6 and by Tab, which
+    /// are presses, and presses reach the `Server`. A desktop's own state
+    /// cannot know it, so `crate::what_the_server_tells_a_frame` fills it and
+    /// every other builder of this frame leaves it [`None`] — which is the
+    /// true answer for a fixture nobody has pressed F6 on.
+    pub the_keyboard_is_on_the_bar: Option<usize>,
 }
 
 impl Nested {
@@ -463,6 +471,11 @@ pub(crate) fn frame_pictures(
             display_scale: desktop.display_scale,
             on_the_dock: desktop.on_the_dock,
             in_more_apps: desktop.in_more_apps,
+            // **Read off the frame**, like every other field in this block and
+            // unlike `market`, which was written `None` here and cost a release
+            // — see the note below it. This one is tested through this
+            // function rather than through the raster for that reason.
+            the_keyboard_is_on_the_bar: desktop.the_keyboard_is_on_the_bar,
             // **Read off the frame, and a literal `None` until 2026-10-19.**
             //
             // Every other field in this block is taken from the frame; this

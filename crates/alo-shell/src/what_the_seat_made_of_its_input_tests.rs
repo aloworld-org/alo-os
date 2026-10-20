@@ -799,6 +799,8 @@ fn the_real_raster_recorded_the_way_the_draw_records_it_opens_the_market() -> Re
             &crate::what_the_dock_has_open::NOTHING,
             &crate::the_docks_words::TheDocksWords::default(),
         ),
+        // No keyboard on this bar: this test is about where a press lands.
+        None,
         &mut fonts,
     )
     .expect("a fresh machine's Dock lays out on the display it draws on");
