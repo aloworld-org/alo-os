@@ -1,4 +1,4 @@
-# Seventeen public functions that nothing calls
+# What nothing calls
 
 **What this is.** A measurement, taken once by hand on 2026-10-20, of a fault
 this repository has met before under the name *declared is not dispatched*: a
@@ -129,3 +129,70 @@ proposed here rather than written.
 
 **Until then the honest statement is the one at the top: this was measured once,
 by hand, on 2026-10-20.**
+
+## The method had two more holes, and the whole workspace is worse than three crates
+
+*Added the same evening, before the first version had landed. The figures above
+are for three crates and are left as they were measured; these are for all 122,
+and they are not comparable — a scope that lives in the method and not in the
+sentence is a scope the reader cannot check.*
+
+**Hole three: a reference from inside dead code counted as a caller.**
+`alo-dock`'s `where_it_sits` looked reached because `where_a_preview_sits` names
+it — and `where_a_preview_sits` is a one-line wrapper that nothing calls. So
+reachability is not one hop: it needs a **fixed point**, removing orphans and
+recounting until nothing changes. *The clue was a result that looked wrong: a
+function with a caller sitting next to a function without one, in the same file,
+doing the same job.*
+
+**Hole four: a `pub use` counted as a caller.** A re-export is a declaration, not
+a call, and nearly every crate re-exports its own public surface in `lib.rs` — so
+this one flattered every crate at once. `use` statements are now stripped before
+counting.
+
+**Hole five, and this one is not fixed:** the first version was
+`O(functions × files)` and **did not finish on 122 crates in ten minutes.** It
+was rewritten as one tokenising pass — a `Counter` of identifiers per file, built
+once — and runs in **0.9 seconds**. Worth recording because the slow version's
+failure mode was silence: a sweep that never returns reports nothing, and a
+reader would have taken *we did not find more* from it.
+
+### What the workspace actually looks like
+
+| | |
+|---|---|
+| `pub fn` in `crates/**/src` | **6,709** |
+| with no live caller and no test, to a fixed point | **44** |
+
+By crate, where there is more than one: `alo-shell` **18** — one more than the
+one-hop count above found — `alo-dock` 3, `alo-models` 3, and two each in
+`alo-notifying`, `alo-agentd`, `alo-adapters`, `alo-tasks`, `alo-corridor` and
+`alo-terminal`. Then one each in `alo-access`, `alo-nearby`, `alo-elsewhere`,
+`alo-installer`, `alo-put-aside`, `alo-bluetooth`, `alo-playing` and
+`alo-reconciling`.
+
+**The two independent implementations agreeing on `alo-shell` is the only
+corroboration here**, and it is worth more than either number alone: the slow
+one-hop script and the fast fixed-point one share no code and both say 17–18.
+
+### One of the 44 is fixed in this change
+
+`alo-access`'s `ignore_the_same_key_for` — the only way to change how long the
+same key is ignored for, with **no caller and no test, not once**. It is a gap
+rather than a tidy-up because the three key settings are a set: `Setting::every()`
+offers sticky, slow **and** bounce keys, each has a translated word, and
+`filtering.rs` genuinely honours the value. Its twin `hold_keys_for` is asserted
+to round-trip; this one was reachable by nothing — in a test file whose own name
+is *the values a person chose survive being written down*, which covered two of
+the three.
+
+**No road for a person to choose the delay was added.** `docs/features.md` offers
+*sticky keys, slow keys, and keyboard-only operation of everything* and names no
+duration, so building one would **add** a promise rather than keep one.
+
+### What these three crates' figures do and do not mean now
+
+The 682/122/19 above stands as what was measured for `alo-terminal`,
+`alo-shell` and `alo-desktop` with the one-hop method. The workspace table is the
+better measurement and it is the one to repeat. **Neither runs anywhere**, which
+is still the last section's point.

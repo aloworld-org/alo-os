@@ -161,3 +161,83 @@ fn the_values_a_person_chose_survive_being_written_down() {
         Some(Duration::from_millis(450))
     );
 }
+
+/// **The bounce-keys delay survives too**, which this file promised and did not
+/// check.
+///
+/// *Added 2026-10-20.* `TurnedOn::ignore_the_same_key_for` — the only way to
+/// change how long the same key is ignored for — was called by **nothing in the
+/// workspace**: no caller, no test, not once. Found by counting, to a fixed
+/// point, the live references to every `pub fn` in every crate.
+///
+/// # Why it is a gap rather than a tidy-up
+///
+/// The three key settings are a set. `Setting::every()` offers sticky keys,
+/// slow keys **and** bounce keys; each has a translated word; `filtering.rs`
+/// genuinely honours `ignored_after_the_same_key`, defaulting to `A_MOMENT`
+/// where nothing chose. So a person can turn bounce keys on, and the one value
+/// it has was reachable by no test — while its twin `hold_keys_for` is asserted
+/// to round-trip in the test above.
+///
+/// **The test above is named *the values a person chose survive being written
+/// down*, and it covered two of the three.** That is the shape worth catching:
+/// not a missing feature, but a promise whose name is plural and whose
+/// assertions are not.
+///
+/// # What is deliberately not here
+///
+/// No road that lets a person *choose* the delay. `docs/features.md` offers
+/// *sticky keys, slow keys, and keyboard-only operation of everything* and
+/// names no duration, so building one would **add** a promise rather than keep
+/// one — and never offering is not taking away. This holds what exists.
+#[test]
+fn the_bounce_keys_delay_survives_being_written_down_as_well() {
+    let folder = a_folder();
+    let mut turned_on = TurnedOn::nothing();
+    turned_on.turn_on(Setting::BounceKeys);
+    turned_on.ignore_the_same_key_for(Duration::from_millis(275));
+    alo_access::keeping::keep(&folder, &turned_on).unwrap();
+
+    let read_back = alo_access::keeping::read(&folder).unwrap();
+    assert_eq!(
+        read_back.key_filter().ignored_after_the_same_key,
+        Some(Duration::from_millis(275)),
+        "the value a person chose for bounce keys did not survive"
+    );
+    // A control: 275 is not the default, so a filter that ignored the stored
+    // value and answered `A_MOMENT` would fail the assertion above rather than
+    // pass it by coincidence.
+    assert_ne!(
+        read_back.key_filter().ignored_after_the_same_key,
+        TurnedOn::nothing().key_filter().ignored_after_the_same_key,
+        "275ms must differ from what a machine nobody changed would answer"
+    );
+}
+
+/// **And the two delays are kept apart**, so neither setting reads the other's
+/// value.
+///
+/// One struct holds both durations and `key_filter` builds both from it, so a
+/// field crossed in that constructor would give a person their slow-keys delay
+/// as their bounce-keys delay. Two different numbers, asserted both ways: the
+/// test cannot pass if they are swapped, and cannot pass if either is dropped.
+#[test]
+fn the_slow_and_bounce_delays_do_not_read_each_others_value() {
+    let mut turned_on = TurnedOn::nothing();
+    turned_on.turn_on(Setting::SlowKeys);
+    turned_on.turn_on(Setting::BounceKeys);
+    turned_on.hold_keys_for(Duration::from_millis(450));
+    turned_on.ignore_the_same_key_for(Duration::from_millis(275));
+
+    let filter = turned_on.key_filter();
+    assert_eq!(
+        filter.held_before_it_counts,
+        Some(Duration::from_millis(450)),
+        "slow keys took the wrong value"
+    );
+    assert_eq!(
+        filter.ignored_after_the_same_key,
+        Some(Duration::from_millis(275)),
+        "bounce keys took the wrong value"
+    );
+}
