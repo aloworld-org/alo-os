@@ -68,6 +68,7 @@ mod sequence;
 mod tidying;
 mod told;
 mod verifying;
+mod what_display_there_is;
 mod which_disks_may_be_offered;
 mod why_there_is_no_network;
 mod words;
@@ -93,6 +94,9 @@ pub use told::{
     Beside, NotTold, REPLACING, THE_CHOICE, THE_EFI, THE_PARTITION, THE_REPLACING, Told,
 };
 pub use verifying::{Verified, Verifying};
+pub use what_display_there_is::{
+    Glass, WhatDisplayThereIs, from_a_connector, is_connected, the_glass, the_mode,
+};
 pub use which_disks_may_be_offered::{
     NotOffered, Offered, TheMedium, WhatToShow, what_may_be_offered,
 };
