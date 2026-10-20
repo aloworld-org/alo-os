@@ -8324,3 +8324,62 @@ inside that check and both are the same shape in opposite directions:
 is not a check. The question to ask of the green thing was *what would have to be
 true for this build to pass while the environment is broken*, and the answer was
 *any one of thirty paths being wrong*.
+
+## `alo-agentd` will not start without a boundary, so a person's own question cannot be asked on a machine that has none (2026-10-20)
+
+**What was expected.** A person's own question needs no turn, no grant and no
+bracket — `crates/alo-agentd/src/a_persons_own_question.rs` says so in its own
+header, and ADR 0126 put it beside the agent's road rather than through it. So
+it should not need anything the agent's road needs.
+
+**What happens.** It needs the daemon, and the daemon will not start:
+
+```text
+$ alo-agentd
+alo-agentd did not run: a turn's work cannot be bounded on this machine: there
+is no boundary at /sys/fs/bpf/alo/bounds: alo-boundaryd loads one at boot, and
+until it has, this machine cannot bound a turn — alo-agentd will not run
+without a boundary, because a turn that cannot be bounded does not run (ADR 0015)
+```
+
+And what the person sees, measured with a provider in their settings and a
+local model running:
+
+```text
+$ alo-ask "what is the capital of Spain"
+alo could not ask your provider, because the alo service is not running on
+this machine. Start it and ask again.
+```
+
+**Both sentences are true and the advice cannot be taken.** Starting it fails,
+for a reason the person is never shown, about a thing their question does not
+use: `alo_asking::a_question_nobody_is_showing` imposes **no** boundary. It
+checks that the place is the provider, asks the organisation's rule about the
+**resolved** destination, and then asks. The boundary is the agent's.
+
+**Why it does not bite a real machine.** `alo-boundaryd` loads the boundary at
+boot (ADR 0018), so on a machine that booted the image the daemon starts and
+the question is answered. This is a development machine's quirk, and it is
+recorded because a development machine is where the next person will meet it —
+it cost an hour of standing a daemon up before the refusal named the cause.
+
+**What is measured and what is open.** Measured: the refusal, its reason, and
+that the person's road imposes no boundary. **Open, and the owner's:** whether
+the daemon should start without a boundary and refuse only turns. There is a
+real argument each way — a machine with no boundary is not fit to run the
+agent's service at all, which is the simplest and loudest thing; and a person's
+question, a pairing and a settings read need nothing it lacks, so refusing them
+refuses something that would work. ADR 0015's sentence is about **turns**;
+extending it to the whole service is a reading, not a ruling.
+
+**What was verified while finding this**, as a person, at a shell, on 2026-10-20:
+
+| | |
+|---|---|
+| no provider chosen, a local runtime running | answered, and the line beside it says *on this machine* — on standard error, while the answer is on standard output |
+| a provider chosen, no service | **refused in words**, exit 1, and **not** answered locally — which is ADR 0125's *the half worth writing first*, and ADR 0008's *never silent fallback* holding at the surface |
+| nothing typed | *there is nothing to ask yet — write the question first*, exit 1 |
+
+The provider half — the answer coming back from the provider with the service
+running — **has not been verified on any machine**, and needs one with a
+boundary.

@@ -128,6 +128,68 @@ fn a_person_who_has_not_been_asked_is_not_refused() {
     );
 }
 
+/// **A person who chose a provider is told about their provider, and never
+/// about this machine's runtime.**
+///
+/// What this pins is the **routing**, which is the thing that was measured
+/// wrong: *with a provider in their settings and one local model installed, a
+/// person is answered locally and told only `on this machine`* (ADR 0125).
+/// `main.rs` sends a chosen provider to the daemon before it looks at the
+/// catalogue or the runtime, and says in its own words why: *a person whose
+/// question is going to OpenAI must not first be told a local runtime is
+/// unreachable.*
+///
+/// # Why it asserts this and not *never answered on this machine*
+///
+/// That was the first version of this test and it was **vacuous**. On a machine
+/// with no model runtime — which is every machine in CI — nothing can answer
+/// locally whatever the routing does, so an assertion that no answer came from
+/// here passes for a command that had fallen through to the catalogue. It also
+/// matched the phrase *on this machine* inside an unrelated and correct
+/// sentence: *the alo service is not running on this machine.*
+///
+/// This version can fail. Take the provider road out of `main.rs` and the
+/// person is told about the runtime instead, which is what both assertions
+/// below catch.
+///
+/// # And the setting is deliberately absent from these settings
+///
+/// The test above holds this when the person turned fallback **off**, which is
+/// a thing they asked for. This is the default — every person who has not
+/// opened that row — and nothing held the routing to it.
+#[test]
+fn a_person_who_chose_a_provider_is_told_about_their_provider() {
+    let home = a_login_whose_settings_say(
+        "provider-no-fallback-setting",
+        "format = 3\n\n\
+         [answers]\n\
+         provider = { name = \"Mistral\", model = \"mistral-small-latest\" }\n\n\
+         [[provider]]\n\
+         name = \"Mistral\"\n\
+         endpoint = \"https://api.mistral.ai\"\n\
+         region = \"the EU\"\n",
+    );
+
+    let (ok, said) = run(&["what is the capital of Spain"], &home);
+
+    assert!(!ok, "a question nothing could answer succeeded: {said}");
+    assert!(
+        said.contains("provider"),
+        "a person who chose a provider was not told anything about it: {said}"
+    );
+    assert!(
+        !said.contains("runtime"),
+        "a person whose question was going to a provider was told about this machine's \
+         runtime: {said}"
+    );
+    // Not the *forbidden* sentence either, because they forbade nothing — that
+    // would be the opposite fault, refusing somebody who never said no.
+    assert!(
+        !said.contains("told alo not to use anything else"),
+        "a person who never saw the setting was refused as though they had said no: {said}"
+    );
+}
+
 /// **Nothing typed is answered before the machine is touched.**
 ///
 /// The order this pins is the one that was wrong first: the model used to be
