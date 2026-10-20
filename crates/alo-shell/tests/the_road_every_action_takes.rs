@@ -56,15 +56,20 @@ use alo_shortcuts::Action;
 /// **Every line here is a decision somebody has to make, not a fault to fix.**
 /// A chord bound to a surface that does not exist is worse than an unbound one:
 /// it teaches a person a road and then takes it away.
-const NO_ROAD_YET: [(Action, &str); 1] = [(
-    Action::Launcher,
-    "Which surface a launcher is has never been decided, and two could be meant: the Dock's \
-     *More apps* overview, which is specified to hold pinned and currently open applications \
-     rather than merely installed ones, and the alo Bar, which `docs/features.md` carries as a \
-     starred differentiator and which does not exist. `CLAUDE.md`: when the answer is not \
-     obvious, it is scope. Binding a chord to the wrong one of two surfaces would teach a \
-     person a road we then take away.",
-)];
+/// **Empty, and that is the point of it.**
+///
+/// It held `Action::Launcher` until 2026-10-20, with the reason that *which
+/// surface a launcher is* had never been decided. The owner decided it — the
+/// alo Bar, the field already on the Dock — and `crate::a_chord_opens_the_bar`
+/// is the arm, so the excuse went with the decision rather than outliving it.
+/// **That is this file's whole argument**: an entry here is a dated claim about
+/// something that does not exist, nothing about building the thing touches the
+/// claim, and `nothing_named_as_having_no_road_is_routed_after_all` is what
+/// makes it expire. It caught this one.
+///
+/// An addition needs a sentence of over eighty characters saying what decision
+/// is missing — not that the work is unfinished, which is true of everything.
+const NO_ROAD_YET: [(Action, &str); 0] = [];
 
 /// Every `.rs` file of this crate's own source.
 fn the_source() -> Vec<(PathBuf, String)> {
