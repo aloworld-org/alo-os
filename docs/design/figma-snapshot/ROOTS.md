@@ -27,6 +27,7 @@ refreshed  2026-10-07, by the development PC at the owner's instruction
 | `371:30134` | section | 11400×5960 | 02 — Set up your PC | yes, `70-28.xml` |
 | `372:30292` | section | 11400×3580 | 03 — Start working | yes, `70-28.xml` |
 | `383:26066` | section | 8500×8700 | 04 — AI choice | yes, `70-28.xml` |
+| `530:30834` | section | — | 04 — From a USB stick · The environment asks | **no**, added 2026-10-20 — ids below |
 | `479:28965` | section | 4480×1180 | Terminal · Rich results by default | yes, `479-28965.xml` |
 | `479:28967` | component | 990×320 | Terminal / View / Benchmark comparison | yes, `the-terminal-view-components.xml` |
 | `479:28986` | component | 990×320 | Terminal / View / File diff | yes, `the-terminal-view-components.xml` |
@@ -160,6 +161,41 @@ Preparation could not finish · `375:30307` 05b · Replace · Ready to restart �
 `370:30206` 06 · Install after restart · `370:30343` 06a · Download interrupted ·
 `375:30331` 06b · Replace · Installing · `375:30406` 06c · Installation details ·
 `370:30233` 07 · Installation complete · `375:30354` 07b · Replace · Complete
+
+### From a USB stick, the environment asking — 6, added 2026-10-20
+
+**The desktop lane's screens, recorded for the boundary rather than claimed** —
+the same footing as the installer frames above, and for the same reason: they
+draw them, and this index exists so a reader who cannot open Figma holds the
+ids.
+
+Section root `530:30834`, on page `70:28` of file `nDxyF5Ho9oC4RObjVzwBNJ`:
+
+`530:30835` S1 · Start from a stick · `530:30856` S2 · Try alo OS or install it ·
+`530:30877` S3 · Choose a network · `530:30898` S4 · Choose a disk ·
+`530:30919` S5 · Review · Erase this disk · `530:30940` S6 · No disk can be used
+
+All six are 1440×960 and cloned from `370:30118` (`03 · Keep Windows or replace
+it`), so they carry its component instances — `First start / Choice`
+(`370:30057`) and `First start / Action` (`370:30053`) — rather than new ones.
+
+**Why they exist.** ADR 0128: the environment asks for the network, and **no
+pre-shared key is written to the staging partition**. Nothing in the file asked
+anything from the environment before these — the desktop lane searched every
+top-level node and every section child, and what came back was `13 · Sign in /
+Password`, the pairing frames under `04 — AI choice`, the terminal settings, and
+nothing else. The owner adopted them on 2026-10-20.
+
+**Two of their sentences are promises rather than labels**, and a review should
+read them as such: *the stick you started from is not shown here and cannot be
+chosen*, and *your Wi-Fi password is never written to this computer's disk*. The
+second is ADR 0128's decision said to a person; the first is the rule at
+`alo_installing::disks`'s `Unsuitable::HoldsThisInstaller`.
+
+**Not exported.** There is no XML for this section yet, so a reader wanting the
+geometry asks the desktop lane or opens the file. The measurements off `S4 ·
+Choose a disk` were taken on 2026-10-20 and belong with whoever draws it; they
+are not here, because this file holds ids and not specifications.
 
 ### Retired 2026-10-06 — do not build
 
