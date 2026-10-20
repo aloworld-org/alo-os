@@ -55,8 +55,11 @@
 //! screen from the environment* — and until somebody has a photograph, this is
 //! not done whatever these tests say.
 
+#[cfg(unix)]
 use std::fs::File;
+#[cfg(unix)]
 use std::io;
+#[cfg(unix)]
 use std::os::unix::fs::FileExt as _;
 
 /// Where the kernel says how large the framebuffer is.
@@ -247,6 +250,18 @@ impl TheSurface {
 ///
 /// Whatever the write failed with. A framebuffer that is not there, or is not
 /// writable by this program, arrives here rather than as a wrong picture.
+///
+/// # Why this one function is gated and the rest of the file is not
+///
+/// `FileExt::write_all_at` is Unix's, and this crate **must cross-compile for
+/// Windows** — `alo-installer`'s tests pull it in, so the gate's Windows step
+/// builds it. Everything above is arithmetic and parsing and is portable; only
+/// the write is not, so only the write is gated.
+///
+/// *This was not gated when it was written, and the gate step added in #853
+/// caught it — on the author's own branch, in the hour after he skipped
+/// running that step locally on three changes in a row.*
+#[cfg(unix)]
 pub fn fill(at: &File, surface: TheSurface, grey: Grey) -> io::Result<()> {
     let row = surface.a_row_of(grey);
     for down in 0..surface.down() {

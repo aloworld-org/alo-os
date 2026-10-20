@@ -77,8 +77,13 @@ mod writing;
 
 pub use a_surface_to_draw_on::{
     Grey, NoSurface, TheSurface, WHERE_THE_DEPTH_IS, WHERE_THE_PIXELS_GO, WHERE_THE_SIZE_IS,
-    WHERE_THE_STRIDE_IS, fill,
+    WHERE_THE_STRIDE_IS,
 };
+// Gated with the item it names, which `alo-citing`'s own guard requires: a
+// `pub use` of a `cfg`-gated item, without the same `cfg`, is what stopped
+// `alo-portals` compiling for Windows from #635 to #839.
+#[cfg(unix)]
+pub use a_surface_to_draw_on::fill;
 pub use complaint::{Complaint, THE_LAST_LINES};
 pub use console::{ACTIVE, every_console, every_serial_line};
 pub use disk::{BY_ID, DiskName, NotADisk, NotAPartition, PartitionName};
@@ -102,8 +107,8 @@ pub use verifying::{Verified, Verifying};
 pub use what_display_there_is::{
     Glass, WhatDisplayThereIs, from_a_connector, is_connected, the_glass, the_mode,
 };
-    NotOffered, Offered, TheMedium, WhatToShow, what_may_be_offered,
 pub use which_disks_may_be_offered::{
+    NotOffered, Offered, TheMedium, WhatToShow, what_may_be_offered,
 };
 pub use why_there_is_no_network::WhyThereIsNoNetwork;
 pub use words::{EVERY_WORD, WordsError, declare_into, installing_words};
