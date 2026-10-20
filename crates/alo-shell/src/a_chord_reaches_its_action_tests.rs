@@ -120,19 +120,21 @@ fn every_action_this_release_declares_has_a_road() {
         }
     }
 
-    // **One named exception, and the assertion is equality rather than
-    // containment**, so the list cannot grow quietly and cannot shrink without
-    // somebody editing this line. `Action::Launcher`'s own rustdoc carries the
-    // reason in full: `Super`+`Space` is bound and *which surface the launcher
-    // is* has never been decided — the Dock's overview, which cannot start an
-    // application nobody has started, or the alo Bar, which does not exist.
-    // Guessing would teach a person a road we then take away, so it is the
-    // owner's question. **An exception that stops being true is a permission**,
-    // which is why removing it is a one-line change and why this fails if it
-    // ever does.
+    // **No exceptions, and the assertion is equality rather than containment**,
+    // so the list cannot grow quietly.
+    //
+    // **`Action::Launcher` was the one entry here until 2026-10-20.** Its
+    // rustdoc carried the reason: `Super`+`Space` was bound and *which surface
+    // the launcher is* had never been decided — the Dock's overview, which
+    // cannot start an application nobody has started, or the alo Bar. The
+    // owner settled it, in their words, *it is already on the dock*, and
+    // `crate::a_chord_opens_the_bar` is the arm. **The exception was a
+    // permission and it has been spent**, which is what this line being empty
+    // now means: nothing may be declared, bound, worded and translated with no
+    // arm in the chain, and there is no precedent here to cite.
     assert_eq!(
         without_a_road,
-        vec![Action::Launcher],
+        Vec::new(),
         "the set of declared actions that reach nothing has changed. Anything new here was \
          shipped, worded, translated and bound with no arm in the chain — build it, or if the \
          surface it needs is genuinely undecided, say so on the action and add it here"

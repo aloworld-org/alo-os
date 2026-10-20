@@ -238,14 +238,20 @@ impl Server {
         // borrows nothing.** One flag on the composer — no window, no places,
         // no clock — so the layers below never see it.
         //
-        // **This chord did nothing at all until 2026-10-14.** Measured: the
-        // shell's dispatch chain had zero arms for `Action::TheAgent`, against
-        // four for Settings. `Super`+`A` was shipped, declared, bound, worded
-        // and translated, and pressing it was indistinguishable from pressing
-        // an unbound key. `crate::a_chord_brings_up_the_agent`'s header has the
-        // judgement, and says what is still owed: the overlay that floats over
-        // the focused window is a promise of its own and is not this.
-        if self.a_chord_brings_up_the_agent(&shortcuts, chord) {
+        // **Neither of these chords did anything at all until recently.**
+        // Measured: the shell's dispatch chain had zero arms for
+        // `Action::TheAgent` on 2026-10-14, against four for Settings.
+        // `Super`+`A` was shipped, declared, bound, worded and translated, and
+        // pressing it was indistinguishable from pressing an unbound key.
+        // `Super`+`Space` was the same and lasted six days longer, because
+        // *which surface the launcher is* was undecided until the owner said
+        // on 2026-10-20 that it is the Bar already on the Dock.
+        //
+        // `crate::a_chord_opens_the_bar`'s header has the judgement, what the
+        // two chords share, and what is still owed: the overlay that floats
+        // over the focused window is a promise of its own and is not this, and
+        // the Bar's *finding* half is the next change rather than this one.
+        if self.a_chord_opens_the_bar(&shortcuts, chord) {
             self.shortcuts = Some(shortcuts);
             return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
         }

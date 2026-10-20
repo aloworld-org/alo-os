@@ -43,31 +43,32 @@ use crate::words::{self, Word};
 pub enum Action {
     /// Bring up the agent over whatever is in front of you.
     TheAgent,
-    /// Open the launcher.
+    /// Open the alo Bar — the field on the Dock whose prompt reads *Find,
+    /// open, or ask…*.
     ///
-    /// **The one action in this list that reaches nothing, because *which
-    /// surface* has never been decided.** `Super`+`Space` is bound to it and
-    /// has been since this list was written; measured 2026-10-14, the shell's
-    /// dispatch chain has no arm for it, and
-    /// `alo_shell::the_road_every_action_takes` names it as the single
-    /// exception rather than letting it hide among the others.
+    /// **It reached nothing from the day it was written until 2026-10-20**,
+    /// and this doc said so: `Super`+`Space` was bound, and *which surface the
+    /// launcher is* had never been decided. Two could have been meant.
     ///
-    /// Two surfaces could be meant and the difference matters to a person:
-    ///
-    /// - The Dock's **More apps** overview, which is built, has a search field
-    ///   and a grid, and is specified to hold applications **pinned or
-    ///   currently open** — `docs/features.md` says in as many words that
-    ///   applications *merely installed* are not there. A launcher that cannot
-    ///   start something you have not already started is not one.
+    /// - The Dock's **More apps** overview is built, has a search field and a
+    ///   grid, and is specified to hold applications **pinned or currently
+    ///   open** — `docs/features.md` says in as many words that applications
+    ///   *merely installed* are not there. A launcher that cannot start
+    ///   something you have not already started is not one, so it was never
+    ///   this.
     /// - **The alo Bar** — *ask, find, open, create or hand over, from one
-    ///   place* — which `docs/features.md` carries as a starred differentiator
-    ///   and which does not exist.
+    ///   place*, which `docs/features.md` carries as a starred differentiator.
     ///
-    /// So this is a question for the owner and not a lane's to answer:
-    /// `CLAUDE.md` is that when the answer is not obvious, it is scope, and
-    /// binding a chord to the wrong one of two surfaces would teach a person a
-    /// road we then take away. Named here rather than filed elsewhere, because
-    /// this is where somebody looking at the action will be.
+    /// **The owner settled it on 2026-10-20**, in their own words: *it is
+    /// already on the dock, we then need to add to open when the user clicks
+    /// windows + space*. The Bar's field is on the Dock, it draws, and it has
+    /// taken typing since the composer was built — what was missing was the
+    /// chord reaching it, which `alo_shell::a_chord_opens_the_bar` now is.
+    ///
+    /// **What is still owed, and a reader should not assume otherwise:** the
+    /// Bar opens and what is typed reaches the agent. Typing an application's
+    /// name does **not** open that application yet. That is the *finding* half
+    /// of the same promise and is the next change.
     Launcher,
     /// Open a terminal.
     ///
