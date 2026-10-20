@@ -56,7 +56,31 @@ The second step gates the third **deliberately**: nobody has ever watched the
 market open on a running machine, and a signature on something unseen is the
 thing this project exists not to do.
 
-## The Mac lane's loop
+## The two loops below are where things stood on 2026-10-19, not where they are
+
+**Dated, because the gate caught this page before anybody read it.** It was
+written at 19:30Z on 2026-10-19 and its one fault was a version written in the
+form `ROADMAP.md` refuses. Fixing that, a day later, meant reading the rest —
+and the two numbered lists had moved underneath it:
+
+| what the list says | what happened |
+|---|---|
+| Mac 1–2: declare 0.0.8, dispatch the image | both done; 0.0.8 is built and **unsigned**, and `next = "0.0.8"` is still declared |
+| Mac 3: Wi-Fi in the boot environment | **#847**, merged, and verified on the shipped candidate's own initramfs |
+| Mac 4: the network question | reshaped. The Windows half says it before the shrink (**#848**); the environment names which of three faults (**#854**). *Carrying* the network across the restart is **ADR 0128** and the owner's |
+| Mac 5–6: a local `--source-imgref`, verification before the shrink | **parked**, and said so: both only make sense on the removable-media road, which ADR 0023 names and does not specify |
+| Mac 7: `THE_AREA` and its refusal | **#851** — the refusal existed and said the wrong thing |
+| Mac 8: `btrfs filesystem resize` | still waiting on the layout change, Windows item 8 |
+| Windows 1: #844 | merged |
+| Windows 2: #845 | **never landed.** Closed as superseded by **#853**, which carries the same fixture fix and the gate step that stops it recurring |
+| Windows 3: boot 0.0.8 and press Applications | booted; the entry **could not be pressed** — pointer motion never reaches the compositor, so the market gate is still unverified |
+
+**The structure above this line is what the page is for** — the line between the
+lanes, the two decisions, the spine, the interfaces — and none of that has
+moved. The lists are a snapshot and are kept as one rather than rewritten,
+because a plan that quietly updates its own items is a plan nobody can date.
+
+## The Mac lane's loop, as of 2026-10-19
 
 In order. Each is startable without this lane, except where the spine says
 otherwise — and when the spine is waiting, the next item here is.
@@ -84,7 +108,7 @@ otherwise — and when the spine is waiting, the next item here is.
 8. **The `btrfs filesystem resize`** after `tidying`, once the geometry above
    lands.
 
-## The Windows lane's loop
+## The Windows lane's loop, as of 2026-10-19
 
 1. **#844** — wireless in the image, and ADR 0009's missing test. In its gate.
 2. **#845** — the Windows-only test that could not compile. In its gate.
@@ -110,7 +134,8 @@ otherwise — and when the spine is waiting, the next item here is.
    different clothes.
 8. **The layout change** — `Windows | alo OS | area`, for the Mac lane's
    item 8.
-9. **Fast Startup read differently by two builds on identical input.** v0.0.6
+9. **Fast Startup read differently by two builds on identical input.**
+   Release 0.0.6 (2026-10-07)
    said *could not be found out* where the 2026-10-08 candidate says *on*, with
    the same registry state. Unexplained, and a behaviour change nobody intended
    is worth one look.
