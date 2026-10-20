@@ -1024,7 +1024,11 @@ fn every_word_is_in_the_vocabulary_alo_saying_collects() {
                 .and(
                     "holding",
                     "another operating system and about 340 GB of files",
-                ),
+                )
+                .and("stick", "SanDisk Ultra")
+                .and("keys", "a  z  @")
+                .and("how_far", "68%")
+                .and("how_long", "two minutes"),
         );
         assert!(!said.is_a_bug(), "{} is not collected", word.named());
     }

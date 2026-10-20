@@ -694,8 +694,330 @@ pub const INSTALL_FROM_WINDOWS_INSTEAD: Word = Word::saying(
      have room beside it.",
 );
 
+// ---------------------------------------------------------------------------
+// The keyboard, which comes before anything is typed. `530:30876`.
+//
+// **It is first because typing presupposes it.** The installed system decided
+// the same thing for the same reason — its language and keyboard sheet is the
+// first screen at first start — and here it is sharper: the two things this
+// environment asks a person to type are a network password and a disk's own
+// name, and both fail silently and identically on the wrong layout.
+// ---------------------------------------------------------------------------
+
+/// S0's eyebrow.
+pub const BEFORE_ANYTHING_IS_TYPED: Word = Word::saying(
+    "installing.before-anything-typed",
+    "BEFORE ANYTHING IS TYPED",
+)
+.noting("The quiet label above the keyboard question. It says why this screen comes first.");
+
+/// S0's question.
+pub const WHICH_KEYBOARD: Word = Word::saying(
+    "installing.which-keyboard",
+    "Which keyboard\nare you using?",
+)
+.noting(
+    "The question on the first screen. *Using* rather than *have*: a person may be installing on \
+     somebody else's computer with their own keyboard plugged in. The line break is the \
+     design's.",
+);
+
+/// S0's sentence under the question.
+pub const WHY_THE_KEYBOARD_COMES_FIRST: Word = Word::saying(
+    "installing.why-the-keyboard-first",
+    "You will type a network password and the name of a disk. Both have to be exact, so the \
+     keyboard has to be right first",
+)
+.noting(
+    "Under the question. It names the two things that will be typed, because a person asked \
+     about their keyboard before anything else has happened deserves to know why they are being \
+     asked. *Exact* is the word that matters: neither is checked for near-enough.",
+);
+
+/// S0's check, which is the card rather than a list.
+pub const PRESS_THESE_TO_CHECK: Word = Word::saying(
+    "installing.press-these-to-check",
+    "Press the keys shown to check: {keys}",
+)
+.noting(
+    "Under the layout this screen thinks is right. {keys} are characters, not words, and are \
+     never translated — they are chosen because they move between layouts. **This card asks the \
+     keyboard to prove itself rather than asking the person to recognise a name**: somebody who \
+     cannot tell one layout from another in a list can tell whether what appeared matches what \
+     is printed on their key.",
+);
+
+/// S0's other choice.
+pub const SOMETHING_ELSE: Word = Word::saying("installing.something-else", "Something else")
+    .noting(
+        "The second choice on the keyboard screen, which opens the full list. Short on purpose: \
+         it is a way out of a guess, not a description.",
+    );
+
+/// What that opens.
+pub const EVERY_LAYOUT_THIS_COMPUTER_KNOWS: Word = Word::saying(
+    "installing.every-layout",
+    "Choose from every layout this computer knows",
+)
+.noting("Under *Something else*.");
+
+/// S0's line under the cards.
+pub const IF_IT_DOES_NOT_MATCH: Word = Word::saying(
+    "installing.if-it-does-not-match",
+    "If what you type below does not match, choose another layout",
+)
+.noting(
+    "The quiet line on the keyboard screen. It tells a person what to do about a result rather \
+     than only what the screen is for.",
+);
+
+// ---------------------------------------------------------------------------
+// Writing a stick, which the owner ruled on 2026-10-20 that alo OS does
+// itself as well as publishing an image a person writes with their own tool.
+// `530:30904` to `530:30988`.
+//
+// **The only road in this product that erases a device nobody chose for alo
+// OS.** `docs/features.md` says so in the line that adds it, and every
+// sentence here is written on that footing: what is offered, what is on it,
+// what goes, and nothing written until the person types that device's name.
+// ---------------------------------------------------------------------------
+
+/// S7's eyebrow.
+pub const WRITE_A_STICK: Word = Word::saying("installing.write-a-stick", "WRITE A STICK")
+    .noting("The quiet label above the question that chooses a stick to write.");
+
+/// S7's question.
+pub const WHICH_STICK: Word = Word::saying(
+    "installing.which-stick",
+    "Which stick should\nalo OS write?",
+)
+.noting(
+    "The question on the screen that chooses a device to write. *Stick* is the ordinary word for \
+     a USB memory device in English; use whatever ordinary word a reader of your language would \
+     use, not a technical one.",
+);
+
+/// S7's sentence under the question.
+pub const THE_STICK_WILL_BE_ERASED: Word = Word::saying(
+    "installing.the-stick-will-be-erased",
+    "Everything on the stick you choose will be erased. Nothing is changed until you type its \
+     name",
+)
+.noting(
+    "Under the question. Both halves are promises: the first is what happens, the second is when \
+     — and the second is the same consent the disk takes, in the same words. **Keep \
+     *everything*.** There is no road that writes a stick and keeps what was on it.",
+);
+
+/// S7's line under the devices.
+pub const ONLY_REMOVABLE_DEVICES: Word = Word::saying(
+    "installing.only-removable-devices",
+    "Only removable devices are shown. The disk this computer runs on is not one of them",
+)
+.noting(
+    "The quiet line under the list of sticks. It explains an absence — somebody looking for \
+     their computer's own disk will not find it — and says why, which is that this screen makes \
+     something you carry to another machine.",
+);
+
+/// S8's heading, which names the device rather than the act.
+pub const THIS_ERASES_THE_STICK: Word =
+    Word::saying("installing.this-erases-the-stick", "This erases\n{stick}").noting(
+        "The heading on the review before a stick is written. {stick} is the device's own name \
+         as a person reads it — *SanDisk Ultra* — and is not translated. Present tense and \
+         active, as on the disk's own review: not *will erase*.",
+    );
+
+/// What goes from it.
+pub const WHAT_GOES_FROM_THE_STICK: Word = Word::saying(
+    "installing.what-goes-from-the-stick",
+    "{holding} on this stick will be gone, and cannot be brought back",
+)
+.noting(
+    "Under the heading on the stick's review. {holding} is what is on it, already written out — \
+     *About 4 GB of files*. **Keep the second clause**: it is the sentence, and the person who \
+     misreads the first half is who this screen exists for.",
+);
+
+/// S8's instruction.
+pub const TYPE_THE_STICKS_NAME: Word = Word::saying(
+    "installing.type-the-sticks-name",
+    "Type the name of the stick to continue",
+)
+.noting("The heading of the field that confirms. Matching is exact.");
+
+/// What a stick's review promises is untouched.
+pub const ONLY_THE_STICK_IS_WRITTEN: Word = Word::saying(
+    "installing.only-the-stick-is-written",
+    "Nothing on this computer is touched. Only the stick is written",
+)
+.noting(
+    "Under *What stays* on the stick's review. Somebody about to let a program erase something \
+     is wondering what else it can reach, and this is the answer.",
+);
+
+/// S8's action, which names what it does.
+pub const ERASE_AND_WRITE: Word = Word::saying("installing.erase-and-write", "Erase and write")
+    .noting(
+        "The button on the stick's review. It names what it does rather than saying *Continue*, \
+         for the reason *Erase and install* does: a button that erases should say so on its \
+         face.",
+    );
+
+/// S9's eyebrow.
+pub const WRITING: Word = Word::saying("installing.writing", "WRITING")
+    .noting("The quiet label while a stick is being written.");
+
+/// S9's heading.
+pub const WRITING_TO_THE_STICK: Word = Word::saying(
+    "installing.writing-to-the-stick",
+    "Writing alo OS\nto {stick}",
+)
+.noting(
+    "The heading while the write runs. {stick} is the device's own name and is not translated. \
+     *alo OS* is the product's name and is not either.",
+);
+
+/// The one thing a person must not do.
+pub const LEAVE_THE_STICK_IN: Word = Word::saying(
+    "installing.leave-the-stick-in",
+    "Leave the stick in until this finishes. Taking it out now leaves it unusable",
+)
+.noting(
+    "Under the heading while writing. It is the only instruction on this screen and the only \
+     thing a person can get wrong here, which is why it is said where they are looking rather \
+     than in a warning they already dismissed.",
+);
+
+/// What was checked before anything was written.
+pub const CHECKED_BEFORE_IT_WAS_WRITTEN: Word = Word::saying(
+    "installing.checked-before-written",
+    "Checked before it was written",
+)
+.noting(
+    "The heading of the first card while writing. What was checked is that what is being written \
+     is a genuine alo OS; the sentence under it says so. Do not name how it was checked.",
+);
+
+/// And what that means.
+pub const ONLY_A_GENUINE_ALO_OS: Word = Word::saying(
+    "installing.only-a-genuine-alo-os",
+    "Only a genuine alo OS is written to a stick",
+)
+.noting(
+    "Under *Checked before it was written*. **Do not name the machinery**: not the signature, \
+     not the key, not where it came from. A person needs to know that it was checked, and \
+     learning the names of the tools tells them only that something complicated happened.",
+);
+
+/// How far it has got.
+pub const HOW_FAR_THE_WRITE_HAS_GOT: Word =
+    Word::saying("installing.how-far-the-write", "Writing  \u{b7}  {how_far}").noting(
+        "The second card while writing. {how_far} is already written out as a percentage and is \
+         not translated. The separator is a middle dot with two spaces each side, as on every \
+         other row in this product.",
+    );
+
+/// And roughly how long is left.
+pub const ABOUT_HOW_LONG_IS_LEFT: Word =
+    Word::saying("installing.about-how-long", "About {how_long} left").noting(
+        "Under the progress. {how_long} is already written out — *two minutes* — and **about** \
+         must be kept: the number is an estimate and saying it exactly would be claiming \
+         something this program does not know.",
+    );
+
+/// What a person may do meanwhile.
+pub const KEEP_USING_THIS_COMPUTER: Word = Word::saying(
+    "installing.keep-using-this-computer",
+    "You can keep using this computer while it writes",
+)
+.noting(
+    "The quiet line while writing. It is said because a person watching a progress bar on their \
+     own working computer does not otherwise know whether they are allowed to go away.",
+);
+
+/// S10's eyebrow.
+pub const READY: Word = Word::saying("installing.ready", "READY")
+    .noting("The quiet label when a stick has been written and nothing is left to do.");
+
+/// S10's heading.
+pub const THE_STICK_IS_READY: Word =
+    Word::saying("installing.the-stick-is-ready", "The stick is ready").noting(
+        "The heading when the write has finished. One short line: there is nothing to explain.",
+    );
+
+/// What to do with it.
+pub const TAKE_IT_TO_THE_OTHER_COMPUTER: Word = Word::saying(
+    "installing.take-it-to-the-other-computer",
+    "Take it to the computer you want alo OS on, and start that computer from it",
+)
+.noting(
+    "Under the heading. It says the next step in the person's own terms — carrying a thing to a \
+     machine — rather than naming what the machine does with it.",
+);
+
+/// S10's first choice, which is S1's own action.
+pub const START_THIS_PC_FROM_IT: Word = Word::saying(
+    "installing.start-this-pc-from-it",
+    "Start this PC from it instead",
+)
+.noting(
+    "The first of two choices once a stick is written. *Instead* matters: it is an alternative \
+     to carrying it elsewhere, for somebody who has changed their mind. *PC* is the ordinary \
+     word for the machine in front of them.",
+);
+
+/// What that does.
+pub const RESTART_AND_START_FROM_IT: Word = Word::saying(
+    "installing.restart-and-start-from-it",
+    "Restart this computer and start from the stick you just wrote",
+)
+.noting("Under *Start this PC from it instead*.");
+
+/// S10's second choice.
+pub const WRITE_ANOTHER: Word = Word::saying("installing.write-another", "Write another")
+    .noting("The second choice once a stick is written, for somebody making more than one.");
+
+/// What that does.
+pub const CHOOSE_ANOTHER_STICK: Word = Word::saying(
+    "installing.choose-another-stick",
+    "Choose another stick to write",
+)
+.noting("Under *Write another*.");
+
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 66] = [
+pub const EVERY_WORD: [Word; 97] = [
+    BEFORE_ANYTHING_IS_TYPED,
+    WHICH_KEYBOARD,
+    WHY_THE_KEYBOARD_COMES_FIRST,
+    PRESS_THESE_TO_CHECK,
+    SOMETHING_ELSE,
+    EVERY_LAYOUT_THIS_COMPUTER_KNOWS,
+    IF_IT_DOES_NOT_MATCH,
+    WRITE_A_STICK,
+    WHICH_STICK,
+    THE_STICK_WILL_BE_ERASED,
+    ONLY_REMOVABLE_DEVICES,
+    THIS_ERASES_THE_STICK,
+    WHAT_GOES_FROM_THE_STICK,
+    TYPE_THE_STICKS_NAME,
+    ONLY_THE_STICK_IS_WRITTEN,
+    ERASE_AND_WRITE,
+    WRITING,
+    WRITING_TO_THE_STICK,
+    LEAVE_THE_STICK_IN,
+    CHECKED_BEFORE_IT_WAS_WRITTEN,
+    ONLY_A_GENUINE_ALO_OS,
+    HOW_FAR_THE_WRITE_HAS_GOT,
+    ABOUT_HOW_LONG_IS_LEFT,
+    KEEP_USING_THIS_COMPUTER,
+    READY,
+    THE_STICK_IS_READY,
+    TAKE_IT_TO_THE_OTHER_COMPUTER,
+    START_THIS_PC_FROM_IT,
+    RESTART_AND_START_FROM_IT,
+    WRITE_ANOTHER,
+    CHOOSE_ANOTHER_STICK,
     FROM_A_STICK,
     TRY_OR_INSTALL,
     NOTHING_HAS_BEEN_CHANGED_YET,
@@ -845,14 +1167,18 @@ mod tests {
         // so each one costs them a note, and a fourth appearing quietly is a
         // translator guessing. Adding one is a line here and a sentence in its
         // note saying what fills it.
-        const THE_GAPS: [&str; 4] = [
+        const THE_GAPS: [&str; 8] = [
             // A device's own name, as the machine reports it. Never translated.
             "disk", // How large a disk is, already written out: *1 TB*.
             "size", // How much of a disk is in use, already written out: *340 GB*.
             "files",
             // What is on a disk, already said in words by this crate:
             // *Windows and about 340 GB of files*.
-            "holding",
+            "holding", // A removable device's own name: *SanDisk Ultra*.
+            "stick",   // The characters a person presses to prove their keyboard.
+            "keys",    // How far a write has got, already a percentage.
+            "how_far", // How long is left, already written out: *two minutes*.
+            "how_long",
         ];
         for word in EVERY_WORD {
             assert!(word.note().is_some(), "{}", word.named());
@@ -892,7 +1218,11 @@ mod tests {
     /// fails here.
     #[test]
     fn nothing_here_names_the_machinery_a_key_or_a_signature() {
-        const MAY_SAY_PASSWORD: [&str; 2] = [
+        const MAY_SAY_PASSWORD: [&str; 3] = [
+            // *You will type a network password and the name of a disk* —
+            // said on the screen that comes before anything is typed, which
+            // exists because that password has to be exact.
+            "installing.why-the-keyboard-first",
             // *Your password is used here and kept nowhere* — said while
             // asking for it.
             "installing.why-a-network",
@@ -940,11 +1270,24 @@ mod tests {
                 "initramfs",
                 "kernel",
             ] {
-                assert!(
-                    !said.contains(forbidden),
-                    "{} says \"{forbidden}\"",
-                    word.named()
-                );
+                // **Whole words, not substrings.** This read `contains` until
+                // 2026-10-20, when the first sentence in this crate to say
+                // *keyboard* failed on `key` — and *keyboard* is the one word
+                // the screen before every typed thing cannot avoid. The rule
+                // is about naming our machinery, and a word that merely
+                // contains those letters names nothing.
+                //
+                // Nobody had noticed because nothing here had ever said
+                // keyboard, monkey or keystroke. The same shape as the market
+                // fault and the `the_bar:` guard: a match that is right about
+                // the letters and wrong about the thing.
+                let says_it = if forbidden.contains(' ') {
+                    said.contains(forbidden)
+                } else {
+                    said.split(|c: char| !c.is_alphanumeric())
+                        .any(|one| one == forbidden)
+                };
+                assert!(!says_it, "{} says \"{forbidden}\"", word.named());
             }
         }
     }
