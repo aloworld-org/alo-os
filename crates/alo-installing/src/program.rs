@@ -204,11 +204,25 @@ impl Program {
     #[must_use]
     pub fn arguments(&self) -> Vec<String> {
         match self {
+            // **`--bytes`, and three columns a person reads rather than a
+            // program.** `SIZE` and `MODEL` are how a disk is *named* to
+            // somebody choosing one — `docs/features.md`: *it says what is on
+            // each disk, in words, before anybody chooses one* — and `FSUSED`
+            // is how much of it is theirs. Without them the only honest thing
+            // to show is `/dev/nvme0n1`, which is the fault that line exists to
+            // end: two disks of the same size from the same maker are ordinary
+            // to own, and a device path tells nobody which is which.
+            //
+            // `--bytes` because a size is arithmetic here, not a label:
+            // `931.5G` cannot be compared against the least disk alo OS needs,
+            // and rounding it for a person is this product's own job and not
+            // `lsblk`'s.
             Self::ListingTheDisks => [
                 "--json",
                 "--paths",
+                "--bytes",
                 "--output",
-                "NAME,TYPE,RO,MOUNTPOINTS,PARTTYPE,LABEL",
+                "NAME,TYPE,RO,MOUNTPOINTS,PARTTYPE,LABEL,SIZE,MODEL,FSUSED",
             ]
             .map(str::to_owned)
             .to_vec(),

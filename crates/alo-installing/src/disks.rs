@@ -82,8 +82,8 @@ pub const ANOTHER_SYSTEMS: [&str; 5] = [
     "af9b60a0-1431-4f62-bc68-3311714a69ad",
 ];
 
-/// Everything `lsblk --json --paths --output NAME,TYPE,RO,MOUNTPOINTS,PARTTYPE,LABEL`
-/// said.
+/// Everything `lsblk --json --paths --bytes --output
+/// NAME,TYPE,RO,MOUNTPOINTS,PARTTYPE,LABEL,SIZE,MODEL,FSUSED` said.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Disks {
     /// Every device at the top of the tree.
@@ -112,6 +112,25 @@ struct Device {
     /// Partitions and anything else stacked on it.
     #[serde(default)]
     children: Vec<Device>,
+    /// How many bytes it holds, with `--bytes` asked for.
+    ///
+    /// **Optional, and that is not defensive.** A device `lsblk` cannot size
+    /// — an empty card reader is the ordinary one — reports null rather than
+    /// nought, and the two mean different things to somebody choosing a disk:
+    /// *nothing in it* and *nought bytes* are not the same sentence.
+    #[serde(default)]
+    size: Option<u64>,
+    /// What the maker calls it, where the device says.
+    ///
+    /// **This is how a disk is named to a person**, and it is absent more often
+    /// than one would like — a virtual disk, a card reader and some USB
+    /// bridges report nothing. `crate::which_disks_may_be_offered` falls back
+    /// to the device path and says so rather than inventing a name.
+    #[serde(default)]
+    model: Option<String>,
+    /// How many bytes of the filesystem on it are used, where there is one.
+    #[serde(default)]
+    fsused: Option<u64>,
 }
 
 /// The partition number at the end of a device's name, or [`None`].
@@ -129,6 +148,23 @@ fn its_number(name: &str) -> Option<u32> {
         .rev()
         .collect();
     digits.parse().ok()
+}
+
+/// One whole disk, as the machine described it.
+///
+/// **Not a judgement about it.** Whether it may be offered to a person, what
+/// they read it as, and what is on it are
+/// `crate::which_disks_may_be_offered`'s — this is only what was listed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AWholeDisk {
+    /// Its whole path, which is what a program opens.
+    pub name: String,
+    /// What the maker calls it, where the device says anything at all.
+    pub model: Option<String>,
+    /// How many bytes it holds.
+    pub bytes: Option<u64>,
+    /// How many bytes the filesystems on it are using.
+    pub used: Option<u64>,
 }
 
 /// Whether this install may write over the system already on the disk.
@@ -244,6 +280,38 @@ impl Disks {
             }
         }
         None
+    }
+
+    /// Every whole disk the machine listed, as somebody choosing one needs it.
+    ///
+    /// **Facts, in the order the machine gave them, and no judgement.** Which
+    /// of these a person may be offered, what each is called and what is on it
+    /// belong to `crate::which_disks_may_be_offered`, because they are
+    /// sentences and this file may not word one. What is here is only what the
+    /// lister said.
+    ///
+    /// **A disk's used space is the sum of its partitions'.** A whole disk has
+    /// no filesystem of its own, so the lister reports nothing for it on every
+    /// machine; the number a person recognises — *about 340 GB of files* — is
+    /// what the partitions on it hold. A partition the lister could not measure
+    /// contributes nothing rather than nought, and the sum is [`None`] when
+    /// none of them could be measured, because *nothing on it* and *we could
+    /// not tell* are different sentences.
+    #[must_use]
+    pub fn every_whole_disk(&self) -> Vec<AWholeDisk> {
+        self.blockdevices
+            .iter()
+            .filter(|device| device.kind == "disk")
+            .map(|device| {
+                let measured: Vec<u64> = device.children.iter().filter_map(|p| p.fsused).collect();
+                AWholeDisk {
+                    name: device.name.clone(),
+                    model: device.model.clone().filter(|it| !it.trim().is_empty()),
+                    bytes: device.size,
+                    used: (!measured.is_empty()).then(|| measured.iter().sum()),
+                }
+            })
+            .collect()
     }
 
     /// Whether the device at this path may be written by a whole-disk install.

@@ -348,8 +348,98 @@ pub const NOT_THE_SPACE_THE_INSTALLER_MADE: Word = Word::saying(
      throughout these sentences; do not use a word for a partition or a volume.",
 );
 
+// ---------------------------------------------------------------------------
+// Asking which disk. The person chose nothing before the restart, because
+// there was no Windows to choose it on — see `crate::which_disks_may_be_offered`.
+// ---------------------------------------------------------------------------
+
+/// What a person reads a disk as, when the machine says both.
+pub const A_DISK_AND_ITS_SIZE: Word =
+    Word::saying("installing.a-disk-and-its-size", "{disk}  ·  {size}").noting(
+        "{disk} is what the maker calls the disk — Samsung SSD 870 EVO, WD Elements — and is not \
+         translated. {size} is already written out, for example 1 TB, and is not translated \
+         either; the unit is the one the disk was sold in. The separator is a middle dot with \
+         two spaces each side. Translate nothing here; the line exists so the two parts are \
+         joined the same way in every language.",
+    );
+
+/// A disk with nothing on it.
+pub const NOTHING_IS_ON_IT: Word = Word::saying(
+    "installing.nothing-is-on-it",
+    "Empty. Nothing would be lost",
+)
+.noting(
+    "Said under a disk a person may choose, when the machine found no filesystem on it at all. \
+     Two short sentences on purpose: the first is what the disk is, the second is what choosing \
+     it costs them. Do not merge them into a clause.",
+);
+
+/// A disk holding another system, and how much of it is in use.
+pub const ANOTHER_SYSTEM_AND_FILES: Word = Word::saying(
+    "installing.another-system-and-files",
+    "Holds another operating system and about {files} of files",
+)
+.noting(
+    "Said under a disk a person may choose, when choosing it would erase what is on it. {files} \
+     is already written out, for example 340 GB, and is not translated. 'About' matters and must \
+     be kept: the number is what the machine reports in use and is not exact to the byte. Do not \
+     name the other system — this environment cannot tell which one it is, and a wrong name here \
+     is read as certainty.",
+);
+
+/// A disk holding something, where how much could not be measured.
+pub const SOMETHING_IS_ON_IT: Word = Word::saying(
+    "installing.something-is-on-it",
+    "Holds another operating system. Everything on this disk would be lost",
+)
+.noting(
+    "Said instead of the sentence above when the machine could not measure how much is in use. \
+     It says less rather than guessing a number. Keep 'everything', because the person is being \
+     told the whole disk goes.",
+);
+
+/// The disk this installer is running from.
+pub const THAT_IS_THIS_INSTALLER: Word = Word::saying(
+    "installing.that-is-this-installer",
+    "This is the disk alo OS is being installed from, so it cannot be installed onto",
+)
+.noting(
+    "Said beside a disk a person is not offered. They are most likely looking at the USB stick \
+     they started this computer from. The sentence says why rather than hiding the disk, because \
+     a disk missing from a list teaches nobody anything.",
+);
+
+/// A disk something else is using.
+pub const THAT_DISK_IS_IN_USE: Word = Word::saying(
+    "installing.that-disk-is-in-use",
+    "Something on this computer is using this disk, so it cannot be written",
+)
+.noting(
+    "Said beside a disk a person is not offered: it is read-only, or something on it is open. \
+     Do not name the thing using it — this environment does not know what it is.",
+);
+
+/// No labelled area anywhere, so which disk this installer is on is unknown.
+pub const CANNOT_TELL_WHICH_DISK_THIS_IS: Word = Word::saying(
+    "installing.cannot-tell-which-disk-this-is",
+    "This installer cannot tell which disk it is running from, so it will not erase anything",
+)
+.noting(
+    "Said beside a disk holding another system, when the medium alo OS is being installed from \
+     carries no mark identifying it. Erasing could destroy the installer itself half way through \
+     installing, so only disks with nothing on them are offered. The sentence is a boundary and \
+     not a fault: nothing is wrong with the person's computer.",
+);
+
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 31] = [
+pub const EVERY_WORD: [Word; 38] = [
+    A_DISK_AND_ITS_SIZE,
+    NOTHING_IS_ON_IT,
+    ANOTHER_SYSTEM_AND_FILES,
+    SOMETHING_IS_ON_IT,
+    THAT_IS_THIS_INSTALLER,
+    THAT_DISK_IS_IN_USE,
+    CANNOT_TELL_WHICH_DISK_THIS_IS,
     NO_NETWORK_CARD,
     NOTHING_CONNECTED,
     STARTING,
@@ -454,13 +544,29 @@ mod tests {
     /// **Every word carries a note, and the only gap anywhere is the disk.**
     #[test]
     fn every_word_carries_a_note_and_its_only_gap_is_the_disk() {
+        // **Three gaps, named, and nothing else.** It was one until 2026-10-20,
+        // when the environment gained the question *which disk?* — asking it
+        // means naming a disk the way a person bought it and saying what is on
+        // it, and neither fits in `{disk}`, which is a device's own name.
+        //
+        // The list is written out rather than relaxed to *any gap*: a gap is
+        // the one thing in a sentence a translator cannot see the meaning of,
+        // so each one costs them a note, and a fourth appearing quietly is a
+        // translator guessing. Adding one is a line here and a sentence in its
+        // note saying what fills it.
+        const THE_GAPS: [&str; 3] = [
+            // A device's own name, as the machine reports it. Never translated.
+            "disk", // How large a disk is, already written out: *1 TB*.
+            "size", // How much of a disk is in use, already written out: *340 GB*.
+            "files",
+        ];
         for word in EVERY_WORD {
             assert!(word.note().is_some(), "{}", word.named());
             for gap in word.phrase().unwrap().source().gaps() {
-                assert_eq!(
-                    gap,
-                    "disk",
-                    "{} has a gap other than the disk",
+                assert!(
+                    THE_GAPS.contains(&gap.as_str()),
+                    "{} has the gap {{{gap}}}, which is not one of {THE_GAPS:?} — add it there \
+                     with what fills it, or word the sentence without it",
                     word.named()
                 );
             }

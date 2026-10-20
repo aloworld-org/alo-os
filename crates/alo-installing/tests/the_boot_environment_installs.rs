@@ -1011,7 +1011,17 @@ fn every_word_is_in_the_vocabulary_alo_saying_collects() {
     let everything = alo_saying::everything_this_machine_can_say().expect("the vocabulary");
     let strings = Strings::of(everything);
     for word in alo_installing::EVERY_WORD {
-        let said = strings.say(&word.key(), &alo_strings::Filling::of("disk", "virtio-a"));
+        // **Every gap filled, not only the disk's.** A sentence left with an
+        // unfilled gap answers `is_a_bug`, so filling one gap and asking about
+        // three would report the two new ones as uncollected when what is
+        // wrong is the question. `crate::words`' own test holds the list of
+        // gaps that may exist.
+        let said = strings.say(
+            &word.key(),
+            &alo_strings::Filling::of("disk", "virtio-a")
+                .and("size", "1 TB")
+                .and("files", "340 GB"),
+        );
         assert!(!said.is_a_bug(), "{} is not collected", word.named());
     }
 }

@@ -968,7 +968,10 @@ installer.will.shrink-windows	Windows on {volume} is made {area} GB smaller. You
 installer.will.windows-does-not-get-it-back	Windows does not get that space back while alo OS is on this computer
 installer.will.windows-lends-the-area	Windows lends {area} GB while alo OS is installed, and gets it back afterwards
 installer.windows-disk-not-supported	The disk {disk} that Windows is on is laid out in an older way this installer does not support, so nothing was changed
+installing.a-disk-and-its-size	{disk}  ·  {size}
+installing.another-system-and-files	Holds another operating system and about {files} of files
 installing.cannot-be-written	The disk you chose, {disk}, is in use or cannot be written to, so nothing was changed
+installing.cannot-tell-which-disk-this-is	This installer cannot tell which disk it is running from, so it will not erase anything
 installing.checking-it-is-genuine	Checking over the internet that this download is a genuine alo OS
 installing.checking-the-disk	Checking that {disk} is safe to install onto
 installing.choice-not-understood	The disk chosen for alo OS could not be understood, so nothing was changed
@@ -990,11 +993,15 @@ installing.not-installed	alo OS could not be installed onto {disk}. That disk ma
 installing.not-reachable	alo OS could not be downloaded, so nothing was changed. Check that this computer is connected to the internet by a network cable, then restart to try again
 installing.not-the-space-the-installer-made	The space for alo OS on the disk {disk} is not there, so nothing was changed. Start Windows and run the alo OS installer again
 installing.nothing-connected	No network cable is plugged in, so nothing was changed and alo OS was not installed. Plug in a network cable, then restart to try again
+installing.nothing-is-on-it	Empty. Nothing would be lost
 installing.reading-the-choice	Reading which disk you chose before the restart
 installing.replacing-what-is-there	Everything on {disk} is being replaced, including the system that was on it. This is the road you agreed to twice, and there is no way back from here
 installing.restart-when-ready	You can turn this computer off or restart it now
+installing.something-is-on-it	Holds another operating system. Everything on this disk would be lost
 installing.starting	alo OS is being installed on this computer. Each step is written here as it happens
 installing.still-installing	Still installing alo OS. Leave the computer on
+installing.that-disk-is-in-use	Something on this computer is using this disk, so it cannot be written
+installing.that-is-this-installer	This is the disk alo OS is being installed from, so it cannot be installed onto
 installing.tidied	This computer now starts alo OS, with Windows behind it, and the installer's space is back
 installing.tidy-entries-not-read	The list of systems this computer can start could not be read, so it was left as it is
 installing.tidy-not-whole	alo OS is installed and starts. Some tidying up could not be finished, and you can do it      from alo OS once it has started
