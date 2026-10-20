@@ -129,6 +129,23 @@ jobs:
           cargo test --release --locked -p alo-installer
           --test the_installer_starts_on_a_clean_windows
 
+      # **The reads, run against this Windows.** `tests/reading_this_windows.rs`
+      # has existed since 2026-09-15 and nothing has ever run it: it is
+      # `#![cfg(windows)]`, the gate has no Windows, and this workflow built the
+      # installer without running it. So its claim — *the PowerShell scripts
+      # parse, the cmdlets exist, the JSON is the shape `alo-installer` reads* —
+      # was a hand measurement from one day, and covered nothing added since.
+      #
+      # It changes nothing by construction: every program goes through a machine
+      # that refuses to start one that changes anything, which is the first
+      # thing the test itself asserts. Some answers need an administrator and
+      # this runner is not one; *could not be found out* is the behaviour under
+      # test rather than a failure, because not known is never read as off.
+      - name: Every check is answered by this Windows, and nothing is changed
+        run: >
+          cargo test --release --locked -p alo-installer
+          --test reading_this_windows -- --nocapture
+
       - name: Put the candidate together
         shell: pwsh
         run: |

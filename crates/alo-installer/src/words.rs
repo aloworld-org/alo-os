@@ -376,6 +376,56 @@ pub const WILL_RESTART_KEEPING_WINDOWS: Word = Word::saying(
      Windows starts as it did before. alo OS is the product's name and is not translated.",
 );
 
+/// A wired connection is up, which is what the staged environment can use.
+pub const FOUND_A_CABLE: Word = Word::saying(
+    "installer.found.a-cable",
+    "This computer is connected by cable, which is what the next step needs",
+)
+.noting(
+    "Said before anything on the disk is changed. \"By cable\" means wired ethernet, as \
+     opposed to Wi-Fi.",
+);
+
+/// No wired connection is up, and there is a wireless card.
+///
+/// **The sentence this whole reading exists for.** It names the consequence
+/// rather than the state, because the state means nothing to a person: after
+/// the restart there is nowhere to choose a network, and the disk has already
+/// been shrunk by then.
+pub const FOUND_ONLY_WIRELESS: Word = Word::saying(
+    "installer.found.only-wireless",
+    "This computer is on Wi-Fi and has no cable connected. After the restart, alo OS is \
+     downloaded over a wired connection only — there is no way to choose a Wi-Fi network \
+     then. Connect a cable before continuing",
+)
+.noting(
+    "Said before anything on the disk is changed, so the person can still act on it. \
+     \"A cable\" is wired ethernet. Keep the instruction at the end, as an instruction. alo \
+     OS is the product's name and is not translated.",
+);
+
+/// Nothing is up, wired or wireless.
+pub const FOUND_NO_NETWORK: Word = Word::saying(
+    "installer.found.no-network",
+    "This computer is not connected to any network. After the restart, alo OS is downloaded \
+     over a wired connection only. Connect a cable before continuing",
+)
+.noting(
+    "Said before anything on the disk is changed. \"A cable\" is wired ethernet. alo OS is \
+     the product's name and is not translated.",
+);
+
+/// How this computer reaches a network could not be read.
+pub const FOUND_NETWORK_NOT_READ: Word = Word::saying(
+    "installer.found.network-not-read",
+    "Whether this computer has a cable connected could not be found out. After the restart, \
+     alo OS is downloaded over a wired connection only",
+)
+.noting(
+    "Said when the check could not be answered, which is never read as \"a cable is \
+     connected\". alo OS is the product's name and is not translated.",
+);
+
 /// Fast Startup is on.
 pub const FOUND_FAST_STARTUP_ON: Word = Word::saying(
     "installer.found.fast-startup-on",
@@ -1437,7 +1487,7 @@ pub const REMOVE_FAST_STARTUP_IS_STILL_OFF: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 140] = [
+pub const EVERY_WORD: [Word; 144] = [
     A_TEST_BUILD_FROM,
     A_TEST_BUILD,
     STARTING,
@@ -1474,6 +1524,10 @@ pub const EVERY_WORD: [Word; 140] = [
     WILL_ADD_THE_ENTRY,
     WILL_RESTART,
     WILL_RESTART_KEEPING_WINDOWS,
+    FOUND_A_CABLE,
+    FOUND_ONLY_WIRELESS,
+    FOUND_NO_NETWORK,
+    FOUND_NETWORK_NOT_READ,
     FOUND_FAST_STARTUP_ON,
     FOUND_FAST_STARTUP_OFF,
     FOUND_FAST_STARTUP_NOT_READ,

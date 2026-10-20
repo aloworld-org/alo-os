@@ -74,6 +74,7 @@ fn kind(program: &Program) -> &'static str {
         Program::ListingTheDisks => "disks",
         Program::ListingTheStartEntries => "entries",
         Program::ReadingFastStartup => "fast-startup",
+        Program::ReadingHowItReachesTheNetwork => "how-it-reaches-the-network",
         Program::GivingTheStartPartitionALetter { .. } => "give-esp-letter",
         Program::TakingTheStartPartitionsLetterAway { .. } => "take-esp-letter",
         Program::MakingTheShortcut => "shortcut",
@@ -175,6 +176,13 @@ impl Scripted {
             (
                 "fast-startup",
                 printed(r#"{"HiberbootEnabled":0,"HibernateEnabled":1}"#),
+            ),
+            // A cable on this scripted computer, which is what the staged
+            // environment needs, so these tests are not also about the warning
+            // (`a_computer_on_wi_fi_is_told_before_its_disk_is_touched`).
+            (
+                "how-it-reaches-the-network",
+                printed(r#"{"Adapters":2,"Wired":1,"Wireless":1}"#),
             ),
             (
                 "shortcut",
@@ -438,6 +446,7 @@ fn a_computer_that_can_take_alo_os_is_checked_told_asked_staged_and_restarted() 
             "disks",
             "entries",
             "fast-startup",
+            "how-it-reaches-the-network",
             "shrink",
             "make-area",
             "prepare-area",
@@ -490,6 +499,7 @@ fn a_computer_that_can_take_alo_os_is_checked_told_asked_staged_and_restarted() 
         "This computer has a security chip (TPM), and it is ready",
         "Windows on C: is encrypted with BitLocker. It stays encrypted, and the installer does not read what is on it",
         "Windows on C: has 558 GB free of 929 GB",
+        "This computer is connected by cable, which is what the next step needs",
         "This computer has 32 GB of memory",
         "Windows is on the disk Samsung SSD 980 1TB (931 GB)",
         "The disk Msft Virtual Disk (32 GB) is empty, and alo OS can be installed onto it",
@@ -512,6 +522,111 @@ fn a_computer_that_can_take_alo_os_is_checked_told_asked_staged_and_restarted() 
         Some(
             "Everything is ready. This computer restarts in a few seconds, and installing continues after the restart"
         )
+    );
+}
+
+/// **A computer on Wi-Fi is told before its disk is touched, and is not
+/// refused.**
+///
+/// The environment this installer stages is wired-only, and the shrink happens
+/// before the restart, so without this a person whose only network is Wi-Fi is
+/// left with a smaller Windows, unallocated space, no alo OS and no removal
+/// road — [ADR 0023](../../../docs/decisions/0023-installed-from-the-machine-it-replaces.md)
+/// names that as the road not failing cleanly for the audience it is aimed at.
+///
+/// Two things are held here, and they pull in opposite directions:
+///
+/// - the sentence is said **before the question**, which is before any change,
+///   so the person can still act on it — a cable in the next room, a dock in a
+///   bag;
+/// - the install **still happens** when they agree. Law 5: the choice is
+///   theirs, and a refusal here would take it away from somebody who knows
+///   something this check cannot (that they are about to plug a cable in).
+///
+/// It names the consequence rather than the state, because *no wired adapter is
+/// up* means nothing to a person and *alo OS is downloaded over a cable only,
+/// and there is no way to choose a Wi-Fi network after the restart* does.
+#[test]
+fn a_computer_on_wi_fi_is_told_before_its_disk_is_touched() {
+    let (machine, released) = Scripted::installable();
+    let machine = machine.answering(
+        "how-it-reaches-the-network",
+        r#"{"Adapters":2,"Wired":0,"Wireless":1}"#,
+    );
+    let (ended, machine) = run(machine, released);
+
+    let told = machine
+        .said
+        .iter()
+        .position(|said| {
+            said == "This computer is on Wi-Fi and has no cable connected. After the restart, \
+                     alo OS is downloaded over a wired connection only — there is no way to \
+                     choose a Wi-Fi network then. Connect a cable before continuing"
+        })
+        .unwrap_or_else(|| panic!("never told about Wi-Fi\n{:#?}", machine.said));
+    let asked = machine
+        .said
+        .iter()
+        .position(|said| said.starts_with("Nothing on this computer has been changed yet"))
+        .unwrap();
+    assert!(
+        told < asked,
+        "told after the consent was put: {told} >= {asked}"
+    );
+    // And the cable sentence is not also said, because this computer has none.
+    assert!(
+        !machine
+            .said
+            .iter()
+            .any(|said| said.contains("connected by cable, which is what")),
+        "{:#?}",
+        machine.said
+    );
+
+    // Not a refusal: the person agreed, and it installed.
+    assert_eq!(
+        ended,
+        Ended::Staged { restarted: true },
+        "{:#?}",
+        machine.said
+    );
+    assert!(machine.ran.iter().any(Program::changes));
+}
+
+/// **A computer whose network could not be read is told that, and never told it
+/// has a cable.**
+///
+/// A check that could not run is the one case where a quiet pass would be
+/// worst: the disk is shrunk, the machine restarts, and nothing ever said which
+/// connection the next step needed.
+#[test]
+fn a_network_that_could_not_be_read_is_not_read_as_a_cable() {
+    let (machine, released) = Scripted::installable();
+    let machine = machine.answering(
+        "how-it-reaches-the-network",
+        "Get-NetAdapter : not recognized",
+    );
+    let (ended, machine) = run(machine, released);
+    assert!(
+        machine.said.iter().any(|said| {
+            said.starts_with("Whether this computer has a cable connected could not be found out")
+        }),
+        "{:#?}",
+        machine.said
+    );
+    assert!(
+        !machine
+            .said
+            .iter()
+            .any(|said| said.contains("connected by cable, which is what")),
+        "{:#?}",
+        machine.said
+    );
+    assert_eq!(
+        ended,
+        Ended::Staged { restarted: true },
+        "{:#?}",
+        machine.said
     );
 }
 

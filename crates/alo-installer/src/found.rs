@@ -11,6 +11,7 @@ use crate::bitlocker::BitLocker;
 use crate::disks::{Disks, Standing};
 use crate::fast_startup::FastStartup;
 use crate::memory::MADE_FOR;
+use crate::reaching_the_network::ReachingTheNetwork;
 use crate::security_chip::SecurityChip;
 use crate::sizes;
 use crate::starting::Starting;
@@ -37,6 +38,8 @@ pub struct Found {
     pub an_entry_is_named_alo_os: Option<bool>,
     /// Whether Windows' Fast Startup is on.
     pub fast_startup: FastStartup,
+    /// How this computer reaches a network.
+    pub reaching: ReachingTheNetwork,
 }
 
 impl Found {
@@ -97,6 +100,23 @@ impl Found {
                 FastStartup::On => words::FOUND_FAST_STARTUP_ON,
                 FastStartup::Off => words::FOUND_FAST_STARTUP_OFF,
                 FastStartup::NotRead => words::FOUND_FAST_STARTUP_NOT_READ,
+            },
+            Filling::nothing(),
+        ));
+
+        // **Said before the shrink, which is the whole point of reading it.**
+        // The environment this installer stages is wired-only and the shrink
+        // happens before the restart, so a person whose only network is Wi-Fi
+        // would otherwise find out after their disk had already changed
+        // (ADR 0023). Said whichever it is, like every other finding, and
+        // nothing here refuses: a cable may be in the next room, and the
+        // choice is the person's.
+        said.push(say(
+            match self.reaching {
+                ReachingTheNetwork::ByCable => words::FOUND_A_CABLE,
+                ReachingTheNetwork::OnlyWireless => words::FOUND_ONLY_WIRELESS,
+                ReachingTheNetwork::NotAtAll => words::FOUND_NO_NETWORK,
+                ReachingTheNetwork::NotRead => words::FOUND_NETWORK_NOT_READ,
             },
             Filling::nothing(),
         ));
