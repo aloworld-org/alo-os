@@ -30,8 +30,15 @@
 //! for the place it asks — is that same substitution arriving as a suggestion.
 //! So this says what happened and stops. The owner decided on 2026-10-18 that
 //! whether alo may use another model or API when the chosen one is unavailable
-//! is **a setting the person sets**; that setting does not exist yet, and both
-//! sentences here are true either way.
+//! is **a setting the person sets**, and both sentences here are true either
+//! way.
+//!
+//! *This said "that setting does not exist yet" until 2026-10-20, when it was
+//! checked and did: `alo_choosing::Settings::may_use_another`, its
+//! `[when-mine-is-unavailable]` key in `docs/contracts/person-settings.md`, its
+//! Settings row, and `main.rs` reading it before the model is worked out. A
+//! comment naming what is missing is dated from the moment it is written, and
+//! this one outlived what it described.*
 
 use alo_choosing::Picked;
 use alo_models::InferenceSource;
