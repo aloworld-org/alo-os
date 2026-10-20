@@ -42,7 +42,47 @@ stored.
 the lesson is not about Wi-Fi: *a document that opens by naming our own
 unbuilt thing as a given will produce options that all accept it.*
 
-## What was decided, and what it costs
+## Reversed by the owner on 2026-10-20, directly: the pickers are drawn
+
+**Console-first is off.** Shown the text sketch it would have produced —
+
+    Networks found:
+      1) BT-Hub-7A2C
+      2) Virgin Media
+    Type a number: 2
+    Password: ________
+
+— the owner answered: *"we have design these in figma, ask desktop to do, and
+the rest ask desktop will answer"*. So the pickers follow the design like every
+other surface in this product, and the desktop lane draws them.
+
+**This answer came from the owner directly**, which the two before it did not.
+The ruling that the environment asks, and the console-first recommendation, both
+reached this document through the desktop lane's session; this reversal was said
+to the Mac lane in its own words. The distinction is recorded because it is the
+difference between a decision one can act on and one that wants confirming.
+
+**What is unchanged:** the environment asks, and **no pre-shared key is written
+to the staging partition.** That is the decision this ADR exists for and the
+reversal does not touch it. What changed is the front end.
+
+**Why the reversal is affordable**, and it is the section below rather than
+anything here: three of the four reasons for console-first were measured and
+wrong. The fonts are already in the base, `libdrm` is already in the base, Mesa
+and EGL and GBM are neither needed nor present for a software raster, and the
+area has 779 MiB spare. Had that been measured before the recommendation, this
+reversal would not have been needed.
+
+**And the departure is withdrawn rather than written down.** The section below
+records a console picker as a deliberate departure from a design that exists.
+It is no longer a departure, because it is no longer being built. The reasoning
+stays, because *the design was already there and both lanes reported an absence*
+is the part worth keeping.
+
+### What was recommended, and what it would have cost
+
+*Superseded above. Kept because the owner agreed to it and the record should show
+what they were told.*
 
 **A plain text picker on the console first; a graphical one later.** Networks
 listed, type the number, type the password — the numbered-list shape Debian has
