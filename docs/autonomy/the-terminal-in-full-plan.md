@@ -96,7 +96,7 @@ causes, five of which are another lane's or the owner's:
 | 8 | bisect the machine | **the comparer** — the third PC's |
 | 10 | *your files as they were* | **the comparer** |
 | 9 | try a command touching nothing | **the kernel boundary** — the kernel plan's |
-| 11 | ask alo where the person chose, not only here | **both blocks gone.** ADR 0125 settled law 1 out of a process; the owner settled the trade, and the setting and its Settings row are built (#820, #822). **What is left is law 1's egress sequence gaining a caller that is not a turn**, and then a request and a sender — see task 11, where *one request on the socket* was measured and found to understate it |
+| 11 | ask alo where the person chose, not only here | **built, and verified as far as a machine without a boundary allows** (2026-10-20). Every piece this table and the sections below called the remainder exists: the protocol message, its handler, the door `alo-ask` sends on, the road with no indicator, the shared ordering, and the contract. **What is left is not code**: the refusal paths' coverage, and the answer coming back on a machine — see *What task 11 still owes, measured 2026-10-20* |
 
 **So the five causes are:** shell integration (2 tasks), the privileged comparer
 (3), a design component nobody has captured (part of 1), `alo-capability`'s
@@ -824,7 +824,51 @@ for a credential to answer a question a rule had already refused.
 |---|---|
 | 1 | law 1's egress sequence — **done**, #825 |
 | 2 | `doing.rs`'s provider preparation, shared rather than copied — **done**, `alo-agentd/src/a_provider_ready_to_be_asked.rs` |
-| 3 | the protocol message, the daemon's handler, `alo-ask` sending it — **the remainder**, and the whole of it |
+| 3 | the protocol message, the daemon's handler, `alo-ask` sending it — **done**; see below |
+
+### What task 11 still owes, measured 2026-10-20
+
+**Row 3 above said *the remainder, and the whole of it*, and all three of its
+parts exist.** Measured by asking the tree for each file rather than by reading
+this page, with a control (a path that cannot exist, to show the check can
+answer *no*):
+
+| the piece this page called remaining | where it is |
+|---|---|
+| the protocol message | `FromAPerson::TheirOwnQuestion`, `alo-protocol/src/person.rs` |
+| the daemon's handler | `alo-agentd/src/a_persons_own_question.rs`, 327 lines |
+| `alo-ask` sending it | `alo-ask/src/at_the_daemons_door.rs` |
+| the road that shows no indicator | `alo-asking/src/a_question_nobody_is_showing.rs` |
+| the shared *rule, road, key* ordering | `alo-agentd/src/a_provider_ready_to_be_asked.rs` |
+| `docs/contracts/daemon-protocol.md` | names `their-own-question` twice |
+
+**And it was run as a person**, at a shell, which is the leg of *done* a file
+listing cannot answer:
+
+| | |
+|---|---|
+| no provider chosen, a local runtime running | answered, and the line beside it says *on this machine* — on standard error, while the answer is on standard output |
+| a provider chosen, no service | **refused in words**, exit 1, and **not** answered locally. ADR 0125 called this *the half worth writing first*; it is ADR 0008's *never silent* holding at the surface |
+| nothing typed | *there is nothing to ask yet — write the question first* |
+
+**So what is left is not code.** Two things, and neither is a caller:
+
+1. **The refusal paths, which the section above calls the work.** With
+   `WhoseKeyring::Nobodys` every provider road ends at the absent key, so a unit
+   test reaches two sentences — the rule's and the key's. A third needs a
+   keyring that holds something, which needs a real Secret Service bus;
+   `NotPut::DidNotAnswer` needs a provider that answers badly. #857 holds the
+   two that are reachable and says which are not.
+2. **The answer coming back, on a machine.** `alo-agentd` refuses to start
+   without a BPF boundary (ADR 0015), so the provider half cannot be reached on
+   a machine where `alo-boundaryd` has not loaded one — `docs/quirks.md`,
+   *`alo-agentd` will not start without a boundary*. On a booted image it has,
+   so the machine that can answer this is a booted one.
+
+*This section exists because the two rows above it were the kind of status this
+page warns about in its own words: **a status that names a dependency is making
+a claim.** Both named work that had already landed, and a lane reading them
+would have opened a file to write something that was there.*
 
 *The protocol message was written on 2026-10-19 and **discarded unlanded**: a
 message nothing sends is the fault this plan keeps finding, and the honest place
