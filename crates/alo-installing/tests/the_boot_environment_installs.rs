@@ -1020,7 +1020,11 @@ fn every_word_is_in_the_vocabulary_alo_saying_collects() {
             &word.key(),
             &alo_strings::Filling::of("disk", "virtio-a")
                 .and("size", "1 TB")
-                .and("files", "340 GB"),
+                .and("files", "340 GB")
+                .and(
+                    "holding",
+                    "another operating system and about 340 GB of files",
+                ),
         );
         assert!(!said.is_a_bug(), "{} is not collected", word.named());
     }
