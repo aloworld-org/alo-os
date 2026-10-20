@@ -128,6 +128,25 @@ pub enum NotStaged {
     Incomplete,
     /// It is not what this release was built with.
     NotGenuine,
+    /// **The boot environment this build carries does not fit the area this
+    /// build makes for it.**
+    ///
+    /// Its own fault and not the person's, which is why it is not
+    /// [`NotStaged::Incomplete`]: that sentence says *this download is
+    /// incomplete, download alo OS again*, and downloading the same build again
+    /// produces the same environment and the same number. **Telling a person to
+    /// repeat the one action that cannot work is worse than telling them
+    /// nothing**, and it is what this returned until 2026-10-20.
+    ///
+    /// It is reported before the shrink, like every other refusal on this road,
+    /// so nothing on the disk has changed when it is said.
+    TooBigForTheArea {
+        /// What the environment weighs, in bytes.
+        total: u64,
+        /// What the area has for it once the file system has taken its own, in
+        /// bytes.
+        room: u64,
+    },
 }
 
 impl Released {
@@ -142,6 +161,27 @@ impl Released {
     pub fn of(hex: Option<&str>) -> Self {
         Self(hex.and_then(sha256_from_hex))
     }
+}
+
+/// What the area has for the environment, once the file system has taken its
+/// own.
+#[must_use]
+pub const fn the_areas_room() -> u64 {
+    THE_AREA - THE_FILE_SYSTEMS_OWN
+}
+
+/// Whether what has been read so far still fits the area.
+///
+/// # Errors
+///
+/// [`NotStaged::TooBigForTheArea`] once it does not, carrying both numbers so
+/// the sentence a person reads can name them.
+fn still_fits(total: u64) -> Result<(), NotStaged> {
+    let room = the_areas_room();
+    if total > room {
+        return Err(NotStaged::TooBigForTheArea { total, room });
+    }
+    Ok(())
 }
 
 impl TheEnvironment {
@@ -177,10 +217,13 @@ impl TheEnvironment {
                 return Err(NotStaged::NotGenuine);
             }
             total = total.saturating_add(u64::try_from(bytes.len()).unwrap_or(u64::MAX));
+            // **Checked here and not after the loop**, so an environment that
+            // does not fit is never fully held in memory first. It was after
+            // the loop until 2026-10-20, which meant the one case the bound
+            // exists for was the case that allocated a gibibyte to discover it
+            // — and made the refusal untestable without allocating one.
+            still_fits(total)?;
             files.push((path, bytes));
-        }
-        if total > THE_AREA - THE_FILE_SYSTEMS_OWN {
-            return Err(NotStaged::Incomplete);
         }
         Ok(Self { files })
     }
@@ -329,6 +372,114 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
 )]
 mod tests {
     use super::*;
+
+    use crate::sizes::GIB;
+
+    /// **The bound is asked at its own boundary**, which is the one place an
+    /// off-by-one in it could hide: an environment of exactly the area's room
+    /// fits, and one byte more does not.
+    ///
+    /// The numbers are the real ones — a gibibyte less the 16 MiB the FAT file
+    /// system takes for itself — and this is the test that would fail if either
+    /// moved without the sentence moving with it.
+    #[test]
+    fn an_environment_of_exactly_the_rooms_size_fits_and_one_byte_more_does_not() {
+        let room = the_areas_room();
+        assert_eq!(room, GIB - 16 * MIB);
+        assert_eq!(still_fits(0), Ok(()));
+        assert_eq!(still_fits(room), Ok(()));
+        assert_eq!(
+            still_fits(room + 1),
+            Err(NotStaged::TooBigForTheArea {
+                total: room + 1,
+                room
+            })
+        );
+        assert_eq!(
+            still_fits(u64::MAX),
+            Err(NotStaged::TooBigForTheArea {
+                total: u64::MAX,
+                room
+            })
+        );
+    }
+
+    /// **The refusal says which numbers, in megabytes, and does not tell the
+    /// person to download again.**
+    ///
+    /// Megabytes because both numbers are a little under a gibibyte: in
+    /// gigabytes the sentence would say a thing is too big for something the
+    /// same size. And not *download again*, because the same build downloaded
+    /// again carries the same environment and the same number — which is what
+    /// this case said until 2026-10-20, when it was
+    /// [`NotStaged::Incomplete`].
+    #[test]
+    fn the_refusal_names_both_sizes_and_sends_nobody_back_to_the_download() {
+        let room = the_areas_room();
+        let (word, filling) = crate::Refusal::TooBigForTheArea {
+            total: room + 1,
+            room,
+        }
+        .said_as();
+        let strings = alo_strings::Strings::of(crate::words::installer_words().unwrap());
+        let said = strings.say(&word.key(), &filling);
+        let text = said.text();
+        assert!(said.unfilled().is_empty(), "{text}");
+        assert!(!said.is_a_bug(), "{text}");
+        assert!(text.contains("1009 MB"), "{text}");
+        assert!(text.contains("1008 MB"), "{text}");
+        assert!(!text.to_lowercase().contains("download"), "{text}");
+        assert!(
+            text.contains("Nothing on this computer was changed"),
+            "{text}"
+        );
+    }
+
+    /// **The bound is asked inside the loop, before each file is kept.**
+    ///
+    /// **This is a test about the shape of the code and not about what it
+    /// does, and it says so because that is unusual.** Moving the check back
+    /// after the loop changes nothing any other test here can see: the same
+    /// refusal, the same two numbers, the same sentence. What changes is that
+    /// an environment too big for the area is read into memory in full before
+    /// anything notices — a gibibyte, on a machine that is mid-install — and
+    /// the only way to observe it is to allocate one, which no test here is
+    /// going to do.
+    ///
+    /// So the property is stated where it can be checked cheaply. It was
+    /// measured as a real gap: the check sat after the loop until 2026-10-20
+    /// and seven other mutations of this bound were caught while this one was
+    /// not.
+    #[test]
+    fn the_bound_is_asked_before_each_file_is_kept_and_not_after_them_all() {
+        let source = include_str!("environment.rs");
+        let loop_body = source
+            .split_once("for (sha256, path) in listed {")
+            .expect("the loop that reads each file")
+            .1
+            .split_once("Ok(Self { files })")
+            .expect("the end of the road that reads them")
+            .0;
+        let asked = loop_body
+            .find("still_fits(total)?;")
+            .expect("the bound is asked on the road that reads the files");
+        let kept = loop_body
+            .find("files.push(")
+            .expect("each file is kept on that road");
+        assert!(
+            asked < kept,
+            "the bound is asked after the files are kept, so a whole environment \
+             is held in memory before it is refused"
+        );
+        // And asked inside the loop rather than after it: everything from the
+        // `for` to the end of the road is one body, so what separates the two
+        // readings is whether the asking is before the loop's own closing brace.
+        let closes = loop_body.find("\n        }").expect("the loop closes");
+        assert!(
+            asked < closes,
+            "the bound is asked after the loop, not inside it"
+        );
+    }
 
     /// A list naming every needed file.
     fn a_list() -> String {

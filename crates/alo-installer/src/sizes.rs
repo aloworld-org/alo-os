@@ -80,6 +80,18 @@ pub fn taken(bytes: u64) -> String {
     ((bytes + GIB / 2) / GIB).to_string()
 }
 
+/// A size a person is told in megabytes, rounded up.
+///
+/// **Gigabytes are wrong for one pair of sizes and only that pair**: what the
+/// boot environment weighs and what the area holds. Both are a little under a
+/// gibibyte, so `taken` and `had` would print *1* and *1* and the sentence
+/// would say a thing is too big for something the same size. Rounded up,
+/// because the number that matters is the one that does not fit.
+#[must_use]
+pub fn in_megabytes(bytes: u64) -> String {
+    bytes.div_ceil(MIB).to_string()
+}
+
 /// A size rounded down to a whole mebibyte, which is how Windows aligns
 /// partitions.
 #[must_use]

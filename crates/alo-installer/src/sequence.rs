@@ -89,6 +89,9 @@ fn installing(
         Ended::Refused(match why {
             NotStaged::Incomplete => Refusal::Incomplete,
             NotStaged::NotGenuine => Refusal::NotGenuine,
+            NotStaged::TooBigForTheArea { total, room } => {
+                Refusal::TooBigForTheArea { total, room }
+            }
         })
     })?;
     say(machine, strings, words::GENUINE, &Filling::nothing());
