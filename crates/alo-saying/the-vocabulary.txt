@@ -954,6 +954,7 @@ installer.switch.type-to-agree	To restart into alo OS now, type {word} and press
 installer.switch.will-restart	This computer restarts into alo OS once. Windows stays the one it starts normally, and restarting again comes back to Windows
 installer.system.alo-os	alo OS
 installer.system.windows	Windows
+installer.too-big-for-the-area	This version of the installer cannot be used: what it needs to put on this computer is {environment} MB, and the space it makes for it holds {area} MB. Nothing on this computer was changed. This is a fault in this version of alo OS and not in your computer. Please report it
 installer.turning-fast-startup-off	Turning Windows' Fast Startup off. Windows keeps hibernation, and starts and shuts down as before
 installer.type-the-disk-and-the-word	To erase {disk} and install alo OS, type its name and the word {word}, with a space between them. Press Enter on its own to stop
 installer.type-the-disks-name	To agree, type the name of the disk alo OS replaces, exactly as it is written above, and press Enter. Everything on that disk is replaced. To stop, press Enter without typing anything

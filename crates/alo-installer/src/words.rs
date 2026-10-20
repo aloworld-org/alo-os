@@ -820,7 +820,33 @@ pub const NOT_AN_ADMINISTRATOR: Word = Word::saying(
      right-clicked; use the name Windows uses in this language.",
 );
 
+/// The boot environment this build carries does not fit the area it makes.
+///
+/// **It does not tell the person to download again**, which is what
+/// [`INCOMPLETE`] says and what the too-big case said until 2026-10-20. The
+/// same build downloaded again carries the same environment and the same
+/// number, so that advice is a loop. This says whose fault it is and the one
+/// thing that can actually help.
+pub const TOO_BIG_FOR_THE_AREA: Word = Word::saying(
+    "installer.too-big-for-the-area",
+    "This version of the installer cannot be used: what it needs to put on this computer is \
+     {environment} MB, and the space it makes for it holds {area} MB. Nothing on this computer \
+     was changed. This is a fault in this version of alo OS and not in your computer. Please \
+     report it",
+)
+.noting(
+    "Said before anything on the disk is changed. {environment} and {area} are whole numbers of \
+     megabytes. It deliberately does not say \"download alo OS again\", because the same \
+     version downloaded again would say this again. alo OS is the product's name and is not \
+     translated.",
+);
+
 /// The download is incomplete.
+///
+/// **Not the sentence for an environment that does not fit**, which this said
+/// until 2026-10-20: see [`TOO_BIG_FOR_THE_AREA`]. *Download alo OS again* is
+/// right for a file that is missing or unreadable and is a loop for a build
+/// whose environment is simply too big.
 pub const INCOMPLETE: Word = Word::saying(
     "installer.incomplete",
     "This download is incomplete, so nothing was changed. Download alo OS again",
@@ -1487,7 +1513,8 @@ pub const REMOVE_FAST_STARTUP_IS_STILL_OFF: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 144] = [
+pub const EVERY_WORD: [Word; 145] = [
+    TOO_BIG_FOR_THE_AREA,
     A_TEST_BUILD_FROM,
     A_TEST_BUILD,
     STARTING,

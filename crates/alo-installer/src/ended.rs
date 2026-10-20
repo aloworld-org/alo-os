@@ -36,6 +36,18 @@ pub enum Refusal {
     Incomplete,
     /// The download is not what this release was built with.
     NotGenuine,
+    /// The boot environment this build carries does not fit the area this build
+    /// makes for it — this build's own fault, and said as that.
+    ///
+    /// Deliberately not [`Refusal::Incomplete`]: that sentence tells a person
+    /// to download alo OS again, and the same build downloaded again carries
+    /// the same environment and the same number.
+    TooBigForTheArea {
+        /// What the environment weighs, in bytes.
+        total: u64,
+        /// What the area has for it, in bytes.
+        room: u64,
+    },
     /// The computer starts the BIOS way.
     NotUefi,
     /// How it starts could not be read.
@@ -151,6 +163,11 @@ impl Refusal {
             Self::NotAnAdministrator => (words::NOT_AN_ADMINISTRATOR, Filling::nothing()),
             Self::Incomplete => (words::INCOMPLETE, Filling::nothing()),
             Self::NotGenuine => (words::NOT_GENUINE, Filling::nothing()),
+            Self::TooBigForTheArea { total, room } => (
+                words::TOO_BIG_FOR_THE_AREA,
+                Filling::of("environment", sizes::in_megabytes(*total))
+                    .and("area", sizes::in_megabytes(*room)),
+            ),
             Self::NotUefi => (words::NOT_UEFI, Filling::nothing()),
             Self::StartingNotRead => (words::STARTING_NOT_READ, Filling::nothing()),
             Self::SecureBootOn => (words::SECURE_BOOT_ON, Filling::nothing()),
