@@ -24,7 +24,7 @@ wrong thing from, confidently.
 | 2 a surface with pixels | **#873**, queued behind #872. **Method changed** — see the item |
 | 3a a key arrives | **#874**, queued behind #873 |
 | 3b a key becomes a character | **not started, and not startable** — see the item |
-| 4a Windows starts the stick | written; **cannot land** — no caller, and the screen that would call it is in no frame |
+| 4a Windows starts the stick | written; **cannot land until its caller is built** — the caller is `530:30835` S1, the desktop lane's |
 | 4b a program that writes a stick | **not this lane's to start** — it is not in `docs/features.md` |
 | 5 the asking, joined up | not started; the one item that genuinely waits on the other lane |
 | 6 joining the network | **#875**, queued behind #874 |
@@ -157,22 +157,41 @@ it. That is the gate saying *build the caller or do not start*, and the caller
 is the **offer** — *restart from the stick now* — which is a sentence a person
 reads, so it is the desktop lane's half.
 
-**And the offer is drawn nowhere, which was found while correcting this page and
-is reported here the minute it was found.** Every frame in
-`docs/design/figma-snapshot/ROOTS.md` that mentions restarting belongs to the
-*staging* road — `370:30179` 05 · Prepare and restart, `370:30371` 05a ·
-Preparation could not finish, `375:30307` 05b · Replace · Ready to restart,
-`370:30206` 06 · Install after restart — which reboots into the environment
-staged on the internal disk. The six stick frames begin at `530:30835` **S1 ·
-Start from a stick**, which is the environment's own first screen *after* a
-machine has already booted from one. Nothing in either set is Windows offering
-to restart into a stick.
+**The caller is `530:30835` S1, and this page said it was drawn nowhere.** That
+was wrong, and the correction came from the desktop lane within the hour. The
+reasoning that produced it is worth keeping, because it is a trap this index
+sets for anyone reading it the way I did:
 
-**So 4a needs two things decided, and neither is a line of code.** Where the
-stick comes from — a writer of ours (4b) or an image the owner publishes and a
-person writes with another tool — and a frame for the offer. The lookup works
-either way, which is why it was worth writing first; it cannot be called either
-way.
+`ROOTS.md` files the six under the heading *From a USB stick, the environment
+asking*, and lists them by node id and title only. **S1's title is *Start from a
+stick*, which reads as the environment's own first screen** — the one a person
+meets *after* booting from one. Every frame in the index that mentions
+restarting belongs to the *staging* road (`370:30179` 05 · Prepare and restart,
+`370:30371` 05a, `375:30307` 05b, `370:30206` 06 · Install after restart), so on
+titles alone there is no Windows offer anywhere in the file.
+
+**The sentences inside the frame settle it, and they are not in the index.** S1
+says *Start this PC from a stick*, offers *Restart from the stick now — We
+restart this PC and start from the stick. No key to press as it starts*, and
+closes *Windows starts as usual the next time you switch this PC on.* Only a
+program running on Windows can say either of those. S2 is the one that runs from
+the stick and says so in its own first line — *You are running alo OS from the
+stick.* **S1 is the offer on Windows; S2 is what you meet after it.**
+
+**A title is not a frame**, which is the general form, and the index's own
+details already pointed the right way for anybody who read them: all six are
+*cloned from `370:30118`* — `03 · Keep Windows or replace it`, a frame of the
+**Windows** program. A set cloned from a Windows frame is a hint the heading
+above it overrode.
+
+*This lane could not check the frame itself: the Figma connector is not
+authorised in this session. What is written above was corroborated against
+`ROOTS.md`'s clone parent and against the quoted sentences being ones only
+Windows can say — not against the file.*
+
+**So 4a is blocked on its caller being built, not on anything being decided.**
+S1's *Restart from the stick now* is the call site, it belongs to the desktop
+lane, and `the_one_that_starts` is ready for it.
 
 Two further notes for whoever picks it up: `Entry::of` accepts **only a braced
 GUID**, which made the first test for the identifier-reset bug pass for the
@@ -187,11 +206,18 @@ the same line that the phrase *no USB stick* had *hardened into a promise nobody
 decided to make*. A road is not a writer: a stick can arrive from an image the
 owner publishes as much as from a program of ours.
 
-**And a writer is the one destructive capability in this whole list.** It erases
-a USB device, which is somebody's photographs if they picked the wrong one. By
-the standing rule, *when the answer is not obvious, it is scope* — so this wants
-a line in `docs/features.md` with a tier, from the owner, before one line of it
-is written.
+**And the design draws it, which makes this sharper rather than settled.** S1's
+second card is *Write a stick for another PC — Choose a USB stick to write.
+Everything already on that stick will be erased.* So a drawn screen offers a
+capability that `docs/features.md` does not list, and the two disagree. *Where
+code and design differ the design is right until an ADR says otherwise* is the
+standing rule, but `docs/features.md` is the scope gate, and this is the one
+**destructive** capability in the list: it erases a USB device, which is
+somebody's photographs if they picked the wrong one.
+
+So this is the owner's, as one question — does the writer get a line with a tier,
+or does the card come out — and the desktop lane is putting it to them. Not a
+line of it is written in the meantime.
 
 **What is already true and stays true either way:** whatever writes a stick must
 label its FAT32 partition `ALO-INSTALL`, because the desktop lane's rule 1 —
