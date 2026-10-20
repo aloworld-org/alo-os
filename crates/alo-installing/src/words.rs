@@ -534,7 +534,7 @@ pub const WHY_A_NETWORK_IS_NEEDED: Word = Word::saying(
 )
 .noting(
     "Under the question. The second half is a promise this program keeps: the password a person \
-     types reaches the network and is written to no disk. [ADR 0128] decided it, and a \
+     types reaches the network and is written to no disk, and a \
      translation that softens it into *not stored permanently* would be promising something \
      weaker than what happens.",
 );
@@ -1219,7 +1219,9 @@ mod tests {
             // asking for it.
             "installing.why-a-network",
             // *Your Wi-Fi password is never written to this computer's disk* —
-            // the promise ADR 0128 made.
+            // the promise
+            // [ADR 0128](../../../docs/decisions/0128-whether-a-wi-fi-password-may-be-written-to-the-staging-partition.md)
+            // made.
             "installing.password-never-written",
         ];
         let excepted: Vec<String> = EVERY_WORD
