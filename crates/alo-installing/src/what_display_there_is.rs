@@ -62,6 +62,20 @@ pub struct Glass {
 }
 
 impl Glass {
+    /// A glass of this size, in millimetres.
+    ///
+    /// **For a caller that already has the measurement**, which today is a
+    /// test: the one road a machine takes is [`the_glass`], which reads it out
+    /// of what the display reported. Nought is accepted rather than refused
+    /// because nought is a thing displays really say — a virtual output, and
+    /// some real panels — and whoever reads it has to decide what to do about
+    /// that rather than be handed a [`None`] that hides which of the two it
+    /// was.
+    #[must_use]
+    pub const fn of(across: u32, down: u32) -> Self {
+        Self { across, down }
+    }
+
     /// Across, in millimetres.
     #[must_use]
     pub const fn across(self) -> u32 {

@@ -72,6 +72,7 @@ mod tidying;
 mod told;
 mod verifying;
 mod what_display_there_is;
+mod where_a_screen_goes;
 mod which_disks_may_be_offered;
 mod why_there_is_no_network;
 mod words;
@@ -112,6 +113,9 @@ pub use told::{
 pub use verifying::{Verified, Verifying};
 pub use what_display_there_is::{
     Glass, WhatDisplayThereIs, from_a_connector, is_connected, the_glass, the_mode,
+};
+pub use where_a_screen_goes::{
+    AScreensPlaces, AnArea, THE_DESIGN_WAS_DRAWN_AT, TheType, where_a_screen_goes,
 };
 pub use which_disks_may_be_offered::{
     NotOffered, Offered, TheMedium, WhatToShow, what_may_be_offered,
