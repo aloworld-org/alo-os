@@ -931,3 +931,108 @@ fn a_press_where_each_letter_is_drawn_reaches_that_letters_entry() {
          opens nothing: {reached:?}"
     );
 }
+
+/// **A press on an icon with nothing open reaches a sender**, which the enum it
+/// comes from denied until 2026-10-19.
+///
+/// `WhatAnIconDoes::Launch` carried *nothing here can start an application*,
+/// and `Server::go_to_this_application` had been putting the ask on
+/// `Server::asked_to_start` since the press was written. A comment cannot be
+/// tested, so this tests what the comment denied: the road from the press to
+/// something that is handed the application's identifier.
+///
+/// # Why a sender of this test's own
+///
+/// `crate::an_application_is_started` takes the way to start applications from
+/// outside precisely so this can be measured without a bus. The sender here
+/// records what it was asked and answers — so a pass means the identifier
+/// **arrived**, not that a function existed.
+///
+/// # And the refusal, in the same test
+///
+/// An application with no bus name is the ordinary case on a fresh machine, and
+/// the answer has to be *it did not start* rather than a silent success. The
+/// second half supplies a sender that refuses everything and reads back which
+/// application could not be reached, which is the only shape a caller can
+/// record.
+#[test]
+fn a_press_with_nothing_open_asks_the_application_to_start() {
+    use std::sync::{Arc, Mutex};
+
+    let (_runtime, mut server) = a_session("start-from-a-press");
+    let dolphin = alo_dock::AppId::named("org.kde.dolphin").expect("a named application");
+
+    // **A control before the press**, so a pass cannot come from an ask that
+    // was already on the list.
+    assert_eq!(
+        server.how_many_are_waiting_to_start(),
+        0,
+        "a session that has taken no press is already waiting to start something"
+    );
+
+    // Nothing is open on this session at all, which is the case
+    // `what_pressing_an_icon_decides` above reads as `Launch`.
+    server.go_to_this_application(&dolphin);
+    assert_eq!(
+        server.how_many_are_waiting_to_start(),
+        1,
+        "a press on an icon with nothing open recorded no ask, so nothing downstream can start it"
+    );
+
+    let asked: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+    let heard = Arc::clone(&asked);
+    server.it_can_start_applications_with(Box::new(move |name| {
+        heard
+            .lock()
+            .expect("the sender's own list")
+            .push(name.to_owned());
+        true
+    }));
+    let not_started = server.start_what_was_asked_for_now();
+
+    assert!(
+        not_started.is_empty(),
+        "a sender that answered yes still reported {not_started:?} as unstarted"
+    );
+    assert_eq!(
+        *asked.lock().expect("the sender's own list"),
+        vec!["org.kde.dolphin".to_owned()],
+        "the identifier a person pressed is not what reached the sender"
+    );
+    // **Taken off the list whether it worked or not**, which is
+    // `Server::start_what_was_asked_for`'s rule: an ask left behind would be an
+    // `Activate` sent on every frame.
+    assert_eq!(
+        server.how_many_are_waiting_to_start(),
+        0,
+        "the ask stayed on the list after it was sent, which is a bus call every frame"
+    );
+
+    // **The refusal, measured the same way.** A second session, because the
+    // first has been given a sender that says yes.
+    let (_elsewhere, mut refusing) = a_session("start-from-a-press-refused");
+    refusing.go_to_this_application(&dolphin);
+    refusing.it_can_start_applications_with(Box::new(|_| false));
+    let not_started = refusing.start_what_was_asked_for_now();
+    assert_eq!(
+        not_started,
+        vec![dolphin.clone()],
+        "an application nothing could reach was not reported as unstarted"
+    );
+    assert_eq!(
+        refusing.how_many_are_waiting_to_start(),
+        0,
+        "a refused ask stayed on the list, which is a bus call every frame for an application \
+         that is not there"
+    );
+
+    // **And a machine that was never given a sender says so**, rather than
+    // reporting the application started.
+    let (_nowhere, mut mute) = a_session("start-from-a-press-with-no-sender");
+    mute.go_to_this_application(&dolphin);
+    assert_eq!(
+        mute.start_what_was_asked_for_now(),
+        vec![dolphin],
+        "a session with no way to start applications reported the press as carried out"
+    );
+}

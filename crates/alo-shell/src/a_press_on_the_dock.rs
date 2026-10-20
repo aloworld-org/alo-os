@@ -201,10 +201,34 @@ pub(crate) enum WhatAnIconDoes {
     Focus(alo_dock::WindowId),
     /// One window, put aside: bring it back, then focus it.
     BringItBackThenFocus(alo_dock::WindowId),
-    /// Several windows: the person chooses. **Not built** — task 3.
+    /// Several windows: the person chooses.
+    ///
+    /// **This said *not built* until 2026-10-19 and both of these were
+    /// carried out twenty lines below it.** `Server::go_to_this_application`
+    /// records the ask on `Server::the_dock_was_asked_for`, and the rows are
+    /// worked out at every draw by `Server::what_the_dock_has_open` rather
+    /// than kept, so a window that closes while the list is open leaves it.
+    /// `crate::what_the_dock_has_open_tests` holds that surface's own table.
+    ///
+    /// What is still owed is not the picker: it is the **travelling**, which
+    /// [`what_a_press_on_an_icon_does`] collapses into *focus it* because the
+    /// windows it is handed carry placeholder geometry.
     OpenThePicker,
-    /// Nothing open: start it. **Not built** — nothing here can start an
-    /// application.
+    /// Nothing open: start it.
+    ///
+    /// **This said *nothing here can start an application* until 2026-10-19,
+    /// and the road had been there since the press was written.**
+    /// `Server::go_to_this_application` puts the ask on
+    /// `Server::asked_to_start`; `crate::an_application_is_started` sends it
+    /// off the input path through the sender this machine was given, which in
+    /// the shipped desktop is `alo_portals::activated` — D-Bus activation, a
+    /// message to the application and never a command run.
+    ///
+    /// **What is true, and is the limit worth writing down instead:** an
+    /// application with no bus name and nothing to start one is **not**
+    /// started, and that refusal is returned rather than worked around.
+    /// Reading an `Exec` line is what `crate::an_application_is_started`'s
+    /// header refuses and the second law is why.
     Launch,
 }
 
