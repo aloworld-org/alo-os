@@ -10,8 +10,9 @@
 
 use super::a_bars_length;
 use super::{
-    A_BORDER, A_LETTER, A_LINE, A_NOTE, A_STRIP, AN_INSET, BELOW_THE_NOTE, CONTENT_BELOW_THE_TOP,
-    THE_WEIGHT, a_source_region_inside, lines_that_fit, transcript_height_in,
+    A_BORDER, A_GUTTER, A_LETTER, A_LINE, A_NOTE, A_STRIP, AN_INSET, BELOW_THE_NOTE,
+    CONTENT_BELOW_THE_TOP, THE_WEIGHT, a_programs_room_inside, a_source_region_inside,
+    lines_that_fit, the_note_begins_at, transcript_height_in,
 };
 
 /// The body the design draws the window at. **Not a measure** — it is the size
@@ -261,4 +262,133 @@ fn two_equal_durations_draw_two_equal_bars() {
 fn a_longest_of_nothing_or_a_track_of_nothing_draws_nothing() {
     assert_eq!(a_bars_length(240_000, 0, 706), 0);
     assert_eq!(a_bars_length(240_000, 240_000, 0), 0);
+}
+
+/// **A program's room is the design's own 894, and three measured figures say
+/// so together.**
+///
+/// *Added 2026-10-20 because `a_programs_room_inside` was called by nothing and
+/// tested by nothing* — found by counting, across the whole workspace, the
+/// references to every `pub fn` in this crate outside its own file. It was one
+/// of two here with no caller and no test at all, which is the worst of the
+/// three states a function can be in: its arithmetic could have been wrong from
+/// the day it was written and nothing would have said so.
+///
+/// # Why this is not the formula restated
+///
+/// Asserting `a_programs_room_inside(w) == a_source_region_inside(w) - A_GUTTER`
+/// would pass even if **both** were wrong, because it is the body of the
+/// function written out a second time. `docs/design/the-terminal-window.md`
+/// instead gives three figures measured off the file independently:
+///
+/// | read from the design | figure |
+/// |---|---|
+/// | the transcript, and its source region at inset 24 each side | `1038` → `990` |
+/// | `Rich test result / untrusted program data`, at x 96 | `894` wide |
+/// | the gutter, measured twice and at a plain region too | `96` |
+///
+/// and they close: `96 + 894 = 990` exactly. So this asserts all three, and a
+/// change to any one of `AN_INSET`, `A_GUTTER` or the arithmetic between them
+/// breaks it.
+#[test]
+fn a_programs_room_is_the_region_less_the_gutter_at_the_designs_own_width() {
+    // The design's first measured pair, which the region test above also uses.
+    assert_eq!(a_source_region_inside(1038), 990, "the region at inset 24");
+    // The figure measured on the rich result, which is the one worth having.
+    assert_eq!(a_programs_room_inside(1038), 894, "the design draws 894");
+    // And the three close on each other rather than merely each being true.
+    assert_eq!(
+        a_source_region_inside(1038) - a_programs_room_inside(1038),
+        A_GUTTER,
+        "96 + 894 = 990, which is what the design measured"
+    );
+}
+
+/// **And it is not a constant**: the design's second width gives a different
+/// room, by the same two rules.
+///
+/// `718 → 670` is the design's own second pair; `670 − 96 = 574` follows from
+/// the gutter being unconditional, which the design establishes by measuring it
+/// on a **plain** source region with no rich result in it. A figure that held
+/// only at 1038 would be a figure that holds on one machine, which the standing
+/// rule on screen sizes forbids.
+#[test]
+fn a_programs_room_follows_the_width_rather_than_being_one_number() {
+    assert_eq!(a_source_region_inside(718), 670, "the design's second pair");
+    assert_eq!(a_programs_room_inside(718), 574, "670 less the gutter");
+    assert_ne!(
+        a_programs_room_inside(1038),
+        a_programs_room_inside(718),
+        "a room that does not change with the width is not derived from it"
+    );
+}
+
+/// **A transcript too narrow for its own insets and gutter leaves no room at
+/// all**, rather than wrapping to something enormous.
+///
+/// The doc comment calls the saturation *a real case on a small display and not
+/// a defensive flourish*, and that claim had nothing holding it. Both edges are
+/// asserted: one pixel short of the gutter is zero, and one pixel past it is
+/// one — so a test that passed because the function always answered zero would
+/// fail.
+#[test]
+fn a_transcript_narrower_than_its_insets_and_gutter_leaves_no_room() {
+    let no_room = AN_INSET * 2 + A_GUTTER;
+    assert_eq!(a_programs_room_inside(no_room), 0, "exactly nothing left");
+    assert_eq!(a_programs_room_inside(no_room - 1), 0, "and not a wrap");
+    assert_eq!(a_programs_room_inside(0), 0, "nor from nothing");
+    assert_eq!(
+        a_programs_room_inside(no_room + 1),
+        1,
+        "one pixel past it is one pixel of room, so zero is not the only answer"
+    );
+}
+
+/// **The note's top is the design's 763**, derived from the body rather than
+/// written down.
+///
+/// The other function here that nothing called and nothing tested. Its own doc
+/// comment states `800 - 9 - 28 = 763` and says *that is exactly where the
+/// design draws it* — a claim that was checked by whoever wrote it and by
+/// nothing since.
+///
+/// **This is also the arithmetic `alo-shell` does a second time.**
+/// `the_terminals_cells_are_drawn.rs:409` carries the comment *`measures::the_
+/// note_begins_at` is the same arithmetic on a body* and then computes it from
+/// the scaled measures itself, because it needs the figure in device pixels
+/// with each edge rounded separately. That duplication is real and is **not
+/// fixed here** — `alo-shell` belongs to another lane — but with this test the
+/// two can no longer drift silently in the same direction.
+#[test]
+fn the_note_begins_where_the_design_draws_it() {
+    assert_eq!(
+        the_note_begins_at(THE_DESIGNS_BODY),
+        763,
+        "800 less the nine rows under it less the note's own 28"
+    );
+    assert_eq!(
+        THE_DESIGNS_BODY - the_note_begins_at(THE_DESIGNS_BODY),
+        BELOW_THE_NOTE + A_NOTE,
+        "and what is below the note is exactly those two measures"
+    );
+}
+
+/// **A body shorter than the note and its margin begins the note at zero**, not
+/// at a wrapped figure near `u32::MAX`.
+///
+/// The same edge as the region's, for the same reason: a small display is a real
+/// case. A window this short cannot draw a note, and the caller's job is to
+/// refuse — which `alo-shell` does, returning `None` when the band has no
+/// height — but the measure must not hand it a number that looks enormous.
+#[test]
+fn a_body_too_short_for_a_note_begins_it_at_nothing() {
+    let the_least = BELOW_THE_NOTE + A_NOTE;
+    assert_eq!(the_note_begins_at(the_least), 0, "exactly nothing above it");
+    assert_eq!(the_note_begins_at(the_least - 1), 0, "and not a wrap");
+    assert_eq!(the_note_begins_at(0), 0, "nor from nothing");
+    assert_eq!(
+        the_note_begins_at(the_least + 1),
+        1,
+        "one pixel taller is one pixel down, so zero is not the only answer"
+    );
 }
