@@ -573,6 +573,55 @@ pub const HISTORY: Word = Word::saying("dock.history", "History").noting(
 /// is lost, and this file is not the place to keep a copy of them.
 pub const RETIRED: [&str; 2] = ["dock.labels.under", "dock.labels.gave-way"];
 
+// ---------------------------------------------------------------------------
+// The alo Bar while somebody is finding something. The field's own prompt is
+// `FIND_OPEN_OR_ASK` above; these are the rows under it and the line that says
+// where they came from. Added 2026-10-20 with the Bar's finding half.
+// ---------------------------------------------------------------------------
+
+/// One row in the alo Bar, when what was found is an application.
+///
+/// The design draws a row as `Name · where it is` — *Launch strategy · Docs*,
+/// *Opening scene · Blender* (`alo Bar / Open`, `81:890`). **The second half
+/// says what kind of thing the row is**, so an application and a document can
+/// be told apart without opening either.
+pub const AN_APPLICATION_ROW: Word =
+    Word::saying("dock.bar.row.application", "{what}  \u{b7}  Application").noting(
+        "One line in the list the alo Bar shows while somebody types. {what} is the \
+         application's own name as this machine knows it \u{2014} firefox, TextEditor \u{2014} \
+         and is never translated. Translate the word after the dot: it says what kind of thing \
+         this row is, so an application and a document can be told apart at a glance. The \
+         separator is a middle dot with two spaces each side and is the same on every row.",
+    );
+
+/// The line under the field, when what was found is not exactly one thing.
+pub const APPLICATIONS_HERE: Word = Word::saying(
+    "dock.bar.found.applications",
+    "On this computer  \u{b7}  {how_many} applications",
+)
+.noting(
+    "The small line between the field and the list. It says where the results came from and how \
+     many there are. {how_many} is a number and is not translated. **It is said even when the \
+     number is nought** \u{2014} somebody who typed something that found nothing reads a \
+     sentence rather than meeting an empty space, which is the difference between a list that \
+     is empty and a machine that seems to have stopped.",
+);
+
+/// The same line, for exactly one result.
+///
+/// **A sentence of its own rather than a plural rule**, because the languages
+/// this product promises do not share one: Polish has three forms and Arabic
+/// six, and a rule written in English grammar is wrong in both.
+pub const ONE_APPLICATION_HERE: Word = Word::saying(
+    "dock.bar.found.one-application",
+    "On this computer  \u{b7}  {how_many} application",
+)
+.noting(
+    "The same line as `dock.bar.found.applications`, for exactly one result. {how_many} is always 1 \
+     and is still a gap, so a language that writes the numeral differently can. Keep both \
+     sentences rather than merging them into one with a plural rule.",
+);
+
 /// Every string this crate can say, in the order a translator meets them: the
 /// two answers about whether it gives way, where the dock keeps its names, the
 /// two refusals, what is said about the person's own file, what a reader is
@@ -583,7 +632,10 @@ pub const RETIRED: [&str; 2] = ["dock.labels.under", "dock.labels.gave-way"];
 /// beside the other settings' words because this list's order is the order a
 /// translator meets them in, and a translator who has already done this file
 /// should find the new ones together rather than hunting a diff.
-pub const EVERY_WORD: [Word; 42] = [
+pub const EVERY_WORD: [Word; 45] = [
+    AN_APPLICATION_ROW,
+    APPLICATIONS_HERE,
+    ONE_APPLICATION_HERE,
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
     NAMES_BESIDE,

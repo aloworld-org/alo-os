@@ -389,6 +389,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 // separate subject and `dock_raster`'s own
                                 // tests hold it.
                                 the_keyboard_is_on_the_bar: None,
+                                the_bar: None,
                                 // **Three applications, so there is a Dock to
                                 // look at.** This held nothing until
                                 // 2026-10-10, with the note *deliberately not

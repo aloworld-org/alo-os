@@ -281,6 +281,16 @@ pub struct Server {
     /// a cell focused in it. One field for both would make *which thing does
     /// Enter act on* a question with two answers.
     pub(crate) which_slot_on_the_bar: Option<usize>,
+    /// Which row of the alo Bar the keyboard is on, if any.
+    ///
+    /// **Not the same thing as `which_slot_on_the_bar`**, which is a control on
+    /// the Dock's own bar. This is a row in the panel the alo Bar opens, and
+    /// the two are never both meaningful: the Dock's controls are walked with
+    /// Tab, the Bar's rows with the arrows.
+    ///
+    /// [`None`] is somebody typing rather than choosing, which is every frame
+    /// until they press an arrow.
+    pub(crate) which_row_in_the_bar: Option<usize>,
     /// What the Settings entry is called, in this person's language.
     ///
     /// **Kept because a search has to match what is drawn.** A native entry has
@@ -592,6 +602,7 @@ impl Server {
             // The keyboard starts with the work, which is where a person's
             // hands already are.
             which_area_has_the_keyboard: None,
+            which_row_in_the_bar: None,
             which_slot_on_the_bar: None,
             the_settings_entry_is_called: String::new(),
             the_applications_entry_is_called: String::new(),

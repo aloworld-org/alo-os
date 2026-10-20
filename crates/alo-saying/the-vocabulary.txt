@@ -586,6 +586,9 @@ dock.announced.focused	focused
 dock.announced.open	{app}, {windows} open
 dock.announced.some-put-aside	{app}, {windows} open, {aside} minimised
 dock.announced.where	on the canvas, {across} across and {down} down
+dock.bar.found.applications	On this computer  ·  {how_many} applications
+dock.bar.found.one-application	On this computer  ·  {how_many} application
+dock.bar.row.application	{what}  ·  Application
 dock.composer.key	alo
 dock.composer.prompt	Find, open, or ask…
 dock.edge	Where the dock goes

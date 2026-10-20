@@ -880,7 +880,7 @@ fn the_overflow_list(
 /// bar could not reach it — which is why the bar had no ring and why its own
 /// note said *when it does, the rule is `a_focus_ring`'s*. Lifted here rather
 /// than copied, which is what that note asked for.
-fn a_focus_ring(item: Rectangle<i32, Physical>) -> Rectangle<i32, Physical> {
+pub(crate) fn a_focus_ring(item: Rectangle<i32, Physical>) -> Rectangle<i32, Physical> {
     let off = i32::try_from(alo_dock::measures::THE_FOCUS_RING_STANDS_OFF).unwrap_or(4);
     Rectangle::new(
         (item.loc.x - off, item.loc.y - off).into(),
