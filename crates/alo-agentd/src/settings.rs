@@ -6,7 +6,7 @@
 //! there is only one honest answer: **the environment this process was started
 //! with**.
 //!
-//! # Why the environment is the person (ADR 0019 §3)
+//! # Why the environment is the person
 //!
 //! `alo-agentd` runs as the person, one instance per login, started by
 //! `systemd` inside their session — so `$XDG_CONFIG_HOME` and `$HOME` as this
@@ -14,7 +14,13 @@
 //! its own settings rather than reaching into somebody's home directory.
 //!
 //! **That is a condition, not an assumption, and it is written down as one.**
-//! ADR 0019 records it: the day something serves two people from one process,
+//! `alo-agentd.service` sets `User=alo` and `image/usr/lib/tmpfiles.d/alo.conf`
+//! says *alo-agentd — which runs as the person, holding nothing*; ADR 0088
+//! quotes that comment. **This paragraph cited "ADR 0019 §3" until 2026-10-20
+//! and that was wrong** — ADR 0019 is `a-runtime-is-found-not-configured`. The
+//! citation sat here unchecked because `alo-citing`'s test reads *links*, and a
+//! bare number in prose is not one. The day something serves two people from
+//! one process,
 //! this becomes one person reading another's choices, and it becomes so
 //! silently. [`of_a_session`] therefore takes both variables as arguments and
 //! [`this_sessions_own`] is the only thing on **the settings road** that reads

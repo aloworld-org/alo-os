@@ -1,14 +1,23 @@
 //! **Every place this crate asks the environment who the person is, is on a
 //! list that says why — and a new one fails this test in any spelling.**
 //!
-//! [ADR 0019](../../../docs/decisions/0019-the-daemon-runs-as-the-person.md) §3
-//! is a *condition*, not an assumption: `alo-agentd` runs as the person, one
-//! instance per login, so `$HOME` and `$XDG_CONFIG_HOME` as this process has
-//! them **are** theirs. The day something serves two people from one process,
-//! every one of these reads becomes one person reading another's directories,
-//! and it becomes so silently.
+//! **`alo-agentd` runs as the person** — `alo-agentd.service` sets `User=alo`, and
+//! `image/usr/lib/tmpfiles.d/alo.conf` says the same in words: *alo-agentd —
+//! which runs as the person, holding nothing*. So `$HOME` and
+//! `$XDG_CONFIG_HOME` as this process has them **are** theirs, and reading them
+//! is the daemon reading its own settings.
 //!
-//! The protection ADR 0019 asks for is therefore not *read it once* — some of
+//! **That is a condition, not an assumption.** The day something serves two
+//! people from one process, every one of these reads becomes one person reading
+//! another's directories, and it becomes so silently.
+//!
+//! *`settings.rs` attributed this to "ADR 0019 §3" and that citation is wrong:
+//! ADR 0019 is `a-runtime-is-found-not-configured`, which `alo-models` cites
+//! correctly. The claim is discussed in ADR 0088, which quotes the `tmpfiles`
+//! comment above. Corrected here rather than carried forward, and the unit file
+//! is cited instead because it is the thing that makes it true.*
+//!
+//! The protection that condition asks for is therefore not *read it once* — some of
 //! these reads are for different jobs and cannot be merged. It is that the
 //! list of places is **short, named, and known**, so that day is a day of
 //! editing a list rather than searching a crate.
@@ -62,7 +71,7 @@ const WHAT_NAMES_THE_PERSONS_PLACE: [&str; 4] =
 const WHERE_THE_PERSON_IS_READ: [(&str, &str); 3] = [
     (
         "settings.rs",
-        "the settings road: whose configuration file this service reads (ADR 0019 §3)",
+        "the settings road: whose configuration file this service reads, as the person it runs as",
     ),
     (
         "starting.rs",
