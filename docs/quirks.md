@@ -8267,3 +8267,60 @@ contains the project*, and the thing is *the command runs*.
 **What follows.** `/lib` is a link to `/usr/lib` on some machines and a folder on
 others, so the library folder is resolved rather than assumed — a bound made of
 the link would be a bound around the link.
+
+## `dracut` exits 0 for an `install_items` path it cannot find (2026-10-20)
+
+**What was expected.** `image/installing/alo-installing.conf` is a list of
+programs the boot environment must carry, and its own header says each entry was
+found *one refusal at a time, by booting the environment*. The natural reading
+is that a wrong entry is a build failure — a build told to put a file in an
+initramfs and unable to find it has nothing sensible to do but say so.
+
+**What happens.** It says nothing a build reads, writes the initramfs without
+the file, and **returns success.**
+
+```text
+$ echo 'install_items+=" /usr/bin/definitely-not-in-this-image "' \
+    > /etc/dracut.conf.d/probe.conf
+$ dracut --no-hostonly --reproducible --force --kver "$(ls /usr/lib/modules)" /tmp/probe.img
+$ echo "exit=$?"
+exit=0
+$ ls -l /tmp/probe.img
+-rw------- 1 root root 79346387 ...
+```
+
+Measured in the pinned base — `quay.io/fedora/fedora-bootc@sha256:077182b6…`,
+the digest `image/installing/Containerfile` builds the environment from.
+
+**Why it matters more than it looks.** Every entry in that list could have been
+wrong and nothing in this repository would have noticed. Two of them *were*:
+`/etc/containers/containers.conf` and `/etc/containers/storage.conf` had been
+named since the day the list was written and were never in any initramfs,
+because the base has no `/etc` copy of either — Fedora ships those two defaults
+in `/usr/share/containers/`, which the list already names beside them. Every
+install that worked had worked without them.
+
+**And it explains the archaeology.** The reason that list was built one refusal
+at a time by restarting a machine is that restarting a machine was the only
+instrument anybody had: a missing program is discovered by the environment
+asking for it at run time and not finding it.
+
+**What follows.** The list is held to the initramfs it builds, in the recipe
+that builds it (#847): `lsinitrd` after `dracut`, every `install_items` path
+aboard, every `add_drivers` module with a `.ko` aboard, and a pattern that
+matches nothing refused rather than silently expanding to itself. Two traps are
+inside that check and both are the same shape in opposite directions:
+
+- **`/usr/sbin` is a symlink to `bin` on Fedora 42**, so a path named
+  `/usr/sbin/sfdisk` is stored in the initramfs as `usr/bin/sfdisk`. A check
+  that compares the declared name alone finds twenty absences that are not
+  absences. It resolves the link and accepts either.
+- **`/usr/lib/firmware/iwlwifi-3168-29.ucode.xz` is a 38-byte symlink** into
+  `intel/iwlwifi/`, where the real file is 262,656 bytes. Naming the link puts
+  38 dangling bytes in the initramfs: the path exists, `test -e` passes, and the
+  kernel cannot read the firmware. The list names the real path.
+
+**The lesson is the one this repository keeps meeting.** A tool that cannot fail
+is not a check. The question to ask of the green thing was *what would have to be
+true for this build to pass while the environment is broken*, and the answer was
+*any one of thirty paths being wrong*.
