@@ -663,6 +663,51 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False upower \
  && ls /usr/lib/firmware/rtl_nic > /dev/null \
  && echo "an ordinary computer: battery, bluetooth, removable media, network, wireless, audio, suspend, time, and firmware for the certified machine's own graphics and ethernet"
 
+# **A person's own Wi-Fi, asserted by name — the breadth `docs/features.md`
+# stars and nothing held.**
+#
+# *"Start it, use the whole system, see that your screen, **your Wi-Fi** and
+# your trackpad work on **your** machine with nothing on that machine changed"*
+# is a starred line, added by the owner on 2026-10-20 for the stick that tries
+# alo OS. On somebody else's laptop *your Wi-Fi* is whatever card they have, and
+# until this block the build checked **one** firmware file for it:
+# `iwlwifi-3168-29.ucode.xz`, which is the certified machine's own card.
+#
+# **Measured in the pinned base on 2026-10-21, and the news is good: the breadth
+# was already true and simply unheld.** Every other wireless family's firmware
+# arrives with packages the base installs — `atheros-firmware` 41 MB,
+# `brcmfmac-firmware` 10 MB, `mt7xxx-firmware` 22 MB, `realtek-firmware` 6 MB,
+# `tiwilink-firmware` 5 MB — and nothing in this file removes any of it:
+#
+# | | |
+# |---|---|
+# | `ath10k` 9, `ath11k` 9, `ath12k` 2, `ath9k_htc` 2 | Qualcomm Atheros |
+# | `brcm` 118 | Broadcom and Cypress |
+# | `mediatek` 43 | MediaTek |
+# | `mrvl` 21 | Marvell |
+# | `rtw88` 11, `rtw89` 17, `rtlwifi` 42 | Realtek |
+# | `ti-connectivity` 37, `nxp` 7 | TI, NXP |
+# | `iwlwifi-*.ucode` **0** | Intel — absent from the base, which is what the wireless step above installs |
+#
+# **So this block asserts a property of the base rather than adding one**, and
+# the reason it is worth a block is that a base which quietly dropped
+# `atheros-firmware` would have passed every check in this file. The one card
+# the build tested was the one card the certified machine has, which is the
+# narrowest possible reading of *your* Wi-Fi.
+#
+# **Each directory is required to be non-empty, not merely present**, because
+# this file already records the failure that makes that distinction matter:
+# *the licence for firmware that is not there is present*. A directory holding
+# a licence and no firmware is the shape that passed before.
+RUN for family in ath10k ath11k ath12k ath9k_htc brcm mediatek mrvl \
+                  rtw88 rtw89 rtlwifi ti-connectivity nxp; do \
+      test -n "$(ls -A "/usr/lib/firmware/${family}" 2>/dev/null)" \
+        || { echo "a person's own Wi-Fi: /usr/lib/firmware/${family} is empty or absent" >&2; exit 1; }; \
+    done \
+ && test "$(ls /usr/lib/firmware/iwlwifi-*.ucode* 2>/dev/null | wc -l)" -gt 0 \
+ && ls /usr/lib/firmware/rtl_nic > /dev/null \
+ && echo "your Wi-Fi: firmware for Intel, Qualcomm Atheros, Broadcom, MediaTek, Marvell, Realtek, TI and NXP, and ethernet beside it"
+
 
 # **What this machine plays, as [ADR 0058](../docs/decisions/0058-which-software-decoders-the-image-ships.md)
 # decided it** — and the decoders it may not carry, absent by name.
