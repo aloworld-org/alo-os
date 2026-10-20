@@ -97,8 +97,8 @@ pub use verifying::{Verified, Verifying};
 pub use what_display_there_is::{
     Glass, WhatDisplayThereIs, from_a_connector, is_connected, the_glass, the_mode,
 };
-pub use which_disks_may_be_offered::{
     NotOffered, Offered, TheMedium, WhatToShow, what_may_be_offered,
+pub use which_disks_may_be_offered::{
 };
 pub use why_there_is_no_network::WhyThereIsNoNetwork;
 pub use words::{EVERY_WORD, WordsError, declare_into, installing_words};
