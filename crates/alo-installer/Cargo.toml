@@ -8,6 +8,21 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+# **How much room alo OS needs, read rather than copied.** `alo_image::room`
+# holds it, because it is a fact about the image and both installers consume it.
+# It was a literal in `src/sizes.rs` and the environment had no size check at
+# all, which `tests/the_installer_walked_on_a_real_windows.rs` had already
+# written down: *one guard on the other side of a reboot from the thing it
+# protects.* Survivable from Windows, which refuses before it restarts; not
+# survivable from a stick, where nothing refuses and `bootc install
+# to-disk --wipe` is one program.
+#
+# **A real dependency, not a development one.** The note below said a
+# development dependency avoided a cycle; `cargo metadata` accepts this one, so
+# there is no cycle to avoid, and `alo-image` already cross-compiles for
+# `x86_64-pc-windows-gnu` — checked, with `--all-targets`, before this line was
+# written.
+alo-image = { path = "../alo-image" }
 # The environment this program stages, and the three facts it owes it: the
 # label its area carries, the disk name it will accept, and the partition types
 # it refuses a disk for. Named from the crate that refuses them rather than
@@ -36,12 +51,10 @@ thiserror = { workspace = true }
 ring = { workspace = true }
 
 [dev-dependencies]
-# What the Release a person downloads from says, so that the Secure Boot state
-# the notes promise can be held to the state `deciding.rs` really accepts. A
-# development dependency only, and in this direction only: `alo-installing`
-# depends on `alo-image`, so this crate is where the two ends can be compared
-# without a cycle, and the rule itself lives once in `alo_image::ACCEPTED`.
-alo-image = { path = "../alo-image" }
+# `alo-image` is a real dependency above, so it is not repeated here. What it
+# was here for — comparing what the Release says against what `deciding.rs`
+# accepts, with the rule living once in `alo_image::ACCEPTED` — is unchanged and
+# still works.
 
 # The machine's one vocabulary, in the direction every crate takes: a crate that
 # says something is collected by `alo-saying`, and never reaches for it.

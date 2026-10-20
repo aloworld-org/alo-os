@@ -110,6 +110,7 @@ mod recipe;
 mod refusing;
 mod released;
 mod releasing;
+mod room;
 mod runtime;
 mod service;
 #[cfg(test)]
@@ -145,6 +146,7 @@ pub use refusing::{
 };
 pub use released::{ACCEPTED, everything_wrong_with_the_try_it};
 pub use releasing::{THE_RELEASE, TheRelease};
+pub use room::{THE_LEAST_DISK, can_hold_alo_os};
 pub use runtime::{THE_RUNTIMES_BINARY, THE_RUNTIMES_LIBRARIES, TheRuntime};
 pub use service::{ROOT, Service};
 pub use trying::{Requirement, THE_HARDWARE, THE_README, THE_SECTION, TheTryIt, what_to_buy};
