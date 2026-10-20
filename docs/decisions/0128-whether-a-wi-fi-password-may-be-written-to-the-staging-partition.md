@@ -57,6 +57,64 @@ used for twenty years. The desktop lane's reasoning, which the owner agreed to:
   initramfs that #847 has just taken from 79 MB to 124 MB. That is weeks, and it
   would hold the whole road.
 
+### That third reason was not measured, and most of it is wrong — 2026-10-20
+
+**Both lanes repeated it and neither had measured it.** It was the reason put to
+the owner, it is recorded above as agreed, and it is corrected here rather than
+quietly edited, because what the owner agreed to should stay visible beside what
+turned out to be true.
+
+| what the reason claimed | measured |
+|---|---|
+| fonts must be added | **already in the base.** `AdwaitaSans-Regular.ttf` and `AdwaitaMono-Regular.ttf` are in `/usr/share/fonts/`, which is where the design's own faces live. They cost a line in `install_items`, not a package |
+| a display stack must be added | **`libdrm` is already in the base.** A screen rastered in software draws to a DRM dumb buffer and needs nothing else |
+| Mesa, EGL, GBM | **not needed, and not there.** The base has no `libEGL`, no `libgbm`, no `libgallium` at all — and a software raster wants none of them. Only a GL-accelerated screen would, and the design's 06 is a wallpaper, a card, text and a progress bar |
+| the initramfs is 124 MB and growing | **the area has 779 MiB spare.** Measured from the published candidate: 229 MiB staged of the 1008 MiB the area holds, 22.7% used |
+
+**So size is not the obstacle, and three orders of magnitude of headroom is not
+a close call.** The sentence *that is weeks* may still be right; the reason given
+for it was not.
+
+### What it does cost, named so the next estimate is better than this one
+
+- **Keyboard input.** The design's 06 carries `Action / View details` and
+  `Action / Accessibility`; its own asking screens would carry a text field. The
+  environment reads a console today and has no input road to a drawn surface.
+- **The DRM road, without giving up static linking.** `alo-installing` is built
+  statically against musl **on purpose** — `image/installing/Containerfile` says
+  why: *what is copied into the environment depends on nothing in it.* Linking
+  `libdrm` would give that up, so drawing wants the modeset and dumb-buffer
+  ioctls written directly. Bounded, and real.
+- **A real display.** The environment runs before anything has configured a
+  screen, on whatever mode the firmware left. Nothing in this repository has
+  drawn under those conditions, and a boot that comes up black is worse than a
+  console that comes up readable.
+
+### And the design already requires it, which changes the question
+
+`docs/design/figma-snapshot/ROOTS.md` lists all 17 installer frames, and
+`70-28.xml` exports them. **`370:30206 — 06 · Install after restart` is the
+environment's own screen**: 1440×960, the product wallpaper, `Choice / Image
+verified`, `Measured progress`, `Action / View details`, `Action /
+Accessibility`. Its words, read from the file: *Installing alo OS on the disk you
+confirmed* — past tense, after a restart — and `05 · Prepare and restart` says
+*it will not ask you to choose the disk again*. Windows is not running at that
+point and cannot draw it.
+
+**So the display stack is not a cost the picker introduces. It is a cost the
+design has been owed since 06 was drawn**, and a picker is one more screen on a
+surface already owed. The question is not *picker or console*; it is *when is 06
+paid for*.
+
+**And the frames were in this repository the whole time.** Both lanes reasoned
+from code and from ADR 0023's prose, reported an absence, and neither opened
+`docs/design/figma-snapshot/ROOTS.md` — the file whose only purpose is to say
+what the design contains. `CLAUDE.md` says the design is followed and is right
+until an ADR says otherwise. **A console picker is therefore a departure from a
+design that exists, and this section is where it is written down.** It is not
+decided here: what is decided above is that the environment asks, and the owner
+agreed to console-first without this measurement in front of them.
+
 **What it costs, said plainly as the rejected options were.** A person
 installing alo OS types their Wi-Fi password at a text prompt on a console, which
 is less than the rest of this product's interface promises and is the thing a
