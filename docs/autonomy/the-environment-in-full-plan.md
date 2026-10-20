@@ -239,6 +239,33 @@ Nothing is built on 3b until that engine exists somewhere. It is a smaller and
 sharper blocker than *where does the table come from*, and it is the first thing
 to settle.
 
+#### 3b is not an item among items; it is the gate for every screen that asks
+
+*The desktop lane's point, 2026-10-20, and this lane checked it rather than
+agreeing.* They argued it against a trade this lane had offered the owner — a
+layout list sooner instead of S0's self-proving card — and the trade does not
+exist.
+
+**Everything the environment ever asks a person to type runs through this one
+table**: S0's four proof characters, S3's Wi-Fi password, S4 and S5's typed disk
+name, and S7 and S8's typed stick name. There is nothing else it asks anybody to
+type. So a layout screen that arrived sooner would arrive into an environment
+where **choosing a layout changes nothing a person can observe**, because
+nothing can be typed either way — a screen that asks a question and cannot act
+on the answer, which is the shape both lanes have spent two days removing.
+
+**Measured, and it is stronger than the argument needed.** There is no console
+road either: `alo-installing` reads no typed input anywhere today.
+`running.rs` touches stdin only as `Stdio::null()` for subprocesses and a
+`BufReader` over a child's complaints, and the typed disk-name consent that
+exists lives on the **Windows** side, arriving as `alo.installing.to=` on the
+kernel command line ([`Told`]). So the environment has never taken a typed
+character by any road, and there is no fallback to fall back to.
+
+**What follows for whoever reads this plan next:** if 3b slips, the drawing work
+behind it is still worth doing and **the asking is not**. Four of the eleven
+frames are surfaces a person only reads; the other seven wait on one table.
+
 ## 4. The stick: two halves that this page ran together
 
 **The original item read *a program that writes one* and then gave a stick
