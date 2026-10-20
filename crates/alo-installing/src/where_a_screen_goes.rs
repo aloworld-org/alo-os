@@ -43,7 +43,7 @@ pub const THE_DESIGN_WAS_DRAWN_AT: (u32, u32) = (1440, 960);
 
 /// A rectangle on the screen, in the framebuffer's own pixels.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Box {
+pub struct AnArea {
     /// How far across its left edge is.
     pub across: u32,
     /// How far down its top edge is.
@@ -125,23 +125,23 @@ const THE_BODY_IS_AT_LEAST_MM: f32 = 3.05;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AScreensPlaces {
     /// The small line above the title.
-    pub eyebrow: Box,
+    pub eyebrow: AnArea,
     /// The question itself.
-    pub title: Box,
+    pub title: AnArea,
     /// The sentence under it.
-    pub introduction: Box,
+    pub introduction: AnArea,
     /// Where the first card sits, and how large every card is.
-    pub first_card: Box,
+    pub first_card: AnArea,
     /// How far down from one card to the next.
     pub card_to_card: u32,
     /// The line under the cards.
-    pub consequence: Box,
+    pub consequence: AnArea,
     /// The button that goes on.
-    pub onward: Box,
+    pub onward: AnArea,
     /// The button that goes back.
-    pub back: Box,
+    pub back: AnArea,
     /// The accessibility control, bottom left.
-    pub accessibility: Box,
+    pub accessibility: AnArea,
     /// How large the eyebrow and the help line are drawn.
     pub small: TheType,
     /// How large the title is drawn.
@@ -183,7 +183,7 @@ pub fn where_a_screen_goes(across: u32, down: u32, glass: Option<Glass>) -> Opti
     let button = share_across(A_BUTTON_IS_WIDE);
     let a_card_is_tall = down_from(86);
     let a_button_is_tall = down_from(48);
-    let at = |down_by: u32, wide: u32, tall: u32| Box {
+    let at = |down_by: u32, wide: u32, tall: u32| AnArea {
         across: left,
         down: top + down_by,
         wide,
@@ -198,13 +198,13 @@ pub fn where_a_screen_goes(across: u32, down: u32, glass: Option<Glass>) -> Opti
         card_to_card: a_card_is_tall + down_from(10),
         consequence: at(down_from(375), wide, quiet.apart),
         onward: at(down_from(413), button, a_button_is_tall),
-        back: Box {
+        back: AnArea {
             across: left + button + down_from(12),
             down: top + down_from(413),
             wide: button,
             tall: a_button_is_tall,
         },
-        accessibility: Box {
+        accessibility: AnArea {
             across: share_across(40.0 / 1440.0),
             down: down - down_from(84),
             wide: button,
