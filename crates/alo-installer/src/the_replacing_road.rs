@@ -249,6 +249,7 @@ mod tests {
     use super::*;
     use crate::disks::Disks;
     use crate::machine::tests::Answering;
+    use crate::reaching_the_network::ReachingTheNetwork;
     // `disks.rs`' own description of what Windows prints, reused rather than
     // copied, so this crate holds one idea of what a machine's disks look like.
     use crate::disks::tests::PRINTED as SEVERAL_DISKS;
@@ -288,6 +289,7 @@ mod tests {
             disks: Disks::read(Some(disks)),
             an_entry_is_named_alo_os: Some(false),
             fast_startup: FastStartup::Off,
+            reaching: ReachingTheNetwork::ByCable,
         }
     }
 

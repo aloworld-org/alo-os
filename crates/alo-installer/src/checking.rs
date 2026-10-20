@@ -13,6 +13,7 @@ use crate::found::Found;
 use crate::machine::TheMachine;
 use crate::memory;
 use crate::program::Program;
+use crate::reaching_the_network::ReachingTheNetwork;
 use crate::security_chip::SecurityChip;
 use crate::starting::Starting;
 use crate::windows_volume::WindowsVolume;
@@ -41,6 +42,9 @@ pub fn check(machine: &mut impl TheMachine) -> Found {
         an_entry_is_named_alo_os: answered(machine, &Program::ListingTheStartEntries)
             .map(|printed| entries::one_is_named_alo_os(&printed)),
         fast_startup: FastStartup::read(answered(machine, &Program::ReadingFastStartup).as_deref()),
+        reaching: ReachingTheNetwork::read(
+            answered(machine, &Program::ReadingHowItReachesTheNetwork).as_deref(),
+        ),
     }
 }
 

@@ -857,6 +857,7 @@ installer.disks-not-read	The disks in this computer could not be read, so nothin
 installer.entries-not-read	The list of systems this computer can start could not be read, so nothing was changed
 installer.erasing-word	erase
 installer.fast-startup-left-on	Windows' Fast Startup is being left on, and nothing about it is changed
+installer.found.a-cable	This computer is connected by cable, which is what the next step needs
 installer.found.a-disk-for-alo-os	The disk {disk} ({size} GB) is empty, and alo OS can be installed onto it
 installer.found.a-disk-in-use	The disk {disk} ({size} GB) already holds files or a system, so alo OS does not use it
 installer.found.a-disk-not-usable	The disk {disk} ({size} GB) cannot be written to, or is connected in a way this installer does not recognise yet, so alo OS does not use it
@@ -871,8 +872,11 @@ installer.found.fast-startup-on	Windows' Fast Startup is on
 installer.found.little-memory	This computer has {memory} GB of memory. alo OS is made for 16 GB or more, and is slow with less
 installer.found.memory	This computer has {memory} GB of memory
 installer.found.memory-not-read	How much memory this computer has could not be found out
+installer.found.network-not-read	Whether this computer has a cable connected could not be found out. After the restart, alo OS is downloaded over a wired connection only
+installer.found.no-network	This computer is not connected to any network. After the restart, alo OS is downloaded over a wired connection only. Connect a cable before continuing
 installer.found.no-tpm	This computer has no security chip (TPM)
 installer.found.not-uefi	This computer starts in the older BIOS way
+installer.found.only-wireless	This computer is on Wi-Fi and has no cable connected. After the restart, alo OS is downloaded over a wired connection only — there is no way to choose a Wi-Fi network then. Connect a cable before continuing
 installer.found.secure-boot-not-read	Whether Secure Boot is on could not be found out
 installer.found.secure-boot-off	Secure Boot is off
 installer.found.secure-boot-on	Secure Boot is on

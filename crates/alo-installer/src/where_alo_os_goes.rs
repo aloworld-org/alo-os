@@ -171,6 +171,7 @@ mod tests {
     use crate::found::Found;
     use crate::identities::{DiskNumber, PartitionNumber};
     use crate::machine::tests::Answering;
+    use crate::reaching_the_network::ReachingTheNetwork;
     use crate::security_chip::SecurityChip;
     use crate::starting::Starting;
     use crate::windows_volume::{BesideWindows, WindowsVolume};
@@ -248,6 +249,7 @@ mod tests {
             disks: Disks::read(Some(disks)),
             an_entry_is_named_alo_os: Some(false),
             fast_startup: FastStartup::Off,
+            reaching: ReachingTheNetwork::ByCable,
         }
     }
 

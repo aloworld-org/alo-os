@@ -69,6 +69,7 @@ mod naming;
 #[cfg(windows)]
 mod on_windows;
 mod program;
+mod reaching_the_network;
 mod removing;
 mod security_chip;
 mod sequence;
@@ -112,6 +113,7 @@ pub use program::{
     BASIC_DATA, Program, THE_ENTRYS_NAME, THE_LOADER, THE_PROGRAMS_HOME, THE_PROGRAMS_NAME,
     THE_REMOVALS_SHORTCUT, THE_SHORTCUT, Tool,
 };
+pub use reaching_the_network::ReachingTheNetwork;
 pub use removing::{Removed, THE_REMOVALS_WORD, remove_alo_os};
 pub use security_chip::SecurityChip;
 pub use sequence::install;

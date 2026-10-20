@@ -31,6 +31,9 @@
 //! | [`Program::ReadingFastStartup`] | whether Windows' Fast Startup is on, from two
 //!   registry values, whether the hibernation file is there, and how many entries the
 //!   enumeration that looked for it found |
+//! | [`Program::ReadingHowItReachesTheNetwork`] | how this computer reaches a network:
+//!   every physical adapter as a control, and how many are up and wired and up and
+//!   wireless |
 //!
 //! | Changes, in the order they are made | Put back by |
 //! |---|---|
@@ -80,6 +83,15 @@ pub const THE_DEFAULTS_SHORTCUT: &str =
 /// installed from a download finds the way back where they found the way in.
 pub const THE_REMOVALS_SHORTCUT: &str =
     "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Remove alo OS.lnk";
+
+/// What `Get-NetAdapter` calls a wired adapter.
+///
+/// The cmdlet's own word, not a name a person or a vendor chose: an adapter's
+/// name is in the machine's language and a `Description` is the vendor's.
+const THE_WIRED_KIND: &str = "802.3";
+
+/// What `Get-NetAdapter` calls a wireless adapter.
+const THE_WIRELESS_KIND: &str = "Native 802.11";
 
 /// Where Windows keeps the setting behind Fast Startup.
 const THE_POWER_KEY: &str = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power";
@@ -166,6 +178,20 @@ pub enum Program {
     ///
     /// Reads only, and **names no `powercfg`**, which a test holds.
     ReadingFastStartup,
+
+    /// How this computer reaches a network: every physical adapter, and how
+    /// many are up and wired and how many are up and wireless.
+    ///
+    /// The environment this installer stages is wired-only, and the shrink
+    /// happens before the restart, so a person whose only network is Wi-Fi is
+    /// told before anything is changed (`crate::reaching_the_network`).
+    ///
+    /// `Get-NetAdapter` needs no administrator. `-Physical` leaves out the
+    /// tunnels and loopbacks Windows also lists, which are up and reach
+    /// nothing. The count of all of them is printed as a **control**: a
+    /// computer that downloaded this program has an adapter, so nought is an
+    /// instrument that found nothing rather than an answer.
+    ReadingHowItReachesTheNetwork,
 
     /// Give the EFI system partition a drive letter, so the one file both
     /// systems keep the default in can be read and written.
@@ -438,6 +464,7 @@ impl Program {
                 | Self::ListingTheDisks
                 | Self::ListingTheStartEntries
                 | Self::ReadingFastStartup
+                | Self::ReadingHowItReachesTheNetwork
         )
     }
 
@@ -574,6 +601,28 @@ impl Program {
                    HibernateEnabled = $(if ($null -eq $hibernation) {{ $null }} else {{ [uint32]$hibernation }}); \
                    RootEntries = [uint32]$named.Count; \
                    HiberfilSys = [bool]($named -contains 'hiberfil.sys') }})"
+            ),
+            // **`-Physical` and not every adapter.** Windows also lists
+            // tunnels, loopbacks and the virtual adapters a hypervisor or a
+            // VPN leaves behind; several are `Up` and reach nothing, and one of
+            // them would read as a cable.
+            //
+            // **`MediaType` and not the adapter's name.** A name is the
+            // vendor's and is in the machine's own language; `802.3` and
+            // `Native 802.11` are what the cmdlet itself reports.
+            //
+            // The count of every physical adapter is the control, and is
+            // printed whatever the other two are: see
+            // `crate::reaching_the_network`.
+            Self::ReadingHowItReachesTheNetwork => format!(
+                "$all = @(Get-NetAdapter -Physical -ErrorAction SilentlyContinue); \
+                 $up = @($all | Where-Object {{ $_.Status -eq 'Up' }}); \
+                 ConvertTo-Json -Compress -InputObject ([ordered]@{{ \
+                   Adapters = [uint32]$all.Count; \
+                   Wired = [uint32]@($up | \
+                     Where-Object {{ $_.MediaType -eq '{THE_WIRED_KIND}' }}).Count; \
+                   Wireless = [uint32]@($up | \
+                     Where-Object {{ $_.MediaType -eq '{THE_WIRELESS_KIND}' }}).Count }})"
             ),
             // The shortcut is made through Windows' own shell object, which is
             // how a shortcut is made on Windows, and read back: a shortcut that
