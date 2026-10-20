@@ -113,18 +113,11 @@ pub enum Pressed {
 /// next person to shorten this function would trust the wrong line.
 #[must_use]
 pub fn what_was_pressed(event: &[u8]) -> Option<Pressed> {
-    let kind = u16::from_ne_bytes([*event.get(16)?, *event.get(17)?]);
-    let code = u16::from_ne_bytes([*event.get(18)?, *event.get(19)?]);
-    let value = i32::from_ne_bytes([
-        *event.get(20)?,
-        *event.get(21)?,
-        *event.get(22)?,
-        *event.get(23)?,
-    ]);
-    if kind != A_KEY || value == 0 {
+    let said = what_an_event_said(event)?;
+    if said.value == 0 {
         return None;
     }
-    match code {
+    match said.code {
         code::UP => Some(Pressed::Up),
         code::DOWN => Some(Pressed::Down),
         code::ENTER => Some(Pressed::Enter),
@@ -133,6 +126,43 @@ pub fn what_was_pressed(event: &[u8]) -> Option<Pressed> {
         code::TAB => Some(Pressed::Tab),
         _ => None,
     }
+}
+
+/// Which key an event was about, and what happened to it.
+///
+/// `value` is the kernel's: **0 a release, 1 a press, 2 an autorepeat.** It is
+/// carried rather than reduced to a boolean because the two readers of this
+/// want different things from it — [`what_was_pressed`] discards releases,
+/// since a list that moved on both would move twice for one keystroke, and
+/// `crate::WhatAPersonTyped` **needs** them, because a shift whose release is
+/// never seen stays held for the rest of the install.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Said {
+    /// The evdev code, as `input-event-codes.h` numbers it.
+    pub code: u16,
+    /// 0 a release, 1 a press, 2 an autorepeat.
+    pub value: i32,
+}
+
+/// The key event in these bytes, where they are one.
+///
+/// [`None`] for anything that is not a key event — a synchronisation marker, a
+/// mouse movement — and for a short read, which every `get` here holds.
+#[must_use]
+pub fn what_an_event_said(event: &[u8]) -> Option<Said> {
+    let kind = u16::from_ne_bytes([*event.get(16)?, *event.get(17)?]);
+    if kind != A_KEY {
+        return None;
+    }
+    Some(Said {
+        code: u16::from_ne_bytes([*event.get(18)?, *event.get(19)?]),
+        value: i32::from_ne_bytes([
+            *event.get(20)?,
+            *event.get(21)?,
+            *event.get(22)?,
+            *event.get(23)?,
+        ]),
+    })
 }
 
 /// Whether a device with these capabilities is a keyboard.

@@ -991,6 +991,7 @@ name = "alo-installing"
 version = "0.0.1"
 dependencies = [
  "alo-image",
+ "alo-keyboards",
  "alo-saying",
  "alo-starting",
  "alo-strings",

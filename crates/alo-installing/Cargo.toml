@@ -14,6 +14,9 @@ repository.workspace = true
 # second parser of the digest in the program that pulls it — and a second
 # parser is exactly where a pin and what is pulled would drift apart.
 alo-image = { path = "../alo-image" }
+# The keyboard table: what a key gives on the layout a person chose. Pure Rust,
+# no C in it, which is why this crate can take it and stay static against musl.
+alo-keyboards = { path = "../alo-keyboards" }
 
 # Every sentence the person watching the console reads.
 # Windows own loader, named once in the crate that owns the menu both systems
