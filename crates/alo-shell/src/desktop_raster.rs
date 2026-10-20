@@ -38,6 +38,12 @@ use crate::{DesktopLook, FillingShows, FillingWindow, RenderError, RunningShows,
 /// The desktop for one display, ready to paint.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct DesktopPicture {
+    /// The alo Bar's panel, when somebody has it open.
+    ///
+    /// **Drawn above everything but the task windows**, because it is what the
+    /// keyboard is in: a panel a person is typing into, covered by anything,
+    /// is a panel they cannot read what they typed in.
+    pub(crate) the_bar: Option<crate::bar_raster::BarPicture>,
     /// The display size it was laid out for.
     pub(crate) size: (i32, i32),
     /// The dock, or nothing when a window needs the room it sits in and the
@@ -187,6 +193,9 @@ pub(crate) struct Shown<'a> {
     /// Which slot on the bar the keyboard is on, from
     /// [`crate::nested_desktop::DesktopFrame::the_keyboard_is_on_the_bar`].
     pub(crate) the_keyboard_is_on_the_bar: Option<usize>,
+    /// The alo Bar's panel, from
+    /// [`crate::nested_desktop::DesktopFrame::the_bar`].
+    pub(crate) the_bar: Option<crate::bar_raster::TheBarOnTheDisplay<'a>>,
 }
 
 /// What the running window shows, as a panel.
@@ -253,6 +262,7 @@ pub(crate) fn picture(
         the_dock_has_open,
         the_docks_words,
         the_keyboard_is_on_the_bar,
+        the_bar,
     } = shown;
     // **The count the desktop handed over, not a constant.** This passed a
     // literal `0` until 2026-10-09, with a comment saying a bar holding nothing
@@ -389,7 +399,13 @@ pub(crate) fn picture(
         )
     });
 
+    // **The alo Bar, left out if it refuses** — the same rule as the market
+    // and the task windows above. A panel that could not be rasterised is a
+    // panel not drawn, never a half-drawn one.
+    let the_bar = the_bar.and_then(|open| crate::bar_raster::picture(&open, palette, fonts));
+
     Ok(DesktopPicture {
+        the_bar,
         tasks,
         market,
         top_controls,

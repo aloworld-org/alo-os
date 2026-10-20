@@ -946,6 +946,7 @@ mod running {
                 // presses. `what_only_the_server_knows` sets it from
                 // `Server::which_slot_on_the_bar`.
                 the_keyboard_is_on_the_bar: None,
+                the_bar: None,
                 look: self.look,
                 strings: &self.strings,
                 egress: &self.egress,

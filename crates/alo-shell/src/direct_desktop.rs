@@ -1168,6 +1168,41 @@ impl LoopInput for Desk<'_> {
                 words: &the_markets_words,
             })
         });
+        // **The alo Bar, worked out once a frame and kept alive beside the
+        // market's words**, for the same reason: the raster borrows these
+        // strings and the frame outlives this block.
+        //
+        // **Open means the composer has the keyboard and something is in it.**
+        // An empty field is the Dock's own prompt and no panel — a list that
+        // appeared the moment somebody pressed the chord would flash every
+        // application on the machine under their first keystroke.
+        let typed_into_the_bar = server.composer().typed().to_owned();
+        let bar_is_open =
+            server.composer().has_the_keyboard() && !typed_into_the_bar.trim().is_empty();
+        let found = if bar_is_open {
+            crate::the_bar_finds::what_the_bar_finds(
+                &typed_into_the_bar,
+                &server.what_this_machine_has,
+                self.strings,
+            )
+        } else {
+            Vec::new()
+        };
+        let where_from = if bar_is_open {
+            crate::the_bar_finds::where_these_came_from(found.len(), self.strings)
+        } else {
+            String::new()
+        };
+        let the_bar = bar_is_open
+            .then(|| crate::where_the_bar_opens::where_the_bar_opens(size))
+            .flatten()
+            .map(|places| crate::bar_raster::TheBarOnTheDisplay {
+                places,
+                typed: &typed_into_the_bar,
+                origin: &where_from,
+                results: &found,
+                chosen: server.which_row_in_the_bar,
+            });
         what_only_the_server_knows(
             &mut frame,
             server,
@@ -1179,6 +1214,7 @@ impl LoopInput for Desk<'_> {
                 the_docks_words: &the_docks_words,
                 tasks: &the_task_windows,
                 market: the_market,
+                the_bar,
             },
             &named,
         );
@@ -1394,6 +1430,12 @@ impl LoopInput for Desk<'_> {
                     // window on two screens at once with one of them
                     // unreachable. It is on the display the loop holds, which
                     // is where Settings is for the same reason.
+                    // **None on an extra display**, for the market's reason
+                    // and the same one: a person is typing into one Bar, and
+                    // drawing the panel on every display would put the rows
+                    // they are choosing from on screens their keyboard is not
+                    // on. It opens on the display the loop holds.
+                    the_bar: None,
                     market: None,
                 },
                 &named,

@@ -175,7 +175,60 @@ impl crate::Server {
     ///
     /// Answers whether anything happened, so a caller knows whether to draw
     /// again.
+    /// What the alo Bar would open if Enter were pressed now, if anything.
+    ///
+    /// **The row the keyboard is on, and the first one when it is on none.**
+    /// That is what every other system does — Windows' Start and a Mac's
+    /// Spotlight both act on the top result until somebody moves off it — and
+    /// it is why a person can type three letters and press Enter without ever
+    /// touching an arrow.
+    ///
+    /// [`None`] when nothing was typed or nothing matched, which is when Enter
+    /// means what it has always meant: ask alo.
+    #[must_use]
+    pub fn what_the_bar_would_open(&self) -> Option<String> {
+        let matches = crate::the_bar_finds::what_matches(
+            self.the_composer.typed(),
+            &self.what_this_machine_has,
+        );
+        matches
+            .get(self.which_row_in_the_bar.unwrap_or(0))
+            .map(|identifier| (*identifier).clone())
+    }
+
+    /// Carry out one key in the composer.
+    ///
+    /// **Enter opens what the Bar found, and asks alo only when it found
+    /// nothing.** `docs/features.md` promises the Bar *works with no model at
+    /// all*: application names open applications. A person who typed the name
+    /// of something they have installed and pressed Enter has asked for that
+    /// thing, and sending it to a model instead would be answering a different
+    /// question — and on a machine with no model, answering none.
     pub fn a_key_reached_the_composer(&mut self, key: ComposerKey) -> WhatTheComposerDid {
+        // **The field's own guard, repeated here deliberately.** This arm runs
+        // *before* `TheComposer::pressed`, which is what refuses every key for
+        // a field that does not have the keyboard — so without this an Enter
+        // routed here while the Bar is shut would open an application from
+        // text nobody is looking at. Tested rather than argued:
+        // `enter_does_nothing_when_the_bar_does_not_have_the_keyboard`.
+        if key == ComposerKey::Ask
+            && self.the_composer.has_the_keyboard()
+            && let Some(identifier) = self.what_the_bar_would_open()
+            && let Ok(application) = alo_dock::AppId::named(&identifier)
+        {
+            // **Pushed and not started here**, which is
+            // `Server::asked_to_start`'s whole reason: the bus starts an
+            // application and that is not fast, and sent from the input path it
+            // would hold every window on the machine still while one started.
+            self.asked_to_start.push(application);
+            // **The field empties and the keyboard leaves it**, which is what
+            // asking alo does and for the same reason: a request still in the
+            // field is one a person sends twice. `Clear` is the key that means
+            // exactly this, so it is the one used rather than a second way of
+            // emptying the same field.
+            self.which_row_in_the_bar = None;
+            return self.the_composer.pressed(ComposerKey::Clear);
+        }
         let what = self.the_composer.pressed(key);
         if let WhatTheComposerDid::TheyAsked(ref request) = what {
             // **The field already emptied itself**, and this records the asking.

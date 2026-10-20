@@ -196,6 +196,7 @@ pub use an_application_is_started::{AWayToStartApplications, AsksAnApplicationTo
 /// wire, and because whoever wires a compositor together serves the door.
 /// The compositor's hand for the three application acts the door carries.
 mod an_application_verb_is_carried_out;
+pub mod bar_raster;
 mod dock_room;
 mod dock_windows;
 mod drawing;
@@ -367,6 +368,7 @@ pub mod task_raster;
 pub mod task_text;
 pub mod the_application_door;
 pub mod the_application_doors_place;
+pub mod the_bar_finds;
 mod the_bars_pressable_slots;
 /// The Dock's composer as a field a person types a request into.
 pub mod the_composer_a_person_types_in;
@@ -415,6 +417,7 @@ mod what_the_seat_made_of_its_input;
 mod what_the_server_tells_a_frame;
 mod where_a_task_window_opens;
 mod where_a_window_opens;
+pub mod where_the_bar_opens;
 mod where_the_dock_is;
 mod where_the_market_opens;
 pub mod which_area_has_the_keyboard;

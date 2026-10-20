@@ -254,6 +254,16 @@ pub struct DesktopFrame<'a> {
     /// every other builder of this frame leaves it [`None`] — which is the
     /// true answer for a fixture nobody has pressed F6 on.
     pub the_keyboard_is_on_the_bar: Option<usize>,
+    /// The alo Bar, when a person has it open and has typed something.
+    ///
+    /// **[`None`] is a Bar nobody is using**, which is most frames: the panel
+    /// opens over the canvas only while the composer has the keyboard and
+    /// something has been typed into it. An empty field shows the Dock's own
+    /// prompt and no panel at all.
+    ///
+    /// **Server state, like `market`** — what was typed and what it found are
+    /// decided by presses, and presses reach the `Server`.
+    pub the_bar: Option<crate::bar_raster::TheBarOnTheDisplay<'a>>,
 }
 
 impl Nested {
@@ -475,6 +485,10 @@ pub(crate) fn frame_pictures(
             // unlike `market`, which was written `None` here and cost a release
             // — see the note below it. This one is tested through this
             // function rather than through the raster for that reason.
+            // **Read off the frame**, like every other field in this block.
+            // `market` is the one that was not, and that is why it is the one
+            // with a paragraph under it.
+            the_bar: desktop.the_bar,
             the_keyboard_is_on_the_bar: desktop.the_keyboard_is_on_the_bar,
             // **Read off the frame, and a literal `None` until 2026-10-19.**
             //

@@ -86,6 +86,11 @@ pub(crate) struct WhatTheLaneBuilt<'a> {
     /// words are `String`s somewhere. [`None`] is a shut window, which is every
     /// moment until a person presses the Applications entry on their Dock.
     pub(crate) market: Option<crate::market_raster::AMarketOnTheDisplay<'a>>,
+    /// The alo Bar, when somebody has it open and has typed into it.
+    ///
+    /// **Borrowed from a bundle the lane keeps alive**, for `market`'s reason:
+    /// the rows hold strings that were said this frame.
+    pub(crate) the_bar: Option<crate::bar_raster::TheBarOnTheDisplay<'a>>,
 }
 
 /// Fill the fields of `frame` that only `server` and the lane can answer.
@@ -105,12 +110,16 @@ pub(crate) fn what_only_the_server_knows<'a>(
         the_docks_words,
         tasks,
         market,
+        the_bar,
     } = built;
     frame.tasks = tasks;
     // **Whether a person has the market open**, which a desktop's own state
     // cannot know for `the_dock_has_open`'s reason exactly: it is opened by a
     // press, and presses reach the `Server`.
     frame.market = market;
+    // **The Bar, for `market`'s reason exactly**: what was typed and what it
+    // found are decided by presses, and presses reach the `Server`.
+    frame.the_bar = the_bar;
     frame.windows = windows;
     // A desktop's own state cannot know that a window has taken the whole
     // screen, and the Dock gives way to one that has.
