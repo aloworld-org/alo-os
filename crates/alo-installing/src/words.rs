@@ -250,7 +250,36 @@ pub const CANNOT_BE_WRITTEN: Word = Word::saying(
 )
 .noting("{disk} is the disk's own name, not translated.");
 
+/// There is no network card at all.
+pub const NO_NETWORK_CARD: Word = Word::saying(
+    "installing.no-network-card",
+    "This computer's network card was not found, so nothing was changed and alo OS was not \
+     installed. Windows is still there and starts as it did before. This needs a computer \
+     whose network card this version of alo OS knows",
+)
+.noting(
+    "Said when the machine has no network card the system can see at all — so it deliberately \
+     does not mention a cable, because there is nowhere to plug one in. alo OS and Windows are \
+     product names and are not translated.",
+);
+
+/// There is a network card and nothing on the wire.
+pub const NOTHING_CONNECTED: Word = Word::saying(
+    "installing.nothing-connected",
+    "No network cable is plugged in, so nothing was changed and alo OS was not installed. \
+     Plug in a network cable, then restart to try again",
+)
+.noting(
+    "Said when the computer has a network card and nothing is connected to it. \"A network \
+     cable\" is wired ethernet. alo OS is the product's name and is not translated.",
+);
+
 /// The internet could not be reached.
+///
+/// **Kept for the case it was always right about**: a live network card and
+/// the download still did not arrive. [`NO_NETWORK_CARD`] and
+/// [`NOTHING_CONNECTED`] took the two cases this sentence could not be acted
+/// on for.
 pub const NOT_REACHABLE: Word = Word::saying(
     "installing.not-reachable",
     "alo OS could not be downloaded, so nothing was changed. Check that this computer is \
@@ -320,7 +349,9 @@ pub const NOT_THE_SPACE_THE_INSTALLER_MADE: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 29] = [
+pub const EVERY_WORD: [Word; 31] = [
+    NO_NETWORK_CARD,
+    NOTHING_CONNECTED,
     STARTING,
     REPLACING_WHAT_IS_THERE,
     TIDYING,

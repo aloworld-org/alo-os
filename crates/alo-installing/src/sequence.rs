@@ -39,6 +39,7 @@ use crate::machine::{BEFORE_RESTARTING, STILL_EVERY, THE_DISK_APPEARS_WITHIN, Th
 use crate::program::Program;
 use crate::told::{NotTold, Told};
 use crate::verifying::{Verified, Verifying};
+use crate::why_there_is_no_network::WhyThereIsNoNetwork;
 use crate::words;
 use crate::writing::{Onto, Writing};
 
@@ -309,7 +310,31 @@ fn before_writing(
         .run(&Program::WaitingForTheNetwork, &connecting, STILL_EVERY)
         .map_err(|_| Refusal::Damaged)?;
     if !connected.succeeded {
-        return Err(Refusal::NotReachable);
+        // **Asked only here, on the road where the wait already failed.** The
+        // reading costs nothing on the road that works, and on the road that
+        // does not it is the difference between a sentence a person can act on
+        // and one they cannot: *check the cable* said to a machine with no
+        // network card at all.
+        let cards = machine
+            .run(
+                &Program::AskingAboutTheNetworkCards,
+                &connecting,
+                STILL_EVERY,
+            )
+            .ok()
+            .filter(|ran| ran.succeeded)
+            .map(|ran| ran.printed);
+        return Err(match WhyThereIsNoNetwork::read(cards.as_deref()) {
+            WhyThereIsNoNetwork::NoCard => Refusal::NoNetworkCard,
+            WhyThereIsNoNetwork::NothingConnected => Refusal::NothingConnected,
+            // Both end at the sentence this road has always said, and for the
+            // same reason: a live card that still could not download, and a
+            // reading that did not happen, are both *as far as this can see,
+            // the network is there and the download is not*.
+            WhyThereIsNoNetwork::ConnectedAndStillNoNetwork | WhyThereIsNoNetwork::NotRead => {
+                Refusal::NotReachable
+            }
+        });
     }
 
     let asking = strings.say(&words::CHECKING_IT_IS_GENUINE.key(), &Filling::nothing());

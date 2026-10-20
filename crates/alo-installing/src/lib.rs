@@ -68,6 +68,7 @@ mod sequence;
 mod tidying;
 mod told;
 mod verifying;
+mod why_there_is_no_network;
 mod words;
 mod writing;
 
@@ -91,5 +92,6 @@ pub use told::{
     Beside, NotTold, REPLACING, THE_CHOICE, THE_EFI, THE_PARTITION, THE_REPLACING, Told,
 };
 pub use verifying::{Verified, Verifying};
+pub use why_there_is_no_network::WhyThereIsNoNetwork;
 pub use words::{EVERY_WORD, WordsError, declare_into, installing_words};
 pub use writing::{A_WATCHED_LINE, THE_PERSONS_SCREEN, TheConsole, Writing};
