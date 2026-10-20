@@ -215,6 +215,26 @@ mod tests {
         config.into_os_string()
     }
 
+    /// The same, with an endpoint that is not somewhere this machine can name.
+    ///
+    /// A provider whose address will not resolve into a destination is a
+    /// different thing for a person to go and do than a rule refusing them or
+    /// a key being absent, and **nothing exercised it**: see
+    /// [`each_refusal_on_this_road_is_its_own_sentence`].
+    fn a_person_whose_provider_is_nowhere(called: &str) -> std::ffi::OsString {
+        let config = a_directory_of_our_own(called);
+        let folder = config.join(alo_choosing::THE_FOLDER);
+        std::fs::create_dir_all(&folder).unwrap();
+        std::fs::write(
+            folder.join(alo_choosing::THE_SETTINGS),
+            "format = 3\n\n[answers]\nprovider = { name = \"Nowhere\", model = \
+             \"a-model\" }\n\n[[provider]]\nname = \"Nowhere\"\nendpoint = \
+             \"https://example.invalid\"\nregion = \"the EU\"\n",
+        )
+        .unwrap();
+        config.into_os_string()
+    }
+
     /// A machine with these settings and this rule, and nobody's keyring.
     fn a_machine(called: &str, bound: TheBound) -> Questions {
         Questions::of_a_session(
@@ -302,26 +322,119 @@ mod tests {
 
     /// Every refusal on this road is somebody's sentence and none of them is a
     /// marked key, which is what a person actually reads.
+    /// **Each thing that can stop a person's question is its own sentence**,
+    /// and two of them are not allowed to collapse into one.
+    ///
+    /// *This test was called `every_refusal_this_road_makes_is_a_real_sentence`
+    /// and it checked that each of three machines produced a sentence that was
+    /// not a marked key and not empty. Measured on 2026-10-20 by printing what
+    /// it actually got: **two of its three cases produced the same sentence**,
+    /// and correctly so — a rule permitting the EU permits an EU provider, so
+    /// that case walks past the rule and ends where the third does, at the
+    /// absent key. So the test exercised **two** refusals while its name
+    /// claimed every one, and nothing would have noticed another collapsing
+    /// into them.*
+    ///
+    /// What it asks now: these four machines give **two** distinct sentences,
+    /// and **which** of them share one is named rather than counted, so a
+    /// different pair collapsing tomorrow fails here.
+    ///
+    /// And the fourth machine records the ordering's **consequence**: a
+    /// provider at an address this machine cannot reach is refused for the
+    /// **key**, because the key is asked first. Resolving that address would be
+    /// a lookup leaving this machine on behalf of a question that was already
+    /// impossible.
+    ///
+    /// *That one assertion is defensive rather than load-bearing, and saying so
+    /// is the point.* The ordering itself is guarded where it is decided —
+    /// [`crate::a_provider_ready_to_be_asked`] has five tests, three of them
+    /// about the order (`a_rule_refuses_before_the_keyring_is_opened`,
+    /// `a_rule_refuses_before_a_road_is_asked_for`,
+    /// `no_road_out_refuses_before_the_keyring_is_opened`). This one would only
+    /// fail if the key stopped coming first, which those three fail on sooner
+    /// and more precisely. It is here because it reads as a claim about this
+    /// road, and a reader should not have to guess which test is holding it.
+    ///
+    /// # Only two are reachable here, and that is the finding
+    ///
+    /// With `WhoseKeyring::Nobodys` every provider road ends at the absent key,
+    /// so the rule and the key are the only two sentences a unit test can get.
+    /// Getting a third needs a keyring that holds something, which needs a real
+    /// Secret Service bus. `NotPut::DidNotAnswer` needs a provider that answers
+    /// badly; `NotPut::Miswired` and `NotPut::NotWhatFailed` are shapes this
+    /// road refuses to produce. **None of those is covered here**, and
+    /// `docs/autonomy/the-terminal-in-full-plan.md` lists them as part of the
+    /// remaining work on task 11.
     #[test]
-    fn every_refusal_this_road_makes_is_a_real_sentence() {
+    fn each_refusal_on_this_road_is_its_own_sentence() {
         let strings = in_english();
-        for (called, bound) in [
-            (
-                "persons-question-every-bound",
-                TheBound::AnOrganisations(SourcePolicy::ThisMachineOnly),
-            ),
-            ("persons-question-every-region", {
-                TheBound::AnOrganisations(SourcePolicy::InRegion("the EU".to_owned()))
-            }),
-            ("persons-question-every-none", TheBound::Nobodys),
-        ] {
-            let mut questions = a_machine(called, bound);
+        let said_for = |called: &str, config: std::ffi::OsString, bound: TheBound| {
+            let mut questions = Questions::of_a_session(
+                Some(config),
+                None,
+                Catalogue::built_in().unwrap(),
+                bound,
+                WhoseKeyring::Nobodys,
+            );
             let said = answered("may the tenant sublet?", &mut questions, &strings);
-            let refusal = said
-                .refusal()
-                .expect("nobody's keyring holds this provider's key");
+            let refusal = said.refusal().expect("none of these can be answered");
             assert!(!refusal.is_a_bug(), "{called}: {refusal:?}");
             assert!(!refusal.text().is_empty(), "{called}");
-        }
+            refusal.text().to_owned()
+        };
+
+        // The organisation's rule, before the keyring is opened.
+        let a_rule_refused = said_for(
+            "persons-question-every-bound",
+            a_person_who_chose_a_provider("persons-question-every-bound"),
+            TheBound::AnOrganisations(SourcePolicy::ThisMachineOnly),
+        );
+        // A rule that permits this provider walks past it, to the absent key.
+        let no_key_under_a_rule = said_for(
+            "persons-question-every-region",
+            a_person_who_chose_a_provider("persons-question-every-region"),
+            TheBound::AnOrganisations(SourcePolicy::InRegion("the EU".to_owned())),
+        );
+        // No rule at all, and the same absent key.
+        let no_key_with_no_rule = said_for(
+            "persons-question-every-none",
+            a_person_who_chose_a_provider("persons-question-every-none"),
+            TheBound::Nobodys,
+        );
+        // An address this machine cannot turn into a destination.
+        let nowhere_to_go = said_for(
+            "persons-question-every-nowhere",
+            a_person_whose_provider_is_nowhere("persons-question-every-nowhere"),
+            TheBound::Nobodys,
+        );
+
+        // **Named rather than counted.** Each pair that shares a sentence
+        // shares it for a stated reason, so a *different* pair collapsing
+        // tomorrow fails here.
+        assert_eq!(
+            no_key_under_a_rule, no_key_with_no_rule,
+            "a rule that permits this provider should end where no rule does"
+        );
+        // **And this is the ordering, asserted rather than commented.** A
+        // provider at an address this machine cannot reach is refused for the
+        // **key**, not for the address — because the key is asked first, so
+        // nothing resolves an address for a question that could never be put.
+        // Resolving it would be a lookup leaving this machine on behalf of a
+        // question that was already impossible.
+        assert_eq!(
+            nowhere_to_go, no_key_with_no_rule,
+            "an address was reached for before the key, so a question that could not be \
+             asked still sent a lookup"
+        );
+        let distinct: std::collections::BTreeSet<&str> =
+            [a_rule_refused.as_str(), no_key_with_no_rule.as_str()]
+                .into_iter()
+                .collect();
+        assert_eq!(
+            distinct.len(),
+            2,
+            "a rule refusing and a key being absent are two different things for a person to \
+             go and do, and they are said the same way: {distinct:#?}"
+        );
     }
 }
