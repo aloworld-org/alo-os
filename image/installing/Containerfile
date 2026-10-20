@@ -118,12 +118,80 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-installing /usr/bin/a
 COPY image/pinned.toml /usr/lib/alo/installing/pinned.toml
 COPY image/signing/alo-os.pub /usr/lib/alo/installing/signing/alo-os.pub
 
+# **What a wireless join needs, which the pinned base does not have.**
+#
+# The environment is built `FROM ${THE_BASE}` and installed nothing until now,
+# so what it could carry was whatever Fedora's bootc base happens to ship. On
+# 2026-10-20 that base was unpacked and listed, 145,474 paths, with a control:
+# `/usr/bin/nm-online`, which this environment already runs, is there. Against
+# that control, **none** of the supplicant, its unit, its bus files,
+# NetworkManager's Wi-Fi plugin, any `iwlwifi` firmware or the regulatory
+# database is in the base. `nmcli`, `dbus-broker` and all five wireless kernel
+# modules are.
+#
+# So the environment could only ever have brought up a cable, and
+# `docs/features.md` promises *download, click, reboot, sign in* with no cable
+# in it, to an audience of developers most of whom have none.
+#
+# **`wireless-regdb` is asked for by name rather than taken.** The installed
+# image has `regulatory.db` without naming it, as something's weak or hard
+# dependency. A recipe that inspects what it asked for learns nothing — this
+# file's own rule — and without that database a card falls back to the most
+# restrictive domain, where association on some channels does not happen and
+# the person is told *no networks found*.
+#
+# **The supplicant is RUN, not found.** `test -x` is the substitution
+# `image/Containerfile` records twice: a binary that cannot resolve its
+# libraries passes it. `-v` loads it, resolves them, prints its version and
+# exits 0; with no arguments it exits 255. The prefix is grepped, not a
+# version, because the version is the base's to change.
+RUN dnf install --assumeyes --setopt=install_weak_deps=False \
+      NetworkManager-wifi wpa_supplicant wireless-regdb \
+      iwlwifi-mvm-firmware iwlwifi-dvm-firmware \
+ && dnf clean all \
+ && /usr/sbin/wpa_supplicant -v | grep -q 'wpa_supplicant v' \
+ && ls /usr/lib64/NetworkManager/*/libnm-device-plugin-wifi.so > /dev/null \
+ && test -f /usr/lib/firmware/iwlwifi-3168-29.ucode.xz \
+ && test -f /usr/lib/firmware/regulatory.db \
+ && echo "the environment can join a wireless network: a supplicant that runs, NetworkManager's Wi-Fi plugin, the certified machine's own firmware and the regulatory database"
+
 COPY image/installing/alo-installing.target /usr/lib/systemd/system/alo-installing.target
 COPY image/installing/alo-installing.service /usr/lib/systemd/system/alo-installing.service
 COPY image/installing/run-alo-installing-root.mount /usr/lib/systemd/system/run-alo-installing-root.mount
 COPY image/installing/run-alo-installing-root.mount /usr/lib/systemd/system/run-alo-installing-root.mount
 COPY image/installing/alo-installing.conf /etc/dracut.conf.d/alo-installing.conf
 COPY image/installing/grub.cfg /environment/EFI/BOOT/grub.cfg
+
+# **The initramfs is held to its own list** — the check this recipe has never
+# had, and the reason every path in that list was found one refusal at a time by
+# restarting a machine.
+#
+# **Measured in the pinned base on 2026-10-20: `dracut` exits 0 for an
+# `install_items` path it cannot find.** It prints nothing a build reads, writes
+# the initramfs without that file, and returns success. So every entry in
+# `alo-installing.conf` could be wrong — misspelt, moved by an upstream, or
+# never in the base at all — and this build would be green, which is how two
+# entries (`/etc/containers/containers.conf` and `storage.conf`) sat in that
+# list from the day it was written without ever being in an initramfs.
+#
+# What this asks of the artefact rather than of the inputs:
+#
+# - every `install_items` path is **inside the initramfs it just built**;
+# - a path that is a symlink counts when its target is aboard, because
+#   `/usr/sbin` is a link to `bin` on Fedora 42 and `dracut` stores the real
+#   name — the same trap as the firmware link, in the other direction;
+# - a **pattern** that matches nothing on the machine fails here rather than
+#   expanding to itself and quietly being absent. There is one pattern, and it
+#   is NetworkManager's plugin, whose directory is named for a version `dnf`
+#   chooses at build time;
+# - every `add_drivers` module has a `.ko` aboard, because an initramfs with no
+#   `iwlwifi` finds no card and tells the person *no networks found*.
+#
+# Proved both ways in the pinned base on 2026-10-20, four runs: it passes
+# against the initramfs the list built; it names exactly the six wireless parts
+# when they are commented out of the list the initramfs was built from; it names
+# the three `iwl*` modules when `add_drivers` is; and it refuses the pattern when
+# nothing matches it.
 
 # One kernel, asserted rather than assumed: a base carrying two would make the
 # choice of which one boots a directory listing's order.
@@ -141,6 +209,31 @@ RUN chmod 0755 /usr/bin/cosign /usr/bin/alo-installing \
  && dracut --no-hostonly --reproducible --force --kver "${kernel}" \
       /environment/EFI/alo-installing/initramfs.img \
  && cp "/usr/lib/modules/${kernel}/vmlinuz" /environment/EFI/alo-installing/vmlinuz \
+ && list=/etc/dracut.conf.d/alo-installing.conf \
+ && inside="$(lsinitrd /environment/EFI/alo-installing/initramfs.img \
+      | awk 'NF == 0 { next } NF > 2 && $(NF-1) == "->" { print $(NF-2); next } { print $NF }')" \
+ && absent="" \
+ && for pattern in $(sed -n 's/^install_items+="\(.*\)"[[:space:]]*$/\1/p' "${list}"); do \
+      for part in ${pattern}; do \
+        case "${part}" in \
+          *'*'*) echo "nothing in this image matches ${pattern}" >&2; exit 1 ;; \
+        esac; \
+        test -e "${part}" || { absent="${absent} ${part}(not-in-the-image)"; continue; }; \
+        printf '%s\n' "${inside}" | grep -qxF "${part#/}" && continue; \
+        real="$(readlink -f "${part}")"; \
+        printf '%s\n' "${inside}" | grep -qxF "${real#/}" && continue; \
+        absent="${absent} ${part}"; \
+      done; \
+    done \
+ && for driver in $(sed -n 's/^add_drivers+="\(.*\)"[[:space:]]*$/\1/p' "${list}"); do \
+      printf '%s\n' "${inside}" | grep -qE "/${driver}\.ko" \
+        || absent="${absent} ${driver}.ko"; \
+    done \
+ && if test -n "${absent}"; then \
+      echo "the initramfs does not carry what its list names:${absent}" >&2; \
+      exit 1; \
+    fi \
+ && echo "the initramfs carries every path and every module its list names" \
  && cp /usr/lib/bootupd/updates/EFI/fedora/shimx64.efi /environment/EFI/BOOT/BOOTX64.EFI \
  && cp /usr/lib/bootupd/updates/EFI/fedora/grubx64.efi /environment/EFI/BOOT/grubx64.efi \
  && cp /usr/lib/bootupd/updates/EFI/fedora/mmx64.efi /environment/EFI/BOOT/mmx64.efi

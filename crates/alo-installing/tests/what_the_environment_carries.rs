@@ -482,3 +482,308 @@ fn a_list_missing_what_the_installer_finishes_with_is_caught() {
         vec!["/usr/sbin/fstrim", "/usr/bin/umount"]
     );
 }
+
+// ---------------------------------------------------------------------------
+// A wireless join, which an initramfs carries only when every part is named
+// ---------------------------------------------------------------------------
+//
+// `docs/features.md` promises *download, click, reboot, sign in* with no cable
+// in it, and the audience is developers, most of whom have none. The installed
+// system gained wireless in #844; the environment is the other half.
+//
+// **Every path here was read out of image 0.0.8 by digest on 2026-10-20**
+// (`sha256:a543874e…`), unpacked and listed, rather than taken from a
+// distribution's convention — and two of them are not where a convention would
+// put them.
+
+/// The programs, units, bus files, library and firmware a wireless join needs
+/// aboard, at the paths they are at.
+///
+/// Three are worth saying out loud, because each is a way for every other part
+/// to be right and the join to fail:
+///
+/// - **the bus policy is in `/etc`**, not `/usr/share` where the activation
+///   service is. Without it the bus denies NetworkManager's call to the
+///   supplicant, and the error names NetworkManager rather than this file;
+/// - **the supplicant is at `/usr/bin`**, which is the rpm's own path.
+///   `/usr/sbin/wpa_supplicant` resolves too, because Fedora 42 merged the two,
+///   and is not the one named;
+/// - **the firmware is the file and not the link.** See
+///   [`THE_LINK_THAT_IS_NOT_THE_FIRMWARE`].
+///
+/// And one of them is a **pattern** rather than a path: NetworkManager's plugin
+/// lives in a directory named for NetworkManager's version, which `dnf` chooses
+/// from the live repository when the environment is built and which the base's
+/// own digest therefore does not fix. A pattern that matches nothing expands to
+/// itself and is silently absent, so `image/installing/Containerfile` refuses
+/// one that matches nothing — see
+/// [`the_recipe_holds_the_initramfs_to_its_list`].
+const EVERY_WIRELESS_PART: [&str; 10] = [
+    "/usr/bin/wpa_supplicant",
+    "/usr/bin/wpa_cli",
+    "/usr/bin/nmcli",
+    "/usr/lib/systemd/system/wpa_supplicant.service",
+    "/usr/share/dbus-1/system-services/fi.w1.wpa_supplicant1.service",
+    "/etc/dbus-1/system.d/wpa_supplicant.conf",
+    "/usr/lib64/NetworkManager/*/libnm-device-plugin-wifi.so",
+    "/usr/lib/firmware/intel/iwlwifi/iwlwifi-3168-29.ucode.xz",
+    "/usr/lib/firmware/regulatory.db",
+    "/usr/lib/firmware/regulatory.db.p7s",
+];
+
+/// **The path that looks like the firmware and is 38 bytes.**
+///
+/// `/usr/lib/firmware/iwlwifi-3168-29.ucode.xz` is a symlink into
+/// `intel/iwlwifi/`; the file it points at is 262,656 bytes. A list naming the
+/// link puts the link in the initramfs, where it points at nothing: the path
+/// exists, `test -e` passes, and the kernel cannot read the firmware. So this
+/// one is checked by its **absence** — an entry that names it is the fault,
+/// whether or not the real path is named beside it.
+///
+/// `image/Containerfile`'s own wireless proof names this path, correctly:
+/// there, inside the installed image, the link resolves and `test -f` is asking
+/// whether the firmware is installed at all. Here it is a different question.
+const THE_LINK_THAT_IS_NOT_THE_FIRMWARE: &str = "/usr/lib/firmware/iwlwifi-3168-29.ucode.xz";
+
+/// The kernel modules a wireless card needs, which an initramfs carries only
+/// when it is told to by name — `iwlmvm` is what the certified machine's Intel
+/// AC 3168 uses, `iwldvm` is Intel's older cards, and `cfg80211` and
+/// `mac80211` are the stack beneath both.
+const EVERY_WIRELESS_DRIVER: [&str; 5] = ["iwlwifi", "iwlmvm", "iwldvm", "cfg80211", "mac80211"];
+
+/// Every module an initramfs list adds, one per entry.
+fn drivers_added_by(list: &str) -> Vec<String> {
+    list.lines()
+        .map(str::trim)
+        .filter(|line| !line.starts_with('#'))
+        .filter_map(|line| line.strip_prefix("add_drivers+="))
+        .flat_map(|drivers| {
+            drivers
+                .trim_matches('"')
+                .split_whitespace()
+                .map(str::to_owned)
+                .collect::<Vec<_>>()
+        })
+        .collect()
+}
+
+/// What is wrong with a list's wireless, as sentences naming the part.
+fn wrong_with_the_wireless(list: &str) -> Vec<String> {
+    let installed = installed_by(list);
+    let added = drivers_added_by(list);
+    let mut wrong: Vec<String> = EVERY_WIRELESS_PART
+        .iter()
+        .filter(|part| !installed.iter().any(|aboard| aboard == *part))
+        .map(|part| format!("the environment cannot join a network without {part}"))
+        .chain(
+            EVERY_WIRELESS_DRIVER
+                .iter()
+                .filter(|driver| !added.iter().any(|aboard| aboard == *driver))
+                .map(|driver| format!("no card is found without the {driver} module")),
+        )
+        .collect();
+    if installed
+        .iter()
+        .any(|aboard| aboard == THE_LINK_THAT_IS_NOT_THE_FIRMWARE)
+    {
+        wrong.push(format!(
+            "{THE_LINK_THAT_IS_NOT_THE_FIRMWARE} is a link into intel/iwlwifi/, and an initramfs would carry the link"
+        ));
+    }
+    wrong
+}
+
+/// **The initramfs carries everything a wireless join needs**, at the paths the
+/// image has them at, and the modules by name.
+#[test]
+fn the_initramfs_carries_what_a_wireless_join_needs() {
+    assert_eq!(
+        wrong_with_the_wireless(&the_recipes("alo-installing.conf")),
+        Vec::<String>::new()
+    );
+}
+
+/// **A list missing one part is caught**, each on its own — and so is a list
+/// that names the firmware's link instead of the firmware.
+#[test]
+fn a_list_that_cannot_join_a_network_is_caught() {
+    let list = the_recipes("alo-installing.conf");
+    for part in EVERY_WIRELESS_PART {
+        let dropped = list.replace(&format!(" {part} "), " ");
+        assert_ne!(dropped, list, "the list no longer names {part}");
+        assert_eq!(
+            wrong_with_the_wireless(&dropped),
+            vec![format!(
+                "the environment cannot join a network without {part}"
+            )]
+        );
+    }
+    for driver in EVERY_WIRELESS_DRIVER {
+        let dropped = list.replace(&format!(" {driver} "), " ");
+        assert_ne!(dropped, list, "the list no longer adds {driver}");
+        assert_eq!(
+            wrong_with_the_wireless(&dropped),
+            vec![format!("no card is found without the {driver} module")]
+        );
+    }
+    // The substitution a person would make reading a distribution's own
+    // documentation, which names the link everywhere.
+    let the_link = list.replace(
+        "/usr/lib/firmware/intel/iwlwifi/iwlwifi-3168-29.ucode.xz",
+        THE_LINK_THAT_IS_NOT_THE_FIRMWARE,
+    );
+    assert_ne!(the_link, list);
+    assert_eq!(wrong_with_the_wireless(&the_link).len(), 2);
+    // And naming it beside the real one is still wrong, because the initramfs
+    // carries both and the link in it still points at nothing.
+    let both = list.replace(
+        "install_items+=\" /usr/lib/firmware/regulatory.db",
+        &format!(
+            "install_items+=\" {THE_LINK_THAT_IS_NOT_THE_FIRMWARE} /usr/lib/firmware/regulatory.db"
+        ),
+    );
+    assert_ne!(both, list);
+    assert_eq!(wrong_with_the_wireless(&both).len(), 1);
+}
+
+/// The environment's recipe, with its prose dropped and its continued lines
+/// joined — **what the build runs, rather than what the file says.**
+///
+/// Both tests below were written against the whole file first, and both passed
+/// a mutation that broke what they are for: one was satisfied by a comment
+/// naming a package the `dnf` line no longer installed, and the other by an
+/// `exit 1` belonging to a different branch three lines up. A recipe is prose
+/// and program in one file, and a test that greps the file cannot tell them
+/// apart.
+fn what_the_recipe_runs() -> String {
+    let recipe = std::fs::read_to_string(
+        Path::new(alo_image::THE_IMAGE)
+            .join("installing")
+            .join("Containerfile"),
+    )
+    .expect("the environment's recipe is there");
+    let program: Vec<&str> = recipe
+        .lines()
+        .filter(|line| !line.trim_start().starts_with('#'))
+        .collect();
+    // A `\` at the end of a line continues it, so the shell sees one command.
+    // Joining them is what lets a test say *this refusal, then this exit*.
+    program
+        .join("\n")
+        .replace("\\\n", " ")
+        .split_whitespace()
+        .collect::<Vec<&str>>()
+        .join(" ")
+}
+
+/// **The recipe holds the initramfs it built to the list it was built from.**
+///
+/// This is the check that makes every other claim in `alo-installing.conf`
+/// worth anything, and it is here so that deleting it fails a gate.
+///
+/// **`dracut` exits 0 for an `install_items` path it cannot find** — measured
+/// in the pinned base on 2026-10-20, with a deliberately absent path: it
+/// printed nothing a build reads, wrote the initramfs without the file, and
+/// returned success. So a list every one of whose entries was wrong would build
+/// green, which is how `/etc/containers/containers.conf` and `storage.conf` sat
+/// in that list from the day it was written without ever being aboard: Fedora
+/// ships those two in `/usr/share/containers/`, and the base has no `/etc`
+/// copy at all.
+///
+/// Five things are asked of the recipe, each naming the way the check can be
+/// true and useless:
+///
+/// - it reads the built **initramfs** (`lsinitrd`) rather than the machine it
+///   was built on, which is the whole point;
+/// - it reads the **list** rather than a copy of it, because a second copy is
+///   the thing that goes stale;
+/// - it looks at `install_items` **and** `add_drivers`, because an initramfs
+///   with every program and no `iwlwifi` finds no card;
+/// - it **refuses** what is absent, rather than printing it. This is checked as
+///   the refusal and the exit **adjacent**, because the recipe exits 1
+///   elsewhere and `contains("exit 1")` passed with this branch turned into a
+///   `true`;
+/// - it runs **after** `dracut`, which is the difference between measuring the
+///   artefact and measuring what was handed to it.
+#[test]
+fn the_recipe_holds_the_initramfs_to_its_list() {
+    let runs = what_the_recipe_runs();
+    for (what, said) in [
+        (
+            "it does not read the initramfs it built",
+            "lsinitrd /environment",
+        ),
+        (
+            "it does not read the list the initramfs was built from",
+            "list=/etc/dracut.conf.d/alo-installing.conf",
+        ),
+        ("it does not read the list's paths", "install_items+="),
+        ("it does not read the list's modules", "add_drivers+="),
+        (
+            "it does not refuse a pattern that matches nothing",
+            "nothing in this image matches ${pattern}\" >&2; exit 1",
+        ),
+        (
+            "it does not refuse what the initramfs is missing",
+            "does not carry what its list names:${absent}\" >&2; exit 1;",
+        ),
+    ] {
+        assert!(
+            runs.contains(said),
+            "{what}: the recipe does not say {said}"
+        );
+    }
+    let dracut = runs
+        .find("dracut --no-hostonly")
+        .expect("the recipe runs dracut");
+    let reading = runs
+        .find("lsinitrd")
+        .expect("the recipe reads the initramfs");
+    assert!(
+        dracut < reading,
+        "the recipe reads the initramfs before it builds one"
+    );
+}
+
+/// **The recipe installs what the base does not have.**
+///
+/// The environment is built from the pinned base and installed nothing until
+/// 2026-10-20, when that base was unpacked and listed — 145,474 paths, with
+/// `/usr/bin/nm-online` as the control, which this environment already runs and
+/// which is there. Against that control the base has **no** supplicant, no
+/// NetworkManager Wi-Fi plugin, no `iwlwifi` firmware and no regulatory
+/// database; it has `nmcli`, `dbus-broker` and all five wireless modules.
+///
+/// So naming those parts in the list is not enough on its own, and this test is
+/// the one that fails if the install is dropped while the list keeps them —
+/// which would otherwise build green and ship an initramfs that cannot join a
+/// network, because `dracut` does not mind a path that is not there.
+///
+/// Each package is looked for in **what the recipe runs**, not in the recipe:
+/// `wireless-regdb` was removed from the `dnf` line and this test passed,
+/// because the comment above that line explains why it is asked for by name.
+#[test]
+fn the_recipe_installs_the_wireless_parts_the_base_lacks() {
+    let runs = what_the_recipe_runs();
+    for package in [
+        "NetworkManager-wifi",
+        "wpa_supplicant",
+        // Asked for by name rather than taken as something's dependency: a
+        // card with no regulatory database falls back to the most restrictive
+        // domain, and the person is told *no networks found*.
+        "wireless-regdb",
+        "iwlwifi-mvm-firmware",
+        "iwlwifi-dvm-firmware",
+    ] {
+        assert!(
+            runs.contains(package),
+            "the environment does not install {package}, which the base does not have"
+        );
+    }
+    // Run rather than found, which is this repository's own recorded
+    // substitution: a binary that cannot resolve its libraries passes `test -x`.
+    assert!(
+        runs.contains("wpa_supplicant -v"),
+        "the recipe finds the supplicant without starting it"
+    );
+}
