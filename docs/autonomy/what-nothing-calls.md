@@ -130,6 +130,79 @@ proposed here rather than written.
 **Until then the honest statement is the one at the top: this was measured once,
 by hand, on 2026-10-20.**
 
+## Hole six, and it ran the other way: two FALSE orphans
+
+*Added 2026-10-20 at 22:00, an hour after the section above landed. Its figures
+are superseded by these, and are left in place rather than overwritten so the
+sequence of mistakes stays readable.*
+
+**A line comment between `#[cfg(test)]` and the attribute before `mod` made the
+splitter miss the test module.** `alo-acting/src/answer.rs` has this shape, and
+it was one of nine files:
+
+```rust
+#[cfg(test)]
+// Counted: one `expect` and no `unwrap` or `panic!`, so only the one it uses
+#[expect(clippy::expect_used, reason = "...")]
+mod tests {
+```
+
+The gap pattern allowed whitespace and further attributes, and **not comments**.
+A missed module stays in the product half — and because this one sits after the
+last `pub fn` in its file, it was absorbed into **that function's own body**,
+where every call it makes is then discarded as a *self-reference*.
+
+**So `alo_acting::could_answer` was reported as called by nothing, and four
+tests call it.** Its sibling `is_this_machines_fault` went the same way. Both sit
+in the refusal path — `could_answer` is the guard that stops `open` answering
+*no window*, which would tell a person something that is not a reason — so these
+were the two findings in the list that looked most worth having, and both were
+artefacts of the tool.
+
+### The control that closes the class rather than the instance
+
+Widening the pattern fixes nine files. What stops a tenth shape is a control:
+
+> **every product file whose text contains `#[cfg(test)] … mod X {` must be a
+> file the splitter stripped.** Measured after the fix: **1,226 recognised, 0
+> missed.**
+
+That is checkable without knowing which shapes exist. The previous five fixes
+were not: each was a shape somebody happened to notice.
+
+### The corrected figures
+
+| | |
+|---|---|
+| `pub fn` under `crates/**/src` | **6,827** |
+| no live caller and no test, to a fixed point | **44**, on `main` at 22:00 on 2026-10-20 |
+
+`alo-shell` **19** — not the 18 above — `alo-dock` 3, `alo-models` 3, two each in
+`alo-adapters`, `alo-agentd`, `alo-notifying`, `alo-corridor` and `alo-tasks`,
+one each in nine more, and **`alo-acting` 0, not 2**. It falls to 41 when the two
+changes in flight land.
+
+### What six holes in one script actually say
+
+Every one was found by **a result that looked implausible**, never by reading the
+code: three findings where a crate obviously had more; a function with a caller
+sitting beside an identical one without; a sweep that returned zero; and here, a
+guard in the refusal path that surely somebody had tested. **The method is sound
+and its implementation keeps being wrong**, which is the ordinary condition of a
+grep-based audit. So the figure is worth having only with its controls printed
+beside it — and a reader who finds one of these numbers implausible should
+disbelieve the number rather than the code.
+
+## One triaged, and deliberately not fixed
+
+`alo-dock`'s `full_screen_ended` looked like the best candidate in the list: a
+`Revealing` state nothing constructs, while full screen exists in `alo-shell`
+and the dock's own menu offers `What::FullScreen`. **It is not a fault.** Its
+whole body is `Self::covered()` — a named alias for a transition, carrying no
+behaviour of its own — and the caller that would use the name rather than
+`covered()` directly belongs to `alo-shell`, which is another lane's crate.
+Written down so the next reader does not spend the same hour on it.
+
 ## The method had two more holes, and the whole workspace is worse than three crates
 
 *Added the same evening, before the first version had landed. The figures above
