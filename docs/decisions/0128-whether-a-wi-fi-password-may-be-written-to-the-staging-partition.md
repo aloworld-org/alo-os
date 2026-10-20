@@ -1,9 +1,86 @@
 # ADR 0128 — Whether a Wi-Fi password may be written to the staging partition
 
-**Status:** **proposed, 2026-10-20, by the Mac lane.** Four options, with a
-recommendation. Not decided; [ADR 0023](0023-installed-from-the-machine-it-replaces.md)
-says in its own words that this one *is its own decision and the owner's*, and
-nothing is built until it is made.
+**Status:** **accepted, 2026-10-20, by the owner — with an option this document
+ruled out in its own premise.** The ruling: **the environment asks, and no
+pre-shared key is written to the staging partition.** Relayed by the desktop
+lane, who put A and D to the owner and added that Windows 11, Ubuntu, Fedora,
+macOS recovery and ChromeOS all ask at the moment they need the network. The
+owner's words were *"can we do it as the windows 11"* and, against the desktop
+lane's recommendation of a console picker first and a graphical one later,
+*"I agree with the rest"*.
+
+**The answer reached this document through another agent's session, and that is
+recorded rather than smoothed over.** What is written below as the decision is
+what was relayed; the owner is the one who can confirm it, and the desktop lane
+is putting their two sentences on #850 so the provenance is in the repository
+and not only in two agent transcripts.
+
+*Originally proposed the same day by the Mac lane, with four options and a
+recommendation, under*
+[ADR 0023](0023-installed-from-the-machine-it-replaces.md)'s *words that this
+one is its own decision and the owner's.*
+
+## What was wrong with this document, and it is the important part
+
+**It presented a thing we had not built as a constraint to design around.** The
+context below says the environment *has no interactive surface at all*, and
+states it as a fact — which it is. But it is a fact about **what we built**, not
+a limit imposed from outside, and putting it in the premise rather than in the
+options meant the four options were all answers to *where do we put the
+password*, when the question the owner answered was *why is there a password to
+put anywhere*.
+
+So the fifth option was never on the page: **give the environment the surface,
+and ask.** It removes the exposure rather than narrowing it — the password
+exists only in memory on the machine asking for it — and with it, three of the
+four facts this document assembled stop applying at all: FAT32 having no
+permissions, `tidy_up` not running on the failure road, and BitLocker not
+covering the area. They were all facts about storing a secret that now is not
+stored.
+
+**Everything below remains correct.** What changed is the premise above it, and
+the lesson is not about Wi-Fi: *a document that opens by naming our own
+unbuilt thing as a given will produce options that all accept it.*
+
+## What was decided, and what it costs
+
+**A plain text picker on the console first; a graphical one later.** Networks
+listed, type the number, type the password — the numbered-list shape Debian has
+used for twenty years. The desktop lane's reasoning, which the owner agreed to:
+
+- the environment already has the two hard pieces, a console and the tool that
+  lists networks and joins one. What is missing is the asking;
+- what happens underneath is identical either way — NetworkManager joining a
+  network is the same call whether a text list or a drawn picker chose it — so
+  the graphical version replaces a front end later and throws nothing away;
+- a graphical picker needs a display stack, fonts and keyboard input inside an
+  initramfs that #847 has just taken from 79 MB to 124 MB. That is weeks, and it
+  would hold the whole road.
+
+**What it costs, said plainly as the rejected options were.** A person
+installing alo OS types their Wi-Fi password at a text prompt on a console, which
+is less than the rest of this product's interface promises and is the thing a
+graphical picker later repays. And the environment grows an interactive surface
+it did not have — which is a surface to review, and law 2's concerns do not
+apply to it only because there is no agent in the environment at all
+(`crates/alo-installing/src/program.rs` says so in its own header).
+
+## What this means for the work
+
+- **Nothing is written to the staging partition**, so the three facts about
+  storing a secret there are moot and the removal road does not have to wipe
+  bytes.
+- **802.1X is unchanged.** ADR 0023 already said enterprise Wi-Fi cannot be
+  carried as a pre-shared key; it equally cannot be typed into a two-field
+  prompt. A cable or the removable-media road, and #848 says so before the
+  shrink.
+- **#848 stands and is not withdrawn.** Telling a person before the shrink that
+  the next step needs a cable stays true until the picker exists, and after it
+  exists it is still true for a machine whose card has no firmware.
+- **#854's reading becomes load-bearing rather than incidental.** A picker has
+  to name networks something a person recognises and must tell *no carrier* and
+  *wrong password* apart, which is what the numeric state and the kernel's own
+  flags are for.
 **Context:** ADR 0023 §*What is still owed, and is not decided here*;
 `docs/features.md` — *installed from the machine it replaces* and *carrying the
 network across the restart is how the road above reaches Wi-Fi*; law 1 (*nothing
