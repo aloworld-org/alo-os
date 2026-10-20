@@ -125,6 +125,36 @@ for it was not.
   why: *what is copied into the environment depends on nothing in it.* Linking
   `libdrm` would give that up, so drawing wants the modeset and dumb-buffer
   ioctls written directly. Bounded, and real.
+
+  **And smaller than that, measured 2026-10-20 out of the kernel the
+  environment already boots** (`6.19.14-101.fc42.x86_64`, its own `config`
+  file, with a control — a config name that cannot exist reports absent):
+
+  | | |
+  |---|---|
+  | `CONFIG_DRM=y` | the DRM core, built in |
+  | `CONFIG_DRM_SIMPLEDRM=y` | **a DRM device from the firmware's framebuffer, with no GPU driver at all** |
+  | `CONFIG_SYSFB_SIMPLEFB=y`, `CONFIG_FB_EFI=y` | the handoff from UEFI's own graphics output |
+  | `CONFIG_DRM_FBDEV_EMULATION=y` | and `/dev/fb0` beside it |
+  | `CONFIG_DEVTMPFS=y`, `CONFIG_DEVTMPFS_MOUNT=y` | so the device node appears without anything creating it |
+
+  All **built in**, not modules — which is why `find` for `simpledrm.ko` comes
+  back empty and why a reader checking for modules would conclude the opposite.
+  **So nothing has to be added to the initramfs for a drawable surface**: no
+  module, no library, no Mesa, no `libdrm`. The kernel presents
+  `/dev/dri/card0` from the mode the firmware left, and a framebuffer beside it.
+
+  What is left is our own code — open it, take a dumb buffer, put pixels in it —
+  and with fbdev emulation present even the ioctls may be avoidable for a first
+  screen. That is not weeks.
+
+- **The mode is the firmware's, not the design's.** `simpledrm` presents
+  whatever the firmware set, which is not 1440×960 and is not ours to choose.
+  `CLAUDE.md` already requires this of every surface — *nothing is built to one
+  screen size… every layout is derived from the display it is on* — and the
+  environment is where it bites first, because there is no compositor to
+  normalise anything. The frames are drawn at 1440×960; the environment has to
+  derive from what it is given.
 - **A real display.** The environment runs before anything has configured a
   screen, on whatever mode the firmware left. Nothing in this repository has
   drawn under those conditions, and a boot that comes up black is worse than a
