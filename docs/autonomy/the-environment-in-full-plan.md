@@ -23,9 +23,9 @@ wrong thing from, confidently.
 | 1 what display there is | **#872**, in the merge queue. **Method changed** — see the item |
 | 2 a surface with pixels | **#873**, queued behind #872. **Method changed** — see the item |
 | 3a a key arrives | **#874**, queued behind #873 |
-| 3b a key becomes a character | **not started, and not startable** — see the item |
+| 3b a key becomes a character | **decided, and blocked one level down** — the layout screen is settled; where the keycode table comes from is not |
 | 4a Windows starts the stick | written; **cannot land until its caller is built** — the caller is `530:30835` S1, the desktop lane's |
-| 4b a program that writes a stick | **not this lane's to start** — it is not in `docs/features.md` |
+| 4b a program that writes a stick | **the owner ruled: build it.** Blocked on the line reaching the remote, and on frames |
 | 5 the asking, joined up | not started; the one item that genuinely waits on the other lane |
 | 6 joining the network | **#875**, queued behind #874 |
 
@@ -106,7 +106,7 @@ button reports `KEY_POWER` and would otherwise pass; and the capabilities
 bitmask is read **last word first**, because that is the order the kernel fills
 it.
 
-### 3b. A key becomes a character — not started, and not startable here
+### 3b. A key becomes a character — the screen is decided, the table is not
 
 **This page said *the keymap the person chose at the loader*. There is no such
 keymap, and there is nothing at the loader that chooses one.** The environment
@@ -126,6 +126,118 @@ therefore wants a line in `docs/features.md` with a tier.
 password on a French keyboard gets it wrong silently, and the environment's only
 report would be *the password was refused*. That is the fifth failure in item 6
 telling the truth about the wrong thing.
+
+**Answered 2026-10-20 by the desktop lane: road (a), a layout screen, and it is
+a seventh frame.** Their reasoning is that the installed system already made
+this decision for the same reason — the language and keyboard sheet is the first
+thing at first start, because *typing presupposes the layout that screen
+chooses*. The environment has it sharper: the two things it asks a person to
+type are a Wi-Fi password and a disk's own name, one checked by somebody else's
+router and one by exact match, and **both fail silently and identically on an
+AZERTY keyboard.** So the layout screen comes **first** — before the network,
+before anything typed.
+
+Road (b), a fifth command-line key, was declined for the reason this page
+already gave: it exists only on the road that starts from Windows, and the stick
+road is the one where a person is most likely to be on hardware we know nothing
+about. It survives as a **default** rather than a mechanism — on the Windows
+road, Windows knows the layout, so arriving at the screen with the right one
+already chosen beats arriving blank. That can come later and changes nothing.
+
+#### And underneath it, the blocker neither lane had named
+
+**Measured 2026-10-20. `alo-keyboards` stops one link short of what this needs.**
+
+| | |
+|---|---|
+| what it has | `Layout`, `Keysym`, `Compose`, `Typed` — and **no C dependency**, pure Rust over serde and thiserror |
+| what that chain gives | keysym → composed text |
+| what `Layout` is | a name and a variant (`de`, `intl`) — **not a table** |
+| how a `Keysym` is made | from a **name**: `Keysym::named("adiaeresis")` |
+
+So the missing link is the one #874 feeds into: **evdev keycode + modifier state
++ layout → keysym.** Nothing in the workspace does it except the compositor,
+through `xkbcommon`, which enters the graph only via `smithay` and `winit` —
+and `alo-installing` has neither.
+
+**The decision is about linkage, not space.** Measured in the VM: `us` 116K,
+`gb` 12K, `fr` 108K, `de` 100K, `es` 12K, the whole tree 4.0M — against 779 MiB
+spare in the staging area. Size is irrelevant on every road.
+
+| road | cost |
+|---|---|
+| **(a)** link `libxkbcommon` in `alo-installing` | least code; gives up a stated property — this crate is *static against musl so that what is copied into the environment depends on nothing in it* — and puts a C library in the one program that runs as root on a disk it is about to overwrite |
+| **(b)** generate a pure-Rust keycode→keysym table at build time from the xkb symbol files, for the layouts the screen offers | keeps static musl; costs a build step and a generated file |
+| **(c)** ship the data and parse the xkb symbol format in our own Rust at runtime | **ruled out here**: parsing xkb's own format is writing an engine, and engines are configured, never written in |
+
+**This lane recommends (b). It first said (b) was the ADR-shaped one and that
+was backwards**, which the desktop lane corrected: the property is *static
+against musl so that what is copied into the environment depends on nothing in
+it*, and **(b) keeps that property while (a) spends it**. So the road needing a
+decision recorded is linking the C library. (b) is work; (a) is a change to what
+the environment is.
+
+Three further reasons against (a), theirs: it would be spent in the one program
+that runs as root against a disk it is about to overwrite, in an environment with
+no package manager, no update road and nobody to notice a bad interaction; the
+gain is the smallest possible, since `alo-keyboards` already carries everything
+after the keysym in pure Rust and what is missing is **one lookup**; and a static
+binary that gains one dynamic dependency leaves the next person a precedent
+rather than an argument to make.
+
+**The layout list arrived at 22:40**: eight — `be`, `fr`, `de`, `es`, `it`,
+`nl`, `gb`, `us` — chosen to cover the EU languages promised with the fewest
+tables plus the two that differ most, and a ninth card, *Something else*, which
+is deliberately undrawn until anybody is known to reach it.
+
+#### And (b) is (c) with extra steps unless the generator calls the engine
+
+**Measured 2026-10-20 at 22:40, once the list made it worth measuring.** (b) was
+written here as *generate a table from the xkb symbol files*, and (c) was ruled
+out as *parsing xkb's own format*. **Those are the same work at different
+times**, and the symbol files say so:
+
+| layout | keys it defines | `include` directives |
+|---|---|---|
+| `be` | 74 | 12 |
+| `nl` | 79 | 7 |
+| `gb` | 85 | 19 |
+| `es` | 118 | 16 |
+| `it` | 233 | 22 |
+| `de` | 653 | 100 |
+| `fr` | 709 | 8 |
+| `us` | 1352 | 82 |
+
+Belgian is **mostly `include "fr(basic)"` plus overrides.** Reading these
+correctly means implementing xkb's include semantics, its variant selection, its
+levels and groups, and the `types` and `compat` directories beside `symbols`.
+That is the engine, whenever it runs.
+
+**So (b) is legitimate only if the generator invokes `xkbcommon` and snapshots
+what it answers** — then xkb parses xkb and this repository holds a table. A
+generator that reads the files itself is (c) relocated to build time, and should
+be refused on the same grounds.
+
+**Which gives the table the shape this repository already uses for a derived
+artefact**: generate it, **commit it**, and let a test regenerate and compare —
+the pattern the vocabulary snapshot follows. Then neither CI nor an ordinary
+build needs xkb at all; only whoever regenerates does.
+
+**And that is the one thing nobody has.** `xkbcli`, `setxkbmap` and `xkbcomp` are
+all absent from the Lima VM, and `libxkbcommon` reaches the lock file only
+through `smithay` and `winit`. The data is present — 138 layouts under
+`/usr/share/X11/xkb` — and the tool that reads it is not, on either machine.
+
+**What that settles about the list.** The desktop lane asked whether the cost is
+per layout, offering eight and all 138 if they come cheaply. **The cost is
+neither per layout nor in data** — it is the generator and its engine, and once
+those exist the marginal cost of 138 over 8 is close to nothing. The reason to
+take eight anyway is not size: eight are layouts somebody can check by typing on
+them, and 138 would be 130 tables nothing has ever verified.
+
+Nothing is built on 3b until that engine exists somewhere. It is a smaller and
+sharper blocker than *where does the table come from*, and it is the first thing
+to settle.
 
 ## 4. The stick: two halves that this page ran together
 
@@ -199,7 +311,7 @@ wrong reason; and `crates/alo-installer` is the **Windows lane's** crate by the
 table in `two-lanes-that-do-not-wait.md`, so this is a lane crossing and should
 be said out loud rather than discovered in a diff.
 
-### 4b. A program that writes a stick — not in `docs/features.md`
+### 4b. A program that writes a stick — the owner ruled: build it
 
 `docs/features.md` promises *a road from removable media beside it*, and says in
 the same line that the phrase *no USB stick* had *hardened into a promise nobody
@@ -215,9 +327,72 @@ standing rule, but `docs/features.md` is the scope gate, and this is the one
 **destructive** capability in the list: it erases a USB device, which is
 somebody's photographs if they picked the wrong one.
 
-So this is the owner's, as one question — does the writer get a line with a tier,
-or does the card come out — and the desktop lane is putting it to them. Not a
-line of it is written in the meantime.
+**Ruled on 2026-10-20. The owner's words were *let's build 1 and 2*: publish an
+image a person writes with their own tool, **and** write a stick from the
+program running on Windows. Both, not one instead of the other — which is the
+same shape as the removable-media line above it.** The third road offered —
+write only to an empty stick — was argued against and dropped, because a stick
+is essentially never empty: every one sold is formatted, so that version refuses
+nearly every device politely and offers no way on.
+
+**The desktop lane argued against building it at all and was overruled**, and
+recorded that so this page weighs the ruling rather than their reasoning. Their
+case was the asymmetry: not building it costs somebody a trip to another tool,
+building it badly costs somebody their photographs. The ruling answers it —
+*making the stick* is where people stop. Worth keeping both halves: the cost
+they named falls on us and is bounded by how carefully this is built; the cost
+the owner named falls on a person and is not bounded by anything we do.
+
+**The gate moved at 22:20, and for forty minutes before that it had not.**
+Checked at 22:15: the phrase *one destructive thing in this product* appeared
+nowhere on `origin/main` and on none of the remote branches — every head was
+fetched and each one's `docs/features.md` searched. The lines were on the desktop
+lane's local disk. They pushed on being told, to
+`the-installer-screens-in-rules` (`9c439e20`), and the text below is quoted from
+that file rather than from their message. **A ruling reported is not a scope gate
+opened**, and work on a local disk looks absent.
+
+**Whose halves.** The device list and every sentence are the desktop lane's,
+**including the rule that the system disk is never among them**. The writing is
+this lane's. The frames past S1's card — choosing a device, reviewing, writing,
+finished — do not exist yet, and they come first: writing against a design that
+does not exist is the S1 mistake in the other direction.
+
+#### *Removable* has to mean what `alo-drives` already makes it mean
+
+The line says **the devices offered are removable ones and never the disk this
+computer runs on**, and the desktop lane intends to key the list on *removable*
+rather than on *not the system disk*. The reasoning is sound — offering a fixed
+disk to be written as a stick has no honest case, whereas refusing a removable
+one in the *installer's* list would refuse somebody installing onto an external
+drive, which is ordinary.
+
+**The risk is not the rule, it is the flag**, and the workspace has already met
+it. `alo-drives/src/udisks.rs:239` does not trust one signal:
+
+```rust
+let removable = flag(drive, "Removable")
+    || flag(drive, "MediaRemovable")
+    || text(drive, "ConnectionBus").is_some_and(|bus| PLUGGED_IN_BY.contains(&bus));
+let the_systems = blocks.iter().any(|(_, block, _)| flag(block, "HintSystem"));
+```
+
+with `PLUGGED_IN_BY = ["usb", "sdio"]`. Three signals OR'd, and then the
+system's own blocks excluded — because the question *has this drive removable
+media* (a card reader, an optical drive) is **not** the question *can a person
+unplug this*, and a USB disk enclosure can answer no to the first while being
+exactly what somebody means to write.
+
+So a list keyed on a single `removable` flag would refuse a USB SSD enclosure and
+tell a person *no devices can be used* while they are holding one. **This lane
+has not measured that on hardware** — there is no USB disk on this machine — and
+offers it as the precedent in `alo-drives` rather than as a measurement.
+
+What the environment reads today is `lsblk` with
+`NAME,TYPE,RO,MOUNTPOINTS,PARTTYPE,LABEL,SIZE,MODEL,FSUSED`, which carries **no
+removable signal at all** — so whichever way the rule goes, this lane owes the
+columns for it. `HOTPLUG` and `TRAN` are the two that answer *can a person
+unplug this*; `RM` is the one that answers the other question.
 
 **What is already true and stays true either way:** whatever writes a stick must
 label its FAT32 partition `ALO-INSTALL`, because the desktop lane's rule 1 —
