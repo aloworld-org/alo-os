@@ -138,9 +138,12 @@ is what a second road answers.
   with no permissions, `tidy_up` runs only after a successful install so the
   failure case leaves it there, and removal takes the partition out of the
   table rather than wiping the bytes. That is its own decision and the owner's.
-  **Laid out as [ADR 0128](0128-whether-a-wi-fi-password-may-be-written-to-the-staging-partition.md)
-  on 2026-10-20** — four options and a recommendation, still the owner's to
-  decide. That ADR also corrects the sentence above: a failure in the *Windows*
+  **Answered 2026-10-20: no.** [ADR 0128](0128-whether-a-wi-fi-password-may-be-written-to-the-staging-partition.md)
+  laid out four options; the owner chose a fifth that document had ruled out in
+  its own premise — **the environment asks, and no pre-shared key is written**,
+  a text picker on the console first and a graphical one later. So this bullet
+  is settled, and the three facts beneath it about storing a secret on a FAT
+  volume are moot. That ADR also corrects the sentence above: a failure in the *Windows*
   half does put the area back. The case with no put-back is a failure **after**
   the restart, where the Windows program has already exited and the
   environment's `tidy_up` is reached only on the arm where the install
