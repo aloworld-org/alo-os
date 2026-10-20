@@ -380,6 +380,43 @@ jobs:
           echo
           echo "A lane running cargo test --workspace with no filter covers more than this."
 
+      # **Does the Windows half still compile?** Cross-checked from this Linux
+      # runner, which needs no Windows runner and costs seconds.
+      #
+      # **The hole this closes, measured.** `alo-portals` re-exported an item
+      # from a Linux-only module without gating the re-export, so it did not
+      # compile for Windows **from #635 until #839** — weeks in which `main` was
+      # green for every gate here, because the only build that targets Windows
+      # is `installer-candidate.yml` and that runs on a manual dispatch.
+      #
+      # **`--all-targets` is the whole point and not a flourish.** Measured on
+      # 2026-10-20: without it this reaches **17** of the 122 crates in this
+      # workspace and **not** `alo-portals`; with it, **87**, that crate
+      # included. The installer's own tests are what pull the rest in, and the
+      # candidate's Windows job failed in a *test* step rather than a build
+      # step for exactly that reason.
+      #
+      # **It found something the first time it ran.**
+      # `crates/alo-installer/tests/reading_this_windows.rs` did not compile:
+      # `TheMachine` had gained `this_program` and that file's machine never
+      # implemented it. It is `#![cfg(windows)]`, so no gate here had ever
+      # compiled it — a test whose purpose is to say *the PowerShell parses on a
+      # real Windows* had been unable to say anything for as long as that method
+      # had existed.
+      #
+      # **Compilation, not warnings.** `-D warnings` here would fail on 111
+      # warnings in crates that are not built for Windows in earnest, and the
+      # fault this closes was a compile error. What it does **not** check: the
+      # 35 crates nothing Windows-facing depends on, lints, and whether anything
+      # *runs* — that last one is the candidate's Windows job, which runs
+      # `reading_this_windows` against a real Windows.
+      - name: the installer still compiles for Windows
+        run: |
+          rustup target add x86_64-pc-windows-gnu
+          sudo apt-get install --yes --no-install-recommends gcc-mingw-w64-x86-64
+          cargo check --locked --target x86_64-pc-windows-gnu \
+            -p alo-installer --all-targets
+
       # **Built here rather than with `cargo run`, so two failures stay apart.**
       # A supervisor that does not compile and a gate that does not pass are
       # different things and should not share a step: one is a change to this
