@@ -455,17 +455,13 @@ mod tests {
         let source = include_str!("environment.rs");
         let loop_body = source
             .split_once("for (sha256, path) in listed {")
-            .expect("the loop that reads each file")
+            .unwrap()
             .1
             .split_once("Ok(Self { files })")
-            .expect("the end of the road that reads them")
+            .unwrap()
             .0;
-        let asked = loop_body
-            .find("still_fits(total)?;")
-            .expect("the bound is asked on the road that reads the files");
-        let kept = loop_body
-            .find("files.push(")
-            .expect("each file is kept on that road");
+        let asked = loop_body.find("still_fits(total)?;").unwrap();
+        let kept = loop_body.find("files.push(").unwrap();
         assert!(
             asked < kept,
             "the bound is asked after the files are kept, so a whole environment \
@@ -474,7 +470,7 @@ mod tests {
         // And asked inside the loop rather than after it: everything from the
         // `for` to the end of the road is one body, so what separates the two
         // readings is whether the asking is before the loop's own closing brace.
-        let closes = loop_body.find("\n        }").expect("the loop closes");
+        let closes = loop_body.find("\n        }").unwrap();
         assert!(
             asked < closes,
             "the bound is asked after the loop, not inside it"
