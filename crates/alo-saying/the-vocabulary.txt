@@ -972,43 +972,102 @@ installer.will.windows-does-not-get-it-back	Windows does not get that space back
 installer.will.windows-lends-the-area	Windows lends {area} GB while alo OS is installed, and gets it back afterwards
 installer.windows-disk-not-supported	The disk {disk} that Windows is on is laid out in an older way this installer does not support, so nothing was changed
 installing.a-disk-and-its-size	{disk}  ·  {size}
+installing.about-how-long	About {how_long} left
 installing.another-system-and-files	Holds another operating system and about {files} of files
+installing.before-anything-typed	BEFORE ANYTHING IS TYPED
 installing.cannot-be-written	The disk you chose, {disk}, is in use or cannot be written to, so nothing was changed
 installing.cannot-tell-which-disk-this-is	This installer cannot tell which disk it is running from, so it will not erase anything
+installing.check-this-carefully	CHECK THIS CAREFULLY
+installing.checked-before-written	Checked before it was written
 installing.checking-it-is-genuine	Checking over the internet that this download is a genuine alo OS
 installing.checking-the-disk	Checking that {disk} is safe to install onto
 installing.choice-not-understood	The disk chosen for alo OS could not be understood, so nothing was changed
+installing.choose-another-stick	Choose another stick to write
+installing.connect-another-disk	Connect another disk
 installing.connecting	Connecting to the internet
 installing.damaged	This installer is damaged, so nothing was changed. Download alo OS again
 installing.disk-not-connected	The disk you chose, {disk}, is not connected to this computer, so nothing was changed
 installing.disks-not-read	The disks in this computer could not be read, so nothing was changed
+installing.erase-and-install	Erase and install
+installing.erase-and-write	Erase and write
+installing.every-layout	Choose from every layout this computer knows
+installing.from-a-stick	FROM A STICK
 installing.genuine	This is a genuine alo OS
 installing.holds-another-system	The disk you chose, {disk}, holds another operating system, so nothing was changed
 installing.holds-this-installer	The disk you chose, {disk}, holds this installer itself, so nothing was changed
+installing.how-far-the-write	Writing  ·  {how_far}
+installing.how-to-connect	How should this computer connect?
+installing.if-it-does-not-match	If what you type below does not match, choose another layout
+installing.install-alo-os	Install alo OS
+installing.install-from-windows-instead	Install from Windows instead
+installing.install-whenever	You can install at any time while you are trying it
 installing.installed	alo OS is installed. This computer restarts in a few seconds
 installing.installing	Installing alo OS onto {disk}. Everything that was on that disk is being replaced. This takes a while, and this screen will say when it is done
+installing.keep-using-this-computer	You can keep using this computer while it writes
+installing.leave-the-stick-in	Leave the stick in until this finishes. Taking it out now leaves it unusable
 installing.looking-for-the-disk	Looking for the disk you chose: {disk}
+installing.network	NETWORK
 installing.no-disk-chosen	No disk was chosen for alo OS, so nothing was changed
+installing.no-disk-is-big-enough	No disk here is big enough
 installing.no-network-card	This computer's network card was not found, so nothing was changed and alo OS was not installed. Windows is still there and starts as it did before. This needs a computer whose network card this version of alo OS knows
+installing.no-other-disk-is-touched	Nothing on any other disk is touched, including the stick you started from
 installing.not-a-whole-disk	{disk} is part of a disk rather than a whole disk, so nothing was changed
 installing.not-genuine	This download is not a genuine alo OS, so nothing was changed
 installing.not-installed	alo OS could not be installed onto {disk}. That disk may now hold part of alo OS; nothing else on this computer was changed. Restart to try again
 installing.not-reachable	alo OS could not be downloaded, so nothing was changed. Check that this computer is connected to the internet by a network cable, then restart to try again
 installing.not-the-space-the-installer-made	The space for alo OS on the disk {disk} is not there, so nothing was changed. Start Windows and run the alo OS installer again
+installing.nothing-changed-yet	You are running alo OS from the stick. Nothing on this computer has been changed
 installing.nothing-connected	No network cable is plugged in, so nothing was changed and alo OS was not installed. Plug in a network cable, then restart to try again
+installing.nothing-has-changed-yet	Nothing has been changed yet. Going back changes nothing
 installing.nothing-is-on-it	Empty. Nothing would be lost
+installing.nothing-until-you-type-it	Nothing is changed until you type the name of the disk you choose
+installing.nothing-was-changed	NOTHING WAS CHANGED
+installing.only-a-genuine-alo-os	Only a genuine alo OS is written to a stick
+installing.only-removable-devices	Only removable devices are shown. The disk this computer runs on is not one of them
+installing.only-the-stick-is-written	Nothing on this computer is touched. Only the stick is written
+installing.password-never-written	Your Wi-Fi password is never written to this computer's disk
+installing.press-these-to-check	Press the keys shown to check: {keys}
 installing.reading-the-choice	Reading which disk you chose before the restart
+installing.ready	READY
 installing.replacing-what-is-there	Everything on {disk} is being replaced, including the system that was on it. This is the road you agreed to twice, and there is no way back from here
+installing.restart-and-start-from-it	Restart this computer and start from the stick you just wrote
 installing.restart-when-ready	You can turn this computer off or restart it now
+installing.something-else	Something else
 installing.something-is-on-it	Holds another operating system. Everything on this disk would be lost
+installing.start-this-pc-from-it	Start this PC from it instead
 installing.starting	alo OS is being installed on this computer. Each step is written here as it happens
 installing.still-installing	Still installing alo OS. Leave the computer on
+installing.take-it-to-the-other-computer	Take it to the computer you want alo OS on, and start that computer from it
 installing.that-disk-is-in-use	Something on this computer is using this disk, so it cannot be written
 installing.that-is-this-installer	This is the disk alo OS is being installed from, so it cannot be installed onto
+installing.the-stick-is-not-shown	The stick you started from is not shown here and cannot be chosen
+installing.the-stick-is-ready	The stick is ready
+installing.the-stick-will-be-erased	Everything on the stick you choose will be erased. Nothing is changed until you type its name
+installing.this-erases	This erases {disk}
+installing.this-erases-the-stick	This erases {stick}
 installing.tidied	This computer now starts alo OS, with Windows behind it, and the installer's space is back
 installing.tidy-entries-not-read	The list of systems this computer can start could not be read, so it was left as it is
 installing.tidy-not-whole	alo OS is installed and starts. Some tidying up could not be finished, and you can do it      from alo OS once it has started
 installing.tidying	Tidying up: naming alo OS in the start-up menu, putting Windows behind it, and taking the      installer's own space back
+installing.try-it-first	Try it first
+installing.try-or-install	Try alo OS, or install it
+installing.type-the-name	Type the name of the disk to continue
+installing.type-the-sticks-name	Type the name of the stick to continue
+installing.what-goes-from-the-stick	{holding} on this stick will be gone, and cannot be brought back
+installing.what-installing-is	Choose a disk to install on. You will be told exactly what changes before anything does
+installing.what-stays	What stays
+installing.what-trying-is	Use the whole system from the stick. See that your screen, your Wi-Fi and your trackpad work
+installing.what-will-be-gone	{holding} on this disk will be gone, and cannot be brought back
+installing.where-to-install	WHERE TO INSTALL
+installing.which-disk	Which disk should alo OS use?
+installing.which-keyboard	Which keyboard are you using?
+installing.which-stick	Which stick should alo OS write?
+installing.why-a-network	alo OS is downloaded over the network. Your password is used here and kept nowhere
+installing.why-the-keyboard-first	You will type a network password and the name of a disk. Both have to be exact, so the keyboard has to be right first
+installing.write-a-stick	WRITE A STICK
+installing.write-another	Write another
+installing.writing	WRITING
+installing.writing-to-the-stick	Writing alo OS to {stick}
 keeping-up.already-waiting	This update is already waiting for your next restart
 keeping-up.answer-not-understood	The answer about whether there is an update could not be understood, so nothing on this machine has changed
 keeping-up.changed-since-it-was-found	This machine changed after the update was found, so nothing was changed. Check for the update again

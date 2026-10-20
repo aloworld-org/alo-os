@@ -450,11 +450,8 @@ pub const FROM_A_STICK: Word = Word::saying("installing.from-a-stick", "FROM A S
 
 /// S2's question.
 pub const TRY_OR_INSTALL: Word =
-    Word::saying("installing.try-or-install", "Try alo OS,\nor install it").noting(
-        "The question on the screen somebody meets after starting from a stick. The line break is \
-     deliberate and is part of the design: keep it where the sense breaks in your language, or \
-     remove it if your language does not break there.",
-    );
+    Word::saying("installing.try-or-install", "Try alo OS, or install it")
+        .noting("The question on the screen somebody meets after starting from a stick.");
 
 /// S2's sentence under the question.
 pub const NOTHING_HAS_BEEN_CHANGED_YET: Word = Word::saying(
@@ -523,11 +520,10 @@ pub const NETWORK: Word = Word::saying("installing.network", "NETWORK").noting(
 /// S3's question.
 pub const HOW_SHOULD_THIS_COMPUTER_CONNECT: Word = Word::saying(
     "installing.how-to-connect",
-    "How should this\ncomputer connect?",
+    "How should this computer connect?",
 )
 .noting(
-    "The question on the screen that chooses a network. The line break is the design's; keep it \
-     where the sense breaks in your language. *This computer* rather than *your computer*: the \
+    "The question on the screen that chooses a network. *This computer* rather than *your computer*: the \
      person may be installing on a machine that is not theirs.",
 );
 
@@ -559,14 +555,11 @@ pub const WHERE_TO_INSTALL: Word = Word::saying("installing.where-to-install", "
     .noting("The quiet label above the question that chooses a disk.");
 
 /// S4's question.
-pub const WHICH_DISK: Word = Word::saying(
-    "installing.which-disk",
-    "Which disk should\nalo OS use?",
-)
-.noting(
-    "The question on the screen that chooses a disk. The line break is the design's. *alo OS* is \
+pub const WHICH_DISK: Word = Word::saying("installing.which-disk", "Which disk should alo OS use?")
+    .noting(
+        "The question on the screen that chooses a disk. *alo OS* is \
      never translated.",
-);
+    );
 
 /// S4's sentence under the question, and the promise it carries.
 pub const NOTHING_UNTIL_YOU_TYPE_IT: Word = Word::saying(
@@ -599,9 +592,9 @@ pub const CHECK_THIS_CAREFULLY: Word =
     );
 
 /// S5's question, which is not a question.
-pub const THIS_ERASES: Word = Word::saying("installing.this-erases", "This erases\n{disk}").noting(
+pub const THIS_ERASES: Word = Word::saying("installing.this-erases", "This erases {disk}").noting(
     "The heading on the review screen. {disk} is the disk's own name as a person reads it — \
-     *Samsung SSD 870 EVO · 1 TB* — and is not translated. The line break is the design's. \
+     *Samsung SSD 870 EVO · 1 TB* — and is not translated. \
      **Present tense and active**: not *this will erase* and not *this would erase*. The person \
      is about to do it.",
 );
@@ -669,10 +662,10 @@ pub const NOTHING_WAS_CHANGED: Word =
 /// S6's heading.
 pub const NO_DISK_IS_BIG_ENOUGH: Word = Word::saying(
     "installing.no-disk-is-big-enough",
-    "No disk here is\nbig enough",
+    "No disk here is big enough",
 )
 .noting(
-    "The heading when nothing on this computer can hold alo OS. The line break is the design's. \
+    "The heading when nothing on this computer can hold alo OS. \
      *Here* means this computer, and it matters: a disk somewhere else would do.",
 );
 
@@ -714,12 +707,11 @@ pub const BEFORE_ANYTHING_IS_TYPED: Word = Word::saying(
 /// S0's question.
 pub const WHICH_KEYBOARD: Word = Word::saying(
     "installing.which-keyboard",
-    "Which keyboard\nare you using?",
+    "Which keyboard are you using?",
 )
 .noting(
     "The question on the first screen. *Using* rather than *have*: a person may be installing on \
-     somebody else's computer with their own keyboard plugged in. The line break is the \
-     design's.",
+     somebody else's computer with their own keyboard plugged in.",
 );
 
 /// S0's sentence under the question.
@@ -789,7 +781,7 @@ pub const WRITE_A_STICK: Word = Word::saying("installing.write-a-stick", "WRITE 
 /// S7's question.
 pub const WHICH_STICK: Word = Word::saying(
     "installing.which-stick",
-    "Which stick should\nalo OS write?",
+    "Which stick should alo OS write?",
 )
 .noting(
     "The question on the screen that chooses a device to write. *Stick* is the ordinary word for \
@@ -822,7 +814,7 @@ pub const ONLY_REMOVABLE_DEVICES: Word = Word::saying(
 
 /// S8's heading, which names the device rather than the act.
 pub const THIS_ERASES_THE_STICK: Word =
-    Word::saying("installing.this-erases-the-stick", "This erases\n{stick}").noting(
+    Word::saying("installing.this-erases-the-stick", "This erases {stick}").noting(
         "The heading on the review before a stick is written. {stick} is the device's own name \
          as a person reads it — *SanDisk Ultra* — and is not translated. Present tense and \
          active, as on the disk's own review: not *will erase*.",
@@ -871,7 +863,7 @@ pub const WRITING: Word = Word::saying("installing.writing", "WRITING")
 /// S9's heading.
 pub const WRITING_TO_THE_STICK: Word = Word::saying(
     "installing.writing-to-the-stick",
-    "Writing alo OS\nto {stick}",
+    "Writing alo OS to {stick}",
 )
 .noting(
     "The heading while the write runs. {stick} is the device's own name and is not translated. \
