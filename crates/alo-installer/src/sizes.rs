@@ -53,8 +53,20 @@ pub const WINDOWS_KEEPS_FREE: u64 = 16 * GIB;
 /// somebody's only computer, 24 GB was never only the model's size, and
 /// lowering it to let more machines through is a thing to do on purpose with a
 /// measurement behind it rather than as a side effect of another change.
+///
+/// **No longer a number here, because it was the only one.** It lived in this
+/// file and the environment had no size check at all, so it was *one guard on
+/// the other side of a reboot from the thing it protects* —
+/// `tests/the_installer_walked_on_a_real_windows.rs`'s own words. That is
+/// survivable on this road, which refuses before it restarts; it is not
+/// survivable on the road from a stick, where there is no Windows half to
+/// refuse and `bootc install to-disk --wipe` is one program.
+///
+/// So it is `alo_image::THE_LEAST_DISK` now, where both roads read it, and this
+/// stays as the name this crate already uses so no call site had to move.
+///
 /// `docs/booting.md` carries the same note beside the 17 GB floor.
-pub const THE_LEAST_DISK: u64 = 24 * GIB;
+pub const THE_LEAST_DISK: u64 = alo_image::THE_LEAST_DISK;
 
 /// A size a person is told they have.
 #[must_use]
