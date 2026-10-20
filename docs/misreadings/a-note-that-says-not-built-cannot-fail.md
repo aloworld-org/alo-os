@@ -78,3 +78,48 @@ note out. **That is an absence somebody can fail.**
 The cheap habit, when you find one at all: before quoting a *not built*
 note as evidence, read to the end of the file it is in. Both of these
 were twenty lines from their own dispatcher.
+
+## And the absence with a clock on it, 2026-10-20
+
+The two notes above were wrong about the present. This one was **right when it
+was written and stopped being right**, which is the same mechanism with a date
+inside it and is harder to see.
+
+`crates/alo-shell/src/dock_raster.rs` passed the bar no focus rings at all,
+under this:
+
+```rust
+// **No focus ring on the bar itself, and that is a gap and not a
+// decision.** The keyboard reaches the two surfaces the bar opens; it
+// does not yet reach the bar's own slots, so there is nothing here for
+// a ring to mark. When it does, the rectangle is the slot's and the
+// rule is `a_focus_ring`'s — the measurement is already in
+// `alo_dock::measures`.
+rings: &[],
+```
+
+Every sentence of that was true the day it was written. On **2026-10-18** the
+bar gained a keyboard performer — `Server::the_keyboard_takes_the_slot_it_is_on`
+— and the second sentence became false. Nothing in that change had any reason
+to visit this file, and **no test could fail**: the clause the note hangs on is
+a claim about what *another* module does not do yet.
+
+What it cost is the part worth recording. F6 moved the keyboard onto the Dock
+and the screen did not change by one byte, so four presses on a booted machine
+were reported — by this lane, to another lane and to the owner — as **F6 does
+not reach the Dock**. The chord was right, the handler was right, the
+end-to-end trace another lane ran was right, and the screen was the liar.
+
+**Two things make this one worse than a plainly stale note.** The note was
+*accurate about intent* — *when it does, the rule is `a_focus_ring`'s* — and
+the code could not honour it, because `a_focus_ring` was a function nested
+inside another function that the bar could not reach. And the diagnosis it
+produced pointed at the input path, which is the half that was working.
+
+**The cure, beyond the one above.** A note whose truth depends on another
+module's state names that module and what would end the wait, so the search
+that finds the change also finds the note: *nothing here for a ring to mark
+until `which_slot_on_the_bar` has a writer* would have been found by a grep for
+`which_slot_on_the_bar` on the day it got one. And when a note says *the rule
+is X's*, check that X is callable from where the note is — if it is not, the
+note is describing a change nobody can make.

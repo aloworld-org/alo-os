@@ -335,6 +335,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     // a machine with no saved pins should show.
                     on_the_dock: &on_the_dock,
                     in_more_apps: &in_more_apps,
+                    the_keyboard_is_on_the_bar: None,
                     display_scale: 100,
                     dock: &dock,
                     look: DesktopLook::of(

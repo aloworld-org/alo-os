@@ -383,6 +383,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 tasks: &a_task_window,
                                 market: Some(the_market_window),
                                 display_scale: 100,
+                                // **The keyboard is not on the bar in this
+                                // picture.** This check draws a desktop with
+                                // windows on it; where the keyboard is, is a
+                                // separate subject and `dock_raster`'s own
+                                // tests hold it.
+                                the_keyboard_is_on_the_bar: None,
                                 // **Three applications, so there is a Dock to
                                 // look at.** This held nothing until
                                 // 2026-10-10, with the note *deliberately not

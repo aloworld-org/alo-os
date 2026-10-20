@@ -141,6 +141,13 @@ pub(crate) fn what_only_the_server_knows<'a>(
     // `Holding::in_the_overview` is `what_the_dock_holds` before the membership
     // rule, so the two cannot drift.
     frame.in_more_apps = in_more_apps;
+    // **Where the keyboard is on the bar**, which a desktop's own state cannot
+    // know for `market`'s reason exactly: F6 and Tab write it and both are
+    // presses, and presses reach the `Server`. Read straight off rather than
+    // interpreted — `Server::the_keyboard_is_now_in` already decides that only
+    // the Dock gets a slot, and a second opinion here would be a second place
+    // for the answer to be wrong.
+    frame.the_keyboard_is_on_the_bar = server.which_slot_on_the_bar;
     // **Whether the overflow list is open**, which a desktop's own state cannot
     // know: it is turned over by a press, and presses reach the `Server`.
     frame.the_dock_has_open = the_dock_has_open;

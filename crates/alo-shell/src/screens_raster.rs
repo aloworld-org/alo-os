@@ -131,6 +131,11 @@ pub(crate) fn picture(
             &crate::what_the_dock_has_open::NOTHING,
             &crate::the_docks_words::TheDocksWords::default(),
         ),
+        // **No keyboard on this Dock**, which is this picture's subject rather
+        // than an omission: a preview of where the screens are is not a Dock
+        // anybody is typing on, and a focus ring drawn in it would say a person
+        // had landed on a slot of a Dock that is a thumbnail.
+        None,
         fonts,
     )?;
     let warming = place.warming();

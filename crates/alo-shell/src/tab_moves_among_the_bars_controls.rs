@@ -117,14 +117,7 @@ impl crate::Server {
     pub(crate) fn how_many_controls_the_bar_has(&self) -> usize {
         self.dock_as_drawn
             .values()
-            .map(|places| {
-                places
-                    .places
-                    .each()
-                    .iter()
-                    .filter(|place| place.what().can_be_pressed())
-                    .count()
-            })
+            .map(|places| crate::the_bars_pressable_slots::how_many(&places.places))
             .min()
             .unwrap_or(0)
     }

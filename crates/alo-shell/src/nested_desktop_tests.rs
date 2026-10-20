@@ -71,6 +71,7 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                     display_scale: 100,
                     on_the_dock: &[],
                     in_more_apps: &[],
+                    the_keyboard_is_on_the_bar: None,
                     dock: &dock,
                     look: noon_look(&an_appearance(), reading),
                     strings: &strings,
@@ -194,6 +195,7 @@ fn a_desktop_frame_whose_indicator_was_never_told_is_refused_whole() {
         display_scale: 100,
         on_the_dock: &[],
         in_more_apps: &[],
+        the_keyboard_is_on_the_bar: None,
         dock: &dock,
         look: noon_look(&an_appearance(), Direction::LeftToRight),
         strings: &strings,
@@ -246,6 +248,7 @@ fn the_record_window_sits_in_the_desktop_frame() {
         display_scale: 100,
         on_the_dock: &[],
         in_more_apps: &[],
+        the_keyboard_is_on_the_bar: None,
         dock: &dock,
         look: noon_look(&an_appearance(), Direction::LeftToRight),
         strings: &strings,
@@ -309,6 +312,7 @@ fn the_frame_carries_whether_the_panel_is_revealed() {
                 display_scale: 100,
                 on_the_dock: &[],
                 in_more_apps: &[],
+                the_keyboard_is_on_the_bar: None,
                 dock: &dock,
                 look: noon_look(&an_appearance(), Direction::LeftToRight),
                 strings: &strings,
@@ -411,6 +415,7 @@ fn the_frame_carries_the_market_a_person_opened() {
         display_scale: 100,
         on_the_dock: &[],
         in_more_apps: &[],
+        the_keyboard_is_on_the_bar: None,
         dock: &dock,
         look,
         strings: &strings,
@@ -425,5 +430,98 @@ fn the_frame_carries_the_market_a_person_opened() {
         "a person had the market open and the frame's picture holds no market, \
          so nothing will be painted and -- because an open window takes the keys -- \
          they lose the keyboard with nothing on screen to say why"
+    );
+}
+
+/// **The frame carries where the keyboard is on the bar**, through the one
+/// function that builds a picture for both roads.
+///
+/// # Why this seam and not the raster's
+///
+/// `crate::dock_raster`'s own tests hold that the ring is drawn when it is
+/// asked for. They cannot see the question being asked: `frame_pictures` reads
+/// the frame's fields into `desktop_raster::Shown`, and **a literal written
+/// there instead of the frame's value is invisible to every test below it.**
+/// That is not a hypothetical — `market: None` was written in this block, the
+/// market's own raster tests stayed green, and a person pressing the
+/// Applications entry lost their keyboard to a window that was never drawn.
+///
+/// So this asserts the only thing that distinguishes the two: a Dock drawn
+/// with the keyboard on its first slot is not pixel-for-pixel a Dock drawn with
+/// the keyboard elsewhere.
+#[test]
+fn the_frame_carries_the_slot_the_keyboard_is_on() {
+    let strings = words();
+    let mut labels = WindowControlLabels::new().unwrap();
+    let dock = Dock::shipped();
+    let running = RunningWindow::closed();
+    let filling = FillingWindow::closed();
+    let mut told = EgressStatus::on_an_output();
+    assert_eq!(
+        Indicating::nowhere().show(Some(&mut told), &Indicator::default()),
+        Drew::Shown
+    );
+
+    // **`mut`, because it lends the labels to each draw.** The labels are the
+    // window controls' words, said once and reused — which is the point of
+    // them, and the reason this is a closure rather than three copies.
+    let mut painted = |the_keyboard_is_on_the_bar| {
+        let frame = DesktopFrame {
+            tasks: &[],
+            market: None,
+            the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
+            the_docks_words: crate::desktop_testing::no_words(),
+            in_use: &[],
+            notifications: &[],
+            capturing: None,
+            division: crate::desktop_testing::an_undivided_display(),
+            offer: crate::desktop_testing::nothing_offered(),
+            windows: &[],
+            put_aside: crate::desktop_testing::nothing_put_aside(),
+            panel_is_revealed: true,
+            filling_the_screen: false,
+            display_scale: 100,
+            on_the_dock: &[],
+            in_more_apps: &[],
+            the_keyboard_is_on_the_bar,
+            dock: &dock,
+            look: noon_look(&an_appearance(), Direction::LeftToRight),
+            strings: &strings,
+            egress: &told,
+            running: &running,
+            filling: &filling,
+        };
+        // **`unwrap` and not `expect`**, which is this file's own convention:
+        // its header allows the first and refuses the second, because in a test
+        // a panic on an unexpected `None` is the failure being reported. A told
+        // indicator and an undivided display draw a desktop, and that desktop's
+        // bar is drawn on every frame.
+        let pictures = frame_pictures(frame, None, None, &mut labels, (1920, 1080), None).unwrap();
+        pictures
+            .desktop
+            .dock
+            .as_ref()
+            .unwrap()
+            .surface
+            .as_ref()
+            .unwrap()
+            .pixels
+            .clone()
+    };
+
+    let quiet = painted(None);
+    let reached = painted(Some(0));
+    assert_ne!(
+        reached, quiet,
+        "the frame said the keyboard was on the bar's first slot and the picture is identical \
+         to one where it is not, so the frame's answer never reached the Dock's drawing — \
+         which is a person pressing F6 and seeing nothing happen"
+    );
+    // **The control.** Two draws of the same frame must agree, or the
+    // comparison above would pass on a picture that merely differs twice.
+    assert_eq!(
+        painted(None),
+        quiet,
+        "two pictures of the same frame differ, so this test cannot say anything"
     );
 }

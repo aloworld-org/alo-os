@@ -198,6 +198,7 @@ fn what_is_drawn_on_two_desktops_carries_the_indicator_and_the_question() {
                     display_scale: 100,
                     on_the_dock: &[],
                     in_more_apps: &[],
+                    the_keyboard_is_on_the_bar: None,
                 },
                 None,
                 Some(ApprovalFrame {

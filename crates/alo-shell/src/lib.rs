@@ -367,6 +367,7 @@ pub mod task_raster;
 pub mod task_text;
 pub mod the_application_door;
 pub mod the_application_doors_place;
+mod the_bars_pressable_slots;
 /// The Dock's composer as a field a person types a request into.
 pub mod the_composer_a_person_types_in;
 mod the_desk_is_reconciled;

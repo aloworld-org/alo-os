@@ -941,6 +941,11 @@ mod running {
                 // `on_the_dock`'s reason exactly, and overridden on the way to
                 // the frame by `what_only_the_server_knows`.
                 in_more_apps: &[],
+                // **The lane fills this too**, for `market`'s reason exactly:
+                // F6 and Tab write which slot the keyboard is on and both are
+                // presses. `what_only_the_server_knows` sets it from
+                // `Server::which_slot_on_the_bar`.
+                the_keyboard_is_on_the_bar: None,
                 look: self.look,
                 strings: &self.strings,
                 egress: &self.egress,

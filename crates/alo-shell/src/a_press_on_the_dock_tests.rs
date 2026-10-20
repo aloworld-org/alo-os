@@ -886,6 +886,8 @@ fn a_press_where_each_letter_is_drawn_reaches_that_letters_entry() {
             &crate::what_the_dock_has_open::NOTHING,
             &crate::the_docks_words::TheDocksWords::default(),
         ),
+        // No keyboard on this bar: this test is about where a press lands.
+        None,
         &mut fonts,
     )
     .expect("a Dock of two entries lays out on a 1280 x 800 display");
@@ -1035,4 +1037,49 @@ fn a_press_with_nothing_open_asks_the_application_to_start() {
         vec![dolphin],
         "a session with no way to start applications reported the press as carried out"
     );
+}
+
+/// **The slot the ring goes round is the slot a press lands on.**
+///
+/// `crate::dock_raster` draws the focus ring round
+/// `crate::the_bars_pressable_slots::the_one_at(places, which)`, and
+/// `Server::the_keyboard_takes_the_slot_it_is_on` carries out
+/// `what_this_slot_does` of the same place. This walks every slot on a shipped
+/// bar and asks the **pointer** road what is at its middle, so the two roads
+/// are compared against each other rather than each against itself.
+///
+/// # Why this test and not a drawing test
+///
+/// `crate::window_control_input`'s header records what one divergence of this
+/// kind cost: only the keyboard was migrated, the button stayed broken, and a
+/// keyboard test passed throughout. A ring round the wrong slot is that fault
+/// wearing a different coat — the control that lights up would not be the
+/// control that runs, and **both halves would pass their own tests.**
+#[test]
+fn the_slot_the_ring_marks_is_the_slot_a_press_lands_on() {
+    for edge in [Edge::Bottom, Edge::Top, Edge::Left, Edge::Right] {
+        let dock = on_the_edge(edge, 3);
+        let how_many = crate::the_bars_pressable_slots::how_many(&dock.places);
+        assert!(
+            how_many >= 2,
+            "{edge:?}: a bar of {how_many} slots is too few for this to measure anything"
+        );
+
+        for which in 0..how_many {
+            let place = crate::the_bars_pressable_slots::the_one_at(&dock.places, which)
+                .unwrap_or_else(|| panic!("{edge:?}: slot {which} is inside the count"));
+            // **The middle of the slot the ring would go round**, in the same
+            // *along the bar* measure the layout gives — and turned into a
+            // point on the display by the same helper the other tests here
+            // use, so this is not a second idea of where the bar is.
+            let along = place.from_the_start() + place.across() / 2;
+            let landed = what_a_press_on_the_dock_does(&dock, at(&dock, along));
+            assert_eq!(
+                landed,
+                super::what_this_slot_does(place.what()),
+                "{edge:?}: a press in the middle of slot {which} does not reach what the \
+                 keyboard on that slot would carry out"
+            );
+        }
+    }
 }
