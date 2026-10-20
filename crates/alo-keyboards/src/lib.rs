@@ -97,6 +97,7 @@ pub mod switching;
 pub mod these;
 pub mod typing;
 pub mod unkept;
+pub mod what_a_key_gives;
 pub mod words;
 
 #[cfg(test)]
@@ -116,4 +117,5 @@ pub use rented::{NotAList, NotRented, Rented, THE_RULES};
 pub use these::These;
 pub use typing::{Composing, Typed};
 pub use unkept::{FileNotRead, FileNotWritten};
+pub use what_a_key_gives::{EVERY_LAYOUT, Held, a_layout_is_offered, what_a_key_gives};
 pub use words::{Word, WordsError, declare_into, keyboard_words};
