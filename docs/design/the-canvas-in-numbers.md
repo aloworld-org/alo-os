@@ -48,6 +48,48 @@ not the first ([the shortcuts and the edges](the-shortcuts-and-the-edges.md)).
 
 All **Manrope**, with **Geist Mono** for anything the machine says in code.
 
+**And the faces are carried, not borrowed** — which is the fact a builder needs
+and which was recorded only in a Rust doc comment until 2026-10-20.
+
+| | |
+|---|---|
+| where they are | `crates/alo-shell/fonts/` — `Manrope.ttf`, `Manrope-SemiBold.ttf`, `GeistMono.ttf`, and `fonts/README.md` with the licence, the upstream revision and the hash |
+| how they are loaded | `include_bytes!`, into the binary. **Never `/usr/share/fonts`**, so what a surface draws in does not depend on what a base image happens to ship |
+| who asks for them | `alo_shell::painted_text::alos_own_text` — `Family::Name("Manrope")` with `Weight(600)`, in one place so a measurement and a drawing cannot disagree about the face they meant |
+| **why `Inter.ttf` is still there** | as the fallback, deliberately. A script Manrope has no glyphs for falls through to the rest of the font database; narrowing that would mean a person's language stops rendering. **The shell does not draw in Inter** — it asks for Manrope by name and keeps Inter behind it |
+
+**Settled 2026-10-09, and it had been wrong before that**: this crate bundled
+only Inter and asked for `Family::SansSerif`, so nothing in the product drew the
+typeface its own design uses. The weight matters as much as the family —
+`Manrope-SemiBold.ttf` is bundled beside `Manrope.ttf` rather than left to
+synthesis, because cosmic-text drops a family **silently** when no loaded face
+matches the weight asked for, and a heading that renders Regular where the
+design says SemiBold is a hierarchy quietly wrong rather than a visible fault.
+
+### The boot environment draws in the same face, and it costs the initramfs nothing
+
+`alo-installing` is the one program in the boot environment, and ADR 0128 gives
+it screens of its own to draw — a network picker, a disk picker, and the review
+before a disk is erased. Those are alo's own surfaces and take alo's own face.
+
+Because the faces are **embedded rather than read from the file system**, the
+environment needs no font added to `image/installing/alo-installing.conf` and
+depends on nothing the base ships. `Manrope-SemiBold.ttf` is 145 KB inside a
+binary that is already copied in whole.
+
+**Two things the environment cannot take from this page**, and they are written
+here so nobody assumes otherwise:
+
+- **the mode is the firmware's.** `simpledrm` presents whatever UEFI left, which
+  is not 1440×960 and is not ours to choose, and there is no compositor in the
+  environment to normalise it. Every number on this page is a proportion or a
+  logical measure for that surface, exactly as `CLAUDE.md` requires of every
+  display;
+- **nothing here has been drawn there yet.** The kernel carries the surface
+  (`CONFIG_DRM_SIMPLEDRM=y`, built in) and the font is in the binary, but no
+  machine has put a pixel on a screen from the environment. That is a
+  measurement nobody has taken, not a thing this page describes.
+
 | Role | Size / line | Weight | Tracking |
 |---|---|---|---|
 | Display/Medium | 36 / 44 | 600 | −0.8 |
