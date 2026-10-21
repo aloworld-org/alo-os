@@ -1776,6 +1776,14 @@ terminal.explained.destructive	it destroys something
 terminal.explained.elevated	it needs more than your own rights
 terminal.explained.leaves	something leaves this machine
 terminal.explained.not-a-guarantee	an explanation, not a guarantee
+terminal.integration.added	Added to {file}. Open a new terminal to use it.
+terminal.integration.already	Already in {file}
+terminal.integration.no-such-shell	alo has no integration for {shell} yet
+terminal.integration.nowhere	This session has no folder of its own, so there is nowhere to add it
+terminal.integration.offer	Let alo read what you type in the terminal
+terminal.integration.reveals	Every command you run, to alo, on this machine. Nothing leaves this machine because of it.
+terminal.integration.would-add-to	Adds it to {file}
+terminal.integration.would-not-write	{file} would not take the change: {why}
 terminal.result.failed#one	{failed} failed
 terminal.result.failed#other	{failed} failed
 terminal.result.from-cargo-test	cargo test output

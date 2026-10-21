@@ -193,6 +193,7 @@ fn a_way_with_nothing_to_choose_is_absent_rather_than_disabled() {
     let places = SettingsPlaces::of(
         None,
         Some(home.as_os_str()),
+        None,
         &var.join("grants"),
         &var.join("pairings"),
         &var.join("agentd.sock"),
@@ -1020,19 +1021,24 @@ fn moving_between_rows_and_sections_changes_nothing() {
         window.pressed(key(SettingsKey::NextSection), doors(&strings, &door));
     }
     assert_eq!(
-        firsts[..5],
+        firsts[..6],
         [
             SettingsSection::Answering,
             SettingsSection::Appearance,
             SettingsSection::Dock,
             SettingsSection::Shortcuts,
+            // Between the shortcuts and the grants, which is where
+            // `settings_lines` draws it.
+            SettingsSection::Terminal,
             SettingsSection::Granted,
         ]
     );
     window.pressed(key(SettingsKey::PreviousSection), doors(&strings, &door));
     assert_eq!(
         window.focused(noon()).unwrap(),
-        SettingsRow::Shortcut(Action::ALL[0])
+        // One section back from the grants is the terminal's single row, and
+        // it was the first shortcut until the terminal section existed.
+        SettingsRow::ShellIntegration
     );
     for pressed in [SettingsKey::Last, SettingsKey::First, SettingsKey::Nothing] {
         window.pressed(key(pressed), doors(&strings, &door));

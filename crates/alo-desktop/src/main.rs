@@ -527,6 +527,7 @@ mod running {
             Some(alo_shell::SettingsPlaces::of(
                 std::env::var_os("XDG_CONFIG_HOME").as_deref(),
                 std::env::var_os("HOME").as_deref(),
+                std::env::var_os("SHELL").as_deref(),
                 &alo_remembering::this_persons_grants(),
                 std::path::Path::new(alo_remembering::THE_PAIRINGS),
                 &alo_changing::this_persons_door(),

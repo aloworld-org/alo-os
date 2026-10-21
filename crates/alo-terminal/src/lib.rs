@@ -59,6 +59,7 @@ pub mod what_alo_said;
 pub mod what_is_blocking_it;
 pub mod what_the_kernel_says;
 pub mod what_the_shell_says_about_the_prompt;
+pub mod where_the_integration_stands;
 pub mod who_is_speaking;
 pub mod why_a_command_is_waiting;
 pub mod words;

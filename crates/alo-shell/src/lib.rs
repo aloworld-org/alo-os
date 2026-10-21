@@ -328,6 +328,7 @@ mod settings_paired;
 mod settings_places;
 mod settings_raster;
 mod settings_seat;
+mod settings_shell_integration;
 #[cfg(test)]
 #[path = "../tests/unit_fixtures/settings_testing.rs"]
 mod settings_testing;

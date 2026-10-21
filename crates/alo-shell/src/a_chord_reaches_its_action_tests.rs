@@ -96,6 +96,7 @@ fn every_action_this_release_declares_has_a_road() {
         server.the_settings_places_are(crate::SettingsPlaces::of(
             Some(runtime.path().as_os_str()),
             Some(runtime.path().as_os_str()),
+            None,
             &runtime.path().join("grants"),
             &runtime.path().join("pairings"),
             &runtime.path().join("daemon"),
