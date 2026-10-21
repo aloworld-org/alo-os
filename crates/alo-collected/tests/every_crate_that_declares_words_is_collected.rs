@@ -373,3 +373,115 @@ fn a_workspace_that_cannot_be_read_is_checking_nothing() {
          passing over a workspace it no longer understood"
     );
 }
+
+/// Where the crate that is deliberately apart keeps its sentences.
+const THE_CRATE_APART: &str = "crates/alo-agentd/src/words.rs";
+
+/// **The figure in the exception's reason is the number of sentences that crate
+/// actually declares.**
+///
+/// `DELIBERATELY_APART`'s reason argues from a quantity — *a vocabulary
+/// assembled here would hold N fewer strings on a host with no daemon* — and
+/// **it said three while that crate declared 31.** Off by a factor of ten, in
+/// the one place whose job is to make the exception legible, and nothing could
+/// have noticed: `alo-collected` cannot depend on `alo-agentd` to count them,
+/// because that crate is Linux-only and being Linux-only is the whole reason it
+/// is apart.
+///
+/// So it is counted **off the disk**, which this file already does for
+/// everything else it checks.
+#[test]
+fn the_exception_names_the_number_of_sentences_that_crate_declares() {
+    let source = off_the_disk(THE_CRATE_APART)
+        .unwrap_or_else(|| panic!("{THE_CRATE_APART} is not where this test expects it"));
+    let declared = source.matches("Word::saying").count();
+
+    // The control. A count of zero would make the assertion below pass against
+    // any reason text at all, and this file's whole subject is a check that
+    // cannot fail dressed as one that does.
+    assert!(
+        declared > 1,
+        "counted {declared} sentences in {THE_CRATE_APART}, so the count is \
+         broken rather than the reason"
+    );
+
+    let (_, reason) = DELIBERATELY_APART
+        .iter()
+        .find(|(named, _)| *named == "alo-agentd")
+        .expect("alo-agentd is the crate held apart");
+    assert!(
+        reason.contains(&format!("{declared} fewer")),
+        "that crate declares {declared} sentences and the reason it is held \
+         apart does not say so. The reason argues from the quantity, so the \
+         quantity has to be right:\n{reason}"
+    );
+}
+
+/// **No sentence in the crate held apart is padded**, which the vocabulary's own
+/// check cannot see.
+///
+/// Every other crate's sentences go through `everything_this_machine_can_say`
+/// and are checked there. This one's deliberately do not, so a stray space at
+/// either end of a sentence survives — and three of them had one.
+///
+/// # What this cannot see, said rather than left to be found
+///
+/// It reads **source**, so it sees only a sentence written as a literal in this
+/// one file. A sentence assembled at runtime from pieces, or declared in another
+/// module of that crate, is invisible to it — and so is a padded *translation*,
+/// which lives in a file this does not open. Those are real gaps and this is not
+/// a claim that no sentence anywhere is padded.
+#[test]
+fn no_sentence_the_vocabulary_cannot_see_is_padded() {
+    let source = off_the_disk(THE_CRATE_APART)
+        .unwrap_or_else(|| panic!("{THE_CRATE_APART} is not where this test expects it"));
+
+    let mut padded: Vec<String> = Vec::new();
+    let mut seen = 0usize;
+    // `Word::saying("key", "the sentence", …)` — the key, then the English.
+    for after in source.split("Word::saying").skip(1) {
+        let mut strings = after.match_indices('"').map(|(at, _)| at);
+        let Some(key_from) = strings.next() else {
+            continue;
+        };
+        let Some(key_to) = strings.next() else {
+            continue;
+        };
+        let Some(text_from) = strings.next() else {
+            continue;
+        };
+        let Some(text_to) = strings.next() else {
+            continue;
+        };
+        let key = &after[key_from + 1..key_to];
+        let text = &after[text_from + 1..text_to];
+        // **The key as well as the sentence.** A padded key is worse: a
+        // sentence with a stray space reads oddly, and a key with one matches no
+        // translation at all and silently renders English for ever. The first
+        // version of this checked only the sentence, and a mutation that padded
+        // a key went straight through it.
+        if key.trim() != key {
+            padded.push(format!("{key:?} is a KEY with a space at an end"));
+        }
+        // A sentence written over several lines is joined with a `\` and leading
+        // whitespace, which is not padding — only the ends of the whole literal
+        // are being judged here.
+        seen += 1;
+        if text.starts_with(' ') || text.ends_with(' ') {
+            padded.push(format!("{key}: {text:?}"));
+        }
+    }
+
+    assert!(
+        seen > 1,
+        "this scan found {seen} sentences in {THE_CRATE_APART}, so it is the \
+         scan that is broken"
+    );
+    assert!(
+        padded.is_empty(),
+        "{} of {seen} sentences begin or end with a space, and nothing else \
+         checks them:\n{}",
+        padded.len(),
+        padded.join("\n")
+    );
+}

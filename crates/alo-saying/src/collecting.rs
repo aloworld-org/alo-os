@@ -169,18 +169,25 @@ pub const EVERY_LIST: &[&str] = &[
 pub const DELIBERATELY_APART: [(&str, &str); 1] = [(
     "alo-agentd",
     "it is Linux, and every module in it is compiled out anywhere else, so a \
-     vocabulary assembled here would hold three fewer strings on a host with no \
+     vocabulary assembled here would hold 31 fewer strings on a host with no \
      daemon than on a machine with one — and one host would then refuse a \
-     translation file the other accepted. It declares its own three on top of \
+     translation file the other accepted. It declares its own list on top of \
      this one, which is the rule docs/contracts/translations.md states for \
-     anything that assembles a vocabulary.",
+     anything that assembles a vocabulary. The figure is held to that crate's \
+     own source by a test, because it said THREE until 2026-10-21 and the \
+     argument above is a quantitative one.",
 )];
 
 /// Everything alo OS can say, in one vocabulary.
 ///
 /// What a process adds to this is whatever it says that the rest of the machine
-/// does not — today that is `alo-agentd`'s three, and nothing else in this
+/// does not — today that is `alo-agentd`'s own list, and nothing else in this
 /// workspace has any.
+///
+/// **No figure here on purpose.** This sentence said *three* while that crate
+/// declared 31, and a number in a doc comment is a number nothing checks. The
+/// one place a figure is written is [`DELIBERATELY_APART`]'s reason, where the
+/// argument needs it, and a test holds that one to the crate's own source.
 ///
 /// # Errors
 ///
