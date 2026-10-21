@@ -287,10 +287,76 @@ either a task window or a terminal, and that the widening *cannot be built
 alone* because nothing would ever construct the terminal arm. **The explanation
 constructs it.** One change now builds both.
 
-**What is still owed in the answer**, and it is the shape rather than the road:
-the agent's door posts back a plain `String`, and the view needs **plain words
-and the three marks** — destructive, needs elevated rights, leaves the machine.
-So the reply needs a shape that carries four things, not one.
+**What was owed in the answer is built, and this section was stale about it for
+three days.** The text here read *the agent's door posts back a plain `String`,
+so the reply needs a shape that carries four things, not one*. The door does
+still post a plain `String` — `WhatCameBack::said` — and the four things arrive
+anyway, because the parsing happens at the **receiving** end:
+`alo_shell::what_alo_asks_about_a_command::what_came_back` reads a `MARKS:`
+first line into `WorthSeeing::Destructive`, `NeedsElevatedRights` and
+`LeavesTheMachine`, and the rest into the plain words. *The premise was true and
+the conclusion was wrong:* the shape was carried without the door changing.
+
+**So the road is end to end.** Measured 2026-10-21 by following it rather than
+reading the status line:
+
+| | |
+|---|---|
+| a person asks | `Ctrl`+`X` `Ctrl`+`A`, the snippet's `__alo_typed` |
+| the mark is read | `what_the_shell_says_about_the_prompt` |
+| a request is made | `what_alo_asks_about_a_command::the_requests_in` |
+| it goes to the agent | `direct_desktop.rs:838`, `WhoAsked::TheTerminal` |
+| the reply is parsed | `what_came_back`, into `WhatACommandWillDo` |
+| it is drawn | `direct_desktop.rs:1092` → `Server::alo_explains` → `WhatAloSaid::explains` |
+
+`WhoAsked::TheTerminal` has existed since 2026-10-18, and its own doc comment
+cites the owner's decision as the thing that constructs it.
+
+**What was actually missing is the fourth condition: nobody had seen it.** No
+example and no fixture drew an explanation — measured by grepping every
+`examples/` file for `alo_explains`, `WhatACommandWillDo` and `explains(`, which
+answered **zero**. A moment in `examples/support/a_terminal_check.rs` now drives
+`what_came_back` on a reply in the shape the request asks for and draws the
+result through the nested compositor, so the parse, the marks and the drawing
+are exercised where a gate can see them. **The socket round trip to
+`alo-agentd` is still not exercised anywhere**, because that fixture has no
+daemon and no model behind it — said here rather than left to be assumed.
+
+### And looking at the frame found a defect no assertion could — 2026-10-22
+
+**A long explanation is cut off mid-word and its tail is lost.** Not wrapped,
+not scrolled, not marked as shortened. Measured on the fixture above at
+1440×960:
+
+| the reply | what was drawn |
+|---|---|
+| 137 characters | all of it, ending at x=1130 of 1440 |
+| 286 characters | `…so nothing can be restored afterwar` — **stopped**, ink ending at x=1214 |
+
+What the second one lost was *it can reach files that are not yours as well as
+the ones that are* — which is the half a person deciding whether to press Enter
+most needs. The cause is `Wrap::None`, set on every text buffer in
+`the_terminals_cells_are_drawn.rs`; the clip at x=1214 rather than 1440 says it
+is the terminal's own text area and not the display's edge.
+
+**This is `CLAUDE.md`'s own rule about screen size** — *a control that falls off
+a small panel is a bug and not a tuning problem* — and a model's two-sentence
+answer passes 137 characters without trying.
+
+**The fix is not a tidy-up, which is why it is written here rather than done.**
+`WhatAloSaid::the_lines()` is drawn one row each, *and* its count feeds
+`alo_terminal::regions_of`, which places the gutter's `alo` label; a line that
+wrapped without the count agreeing would caption the wrong row, and
+`what_alo_said_tests.rs` already asserts the two cannot disagree. So wrapping
+belongs in `alo-terminal` beside the count — but the width it must wrap to is a
+pixel measure held by the shell's font system, which `alo-terminal` has no
+access to. **Where wrapping lives, and what width it is given, is the question
+to settle**, and the law about screen sizes says the answer is a measure derived
+from the display rather than a constant.
+
+*Found by writing the frame out and reading it. The fixture's own assertion
+counts rows of ink and passed on the truncated frame, as it would on any
+truncation: **the check cannot see the fault it sits next to.***
 
 > **This decision was made on 2026-10-18 and reached `main` on 2026-10-21**,
 > because it was written onto a branch for which **no pull request was ever
