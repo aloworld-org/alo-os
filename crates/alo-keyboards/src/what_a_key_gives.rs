@@ -90,20 +90,42 @@ pub const EVERY_LAYOUT: [&str; 8] = ["be", "fr", "de", "es", "it", "nl", "gb", "
 #[cfg(test)]
 pub(crate) const THE_X11_OFFSET: u16 = 8;
 
-/// Every character the table was built for.
+/// Every character the table is built for.
 ///
-/// Printable ASCII, the Latin-1 letters without the multiplication and division
-/// signs, and four a European password or machine name may hold. **A character
-/// outside this set cannot be typed**, which is a real limit and is why it is a
-/// named list rather than a range somebody has to infer.
+/// **Eight ranges, chosen by a coverage check rather than by judgement.** The
+/// first version of this was printable ASCII, the Latin-1 letters and four more,
+/// picked by hand — and it deliberately left out `×` and `÷` on the grounds that
+/// nobody types them. A check that asked each compiled keymap which keysyms its
+/// layouts actually put on keys then named what was unreachable, and `×` and `÷`
+/// were on real keys on four layouts: `Mod5 Shift` on key 51 or 52. So a person
+/// pressing that key got nothing, because of a judgement somebody made about
+/// what they would want.
 ///
-/// Built from ranges rather than written out, because a hand-written list of
-/// 192 code points is a list with a typo in it.
+/// | range | what the check named in it |
+/// |---|---|
+/// | `0x0020..0x007F` | printable ASCII |
+/// | `0x00A0..0x0100` | Latin-1 — **including `×` and `÷`**, which were excluded by hand |
+/// | `0x0100..0x0250` | Latin Extended-A and B — `ſ` on German's S key |
+/// | `0x0370..0x0400` | Greek — the omega Belgian puts on AltGr with shift |
+/// | `0x1E00..0x1F00` | Latin Extended Additional — `ẞ`, the capital sharp s, on six layouts |
+/// | `0x2000..0x2070` | general punctuation — `′ ″ ‹ › •` |
+/// | `0x20A0..0x20C0` | currency — the Euro |
+/// | `0x2100..0x2200` | letterlike, number forms and arrows |
+///
+/// *The ranges are the desktop lane's, and they are adopted here because this
+/// lane's own coverage check named the same gaps rather than because they said
+/// so.* A character outside them still cannot be typed, and the check is what
+/// says whether that matters.
 #[cfg(test)]
 pub(crate) fn every_code_point_asked_for() -> Vec<u32> {
-    (0x20..0x7F)
-        .chain((0xA1..0x100).filter(|point| *point != 0xD7 && *point != 0xF7))
-        .chain([0x0152, 0x0153, 0x017F, 0x20AC])
+    (0x0020..0x007F)
+        .chain(0x00A0..0x0100)
+        .chain(0x0100..0x0250)
+        .chain(0x0370..0x0400)
+        .chain(0x1E00..0x1F00)
+        .chain(0x2000..0x2070)
+        .chain(0x20A0..0x20C0)
+        .chain(0x2100..0x2200)
         .collect()
 }
 
