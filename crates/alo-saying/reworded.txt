@@ -60,3 +60,32 @@ key: terminal.result.ignored#other
 now: {ignored} ignored
 why: As `terminal.result.ignored#one`. Separate only because each counted form is keyed and checked on its own.
 
+
+key: installer.default.changed
+now: Done. This computer now starts the other system when nobody chooses, and you can change it back here or in alo OS's own settings
+why: only whitespace changed. A run of spaces nobody meant was collapsed to one; every word, every gap and every claim is exactly as it was, so a correct translation of the old English is a correct translation of this one unaltered.
+
+key: installer.default.not-there
+now: This computer keeps no choice of which system starts, so there is nothing to change here. Nothing was changed
+why: only whitespace changed. A run of spaces nobody meant was collapsed to one; every word, every gap and every claim is exactly as it was, so a correct translation of the old English is a correct translation of this one unaltered.
+
+key: installer.default.type-to-change
+now: To make this computer start {system} instead, type {change} and press Enter. To leave it as it is, press Enter without typing anything
+why: only whitespace changed. A run of spaces nobody meant was collapsed to one; every word, every gap and every claim is exactly as it was, so a correct translation of the old English is a correct translation of this one unaltered.
+
+key: installing.tidy-not-whole
+now: alo OS is installed and starts. Some tidying up could not be finished, and you can do it from alo OS once it has started
+why: only whitespace changed. A run of spaces nobody meant was collapsed to one; every word, every gap and every claim is exactly as it was, so a correct translation of the old English is a correct translation of this one unaltered.
+
+key: installing.tidying
+now: Tidying up: naming alo OS in the start-up menu, putting Windows behind it, and taking the installer's own space back
+why: only whitespace changed. A run of spaces nobody meant was collapsed to one; every word, every gap and every claim is exactly as it was, so a correct translation of the old English is a correct translation of this one unaltered.
+
+key: recounting.outcome.not-bounded
+now: the agent asked for this and nothing was done, because this machine could not hold the agent inside what was granted
+why: only whitespace changed. A run of spaces nobody meant was collapsed to one; every word, every gap and every claim is exactly as it was, so a correct translation of the old English is a correct translation of this one unaltered.
+
+key: turn.could-not-ask-the-record
+now: your agent could not be told what was done to that file: the record could not be read. Nothing was changed by asking, and asking again is safe
+why: only whitespace changed. A run of spaces nobody meant was collapsed to one; every word, every gap and every claim is exactly as it was, so a correct translation of the old English is a correct translation of this one unaltered.
+

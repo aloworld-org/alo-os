@@ -1223,7 +1223,7 @@ pub const DEFAULT_IS: Word = Word::saying(
 /// The question.
 pub const DEFAULT_TYPE_TO_CHANGE: Word = Word::saying(
     "installer.default.type-to-change",
-    "To make this computer start {system} instead, type {change} and press Enter. To leave it as      it is, press Enter without typing anything",
+    "To make this computer start {system} instead, type {change} and press Enter. To leave it as it is, press Enter without typing anything",
 )
 .noting(
     "{system} is the other system's name and {change} is the word below, in this language. The      change is for every start from now on, and not for one restart.",
@@ -1237,7 +1237,7 @@ pub const DEFAULT_CHANGE_IT: Word = Word::saying("installer.default.change-it", 
 /// It was changed.
 pub const DEFAULT_CHANGED: Word = Word::saying(
     "installer.default.changed",
-    "Done. This computer now starts the other system when nobody chooses, and you can change it      back here or in alo OS's own settings",
+    "Done. This computer now starts the other system when nobody chooses, and you can change it back here or in alo OS's own settings",
 )
 .noting("Said after the change was written and read back.");
 
@@ -1251,7 +1251,7 @@ pub const DEFAULT_KEPT: Word = Word::saying(
 /// The loader's file is not there.
 pub const DEFAULT_NOT_THERE: Word = Word::saying(
     "installer.default.not-there",
-    "This computer keeps no choice of which system starts, so there is nothing to change here.      Nothing was changed",
+    "This computer keeps no choice of which system starts, so there is nothing to change here. Nothing was changed",
 )
 .noting("Said when the file both systems keep the answer in is not on the start partition.");
 

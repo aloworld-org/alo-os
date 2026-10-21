@@ -218,7 +218,7 @@ pub const AN_ADMINISTRATOR_SET_THAT_RULE: Word = Word::saying(
 /// by discovering their agent can no longer read their invoices.
 pub const WHAT_IS_GRANTED_WAS_NOT_READ_AGAIN: Word = Word::saying(
     "agentd.what-is-granted-was-not-read-again",
-    "what you have granted could not be read again, so this machine is still using the list it      already had — nothing was widened and nothing was forgotten",
+    "what you have granted could not be read again, so this machine is still using the list it already had — nothing was widened and nothing was forgotten",
 )
 .noting(
     "Said when somebody's side of the machine reports that what they granted has changed and the      machine cannot read its own list of grants. \"Granted\" is what a person does by picking a      folder for their agent to reach. The second half is the reassurance that matters and should      stay a plain statement: the agent can reach exactly what it could reach a moment ago, no more      and no less.",
@@ -232,7 +232,7 @@ pub const WHAT_IS_GRANTED_WAS_NOT_READ_AGAIN: Word = Word::saying(
 /// `crate::rereading::an_agent_knocked` is what says this, and writes it down.
 pub const AN_AGENT_CANNOT_SAY_WHAT_IS_GRANTED: Word = Word::saying(
     "agentd.an-agent-cannot-say-what-is-granted",
-    "what you have granted changes when you pick or revoke a folder, and an agent cannot say that      it has — nothing was read again",
+    "what you have granted changes when you pick or revoke a folder, and an agent cannot say that it has — nothing was read again",
 )
 .noting(
     "Said to an agent that told alo OS what the person had granted had changed, which only the      person's own side of the machine may say, and shown to the person by whatever they were      talking to. It is addressed to them rather than to the agent: they are being told that their      agent asked for something it may not have, and that nothing came of it.",
@@ -327,7 +327,7 @@ pub const THE_CHOSEN_MACHINE_DID_NOT_ANSWER: Word = Word::saying(
 /// to keep the person's settings.
 pub const NOWHERE_TO_KEEP_THE_CHOICE: Word = Word::saying(
     "agentd.nowhere-to-keep-the-choice",
-    "this machine has nowhere to keep your settings for this session, so nothing was chosen to      answer your questions",
+    "this machine has nowhere to keep your settings for this session, so nothing was chosen to answer your questions",
 )
 .noting(
     "Said to the person's own shell when they chose a machine on their network to answer their      questions and alo OS could not find where their settings are kept — the session has no home      folder to keep them in. Nothing was written and nothing else was chosen.",
