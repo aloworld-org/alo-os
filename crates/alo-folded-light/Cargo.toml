@@ -1,0 +1,18 @@
+[package]
+name = "alo-folded-light"
+version = "0.0.1"
+description = "The folded light behind alo OS's own screens: five curves, each with its own gradient."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# **No dependencies, and that is the reason this is a crate.** It was a module
+# inside `alo-shell` until 2026-10-21, which meant the install environment —
+# which must stay small, static and free of the compositor — could not draw the
+# same wallpaper the installed system does. A person would have met one
+# backdrop before installing and a different one after, from one design.
+#
+# It takes a size and returns pixels. No window, no name, no file, no personal
+# content, which is the owner's own direction about the wallpaper.
+[dependencies]

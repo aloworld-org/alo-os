@@ -102,12 +102,60 @@ impl Grey {
         self.0
     }
 
-    /// Dark enough to be plainly deliberate and light enough to be plainly
-    /// lit — so that a photograph of it cannot be confused with a screen that
-    /// is off.
+    /// What a whole screen is: `bg/canvas`, which is **#FAF7F2** — a warm
+    /// off-white, not white.
+    ///
+    /// **Read off the adopted frame itself**, `530:30877 S3 · Choose a
+    /// network`, on 2026-10-21. The environment drew `0x18` — near black —
+    /// until that day, with nothing anywhere deciding it should; the owner saw
+    /// the first picture ever taken of a screen and asked why it was black.
+    ///
+    /// It was then briefly drawn `#FFFFFF`, which was still wrong and wrong in
+    /// a way a picture does not show: `bg/surface` is white and is **a card's**
+    /// fill, while `bg/canvas` is the screen behind the cards. Two light
+    /// values that look alike in a thumbnail and are a different decision.
     #[must_use]
-    pub const fn plainly_drawn() -> Self {
-        Self(0x40)
+    pub const fn the_canvas() -> Self {
+        Self(0xF7)
+    }
+
+    /// What a card is: `bg/surface`, **#FFFFFF**, white against the canvas.
+    ///
+    /// Nothing draws a card yet — see [`Self::a_cards_edge`] — so this is the
+    /// value waiting for whoever does.
+    #[must_use]
+    pub const fn a_cards_surface() -> Self {
+        Self(0xFF)
+    }
+
+    /// The line around a card: `border/default`, **#E7EBEF**, at
+    /// `radius/md` = 12.
+    ///
+    /// **Unused, and that is the honest state rather than an oversight.** The
+    /// environment draws a card's words and not the card: `a_screen_is_drawn`
+    /// places text and has no rectangle in it at all, so the six screens are
+    /// the design's words in the design's places with none of its boxes. A
+    /// picture of a screen shows this immediately and no test does.
+    #[must_use]
+    pub const fn a_cards_edge() -> Self {
+        Self(0xEA)
+    }
+
+    /// The ink on it: `text/primary`, which is **#102A43** — navy, and the
+    /// design file calls it *the approved colour*.
+    ///
+    /// **As a grey, because this crate cannot yet draw a colour.** The
+    /// framebuffer's channel order is unmeasured, so a navy drawn as three
+    /// channels might come out orange; a grey is the one value that cannot be
+    /// wrong about channel order. `0x26` is #102A43's luminance by Rec. 709 —
+    /// `0.2126 × 0x10 + 0.7152 × 0x2A + 0.0722 × 0x43` — so what a person sees
+    /// today is the design in black and white rather than a different design.
+    ///
+    /// The moment somebody measures the channel order on a real machine, this
+    /// becomes #102A43 and nothing else here changes.
+    #[must_use]
+    pub const fn the_ink() -> Self {
+        Self(0x26)
     }
 }
 
@@ -350,9 +398,12 @@ mod tests {
     fn a_grey_is_the_same_in_every_channel() {
         let surface =
             TheSurface::from_what_the_kernel_says("8,2\n", "32\n", "32\n").expect("a surface");
-        let row = surface.a_row_of(Grey::plainly_drawn());
+        let row = surface.a_row_of(Grey::the_ink());
         assert_eq!(row.len(), 32);
-        assert!(row.iter().all(|byte| *byte == 0x40), "{row:?}");
+        assert!(
+            row.iter().all(|byte| *byte == Grey::the_ink().as_a_value()),
+            "{row:?}"
+        );
     }
 
     /// **A depth that is not 32 is refused rather than drawn wrong.**

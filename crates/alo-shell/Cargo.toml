@@ -6,6 +6,12 @@ rust-version.workspace = true
 license.workspace = true
 publish = false
 
+# The wallpaper, which was a module in this crate until 2026-10-21. It moved
+# out so the install environment can draw the same one: a person met one
+# backdrop before installing and a different one after, from one design.
+[dependencies]
+alo-folded-light = { path = "../alo-folded-light" }
+
 [target.'cfg(target_os = "linux")'.dependencies]
 # The type of the session the sign-in screen hands over to, and nothing else:
 # `tests/sign_in_source.rs` holds this crate to naming `alo_accounts::Session`

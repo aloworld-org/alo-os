@@ -73,9 +73,18 @@ fn the_sign_in_files() -> Vec<(String, Vec<(usize, String)>)> {
     // without reading the new file is the one thing it cannot stop. It fired
     // on `sign_in_wallpaper.rs` the hour after it was widened, which is the
     // only evidence worth having that it works.
+    // **15 since 2026-10-21**, and the one that left is `sign_in_wallpaper.rs`.
+    // It moved to the `alo-folded-light` crate so the install environment can
+    // draw the same artwork — a person met one backdrop before installing and a
+    // different one after, from one design. The tripwire fired on the move, which
+    // is what it is for; this number was lowered by somebody who read the moved
+    // file first, as the paragraph above asks. Measured: 489 lines on both sides
+    // with four changed — `pub(crate) fn` becoming `pub fn`, and the `#[path]`
+    // following the test file's rename — and its 311-line test file byte for byte
+    // identical.
     assert_eq!(
         files.len(),
-        16,
+        15,
         "a sign-in file was added or lost: {:?}",
         file_names(&files)
     );

@@ -221,7 +221,7 @@ struct Edge {
 /// An empty vector for a screen with no area, which is the one case with
 /// nothing to draw rather than a refusal worth reporting.
 #[must_use]
-pub(crate) fn the_wallpaper(width: i32, height: i32, ground: [u8; 3]) -> Vec<[u8; 3]> {
+pub fn the_wallpaper(width: i32, height: i32, ground: [u8; 3]) -> Vec<[u8; 3]> {
     if width <= 0 || height <= 0 {
         return Vec::new();
     }
@@ -485,5 +485,5 @@ fn mixed(under: [u8; 3], over: [u8; 3], how_much: f64) -> [u8; 3] {
 }
 
 #[cfg(test)]
-#[path = "sign_in_wallpaper_tests.rs"]
+#[path = "lib_tests.rs"]
 mod tests;

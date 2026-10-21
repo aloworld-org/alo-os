@@ -985,6 +985,7 @@ installing.choice-not-understood	The disk chosen for alo OS could not be underst
 installing.choose-another-stick	Choose another stick to write
 installing.connect-another-disk	Connect another disk
 installing.connecting	Connecting to the internet
+installing.continue	Continue
 installing.damaged	This installer is damaged, so nothing was changed. Download alo OS again
 installing.disk-not-connected	The disk you chose, {disk}, is not connected to this computer, so nothing was changed
 installing.disks-not-read	The disks in this computer could not be read, so nothing was changed
@@ -993,6 +994,7 @@ installing.erase-and-write	Erase and write
 installing.every-layout	Choose from every layout this computer knows
 installing.from-a-stick	FROM A STICK
 installing.genuine	This is a genuine alo OS
+installing.go-back	Back
 installing.holds-another-system	The disk you chose, {disk}, holds another operating system, so nothing was changed
 installing.holds-this-installer	The disk you chose, {disk}, holds this installer itself, so nothing was changed
 installing.how-far-the-write	Writing  ·  {how_far}

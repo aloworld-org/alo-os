@@ -666,6 +666,23 @@ pub const NOTHING_HAS_CHANGED_YET: Word = Word::saying(
      they are, the second is that leaving is free. Do not merge them.",
 );
 
+/// The action that goes on, on every screen but the review.
+///
+/// **The adopted frames draw this button and nothing drew it**, so a person
+/// could act on it — the walk has taken Enter since #899 — and could not see
+/// it. The review screen keeps [`ERASE_AND_INSTALL`] instead, for the reason
+/// written there.
+pub const CONTINUE: Word = Word::saying("installing.continue", "Continue").noting(
+    "The button that goes on. One word, because every screen it is on has already asked its \
+     question in the title above it.",
+);
+
+/// The action that goes back.
+pub const GO_BACK: Word = Word::saying("installing.go-back", "Back").noting(
+    "The button that returns to the screen before. It is never the only way back — Escape does \
+     the same thing — but a person who has not been told that can see this.",
+);
+
 /// S5's action.
 pub const ERASE_AND_INSTALL: Word =
     Word::saying("installing.erase-and-install", "Erase and install").noting(
@@ -1000,7 +1017,7 @@ pub const CHOOSE_ANOTHER_STICK: Word = Word::saying(
 .noting("Under *Write another*.");
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 97] = [
+pub const EVERY_WORD: [Word; 99] = [
     BEFORE_ANYTHING_IS_TYPED,
     WHICH_KEYBOARD,
     WHY_THE_KEYBOARD_COMES_FIRST,
@@ -1051,6 +1068,8 @@ pub const EVERY_WORD: [Word; 97] = [
     CHECK_THIS_CAREFULLY,
     THIS_ERASES,
     WHAT_WILL_BE_GONE,
+    CONTINUE,
+    GO_BACK,
     TYPE_THE_NAME_TO_CONTINUE,
     WHAT_STAYS,
     NO_OTHER_DISK_IS_TOUCHED,

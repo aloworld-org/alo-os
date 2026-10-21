@@ -36,6 +36,8 @@ fn the_keyboard_question() -> TheWordsOfAScreen {
             ),
         ],
         consequence: "If what you type below does not match, choose another layout".to_owned(),
+        onward: "Continue".to_owned(),
+        back: "Back".to_owned(),
     }
 }
 
@@ -46,8 +48,8 @@ fn every_sentence_asked_for_appears_somewhere_on_the_screen() {
     // cards and the quiet line all have to be there.
     let (across, down) = THE_DESIGN_WAS_DRAWN_AT;
     let words = the_keyboard_question();
-    let shows =
-        what_a_screen_shows(across, down, None, face(), &words).expect("the reference lays out");
+    let shows = what_a_screen_shows(across, down, None, face(), &words, None)
+        .expect("the reference lays out");
     let all: String = shows
         .lines
         .iter()
@@ -77,7 +79,7 @@ fn the_long_introduction_wraps_and_the_cards_move_below_where_it_ends() {
     // first card has to be below its last line.
     let (across, down) = THE_DESIGN_WAS_DRAWN_AT;
     let words = the_keyboard_question();
-    let shows = what_a_screen_shows(across, down, None, face(), &words).expect("lays out");
+    let shows = what_a_screen_shows(across, down, None, face(), &words, None).expect("lays out");
 
     let introduction: Vec<_> = shows
         .lines
@@ -118,7 +120,7 @@ fn no_line_is_drawn_over_the_line_below_it() {
         (1920, 1080),
         (3840, 2160),
     ] {
-        let Some(shows) = what_a_screen_shows(across, down, None, face(), &words) else {
+        let Some(shows) = what_a_screen_shows(across, down, None, face(), &words, None) else {
             continue;
         };
         let mut sorted = shows.lines.clone();
@@ -147,7 +149,7 @@ fn no_line_is_drawn_over_the_line_below_it() {
 fn every_line_is_inside_the_display() {
     let words = the_keyboard_question();
     for (across, down) in [(640_u32, 480_u32), (1280, 800), (1440, 960), (3840, 2160)] {
-        let Some(shows) = what_a_screen_shows(across, down, None, face(), &words) else {
+        let Some(shows) = what_a_screen_shows(across, down, None, face(), &words, None) else {
             continue;
         };
         for line in &shows.lines {
@@ -171,14 +173,14 @@ fn every_line_is_inside_the_display() {
 #[test]
 fn a_display_too_small_shows_no_screen_rather_than_a_broken_one() {
     let words = the_keyboard_question();
-    assert!(what_a_screen_shows(320, 240, None, face(), &words).is_none());
+    assert!(what_a_screen_shows(320, 240, None, face(), &words, None).is_none());
 }
 
 #[test]
 fn a_screen_with_nothing_on_it_has_no_lines() {
     let (across, down) = THE_DESIGN_WAS_DRAWN_AT;
     let nothing = TheWordsOfAScreen::default();
-    let shows = what_a_screen_shows(across, down, None, face(), &nothing).expect("lays out");
+    let shows = what_a_screen_shows(across, down, None, face(), &nothing, None).expect("lays out");
     assert!(
         shows.lines.is_empty(),
         "a screen asked to say nothing drew {:?}",
@@ -214,10 +216,10 @@ fn a_screen_drawn_into_a_file_has_letters_in_it() {
     )
     .expect("a surface the shape a framebuffer is");
 
-    let beneath = Grey::of(0x18);
-    let ink = Grey::of(0xE8);
+    let beneath = Grey::the_canvas();
+    let ink = Grey::the_ink();
     let words = the_keyboard_question();
-    let shows = what_a_screen_shows(across, down, None, face(), &words).expect("lays out");
+    let shows = what_a_screen_shows(across, down, None, face(), &words, None).expect("lays out");
 
     let at = std::env::temp_dir().join("alo-a-screen-drawn-into-a-file.fb");
     let file = std::fs::OpenOptions::new()
@@ -249,7 +251,11 @@ fn a_screen_drawn_into_a_file_has_letters_in_it() {
     // Every byte is either the background or ink over it, and **at least one is
     // not the background** — which is the whole claim. A screen of pure
     // background is what every other test here would still pass against.
-    let background = wrote.iter().filter(|&&byte| byte == 0x18).count();
+    // The canvas value, asked of the type rather than written here: it was
+    // 0x18 until the design's own token replaced it, and a literal in a test
+    // is a second place for that to be wrong.
+    let canvas = crate::a_surface_to_draw_on::Grey::the_canvas().as_a_value();
+    let background = wrote.iter().filter(|&&byte| byte == canvas).count();
     let inked = wrote.len() - background;
     assert!(
         inked > 2_000,
@@ -266,13 +272,153 @@ fn a_screen_drawn_into_a_file_has_letters_in_it() {
         wrote[from..from + stride as usize].to_vec()
     };
     let through_the_title = shows.places.title.down + shows.places.title_type.tall / 2;
+    // **Ink, rather than "differs from the background".** This asked whether a
+    // row held any byte other than `0x18`, and whether a row above the block
+    // held none. Both stopped being the right question on the same day: the
+    // canvas is no longer `0x18`, and a wallpaper is now drawn behind
+    // everything — so every row differs from a flat fill, and the second
+    // assertion would fail on a screen that is perfectly correct.
+    //
+    // What is worth asserting is where the **ink** is, and ink is far darker
+    // than either the canvas or any part of the wallpaper.
+    let ink = crate::a_surface_to_draw_on::Grey::the_ink().as_a_value();
+    let inked_on = |down: u32| {
+        row_of(down)
+            .iter()
+            .filter(|byte| byte.abs_diff(ink) < 0x20)
+            .count()
+    };
     assert!(
-        row_of(through_the_title).iter().any(|&byte| byte != 0x18),
+        inked_on(through_the_title) > 0,
         "the row through the question has no ink in it"
     );
+    assert_eq!(
+        inked_on(2),
+        0,
+        "there is ink on a row above the whole block, so a word is drawn \
+         outside it"
+    );
+}
+
+/// A list of this many networks, named so they can be told apart on screen.
+fn that_many_networks(how_many: usize) -> TheWordsOfAScreen {
+    TheWordsOfAScreen {
+        eyebrow: "BEFORE ANYTHING IS INSTALLED".to_owned(),
+        title: "Which network?".to_owned(),
+        introduction: "Choose the network this computer should use".to_owned(),
+        cards: (0..how_many)
+            .map(|which| (format!("network-{which}"), String::new()))
+            .collect(),
+        consequence: String::new(),
+        onward: "Continue".to_owned(),
+        back: "Back".to_owned(),
+    }
+}
+
+#[test]
+fn a_screen_with_more_choices_than_fit_is_still_drawn() {
+    // **This is the regression.** `what_a_screen_shows` asks the layout for one
+    // card slot per card, and the layout answers `None` rather than draw over
+    // the accessibility button — so between #892 and the change that added
+    // this test, a screen with more choices on it than fit was **not drawn at
+    // all**. Not truncated: a grey screen. Eight layouts are offered, so the
+    // layout screen never drew on any display.
+    let (across, down) = THE_DESIGN_WAS_DRAWN_AT;
+    let many = that_many_networks(19);
+
+    // The old road still refuses it, which is correct of it and is what makes
+    // this test about the new one rather than about a changed layout.
     assert!(
-        row_of(2).iter().all(|&byte| byte == 0x18),
-        "a row above the whole block has ink in it, so something is drawn \
-         outside the block"
+        what_a_screen_shows(across, down, None, face(), &many, None).is_none(),
+        "the six-frame layout is expected to refuse 19 cards; if it now accepts \
+         them, this test is no longer measuring what it says"
+    );
+
+    let shows = super::what_a_list_screen_shows(across, down, None, face(), &many, 0)
+        .expect("a list screen lays out at the size the design was drawn at");
+
+    assert!(
+        !shows.shows.lines.is_empty(),
+        "a list screen drew no lines at all"
+    );
+    assert!(
+        shows.drawn.len() < 19,
+        "all 19 cards were drawn, so nothing was windowed and the screen is \
+         back to drawing over its own actions"
+    );
+    assert!(
+        shows.drawn.len() >= 2,
+        "only {} card(s) were drawn; a list screen that shows one choice is a \
+         question with no visible answers",
+        shows.drawn.len()
+    );
+    assert!(
+        shows.more_below,
+        "19 networks with {} drawn, and the screen does not know there is more \
+         below it",
+        shows.drawn.len()
+    );
+    assert!(
+        !shows.more_above,
+        "the ring is on the first network, so nothing is above it"
+    );
+}
+
+#[test]
+fn the_window_follows_the_ring_down_the_list() {
+    // Where the list is scrolled to is **derived** from the cursor, never kept
+    // beside it, so the two cannot disagree. With the ring on the last of 19,
+    // the last is drawn and there is more above.
+    let (across, down) = THE_DESIGN_WAS_DRAWN_AT;
+    let many = that_many_networks(19);
+
+    let first = super::what_a_list_screen_shows(across, down, None, face(), &many, 0)
+        .expect("lays out with the ring at the top");
+    let last = super::what_a_list_screen_shows(across, down, None, face(), &many, 18)
+        .expect("lays out with the ring at the bottom");
+
+    assert!(
+        last.drawn.contains(&18),
+        "the ring is on network 18 and the drawn window is {:?}, which does not \
+         contain it — a person holding the down key would lose the cursor off \
+         the bottom",
+        last.drawn
+    );
+    assert!(
+        last.more_above && !last.more_below,
+        "at the end of the list there is more above and nothing below; got \
+         above={} below={}",
+        last.more_above,
+        last.more_below
+    );
+    assert_ne!(
+        first.drawn, last.drawn,
+        "the window did not move when the ring did, so the list does not scroll"
+    );
+    assert_eq!(
+        first.drawn.len(),
+        last.drawn.len(),
+        "the window changed size as it moved; it is one screenful either way"
+    );
+}
+
+#[test]
+fn a_list_that_fits_is_not_scrolled_and_says_so() {
+    // **The control.** Every assertion above would hold on a screen that
+    // always claimed there was more list. With three networks there is not,
+    // and the screen must say neither above nor below.
+    let (across, down) = THE_DESIGN_WAS_DRAWN_AT;
+    let few = that_many_networks(3);
+
+    let shows = super::what_a_list_screen_shows(across, down, None, face(), &few, 0)
+        .expect("three networks lay out");
+
+    assert_eq!(shows.drawn, 0..3, "all three should be drawn");
+    assert!(
+        !shows.more_above && !shows.more_below,
+        "three networks all fit, so there is no more list in either direction; \
+         got above={} below={}",
+        shows.more_above,
+        shows.more_below
     );
 }

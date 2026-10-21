@@ -123,8 +123,12 @@ pub fn ask(
     let surface = screen.surface();
     let display = screen.at();
 
-    let beneath = Grey::of(0x18);
-    let ink = Grey::of(0xE8);
+    // **The design's own two tokens, not two numbers chosen here.** This read
+    // `Grey::of(0x18)` and `Grey::of(0xE8)` — a near-black surface with
+    // near-white ink — which is the design inverted, and no document ever
+    // decided it.
+    let beneath = Grey::the_canvas();
+    let ink = Grey::the_ink();
     let mut asking = TheAsking::begins();
     let mut typing: Option<WhatAPersonTyped> = None;
     let mut event = [0_u8; crate::a_key_reaches_here::ONE_EVENT];
@@ -144,13 +148,35 @@ pub fn ask(
             let words = crate::what_each_screen_says::what_this_screen_says(
                 strings, &asking, layouts, networks, disks,
             );
-            if let Some(shows) = crate::a_screen_is_drawn::what_a_screen_shows(
-                surface.across(),
-                surface.down(),
-                None,
-                face,
-                &words,
-            ) {
+            // **A list screen is drawn by the layout that scrolls.** The
+            // ordinary layout asks for one card slot per card and refuses
+            // rather than draw over the accessibility button, so a screen with
+            // more choices than fit came back as nothing and was drawn as
+            // nothing — a grey screen, on every display, for the eight layouts
+            // and for any room with five networks in it. `is_a_list` answers
+            // which of the six screens that applies to, and the window is
+            // derived from where the ring is.
+            let drawn = if asking.is_a_list() {
+                crate::a_screen_is_drawn::what_a_list_screen_shows(
+                    surface.across(),
+                    surface.down(),
+                    None,
+                    face,
+                    &words,
+                    asking.card(),
+                )
+                .map(|list| list.shows)
+            } else {
+                crate::a_screen_is_drawn::what_a_screen_shows(
+                    surface.across(),
+                    surface.down(),
+                    None,
+                    face,
+                    &words,
+                    Some(asking.card()),
+                )
+            };
+            if let Some(shows) = drawn {
                 crate::a_screen_is_drawn::draw_a_screen(
                     display, surface, beneath, ink, face, &shows,
                 )?;
