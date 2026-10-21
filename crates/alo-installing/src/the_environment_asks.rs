@@ -19,6 +19,10 @@
 
 use crate::a_key_reaches_here::{Pressed, what_was_pressed};
 use crate::the_asking_walks::{TheAnswers, TheAsking, WhatThePersonDid, WhatTheRingIsOn};
+#[cfg(unix)]
+use crate::the_keyboard_a_person_has::the_keyboard_a_person_has;
+#[cfg(unix)]
+use crate::the_screen_the_kernel_left::the_screen_the_kernel_left;
 
 /// What this key event meant, for a screen a person moves about on.
 ///
@@ -43,6 +47,15 @@ pub fn what_the_person_did(event: &[u8]) -> Option<WhatThePersonDid> {
         Pressed::Tab => WhatThePersonDid::NothingThisScreenActsOn,
     })
 }
+
+/// The root the real machine is under.
+///
+/// Both openers take a root so that a test can build one — a tree of input
+/// devices, or a framebuffer that is a file of the right size. **Production is
+/// the one caller that passes the real thing**, and it is named rather than
+/// written as a bare slash so that reading this says which.
+#[cfg(unix)]
+const THE_WHOLE_MACHINE: &str = "/";
 
 #[cfg(test)]
 #[path = "the_environment_asks_tests.rs"]
@@ -71,10 +84,11 @@ pub fn ask(
     networks: &[crate::ANetwork],
     disks: &[crate::Offered],
 ) -> std::io::Result<Option<TheAnswers>> {
-    use crate::a_surface_to_draw_on::{Grey, WHERE_THE_PIXELS_GO};
+    use crate::a_surface_to_draw_on::Grey;
     use crate::alos_own_face::AlosOwnFace;
     use crate::what_a_person_typed::{Typed, WhatAPersonTyped};
     use std::io::Read as _;
+    use std::path::Path;
 
     let Ok(face) = AlosOwnFace::carried() else {
         // The typeface compiled into this program would not read, which can
@@ -82,15 +96,32 @@ pub fn ask(
         // drawn, so the caller falls back to the console it already has.
         return Ok(None);
     };
-    let Some(surface) = the_surface()? else {
-        return Ok(None);
+    // **Which of the four it was, said rather than swallowed.** These two
+    // used to be private functions here that answered `Option`, so a machine
+    // with no framebuffer, a kernel describing a screen with nothing to write
+    // to, and a program not running as root all came back as the same
+    // nothing -- and the third is the one that happens on a developer's
+    // machine. `NoScreen` tells them apart and its own message says so.
+    //
+    // Noted and not said: the vocabulary never names a device, and whoever
+    // helps somebody afterwards needs to know which file would not open.
+    let screen = match the_screen_the_kernel_left(Path::new(THE_WHOLE_MACHINE)) {
+        Ok(screen) => screen,
+        Err(why) => {
+            eprintln!("alo-installing: no screen to draw on: {why}");
+            return Ok(None);
+        }
     };
-    let Some(mut keyboard) = a_keyboard()? else {
-        return Ok(None);
+    let found = match the_keyboard_a_person_has(Path::new(THE_WHOLE_MACHINE)) {
+        Ok(found) => found,
+        Err(why) => {
+            eprintln!("alo-installing: no keyboard to read: {why}");
+            return Ok(None);
+        }
     };
-    let display = std::fs::OpenOptions::new()
-        .write(true)
-        .open(WHERE_THE_PIXELS_GO)?;
+    let mut keyboard = std::fs::File::open(&found)?;
+    let surface = screen.surface();
+    let display = screen.at();
 
     let beneath = Grey::of(0x18);
     let ink = Grey::of(0xE8);
@@ -121,7 +152,7 @@ pub fn ask(
                 &words,
             ) {
                 crate::a_screen_is_drawn::draw_a_screen(
-                    &display, surface, beneath, ink, face, &shows,
+                    display, surface, beneath, ink, face, &shows,
                 )?;
             }
             owed = false;
@@ -208,59 +239,4 @@ fn ring<'a>(
         },
         WhichScreen::ThePassword | WhichScreen::TheReview => WhatTheRingIsOn::default(),
     }
-}
-
-/// The surface the firmware left, where there is one.
-#[cfg(unix)]
-fn the_surface() -> std::io::Result<Option<crate::a_surface_to_draw_on::TheSurface>> {
-    use crate::a_surface_to_draw_on::{
-        TheSurface, WHERE_THE_DEPTH_IS, WHERE_THE_SIZE_IS, WHERE_THE_STRIDE_IS,
-    };
-    let Ok(size) = std::fs::read_to_string(WHERE_THE_SIZE_IS) else {
-        return Ok(None);
-    };
-    let Ok(stride) = std::fs::read_to_string(WHERE_THE_STRIDE_IS) else {
-        return Ok(None);
-    };
-    let Ok(depth) = std::fs::read_to_string(WHERE_THE_DEPTH_IS) else {
-        return Ok(None);
-    };
-    Ok(TheSurface::from_what_the_kernel_says(&size, &stride, &depth).ok())
-}
-
-/// The first device that is a keyboard, opened.
-///
-/// **A keyboard is recognised by A, Z and Enter together**, which is
-/// `is_a_keyboard`'s rule and not restated here: a power button reports one
-/// key and would otherwise pass as a keyboard, and a person would be left
-/// pressing arrows at a device that has none.
-#[cfg(unix)]
-fn a_keyboard() -> std::io::Result<Option<std::fs::File>> {
-    use crate::a_key_reaches_here::{WHERE_THE_KEYS_ARE, is_a_keyboard};
-    let Ok(every) = std::fs::read_dir(WHERE_THE_KEYS_ARE) else {
-        return Ok(None);
-    };
-    let mut named: Vec<String> = every
-        .filter_map(Result::ok)
-        .map(|one| one.file_name().to_string_lossy().into_owned())
-        .filter(|one| one.starts_with("event"))
-        .collect();
-    // In order, so that two keyboards plugged in give the same answer twice.
-    named.sort();
-
-    for one in named {
-        let capabilities = std::path::Path::new(WHERE_THE_KEYS_ARE)
-            .join(&one)
-            .join("device/capabilities/key");
-        let Ok(says) = std::fs::read_to_string(&capabilities) else {
-            continue;
-        };
-        if !is_a_keyboard(&says) {
-            continue;
-        }
-        if let Ok(opened) = std::fs::File::open(format!("/dev/input/{one}")) {
-            return Ok(Some(opened));
-        }
-    }
-    Ok(None)
 }
