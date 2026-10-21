@@ -329,7 +329,12 @@ mod tests {
     /// or a key or password handed to it as a secret.
     #[test]
     fn a_workflow_that_signs_is_caught() {
-        let push = "podman push --digestfile digest \"$REGISTRY:$VERSION\"";
+        // **The tag is the build identifier, not the product version**, since
+        // ADR 0097 rule 4: a candidate carries a build identifier and no
+        // product version. This named `$REGISTRY:$VERSION` until 2026-10-21,
+        // and `with` refused to mutate a line that was no longer there, which
+        // is that helper doing its job rather than a test to loosen.
+        let push = "podman push --digestfile digest \"$REGISTRY:$BUILD\"";
         for signing in [
             format!("{push}\n          cosign sign --key cosign.key \"$REGISTRY@$(cat digest)\""),
             format!("{push}\n        env:\n          COSIGN_PASSWORD: ${{{{ secrets.KEY }}}}"),
