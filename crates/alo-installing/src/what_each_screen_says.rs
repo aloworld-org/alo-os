@@ -34,7 +34,19 @@ use alo_strings::{Filling, Strings, Word};
 /// A line with nothing after it looks like a screen that has stopped, and this
 /// environment has no animation to show otherwise — so the caret is a
 /// character on the end of the line rather than something that blinks.
-const THE_CARET: char = '▌';
+///
+/// **It was `▌` (U+2590 LEFT HALF BLOCK) until 2026-10-21, and the bundled
+/// face does not have that character.** `Manrope-SemiBold.ttf`'s own `cmap`
+/// maps it to glyph 0, so the caret drew nothing — and since the caret is the
+/// *only* thing on an empty field, the password screen showed no field at all.
+/// A person was asked for a password and given nowhere to type it.
+///
+/// Nothing caught it: the sentence was built correctly, the screen laid out,
+/// the test asked whether it laid out. `the_face_has_every_character_it_is_ever_asked_to_draw`
+/// is the check that now cannot let a character without a glyph into this
+/// crate, and `every_screen_has_ink_on_it_and_is_left_as_a_picture` draws the
+/// screens so a person can look.
+const THE_CARET: char = '|';
 
 /// What a hidden character looks like.
 const A_HIDDEN_CHARACTER: char = '•';
@@ -87,7 +99,33 @@ pub fn what_this_screen_says(
                     layouts
                         .first()
                         .map_or_else(String::new, |&(_, shown)| shown.to_owned()),
-                    say(&words::PRESS_THESE_TO_CHECK),
+                    // **`{keys}` is filled here and was filled nowhere before.**
+                    // Every sentence on every screen is said with
+                    // `Filling::nothing()`, so this one placeholder reached a
+                    // person as the word `[keys]` on the first screen of the
+                    // install. The four characters are derived from the
+                    // keymap, never written down — see
+                    // `the_keys_that_prove_a_layout`.
+                    layouts
+                        .first()
+                        .and_then(|&(code, _)| {
+                            crate::the_keys_that_prove_a_layout::the_keys_that_prove_a_layout(code)
+                        })
+                        .map_or_else(
+                            // A layout with no keys to show is a layout this
+                            // environment cannot check, so it says the honest
+                            // thing rather than an empty check.
+                            || say(&words::EVERY_LAYOUT_THIS_COMPUTER_KNOWS),
+                            |keys| {
+                                strings
+                                    .say(
+                                        &words::PRESS_THESE_TO_CHECK.key(),
+                                        &Filling::of("keys", keys),
+                                    )
+                                    .text()
+                                    .to_owned()
+                            },
+                        ),
                 ),
                 (
                     say(&words::SOMETHING_ELSE),
@@ -95,6 +133,8 @@ pub fn what_this_screen_says(
                 ),
             ],
             consequence: say(&words::IF_IT_DOES_NOT_MATCH),
+            onward: say(&words::CONTINUE),
+            back: say(&words::GO_BACK),
         },
 
         WhichScreen::EveryLayout => TheWordsOfAScreen {
@@ -106,6 +146,8 @@ pub fn what_this_screen_says(
                 .map(|&(_, shown)| (shown.to_owned(), String::new()))
                 .collect(),
             consequence: say(&words::IF_IT_DOES_NOT_MATCH),
+            onward: say(&words::CONTINUE),
+            back: say(&words::GO_BACK),
         },
 
         WhichScreen::TheNetwork => TheWordsOfAScreen {
@@ -121,6 +163,8 @@ pub fn what_this_screen_says(
                 .map(|network| (network.name().to_owned(), String::new()))
                 .collect(),
             consequence: say(&words::THE_PASSWORD_IS_NEVER_WRITTEN),
+            onward: say(&words::CONTINUE),
+            back: say(&words::GO_BACK),
         },
 
         WhichScreen::ThePassword => TheWordsOfAScreen {
@@ -132,6 +176,8 @@ pub fn what_this_screen_says(
             introduction: say(&words::WHY_A_NETWORK_IS_NEEDED),
             cards: vec![(the_field(asking), String::new())],
             consequence: say(&words::THE_PASSWORD_IS_NEVER_WRITTEN),
+            onward: say(&words::CONTINUE),
+            back: say(&words::GO_BACK),
         },
 
         WhichScreen::TheDisk => TheWordsOfAScreen {
@@ -148,6 +194,8 @@ pub fn what_this_screen_says(
                 .map(|disk| (disk.called.clone(), disk.holding.clone()))
                 .collect(),
             consequence: say(&words::THE_STICK_IS_NOT_SHOWN),
+            onward: say(&words::CONTINUE),
+            back: say(&words::GO_BACK),
         },
 
         WhichScreen::TheReview => TheWordsOfAScreen {
@@ -157,9 +205,40 @@ pub fn what_this_screen_says(
             // back, and reading it off anywhere but the top of the screen
             // would make that harder than it needs to be.
             title: asking.disk().unwrap_or_default().to_owned(),
-            introduction: say(&words::WHAT_WILL_BE_GONE),
+            // **`{holding}` is filled here and was filled nowhere before.** A
+            // person confirming the one irreversible step of the install read
+            // *"{holding} on this disk will be gone"* — the placeholder — on
+            // the screen whose entire job is telling them exactly what they
+            // are about to lose. `holding` is already a said sentence where
+            // the disk was offered, so it is carried across rather than built
+            // a second way.
+            introduction: {
+                let holding = disks
+                    .iter()
+                    .find(|disk| Some(disk.called.as_str()) == asking.disk())
+                    .map(|disk| disk.holding.clone());
+                holding.map_or_else(
+                    // No disk matched, so nothing can be named. The sentence
+                    // that names nothing in particular is the honest one, and
+                    // it is already written.
+                    || say(&words::NOTHING_UNTIL_YOU_TYPE_IT),
+                    |holding| {
+                        strings
+                            .say(
+                                &words::WHAT_WILL_BE_GONE.key(),
+                                &Filling::of("holding", holding),
+                            )
+                            .text()
+                            .to_owned()
+                    },
+                )
+            },
             cards: vec![(say(&words::TYPE_THE_NAME_TO_CONTINUE), the_field(asking))],
             consequence: say(&words::NO_OTHER_DISK_IS_TOUCHED),
+            // **Not *Continue*.** `words.rs` says why on the word itself:
+            // a button that erases a disk should say so on its face.
+            onward: say(&words::ERASE_AND_INSTALL),
+            back: say(&words::GO_BACK),
         },
     }
 }

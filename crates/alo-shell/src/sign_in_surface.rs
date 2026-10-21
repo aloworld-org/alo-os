@@ -20,7 +20,7 @@
 //! surface, its border, and the border in the failure colour when a person has
 //! just been refused.
 //!
-//! The ground is **the wallpaper**, which `crate::sign_in_wallpaper` draws:
+//! The ground is **the wallpaper**, which `alo_folded_light` draws:
 //! five cubic paths with linear gradients, from
 //! `docs/design/figma-snapshot/176-10686-wallpaper.svg`. This file said *not
 //! drawn: the wallpaper* until 2026-10-12, and the screen was flat `#FAF7F2`
@@ -208,7 +208,7 @@ pub(crate) fn sign_in_surface(
     // `THE_GROUND_IS` rather than the flat colour this drew until the
     // wallpaper existed. One raster for the whole screen, made once, read
     // below as each pixel's starting colour.
-    let behind = crate::sign_in_wallpaper::the_wallpaper(w, h, colours.ground);
+    let behind = alo_folded_light::the_wallpaper(w, h, colours.ground);
 
     let mut pixels = Vec::with_capacity((w as usize) * (h as usize) * 4);
     for y in 0..h {

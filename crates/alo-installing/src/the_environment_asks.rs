@@ -92,8 +92,12 @@ pub fn ask(
         .write(true)
         .open(WHERE_THE_PIXELS_GO)?;
 
-    let beneath = Grey::of(0x18);
-    let ink = Grey::of(0xE8);
+    // **The design's own two tokens, not two numbers chosen here.** This read
+    // `Grey::of(0x18)` and `Grey::of(0xE8)` — a near-black surface with
+    // near-white ink — which is the design inverted, and no document ever
+    // decided it.
+    let beneath = Grey::the_canvas();
+    let ink = Grey::the_ink();
     let mut asking = TheAsking::begins();
     let mut typing: Option<WhatAPersonTyped> = None;
     let mut event = [0_u8; crate::a_key_reaches_here::ONE_EVENT];
@@ -138,6 +142,7 @@ pub fn ask(
                     None,
                     face,
                     &words,
+                    Some(asking.card()),
                 )
             };
             if let Some(shows) = drawn {

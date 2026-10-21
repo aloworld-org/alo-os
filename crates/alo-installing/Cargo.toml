@@ -16,6 +16,7 @@ repository.workspace = true
 alo-image = { path = "../alo-image" }
 # The keyboard table: what a key gives on the layout a person chose. Pure Rust,
 # no C in it, which is why this crate can take it and stay static against musl.
+alo-folded-light = { path = "../alo-folded-light" }
 alo-keyboards = { path = "../alo-keyboards" }
 
 # Every sentence the person watching the console reads.

@@ -846,6 +846,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-folded-light"
+version = "0.0.1"
+
+[[package]]
 name = "alo-formats"
 version = "0.0.1"
 dependencies = [
@@ -990,6 +994,7 @@ dependencies = [
 name = "alo-installing"
 version = "0.0.1"
 dependencies = [
+ "alo-folded-light",
  "alo-image",
  "alo-keyboards",
  "alo-saying",
@@ -1629,6 +1634,7 @@ dependencies = [
  "alo-dock",
  "alo-egress",
  "alo-files",
+ "alo-folded-light",
  "alo-formats",
  "alo-granted",
  "alo-greeting",

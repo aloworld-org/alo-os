@@ -144,3 +144,65 @@ pub fn draw(
 #[cfg(test)]
 #[path = "ink_on_the_surface_tests.rs"]
 mod tests;
+
+/// Put this much of this ink onto a row that already has something on it.
+///
+/// # Why this exists beside [`a_row_of_ink`]
+///
+/// `a_row_of_ink` **builds** a row: it starts from the background and returns
+/// the whole thing. That is right for one line of text on an empty screen and
+/// wrong for everything a screen actually has on it, because a second call
+/// throws away the first — so *Continue* would erase *Back* beside it, a
+/// card's border would erase its own fill either side of itself, and the words
+/// on a card would erase the card.
+///
+/// This one **adds** to a row that is already there, which is what lets a
+/// screen be composed — canvas, then boxes, then words — and written once.
+///
+/// `at_across` may put part of the coverage off either edge; what falls off is
+/// dropped rather than wrapping onto the next row.
+pub fn onto(row: &mut [u8], surface: TheSurface, ink: Grey, how_much: &[f64], at_across: u32) {
+    let as_bytes: Vec<u8> = how_much
+        .iter()
+        .map(|covered| (covered.clamp(0.0, 1.0) * 255.0).round() as u8)
+        .collect();
+    onto_coverage(row, surface, ink, &as_bytes, at_across);
+}
+
+/// The same, for coverage that is already the 0-255 a glyph is rasterised to.
+///
+/// Text arrives from [] in bytes and boxes are
+/// computed in fractions; converting one to the other at the boundary keeps
+/// one compositor rather than two that could disagree about what a
+/// half-covered pixel means.
+pub fn onto_coverage(
+    row: &mut [u8],
+    surface: TheSurface,
+    ink: Grey,
+    how_much: &[u8],
+    at_across: u32,
+) {
+    let each_pixel = surface.each_pixel() as usize;
+    for (along, &covered) in how_much.iter().enumerate() {
+        if covered == 0 {
+            continue;
+        }
+        let Some(across) = at_across.checked_add(along as u32) else {
+            break;
+        };
+        if across >= surface.across() {
+            break;
+        }
+        let from = across as usize * each_pixel;
+        // The row already holds whatever is under this, so the blend is
+        // against that rather than against the canvas — which is what makes a
+        // border antialias against its own card.
+        let Some(&under) = row.get(from) else { break };
+        let value = mixed(Grey::of(under), ink, covered);
+        for channel in 0..each_pixel {
+            if let Some(byte) = row.get_mut(from + channel) {
+                *byte = value;
+            }
+        }
+    }
+}

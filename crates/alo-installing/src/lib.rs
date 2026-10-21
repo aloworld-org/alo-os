@@ -53,6 +53,7 @@
 //! file system on that partition, and without it a command line staged wrongly
 //! would be the end of somebody's Windows.
 
+mod a_box_on_the_surface;
 mod a_key_reaches_here;
 mod a_line_as_coverage;
 mod a_screen_is_drawn;
@@ -75,6 +76,7 @@ mod sequence;
 mod the_asking_walks;
 mod the_environment_asks;
 mod the_keyboard_a_person_has;
+mod the_keys_that_prove_a_layout;
 mod the_screen_that_lists_every_layout;
 mod the_screen_the_kernel_left;
 mod tidying;
@@ -97,6 +99,9 @@ pub mod words;
 mod wrapping;
 mod writing;
 
+pub use a_box_on_the_surface::{
+    ABoxToDraw, AN_EDGE, THE_CORNER, THE_RING, as_this_display_draws_it, the_edge_of, the_fill_of,
+};
 pub use a_key_reaches_here::{
     ONE_EVENT, Pressed, WHERE_THE_KEYS_ARE, has_key, is_a_keyboard, what_was_pressed,
 };
@@ -143,6 +148,7 @@ pub use the_environment_asks::what_the_person_did;
 pub use the_keyboard_a_person_has::{
     NoKeyboard, WHERE_THE_DEVICES_ARE, WHERE_THE_EVENTS_ARE, the_keyboard_a_person_has,
 };
+pub use the_keys_that_prove_a_layout::{THE_FOUR_POSITIONS, the_keys_that_prove_a_layout};
 pub use what_a_person_typed::{Typed, WhatAPersonTyped};
 pub use what_each_screen_says::{how_many_cards, what_this_screen_says};
 // Gated with the item it names: it opens the framebuffer and a keyboard, and

@@ -10,7 +10,7 @@
 //!
 //! # What this draws
 //!
-//! The wallpaper — the same artwork `crate::sign_in_wallpaper` already
+//! The wallpaper — the same artwork `alo_folded_light` already
 //! rasterises, because the capture shows the first-start sheets carry the
 //! identical five vectors — then a card behind each choice row, and the filled
 //! ground behind the first action.
@@ -88,7 +88,7 @@ pub(crate) fn setup_sheet_surface(
     let (w, h) = (area.size.w, area.size.h);
 
     // The same wallpaper the sign-in screen draws, on the same ground.
-    let ground = crate::sign_in_wallpaper::the_wallpaper(w, h, colours.ground);
+    let ground = alo_folded_light::the_wallpaper(w, h, colours.ground);
 
     let corner = f64::from(THE_CORNER_IS) * scale.x;
     let hairline = f64::from(THE_HAIRLINE_IS) * scale.x;

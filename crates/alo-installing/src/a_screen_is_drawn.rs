@@ -26,11 +26,17 @@
 //! it is what makes a screen reviewable: **the fault worth catching is a line
 //! in the wrong place, not a byte in the wrong order.**
 
-use crate::a_line_as_coverage::a_line_as_coverage;
+use crate::a_box_on_the_surface::{
+    ABoxToDraw, AN_EDGE, THE_CORNER, THE_RING, as_this_display_draws_it, the_edge_of, the_fill_of,
+};
+use crate::a_line_as_coverage::{ACoverage, a_line_as_coverage};
+use crate::a_surface_to_draw_on::Grey;
 use crate::alos_own_face::AlosOwnFace;
 use crate::what_display_there_is::Glass;
 use crate::where_a_list_screen_goes::{how_many_cards_fit, where_a_list_screen_goes};
-use crate::where_a_screen_goes::{AScreensPlaces, HowMuchThereIs, TheType, where_a_screen_goes};
+use crate::where_a_screen_goes::{
+    AScreensPlaces, AnArea, HowMuchThereIs, TheType, where_a_screen_goes,
+};
 use crate::which_choices_are_shown::WhereInTheList;
 use crate::wrapping::wrapped;
 
@@ -47,6 +53,13 @@ pub struct ALineToDraw {
     pub em: u32,
     /// How tall the line it sits on is.
     pub line_is_tall: u32,
+    /// What it is drawn in, where that is not the screen's ink.
+    ///
+    /// **The word on the filled button needs this and nothing else does.**
+    /// *Continue* sits on a navy box, so drawing it in the navy ink makes it
+    /// invisible -- which is exactly what the first build of these buttons
+    /// did, and a picture showed it in one glance.
+    pub drawn_in: Option<Grey>,
 }
 
 /// What a screen puts on the display, in the order it goes down.
@@ -54,6 +67,9 @@ pub struct ALineToDraw {
 pub struct WhatAScreenShows {
     /// Every line of text, topmost first.
     pub lines: Vec<ALineToDraw>,
+    /// Every box behind them: the cards, the ring on the chosen one, and the
+    /// two buttons. Drawn before the text, in this order.
+    pub boxes: Vec<ABoxToDraw>,
     /// Where the parts of the screen were put.
     pub places: AScreensPlaces,
 }
@@ -75,6 +91,16 @@ pub struct TheWordsOfAScreen {
     pub cards: Vec<(String, String)>,
     /// The quiet line under the cards.
     pub consequence: String,
+    /// What the button that goes on says — *Continue* on most screens, and
+    /// *Erase and install* on the review, which names what it does.
+    ///
+    /// Empty draws a button with no word on it, which is what every screen did
+    /// until 2026-10-21: the adopted frames draw two buttons, the walk has
+    /// acted on Enter and Escape since #899, and a person could neither see
+    /// what they were pressing nor that there was anything to press.
+    pub onward: String,
+    /// What the button that goes back says.
+    pub back: String,
 }
 
 /// Work out what this screen shows on a display this size.
@@ -102,8 +128,9 @@ pub fn what_a_screen_shows(
     glass: Option<Glass>,
     face: AlosOwnFace<'_>,
     words: &TheWordsOfAScreen,
+    ring: Option<usize>,
 ) -> Option<WhatAScreenShows> {
-    shows_with(where_a_screen_goes, across, down, glass, face, words)
+    shows_with(where_a_screen_goes, across, down, glass, face, words, ring)
 }
 
 /// Where a screen's parts go: either the adopted six frames' shape, or the
@@ -122,6 +149,7 @@ fn shows_with(
     glass: Option<Glass>,
     face: AlosOwnFace<'_>,
     words: &TheWordsOfAScreen,
+    ring: Option<usize>,
 ) -> Option<WhatAScreenShows> {
     // The block's width is needed to wrap, and the layout needs the line
     // counts to place anything — so the layout is asked twice: once with one
@@ -179,6 +207,7 @@ fn shows_with(
             down,
             em: kind.tall,
             line_is_tall: kind.apart,
+            drawn_in: None,
         });
     };
 
@@ -224,7 +253,94 @@ fn shows_with(
         put(line, places.consequence.across, down, places.quiet);
     }
 
-    Some(WhatAScreenShows { lines, places })
+    // **The words on the buttons**, centred in the box each sits in. The
+    // onward button is filled, so its word is drawn in the canvas colour
+    // rather than the ink -- which is the one place on these screens where
+    // the two swap, and it is why the drawing takes the colour rather than
+    // assuming it.
+    for (word, area, drawn_in) in [
+        // The onward button is filled, so its word is the canvas colour.
+        (&words.onward, places.onward, Some(Grey::the_canvas())),
+        (&words.back, places.back, None),
+    ] {
+        if word.is_empty() {
+            continue;
+        }
+        let wide = face.how_wide(word, places.body.tall);
+        let across = area.across + area.wide.saturating_sub(wide) / 2;
+        let down = area.down + area.tall.saturating_sub(places.body.apart) / 2;
+        lines.push(ALineToDraw {
+            says: word.clone(),
+            across,
+            down,
+            em: places.body.tall,
+            line_is_tall: places.body.apart,
+            drawn_in,
+        });
+    }
+
+    Some(WhatAScreenShows {
+        lines,
+        boxes: the_boxes_of(&places, words.cards.len(), ring, down),
+        places,
+    })
+}
+
+/// The cards, the ring on the chosen one, and the two buttons.
+///
+/// Built from the places the layout already decided rather than from numbers
+/// of its own: a card is where `first_card` says and as large as it says, and
+/// the buttons are `onward` and `back`. Nothing here chooses a position.
+fn the_boxes_of(
+    places: &AScreensPlaces,
+    how_many_cards: usize,
+    ring: Option<usize>,
+    down: u32,
+) -> Vec<ABoxToDraw> {
+    let corner = as_this_display_draws_it(THE_CORNER, down);
+    let quiet = as_this_display_draws_it(AN_EDGE, down);
+    let chosen = as_this_display_draws_it(THE_RING, down);
+
+    let mut boxes = Vec::new();
+    for which in 0..how_many_cards {
+        let top = places.first_card.down + u32::try_from(which).unwrap_or(0) * places.card_to_card;
+        boxes.push(ABoxToDraw {
+            area: AnArea {
+                down: top,
+                ..places.first_card
+            },
+            fill: Grey::a_cards_surface(),
+            // **The ring is the only thing that answers *where am I*.** The
+            // frame draws the chosen card outlined in navy and the rest with a
+            // quiet grey border, and until this existed neither was drawn —
+            // so pressing the down arrow changed nothing a person could see.
+            edge: if ring == Some(which) {
+                Grey::the_ink()
+            } else {
+                Grey::a_cards_edge()
+            },
+            edge_is: if ring == Some(which) { chosen } else { quiet },
+            corner,
+        });
+    }
+
+    // *Continue* is the one that goes on, so it is the filled one: navy, with
+    // its word drawn in the canvas's own colour. *Back* is the quiet one.
+    boxes.push(ABoxToDraw {
+        area: places.onward,
+        fill: Grey::the_ink(),
+        edge: Grey::the_ink(),
+        edge_is: 0,
+        corner,
+    });
+    boxes.push(ABoxToDraw {
+        area: places.back,
+        fill: Grey::a_cards_surface(),
+        edge: Grey::a_cards_edge(),
+        edge_is: quiet,
+        corner,
+    });
+    boxes
 }
 
 /// A list screen, and whether the list carries on past what is drawn.
@@ -321,6 +437,8 @@ pub fn what_a_list_screen_shows(
             // its own header. Carrying one would reserve room the cards should
             // have.
             consequence: String::new(),
+            onward: words.onward.clone(),
+            back: words.back.clone(),
         };
         if let Some(shows) = shows_with(
             where_a_list_screen_goes,
@@ -329,6 +447,9 @@ pub fn what_a_list_screen_shows(
             glass,
             face,
             &windowed,
+            // The ring is on a card of the WHOLE list; the window holds only
+            // some of them, so it is moved into the window's own numbering.
+            ring.checked_sub(drawn.start),
         ) {
             return Some(AListScreenShows {
                 shows,
@@ -365,19 +486,115 @@ pub fn draw_a_screen(
     face: AlosOwnFace<'_>,
     shows: &WhatAScreenShows,
 ) -> std::io::Result<()> {
-    crate::a_surface_to_draw_on::fill(at, surface, beneath)?;
-    for line in &shows.lines {
-        let coverage = a_line_as_coverage(face, &line.says, line.em, line.line_is_tall);
-        crate::ink_on_the_surface::draw(
-            at,
-            surface,
-            beneath,
-            ink,
-            &coverage,
-            line.across,
-            line.down,
-        )?;
+    // **The wallpaper, which is the same artwork the installed system draws.**
+    // A person meets one backdrop before installing and the same one after,
+    // because it is one crate rather than two transcriptions of one export.
+    //
+    // It is asked for in colour and used as a grey: this crate cannot draw a
+    // colour until somebody measures the framebuffer's channel order, so the
+    // red channel is taken as the value. The artwork is a pale blue-grey on
+    // cream, so its luminance is very nearly its red, and what a person sees
+    // is the design in black and white rather than a different design.
+    let ground = alo_folded_light::the_wallpaper(
+        surface.across() as i32,
+        surface.down() as i32,
+        [beneath.as_a_value(); 3],
+    );
+
+    // **One pass down the screen, writing each row once.**
+    //
+    // A row used to be built by `a_row_of_ink`, which starts from the
+    // background and returns the whole row — right for one line on an empty
+    // screen, wrong the moment a screen has more than one thing on it. Two
+    // calls for the same row and the second throws away the first: *Back*
+    // would erase *Continue* beside it, a border would erase its own fill,
+    // and the words on a card would erase the card.
+    //
+    // So the canvas, the boxes and the words are composed into one row and
+    // that row is written. Each box is two passes, the fill and then the
+    // border over it, so a corner is antialiased against what is really
+    // behind it.
+    let words: Vec<(ACoverage, u32, u32, Grey)> = shows
+        .lines
+        .iter()
+        .map(|line| {
+            (
+                a_line_as_coverage(face, &line.says, line.em, line.line_is_tall),
+                line.across,
+                line.down,
+                line.drawn_in.unwrap_or(ink),
+            )
+        })
+        .collect();
+
+    for down in 0..surface.down() {
+        let mut row = surface.a_row_of(beneath);
+        // The wallpaper is the canvas for this row, under everything else.
+        {
+            let from = down as usize * surface.across() as usize;
+            let each_pixel = surface.each_pixel() as usize;
+            for along in 0..surface.across() as usize {
+                let Some(pixel) = ground.get(from + along) else {
+                    break;
+                };
+                for channel in 0..each_pixel {
+                    if let Some(byte) = row.get_mut(along * each_pixel + channel) {
+                        *byte = pixel[0];
+                    }
+                }
+            }
+        }
+        let mut touched = true;
+
+        for a_box in &shows.boxes {
+            let Some(within) = down.checked_sub(a_box.area.down) else {
+                continue;
+            };
+            if within >= a_box.area.tall {
+                continue;
+            }
+            touched = true;
+            crate::ink_on_the_surface::onto(
+                &mut row,
+                surface,
+                a_box.fill,
+                &the_fill_of(*a_box, within),
+                a_box.area.across,
+            );
+            if a_box.edge_is > 0 {
+                crate::ink_on_the_surface::onto(
+                    &mut row,
+                    surface,
+                    a_box.edge,
+                    &the_edge_of(*a_box, within),
+                    a_box.area.across,
+                );
+            }
+        }
+
+        for (coverage, across, top, colour) in &words {
+            let Some(within) = down.checked_sub(*top) else {
+                continue;
+            };
+            if within >= coverage.down() {
+                continue;
+            }
+            touched = true;
+            crate::ink_on_the_surface::onto_coverage(
+                &mut row,
+                surface,
+                *colour,
+                coverage.row(within),
+                *across,
+            );
+        }
+
+        if touched {
+            use std::os::unix::fs::FileExt as _;
+            at.write_all_at(&row, surface.where_row_begins(down))?;
+        }
     }
+
     Ok(())
 }
 
