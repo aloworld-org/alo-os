@@ -411,3 +411,77 @@ The 682/122/19 above stands as what was measured for `alo-terminal`,
 `alo-shell` and `alo-desktop` with the one-hop method. The workspace table is the
 better measurement and it is the one to repeat. **Neither runs anywhere**, which
 is still the last section's point.
+
+## What a reference count cannot see, and it shipped a grey screen the same night
+
+*Added 2026-10-21. The sweep above is a count of callers, so the only fault it
+can find is **nothing calls it**. The fault below is **not everything that
+should, does**, and no reference count will ever find it: the orphan test passes
+on the first caller.*
+
+**What happened.** `which_choices_are_shown` and `where_a_list_screen_goes` are
+the installing environment's scrolling for a list longer than the screen, built
+in #892. One screen uses them. The screens added five hours later in #899 reach
+for `where_a_screen_goes` instead, which lays out every card with no bound — so
+past the number that fit, the flow runs off the screen and **nothing is drawn at
+all**, rather than a truncated list. Measured by the desktop lane on 1920×1080:
+**four** choices draw, and at five there is no screen. Eight keyboard layouts
+are offered, so the layout screen never drew on any display.
+
+Measured here 2026-10-21, over all 55 files of `crates/alo-installing/src`, with
+every read proved rather than assumed — **55 of 55 readable**, because the first
+version of this measurement doubled the path and reported a confident **0** for
+every file:
+
+| file | mentions of the list layout |
+|---|---|
+| `the_screen_that_lists_every_layout.rs` | **9** — the one screen that scrolls |
+| `where_a_list_screen_goes.rs` + its tests | 4 + 18 — the mechanism itself |
+| `which_choices_are_shown.rs` + its tests | 4 + 10 — the mechanism itself |
+| `lib.rs` | 5 — the exports |
+| **`the_asking_walks.rs`** — the flow, 16,190 bytes | **0** |
+| **`where_a_screen_goes.rs`** — the general layout, 13,720 bytes | **0** |
+| `a_screen_is_drawn.rs` | 0 |
+
+**Why the sweep is blind to it.** Every function in both modules has callers.
+`WhereInTheList` is exported at `lib.rs:168` and constructed at
+`the_screen_that_lists_every_layout.rs:90`. A caller count of one and a caller
+count of nine are the same answer to *is this reached*, and the question that
+matters is *is this reached from everywhere it should be* — which is not a
+property of the function at all. It is a property of the **set of surfaces**,
+and nothing in this page's method knows that set exists.
+
+**One of the six the desktop lane reported is this fault wearing the other
+one's clothes, and is worth keeping as a worked example.** They flagged
+`first_one_shown` as a `pub fn` nothing calls. It has **four** callers, all
+inside its own file — lines 102, 116, 125 and 131 of
+`which_choices_are_shown.rs`, against the definition at 89. By this page's
+method it is reached and was never a candidate. Their instrument excludes
+same-file callers somewhere, which is a different and defensible question to
+ask, and it found a real fault **for the wrong stated reason**. A list built
+that way will be mostly normal shapes: a function used only by its own module's
+other methods is how an `impl` block is written.
+
+**And the timeline is the argument for the gate the section above proposes,
+better than that section makes it.** The sweep was not wrong and no crate was
+skipped:
+
+| | |
+|---|---|
+| this document landed, `alo-installing` at **0** orphans | 2026-10-20 **22:52:52Z** |
+| #892 built the scrolling | 2026-10-21 **04:04:57Z** |
+| #899 built screens that do not use it | 2026-10-21 **10:44:35Z** |
+
+**The fault is newer than the instrument by five hours and twelve minutes.** So
+the case for a standing check is not *a hand sweep might miss something* — it is
+*a hand sweep missed nothing, and what it could not have seen shipped the same
+night*. The gate the section above proposes would still not have caught **this**
+one, which is the honest half: it would have caught a function with no callers,
+and this is a function with one.
+
+**What would catch it** is a different check, and it is not written either: for
+each mechanism with more than one plausible surface, the **set** of surfaces
+that use it against the set that exists. That needs somebody to say what the set
+is, which is a judgement and not a count — so it is named here rather than
+proposed as a gate, because a gate nobody can define is worse than a paragraph
+somebody reads.
