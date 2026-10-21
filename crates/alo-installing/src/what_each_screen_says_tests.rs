@@ -324,6 +324,13 @@ fn every_screen_is_drawn_with_as_much_on_it_as_really_arrives() {
         WhichScreen::TheReview,
     ] {
         let mut asking = at(screen);
+        // **The walk has to have arrived.** Mutating `at` to return the
+        // first screen every time left three of this file's checks passing —
+        // including the one that renders all six — because they would then
+        // test one screen six times and agree with themselves about it. A
+        // fixture that does not reach a surface removes it from every guard
+        // over that surface, silently.
+        assert_eq!(asking.on(), screen, "the walk did not reach {screen:?}");
         asking.there_are_this_many_cards(how_many_cards(&asking, &layouts, &networks, &disks));
         let words = what_this_screen_says(&strings, &asking, &layouts, &networks, &disks);
 
@@ -453,6 +460,13 @@ fn every_screen_has_ink_on_it_and_is_left_as_a_picture() {
         WhichScreen::TheReview,
     ] {
         let mut asking = at(screen);
+        // **The walk has to have arrived.** Mutating `at` to return the
+        // first screen every time left three of this file's checks passing —
+        // including the one that renders all six — because they would then
+        // test one screen six times and agree with themselves about it. A
+        // fixture that does not reach a surface removes it from every guard
+        // over that surface, silently.
+        assert_eq!(asking.on(), screen, "the walk did not reach {screen:?}");
         asking.there_are_this_many_cards(how_many_cards(&asking, &layouts, &networks, &disks));
         let words = what_this_screen_says(&strings, &asking, &layouts, &networks, &disks);
 
@@ -586,6 +600,13 @@ fn no_screen_shows_a_placeholder_to_a_person() {
         WhichScreen::TheReview,
     ] {
         let mut asking = at(screen);
+        // **The walk has to have arrived.** Mutating `at` to return the
+        // first screen every time left three of this file's checks passing —
+        // including the one that renders all six — because they would then
+        // test one screen six times and agree with themselves about it. A
+        // fixture that does not reach a surface removes it from every guard
+        // over that surface, silently.
+        assert_eq!(asking.on(), screen, "the walk did not reach {screen:?}");
         asking.there_are_this_many_cards(how_many_cards(&asking, &layouts, &networks, &disks));
         let words = what_this_screen_says(&strings, &asking, &layouts, &networks, &disks);
 
