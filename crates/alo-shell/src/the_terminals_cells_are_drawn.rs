@@ -840,6 +840,50 @@ fn alos_own_line(
     line: usize,
     colours: ([u8; 3], [u8; 3]),
 ) -> Option<Inked> {
+    shaped_into_alos_row(fonts, said, goes, line, colours, Wrap::None, 1).map(|(drawn, _)| drawn)
+}
+
+/// One of alo's own lines, **wrapped at the room it has**, and how many rows it
+/// took.
+///
+/// **Only alo's remark uses this, and the reason is layout rather than taste.**
+/// Everything else drawn through [`alos_own_line`] — a diff's rows, a
+/// benchmark's, a result's summary and its provenance — is one row per item by
+/// construction, and each of those callers works out its own row from a count it
+/// already holds. A line that silently became two would be drawn over the next
+/// one. A model's prose has no such bound, so it is the one that must wrap, and
+/// its caller is the one written to advance by rows.
+fn alos_own_wrapped_line(
+    fonts: &mut FontSystem,
+    said: &str,
+    goes: WhereTheCellsGo,
+    line: usize,
+    colours: ([u8; 3], [u8; 3]),
+    at_most: usize,
+) -> Option<(Inked, usize)> {
+    shaped_into_alos_row(fonts, said, goes, line, colours, Wrap::Word, at_most)
+}
+
+/// alo's own line, shaped and inked, answering what it drew and how many rows
+/// it took.
+///
+/// **Until 2026-10-22 there was no wrapping here at all.** The buffer was laid
+/// out unbounded and `inked` cropped whatever overran `room`, so a long
+/// explanation was cut off **mid-word with its tail lost** — not wrapped, not
+/// scrolled, not marked as shortened. Measured on the nested terminal fixture at
+/// 1440x960: 137 characters drew whole, and 286 drew as
+/// `...so nothing can be restored afterwar` and stopped, losing *it can reach
+/// files that are not yours*, which is the half a person deciding whether to
+/// press Enter most needs.
+fn shaped_into_alos_row(
+    fonts: &mut FontSystem,
+    said: &str,
+    goes: WhereTheCellsGo,
+    line: usize,
+    colours: ([u8; 3], [u8; 3]),
+    wrapping: Wrap,
+    at_most: usize,
+) -> Option<(Inked, usize)> {
     let (ground, ink) = colours;
     let (across, down) = goes.the_cell_at(0, line);
     #[expect(
@@ -850,19 +894,71 @@ fn alos_own_line(
     // **What the transcript leaves after the gutter**, rather than a measure of
     // its own: the sentence starts where the cells start and runs to the
     // transcript's far inset, so it is the same room a line of output has.
+    //
+    // **It is also what a wrapped line wraps to**, which is why this stays a
+    // measure read off the display's own rectangle rather than a figure
+    // somebody chose: a wrapped sentence then wraps to the screen it is on.
     let room = goes.transcript.loc.x + goes.transcript.size.w - goes.inset.0 - across;
     if room <= 0 || tall <= 0 {
         return None;
     }
 
     let mut buffer = Buffer::new(fonts, goes.label_metrics());
-    buffer.set_wrap(fonts, Wrap::None);
-    buffer.set_size(fonts, None, None);
+    buffer.set_wrap(fonts, wrapping);
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "a width in pixels is four digits at most on any display this product lays out for"
+    )]
+    let bounded = if matches!(wrapping, Wrap::None) {
+        None
+    } else {
+        Some(room as f32)
+    };
+    // **Bounded in height as well as width**, so the buffer does not lay out
+    // rows it has no room for. Clipping them in `inked` instead left a
+    // **one-pixel smear** of the next row's ascenders — measured at y=737 on a
+    // 1440x960 frame, where the row below began at 741 — and that smear was
+    // enough to make a fixture counting rows of ink believe a line had wrapped.
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "a height in pixels is four digits at most on any display this product lays out for"
+    )]
+    let ceiling =
+        bounded.map(|_| tall.saturating_mul(i32::try_from(at_most.max(1)).unwrap_or(1)) as f32);
+    buffer.set_size(fonts, bounded, ceiling);
     buffer.set_text(fonts, said, &alos_own_text(), Shaping::Advanced);
     buffer.shape_until_scroll(fonts, false);
-    let shaped = inked(fonts, &buffer, (room, tall), 0, ground, ink);
+    // **How many rows it really took**, asked of the shaped buffer rather than
+    // guessed from the text's length: the caller advances by this, and the
+    // gutter's own region is counted from it, so a wrap nobody predicted would
+    // caption the wrong row.
+    // **At most the rows it was given.** A wrapped sentence can want more rows
+    // than alo's block has left, and the lines beneath it — each mark, and the
+    // disclaimer — are the ones that must not be the casualty:
+    // `WhatACommandWillDo::and_not_a_guarantee` has no shape that omits it, so a
+    // drawing that dropped it would break an invariant the type states.
+    //
+    // What this costs is named rather than hidden: prose longer than the room
+    // **is still shortened, and still says nothing about it** — but it is now cut
+    // at a word rather than mid-word, and the marks below it survive. What a
+    // too-tall explanation should really do is a question
+    // `docs/design/the-terminal-window.md` leaves open, in the same words it
+    // uses for a benchmark bar that overruns: *left open deliberately; this is
+    // exactly the sort of thing that gets invented once and then cited as the
+    // design.*
+    let rows = buffer.layout_runs().count().clamp(1, at_most.max(1));
+    let shaped = inked(
+        fonts,
+        &buffer,
+        (room, tall.saturating_mul(i32::try_from(rows).unwrap_or(1))),
+        0,
+        ground,
+        ink,
+    );
     let bottom = goes.transcript.loc.y + goes.transcript.size.h;
-    shaped.placed(across, down, bottom)
+    shaped
+        .placed(across, down, bottom)
+        .map(|drawn| (drawn, rows))
 }
 
 /// A colour a cell asked for, or the one this machine uses when it asked for
@@ -1363,7 +1459,22 @@ pub(crate) fn picture(
     // explanation, not a guarantee* — and the count below is the same count the
     // gutter's regions are worked out from, which `what_alo_said_tests.rs`
     // asserts cannot disagree with these lines.
-    for (which, line) in what_alo_said.the_lines().into_iter().enumerate() {
+    // **Rows, not lines.** One of alo's lines can wrap, so what the next sits
+    // beneath is how many rows the last one really took — and that same running
+    // total is what the gutter's region is counted from below.
+    //
+    // `WhatAloSaid::lines()` still answers how many *lines* alo said, which is
+    // what it is for and what its own tests hold it to. It cannot answer rows:
+    // that needs a width and a font, and `alo-terminal` has neither.
+    // **How many rows alo's block has**, so a wrapped line cannot eat the rows
+    // its own marks and disclaimer need. The room is the transcript's, less its
+    // inset, in lines — the same arithmetic the grid is sized by.
+    let rows_in_all = lines_in(goes.the_room().size.h, goes.metrics.line_height);
+    let alos_first_row = a_diffs_first_line + how_tall_the_diff_is;
+    let alos_lines = what_alo_said.the_lines();
+    let how_many = alos_lines.len();
+    let mut alos_rows = 0_usize;
+    for (which, line) in alos_lines.into_iter().enumerate() {
         let text = match &line {
             alo_terminal::AloSLine::InOurWords(key) => says
                 .say(key, &alo_strings::Filling::nothing())
@@ -1371,9 +1482,23 @@ pub(crate) fn picture(
                 .to_owned(),
             alo_terminal::AloSLine::AsTheModelSaidIt(prose) => prose.clone(),
         };
-        let beneath = a_diffs_first_line + how_tall_the_diff_is + which;
-        if let Some(drawn) = alos_own_line(fonts, &text, goes, beneath, (ground, ink)) {
+        let beneath = alos_first_row + alos_rows;
+        // One row kept back for each line still to come, so the last of them —
+        // the disclaimer — always has somewhere to go.
+        let still_to_come = how_many.saturating_sub(which).saturating_sub(1);
+        let at_most = rows_in_all
+            .saturating_sub(beneath)
+            .saturating_sub(still_to_come)
+            .max(1);
+        if let Some((drawn, rows)) =
+            alos_own_wrapped_line(fonts, &text, goes, beneath, (ground, ink), at_most)
+        {
             placed.push(drawn);
+            alos_rows = alos_rows.saturating_add(rows);
+        } else {
+            // A line with no room to draw still takes its row, so the one after
+            // it does not climb on top of it.
+            alos_rows = alos_rows.saturating_add(1);
         }
     }
 
@@ -1381,10 +1506,7 @@ pub(crate) fn picture(
     // design's own rule and not a convenience: *PROGRAM includes parsed rich
     // results*. A summary drawn in alo's region would label a stranger's
     // arithmetic as alo's interpretation.
-    for region in alo_terminal::regions_of(
-        a_diffs_first_line + how_tall_the_diff_is,
-        what_alo_said.lines(),
-    ) {
+    for region in alo_terminal::regions_of(a_diffs_first_line + how_tall_the_diff_is, alos_rows) {
         let said = says.say(
             &region.who.the_word().key(),
             &alo_strings::Filling::nothing(),

@@ -1327,26 +1327,19 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     // carries two of the three marks so that a frame with marks is distinct
     // from one without.
     //
-    // **The explanation here is short on purpose, and that is a defect this
-    // check cannot fail on.** Measured 2026-10-22 on this fixture, at 1440x960:
-    // alo's lines are drawn one row each with `Wrap::None`, so a long
-    // explanation is **cut off mid-word and its tail is lost** — not wrapped,
-    // not scrolled, not marked. A 286-character reply was drawn as
+    // **Two explanations are drawn, a short one and a long one, and the long
+    // one must take more rows.** That comparison is the whole point of the
+    // step, because it is the one thing truncation and wrapping answer
+    // differently: a clipped line and a wrapped line both put ink on the
+    // screen, and only the wrapped one puts it on a second row.
+    //
+    // Until 2026-10-22 alo's lines were laid out unbounded and cropped, so a
+    // long explanation was cut off **mid-word with its tail lost**. Measured
+    // here at 1440x960: 137 characters drew whole, and 286 drew as
     // `...so nothing can be restored afterwar` and stopped, losing *it can
     // reach files that are not yours*, which is the half a person deciding
-    // whether to press Enter most needs. The ink ended at x=1214 of 1440, so it
-    // is a clip inside the terminal's own text area rather than the display's
-    // edge.
-    //
-    // 137 characters fit; 286 did not. **Nothing here asserts that limit**,
-    // because a check that asserted today's truncation would make the bug the
-    // specification. Wrapping belongs in `alo_terminal::WhatAloSaid` rather than
-    // here: `the_lines()` is drawn one row each *and* its count feeds
-    // `alo_terminal::regions_of`, which places the gutter's labels, so a line
-    // that wrapped without the count agreeing would put `alo` beside the wrong
-    // row. That is a decision about where wrapping lives and what width it uses,
-    // and it is recorded in `docs/autonomy/the-terminal-in-full-plan.md` rather
-    // than guessed at here.
+    // whether to press Enter most needs. With `Wrap::None` restored this step
+    // fails, which is the only reason to trust it.
     let at = typing(&mut server, "clear", 800)?;
     typed(&mut server, THE_ENTER_KEY, at + 2)?;
     until_the_shell_writes(&mut server);
@@ -1409,6 +1402,95 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             &format!("{into}.explained.ppm"),
             "the frame with alo's explanation of a command",
         )?;
+    }
+    // **And now the pair that answers whether it wraps**, which the step above
+    // cannot: it carries two marks, and alo's block has only four rows between
+    // the grid's last line and the transcript's foot, so with two marks and a
+    // disclaimer there is exactly **one** row left for the prose. A long
+    // explanation there cannot wrap however well the wrapping works, and asking
+    // it to would measure the room rather than the wrapping.
+    //
+    // So both of these carry **no** marks — which leaves three rows for the
+    // prose — and differ **only** in how long the sentence is. That is the
+    // whole control: a first version varied the marks as well as the length and
+    // compared 6 rows against 7, because removing two marks removes two rows.
+    // It failed, correctly, and the figure it printed is what showed the
+    // comparison rather than the product was wrong.
+    //
+    // *That alo's block can want more rows than it has is a separate gap, and
+    // `docs/autonomy/the-terminal-in-full-plan.md` carries it: giving it more
+    // rows means taking them from the grid, which resizes the person's shell,
+    // and `docs/design/the-terminal-window.md` leaves this family of overflow
+    // open on purpose.*
+    let briefly = "MARKS: none\nIt deletes /important and everything under it.";
+    let at_length = "MARKS: none\nIt removes the directory /important and every file beneath \
+                     it, without moving anything to a wastebasket first, so nothing can be \
+                     restored afterwards by ordinary means. It also asks for administrator \
+                     rights, which means it can reach files that are not yours as well as the \
+                     ones that are.";
+
+    let rows_for = |reply: &str,
+                    moment: &'static str,
+                    server: &mut Server,
+                    nested: &mut Nested,
+                    labels: &mut WindowControlLabels|
+     -> Result<usize, Box<dyn std::error::Error>> {
+        let Some(explained) = alo_shell::what_alo_asks_about_a_command::what_came_back(reply)
+        else {
+            return Err(format!("{moment}: the reply parsed to no explanation at all").into());
+        };
+        server.alo_explains(explained);
+        nested.pump()?;
+        nested.submit_with_desktop(
+            &[],
+            &[],
+            &alo_shell::Cursor::Default,
+            &[],
+            labels,
+            desktop(),
+            None,
+            None,
+            Some(TheTerminalToDraw {
+                server,
+                display: THE_DISPLAY,
+            }),
+        )?;
+        let frame = frame_just_drawn(nested, moment)?;
+        if let Ok(into) = std::env::var("ALO_TERMINAL_CHECK_WRITE") {
+            written_out(&frame, &format!("{into}.{moment}.ppm"), moment)?;
+        }
+        Ok(rows_with_ink(&frame, &without))
+    };
+
+    let briefly_rows = rows_for(
+        briefly,
+        "explained-briefly",
+        &mut server,
+        &mut nested,
+        &mut labels,
+    )?;
+    let at_length_rows = rows_for(
+        at_length,
+        "explained-at-length",
+        &mut server,
+        &mut nested,
+        &mut labels,
+    )?;
+
+    // **The one thing truncation and wrapping answer differently.** Both replies
+    // carry the same marks — none — and the same disclaimer, so every row but
+    // the prose's is identical between the two frames. A clipped line and a
+    // wrapped line both put ink on the screen; only the wrapped one puts it on a
+    // second row.
+    if at_length_rows <= briefly_rows {
+        return Err(format!(
+            "a 286-character explanation with three rows to wrap into took no more rows than a \
+             58-character one ({at_length_rows} against {briefly_rows}), so it was cut off \
+             rather than wrapped and a person never sees its tail. alo's lines are drawn by \
+             `shaped_into_alos_row`; a `Wrap::None` there lays the sentence out unbounded and \
+             `inked` crops whatever overruns the room the transcript leaves."
+        )
+        .into());
     }
     if let Ok(into) = std::env::var("ALO_TERMINAL_CHECK_WRITE") {
         written_out(
