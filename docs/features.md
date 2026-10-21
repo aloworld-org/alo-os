@@ -628,7 +628,10 @@ file carries it with a tier.*
   come back to tomorrow. *Other terminals can show an inline image. None can
   make it a thing on your desk that outlives the scroll, because the compositor
   is not theirs*
-  **The first rich view is built, 2026-10-17**: a run of tests recognised in what
+  **All three rich views the design specifies are built**: the test result on
+  2026-10-17, the benchmark in #803 and the file diff in #804 on 2026-10-18.
+  **None has been seen on a machine.** *This read* the first rich view is built
+  *until 2026-10-21.* The first was a run of tests recognised in what
   a program printed, drawn as the design's own frame draws it — the summary from
   the numbers, then *Source: … · Not independently verified*. Three of that
   frame's rules are tests rather than sentences: every accessor is named
@@ -643,10 +646,24 @@ file carries it with a tier.*
   **Recognising nothing is the ordinary case**, which the design says by drawing
   its text fallback first. **Not built**: the three *Ask alo* actions, which are
   the agent's road; and *a thing on your desk that outlives the scroll*, which
-  is a window rather than a line. **Not specified anywhere**: the benchmark and
-  diff views are instances of components no snapshot in this repository
-  contains, so their insides cannot be checked against anything — see
-  `docs/design/the-terminal-window.md`
+  is a window rather than a line. *Of those two, the three actions' **words**
+  are known — `Text`, `Expand` and `Open on canvas`, read off a render on
+  2026-10-18 because they are in no layer name; what is not built is the road
+  from the terminal to the agent, which nothing constructs.*
+
+  **This entry also carried a second claim until 2026-10-21** — *not specified
+  anywhere: the benchmark and diff views are instances of components no snapshot
+  in this repository contains, so their insides cannot be checked against
+  anything.* **It stopped being true on 2026-10-18**, and both views were built
+  the same day.
+  The components are committed as
+  `docs/design/figma-snapshot/the-terminal-view-components.xml` — 6,888 bytes,
+  holding `479:28967` *Terminal / View / Benchmark comparison* and `479:28986`
+  *Terminal / View / File diff*, both 990×320. Three figures in it that a
+  screenshot would have lost: the chart's bars are **one scale**, 2 px per
+  millisecond from a shared origin, so a proportion and never two constants; the
+  diff's removal marker is **U+2212 MINUS SIGN** and not a hyphen; and the
+  action labels are in no layer name. See `docs/design/the-terminal-window.md`
 - ★ **Hand somebody a session they can replay.** Not a transcript — the
   commands **and what each one changed**, replayed on their machine. The
   reproducible bug report.
