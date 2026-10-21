@@ -601,6 +601,7 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
 RUN dnf install --assumeyes --setopt=install_weak_deps=False \
       NetworkManager-wifi wpa_supplicant \
       iwlwifi-mvm-firmware iwlwifi-dvm-firmware \
+      mediatek-firmware libertas-firmware \
  && dnf clean all \
  && /usr/sbin/wpa_supplicant -v | grep -q 'wpa_supplicant v' \
  && ls /usr/lib64/NetworkManager/*/libnm-device-plugin-wifi.so > /dev/null \
@@ -699,6 +700,26 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False upower \
 # this file already records the failure that makes that distinction matter:
 # *the licence for firmware that is not there is present*. A directory holding
 # a licence and no firmware is the shape that passed before.
+#
+# **The last two families, on the owner's instruction of 2026-10-21.** The
+# measurement above found every wireless family aboard except Intel's, and named
+# two packages still absent: `mediatek-firmware` 4.7 MB and `libertas-firmware`
+# 1.4 MB, both for older parts. The owner's answer was *install them*, so the
+# wireless step above now does, and these two lines hold them.
+#
+# **They are asserted differently from each other, and neither is a directory
+# this file could have guessed at.** Measured in the pinned base:
+#
+# | | |
+# |---|---|
+# | `/usr/lib/firmware/libertas` | **absent** from the base, so the directory itself is the proof |
+# | `/usr/lib/firmware/mediatek` | **present with 43 entries** already, from `mt7xxx-firmware` — so a directory check would pass without `mediatek-firmware` ever being installed |
+#
+# So MediaTek is held by one of the 56 files only the new package brings —
+# `mt7981_wm.bin*`, measured absent from the base — and not by its directory.
+# *A check that would pass without the thing it is checking for is the fault
+# this whole block exists to answer, and the obvious spelling of it was that
+# fault.*
 RUN for family in ath10k ath11k ath12k ath9k_htc brcm mediatek mrvl \
                   rtw88 rtw89 rtlwifi ti-connectivity nxp; do \
       test -n "$(ls -A "/usr/lib/firmware/${family}" 2>/dev/null)" \
@@ -706,6 +727,10 @@ RUN for family in ath10k ath11k ath12k ath9k_htc brcm mediatek mrvl \
     done \
  && test "$(ls /usr/lib/firmware/iwlwifi-*.ucode* 2>/dev/null | wc -l)" -gt 0 \
  && ls /usr/lib/firmware/rtl_nic > /dev/null \
+ && { test -n "$(ls -A /usr/lib/firmware/libertas 2>/dev/null)" \
+      || { echo "a person's own Wi-Fi: libertas-firmware is not aboard" >&2; exit 1; }; } \
+ && { test -n "$(ls /usr/lib/firmware/mediatek/mt7981_wm.bin* 2>/dev/null)" \
+      || { echo "a person's own Wi-Fi: mediatek-firmware is not aboard — /usr/lib/firmware/mediatek exists without it" >&2; exit 1; }; } \
  && echo "your Wi-Fi: firmware for Intel, Qualcomm Atheros, Broadcom, MediaTek, Marvell, Realtek, TI and NXP, and ethernet beside it"
 
 

@@ -36,6 +36,30 @@
 //! by which `^` then `e` makes `ê` — is **not** here: `how-to-type` answers
 //! single keys, and composing is [`crate::Compose`]'s job, which already
 //! exists. So this turns a key into a character and does not turn two into one.
+//!
+//! # A dead level is recorded, not absent
+//!
+//! **This was a divergence until 2026-10-21, and the fix is the interesting
+//! part.** A level whose keysym produces no character — `dead_circumflex` and
+//! sixteen others — used to have no row at all, so *this level is dead* and
+//! *this key ignores this modifier* were the same absence. On Belgian's `AD11`,
+//! `[dead_circumflex, dead_diaeresis, bracketleft, dead_abovering]`, dropping
+//! the unused shift landed AltGr-with-shift on level 3 and typed `[` where it
+//! should have typed nothing.
+//!
+//! **The first plan for fixing it was wrong and is worth recording as such:**
+//! read each key's type from `compile-keymap`'s `type` declarations. A compiled
+//! keymap states **no key's type** — measured, 0 of 419 key lines on Belgian
+//! mention one, because xkbcommon resolves types internally and its text output
+//! omits them. Inferring a type from the keysyms is what xkbcommon itself does,
+//! and doing it here would be becoming the engine.
+//!
+//! What works instead: **`how-to-type` accepts a keysym by name**, so the engine
+//! is asked about the dead levels directly and the table records them as rows
+//! that give nothing. The dead names are read out of each compiled keymap rather
+//! than listed by hand — 17 across the eight layouts, 13 to 16 on each, and
+//! **none at all on `us`**, which is exactly why this was invisible to anybody
+//! testing on a US board.
 
 use std::char;
 
@@ -130,6 +154,18 @@ impl Held {
         self
     }
 
+    /// The same, with every modifier this key pays no attention to dropped.
+    ///
+    /// See `what_this_key_consults`: a modifier a key's type does not list is
+    /// ignored by that key, so holding it must not stop the key answering.
+    const fn but_only(self, consulted: Self) -> Self {
+        Self {
+            shift: self.shift && consulted.shift,
+            altgr: self.altgr && consulted.altgr,
+            caps: self.caps && consulted.caps,
+        }
+    }
+
     /// How this reads in the committed table's third column.
     ///
     /// The names are xkb's and the order is sorted, which is how the table was
@@ -166,7 +202,8 @@ pub fn what_a_key_gives(layout: &str, evdev: u16, held: Held) -> Option<char> {
     if !a_layout_is_offered(layout) {
         return None;
     }
-    let wanted = held.as_the_table_writes_it();
+    let wanted = held.but_only(what_this_key_consults(layout, evdev));
+    let wanted = wanted.as_the_table_writes_it();
     for row in THE_TABLE.lines() {
         let mut column = row.split('\t');
         if column.next()? != layout {
@@ -178,9 +215,73 @@ pub fn what_a_key_gives(layout: &str, evdev: u16, held: Held) -> Option<char> {
         if code != evdev || column.next()? != wanted {
             continue;
         }
-        return column.next().and_then(a_code_point);
+        // A `dead` fourth column is a level that produces no character —
+        // `dead_circumflex` and sixteen others. It answers `None`, and it does
+        // so **explicitly**: `a_code_point` would also fail on it, and relying
+        // on that would leave the next reader to work out that a row exists and
+        // is deliberately empty.
+        return match column.next()? {
+            "dead" => None,
+            point => a_code_point(point),
+        };
     }
     None
+}
+
+/// Which modifiers this key pays any attention to at all.
+///
+/// **A modifier a key's type does not list is ignored by that key**, which is
+/// xkb's own rule and the reason this function exists. The keymap says it
+/// outright:
+///
+/// ```text
+/// type "ONE_LEVEL"  { modifiers= none; }
+/// type "TWO_LEVEL"  { modifiers= Shift; map[Shift]= 2; }
+/// type "ALPHABETIC" { modifiers= Shift+Lock; map[Shift]= 2; map[Lock]= 2; }
+/// ```
+///
+/// `Lock` is absent from `TWO_LEVEL`, so caps lock does nothing to a digit key —
+/// it neither shifts it nor stops it. `ONE_LEVEL` lists nothing, so the space
+/// bar gives a space with anything held.
+///
+/// **The table cannot say this directly and the hole it left was person-facing.**
+/// `xkbcli how-to-type` answers *which modifiers reach this character*, so a
+/// modifier that reaches nothing is never mentioned — Belgian's ampersand key
+/// had rows for nothing, `Shift`, `Mod5` and `Mod5 Shift` and **no `Lock` row at
+/// all**, and the space bar had one row. Matched strictly, a person with caps
+/// lock on typed nothing from that key, and a shifted space typed nothing: a
+/// Wi-Fi password that stops dead with no report but *the password was refused*.
+///
+/// So the modifiers a key consults are read back out of its own rows — the union
+/// of every modifier any row for it mentions — and anything else is dropped
+/// before matching. *Found by the desktop lane on 2026-10-21, measured against
+/// this table rather than inferred, and the diagnosis is theirs.*
+fn what_this_key_consults(layout: &str, evdev: u16) -> Held {
+    let mut consulted = Held::nothing();
+    for row in THE_TABLE.lines() {
+        let mut column = row.split('\t');
+        if column.next() != Some(layout) {
+            continue;
+        }
+        let Some(Ok(code)) = column.next().map(str::parse::<u16>) else {
+            continue;
+        };
+        if code != evdev {
+            continue;
+        }
+        let Some(mods) = column.next() else {
+            continue;
+        };
+        for one in mods.split_whitespace() {
+            match one {
+                "Shift" => consulted.shift = true,
+                "Mod5" => consulted.altgr = true,
+                "Lock" => consulted.caps = true,
+                _ => {}
+            }
+        }
+    }
+    consulted
 }
 
 /// The character a `U+XXXX` column names.
