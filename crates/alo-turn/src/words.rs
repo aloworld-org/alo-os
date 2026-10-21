@@ -210,7 +210,7 @@ pub const COULD_NOT_LOOK_AT_THE_CATALOGUE: Word = Word::saying(
 /// the question, and asking again costs nothing.
 pub const COULD_NOT_ASK_THE_RECORD: Word = Word::saying(
     "turn.could-not-ask-the-record",
-    "your agent could not be told what was done to that file: the record could not be read.      Nothing was changed by asking, and asking again is safe",
+    "your agent could not be told what was done to that file: the record could not be read. Nothing was changed by asking, and asking again is safe",
 )
 .noting(
     "Shown to a person whose agent asked what the record says was done to one of their files      and was not answered. Usually the file the record is kept in could not be read. It does      not say that nothing was done to the file — nothing was found out either way, which is      what this sentence has to leave open.",

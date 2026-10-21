@@ -131,7 +131,7 @@ pub const INSTALLED: Word = Word::saying(
 /// Tidying up, said before it begins.
 pub const TIDYING: Word = Word::saying(
     "installing.tidying",
-    "Tidying up: naming alo OS in the start-up menu, putting Windows behind it, and taking the      installer's own space back",
+    "Tidying up: naming alo OS in the start-up menu, putting Windows behind it, and taking the installer's own space back",
 )
 .noting(
     "Said after alo OS is installed and before the computer restarts. The start-up menu is the      computer's own, which it shows before either system starts.",
@@ -147,7 +147,7 @@ pub const TIDIED: Word = Word::saying(
 /// Some of it could not be done.
 pub const TIDY_NOT_WHOLE: Word = Word::saying(
     "installing.tidy-not-whole",
-    "alo OS is installed and starts. Some tidying up could not be finished, and you can do it      from alo OS once it has started",
+    "alo OS is installed and starts. Some tidying up could not be finished, and you can do it from alo OS once it has started",
 )
 .noting(
     "Said when one of those three could not be done. alo OS is installed either way, and the      sentence says so first.",
