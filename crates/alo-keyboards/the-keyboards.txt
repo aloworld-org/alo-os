@@ -1,1768 +1,1902 @@
-be	57		U+0020	 
-be	9		U+0021	!
+be	2		U+0026	&
+be	2	Mod5	U+007C	|
+be	2	Mod5 Shift	U+00A1	¡
+be	2	Shift	U+0031	1
+be	3		U+00E9	é
+be	3	Mod5	U+0040	@
+be	3	Shift	U+0032	2
 be	4		U+0022	"
 be	4	Mod5	U+0023	#
-be	5	Mod5 Shift	U+0024	$
-be	27		U+0024	$
-be	434		U+0024	$
-be	40	Shift	U+0025	%
-be	2		U+0026	&
-be	37	Mod5 Shift	U+0026	&
-be	37	Lock Mod5 Shift	U+0026	&
-be	5		U+0027	'
-be	6		U+0028	(
-be	179		U+0028	(
-be	12		U+0029	)
-be	180		U+0029	)
-be	27	Shift	U+002A	*
-be	53	Shift	U+002B	+
-be	50		U+002C	,
-be	13		U+002D	-
-be	51	Shift	U+002E	.
-be	52	Shift	U+002F	/
-be	11	Shift	U+0030	0
-be	2	Shift	U+0031	1
-be	3	Shift	U+0032	2
+be	4	Mod5 Shift	U+00A3	£
 be	4	Shift	U+0033	3
+be	5		U+0027	'
+be	5	Mod5	U+00BC	¼
+be	5	Mod5 Shift	U+0024	$
 be	5	Shift	U+0034	4
+be	6		U+0028	(
+be	6	Mod5	U+00BD	½
 be	6	Shift	U+0035	5
-be	7	Shift	U+0036	6
-be	8	Shift	U+0037	7
-be	9	Shift	U+0038	8
-be	10	Shift	U+0039	9
-be	52		U+003A	:
-be	51		U+003B	;
-be	44	Mod5 Shift	U+003C	<
-be	44	Lock Mod5 Shift	U+003C	<
-be	86		U+003C	<
-be	53		U+003D	=
-be	45	Mod5 Shift	U+003E	>
-be	45	Lock Mod5 Shift	U+003E	>
-be	86	Shift	U+003E	>
-be	50	Shift	U+003F	?
-be	3	Mod5	U+0040	@
-be	16	Mod5	U+0040	@
-be	16	Lock Mod5	U+0040	@
-be	16	Shift	U+0041	A
-be	16	Lock	U+0041	A
-be	48	Shift	U+0042	B
-be	48	Lock	U+0042	B
-be	46	Shift	U+0043	C
-be	46	Lock	U+0043	C
-be	32	Shift	U+0044	D
-be	32	Lock	U+0044	D
-be	18	Shift	U+0045	E
-be	18	Lock	U+0045	E
-be	33	Shift	U+0046	F
-be	33	Lock	U+0046	F
-be	34	Shift	U+0047	G
-be	34	Lock	U+0047	G
-be	35	Shift	U+0048	H
-be	35	Lock	U+0048	H
-be	23	Shift	U+0049	I
-be	23	Lock	U+0049	I
-be	36	Shift	U+004A	J
-be	36	Lock	U+004A	J
-be	37	Shift	U+004B	K
-be	37	Lock	U+004B	K
-be	38	Shift	U+004C	L
-be	38	Lock	U+004C	L
-be	39	Shift	U+004D	M
-be	39	Lock	U+004D	M
-be	49	Shift	U+004E	N
-be	49	Lock	U+004E	N
-be	24	Shift	U+004F	O
-be	24	Lock	U+004F	O
-be	25	Shift	U+0050	P
-be	25	Lock	U+0050	P
-be	30	Shift	U+0051	Q
-be	30	Lock	U+0051	Q
-be	19	Shift	U+0052	R
-be	19	Lock	U+0052	R
-be	31	Shift	U+0053	S
-be	31	Lock	U+0053	S
-be	20	Shift	U+0054	T
-be	20	Lock	U+0054	T
-be	22	Shift	U+0055	U
-be	22	Lock	U+0055	U
-be	47	Shift	U+0056	V
-be	47	Lock	U+0056	V
-be	44	Shift	U+0057	W
-be	44	Lock	U+0057	W
-be	45	Shift	U+0058	X
-be	45	Lock	U+0058	X
-be	21	Shift	U+0059	Y
-be	21	Lock	U+0059	Y
-be	17	Shift	U+005A	Z
-be	17	Lock	U+005A	Z
-be	9	Mod5	U+005B	[
-be	26	Mod5	U+005B	[
-be	12	Mod5	U+005C	\
-be	86	Mod5	U+005C	\
-be	86	Mod5 Shift	U+005C	\
-be	27	Mod5	U+005D	]
+be	7		U+00A7	§
 be	7	Mod5	U+005E	^
+be	7	Shift	U+0036	6
+be	8		U+00E8	è
+be	8	Mod5	U+007B	{
+be	8	Shift	U+0037	7
+be	9		U+0021	!
+be	9	Mod5	U+005B	[
+be	9	Shift	U+0038	8
+be	10		U+00E7	ç
+be	10	Mod5	U+007B	{
+be	10	Mod5 Shift	U+00B1	±
+be	10	Shift	U+0039	9
+be	11		U+00E0	à
+be	11	Mod5	U+007D	}
+be	11	Mod5 Shift	U+00B0	°
+be	11	Shift	U+0030	0
+be	12		U+0029	)
+be	12	Mod5	U+005C	\
+be	12	Mod5 Shift	U+00BF	¿
+be	12	Shift	U+00B0	°
+be	13		U+002D	-
+be	13	Mod5	dead	dead_cedilla
+be	13	Mod5 Shift	dead	dead_ogonek
 be	13	Shift	U+005F	_
 be	16		U+0061	a
+be	16	Lock	U+0041	A
+be	16	Lock Mod5	U+0040	@
 be	16	Lock Shift	U+0061	a
-be	48		U+0062	b
-be	48	Lock Shift	U+0062	b
-be	46		U+0063	c
-be	46	Lock Shift	U+0063	c
-be	32		U+0064	d
-be	32	Lock Shift	U+0064	d
-be	18		U+0065	e
-be	18	Lock Shift	U+0065	e
-be	33		U+0066	f
-be	33	Lock Shift	U+0066	f
-be	34		U+0067	g
-be	34	Lock Shift	U+0067	g
-be	35		U+0068	h
-be	35	Lock Shift	U+0068	h
-be	23		U+0069	i
-be	23	Lock Shift	U+0069	i
-be	36		U+006A	j
-be	36	Lock Shift	U+006A	j
-be	37		U+006B	k
-be	37	Lock Shift	U+006B	k
-be	38		U+006C	l
-be	38	Lock Shift	U+006C	l
-be	39		U+006D	m
-be	39	Lock Shift	U+006D	m
-be	49		U+006E	n
-be	49	Lock Shift	U+006E	n
-be	24		U+006F	o
-be	24	Lock Shift	U+006F	o
-be	25		U+0070	p
-be	25	Lock Shift	U+0070	p
-be	30		U+0071	q
-be	30	Lock Shift	U+0071	q
-be	19		U+0072	r
-be	19	Lock Shift	U+0072	r
-be	31		U+0073	s
-be	31	Lock Shift	U+0073	s
-be	20		U+0074	t
-be	20	Lock Shift	U+0074	t
-be	22		U+0075	u
-be	22	Lock Shift	U+0075	u
-be	47		U+0076	v
-be	47	Lock Shift	U+0076	v
-be	44		U+0077	w
-be	44	Lock Shift	U+0077	w
-be	45		U+0078	x
-be	45	Lock Shift	U+0078	x
-be	21		U+0079	y
-be	21	Lock Shift	U+0079	y
+be	16	Mod5	U+0040	@
+be	16	Shift	U+0041	A
 be	17		U+007A	z
-be	17	Lock Shift	U+007A	z
-be	8	Mod5	U+007B	{
-be	10	Mod5	U+007B	{
-be	2	Mod5	U+007C	|
-be	11	Mod5	U+007D	}
-be	2	Mod5 Shift	U+00A1	¡
-be	18	Mod5 Shift	U+00A2	¢
-be	18	Lock Mod5 Shift	U+00A2	¢
-be	46	Mod5	U+00A2	¢
-be	46	Lock Mod5	U+00A2	¢
-be	4	Mod5 Shift	U+00A3	£
-be	43	Shift	U+00A3	£
-be	21	Mod5 Shift	U+00A5	¥
-be	21	Lock Mod5 Shift	U+00A5	¥
-be	7		U+00A7	§
-be	17	Mod5 Shift	U+00A7	§
+be	17	Lock	U+005A	Z
+be	17	Lock Mod5	U+017F	ſ
 be	17	Lock Mod5 Shift	U+00A7	§
-be	46	Mod5 Shift	U+00A9	©
-be	46	Lock Mod5 Shift	U+00A9	©
-be	33	Mod5 Shift	U+00AA	ª
+be	17	Lock Shift	U+007A	z
+be	17	Mod5	U+017F	ſ
+be	17	Mod5 Shift	U+00A7	§
+be	17	Shift	U+005A	Z
+be	18		U+0065	e
+be	18	Lock	U+0045	E
+be	18	Lock Mod5	U+20AC	€
+be	18	Lock Mod5 Shift	U+00A2	¢
+be	18	Lock Shift	U+0065	e
+be	18	Mod5	U+20AC	€
+be	18	Mod5 Shift	U+00A2	¢
+be	18	Shift	U+0045	E
+be	19		U+0072	r
+be	19	Lock	U+0052	R
+be	19	Lock Mod5	U+00B6	¶
+be	19	Lock Mod5 Shift	U+00AE	®
+be	19	Lock Shift	U+0072	r
+be	19	Mod5	U+00B6	¶
+be	19	Mod5 Shift	U+00AE	®
+be	19	Shift	U+0052	R
+be	20		U+0074	t
+be	20	Lock	U+0054	T
+be	20	Lock Shift	U+0074	t
+be	20	Shift	U+0054	T
+be	21		U+0079	y
+be	21	Lock	U+0059	Y
+be	21	Lock Mod5 Shift	U+00A5	¥
+be	21	Lock Shift	U+0079	y
+be	21	Mod5 Shift	U+00A5	¥
+be	21	Shift	U+0059	Y
+be	22		U+0075	u
+be	22	Lock	U+0055	U
+be	22	Lock Shift	U+0075	u
+be	22	Shift	U+0055	U
+be	23		U+0069	i
+be	23	Lock	U+0049	I
+be	23	Lock Shift	U+0069	i
+be	23	Shift	U+0049	I
+be	24		U+006F	o
+be	24	Lock	U+004F	O
+be	24	Lock Mod5	U+0152	Œ
+be	24	Lock Mod5 Shift	U+0153	œ
+be	24	Lock Shift	U+006F	o
+be	24	Mod5	U+0153	œ
+be	24	Mod5 Shift	U+0152	Œ
+be	24	Shift	U+004F	O
+be	25		U+0070	p
+be	25	Lock	U+0050	P
+be	25	Lock Mod5	U+00DE	Þ
+be	25	Lock Mod5 Shift	U+00FE	þ
+be	25	Lock Shift	U+0070	p
+be	25	Mod5	U+00FE	þ
+be	25	Mod5 Shift	U+00DE	Þ
+be	25	Shift	U+0050	P
+be	26		dead	dead_circumflex
+be	26	Mod5	U+005B	[
+be	26	Mod5 Shift	dead	dead_abovering
+be	26	Shift	dead	dead_diaeresis
+be	27		U+0024	$
+be	27	Mod5	U+005D	]
+be	27	Mod5 Shift	dead	dead_macron
+be	27	Shift	U+002A	*
+be	30		U+0071	q
+be	30	Lock	U+0051	Q
+be	30	Lock Mod5	U+00C6	Æ
+be	30	Lock Mod5 Shift	U+00E6	æ
+be	30	Lock Shift	U+0071	q
+be	30	Mod5	U+00E6	æ
+be	30	Mod5 Shift	U+00C6	Æ
+be	30	Shift	U+0051	Q
+be	31		U+0073	s
+be	31	Lock	U+0053	S
+be	31	Lock Mod5 Shift	U+00DF	ß
+be	31	Lock Shift	U+0073	s
+be	31	Mod5	U+00DF	ß
+be	31	Shift	U+0053	S
+be	32		U+0064	d
+be	32	Lock	U+0044	D
+be	32	Lock Mod5	U+00D0	Ð
+be	32	Lock Mod5 Shift	U+00F0	ð
+be	32	Lock Shift	U+0064	d
+be	32	Mod5	U+00F0	ð
+be	32	Mod5 Shift	U+00D0	Ð
+be	32	Shift	U+0044	D
+be	33		U+0066	f
+be	33	Lock	U+0046	F
 be	33	Lock Mod5 Shift	U+00AA	ª
-be	44	Mod5	U+00AB	«
-be	44	Lock Mod5	U+00AB	«
+be	33	Lock Shift	U+0066	f
+be	33	Mod5 Shift	U+00AA	ª
+be	33	Shift	U+0046	F
+be	34		U+0067	g
+be	34	Lock	U+0047	G
+be	34	Lock Shift	U+0067	g
+be	34	Shift	U+0047	G
+be	35		U+0068	h
+be	35	Lock	U+0048	H
+be	35	Lock Shift	U+0068	h
+be	35	Shift	U+0048	H
+be	36		U+006A	j
+be	36	Lock	U+004A	J
+be	36	Lock Mod5	dead	dead_hook
+be	36	Lock Mod5 Shift	dead	dead_horn
+be	36	Lock Shift	U+006A	j
+be	36	Mod5	dead	dead_hook
+be	36	Mod5 Shift	dead	dead_horn
+be	36	Shift	U+004A	J
+be	37		U+006B	k
+be	37	Lock	U+004B	K
+be	37	Lock Mod5 Shift	U+0026	&
+be	37	Lock Shift	U+006B	k
+be	37	Mod5 Shift	U+0026	&
+be	37	Shift	U+004B	K
+be	38		U+006C	l
+be	38	Lock	U+004C	L
+be	38	Lock Shift	U+006C	l
+be	38	Shift	U+004C	L
+be	39		U+006D	m
+be	39	Lock	U+004D	M
+be	39	Lock Mod5	dead	dead_acute
+be	39	Lock Mod5 Shift	dead	dead_doubleacute
+be	39	Lock Shift	U+006D	m
+be	39	Mod5	dead	dead_acute
+be	39	Mod5 Shift	dead	dead_doubleacute
+be	39	Shift	U+004D	M
+be	40		U+00F9	ù
+be	40	Mod5	dead	dead_acute
+be	40	Mod5 Shift	dead	dead_caron
+be	40	Shift	U+0025	%
+be	41		U+00B2	²
 be	41	Mod5	U+00AC	¬
 be	41	Mod5 Shift	U+00AC	¬
-be	19	Mod5 Shift	U+00AE	®
-be	19	Lock Mod5 Shift	U+00AE	®
-be	11	Mod5 Shift	U+00B0	°
-be	12	Shift	U+00B0	°
-be	10	Mod5 Shift	U+00B1	±
-be	118		U+00B1	±
-be	41		U+00B2	²
 be	41	Shift	U+00B3	³
 be	43		U+00B5	µ
-be	19	Mod5	U+00B6	¶
-be	19	Lock Mod5	U+00B6	¶
-be	52	Mod5	U+00B7	·
-be	50	Mod5 Shift	U+00BA	º
-be	45	Mod5	U+00BB	»
+be	43	Mod5	dead	dead_grave
+be	43	Mod5 Shift	dead	dead_breve
+be	43	Shift	U+00A3	£
+be	44		U+0077	w
+be	44	Lock	U+0057	W
+be	44	Lock Mod5	U+00AB	«
+be	44	Lock Mod5 Shift	U+003C	<
+be	44	Lock Shift	U+0077	w
+be	44	Mod5	U+00AB	«
+be	44	Mod5 Shift	U+003C	<
+be	44	Shift	U+0057	W
+be	45		U+0078	x
+be	45	Lock	U+0058	X
 be	45	Lock Mod5	U+00BB	»
-be	5	Mod5	U+00BC	¼
-be	6	Mod5	U+00BD	½
-be	12	Mod5 Shift	U+00BF	¿
-be	30	Mod5 Shift	U+00C6	Æ
-be	30	Lock Mod5	U+00C6	Æ
-be	32	Mod5 Shift	U+00D0	Ð
-be	32	Lock Mod5	U+00D0	Ð
-be	25	Mod5 Shift	U+00DE	Þ
-be	25	Lock Mod5	U+00DE	Þ
-be	31	Mod5	U+00DF	ß
-be	31	Lock Mod5 Shift	U+00DF	ß
-be	11		U+00E0	à
-be	30	Mod5	U+00E6	æ
-be	30	Lock Mod5 Shift	U+00E6	æ
-be	10		U+00E7	ç
-be	8		U+00E8	è
-be	3		U+00E9	é
-be	32	Mod5	U+00F0	ð
-be	32	Lock Mod5 Shift	U+00F0	ð
-be	40		U+00F9	ù
-be	25	Mod5	U+00FE	þ
-be	25	Lock Mod5 Shift	U+00FE	þ
-be	24	Mod5 Shift	U+0152	Œ
-be	24	Lock Mod5	U+0152	Œ
-be	24	Mod5	U+0153	œ
-be	24	Lock Mod5 Shift	U+0153	œ
-be	17	Mod5	U+017F	ſ
-be	17	Lock Mod5	U+017F	ſ
-be	18	Mod5	U+20AC	€
-be	18	Lock Mod5	U+20AC	€
+be	45	Lock Mod5 Shift	U+003E	>
+be	45	Lock Shift	U+0078	x
+be	45	Mod5	U+00BB	»
+be	45	Mod5 Shift	U+003E	>
+be	45	Shift	U+0058	X
+be	46		U+0063	c
+be	46	Lock	U+0043	C
+be	46	Lock Mod5	U+00A2	¢
+be	46	Lock Mod5 Shift	U+00A9	©
+be	46	Lock Shift	U+0063	c
+be	46	Mod5	U+00A2	¢
+be	46	Mod5 Shift	U+00A9	©
+be	46	Shift	U+0043	C
+be	47		U+0076	v
+be	47	Lock	U+0056	V
+be	47	Lock Shift	U+0076	v
+be	47	Shift	U+0056	V
+be	48		U+0062	b
+be	48	Lock	U+0042	B
+be	48	Lock Shift	U+0062	b
+be	48	Shift	U+0042	B
+be	49		U+006E	n
+be	49	Lock	U+004E	N
+be	49	Lock Shift	U+006E	n
+be	49	Shift	U+004E	N
+be	50		U+002C	,
+be	50	Mod5	dead	dead_cedilla
+be	50	Mod5 Shift	U+00BA	º
+be	50	Shift	U+003F	?
+be	51		U+003B	;
+be	51	Shift	U+002E	.
+be	52		U+003A	:
+be	52	Mod5	U+00B7	·
+be	52	Shift	U+002F	/
+be	53		U+003D	=
+be	53	Mod5	dead	dead_tilde
+be	53	Mod5 Shift	dead	dead_abovedot
+be	53	Shift	U+002B	+
+be	57		U+0020	 
+be	86		U+003C	<
+be	86	Mod5	U+005C	\
+be	86	Mod5 Shift	U+005C	\
+be	86	Shift	U+003E	>
+be	118		U+00B1	±
+be	179		U+0028	(
+be	180		U+0029	)
+be	434		U+0024	$
 be	435		U+20AC	€
-fr	57		U+0020	 
-fr	53		U+0021	!
-fr	4		U+0022	"
-fr	4	Mod5	U+0023	#
-fr	5	Mod5 Shift	U+0024	$
-fr	27		U+0024	$
-fr	434		U+0024	$
-fr	40	Shift	U+0025	%
-fr	2		U+0026	&
-fr	37	Mod5 Shift	U+0026	&
-fr	37	Lock Mod5 Shift	U+0026	&
-fr	5		U+0027	'
-fr	6		U+0028	(
-fr	179		U+0028	(
-fr	12		U+0029	)
-fr	180		U+0029	)
-fr	43		U+002A	*
-fr	13	Shift	U+002B	+
-fr	50		U+002C	,
-fr	7		U+002D	-
-fr	51	Shift	U+002E	.
-fr	52	Shift	U+002F	/
-fr	11	Shift	U+0030	0
-fr	2	Shift	U+0031	1
-fr	3	Shift	U+0032	2
-fr	4	Shift	U+0033	3
-fr	5	Shift	U+0034	4
-fr	6	Shift	U+0035	5
-fr	7	Shift	U+0036	6
-fr	8	Shift	U+0037	7
-fr	9	Shift	U+0038	8
-fr	10	Shift	U+0039	9
-fr	52		U+003A	:
-fr	51		U+003B	;
-fr	17	Mod5 Shift	U+003C	<
-fr	17	Lock Mod5 Shift	U+003C	<
-fr	86		U+003C	<
-fr	13		U+003D	=
-fr	45	Mod5 Shift	U+003E	>
-fr	45	Lock Mod5 Shift	U+003E	>
-fr	86	Shift	U+003E	>
-fr	50	Shift	U+003F	?
-fr	11	Mod5	U+0040	@
-fr	30	Mod5	U+0040	@
-fr	30	Lock Mod5	U+0040	@
-fr	16	Shift	U+0041	A
-fr	16	Lock	U+0041	A
-fr	48	Shift	U+0042	B
-fr	48	Lock	U+0042	B
-fr	46	Shift	U+0043	C
-fr	46	Lock	U+0043	C
-fr	32	Shift	U+0044	D
-fr	32	Lock	U+0044	D
-fr	18	Shift	U+0045	E
-fr	18	Lock	U+0045	E
-fr	33	Shift	U+0046	F
-fr	33	Lock	U+0046	F
-fr	34	Shift	U+0047	G
-fr	34	Lock	U+0047	G
-fr	35	Shift	U+0048	H
-fr	35	Lock	U+0048	H
-fr	23	Shift	U+0049	I
-fr	23	Lock	U+0049	I
-fr	36	Shift	U+004A	J
-fr	36	Lock	U+004A	J
-fr	37	Shift	U+004B	K
-fr	37	Lock	U+004B	K
-fr	38	Shift	U+004C	L
-fr	38	Lock	U+004C	L
-fr	39	Shift	U+004D	M
-fr	39	Lock	U+004D	M
-fr	49	Shift	U+004E	N
-fr	49	Lock	U+004E	N
-fr	24	Shift	U+004F	O
-fr	24	Lock	U+004F	O
-fr	25	Shift	U+0050	P
-fr	25	Lock	U+0050	P
-fr	30	Shift	U+0051	Q
-fr	30	Lock	U+0051	Q
-fr	19	Shift	U+0052	R
-fr	19	Lock	U+0052	R
-fr	31	Shift	U+0053	S
-fr	31	Lock	U+0053	S
-fr	20	Shift	U+0054	T
-fr	20	Lock	U+0054	T
-fr	22	Shift	U+0055	U
-fr	22	Lock	U+0055	U
-fr	47	Shift	U+0056	V
-fr	47	Lock	U+0056	V
-fr	44	Shift	U+0057	W
-fr	44	Lock	U+0057	W
-fr	45	Shift	U+0058	X
-fr	45	Lock	U+0058	X
-fr	21	Shift	U+0059	Y
-fr	21	Lock	U+0059	Y
-fr	17	Shift	U+005A	Z
-fr	17	Lock	U+005A	Z
-fr	6	Mod5	U+005B	[
-fr	9	Mod5	U+005C	\
-fr	12	Mod5	U+005D	]
-fr	10	Mod5	U+005E	^
-fr	9		U+005F	_
-fr	8	Mod5	U+0060	`
-fr	16		U+0061	a
-fr	16	Lock Shift	U+0061	a
-fr	48		U+0062	b
-fr	48	Lock Shift	U+0062	b
-fr	46		U+0063	c
-fr	46	Lock Shift	U+0063	c
-fr	32		U+0064	d
-fr	32	Lock Shift	U+0064	d
-fr	18		U+0065	e
-fr	18	Lock Shift	U+0065	e
-fr	33		U+0066	f
-fr	33	Lock Shift	U+0066	f
-fr	34		U+0067	g
-fr	34	Lock Shift	U+0067	g
-fr	35		U+0068	h
-fr	35	Lock Shift	U+0068	h
-fr	23		U+0069	i
-fr	23	Lock Shift	U+0069	i
-fr	36		U+006A	j
-fr	36	Lock Shift	U+006A	j
-fr	37		U+006B	k
-fr	37	Lock Shift	U+006B	k
-fr	38		U+006C	l
-fr	38	Lock Shift	U+006C	l
-fr	39		U+006D	m
-fr	39	Lock Shift	U+006D	m
-fr	49		U+006E	n
-fr	49	Lock Shift	U+006E	n
-fr	24		U+006F	o
-fr	24	Lock Shift	U+006F	o
-fr	25		U+0070	p
-fr	25	Lock Shift	U+0070	p
-fr	30		U+0071	q
-fr	30	Lock Shift	U+0071	q
-fr	19		U+0072	r
-fr	19	Lock Shift	U+0072	r
-fr	31		U+0073	s
-fr	31	Lock Shift	U+0073	s
-fr	20		U+0074	t
-fr	20	Lock Shift	U+0074	t
-fr	22		U+0075	u
-fr	22	Lock Shift	U+0075	u
-fr	47		U+0076	v
-fr	47	Lock Shift	U+0076	v
-fr	44		U+0077	w
-fr	44	Lock Shift	U+0077	w
-fr	45		U+0078	x
-fr	45	Lock Shift	U+0078	x
-fr	21		U+0079	y
-fr	21	Lock Shift	U+0079	y
-fr	17		U+007A	z
-fr	17	Lock Shift	U+007A	z
-fr	5	Mod5	U+007B	{
-fr	7	Mod5	U+007C	|
-fr	86	Mod5	U+007C	|
-fr	13	Mod5	U+007D	}
-fr	3	Mod5	U+007E	~
-fr	41	Shift	U+007E	~
-fr	2	Mod5 Shift	U+00A1	¡
-fr	18	Mod5 Shift	U+00A2	¢
-fr	18	Lock Mod5 Shift	U+00A2	¢
-fr	46	Mod5	U+00A2	¢
-fr	46	Lock Mod5	U+00A2	¢
-fr	4	Mod5 Shift	U+00A3	£
-fr	27	Shift	U+00A3	£
-fr	27	Mod5	U+00A4	¤
-fr	21	Mod5 Shift	U+00A5	¥
-fr	21	Lock Mod5 Shift	U+00A5	¥
-fr	86	Mod5 Shift	U+00A6	¦
-fr	53	Shift	U+00A7	§
-fr	46	Mod5 Shift	U+00A9	©
-fr	46	Lock Mod5 Shift	U+00A9	©
-fr	33	Mod5 Shift	U+00AA	ª
-fr	33	Lock Mod5 Shift	U+00AA	ª
-fr	17	Mod5	U+00AB	«
-fr	17	Lock Mod5	U+00AB	«
-fr	41	Mod5	U+00AC	¬
-fr	41	Mod5 Shift	U+00AC	¬
-fr	19	Mod5 Shift	U+00AE	®
-fr	19	Lock Mod5 Shift	U+00AE	®
-fr	11	Mod5 Shift	U+00B0	°
-fr	12	Shift	U+00B0	°
-fr	10	Mod5 Shift	U+00B1	±
-fr	118		U+00B1	±
-fr	41		U+00B2	²
-fr	39	Mod5	U+00B5	µ
-fr	39	Lock Mod5	U+00B5	µ
-fr	43	Shift	U+00B5	µ
-fr	19	Mod5	U+00B6	¶
-fr	19	Lock Mod5	U+00B6	¶
-fr	52	Mod5	U+00B7	·
-fr	2	Mod5	U+00B9	¹
-fr	39	Mod5 Shift	U+00BA	º
-fr	39	Lock Mod5 Shift	U+00BA	º
-fr	45	Mod5	U+00BB	»
-fr	45	Lock Mod5	U+00BB	»
-fr	12	Mod5 Shift	U+00BF	¿
-fr	16	Mod5 Shift	U+00C6	Æ
-fr	16	Lock Mod5	U+00C6	Æ
-fr	32	Mod5 Shift	U+00D0	Ð
-fr	32	Lock Mod5	U+00D0	Ð
-fr	24	Mod5 Shift	U+00D8	Ø
-fr	24	Lock Mod5	U+00D8	Ø
-fr	25	Mod5 Shift	U+00DE	Þ
-fr	25	Lock Mod5	U+00DE	Þ
-fr	31	Mod5	U+00DF	ß
-fr	31	Lock Mod5 Shift	U+00DF	ß
-fr	11		U+00E0	à
-fr	16	Mod5	U+00E6	æ
-fr	16	Lock Mod5 Shift	U+00E6	æ
-fr	10		U+00E7	ç
-fr	8		U+00E8	è
-fr	3		U+00E9	é
-fr	32	Mod5	U+00F0	ð
-fr	32	Lock Mod5 Shift	U+00F0	ð
-fr	24	Mod5	U+00F8	ø
-fr	24	Lock Mod5 Shift	U+00F8	ø
-fr	40		U+00F9	ù
-fr	25	Mod5	U+00FE	þ
-fr	25	Lock Mod5 Shift	U+00FE	þ
-fr	18	Mod5	U+20AC	€
-fr	18	Lock Mod5	U+20AC	€
-fr	435		U+20AC	€
-de	57		U+0020	 
-de	2	Shift	U+0021	!
-de	3	Shift	U+0022	"
-de	43		U+0023	#
-de	5	Shift	U+0024	$
-de	434		U+0024	$
-de	6	Shift	U+0025	%
-de	7	Shift	U+0026	&
-de	37	Mod5 Shift	U+0026	&
-de	37	Lock Mod5 Shift	U+0026	&
-de	43	Shift	U+0027	'
-de	9	Shift	U+0028	(
-de	179		U+0028	(
-de	10	Shift	U+0029	)
-de	180		U+0029	)
-de	27	Shift	U+002A	*
-de	27		U+002B	+
-de	51		U+002C	,
-de	53		U+002D	-
-de	52		U+002E	.
-de	8	Shift	U+002F	/
-de	11		U+0030	0
 de	2		U+0031	1
-de	3		U+0032	2
-de	4		U+0033	3
-de	5		U+0034	4
-de	6		U+0035	5
-de	7		U+0036	6
-de	8		U+0037	7
-de	9		U+0038	8
-de	10		U+0039	9
-de	52	Shift	U+003A	:
-de	51	Shift	U+003B	;
-de	86		U+003C	<
-de	11	Shift	U+003D	=
-de	86	Shift	U+003E	>
-de	12	Shift	U+003F	?
-de	12	Lock Shift	U+003F	?
-de	16	Mod5	U+0040	@
-de	16	Lock Mod5	U+0040	@
-de	30	Shift	U+0041	A
-de	30	Lock	U+0041	A
-de	48	Shift	U+0042	B
-de	48	Lock	U+0042	B
-de	46	Shift	U+0043	C
-de	46	Lock	U+0043	C
-de	32	Shift	U+0044	D
-de	32	Lock	U+0044	D
-de	18	Shift	U+0045	E
-de	18	Lock	U+0045	E
-de	33	Shift	U+0046	F
-de	33	Lock	U+0046	F
-de	34	Shift	U+0047	G
-de	34	Lock	U+0047	G
-de	35	Shift	U+0048	H
-de	35	Lock	U+0048	H
-de	23	Shift	U+0049	I
-de	23	Lock	U+0049	I
-de	36	Shift	U+004A	J
-de	36	Lock	U+004A	J
-de	37	Shift	U+004B	K
-de	37	Lock	U+004B	K
-de	38	Shift	U+004C	L
-de	38	Lock	U+004C	L
-de	50	Shift	U+004D	M
-de	50	Lock	U+004D	M
-de	49	Shift	U+004E	N
-de	49	Lock	U+004E	N
-de	24	Shift	U+004F	O
-de	24	Lock	U+004F	O
-de	25	Shift	U+0050	P
-de	25	Lock	U+0050	P
-de	16	Shift	U+0051	Q
-de	16	Lock	U+0051	Q
-de	19	Shift	U+0052	R
-de	19	Lock	U+0052	R
-de	31	Shift	U+0053	S
-de	31	Lock	U+0053	S
-de	20	Shift	U+0054	T
-de	20	Lock	U+0054	T
-de	22	Shift	U+0055	U
-de	22	Lock	U+0055	U
-de	47	Shift	U+0056	V
-de	47	Lock	U+0056	V
-de	17	Shift	U+0057	W
-de	17	Lock	U+0057	W
-de	45	Shift	U+0058	X
-de	45	Lock	U+0058	X
-de	44	Shift	U+0059	Y
-de	44	Lock	U+0059	Y
-de	21	Shift	U+005A	Z
-de	21	Lock	U+005A	Z
-de	9	Mod5	U+005B	[
-de	12	Mod5	U+005C	\
-de	12	Lock Mod5	U+005C	\
-de	10	Mod5	U+005D	]
-de	53	Shift	U+005F	_
-de	30		U+0061	a
-de	30	Lock Shift	U+0061	a
-de	48		U+0062	b
-de	48	Lock Shift	U+0062	b
-de	46		U+0063	c
-de	46	Lock Shift	U+0063	c
-de	32		U+0064	d
-de	32	Lock Shift	U+0064	d
-de	18		U+0065	e
-de	18	Lock Shift	U+0065	e
-de	33		U+0066	f
-de	33	Lock Shift	U+0066	f
-de	34		U+0067	g
-de	34	Lock Shift	U+0067	g
-de	35		U+0068	h
-de	35	Lock Shift	U+0068	h
-de	23		U+0069	i
-de	23	Lock Shift	U+0069	i
-de	36		U+006A	j
-de	36	Lock Shift	U+006A	j
-de	37		U+006B	k
-de	37	Lock Shift	U+006B	k
-de	38		U+006C	l
-de	38	Lock Shift	U+006C	l
-de	50		U+006D	m
-de	50	Lock Shift	U+006D	m
-de	49		U+006E	n
-de	49	Lock Shift	U+006E	n
-de	24		U+006F	o
-de	24	Lock Shift	U+006F	o
-de	25		U+0070	p
-de	25	Lock Shift	U+0070	p
-de	16		U+0071	q
-de	16	Lock Shift	U+0071	q
-de	19		U+0072	r
-de	19	Lock Shift	U+0072	r
-de	31		U+0073	s
-de	31	Lock Shift	U+0073	s
-de	20		U+0074	t
-de	20	Lock Shift	U+0074	t
-de	22		U+0075	u
-de	22	Lock Shift	U+0075	u
-de	47		U+0076	v
-de	47	Lock Shift	U+0076	v
-de	17		U+0077	w
-de	17	Lock Shift	U+0077	w
-de	45		U+0078	x
-de	45	Lock Shift	U+0078	x
-de	44		U+0079	y
-de	44	Lock Shift	U+0079	y
-de	21		U+007A	z
-de	21	Lock Shift	U+007A	z
-de	8	Mod5	U+007B	{
-de	86	Mod5	U+007C	|
-de	11	Mod5	U+007D	}
-de	27	Mod5	U+007E	~
-de	2	Mod5 Shift	U+00A1	¡
-de	46	Mod5	U+00A2	¢
-de	46	Lock Mod5	U+00A2	¢
-de	4	Mod5 Shift	U+00A3	£
-de	5	Mod5 Shift	U+00A4	¤
-de	21	Mod5 Shift	U+00A5	¥
-de	21	Lock Mod5 Shift	U+00A5	¥
-de	4	Shift	U+00A7	§
-de	17	Mod5 Shift	U+00A7	§
-de	17	Lock Mod5 Shift	U+00A7	§
-de	46	Mod5 Shift	U+00A9	©
-de	46	Lock Mod5 Shift	U+00A9	©
-de	33	Mod5 Shift	U+00AA	ª
-de	33	Lock Mod5 Shift	U+00AA	ª
-de	45	Mod5	U+00AB	«
-de	45	Lock Mod5	U+00AB	«
-de	7	Mod5	U+00AC	¬
-de	19	Mod5 Shift	U+00AE	®
-de	19	Lock Mod5 Shift	U+00AE	®
-de	27	Mod5 Shift	U+00AF	¯
-de	11	Mod5 Shift	U+00B0	°
-de	41	Shift	U+00B0	°
-de	10	Mod5 Shift	U+00B1	±
-de	118		U+00B1	±
-de	3	Mod5	U+00B2	²
-de	4	Mod5	U+00B3	³
-de	50	Mod5	U+00B5	µ
-de	50	Lock Mod5	U+00B5	µ
-de	19	Mod5	U+00B6	¶
-de	19	Lock Mod5	U+00B6	¶
-de	51	Mod5	U+00B7	·
 de	2	Mod5	U+00B9	¹
-de	50	Mod5 Shift	U+00BA	º
-de	50	Lock Mod5 Shift	U+00BA	º
-de	44	Mod5	U+00BB	»
-de	44	Lock Mod5	U+00BB	»
+de	2	Mod5 Shift	U+00A1	¡
+de	2	Shift	U+0021	!
+de	3		U+0032	2
+de	3	Mod5	U+00B2	²
+de	3	Shift	U+0022	"
+de	4		U+0033	3
+de	4	Mod5	U+00B3	³
+de	4	Mod5 Shift	U+00A3	£
+de	4	Shift	U+00A7	§
+de	5		U+0034	4
 de	5	Mod5	U+00BC	¼
+de	5	Mod5 Shift	U+00A4	¤
+de	5	Shift	U+0024	$
+de	6		U+0035	5
 de	6	Mod5	U+00BD	½
-de	12	Mod5 Shift	U+00BF	¿
-de	12	Lock Mod5 Shift	U+00BF	¿
-de	40	Shift	U+00C4	Ä
-de	40	Lock	U+00C4	Ä
-de	30	Mod5 Shift	U+00C6	Æ
-de	30	Lock Mod5	U+00C6	Æ
-de	32	Mod5 Shift	U+00D0	Ð
-de	32	Lock Mod5	U+00D0	Ð
-de	39	Shift	U+00D6	Ö
-de	39	Lock	U+00D6	Ö
-de	24	Mod5 Shift	U+00D8	Ø
-de	24	Lock Mod5	U+00D8	Ø
-de	26	Shift	U+00DC	Ü
-de	26	Lock	U+00DC	Ü
-de	25	Mod5 Shift	U+00DE	Þ
-de	25	Lock Mod5	U+00DE	Þ
+de	6	Shift	U+0025	%
+de	7		U+0036	6
+de	7	Mod5	U+00AC	¬
+de	7	Shift	U+0026	&
+de	8		U+0037	7
+de	8	Mod5	U+007B	{
+de	8	Shift	U+002F	/
+de	9		U+0038	8
+de	9	Mod5	U+005B	[
+de	9	Shift	U+0028	(
+de	10		U+0039	9
+de	10	Mod5	U+005D	]
+de	10	Mod5 Shift	U+00B1	±
+de	10	Shift	U+0029	)
+de	11		U+0030	0
+de	11	Mod5	U+007D	}
+de	11	Mod5 Shift	U+00B0	°
+de	11	Shift	U+003D	=
 de	12		U+00DF	ß
-de	40		U+00E4	ä
-de	40	Lock Shift	U+00E4	ä
-de	30	Mod5	U+00E6	æ
-de	30	Lock Mod5 Shift	U+00E6	æ
-de	32	Mod5	U+00F0	ð
-de	32	Lock Mod5 Shift	U+00F0	ð
-de	39		U+00F6	ö
-de	39	Lock Shift	U+00F6	ö
-de	24	Mod5	U+00F8	ø
-de	24	Lock Mod5 Shift	U+00F8	ø
-de	26		U+00FC	ü
-de	26	Lock Shift	U+00FC	ü
-de	25	Mod5	U+00FE	þ
-de	25	Lock Mod5 Shift	U+00FE	þ
-de	17	Mod5	U+017F	ſ
+de	12	Lock Mod5	U+005C	\
+de	12	Lock Mod5 Shift	U+00BF	¿
+de	12	Lock Shift	U+003F	?
+de	12	Mod5	U+005C	\
+de	12	Mod5 Shift	U+00BF	¿
+de	12	Shift	U+003F	?
+de	13		dead	dead_acute
+de	13	Mod5	dead	dead_cedilla
+de	13	Mod5 Shift	dead	dead_ogonek
+de	13	Shift	dead	dead_grave
+de	16		U+0071	q
+de	16	Lock	U+0051	Q
+de	16	Lock Mod5	U+0040	@
+de	16	Lock Shift	U+0071	q
+de	16	Mod5	U+0040	@
+de	16	Shift	U+0051	Q
+de	17		U+0077	w
+de	17	Lock	U+0057	W
 de	17	Lock Mod5	U+017F	ſ
-de	31	Mod5	U+017F	ſ
-de	31	Lock Mod5 Shift	U+017F	ſ
-de	18	Mod5	U+20AC	€
+de	17	Lock Mod5 Shift	U+00A7	§
+de	17	Lock Shift	U+0077	w
+de	17	Mod5	U+017F	ſ
+de	17	Mod5 Shift	U+00A7	§
+de	17	Shift	U+0057	W
+de	18		U+0065	e
+de	18	Lock	U+0045	E
 de	18	Lock Mod5	U+20AC	€
-de	18	Mod5 Shift	U+20AC	€
 de	18	Lock Mod5 Shift	U+20AC	€
+de	18	Lock Shift	U+0065	e
+de	18	Mod5	U+20AC	€
+de	18	Mod5 Shift	U+20AC	€
+de	18	Shift	U+0045	E
+de	19		U+0072	r
+de	19	Lock	U+0052	R
+de	19	Lock Mod5	U+00B6	¶
+de	19	Lock Mod5 Shift	U+00AE	®
+de	19	Lock Shift	U+0072	r
+de	19	Mod5	U+00B6	¶
+de	19	Mod5 Shift	U+00AE	®
+de	19	Shift	U+0052	R
+de	20		U+0074	t
+de	20	Lock	U+0054	T
+de	20	Lock Shift	U+0074	t
+de	20	Shift	U+0054	T
+de	21		U+007A	z
+de	21	Lock	U+005A	Z
+de	21	Lock Mod5 Shift	U+00A5	¥
+de	21	Lock Shift	U+007A	z
+de	21	Mod5 Shift	U+00A5	¥
+de	21	Shift	U+005A	Z
+de	22		U+0075	u
+de	22	Lock	U+0055	U
+de	22	Lock Shift	U+0075	u
+de	22	Shift	U+0055	U
+de	23		U+0069	i
+de	23	Lock	U+0049	I
+de	23	Lock Shift	U+0069	i
+de	23	Shift	U+0049	I
+de	24		U+006F	o
+de	24	Lock	U+004F	O
+de	24	Lock Mod5	U+00D8	Ø
+de	24	Lock Mod5 Shift	U+00F8	ø
+de	24	Lock Shift	U+006F	o
+de	24	Mod5	U+00F8	ø
+de	24	Mod5 Shift	U+00D8	Ø
+de	24	Shift	U+004F	O
+de	25		U+0070	p
+de	25	Lock	U+0050	P
+de	25	Lock Mod5	U+00DE	Þ
+de	25	Lock Mod5 Shift	U+00FE	þ
+de	25	Lock Shift	U+0070	p
+de	25	Mod5	U+00FE	þ
+de	25	Mod5 Shift	U+00DE	Þ
+de	25	Shift	U+0050	P
+de	26		U+00FC	ü
+de	26	Lock	U+00DC	Ü
+de	26	Lock Mod5	dead	dead_diaeresis
+de	26	Lock Mod5 Shift	dead	dead_abovering
+de	26	Lock Shift	U+00FC	ü
+de	26	Mod5	dead	dead_diaeresis
+de	26	Mod5 Shift	dead	dead_abovering
+de	26	Shift	U+00DC	Ü
+de	27		U+002B	+
+de	27	Mod5	U+007E	~
+de	27	Mod5 Shift	U+00AF	¯
+de	27	Shift	U+002A	*
+de	30		U+0061	a
+de	30	Lock	U+0041	A
+de	30	Lock Mod5	U+00C6	Æ
+de	30	Lock Mod5 Shift	U+00E6	æ
+de	30	Lock Shift	U+0061	a
+de	30	Mod5	U+00E6	æ
+de	30	Mod5 Shift	U+00C6	Æ
+de	30	Shift	U+0041	A
+de	31		U+0073	s
+de	31	Lock	U+0053	S
+de	31	Lock Mod5 Shift	U+017F	ſ
+de	31	Lock Shift	U+0073	s
+de	31	Mod5	U+017F	ſ
+de	31	Shift	U+0053	S
+de	32		U+0064	d
+de	32	Lock	U+0044	D
+de	32	Lock Mod5	U+00D0	Ð
+de	32	Lock Mod5 Shift	U+00F0	ð
+de	32	Lock Shift	U+0064	d
+de	32	Mod5	U+00F0	ð
+de	32	Mod5 Shift	U+00D0	Ð
+de	32	Shift	U+0044	D
+de	33		U+0066	f
+de	33	Lock	U+0046	F
+de	33	Lock Mod5 Shift	U+00AA	ª
+de	33	Lock Shift	U+0066	f
+de	33	Mod5 Shift	U+00AA	ª
+de	33	Shift	U+0046	F
+de	34		U+0067	g
+de	34	Lock	U+0047	G
+de	34	Lock Shift	U+0067	g
+de	34	Shift	U+0047	G
+de	35		U+0068	h
+de	35	Lock	U+0048	H
+de	35	Lock Shift	U+0068	h
+de	35	Shift	U+0048	H
+de	36		U+006A	j
+de	36	Lock	U+004A	J
+de	36	Lock Mod5	dead	dead_belowdot
+de	36	Lock Mod5 Shift	dead	dead_abovedot
+de	36	Lock Shift	U+006A	j
+de	36	Mod5	dead	dead_belowdot
+de	36	Mod5 Shift	dead	dead_abovedot
+de	36	Shift	U+004A	J
+de	37		U+006B	k
+de	37	Lock	U+004B	K
+de	37	Lock Mod5 Shift	U+0026	&
+de	37	Lock Shift	U+006B	k
+de	37	Mod5 Shift	U+0026	&
+de	37	Shift	U+004B	K
+de	38		U+006C	l
+de	38	Lock	U+004C	L
+de	38	Lock Shift	U+006C	l
+de	38	Shift	U+004C	L
+de	39		U+00F6	ö
+de	39	Lock	U+00D6	Ö
+de	39	Lock Mod5	dead	dead_doubleacute
+de	39	Lock Mod5 Shift	dead	dead_belowdot
+de	39	Lock Shift	U+00F6	ö
+de	39	Mod5	dead	dead_doubleacute
+de	39	Mod5 Shift	dead	dead_belowdot
+de	39	Shift	U+00D6	Ö
+de	40		U+00E4	ä
+de	40	Lock	U+00C4	Ä
+de	40	Lock Mod5	dead	dead_circumflex
+de	40	Lock Mod5 Shift	dead	dead_caron
+de	40	Lock Shift	U+00E4	ä
+de	40	Mod5	dead	dead_circumflex
+de	40	Mod5 Shift	dead	dead_caron
+de	40	Shift	U+00C4	Ä
+de	41		dead	dead_circumflex
+de	41	Shift	U+00B0	°
+de	43		U+0023	#
+de	43	Mod5 Shift	dead	dead_breve
+de	43	Shift	U+0027	'
+de	44		U+0079	y
+de	44	Lock	U+0059	Y
+de	44	Lock Mod5	U+00BB	»
+de	44	Lock Shift	U+0079	y
+de	44	Mod5	U+00BB	»
+de	44	Shift	U+0059	Y
+de	45		U+0078	x
+de	45	Lock	U+0058	X
+de	45	Lock Mod5	U+00AB	«
+de	45	Lock Shift	U+0078	x
+de	45	Mod5	U+00AB	«
+de	45	Shift	U+0058	X
+de	46		U+0063	c
+de	46	Lock	U+0043	C
+de	46	Lock Mod5	U+00A2	¢
+de	46	Lock Mod5 Shift	U+00A9	©
+de	46	Lock Shift	U+0063	c
+de	46	Mod5	U+00A2	¢
+de	46	Mod5 Shift	U+00A9	©
+de	46	Shift	U+0043	C
+de	47		U+0076	v
+de	47	Lock	U+0056	V
+de	47	Lock Shift	U+0076	v
+de	47	Shift	U+0056	V
+de	48		U+0062	b
+de	48	Lock	U+0042	B
+de	48	Lock Shift	U+0062	b
+de	48	Shift	U+0042	B
+de	49		U+006E	n
+de	49	Lock	U+004E	N
+de	49	Lock Shift	U+006E	n
+de	49	Shift	U+004E	N
+de	50		U+006D	m
+de	50	Lock	U+004D	M
+de	50	Lock Mod5	U+00B5	µ
+de	50	Lock Mod5 Shift	U+00BA	º
+de	50	Lock Shift	U+006D	m
+de	50	Mod5	U+00B5	µ
+de	50	Mod5 Shift	U+00BA	º
+de	50	Shift	U+004D	M
+de	51		U+002C	,
+de	51	Mod5	U+00B7	·
+de	51	Shift	U+003B	;
+de	52		U+002E	.
+de	52	Shift	U+003A	:
+de	53		U+002D	-
+de	53	Shift	U+005F	_
+de	57		U+0020	 
+de	86		U+003C	<
+de	86	Mod5	U+007C	|
+de	86	Mod5 Shift	dead	dead_belowmacron
+de	86	Shift	U+003E	>
+de	118		U+00B1	±
+de	179		U+0028	(
+de	180		U+0029	)
+de	434		U+0024	$
 de	435		U+20AC	€
-es	57		U+0020	 
-es	2	Shift	U+0021	!
-es	3	Shift	U+0022	"
-es	4	Mod5	U+0023	#
-es	5	Shift	U+0024	$
-es	5	Mod5 Shift	U+0024	$
-es	434		U+0024	$
-es	6	Shift	U+0025	%
-es	7	Shift	U+0026	&
-es	37	Mod5 Shift	U+0026	&
-es	37	Lock Mod5 Shift	U+0026	&
-es	12		U+0027	'
-es	9	Shift	U+0028	(
-es	179		U+0028	(
-es	10	Shift	U+0029	)
-es	180		U+0029	)
-es	27	Shift	U+002A	*
-es	27		U+002B	+
-es	51		U+002C	,
-es	53		U+002D	-
-es	52		U+002E	.
-es	8	Shift	U+002F	/
-es	11		U+0030	0
 es	2		U+0031	1
+es	2	Mod5	U+007C	|
+es	2	Mod5 Shift	U+00A1	¡
+es	2	Shift	U+0021	!
 es	3		U+0032	2
-es	4		U+0033	3
-es	5		U+0034	4
-es	6		U+0035	5
-es	7		U+0036	6
-es	8		U+0037	7
-es	9		U+0038	8
-es	10		U+0039	9
-es	52	Shift	U+003A	:
-es	51	Shift	U+003B	;
-es	44	Mod5 Shift	U+003C	<
-es	44	Lock Mod5 Shift	U+003C	<
-es	86		U+003C	<
-es	11	Shift	U+003D	=
-es	45	Mod5 Shift	U+003E	>
-es	45	Lock Mod5 Shift	U+003E	>
-es	86	Shift	U+003E	>
-es	12	Shift	U+003F	?
 es	3	Mod5	U+0040	@
-es	16	Mod5	U+0040	@
-es	16	Lock Mod5	U+0040	@
-es	30	Shift	U+0041	A
-es	30	Lock	U+0041	A
-es	48	Shift	U+0042	B
-es	48	Lock	U+0042	B
-es	46	Shift	U+0043	C
-es	46	Lock	U+0043	C
-es	32	Shift	U+0044	D
-es	32	Lock	U+0044	D
-es	18	Shift	U+0045	E
-es	18	Lock	U+0045	E
-es	33	Shift	U+0046	F
-es	33	Lock	U+0046	F
-es	34	Shift	U+0047	G
-es	34	Lock	U+0047	G
-es	35	Shift	U+0048	H
-es	35	Lock	U+0048	H
-es	23	Shift	U+0049	I
-es	23	Lock	U+0049	I
-es	36	Shift	U+004A	J
-es	36	Lock	U+004A	J
-es	37	Shift	U+004B	K
-es	37	Lock	U+004B	K
-es	38	Shift	U+004C	L
-es	38	Lock	U+004C	L
-es	50	Shift	U+004D	M
-es	50	Lock	U+004D	M
-es	49	Shift	U+004E	N
-es	49	Lock	U+004E	N
-es	24	Shift	U+004F	O
-es	24	Lock	U+004F	O
-es	25	Shift	U+0050	P
-es	25	Lock	U+0050	P
-es	16	Shift	U+0051	Q
-es	16	Lock	U+0051	Q
-es	19	Shift	U+0052	R
-es	19	Lock	U+0052	R
-es	31	Shift	U+0053	S
-es	31	Lock	U+0053	S
-es	20	Shift	U+0054	T
-es	20	Lock	U+0054	T
-es	22	Shift	U+0055	U
-es	22	Lock	U+0055	U
-es	47	Shift	U+0056	V
-es	47	Lock	U+0056	V
-es	17	Shift	U+0057	W
-es	17	Lock	U+0057	W
-es	45	Shift	U+0058	X
-es	45	Lock	U+0058	X
-es	21	Shift	U+0059	Y
-es	21	Lock	U+0059	Y
-es	44	Shift	U+005A	Z
-es	44	Lock	U+005A	Z
+es	3	Shift	U+0022	"
+es	4		U+0033	3
+es	4	Mod5	U+0023	#
+es	4	Mod5 Shift	U+00A3	£
+es	4	Shift	U+00B7	·
+es	5		U+0034	4
+es	5	Mod5	U+007E	~
+es	5	Mod5 Shift	U+0024	$
+es	5	Shift	U+0024	$
+es	6		U+0035	5
+es	6	Mod5	U+00BD	½
+es	6	Shift	U+0025	%
+es	7		U+0036	6
+es	7	Mod5	U+00AC	¬
+es	7	Shift	U+0026	&
+es	8		U+0037	7
+es	8	Mod5	U+007B	{
+es	8	Shift	U+002F	/
+es	9		U+0038	8
 es	9	Mod5	U+005B	[
-es	26	Mod5	U+005B	[
+es	9	Shift	U+0028	(
+es	10		U+0039	9
+es	10	Mod5	U+005D	]
+es	10	Mod5 Shift	U+00B1	±
+es	10	Shift	U+0029	)
+es	11		U+0030	0
+es	11	Mod5	U+007D	}
+es	11	Mod5 Shift	U+00B0	°
+es	11	Shift	U+003D	=
+es	12		U+0027	'
 es	12	Mod5	U+005C	\
+es	12	Mod5 Shift	U+00BF	¿
+es	12	Shift	U+003F	?
+es	13		U+00A1	¡
+es	13	Mod5	dead	dead_cedilla
+es	13	Mod5 Shift	dead	dead_ogonek
+es	13	Shift	U+00BF	¿
+es	16		U+0071	q
+es	16	Lock	U+0051	Q
+es	16	Lock Mod5	U+0040	@
+es	16	Lock Shift	U+0071	q
+es	16	Mod5	U+0040	@
+es	16	Shift	U+0051	Q
+es	17		U+0077	w
+es	17	Lock	U+0057	W
+es	17	Lock Mod5	U+017F	ſ
+es	17	Lock Mod5 Shift	U+00A7	§
+es	17	Lock Shift	U+0077	w
+es	17	Mod5	U+017F	ſ
+es	17	Mod5 Shift	U+00A7	§
+es	17	Shift	U+0057	W
+es	18		U+0065	e
+es	18	Lock	U+0045	E
+es	18	Lock Mod5	U+20AC	€
+es	18	Lock Mod5 Shift	U+00A2	¢
+es	18	Lock Shift	U+0065	e
+es	18	Mod5	U+20AC	€
+es	18	Mod5 Shift	U+00A2	¢
+es	18	Shift	U+0045	E
+es	19		U+0072	r
+es	19	Lock	U+0052	R
+es	19	Lock Mod5	U+00B6	¶
+es	19	Lock Mod5 Shift	U+00AE	®
+es	19	Lock Shift	U+0072	r
+es	19	Mod5	U+00B6	¶
+es	19	Mod5 Shift	U+00AE	®
+es	19	Shift	U+0052	R
+es	20		U+0074	t
+es	20	Lock	U+0054	T
+es	20	Lock Shift	U+0074	t
+es	20	Shift	U+0054	T
+es	21		U+0079	y
+es	21	Lock	U+0059	Y
+es	21	Lock Mod5 Shift	U+00A5	¥
+es	21	Lock Shift	U+0079	y
+es	21	Mod5 Shift	U+00A5	¥
+es	21	Shift	U+0059	Y
+es	22		U+0075	u
+es	22	Lock	U+0055	U
+es	22	Lock Shift	U+0075	u
+es	22	Shift	U+0055	U
+es	23		U+0069	i
+es	23	Lock	U+0049	I
+es	23	Lock Shift	U+0069	i
+es	23	Shift	U+0049	I
+es	24		U+006F	o
+es	24	Lock	U+004F	O
+es	24	Lock Mod5	U+00D8	Ø
+es	24	Lock Mod5 Shift	U+00F8	ø
+es	24	Lock Shift	U+006F	o
+es	24	Mod5	U+00F8	ø
+es	24	Mod5 Shift	U+00D8	Ø
+es	24	Shift	U+004F	O
+es	25		U+0070	p
+es	25	Lock	U+0050	P
+es	25	Lock Mod5	U+00DE	Þ
+es	25	Lock Mod5 Shift	U+00FE	þ
+es	25	Lock Shift	U+0070	p
+es	25	Mod5	U+00FE	þ
+es	25	Mod5 Shift	U+00DE	Þ
+es	25	Shift	U+0050	P
+es	26		dead	dead_grave
+es	26	Mod5	U+005B	[
+es	26	Mod5 Shift	dead	dead_abovering
+es	26	Shift	dead	dead_circumflex
+es	27		U+002B	+
+es	27	Mod5	U+005D	]
+es	27	Mod5 Shift	dead	dead_macron
+es	27	Shift	U+002A	*
+es	30		U+0061	a
+es	30	Lock	U+0041	A
+es	30	Lock Mod5	U+00C6	Æ
+es	30	Lock Mod5 Shift	U+00E6	æ
+es	30	Lock Shift	U+0061	a
+es	30	Mod5	U+00E6	æ
+es	30	Mod5 Shift	U+00C6	Æ
+es	30	Shift	U+0041	A
+es	31		U+0073	s
+es	31	Lock	U+0053	S
+es	31	Lock Mod5 Shift	U+00DF	ß
+es	31	Lock Shift	U+0073	s
+es	31	Mod5	U+00DF	ß
+es	31	Shift	U+0053	S
+es	32		U+0064	d
+es	32	Lock	U+0044	D
+es	32	Lock Mod5	U+00D0	Ð
+es	32	Lock Mod5 Shift	U+00F0	ð
+es	32	Lock Shift	U+0064	d
+es	32	Mod5	U+00F0	ð
+es	32	Mod5 Shift	U+00D0	Ð
+es	32	Shift	U+0044	D
+es	33		U+0066	f
+es	33	Lock	U+0046	F
+es	33	Lock Mod5 Shift	U+00AA	ª
+es	33	Lock Shift	U+0066	f
+es	33	Mod5 Shift	U+00AA	ª
+es	33	Shift	U+0046	F
+es	34		U+0067	g
+es	34	Lock	U+0047	G
+es	34	Lock Shift	U+0067	g
+es	34	Shift	U+0047	G
+es	35		U+0068	h
+es	35	Lock	U+0048	H
+es	35	Lock Shift	U+0068	h
+es	35	Shift	U+0048	H
+es	36		U+006A	j
+es	36	Lock	U+004A	J
+es	36	Lock Mod5	dead	dead_hook
+es	36	Lock Mod5 Shift	dead	dead_horn
+es	36	Lock Shift	U+006A	j
+es	36	Mod5	dead	dead_hook
+es	36	Mod5 Shift	dead	dead_horn
+es	36	Shift	U+004A	J
+es	37		U+006B	k
+es	37	Lock	U+004B	K
+es	37	Lock Mod5 Shift	U+0026	&
+es	37	Lock Shift	U+006B	k
+es	37	Mod5 Shift	U+0026	&
+es	37	Shift	U+004B	K
+es	38		U+006C	l
+es	38	Lock	U+004C	L
+es	38	Lock Shift	U+006C	l
+es	38	Shift	U+004C	L
+es	39		U+00F1	ñ
+es	39	Lock	U+00D1	Ñ
+es	39	Lock Mod5	dead	dead_tilde
+es	39	Lock Mod5 Shift	dead	dead_doubleacute
+es	39	Lock Shift	U+00F1	ñ
+es	39	Mod5	dead	dead_tilde
+es	39	Mod5 Shift	dead	dead_doubleacute
+es	39	Shift	U+00D1	Ñ
+es	40		dead	dead_acute
+es	40	Mod5	U+007B	{
+es	40	Mod5 Shift	dead	dead_caron
+es	40	Shift	dead	dead_diaeresis
+es	41		U+00BA	º
 es	41	Mod5	U+005C	\
 es	41	Mod5 Shift	U+005C	\
-es	10	Mod5	U+005D	]
-es	27	Mod5	U+005D	]
-es	53	Shift	U+005F	_
-es	30		U+0061	a
-es	30	Lock Shift	U+0061	a
-es	48		U+0062	b
-es	48	Lock Shift	U+0062	b
-es	46		U+0063	c
-es	46	Lock Shift	U+0063	c
-es	32		U+0064	d
-es	32	Lock Shift	U+0064	d
-es	18		U+0065	e
-es	18	Lock Shift	U+0065	e
-es	33		U+0066	f
-es	33	Lock Shift	U+0066	f
-es	34		U+0067	g
-es	34	Lock Shift	U+0067	g
-es	35		U+0068	h
-es	35	Lock Shift	U+0068	h
-es	23		U+0069	i
-es	23	Lock Shift	U+0069	i
-es	36		U+006A	j
-es	36	Lock Shift	U+006A	j
-es	37		U+006B	k
-es	37	Lock Shift	U+006B	k
-es	38		U+006C	l
-es	38	Lock Shift	U+006C	l
-es	50		U+006D	m
-es	50	Lock Shift	U+006D	m
-es	49		U+006E	n
-es	49	Lock Shift	U+006E	n
-es	24		U+006F	o
-es	24	Lock Shift	U+006F	o
-es	25		U+0070	p
-es	25	Lock Shift	U+0070	p
-es	16		U+0071	q
-es	16	Lock Shift	U+0071	q
-es	19		U+0072	r
-es	19	Lock Shift	U+0072	r
-es	31		U+0073	s
-es	31	Lock Shift	U+0073	s
-es	20		U+0074	t
-es	20	Lock Shift	U+0074	t
-es	22		U+0075	u
-es	22	Lock Shift	U+0075	u
-es	47		U+0076	v
-es	47	Lock Shift	U+0076	v
-es	17		U+0077	w
-es	17	Lock Shift	U+0077	w
-es	45		U+0078	x
-es	45	Lock Shift	U+0078	x
-es	21		U+0079	y
-es	21	Lock Shift	U+0079	y
-es	44		U+007A	z
-es	44	Lock Shift	U+007A	z
-es	8	Mod5	U+007B	{
-es	40	Mod5	U+007B	{
-es	2	Mod5	U+007C	|
-es	86	Mod5	U+007C	|
-es	11	Mod5	U+007D	}
-es	43	Mod5	U+007D	}
-es	43	Lock Mod5	U+007D	}
-es	5	Mod5	U+007E	~
-es	2	Mod5 Shift	U+00A1	¡
-es	13		U+00A1	¡
-es	18	Mod5 Shift	U+00A2	¢
-es	18	Lock Mod5 Shift	U+00A2	¢
-es	46	Mod5	U+00A2	¢
-es	46	Lock Mod5	U+00A2	¢
-es	4	Mod5 Shift	U+00A3	£
-es	21	Mod5 Shift	U+00A5	¥
-es	21	Lock Mod5 Shift	U+00A5	¥
-es	86	Mod5 Shift	U+00A6	¦
-es	17	Mod5 Shift	U+00A7	§
-es	17	Lock Mod5 Shift	U+00A7	§
-es	46	Mod5 Shift	U+00A9	©
-es	46	Lock Mod5 Shift	U+00A9	©
-es	33	Mod5 Shift	U+00AA	ª
-es	33	Lock Mod5 Shift	U+00AA	ª
 es	41	Shift	U+00AA	ª
-es	44	Mod5	U+00AB	«
-es	44	Lock Mod5	U+00AB	«
-es	7	Mod5	U+00AC	¬
-es	19	Mod5 Shift	U+00AE	®
-es	19	Lock Mod5 Shift	U+00AE	®
-es	11	Mod5 Shift	U+00B0	°
-es	10	Mod5 Shift	U+00B1	±
-es	118		U+00B1	±
-es	50	Mod5	U+00B5	µ
-es	50	Lock Mod5	U+00B5	µ
-es	19	Mod5	U+00B6	¶
-es	19	Lock Mod5	U+00B6	¶
-es	4	Shift	U+00B7	·
-es	52	Mod5	U+00B7	·
-es	41		U+00BA	º
-es	50	Mod5 Shift	U+00BA	º
-es	50	Lock Mod5 Shift	U+00BA	º
-es	45	Mod5	U+00BB	»
-es	45	Lock Mod5	U+00BB	»
-es	6	Mod5	U+00BD	½
-es	12	Mod5 Shift	U+00BF	¿
-es	13	Shift	U+00BF	¿
-es	30	Mod5 Shift	U+00C6	Æ
-es	30	Lock Mod5	U+00C6	Æ
-es	43	Shift	U+00C7	Ç
-es	43	Lock	U+00C7	Ç
-es	32	Mod5 Shift	U+00D0	Ð
-es	32	Lock Mod5	U+00D0	Ð
-es	39	Shift	U+00D1	Ñ
-es	39	Lock	U+00D1	Ñ
-es	24	Mod5 Shift	U+00D8	Ø
-es	24	Lock Mod5	U+00D8	Ø
-es	25	Mod5 Shift	U+00DE	Þ
-es	25	Lock Mod5	U+00DE	Þ
-es	31	Mod5	U+00DF	ß
-es	31	Lock Mod5 Shift	U+00DF	ß
-es	30	Mod5	U+00E6	æ
-es	30	Lock Mod5 Shift	U+00E6	æ
 es	43		U+00E7	ç
+es	43	Lock	U+00C7	Ç
+es	43	Lock Mod5	U+007D	}
+es	43	Lock Mod5 Shift	dead	dead_breve
 es	43	Lock Shift	U+00E7	ç
-es	32	Mod5	U+00F0	ð
-es	32	Lock Mod5 Shift	U+00F0	ð
-es	39		U+00F1	ñ
-es	39	Lock Shift	U+00F1	ñ
-es	24	Mod5	U+00F8	ø
-es	24	Lock Mod5 Shift	U+00F8	ø
-es	25	Mod5	U+00FE	þ
-es	25	Lock Mod5 Shift	U+00FE	þ
-es	17	Mod5	U+017F	ſ
-es	17	Lock Mod5	U+017F	ſ
-es	18	Mod5	U+20AC	€
-es	18	Lock Mod5	U+20AC	€
+es	43	Mod5	U+007D	}
+es	43	Mod5 Shift	dead	dead_breve
+es	43	Shift	U+00C7	Ç
+es	44		U+007A	z
+es	44	Lock	U+005A	Z
+es	44	Lock Mod5	U+00AB	«
+es	44	Lock Mod5 Shift	U+003C	<
+es	44	Lock Shift	U+007A	z
+es	44	Mod5	U+00AB	«
+es	44	Mod5 Shift	U+003C	<
+es	44	Shift	U+005A	Z
+es	45		U+0078	x
+es	45	Lock	U+0058	X
+es	45	Lock Mod5	U+00BB	»
+es	45	Lock Mod5 Shift	U+003E	>
+es	45	Lock Shift	U+0078	x
+es	45	Mod5	U+00BB	»
+es	45	Mod5 Shift	U+003E	>
+es	45	Shift	U+0058	X
+es	46		U+0063	c
+es	46	Lock	U+0043	C
+es	46	Lock Mod5	U+00A2	¢
+es	46	Lock Mod5 Shift	U+00A9	©
+es	46	Lock Shift	U+0063	c
+es	46	Mod5	U+00A2	¢
+es	46	Mod5 Shift	U+00A9	©
+es	46	Shift	U+0043	C
+es	47		U+0076	v
+es	47	Lock	U+0056	V
+es	47	Lock Shift	U+0076	v
+es	47	Shift	U+0056	V
+es	48		U+0062	b
+es	48	Lock	U+0042	B
+es	48	Lock Shift	U+0062	b
+es	48	Shift	U+0042	B
+es	49		U+006E	n
+es	49	Lock	U+004E	N
+es	49	Lock Shift	U+006E	n
+es	49	Shift	U+004E	N
+es	50		U+006D	m
+es	50	Lock	U+004D	M
+es	50	Lock Mod5	U+00B5	µ
+es	50	Lock Mod5 Shift	U+00BA	º
+es	50	Lock Shift	U+006D	m
+es	50	Mod5	U+00B5	µ
+es	50	Mod5 Shift	U+00BA	º
+es	50	Shift	U+004D	M
+es	51		U+002C	,
+es	51	Shift	U+003B	;
+es	52		U+002E	.
+es	52	Mod5	U+00B7	·
+es	52	Shift	U+003A	:
+es	53		U+002D	-
+es	53	Mod5	dead	dead_belowdot
+es	53	Mod5 Shift	dead	dead_abovedot
+es	53	Shift	U+005F	_
+es	57		U+0020	 
+es	86		U+003C	<
+es	86	Mod5	U+007C	|
+es	86	Mod5 Shift	U+00A6	¦
+es	86	Shift	U+003E	>
+es	118		U+00B1	±
+es	179		U+0028	(
+es	180		U+0029	)
+es	434		U+0024	$
 es	435		U+20AC	€
-it	57		U+0020	 
-it	2	Shift	U+0021	!
-it	3	Shift	U+0022	"
-it	40	Mod5	U+0023	#
-it	5	Shift	U+0024	$
-it	434		U+0024	$
-it	6	Shift	U+0025	%
-it	7	Shift	U+0026	&
-it	37	Mod5 Shift	U+0026	&
-it	37	Lock Mod5 Shift	U+0026	&
-it	12		U+0027	'
-it	9	Shift	U+0028	(
-it	179		U+0028	(
-it	10	Shift	U+0029	)
-it	180		U+0029	)
-it	27	Shift	U+002A	*
-it	27		U+002B	+
-it	51		U+002C	,
-it	53		U+002D	-
-it	52		U+002E	.
-it	8	Shift	U+002F	/
-it	11		U+0030	0
-it	2		U+0031	1
-it	3		U+0032	2
-it	4		U+0033	3
-it	5		U+0034	4
-it	6		U+0035	5
-it	7		U+0036	6
-it	8		U+0037	7
-it	9		U+0038	8
-it	10		U+0039	9
-it	52	Shift	U+003A	:
-it	51	Shift	U+003B	;
-it	44	Mod5 Shift	U+003C	<
-it	44	Lock Mod5 Shift	U+003C	<
-it	86		U+003C	<
-it	11	Shift	U+003D	=
-it	45	Mod5 Shift	U+003E	>
-it	45	Lock Mod5 Shift	U+003E	>
-it	86	Shift	U+003E	>
-it	12	Shift	U+003F	?
-it	16	Mod5	U+0040	@
-it	16	Lock Mod5	U+0040	@
-it	39	Mod5	U+0040	@
-it	30	Shift	U+0041	A
-it	30	Lock	U+0041	A
-it	48	Shift	U+0042	B
-it	48	Lock	U+0042	B
-it	46	Shift	U+0043	C
-it	46	Lock	U+0043	C
-it	32	Shift	U+0044	D
-it	32	Lock	U+0044	D
-it	18	Shift	U+0045	E
-it	18	Lock	U+0045	E
-it	33	Shift	U+0046	F
-it	33	Lock	U+0046	F
-it	34	Shift	U+0047	G
-it	34	Lock	U+0047	G
-it	35	Shift	U+0048	H
-it	35	Lock	U+0048	H
-it	23	Shift	U+0049	I
-it	23	Lock	U+0049	I
-it	36	Shift	U+004A	J
-it	36	Lock	U+004A	J
-it	37	Shift	U+004B	K
-it	37	Lock	U+004B	K
-it	38	Shift	U+004C	L
-it	38	Lock	U+004C	L
-it	50	Shift	U+004D	M
-it	50	Lock	U+004D	M
-it	49	Shift	U+004E	N
-it	49	Lock	U+004E	N
-it	24	Shift	U+004F	O
-it	24	Lock	U+004F	O
-it	25	Shift	U+0050	P
-it	25	Lock	U+0050	P
-it	16	Shift	U+0051	Q
-it	16	Lock	U+0051	Q
-it	19	Shift	U+0052	R
-it	19	Lock	U+0052	R
-it	31	Shift	U+0053	S
-it	31	Lock	U+0053	S
-it	20	Shift	U+0054	T
-it	20	Lock	U+0054	T
-it	22	Shift	U+0055	U
-it	22	Lock	U+0055	U
-it	47	Shift	U+0056	V
-it	47	Lock	U+0056	V
-it	17	Shift	U+0057	W
-it	17	Lock	U+0057	W
-it	45	Shift	U+0058	X
-it	45	Lock	U+0058	X
-it	21	Shift	U+0059	Y
-it	21	Lock	U+0059	Y
-it	44	Shift	U+005A	Z
-it	44	Lock	U+005A	Z
-it	9	Mod5	U+005B	[
-it	26	Mod5	U+005B	[
-it	41		U+005C	\
-it	10	Mod5	U+005D	]
-it	27	Mod5	U+005D	]
-it	13	Shift	U+005E	^
-it	53	Shift	U+005F	_
-it	12	Mod5	U+0060	`
-it	30		U+0061	a
-it	30	Lock Shift	U+0061	a
-it	48		U+0062	b
-it	48	Lock Shift	U+0062	b
-it	46		U+0063	c
-it	46	Lock Shift	U+0063	c
-it	32		U+0064	d
-it	32	Lock Shift	U+0064	d
-it	18		U+0065	e
-it	18	Lock Shift	U+0065	e
-it	33		U+0066	f
-it	33	Lock Shift	U+0066	f
-it	34		U+0067	g
-it	34	Lock Shift	U+0067	g
-it	35		U+0068	h
-it	35	Lock Shift	U+0068	h
-it	23		U+0069	i
-it	23	Lock Shift	U+0069	i
-it	36		U+006A	j
-it	36	Lock Shift	U+006A	j
-it	37		U+006B	k
-it	37	Lock Shift	U+006B	k
-it	38		U+006C	l
-it	38	Lock Shift	U+006C	l
-it	50		U+006D	m
-it	50	Lock Shift	U+006D	m
-it	49		U+006E	n
-it	49	Lock Shift	U+006E	n
-it	24		U+006F	o
-it	24	Lock Shift	U+006F	o
-it	25		U+0070	p
-it	25	Lock Shift	U+0070	p
-it	16		U+0071	q
-it	16	Lock Shift	U+0071	q
-it	19		U+0072	r
-it	19	Lock Shift	U+0072	r
-it	31		U+0073	s
-it	31	Lock Shift	U+0073	s
-it	20		U+0074	t
-it	20	Lock Shift	U+0074	t
-it	22		U+0075	u
-it	22	Lock Shift	U+0075	u
-it	47		U+0076	v
-it	47	Lock Shift	U+0076	v
-it	17		U+0077	w
-it	17	Lock Shift	U+0077	w
-it	45		U+0078	x
-it	45	Lock Shift	U+0078	x
-it	21		U+0079	y
-it	21	Lock Shift	U+0079	y
-it	44		U+007A	z
-it	44	Lock Shift	U+007A	z
-it	8	Mod5	U+007B	{
-it	26	Mod5 Shift	U+007B	{
-it	41	Shift	U+007C	|
-it	11	Mod5	U+007D	}
-it	27	Mod5 Shift	U+007D	}
-it	13	Mod5	U+007E	~
-it	2	Mod5 Shift	U+00A1	¡
-it	18	Mod5 Shift	U+00A2	¢
-it	18	Lock Mod5 Shift	U+00A2	¢
-it	46	Mod5	U+00A2	¢
-it	46	Lock Mod5	U+00A2	¢
-it	4	Shift	U+00A3	£
-it	21	Mod5 Shift	U+00A5	¥
-it	21	Lock Mod5 Shift	U+00A5	¥
-it	41	Mod5 Shift	U+00A6	¦
-it	17	Mod5 Shift	U+00A7	§
-it	17	Lock Mod5 Shift	U+00A7	§
-it	43	Shift	U+00A7	§
-it	46	Mod5 Shift	U+00A9	©
-it	46	Lock Mod5 Shift	U+00A9	©
-it	33	Mod5 Shift	U+00AA	ª
-it	33	Lock Mod5 Shift	U+00AA	ª
-it	44	Mod5	U+00AB	«
-it	44	Lock Mod5	U+00AB	«
-it	86	Mod5	U+00AB	«
-it	7	Mod5	U+00AC	¬
-it	41	Mod5	U+00AC	¬
-it	19	Mod5 Shift	U+00AE	®
-it	19	Lock Mod5 Shift	U+00AE	®
-it	40	Shift	U+00B0	°
-it	10	Mod5 Shift	U+00B1	±
-it	118		U+00B1	±
-it	3	Mod5	U+00B2	²
-it	4	Mod5	U+00B3	³
-it	50	Mod5	U+00B5	µ
-it	50	Lock Mod5	U+00B5	µ
-it	19	Mod5	U+00B6	¶
-it	19	Lock Mod5	U+00B6	¶
-it	52	Mod5	U+00B7	·
-it	2	Mod5	U+00B9	¹
-it	50	Mod5 Shift	U+00BA	º
-it	50	Lock Mod5 Shift	U+00BA	º
-it	45	Mod5	U+00BB	»
-it	45	Lock Mod5	U+00BB	»
-it	86	Mod5 Shift	U+00BB	»
-it	5	Mod5	U+00BC	¼
-it	6	Mod5	U+00BD	½
-it	12	Mod5 Shift	U+00BF	¿
-it	30	Mod5 Shift	U+00C6	Æ
-it	30	Lock Mod5	U+00C6	Æ
-it	32	Mod5 Shift	U+00D0	Ð
-it	32	Lock Mod5	U+00D0	Ð
-it	49	Mod5 Shift	U+00D1	Ñ
-it	49	Lock Mod5	U+00D1	Ñ
-it	24	Mod5 Shift	U+00D8	Ø
-it	24	Lock Mod5	U+00D8	Ø
-it	25	Mod5 Shift	U+00DE	Þ
-it	25	Lock Mod5	U+00DE	Þ
-it	31	Mod5	U+00DF	ß
-it	31	Lock Mod5 Shift	U+00DF	ß
-it	40		U+00E0	à
-it	30	Mod5	U+00E6	æ
-it	30	Lock Mod5 Shift	U+00E6	æ
-it	39	Shift	U+00E7	ç
-it	26		U+00E8	è
-it	26	Shift	U+00E9	é
-it	13		U+00EC	ì
-it	32	Mod5	U+00F0	ð
-it	32	Lock Mod5 Shift	U+00F0	ð
-it	49	Mod5	U+00F1	ñ
-it	49	Lock Mod5 Shift	U+00F1	ñ
-it	39		U+00F2	ò
-it	24	Mod5	U+00F8	ø
-it	24	Lock Mod5 Shift	U+00F8	ø
-it	43		U+00F9	ù
-it	25	Mod5	U+00FE	þ
-it	25	Lock Mod5 Shift	U+00FE	þ
-it	17	Mod5	U+017F	ſ
-it	17	Lock Mod5	U+017F	ſ
-it	18	Mod5	U+20AC	€
-it	18	Lock Mod5	U+20AC	€
-it	435		U+20AC	€
-nl	57		U+0020	 
-nl	2	Shift	U+0021	!
-nl	3	Shift	U+0022	"
-nl	4	Shift	U+0023	#
-nl	5	Shift	U+0024	$
-nl	5	Mod5 Shift	U+0024	$
-nl	434		U+0024	$
-nl	6	Shift	U+0025	%
-nl	7	Shift	U+0026	&
-nl	37	Mod5 Shift	U+0026	&
-nl	37	Lock Mod5 Shift	U+0026	&
-nl	11	Shift	U+0027	'
-nl	40	Mod5	U+0027	'
-nl	9	Shift	U+0028	(
-nl	179		U+0028	(
-nl	10	Shift	U+0029	)
-nl	180		U+0029	)
-nl	27		U+002A	*
-nl	39		U+002B	+
-nl	51		U+002C	,
-nl	53		U+002D	-
-nl	52		U+002E	.
-nl	12		U+002F	/
-nl	11		U+0030	0
-nl	2		U+0031	1
-nl	3		U+0032	2
-nl	4		U+0033	3
-nl	5		U+0034	4
-nl	6		U+0035	5
-nl	7		U+0036	6
-nl	8		U+0037	7
-nl	9		U+0038	8
-nl	10		U+0039	9
-nl	52	Shift	U+003A	:
-nl	51	Shift	U+003B	;
-nl	43		U+003C	<
-nl	44	Mod5 Shift	U+003C	<
-nl	44	Lock Mod5 Shift	U+003C	<
-nl	53	Shift	U+003D	=
-nl	43	Shift	U+003E	>
-nl	45	Mod5 Shift	U+003E	>
-nl	45	Lock Mod5 Shift	U+003E	>
-nl	12	Shift	U+003F	?
-nl	16	Mod5	U+0040	@
-nl	16	Lock Mod5	U+0040	@
-nl	41		U+0040	@
-nl	30	Shift	U+0041	A
-nl	30	Lock	U+0041	A
-nl	48	Shift	U+0042	B
-nl	48	Lock	U+0042	B
-nl	46	Shift	U+0043	C
-nl	46	Lock	U+0043	C
-nl	32	Shift	U+0044	D
-nl	32	Lock	U+0044	D
-nl	18	Shift	U+0045	E
-nl	18	Lock	U+0045	E
-nl	33	Shift	U+0046	F
-nl	33	Lock	U+0046	F
-nl	34	Shift	U+0047	G
-nl	34	Lock	U+0047	G
-nl	35	Shift	U+0048	H
-nl	35	Lock	U+0048	H
-nl	23	Shift	U+0049	I
-nl	23	Lock	U+0049	I
-nl	36	Shift	U+004A	J
-nl	36	Lock	U+004A	J
-nl	37	Shift	U+004B	K
-nl	37	Lock	U+004B	K
-nl	38	Shift	U+004C	L
-nl	38	Lock	U+004C	L
-nl	50	Shift	U+004D	M
-nl	50	Lock	U+004D	M
-nl	49	Shift	U+004E	N
-nl	49	Lock	U+004E	N
-nl	24	Shift	U+004F	O
-nl	24	Lock	U+004F	O
-nl	25	Shift	U+0050	P
-nl	25	Lock	U+0050	P
-nl	16	Shift	U+0051	Q
-nl	16	Lock	U+0051	Q
-nl	19	Shift	U+0052	R
-nl	19	Lock	U+0052	R
-nl	31	Shift	U+0053	S
-nl	31	Lock	U+0053	S
-nl	20	Shift	U+0054	T
-nl	20	Lock	U+0054	T
-nl	22	Shift	U+0055	U
-nl	22	Lock	U+0055	U
-nl	47	Shift	U+0056	V
-nl	47	Lock	U+0056	V
-nl	17	Shift	U+0057	W
-nl	17	Lock	U+0057	W
-nl	45	Shift	U+0058	X
-nl	45	Lock	U+0058	X
-nl	21	Shift	U+0059	Y
-nl	21	Lock	U+0059	Y
-nl	44	Shift	U+005A	Z
-nl	44	Lock	U+005A	Z
-nl	9	Mod5 Shift	U+005B	[
-nl	86	Shift	U+005B	[
-nl	12	Mod5	U+005C	\
-nl	10	Mod5 Shift	U+005D	]
-nl	86		U+005D	]
-nl	26	Mod5 Shift	U+005E	^
-nl	8	Shift	U+005F	_
-nl	40	Mod5 Shift	U+0060	`
-nl	30		U+0061	a
-nl	30	Lock Shift	U+0061	a
-nl	48		U+0062	b
-nl	48	Lock Shift	U+0062	b
-nl	46		U+0063	c
-nl	46	Lock Shift	U+0063	c
-nl	32		U+0064	d
-nl	32	Lock Shift	U+0064	d
-nl	18		U+0065	e
-nl	18	Lock Shift	U+0065	e
-nl	33		U+0066	f
-nl	33	Lock Shift	U+0066	f
-nl	34		U+0067	g
-nl	34	Lock Shift	U+0067	g
-nl	35		U+0068	h
-nl	35	Lock Shift	U+0068	h
-nl	23		U+0069	i
-nl	23	Lock Shift	U+0069	i
-nl	36		U+006A	j
-nl	36	Lock Shift	U+006A	j
-nl	37		U+006B	k
-nl	37	Lock Shift	U+006B	k
-nl	38		U+006C	l
-nl	38	Lock Shift	U+006C	l
-nl	50		U+006D	m
-nl	50	Lock Shift	U+006D	m
-nl	49		U+006E	n
-nl	49	Lock Shift	U+006E	n
-nl	24		U+006F	o
-nl	24	Lock Shift	U+006F	o
-nl	25		U+0070	p
-nl	25	Lock Shift	U+0070	p
-nl	16		U+0071	q
-nl	16	Lock Shift	U+0071	q
-nl	19		U+0072	r
-nl	19	Lock Shift	U+0072	r
-nl	31		U+0073	s
-nl	31	Lock Shift	U+0073	s
-nl	20		U+0074	t
-nl	20	Lock Shift	U+0074	t
-nl	22		U+0075	u
-nl	22	Lock Shift	U+0075	u
-nl	47		U+0076	v
-nl	47	Lock Shift	U+0076	v
-nl	17		U+0077	w
-nl	17	Lock Shift	U+0077	w
-nl	45		U+0078	x
-nl	45	Lock Shift	U+0078	x
-nl	21		U+0079	y
-nl	21	Lock Shift	U+0079	y
-nl	44		U+007A	z
-nl	44	Lock Shift	U+007A	z
-nl	9	Mod5	U+007B	{
-nl	27	Shift	U+007C	|
-nl	86	Mod5	U+007C	|
-nl	10	Mod5	U+007D	}
-nl	26	Mod5	U+007E	~
-nl	2	Mod5 Shift	U+00A1	¡
-nl	18	Mod5 Shift	U+00A2	¢
-nl	18	Lock Mod5 Shift	U+00A2	¢
-nl	46	Mod5	U+00A2	¢
-nl	46	Lock Mod5	U+00A2	¢
-nl	4	Mod5 Shift	U+00A3	£
-nl	8	Mod5	U+00A3	£
-nl	21	Mod5 Shift	U+00A5	¥
-nl	21	Lock Mod5 Shift	U+00A5	¥
-nl	86	Mod5 Shift	U+00A6	¦
-nl	17	Mod5 Shift	U+00A7	§
-nl	17	Lock Mod5 Shift	U+00A7	§
-nl	41	Shift	U+00A7	§
-nl	46	Mod5 Shift	U+00A9	©
-nl	46	Lock Mod5 Shift	U+00A9	©
-nl	33	Mod5	U+00AA	ª
-nl	33	Lock Mod5	U+00AA	ª
-nl	33	Mod5 Shift	U+00AA	ª
-nl	33	Lock Mod5 Shift	U+00AA	ª
-nl	44	Mod5	U+00AB	«
-nl	44	Lock Mod5	U+00AB	«
-nl	51	Mod5 Shift	U+00AB	«
-nl	41	Mod5	U+00AC	¬
-nl	41	Mod5 Shift	U+00AC	¬
-nl	53	Mod5	U+00AD	­
-nl	19	Mod5 Shift	U+00AE	®
-nl	19	Lock Mod5 Shift	U+00AE	®
-nl	11	Mod5	U+00B0	°
-nl	13		U+00B0	°
-nl	39	Shift	U+00B1	±
-nl	118		U+00B1	±
-nl	3	Mod5	U+00B2	²
-nl	4	Mod5	U+00B3	³
-nl	19	Mod5	U+00B6	¶
-nl	19	Lock Mod5	U+00B6	¶
-nl	25	Mod5	U+00B6	¶
-nl	25	Lock Mod5	U+00B6	¶
-nl	52	Mod5	U+00B7	·
-nl	51	Mod5	U+00B8	¸
-nl	2	Mod5	U+00B9	¹
-nl	50	Mod5 Shift	U+00BA	º
-nl	50	Lock Mod5 Shift	U+00BA	º
-nl	45	Mod5	U+00BB	»
-nl	45	Lock Mod5	U+00BB	»
-nl	52	Mod5 Shift	U+00BB	»
-nl	5	Mod5	U+00BC	¼
-nl	6	Mod5	U+00BD	½
-nl	7	Mod5	U+00BE	¾
-nl	12	Mod5 Shift	U+00BF	¿
-nl	30	Mod5 Shift	U+00C1	Á
-nl	30	Lock Mod5	U+00C1	Á
-nl	23	Mod5 Shift	U+00CF	Ï
-nl	23	Lock Mod5	U+00CF	Ï
-nl	32	Mod5 Shift	U+00D0	Ð
-nl	32	Lock Mod5	U+00D0	Ð
-nl	49	Mod5 Shift	U+00D1	Ñ
-nl	49	Lock Mod5	U+00D1	Ñ
-nl	24	Mod5 Shift	U+00D2	Ò
-nl	24	Lock Mod5	U+00D2	Ò
-nl	22	Mod5 Shift	U+00DC	Ü
-nl	22	Lock Mod5	U+00DC	Ü
-nl	20	Mod5 Shift	U+00DE	Þ
-nl	20	Lock Mod5	U+00DE	Þ
-nl	25	Mod5 Shift	U+00DE	Þ
-nl	25	Lock Mod5 Shift	U+00DE	Þ
-nl	31	Mod5	U+00DF	ß
-nl	31	Lock Mod5 Shift	U+00DF	ß
-nl	30	Mod5	U+00E1	á
-nl	30	Lock Mod5 Shift	U+00E1	á
-nl	23	Mod5	U+00EF	ï
-nl	23	Lock Mod5 Shift	U+00EF	ï
-nl	32	Mod5	U+00F0	ð
-nl	32	Lock Mod5 Shift	U+00F0	ð
-nl	49	Mod5	U+00F1	ñ
-nl	49	Lock Mod5 Shift	U+00F1	ñ
-nl	24	Mod5	U+00F2	ò
-nl	24	Lock Mod5 Shift	U+00F2	ò
-nl	22	Mod5	U+00FC	ü
-nl	22	Lock Mod5 Shift	U+00FC	ü
-nl	20	Mod5	U+00FE	þ
-nl	20	Lock Mod5 Shift	U+00FE	þ
-nl	21	Mod5	U+00FF	ÿ
-nl	21	Lock Mod5	U+00FF	ÿ
-nl	17	Mod5	U+017F	ſ
-nl	17	Lock Mod5	U+017F	ſ
-nl	18	Mod5	U+20AC	€
-nl	18	Lock Mod5	U+20AC	€
-nl	435		U+20AC	€
-gb	57		U+0020	 
-gb	2	Shift	U+0021	!
-gb	3	Shift	U+0022	"
-gb	43		U+0023	#
-gb	5	Shift	U+0024	$
-gb	434		U+0024	$
-gb	6	Shift	U+0025	%
-gb	8	Shift	U+0026	&
-gb	37	Mod5 Shift	U+0026	&
-gb	37	Lock Mod5 Shift	U+0026	&
-gb	40		U+0027	'
-gb	10	Shift	U+0028	(
-gb	179		U+0028	(
-gb	11	Shift	U+0029	)
-gb	180		U+0029	)
-gb	9	Shift	U+002A	*
-gb	13	Shift	U+002B	+
-gb	51		U+002C	,
-gb	12		U+002D	-
-gb	52		U+002E	.
-gb	53		U+002F	/
-gb	11		U+0030	0
+fr	2		U+0026	&
+fr	2	Mod5	U+00B9	¹
+fr	2	Mod5 Shift	U+00A1	¡
+fr	2	Shift	U+0031	1
+fr	3		U+00E9	é
+fr	3	Mod5	U+007E	~
+fr	3	Shift	U+0032	2
+fr	4		U+0022	"
+fr	4	Mod5	U+0023	#
+fr	4	Mod5 Shift	U+00A3	£
+fr	4	Shift	U+0033	3
+fr	5		U+0027	'
+fr	5	Mod5	U+007B	{
+fr	5	Mod5 Shift	U+0024	$
+fr	5	Shift	U+0034	4
+fr	6		U+0028	(
+fr	6	Mod5	U+005B	[
+fr	6	Shift	U+0035	5
+fr	7		U+002D	-
+fr	7	Mod5	U+007C	|
+fr	7	Shift	U+0036	6
+fr	8		U+00E8	è
+fr	8	Mod5	U+0060	`
+fr	8	Shift	U+0037	7
+fr	9		U+005F	_
+fr	9	Mod5	U+005C	\
+fr	9	Shift	U+0038	8
+fr	10		U+00E7	ç
+fr	10	Mod5	U+005E	^
+fr	10	Mod5 Shift	U+00B1	±
+fr	10	Shift	U+0039	9
+fr	11		U+00E0	à
+fr	11	Mod5	U+0040	@
+fr	11	Mod5 Shift	U+00B0	°
+fr	11	Shift	U+0030	0
+fr	12		U+0029	)
+fr	12	Mod5	U+005D	]
+fr	12	Mod5 Shift	U+00BF	¿
+fr	12	Shift	U+00B0	°
+fr	13		U+003D	=
+fr	13	Mod5	U+007D	}
+fr	13	Mod5 Shift	dead	dead_ogonek
+fr	13	Shift	U+002B	+
+fr	16		U+0061	a
+fr	16	Lock	U+0041	A
+fr	16	Lock Mod5	U+00C6	Æ
+fr	16	Lock Mod5 Shift	U+00E6	æ
+fr	16	Lock Shift	U+0061	a
+fr	16	Mod5	U+00E6	æ
+fr	16	Mod5 Shift	U+00C6	Æ
+fr	16	Shift	U+0041	A
+fr	17		U+007A	z
+fr	17	Lock	U+005A	Z
+fr	17	Lock Mod5	U+00AB	«
+fr	17	Lock Mod5 Shift	U+003C	<
+fr	17	Lock Shift	U+007A	z
+fr	17	Mod5	U+00AB	«
+fr	17	Mod5 Shift	U+003C	<
+fr	17	Shift	U+005A	Z
+fr	18		U+0065	e
+fr	18	Lock	U+0045	E
+fr	18	Lock Mod5	U+20AC	€
+fr	18	Lock Mod5 Shift	U+00A2	¢
+fr	18	Lock Shift	U+0065	e
+fr	18	Mod5	U+20AC	€
+fr	18	Mod5 Shift	U+00A2	¢
+fr	18	Shift	U+0045	E
+fr	19		U+0072	r
+fr	19	Lock	U+0052	R
+fr	19	Lock Mod5	U+00B6	¶
+fr	19	Lock Mod5 Shift	U+00AE	®
+fr	19	Lock Shift	U+0072	r
+fr	19	Mod5	U+00B6	¶
+fr	19	Mod5 Shift	U+00AE	®
+fr	19	Shift	U+0052	R
+fr	20		U+0074	t
+fr	20	Lock	U+0054	T
+fr	20	Lock Shift	U+0074	t
+fr	20	Shift	U+0054	T
+fr	21		U+0079	y
+fr	21	Lock	U+0059	Y
+fr	21	Lock Mod5 Shift	U+00A5	¥
+fr	21	Lock Shift	U+0079	y
+fr	21	Mod5 Shift	U+00A5	¥
+fr	21	Shift	U+0059	Y
+fr	22		U+0075	u
+fr	22	Lock	U+0055	U
+fr	22	Lock Shift	U+0075	u
+fr	22	Shift	U+0055	U
+fr	23		U+0069	i
+fr	23	Lock	U+0049	I
+fr	23	Lock Shift	U+0069	i
+fr	23	Shift	U+0049	I
+fr	24		U+006F	o
+fr	24	Lock	U+004F	O
+fr	24	Lock Mod5	U+00D8	Ø
+fr	24	Lock Mod5 Shift	U+00F8	ø
+fr	24	Lock Shift	U+006F	o
+fr	24	Mod5	U+00F8	ø
+fr	24	Mod5 Shift	U+00D8	Ø
+fr	24	Shift	U+004F	O
+fr	25		U+0070	p
+fr	25	Lock	U+0050	P
+fr	25	Lock Mod5	U+00DE	Þ
+fr	25	Lock Mod5 Shift	U+00FE	þ
+fr	25	Lock Shift	U+0070	p
+fr	25	Mod5	U+00FE	þ
+fr	25	Mod5 Shift	U+00DE	Þ
+fr	25	Shift	U+0050	P
+fr	26		dead	dead_circumflex
+fr	26	Mod5	dead	dead_diaeresis
+fr	26	Mod5 Shift	dead	dead_abovering
+fr	26	Shift	dead	dead_diaeresis
+fr	27		U+0024	$
+fr	27	Mod5	U+00A4	¤
+fr	27	Mod5 Shift	dead	dead_macron
+fr	27	Shift	U+00A3	£
+fr	30		U+0071	q
+fr	30	Lock	U+0051	Q
+fr	30	Lock Mod5	U+0040	@
+fr	30	Lock Shift	U+0071	q
+fr	30	Mod5	U+0040	@
+fr	30	Shift	U+0051	Q
+fr	31		U+0073	s
+fr	31	Lock	U+0053	S
+fr	31	Lock Mod5 Shift	U+00DF	ß
+fr	31	Lock Shift	U+0073	s
+fr	31	Mod5	U+00DF	ß
+fr	31	Shift	U+0053	S
+fr	32		U+0064	d
+fr	32	Lock	U+0044	D
+fr	32	Lock Mod5	U+00D0	Ð
+fr	32	Lock Mod5 Shift	U+00F0	ð
+fr	32	Lock Shift	U+0064	d
+fr	32	Mod5	U+00F0	ð
+fr	32	Mod5 Shift	U+00D0	Ð
+fr	32	Shift	U+0044	D
+fr	33		U+0066	f
+fr	33	Lock	U+0046	F
+fr	33	Lock Mod5 Shift	U+00AA	ª
+fr	33	Lock Shift	U+0066	f
+fr	33	Mod5 Shift	U+00AA	ª
+fr	33	Shift	U+0046	F
+fr	34		U+0067	g
+fr	34	Lock	U+0047	G
+fr	34	Lock Shift	U+0067	g
+fr	34	Shift	U+0047	G
+fr	35		U+0068	h
+fr	35	Lock	U+0048	H
+fr	35	Lock Shift	U+0068	h
+fr	35	Shift	U+0048	H
+fr	36		U+006A	j
+fr	36	Lock	U+004A	J
+fr	36	Lock Mod5	dead	dead_hook
+fr	36	Lock Mod5 Shift	dead	dead_horn
+fr	36	Lock Shift	U+006A	j
+fr	36	Mod5	dead	dead_hook
+fr	36	Mod5 Shift	dead	dead_horn
+fr	36	Shift	U+004A	J
+fr	37		U+006B	k
+fr	37	Lock	U+004B	K
+fr	37	Lock Mod5 Shift	U+0026	&
+fr	37	Lock Shift	U+006B	k
+fr	37	Mod5 Shift	U+0026	&
+fr	37	Shift	U+004B	K
+fr	38		U+006C	l
+fr	38	Lock	U+004C	L
+fr	38	Lock Shift	U+006C	l
+fr	38	Shift	U+004C	L
+fr	39		U+006D	m
+fr	39	Lock	U+004D	M
+fr	39	Lock Mod5	U+00B5	µ
+fr	39	Lock Mod5 Shift	U+00BA	º
+fr	39	Lock Shift	U+006D	m
+fr	39	Mod5	U+00B5	µ
+fr	39	Mod5 Shift	U+00BA	º
+fr	39	Shift	U+004D	M
+fr	40		U+00F9	ù
+fr	40	Mod5	dead	dead_circumflex
+fr	40	Mod5 Shift	dead	dead_caron
+fr	40	Shift	U+0025	%
+fr	41		U+00B2	²
+fr	41	Mod5	U+00AC	¬
+fr	41	Mod5 Shift	U+00AC	¬
+fr	41	Shift	U+007E	~
+fr	43		U+002A	*
+fr	43	Mod5	dead	dead_grave
+fr	43	Mod5 Shift	dead	dead_breve
+fr	43	Shift	U+00B5	µ
+fr	44		U+0077	w
+fr	44	Lock	U+0057	W
+fr	44	Lock Shift	U+0077	w
+fr	44	Shift	U+0057	W
+fr	45		U+0078	x
+fr	45	Lock	U+0058	X
+fr	45	Lock Mod5	U+00BB	»
+fr	45	Lock Mod5 Shift	U+003E	>
+fr	45	Lock Shift	U+0078	x
+fr	45	Mod5	U+00BB	»
+fr	45	Mod5 Shift	U+003E	>
+fr	45	Shift	U+0058	X
+fr	46		U+0063	c
+fr	46	Lock	U+0043	C
+fr	46	Lock Mod5	U+00A2	¢
+fr	46	Lock Mod5 Shift	U+00A9	©
+fr	46	Lock Shift	U+0063	c
+fr	46	Mod5	U+00A2	¢
+fr	46	Mod5 Shift	U+00A9	©
+fr	46	Shift	U+0043	C
+fr	47		U+0076	v
+fr	47	Lock	U+0056	V
+fr	47	Lock Shift	U+0076	v
+fr	47	Shift	U+0056	V
+fr	48		U+0062	b
+fr	48	Lock	U+0042	B
+fr	48	Lock Shift	U+0062	b
+fr	48	Shift	U+0042	B
+fr	49		U+006E	n
+fr	49	Lock	U+004E	N
+fr	49	Lock Shift	U+006E	n
+fr	49	Shift	U+004E	N
+fr	50		U+002C	,
+fr	50	Mod5	dead	dead_acute
+fr	50	Mod5 Shift	dead	dead_doubleacute
+fr	50	Shift	U+003F	?
+fr	51		U+003B	;
+fr	51	Shift	U+002E	.
+fr	52		U+003A	:
+fr	52	Mod5	U+00B7	·
+fr	52	Shift	U+002F	/
+fr	53		U+0021	!
+fr	53	Mod5	dead	dead_belowdot
+fr	53	Mod5 Shift	dead	dead_abovedot
+fr	53	Shift	U+00A7	§
+fr	57		U+0020	 
+fr	86		U+003C	<
+fr	86	Mod5	U+007C	|
+fr	86	Mod5 Shift	U+00A6	¦
+fr	86	Shift	U+003E	>
+fr	118		U+00B1	±
+fr	179		U+0028	(
+fr	180		U+0029	)
+fr	434		U+0024	$
+fr	435		U+20AC	€
 gb	2		U+0031	1
+gb	2	Mod5	U+00B9	¹
+gb	2	Mod5 Shift	U+00A1	¡
+gb	2	Shift	U+0021	!
 gb	3		U+0032	2
+gb	3	Mod5	U+00B2	²
+gb	3	Shift	U+0022	"
 gb	4		U+0033	3
+gb	4	Mod5	U+00B3	³
+gb	4	Mod5 Shift	U+00A3	£
+gb	4	Shift	U+00A3	£
 gb	5		U+0034	4
+gb	5	Mod5	U+20AC	€
+gb	5	Mod5 Shift	U+00BC	¼
+gb	5	Shift	U+0024	$
 gb	6		U+0035	5
+gb	6	Mod5	U+00BD	½
+gb	6	Shift	U+0025	%
 gb	7		U+0036	6
-gb	8		U+0037	7
-gb	9		U+0038	8
-gb	10		U+0039	9
-gb	39	Shift	U+003A	:
-gb	39		U+003B	;
-gb	44	Mod5 Shift	U+003C	<
-gb	44	Lock Mod5 Shift	U+003C	<
-gb	51	Shift	U+003C	<
-gb	13		U+003D	=
-gb	45	Mod5 Shift	U+003E	>
-gb	45	Lock Mod5 Shift	U+003E	>
-gb	52	Shift	U+003E	>
-gb	53	Shift	U+003F	?
-gb	16	Mod5	U+0040	@
-gb	16	Lock Mod5	U+0040	@
-gb	40	Shift	U+0040	@
-gb	30	Shift	U+0041	A
-gb	30	Lock	U+0041	A
-gb	48	Shift	U+0042	B
-gb	48	Lock	U+0042	B
-gb	46	Shift	U+0043	C
-gb	46	Lock	U+0043	C
-gb	32	Shift	U+0044	D
-gb	32	Lock	U+0044	D
-gb	18	Shift	U+0045	E
-gb	18	Lock	U+0045	E
-gb	18	Mod5 Shift	U+0045	E
-gb	18	Lock Mod5	U+0045	E
-gb	33	Shift	U+0046	F
-gb	33	Lock	U+0046	F
-gb	34	Shift	U+0047	G
-gb	34	Lock	U+0047	G
-gb	35	Shift	U+0048	H
-gb	35	Lock	U+0048	H
-gb	23	Shift	U+0049	I
-gb	23	Lock	U+0049	I
-gb	36	Shift	U+004A	J
-gb	36	Lock	U+004A	J
-gb	37	Shift	U+004B	K
-gb	37	Lock	U+004B	K
-gb	38	Shift	U+004C	L
-gb	38	Lock	U+004C	L
-gb	50	Shift	U+004D	M
-gb	50	Lock	U+004D	M
-gb	49	Shift	U+004E	N
-gb	49	Lock	U+004E	N
-gb	24	Shift	U+004F	O
-gb	24	Lock	U+004F	O
-gb	25	Shift	U+0050	P
-gb	25	Lock	U+0050	P
-gb	16	Shift	U+0051	Q
-gb	16	Lock	U+0051	Q
-gb	19	Shift	U+0052	R
-gb	19	Lock	U+0052	R
-gb	31	Shift	U+0053	S
-gb	31	Lock	U+0053	S
-gb	20	Shift	U+0054	T
-gb	20	Lock	U+0054	T
-gb	22	Shift	U+0055	U
-gb	22	Lock	U+0055	U
-gb	47	Shift	U+0056	V
-gb	47	Lock	U+0056	V
-gb	17	Shift	U+0057	W
-gb	17	Lock	U+0057	W
-gb	45	Shift	U+0058	X
-gb	45	Lock	U+0058	X
-gb	21	Shift	U+0059	Y
-gb	21	Lock	U+0059	Y
-gb	44	Shift	U+005A	Z
-gb	44	Lock	U+005A	Z
-gb	9	Mod5	U+005B	[
-gb	26		U+005B	[
-gb	12	Mod5	U+005C	\
-gb	86		U+005C	\
-gb	10	Mod5	U+005D	]
-gb	27		U+005D	]
+gb	7	Mod5	U+00BE	¾
 gb	7	Shift	U+005E	^
+gb	8		U+0037	7
+gb	8	Mod5	U+007B	{
+gb	8	Shift	U+0026	&
+gb	9		U+0038	8
+gb	9	Mod5	U+005B	[
+gb	9	Shift	U+002A	*
+gb	10		U+0039	9
+gb	10	Mod5	U+005D	]
+gb	10	Mod5 Shift	U+00B1	±
+gb	10	Shift	U+0028	(
+gb	11		U+0030	0
+gb	11	Mod5	U+007D	}
+gb	11	Mod5 Shift	U+00B0	°
+gb	11	Shift	U+0029	)
+gb	12		U+002D	-
+gb	12	Mod5	U+005C	\
+gb	12	Mod5 Shift	U+00BF	¿
 gb	12	Shift	U+005F	_
-gb	41		U+0060	`
-gb	30		U+0061	a
-gb	30	Lock Shift	U+0061	a
-gb	48		U+0062	b
-gb	48	Lock Shift	U+0062	b
-gb	46		U+0063	c
-gb	46	Lock Shift	U+0063	c
-gb	32		U+0064	d
-gb	32	Lock Shift	U+0064	d
+gb	13		U+003D	=
+gb	13	Mod5	dead	dead_cedilla
+gb	13	Mod5 Shift	dead	dead_ogonek
+gb	13	Shift	U+002B	+
+gb	16		U+0071	q
+gb	16	Lock	U+0051	Q
+gb	16	Lock Mod5	U+0040	@
+gb	16	Lock Shift	U+0071	q
+gb	16	Mod5	U+0040	@
+gb	16	Shift	U+0051	Q
+gb	17		U+0077	w
+gb	17	Lock	U+0057	W
+gb	17	Lock Mod5	U+017F	ſ
+gb	17	Lock Mod5 Shift	U+00A7	§
+gb	17	Lock Shift	U+0077	w
+gb	17	Mod5	U+017F	ſ
+gb	17	Mod5 Shift	U+00A7	§
+gb	17	Shift	U+0057	W
 gb	18		U+0065	e
+gb	18	Lock	U+0045	E
+gb	18	Lock Mod5	U+0045	E
+gb	18	Lock Mod5 Shift	U+0065	e
 gb	18	Lock Shift	U+0065	e
 gb	18	Mod5	U+0065	e
-gb	18	Lock Mod5 Shift	U+0065	e
-gb	33		U+0066	f
-gb	33	Lock Shift	U+0066	f
-gb	34		U+0067	g
-gb	34	Lock Shift	U+0067	g
-gb	35		U+0068	h
-gb	35	Lock Shift	U+0068	h
-gb	23		U+0069	i
-gb	23	Lock Shift	U+0069	i
-gb	36		U+006A	j
-gb	36	Lock Shift	U+006A	j
-gb	37		U+006B	k
-gb	37	Lock Shift	U+006B	k
-gb	38		U+006C	l
-gb	38	Lock Shift	U+006C	l
-gb	50		U+006D	m
-gb	50	Lock Shift	U+006D	m
-gb	49		U+006E	n
-gb	49	Lock Shift	U+006E	n
-gb	24		U+006F	o
-gb	24	Lock Shift	U+006F	o
-gb	25		U+0070	p
-gb	25	Lock Shift	U+0070	p
-gb	16		U+0071	q
-gb	16	Lock Shift	U+0071	q
+gb	18	Mod5 Shift	U+0045	E
+gb	18	Shift	U+0045	E
 gb	19		U+0072	r
+gb	19	Lock	U+0052	R
+gb	19	Lock Mod5	U+00B6	¶
+gb	19	Lock Mod5 Shift	U+00AE	®
 gb	19	Lock Shift	U+0072	r
-gb	31		U+0073	s
-gb	31	Lock Shift	U+0073	s
+gb	19	Mod5	U+00B6	¶
+gb	19	Mod5 Shift	U+00AE	®
+gb	19	Shift	U+0052	R
 gb	20		U+0074	t
+gb	20	Lock	U+0054	T
 gb	20	Lock Shift	U+0074	t
-gb	22		U+0075	u
-gb	22	Lock Shift	U+0075	u
-gb	47		U+0076	v
-gb	47	Lock Shift	U+0076	v
-gb	17		U+0077	w
-gb	17	Lock Shift	U+0077	w
-gb	45		U+0078	x
-gb	45	Lock Shift	U+0078	x
+gb	20	Shift	U+0054	T
 gb	21		U+0079	y
+gb	21	Lock	U+0059	Y
+gb	21	Lock Mod5 Shift	U+00A5	¥
 gb	21	Lock Shift	U+0079	y
-gb	44		U+007A	z
-gb	44	Lock Shift	U+007A	z
-gb	8	Mod5	U+007B	{
+gb	21	Mod5 Shift	U+00A5	¥
+gb	21	Shift	U+0059	Y
+gb	22		U+0075	u
+gb	22	Lock	U+0055	U
+gb	22	Lock Shift	U+0075	u
+gb	22	Shift	U+0055	U
+gb	23		U+0069	i
+gb	23	Lock	U+0049	I
+gb	23	Lock Shift	U+0069	i
+gb	23	Shift	U+0049	I
+gb	24		U+006F	o
+gb	24	Lock	U+004F	O
+gb	24	Lock Mod5	U+00D8	Ø
+gb	24	Lock Mod5 Shift	U+00F8	ø
+gb	24	Lock Shift	U+006F	o
+gb	24	Mod5	U+00F8	ø
+gb	24	Mod5 Shift	U+00D8	Ø
+gb	24	Shift	U+004F	O
+gb	25		U+0070	p
+gb	25	Lock	U+0050	P
+gb	25	Lock Mod5	U+00DE	Þ
+gb	25	Lock Mod5 Shift	U+00FE	þ
+gb	25	Lock Shift	U+0070	p
+gb	25	Mod5	U+00FE	þ
+gb	25	Mod5 Shift	U+00DE	Þ
+gb	25	Shift	U+0050	P
+gb	26		U+005B	[
+gb	26	Mod5	dead	dead_diaeresis
+gb	26	Mod5 Shift	dead	dead_abovering
 gb	26	Shift	U+007B	{
+gb	27		U+005D	]
+gb	27	Mod5	dead	dead_tilde
+gb	27	Mod5 Shift	dead	dead_macron
+gb	27	Shift	U+007D	}
+gb	30		U+0061	a
+gb	30	Lock	U+0041	A
+gb	30	Lock Mod5	U+00C6	Æ
+gb	30	Lock Mod5 Shift	U+00E6	æ
+gb	30	Lock Shift	U+0061	a
+gb	30	Mod5	U+00E6	æ
+gb	30	Mod5 Shift	U+00C6	Æ
+gb	30	Shift	U+0041	A
+gb	31		U+0073	s
+gb	31	Lock	U+0053	S
+gb	31	Lock Mod5 Shift	U+00DF	ß
+gb	31	Lock Shift	U+0073	s
+gb	31	Mod5	U+00DF	ß
+gb	31	Shift	U+0053	S
+gb	32		U+0064	d
+gb	32	Lock	U+0044	D
+gb	32	Lock Mod5	U+00D0	Ð
+gb	32	Lock Mod5 Shift	U+00F0	ð
+gb	32	Lock Shift	U+0064	d
+gb	32	Mod5	U+00F0	ð
+gb	32	Mod5 Shift	U+00D0	Ð
+gb	32	Shift	U+0044	D
+gb	33		U+0066	f
+gb	33	Lock	U+0046	F
+gb	33	Lock Mod5 Shift	U+00AA	ª
+gb	33	Lock Shift	U+0066	f
+gb	33	Mod5 Shift	U+00AA	ª
+gb	33	Shift	U+0046	F
+gb	34		U+0067	g
+gb	34	Lock	U+0047	G
+gb	34	Lock Shift	U+0067	g
+gb	34	Shift	U+0047	G
+gb	35		U+0068	h
+gb	35	Lock	U+0048	H
+gb	35	Lock Shift	U+0068	h
+gb	35	Shift	U+0048	H
+gb	36		U+006A	j
+gb	36	Lock	U+004A	J
+gb	36	Lock Mod5	dead	dead_hook
+gb	36	Lock Mod5 Shift	dead	dead_horn
+gb	36	Lock Shift	U+006A	j
+gb	36	Mod5	dead	dead_hook
+gb	36	Mod5 Shift	dead	dead_horn
+gb	36	Shift	U+004A	J
+gb	37		U+006B	k
+gb	37	Lock	U+004B	K
+gb	37	Lock Mod5 Shift	U+0026	&
+gb	37	Lock Shift	U+006B	k
+gb	37	Mod5 Shift	U+0026	&
+gb	37	Shift	U+004B	K
+gb	38		U+006C	l
+gb	38	Lock	U+004C	L
+gb	38	Lock Shift	U+006C	l
+gb	38	Shift	U+004C	L
+gb	39		U+003B	;
+gb	39	Mod5	dead	dead_acute
+gb	39	Mod5 Shift	dead	dead_doubleacute
+gb	39	Shift	U+003A	:
+gb	40		U+0027	'
+gb	40	Mod5	dead	dead_circumflex
+gb	40	Mod5 Shift	dead	dead_caron
+gb	40	Shift	U+0040	@
+gb	41		U+0060	`
 gb	41	Mod5	U+007C	|
 gb	41	Mod5 Shift	U+007C	|
-gb	86	Shift	U+007C	|
-gb	86	Mod5	U+007C	|
-gb	11	Mod5	U+007D	}
-gb	27	Shift	U+007D	}
-gb	43	Shift	U+007E	~
-gb	2	Mod5 Shift	U+00A1	¡
-gb	46	Mod5	U+00A2	¢
-gb	46	Lock Mod5	U+00A2	¢
-gb	4	Shift	U+00A3	£
-gb	4	Mod5 Shift	U+00A3	£
-gb	21	Mod5 Shift	U+00A5	¥
-gb	21	Lock Mod5 Shift	U+00A5	¥
-gb	86	Mod5 Shift	U+00A6	¦
-gb	17	Mod5 Shift	U+00A7	§
-gb	17	Lock Mod5 Shift	U+00A7	§
-gb	46	Mod5 Shift	U+00A9	©
-gb	46	Lock Mod5 Shift	U+00A9	©
-gb	33	Mod5 Shift	U+00AA	ª
-gb	33	Lock Mod5 Shift	U+00AA	ª
-gb	44	Mod5	U+00AB	«
-gb	44	Lock Mod5	U+00AB	«
 gb	41	Shift	U+00AC	¬
-gb	19	Mod5 Shift	U+00AE	®
-gb	19	Lock Mod5 Shift	U+00AE	®
-gb	11	Mod5 Shift	U+00B0	°
-gb	10	Mod5 Shift	U+00B1	±
-gb	118		U+00B1	±
-gb	3	Mod5	U+00B2	²
-gb	4	Mod5	U+00B3	³
-gb	50	Mod5	U+00B5	µ
-gb	50	Lock Mod5	U+00B5	µ
-gb	19	Mod5	U+00B6	¶
-gb	19	Lock Mod5	U+00B6	¶
-gb	52	Mod5	U+00B7	·
-gb	2	Mod5	U+00B9	¹
-gb	50	Mod5 Shift	U+00BA	º
-gb	50	Lock Mod5 Shift	U+00BA	º
-gb	45	Mod5	U+00BB	»
+gb	43		U+0023	#
+gb	43	Mod5	dead	dead_grave
+gb	43	Mod5 Shift	dead	dead_breve
+gb	43	Shift	U+007E	~
+gb	44		U+007A	z
+gb	44	Lock	U+005A	Z
+gb	44	Lock Mod5	U+00AB	«
+gb	44	Lock Mod5 Shift	U+003C	<
+gb	44	Lock Shift	U+007A	z
+gb	44	Mod5	U+00AB	«
+gb	44	Mod5 Shift	U+003C	<
+gb	44	Shift	U+005A	Z
+gb	45		U+0078	x
+gb	45	Lock	U+0058	X
 gb	45	Lock Mod5	U+00BB	»
-gb	5	Mod5 Shift	U+00BC	¼
-gb	6	Mod5	U+00BD	½
-gb	7	Mod5	U+00BE	¾
-gb	12	Mod5 Shift	U+00BF	¿
-gb	30	Mod5 Shift	U+00C6	Æ
-gb	30	Lock Mod5	U+00C6	Æ
-gb	32	Mod5 Shift	U+00D0	Ð
-gb	32	Lock Mod5	U+00D0	Ð
-gb	24	Mod5 Shift	U+00D8	Ø
-gb	24	Lock Mod5	U+00D8	Ø
-gb	25	Mod5 Shift	U+00DE	Þ
-gb	25	Lock Mod5	U+00DE	Þ
-gb	31	Mod5	U+00DF	ß
-gb	31	Lock Mod5 Shift	U+00DF	ß
-gb	30	Mod5	U+00E6	æ
-gb	30	Lock Mod5 Shift	U+00E6	æ
-gb	32	Mod5	U+00F0	ð
-gb	32	Lock Mod5 Shift	U+00F0	ð
-gb	24	Mod5	U+00F8	ø
-gb	24	Lock Mod5 Shift	U+00F8	ø
-gb	25	Mod5	U+00FE	þ
-gb	25	Lock Mod5 Shift	U+00FE	þ
-gb	17	Mod5	U+017F	ſ
-gb	17	Lock Mod5	U+017F	ſ
-gb	5	Mod5	U+20AC	€
+gb	45	Lock Mod5 Shift	U+003E	>
+gb	45	Lock Shift	U+0078	x
+gb	45	Mod5	U+00BB	»
+gb	45	Mod5 Shift	U+003E	>
+gb	45	Shift	U+0058	X
+gb	46		U+0063	c
+gb	46	Lock	U+0043	C
+gb	46	Lock Mod5	U+00A2	¢
+gb	46	Lock Mod5 Shift	U+00A9	©
+gb	46	Lock Shift	U+0063	c
+gb	46	Mod5	U+00A2	¢
+gb	46	Mod5 Shift	U+00A9	©
+gb	46	Shift	U+0043	C
+gb	47		U+0076	v
+gb	47	Lock	U+0056	V
+gb	47	Lock Shift	U+0076	v
+gb	47	Shift	U+0056	V
+gb	48		U+0062	b
+gb	48	Lock	U+0042	B
+gb	48	Lock Shift	U+0062	b
+gb	48	Shift	U+0042	B
+gb	49		U+006E	n
+gb	49	Lock	U+004E	N
+gb	49	Lock Shift	U+006E	n
+gb	49	Shift	U+004E	N
+gb	50		U+006D	m
+gb	50	Lock	U+004D	M
+gb	50	Lock Mod5	U+00B5	µ
+gb	50	Lock Mod5 Shift	U+00BA	º
+gb	50	Lock Shift	U+006D	m
+gb	50	Mod5	U+00B5	µ
+gb	50	Mod5 Shift	U+00BA	º
+gb	50	Shift	U+004D	M
+gb	51		U+002C	,
+gb	51	Shift	U+003C	<
+gb	52		U+002E	.
+gb	52	Mod5	U+00B7	·
+gb	52	Shift	U+003E	>
+gb	53		U+002F	/
+gb	53	Mod5	dead	dead_belowdot
+gb	53	Mod5 Shift	dead	dead_abovedot
+gb	53	Shift	U+003F	?
+gb	57		U+0020	 
+gb	86		U+005C	\
+gb	86	Mod5	U+007C	|
+gb	86	Mod5 Shift	U+00A6	¦
+gb	86	Shift	U+007C	|
+gb	118		U+00B1	±
+gb	179		U+0028	(
+gb	180		U+0029	)
+gb	434		U+0024	$
 gb	435		U+20AC	€
-us	57		U+0020	 
-us	2	Shift	U+0021	!
-us	40	Shift	U+0022	"
-us	4	Shift	U+0023	#
-us	5	Shift	U+0024	$
-us	434		U+0024	$
-us	6	Shift	U+0025	%
-us	8	Shift	U+0026	&
-us	40		U+0027	'
-us	10	Shift	U+0028	(
-us	179		U+0028	(
-us	11	Shift	U+0029	)
-us	180		U+0029	)
-us	9	Shift	U+002A	*
-us	13	Shift	U+002B	+
-us	51		U+002C	,
-us	12		U+002D	-
-us	52		U+002E	.
-us	53		U+002F	/
-us	11		U+0030	0
+it	2		U+0031	1
+it	2	Mod5	U+00B9	¹
+it	2	Mod5 Shift	U+00A1	¡
+it	2	Shift	U+0021	!
+it	3		U+0032	2
+it	3	Mod5	U+00B2	²
+it	3	Mod5 Shift	dead	dead_doubleacute
+it	3	Shift	U+0022	"
+it	4		U+0033	3
+it	4	Mod5	U+00B3	³
+it	4	Mod5 Shift	dead	dead_tilde
+it	4	Shift	U+00A3	£
+it	5		U+0034	4
+it	5	Mod5	U+00BC	¼
+it	5	Shift	U+0024	$
+it	6		U+0035	5
+it	6	Mod5	U+00BD	½
+it	6	Shift	U+0025	%
+it	7		U+0036	6
+it	7	Mod5	U+00AC	¬
+it	7	Shift	U+0026	&
+it	8		U+0037	7
+it	8	Mod5	U+007B	{
+it	8	Shift	U+002F	/
+it	9		U+0038	8
+it	9	Mod5	U+005B	[
+it	9	Shift	U+0028	(
+it	10		U+0039	9
+it	10	Mod5	U+005D	]
+it	10	Mod5 Shift	U+00B1	±
+it	10	Shift	U+0029	)
+it	11		U+0030	0
+it	11	Mod5	U+007D	}
+it	11	Mod5 Shift	dead	dead_ogonek
+it	11	Shift	U+003D	=
+it	12		U+0027	'
+it	12	Mod5	U+0060	`
+it	12	Mod5 Shift	U+00BF	¿
+it	12	Shift	U+003F	?
+it	13		U+00EC	ì
+it	13	Mod5	U+007E	~
+it	13	Mod5 Shift	dead	dead_circumflex
+it	13	Shift	U+005E	^
+it	16		U+0071	q
+it	16	Lock	U+0051	Q
+it	16	Lock Mod5	U+0040	@
+it	16	Lock Shift	U+0071	q
+it	16	Mod5	U+0040	@
+it	16	Shift	U+0051	Q
+it	17		U+0077	w
+it	17	Lock	U+0057	W
+it	17	Lock Mod5	U+017F	ſ
+it	17	Lock Mod5 Shift	U+00A7	§
+it	17	Lock Shift	U+0077	w
+it	17	Mod5	U+017F	ſ
+it	17	Mod5 Shift	U+00A7	§
+it	17	Shift	U+0057	W
+it	18		U+0065	e
+it	18	Lock	U+0045	E
+it	18	Lock Mod5	U+20AC	€
+it	18	Lock Mod5 Shift	U+00A2	¢
+it	18	Lock Shift	U+0065	e
+it	18	Mod5	U+20AC	€
+it	18	Mod5 Shift	U+00A2	¢
+it	18	Shift	U+0045	E
+it	19		U+0072	r
+it	19	Lock	U+0052	R
+it	19	Lock Mod5	U+00B6	¶
+it	19	Lock Mod5 Shift	U+00AE	®
+it	19	Lock Shift	U+0072	r
+it	19	Mod5	U+00B6	¶
+it	19	Mod5 Shift	U+00AE	®
+it	19	Shift	U+0052	R
+it	20		U+0074	t
+it	20	Lock	U+0054	T
+it	20	Lock Shift	U+0074	t
+it	20	Shift	U+0054	T
+it	21		U+0079	y
+it	21	Lock	U+0059	Y
+it	21	Lock Mod5 Shift	U+00A5	¥
+it	21	Lock Shift	U+0079	y
+it	21	Mod5 Shift	U+00A5	¥
+it	21	Shift	U+0059	Y
+it	22		U+0075	u
+it	22	Lock	U+0055	U
+it	22	Lock Shift	U+0075	u
+it	22	Shift	U+0055	U
+it	23		U+0069	i
+it	23	Lock	U+0049	I
+it	23	Lock Shift	U+0069	i
+it	23	Shift	U+0049	I
+it	24		U+006F	o
+it	24	Lock	U+004F	O
+it	24	Lock Mod5	U+00D8	Ø
+it	24	Lock Mod5 Shift	U+00F8	ø
+it	24	Lock Shift	U+006F	o
+it	24	Mod5	U+00F8	ø
+it	24	Mod5 Shift	U+00D8	Ø
+it	24	Shift	U+004F	O
+it	25		U+0070	p
+it	25	Lock	U+0050	P
+it	25	Lock Mod5	U+00DE	Þ
+it	25	Lock Mod5 Shift	U+00FE	þ
+it	25	Lock Shift	U+0070	p
+it	25	Mod5	U+00FE	þ
+it	25	Mod5 Shift	U+00DE	Þ
+it	25	Shift	U+0050	P
+it	26		U+00E8	è
+it	26	Mod5	U+005B	[
+it	26	Mod5 Shift	U+007B	{
+it	26	Shift	U+00E9	é
+it	27		U+002B	+
+it	27	Mod5	U+005D	]
+it	27	Mod5 Shift	U+007D	}
+it	27	Shift	U+002A	*
+it	30		U+0061	a
+it	30	Lock	U+0041	A
+it	30	Lock Mod5	U+00C6	Æ
+it	30	Lock Mod5 Shift	U+00E6	æ
+it	30	Lock Shift	U+0061	a
+it	30	Mod5	U+00E6	æ
+it	30	Mod5 Shift	U+00C6	Æ
+it	30	Shift	U+0041	A
+it	31		U+0073	s
+it	31	Lock	U+0053	S
+it	31	Lock Mod5 Shift	U+00DF	ß
+it	31	Lock Shift	U+0073	s
+it	31	Mod5	U+00DF	ß
+it	31	Shift	U+0053	S
+it	32		U+0064	d
+it	32	Lock	U+0044	D
+it	32	Lock Mod5	U+00D0	Ð
+it	32	Lock Mod5 Shift	U+00F0	ð
+it	32	Lock Shift	U+0064	d
+it	32	Mod5	U+00F0	ð
+it	32	Mod5 Shift	U+00D0	Ð
+it	32	Shift	U+0044	D
+it	33		U+0066	f
+it	33	Lock	U+0046	F
+it	33	Lock Mod5 Shift	U+00AA	ª
+it	33	Lock Shift	U+0066	f
+it	33	Mod5 Shift	U+00AA	ª
+it	33	Shift	U+0046	F
+it	34		U+0067	g
+it	34	Lock	U+0047	G
+it	34	Lock Shift	U+0067	g
+it	34	Shift	U+0047	G
+it	35		U+0068	h
+it	35	Lock	U+0048	H
+it	35	Lock Shift	U+0068	h
+it	35	Shift	U+0048	H
+it	36		U+006A	j
+it	36	Lock	U+004A	J
+it	36	Lock Mod5	dead	dead_hook
+it	36	Lock Mod5 Shift	dead	dead_horn
+it	36	Lock Shift	U+006A	j
+it	36	Mod5	dead	dead_hook
+it	36	Mod5 Shift	dead	dead_horn
+it	36	Shift	U+004A	J
+it	37		U+006B	k
+it	37	Lock	U+004B	K
+it	37	Lock Mod5 Shift	U+0026	&
+it	37	Lock Shift	U+006B	k
+it	37	Mod5 Shift	U+0026	&
+it	37	Shift	U+004B	K
+it	38		U+006C	l
+it	38	Lock	U+004C	L
+it	38	Lock Shift	U+006C	l
+it	38	Shift	U+004C	L
+it	39		U+00F2	ò
+it	39	Mod5	U+0040	@
+it	39	Mod5 Shift	dead	dead_cedilla
+it	39	Shift	U+00E7	ç
+it	40		U+00E0	à
+it	40	Mod5	U+0023	#
+it	40	Mod5 Shift	dead	dead_abovering
+it	40	Shift	U+00B0	°
+it	41		U+005C	\
+it	41	Mod5	U+00AC	¬
+it	41	Mod5 Shift	U+00A6	¦
+it	41	Shift	U+007C	|
+it	43		U+00F9	ù
+it	43	Mod5	dead	dead_grave
+it	43	Mod5 Shift	dead	dead_breve
+it	43	Shift	U+00A7	§
+it	44		U+007A	z
+it	44	Lock	U+005A	Z
+it	44	Lock Mod5	U+00AB	«
+it	44	Lock Mod5 Shift	U+003C	<
+it	44	Lock Shift	U+007A	z
+it	44	Mod5	U+00AB	«
+it	44	Mod5 Shift	U+003C	<
+it	44	Shift	U+005A	Z
+it	45		U+0078	x
+it	45	Lock	U+0058	X
+it	45	Lock Mod5	U+00BB	»
+it	45	Lock Mod5 Shift	U+003E	>
+it	45	Lock Shift	U+0078	x
+it	45	Mod5	U+00BB	»
+it	45	Mod5 Shift	U+003E	>
+it	45	Shift	U+0058	X
+it	46		U+0063	c
+it	46	Lock	U+0043	C
+it	46	Lock Mod5	U+00A2	¢
+it	46	Lock Mod5 Shift	U+00A9	©
+it	46	Lock Shift	U+0063	c
+it	46	Mod5	U+00A2	¢
+it	46	Mod5 Shift	U+00A9	©
+it	46	Shift	U+0043	C
+it	47		U+0076	v
+it	47	Lock	U+0056	V
+it	47	Lock Shift	U+0076	v
+it	47	Shift	U+0056	V
+it	48		U+0062	b
+it	48	Lock	U+0042	B
+it	48	Lock Shift	U+0062	b
+it	48	Shift	U+0042	B
+it	49		U+006E	n
+it	49	Lock	U+004E	N
+it	49	Lock Mod5	U+00D1	Ñ
+it	49	Lock Mod5 Shift	U+00F1	ñ
+it	49	Lock Shift	U+006E	n
+it	49	Mod5	U+00F1	ñ
+it	49	Mod5 Shift	U+00D1	Ñ
+it	49	Shift	U+004E	N
+it	50		U+006D	m
+it	50	Lock	U+004D	M
+it	50	Lock Mod5	U+00B5	µ
+it	50	Lock Mod5 Shift	U+00BA	º
+it	50	Lock Shift	U+006D	m
+it	50	Mod5	U+00B5	µ
+it	50	Mod5 Shift	U+00BA	º
+it	50	Shift	U+004D	M
+it	51		U+002C	,
+it	51	Mod5	dead	dead_acute
+it	51	Shift	U+003B	;
+it	52		U+002E	.
+it	52	Mod5	U+00B7	·
+it	52	Mod5 Shift	dead	dead_diaeresis
+it	52	Shift	U+003A	:
+it	53		U+002D	-
+it	53	Mod5	dead	dead_macron
+it	53	Shift	U+005F	_
+it	57		U+0020	 
+it	86		U+003C	<
+it	86	Mod5	U+00AB	«
+it	86	Mod5 Shift	U+00BB	»
+it	86	Shift	U+003E	>
+it	118		U+00B1	±
+it	179		U+0028	(
+it	180		U+0029	)
+it	434		U+0024	$
+it	435		U+20AC	€
+nl	2		U+0031	1
+nl	2	Mod5	U+00B9	¹
+nl	2	Mod5 Shift	U+00A1	¡
+nl	2	Shift	U+0021	!
+nl	3		U+0032	2
+nl	3	Mod5	U+00B2	²
+nl	3	Shift	U+0022	"
+nl	4		U+0033	3
+nl	4	Mod5	U+00B3	³
+nl	4	Mod5 Shift	U+00A3	£
+nl	4	Shift	U+0023	#
+nl	5		U+0034	4
+nl	5	Mod5	U+00BC	¼
+nl	5	Mod5 Shift	U+0024	$
+nl	5	Shift	U+0024	$
+nl	6		U+0035	5
+nl	6	Mod5	U+00BD	½
+nl	6	Shift	U+0025	%
+nl	7		U+0036	6
+nl	7	Mod5	U+00BE	¾
+nl	7	Shift	U+0026	&
+nl	8		U+0037	7
+nl	8	Mod5	U+00A3	£
+nl	8	Shift	U+005F	_
+nl	9		U+0038	8
+nl	9	Mod5	U+007B	{
+nl	9	Mod5 Shift	U+005B	[
+nl	9	Shift	U+0028	(
+nl	10		U+0039	9
+nl	10	Mod5	U+007D	}
+nl	10	Mod5 Shift	U+005D	]
+nl	10	Shift	U+0029	)
+nl	11		U+0030	0
+nl	11	Mod5	U+00B0	°
+nl	11	Shift	U+0027	'
+nl	12		U+002F	/
+nl	12	Mod5	U+005C	\
+nl	12	Mod5 Shift	U+00BF	¿
+nl	12	Shift	U+003F	?
+nl	13		U+00B0	°
+nl	13	Mod5	dead	dead_cedilla
+nl	13	Mod5 Shift	dead	dead_ogonek
+nl	13	Shift	dead	dead_tilde
+nl	16		U+0071	q
+nl	16	Lock	U+0051	Q
+nl	16	Lock Mod5	U+0040	@
+nl	16	Lock Shift	U+0071	q
+nl	16	Mod5	U+0040	@
+nl	16	Shift	U+0051	Q
+nl	17		U+0077	w
+nl	17	Lock	U+0057	W
+nl	17	Lock Mod5	U+017F	ſ
+nl	17	Lock Mod5 Shift	U+00A7	§
+nl	17	Lock Shift	U+0077	w
+nl	17	Mod5	U+017F	ſ
+nl	17	Mod5 Shift	U+00A7	§
+nl	17	Shift	U+0057	W
+nl	18		U+0065	e
+nl	18	Lock	U+0045	E
+nl	18	Lock Mod5	U+20AC	€
+nl	18	Lock Mod5 Shift	U+00A2	¢
+nl	18	Lock Shift	U+0065	e
+nl	18	Mod5	U+20AC	€
+nl	18	Mod5 Shift	U+00A2	¢
+nl	18	Shift	U+0045	E
+nl	19		U+0072	r
+nl	19	Lock	U+0052	R
+nl	19	Lock Mod5	U+00B6	¶
+nl	19	Lock Mod5 Shift	U+00AE	®
+nl	19	Lock Shift	U+0072	r
+nl	19	Mod5	U+00B6	¶
+nl	19	Mod5 Shift	U+00AE	®
+nl	19	Shift	U+0052	R
+nl	20		U+0074	t
+nl	20	Lock	U+0054	T
+nl	20	Lock Mod5	U+00DE	Þ
+nl	20	Lock Mod5 Shift	U+00FE	þ
+nl	20	Lock Shift	U+0074	t
+nl	20	Mod5	U+00FE	þ
+nl	20	Mod5 Shift	U+00DE	Þ
+nl	20	Shift	U+0054	T
+nl	21		U+0079	y
+nl	21	Lock	U+0059	Y
+nl	21	Lock Mod5	U+00FF	ÿ
+nl	21	Lock Mod5 Shift	U+00A5	¥
+nl	21	Lock Shift	U+0079	y
+nl	21	Mod5	U+00FF	ÿ
+nl	21	Mod5 Shift	U+00A5	¥
+nl	21	Shift	U+0059	Y
+nl	22		U+0075	u
+nl	22	Lock	U+0055	U
+nl	22	Lock Mod5	U+00DC	Ü
+nl	22	Lock Mod5 Shift	U+00FC	ü
+nl	22	Lock Shift	U+0075	u
+nl	22	Mod5	U+00FC	ü
+nl	22	Mod5 Shift	U+00DC	Ü
+nl	22	Shift	U+0055	U
+nl	23		U+0069	i
+nl	23	Lock	U+0049	I
+nl	23	Lock Mod5	U+00CF	Ï
+nl	23	Lock Mod5 Shift	U+00EF	ï
+nl	23	Lock Shift	U+0069	i
+nl	23	Mod5	U+00EF	ï
+nl	23	Mod5 Shift	U+00CF	Ï
+nl	23	Shift	U+0049	I
+nl	24		U+006F	o
+nl	24	Lock	U+004F	O
+nl	24	Lock Mod5	U+00D2	Ò
+nl	24	Lock Mod5 Shift	U+00F2	ò
+nl	24	Lock Shift	U+006F	o
+nl	24	Mod5	U+00F2	ò
+nl	24	Mod5 Shift	U+00D2	Ò
+nl	24	Shift	U+004F	O
+nl	25		U+0070	p
+nl	25	Lock	U+0050	P
+nl	25	Lock Mod5	U+00B6	¶
+nl	25	Lock Mod5 Shift	U+00DE	Þ
+nl	25	Lock Shift	U+0070	p
+nl	25	Mod5	U+00B6	¶
+nl	25	Mod5 Shift	U+00DE	Þ
+nl	25	Shift	U+0050	P
+nl	26		dead	dead_diaeresis
+nl	26	Mod5	U+007E	~
+nl	26	Mod5 Shift	U+005E	^
+nl	26	Shift	dead	dead_circumflex
+nl	27		U+002A	*
+nl	27	Mod5	dead	dead_tilde
+nl	27	Mod5 Shift	dead	dead_macron
+nl	27	Shift	U+007C	|
+nl	30		U+0061	a
+nl	30	Lock	U+0041	A
+nl	30	Lock Mod5	U+00C1	Á
+nl	30	Lock Mod5 Shift	U+00E1	á
+nl	30	Lock Shift	U+0061	a
+nl	30	Mod5	U+00E1	á
+nl	30	Mod5 Shift	U+00C1	Á
+nl	30	Shift	U+0041	A
+nl	31		U+0073	s
+nl	31	Lock	U+0053	S
+nl	31	Lock Mod5 Shift	U+00DF	ß
+nl	31	Lock Shift	U+0073	s
+nl	31	Mod5	U+00DF	ß
+nl	31	Shift	U+0053	S
+nl	32		U+0064	d
+nl	32	Lock	U+0044	D
+nl	32	Lock Mod5	U+00D0	Ð
+nl	32	Lock Mod5 Shift	U+00F0	ð
+nl	32	Lock Shift	U+0064	d
+nl	32	Mod5	U+00F0	ð
+nl	32	Mod5 Shift	U+00D0	Ð
+nl	32	Shift	U+0044	D
+nl	33		U+0066	f
+nl	33	Lock	U+0046	F
+nl	33	Lock Mod5	U+00AA	ª
+nl	33	Lock Mod5 Shift	U+00AA	ª
+nl	33	Lock Shift	U+0066	f
+nl	33	Mod5	U+00AA	ª
+nl	33	Mod5 Shift	U+00AA	ª
+nl	33	Shift	U+0046	F
+nl	34		U+0067	g
+nl	34	Lock	U+0047	G
+nl	34	Lock Shift	U+0067	g
+nl	34	Shift	U+0047	G
+nl	35		U+0068	h
+nl	35	Lock	U+0048	H
+nl	35	Lock Shift	U+0068	h
+nl	35	Shift	U+0048	H
+nl	36		U+006A	j
+nl	36	Lock	U+004A	J
+nl	36	Lock Mod5	dead	dead_hook
+nl	36	Lock Mod5 Shift	dead	dead_horn
+nl	36	Lock Shift	U+006A	j
+nl	36	Mod5	dead	dead_hook
+nl	36	Mod5 Shift	dead	dead_horn
+nl	36	Shift	U+004A	J
+nl	37		U+006B	k
+nl	37	Lock	U+004B	K
+nl	37	Lock Mod5 Shift	U+0026	&
+nl	37	Lock Shift	U+006B	k
+nl	37	Mod5 Shift	U+0026	&
+nl	37	Shift	U+004B	K
+nl	38		U+006C	l
+nl	38	Lock	U+004C	L
+nl	38	Lock Shift	U+006C	l
+nl	38	Shift	U+004C	L
+nl	39		U+002B	+
+nl	39	Mod5	dead	dead_acute
+nl	39	Mod5 Shift	dead	dead_doubleacute
+nl	39	Shift	U+00B1	±
+nl	40		dead	dead_acute
+nl	40	Mod5	U+0027	'
+nl	40	Mod5 Shift	U+0060	`
+nl	40	Shift	dead	dead_grave
+nl	41		U+0040	@
+nl	41	Mod5	U+00AC	¬
+nl	41	Mod5 Shift	U+00AC	¬
+nl	41	Shift	U+00A7	§
+nl	43		U+003C	<
+nl	43	Mod5	dead	dead_grave
+nl	43	Mod5 Shift	dead	dead_breve
+nl	43	Shift	U+003E	>
+nl	44		U+007A	z
+nl	44	Lock	U+005A	Z
+nl	44	Lock Mod5	U+00AB	«
+nl	44	Lock Mod5 Shift	U+003C	<
+nl	44	Lock Shift	U+007A	z
+nl	44	Mod5	U+00AB	«
+nl	44	Mod5 Shift	U+003C	<
+nl	44	Shift	U+005A	Z
+nl	45		U+0078	x
+nl	45	Lock	U+0058	X
+nl	45	Lock Mod5	U+00BB	»
+nl	45	Lock Mod5 Shift	U+003E	>
+nl	45	Lock Shift	U+0078	x
+nl	45	Mod5	U+00BB	»
+nl	45	Mod5 Shift	U+003E	>
+nl	45	Shift	U+0058	X
+nl	46		U+0063	c
+nl	46	Lock	U+0043	C
+nl	46	Lock Mod5	U+00A2	¢
+nl	46	Lock Mod5 Shift	U+00A9	©
+nl	46	Lock Shift	U+0063	c
+nl	46	Mod5	U+00A2	¢
+nl	46	Mod5 Shift	U+00A9	©
+nl	46	Shift	U+0043	C
+nl	47		U+0076	v
+nl	47	Lock	U+0056	V
+nl	47	Lock Shift	U+0076	v
+nl	47	Shift	U+0056	V
+nl	48		U+0062	b
+nl	48	Lock	U+0042	B
+nl	48	Lock Shift	U+0062	b
+nl	48	Shift	U+0042	B
+nl	49		U+006E	n
+nl	49	Lock	U+004E	N
+nl	49	Lock Mod5	U+00D1	Ñ
+nl	49	Lock Mod5 Shift	U+00F1	ñ
+nl	49	Lock Shift	U+006E	n
+nl	49	Mod5	U+00F1	ñ
+nl	49	Mod5 Shift	U+00D1	Ñ
+nl	49	Shift	U+004E	N
+nl	50		U+006D	m
+nl	50	Lock	U+004D	M
+nl	50	Lock Mod5 Shift	U+00BA	º
+nl	50	Lock Shift	U+006D	m
+nl	50	Mod5 Shift	U+00BA	º
+nl	50	Shift	U+004D	M
+nl	51		U+002C	,
+nl	51	Mod5	U+00B8	¸
+nl	51	Mod5 Shift	U+00AB	«
+nl	51	Shift	U+003B	;
+nl	52		U+002E	.
+nl	52	Mod5	U+00B7	·
+nl	52	Mod5 Shift	U+00BB	»
+nl	52	Shift	U+003A	:
+nl	53		U+002D	-
+nl	53	Mod5	U+00AD	­
+nl	53	Mod5 Shift	dead	dead_abovedot
+nl	53	Shift	U+003D	=
+nl	57		U+0020	 
+nl	86		U+005D	]
+nl	86	Mod5	U+007C	|
+nl	86	Mod5 Shift	U+00A6	¦
+nl	86	Shift	U+005B	[
+nl	118		U+00B1	±
+nl	179		U+0028	(
+nl	180		U+0029	)
+nl	434		U+0024	$
+nl	435		U+20AC	€
 us	2		U+0031	1
+us	2	Shift	U+0021	!
 us	3		U+0032	2
-us	4		U+0033	3
-us	5		U+0034	4
-us	6		U+0035	5
-us	7		U+0036	6
-us	8		U+0037	7
-us	9		U+0038	8
-us	10		U+0039	9
-us	39	Shift	U+003A	:
-us	39		U+003B	;
-us	51	Shift	U+003C	<
-us	86		U+003C	<
-us	13		U+003D	=
-us	52	Shift	U+003E	>
-us	86	Shift	U+003E	>
-us	53	Shift	U+003F	?
 us	3	Shift	U+0040	@
-us	30	Shift	U+0041	A
-us	30	Lock	U+0041	A
-us	48	Shift	U+0042	B
-us	48	Lock	U+0042	B
-us	46	Shift	U+0043	C
-us	46	Lock	U+0043	C
-us	32	Shift	U+0044	D
-us	32	Lock	U+0044	D
-us	18	Shift	U+0045	E
-us	18	Lock	U+0045	E
-us	33	Shift	U+0046	F
-us	33	Lock	U+0046	F
-us	34	Shift	U+0047	G
-us	34	Lock	U+0047	G
-us	35	Shift	U+0048	H
-us	35	Lock	U+0048	H
-us	23	Shift	U+0049	I
-us	23	Lock	U+0049	I
-us	36	Shift	U+004A	J
-us	36	Lock	U+004A	J
-us	37	Shift	U+004B	K
-us	37	Lock	U+004B	K
-us	38	Shift	U+004C	L
-us	38	Lock	U+004C	L
-us	50	Shift	U+004D	M
-us	50	Lock	U+004D	M
-us	49	Shift	U+004E	N
-us	49	Lock	U+004E	N
-us	24	Shift	U+004F	O
-us	24	Lock	U+004F	O
-us	25	Shift	U+0050	P
-us	25	Lock	U+0050	P
-us	16	Shift	U+0051	Q
-us	16	Lock	U+0051	Q
-us	19	Shift	U+0052	R
-us	19	Lock	U+0052	R
-us	31	Shift	U+0053	S
-us	31	Lock	U+0053	S
-us	20	Shift	U+0054	T
-us	20	Lock	U+0054	T
-us	22	Shift	U+0055	U
-us	22	Lock	U+0055	U
-us	47	Shift	U+0056	V
-us	47	Lock	U+0056	V
-us	17	Shift	U+0057	W
-us	17	Lock	U+0057	W
-us	45	Shift	U+0058	X
-us	45	Lock	U+0058	X
-us	21	Shift	U+0059	Y
-us	21	Lock	U+0059	Y
-us	44	Shift	U+005A	Z
-us	44	Lock	U+005A	Z
-us	26		U+005B	[
-us	43		U+005C	\
-us	27		U+005D	]
+us	4		U+0033	3
+us	4	Shift	U+0023	#
+us	5		U+0034	4
+us	5	Shift	U+0024	$
+us	6		U+0035	5
+us	6	Shift	U+0025	%
+us	7		U+0036	6
 us	7	Shift	U+005E	^
+us	8		U+0037	7
+us	8	Shift	U+0026	&
+us	9		U+0038	8
+us	9	Shift	U+002A	*
+us	10		U+0039	9
+us	10	Shift	U+0028	(
+us	11		U+0030	0
+us	11	Shift	U+0029	)
+us	12		U+002D	-
 us	12	Shift	U+005F	_
-us	41		U+0060	`
-us	30		U+0061	a
-us	48		U+0062	b
-us	46		U+0063	c
-us	32		U+0064	d
-us	18		U+0065	e
-us	33		U+0066	f
-us	34		U+0067	g
-us	35		U+0068	h
-us	23		U+0069	i
-us	36		U+006A	j
-us	37		U+006B	k
-us	38		U+006C	l
-us	50		U+006D	m
-us	49		U+006E	n
-us	24		U+006F	o
-us	25		U+0070	p
+us	13		U+003D	=
+us	13	Shift	U+002B	+
 us	16		U+0071	q
-us	19		U+0072	r
-us	31		U+0073	s
-us	20		U+0074	t
-us	22		U+0075	u
-us	47		U+0076	v
+us	16	Lock	U+0051	Q
+us	16	Shift	U+0051	Q
 us	17		U+0077	w
-us	45		U+0078	x
+us	17	Lock	U+0057	W
+us	17	Shift	U+0057	W
+us	18		U+0065	e
+us	18	Lock	U+0045	E
+us	18	Shift	U+0045	E
+us	19		U+0072	r
+us	19	Lock	U+0052	R
+us	19	Shift	U+0052	R
+us	20		U+0074	t
+us	20	Lock	U+0054	T
+us	20	Shift	U+0054	T
 us	21		U+0079	y
-us	44		U+007A	z
+us	21	Lock	U+0059	Y
+us	21	Shift	U+0059	Y
+us	22		U+0075	u
+us	22	Lock	U+0055	U
+us	22	Shift	U+0055	U
+us	23		U+0069	i
+us	23	Lock	U+0049	I
+us	23	Shift	U+0049	I
+us	24		U+006F	o
+us	24	Lock	U+004F	O
+us	24	Shift	U+004F	O
+us	25		U+0070	p
+us	25	Lock	U+0050	P
+us	25	Shift	U+0050	P
+us	26		U+005B	[
 us	26	Shift	U+007B	{
-us	43	Shift	U+007C	|
-us	86	Mod5	U+007C	|
+us	27		U+005D	]
 us	27	Shift	U+007D	}
+us	30		U+0061	a
+us	30	Lock	U+0041	A
+us	30	Shift	U+0041	A
+us	31		U+0073	s
+us	31	Lock	U+0053	S
+us	31	Shift	U+0053	S
+us	32		U+0064	d
+us	32	Lock	U+0044	D
+us	32	Shift	U+0044	D
+us	33		U+0066	f
+us	33	Lock	U+0046	F
+us	33	Shift	U+0046	F
+us	34		U+0067	g
+us	34	Lock	U+0047	G
+us	34	Shift	U+0047	G
+us	35		U+0068	h
+us	35	Lock	U+0048	H
+us	35	Shift	U+0048	H
+us	36		U+006A	j
+us	36	Lock	U+004A	J
+us	36	Shift	U+004A	J
+us	37		U+006B	k
+us	37	Lock	U+004B	K
+us	37	Shift	U+004B	K
+us	38		U+006C	l
+us	38	Lock	U+004C	L
+us	38	Shift	U+004C	L
+us	39		U+003B	;
+us	39	Shift	U+003A	:
+us	40		U+0027	'
+us	40	Shift	U+0022	"
+us	41		U+0060	`
 us	41	Shift	U+007E	~
+us	43		U+005C	\
+us	43	Shift	U+007C	|
+us	44		U+007A	z
+us	44	Lock	U+005A	Z
+us	44	Shift	U+005A	Z
+us	45		U+0078	x
+us	45	Lock	U+0058	X
+us	45	Shift	U+0058	X
+us	46		U+0063	c
+us	46	Lock	U+0043	C
+us	46	Shift	U+0043	C
+us	47		U+0076	v
+us	47	Lock	U+0056	V
+us	47	Shift	U+0056	V
+us	48		U+0062	b
+us	48	Lock	U+0042	B
+us	48	Shift	U+0042	B
+us	49		U+006E	n
+us	49	Lock	U+004E	N
+us	49	Shift	U+004E	N
+us	50		U+006D	m
+us	50	Lock	U+004D	M
+us	50	Shift	U+004D	M
+us	51		U+002C	,
+us	51	Shift	U+003C	<
+us	52		U+002E	.
+us	52	Shift	U+003E	>
+us	53		U+002F	/
+us	53	Shift	U+003F	?
+us	57		U+0020	 
+us	86		U+003C	<
+us	86	Mod5	U+007C	|
 us	86	Mod5 Shift	U+00A6	¦
+us	86	Shift	U+003E	>
 us	118		U+00B1	±
+us	179		U+0028	(
+us	180		U+0029	)
+us	434		U+0024	$
 us	435		U+20AC	€
