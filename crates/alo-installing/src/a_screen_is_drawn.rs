@@ -29,7 +29,9 @@
 use crate::a_line_as_coverage::a_line_as_coverage;
 use crate::alos_own_face::AlosOwnFace;
 use crate::what_display_there_is::Glass;
+use crate::where_a_list_screen_goes::{how_many_cards_fit, where_a_list_screen_goes};
 use crate::where_a_screen_goes::{AScreensPlaces, HowMuchThereIs, TheType, where_a_screen_goes};
+use crate::which_choices_are_shown::WhereInTheList;
 use crate::wrapping::wrapped;
 
 /// One line of text, and where on the screen it goes.
@@ -101,11 +103,31 @@ pub fn what_a_screen_shows(
     face: AlosOwnFace<'_>,
     words: &TheWordsOfAScreen,
 ) -> Option<WhatAScreenShows> {
+    shows_with(where_a_screen_goes, across, down, glass, face, words)
+}
+
+/// Where a screen's parts go: either the adopted six frames' shape, or the
+/// scrolling shape that moves the actions down.
+///
+/// Taken as a function rather than a flag because the two layouts are two
+/// functions already, and a flag would mean a `match` in this file deciding
+/// something `where_a_list_screen_goes` has decided.
+type WhereTheyGo = fn(u32, u32, Option<Glass>, HowMuchThereIs) -> Option<AScreensPlaces>;
+
+/// What a screen shows, under whichever of the two layouts it is given.
+fn shows_with(
+    where_they_go: WhereTheyGo,
+    across: u32,
+    down: u32,
+    glass: Option<Glass>,
+    face: AlosOwnFace<'_>,
+    words: &TheWordsOfAScreen,
+) -> Option<WhatAScreenShows> {
     // The block's width is needed to wrap, and the layout needs the line
     // counts to place anything — so the layout is asked twice: once with one
     // line of everything, to learn how wide the block is, and once with what
     // the sentences actually take. The first answer is used for nothing else.
-    let how_wide = where_a_screen_goes(
+    let how_wide = where_they_go(
         across,
         down,
         glass,
@@ -127,7 +149,7 @@ pub fn what_a_screen_shows(
     // Asked with the reference type sizes to count lines, which is right
     // because the type is a proportion of the display and so is the block: a
     // sentence that takes three lines takes three at every size.
-    let reference = where_a_screen_goes(
+    let reference = where_they_go(
         across,
         down,
         glass,
@@ -137,7 +159,7 @@ pub fn what_a_screen_shows(
     let introduction = lines_of(&words.introduction, reference.body);
     let consequence = lines_of(&words.consequence, reference.quiet);
 
-    let places = where_a_screen_goes(
+    let places = where_they_go(
         across,
         down,
         glass,
@@ -203,6 +225,120 @@ pub fn what_a_screen_shows(
     }
 
     Some(WhatAScreenShows { lines, places })
+}
+
+/// A list screen, and whether the list carries on past what is drawn.
+#[derive(Debug, Clone)]
+pub struct AListScreenShows {
+    /// The screen, holding only the cards that fit.
+    pub shows: WhatAScreenShows,
+    /// Which of the whole list is drawn, so a caller can say *3 of 19*.
+    pub drawn: core::ops::Range<usize>,
+    /// There is more list above what is drawn.
+    pub more_above: bool,
+    /// There is more list below what is drawn.
+    pub more_below: bool,
+}
+
+/// What a screen shows when its list is longer than the screen.
+///
+/// # Why this exists, and what it cost not to have it
+///
+/// [`what_a_screen_shows`] asks the layout for **one card slot per card**, and
+/// [`where_a_screen_goes`] answers [`None`] when the flow would run past the
+/// accessibility button — which is right, because a screen drawn over its own
+/// actions is worse than one that says it cannot be drawn. The caller then had
+/// nothing to draw and drew nothing.
+///
+/// So between #892 and this change, a screen with more choices on it than fit
+/// **was not drawn at all**: not a truncated list, not a message, a grey
+/// screen. Measured at 1920×1080 the limit was **four**, and the environment
+/// offers eight keyboard layouts, so the layout screen never drew on any
+/// display, and a person standing in a room with five Wi-Fi networks saw
+/// nothing on the network screen either.
+///
+/// Nothing here is new mechanism. [`where_a_list_screen_goes`] moves the
+/// actions down out of the scrolling region, [`how_many_cards_fit`] counts the
+/// whole cards that leaves room for, and [`WhereInTheList`] decides which of
+/// them a cursor is looking at — all three from #892, all three tested, and
+/// none of them had a caller on these screens.
+///
+/// `ring` is which card of the **whole** list the ring is on, so the window is
+/// derived from the cursor rather than kept beside it: *where is this scrolled
+/// to* keeps one answer.
+///
+/// Returns [`None`] only where a list screen cannot be laid out at all, which
+/// is the display being too small and is the same answer at the same size as
+/// everywhere else.
+#[must_use]
+pub fn what_a_list_screen_shows(
+    across: u32,
+    down: u32,
+    glass: Option<Glass>,
+    face: AlosOwnFace<'_>,
+    words: &TheWordsOfAScreen,
+    ring: usize,
+) -> Option<AListScreenShows> {
+    // How many fit is asked of a list screen laid out with one card, because
+    // the room between the first card and the actions is what buys the rest
+    // and that distance does not grow with the number of cards.
+    let one = where_a_list_screen_goes(
+        across,
+        down,
+        glass,
+        HowMuchThereIs {
+            cards: 1,
+            ..HowMuchThereIs::as_the_frames_were_drawn()
+        },
+    )?;
+    let most = how_many_cards_fit(&one);
+
+    let mut where_in = WhereInTheList::of(words.cards.len());
+    for _ in 0..ring.min(words.cards.len()) {
+        where_in.down();
+    }
+
+    // **How many fit is asked, and then checked.** `how_many_cards_fit`
+    // measures the room between the first card and the actions, which is the
+    // right question and is asked of a screen carrying *the reference* title
+    // and introduction. This screen's own sentences may wrap to more lines
+    // than that — the layout screen's introduction does — and then the flow
+    // runs past the actions and the layout refuses, which is how
+    // `EveryLayout` drew nothing even once it was using this road.
+    //
+    // So the window narrows by one until it lays out. It terminates because it
+    // stops at one card, and a list screen that cannot draw one card is a
+    // display too small to lay out at all, which is the `None` below.
+    for fit in (1..=most).rev() {
+        let drawn = where_in.shown(fit);
+        let windowed = TheWordsOfAScreen {
+            eyebrow: words.eyebrow.clone(),
+            title: words.title.clone(),
+            introduction: words.introduction.clone(),
+            cards: words.cards.get(drawn.clone())?.to_vec(),
+            // A list screen draws no consequence line: there is no consequence
+            // to a cursor moving, and `where_a_list_screen_goes` says so in
+            // its own header. Carrying one would reserve room the cards should
+            // have.
+            consequence: String::new(),
+        };
+        if let Some(shows) = shows_with(
+            where_a_list_screen_goes,
+            across,
+            down,
+            glass,
+            face,
+            &windowed,
+        ) {
+            return Some(AListScreenShows {
+                shows,
+                more_above: where_in.more_above(fit),
+                more_below: where_in.more_below(fit),
+                drawn,
+            });
+        }
+    }
+    None
 }
 
 /// Draw what a screen shows onto the surface.

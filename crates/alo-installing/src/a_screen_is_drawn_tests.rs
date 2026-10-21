@@ -276,3 +276,124 @@ fn a_screen_drawn_into_a_file_has_letters_in_it() {
          outside the block"
     );
 }
+
+/// A list of this many networks, named so they can be told apart on screen.
+fn that_many_networks(how_many: usize) -> TheWordsOfAScreen {
+    TheWordsOfAScreen {
+        eyebrow: "BEFORE ANYTHING IS INSTALLED".to_owned(),
+        title: "Which network?".to_owned(),
+        introduction: "Choose the network this computer should use".to_owned(),
+        cards: (0..how_many)
+            .map(|which| (format!("network-{which}"), String::new()))
+            .collect(),
+        consequence: String::new(),
+    }
+}
+
+#[test]
+fn a_screen_with_more_choices_than_fit_is_still_drawn() {
+    // **This is the regression.** `what_a_screen_shows` asks the layout for one
+    // card slot per card, and the layout answers `None` rather than draw over
+    // the accessibility button — so between #892 and the change that added
+    // this test, a screen with more choices on it than fit was **not drawn at
+    // all**. Not truncated: a grey screen. Eight layouts are offered, so the
+    // layout screen never drew on any display.
+    let (across, down) = THE_DESIGN_WAS_DRAWN_AT;
+    let many = that_many_networks(19);
+
+    // The old road still refuses it, which is correct of it and is what makes
+    // this test about the new one rather than about a changed layout.
+    assert!(
+        what_a_screen_shows(across, down, None, face(), &many).is_none(),
+        "the six-frame layout is expected to refuse 19 cards; if it now accepts \
+         them, this test is no longer measuring what it says"
+    );
+
+    let shows = super::what_a_list_screen_shows(across, down, None, face(), &many, 0)
+        .expect("a list screen lays out at the size the design was drawn at");
+
+    assert!(
+        !shows.shows.lines.is_empty(),
+        "a list screen drew no lines at all"
+    );
+    assert!(
+        shows.drawn.len() < 19,
+        "all 19 cards were drawn, so nothing was windowed and the screen is \
+         back to drawing over its own actions"
+    );
+    assert!(
+        shows.drawn.len() >= 2,
+        "only {} card(s) were drawn; a list screen that shows one choice is a \
+         question with no visible answers",
+        shows.drawn.len()
+    );
+    assert!(
+        shows.more_below,
+        "19 networks with {} drawn, and the screen does not know there is more \
+         below it",
+        shows.drawn.len()
+    );
+    assert!(
+        !shows.more_above,
+        "the ring is on the first network, so nothing is above it"
+    );
+}
+
+#[test]
+fn the_window_follows_the_ring_down_the_list() {
+    // Where the list is scrolled to is **derived** from the cursor, never kept
+    // beside it, so the two cannot disagree. With the ring on the last of 19,
+    // the last is drawn and there is more above.
+    let (across, down) = THE_DESIGN_WAS_DRAWN_AT;
+    let many = that_many_networks(19);
+
+    let first = super::what_a_list_screen_shows(across, down, None, face(), &many, 0)
+        .expect("lays out with the ring at the top");
+    let last = super::what_a_list_screen_shows(across, down, None, face(), &many, 18)
+        .expect("lays out with the ring at the bottom");
+
+    assert!(
+        last.drawn.contains(&18),
+        "the ring is on network 18 and the drawn window is {:?}, which does not \
+         contain it — a person holding the down key would lose the cursor off \
+         the bottom",
+        last.drawn
+    );
+    assert!(
+        last.more_above && !last.more_below,
+        "at the end of the list there is more above and nothing below; got \
+         above={} below={}",
+        last.more_above,
+        last.more_below
+    );
+    assert_ne!(
+        first.drawn, last.drawn,
+        "the window did not move when the ring did, so the list does not scroll"
+    );
+    assert_eq!(
+        first.drawn.len(),
+        last.drawn.len(),
+        "the window changed size as it moved; it is one screenful either way"
+    );
+}
+
+#[test]
+fn a_list_that_fits_is_not_scrolled_and_says_so() {
+    // **The control.** Every assertion above would hold on a screen that
+    // always claimed there was more list. With three networks there is not,
+    // and the screen must say neither above nor below.
+    let (across, down) = THE_DESIGN_WAS_DRAWN_AT;
+    let few = that_many_networks(3);
+
+    let shows = super::what_a_list_screen_shows(across, down, None, face(), &few, 0)
+        .expect("three networks lay out");
+
+    assert_eq!(shows.drawn, 0..3, "all three should be drawn");
+    assert!(
+        !shows.more_above && !shows.more_below,
+        "three networks all fit, so there is no more list in either direction; \
+         got above={} below={}",
+        shows.more_above,
+        shows.more_below
+    );
+}

@@ -216,6 +216,32 @@ impl TheAsking {
         matches!(self.on, WhichScreen::ThePassword)
     }
 
+    /// Whether this screen's cards are a list a person scrolls, rather than a
+    /// choice between a few things the design drew.
+    ///
+    /// **Written out rather than `matches!`**, for the reason
+    /// `docs/misreadings/two-predicates-in-one-file-and-only-one-was-armed.md`
+    /// gives: a seventh screen added later must not quietly take `false` from a
+    /// catch-all. It has to be answered.
+    ///
+    /// The three that are lists are the three whose cards are **data that
+    /// arrives** — the layouts this computer knows, the networks in the room,
+    /// the disks in the machine — so not one of them has a length anybody drew.
+    /// The other three choose between things the six frames did draw, and two
+    /// of those are a field, which is one card the ring does not move over.
+    ///
+    /// This answer decides which layout draws the screen, which is why it
+    /// exists: a list screen moves the actions down out of the scrolling
+    /// region, and a screen asked for more cards than the ordinary layout holds
+    /// is **not drawn at all**.
+    #[must_use]
+    pub const fn is_a_list(&self) -> bool {
+        match self.on {
+            WhichScreen::EveryLayout | WhichScreen::TheNetwork | WhichScreen::TheDisk => true,
+            WhichScreen::TheKeyboard | WhichScreen::ThePassword | WhichScreen::TheReview => false,
+        }
+    }
+
     /// How many cards the screen in front of a person has.
     pub const fn there_are_this_many_cards(&mut self, how_many: usize) {
         self.how_many = how_many;

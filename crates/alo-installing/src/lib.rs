@@ -102,7 +102,8 @@ pub use a_key_reaches_here::{
 };
 pub use a_line_as_coverage::{ACoverage, a_line_as_coverage};
 pub use a_screen_is_drawn::{
-    ALineToDraw, TheWordsOfAScreen, WhatAScreenShows, what_a_screen_shows,
+    ALineToDraw, AListScreenShows, TheWordsOfAScreen, WhatAScreenShows, what_a_list_screen_shows,
+    what_a_screen_shows,
 };
 pub use a_surface_to_draw_on::{
     Grey, NoSurface, TheSurface, WHERE_THE_DEPTH_IS, WHERE_THE_PIXELS_GO, WHERE_THE_SIZE_IS,

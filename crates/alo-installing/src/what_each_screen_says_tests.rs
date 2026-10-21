@@ -263,3 +263,121 @@ fn a_scan_that_found_nothing_leaves_the_screen_with_no_cards_rather_than_a_wrong
     );
     assert_eq!(how_many_cards(&asking, &THE_EIGHT, &[], &disks()), 0);
 }
+
+/// Many networks, as a person in a block of flats actually sees them.
+fn a_roomful_of_networks() -> Vec<ANetwork> {
+    let mut lines = String::new();
+    for which in 0..19 {
+        lines.push_str(&format!("network-{which}:{}:WPA2\n", 40 + which));
+    }
+    joining_a_network::every_network(&lines)
+}
+
+#[test]
+fn every_screen_is_drawn_with_as_much_on_it_as_really_arrives() {
+    // **The regression, at the seam where it happened.** The walk asked
+    // `what_a_screen_shows` for every screen, and that function asks the
+    // layout for one card slot per card. With eight layouts or nineteen
+    // networks the layout refused — correctly, rather than draw over the
+    // accessibility button — so the walk had nothing and drew nothing. A grey
+    // screen, on every display, for the layout screen always and the network
+    // screen in any room with five networks in it.
+    //
+    // This walks all six screens with as much on them as really arrives and
+    // asserts each one produces lines, choosing the road by `is_a_list()`
+    // exactly as `the_environment_asks` does. If the two ever disagree about
+    // which screens are lists, this test does not notice — so it is the
+    // production predicate that is called here, not a copy of it.
+    let strings = strings();
+    // The eight `main.rs` offers, copied because `THE_LAYOUTS_OFFERED` is in
+    // the binary and this test is in the library. **Eight is the figure that
+    // matters**: it is more than the ordinary layout holds, which is why the
+    // layout screen drew nothing on every display rather than only on small
+    // ones.
+    let layouts: Vec<(&str, &str)> = vec![
+        ("be", "Belgisch"),
+        ("fr", "Français"),
+        ("de", "Deutsch"),
+        ("es", "Español"),
+        ("it", "Italiano"),
+        ("nl", "Nederlands"),
+        ("gb", "English (UK)"),
+        ("us", "English (US)"),
+    ];
+    let networks = a_roomful_of_networks();
+    let disks = disks();
+    let face = crate::alos_own_face::AlosOwnFace::carried().expect("the compiled-in typeface");
+    let (across, down) = crate::where_a_screen_goes::THE_DESIGN_WAS_DRAWN_AT;
+
+    for screen in [
+        WhichScreen::TheKeyboard,
+        WhichScreen::EveryLayout,
+        WhichScreen::TheNetwork,
+        WhichScreen::ThePassword,
+        WhichScreen::TheDisk,
+        WhichScreen::TheReview,
+    ] {
+        let mut asking = at(screen);
+        asking.there_are_this_many_cards(how_many_cards(&asking, &layouts, &networks, &disks));
+        let words = what_this_screen_says(&strings, &asking, &layouts, &networks, &disks);
+
+        let lines = if asking.is_a_list() {
+            crate::a_screen_is_drawn::what_a_list_screen_shows(
+                across,
+                down,
+                None,
+                face,
+                &words,
+                asking.card(),
+            )
+            .map(|list| list.shows.lines.len())
+        } else {
+            crate::a_screen_is_drawn::what_a_screen_shows(across, down, None, face, &words)
+                .map(|shows| shows.lines.len())
+        };
+
+        let drew = lines.unwrap_or(0);
+        assert!(
+            drew > 0,
+            "{screen:?} drew nothing with {} layouts, {} networks and {} disks \
+             on it. A person looking at this screen sees no words at all and \
+             has no way to find out why.",
+            layouts.len(),
+            networks.len(),
+            disks.len()
+        );
+    }
+}
+
+#[test]
+fn the_three_screens_whose_cards_arrive_are_the_three_that_scroll() {
+    // **The control for the test above.** It would pass on a build where every
+    // screen used the scrolling layout, and that would be wrong in the other
+    // direction: the keyboard question is two cards the design drew, and
+    // moving its actions down to make room for a list it does not have would
+    // put them somewhere nobody decided.
+    //
+    // So this asserts the division itself, which is what `is_a_list` is for.
+    for screen in [
+        WhichScreen::EveryLayout,
+        WhichScreen::TheNetwork,
+        WhichScreen::TheDisk,
+    ] {
+        assert!(
+            at(screen).is_a_list(),
+            "{screen:?}'s cards are data that arrives, so it has no length \
+             anybody drew and it must scroll"
+        );
+    }
+    for screen in [
+        WhichScreen::TheKeyboard,
+        WhichScreen::ThePassword,
+        WhichScreen::TheReview,
+    ] {
+        assert!(
+            !at(screen).is_a_list(),
+            "{screen:?} chooses between things the six frames drew, so it keeps \
+             the layout they were drawn in"
+        );
+    }
+}
