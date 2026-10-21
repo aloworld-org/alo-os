@@ -37,17 +37,29 @@
 //! single keys, and composing is [`crate::Compose`]'s job, which already
 //! exists. So this turns a key into a character and does not turn two into one.
 //!
-//! **And one known divergence, measured rather than suspected.** A key whose
-//! level is *dead* has no row, so on a key where some levels are dead and one
-//! is not, dropping an unused modifier can land on the live level: Belgian's
-//! `AD11` is `[dead_circumflex, dead_diaeresis, bracketleft, dead_abovering]`
-//! and AltGr-with-shift answers `[` where it should answer nothing. It cannot
-//! be fixed from this table, because *this level is dead* and *this key ignores
-//! this modifier* are the same absence in it. The fix is to generate each key's
-//! consulted modifiers from `compile-keymap`'s own `type` declarations, which
-//! would have made the caps-lock holes impossible rather than repaired —
-//! `a_dead_level_resolves_to_its_neighbour_which_is_known_and_wrong` pins the
-//! wrong answer so the fix is noticed.
+//! # A dead level is recorded, not absent
+//!
+//! **This was a divergence until 2026-10-21, and the fix is the interesting
+//! part.** A level whose keysym produces no character — `dead_circumflex` and
+//! sixteen others — used to have no row at all, so *this level is dead* and
+//! *this key ignores this modifier* were the same absence. On Belgian's `AD11`,
+//! `[dead_circumflex, dead_diaeresis, bracketleft, dead_abovering]`, dropping
+//! the unused shift landed AltGr-with-shift on level 3 and typed `[` where it
+//! should have typed nothing.
+//!
+//! **The first plan for fixing it was wrong and is worth recording as such:**
+//! read each key's type from `compile-keymap`'s `type` declarations. A compiled
+//! keymap states **no key's type** — measured, 0 of 419 key lines on Belgian
+//! mention one, because xkbcommon resolves types internally and its text output
+//! omits them. Inferring a type from the keysyms is what xkbcommon itself does,
+//! and doing it here would be becoming the engine.
+//!
+//! What works instead: **`how-to-type` accepts a keysym by name**, so the engine
+//! is asked about the dead levels directly and the table records them as rows
+//! that give nothing. The dead names are read out of each compiled keymap rather
+//! than listed by hand — 17 across the eight layouts, 13 to 16 on each, and
+//! **none at all on `us`**, which is exactly why this was invisible to anybody
+//! testing on a US board.
 
 use std::char;
 
@@ -203,7 +215,15 @@ pub fn what_a_key_gives(layout: &str, evdev: u16, held: Held) -> Option<char> {
         if code != evdev || column.next()? != wanted {
             continue;
         }
-        return column.next().and_then(a_code_point);
+        // A `dead` fourth column is a level that produces no character —
+        // `dead_circumflex` and sixteen others. It answers `None`, and it does
+        // so **explicitly**: `a_code_point` would also fail on it, and relying
+        // on that would leave the next reader to work out that a row exists and
+        // is deliberately empty.
+        return match column.next()? {
+            "dead" => None,
+            point => a_code_point(point),
+        };
     }
     None
 }

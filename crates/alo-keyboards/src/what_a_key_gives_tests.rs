@@ -26,7 +26,7 @@ use super::{
 /// and the character. A malformed row is **not** skipped here, unlike in
 /// `what_a_key_gives`: a caller counting rows needs to know the file is whole,
 /// and a silently dropped row is how a table loses a key nobody notices.
-fn every_row() -> impl Iterator<Item = (&'static str, u16, &'static str, char)> {
+fn every_row() -> impl Iterator<Item = (&'static str, u16, &'static str, Option<char>)> {
     THE_TABLE.lines().filter(|row| !row.is_empty()).map(|row| {
         let mut column = row.split('\t');
         let (Some(layout), Some(code), Some(mods), Some(point)) =
@@ -37,8 +37,16 @@ fn every_row() -> impl Iterator<Item = (&'static str, u16, &'static str, char)> 
         let code: u16 = code
             .parse()
             .unwrap_or_else(|_| panic!("a row's evdev column is not a number: {row:?}"));
-        let character =
-            a_code_point(point).unwrap_or_else(|| panic!("a row's code point is not one: {row:?}"));
+        // `dead` in the fourth column is a level that produces no character.
+        // Anything else must parse, so a mangled row still panics.
+        let character = if point == "dead" {
+            None
+        } else {
+            Some(
+                a_code_point(point)
+                    .unwrap_or_else(|| panic!("a row's code point is not one: {row:?}")),
+            )
+        };
         (layout, code, mods, character)
     })
 }
@@ -402,10 +410,10 @@ fn the_table_is_whole() {
 fn the_table_is_what_the_engine_says() {
     use std::fmt::Write as _;
 
-    let found = std::process::Command::new("xkbcli")
+    let probe = std::process::Command::new("xkbcli")
         .args(["how-to-type", "--layout", "us", "0x0061"])
         .output();
-    let Ok(probe) = found else {
+    let Ok(probe) = probe else {
         panic!(
             "xkbcli is not on this machine, and this test does not pass without it. \
              Install libxkbcommon-tools, or leave this test ignored."
@@ -416,45 +424,39 @@ fn the_table_is_what_the_engine_says() {
         "xkbcli is here and did not answer the question this test asks of it"
     );
 
-    let mut rebuilt = String::new();
-    let mut seen = std::collections::BTreeSet::new();
+    // Keyed by (layout, evdev, modifiers) and ordered by it, so the file's order
+    // is a property of the data rather than of the order the queries ran in.
+    let mut rows: std::collections::BTreeMap<(&str, u16, String), String> =
+        std::collections::BTreeMap::new();
+
     for layout in EVERY_LAYOUT {
+        // **The characters.** What the engine says produces each one.
         for point in every_code_point_asked_for() {
-            let said = std::process::Command::new("xkbcli")
-                .args(["how-to-type", "--layout", layout, &format!("0x{point:04X}")])
-                .output()
-                .expect("xkbcli answered a moment ago");
-            for line in String::from_utf8_lossy(&said.stdout).lines() {
-                let Some((x11, rest)) = line.split_once(char::is_whitespace) else {
-                    continue;
-                };
-                let Ok(x11) = x11.trim().parse::<u16>() else {
-                    continue;
-                };
-                let Some((before, mods)) = rest.rsplit_once('[') else {
-                    continue;
-                };
-                let Some(mods) = mods.split(']').next() else {
-                    continue;
-                };
-                // only the first layout group, which is the one a person chose
-                if before.split_whitespace().nth(1) != Some("1") {
-                    continue;
-                }
-                let mut held: Vec<&str> = mods.split_whitespace().collect();
-                held.sort_unstable();
-                let held = held.join(" ");
-                let evdev = x11 - THE_X11_OFFSET;
-                if seen.insert((layout, evdev, held.clone())) {
-                    let character = char::from_u32(point).expect("a code point this test named");
-                    writeln!(
-                        rebuilt,
-                        "{layout}\t{evdev}\t{held}\tU+{point:04X}\t{character}"
-                    )
-                    .expect("writing to a String");
-                }
+            let character = char::from_u32(point).expect("a code point this test named");
+            for (evdev, held) in
+                what_the_engine_said(&how_to_type(layout, &format!("0x{point:04X}"), false))
+            {
+                rows.entry((layout, evdev, held))
+                    .or_insert_with(|| format!("U+{point:04X}\t{character}"));
             }
         }
+        // **The dead levels.** A level whose keysym produces no character has no
+        // row above, and an absent row and an ignored modifier are the same
+        // absence — which is how AltGr-with-shift on Belgian's circumflex key
+        // answered `[`, its own level 3, instead of nothing. Asked by keysym
+        // NAME, which `how-to-type` accepts, so the engine still answers and
+        // nothing here interprets its format.
+        for name in dead_keysyms_of(layout) {
+            for (evdev, held) in what_the_engine_said(&how_to_type(layout, &name, true)) {
+                rows.entry((layout, evdev, held))
+                    .or_insert_with(|| format!("dead\t{name}"));
+            }
+        }
+    }
+
+    let mut rebuilt = String::new();
+    for ((layout, evdev, held), what) in &rows {
+        writeln!(rebuilt, "{layout}\t{evdev}\t{held}\t{what}").expect("writing to a String");
     }
 
     let beside = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("the-keyboards.txt");
@@ -479,6 +481,97 @@ fn the_table_is_what_the_engine_says() {
             "row {n} of the keyboard table is not what the engine says today"
         );
     }
+}
+
+/// Ask the engine about one character or one keysym on one layout.
+fn how_to_type(layout: &str, what: &str, by_keysym: bool) -> String {
+    let mut args = vec!["how-to-type"];
+    if by_keysym {
+        args.push("--keysym");
+    }
+    args.extend(["--layout", layout, what]);
+    let said = std::process::Command::new("xkbcli")
+        .args(&args)
+        .output()
+        .expect("xkbcli answered a moment ago");
+    String::from_utf8_lossy(&said.stdout).into_owned()
+}
+
+/// Every (evdev code, modifiers) the engine named for the first layout group.
+///
+/// The modifier names are sorted so a row is one string rather than a set, and
+/// the keycode has [`THE_X11_OFFSET`] taken off it because this table is read
+/// against `/dev/input/event*`.
+fn what_the_engine_said(out: &str) -> Vec<(u16, String)> {
+    let mut found = Vec::new();
+    for line in out.lines() {
+        let Some((x11, rest)) = line.split_once(char::is_whitespace) else {
+            continue;
+        };
+        let Ok(x11) = x11.trim().parse::<u16>() else {
+            continue;
+        };
+        let Some((before, mods)) = rest.rsplit_once('[') else {
+            continue;
+        };
+        let Some(mods) = mods.split(']').next() else {
+            continue;
+        };
+        if before.split_whitespace().nth(1) != Some("1") {
+            continue;
+        }
+        let mut held: Vec<&str> = mods.split_whitespace().collect();
+        held.sort_unstable();
+        found.push((x11 - THE_X11_OFFSET, held.join(" ")));
+    }
+    found
+}
+
+/// Which dead keysyms this layout actually puts on a key.
+///
+/// **Chosen from the data rather than from a list somebody wrote.** A compiled
+/// keymap names every keysym on every key, so the dead ones are read out of it —
+/// 17 across the eight layouts, 13 to 16 on each, and **none at all on `us`**,
+/// which is exactly why a divergence here is invisible to anyone testing on a
+/// US board.
+///
+/// This reads names out of a flat generated list. It does not resolve an
+/// `include`, choose a variant or infer a type, which is the line between
+/// configuring the engine and becoming it.
+fn dead_keysyms_of(layout: &str) -> Vec<String> {
+    let said = std::process::Command::new("xkbcli")
+        .args(["compile-keymap", "--layout", layout])
+        .output()
+        .expect("xkbcli compiles a keymap");
+    let text = String::from_utf8_lossy(&said.stdout);
+    let Some((_, symbols)) = text.split_once("xkb_symbols") else {
+        panic!("a compiled keymap for {layout} has no symbols section");
+    };
+    let mut names = std::collections::BTreeSet::new();
+    // Key declarations run over several lines on nineteen to twenty-one keys per
+    // layout, so this accumulates to the `;` rather than reading line by line —
+    // the desktop lane's parse read one-line keys only and German could not type
+    // a question mark.
+    let mut inside: Option<String> = None;
+    for line in symbols.lines() {
+        if inside.is_none() && line.contains("key <") {
+            inside = Some(String::new());
+        }
+        if let Some(held) = inside.as_mut() {
+            held.push_str(line);
+            if line.contains(';') {
+                let whole = std::mem::take(held);
+                inside = None;
+                let Some(at) = whole.find('[') else { continue };
+                for word in whole[at..].split(|c: char| !c.is_alphanumeric() && c != '_') {
+                    if word.starts_with("dead_") {
+                        names.insert(word.to_owned());
+                    }
+                }
+            }
+        }
+    }
+    names.into_iter().collect()
 }
 
 /// **Every answer the engine gives, reproduced by the lookup** — the desktop
@@ -599,8 +692,8 @@ fn the_lookup_reproduces_every_answer_the_engine_gives() {
     );
 }
 
-/// **A dead level resolves to its neighbour, which is a known divergence from
-/// the keymap and is pinned here rather than left to be discovered.**
+/// **A dead level gives nothing, rather than the character on the level beside
+/// it.**
 ///
 /// *Predicted by the desktop lane on 2026-10-21 and measured here.* Belgian's
 /// `AD11` is `[dead_circumflex, dead_diaeresis, bracketleft, dead_abovering]` —
@@ -625,7 +718,7 @@ fn the_lookup_reproduces_every_answer_the_engine_gives() {
 /// **This test pins the wrong answer on purpose.** When the generator learns
 /// about dead levels this test fails, which is how it should be found.
 #[test]
-fn a_dead_level_resolves_to_its_neighbour_which_is_known_and_wrong() {
+fn a_dead_level_gives_nothing_rather_than_its_neighbour() {
     const BELGIAN_CIRCUMFLEX: u16 = 26;
 
     // The three that are right.
@@ -652,9 +745,24 @@ fn a_dead_level_resolves_to_its_neighbour_which_is_known_and_wrong() {
             BELGIAN_CIRCUMFLEX,
             Held::nothing().and_altgr().and_shift()
         ),
-        Some('['),
-        "KNOWN DIVERGENCE: level 4 is dead_abovering and should give nothing. \
-         If this now answers None, the generator has learnt about dead levels \
-         and this test should be rewritten to assert that."
+        None,
+        "level 4 is dead_abovering and gives no character"
+    );
+
+    // The control on the whole fix: this key now has four rows, one per
+    // level, three of them dead. Before the generator learnt about dead
+    // levels it had exactly one.
+    let its_rows: Vec<_> = every_row()
+        .filter(|(layout, code, ..)| *layout == "be" && *code == BELGIAN_CIRCUMFLEX)
+        .collect();
+    assert_eq!(
+        its_rows.len(),
+        4,
+        "every level of this key should have a row"
+    );
+    assert_eq!(
+        its_rows.iter().filter(|(.., what)| what.is_none()).count(),
+        3,
+        "three of this key's four levels are dead"
     );
 }
