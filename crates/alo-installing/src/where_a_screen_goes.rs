@@ -152,13 +152,88 @@ pub struct AScreensPlaces {
     pub quiet: TheType,
 }
 
+/// The one gap between every part of the block.
+///
+/// **Not a seventh number: the only one.** The offsets this file was first
+/// written from — the title at 32, the introduction at 136, the first card at
+/// 177, the line under them at 375, the actions at 413 — are not independent.
+/// Each part sits exactly sixteen below where the part above it ends, and all
+/// five follow from that:
+///
+/// | part | sits at | and the part above ends at |
+/// |---|---|---|
+/// | title | 32 | 16 |
+/// | introduction | 136 | 120 |
+/// | first card | 177 | 161 |
+/// | the line under the cards | 375 | 359 |
+/// | the actions | 413 | 397 |
+///
+/// Measured off the adopted frames on 2026-10-20, and it matters because those
+/// offsets are a **snapshot of this flow taken with a one-line introduction.**
+/// `words.rs` gives the keyboard screen an introduction of 120 characters,
+/// which is two lines where the design was drawn and five or six in the
+/// narrowest block this file lays out for — and the slot those offsets give it
+/// is one line with sixteen of clearance. Laid out from the offsets, **the
+/// second line of that sentence would have been drawn over the first card.**
+pub const THE_GAP: u32 = 16;
+
+/// How much there is to put in the block, which is what moves everything below.
+///
+/// Counted in lines rather than in pixels because the caller is the only thing
+/// that can know: how many lines a sentence takes depends on the typeface and
+/// on the block's width, which is [`crate::wrapped`]'s question and not this
+/// file's.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HowMuchThereIs {
+    /// How many lines the question takes.
+    pub title_lines: u32,
+    /// How many lines the sentence under it takes.
+    pub introduction_lines: u32,
+    /// How many cards there are.
+    pub cards: u32,
+    /// How many lines the quiet line under the cards takes.
+    pub consequence_lines: u32,
+}
+
+impl HowMuchThereIs {
+    /// What the adopted frames hold, which is what the design was drawn with.
+    ///
+    /// Two lines of title, because that is the height the frames give it; one
+    /// line of introduction; two cards; one quiet line. Laying out with this
+    /// reproduces every one of the measured offsets exactly, which is how the
+    /// flow is shown to be the right reading of them rather than a new layout
+    /// wearing their numbers.
+    #[must_use]
+    pub const fn as_the_frames_were_drawn() -> Self {
+        Self {
+            title_lines: 2,
+            introduction_lines: 1,
+            cards: 2,
+            consequence_lines: 1,
+        }
+    }
+}
+
 /// Where everything goes on a display this size.
 ///
 /// `glass` is what the display says about its own physical size, where it says
 /// anything. It is used **only** by the legibility floor — never to place
 /// anything — so a display that reports nothing still lays out.
+///
+/// `how_much` is how many lines of text and how many cards the screen holds.
+/// Everything below a part moves when that part grows, which is the whole
+/// point — see [`THE_GAP`].
+///
+/// [`None`] where the display is too small to lay out at all, **and where what
+/// was asked for does not fit above the accessibility button** — a screen with
+/// more in it than there is room for is said rather than drawn over itself.
 #[must_use]
-pub fn where_a_screen_goes(across: u32, down: u32, glass: Option<Glass>) -> Option<AScreensPlaces> {
+pub fn where_a_screen_goes(
+    across: u32,
+    down: u32,
+    glass: Option<Glass>,
+    how_much: HowMuchThereIs,
+) -> Option<AScreensPlaces> {
     // **Too small to lay out is said rather than squeezed.** A screen that
     // asks whether to erase a disk, drawn into less room than its own words
     // need, is worse than one that says it cannot be drawn.
@@ -190,26 +265,79 @@ pub fn where_a_screen_goes(across: u32, down: u32, glass: Option<Glass>) -> Opti
         tall,
     };
 
+    // The flow. Each part is placed where the one above it ended, plus the one
+    // gap — so a sentence that wraps to three lines pushes the cards down
+    // rather than having its second and third lines drawn over them.
+    let gap = down_from(THE_GAP);
+    let card_to_card = a_card_is_tall + down_from(10);
+    let mut flowing = 0_u32;
+    let mut next = |tall: u32| {
+        let here = flowing;
+        flowing += tall + gap;
+        here
+    };
+
+    let eyebrow = at(next(small.apart), wide, small.apart);
+    let title = at(
+        next(title_type.apart * how_much.title_lines),
+        wide,
+        title_type.apart * how_much.title_lines,
+    );
+    let introduction = at(
+        next(body.apart * how_much.introduction_lines),
+        wide,
+        body.apart * how_much.introduction_lines,
+    );
+    // The cards are one part of the flow: `n` of them reach from the first
+    // card's top to `(n - 1) * card_to_card + a_card_is_tall`, because the last
+    // one has no gap after it inside the group.
+    let all_the_cards = how_much
+        .cards
+        .saturating_sub(1)
+        .saturating_mul(card_to_card)
+        .saturating_add(if how_much.cards == 0 {
+            0
+        } else {
+            a_card_is_tall
+        });
+    let first_card = at(next(all_the_cards), wide, a_card_is_tall);
+    let consequence = at(
+        next(quiet.apart * how_much.consequence_lines),
+        wide,
+        quiet.apart * how_much.consequence_lines,
+    );
+    let actions_at = next(a_button_is_tall);
+
+    let accessibility = AnArea {
+        across: share_across(40.0 / 1440.0),
+        down: down - down_from(84),
+        wide: button,
+        tall: a_button_is_tall,
+    };
+
+    // **More in the block than the block holds is said rather than drawn.** The
+    // accessibility button is fixed to the bottom edge, so it is what the flow
+    // can run into, and a screen whose way forward is underneath it is a screen
+    // a person cannot leave.
+    if top + actions_at + a_button_is_tall > accessibility.down {
+        return None;
+    }
+
     Some(AScreensPlaces {
-        eyebrow: at(0, wide, small.apart),
-        title: at(down_from(32), wide, title_type.apart * 2),
-        introduction: at(down_from(136), wide, body.apart),
-        first_card: at(down_from(177), wide, a_card_is_tall),
-        card_to_card: a_card_is_tall + down_from(10),
-        consequence: at(down_from(375), wide, quiet.apart),
-        onward: at(down_from(413), button, a_button_is_tall),
+        eyebrow,
+        title,
+        introduction,
+        first_card,
+        card_to_card,
+        consequence,
+        onward: at(actions_at, button, a_button_is_tall),
         back: AnArea {
             across: left + button + down_from(12),
-            down: top + down_from(413),
+            down: top + actions_at,
             wide: button,
             tall: a_button_is_tall,
         },
-        accessibility: AnArea {
-            across: share_across(40.0 / 1440.0),
-            down: down - down_from(84),
-            wide: button,
-            tall: a_button_is_tall,
-        },
+        accessibility,
         small,
         title_type,
         body,
