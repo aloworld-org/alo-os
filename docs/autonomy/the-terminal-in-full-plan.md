@@ -40,13 +40,46 @@ a date on it:
 | ★ | alo says what it measured apart from what it worked out | **built** — the same gutter's `system` against `alo` |
 | ★ | Why is it waiting? | **built and drawn** — `Ctrl`+`Alt`+`W` draws `alo  waiting for the keyboard`, and `waiting for something alo cannot identify` for a clock. This row said *no surface* until 2026-10-17; the surface was there and **drew nothing a person could read**, which #778 fixed |
 | ★ | Scrollback you can move along | **built** — back, forward, and it stops at both ends |
-| ★ | Try a command without letting it touch anything | **the box is built** — #729, 2026-10-16, and it passes on a real kernel. This row said it did not exist. **Nothing calls it**, and how a person asks is a surface the design does not specify |
-| ★ | Scope one command without changing a setting | **nothing** |
-| ★ | Find a command by what it did | **nothing** |
+| ★ | Try a command without letting it touch anything | **built, called and reachable** — the box #729, the caller and the prefix #817, 2026-10-18. A person types `try ./install.sh`. **Never seen on a machine.** *This row said* nothing calls it, and how a person asks is a surface the design does not specify *until 2026-10-21; the owner chose the word on 2026-10-18* |
+| ★ | Scope one command without changing a setting | **built** — `--only-here` in #818, merged 2026-10-19, and `--offline` was already true of any boxed run. **Never seen on a machine.** *This row said* **nothing** *until 2026-10-21, while task 5 of this same file said it was built* |
+| ★ | Find a command by what it did | **the verb is built and offered** — #812, merged 2026-10-18, after the owner chose the surface. Reachable by the agent, which is what *a question to alo* means. **Never seen on a machine.** *This row said* **nothing** *until 2026-10-21, while task 4 of this same file said it was built* |
 | ★ | Bisect the machine, not the repository | **nothing** |
 | ★ | Output that is not stuck in a character grid | **the first rich view is built and drawn** — a recognised test result, #761, and its two lines were cropped into the gutter's label box until #778. This row said *nothing*. Two more views are unspecified in the design |
-| ★ | Hand somebody a session they can replay | **nothing** — the commands wait on ADR 0123, what each changed on ADR 0045 |
-| | Explain a command before it runs | **the answer half is built** — `WhatACommandWillDo`; the asking is decided by ADR 0123, **accepted 2026-10-18**, and is buildable |
+| ★ | Hand somebody a session they can replay | **nothing** — still right, but **one of its two stated causes is gone**: ADR 0123 was accepted 2026-10-18, so knowing the commands is no longer what blocks it. Task 7 of this file records that; this row did not. What is left is the privileged comparer, and somewhere to keep a person's own commands |
+| | Explain a command before it runs | **built** — #805, merged 2026-10-18: the shell integration tells alo what was typed, `Ctrl`+`X` `Ctrl`+`A` asks, and the explanation comes back on the road the owner chose. **Never seen on a machine.** *This row said* the asking … **is buildable** *until 2026-10-21. It was written at 07:58:15Z on 2026-10-18 and #805 merged at 18:15:51Z the same day, so it was accurate for **10.3 hours** and stale for three days* |
+
+**And five of these thirteen rows were wrong on 2026-10-21, four of them in the
+same direction again.** Counted rather than estimated, because the first version
+of this paragraph said *three* and had stopped looking after the three it set out
+to check:
+
+| row | what it said | what had happened |
+|---|---|---|
+| try a command touching nothing | nothing calls it, the surface is unspecified | #817, 2026-10-18 |
+| scope one command | **nothing** | #818, merged 2026-10-19 |
+| find a command by what it did | **nothing** | #812, merged 2026-10-18 |
+| explain a command before it runs | the asking *is buildable* | #805, merged 2026-10-18 |
+| hand somebody a session they can replay | *nothing* — correct — but blocked on ADR 0123 | 0123 accepted 2026-10-18 |
+
+The first four understated what was built. The fifth was right about the state
+and wrong about the cause, which is the one a reader acts on. **Four of the five
+had the answer written in this same file's own task sections**, and the fifth in
+an ADR this file cites by number.
+
+The table's preamble says it was checked against the code *because a status note
+is a measurement with a date on it*, and then the table became the status note.
+**A summary and its own detail disagreeing is the cheapest fault here to find and
+the easiest to leave**: it needs no external source and no machine, only reading
+two parts of one file together — which is why it is worth a pass of its own after
+anything lands, and why *three* was the wrong number to stop at.
+
+*Checked the other way too: with those five corrected, all thirteen rows here now
+agree with the Mac lane's order, read side by side on 2026-10-21. **One row
+disagrees in the other direction**, and it is the order's: its* bisects the
+machine *says* and waits on a bracket*, while task 8 below records the bracket
+landing in #767 on 2026-10-17 and says the task no longer waits on it. That is
+the order's line to fix and is named here rather than reached across, because
+another change is in flight against that file.*
 
 **Four of these rows were wrong on 2026-10-17 and all four in the same
 direction** — they understated what was built, because nobody had drawn the
@@ -543,9 +576,13 @@ is not this plan's to build.
 
 ### 9. Try a command without letting it touch anything
 
-**Status:** **the box is built and demonstrated; nothing calls it, and the
-surface is the owner's.** **Depends on:** a decision on how a person asks for a
-sealed-box run.
+**Status:** **built and landed — the box, the caller and the prefix.** #817 on
+2026-10-18 after the owner chose the word, `--only-here` in #818. **Never seen
+on a machine**, which is the fourth condition and the only one outstanding.
+**Depends on:** nothing. *This line read* the box is built and demonstrated;
+nothing calls it, and the surface is the owner's *until 2026-10-21, and its
+stated dependency — a decision on how a person asks for a sealed-box run — was
+answered by the owner on 2026-10-18, the day after it was written.*
 
 **This task's status was wrong on the day it was written.** It said *the box the
 kernel locks down is not built* while citing `alo-running`, the crate that
@@ -562,21 +599,57 @@ control group, put its id and places into the boundary's map, start
 root, one reading the file the box was given and one refused the file it was
 not. They fail rather than skip without a writable `/sys/fs/bpf`.
 
-**What is owed, and it is the fault this plan exists to stop, a sixth time:**
+**What was owed, measured 2026-10-17 — and three of these four rows stopped
+being true the next day:**
 
-| | |
-|---|---|
-| crates depending on `alo-running` | **none** |
-| readers of `alo_capability::HowCodeRuns` outside it | **none**, so the level a person chooses decides nothing |
-| what the design says about how a person asks | **nothing** — the only match for *box* in `docs/design/the-terminal-window.md` is a label's bounding box |
-| what ADR 0064 says about it | **nothing** — no prefix, command or chord |
+| | then | **re-measured 2026-10-21** |
+|---|---|---|
+| crates depending on `alo-running` | **none** | **`crates/alo-try`**, and only it |
+| readers of `alo_capability::HowCodeRuns` outside it | **none**, so the level a person chooses decides nothing | **`crates/alo-try/src/main.rs`** — but *the level a person chooses still decides nothing*, which is the half of this row that survived |
+| what the design says about how a person asks | **nothing** | still nothing in the design file — **and it no longer blocks anything**, because the owner answered it in conversation rather than in the design |
+| what ADR 0064 says about it | **nothing** — no prefix, command or chord | still nothing in 0064 — **the prefix is `try`**, chosen by the owner on 2026-10-18 and landed in #817, with `--only-here` in #818 |
 
-So a caller cannot be built without inventing the surface it is called from, and
-`CLAUDE.md` sends a design that is silent to the owner. **One sentence on the
-scope judgement**: wiring the level to the box *makes an existing promise true*
-and would be this lane's, but *how a person asks* is a surface the design does
-not specify, which is the owner's — so the task stops here rather than guessing
-a prefix.
+**So the task did not stop where this said it stopped.** It said *a caller
+cannot be built without inventing the surface it is called from*, and the owner
+supplied the surface the next day; the caller was built against it and landed.
+A person types `try ./install.sh`, and `try` is a shell **function** in
+`crates/alo-terminal/shell-integration/alo.bash`, guarded on
+`command -v alo-try` so that a `try` which could only fail is never defined.
+
+**The surviving row is the important one.** `HowCodeRuns` is named in 11 files
+across exactly three crates — `alo-running`, `alo-capability`, `alo-try` — and
+**none stores or reads a person's choice of level**. `try` does not close that
+and is not meant to: it passes `HowCodeRuns::InASealedBox` as a literal,
+deliberately, because *a person who typed `try` asked for a sealed box for this
+one command, whatever their setting says*. The gap belongs to the first of the
+thirteen — *decides whether alo may use it* — which the Mac lane's order already
+carries as **blocked**.
+
+**What is owed now, and no task in this plan owns it.** The snippet that defines
+`try` is `include_str!`'d into the binary and **a person installs it by hand**.
+[ADR 0123](../decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md)
+term 6, accepted by the owner on 2026-10-18, promises *the snippet, the sentence
+saying plainly what it reveals, **and a one-press way to add it***. The one-press
+way is **not built**, and `crates/alo-terminal/src/the_snippet_a_person_installs.rs`
+says so in its own header rather than leaving it to be found: what surface offers
+it is a decision nobody has made, and a file that installed itself would break
+the term it was written for.
+
+Searched 2026-10-21 under ten spellings — `one-press`, `one press`, `offers to
+add`, `install the snippet`, `add it for`, `adds it`, `paste`, `bashrc`,
+`.bashrc`, `shell startup` — **it appears nowhere in this plan, in
+`docs/features.md`, or in the Mac lane's order.** `paste` matches five times in
+`features.md` and every one is about copy-and-paste or an install script, not
+the snippet. So it is an accepted promise that no task owns, and it reaches
+every terminal feature that needs the integration: what a person typed, the
+explanation on `Ctrl`+`X` `Ctrl`+`A`, and `try` itself.
+
+**One sentence on the scope judgement**, which is the same one this task made
+and got right for a different row: building the one-press way *makes an existing
+promise true*, because ADR 0123 term 6 already promises it — but *what surface
+offers it* is a decision nobody has made, and `CLAUDE.md` says that when the
+answer is not obvious it is scope. So it is written down here for the owner
+rather than guessed at, exactly as the prefix was, and the prefix took one day.
 
 ### 10. *Choose one, and your files are as they were*
 
