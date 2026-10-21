@@ -100,6 +100,8 @@ pub use ink_on_the_surface::a_row_of_ink;
 // `alo-portals` compiling for Windows from #635 to #839.
 #[cfg(unix)]
 pub use a_surface_to_draw_on::fill;
+// The same gate, for the same reason, on the one function in
+// `ink_on_the_surface` that writes.
 pub use complaint::{Complaint, THE_LAST_LINES};
 pub use console::{ACTIVE, every_console, every_serial_line};
 pub use disk::{BY_ID, DiskName, NotADisk, NotAPartition, PartitionName};
@@ -110,6 +112,8 @@ pub use disks::{
 pub use ended::{Ended, Refusal};
 pub use entries::{Entries, Entry, THE_ENTRYS_NAME, THE_LOADER_THE_BASE_INSTALLS};
 pub use environment::{Environment, WHERE_IT_IS};
+#[cfg(unix)]
+pub use ink_on_the_surface::draw;
 pub use joining_a_network::{ANetwork, NotJoined, TEMPORARY, every_network, why_not_joined};
 pub use machine::{BEFORE_RESTARTING, STILL_EVERY, THE_DISK_APPEARS_WITHIN, TheMachine};
 pub use program::{EVERY_PROGRAM, Program, Ran};
