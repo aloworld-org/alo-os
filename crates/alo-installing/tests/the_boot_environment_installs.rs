@@ -190,12 +190,14 @@ impl TheMachine for Scripted {
         if *program == Program::WaitingForTheNetwork {
             return Ok(Ran {
                 succeeded: self.connects,
+                exit_code: None,
                 ..Ran::default()
             });
         }
         if *program == Program::Restarting {
             return Ok(Ran {
                 succeeded: true,
+                exit_code: None,
                 ..Ran::default()
             });
         }
@@ -222,6 +224,7 @@ fn the_environment() -> Environment {
 fn succeeded(printed: &str) -> std::io::Result<Ran> {
     Ok(Ran {
         succeeded: true,
+        exit_code: None,
         printed: printed.to_owned(),
         complained: String::new(),
     })
@@ -231,6 +234,7 @@ fn succeeded(printed: &str) -> std::io::Result<Ran> {
 fn failed(complained: &str) -> std::io::Result<Ran> {
     Ok(Ran {
         succeeded: false,
+        exit_code: None,
         printed: String::new(),
         complained: complained.to_owned(),
     })
@@ -295,7 +299,7 @@ fn a_genuine_release_onto_the_chosen_disk_is_installed_with_every_step_said() {
         .answering(succeeded(THE_DISKS))
         .answering(succeeded(""));
 
-    let ended = install(&mut machine, &strings(), Ok(&environment));
+    let ended = install(&mut machine, &strings(), Ok(&environment), None);
 
     let disk = alo_installing::DiskName::named("virtio-alo-target").expect("a disk");
     assert_eq!(ended, Ended::Installed(disk.clone()));
@@ -391,7 +395,7 @@ fn a_release_whose_signature_does_not_verify_writes_nothing_and_says_so() {
             "Error: no matching signatures: error verifying bundle: failed to verify signature",
         ));
 
-    let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+    let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
     refused_with(
         &machine,
@@ -507,7 +511,7 @@ fn alo_os_goes_into_the_space_the_installer_made_and_windows_stays() {
         .answering(succeeded(""));
     let mut machine = the_tidying_answers(machine, THE_DISKS_BESIDE);
 
-    let ended = install(&mut machine, &strings(), Ok(&environment));
+    let ended = install(&mut machine, &strings(), Ok(&environment), None);
 
     let disk = alo_installing::DiskName::named("virtio-alo-windows").expect("a disk");
     assert_eq!(ended, Ended::Installed(disk));
@@ -609,7 +613,7 @@ fn windows_own_volume_named_as_the_space_is_refused_and_nothing_is_made() {
             the_environment().pin().digest(),
         )));
 
-    let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+    let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
     let disk = alo_installing::DiskName::named("virtio-alo-windows").expect("a disk");
     refused_with(
@@ -663,7 +667,7 @@ fn a_space_named_on_another_disk_is_refused() {
             the_environment().pin().digest(),
         )));
 
-    let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+    let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
     let disk = alo_installing::DiskName::named("virtio-alo-windows").expect("a disk");
     assert_eq!(
@@ -687,7 +691,7 @@ fn a_space_that_never_appeared_is_refused() {
             the_environment().pin().digest(),
         )));
 
-    let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+    let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
     let disk = alo_installing::DiskName::named("virtio-alo-windows").expect("a disk");
     assert_eq!(
@@ -714,7 +718,7 @@ fn half_a_road_and_both_roads_are_refused_before_anything_is_read() {
         let mut machine = Scripted::choosing("virtio-alo-windows");
         machine.command_line = Ok(line.to_owned());
 
-        let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+        let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
         refused_with(
             &machine,
@@ -754,7 +758,7 @@ fn a_verification_of_some_other_release_writes_nothing() {
         .answering(succeeded(THE_DISKS))
         .answering(succeeded(&the_owners_verification(&other)));
 
-    let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+    let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
     refused_with(
         &machine,
@@ -774,7 +778,7 @@ fn a_release_that_cannot_be_reached_writes_nothing_and_says_why() {
             "Error: Get \"https://ghcr.io/v2/\": dial tcp: lookup ghcr.io on [::1]:53: connection refused",
         ));
 
-    let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+    let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
     refused_with(
         &machine,
@@ -795,7 +799,7 @@ fn with_no_disk_chosen_nothing_is_looked_at_or_written() {
         let mut machine = Scripted::choosing("virtio-alo-target");
         machine.command_line = Ok(line.to_owned());
 
-        let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+        let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
         refused_with(
             &machine,
@@ -820,7 +824,7 @@ fn a_choice_that_is_not_one_disk_is_not_guessed_at() {
         let mut machine = Scripted::choosing("virtio-alo-target");
         machine.command_line = line;
 
-        let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+        let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
         refused_with(
             &machine,
@@ -837,7 +841,7 @@ fn a_choice_that_is_not_one_disk_is_not_guessed_at() {
 fn part_of_a_disk_is_refused() {
     let mut machine = Scripted::choosing("virtio-alo-target-part1");
 
-    let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+    let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
     refused_with(
         &machine,
@@ -857,7 +861,7 @@ fn part_of_a_disk_is_refused() {
 fn a_disk_that_never_appears_is_refused() {
     let mut machine = Scripted::choosing("usb-Somebodys_Stick_0001");
 
-    let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+    let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
     refused_with(
         &machine,
@@ -895,7 +899,7 @@ fn the_installers_own_disk_and_another_systems_disk_are_refused_before_the_netwo
     ] {
         let mut machine = Scripted::choosing(chosen).answering(succeeded(THE_DISKS));
 
-        let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+        let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
         refused_with(&machine, &ended, &refusal, &english(word(sentence), chosen));
         assert_eq!(machine.ran, [Program::ListingTheDisks], "{chosen}");
@@ -912,7 +916,7 @@ fn disks_that_cannot_be_read_are_not_assumed_empty() {
     ] {
         let mut machine = Scripted::choosing("virtio-alo-target").answering(answer);
 
-        let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+        let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
         refused_with(
             &machine,
@@ -929,7 +933,7 @@ fn disks_that_cannot_be_read_are_not_assumed_empty() {
 #[test]
 fn a_damaged_environment_refuses_before_reading_anything() {
     let mut machine = Scripted::choosing("virtio-alo-target");
-    let ended = install(&mut machine, &strings(), Err(Refusal::Damaged));
+    let ended = install(&mut machine, &strings(), Err(Refusal::Damaged), None);
     refused_with(
         &machine,
         &ended,
@@ -946,7 +950,7 @@ fn a_damaged_environment_refuses_before_reading_anything() {
     let mut machine = Scripted::choosing("virtio-alo-target")
         .answering(succeeded(THE_DISKS))
         .answering(Err(std::io::Error::from(std::io::ErrorKind::NotFound)));
-    let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+    let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
     refused_with(
         &machine,
         &ended,
@@ -986,7 +990,7 @@ fn a_write_that_does_not_finish_is_said_plainly_and_never_restarts() {
             )))
             .answering(answer);
 
-        let ended = install(&mut machine, &strings(), Ok(&environment));
+        let ended = install(&mut machine, &strings(), Ok(&environment), None);
 
         let disk = alo_installing::DiskName::named("virtio-alo-target").expect("a disk");
         assert_eq!(ended, Ended::NotInstalled(disk));
@@ -1081,7 +1085,7 @@ fn with_no_connection_the_refusal_names_which_of_three() {
             .answering(succeeded(cards));
         machine.connects = false;
 
-        let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+        let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
         refused_with(&machine, &ended, &refusal, word(key).says());
         assert_eq!(
@@ -1110,7 +1114,7 @@ fn a_reading_that_did_not_happen_says_only_what_is_known() {
             .answering(cards);
         machine.connects = false;
 
-        let ended = install(&mut machine, &strings(), Ok(&the_environment()));
+        let ended = install(&mut machine, &strings(), Ok(&the_environment()), None);
 
         refused_with(
             &machine,

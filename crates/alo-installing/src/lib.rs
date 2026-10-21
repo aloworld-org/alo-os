@@ -55,6 +55,7 @@
 
 mod a_key_reaches_here;
 mod a_line_as_coverage;
+mod a_screen_is_drawn;
 mod a_surface_to_draw_on;
 mod alos_own_face;
 mod complaint;
@@ -71,17 +72,26 @@ mod program;
 #[cfg(target_os = "linux")]
 mod running;
 mod sequence;
+mod the_asking_walks;
+mod the_environment_asks;
 mod the_screen_that_lists_every_layout;
 mod tidying;
 mod told;
 mod verifying;
+mod what_a_person_typed;
 mod what_display_there_is;
+mod what_each_screen_says;
 mod where_a_list_screen_goes;
 mod where_a_screen_goes;
 mod which_choices_are_shown;
 mod which_disks_may_be_offered;
 mod why_there_is_no_network;
-mod words;
+// **Public, because whoever draws a screen needs the sentences on it.** The
+// constants are what `what_each_screen_says` chooses among and what
+// `main` says while a program runs; a drawer that could not reach them
+// would have to hold its own copy of the English, which is the one thing this
+// crate exists to prevent.
+pub mod words;
 mod wrapping;
 mod writing;
 
@@ -89,6 +99,9 @@ pub use a_key_reaches_here::{
     ONE_EVENT, Pressed, WHERE_THE_KEYS_ARE, has_key, is_a_keyboard, what_was_pressed,
 };
 pub use a_line_as_coverage::{ACoverage, a_line_as_coverage};
+pub use a_screen_is_drawn::{
+    ALineToDraw, TheWordsOfAScreen, WhatAScreenShows, what_a_screen_shows,
+};
 pub use a_surface_to_draw_on::{
     Grey, NoSurface, TheSurface, WHERE_THE_DEPTH_IS, WHERE_THE_PIXELS_GO, WHERE_THE_SIZE_IS,
     WHERE_THE_STRIDE_IS,
@@ -102,6 +115,8 @@ pub use ink_on_the_surface::a_row_of_ink;
 pub use a_surface_to_draw_on::fill;
 // The same gate, for the same reason, on the one function in
 // `ink_on_the_surface` that writes.
+#[cfg(unix)]
+pub use a_screen_is_drawn::draw_a_screen;
 pub use complaint::{Complaint, THE_LAST_LINES};
 pub use console::{ACTIVE, every_console, every_serial_line};
 pub use disk::{BY_ID, DiskName, NotADisk, NotAPartition, PartitionName};
@@ -114,12 +129,20 @@ pub use entries::{Entries, Entry, THE_ENTRYS_NAME, THE_LOADER_THE_BASE_INSTALLS}
 pub use environment::{Environment, WHERE_IT_IS};
 #[cfg(unix)]
 pub use ink_on_the_surface::draw;
-pub use joining_a_network::{ANetwork, NotJoined, TEMPORARY, every_network, why_not_joined};
+pub use joining_a_network::{ANetwork, NotJoined, TEMPORARY, every_network, join, why_not_joined};
 pub use machine::{BEFORE_RESTARTING, STILL_EVERY, THE_DISK_APPEARS_WITHIN, TheMachine};
 pub use program::{EVERY_PROGRAM, Program, Ran};
 #[cfg(target_os = "linux")]
 pub use running::OnThisMachine;
 pub use sequence::install;
+pub use the_asking_walks::{TheAnswers, TheAsking, WhatThePersonDid, WhatTheRingIsOn, WhichScreen};
+pub use the_environment_asks::what_the_person_did;
+pub use what_a_person_typed::{Typed, WhatAPersonTyped};
+pub use what_each_screen_says::{how_many_cards, what_this_screen_says};
+// Gated with the item it names: it opens the framebuffer and a keyboard, and
+// this crate must still cross-compile for Windows.
+#[cfg(unix)]
+pub use the_environment_asks::ask;
 pub use the_screen_that_lists_every_layout::{ALayoutsCard, EveryLayoutThisComputerKnows};
 pub use tidying::{Tidied, tidy_up};
 pub use told::{

@@ -49,10 +49,11 @@ pub fn install(
     machine: &mut impl TheMachine,
     strings: &Strings,
     environment: Result<&Environment, Refusal>,
+    chosen: Option<Told>,
 ) -> Ended {
     say(machine, strings, words::STARTING, &Filling::nothing());
     let ended = match environment {
-        Ok(environment) => installing(machine, strings, environment),
+        Ok(environment) => installing(machine, strings, environment, chosen),
         Err(refusal) => Ended::Refused(refusal),
     };
 
@@ -86,8 +87,9 @@ fn installing(
     machine: &mut impl TheMachine,
     strings: &Strings,
     environment: &Environment,
+    chosen: Option<Told>,
 ) -> Ended {
-    match before_writing(machine, strings, environment) {
+    match before_writing(machine, strings, environment, chosen) {
         Err(refusal) => Ended::Refused(refusal),
         Ok((writing, disk)) => {
             // **The disk the person chose, not the one the write names.** On the
@@ -190,10 +192,43 @@ fn made_the_root(
 /// question: a write can name a partition, and everything after it — what is
 /// said, what is tidied, what the environment ends with — is about the disk the
 /// person chose.
+/// What the kernel command line says was chosen, where that is the road taken.
+///
+/// **Which word was wrong is kept, and kept off the screen.** The person is
+/// told in the vocabulary, which never names a kernel word; whoever helps them
+/// afterwards needs to know exactly which one. Three of these can only happen
+/// if the installer that staged this line staged it wrong — a half-named road,
+/// or a name that is not a partition's — and that is a thing to be able to
+/// read afterwards rather than to guess at.
+fn the_command_line(machine: &mut impl TheMachine) -> Result<Told, Refusal> {
+    let line = machine
+        .command_line()
+        .map_err(|_| Refusal::ChoiceNotUnderstood)?;
+    Told::from_the_command_line(&line).map_err(|why| {
+        machine.note(&format!("the command line: {why}"));
+        match why {
+            NotTold::NothingChosen => Refusal::NoDiskChosen,
+            NotTold::MoreThanOne
+            | NotTold::NotADisk(_)
+            | NotTold::NoEfiPartition
+            | NotTold::NoPartitionToInstallInto
+            | NotTold::NotAPartition(_)
+            | NotTold::BothRoads => Refusal::ChoiceNotUnderstood,
+            NotTold::APartition(named) => Refusal::NotAWholeDisk(named),
+        }
+    })
+}
+
+/// Everything that must be true before anything is written.
+///
+/// Which disk was chosen, that it is there, that it is big enough, and that
+/// what was downloaded is a genuine alo OS — in that order, because each of
+/// them makes the next one worth asking.
 fn before_writing(
     machine: &mut impl TheMachine,
     strings: &Strings,
     environment: &Environment,
+    chosen: Option<Told>,
 ) -> Result<(Writing, DiskName), Refusal> {
     say(
         machine,
@@ -201,31 +236,21 @@ fn before_writing(
         words::READING_THE_CHOICE,
         &Filling::nothing(),
     );
-    let line = machine
-        .command_line()
-        .map_err(|_| Refusal::ChoiceNotUnderstood)?;
-    let told = match Told::from_the_command_line(&line) {
-        Ok(told) => told,
-        Err(why) => {
-            // **Which word was wrong is kept, and kept off the screen.** The
-            // person is told in the vocabulary, which never names a kernel
-            // word; whoever helps them afterwards needs to know exactly which
-            // one. Three of these can only happen if the installer that staged
-            // this line staged it wrong — a half-named road, or a name that is
-            // not a partition's — and that is a thing to be able to read
-            // afterwards rather than to guess at.
-            machine.note(&format!("the command line: {why}"));
-            return Err(match why {
-                NotTold::NothingChosen => Refusal::NoDiskChosen,
-                NotTold::MoreThanOne
-                | NotTold::NotADisk(_)
-                | NotTold::NoEfiPartition
-                | NotTold::NoPartitionToInstallInto
-                | NotTold::NotAPartition(_)
-                | NotTold::BothRoads => Refusal::ChoiceNotUnderstood,
-                NotTold::APartition(named) => Refusal::NotAWholeDisk(named),
-            });
-        }
+    // **Where a person was asked on screen, that is the answer.** The two
+    // roads into this environment stage the choice differently and neither is
+    // a fallback for the other: the Windows program puts it on the kernel
+    // command line before the restart, and the stick road has nobody to put it
+    // there, so the screens ask. A person who answered the screens is not
+    // asked again, and a command line that named a disk is not second-guessed.
+    //
+    // It is noted rather than said, because the vocabulary never names a
+    // device and whoever helps somebody afterwards needs to know which one it
+    // was.
+    let told = if let Some(told) = chosen {
+        machine.note(&format!("chosen on screen: {}", told.disk().as_str()));
+        told
+    } else {
+        the_command_line(machine)?
     };
     let disk = told.disk();
 

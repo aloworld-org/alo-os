@@ -209,6 +209,7 @@ mod tests {
     fn the_owners_signature_over_the_pinned_digest_is_genuine() {
         let ran = Ran {
             succeeded: true,
+            exit_code: None,
             printed: what_it_printed(the_pin().digest()),
             complained: String::new(),
         };
@@ -221,6 +222,7 @@ mod tests {
     fn a_signature_by_another_key_is_not_genuine() {
         let ran = Ran {
             succeeded: false,
+            exit_code: None,
             printed: String::new(),
             complained: "Error: no matching signatures: error verifying bundle: failed to verify \
                          signature\nmain.go:74: error during command execution: no matching \
@@ -248,6 +250,7 @@ mod tests {
         ] {
             let ran = Ran {
                 succeeded: true,
+                exit_code: None,
                 printed: printed.clone(),
                 complained: String::new(),
             };
@@ -261,6 +264,7 @@ mod tests {
     fn the_network_failing_is_not_reached() {
         let ran = Ran {
             succeeded: false,
+            exit_code: None,
             printed: String::new(),
             complained:
                 "Error: Get \"https://ghcr.io/v2/\": dial tcp: lookup ghcr.io on [::1]:53: \
@@ -276,6 +280,7 @@ mod tests {
     fn anything_else_that_fails_is_not_genuine() {
         let ran = Ran {
             succeeded: false,
+            exit_code: None,
             printed: String::new(),
             complained: "Error: GET https://ghcr.io/v2/aloworld-org/alo-os/manifests/sha256:...: \
                          MANIFEST_UNKNOWN"
@@ -285,6 +290,7 @@ mod tests {
 
         let ran = Ran {
             succeeded: true,
+            exit_code: None,
             printed: String::new(),
             complained: "dial tcp".to_owned(),
         };

@@ -11,6 +11,7 @@
 //! | | |
 //! |---|---|
 //! | [`Program::ListingTheDisks`] | reads what the disks hold; writes nothing |
+//! | [`Program::ScanningForNetworks`] | asks what wireless networks are in range; writes nothing |
 //! | [`Program::WaitingForTheNetwork`] | waits for a wired connection; writes nothing |
 //! | [`Program::AskingAboutTheNetworkCards`] | asks the kernel what cards there are and
 //!   whether the wire is live, after the wait above failed; writes nothing |
@@ -59,6 +60,44 @@ const THE_ROOTS_LABEL: &str = "root";
 pub enum Program {
     /// Ask the machine what its disks hold.
     ListingTheDisks,
+    /// Make a connection profile for this network, **held in memory only**.
+    ///
+    /// # Why two programs and not one
+    ///
+    /// `nmcli device wifi connect …` is one call and has no way to say *do not
+    /// write this down*. `connection add --temporary` then `connection up` is
+    /// two, and the first of them carries the flag. **One call that keeps a
+    /// secret is worth less than two that do not.**
+    ///
+    /// ADR 0128 decided the environment asks for the network and that no
+    /// pre-shared key is written to the staging partition, and `S3` says it to
+    /// a person in as many words: *your Wi-Fi password is never written to this
+    /// computer's disk*. A profile made without [`crate::TEMPORARY`] lands in
+    /// `/etc/NetworkManager/system-connections/` — a directory the image has —
+    /// so the flag is what makes the promise true by construction rather than
+    /// by where this happens to be running.
+    AddingANetwork {
+        /// What the network calls itself.
+        ssid: String,
+        /// Its pre-shared key, and empty for an open network.
+        ///
+        /// **The one field in this enum that holds a secret.** It reaches the
+        /// program's arguments and nothing else: `sequence::noted` logs a
+        /// program's *path* and what it complained of, never its arguments,
+        /// and a test in `joining_a_network` holds that.
+        password: String,
+    },
+    /// Bring up the profile just made.
+    BringingItUp {
+        /// The profile's name, which is the network's own.
+        ssid: String,
+    },
+    /// Ask the network manager which wireless networks it can see.
+    ///
+    /// **Reading, and it changes nothing.** A scan asks the card to listen; it
+    /// joins nothing and writes nothing, which is why it is here rather than
+    /// behind the one approval `joining_a_network` takes.
+    ScanningForNetworks,
     /// Wait until the network manager says the machine is connected.
     WaitingForTheNetwork,
     /// Ask the kernel what network cards there are and what state they are in.
@@ -143,6 +182,19 @@ pub enum Program {
 pub struct Ran {
     /// Whether it said it succeeded.
     pub succeeded: bool,
+    /// What it exited with, where the machine could say.
+    ///
+    /// **Kept because a bool cannot tell five failures apart.**
+    /// `joining_a_network::why_not_joined` was written against nmcli's own
+    /// stable codes -- 3 is a timeout, 10 is something not found -- and for as
+    /// long as this struct carried only `succeeded`, two of its five answers
+    /// were unreachable and nothing said so. A person told *no networks found*
+    /// when the truth is *it never answered* cannot act on it.
+    ///
+    /// [`None`] where the program was killed by a signal rather than
+    /// exiting, which is a real thing on Unix and not the same as exiting
+    /// non-zero.
+    pub exit_code: Option<i32>,
     /// What it printed to its standard output, where that was kept.
     pub printed: String,
     /// What it printed to its standard error, where that was kept.
@@ -156,8 +208,13 @@ pub struct Ran {
 /// to carrying every one of them: a program the environment runs and the
 /// initramfs does not hold is a refusal nobody sees until a machine restarts
 /// into it.
-pub const EVERY_PROGRAM: [&str; 10] = [
+pub const EVERY_PROGRAM: [&str; 11] = [
     "/usr/bin/lsblk",
+    // The network manager's own client, for the scan the network screen shows.
+    // It is in the initramfs because NetworkManager is, and it is named here
+    // for the reason the whole list exists: relying on another module's
+    // transitive choice is what this list exists to stop.
+    "/usr/bin/nmcli",
     "/usr/bin/nm-online",
     // **Named rather than inherited.** It is already in the initramfs —
     // dracut's own `network` module brings it, and the shipped candidate of
@@ -185,6 +242,9 @@ impl Program {
     pub fn path(&self) -> &'static str {
         match self {
             Self::ListingTheDisks => "/usr/bin/lsblk",
+            Self::ScanningForNetworks | Self::AddingANetwork { .. } | Self::BringingItUp { .. } => {
+                "/usr/bin/nmcli"
+            }
             Self::WaitingForTheNetwork => "/usr/bin/nm-online",
             Self::AskingAboutTheNetworkCards => "/usr/bin/ip",
             Self::Verifying(_) => "/usr/bin/cosign",
@@ -223,6 +283,68 @@ impl Program {
                 "--bytes",
                 "--output",
                 "NAME,TYPE,RO,MOUNTPOINTS,PARTTYPE,LABEL,SIZE,MODEL,FSUSED",
+            ]
+            .map(str::to_owned)
+            .to_vec(),
+            // **Three fields and nothing else**, because `every_network` parses
+            // exactly these three and in this order: what it calls itself, how
+            // strong it is, and what security it wants. `--terse` is what makes
+            // the answer a shape rather than a table drawn for a person — and
+            // it is also what escapes a colon inside a name, which is the one
+            // thing about this format that needed a test.
+            //
+            // `--rescan yes` because a cached answer is the wrong answer here.
+            // A person standing in front of this screen has just switched the
+            // machine on, and the list they are shown has to be what is in
+            // range now rather than whatever the card last happened to see.
+            // **The password is the last argument and the profile is
+            // temporary.** `wifi-sec` is given only where there is a key: an
+            // open network with `wpa-psk` and an empty `psk` is refused by
+            // the network manager, and refused in a way a person would read as
+            // their password being wrong.
+            //
+            // `ifname '*'` because the environment does not know which card
+            // it has and does not need to: one wireless card is the ordinary
+            // case and the manager picks it.
+            Self::AddingANetwork { ssid, password } => {
+                let mut arguments = vec![
+                    "connection".to_owned(),
+                    "add".to_owned(),
+                    crate::joining_a_network::TEMPORARY.to_owned(),
+                    "type".to_owned(),
+                    "wifi".to_owned(),
+                    "con-name".to_owned(),
+                    ssid.clone(),
+                    "ifname".to_owned(),
+                    "*".to_owned(),
+                    "ssid".to_owned(),
+                    ssid.clone(),
+                ];
+                if !password.is_empty() {
+                    arguments.extend(
+                        [
+                            "wifi-sec.key-mgmt",
+                            "wpa-psk",
+                            "wifi-sec.psk",
+                            password.as_str(),
+                        ]
+                        .map(str::to_owned),
+                    );
+                }
+                arguments
+            }
+            Self::BringingItUp { ssid } => ["connection", "up", ssid.as_str()]
+                .map(str::to_owned)
+                .to_vec(),
+            Self::ScanningForNetworks => [
+                "--terse",
+                "--fields",
+                "SSID,SIGNAL,SECURITY",
+                "device",
+                "wifi",
+                "list",
+                "--rescan",
+                "yes",
             ]
             .map(str::to_owned)
             .to_vec(),
@@ -293,6 +415,9 @@ impl Program {
     pub fn is_read(&self) -> bool {
         match self {
             Self::ListingTheDisks
+            | Self::ScanningForNetworks
+            | Self::AddingANetwork { .. }
+            | Self::BringingItUp { .. }
             | Self::Verifying(_)
             | Self::AskingAboutTheNetworkCards
             | Self::ListingTheStartEntries
@@ -333,6 +458,14 @@ impl Program {
         match self {
             Self::Writing(_) | Self::MakingTheRoot { .. } | Self::RemovingTheArea { .. } => true,
             Self::ListingTheDisks
+            | Self::ScanningForNetworks
+            // **Neither writes to a disk**, which is what this predicate asks:
+            // a temporary profile is held in the network manager's memory for
+            // the life of the daemon and writes no keyfile at all. That is the
+            // whole point of the flag, and if it ever stopped being true this
+            // answer would have to change with it.
+            | Self::AddingANetwork { .. }
+            | Self::BringingItUp { .. }
             | Self::WaitingForTheNetwork
             | Self::AskingAboutTheNetworkCards
             | Self::Verifying(_)
