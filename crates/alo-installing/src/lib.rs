@@ -76,6 +76,7 @@ mod the_asking_walks;
 mod the_environment_asks;
 mod the_keyboard_a_person_has;
 mod the_screen_that_lists_every_layout;
+mod the_screen_the_kernel_left;
 mod tidying;
 mod told;
 mod verifying;
@@ -148,6 +149,9 @@ pub use what_each_screen_says::{how_many_cards, what_this_screen_says};
 #[cfg(unix)]
 pub use the_environment_asks::ask;
 pub use the_screen_that_lists_every_layout::{ALayoutsCard, EveryLayoutThisComputerKnows};
+pub use the_screen_the_kernel_left::{
+    NoScreen, TheScreen, WHAT_THE_KERNEL_PUBLISHES, the_screen_the_kernel_left,
+};
 pub use tidying::{Tidied, tidy_up};
 pub use told::{
     Beside, NotTold, REPLACING, THE_CHOICE, THE_EFI, THE_PARTITION, THE_REPLACING, Told,
