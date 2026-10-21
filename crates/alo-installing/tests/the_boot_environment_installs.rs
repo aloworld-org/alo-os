@@ -190,12 +190,14 @@ impl TheMachine for Scripted {
         if *program == Program::WaitingForTheNetwork {
             return Ok(Ran {
                 succeeded: self.connects,
+                exit_code: None,
                 ..Ran::default()
             });
         }
         if *program == Program::Restarting {
             return Ok(Ran {
                 succeeded: true,
+                exit_code: None,
                 ..Ran::default()
             });
         }
@@ -222,6 +224,7 @@ fn the_environment() -> Environment {
 fn succeeded(printed: &str) -> std::io::Result<Ran> {
     Ok(Ran {
         succeeded: true,
+        exit_code: None,
         printed: printed.to_owned(),
         complained: String::new(),
     })
@@ -231,6 +234,7 @@ fn succeeded(printed: &str) -> std::io::Result<Ran> {
 fn failed(complained: &str) -> std::io::Result<Ran> {
     Ok(Ran {
         succeeded: false,
+        exit_code: None,
         printed: String::new(),
         complained: complained.to_owned(),
     })

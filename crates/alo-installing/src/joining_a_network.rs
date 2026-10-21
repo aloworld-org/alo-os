@@ -357,3 +357,208 @@ mod tests {
         }
     }
 }
+
+/// Join this network, with this password, and say why if it did not.
+///
+/// # The two commands, and why the order is not a preference
+///
+/// The profile is **made first and brought up second**, because the flag that
+/// keeps the password out of any keyfile belongs to the making. A single
+/// `nmcli device wifi connect` would be one call and would write the key down;
+/// see [`crate::Program::AddingANetwork`] for the whole of that argument.
+///
+/// If the making fails there is nothing to bring up, so the second command is
+/// not run — a failure that reported *the network never answered* when the
+/// profile was never made would send a person to move closer to a router that
+/// was never contacted.
+///
+/// # Errors
+///
+/// [`NotJoined`], which is one of five and never a sixth: a person told *no
+/// networks found* when the truth is *your password was refused* cannot act on
+/// it, and nor can a person whose card has no firmware.
+///
+/// `there_is_a_card` is asked of the caller rather than worked out here,
+/// because it is `why_there_is_no_network`'s question and that module answers
+/// it off the kernel's own words rather than off a translated string.
+///
+/// # What is measured and what is not
+///
+/// **The arguments and the classification are tested; no `nmcli` has been run
+/// against a real card.** This build machine has no wireless at all. The
+/// certified machine's own boot is the measurement this owes, and it is the
+/// same debt the rest of this file already carries.
+pub fn join(
+    machine: &mut impl crate::TheMachine,
+    still: &alo_strings::Said,
+    ssid: &str,
+    password: &str,
+    there_is_a_card: bool,
+) -> Result<(), NotJoined> {
+    let making = crate::Program::AddingANetwork {
+        ssid: ssid.to_owned(),
+        password: password.to_owned(),
+    };
+    let made = machine
+        .run(&making, still, crate::STILL_EVERY)
+        .map_err(|_| NotJoined::NoAddressCame)?;
+    if !made.succeeded {
+        // **What it complained of is noted and the arguments are not.** The
+        // password is in the arguments of the command above and in nothing
+        // else: `sequence::noted` writes a program's path and the lines it
+        // complained of, and a test below holds that the password is in
+        // neither.
+        return Err(why_not_joined(1, &made.complained, there_is_a_card));
+    }
+
+    let bringing = crate::Program::BringingItUp {
+        ssid: ssid.to_owned(),
+    };
+    let up = machine
+        .run(&bringing, still, crate::STILL_EVERY)
+        .map_err(|_| NotJoined::NoAddressCame)?;
+    if up.succeeded {
+        Ok(())
+    } else {
+        Err(why_not_joined(
+            up.exit_code.unwrap_or(1),
+            &up.complained,
+            there_is_a_card,
+        ))
+    }
+}
+
+#[cfg(test)]
+mod joining {
+    use crate::Program;
+
+    const SSID: &str = "Fritz!Box 7590";
+    const SECRET: &str = "a-real-password";
+
+    /// Every argument of the two commands, as one string, for asking whether
+    /// something is in them.
+    fn arguments_of(program: &Program) -> String {
+        program.arguments().join(" ")
+    }
+
+    #[test]
+    fn the_profile_is_made_temporary_so_no_key_is_ever_written() {
+        // **The promise S3 makes to a person in as many words**: *your Wi-Fi
+        // password is never written to this computer's disk.* Without this
+        // flag `nmcli` writes a keyfile into
+        // `/etc/NetworkManager/system-connections/`, which the image has — so
+        // the flag is the whole of the promise, and this is the test that it
+        // is there.
+        let making = Program::AddingANetwork {
+            ssid: SSID.to_owned(),
+            password: SECRET.to_owned(),
+        };
+        assert!(
+            arguments_of(&making).contains(super::TEMPORARY),
+            "the profile is not temporary, so the password would be written down: {}",
+            arguments_of(&making)
+        );
+    }
+
+    #[test]
+    fn an_open_network_is_given_no_security_at_all() {
+        // An open network with `wpa-psk` and an empty key is refused by the
+        // network manager — and refused in a way a person would read as their
+        // password being wrong, on a network that asked for none.
+        let open = Program::AddingANetwork {
+            ssid: "A cafe, open".to_owned(),
+            password: String::new(),
+        };
+        let said = arguments_of(&open);
+        assert!(
+            !said.contains("wifi-sec"),
+            "an open network was given security: {said}"
+        );
+        assert!(
+            said.contains("--temporary"),
+            "and it is still temporary: {said}"
+        );
+
+        // The control: a locked one does get it, so the absence above is about
+        // the password being empty and not about the arguments never carrying
+        // security at all.
+        let locked = Program::AddingANetwork {
+            ssid: SSID.to_owned(),
+            password: SECRET.to_owned(),
+        };
+        assert!(arguments_of(&locked).contains("wifi-sec.psk"));
+    }
+
+    #[test]
+    fn the_password_is_in_the_arguments_and_in_nothing_else_this_program_can_say() {
+        // **Where a secret may be and where it may not.** It reaches the one
+        // command's arguments, because that is how the network manager is
+        // told. It must reach nothing that is written down: `Program::path`
+        // is what `sequence::noted` logs beside a complaint, and neither it
+        // nor the bringing-up carries the key.
+        let making = Program::AddingANetwork {
+            ssid: SSID.to_owned(),
+            password: SECRET.to_owned(),
+        };
+        let bringing = Program::BringingItUp {
+            ssid: SSID.to_owned(),
+        };
+
+        assert!(
+            arguments_of(&making).contains(SECRET),
+            "the network manager is never told the password"
+        );
+        assert!(
+            !making.path().contains(SECRET),
+            "the password is in the path that gets logged"
+        );
+        assert!(
+            !arguments_of(&bringing).contains(SECRET),
+            "the second command carries the password, and it has no need of it"
+        );
+        assert!(!bringing.path().contains(SECRET));
+    }
+
+    #[test]
+    fn neither_command_writes_to_a_disk_and_both_are_read() {
+        // Answered deliberately rather than inherited: a temporary profile is
+        // held in the daemon's memory and writes no keyfile, which is the
+        // whole point of the flag. And what they say is read, because
+        // `why_not_joined` classifies the failure from it.
+        for program in [
+            Program::AddingANetwork {
+                ssid: SSID.to_owned(),
+                password: SECRET.to_owned(),
+            },
+            Program::BringingItUp {
+                ssid: SSID.to_owned(),
+            },
+        ] {
+            assert!(!program.writes(), "{program:?} claims to write to a disk");
+            assert!(
+                program.is_read(),
+                "{program:?} is not read, so a failure could not be told apart"
+            );
+        }
+    }
+
+    #[test]
+    fn the_network_is_named_as_both_the_profile_and_the_ssid() {
+        // A profile named something else would be a profile the second
+        // command cannot find, and the failure would read as the network
+        // never answering.
+        let making = Program::AddingANetwork {
+            ssid: SSID.to_owned(),
+            password: SECRET.to_owned(),
+        };
+        let said = arguments_of(&making);
+        assert!(said.contains(&format!("con-name {SSID}")), "{said}");
+        assert!(said.contains(&format!("ssid {SSID}")), "{said}");
+        assert!(
+            arguments_of(&Program::BringingItUp {
+                ssid: SSID.to_owned()
+            })
+            .contains(SSID)
+        );
+    }
+}

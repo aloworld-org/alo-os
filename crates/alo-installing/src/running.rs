@@ -74,6 +74,7 @@ impl TheMachine for OnThisMachine {
             let output = command.output()?;
             let ran = Ran {
                 succeeded: output.status.success(),
+                exit_code: output.status.code(),
                 printed: String::from_utf8_lossy(&output.stdout).into_owned(),
                 complained: String::from_utf8_lossy(&output.stderr).into_owned(),
             };
@@ -109,6 +110,7 @@ impl TheMachine for OnThisMachine {
                     .said();
                 return Ok(Ran {
                     succeeded: status.success(),
+                    exit_code: status.code(),
                     complained,
                     ..Ran::default()
                 });

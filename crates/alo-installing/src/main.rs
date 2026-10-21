@@ -27,8 +27,8 @@ mod running {
 
     use alo_installing::{
         DiskName, Disks, Ended, Environment, OnThisMachine, Program, STILL_EVERY, TheMachine,
-        TheMedium, Told, WHERE_IT_IS, every_network, install, installing_words,
-        what_may_be_offered, words,
+        TheMedium, Told, WHERE_IT_IS, WhyThereIsNoNetwork, every_network, install,
+        installing_words, what_may_be_offered, words,
     };
     use alo_strings::{Filling, Strings};
 
@@ -110,12 +110,62 @@ mod running {
 
         // Noted and not said: the vocabulary never names a device, and
         // whoever helps somebody afterwards needs to know which one it was.
+        // **The password is not among these**, and never is: it reaches the
+        // network manager's arguments and nothing that is written down.
         OnThisMachine.note(&format!(
             "the screens: keyboard {}, network {}, disk {}",
             answers.layout,
             answers.network.as_deref().unwrap_or("none, a cable"),
             answers.disk
         ));
+
+        // **Join it, where one was chosen.** A cable needs nothing done, and
+        // the install waits for a connection by itself either way.
+        //
+        // A join that fails is **not** a refusal to install: the install waits
+        // for the network next and says which of five things went wrong in
+        // words a person can act on, through `why_there_is_no_network`. Two
+        // refusals for one fault would make a person read the first and act on
+        // it while the second was the true one.
+        if let Some(network) = answers.network.as_deref() {
+            let still = strings.say(&words::CONNECTING.key(), &Filling::nothing());
+            // **Asked of the kernel, not assumed.** This was `true` for one
+            // commit and that was the same fault as a bool standing in for an
+            // exit code: with it hardcoded, `NotJoined::NoCard` could never
+            // be the answer, so a person whose wireless card has no firmware
+            // would have been told their password was refused.
+            //
+            // The kernel's own words rather than the network manager's,
+            // because `nmcli` prints a device's state as a TRANSLATED string
+            // and this would match on an English machine and silently match
+            // nothing on a German one -- which is why
+            // `why_there_is_no_network` reads `ip -json link` instead.
+            let there_is_a_card = !matches!(
+                WhyThereIsNoNetwork::read(
+                    OnThisMachine
+                        .run(
+                            &Program::AskingAboutTheNetworkCards,
+                            &strings.say(&words::CONNECTING.key(), &Filling::nothing()),
+                            STILL_EVERY,
+                        )
+                        .ok()
+                        .filter(|ran| ran.succeeded)
+                        .map(|ran| ran.printed)
+                        .as_deref(),
+                ),
+                WhyThereIsNoNetwork::NoCard
+            );
+            match alo_installing::join(
+                &mut OnThisMachine,
+                &still,
+                network,
+                &answers.password,
+                there_is_a_card,
+            ) {
+                Ok(()) => OnThisMachine.note(&format!("joined {network}")),
+                Err(why) => OnThisMachine.note(&format!("{network} was not joined: {why:?}")),
+            }
+        }
 
         // **A disk whose name the install will not accept is not installed
         // onto.** The screens offer only what the machine listed, so this

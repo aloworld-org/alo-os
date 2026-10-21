@@ -129,7 +129,7 @@ pub use entries::{Entries, Entry, THE_ENTRYS_NAME, THE_LOADER_THE_BASE_INSTALLS}
 pub use environment::{Environment, WHERE_IT_IS};
 #[cfg(unix)]
 pub use ink_on_the_surface::draw;
-pub use joining_a_network::{ANetwork, NotJoined, TEMPORARY, every_network, why_not_joined};
+pub use joining_a_network::{ANetwork, NotJoined, TEMPORARY, every_network, join, why_not_joined};
 pub use machine::{BEFORE_RESTARTING, STILL_EVERY, THE_DISK_APPEARS_WITHIN, TheMachine};
 pub use program::{EVERY_PROGRAM, Program, Ran};
 #[cfg(target_os = "linux")]
