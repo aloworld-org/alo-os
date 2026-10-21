@@ -1309,6 +1309,107 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         }),
     )?;
     let a_diff = frame_just_drawn(&nested, "the terminal with a recognised diff")?;
+
+    // **And alo's explanation of a command, drawn.** ADR 0124 term 4 and the
+    // owner's decision of 2026-10-18: a person asks what a command will do
+    // before running it, and the answer comes through the agent.
+    //
+    // **What this drives, and what it cannot.** `what_came_back` is the real
+    // parser and `Server::alo_explains` is the real road to the grid, so the
+    // reply's shape, its three marks and the drawing are all exercised. **The
+    // socket round trip to `alo-agentd` is not**: there is no daemon in this
+    // fixture and no model behind it, so the bytes below stand in for what one
+    // sends back. Said here rather than left to be assumed — the step this
+    // closes is *nothing had ever drawn an explanation*, not *the agent
+    // answered*.
+    //
+    // The reply is written the way the request asks for it, `MARKS:` first, and
+    // carries two of the three marks so that a frame with marks is distinct
+    // from one without.
+    //
+    // **The explanation here is short on purpose, and that is a defect this
+    // check cannot fail on.** Measured 2026-10-22 on this fixture, at 1440x960:
+    // alo's lines are drawn one row each with `Wrap::None`, so a long
+    // explanation is **cut off mid-word and its tail is lost** — not wrapped,
+    // not scrolled, not marked. A 286-character reply was drawn as
+    // `...so nothing can be restored afterwar` and stopped, losing *it can
+    // reach files that are not yours*, which is the half a person deciding
+    // whether to press Enter most needs. The ink ended at x=1214 of 1440, so it
+    // is a clip inside the terminal's own text area rather than the display's
+    // edge.
+    //
+    // 137 characters fit; 286 did not. **Nothing here asserts that limit**,
+    // because a check that asserted today's truncation would make the bug the
+    // specification. Wrapping belongs in `alo_terminal::WhatAloSaid` rather than
+    // here: `the_lines()` is drawn one row each *and* its count feeds
+    // `alo_terminal::regions_of`, which places the gutter's labels, so a line
+    // that wrapped without the count agreeing would put `alo` beside the wrong
+    // row. That is a decision about where wrapping lives and what width it uses,
+    // and it is recorded in `docs/autonomy/the-terminal-in-full-plan.md` rather
+    // than guessed at here.
+    let at = typing(&mut server, "clear", 800)?;
+    typed(&mut server, THE_ENTER_KEY, at + 2)?;
+    until_the_shell_writes(&mut server);
+    until_the_shell_is_quiet(&mut server);
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let before_the_explanation = frame_just_drawn(&nested, "the terminal before an explanation")?;
+
+    let reply = "MARKS: destructive, elevated\nIt deletes the whole of /important and everything under it, and asks for administrator rights to do it. Nothing is copied anywhere first.";
+    let Some(explained) = alo_shell::what_alo_asks_about_a_command::what_came_back(reply) else {
+        return Err(
+            "the reply the agent would send back parsed to no explanation at all, so either `what_came_back` stopped reading the shape the request asks for or the reply above no longer matches it. Nothing was drawn and nothing could be."
+                .into(),
+        );
+    };
+    server.alo_explains(explained);
+    nested.pump()?;
+    nested.submit_with_desktop(
+        &[],
+        &[],
+        &alo_shell::Cursor::Default,
+        &[],
+        &mut labels,
+        desktop(),
+        None,
+        None,
+        Some(TheTerminalToDraw {
+            server: &server,
+            display: THE_DISPLAY,
+        }),
+    )?;
+    let an_explanation = frame_just_drawn(&nested, "the terminal with alo's explanation")?;
+
+    // **Rows of text, against the frame immediately before.** The same rule the
+    // benchmark step learned the hard way: comparing against an older screen
+    // makes `clear` look like a loss.
+    if rows_with_ink(&an_explanation, &without) <= rows_with_ink(&before_the_explanation, &without)
+    {
+        return Err(
+            "alo's explanation of a command added no row of text. Either `alo_explains` reached no terminal — it does nothing when there is none — or `WhatAloSaid::explains` drew nothing for a `WhatACommandWillDo` that parsed correctly. Write the frame out with ALO_TERMINAL_CHECK_WRITE and look before believing either."
+                .into(),
+        );
+    }
+    if let Ok(into) = std::env::var("ALO_TERMINAL_CHECK_WRITE") {
+        written_out(
+            &an_explanation,
+            &format!("{into}.explained.ppm"),
+            "the frame with alo's explanation of a command",
+        )?;
+    }
     if let Ok(into) = std::env::var("ALO_TERMINAL_CHECK_WRITE") {
         written_out(
             &a_diff,
