@@ -1,0 +1,59 @@
+# Every public function of this workspace that nothing reaches: no call outside
+# its own declaration, and no mention in any test of any crate.
+#
+# Generated. Do not edit by hand — regenerate with:
+#
+#     UPDATE_REACHED_SNAPSHOT=1 cargo test -p alo-reached
+#
+# This list MAY SHRINK SILENTLY and MAY NOT GROW SILENTLY. A name leaving means
+# something gained a caller, which needs no explanation. A name arriving means a
+# public function was added that nothing reaches, which is the fault
+# docs/autonomy/what-nothing-calls.md exists for — found seven times in this
+# repository — so it costs a sentence in the change that adds it.
+#
+# What this list cannot tell you: a caller count of one and a caller count of
+# nine are the same answer to "is this reached". The blank install screen of
+# 2026-10-21 was a mechanism with one correct caller and a second surface that
+# should have used it, and no reference count finds that.
+#
+# One line per function: its file, a tab, its name. No line numbers, so adding a
+# comment above an unrelated function does not churn the file.
+crates/alo-adapters/src/accessibility_bus.rs	of_this_person
+crates/alo-adapters/src/session_bus.rs	this_persons
+crates/alo-agentd/src/serving.rs	discovery_answered
+crates/alo-agentd/src/settings.rs	what_this_person_chose
+crates/alo-bluetooth/src/testing.rs	with_no_radio
+crates/alo-corridor/src/crossing.rs	asking_after
+crates/alo-corridor/src/receiving.rs	where_it_listens
+crates/alo-dock/src/announcing.rs	where_a_preview_sits
+crates/alo-dock/src/dock.rs	shipped_dock
+crates/alo-dock/src/revealing.rs	full_screen_ended
+crates/alo-elsewhere/src/sending.rs	as_number
+crates/alo-models/src/ollama.rs	answers_on
+crates/alo-models/src/tried.rs	into_models
+crates/alo-nearby/src/receiving.rs	where_it_listens
+crates/alo-notifying/src/missed.rs	as_number
+crates/alo-notifying/src/shown.rs	into_notification
+crates/alo-playing/src/machine.rs	decoding_sound_in_hardware
+crates/alo-put-aside/src/what_alo_is_doing.rs	status_is_unavailable
+crates/alo-shell/src/direct_input_loop.rs	run_compositor_with_input
+crates/alo-shell/src/direct_loop.rs	run_compositor
+crates/alo-shell/src/display_resources.rs	with_frame
+crates/alo-shell/src/frame_edges.rs	is_a_corner
+crates/alo-shell/src/nested.rs	pump_keyboard
+crates/alo-shell/src/nested_approval.rs	pump_approval
+crates/alo-shell/src/nested_desktop.rs	pump_filling
+crates/alo-shell/src/nested_desktop.rs	pump_running
+crates/alo-shell/src/nested_lock_input.rs	pump_lock
+crates/alo-shell/src/nested_record.rs	pump_record
+crates/alo-shell/src/nested_recovery.rs	pump_recovery
+crates/alo-shell/src/nested_recovery.rs	submit_desktop_or_recovery
+crates/alo-shell/src/nested_recovery.rs	submit_recovery
+crates/alo-shell/src/nested_settings.rs	pump_settings
+crates/alo-shell/src/nested_settings.rs	submit_with_settings
+crates/alo-shell/src/the_edge_takes_the_keyboard.rs	the_keyboard_reached_this_windows_edge
+crates/alo-shell/src/the_edge_takes_the_keyboard.rs	this_windows_edge_was_told_a_key
+crates/alo-shell/src/window_edge.rs	how_big_a_target_looks
+crates/alo-software/src/road.rs	the_tool_for
+crates/alo-tasks/src/task.rs	activity_mut
+crates/alo-tasks/src/task.rs	permissions_mut

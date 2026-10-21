@@ -1415,6 +1415,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-reached"
+version = "0.0.1"
+dependencies = [
+ "alo-by-hand",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-reconciling"
 version = "0.0.1"
 dependencies = [

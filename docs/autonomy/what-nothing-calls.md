@@ -556,3 +556,96 @@ caller, or as neither. The answer is *as a test* — it is what hole two is abou
 **Settle the definition, in prose, before writing the gate**, and keep the
 instrument in the repository so the next reader argues with code rather than
 rewriting it.
+
+## The gate exists, and triage by sampling found three false findings in five
+
+*2026-10-21. The section above asked for the definition to be settled in prose
+and the instrument kept in the repository. Both are done:
+`crates/alo-reached` is the sweep as a crate, and
+`crates/alo-reached/what-nothing-calls.txt` is its committed snapshot.*
+
+**This measurement runs forever.** `every_pub_fn_is_reached_or_accepted` is a
+test in CI, and it fails two ways: a `pub fn` nothing reaches that is not in the
+snapshot, and a name in the snapshot that is now reached. The snapshot may
+shrink silently and may not grow silently. Regenerate with:
+
+    UPDATE_REACHED_SNAPSHOT=1 cargo test -p alo-reached
+
+The hand sweep above, and the triage described below, each ran **once**.
+
+### The definition, settled
+
+A `pub fn` is reached if its name appears anywhere other than its own
+declarations, counting:
+
+| | |
+|---|---|
+| product code outside any `pub fn` body | always |
+| a `pub fn`'s body | only while that function is itself reached |
+| `*_tests.rs`, `tests/`, and `#[cfg(test)]` blocks | as a **test**, which counts |
+| `examples/` | as a **test**, which counts — see the hole below |
+| comments, `use` lines, `pub(crate)` and private declarations | never |
+
+### What triage found, and why the first number was wrong
+
+The first run answered **69**, against this page's **44**. Rather than report
+the difference, five entries were sampled and checked by hand. **Three of the
+five were false**, which would have failed three honest builds:
+
+- `Bounds::reaching_nothing_but` — called in product code at
+  `crates/alo-agentd/src/bounding.rs:214`.
+- `Nested::submit_with_approval` and `Nested::pump_sign_in` — called from
+  `crates/alo-shell/examples`.
+
+Two faults, and the first is the one worth remembering. **The fixed point was
+dropping whole files**: a file was dead once every `pub fn` in it was unreached,
+and since `pub(crate)` and private functions are deliberately not counted as
+public surface, a file holding one dead `pub fn` and twenty live private ones
+was dropped entire — and every call those twenty made stopped counting, over
+twelve rounds, cascading.
+
+**The unit that dies is a function body, not a file.** What makes that sound is
+a guarantee `rustc` already gives and this page had not used: `dead_code` is
+warn-by-default and the gate runs `clippy -D warnings`, so a private or
+`pub(crate)` function nothing reaches **fails CI today**. Verified rather than
+assumed — an unused private `fn` added to `alo-reached` produced
+`error: function ... is never used`. Only a `pub fn` can be dead and unnoticed,
+and those are exactly the ones the snapshot names.
+
+The second fault was that `examples/` was not read at all, though
+`clippy --all-targets` compiles all 49 of them.
+
+### The figures, and the baseline that was itself retracted
+
+| | |
+|---|---|
+| first run, file-sized death, no examples | **69** |
+| after both fixes | **39** |
+| this page's corrected hand figure | **40** |
+
+**39 matches the hand sweep in every crate with two or more entries, exactly**:
+`alo-shell` 18, `alo-dock` 3, and two each in `alo-adapters`, `alo-corridor`,
+`alo-tasks`, `alo-agentd`, `alo-models` and `alo-notifying`. It differs by one
+in the singletons, and the tree has moved by a day.
+
+**The 44 was the wrong baseline, and this page says so above.** It is this
+page's *first* figure, superseded by **40** four paragraphs later in the same
+document. The gap being explained was 69 against 44, and it decomposes as
+**30 of real bug** (69 down to 39), **4 of retracted baseline** (44 down to 40)
+and **1 of a day's drift** — so the arithmetic only closes once the baseline is
+the one the page still holds. *Before explaining a disagreement with a
+document, check whether the document still holds the figure being disagreed
+with.*
+
+A second sample of five, after the fixes, found **five true findings out of
+five**.
+
+### The hole, named rather than discovered
+
+**A function reached only by an example passes this gate.** An example is
+compiled, so calling it prose would be false; but it is a developer's check and
+not a road a person walks, so a function only an example reaches has no road at
+all. `Nested::submit_with_approval` and `Nested::pump_sign_in` are in exactly
+that position today. This gate answers *does anything call it*. The owner's
+test — mechanism, caller, a person can reach it, somebody has seen it — asks
+two more questions than that, and no reference count will answer either.
