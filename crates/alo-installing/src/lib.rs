@@ -55,6 +55,7 @@
 
 mod a_key_reaches_here;
 mod a_line_as_coverage;
+mod a_screen_is_drawn;
 mod a_surface_to_draw_on;
 mod alos_own_face;
 mod complaint;
@@ -71,6 +72,7 @@ mod program;
 #[cfg(target_os = "linux")]
 mod running;
 mod sequence;
+mod the_environment_asks;
 mod the_screen_that_lists_every_layout;
 mod tidying;
 mod told;
@@ -89,6 +91,9 @@ pub use a_key_reaches_here::{
     ONE_EVENT, Pressed, WHERE_THE_KEYS_ARE, has_key, is_a_keyboard, what_was_pressed,
 };
 pub use a_line_as_coverage::{ACoverage, a_line_as_coverage};
+pub use a_screen_is_drawn::{
+    ALineToDraw, TheWordsOfAScreen, WhatAScreenShows, what_a_screen_shows,
+};
 pub use a_surface_to_draw_on::{
     Grey, NoSurface, TheSurface, WHERE_THE_DEPTH_IS, WHERE_THE_PIXELS_GO, WHERE_THE_SIZE_IS,
     WHERE_THE_STRIDE_IS,
@@ -102,6 +107,8 @@ pub use ink_on_the_surface::a_row_of_ink;
 pub use a_surface_to_draw_on::fill;
 // The same gate, for the same reason, on the one function in
 // `ink_on_the_surface` that writes.
+#[cfg(unix)]
+pub use a_screen_is_drawn::draw_a_screen;
 pub use complaint::{Complaint, THE_LAST_LINES};
 pub use console::{ACTIVE, every_console, every_serial_line};
 pub use disk::{BY_ID, DiskName, NotADisk, NotAPartition, PartitionName};
@@ -112,7 +119,6 @@ pub use disks::{
 pub use ended::{Ended, Refusal};
 pub use entries::{Entries, Entry, THE_ENTRYS_NAME, THE_LOADER_THE_BASE_INSTALLS};
 pub use environment::{Environment, WHERE_IT_IS};
-#[cfg(unix)]
 pub use ink_on_the_surface::draw;
 pub use joining_a_network::{ANetwork, NotJoined, TEMPORARY, every_network, why_not_joined};
 pub use machine::{BEFORE_RESTARTING, STILL_EVERY, THE_DISK_APPEARS_WITHIN, TheMachine};
@@ -120,6 +126,11 @@ pub use program::{EVERY_PROGRAM, Program, Ran};
 #[cfg(target_os = "linux")]
 pub use running::OnThisMachine;
 pub use sequence::install;
+pub use the_environment_asks::{TheAsking, WhatThePersonDid, WhichScreen, what_the_person_did};
+// Gated with the item it names: it opens the framebuffer and a keyboard, and
+// this crate must still cross-compile for Windows.
+#[cfg(unix)]
+pub use the_environment_asks::ask;
 pub use the_screen_that_lists_every_layout::{ALayoutsCard, EveryLayoutThisComputerKnows};
 pub use tidying::{Tidied, tidy_up};
 pub use told::{

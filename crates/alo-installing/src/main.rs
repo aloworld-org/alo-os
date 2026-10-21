@@ -26,9 +26,33 @@ mod running {
     use std::process::ExitCode;
 
     use alo_installing::{
-        Ended, Environment, OnThisMachine, WHERE_IT_IS, install, installing_words,
+        Ended, Environment, OnThisMachine, Told, WHERE_IT_IS, install, installing_words,
     };
     use alo_strings::Strings;
+
+    /// The eight layouts the environment offers, and what each calls itself.
+    ///
+    /// The names are endonyms and are never translated — a person choosing a
+    /// keyboard may not yet be able to read the interface language, and in any
+    /// case a layout's own name is the same in every one. They sit here rather
+    /// than in `words.rs` for exactly that reason, which is how this crate
+    /// already treats a disk's own name.
+    ///
+    /// The order is the one `alo_keyboards::EVERY_LAYOUT` offers them in, and
+    /// the **first is the one the keyboard screen shows as its guess**. Until
+    /// the Windows road stages a better guess, that is Belgian — which is a
+    /// guess the screen does not ask a person to trust: it asks them to press
+    /// keys and see whether what appears matches what is printed on them.
+    const THE_LAYOUTS_OFFERED: &[(&str, &str)] = &[
+        ("be", "Belgisch"),
+        ("fr", "Français"),
+        ("de", "Deutsch"),
+        ("es", "Español"),
+        ("it", "Italiano"),
+        ("nl", "Nederlands"),
+        ("gb", "English (UK)"),
+        ("us", "English (US)"),
+    ];
 
     /// Install, and say how it ended in the exit code as well as on the screen.
     pub(crate) fn run() -> ExitCode {
@@ -40,6 +64,31 @@ mod running {
             }
         };
         let strings = Strings::of(vocabulary);
+
+        // **Ask, where nobody has been asked.** The Windows road stages the
+        // answers on the kernel command line before the restart, and a screen
+        // asking them again would be asking a person to repeat themselves. The
+        // stick road stages nothing, and until now the environment refused it
+        // with *no disk chosen* — a true sentence about a question it had never
+        // put to anybody.
+        //
+        // **What this does not yet do**, said here rather than left to be
+        // discovered: the asking settles a *keyboard* and stops. The disk
+        // question is the next screen, so a person on the stick road now meets
+        // a real screen, chooses their layout, and then meets the same refusal
+        // as before. That is one screen of progress and not a finished road.
+        let line = std::fs::read_to_string("/proc/cmdline").unwrap_or_default();
+        if Told::from_the_command_line(&line).is_err() {
+            match alo_installing::ask(&strings, THE_LAYOUTS_OFFERED) {
+                Ok(Some(layout)) => println!("alo-installing: the keyboard is {layout}"),
+                // No display, no keyboard, or nobody settled on anything — all
+                // of which the console below already covers, which is what a
+                // person read before this existed.
+                Ok(None) => {}
+                Err(why) => eprintln!("alo-installing: the screen could not be drawn: {why}"),
+            }
+        }
+
         let inside = Path::new(WHERE_IT_IS);
         let environment = Environment::read(
             inside,
