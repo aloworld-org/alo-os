@@ -202,6 +202,89 @@ off.*
 > `alo-ask` is named four times in `image/Containerfile`. *What is not checked by
 > anything: the recipe's `test -x target/release/alo-compositor`, which is
 > `CLAUDE.md`'s first named example of a check standing in for the thing.*
+>
+> ---
+>
+> **THE STOP ABOVE NO LONGER HOLDS, re-measured 2026-10-21.** The dispatch it
+> asked for happened. **Two images were built on 2026-10-19 and both contain a
+> terminal**, so a reader who stops at the heading above stops on a claim that
+> was true for about thirty-four hours.
+>
+> | `image.yml` run | commit | labelled | `crates/alo-terminal` | the chord |
+> |---|---|---|---|---|
+> | 2026-10-19 10:45:54Z, success | `c7efe4d9` | **0.0.7** | 45 files, `src/lib.rs` 3587 bytes | present |
+> | 2026-10-19 19:57:02Z, success | `abdd0076` | **0.0.8** | 45 files, `src/lib.rs` 4485 bytes | present |
+> | *(the old one the block measured)* | `77db91c6` | 0.0.6 | **absent**, `cat-file -e` exits 128 | absent |
+>
+> Asked of the artefact rather than the calendar, as step 0 says. `main` has 45
+> files under `crates/alo-terminal/` and so does each of the two; the chord is
+> `crates/alo-shell/src/a_chord_opens_a_terminal.rs` — **`src/`, not `tests/`**,
+> which is worth writing down because looking for it under `tests/` answers
+> *absent* for both images and for `main`. The 0.0.6 row is the control: without
+> a commit that genuinely has no terminal, none of the other rows mean anything.
+>
+> **And 0.0.7 is published and signed.** `the-installer-plan.md` records it, read
+> back from the registry rather than from the builder: digest
+> `sha256:0daaa69bc1fbbbb8e228f9b9d75b52a3fcad2b5a8d6667e6e51d127766d50c80`,
+> pushed to `ghcr.io/aloworld-org/alo-os:0.0.7`, signed by the owner by digest on
+> 2026-10-19 and verified against the committed public half. `image/pinned.toml`
+> on `main` now names `0.0.7` and `c7efe4d9`. **So an installable, signed image
+> with a terminal in it exists**, which is what this block said did not.
+>
+> **What has still not happened is the walk.** The boot was set for the evening of
+> 2026-10-18 and that evening has passed. Searched 2026-10-21: no document in
+> `docs/` names either image commit except the build record above, and the two
+> strings only this walk uses — *waiting for the keyboard* and *waiting for
+> something alo cannot identify* — appear in six files, none of which records an
+> observation on a booted machine. **Three of those six were edited on 2026-10-20,
+> after the images**, so being older than the images is not what rules them out;
+> what rules them out is what they say. The closest any comes is `features.md`:
+> *measured on a real pseudoterminal* — which is the thing the fourth condition
+> exists to distinguish from a machine, as a nested compositor is. **An unobserved
+> boot is not a measurement, so the second row of the thirteen still reads *never
+> seen on a machine*** and nothing above it may be promoted.
+>
+> *The first draft of this paragraph said those six files "all predate the
+> images". They do not, and the check that told me so was broken: `[ "$d" \>
+> "2026-10-19" ]` under `zsh` printed `condition expected: >` five times and then
+> a count of **zero**, which reads exactly like a clean negative. The dates were
+> printed beside it and said 2026-10-20 three times. A broken comparison and a
+> true negative give the same number, and only the second field disagreed.*
+>
+> **And the walk is not this lane's to run**, which the block did not say because
+> it was about dispatching rather than booting. The image is x86_64 — the recipe
+> builds `x86_64-unknown-linux-musl`, fetches an `x86-64` converter and an
+> `amd64` runtime, and `image.yml` has one `podman build` on `ubuntu-24.04` with
+> no platform matrix, no `--arch` and no manifest list. This lane's machine and
+> its Lima VM are both `aarch64`. Already recorded at
+> `docs/autonomy/a-loop-on-a-mac.md:131` — *the image is x86_64; an Apple Silicon
+> Mac cannot boot it (the desktop lane's)* — and repeated here because step 1
+> reads as this lane's and the first eight lines of it are.
+>
+> **One thing for the owner, because it changes what signing 0.0.8 would mean.**
+> The owner's condition for signing 0.0.8 was the wireless and Ethernet firmware.
+> **The 0.0.8 image that exists predates all of it.** Every firmware name in the
+> recipe arrived after it was built:
+>
+> | | `c7efe4d9` (0.0.7) | `abdd0076` (0.0.8) | `main` |
+> |---|---|---|---|
+> | `ath10k` and the families of #888, 2026-10-20 | 0 | **0** | 2 |
+> | `mediatek-firmware` / `libertas-firmware` of #891 | 0 | **0** | 4 / 3 |
+> | `image/Containerfile` line count — *the control, proving the file was read at
+> each* | 942 | 1051 | 1121 |
+>
+> The earliest commit naming `ath10k` in the recipe is `20a9f431`, 2026-10-20, and
+> `git merge-base --is-ancestor` says it is an ancestor of **neither** image. So
+> signing `abdd0076` would sign an image without the thing the condition was
+> about. **0.0.8 wants another dispatch from a `main` that includes #888 and
+> #891 first**, and that dispatch is the owner's for the reason the block already
+> gives: it publishes to `ghcr.io`.
+>
+> *The control row in that last table is there because the first version of this
+> measurement reported `ath10k=0` for both images and read it as "the firmware is
+> missing from the image", when the honest reading was "the whole firmware block
+> is newer than both". A zero that means `not yet written` and a zero that means
+> `removed` are the same zero, and only the line count tells them apart.*
 
 
 **The smallest step to the largest change in confidence.** #755 made *why is it
