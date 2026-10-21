@@ -15,6 +15,7 @@
 
 use crate::converter::{THE_CONVERTER, THE_CONVERTERS_BINARY};
 use crate::image::Image;
+use crate::version::is_a_release;
 use crate::wrong::Wrong;
 
 /// The login the service runs as.
@@ -138,15 +139,13 @@ fn the_service_is_reached_where_the_verb_knocks(image: &Image, wrong: &mut Vec<W
     }
 }
 
-/// Whether a version is three numbers, and so one release rather than a name
-/// for whichever is newest.
-fn is_a_release(version: &str) -> bool {
-    let parts: Vec<&str> = version.split('.').collect();
-    parts.len() == 3
-        && parts
-            .iter()
-            .all(|part| !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_digit()))
-}
+// **A second copy of this rule lived here and is gone.** It was identical to
+// `crate::version::is_a_release`, so when that one learned the dated version
+// ADR 0097 settled, this one would have gone on refusing it — and a reader
+// fixing the first would have had no reason to look for a second.
+//
+// That is `docs/misreadings/a-check-fixed-in-one-place-leaves-its-copy.md`
+// exactly, in the file it is named after. Imported rather than repeated.
 
 #[cfg(test)]
 mod tests {

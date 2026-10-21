@@ -112,11 +112,27 @@ fn comes_after(later: &str, earlier: &str) -> bool {
     matches!((numbers(later), numbers(earlier)), (Some(later), Some(earlier)) if later > earlier)
 }
 
-/// A release as three numbers, where it is one.
+/// A release as three numbers it can be ordered by.
+///
+/// **Two shapes, because the product version changed and what is published is
+/// not renamed.** `0.0.7` is three numbers. `2026.10` is a year and a month
+/// with no third part — ADR 0097, accepted 2026-10-08 — and `2026.10.1` is a
+/// second release inside one month. A missing third part is nought, which is
+/// also what orders `2026.10` before `2026.10.1` rather than beside it.
+///
+/// This read exactly three parts until 2026-10-21, so a dated version came
+/// back as [`None`], [`comes_after`] answered *no*, and the result read as
+/// *the next release does not follow the pin* — a true sentence about the
+/// wrong thing.
+///
+/// The ordering needs no special case: the dated scheme began after every
+/// `0.x.y`, so `(2026, 10, 0)` is greater than `(0, 0, 7)` and the first dated
+/// release follows the last sequential one by arithmetic.
 fn numbers(release: &str) -> Option<(u64, u64, u64)> {
     let mut parts = release.split('.').map(str::parse::<u64>);
     match (parts.next(), parts.next(), parts.next(), parts.next()) {
         (Some(Ok(major)), Some(Ok(minor)), Some(Ok(patch)), None) => Some((major, minor, patch)),
+        (Some(Ok(year)), Some(Ok(month)), None, None) => Some((year, month, 0)),
         _ => None,
     }
 }
