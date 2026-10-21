@@ -544,15 +544,43 @@ file carries it with a tier.*
   and `cat` is refused the file it was not. The tests **fail rather than skip**
   when `/sys/fs/bpf` is not writable, so a green run on a machine that could not
   test it is not available.
-  **What is actually owed is a caller and a surface.** Measured the same day:
-  **no crate depends on `alo-running`**, and `alo_capability::HowCodeRuns` — the
-  three levels a person chooses between — is read nowhere outside it. So the
-  level a person picks decides nothing yet, and nothing anywhere asks for a run.
-  **And the surface is the owner's**: this promise says *paste the install
-  script from a README and run it*, and neither the design file nor
-  [ADR 0064](decisions/0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md)
-  says how a person asks — no prefix, no command, no chord. `CLAUDE.md` sends a
-  silent design to the owner rather than to a lane.
+  **The caller and the surface this entry said were owed both exist**, and the
+  paragraph that said otherwise stood until 2026-10-21. It was measured on
+  2026-10-17 and was true then; #817 landed `try` on 2026-10-18 after the owner
+  chose the word, and #818 added `--only-here`. Re-measured 2026-10-21:
+
+  | what the entry said | what is there now |
+  |---|---|
+  | no crate depends on `alo-running` | `crates/alo-try` does, and is the only one |
+  | `HowCodeRuns` is read nowhere outside it | `crates/alo-try/src/main.rs` reads it |
+  | nothing anywhere asks for a run | `alo-try` asks, through `WhereCommandsRun::ran` |
+  | the surface is the owner's — no prefix, no command, no chord | the owner chose the prefix: a person types `try ./install.sh`, and `try` is a shell **function** in `crates/alo-terminal/shell-integration/alo.bash`, guarded on `command -v alo-try` so a `try` that could only fail is never defined |
+
+  **One claim in it is still true, and it is the one worth keeping.** The level a
+  person picks still decides nothing: `HowCodeRuns` is named in 11 files across
+  exactly three crates — `alo-running`, `alo-capability` and `alo-try` — and
+  **none of them stores or reads a person's choice**, which is the same gap the
+  first terminal promise in this list carries. `try` does not close it and is not
+  meant to: it passes `HowCodeRuns::InASealedBox` as a literal, deliberately,
+  because *a person who typed `try` asked for a sealed box for this one command,
+  whatever their setting says about how code runs by default*.
+
+  **What is owed now is neither a caller nor a prefix.** The shell integration
+  that defines `try` is `include_str!`'d into the binary and **a person installs
+  it by hand**;
+  [ADR 0123](decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md)
+  term 6, accepted by the owner on 2026-10-18, promises *the snippet, the
+  sentence saying plainly what it reveals, **and a one-press way to add it***.
+  The one-press way is not built, and `crates/alo-terminal/src/the_snippet_a_person_installs.rs`
+  says so in its own header rather than leaving it to be discovered: what surface
+  offers it is a decision nobody has made, and a file that installed itself would
+  break the term it was written for. **Searched 2026-10-21 under ten spellings —
+  `one-press`, `one press`, `offers to add`, `install the snippet`, `bashrc`,
+  `shell startup` and four more — it appears nowhere in this file, in
+  `the-terminal-in-full-plan.md` or in the Mac lane's order**, so it is an
+  accepted promise that no task owns. It is the owner's, for the reason the old
+  paragraph gave about a different thing: `CLAUDE.md` sends a silent design to
+  the owner rather than to a lane.
 - ★ **Scope one command without changing a setting.** `--only-here` so it may
   not write outside this folder; `--offline` so it may not reach the network,
   and the indicator shows that it did not. **A process cannot credibly restrict
