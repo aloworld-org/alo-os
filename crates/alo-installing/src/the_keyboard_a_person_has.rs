@@ -71,29 +71,20 @@ pub enum NoKeyboard {
 /// and *none of nothing* are different faults and the first is far worse.
 pub fn the_keyboard_a_person_has(root: &Path) -> Result<PathBuf, NoKeyboard> {
     let listed = root.join(WHERE_THE_DEVICES_ARE);
-    let mut events: Vec<(u32, PathBuf)> = Vec::new();
     let Ok(entries) = std::fs::read_dir(&listed) else {
         return Err(NoKeyboard::NothingIsListed(listed.display().to_string()));
     };
-    for entry in entries.flatten() {
-        let name = entry.file_name();
-        let name = name.to_string_lossy();
-        // `event12` and not `input12`, `mice` or `js0`: only an event device has
-        // a file to read key presses from.
-        let Some(number) = name
-            .strip_prefix("event")
-            .and_then(|it| it.parse::<u32>().ok())
-        else {
-            continue;
-        };
-        events.push((number, entry.path()));
-    }
+    let events = the_event_numbers_in_order(
+        entries
+            .flatten()
+            .map(|entry| entry.file_name().to_string_lossy().into_owned()),
+    );
     if events.is_empty() {
         return Err(NoKeyboard::NothingIsListed(listed.display().to_string()));
     }
-    events.sort_unstable_by_key(|(number, _)| *number);
 
-    for (number, at) in &events {
+    for number in &events {
+        let at = listed.join(format!("event{number}"));
         let Ok(capabilities) = std::fs::read_to_string(at.join(WHERE_ITS_KEYS_ARE)) else {
             continue;
         };
@@ -104,6 +95,40 @@ pub fn the_keyboard_a_person_has(root: &Path) -> Result<PathBuf, NoKeyboard> {
         }
     }
     Err(NoKeyboard::NoneIsAKeyboard(events.len()))
+}
+
+/// The `event*` devices among these names, by number, lowest first.
+///
+/// # Why this is not inside the walk above
+///
+/// *Lowest-numbered wins whatever order the names arrive in* is the property
+/// that makes two runs on one machine agree, and it is the one a test cannot
+/// reach through a directory. **Directory order belongs to the filesystem and
+/// differs between them**, so a test that wants an order has to either accept
+/// whatever it is given — and then cannot tell a sorted search from an unsorted
+/// one — or assert a premise about it, which is a test that passes on one
+/// filesystem and fails on another.
+///
+/// Measured on 2026-10-21: the first version of that test asserted the premise.
+/// `read_dir` returns `event3` first on APFS, where it was written, so it was
+/// adversarial and passed; it returns `event1` first on the hosted runner's
+/// filesystem, so the premise assertion fired and **the merge queue could not
+/// land the change**. Nothing was wrong with the code under test.
+///
+/// Taking the names as an argument moves the property somewhere a test can
+/// supply the adversarial order itself, on any filesystem, with no premise to
+/// assert.
+fn the_event_numbers_in_order(names: impl Iterator<Item = String>) -> Vec<u32> {
+    let mut events: Vec<u32> = names
+        .filter_map(|name| {
+            // `event12` and not `input12`, `mice` or `js0`: only an event device
+            // has a file to read key presses from.
+            name.strip_prefix("event")
+                .and_then(|it| it.parse::<u32>().ok())
+        })
+        .collect();
+    events.sort_unstable();
+    events
 }
 
 #[cfg(test)]

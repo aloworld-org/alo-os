@@ -13,7 +13,14 @@
 
 use std::path::{Path, PathBuf};
 
-use super::{NoKeyboard, WHERE_THE_DEVICES_ARE, the_keyboard_a_person_has};
+use super::{
+    NoKeyboard, WHERE_THE_DEVICES_ARE, the_event_numbers_in_order, the_keyboard_a_person_has,
+};
+
+/// The names as an iterator of owned strings, which is what the walk hands over.
+fn named(names: &[&str]) -> Vec<u32> {
+    the_event_numbers_in_order(names.iter().map(|it| (*it).to_owned()))
+}
 
 /// A power button, measured. One key, high in the bitmask, and no letters.
 const A_POWER_BUTTON: &str = "8000 10000000000000 0";
@@ -71,51 +78,55 @@ fn a_digitizer_that_reports_keys_is_not_chosen() {
     );
 }
 
-/// **The lowest-numbered keyboard wins, whatever order the directory is read
-/// in** — and this test checks its own premise, because the first version of it
-/// did not and was worthless.
+/// **The lowest number comes first whatever order the names arrive in** — and
+/// the order is this test's to choose, not the filesystem's.
 ///
 /// A laptop with its own keyboard and one plugged in has two, and both would
 /// work. What matters is that two runs on one machine agree rather than
 /// depending on `read_dir`.
 ///
-/// **Measured: removing the sort did not fail the first version of this test.**
-/// Its fixture was `event9 event2 event11`, and `read_dir` on this filesystem
-/// returns `event2` first — already the lowest — so the answer was the same
-/// either way. `event1 event2 event3` comes back `event3` first, which is
-/// adversarial.
-///
-/// Directory order is the filesystem's and cannot be forced from a test, so the
-/// premise is **asserted**: if the first entry is already the lowest here, this
-/// check cannot tell a sorted search from an unsorted one, and it says so
-/// rather than passing. The remedy is other names, and the failure names it.
+/// Every case below starts with a name that is **not** the lowest, so a search
+/// that answered the first name it was given would fail here. That is what the
+/// previous version of this test tried to arrange through a directory and could
+/// not: `read_dir` returns `event3` first on APFS and `event1` first on the
+/// hosted runner, so it asserted the premise, held on one filesystem and
+/// **blocked the merge queue on the other**. The order is an argument now.
 #[test]
-fn the_lowest_numbered_keyboard_is_chosen_whatever_the_directory_order() {
+fn the_lowest_number_is_first_whatever_order_the_names_arrive_in() {
+    assert_eq!(named(&["event3", "event1", "event2"]), vec![1, 2, 3]);
+    assert_eq!(named(&["event2", "event3", "event1"]), vec![1, 2, 3]);
+    assert_eq!(named(&["event3", "event2", "event1"]), vec![1, 2, 3]);
+    // Two digits, where sorting the text rather than the number answers 11.
+    assert_eq!(named(&["event11", "event2", "event9"]), vec![2, 9, 11]);
+}
+
+/// **Only the event devices are numbered**, not the `input*`, `mice` and `js0`
+/// beside them, and not an `event` with nothing after it.
+#[test]
+fn the_names_that_are_not_event_devices_are_dropped() {
+    assert_eq!(
+        named(&["input0", "mice", "js0", "event5", "event", "eventx"]),
+        vec![5]
+    );
+    assert!(named(&["input0", "mice", "js0"]).is_empty());
+}
+
+/// **The lowest-numbered keyboard is the one answered**, through the real walk.
+///
+/// This is the same property as above seen end to end. It does not prove the
+/// sort by itself — on a filesystem that happens to list `event1` first it
+/// would pass unsorted — which is exactly why the sort is proved separately,
+/// where the order is given rather than discovered.
+#[test]
+fn the_lowest_numbered_keyboard_is_the_one_answered() {
     let root = a_machine_listing(&[
         ("event1", A_KEYBOARD),
         ("event2", A_KEYBOARD),
         ("event3", A_KEYBOARD),
     ]);
-
-    // The premise, read off the filesystem this is running on.
-    let first = std::fs::read_dir(root.join(WHERE_THE_DEVICES_ARE))
-        .expect("the listing this test just wrote")
-        .flatten()
-        .map(|it| it.file_name().to_string_lossy().into_owned())
-        .find(|name| name.starts_with("event"))
-        .expect("a device in the listing");
-    assert_ne!(
-        first, "event1",
-        "this filesystem returns the lowest-numbered device first, so this test \
-         cannot tell a sorted search from an unsorted one. Pick other names: \
-         `event8 event17 event4 event13` was adversarial where this was written."
-    );
-
     assert_eq!(
         the_keyboard_a_person_has(&root).expect("a keyboard is listed"),
-        root.join("dev/input/event1"),
-        "the search answered the first device the directory gave rather than the \
-         lowest-numbered one, so it did not sort"
+        root.join("dev/input/event1")
     );
 }
 
