@@ -611,9 +611,41 @@ one text child named `Quiet`, which is the Button's style variant and not its
 label — so these were read off a render, the same road this document used for
 the gutter's type and the walk used for step 10's summary.
 
-**What the three actions *do* is not unblocked by having their words.** That
-needs a road from the terminal to the agent which nothing constructs yet, and it
-is written down in `docs/autonomy/the-terminal-in-full-plan.md`.
+**What the three actions *do* is not unblocked by having their words**, and the
+reason changed on 2026-10-18.
+
+*This paragraph said the actions needed* a road from the terminal to the agent
+which nothing constructs yet *until 2026-10-21. **That road exists and is
+constructed in product code.*** `WhoAsked` gained a second arm on 2026-10-18 —
+`TheTerminal`, beside `ATaskWindow(WhichTask)` — and
+`crates/alo-shell/src/direct_desktop.rs` asks on it at line 838 and handles the
+answer at line 1092. Neither site is a test; measured 2026-10-21, it is the only
+non-test file that names the arm. `what_a_person_asked_goes_to_the_agent.rs`
+records why the arm could be added at all: the order had said widening it
+*cannot be built alone* because nothing would ever construct a second arm, and
+**the owner's decision that an explanation comes through the agent is what
+constructs it** — `Ctrl`+`X` `Ctrl`+`A` travels this road today.
+
+**What is still not decided is the row the buttons sit in**, which is the
+disagreement two sections above: the specification frame's row hugs its contents
+at 376 and the rendering frames' fills at 958 with the buttons ending at 432.
+That is the live blocker, not the road, and it is a behaviour rather than a
+number — **a hugging row and a filling row diverge the moment a label is
+translated**, and `docs/features.md` promises all 24 official EU languages by
+name. The three labels are not in the vocabulary yet, so there is nothing
+translated to measure; what a longer label costs is therefore an estimate and
+not a reading.
+
+*Put to the owner on 2026-10-21 with a recommendation, and recorded here so the
+next reader neither re-asks it nor guesses: **each button hugs its own label
+while the row fills the width and keeps them left-aligned.** It keeps every
+label readable in every language, which a fixed button width does not; it keeps
+the row's position and height stable, which is the accessibility argument for
+filling; and it makes no button width a constant. It leaves one thing open that
+the owner was asked in the same message — what happens when the three together
+are wider than a narrow window, where wrapping to a second line is what keeps
+every label readable. **Unanswered as this was written**, so nothing is built
+from it.*
 
 ## The type, asked of the live file
 
