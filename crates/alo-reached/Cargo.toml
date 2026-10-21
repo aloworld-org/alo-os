@@ -1,0 +1,31 @@
+[package]
+name = "alo-reached"
+version = "0.0.1"
+description = "Every pub fn of this workspace, held to having a caller or a test — and the ones that have neither, named in a list that may only shrink."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The workspace's own member list, parsed once in this repository rather than
+# three times. `alo-by-hand` answers it for the crates that declare verbs and
+# `alo-collected` already reuses it rather than copying it, for the reason
+# `CLAUDE.md` law 4 gives: a second copy is a second thing to fix the day the
+# manifest changes shape. What is this crate's own is what it looks for inside
+# the crates — a `pub fn`, and whether anything reaches it.
+alo-by-hand = { path = "../alo-by-hand" }
+# A finding is a sentence whoever added the function acts on, and it names the
+# function and its file. This crate says nothing to a person in their own
+# language: it speaks to whoever is holding the diff, in the author's English,
+# the way `alo-collected` and `alo-reconciling` do.
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The gate's own premise check counts the workspace's crates and public
+# functions, to prove the walk walked something. It uses the same member-list
+# parser the crate does, rather than a second one.
+alo-by-hand = { path = "../alo-by-hand" }
+
+[lints]
+workspace = true
