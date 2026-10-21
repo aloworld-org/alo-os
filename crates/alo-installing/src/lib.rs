@@ -79,6 +79,7 @@ mod which_choices_are_shown;
 mod which_disks_may_be_offered;
 mod why_there_is_no_network;
 mod words;
+mod wrapping;
 mod writing;
 
 pub use a_key_reaches_here::{
@@ -120,7 +121,8 @@ pub use what_display_there_is::{
 };
 pub use where_a_list_screen_goes::{how_many_cards_fit, where_a_list_screen_goes};
 pub use where_a_screen_goes::{
-    AScreensPlaces, AnArea, THE_DESIGN_WAS_DRAWN_AT, TheType, where_a_screen_goes,
+    AScreensPlaces, AnArea, HowMuchThereIs, THE_DESIGN_WAS_DRAWN_AT, THE_GAP, TheType,
+    where_a_screen_goes,
 };
 pub use which_choices_are_shown::WhereInTheList;
 pub use which_disks_may_be_offered::{
@@ -128,4 +130,5 @@ pub use which_disks_may_be_offered::{
 };
 pub use why_there_is_no_network::WhyThereIsNoNetwork;
 pub use words::{EVERY_WORD, WordsError, declare_into, installing_words};
+pub use wrapping::{ALine, how_many_lines, wrapped};
 pub use writing::{A_WATCHED_LINE, THE_PERSONS_SCREEN, TheConsole, Writing};

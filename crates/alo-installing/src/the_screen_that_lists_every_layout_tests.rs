@@ -3,7 +3,6 @@
 
 #![expect(
     clippy::expect_used,
-    clippy::panic,
     reason = "in a test, a panic naming what is wrong is the failure being reported"
 )]
 
@@ -33,8 +32,8 @@ fn eight_layouts_in_five_cards_shows_five_and_says_there_are_more() {
     let screen = opened();
     let cards = screen.cards();
     assert_eq!(cards.len(), 5, "the design size has room for five");
-    assert_eq!(cards[0].called, "Belgisch");
-    assert_eq!(cards[4].called, "Italiano");
+    assert_eq!(cards.first().expect("five cards").called, "Belgisch");
+    assert_eq!(cards.get(4).expect("five cards").called, "Italiano");
     assert!(!screen.more_above(), "at the top and claiming more above");
     assert!(
         screen.more_below(),

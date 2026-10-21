@@ -48,7 +48,7 @@
 //! list that continues.
 
 use crate::what_display_there_is::Glass;
-use crate::where_a_screen_goes::{AScreensPlaces, where_a_screen_goes};
+use crate::where_a_screen_goes::{AScreensPlaces, HowMuchThereIs, where_a_screen_goes};
 
 /// How far down the actions sit on a screen that scrolls.
 ///
@@ -71,8 +71,9 @@ pub fn where_a_list_screen_goes(
     across: u32,
     down: u32,
     glass: Option<Glass>,
+    how_much: HowMuchThereIs,
 ) -> Option<AScreensPlaces> {
-    let mut places = where_a_screen_goes(across, down, glass)?;
+    let mut places = where_a_screen_goes(across, down, glass, how_much)?;
     let moved = (f64::from(down) * f64::from(THE_ACTIONS_MOVE_DOWN_TO)).round() as u32;
     let by = moved.checked_sub(places.onward.down)?;
     places.onward.down = moved;

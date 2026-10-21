@@ -34,7 +34,7 @@
 
 use crate::what_display_there_is::Glass;
 use crate::where_a_list_screen_goes::{how_many_cards_fit, where_a_list_screen_goes};
-use crate::where_a_screen_goes::{AScreensPlaces, AnArea};
+use crate::where_a_screen_goes::{AScreensPlaces, AnArea, HowMuchThereIs};
 use crate::which_choices_are_shown::WhereInTheList;
 use crate::words;
 use alo_strings::Word;
@@ -76,7 +76,13 @@ impl<'a> EveryLayoutThisComputerKnows<'a> {
         glass: Option<Glass>,
         names: &'a [&'a str],
     ) -> Option<Self> {
-        let places = where_a_list_screen_goes(across, down, glass)?;
+        // This screen holds the keyboard question's eyebrow, question and quiet
+        // line, and counts its cards by the room rather than declaring them.
+        let how_much = HowMuchThereIs {
+            cards: 0,
+            ..HowMuchThereIs::as_the_frames_were_drawn()
+        };
+        let places = where_a_list_screen_goes(across, down, glass, how_much)?;
         let fit = how_many_cards_fit(&places);
         Some(Self {
             places,

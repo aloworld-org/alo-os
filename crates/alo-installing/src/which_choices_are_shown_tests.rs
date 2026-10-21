@@ -3,7 +3,6 @@
 
 #![expect(
     clippy::expect_used,
-    clippy::panic,
     reason = "in a test, a panic naming what is wrong is the failure being reported"
 )]
 

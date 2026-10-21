@@ -3,17 +3,27 @@
 
 #![expect(
     clippy::expect_used,
-    clippy::panic,
     reason = "in a test, a panic naming what is wrong is the failure being reported"
 )]
 
 use super::{how_many_cards_fit, where_a_list_screen_goes};
-use crate::where_a_screen_goes::{THE_DESIGN_WAS_DRAWN_AT, where_a_screen_goes};
+use crate::where_a_screen_goes::{HowMuchThereIs, THE_DESIGN_WAS_DRAWN_AT, where_a_screen_goes};
+
+/// What a list screen holds above its cards: the keyboard screen's own
+/// eyebrow, question and quiet line, with the cards counted by the room
+/// rather than declared here.
+fn a_list_screens_text() -> HowMuchThereIs {
+    HowMuchThereIs {
+        cards: 0,
+        ..HowMuchThereIs::as_the_frames_were_drawn()
+    }
+}
 
 #[test]
 fn at_the_design_size_five_whole_cards_fit() {
     let (across, down) = THE_DESIGN_WAS_DRAWN_AT;
-    let places = where_a_list_screen_goes(across, down, None).expect("the reference lays out");
+    let places = where_a_list_screen_goes(across, down, None, a_list_screens_text())
+        .expect("the reference lays out");
 
     // The figures this module's header records, so a change to any of them
     // shows up here as a number rather than as a screen somebody has to look
@@ -31,8 +41,10 @@ fn at_the_design_size_five_whole_cards_fit() {
 #[test]
 fn the_actions_move_and_nothing_else_does() {
     let (across, down) = THE_DESIGN_WAS_DRAWN_AT;
-    let ordinary = where_a_screen_goes(across, down, None).expect("the six frames lay out");
-    let list = where_a_list_screen_goes(across, down, None).expect("a list screen lays out");
+    let ordinary = where_a_screen_goes(across, down, None, a_list_screens_text())
+        .expect("the six frames lay out");
+    let list = where_a_list_screen_goes(across, down, None, a_list_screens_text())
+        .expect("a list screen lays out");
 
     assert!(
         list.onward.down > ordinary.onward.down,
@@ -59,9 +71,22 @@ fn a_list_screen_fits_more_than_the_six_frames_do() {
     // The control for the whole module: if an ordinary screen already fitted
     // five, moving the actions would be achieving nothing and none of this
     // would be worth its own file.
+    //
+    // **Each screen is laid out with its own content**, which is the whole
+    // comparison. Laying the ordinary one out with a list screen's text — no
+    // cards — made it fit one, because its actions then flow up to just under
+    // the introduction. That is correct of a screen with no cards and says
+    // nothing about the six frames.
     let (across, down) = THE_DESIGN_WAS_DRAWN_AT;
-    let ordinary = where_a_screen_goes(across, down, None).expect("lays out");
-    let list = where_a_list_screen_goes(across, down, None).expect("lays out");
+    let ordinary = where_a_screen_goes(
+        across,
+        down,
+        None,
+        HowMuchThereIs::as_the_frames_were_drawn(),
+    )
+    .expect("lays out");
+    let list =
+        where_a_list_screen_goes(across, down, None, a_list_screens_text()).expect("lays out");
 
     assert_eq!(
         how_many_cards_fit(&ordinary),
@@ -81,7 +106,7 @@ fn only_whole_cards_are_counted() {
     // would draw the last card over the way forward, and a person would be
     // looking at a button with a card on top of it.
     for down in (480..=2160).step_by(37) {
-        let Some(places) = where_a_list_screen_goes(1920, down, None) else {
+        let Some(places) = where_a_list_screen_goes(1920, down, None, a_list_screens_text()) else {
             continue;
         };
         let how_many = how_many_cards_fit(&places) as u32;
@@ -122,7 +147,9 @@ fn five_cards_fit_on_every_screen_this_lays_out_for() {
     let mut counts = std::collections::BTreeSet::new();
     for down in (480..=2160).step_by(7) {
         for across in [640_u32, 1024, 1280, 1366, 1920, 2560, 3840] {
-            if let Some(places) = where_a_list_screen_goes(across, down, None) {
+            if let Some(places) =
+                where_a_list_screen_goes(across, down, None, a_list_screens_text())
+            {
                 counts.insert(how_many_cards_fit(&places));
             }
         }
@@ -141,7 +168,8 @@ fn nine_keyboards_in_five_cards_is_one_scroll() {
     // What that means for the person the keyboard screen is for: nine
     // layouts, five visible, so they scroll once and never twice.
     let (across, down) = THE_DESIGN_WAS_DRAWN_AT;
-    let places = where_a_list_screen_goes(across, down, None).expect("lays out");
+    let places =
+        where_a_list_screen_goes(across, down, None, a_list_screens_text()).expect("lays out");
     let fit = how_many_cards_fit(&places);
     assert!(
         fit * 2 >= 9,
@@ -153,8 +181,8 @@ fn nine_keyboards_in_five_cards_is_one_scroll() {
 fn a_display_too_small_has_no_list_screen_either() {
     // The same floor as every other screen, rather than a second answer to
     // *is there room*.
-    assert!(where_a_list_screen_goes(320, 240, None).is_none());
-    assert!(where_a_screen_goes(320, 240, None).is_none());
+    assert!(where_a_list_screen_goes(320, 240, None, a_list_screens_text()).is_none());
+    assert!(where_a_screen_goes(320, 240, None, a_list_screens_text()).is_none());
 }
 
 #[test]
@@ -163,7 +191,7 @@ fn at_least_one_card_is_always_shown() {
     // answers. Swept rather than asserted at one size, because the floor is
     // where this would break.
     for down in 480..=700 {
-        if let Some(places) = where_a_list_screen_goes(640, down, None) {
+        if let Some(places) = where_a_list_screen_goes(640, down, None, a_list_screens_text()) {
             assert!(
                 how_many_cards_fit(&places) >= 1,
                 "nothing shown at {down} tall"
