@@ -848,14 +848,14 @@ installer.checking-the-computer	Checking this computer. This only reads, and cha
 installer.checking-the-download	Checking that this download is a genuine alo OS
 installer.copying-the-installer	Copying the installer into its area, and checking the copy
 installer.default.change-it	change
-installer.default.changed	Done. This computer now starts the other system when nobody chooses, and you can change it      back here or in alo OS's own settings
+installer.default.changed	Done. This computer now starts the other system when nobody chooses, and you can change it back here or in alo OS's own settings
 installer.default.is	This computer starts {system} when nobody chooses at the start-up menu
 installer.default.kept	Nothing was changed, and this computer starts the same system it did
 installer.default.not-reached	The part of the disk this computer starts from could not be reached, so nothing was changed
 installer.default.not-read	Which system this computer starts could not be read or changed, so nothing was changed
-installer.default.not-there	This computer keeps no choice of which system starts, so there is nothing to change here.      Nothing was changed
+installer.default.not-there	This computer keeps no choice of which system starts, so there is nothing to change here. Nothing was changed
 installer.default.starting	This shows which system this computer starts when nobody chooses, and can change it
-installer.default.type-to-change	To make this computer start {system} instead, type {change} and press Enter. To leave it as      it is, press Enter without typing anything
+installer.default.type-to-change	To make this computer start {system} instead, type {change} and press Enter. To leave it as it is, press Enter without typing anything
 installer.disks-not-read	The disks in this computer could not be read, so nothing was changed
 installer.entries-not-read	The list of systems this computer can start could not be read, so nothing was changed
 installer.erasing-word	erase
@@ -1047,8 +1047,8 @@ installing.this-erases	This erases {disk}
 installing.this-erases-the-stick	This erases {stick}
 installing.tidied	This computer now starts alo OS, with Windows behind it, and the installer's space is back
 installing.tidy-entries-not-read	The list of systems this computer can start could not be read, so it was left as it is
-installing.tidy-not-whole	alo OS is installed and starts. Some tidying up could not be finished, and you can do it      from alo OS once it has started
-installing.tidying	Tidying up: naming alo OS in the start-up menu, putting Windows behind it, and taking the      installer's own space back
+installing.tidy-not-whole	alo OS is installed and starts. Some tidying up could not be finished, and you can do it from alo OS once it has started
+installing.tidying	Tidying up: naming alo OS in the start-up menu, putting Windows behind it, and taking the installer's own space back
 installing.try-it-first	Try it first
 installing.try-or-install	Try alo OS, or install it
 installing.type-the-name	Type the name of the disk to continue
@@ -1576,7 +1576,7 @@ recounting.outcome.machine-change-refused	a request to change settings for the w
 recounting.outcome.never-became-a-call	the agent asked for something this machine does not offer, so nothing was done
 recounting.outcome.never-put-anywhere	the agent asked a question and it was not put anywhere, so nothing was sent
 recounting.outcome.nobody-was-asked	the agent asked to do this and it was refused before anybody was asked about it
-recounting.outcome.not-bounded	the agent asked for this and nothing was done, because this machine could not hold the agent      inside what was granted
+recounting.outcome.not-bounded	the agent asked for this and nothing was done, because this machine could not hold the agent inside what was granted
 recounting.outcome.not-put-back	you asked for this to be put back as it was, and it could not be
 recounting.outcome.paired	this machine was paired with another machine
 recounting.outcome.put-back	you put this back as it was before the agent changed it
@@ -1795,7 +1795,7 @@ terminal.who.program	program
 terminal.who.system	system
 terminal.who.you	you
 turn.closed	this turn has stopped, because what happened on it could not be written down
-turn.could-not-ask-the-record	your agent could not be told what was done to that file: the record could not be read.      Nothing was changed by asking, and asking again is safe
+turn.could-not-ask-the-record	your agent could not be told what was done to that file: the record could not be read. Nothing was changed by asking, and asking again is safe
 turn.could-not-install-here	nothing was installed: this machine could not carry the installation out, and the fault is in alo OS rather than in anything you or your agent asked for — ask whoever set this machine up to look at it
 turn.could-not-look-at-the-catalogue	your agent could not be shown what you can install: the fault is in alo OS rather than in anything you or your agent asked for — ask whoever set this machine up to look at it
 turn.grant-here-expired	{machine} was permitted {reach} on this machine, and that has expired, so it cannot reach {wanted} — nothing granted on another machine stands in for it

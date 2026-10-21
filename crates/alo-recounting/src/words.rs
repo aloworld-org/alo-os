@@ -194,7 +194,7 @@ pub const WORKSPACE_OPENED: Word = Word::saying(
 /// inside.
 pub const NOT_BOUNDED: Word = Word::saying(
     "recounting.outcome.not-bounded",
-    "the agent asked for this and nothing was done, because this machine could not hold the agent      inside what was granted",
+    "the agent asked for this and nothing was done, because this machine could not hold the agent inside what was granted",
 )
 .noting(
     "Read at the head of one line of a record somebody is reading back — the agent being the      assistant built into alo OS and not a person. The machine refused to run the agent's turn      because it could not put the boundary around it that keeps the agent inside the folders and      files the person granted. Nothing was attempted and nothing was refused by any rule: it is      a fault in the machine, and the reason is shown after it in the words the person was shown      at the time.",
