@@ -51,6 +51,11 @@ const PHYSICAL_W: u16 = 17;
 const PHYSICAL_A: u16 = 30;
 /// `KEY_1`, the leftmost of the number row.
 const PHYSICAL_1: u16 = 2;
+/// `KEY_1` on a Belgian board — the ampersand key, whose type is `TWO_LEVEL`
+/// and therefore does not consult caps lock.
+const BELGIAN_AMPERSAND: u16 = 2;
+/// `KEY_SPACE`, whose type is `ONE_LEVEL` and consults nothing at all.
+const SPACE_BAR: u16 = 57;
 /// `KEY_ESC`, which gives no character on any layout.
 const ESCAPE: u16 = 1;
 
@@ -202,6 +207,100 @@ fn caps_lock_is_not_shift() {
     assert_eq!(
         what_a_key_gives("fr", PHYSICAL_Q, Held::nothing().and_caps().and_shift()),
         Some('a')
+    );
+}
+
+/// **Caps lock does nothing to a key whose type does not list it**, rather than
+/// stopping that key answering at all.
+///
+/// *Found by the desktop lane on 2026-10-21, measured against this table.*
+/// Belgian's ampersand key has rows for nothing, `Shift`, `Mod5` and
+/// `Mod5 Shift` and **no `Lock` row**, because `xkbcli how-to-type` only names
+/// modifiers that *reach* a character and caps lock reaches nothing on a digit
+/// key. Matched strictly, a person with caps lock on typed **nothing** from
+/// that key — a Wi-Fi password stopping dead with no report but *the password
+/// was refused*.
+///
+/// xkb's own rule is that a modifier a key's type does not list is ignored by
+/// that key: `TWO_LEVEL` lists `Shift` and not `Lock`.
+#[test]
+fn caps_lock_does_nothing_to_a_key_that_does_not_consult_it() {
+    assert_eq!(
+        what_a_key_gives("be", BELGIAN_AMPERSAND, Held::nothing()),
+        Some('&')
+    );
+    assert_eq!(
+        what_a_key_gives("be", BELGIAN_AMPERSAND, Held::nothing().and_caps()),
+        Some('&'),
+        "caps lock stopped a key that does not consult it"
+    );
+    assert_eq!(
+        what_a_key_gives("be", BELGIAN_AMPERSAND, Held::nothing().and_shift()),
+        Some('1')
+    );
+    assert_eq!(
+        what_a_key_gives(
+            "be",
+            BELGIAN_AMPERSAND,
+            Held::nothing().and_shift().and_caps()
+        ),
+        Some('1'),
+        "caps lock changed a key that does not consult it"
+    );
+}
+
+/// **The space bar gives a space with anything held**, which is `ONE_LEVEL`.
+///
+/// The second hole of the same kind, and the more embarrassing one: one row in
+/// the table, so a shifted space typed nothing. Every one of the eight
+/// combinations is asserted, because a rule that holds for three of them and
+/// not the fourth is the shape this fix exists to remove.
+#[test]
+fn the_space_bar_gives_a_space_whatever_is_held() {
+    for layout in EVERY_LAYOUT {
+        for held in [
+            Held::nothing(),
+            Held::nothing().and_shift(),
+            Held::nothing().and_caps(),
+            Held::nothing().and_altgr(),
+            Held::nothing().and_shift().and_caps(),
+            Held::nothing().and_shift().and_altgr(),
+            Held::nothing().and_caps().and_altgr(),
+            Held::nothing().and_shift().and_caps().and_altgr(),
+        ] {
+            assert_eq!(
+                what_a_key_gives(layout, SPACE_BAR, held),
+                Some(' '),
+                "{layout} gave no space for {held:?}"
+            );
+        }
+    }
+}
+
+/// **And the dropping does not go too far**: a key that *does* consult caps
+/// lock still answers to it.
+///
+/// The control on the fix above. Masking every modifier away would make both
+/// tests above pass and break every letter on every layout, so the letter keys
+/// are asserted in the same breath.
+#[test]
+fn a_key_that_does_consult_caps_lock_still_answers_to_it() {
+    assert_eq!(
+        what_a_key_gives("be", PHYSICAL_Q, Held::nothing().and_caps()),
+        Some('A')
+    );
+    assert_eq!(
+        what_a_key_gives("be", PHYSICAL_Q, Held::nothing()),
+        Some('a')
+    );
+    assert_eq!(
+        what_a_key_gives("fr", PHYSICAL_Q, Held::nothing().and_caps().and_shift()),
+        Some('a')
+    );
+    assert_eq!(
+        what_a_key_gives("be", PHYSICAL_Q, Held::nothing().and_altgr()),
+        Some('@'),
+        "masking dropped AltGr from a key that consults it"
     );
 }
 
@@ -380,4 +479,182 @@ fn the_table_is_what_the_engine_says() {
             "row {n} of the keyboard table is not what the engine says today"
         );
     }
+}
+
+/// **Every answer the engine gives, reproduced by the lookup** — the desktop
+/// lane's oracle, which is the part worth keeping from the branch they and I
+/// built in parallel.
+///
+/// It asks the question the other way round: for every character on every
+/// offered layout, `xkbcli how-to-type` says which key and which modifiers
+/// produce it, and the lookup must produce **that character** for that key and
+/// those modifiers. Several thousand independent facts rather than the dozen
+/// hand-picked ones above.
+///
+/// **Why this is worth having beside them, and what it does not do.** The tests
+/// above are properties somebody chose; this is every fact the engine will
+/// state — 1,768 of them, and a per-layout control refusing a run where any
+/// layout states fewer than a hundred.
+///
+/// **It does not catch the two caps-lock holes, and this was measured rather
+/// than assumed.** With the masking removed from `what_a_key_gives` this test
+/// still passes, and `caps_lock_does_nothing_to_a_key_that_does_not_consult_it`
+/// fails. The reason is structural: `how-to-type` names only the modifiers that
+/// **reach** a character, so an oracle built from its answers can never ask
+/// *what does this key do with caps lock on when caps lock reaches nothing*.
+/// Asking in this direction proves the lookup repeats the engine; it cannot
+/// prove the lookup answers everything a keyboard can be asked.
+///
+/// So the two kinds of check cover different things and both are kept. An
+/// oracle that **would** catch the holes asks the other way round — every key
+/// against all eight modifier combinations — which the desktop lane's own did,
+/// and which is worth building if anyone wants that coverage. This one is not
+/// it, and saying so is cheaper than somebody discovering it the way I did.
+///
+/// *Credited rather than reinvented: the two lanes built this table the same
+/// night, theirs gated before pushing and so looked like nothing at all for two
+/// hours. They did not open a competing pull request and sent the oracle
+/// instead.*
+///
+/// Ignored for the same reason as the regeneration test: it needs `xkbcli`, and
+/// `cargo test` printing `ignored` is honest where a silent skip would not be.
+#[test]
+#[ignore = "needs xkbcli from libxkbcommon-tools; run with --ignored"]
+fn the_lookup_reproduces_every_answer_the_engine_gives() {
+    let mut facts = 0usize;
+    let mut by_layout: std::collections::BTreeMap<&str, usize> = std::collections::BTreeMap::new();
+    let mut wrong: Vec<String> = Vec::new();
+
+    for layout in EVERY_LAYOUT {
+        for point in every_code_point_asked_for() {
+            let said = std::process::Command::new("xkbcli")
+                .args(["how-to-type", "--layout", layout, &format!("0x{point:04X}")])
+                .output()
+                .expect("xkbcli answers");
+            let wanted = char::from_u32(point).expect("a code point this test named");
+            for line in String::from_utf8_lossy(&said.stdout).lines() {
+                let Some((x11, rest)) = line.split_once(char::is_whitespace) else {
+                    continue;
+                };
+                let Ok(x11) = x11.trim().parse::<u16>() else {
+                    continue;
+                };
+                let Some((before, mods)) = rest.rsplit_once('[') else {
+                    continue;
+                };
+                let Some(mods) = mods.split(']').next() else {
+                    continue;
+                };
+                if before.split_whitespace().nth(1) != Some("1") {
+                    continue;
+                }
+                let held = Held {
+                    shift: mods.split_whitespace().any(|it| it == "Shift"),
+                    altgr: mods.split_whitespace().any(|it| it == "Mod5"),
+                    caps: mods.split_whitespace().any(|it| it == "Lock"),
+                };
+                let evdev = x11 - THE_X11_OFFSET;
+                facts += 1;
+                *by_layout.entry(layout).or_default() += 1;
+                let got = what_a_key_gives(layout, evdev, held);
+                if got != Some(wanted) {
+                    wrong.push(format!(
+                        "{layout} key {evdev} with [{}] should give {wanted:?} and gives {got:?}",
+                        mods.trim()
+                    ));
+                }
+            }
+        }
+    }
+
+    // **The control, and its first threshold was borrowed and wrong.**
+    //
+    // It asserted `facts > 2_000`, because the desktop lane measured 2,127 — and
+    // this run states **1,768**, because their oracle asks for a wider set of
+    // code points than `every_code_point_asked_for`. A number measured by
+    // another method is not a control on this one, and the check fired on the
+    // first run and said so.
+    //
+    // Counted per layout instead, which is justified by this method rather than
+    // by anybody's total: a layout that silently answered nothing is the failure
+    // worth refusing, and no single number has to be defended.
+    for layout in EVERY_LAYOUT {
+        let its_own = by_layout.get(layout).copied().unwrap_or_default();
+        assert!(
+            its_own > 100,
+            "the engine stated only {its_own} facts for {layout}, which is too few to \
+             be a layout — the tool or this parse is broken, not the lookup"
+        );
+    }
+    assert_eq!(
+        facts,
+        by_layout.values().sum::<usize>(),
+        "the per-layout counts do not add up to the total, so this control is broken"
+    );
+    assert!(
+        wrong.is_empty(),
+        "{} of {facts} answers the engine gives are not what the lookup gives:\n{}",
+        wrong.len(),
+        wrong.join("\n")
+    );
+}
+
+/// **A dead level resolves to its neighbour, which is a known divergence from
+/// the keymap and is pinned here rather than left to be discovered.**
+///
+/// *Predicted by the desktop lane on 2026-10-21 and measured here.* Belgian's
+/// `AD11` is `[dead_circumflex, dead_diaeresis, bracketleft, dead_abovering]` —
+/// **three of its four levels are dead**, so only level 3 produces a character
+/// and the table has exactly one row for that key: `Mod5` gives `[`.
+///
+/// The masking in `what_a_key_gives` reads the modifiers a key consults out of
+/// its own rows, so for this key it sees `Mod5` alone. That is right for three
+/// of the four combinations and **wrong for the fourth**: AltGr with shift is
+/// level 4, which is dead, and dropping the shift lands it on level 3's `[`.
+///
+/// # Why it is recorded rather than fixed here
+///
+/// It cannot be fixed from this table: nothing in it records that a level is
+/// dead, so *this level produces no character* and *this key ignores this
+/// modifier* are the same absence. The fix is to generate each key's consulted
+/// modifiers from `compile-keymap`'s own `type` declarations instead of
+/// inferring them from the rows — which would also have made the caps-lock
+/// holes impossible rather than repaired. That is a generator change and a
+/// regenerated table, and it is this lane's next piece.
+///
+/// **This test pins the wrong answer on purpose.** When the generator learns
+/// about dead levels this test fails, which is how it should be found.
+#[test]
+fn a_dead_level_resolves_to_its_neighbour_which_is_known_and_wrong() {
+    const BELGIAN_CIRCUMFLEX: u16 = 26;
+
+    // The three that are right.
+    assert_eq!(
+        what_a_key_gives("be", BELGIAN_CIRCUMFLEX, Held::nothing()),
+        None,
+        "level 1 is dead_circumflex and gives no character"
+    );
+    assert_eq!(
+        what_a_key_gives("be", BELGIAN_CIRCUMFLEX, Held::nothing().and_shift()),
+        None,
+        "level 2 is dead_diaeresis and gives no character"
+    );
+    assert_eq!(
+        what_a_key_gives("be", BELGIAN_CIRCUMFLEX, Held::nothing().and_altgr()),
+        Some('['),
+        "level 3 is bracketleft"
+    );
+
+    // And the one that is wrong, pinned.
+    assert_eq!(
+        what_a_key_gives(
+            "be",
+            BELGIAN_CIRCUMFLEX,
+            Held::nothing().and_altgr().and_shift()
+        ),
+        Some('['),
+        "KNOWN DIVERGENCE: level 4 is dead_abovering and should give nothing. \
+         If this now answers None, the generator has learnt about dead levels \
+         and this test should be rewritten to assert that."
+    );
 }
