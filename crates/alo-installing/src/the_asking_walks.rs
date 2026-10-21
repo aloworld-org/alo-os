@@ -83,7 +83,10 @@ pub struct TheAnswers {
     /// to the staging partition, and `joining_a_network` keeps that true by
     /// construction with a temporary connection profile.
     pub password: String,
-    /// The disk to install onto.
+    /// The disk a person read and typed back, as they read it.
+    pub disk_called: String,
+    /// The same disk as the machine names it, which is what the install is
+    /// given.
     pub disk: String,
 }
 
@@ -104,7 +107,9 @@ pub struct TheAsking {
     network: Option<String>,
     /// Its password.
     password: String,
-    /// The disk chosen.
+    /// The disk chosen, as a person reads it.
+    disk_called: Option<String>,
+    /// The same disk as the machine names it.
     disk: Option<String>,
     /// Everything, once a person has finished.
     finished: Option<TheAnswers>,
@@ -119,6 +124,16 @@ pub struct TheAsking {
 pub struct WhatTheRingIsOn<'a> {
     /// What it is called, where it is a layout, a network or a disk.
     pub named: Option<&'a str>,
+    /// What the **machine** calls it, where that is a different thing.
+    ///
+    /// A disk has two names and both are needed: a person reads *Samsung SSD
+    /// 870 EVO · 1 TB* and types it back, and the install is given
+    /// `/dev/disk/by-id/...`. Keeping one and deriving the other is not
+    /// possible in either direction, and keeping only the shown name is how an
+    /// install ends up addressed to a sentence.
+    ///
+    /// [`None`] everywhere else, where the two are the same thing.
+    pub as_the_machine_calls_it: Option<&'a str>,
     /// Whether this network wants a password. Ignored on every other screen.
     pub wants_a_password: bool,
 }
@@ -135,6 +150,7 @@ impl TheAsking {
             layout: None,
             network: None,
             password: String::new(),
+            disk_called: None,
             disk: None,
             finished: None,
         }
@@ -173,6 +189,12 @@ impl TheAsking {
     /// The disk chosen.
     #[must_use]
     pub fn disk(&self) -> Option<&str> {
+        self.disk_called.as_deref()
+    }
+
+    /// The disk chosen, as the machine names it.
+    #[must_use]
+    pub fn disk_as_the_machine_calls_it(&self) -> Option<&str> {
         self.disk.as_deref()
     }
 
@@ -302,10 +324,13 @@ impl TheAsking {
                 self.go_to(WhichScreen::TheDisk, 0, 0)
             }
             WhichScreen::TheDisk => {
-                let Some(named) = ring.named else {
+                // Both names, or neither. A disk known by only one of them is
+                // a disk this walk cannot both show and install onto.
+                let (Some(called), Some(path)) = (ring.named, ring.as_the_machine_calls_it) else {
                     return false;
                 };
-                self.disk = Some(named.to_owned());
+                self.disk_called = Some(called.to_owned());
+                self.disk = Some(path.to_owned());
                 self.typed.clear();
                 self.go_to(WhichScreen::TheReview, 0, 0)
             }
@@ -330,10 +355,13 @@ impl TheAsking {
     /// that accepted *nearly* would make that promise mean something looser
     /// than it says.
     fn erase_it_if_the_name_matches(&mut self) -> bool {
-        let Some(disk) = self.disk.clone() else {
+        let (Some(called), Some(disk)) = (self.disk_called.clone(), self.disk.clone()) else {
             return false;
         };
-        if self.typed != disk {
+        // **Against the name a person read, not the one the machine uses.**
+        // Nobody can be asked to type `/dev/disk/by-id/ata-Samsung_SSD...`,
+        // and the screen shows them the other one.
+        if self.typed != called {
             return false;
         }
         let Some(layout) = self.layout.clone() else {
@@ -343,6 +371,7 @@ impl TheAsking {
             layout,
             network: self.network.clone(),
             password: self.password.clone(),
+            disk_called: called,
             disk,
         });
         true
@@ -374,6 +403,7 @@ impl TheAsking {
                 self.go_to(WhichScreen::TheNetwork, 0, 0)
             }
             WhichScreen::TheReview => {
+                self.disk_called = None;
                 self.disk = None;
                 self.typed.clear();
                 self.go_to(WhichScreen::TheDisk, 0, 0)

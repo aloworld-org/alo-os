@@ -15,17 +15,33 @@ fn nothing() -> WhatTheRingIsOn<'static> {
 }
 
 /// A named thing under the ring that wants no password.
+///
+/// The machine's own name is the same string here, which is true of a layout
+/// and of a network — and is what makes the disk, where it is **not** the
+/// same, the case worth its own helper below.
 fn named(what: &str) -> WhatTheRingIsOn<'_> {
     WhatTheRingIsOn {
         named: Some(what),
+        as_the_machine_calls_it: Some(what),
         wants_a_password: false,
     }
 }
 
-/// A network under the ring that does want one.
+/// A disk under the ring, which has two names: what a person reads and types
+/// back, and what the install is given.
+fn a_disk<'a>(called: &'a str, path: &'a str) -> WhatTheRingIsOn<'a> {
+    WhatTheRingIsOn {
+        named: Some(called),
+        as_the_machine_calls_it: Some(path),
+        wants_a_password: false,
+    }
+}
+
+/// A network under the ring that does want a password.
 fn locked(what: &str) -> WhatTheRingIsOn<'_> {
     WhatTheRingIsOn {
         named: Some(what),
+        as_the_machine_calls_it: Some(what),
         wants_a_password: true,
     }
 }
@@ -399,4 +415,88 @@ fn no_other_screen_is_ever_skipped_for_being_empty() {
     asking.there_are_this_many_cards(0);
     assert!(!asking.there_is_no_network_to_choose());
     assert_eq!(asking.on(), WhichScreen::TheReview);
+}
+
+#[test]
+fn a_disk_keeps_both_its_names_and_the_right_one_is_typed_back() {
+    // **A disk is the one thing with two names**, and which is which matters:
+    // a person reads and types *Samsung SSD 870 EVO · 1 TB*, and the install
+    // is given `/dev/disk/by-id/...`. Nobody can be asked to type the second,
+    // and the first cannot be installed onto.
+    let mut asking = TheAsking::begins();
+    asking.and_then(WhatThePersonDid::Chose, named("be"));
+    asking.there_are_this_many_cards(1);
+    asking.and_then(WhatThePersonDid::Chose, named("A cafe, open"));
+    asking.there_are_this_many_cards(1);
+    asking.and_then(
+        WhatThePersonDid::Chose,
+        a_disk(
+            "Samsung SSD 870 EVO  ·  1 TB",
+            "/dev/disk/by-id/ata-Samsung_SSD_870_EVO",
+        ),
+    );
+    assert_eq!(asking.on(), WhichScreen::TheReview);
+    assert_eq!(asking.disk(), Some("Samsung SSD 870 EVO  ·  1 TB"));
+    assert_eq!(
+        asking.disk_as_the_machine_calls_it(),
+        Some("/dev/disk/by-id/ata-Samsung_SSD_870_EVO")
+    );
+
+    // Typing the machine's name is **not** typing the disk's name, however
+    // exactly it is typed.
+    type_in(&mut asking, "/dev/disk/by-id/ata-Samsung_SSD_870_EVO");
+    assert!(!asking.and_then(WhatThePersonDid::Chose, nothing()));
+    assert_eq!(asking.finished(), None);
+
+    // What a person reads is what they type.
+    let mut asking = TheAsking::begins();
+    asking.and_then(WhatThePersonDid::Chose, named("be"));
+    asking.there_are_this_many_cards(1);
+    asking.and_then(WhatThePersonDid::Chose, named("A cafe, open"));
+    asking.there_are_this_many_cards(1);
+    asking.and_then(
+        WhatThePersonDid::Chose,
+        a_disk(
+            "Samsung SSD 870 EVO  ·  1 TB",
+            "/dev/disk/by-id/ata-Samsung_SSD_870_EVO",
+        ),
+    );
+    type_in(&mut asking, "Samsung SSD 870 EVO  ·  1 TB");
+    assert!(asking.and_then(WhatThePersonDid::Chose, nothing()));
+
+    let answers = asking.finished().expect("finished");
+    assert_eq!(answers.disk_called, "Samsung SSD 870 EVO  ·  1 TB");
+    assert_eq!(
+        answers.disk, "/dev/disk/by-id/ata-Samsung_SSD_870_EVO",
+        "the install would be addressed to the name on the screen"
+    );
+}
+
+#[test]
+fn a_disk_known_by_only_one_of_its_names_is_not_chosen_at_all() {
+    // Both names or neither: a disk this walk could show and not install
+    // onto, or install onto and not show, is a disk it cannot honestly offer.
+    for ring in [
+        WhatTheRingIsOn {
+            named: Some("A disk"),
+            as_the_machine_calls_it: None,
+            wants_a_password: false,
+        },
+        WhatTheRingIsOn {
+            named: None,
+            as_the_machine_calls_it: Some("/dev/sda"),
+            wants_a_password: false,
+        },
+    ] {
+        let mut asking = TheAsking::begins();
+        asking.and_then(WhatThePersonDid::Chose, named("be"));
+        asking.there_are_this_many_cards(1);
+        asking.and_then(WhatThePersonDid::Chose, named("A cafe, open"));
+        asking.there_are_this_many_cards(1);
+        assert!(
+            !asking.and_then(WhatThePersonDid::Chose, ring),
+            "a half-named disk was chosen: {ring:?}"
+        );
+        assert_eq!(asking.on(), WhichScreen::TheDisk);
+    }
 }

@@ -181,11 +181,13 @@ fn ring<'a>(
         // the first offered until the Windows road stages a better one.
         WhichScreen::TheKeyboard if asking.card() == 0 => WhatTheRingIsOn {
             named: layouts.first().map(|&(named, _)| named),
+            as_the_machine_calls_it: None,
             wants_a_password: false,
         },
         WhichScreen::TheKeyboard => WhatTheRingIsOn::default(),
         WhichScreen::EveryLayout => WhatTheRingIsOn {
             named: layouts.get(asking.card()).map(|&(named, _)| named),
+            as_the_machine_calls_it: None,
             wants_a_password: false,
         },
         WhichScreen::TheNetwork => {
@@ -193,11 +195,15 @@ fn ring<'a>(
                 .get(asking.card())
                 .map_or_else(WhatTheRingIsOn::default, |network| WhatTheRingIsOn {
                     named: Some(network.name()),
+                    as_the_machine_calls_it: None,
                     wants_a_password: network.locked(),
                 })
         }
+        // **A disk is the one thing with two names**, and both go through:
+        // what a person reads and types back, and what the install is given.
         WhichScreen::TheDisk => WhatTheRingIsOn {
             named: disks.get(asking.card()).map(|disk| disk.called.as_str()),
+            as_the_machine_calls_it: disks.get(asking.card()).map(|disk| disk.disk.as_str()),
             wants_a_password: false,
         },
         WhichScreen::ThePassword | WhichScreen::TheReview => WhatTheRingIsOn::default(),

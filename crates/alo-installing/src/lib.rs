@@ -86,7 +86,12 @@ mod where_a_screen_goes;
 mod which_choices_are_shown;
 mod which_disks_may_be_offered;
 mod why_there_is_no_network;
-mod words;
+// **Public, because whoever draws a screen needs the sentences on it.** The
+// constants are what `what_each_screen_says` chooses among and what
+// `main` says while a program runs; a drawer that could not reach them
+// would have to hold its own copy of the English, which is the one thing this
+// crate exists to prevent.
+pub mod words;
 mod wrapping;
 mod writing;
 

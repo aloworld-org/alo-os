@@ -11,6 +11,7 @@
 //! | | |
 //! |---|---|
 //! | [`Program::ListingTheDisks`] | reads what the disks hold; writes nothing |
+//! | [`Program::ScanningForNetworks`] | asks what wireless networks are in range; writes nothing |
 //! | [`Program::WaitingForTheNetwork`] | waits for a wired connection; writes nothing |
 //! | [`Program::AskingAboutTheNetworkCards`] | asks the kernel what cards there are and
 //!   whether the wire is live, after the wait above failed; writes nothing |
@@ -59,6 +60,12 @@ const THE_ROOTS_LABEL: &str = "root";
 pub enum Program {
     /// Ask the machine what its disks hold.
     ListingTheDisks,
+    /// Ask the network manager which wireless networks it can see.
+    ///
+    /// **Reading, and it changes nothing.** A scan asks the card to listen; it
+    /// joins nothing and writes nothing, which is why it is here rather than
+    /// behind the one approval `joining_a_network` takes.
+    ScanningForNetworks,
     /// Wait until the network manager says the machine is connected.
     WaitingForTheNetwork,
     /// Ask the kernel what network cards there are and what state they are in.
@@ -156,8 +163,13 @@ pub struct Ran {
 /// to carrying every one of them: a program the environment runs and the
 /// initramfs does not hold is a refusal nobody sees until a machine restarts
 /// into it.
-pub const EVERY_PROGRAM: [&str; 10] = [
+pub const EVERY_PROGRAM: [&str; 11] = [
     "/usr/bin/lsblk",
+    // The network manager's own client, for the scan the network screen shows.
+    // It is in the initramfs because NetworkManager is, and it is named here
+    // for the reason the whole list exists: relying on another module's
+    // transitive choice is what this list exists to stop.
+    "/usr/bin/nmcli",
     "/usr/bin/nm-online",
     // **Named rather than inherited.** It is already in the initramfs —
     // dracut's own `network` module brings it, and the shipped candidate of
@@ -185,6 +197,7 @@ impl Program {
     pub fn path(&self) -> &'static str {
         match self {
             Self::ListingTheDisks => "/usr/bin/lsblk",
+            Self::ScanningForNetworks => "/usr/bin/nmcli",
             Self::WaitingForTheNetwork => "/usr/bin/nm-online",
             Self::AskingAboutTheNetworkCards => "/usr/bin/ip",
             Self::Verifying(_) => "/usr/bin/cosign",
@@ -223,6 +236,29 @@ impl Program {
                 "--bytes",
                 "--output",
                 "NAME,TYPE,RO,MOUNTPOINTS,PARTTYPE,LABEL,SIZE,MODEL,FSUSED",
+            ]
+            .map(str::to_owned)
+            .to_vec(),
+            // **Three fields and nothing else**, because `every_network` parses
+            // exactly these three and in this order: what it calls itself, how
+            // strong it is, and what security it wants. `--terse` is what makes
+            // the answer a shape rather than a table drawn for a person — and
+            // it is also what escapes a colon inside a name, which is the one
+            // thing about this format that needed a test.
+            //
+            // `--rescan yes` because a cached answer is the wrong answer here.
+            // A person standing in front of this screen has just switched the
+            // machine on, and the list they are shown has to be what is in
+            // range now rather than whatever the card last happened to see.
+            Self::ScanningForNetworks => [
+                "--terse",
+                "--fields",
+                "SSID,SIGNAL,SECURITY",
+                "device",
+                "wifi",
+                "list",
+                "--rescan",
+                "yes",
             ]
             .map(str::to_owned)
             .to_vec(),
@@ -293,6 +329,7 @@ impl Program {
     pub fn is_read(&self) -> bool {
         match self {
             Self::ListingTheDisks
+            | Self::ScanningForNetworks
             | Self::Verifying(_)
             | Self::AskingAboutTheNetworkCards
             | Self::ListingTheStartEntries
@@ -333,6 +370,7 @@ impl Program {
         match self {
             Self::Writing(_) | Self::MakingTheRoot { .. } | Self::RemovingTheArea { .. } => true,
             Self::ListingTheDisks
+            | Self::ScanningForNetworks
             | Self::WaitingForTheNetwork
             | Self::AskingAboutTheNetworkCards
             | Self::Verifying(_)

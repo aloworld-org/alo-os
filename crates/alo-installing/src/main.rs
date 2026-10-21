@@ -26,9 +26,11 @@ mod running {
     use std::process::ExitCode;
 
     use alo_installing::{
-        Ended, Environment, OnThisMachine, Told, WHERE_IT_IS, install, installing_words,
+        DiskName, Disks, Ended, Environment, OnThisMachine, Program, STILL_EVERY, TheMachine,
+        TheMedium, Told, WHERE_IT_IS, every_network, install, installing_words,
+        what_may_be_offered, words,
     };
-    use alo_strings::Strings;
+    use alo_strings::{Filling, Strings};
 
     /// The eight layouts the environment offers, and what each calls itself.
     ///
@@ -54,6 +56,80 @@ mod running {
         ("us", "English (US)"),
     ];
 
+    /// Ask a person everything, and give the install the disk they chose.
+    ///
+    /// [`None`] where there was no display, no keyboard, or they never
+    /// finished — and then the install reads the command line as it always
+    /// has, finds nothing, and refuses in words a person can act on. **A
+    /// refusal somebody can read beats a program that stops.**
+    ///
+    /// # What is still owed here, and it is one thing
+    ///
+    /// The network a person chose, and its password, are collected and **not
+    /// yet joined**. `joining_a_network` has the two commands and the
+    /// `--temporary` flag that keeps the password out of any keyfile; what it
+    /// has never had is a caller. That is the next change, and it is the last
+    /// one between this and an install a person can finish over Wi-Fi.
+    fn the_screens_answer(strings: &Strings) -> Option<Told> {
+        // Both lists are read before anything is drawn, and handed in rather
+        // than reached for: the asking holds no machine of its own, which is
+        // what lets the whole walk be tested without one.
+        //
+        // **A failure is a short list rather than a stop.** A machine with no
+        // wireless card cannot scan, and the walk then passes over the network
+        // question — which is also what a computer on a cable should see.
+        let scanned = OnThisMachine
+            .run(
+                &Program::ScanningForNetworks,
+                &strings.say(&words::CONNECTING.key(), &Filling::nothing()),
+                STILL_EVERY,
+            )
+            .ok()
+            .filter(|ran| ran.succeeded)
+            .map(|ran| every_network(&ran.printed))
+            .unwrap_or_default();
+
+        let listed = OnThisMachine
+            .run(
+                &Program::ListingTheDisks,
+                &strings.say(&words::LOOKING_FOR_THE_DISK.key(), &Filling::nothing()),
+                STILL_EVERY,
+            )
+            .ok()
+            .filter(|ran| ran.succeeded)
+            .and_then(|ran| Disks::read(&ran.printed).ok());
+        let offered = listed
+            .as_ref()
+            .map(|disks| what_may_be_offered(disks, &TheMedium::of(disks), strings).offered)
+            .unwrap_or_default();
+
+        let answers = alo_installing::ask(strings, THE_LAYOUTS_OFFERED, &scanned, &offered)
+            .inspect_err(|why| eprintln!("alo-installing: the screen could not be drawn: {why}"))
+            .ok()
+            .flatten()?;
+
+        // Noted and not said: the vocabulary never names a device, and
+        // whoever helps somebody afterwards needs to know which one it was.
+        OnThisMachine.note(&format!(
+            "the screens: keyboard {}, network {}, disk {}",
+            answers.layout,
+            answers.network.as_deref().unwrap_or("none, a cable"),
+            answers.disk
+        ));
+
+        // **A disk whose name the install will not accept is not installed
+        // onto.** The screens offer only what the machine listed, so this
+        // cannot normally fail — and if it ever did, refusing here is the
+        // difference between a refusal a person reads and a write addressed to
+        // a name nothing checked.
+        DiskName::named(&answers.disk)
+            .inspect_err(|why| {
+                OnThisMachine.note(&format!("the disk chosen on screen: {why}"));
+            })
+            .ok()
+            .map(Told::taking_this_disk_whole)
+    }
+
     /// Install, and say how it ended in the exit code as well as on the screen.
     pub(crate) fn run() -> ExitCode {
         let vocabulary = match installing_words() {
@@ -68,47 +144,17 @@ mod running {
         // **Ask, where nobody has been asked.** The Windows road stages the
         // answers on the kernel command line before the restart, and a screen
         // asking them again would be asking a person to repeat themselves. The
-        // stick road stages nothing, and until now the environment refused it
-        // with *no disk chosen* — a true sentence about a question it had never
-        // put to anybody.
-        //
-        // **What this does not yet do**, said here rather than left to be
-        // discovered: the walk collects a keyboard, a network, its password
-        // and a disk, and then the install below still reads the disk off the
-        // command line. **Joining the network and installing onto the disk a
-        // person chose on screen is the next change**, and until it lands a
-        // person on the stick road meets every screen, answers every question,
-        // and then meets the same refusal as before.
+        // stick road stages nothing, and until this existed the environment
+        // refused it with *no disk chosen* — a true sentence about a question
+        // it had never put to anybody.
         let line = std::fs::read_to_string("/proc/cmdline").unwrap_or_default();
-        if Told::from_the_command_line(&line).is_err() {
-            // Both lists are handed in rather than reached for, because the
-            // asking holds no machine of its own — which is what lets the
-            // whole walk be tested without one.
-            //
-            // **Neither is read here yet, and that is the honest state.**
-            // Listing the disks is `Program::ListingTheDisks` and belongs in
-            // the same change that installs onto the disk a person chose;
-            // scanning for networks is **not a `Program` at all** yet, so
-            // there is nothing to call. With no networks the walk passes over
-            // the network question rather than showing an empty list, which is
-            // what a computer on a cable should see in any case.
-            let networks: Vec<alo_installing::ANetwork> = Vec::new();
-            let disks: Vec<alo_installing::Offered> = Vec::new();
-
-            match alo_installing::ask(&strings, THE_LAYOUTS_OFFERED, &networks, &disks) {
-                Ok(Some(answers)) => println!(
-                    "alo-installing: the keyboard is {}, the network is {}, the disk is {}",
-                    answers.layout,
-                    answers.network.as_deref().unwrap_or("a cable"),
-                    answers.disk
-                ),
-                // No display, no keyboard, or nobody finished — all of which
-                // the console below already covers, which is what a person
-                // read before this existed.
-                Ok(None) => {}
-                Err(why) => eprintln!("alo-installing: the screen could not be drawn: {why}"),
-            }
-        }
+        let chosen = if Told::from_the_command_line(&line).is_ok() {
+            // The Windows road. Nothing is asked and nothing is passed: the
+            // install reads the line itself, exactly as it always has.
+            None
+        } else {
+            the_screens_answer(&strings)
+        };
 
         let inside = Path::new(WHERE_IT_IS);
         let environment = Environment::read(
@@ -120,6 +166,7 @@ mod running {
             &mut OnThisMachine,
             &strings,
             environment.as_ref().map_err(Clone::clone),
+            chosen,
         ) {
             Ended::Installed(_) => ExitCode::SUCCESS,
             Ended::Refused(_) | Ended::NotInstalled(_) => ExitCode::FAILURE,

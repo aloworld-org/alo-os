@@ -46,10 +46,12 @@ fn at(screen: WhichScreen) -> TheAsking {
     let mut asking = TheAsking::begins();
     let named = |what: &'static str| WhatTheRingIsOn {
         named: Some(what),
+        as_the_machine_calls_it: Some(what),
         wants_a_password: false,
     };
     let locked = |what: &'static str| WhatTheRingIsOn {
         named: Some(what),
+        as_the_machine_calls_it: Some(what),
         wants_a_password: true,
     };
     if screen == WhichScreen::TheKeyboard {

@@ -128,6 +128,33 @@ pub enum NotTold {
 }
 
 impl Told {
+    /// This disk, taken whole, as a person chose it on the screen.
+    ///
+    /// # Why the stick road needs its own way in
+    ///
+    /// [`Self::from_the_command_line`] is the **Windows** road: that program
+    /// read the disks, asked the person, and wrote the answer onto the kernel
+    /// command line before restarting. On the stick road there is nobody to
+    /// write it, so the screens ask — and what they hand back is a disk and
+    /// nothing else.
+    ///
+    /// `replacing` is true and `beside` is [`None`], which together say *take
+    /// the whole of it*. **That is the only road the screens offer**, and the
+    /// reason is in the field's own documentation: alo OS beside what is
+    /// already there needs two partitions found and named, and this
+    /// environment does not go hunting for partitions on a disk it is keeping.
+    /// So the command-line road carries both names and this one carries
+    /// neither, and a screen offering *beside* would be offering a road this
+    /// environment cannot walk.
+    #[must_use]
+    pub const fn taking_this_disk_whole(disk: DiskName) -> Self {
+        Self {
+            disk,
+            replacing: true,
+            beside: None,
+        }
+    }
+
     /// What a kernel command line says was chosen.
     ///
     /// # Errors
