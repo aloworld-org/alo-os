@@ -360,6 +360,42 @@ it *can* merge, and never notices that nothing *will*.
 answers `Pull request is already in the queue`. Either is an answer. Checking
 `mergeable_state` again is not.
 
+### And a second field that reads both ways, which is worse than `clean`
+
+**`autoMergeRequest` does not say whether a pull request is in the queue, and
+reading it as though it did inverts the answer.** Measured on #897 on
+2026-10-21, all three about the same pull request at the same moment:
+
+| asked | answered |
+|---|---|
+| `gh pr view 897 --json autoMergeRequest` | `null` |
+| `gh pr merge 897 --auto` | `already queued to merge` |
+| `repository.mergeQueue.entries` | position 2, `QUEUED`, enqueued `07:37:29Z` |
+
+It is `null` **because** the change is already queued: auto-merge is the thing
+that waits to enqueue, so once something is enqueued there is nothing pending.
+`clean` means two things; this means the *opposite* of the obvious reading, and a
+lane that checks it concludes *nobody enqueued this* about a change at position
+two.
+
+**And the enqueue's own output looks like a refusal.** `gh pr merge <n> --auto
+--squash` prints
+
+```text
+! The merge strategy for main is set by the merge queue
+```
+
+and **enqueues anyway** — the queue sets the strategy, so the flag is ignored
+rather than the command refused. That line was read as benign for a whole
+session, then as a failure for ten minutes, and only the `enqueuedAt` timestamp
+settled which it was.
+
+**So: the entries list, taken now, or `--auto` answering *already queued* about
+one pull request.** A queue read goes stale in seconds — an entry added at 07:37
+is absent from a read taken at 07:36, and that absence means nothing at all.
+*Written by the lane that mis-read it in both directions within one hour, and
+advised the other lane on it in between.*
+
 The enqueue is a GraphQL mutation and wants the pull request's `node_id` rather
 than its number:
 
