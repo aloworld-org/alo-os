@@ -604,6 +604,50 @@ table as a dated reading rather than a property of the product.
 at the end of the day, because two tasks in two documents read as startable on
 the strength of a dependency that had just been met.*
 
+### The decision came, and one level underneath it there is another — 2026-10-21
+
+**The owner decided this on 2026-10-19 and it is
+[ADR 0127](../decisions/0127-a-persons-own-commands-are-bracketed-in-a-session-they-asked-for.md):**
+a person turns snapshots on for a session, through a row in Settings under
+Terminal, and the rewind puts back a folder now or the whole home at the next
+sign-in. **So the blocker this section describes is gone**, and the row has a
+home — the Terminal section landed as #916 on 2026-10-21.
+
+**It is still not buildable, for a reason ADR 0127 did not reach.** It settled
+*how a person asks* and *when the rewind happens*. It never asked **what takes
+the snapshot**, because that read as implementation. Measured 2026-10-21:
+
+| asked | answer |
+|---|---|
+| what command boundary can alo see | only the shell's OSC 133 mark |
+| what may a mark cause | **nothing.** `docs/contracts/shell-integration-marks.md` line 107: *a forged mark can make alo explain a command nobody typed, and it cannot make alo do anything* |
+| is the mark even in time | **no.** `alo.bash`'s own comment: `PS0` is printed *before the command runs*, and bash then execs — alo reads the pseudoterminal on its own schedule, so a snapshot begun when the mark is **seen** can begin after the command wrote |
+| is there a non-forgeable boundary | **no.** No `alo-watch` crate, no manifest naming one, and every `bpf` reference in `crates/**/*.rs` is law 2's sealed box |
+| does anything put files back | **no**, still. ADR 0127's *make and remove, no restore* holds; `alo-changing-undo` was checked rather than read off its name, and the only place it says `subvolume` is a test asserting its wording avoids machinery |
+
+So bracketing on a mark would falsify a published contract **and** be racy, and
+either alone disqualifies it. **There is a clean road and it is measured:** a
+`PS0` command substitution is synchronous — it held a command for **2.02 s** for
+a two-second sleep, which the command then followed 5.4 ms later — and a
+snapshot costs a **median 2.4 ms**, flat from 200 to 20,200 files. So the
+person's own shell can ask a service, which is ADR 0125's accepted shape and
+the shape `alo.bash` already uses for `try`.
+
+**That needs a verb on the daemon's socket, which is a public surface**, so it
+is a decision rather than a commit.
+[ADR 0130](../decisions/0130-what-takes-the-bracket-before-a-persons-own-command.md)
+proposes it with three options and the measurements above.
+
+**Nothing of this was built, deliberately.** The Settings row is the only half
+that could be written alone, and a setting nothing reads is the shape this plan
+exists to stop. *The finding is this lane's; the decision is the owner's.*
+
+**And the pattern is the one task 11 already named**, which is why it is worth
+saying twice: *a correct answer to the question above can hide the question
+below it.* ADR 0127 answered *how does a person ask* correctly and completely,
+and the question underneath — *what is allowed to take a snapshot* — went
+untouched for two days.
+
 ### 6. Explain a command before it runs — **measured blocked and then decided, 2026-10-17**
 
 **This was step 2 of this order for part of 2026-10-17, on the plan's word that
