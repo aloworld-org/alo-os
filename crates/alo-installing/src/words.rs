@@ -17,6 +17,28 @@
 //! download is not a genuine alo OS, so nothing was changed*, and that sentence
 //! is [`NOT_GENUINE`] here word for word. A test at the bottom of this file
 //! reads every sentence for the forbidden names.
+//!
+//! # Which languages this environment can draw, which is not yet all of them
+//!
+//! **Read this before translating any sentence below.** The boot environment
+//! does not shape text. It rasterises outlines from one compiled-in face, which
+//! [ADR 0129](../../../docs/decisions/0129-the-install-environment-rasterises-outlines-and-does-not-shape-text.md)
+//! settles and gives the reasons for — chiefly that the engine the installed
+//! system uses has three recorded ways of finding no face at all, and on this
+//! screen there is nothing behind the text to fall back to.
+//!
+//! What that costs is here rather than there, because this is the file a
+//! translator opens: **a script that needs joining or reordering — Arabic, and
+//! the Indic scripts — cannot be drawn correctly by this environment yet.** The
+//! letters would arrive separated and in the wrong order, which is worse than
+//! not being translated at all.
+//!
+//! Nothing is broken today, because these sentences are not translated yet. The
+//! day they are, this is either a shaper in this crate or an exception somebody
+//! writes down — and it is not a thing to settle in the hour the translations
+//! arrive. A Latin-script language has no such limit: the face carries the
+//! accented letters, and the eight layout names it already draws — *Français*,
+//! *Español* — are the proof that it does.
 
 use alo_strings::{Vocabulary, VocabularyError, WordError};
 
