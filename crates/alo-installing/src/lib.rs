@@ -72,12 +72,15 @@ mod program;
 #[cfg(target_os = "linux")]
 mod running;
 mod sequence;
+mod the_asking_walks;
 mod the_environment_asks;
 mod the_screen_that_lists_every_layout;
 mod tidying;
 mod told;
 mod verifying;
+mod what_a_person_typed;
 mod what_display_there_is;
+mod what_each_screen_says;
 mod where_a_list_screen_goes;
 mod where_a_screen_goes;
 mod which_choices_are_shown;
@@ -126,7 +129,10 @@ pub use program::{EVERY_PROGRAM, Program, Ran};
 #[cfg(target_os = "linux")]
 pub use running::OnThisMachine;
 pub use sequence::install;
-pub use the_environment_asks::{TheAsking, WhatThePersonDid, WhichScreen, what_the_person_did};
+pub use the_asking_walks::{TheAnswers, TheAsking, WhatThePersonDid, WhatTheRingIsOn, WhichScreen};
+pub use the_environment_asks::what_the_person_did;
+pub use what_a_person_typed::{Typed, WhatAPersonTyped};
+pub use what_each_screen_says::{how_many_cards, what_this_screen_says};
 // Gated with the item it names: it opens the framebuffer and a keyboard, and
 // this crate must still cross-compile for Windows.
 #[cfg(unix)]

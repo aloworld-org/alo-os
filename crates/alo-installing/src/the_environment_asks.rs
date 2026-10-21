@@ -1,58 +1,33 @@
-//! The asking: a screen on the display, a keyboard under a person's hands, and
-//! the loop between them.
+//! One key event to one intention, and the loop that opens the machine.
 //!
-//! # What this joins, and what it deliberately does not disturb
+//! The walk itself is [`crate::the_asking_walks`] and the sentences are
+//! [`crate::what_each_screen_says`]. What is left here is the two things only a
+//! real machine can do: turn a keypress into something a screen understands,
+//! and hold the handle.
 //!
-//! Before this, `alo-installing` **never asked anybody anything.** It read the
-//! disk out of the kernel command line — staged by the program a person ran on
-//! Windows — installed, and ended. Every screen, every key reader and the whole
-//! renderer sat on the crate's surface with nothing calling them.
+//! # Why a field needs the layout and a list does not
 //!
-//! **The road that already works is left exactly as it was.** Where the command
-//! line names a disk, this does nothing at all: that is the Windows road, the
-//! answers were given before the restart, and a screen asking them again would
-//! be asking a person to repeat themselves.
+//! An arrow key is an arrow key on every keyboard in the world — evdev 103 is
+//! up whatever is printed on it. **A letter is not.** So navigation is read
+//! straight off the event, and typing goes through
+//! [`crate::WhatAPersonTyped`], which holds the modifier state and knows the
+//! layout a person chose on the first screen.
 //!
-//! What it is for is the other road. A person who booted a stick was never
-//! asked anything by anybody, and today the environment refuses with *no disk
-//! chosen* — a true sentence about a question it never put. **That refusal is
-//! what this replaces.**
-//!
-//! # The loop is four lines and the decisions are not in it
-//!
-//! [`what_the_person_did`] turns one key event into one intention, and
-//! [`TheAsking`] is a state machine over those. Both are tested on any machine.
-//! [`ask`] opens `/dev/fb0` and a keyboard and turns the handle; it is the only
-//! part a test here cannot judge, and the certified machine's boot is the
-//! measurement it is owed.
-//!
-//! That is the third time this crate has taken that split — `fill`,
-//! `draw_a_screen`, and now this — and it is why a fault in any of them is a
-//! fault a test can reach.
+//! That is the whole reason the keyboard question comes first: until it is
+//! answered there is no layout, and until there is a layout a letter cannot be
+//! read at all.
 
 use crate::a_key_reaches_here::{Pressed, what_was_pressed};
+use crate::the_asking_walks::{TheAnswers, TheAsking, WhatThePersonDid, WhatTheRingIsOn};
 
-/// What a person meant by the key they pressed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WhatThePersonDid {
-    /// Move up the cards.
-    WentUp,
-    /// Move down the cards.
-    WentDown,
-    /// Take the card the ring is on.
-    Chose,
-    /// Go back to the screen before.
-    WentBack,
-    /// Nothing this screen acts on.
-    NothingThisScreenActsOn,
-}
-
-/// What this key event meant.
+/// What this key event meant, for a screen a person moves about on.
 ///
-/// `None` for an event that is not a key going down at all — a release, or a
-/// short read — because a screen that moved on both the press and the release
-/// would move twice for one keystroke. That is
-/// [`crate::what_was_pressed`]'s rule and this does not restate it.
+/// `None` for an event that is not a key going down — a release, or a short
+/// read — because a screen that moved on both the press and the release would
+/// move twice for one keystroke.
+///
+/// **Typing is not here**, and that is not an omission: a letter depends on the
+/// layout and this function has none. See this module's header.
 #[must_use]
 pub fn what_the_person_did(event: &[u8]) -> Option<WhatThePersonDid> {
     Some(match what_was_pressed(event)? {
@@ -60,160 +35,25 @@ pub fn what_the_person_did(event: &[u8]) -> Option<WhatThePersonDid> {
         Pressed::Down => WhatThePersonDid::WentDown,
         Pressed::Enter => WhatThePersonDid::Chose,
         Pressed::Escape => WhatThePersonDid::WentBack,
-        // Tab and Backspace mean something on a screen a person types into and
-        // nothing on a screen of cards. They are named here as understood and
-        // unacted-on rather than falling through a catch-all, so that the
-        // screen which does type into a field has somewhere to take them.
-        Pressed::Tab | Pressed::Backspace => WhatThePersonDid::NothingThisScreenActsOn,
+        Pressed::Backspace => WhatThePersonDid::RubbedOut,
+        // Tab moves between things on a screen that has several, and no screen
+        // here has more than one. Named as understood and unacted-on rather
+        // than falling through a catch-all, so the screen that grows a second
+        // field has somewhere to take it.
+        Pressed::Tab => WhatThePersonDid::NothingThisScreenActsOn,
     })
-}
-
-/// Which screen the environment is on.
-///
-/// Only the two the Wi-Fi road needs first. The rest of the eleven frames are
-/// added here as each one's own state exists, and the enum is deliberately
-/// small rather than a placeholder for all of them: a variant nothing can draw
-/// is a screen a person could be sent to and left on.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WhichScreen {
-    /// S0 — which keyboard, the two-card question.
-    TheKeyboard,
-    /// What *Something else* opens: every layout, as a list.
-    EveryLayout,
-}
-
-/// Where the asking has got to.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TheAsking {
-    /// Which screen is on the display.
-    on: WhichScreen,
-    /// Which card the ring is on, on that screen.
-    card: usize,
-    /// How many cards that screen has.
-    how_many: usize,
-    /// Which layout has been settled on, once one has been.
-    settled: Option<String>,
-}
-
-impl TheAsking {
-    /// Begin, on the keyboard question.
-    ///
-    /// It begins there because typing presupposes the layout: the two things
-    /// this environment asks a person to type are a network password and a
-    /// disk's own name, and both fail silently and identically on the wrong
-    /// keyboard.
-    #[must_use]
-    pub fn begins() -> Self {
-        Self {
-            on: WhichScreen::TheKeyboard,
-            card: 0,
-            how_many: 2,
-            settled: None,
-        }
-    }
-
-    /// Which screen is on the display.
-    #[must_use]
-    pub const fn on(&self) -> WhichScreen {
-        self.on
-    }
-
-    /// Which card the ring is on.
-    #[must_use]
-    pub const fn card(&self) -> usize {
-        self.card
-    }
-
-    /// The layout settled on, once one has been.
-    #[must_use]
-    pub fn settled(&self) -> Option<&str> {
-        self.settled.as_deref()
-    }
-
-    /// How many cards the screen in front of a person has.
-    ///
-    /// Told rather than worked out, because on the list screen it is how many
-    /// fit on this display — which only the display can answer.
-    pub const fn there_are_this_many_cards(&mut self, how_many: usize) {
-        self.how_many = how_many;
-        if self.card >= how_many {
-            self.card = how_many.saturating_sub(1);
-        }
-    }
-
-    /// Act on what a person did, and say whether the screen has to be redrawn.
-    ///
-    /// `named` is what the ring is on, where the screen is a list of layouts —
-    /// the caller has the names and this does not hold them.
-    ///
-    /// Returns `true` when anything a person can see has changed. A redraw for
-    /// a key that changed nothing would make the whole screen flash on a key
-    /// the environment does not even act on.
-    pub fn and_then(&mut self, did: WhatThePersonDid, named: Option<&str>) -> bool {
-        match did {
-            WhatThePersonDid::WentUp => {
-                let was = self.card;
-                self.card = self.card.saturating_sub(1);
-                self.card != was
-            }
-            WhatThePersonDid::WentDown => {
-                let was = self.card;
-                let last = self.how_many.saturating_sub(1);
-                self.card = (self.card + 1).min(last);
-                self.card != was
-            }
-            WhatThePersonDid::Chose => self.chose(named),
-            WhatThePersonDid::WentBack => {
-                // From the list, back to the question. From the question there
-                // is nowhere back to: this is the first screen, and Escape on
-                // it does nothing rather than leaving a person on a blank
-                // display.
-                if self.on == WhichScreen::EveryLayout {
-                    self.on = WhichScreen::TheKeyboard;
-                    self.card = 0;
-                    self.how_many = 2;
-                    true
-                } else {
-                    false
-                }
-            }
-            WhatThePersonDid::NothingThisScreenActsOn => false,
-        }
-    }
-
-    /// Take whatever the ring is on.
-    fn chose(&mut self, named: Option<&str>) -> bool {
-        match self.on {
-            // The keyboard question's two cards: the layout the environment
-            // guessed, and *Something else*.
-            WhichScreen::TheKeyboard => {
-                if self.card == 0 {
-                    self.settled = named.map(str::to_owned);
-                    self.settled.is_some()
-                } else {
-                    self.on = WhichScreen::EveryLayout;
-                    self.card = 0;
-                    true
-                }
-            }
-            WhichScreen::EveryLayout => {
-                self.settled = named.map(str::to_owned);
-                self.settled.is_some()
-            }
-        }
-    }
 }
 
 #[cfg(test)]
 #[path = "the_environment_asks_tests.rs"]
 mod tests;
 
-/// Find a keyboard, open the display, and ask.
+/// Find a keyboard, open the display, and ask a person everything.
 ///
-/// Returns the layout a person settled on, and [`None`] where there was no
-/// display, no keyboard, or the person never settled — all of which the caller
-/// has to be able to go on from, because **a refusal a person can read beats a
-/// program that stops.**
+/// Returns what they settled on, and [`None`] where there was no display, no
+/// keyboard, or they never finished — all of which the caller must be able to
+/// go on from, because **a refusal a person can read beats a program that
+/// stops.**
 ///
 /// # Errors
 ///
@@ -227,13 +67,16 @@ mod tests;
 #[cfg(unix)]
 pub fn ask(
     strings: &alo_strings::Strings,
-    offer_these_layouts: &[(&str, &str)],
-) -> std::io::Result<Option<String>> {
+    layouts: &[(&str, &str)],
+    networks: &[crate::ANetwork],
+    disks: &[crate::Offered],
+) -> std::io::Result<Option<TheAnswers>> {
     use crate::a_surface_to_draw_on::{Grey, WHERE_THE_PIXELS_GO};
     use crate::alos_own_face::AlosOwnFace;
+    use crate::what_a_person_typed::{Typed, WhatAPersonTyped};
     use std::io::Read as _;
 
-    let Some(face) = AlosOwnFace::carried().ok() else {
+    let Ok(face) = AlosOwnFace::carried() else {
         // The typeface compiled into this program would not read, which can
         // only mean the file in the repository is damaged. Nothing can be
         // drawn, so the caller falls back to the console it already has.
@@ -252,12 +95,24 @@ pub fn ask(
     let beneath = Grey::of(0x18);
     let ink = Grey::of(0xE8);
     let mut asking = TheAsking::begins();
+    let mut typing: Option<WhatAPersonTyped> = None;
     let mut event = [0_u8; crate::a_key_reaches_here::ONE_EVENT];
     let mut owed = true;
 
     loop {
         if owed {
-            let words = the_words_for(strings, &asking, offer_these_layouts);
+            asking.there_are_this_many_cards(crate::what_each_screen_says::how_many_cards(
+                &asking, layouts, networks, disks,
+            ));
+            // A question with no answers is not a question. This is checked
+            // after the count and before the draw, so an empty network list is
+            // passed over rather than drawn.
+            if asking.there_is_no_network_to_choose() {
+                continue;
+            }
+            let words = crate::what_each_screen_says::what_this_screen_says(
+                strings, &asking, layouts, networks, disks,
+            );
             if let Some(shows) = crate::a_screen_is_drawn::what_a_screen_shows(
                 surface.across(),
                 surface.down(),
@@ -265,7 +120,6 @@ pub fn ask(
                 face,
                 &words,
             ) {
-                asking.there_are_this_many_cards(words.cards.len());
                 crate::a_screen_is_drawn::draw_a_screen(
                     &display, surface, beneath, ink, face, &shows,
                 )?;
@@ -273,82 +127,80 @@ pub fn ask(
             owed = false;
         }
 
-        // A short read is not an event. `read_exact` would be wrong here: a
-        // partial read on this road means the device went away, and the honest
-        // answer is to stop asking rather than to block for ever.
+        // A short read is not an event. `read_exact` would be wrong: a partial
+        // read on this road means the device went away, and the honest answer
+        // is to stop asking rather than to block for ever.
         if keyboard.read(&mut event)? < crate::a_key_reaches_here::ONE_EVENT {
-            return Ok(asking.settled().map(str::to_owned));
+            return Ok(asking.finished().cloned());
         }
+
+        // A field reads letters, which needs the layout a person chose. The
+        // reader is made the moment there is one and then kept, because it
+        // holds the modifier state between keys.
+        if asking.is_a_field() {
+            if typing.is_none() {
+                typing = asking.layout().and_then(WhatAPersonTyped::on);
+            }
+            if let Some(reader) = typing.as_mut() {
+                let arrived = reader.what_arrived(&event);
+                let did = match arrived {
+                    Typed::Added(character) => Some(WhatThePersonDid::Typed(character)),
+                    Typed::Erased => Some(WhatThePersonDid::RubbedOut),
+                    Typed::Nothing => None,
+                };
+                if let Some(did) = did {
+                    let what = ring(&asking, layouts, networks, disks);
+                    owed |= asking.and_then(did, what);
+                    continue;
+                }
+            }
+        }
+
         let Some(did) = what_the_person_did(&event) else {
             continue;
         };
-        let named = under_the_ring(&asking, offer_these_layouts);
-        owed = asking.and_then(did, named);
-        if asking.settled().is_some() {
-            return Ok(asking.settled().map(str::to_owned));
+        let what = ring(&asking, layouts, networks, disks);
+        owed |= asking.and_then(did, what);
+        if let Some(answers) = asking.finished() {
+            return Ok(Some(answers.clone()));
         }
     }
 }
 
-/// What the ring is on, where that is a layout.
+/// What the ring is on, on whichever screen a person is looking at.
 #[cfg(unix)]
-fn under_the_ring<'a>(asking: &TheAsking, layouts: &'a [(&'a str, &'a str)]) -> Option<&'a str> {
+fn ring<'a>(
+    asking: &TheAsking,
+    layouts: &'a [(&'a str, &'a str)],
+    networks: &'a [crate::ANetwork],
+    disks: &'a [crate::Offered],
+) -> WhatTheRingIsOn<'a> {
+    use crate::the_asking_walks::WhichScreen;
     match asking.on() {
         // The first card carries the layout the environment guessed, which is
-        // the first one offered until the Windows road stages a better guess.
-        WhichScreen::TheKeyboard if asking.card() == 0 => layouts.first().map(|&(named, _)| named),
-        WhichScreen::TheKeyboard => None,
-        WhichScreen::EveryLayout => layouts.get(asking.card()).map(|&(named, _)| named),
-    }
-}
-
-/// What the screen in front of a person says.
-#[cfg(unix)]
-fn the_words_for(
-    strings: &alo_strings::Strings,
-    asking: &TheAsking,
-    layouts: &[(&str, &str)],
-) -> crate::a_screen_is_drawn::TheWordsOfAScreen {
-    use crate::a_screen_is_drawn::TheWordsOfAScreen;
-    use crate::words;
-    use alo_strings::Filling;
-
-    let say = |word: &alo_strings::Word| {
-        strings
-            .say(&word.key(), &Filling::nothing())
-            .text()
-            .to_owned()
-    };
-
-    match asking.on() {
-        WhichScreen::TheKeyboard => TheWordsOfAScreen {
-            eyebrow: say(&words::BEFORE_ANYTHING_IS_TYPED),
-            title: say(&words::WHICH_KEYBOARD),
-            introduction: say(&words::WHY_THE_KEYBOARD_COMES_FIRST),
-            cards: vec![
-                (
-                    layouts
-                        .first()
-                        .map_or_else(String::new, |&(_, shown)| shown.to_owned()),
-                    say(&words::PRESS_THESE_TO_CHECK),
-                ),
-                (
-                    say(&words::SOMETHING_ELSE),
-                    say(&words::EVERY_LAYOUT_THIS_COMPUTER_KNOWS),
-                ),
-            ],
-            consequence: say(&words::IF_IT_DOES_NOT_MATCH),
+        // the first offered until the Windows road stages a better one.
+        WhichScreen::TheKeyboard if asking.card() == 0 => WhatTheRingIsOn {
+            named: layouts.first().map(|&(named, _)| named),
+            wants_a_password: false,
         },
-        WhichScreen::EveryLayout => TheWordsOfAScreen {
-            eyebrow: say(&words::BEFORE_ANYTHING_IS_TYPED),
-            title: say(&words::EVERY_LAYOUT_THIS_COMPUTER_KNOWS),
-            introduction: String::new(),
-            cards: layouts
-                .iter()
-                .map(|&(_, shown)| (shown.to_owned(), String::new()))
-                .collect(),
-            consequence: say(&words::IF_IT_DOES_NOT_MATCH),
+        WhichScreen::TheKeyboard => WhatTheRingIsOn::default(),
+        WhichScreen::EveryLayout => WhatTheRingIsOn {
+            named: layouts.get(asking.card()).map(|&(named, _)| named),
+            wants_a_password: false,
         },
+        WhichScreen::TheNetwork => {
+            networks
+                .get(asking.card())
+                .map_or_else(WhatTheRingIsOn::default, |network| WhatTheRingIsOn {
+                    named: Some(network.name()),
+                    wants_a_password: network.locked(),
+                })
+        }
+        WhichScreen::TheDisk => WhatTheRingIsOn {
+            named: disks.get(asking.card()).map(|disk| disk.called.as_str()),
+            wants_a_password: false,
+        },
+        WhichScreen::ThePassword | WhichScreen::TheReview => WhatTheRingIsOn::default(),
     }
 }
 
@@ -373,9 +225,9 @@ fn the_surface() -> std::io::Result<Option<crate::a_surface_to_draw_on::TheSurfa
 /// The first device that is a keyboard, opened.
 ///
 /// **A keyboard is recognised by A, Z and Enter together**, which is
-/// `is_a_keyboard`'s rule and not restated here: a power button reports one key
-/// and would otherwise pass as a keyboard, and a person would be left pressing
-/// arrows at a device that has none.
+/// `is_a_keyboard`'s rule and not restated here: a power button reports one
+/// key and would otherwise pass as a keyboard, and a person would be left
+/// pressing arrows at a device that has none.
 #[cfg(unix)]
 fn a_keyboard() -> std::io::Result<Option<std::fs::File>> {
     use crate::a_key_reaches_here::{WHERE_THE_KEYS_ARE, is_a_keyboard};

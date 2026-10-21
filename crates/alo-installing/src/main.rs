@@ -73,17 +73,38 @@ mod running {
         // put to anybody.
         //
         // **What this does not yet do**, said here rather than left to be
-        // discovered: the asking settles a *keyboard* and stops. The disk
-        // question is the next screen, so a person on the stick road now meets
-        // a real screen, chooses their layout, and then meets the same refusal
-        // as before. That is one screen of progress and not a finished road.
+        // discovered: the walk collects a keyboard, a network, its password
+        // and a disk, and then the install below still reads the disk off the
+        // command line. **Joining the network and installing onto the disk a
+        // person chose on screen is the next change**, and until it lands a
+        // person on the stick road meets every screen, answers every question,
+        // and then meets the same refusal as before.
         let line = std::fs::read_to_string("/proc/cmdline").unwrap_or_default();
         if Told::from_the_command_line(&line).is_err() {
-            match alo_installing::ask(&strings, THE_LAYOUTS_OFFERED) {
-                Ok(Some(layout)) => println!("alo-installing: the keyboard is {layout}"),
-                // No display, no keyboard, or nobody settled on anything — all
-                // of which the console below already covers, which is what a
-                // person read before this existed.
+            // Both lists are handed in rather than reached for, because the
+            // asking holds no machine of its own — which is what lets the
+            // whole walk be tested without one.
+            //
+            // **Neither is read here yet, and that is the honest state.**
+            // Listing the disks is `Program::ListingTheDisks` and belongs in
+            // the same change that installs onto the disk a person chose;
+            // scanning for networks is **not a `Program` at all** yet, so
+            // there is nothing to call. With no networks the walk passes over
+            // the network question rather than showing an empty list, which is
+            // what a computer on a cable should see in any case.
+            let networks: Vec<alo_installing::ANetwork> = Vec::new();
+            let disks: Vec<alo_installing::Offered> = Vec::new();
+
+            match alo_installing::ask(&strings, THE_LAYOUTS_OFFERED, &networks, &disks) {
+                Ok(Some(answers)) => println!(
+                    "alo-installing: the keyboard is {}, the network is {}, the disk is {}",
+                    answers.layout,
+                    answers.network.as_deref().unwrap_or("a cable"),
+                    answers.disk
+                ),
+                // No display, no keyboard, or nobody finished — all of which
+                // the console below already covers, which is what a person
+                // read before this existed.
                 Ok(None) => {}
                 Err(why) => eprintln!("alo-installing: the screen could not be drawn: {why}"),
             }

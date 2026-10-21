@@ -38,7 +38,7 @@
 
 use alo_keyboards::{Held, a_layout_is_offered, what_a_key_gives};
 
-use crate::what_an_event_said;
+use crate::a_key_reaches_here::what_an_event_said;
 
 /// The evdev codes of the keys that change what another key gives.
 mod modifier {
