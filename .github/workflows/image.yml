@@ -45,6 +45,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The product version is the year and the month (ADR 0097, accepted
+      # 2026-10-08). The pattern below read three numbers until 2026-10-21 and
+      # so refused it — the third place in this repository enforcing the scheme
+      # that decision replaced, after `is_a_release` and its own duplicate.
+      #
+      # It is still read, and still has to name exactly one, because it is what
+      # the image announces itself as and what a promotion tags. It is simply
+      # not what a candidate is tagged with; see the next step.
       - name: Read the release the recipe names
         run: |
           count=$(grep -c '^LABEL org.opencontainers.image.version=' image/Containerfile)
@@ -52,20 +60,46 @@ jobs:
             echo "the recipe names $count releases; it must name exactly one" >&2
             exit 1
           fi
-          version=$(sed -n 's/^LABEL org.opencontainers.image.version="\([0-9]*\.[0-9]*\.[0-9]*\)"$/\1/p' image/Containerfile)
-          if [ -z "$version" ]; then
-            echo "the recipe's release is not MAJOR.MINOR.PATCH" >&2
-            exit 1
-          fi
+          version=$(sed -n 's/^LABEL org.opencontainers.image.version="\([0-9][0-9.]*\)"$/\1/p' image/Containerfile)
+          case "$version" in
+            [0-9]*.[0-9]*.[0-9]*|[0-9][0-9][0-9][0-9].[0-9][0-9]) ;;
+            *)
+              echo "the recipe's release is neither YEAR.MONTH nor MAJOR.MINOR.PATCH: '$version'" >&2
+              exit 1
+              ;;
+          esac
           echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      # **A candidate is tagged by what makes it one build, not by what names a
+      # release.** ADR 0097 rule 4: *a candidate carries a build identifier and
+      # no product version*, and rule 2 gives its shape — a date and a short
+      # commit, hyphens for a date and dots for a version.
+      #
+      # Tagging a candidate with the product version made a second build of the
+      # same release impossible: the tag already existed, so the step below
+      # refused it, and the only way past was to invent a version nobody had
+      # decided. The owner asked the question that found this — *why not with
+      # the date, because tomorrow we may build again*.
+      - name: Name this build
+        run: |
+          echo "BUILD=candidate-$(date -u +%Y-%m-%d)-$(echo '${{ github.sha }}' | cut -c1-7)" >> "$GITHUB_ENV"
 
       - name: Log in to the registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u "${{ github.actor }}" --password-stdin
 
+      # Two refusals, and they answer different questions. The product version
+      # must not already be published, because a release tag never moves and
+      # this build is meant to become that release. The build identifier must
+      # not already exist either — the same commit built twice on one day is
+      # two pushes of one tag, and the second would silently replace the first.
       - name: Refuse a release that is already published
         run: |
           if skopeo inspect --raw "docker://$REGISTRY:$VERSION" > /dev/null 2>&1; then
             echo "$REGISTRY:$VERSION is already published, and a published tag never moves" >&2
+            exit 1
+          fi
+          if skopeo inspect --raw "docker://$REGISTRY:$BUILD" > /dev/null 2>&1; then
+            echo "$REGISTRY:$BUILD was already built and pushed; a build identifier names one build" >&2
             exit 1
           fi
 
@@ -73,9 +107,9 @@ jobs:
         run: |
           podman build -f image/Containerfile \
             --label "org.opencontainers.image.revision=${{ github.sha }}" \
-            -t "$REGISTRY:$VERSION" .
+            -t "$REGISTRY:$BUILD" .
 
       - name: Push the candidate
         run: |
-          podman push --digestfile digest "$REGISTRY:$VERSION"
-          echo "candidate $REGISTRY:$VERSION at $(cat digest), built from ${{ github.sha }}; unsigned, and not a release until the owner signs that digest. The two commands to run, and why each flag, are in image/pinned.toml under The two commands that sign a candidate."
+          podman push --digestfile digest "$REGISTRY:$BUILD"
+          echo "candidate $REGISTRY:$BUILD at $(cat digest), built from ${{ github.sha }}, which the recipe names as $VERSION. Unsigned, and not a release until the owner signs that digest — and it carries no release tag, so building again tomorrow needs nothing renamed. The two commands to run, and why each flag, are in image/pinned.toml under The two commands that sign a candidate."

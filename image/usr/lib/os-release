@@ -37,11 +37,11 @@
 NAME="alo OS"
 ID=alo
 ID_LIKE=fedora
-VERSION="0.0.8"
+VERSION="2026.10"
 VERSION_ID=42
-PRETTY_NAME="alo OS 0.0.8"
+PRETTY_NAME="alo OS 2026.10"
 ANSI_COLOR="0;38;2;15;107;114"
-CPE_NAME="cpe:/o:aloworld:alo_os:0.0.8"
+CPE_NAME="cpe:/o:aloworld:alo_os:2026.10"
 PLATFORM_ID="platform:f42"
 DEFAULT_HOSTNAME="alo"
 HOME_URL="https://github.com/aloworld-org/alo-os"
