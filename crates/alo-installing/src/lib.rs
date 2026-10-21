@@ -74,6 +74,7 @@ mod running;
 mod sequence;
 mod the_asking_walks;
 mod the_environment_asks;
+mod the_keyboard_a_person_has;
 mod the_screen_that_lists_every_layout;
 mod tidying;
 mod told;
@@ -137,6 +138,9 @@ pub use running::OnThisMachine;
 pub use sequence::install;
 pub use the_asking_walks::{TheAnswers, TheAsking, WhatThePersonDid, WhatTheRingIsOn, WhichScreen};
 pub use the_environment_asks::what_the_person_did;
+pub use the_keyboard_a_person_has::{
+    NoKeyboard, WHERE_THE_DEVICES_ARE, WHERE_THE_EVENTS_ARE, the_keyboard_a_person_has,
+};
 pub use what_a_person_typed::{Typed, WhatAPersonTyped};
 pub use what_each_screen_says::{how_many_cards, what_this_screen_says};
 // Gated with the item it names: it opens the framebuffer and a keyboard, and
