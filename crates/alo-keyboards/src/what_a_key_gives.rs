@@ -36,6 +36,18 @@
 //! by which `^` then `e` makes `ê` — is **not** here: `how-to-type` answers
 //! single keys, and composing is [`crate::Compose`]'s job, which already
 //! exists. So this turns a key into a character and does not turn two into one.
+//!
+//! **And one known divergence, measured rather than suspected.** A key whose
+//! level is *dead* has no row, so on a key where some levels are dead and one
+//! is not, dropping an unused modifier can land on the live level: Belgian's
+//! `AD11` is `[dead_circumflex, dead_diaeresis, bracketleft, dead_abovering]`
+//! and AltGr-with-shift answers `[` where it should answer nothing. It cannot
+//! be fixed from this table, because *this level is dead* and *this key ignores
+//! this modifier* are the same absence in it. The fix is to generate each key's
+//! consulted modifiers from `compile-keymap`'s own `type` declarations, which
+//! would have made the caps-lock holes impossible rather than repaired —
+//! `a_dead_level_resolves_to_its_neighbour_which_is_known_and_wrong` pins the
+//! wrong answer so the fix is noticed.
 
 use std::char;
 
@@ -130,6 +142,18 @@ impl Held {
         self
     }
 
+    /// The same, with every modifier this key pays no attention to dropped.
+    ///
+    /// See `what_this_key_consults`: a modifier a key's type does not list is
+    /// ignored by that key, so holding it must not stop the key answering.
+    const fn but_only(self, consulted: Self) -> Self {
+        Self {
+            shift: self.shift && consulted.shift,
+            altgr: self.altgr && consulted.altgr,
+            caps: self.caps && consulted.caps,
+        }
+    }
+
     /// How this reads in the committed table's third column.
     ///
     /// The names are xkb's and the order is sorted, which is how the table was
@@ -166,7 +190,8 @@ pub fn what_a_key_gives(layout: &str, evdev: u16, held: Held) -> Option<char> {
     if !a_layout_is_offered(layout) {
         return None;
     }
-    let wanted = held.as_the_table_writes_it();
+    let wanted = held.but_only(what_this_key_consults(layout, evdev));
+    let wanted = wanted.as_the_table_writes_it();
     for row in THE_TABLE.lines() {
         let mut column = row.split('\t');
         if column.next()? != layout {
@@ -181,6 +206,62 @@ pub fn what_a_key_gives(layout: &str, evdev: u16, held: Held) -> Option<char> {
         return column.next().and_then(a_code_point);
     }
     None
+}
+
+/// Which modifiers this key pays any attention to at all.
+///
+/// **A modifier a key's type does not list is ignored by that key**, which is
+/// xkb's own rule and the reason this function exists. The keymap says it
+/// outright:
+///
+/// ```text
+/// type "ONE_LEVEL"  { modifiers= none; }
+/// type "TWO_LEVEL"  { modifiers= Shift; map[Shift]= 2; }
+/// type "ALPHABETIC" { modifiers= Shift+Lock; map[Shift]= 2; map[Lock]= 2; }
+/// ```
+///
+/// `Lock` is absent from `TWO_LEVEL`, so caps lock does nothing to a digit key —
+/// it neither shifts it nor stops it. `ONE_LEVEL` lists nothing, so the space
+/// bar gives a space with anything held.
+///
+/// **The table cannot say this directly and the hole it left was person-facing.**
+/// `xkbcli how-to-type` answers *which modifiers reach this character*, so a
+/// modifier that reaches nothing is never mentioned — Belgian's ampersand key
+/// had rows for nothing, `Shift`, `Mod5` and `Mod5 Shift` and **no `Lock` row at
+/// all**, and the space bar had one row. Matched strictly, a person with caps
+/// lock on typed nothing from that key, and a shifted space typed nothing: a
+/// Wi-Fi password that stops dead with no report but *the password was refused*.
+///
+/// So the modifiers a key consults are read back out of its own rows — the union
+/// of every modifier any row for it mentions — and anything else is dropped
+/// before matching. *Found by the desktop lane on 2026-10-21, measured against
+/// this table rather than inferred, and the diagnosis is theirs.*
+fn what_this_key_consults(layout: &str, evdev: u16) -> Held {
+    let mut consulted = Held::nothing();
+    for row in THE_TABLE.lines() {
+        let mut column = row.split('\t');
+        if column.next() != Some(layout) {
+            continue;
+        }
+        let Some(Ok(code)) = column.next().map(str::parse::<u16>) else {
+            continue;
+        };
+        if code != evdev {
+            continue;
+        }
+        let Some(mods) = column.next() else {
+            continue;
+        };
+        for one in mods.split_whitespace() {
+            match one {
+                "Shift" => consulted.shift = true,
+                "Mod5" => consulted.altgr = true,
+                "Lock" => consulted.caps = true,
+                _ => {}
+            }
+        }
+    }
+    consulted
 }
 
 /// The character a `U+XXXX` column names.
