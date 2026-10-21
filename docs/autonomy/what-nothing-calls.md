@@ -485,3 +485,74 @@ that use it against the set that exists. That needs somebody to say what the set
 is, which is a judgement and not a count — so it is named here rather than
 proposed as a gate, because a gate nobody can define is worse than a paragraph
 somebody reads.
+
+## Hole eight, and it is in a reimplementation of this page's own method
+
+*Added 2026-10-21. The script that produced the figures above was never
+committed — it lived in a scratchpad and is gone, so re-running the measurement
+means rewriting the instrument. **That is the first finding here**: a page whose
+numbers nobody can reproduce is a page whose numbers age without anybody
+noticing. The rewrite, carrying holes three, four and five from above by
+reading them off this page, promptly invented a ninth of its own.*
+
+**What it reported.** Three `pub fn` in `alo-access` with no caller and no test:
+`a_delay_of` in `key_filter.rs`, `after_the_last` in `reaching.rs`,
+`has_a_voice` in `voices.rs`. This page says `alo-access` had **one**, and that
+one — `ignore_the_same_key_for` — was fixed in the change that wrote this page.
+
+**All three are false, and every one of the seven call sites is inside an inline
+`#[cfg(test)]` block in the function's own file:**
+
+| | caller lines | the file's `#[cfg(test)]` span | inside |
+|---|---|---|---|
+| `a_delay_of` | 111, 115, 119, 122 | 84–124 | all four |
+| `after_the_last` | 276 | 231–282 | yes |
+| `has_a_voice` | 89, 91 | 66–108 | both |
+
+**The mechanism, and it is a swap of two correct steps.** The rewrite strips
+`#[cfg(test)] mod` blocks out of the product text, which is right — a test is
+not a product caller, and hole two above is that tests were counted as callers.
+But it **discards** the stripped text rather than adding it to what is counted
+as *test* usage. So a function whose only callers are in its own file's test
+module is counted in neither place, and comes out as *no product caller **and**
+no test* — which is the exact conjunction that defines an orphan here.
+
+**Two right ideas, applied in an order that cancels them.** Hole two fixed
+over-counting by excluding tests from callers. This hole is the same fix applied
+once too often: excluded from callers *and* from tests. The sweep that produced
+this page's 44 did not have it, which is why its `alo-access` figure was 1 and
+correct.
+
+**What made it visible, and it was not care.** Two independent signals
+disagreed with the run:
+
+1. The first run of the rewrite **refused** — *no `.rs` files under
+   `crates/alo-terminal/src`* — because it was pointed at the repository's main
+   checkout, which was **222 commits behind** `origin/main` and predates that
+   crate. A guard written for a different reason caught the wrong subject.
+2. On that stale tree the rewrite reported `ignore_the_same_key_for` as an
+   orphan — a function **this page records as fixed**. A result that contradicts
+   a written record is worth more than a result that agrees with nothing, and
+   it is what sent the run to a worktree at `origin/main`.
+
+Neither signal was a test of the sweep. Both were accidents of it being wrong
+about something else first, which is the uncomfortable part: on a current tree,
+with the crate present, the three false orphans would have read as a finding.
+
+**Why this matters more than three names.** The section above proposes a gate
+built on this method. **An instrument that falsely accuses three functions in
+one eleven-file crate would have failed three honest builds**, and the failure
+would have read as the author's regression rather than as the gate's hole — the
+same shape as a peer lane's `grep -c … || echo "no such file"` the same evening,
+where *zero matches* and *no such file* were reported identically and the
+collapsed answer was the more damning one.
+
+**So the gate's subject is not settled, and that is the finding to act on.** Two
+implementations of *what nothing calls* disagree by three in one small crate,
+and the disagreement is in the definition rather than the arithmetic: whether a
+caller inside the callee's own `#[cfg(test)]` block counts as a test, as a
+caller, or as neither. The answer is *as a test* — it is what hole two is about
+— but a gate encodes whichever answer its author happened to implement, silently.
+**Settle the definition, in prose, before writing the gate**, and keep the
+instrument in the repository so the next reader argues with code rather than
+rewriting it.
