@@ -168,9 +168,14 @@ outside the rule rather than reading it generously.
 
 **There is no lock. Changed 2026-09-19, after it cost two days.**
 
-A machine merges its own finished work when its pull request carries a passing
-`alo/nine-gates` on that exact head. It does not claim anything first and does
-not wait for another machine's permission.
+A machine lands its own finished work when its pull request carries a passing
+`alo/gates-on-a-runner` on that exact head — by **enqueueing** it, which is step
+7 of the task lifecycle. It does not claim anything first and does not wait for
+another machine's permission.
+
+*This said `alo/nine-gates` and "merges its own finished work" until 2026-10-21.
+Neither is right: that status is required by nothing, and a lane does not merge
+— the queue does. See the correction under* Main protection.
 
 ### `main` no longer requires a branch to be up to date. Changed 2026-09-19
 
@@ -230,10 +235,39 @@ racing the other five hundred tests in the same binary. It passed three times
 in a row when run alone. Reverting on that first result would have taken out
 the decoder decision and the errand for nothing.
 
-**A merge queue would be the proper answer and is not available here.** The
-queue waits for `alo/nine-gates` on a temporary branch of its own, and with no
-CI in this repository nothing would ever post it, so every merge would hang.
-Recorded so that nobody proposes it a second time.
+**There is a merge queue, and it is how everything lands.** It builds its own
+candidate on `gh-readonly-queue/main/pr-<n>-<base>`, rebased onto the real
+current `main`, and CI runs the required check on that candidate by itself.
+
+#### This paragraph said the opposite until 2026-10-21, and it was the most expensive wrong sentence in this file
+
+It read: *A merge queue would be the proper answer and is not available here.
+The queue waits for `alo/nine-gates` on a temporary branch of its own, and with
+no CI in this repository nothing would ever post it, so every merge would hang.
+Recorded so that nobody proposes it a second time.*
+
+Every clause of that was true when written and none is now: there is CI, it
+posts `alo/gates-on-a-runner`, and it posts it on the candidate. **But the
+damage was not staleness.** A stale fact gets checked. This was written **in the
+tone of a lesson learned**, with a closing line telling the next reader not to
+raise it again — so it did not merely fail to describe the mechanism, it
+*argued against adopting the one already in use.* Two lanes landed through that
+queue for a whole evening with this paragraph in the file forbidding it.
+
+**The shape to recognise, because this file is full of the good version of
+it:** *recorded so that nobody proposes it a second time* is exactly the right
+thing to write about a road that was tried and failed, and exactly the wrong
+thing to leave unrevisited when the reason it failed is removed. A refusal
+needs its precondition written beside it — *not available because nothing posts
+the status* — so that the day something does post it, the refusal visibly
+expires instead of hardening.
+
+**And one caveat about evidence, which cost the Mac lane a wrong conclusion
+tonight:** `branches/main/protection` has **no** `required_merge_queue` field,
+so asking `has("required_merge_queue")` answers `false` whether or not a queue
+exists. That is an absent field, not a negative answer. Read
+`repository.mergeQueue.entries` by GraphQL, or enqueue something and read the
+position back.
 
 **Why the lock was removed.** A shared claim ref
 (`refs/heads/coordination/integration-lock`) was held by one machine that then
@@ -285,14 +319,15 @@ together.
    on that combined tree. Keep logs and durations. Existing requirements for
    Windows/Linux/component and real-hardware evidence remain in force; do not
    imply hardware certification from developer checks.
-6. Only the coordinator reports `alo/nine-gates` success, on that exact PR head,
-   after reviewing all results and confirming the gated source tree matches it.
-   Include base/tree SHAs and evidence in the PR. Mark it ready. A pending or
-   failed gate never permits a merge; a prior head's success is not transferable.
-7. Recheck that `main` and the PR head have not moved. Squash-merge through the
-   PR, using one descriptive conventional commit and the configured owner's
-   identity, with no co-author trailer. If either moved, stop, integrate and
-   validate the new combined tree; never bypass required checks or protection.
+6. **Push, and let CI post `alo/gates-on-a-runner` on that head.** Nobody
+   hand-posts it — see *Main protection*, and the correction under it. Include
+   base/tree SHAs and the local pre-check's evidence in the PR, and mark it
+   ready. A pending or failed check never permits a merge, and a prior head's
+   success is not transferable.
+7. **Enqueue it, and confirm a position came back.** The merge queue does the
+   merging; a lane does not squash-merge by hand. See *Enqueueing is a step, and
+   nothing will do it for you* below — **this is the step that gets forgotten**,
+   and a change that is clean and green and unenqueued waits for ever.
 8. Verify the merged tree matches the gated tree, record the resulting main
    commit, and delete only that merged task branch, remotely and locally once
    its work is confirmed reachable. Preserve unmerged/parked recovery branches.
@@ -301,6 +336,72 @@ together.
    *A merge is finished when `main` still gates*.
 10. **Clear the blockers that named the task you just finished**, in the same
     change that marks it done.
+
+### Enqueueing is a step, and nothing will do it for you
+
+**Measured on 2026-10-20: four changes, two lanes, twice each, in one evening.**
+Every one of them sat finished and went nowhere, because nobody had told the
+queue. Auto-merge is off on this repository, so a change that is done waits on a
+person indefinitely.
+
+**What makes it invisible is that `clean` means both things:**
+
+| what is actually true | what the API says |
+|---|---|
+| queued, about to land | `mergeable_state: clean` |
+| **nobody enqueued it; it will wait for ever** | `mergeable_state: clean` |
+
+There is no field that separates them and no notification either way. So a lane
+reads `clean`, reads `alo/gates-on-a-runner=success`, concludes correctly that
+it *can* merge, and never notices that nothing *will*.
+
+**The cheap test is to enqueue and read the reply.** Success answers
+`{"mergeQueueEntry":{"position":1,"state":"QUEUED"}}`; something already queued
+answers `Pull request is already in the queue`. Either is an answer. Checking
+`mergeable_state` again is not.
+
+The enqueue is a GraphQL mutation and wants the pull request's `node_id` rather
+than its number:
+
+```bash
+id=$(gh api repos/{owner}/{repo}/pulls/NNN --jq .node_id)   # or curl + .node_id
+gh api graphql -f query='mutation($id:ID!){ enqueuePullRequest(input:{pullRequestId:$id}){ mergeQueueEntry { position state } } }' -F id="$id"
+```
+
+**And a stacked pull request cannot be enqueued at all** while its base is
+another branch: the queue takes only what targets `main`. A stack therefore
+lands bottom-first, and each one above has to be rebased onto `main` and
+enqueued in its turn — a second place the same forgetting happens, and one where
+the upper change looks ready for hours.
+
+**Why this is a numbered step and not advice.** Because it was advice, and it
+failed four times in four hours between two lanes that were each being careful.
+The fix for something nobody remembers is never *remember harder*; it is to put
+it where the procedure is read. *Proposed by the Mac lane on 2026-10-20, in
+these words: "worth one of us writing it into SHARED_MAIN.md as a step rather
+than a habit, since neither of us has managed to remember it reliably."*
+
+#### And the other half of the same step: do not enqueue until you would be content for it to land unattended
+
+**Auto-merge means you are racing the queue.** `#889` landed carrying two known
+bugs — a caps-lock hole on every layout's digit keys and a shifted space that
+typed nothing — because `--auto` was set at push time and the faults were found
+while the gates were still running. The other lane's *do not land the table as
+it stands* arrived correct and too late.
+
+**There is no way back out.** Once a pull request is queued:
+
+- it **cannot be pushed to** — the protected-branch hook refuses it;
+- it **cannot be dequeued** with `--disable-auto`, which answers *already
+  queued to merge*.
+
+So the only road from there is a follow-up: stacked on the branch, or against
+`main` once it lands. That is what `#890` and `#877` both were.
+
+Which makes the step two things rather than one. **Enqueue it** — nothing else
+will. And **enqueue it only when you would be content for it to land with
+nobody watching**, because from that moment nobody can stop it, including you.
+*Recorded by the Mac lane on 2026-10-20, from `#889`.*
 
 ### A stale blocker is invisible work
 
@@ -452,17 +553,47 @@ most of the benefit the queue exists to provide.
 
 ## Main protection
 
-Configure GitHub to require a pull request, the `alo/nine-gates` status and
-linear history for `main`, including administrators. Disallow force pushes and
-deletion. **Do not require a branch to be up to date** — that setting was
-turned off on 2026-09-19 for the reason given under *Taking the integration
-turn*, and what replaced it is step 9 of the task lifecycle. Enable squash merging and deletion of merged branches;
-disable merge-commit and rebase merging. No extra reviewer is required for this
-small-team workflow; that does not replace the coordinator's evidence review.
-The status reports the existing local nine-gate run; it is not a newly installed
-CI runner. Credentials able to write commit statuses remain trusted, so every
-machine must follow the integration-turn rule. Do not bypass protection if API
-access is unavailable: preserve the branch and report the concrete blocker.
+**Read back from the protection API on 2026-10-21, not remembered:**
+
+```
+required contexts : ["alo/gates-on-a-runner"]
+strict            : false
+enforce_admins    : true
+linear history    : true
+force pushes      : false
+```
+
+`main` requires a pull request, that one status, and linear history — for
+administrators too. Force pushes and deletion are refused. **Do not require a
+branch to be up to date**: that setting was turned off on 2026-09-19 for the
+reason given under *Taking the integration turn*, and what replaced it is step 9
+of the task lifecycle. Squash merging and deletion of merged branches are on;
+merge commits and rebase merging are off. No extra reviewer is required for this
+small-team workflow, and that does not replace the coordinator's evidence
+review. Do not bypass protection if API access is unavailable: preserve the
+branch and report the concrete blocker.
+
+### This section said something else until 2026-10-21, and was wrong in both of its load-bearing sentences
+
+It named the required status **`alo/nine-gates`** and said *the status reports
+the existing local nine-gate run; it is not a newly installed CI runner.* Both
+were true once and neither is now:
+
+- the required context is **`alo/gates-on-a-runner`**, and nothing named
+  `alo/nine-gates` is required by anything;
+- **CI posts it.** A workflow produces it, and the merge queue's own candidate
+  commit gets its own run — so a lane does not gate and attest a candidate by
+  hand.
+
+**Acting on the old text costs a whole task.** A lane would run the local gates,
+hand-post a status nothing reads, and then wait for a context nothing requires —
+having done the work, with every field it thought to check looking fine. The
+local gates are a **pre-check**: worth running because they are far cheaper than
+a CI round trip, and not what governs.
+
+Recorded rather than quietly replaced, because the old sentence was *true when
+written*, and that is the kind that survives longest: **nothing happens to a
+document when the thing it describes is replaced.**
 
 ## One build cache and one gate run per machine
 
