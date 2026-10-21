@@ -81,6 +81,7 @@ impl Machine {
         SettingsPlaces::of(
             None,
             None,
+            None,
             self.places.grants(),
             self.places.pairings(),
             self.places.daemon(),
@@ -127,6 +128,13 @@ pub(crate) fn a_persons_machine(what: &str) -> Machine {
     let places = SettingsPlaces::of(
         None,
         Some(home.as_os_str()),
+        // **A real shell, so the shell-integration row exists in this fixture.**
+        // It was `None` for one commit, and that silently took the row out of
+        // `every_setting_the_machine_has_is_in_one_window` — the row was neither
+        // drawn nor acted on, so its drawn-against-acted-on check agreed with
+        // itself about nothing. Measured: with `None` here, deleting the row
+        // from the acted-on list left that test green.
+        Some(std::ffi::OsStr::new("/bin/bash")),
         &machine_files.join("grants"),
         &machine_files.join("pairings"),
         // A socket nothing binds, which is the honest ordinary case: `door.rs`

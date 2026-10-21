@@ -346,3 +346,207 @@ mod tempish {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// The one-press way: adding the snippet to a startup file.
+//
+// These do not start a shell. What the snippet *does* once sourced is measured
+// above, by a real bash; what is measured here is the file edit, and the thing
+// worth holding is that pressing twice cannot leave two copies.
+// ---------------------------------------------------------------------------
+
+use std::path::Path;
+
+use super::{Added, NotAdded, add_to, already_in, the_line_it_begins_with};
+
+/// How many copies of the snippet a startup file holds.
+///
+/// Counts the snippet's **own first line** rather than a string written here,
+/// for the reason `the_line_it_begins_with` gives: a marker spelled twice is
+/// two sources of truth.
+fn copies_in(at: &Path) -> usize {
+    let held = std::fs::read_to_string(at).unwrap_or_default();
+    let marker = the_line_it_begins_with(
+        super::for_the_shell_called("bash").expect("alo ships integration for bash"),
+    );
+    held.matches(marker).count()
+}
+
+/// **A person who has never edited a startup file still gets the integration.**
+#[test]
+fn a_startup_file_that_is_not_there_yet_is_made() {
+    let dir = tempish::Dir::new();
+    let at = dir.path().join(".bashrc");
+    assert!(!at.exists(), "the premise: nothing is there yet");
+
+    assert_eq!(add_to(&at, "/bin/bash"), Ok(Added::Appended));
+    assert_eq!(copies_in(&at), 1, "one copy, in a file that did not exist");
+}
+
+/// **Pressing twice leaves one copy**, which is the whole point of the check.
+///
+/// Two copies would bind `Ctrl`+`X` `Ctrl`+`A` twice and prepend the prompt
+/// marks twice — a prompt measured wrong wraps in the wrong place, which the
+/// snippet's own comments call a worse bug than no integration.
+#[test]
+fn adding_it_twice_leaves_one_copy() {
+    let dir = tempish::Dir::new();
+    let at = dir.path().join(".bashrc");
+
+    assert_eq!(add_to(&at, "bash"), Ok(Added::Appended));
+    let after_once = std::fs::read_to_string(&at).expect("the file the first add wrote");
+
+    assert_eq!(
+        add_to(&at, "bash"),
+        Ok(Added::AlreadyThere),
+        "the second press is told nothing was written, not that it failed"
+    );
+    assert_eq!(copies_in(&at), 1, "still one copy after two presses");
+    assert_eq!(
+        std::fs::read_to_string(&at).expect("the file after the second add"),
+        after_once,
+        "the second press wrote nothing at all, byte for byte"
+    );
+}
+
+/// **A shell alo ships nothing for is refused, and nothing is written.**
+#[test]
+fn a_shell_alo_ships_nothing_for_is_refused_and_nothing_is_written() {
+    let dir = tempish::Dir::new();
+    let at = dir.path().join(".zshrc");
+
+    assert_eq!(
+        add_to(&at, "/usr/bin/zsh"),
+        Err(NotAdded::NoIntegrationFor("/usr/bin/zsh".to_owned())),
+        "the shell is named back, so a person reads which one we have nothing for"
+    );
+    assert!(
+        !at.exists(),
+        "a refusal that created the file would have written a bash snippet for a zsh user"
+    );
+}
+
+/// **What was already in the startup file is kept, and stays first.**
+#[test]
+fn what_was_already_in_the_startup_file_is_kept() {
+    let dir = tempish::Dir::new();
+    let at = dir.path().join(".bashrc");
+    let theirs = "export EDITOR=vi\nalias ll='ls -l'";
+    std::fs::write(&at, theirs).expect("a startup file of their own");
+
+    assert_eq!(add_to(&at, "bash"), Ok(Added::Appended));
+
+    let after = std::fs::read_to_string(&at).expect("the file after");
+    assert!(
+        after.starts_with(theirs),
+        "their own lines are still at the top, unchanged: {after:?}"
+    );
+    assert_eq!(copies_in(&at), 1);
+    assert!(
+        after.contains("\n\n#"),
+        "a blank line separates their lines from the snippet rather than running on"
+    );
+}
+
+/// **A startup file with no final newline does not get the snippet welded onto
+/// its last line.**
+///
+/// That would be a syntax error in their shell, on every new terminal, caused
+/// by us.
+#[test]
+fn a_file_with_no_final_newline_is_not_run_onto() {
+    let dir = tempish::Dir::new();
+    let at = dir.path().join(".bashrc");
+    std::fs::write(&at, "alias ll='ls -l'").expect("a startup file with no final newline");
+
+    assert_eq!(add_to(&at, "bash"), Ok(Added::Appended));
+
+    let after = std::fs::read_to_string(&at).expect("the file after");
+    assert!(
+        after.starts_with("alias ll='ls -l'\n"),
+        "their last line ends before anything of ours begins: {after:?}"
+    );
+}
+
+/// **A read-only startup file never reports a write that did not happen.**
+///
+/// Asserts the **invariant that holds either way** rather than branching on
+/// whether this process is root: a read-only file refuses the append as the
+/// person and takes it as root, and a test that needed to know which would
+/// need a dependency to ask. What must never happen is either half lying —
+/// `Appended` with nothing written, or a refusal that wrote something.
+#[test]
+fn a_read_only_startup_file_never_reports_a_write_that_did_not_happen() {
+    use std::os::unix::fs::PermissionsExt as _;
+
+    let dir = tempish::Dir::new();
+    let at = dir.path().join(".bashrc");
+    std::fs::write(&at, "alias ll='ls -l'\n").expect("a startup file of their own");
+    std::fs::set_permissions(&at, std::fs::Permissions::from_mode(0o444))
+        .expect("making it read-only");
+
+    match add_to(&at, "bash") {
+        Ok(Added::Appended) => assert_eq!(
+            copies_in(&at),
+            1,
+            "it said it appended, so exactly one copy has to be there"
+        ),
+        Ok(Added::AlreadyThere) => {
+            panic!("nothing of ours was in the file, so AlreadyThere is wrong")
+        }
+        Err(NotAdded::WouldNotWrite { at: named, why }) => {
+            assert!(
+                named.ends_with(".bashrc"),
+                "the refusal names the file: {named}"
+            );
+            assert!(!why.is_empty(), "the refusal says what the machine said");
+            assert_eq!(copies_in(&at), 0, "it refused, so nothing was written");
+        }
+        other => panic!("a read-only startup file gives one of those three, got {other:?}"),
+    }
+    // Either way their own line survived, which is the thing an append protects.
+    let after = std::fs::read_to_string(&at).expect("the file is still readable");
+    assert!(after.starts_with("alias ll='ls -l'"), "{after:?}");
+}
+
+/// **`already_in` tells *not there* apart from *we ship nothing for it*.**
+///
+/// Collapsing the two is how a `zsh` user gets offered a `bash` snippet.
+#[test]
+fn already_in_tells_not_there_apart_from_no_snippet_at_all() {
+    assert_eq!(already_in("", "bash"), Some(false), "bash, nothing there");
+    assert_eq!(already_in("", "zsh"), None, "no snippet for zsh at all");
+
+    let snippet = super::for_the_shell_called("bash").expect("alo ships integration for bash");
+    assert_eq!(
+        already_in(snippet, "bash"),
+        Some(true),
+        "the snippet's own text is recognised as itself"
+    );
+}
+
+/// **The marker is the snippet's own first line**, not a copy of it.
+///
+/// This is the guard on the two-sources-of-truth hazard the function's comment
+/// names: if somebody edits `alo.bash`'s first line, the marker follows it, and
+/// a startup file written before the edit is still recognised only if the line
+/// is unchanged — which is why the line is a comment nobody has a reason to
+/// reword.
+#[test]
+fn the_marker_is_the_snippets_own_first_line() {
+    let snippet = super::for_the_shell_called("bash").expect("alo ships integration for bash");
+    let marker = the_line_it_begins_with(snippet);
+
+    assert!(
+        snippet.starts_with(marker),
+        "the marker is where the snippet begins"
+    );
+    assert!(
+        marker.starts_with('#'),
+        "the marker is a comment, so a shell sourcing it does nothing with it: {marker:?}"
+    );
+    assert!(
+        marker.len() > 20,
+        "a short marker would match something a person wrote: {marker:?}"
+    );
+}

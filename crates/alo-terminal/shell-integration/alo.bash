@@ -12,7 +12,9 @@
 # emit — if you already have shell integration for one of those, alo reads it
 # and you need nothing here except the Ctrl+X Ctrl+A binding at the bottom.
 #
-# alo does not add this to your shell startup. You do.
+# alo never adds this to your shell startup on its own. You add it — either by
+# hand, or from Settings under Terminal, which asks you first and writes
+# nothing until you say yes.
 
 # ---------------------------------------------------------------------------
 # The cycle: where the prompt is, and when a command ran.

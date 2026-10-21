@@ -344,11 +344,116 @@ pub const NOT_INDEPENDENTLY_VERIFIED: Word = Word::saying(
      short: it is under every such summary.",
 );
 
+/// The row in Settings that offers to add the shell integration.
+///
+/// **The row names what it gives, not what it writes.** A row called *shell
+/// integration* describes our mechanism; this describes the person's gain, and
+/// the sentence beneath it says the cost.
+pub const ALO_CAN_READ_WHAT_YOU_TYPE: Word = Word::saying(
+    "terminal.integration.offer",
+    "Let alo read what you type in the terminal",
+)
+.noting(
+    "A row in Settings, under Terminal. It offers to add alo's shell integration to the person's \
+     shell startup file. \"Read what you type\" is deliberately plain: the sentence under it says \
+     exactly what is revealed, and this line must not sound smaller than that sentence.",
+);
+
+/// What adding it reveals, which is the whole of the cost.
+///
+/// **[ADR 0123](../../../docs/decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md)
+/// term 6's own sentence**, which the snippet's own header also carries. The
+/// two must not drift: a person reading the file and a person reading Settings
+/// are owed the same sentence.
+pub const WHAT_IT_REVEALS: Word = Word::saying(
+    "terminal.integration.reveals",
+    "Every command you run, to alo, on this machine. Nothing leaves this machine because of it.",
+)
+.noting(
+    "The sentence under the offer above, saying plainly what adding the integration reveals. It is \
+     ADR 0123 term 6's own wording and the same sentence the shipped snippet carries in its own \
+     header. Both halves are load-bearing and must survive translation: what is revealed, and \
+     that it does not leave the machine.",
+);
+
+/// Said where the integration is already in the person's startup file.
+pub const IT_IS_ALREADY_THERE: Word = Word::saying(
+    "terminal.integration.already",
+    "Already in {file}",
+)
+.noting(
+    "Said in place of the offer when the person's shell startup file already holds alo's snippet. \
+     {file} is the file's name as it is on their disk and is never translated.",
+);
+
+/// Said where it is not there yet, naming the file it would be added to.
+pub const IT_WOULD_BE_ADDED_TO: Word =
+    Word::saying("terminal.integration.would-add-to", "Adds it to {file}").noting(
+        "Said beneath the offer when the snippet is not in the person's startup file yet, so they \
+     know which file alo would change before they choose. {file} is the file's name as it is on \
+     their disk and is never translated. It names no key: which key acts on a row is the \
+     surface's business and not a word any crate declares.",
+    );
+
+/// Said after it was added, and what a person has to do for it to take effect.
+///
+/// **A shell reads its startup file when it starts.** Saying only *added* would
+/// leave a person pressing the key in the terminal they already have open and
+/// finding nothing, which reads as a fault.
+pub const IT_WAS_ADDED: Word = Word::saying(
+    "terminal.integration.added",
+    "Added to {file}. Open a new terminal to use it.",
+)
+.noting(
+    "Said once the snippet has been written to the person's shell startup file. The second \
+     sentence is not optional: a shell reads its startup file when it starts, so the terminal \
+     already open does not have the integration, and a person who pressed the key there would \
+     find nothing happens. {file} is never translated.",
+);
+
+/// Said where alo ships no integration for the shell this person's account uses.
+///
+/// **Not an error and not silence.** A person whose shell we have nothing for
+/// is owed *we do not have one for yours yet*, which is true, rather than a
+/// row that does nothing when pressed.
+pub const NO_INTEGRATION_FOR_THIS_SHELL: Word = Word::saying(
+    "terminal.integration.no-such-shell",
+    "alo has no integration for {shell} yet",
+)
+.noting(
+    "Said in place of the offer when the shell the person's account uses is one alo OS ships no \
+     snippet for — today that is every shell except bash. {shell} is the shell's name as their \
+     account holds it and is never translated. This is a statement about what alo has, not about \
+     the person's shell being wrong, and the translation should not read as a refusal.",
+);
+
+/// Said where the session has no folder, so there is nowhere to add it.
+pub const NOWHERE_TO_ADD_IT: Word = Word::saying(
+    "terminal.integration.nowhere",
+    "This session has no folder of its own, so there is nowhere to add it",
+)
+.noting(
+    "Said in place of the offer when the session has no home folder — no home directory, or a \
+     relative one — so alo has no startup file to add the snippet to. The same wording family as \
+     the other sections' \"nowhere to keep it\" sentences.",
+);
+
+/// Said where the startup file would not take the change, with what the machine said.
+pub const IT_WOULD_NOT_TAKE_THE_CHANGE: Word = Word::saying(
+    "terminal.integration.would-not-write",
+    "{file} would not take the change: {why}",
+)
+.noting(
+    "Said when alo tried to add the snippet and the write was refused — a read-only file, a full \
+     disk. {file} is the file's name and {why} is what the machine said, both as they are and \
+     neither translated. Nothing was written when this is said.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 21] = [
+pub const EVERY_WORD: [Word; 29] = [
     A_PROGRAM,
     ALO,
     THE_SYSTEM,
@@ -370,6 +475,14 @@ pub const EVERY_WORD: [Word; 21] = [
     LOWER_IN_THIS_COMPARISON,
     SAME_LINEAR_SCALE,
     NOT_INDEPENDENTLY_VERIFIED,
+    ALO_CAN_READ_WHAT_YOU_TYPE,
+    WHAT_IT_REVEALS,
+    IT_IS_ALREADY_THERE,
+    IT_WOULD_BE_ADDED_TO,
+    IT_WAS_ADDED,
+    NO_INTEGRATION_FOR_THIS_SHELL,
+    NOWHERE_TO_ADD_IT,
+    IT_WOULD_NOT_TAKE_THE_CHANGE,
 ];
 
 /// How many lines a recognised diff took away.

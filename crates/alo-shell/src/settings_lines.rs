@@ -64,6 +64,7 @@ pub(crate) fn sections(open: &Open, strings: &Strings, now: SystemTime) -> Vec<S
         appearance(open, strings),
         dock(open, strings),
         shortcuts(open, strings),
+        terminal(open, strings),
         granted(open, strings, now),
     ];
     drawn.retain(|section| !section.said.is_empty() || !section.lines.is_empty());
@@ -227,6 +228,30 @@ fn shortcuts(open: &Open, strings: &Strings) -> SectionWords {
     SectionWords {
         section: SettingsSection::Shortcuts,
         said,
+        lines,
+    }
+}
+
+/// The terminal: whether alo may read what a person types in it.
+///
+/// **One row, and three reasons there may be none** — no folder, a shell alo
+/// ships nothing for, or a session that did not say which shell. The first two
+/// say so above the row that is not there; the third says nothing, because
+/// there is nothing true to say about a shell nobody named.
+fn terminal(open: &Open, strings: &Strings) -> SectionWords {
+    let section = &open.shell_integration;
+    let lines = if section.offers_a_row() {
+        vec![LineWords {
+            row: Some(SettingsRow::ShellIntegration),
+            parts: section.row(strings),
+            chosen: section.is_already_there(),
+        }]
+    } else {
+        Vec::new()
+    };
+    SectionWords {
+        section: SettingsSection::Terminal,
+        said: section.said(strings),
         lines,
     }
 }

@@ -52,6 +52,7 @@ use crate::settings_answering::{AnsweringSection, SettingsAnswered, SettingsChoi
 use crate::settings_granted::{GrantedSection, SettingsRevoked};
 use crate::settings_keepers::{AppearanceKept, DockKept, ShortcutsKept};
 use crate::settings_kept::{KeptSection, SettingsKept};
+use crate::settings_shell_integration::TheShellIntegration;
 use crate::{SettingsKey, SettingsPlaces};
 use alo_choosing::MayUseAnother;
 
@@ -66,6 +67,8 @@ pub enum SettingsSection {
     Dock,
     /// The shortcuts.
     Shortcuts,
+    /// The terminal: today, whether alo may read what a person types in it.
+    Terminal,
     /// What has been granted to what.
     Granted,
 }
@@ -88,6 +91,10 @@ pub enum SettingsRow {
     Shortcut(Action),
     /// A grant or a pairing: Enter revokes it.
     Granted(Row),
+    /// alo's shell integration: Enter adds it to the person's shell startup
+    /// file, and says so. There is one of these rows, so it carries nothing —
+    /// what it would act on is the section's own answer.
+    ShellIntegration,
     /// Whether alo may use another model or API when the one the person chose
     /// is not available: Enter chooses it.
     ///
@@ -108,6 +115,7 @@ impl SettingsRow {
             Self::Shortcut(_) => SettingsSection::Shortcuts,
             Self::Granted(_) => SettingsSection::Granted,
             Self::UsingAnother(_) => SettingsSection::Answering,
+            Self::ShellIntegration => SettingsSection::Terminal,
         }
     }
 }
@@ -174,6 +182,8 @@ pub(crate) struct Open {
     pub(crate) shortcuts: KeptSection<ShortcutsKept>,
     /// Grants and pairings.
     pub(crate) granted: GrantedSection,
+    /// Whether alo's shell integration is in the person's startup file.
+    pub(crate) shell_integration: TheShellIntegration,
     /// Which row has the focus, counted from the first.
     pub(crate) focus: usize,
     /// Whether Settings waits for a chord for the focused shortcut.
@@ -207,6 +217,7 @@ impl SettingsWindow {
             dock: KeptSection::at_sign_in(places.kept(alo_dock::keeping::THE_FILE)),
             shortcuts: KeptSection::at_sign_in(places.kept(alo_shortcuts::keeping::THE_FILE)),
             granted,
+            shell_integration: TheShellIntegration::at_sign_in(places.shell(), places.folder()),
             focus: 0,
             waiting_for_a_chord: false,
         });
@@ -355,6 +366,12 @@ impl Open {
                     .map(|binding| SettingsRow::Shortcut(binding.action)),
             );
         }
+        // **Beneath the shortcuts and above the grants**, which is where
+        // `crate::settings_lines` draws the section. The two are held to each
+        // other by `every_setting_the_machine_has_is_in_one_window`.
+        if self.shell_integration.offers_a_row() {
+            rows.push(SettingsRow::ShellIntegration);
+        }
         rows.extend(self.granted.rows(now).into_iter().map(SettingsRow::Granted));
         rows
     }
@@ -412,6 +429,10 @@ impl Open {
                 doors.now,
                 doors.strings,
             )),
+            SettingsRow::ShellIntegration => SettingsDid::Kept(
+                SettingsSection::Terminal,
+                self.shell_integration.add(doors.strings),
+            ),
         }
     }
 
@@ -423,7 +444,14 @@ impl Open {
             SettingsSection::Appearance => self.appearance.put_back_as_shipped(strings),
             SettingsSection::Dock => self.dock.put_back_as_shipped(strings),
             SettingsSection::Shortcuts => self.shortcuts.put_back_as_shipped(strings),
-            SettingsSection::Answering | SettingsSection::Granted => return None,
+            // **Not offered for the terminal, and never will be.** The file
+            // this section appends to is the person's own shell startup, not a
+            // file of alo's: putting it back as alo ships it would throw away
+            // whatever else is in it. `settings_shell_integration`'s header
+            // says the same thing where somebody would look for it.
+            SettingsSection::Answering | SettingsSection::Granted | SettingsSection::Terminal => {
+                return None;
+            }
         };
         Some(SettingsDid::Kept(section, kept))
     }

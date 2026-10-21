@@ -37,5 +37,13 @@ thiserror = { workspace = true }
 # deadline, and `SIGHUP` is a signal a process may ignore.
 rustix = { workspace = true, features = ["termios", "process"] }
 
+# Test-only, and nothing new in the tree: `tempfile` is already in
+# `Cargo.lock` because `alo-shell` uses it, and a dev-dependency never reaches a
+# shipped binary. The alternative was a second hand-rolled temporary directory
+# beside the one in `the_snippet_a_person_installs_tests.rs`, and two of those
+# is one more than the crate needs.
+[dev-dependencies]
+tempfile = "3"
+
 [lints]
 workspace = true

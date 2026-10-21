@@ -37,6 +37,7 @@ fn nothing_kept_yet(dir: &Path) -> SettingsPlaces {
     SettingsPlaces::of(
         None,
         None,
+        None,
         &dir.join("grants"),
         &dir.join("pairings"),
         &dir.join("agentd.sock"),

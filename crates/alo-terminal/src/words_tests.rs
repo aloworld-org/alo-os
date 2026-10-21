@@ -62,6 +62,7 @@ fn every_word_in_a_group() -> impl Iterator<Item = Word> {
         .chain(ABOUT_A_RESULT_A_PROGRAM_PRINTED)
         .chain(ABOUT_A_BENCHMARK_A_PROGRAM_PRINTED)
         .chain(ABOUT_A_DIFF_A_PROGRAM_PRINTED)
+        .chain(ABOUT_THE_SHELL_INTEGRATION)
 }
 
 /// **Every word in the array is in exactly one group.**
@@ -164,6 +165,28 @@ const ABOUT_A_BENCHMARK_A_PROGRAM_PRINTED: [Word; 3] = [
 const ABOUT_A_DIFF_A_PROGRAM_PRINTED: [Word; 2] =
     [FROM_A_GIT_DIFF, NO_CHANGES_APPLIED_BY_THIS_VIEW];
 
+/// The sentences Settings says about alo's shell integration.
+///
+/// **A group of their own, under a rule none of the others has**: these are the
+/// only words in this crate a person reads *before deciding something*, rather
+/// than after a program has printed. Two of them carry the whole cost of that
+/// decision — what adding the integration reveals, and that a new terminal is
+/// needed before it does anything — and a translation that softened either
+/// would leave somebody agreeing to something they had not been told.
+///
+/// They are also the only words here that name a file on the person's own disk,
+/// which is why three of them take a `{file}` that is never translated.
+const ABOUT_THE_SHELL_INTEGRATION: [Word; 8] = [
+    ALO_CAN_READ_WHAT_YOU_TYPE,
+    WHAT_IT_REVEALS,
+    IT_IS_ALREADY_THERE,
+    IT_WOULD_BE_ADDED_TO,
+    IT_WAS_ADDED,
+    NO_INTEGRATION_FOR_THIS_SHELL,
+    NOWHERE_TO_ADD_IT,
+    IT_WOULD_NOT_TAKE_THE_CHANGE,
+];
+
 /// **Each gutter label is one word**, because the design gives it 80 of the
 /// gutter's 96 and a phrase has nowhere to go.
 ///
@@ -202,7 +225,8 @@ fn the_groups_are_the_whole_list() {
             + ABOUT_A_COMMAND_NOBODY_HAS_RUN.len()
             + ABOUT_A_RESULT_A_PROGRAM_PRINTED.len()
             + ABOUT_A_BENCHMARK_A_PROGRAM_PRINTED.len()
-            + ABOUT_A_DIFF_A_PROGRAM_PRINTED.len(),
+            + ABOUT_A_DIFF_A_PROGRAM_PRINTED.len()
+            + ABOUT_THE_SHELL_INTEGRATION.len(),
         EVERY_WORD.len(),
         "a word is declared and in no group, so no rule is applied to it"
     );

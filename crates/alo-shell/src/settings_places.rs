@@ -31,6 +31,13 @@ pub struct SettingsPlaces {
     pairings: PathBuf,
     /// The socket the person's daemon listens on, which a revocation knocks at.
     daemon: PathBuf,
+    /// The shell this account uses, as the session was told it.
+    ///
+    /// **Handed over rather than read here**, which is this file's rule for
+    /// everything else: the session knows its own environment and this crate is
+    /// given the answer. `None` where the session did not say, which is a
+    /// different answer from a shell alo ships nothing for.
+    shell: Option<String>,
 }
 
 impl SettingsPlaces {
@@ -48,6 +55,7 @@ impl SettingsPlaces {
     pub fn of(
         config_home: Option<&OsStr>,
         home: Option<&OsStr>,
+        shell: Option<&OsStr>,
         grants: &Path,
         pairings: &Path,
         daemon: &Path,
@@ -58,7 +66,20 @@ impl SettingsPlaces {
             grants: grants.to_owned(),
             pairings: pairings.to_owned(),
             daemon: daemon.to_owned(),
+            // Lossy on purpose: a shell whose path is not text is a shell this
+            // crate cannot match against a name anyway, and losing a byte is
+            // better than refusing to draw the rest of Settings.
+            shell: shell.map(|shell| shell.to_string_lossy().into_owned()),
         }
+    }
+
+    /// The shell this account uses, as the session was told it.
+    ///
+    /// [`None`] where the session did not say — which the shell-integration
+    /// section tells apart from a shell alo ships nothing for.
+    #[must_use]
+    pub fn shell(&self) -> Option<&str> {
+        self.shell.as_deref()
     }
 
     /// The person's folder, or [`None`] for a login that has none.
@@ -113,8 +134,14 @@ mod tests {
         let grants = Path::new("/var/lib/alo/grants");
         let pairings = Path::new("/var/lib/alo/pairings");
         let door = Path::new("/run/alo/1000/agentd.sock");
-        let places =
-            SettingsPlaces::of(None, Some(OsStr::new("/home/ada")), grants, pairings, door);
+        let places = SettingsPlaces::of(
+            None,
+            Some(OsStr::new("/home/ada")),
+            None,
+            grants,
+            pairings,
+            door,
+        );
         assert_eq!(places.daemon(), door);
         let folder = alo_choosing::where_the_folder_is(None, Some(OsStr::new("/home/ada")));
         assert_eq!(places.folder(), folder.as_deref());
@@ -138,7 +165,7 @@ mod tests {
             (Some(OsStr::new("relative/config")), None),
             (None, Some(OsStr::new("relative-home"))),
         ] {
-            let nowhere = SettingsPlaces::of(config_home, home, grants, pairings, door);
+            let nowhere = SettingsPlaces::of(config_home, home, None, grants, pairings, door);
             assert_eq!(nowhere.folder(), None);
             assert_eq!(nowhere.kept(alo_dock::keeping::THE_FILE), None);
             assert_eq!(nowhere.choosing(), None);
