@@ -46,7 +46,7 @@ because a reader starting from it would conclude this goal is unreachable.*
 | ★ | scopes one command | **built**, #818 — `try --only-here` works on a kernel, and `--offline` turned out to be already true of any boxed run. **Never seen on a machine.** *This cell said* blocked — a per-command narrowing is `alo-capability`, another lane's *until 2026-10-18, and all three parts of that were wrong: see task 5 of* the-terminal-in-full-plan.md |
 | ★ | finds a command by what it did | **the verb is built and offered**, #812 on 2026-10-18, after the owner chose the surface. Reachable by the agent, which is what *a question to alo* means; **never seen on a machine** |
 | ★ | bisects the machine | **nothing**, and waits on a bracket |
-| ★ | reads output that is not a character grid | the first rich view is a test result, #761 — **and its two lines were cropped into the gutter's label box** the same way, until #778. This row said *usable* and the summary was not readable. Now drawn, and **seen under a nested compositor**; two more views are unspecified in the design |
+| ★ | reads output that is not a character grid | the first rich view is a test result, #761 — **and its two lines were cropped into the gutter's label box** the same way, until #778. This row said *usable* and the summary was not readable. Now drawn, and **seen under a nested compositor**. **The other two views are also built and drawn** — the benchmark #803 and the file diff #804, both 2026-10-18, after the design was captured; *this row said* two more views are unspecified in the design *until 2026-10-21*. All three: **never seen on a machine** |
 | ★ | hands somebody a session to replay | **nothing**, and waits on rich results |
 | | asks what a command will do first | **built**, #805 on 2026-10-18: the shell integration tells alo what was typed, `Ctrl`+`X` `Ctrl`+`A` asks, and the explanation comes back on the agent's road the owner chose. **Never seen on a machine** |
 
@@ -446,8 +446,17 @@ design specifies. What is left under that task, in the order it is worth doing:
   > time in this document's own order.**
 - ***a thing on your desk that outlives the scroll*** — the promise's own
   words, and a window rather than a line. A promise of its own;
-- **the benchmark and the diff**, which are blocked on the same thing the three
-  actions are blocked on — see below. It is one cause, not three.
+- ~~**the benchmark and the diff**, which are blocked on the same thing the
+  three actions are blocked on — see below. It is one cause, not three.~~
+  **Both are built and drawn**: the benchmark in #803 at 2026-10-18T14:37:57Z
+  and the file diff in #804 at 15:53:19Z, after the desktop lane captured the
+  components the heading below says were missing. So it was one cause and it was
+  removed for two of the three the same day; what remains under it is the three
+  actions' road, not their wording. **Never seen on a machine.** *This bullet
+  read as blocked until 2026-10-21, and neither this document nor
+  `the-terminal-in-full-plan.md` mentioned #803 or #804 once — zero in both. The
+  control is #778 and #761: **6** and **4** here, **4** and **6** there, counted
+  per file because they differ and one pair for both would be wrong about one.*
 
 ### 4. One cause blocks three things, and it is the owner's to unblock — measured 2026-10-17
 

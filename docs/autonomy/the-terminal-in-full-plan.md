@@ -44,7 +44,7 @@ a date on it:
 | ★ | Scope one command without changing a setting | **built** — `--only-here` in #818, merged 2026-10-19, and `--offline` was already true of any boxed run. **Never seen on a machine.** *This row said* **nothing** *until 2026-10-21, while task 5 of this same file said it was built* |
 | ★ | Find a command by what it did | **the verb is built and offered** — #812, merged 2026-10-18, after the owner chose the surface. Reachable by the agent, which is what *a question to alo* means. **Never seen on a machine.** *This row said* **nothing** *until 2026-10-21, while task 4 of this same file said it was built* |
 | ★ | Bisect the machine, not the repository | **nothing** |
-| ★ | Output that is not stuck in a character grid | **the first rich view is built and drawn** — a recognised test result, #761, and its two lines were cropped into the gutter's label box until #778. This row said *nothing*. Two more views are unspecified in the design |
+| ★ | Output that is not stuck in a character grid | **all three views the design specifies are built and drawn** — the test result #761 (its two lines cropped into the gutter's label box until #778), the benchmark #803 and the file diff #804, both 2026-10-18. **Never seen on a machine.** *This row said* two more views are unspecified in the design *until 2026-10-21; the design was captured and both were built on 2026-10-18* |
 | ★ | Hand somebody a session they can replay | **nothing** — still right, but **one of its two stated causes is gone**: ADR 0123 was accepted 2026-10-18, so knowing the commands is no longer what blocks it. Task 7 of this file records that; this row did not. What is left is the privileged comparer, and somewhere to keep a person's own commands |
 | | Explain a command before it runs | **built** — #805, merged 2026-10-18: the shell integration tells alo what was typed, `Ctrl`+`X` `Ctrl`+`A` asks, and the explanation comes back on the road the owner chose. **Never seen on a machine.** *This row said* the asking … **is buildable** *until 2026-10-21. It was written at 07:58:15Z on 2026-10-18 and #805 merged at 18:15:51Z the same day, so it was accurate for **10.3 hours** and stale for three days* |
 
@@ -490,19 +490,47 @@ a lane spends a day on it or an owner spends a decision.***
 
 ### 6. Output that is not stuck in a character grid
 
-**Status:** **the first rich view is built (#761), and its two lines were
-cropped into the gutter's label box until #778** on 2026-10-17 — the same fault
-as task 1 and found the same way. **Depends on:** nothing in
+**Status:** **all three rich views the design specifies are built and drawn.**
+The test result in #761, with its two lines cropped into the gutter's label box
+until #778 on 2026-10-17; **the benchmark in #803 and the file diff in #804,
+both on 2026-10-18**. **Never seen on a machine.** **Depends on:** nothing in
 this plan. **Task 2 depends on this**, not the other way round — and task 2 is
 therefore startable now.
 
-**A test result is the one rich view the design specifies.** The frame `Rich
-test result / untrusted program data` in `485-28999.xml` gives four children at
-measured positions, and every figure is now in
-`docs/design/the-terminal-window.md`. The benchmark and diff views are
-`<instance>` elements whose components are **in no snapshot in this
-repository**, so their insides cannot be checked against anything and were not
-built.
+**A test result was the one rich view the design specified, until 2026-10-18.**
+The frame `Rich test result / untrusted program data` in `485-28999.xml` gives
+four children at measured positions, and every figure is in
+`docs/design/the-terminal-window.md`.
+
+*This task then said the benchmark and diff views were `<instance>` elements
+whose components are **in no snapshot in this repository**, so their insides
+could not be checked and were not built. **Both halves stopped being true on
+2026-10-18**, and this status said otherwise until 2026-10-21:*
+
+| | |
+|---|---|
+| the components | captured and committed as `docs/design/figma-snapshot/the-terminal-view-components.xml`, 6,888 bytes, holding `479:28967` *Terminal / View / Benchmark comparison* and `479:28986` *Terminal / View / File diff*, both 990×320 |
+| the benchmark view | **built**, #803, merged 2026-10-18T14:37:57Z |
+| the diff view | **built**, #804, merged 2026-10-18T15:53:19Z |
+
+Both are drawn rather than only recognised: `the_terminals_cells_are_drawn.rs`
+holds `a_benchmark` and `a_diff` beside `a_test_result`, each declared, each
+destructured, and each read — at lines 1218 and 1286 — which is what separates
+a field from a drawing. **Measured 2026-10-21, and neither this plan nor the
+Mac lane's order mentioned #803 or #804 once** — zero in both. The control that
+the search works is #778 and #761, which this plan mentions **4** and **6**
+times and the order **6** and **4**: counted per file, because they differ
+between the two and one pair of numbers for both documents would be wrong about
+one of them.
+
+*The capture is also the better finding, and it is the desktop lane's: the
+earlier note said the components were unknowable, and they were only
+uncaptured. `get_metadata` on a live instance returns its subtree. Three things
+in it a screenshot would have lost — the bars are a **scale**, 2 px per ms from
+a shared origin at x=126, so a proportion here and never two constants; the
+diff's removal marker is **U+2212 MINUS SIGN** and not a hyphen, which review
+cannot tell apart; and the three `Ask alo` labels are in no layer name at all,
+being* **Text · Expand · Open on canvas** *read off a render.*
 
 Three of the design's own sentences became tests: *formatted output is not
 system evidence* (every accessor is named `it_said_…`), *text reveals original
@@ -510,9 +538,13 @@ bytes* (a result never replaces what the program printed), and *PROGRAM
 includes parsed rich results* (the lines extend the program's gutter region,
 not alo's).
 
-**What is still owed under this task:** the three `Ask alo` actions, which are
-the agent's road; *a thing on your desk that outlives the scroll*, which is a
-window rather than a line; and the two unspecified views.
+**What is still owed under this task**, now that the views are not: the three
+`Ask alo` actions, which are the agent's road — and that road is the thing, not
+the wording, because the labels were read off the design on 2026-10-18 while
+*what the actions do* is still a road from the terminal to the agent that
+nothing constructs; and *a thing on your desk that outlives the scroll*, which
+is a window rather than a line and is **a promise of its own** rather than this
+task's remainder.
 
 Rich results — a table a person can sort, a file name they can open — parsed from
 what a program printed. The design already reserves the room: the gutter was
