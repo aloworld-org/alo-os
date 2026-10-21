@@ -34,6 +34,34 @@ const THE_LAST_WORDS_WITHIN: Duration = Duration::from_secs(5);
 #[derive(Debug, Default)]
 pub struct OnThisMachine;
 
+/// The locale every program here runs in, and why it is not the machine's.
+///
+/// **Every program this environment runs is read by code and shown to nobody.**
+/// A person reads sentences from `alo-strings`; what `lsblk`, `ip` or `nmcli`
+/// print goes to a parser and to the log. So the right locale for all of them
+/// is the one that does not move.
+///
+/// # The fault this closes
+///
+/// `joining_a_network::why_not_joined` tells three of its five failures apart
+/// by matching `nmcli`'s own English — *secrets were required*, *no network
+/// with ssid* — and the other two by exit code. On a machine whose locale is
+/// not English those substrings do not appear, so three answers become
+/// unreachable and the classifier falls through to the last one. **A person
+/// whose password was refused would be told no address came**, which sends
+/// them to their router instead of to their password.
+///
+/// That is the same shape as a bool standing in for an exit code, one layer
+/// out: a distinction that exists in the engine and is destroyed on the way
+/// here. It was found by the Mac lane reading the classifier rather than by
+/// anything running, because neither machine in this team has a wireless card.
+///
+/// **Not measured here.** Nothing in `EVERY_PROGRAM` can be run on this
+/// machine to check it: they reboot, write to disks, or need hardware that is
+/// not present. The certified machine's first boot is where this is either
+/// true or caught, and the five network sentences are what will show it.
+pub const THE_LOCALE_EVERY_PROGRAM_RUNS_IN: [(&str, &str); 2] = [("LC_ALL", "C"), ("LANG", "C")];
+
 impl TheMachine for OnThisMachine {
     fn say(&mut self, said: &Said) {
         let line = said.text();
@@ -69,7 +97,10 @@ impl TheMachine for OnThisMachine {
 
     fn run(&mut self, program: &Program, still: &Said, every: Duration) -> std::io::Result<Ran> {
         let mut command = Command::new(program.path());
-        command.args(program.arguments()).stdin(Stdio::null());
+        command
+            .args(program.arguments())
+            .stdin(Stdio::null())
+            .envs(THE_LOCALE_EVERY_PROGRAM_RUNS_IN);
         if program.is_read() {
             let output = command.output()?;
             let ran = Ran {

@@ -172,6 +172,24 @@ pub enum NotJoined {
 
 /// Why the join failed, from what `nmcli` exited with and said.
 ///
+/// # This depends on the locale, and the locale is forced
+///
+/// Three of the five are told apart by matching `nmcli`'s own English, so on
+/// a machine whose locale is not English **those three become unreachable and
+/// this falls through to the last answer** — a refused password reported as no
+/// address coming, which sends a person to their router instead of to their
+/// password.
+///
+/// `running::THE_LOCALE_EVERY_PROGRAM_RUNS_IN` is what makes the words stable:
+/// every program this environment runs is read by code and shown to nobody, so
+/// all of them run in `C`. **This function is correct only because of that**,
+/// and whoever moves the invocation somewhere else has to take the locale with
+/// it.
+///
+/// *Found by the Mac lane on 2026-10-21, by reading this function rather than
+/// by running it — neither machine in this team has a wireless card to produce
+/// output in any language.*
+///
 /// **The exit code first, because it is the part that is not prose.** `nmcli`'s
 /// codes are documented and stable: `3` is a timeout, `4` is an activation that
 /// failed, `8` is the daemon not running, `10` is something not found. Its
