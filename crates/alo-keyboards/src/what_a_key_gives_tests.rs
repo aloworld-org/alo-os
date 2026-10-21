@@ -440,16 +440,36 @@ fn the_table_is_what_the_engine_says() {
                     .or_insert_with(|| format!("U+{point:04X}\t{character}"));
             }
         }
-        // **The dead levels.** A level whose keysym produces no character has no
-        // row above, and an absent row and an ignored modifier are the same
-        // absence — which is how AltGr-with-shift on Belgian's circumflex key
-        // answered `[`, its own level 3, instead of nothing. Asked by keysym
-        // NAME, which `how-to-type` accepts, so the engine still answers and
-        // nothing here interprets its format.
-        for name in dead_keysyms_of(layout) {
+        // **The keysyms the layout carries, asked by NAME.** Two reasons, and the
+        // second is not obvious:
+        //
+        // A level whose keysym produces no character has no row from the sweep
+        // above, and an absent row and an ignored modifier are the same absence
+        // — which is how AltGr-with-shift on Belgian's circumflex key answered
+        // `[`, its own level 3, instead of nothing.
+        //
+        // **And a character can have two keysym spellings, of which the keymap
+        // uses one and the code-point lookup answers the other.** German's
+        // `TLDE` carries `U2032`; `how-to-type 0x2032` answers the *legacy*
+        // keysym `minutes` (0xad6), which is on no German key, and so reports no
+        // rows at all. Sweeping by code point therefore cannot reach that key,
+        // and a `U`-named keysym carries its own code point in its name.
+        for name in keysyms_of(layout) {
+            let what = if let Some(hex) = name.strip_prefix('U') {
+                match u32::from_str_radix(hex, 16).ok().and_then(char::from_u32) {
+                    Some(character) if hex.len() >= 4 => {
+                        format!("U+{:04X}\t{character}", u32::from(character))
+                    }
+                    _ => continue,
+                }
+            } else if name.starts_with("dead_") {
+                format!("dead\t{name}")
+            } else {
+                continue;
+            };
             for (evdev, held) in what_the_engine_said(&how_to_type(layout, &name, true)) {
                 rows.entry((layout, evdev, held))
-                    .or_insert_with(|| format!("dead\t{name}"));
+                    .or_insert_with(|| what.clone());
             }
         }
     }
@@ -527,7 +547,7 @@ fn what_the_engine_said(out: &str) -> Vec<(u16, String)> {
     found
 }
 
-/// Which dead keysyms this layout actually puts on a key.
+/// Which keysyms this layout actually puts on a key.
 ///
 /// **Chosen from the data rather than from a list somebody wrote.** A compiled
 /// keymap names every keysym on every key, so the dead ones are read out of it —
@@ -538,7 +558,7 @@ fn what_the_engine_said(out: &str) -> Vec<(u16, String)> {
 /// This reads names out of a flat generated list. It does not resolve an
 /// `include`, choose a variant or infer a type, which is the line between
 /// configuring the engine and becoming it.
-fn dead_keysyms_of(layout: &str) -> Vec<String> {
+fn keysyms_of(layout: &str) -> Vec<String> {
     let said = std::process::Command::new("xkbcli")
         .args(["compile-keymap", "--layout", layout])
         .output()
@@ -564,9 +584,22 @@ fn dead_keysyms_of(layout: &str) -> Vec<String> {
                 inside = None;
                 let Some(at) = whole.find('[') else { continue };
                 for word in whole[at..].split(|c: char| !c.is_alphanumeric() && c != '_') {
-                    if word.starts_with("dead_") {
-                        names.insert(word.to_owned());
+                    // the words that are not keysyms at all
+                    if word.is_empty()
+                        || matches!(
+                            word,
+                            "type"
+                                | "Group1"
+                                | "actions"
+                                | "virtualMods"
+                                | "symbols"
+                                | "NoSymbol"
+                                | "VoidSymbol"
+                        )
+                    {
+                        continue;
                     }
+                    names.insert(word.to_owned());
                 }
             }
         }
@@ -764,5 +797,110 @@ fn a_dead_level_gives_nothing_rather_than_its_neighbour() {
         its_rows.iter().filter(|(.., what)| what.is_none()).count(),
         3,
         "three of this key's four levels are dead"
+    );
+}
+
+/// **Every character a layout puts on a key has a row — the coverage check that
+/// chooses the ranges, rather than anybody's judgement about them.**
+///
+/// The desktop lane's suggestion and the thing they said to port first, because
+/// *it chooses the range from the data instead of from either of our
+/// judgement*. It found two faults nothing else would have:
+///
+/// **One, a judgement of mine that cost a person a key.** The first code-point
+/// set left out `×` and `÷` on the grounds that nobody types them. They sit on
+/// `Mod5 Shift` of key 51 or 52 on four of the eight layouts, so pressing that
+/// key gave nothing at all.
+///
+/// **Two, a structural hole no widening would have closed.** A character can
+/// have two keysym spellings. German's `TLDE` carries `U2032`, and
+/// `how-to-type 0x2032` answers the *legacy* keysym `minutes` (`0xad6`) — which
+/// is on no German key, so it reports no rows. Sweeping by code point cannot
+/// reach that key however many ranges are added, which is why the generator now
+/// also sweeps by keysym **name**.
+///
+/// # How it classifies, and what it refuses to assume
+///
+/// A keysym only needs a row if it produces a character, and the engine prints
+/// each keysym's value:
+///
+/// | | |
+/// |---|---|
+/// | value below `0x100` | Latin-1: the value **is** the code point |
+/// | a `U`-prefixed name | the name carries the code point |
+/// | `dead_*` | a row that gives nothing |
+/// | anything else | **not classified, and counted rather than assumed** |
+///
+/// That last row is the discipline. The first version of this check had no such
+/// bucket and counted `Escape`, `Home`, `Up` and `ISO_Level3_Shift` as gaps —
+/// 461 to 514 per layout — which is the same mistake as counting a dead key as a
+/// hole. Around 400 keysyms land there; the ones among them that do produce a
+/// character, like `EuroSign`, are reached by the code-point sweep instead, and
+/// **the proof of that is this check reporting zero missing.**
+#[test]
+#[ignore = "needs xkbcli from libxkbcommon-tools; run with --ignored"]
+fn every_character_a_layout_carries_has_a_row() {
+    let mut missing: Vec<String> = Vec::new();
+    let mut covered = 0usize;
+    let mut unclassified = std::collections::BTreeSet::new();
+
+    for layout in EVERY_LAYOUT {
+        for name in keysyms_of(layout) {
+            let said = how_to_type(layout, &name, true);
+            let point = if let Some(hex) = name.strip_prefix('U') {
+                u32::from_str_radix(hex, 16).ok().filter(|_| hex.len() >= 4)
+            } else if name.starts_with("dead_") {
+                None
+            } else {
+                // `keysym: NAME (0xHEX)` — below 0x100 the value is the code point
+                said.lines()
+                    .next()
+                    .and_then(|line| line.split_once("(0x"))
+                    .and_then(|(_, rest)| rest.split(')').next())
+                    .and_then(|hex| u32::from_str_radix(hex, 16).ok())
+                    .filter(|value| *value < 0x100)
+            };
+            let Some(point) = point else {
+                if !name.starts_with("dead_") {
+                    unclassified.insert(name.clone());
+                }
+                continue;
+            };
+            for (evdev, held) in what_the_engine_said(&said) {
+                let found = every_row().any(|(its_layout, code, mods, _)| {
+                    its_layout == layout && code == evdev && mods == held
+                });
+                if found {
+                    covered += 1;
+                } else {
+                    missing.push(format!(
+                        "{layout} key {evdev} with [{held}] carries {name} (U+{point:04X}) \
+                         and the table has no row for it"
+                    ));
+                }
+            }
+        }
+    }
+
+    // The control: an empty run would pass the assertion below for the worst
+    // possible reason.
+    assert!(
+        covered > 1_000,
+        "this check verified only {covered} rows, which is too few to be all of \
+         them — the tool or this classification is broken, not the table"
+    );
+    assert!(
+        missing.is_empty(),
+        "{} character-bearing keys have no row in the table:\n{}",
+        missing.len(),
+        missing.join("\n")
+    );
+    // Not an assertion: the unclassifiable set is a limit of this check, and it
+    // is printed so a reader knows its size rather than imagining it is zero.
+    assert!(
+        unclassified.len() < 600,
+        "{} keysyms could not be classified, which is more than this layout set \
+         carries — the classification has broken rather than widened",
+        unclassified.len()
     );
 }
