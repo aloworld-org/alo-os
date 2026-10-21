@@ -653,11 +653,26 @@ rather than guessed at, exactly as the prefix was, and the prefix took one day.
 
 ### 10. *Choose one, and your files are as they were*
 
-**Status:** **decided and shaped, 2026-10-19 — not started.** **Depends on:**
-nothing. Both decisions it waited on are made:
+**Status:** **blocked on the owner, and shaped.** **Depends on:** a decision on
+what gets bracketed for a person's own commands, and what that costs — the last
+section of this task states it, and this line said **`Depends on:` nothing**
+until 2026-10-21.
+
+The two decisions it was watching *are* made:
 [ADR 0127](../decisions/0127-a-persons-own-commands-are-bracketed-in-a-session-they-asked-for.md)
-and its amendment — **a Settings row under Terminal**, and **a folder now, the
-next sign-in next, never a root helper.**
+and its amendment gave **a Settings row under Terminal** and **a folder now, the
+next sign-in next, never a root helper**. They are not the only two, which is
+this plan's own lesson about task 9 arriving a second time: **a dependency being
+met is not the same as a task being open**, and the only way to tell is to read
+what else the task already says about itself.
+
+*Found by reading this task's own last section against its first line on
+2026-10-21. A lane that read only the status would have started it, and the plan
+already records what happens next: `changes.rs` was written and thrown away
+deliberately, because a settings file nothing reads with a dependency nothing
+uses fails the cheap checks and is worse in the tree than the measurement. **The
+half of this task that looks safe to start is the half already tried and
+reverted.***
 
 **What it costs, measured 2026-10-19 by starting it and stopping.** The shape is
 `alo-sleeping`'s, which is the crate this would copy, and it is one piece of work
