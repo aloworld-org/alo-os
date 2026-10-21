@@ -86,7 +86,7 @@ fn full_coverage_gives_the_ink_and_none_gives_the_background() {
     }
     let row = (0..solid.down())
         .map(|row_of_the_line| a_row_of_ink(surface, BENEATH, INK, &solid, 0, row_of_the_line))
-        .find(|row| row.iter().any(|&byte| byte == 0xE8));
+        .find(|row| row.contains(&0xE8));
     assert!(
         row.is_some(),
         "a fully covered pixel did not come out as the ink"
