@@ -159,11 +159,47 @@
 
 registry = "ghcr.io/aloworld-org/alo-os"
 
-# **Image 0.0.8 is declared and being built.** The candidate in flight, which
+# **Image 0.0.9 is declared and being built.** The candidate in flight, which
 # the recipe's label names and no installer pulls — removed again by the change
 # that pins its digest.
 #
-# Why there is a 0.0.8 eight hours after 0.0.7: **0.0.7 ships a fault its own
+# # Why there is a 0.0.9, and why 0.0.8 could not simply be rebuilt
+#
+# **0.0.8 was pushed on 2026-10-19 at 19:57Z and the Wi-Fi firmware landed on
+# 2026-10-20.** `20a9f431` — *a person's own Wi-Fi, asserted by name rather than
+# by one card* — is an ancestor of **neither** built image, measured with
+# `merge-base --is-ancestor` on 2026-10-21 with `main` as the control. So the
+# image labelled 0.0.8 carries Intel's `iwlwifi` and NetworkManager's Wi-Fi
+# plugin, which is the certified machine's own card and does work — and carries
+# nothing for Atheros, Broadcom, MediaTek or Marvell, which is every other
+# person's.
+#
+# A rebuild of 0.0.8 is not a road. `image.yml` has a step named *refuse a
+# release that is already published*, because a published tag never moves, and
+# the registry's tag list reads 0.0.1 through 0.0.8. So the next candidate is
+# 0.0.9 and nothing else.
+#
+# # What else 0.0.9 is the first image to carry
+#
+# Everything the install environment does on a screen, which landed on
+# 2026-10-21 and reaches no machine until an image is built from it:
+#
+# - **the first screen drew nothing at all**, on every display size, because
+#   the environment offers eight keyboard layouts and the layout it reached for
+#   holds four — a person could not get past the keyboard question (#915);
+# - the password field drew nothing, because its caret was a character the
+#   bundled face has no glyph for;
+# - two placeholders reached a person unfilled, one of them on the screen that
+#   confirms erasing a disk;
+# - the screens were drawn as the design inverted, near-black on near-white;
+# - and the cards, the ring that says which choice a person is on, the two
+#   buttons and the wallpaper were not drawn at all.
+#
+# **0.0.8 predates every one of those**, so a person booting it meets the
+# install environment as it was on 2026-10-19. That is why this is urgent
+# rather than tidy.
+#
+# Why there was a 0.0.8 eight hours after 0.0.7: **0.0.7 ships a fault its own
 # release notes disclose.** Pressing the Applications entry opened a window that
 # was never drawn, after which the machine appeared to take no keyboard, because
 # the undrawn window was holding it — Escape was the only way out. The cause was
@@ -176,7 +212,7 @@ registry = "ghcr.io/aloworld-org/alo-os"
 #
 # **Not signed and not pinned**: the digest below is still 0.0.7's, an installer
 # still pulls 0.0.7, and this line changes nothing a person's machine does.
-next = "0.0.8"
+next = "0.0.9"
 
 # Release 0.0.2: built from 8d2619daeb07b4b0ebbed59ded8caee722103b65, pushed and
 # signed by the owner on 2026-09-17 (cosign 3.1.3, by digest, no transparency
