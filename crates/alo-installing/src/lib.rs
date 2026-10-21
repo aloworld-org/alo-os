@@ -54,7 +54,9 @@
 //! would be the end of somebody's Windows.
 
 mod a_key_reaches_here;
+mod a_line_as_coverage;
 mod a_surface_to_draw_on;
+mod alos_own_face;
 mod complaint;
 mod console;
 mod disk;
@@ -62,6 +64,7 @@ mod disks;
 mod ended;
 mod entries;
 mod environment;
+mod ink_on_the_surface;
 mod joining_a_network;
 mod machine;
 mod program;
@@ -85,10 +88,13 @@ mod writing;
 pub use a_key_reaches_here::{
     ONE_EVENT, Pressed, WHERE_THE_KEYS_ARE, has_key, is_a_keyboard, what_was_pressed,
 };
+pub use a_line_as_coverage::{ACoverage, a_line_as_coverage};
 pub use a_surface_to_draw_on::{
     Grey, NoSurface, TheSurface, WHERE_THE_DEPTH_IS, WHERE_THE_PIXELS_GO, WHERE_THE_SIZE_IS,
     WHERE_THE_STRIDE_IS,
 };
+pub use alos_own_face::{AlosOwnFace, NoFace};
+pub use ink_on_the_surface::a_row_of_ink;
 // Gated with the item it names, which `alo-citing`'s own guard requires: a
 // `pub use` of a `cfg`-gated item, without the same `cfg`, is what stopped
 // `alo-portals` compiling for Windows from #635 to #839.

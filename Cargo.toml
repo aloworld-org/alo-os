@@ -145,6 +145,15 @@ toml = "0.9"
 thiserror = "2"
 ureq = { version = "3", default-features = false, features = ["rustls", "json"] }
 serde_json = "1"
+# The rasteriser the shell already draws glyphs with, through cosmic-text, and
+# that the install environment now draws its own with -- one engine for both,
+# so the installer does not look like a different product from the system it
+# installs. The features are named rather than defaulted, so that what this
+# depends on is written down: `std` because the geometry it rasterises with
+# needs real floating point -- turning default features off alone produced
+# thirty errors about `f32` having no `sqrt` -- `scale` for the scaler, and
+# `render` for turning an outline into coverage, which is the whole point.
+swash = { version = "0.2", default-features = false, features = ["std", "scale", "render"] }
 # Where one letter ends and the next begins, for the letter a Dock icon shows
 # when an application has no artwork (the owner's ruling of 2026-10-10). The
 # standard library has no spelling for it: `chars().next()` on a name beginning

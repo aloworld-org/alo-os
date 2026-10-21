@@ -93,6 +93,15 @@ impl Grey {
         Self(value)
     }
 
+    /// This grey as the value every channel takes.
+    ///
+    /// What anything compositing onto the surface needs: a grey is one value
+    /// repeated, so blending two of them is arithmetic on these.
+    #[must_use]
+    pub const fn as_a_value(self) -> u8 {
+        self.0
+    }
+
     /// Dark enough to be plainly deliberate and light enough to be plainly
     /// lit — so that a photograph of it cannot be confused with a screen that
     /// is off.
@@ -215,6 +224,15 @@ impl TheSurface {
     #[must_use]
     pub const fn down(self) -> u32 {
         self.down
+    }
+
+    /// Bytes one pixel takes.
+    ///
+    /// Needed by anything writing single pixels rather than whole rows of one
+    /// colour, which is what drawing a letter is.
+    #[must_use]
+    pub const fn each_pixel(self) -> u32 {
+        self.each_pixel
     }
 
     /// One row of this grey, as the bytes a framebuffer row holds.

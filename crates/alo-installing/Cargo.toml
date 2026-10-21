@@ -27,6 +27,14 @@ alo-starting = { path = "../alo-starting" }
 # Every sentence the person reads.
 alo-strings = { path = "../alo-strings" }
 
+# The glyphs. swash is the rasteriser `alo-shell` already draws with, through
+# cosmic-text, so the installer and the desktop put letters on screen through
+# one engine -- which is how the installer stops looking like a different
+# product from the system it installs. Pure Rust with no C bridge, so the
+# static musl build this crate depends on survives it, and already in the lock
+# file because cosmic-text brought it.
+swash = { workspace = true }
+
 # Two things arrive as JSON and nothing else: what the disk lister says about
 # the disks, and what the signature checker says it verified.
 serde = { workspace = true }
