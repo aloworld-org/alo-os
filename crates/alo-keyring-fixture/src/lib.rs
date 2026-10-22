@@ -136,9 +136,39 @@ impl AKeyringOfOurOwn {
         Self::start(what, false)
     }
 
+    /// A keyring unlocked with **an empty password**, which is what the image's
+    /// own unit does.
+    ///
+    /// `image/usr/lib/systemd/system/alo-keyring.service` sends one newline on
+    /// standard input, so the login keyring is created and unlocked with a
+    /// password of no characters — argued in that file, and resting on ADR 0054
+    /// encrypting the disk underneath it.
+    ///
+    /// **This exists because the fixture's divergence from that unit hid a
+    /// bug.** Every constructor above feeds [`A_SYNTHETIC_PASSWORD`], and the
+    /// unit shipped `StandardInput=null`, which is end of file and **not** an
+    /// empty password: the daemon started, systemd reported it `active`, it
+    /// served `org.freedesktop.secrets` — and created no collection at all, so
+    /// no key could be stored. Every test passed, because no test ran the
+    /// configuration that shipped. What is worth proving in CI is therefore not
+    /// that a keyring works, but that a keyring **unlocked the way this machine
+    /// unlocks it** works.
+    ///
+    /// # Panics
+    /// As [`Self::started`].
+    #[must_use]
+    pub fn started_with_an_empty_password(what: &str) -> Self {
+        Self::start_unlocked_by(what, true, b"\n")
+    }
+
     /// The three of them, which differ only in whether anything is put on the
     /// bus.
     fn start(what: &str, serving: bool) -> Self {
+        Self::start_unlocked_by(what, serving, A_SYNTHETIC_PASSWORD.as_bytes())
+    }
+
+    /// All of them, which differ in what reaches the daemon's standard input.
+    fn start_unlocked_by(what: &str, serving: bool, password: &[u8]) -> Self {
         // Only characters a D-Bus address may carry unescaped: the socket
         // under this directory becomes one, and `(` from a thread id is exactly
         // what `dbus-daemon` refuses.
@@ -220,7 +250,7 @@ impl AKeyringOfOurOwn {
         {
             let mut telling = keyring.stdin.take().expect("stdin was asked for");
             telling
-                .write_all(A_SYNTHETIC_PASSWORD.as_bytes())
+                .write_all(password)
                 .expect("the daemon is listening");
         }
         ours.keyring = Some(keyring);
