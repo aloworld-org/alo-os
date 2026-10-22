@@ -12,6 +12,9 @@ repository.workspace = true
 # holds no opinion about — see this crate's own header for why that boundary is
 # honoured by a separate crate rather than bent inside that one.
 alo-applications = { path = "../alo-applications" }
+# The kinds a declaration is read into, which this crate names only in its tests
+# and in what it hands back; the type is alo-opening's.
+alo-opening = { path = "../alo-opening" }
 
 [lints]
 workspace = true

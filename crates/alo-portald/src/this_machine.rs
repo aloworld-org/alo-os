@@ -21,14 +21,19 @@
 //! | `appearance` | `alo_appearance::keeping::at_sign_in`, the person's own `appearance.toml` over what the release ships |
 //! | `time_of_day` | this machine's clock, as the local hour and minute |
 //! | `reaching` | `alo_networks::WhatIsReached` over the rented network manager |
-//! | `applications` | **nothing. There is no reader in this repository** |
+//! | `applications` | `alo_installed::read_with_what_they_open` over the desktop entries, and `alo_formats::keeping::read` for what the person chose |
 //!
 //! This crate's [`TheMachine::applications`] answers [`None`], and that is the honest answer
 //! rather than a gap papered over. `alo_applications::Installed` and `Declared`
 //! can be built by `nothing()`, `holding(…)` and `add(…)` and by nothing else:
 //! **no crate reads what a person has actually installed**, because installing is
 //! `alo-software`'s rented tool and what it put on the machine has never been
-//! asked back. `Chosen` alone has a real reader, `alo_formats::keeping::read`.
+//! asked back. `Chosen` alone has a real reader — and **this file named the
+//! wrong one until 2026-10-22**: it said `alo_formats::keeping::read`, which
+//! reads a person's *regional formats*, a `Chosen` that happens to share a name
+//! with the one this wants. The reader for what opens what is
+//! `alo_applications::keeping::read`, in the crate that declares the type, over
+//! `what-opens-what.toml`.
 //!
 //! The alternative was to answer `Applications` with `Installed::nothing()` and
 //! the person's real `Chosen`, and that would be **worse than refusing**.
@@ -69,6 +74,15 @@ pub struct ThisMachine {
     grants: PathBuf,
     /// The folder holding the person's own settings files.
     theirs: PathBuf,
+    /// Where this machine's desktop entries live, in the order the
+    /// specification searches them.
+    ///
+    /// **Held rather than asked of the environment at each request**, for the
+    /// reason the two above are held: a backend that read `XDG_DATA_DIRS` in
+    /// the middle of answering could be told a different machine between one
+    /// request and the next, and a test could never say which machine it meant.
+    /// The *entries* are still read every time; only where to look is fixed.
+    places: Vec<PathBuf>,
 }
 
 impl ThisMachine {
@@ -79,9 +93,34 @@ impl ThisMachine {
     /// point of the trait this implements.
     #[must_use]
     pub fn reading(grants: impl Into<PathBuf>, theirs: impl Into<PathBuf>) -> Self {
+        Self::reading_entries_in(
+            grants,
+            theirs,
+            alo_installed::where_entries_live(
+                std::env::var_os("HOME").as_deref().map(Path::new),
+                std::env::var_os("XDG_DATA_HOME").as_deref(),
+                std::env::var_os("XDG_DATA_DIRS").as_deref(),
+            ),
+        )
+    }
+
+    /// The same, told where the desktop entries are rather than asking the
+    /// environment.
+    ///
+    /// **This exists so a test can name a machine.** `where_entries_live` reads
+    /// process-wide variables, and a test that set them would be setting them
+    /// for every other test in the binary — which is the fault `CLAUDE.md`
+    /// records as three unrelated tests assuming they were alone on the machine.
+    #[must_use]
+    pub fn reading_entries_in(
+        grants: impl Into<PathBuf>,
+        theirs: impl Into<PathBuf>,
+        places: Vec<PathBuf>,
+    ) -> Self {
         Self {
             grants: grants.into(),
             theirs: theirs.into(),
+            places,
         }
     }
 
@@ -111,14 +150,46 @@ impl TheMachine for ThisMachine {
         alo_remembering::remembered(&self.grants, SystemTime::now()).ok()
     }
 
-    /// [`None`], always, and the module header says why at length.
+    /// What is installed, what each declares it opens, and what the person
+    /// chose — read now, and never held between requests.
     ///
-    /// Not a stub: there is no reader anywhere in this repository for what a
-    /// person has installed, so *cannot be read* is the true answer and a
-    /// refusal is the right behaviour. When `alo-software` can say what its
-    /// rented tool installed, this is where that reading goes.
+    /// **This answered [`None`] until 2026-10-22, and the reason stopped being
+    /// true before that.** The header's old table said *nothing. There is no
+    /// reader in this repository*, which was accurate when it was written and
+    /// survived the arrival of `alo-installed` — a crate whose own header says
+    /// it exists because *until this crate existed nothing built one*. A stale
+    /// sentence held `OpenURI` shut after the thing it described had been
+    /// built, and nothing failed to say so, because a refusal that is correct
+    /// about a machine is indistinguishable from one that is merely old.
+    ///
+    /// **`None` is still the answer when the entries cannot be read**, and that
+    /// is the part worth keeping: an empty `Installed` would make *what opens
+    /// this* answer **nothing opens it**, confidently, about a machine with
+    /// seven applications on it.
+    ///
+    /// A person who has chosen nothing is **not** that case. `alo_formats`
+    /// answers an untouched `Chosen` for a file that is not there, which is
+    /// the ordinary machine, and refusing there would refuse every fresh one.
     fn applications(&self) -> Option<Applications> {
-        None
+        let (installed, declared) = alo_installed::read_with_what_they_open(&self.places);
+        // **Nothing installed is a machine that cannot be read, not a machine
+        // with nothing on it.** Every alo OS machine ships applications, so an
+        // empty list here means the entries were unreachable — and answering it
+        // as a fact would tell a person nothing opens their document.
+        if installed.is_empty() {
+            return None;
+        }
+        // A file that is not there is a person who has chosen nothing, which is
+        // an answer. A file that is there and will not read is not, and the
+        // honest thing is the same refusal as above.
+        let chosen =
+            alo_applications::keeping::read(&self.theirs.join(alo_applications::keeping::THE_FILE))
+                .ok()?;
+        Some(Applications {
+            installed,
+            declared,
+            chosen,
+        })
     }
 
     /// How the machine looks: what the release ships with the person's changes
@@ -236,21 +307,68 @@ mod tests {
         );
     }
 
-    /// **What is installed cannot be read, and this says so rather than saying
-    /// nothing is installed.**
+    /// **A machine whose entries cannot be read answers [`None`], not an empty
+    /// machine.**
     ///
-    /// The module header carries the argument. This is the assertion, and it is
-    /// deliberately a test that will **fail** when somebody gives
-    /// `alo-applications` a real reader — which is the moment this answer has to
-    /// change, and the moment a silent `None` would otherwise survive.
+    /// This replaces a test that asserted `applications()` was always `None`
+    /// and said, in its own words, *answering Applications at all means
+    /// something can now read what is installed — move that reading into
+    /// `ThisMachine::applications` and delete this test*. Something could, from
+    /// the day `alo-installed` landed; the reading has moved here and that test
+    /// has gone, which is the tripwire doing exactly what it was left for.
+    ///
+    /// What survives it is the distinction it was really protecting: an empty
+    /// `Installed` would make *what opens this* answer **nothing opens it**,
+    /// confidently, about a machine with applications on it.
     #[test]
-    fn what_is_installed_is_unread_and_not_an_empty_machine() {
-        let machine = ThisMachine::reading("/nowhere/grants.toml", "/nowhere/theirs");
+    fn a_machine_whose_entries_cannot_be_read_is_not_an_empty_machine() {
+        let machine = ThisMachine::reading_entries_in(
+            "/nowhere/grants.toml",
+            "/nowhere/theirs",
+            vec![PathBuf::from("/nowhere/applications")],
+        );
         assert!(
             machine.applications().is_none(),
-            "answering Applications at all means something can now read what is \
-             installed — move that reading into ThisMachine::applications and \
-             delete this test"
+            "no entries anywhere must refuse, because an empty list would say nothing opens \
+             anything on a machine nobody could read"
+        );
+    }
+
+    /// **A machine with entries answers them, and a person who chose nothing is
+    /// not a refusal.**
+    ///
+    /// The ordinary machine: applications installed, and no
+    /// `what-opens-what.toml` because the person has never changed one. A
+    /// backend that refused here would refuse every fresh machine's `OpenURI`,
+    /// which is the same shape as the appearance test below.
+    #[test]
+    fn a_machine_with_entries_answers_what_opens_what() {
+        let entries = tempfile::tempdir().unwrap();
+        std::fs::write(
+            entries.path().join("viewer.desktop"),
+            "[Desktop Entry]\nType=Application\nName=Viewer\nMimeType=image/png;\n",
+        )
+        .unwrap();
+        let theirs = tempfile::tempdir().unwrap();
+
+        let machine = ThisMachine::reading_entries_in(
+            "/nowhere/grants.toml",
+            theirs.path(),
+            vec![entries.path().to_path_buf()],
+        );
+        let answered = machine.applications().unwrap();
+        assert_eq!(answered.installed.how_many(), 1, "the entry is installed");
+        assert_eq!(
+            answered
+                .declared
+                .declaring(alo_opening::Kind::PngImage)
+                .collect::<Vec<_>>(),
+            ["viewer"],
+            "and what it declares it opens is read from the same entry"
+        );
+        assert!(
+            answered.chosen.is_untouched(),
+            "a person who has never chosen is untouched rather than a refusal"
         );
     }
 

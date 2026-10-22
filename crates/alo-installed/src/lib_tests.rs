@@ -212,3 +212,114 @@ fn the_persons_directory_comes_before_the_systems() {
         ]
     );
 }
+
+/// **An application's declared media types are read off the same entry its name
+/// is.**
+#[test]
+fn what_an_application_opens_is_read_from_its_entry() {
+    let at = a_place_holding(&[(
+        "viewer.desktop",
+        "[Desktop Entry]\nType=Application\nName=Viewer\nMimeType=image/png;image/jpeg;\n",
+    )]);
+    let (installed, declared) = read_with_what_they_open(std::slice::from_ref(&at));
+    assert_eq!(installed.how_many(), 1);
+    let opens = declared
+        .declaring(alo_opening::Kind::PngImage)
+        .collect::<Vec<_>>();
+    assert_eq!(opens, ["viewer"], "{opens:?}");
+    let _ = std::fs::remove_dir_all(&at);
+}
+
+/// **An entry with no `MimeType` is installed and opens nothing**, which is
+/// most of them.
+///
+/// A terminal and a settings panel declare none, and leaving them out of what
+/// is installed because they open nothing would make the Dock's list disagree
+/// with the machine.
+#[test]
+fn an_application_that_opens_nothing_is_still_installed() {
+    let at = a_place_holding(&[(
+        "terminal.desktop",
+        "[Desktop Entry]\nType=Application\nName=Terminal\n",
+    )]);
+    let (installed, declared) = read_with_what_they_open(std::slice::from_ref(&at));
+    assert_eq!(installed.how_many(), 1, "it is installed");
+    for kind in [alo_opening::Kind::Text, alo_opening::Kind::PngImage] {
+        assert_eq!(
+            declared.declaring(kind).count(),
+            0,
+            "it declared nothing, so it opens no {kind:?}"
+        );
+    }
+    let _ = std::fs::remove_dir_all(&at);
+}
+
+/// **A trailing separator declares nothing extra**, which nearly every real
+/// entry has.
+///
+/// **This holds the outcome and does not guard the filter that produces it, and
+/// that was measured rather than assumed.** Deleting
+/// `.filter(|it| !it.is_empty())` from the parser fails **no test**, this one
+/// included: `alo_applications::media_types::kinds_declared_by` answers no
+/// kinds for a media type it does not know, and the empty string is one of
+/// those. So the filter is belt and braces over a thing already true one layer
+/// down, and the honest shape of this test is a characterisation — a trailing
+/// separator is harmless — rather than a guard over the line that makes it so.
+///
+/// Said here because a test whose name sounds like a guard and is not is worse
+/// than no test: the next person deletes the filter, sees green, and concludes
+/// the filter was dead rather than redundant.
+#[test]
+fn a_trailing_separator_declares_nothing_extra() {
+    let with = a_place_holding(&[(
+        "a.desktop",
+        "[Desktop Entry]\nType=Application\nName=A\nMimeType=text/plain;\n",
+    )]);
+    let without = a_place_holding(&[(
+        "b.desktop",
+        "[Desktop Entry]\nType=Application\nName=B\nMimeType=text/plain\n",
+    )]);
+    let (_, one) = read_with_what_they_open(std::slice::from_ref(&with));
+    let (_, two) = read_with_what_they_open(std::slice::from_ref(&without));
+    assert_eq!(
+        one.declaring(alo_opening::Kind::Text).count(),
+        two.declaring(alo_opening::Kind::Text).count(),
+        "the separator changed what was declared"
+    );
+    let _ = std::fs::remove_dir_all(&with);
+    let _ = std::fs::remove_dir_all(&without);
+}
+
+/// **A person's own copy declares what their copy declares.**
+///
+/// `read`'s rule is that an earlier place wins, and this holds the declarations
+/// to the same rule: an application replaced in `~/.local/share/applications`
+/// must not keep declaring what the image's copy declared, or *what opens this*
+/// answers from a file the person replaced.
+#[test]
+fn the_persons_own_copy_declares_what_theirs_declares() {
+    let theirs = a_place_holding(&[(
+        "editor.desktop",
+        "[Desktop Entry]\nType=Application\nName=Editor\nMimeType=text/plain;\n",
+    )]);
+    let shipped = a_place_holding(&[(
+        "editor.desktop",
+        "[Desktop Entry]\nType=Application\nName=Editor\nMimeType=image/png;\n",
+    )]);
+    let (installed, declared) = read_with_what_they_open(&[theirs.clone(), shipped.clone()]);
+    assert_eq!(installed.how_many(), 1, "one application, not two");
+    assert_eq!(
+        declared
+            .declaring(alo_opening::Kind::Text)
+            .collect::<Vec<_>>(),
+        ["editor"],
+        "their copy opens text"
+    );
+    assert_eq!(
+        declared.declaring(alo_opening::Kind::PngImage).count(),
+        0,
+        "the shipped copy's declaration must not survive the person replacing it"
+    );
+    let _ = std::fs::remove_dir_all(&theirs);
+    let _ = std::fs::remove_dir_all(&shipped);
+}

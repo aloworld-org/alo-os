@@ -47,6 +47,22 @@ alo-secrets = { path = "../alo-secrets" }
 # directory.
 alo-choosing = { path = "../alo-choosing" }
 
+# What is installed and what each application declares it opens, read off the
+# machine's own desktop entries. `TheMachine::applications` answered `None` for
+# want of exactly this, on a header that said no reader existed — which was true
+# when written and had stopped being true.
+alo-installed = { path = "../alo-installed" }
+
+# What the person chose opens what, which is the third of the three. The crate
+# that declares `Chosen` is the one that keeps it (ADR 0038), and it is not
+# `alo-formats` — that crate's `Chosen` is a person's regional formats and
+# shares only a name.
+alo-applications = { path = "../alo-applications" }
+
+# The kinds a declaration is read into, named only where this crate checks one.
+alo-opening = { path = "../alo-opening" }
+
+
 [dev-dependencies]
 # A folder to write a settings file into, for the tests that tell a file which
 # did not parse from a machine nobody has touched.

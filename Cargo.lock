@@ -973,6 +973,7 @@ name = "alo-installed"
 version = "0.0.1"
 dependencies = [
  "alo-applications",
+ "alo-opening",
 ]
 
 [[package]]
@@ -1320,9 +1321,12 @@ name = "alo-portald"
 version = "0.0.1"
 dependencies = [
  "alo-appearance",
+ "alo-applications",
  "alo-capability",
  "alo-choosing",
+ "alo-installed",
  "alo-networks",
+ "alo-opening",
  "alo-portals",
  "alo-remembering",
  "alo-secrets",
