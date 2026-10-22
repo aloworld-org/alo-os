@@ -57,15 +57,23 @@ runs — prints one OSC 133 mark carrying that name. The terminal already parses
 that family, already receives `TheCommandIsRunning` at the same instant, and
 would keep the pair against the row where the output starts.
 
-- **The contract question, and it is the whole decision.**
-  `docs/contracts/shell-integration-marks.md` promises *a forged mark can make
-  alo explain a command nobody typed, and it cannot make alo do anything*, and
-  ADR 0130 refused the mark as the **trigger** on exactly that sentence. This is
-  not a trigger: the mark would **label a row**, and the act still re-reads the
-  authoritative list off the disk and refuses a name that is not in it. **The
-  worst a forged mark achieves is labelling a row with another of this person's
-  own places** — which they can already name directly on the command line. That
-  reading may be right and it is not this lane's to assert.
+- **The contract question, and it is the whole decision.** It has four promises
+  about a mark, not one, and each bears on this differently. Added 2026-10-22
+  after the first draft of this ADR quoted only the second and read as though
+  that were the whole of it.
+
+  | the promise | what it says about this |
+  |---|---|
+  | **It never touches the gutter.** *A mark says where a prompt and a command are. It does not say who spoke, and a forged one cannot relabel anything* | **Not engaged.** The gutter is who is speaking, decided by where bytes came from (ADR 0113). A place is not a speaker, and nothing here would move a label from `program` to anything else |
+  | **A mark grants nothing.** *A forged mark can make alo explain a command nobody typed, and it cannot make alo `do` anything* | **The one ADR 0130 refused the mark on**, and rightly: there, the mark would have *caused a snapshot*. Here it causes nothing. The act is still the person naming a place and typing a folder's name, and it still re-reads the authoritative list off the disk and refuses a name that is not on it |
+  | **A mark is a claim, not a fact alo established.** *Anything built on it carries that standing to the person, in the same words the recognised test result already uses:* Not independently verified | **This is the hinge, and it is a condition rather than a wall.** The row-to-place pairing would be built on a mark, so it is a claim — and the contract already says what to do with a claim: carry that standing to the person. There is a precedent drawn and shipped: the test summary's own `Source: … · Not independently verified` |
+  | **alo reads; it does not watch.** *There is no mark between a prompt and a person asking, so there is nothing for alo to read while they type* | **Not engaged, and worth checking it stays so.** This mark would be printed in `PS0` — after Enter, before the command — not while they type |
+
+  **So the worst a forged mark achieves is labelling a row with another of this
+  person's own places**, which they can already name directly on the command
+  line, and the third promise says that labelling must be shown as a claim. What
+  the owner is being asked is whether that reading is right, and whether a fifth
+  sequence is worth it.
 - **For it:** nothing new learns anything about a command. The mark carries a
   directory name alo chose, never a word the person typed.
 - **Against it:** a sixth thing in a published contract, and a person reading
@@ -94,6 +102,25 @@ What this repository does today. The sentence is already narrowed there.
   different from every other terminal, and it is the half a person would
   actually use. Typing an opaque directory name is the thing the promise was
   written to avoid.
+
+## If option A is taken, what it owes
+
+Written here so the decision is a decision and not a direction of travel:
+
+1. **The pairing is shown as a claim**, in the contract's own words, because the
+   third promise above requires it of anything built on a mark. The precedent is
+   drawn and shipped.
+2. **The mark carries a directory name alo chose and nothing a person typed.**
+   That keeps ADR 0130's *not the command, not its arguments, not the directory
+   it will run in* intact — a name is alo's own opaque string.
+3. **An unknown name is refused, not guessed at.** `alo-as-it-was` already does
+   this: `Places::named` answers nothing for a name that is not on the disk, and
+   the person is told *{named} is not one of the places kept on this machine*.
+4. **The reply gains `named: Option<String>` additively**, which
+   `docs/contracts/daemon-protocol.md` allows; no field changes meaning.
+5. **Two of the four unused marks gain a consumer** — see below — because the
+   terminal has to know where a command's output begins to attach anything to
+   it.
 
 ## What would have to be true either way
 
