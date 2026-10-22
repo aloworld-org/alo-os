@@ -57,12 +57,13 @@ pub enum WhatFillingInDid {
     NotFinished,
     /// They gave up. The form is gone and Settings is still open.
     GaveUp,
-    /// They asked to paste, and nothing can do that yet.
+    /// They asked to paste, and the selection's owner has been asked for it.
     ///
-    /// **Its own answer rather than `Nothing`**, so that a surface can say so
-    /// and a test can see the difference between a press that meant nothing
-    /// and one that meant something this machine cannot do.
-    CannotPasteYet,
+    /// **Not `ItChanged`.** Nothing is in the field yet and may never be: the
+    /// selection belongs to another client, which writes when it gets round to
+    /// it and may not write at all. What lands in the field is
+    /// [`Server::that_paste_arrived`]'s business, a frame or several later.
+    AskedForThePaste,
 }
 
 impl Server {
@@ -147,9 +148,83 @@ impl Server {
                 self.filling_in = None;
                 WhatFillingInDid::GaveUp
             }
-            FillingInKey::Paste => WhatFillingInDid::CannotPasteYet,
+            // **Asked for here and arriving later**, which is why this is not
+            // `ItChanged`: the selection belongs to another client and the
+            // field does not change until that client writes. See
+            // [`Server::that_paste_arrived`], which the frame loop calls.
+            FillingInKey::Paste => {
+                self.ask_for_what_is_on_the_clipboard();
+                WhatFillingInDid::AskedForThePaste
+            }
             FillingInKey::Nothing => WhatFillingInDid::Nothing,
         })
+    }
+
+    /// Ask whoever owns the selection to write it down a pipe.
+    ///
+    /// **Nothing waits here.** The pipe's reading end goes to a thread of its
+    /// own (`crate::what_is_on_the_clipboard`), because a client that is busy,
+    /// swapped out or hostile can take as long as it likes to write — and a
+    /// compositor that blocked on that would hang the whole machine on a press
+    /// of Control+V.
+    ///
+    /// Every way this can fail is **silence**, and that is deliberate rather
+    /// than lazy: there is no selection, or it holds no text, or the pipe will
+    /// not open. A person who presses paste with nothing copied sees nothing
+    /// happen, which is what every other system does and what they already
+    /// expect. Saying *there is nothing on your clipboard* would be a sentence
+    /// nobody asked for in the middle of typing a key.
+    fn ask_for_what_is_on_the_clipboard(&mut self) {
+        let Some(keyboard) = self.surfaces.keyboard.as_ref() else {
+            return;
+        };
+        let seat = keyboard.seat.clone();
+        let Ok((reading, writing)) = std::io::pipe() else {
+            return;
+        };
+        // **The reading end is handed over before the ask**, so that a client
+        // which writes and closes immediately has somewhere for its bytes to
+        // go. The other order loses a fast client's paste.
+        self.clipboard
+            .reading(std::os::unix::io::OwnedFd::from(reading));
+        let _ = smithay::wayland::selection::data_device::request_data_device_client_selection(
+            &seat,
+            crate::what_is_on_the_clipboard::TheClipboard::as_text().to_owned(),
+            std::os::unix::io::OwnedFd::from(writing),
+        );
+    }
+
+    /// Put anything that has been pasted into the field it was asked for in.
+    ///
+    /// **Asked once a frame and never blocking**, which is
+    /// `crate::what_a_person_asked_goes_to_the_agent`'s shape: it answers with
+    /// nothing almost every time.
+    ///
+    /// Answers whether the form changed, so a caller knows whether to draw
+    /// again.
+    ///
+    /// **It goes into whichever field has the keyboard now**, not the one that
+    /// had it when the press happened. A person who pressed paste and then
+    /// pressed Tab meant the field they are looking at; holding the earlier
+    /// one would put a key into an address while they watched.
+    pub fn that_paste_arrived(&mut self) -> bool {
+        let pasted = self.clipboard.whatever_was_pasted();
+        if pasted.is_empty() {
+            return false;
+        }
+        let Some(form) = self.filling_in.as_mut() else {
+            // The form closed while a client was being asked. What came back
+            // is dropped rather than kept for a later form: a person who gave
+            // up and came back has not asked for this again.
+            return false;
+        };
+        let mut changed = false;
+        for came in pasted {
+            for letter in came.text().chars() {
+                changed |= form.typed(letter);
+            }
+        }
+        changed
     }
 }
 

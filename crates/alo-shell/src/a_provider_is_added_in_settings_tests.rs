@@ -181,22 +181,39 @@ fn moving_between_fields_puts_the_next_letters_somewhere_else() {
 }
 
 #[test]
-fn a_paste_says_it_cannot_be_done_rather_than_nothing() {
-    // **Said rather than silent**, so the difference between a press that
-    // meant nothing and one that meant something this machine cannot do is
-    // visible to a surface and to this test. Until the selection can be read,
-    // a person cannot put a real API key in this form at all.
+fn a_paste_asks_for_the_selection_and_does_not_pretend_it_arrived() {
+    // **Not ItChanged.** Nothing is in the field yet and may never be: the
+    // selection belongs to another client, which writes when it gets round to
+    // it and may not write at all. A surface that drew on this press would
+    // draw an unchanged field and call it a paste.
     let (_directory, mut server) = a_server();
     server.a_provider_is_added();
     assert_eq!(
         server.a_key_fills_in_the_provider(FillingInKey::Paste),
-        Some(WhatFillingInDid::CannotPasteYet)
+        Some(WhatFillingInDid::AskedForThePaste)
+    );
+    assert_eq!(
+        server
+            .a_provider_is_being_filled_in()
+            .expect("a form")
+            .what_is_in(WhichField::Name),
+        "",
+        "and the field is untouched until something comes back"
     );
     assert_eq!(
         server.a_key_fills_in_the_provider(FillingInKey::Nothing),
         Some(WhatFillingInDid::Nothing),
         "the control: a press that really means nothing answers differently"
     );
+}
+
+#[test]
+fn nothing_arriving_changes_nothing_and_says_so() {
+    // **What a frame loop is told almost every time it asks**, sixty times a
+    // second. A surface that redrew on this would redraw on every frame.
+    let (_directory, mut server) = a_server();
+    server.a_provider_is_added();
+    assert!(!server.that_paste_arrived());
 }
 
 #[test]
@@ -216,4 +233,81 @@ fn asking_again_starts_a_fresh_form() {
         ""
     );
     assert_eq!(server.the_field_being_filled_in(), Some(WhichField::Name));
+}
+
+#[test]
+fn what_a_client_wrote_lands_in_the_field_that_has_the_keyboard() {
+    // **The claim the whole piece exists for**: a person copies a key
+    // somewhere else, presses Control+V, and it is in the field. Driven
+    // through the clipboard directly rather than through a seat, because a
+    // seat needs a real client to own a selection -- what is under test here
+    // is that what comes back reaches the right field.
+    use std::io::Write as _;
+
+    let (_directory, mut server) = a_server();
+    server.a_provider_is_added();
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    assert_eq!(server.the_field_being_filled_in(), Some(WhichField::Key));
+
+    let (reading, writing) = std::io::pipe().expect("a pipe");
+    server
+        .clipboard
+        .reading(std::os::unix::io::OwnedFd::from(reading));
+    let mut writing = writing;
+    writing
+        .write_all(b"sk-proj-a-very-long-key-nobody-would-type\n")
+        .expect("the client writes");
+    drop(writing);
+
+    // The client writes when it gets round to it, so this waits rather than
+    // asserting on the next line -- which is the whole reason the read is on a
+    // thread and not in the frame loop.
+    let until = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    while !server.that_paste_arrived() && std::time::Instant::now() < until {
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+
+    let form = server.a_provider_is_being_filled_in().expect("a form");
+    assert_eq!(
+        form.what_is_in(WhichField::Key),
+        "sk-proj-a-very-long-key-nobody-would-type",
+        "it landed in the key field, with the newline a web page put on the end gone"
+    );
+    // The controls at the other end: the two fields they tabbed past are still
+    // empty, so what arrived went where the keyboard was and not everywhere.
+    assert_eq!(form.what_is_in(WhichField::Name), "");
+    assert_eq!(form.what_is_in(WhichField::Address), "");
+}
+
+#[test]
+fn a_paste_that_arrives_after_the_form_closed_is_dropped() {
+    // A person asked, gave up, and the client answered afterwards. Keeping it
+    // for a later form would put a key they had abandoned into the next one
+    // they opened.
+    use std::io::Write as _;
+
+    let (_directory, mut server) = a_server();
+    server.a_provider_is_added();
+    let (reading, writing) = std::io::pipe().expect("a pipe");
+    server
+        .clipboard
+        .reading(std::os::unix::io::OwnedFd::from(reading));
+    let mut writing = writing;
+    writing.write_all(b"sk-abandoned").expect("written");
+    drop(writing);
+
+    server.a_key_fills_in_the_provider(FillingInKey::GiveUp);
+    std::thread::sleep(std::time::Duration::from_millis(50));
+    assert!(!server.that_paste_arrived());
+
+    // And the next form a person opens is empty.
+    server.a_provider_is_added();
+    assert_eq!(
+        server
+            .a_provider_is_being_filled_in()
+            .expect("a form")
+            .what_is_in(WhichField::Name),
+        ""
+    );
 }
