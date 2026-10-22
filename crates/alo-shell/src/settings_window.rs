@@ -48,6 +48,7 @@ use alo_remembering::NotRemembered;
 use alo_shortcuts::{Action, Chord, Key, Modifiers, Shortcuts};
 use alo_strings::Strings;
 
+use crate::how_code_runs_in_settings::HowCodeRunsHere;
 use crate::settings_answering::{AnsweringSection, SettingsAnswered, SettingsChoice};
 use crate::settings_granted::{GrantedSection, SettingsRevoked};
 use crate::settings_keepers::{AppearanceKept, DockKept, ShortcutsKept};
@@ -69,6 +70,12 @@ pub enum SettingsSection {
     Shortcuts,
     /// The terminal: today, whether alo may read what a person types in it.
     Terminal,
+    /// How code the agent writes or fetches runs: ADR 0064's three levels.
+    ///
+    /// Above *what has been granted to what* because this **is** a grant — the
+    /// separate one that ADR 0064 makes running code — and a person reads the
+    /// grant they are giving before the list of ones they have given.
+    HowCodeRuns,
     /// What has been granted to what.
     Granted,
 }
@@ -104,6 +111,13 @@ pub enum SettingsRow {
     /// about the choice they made there and arises only when they chose a
     /// provider or another machine.
     UsingAnother(MayUseAnother),
+    /// How code the agent writes or fetches runs: Enter chooses this level.
+    ///
+    /// One row per level of ADR 0064, in that ADR's own order, which is least
+    /// to most the agent may do. **A person who has not chosen has none of the
+    /// three ticked**, and `crate::how_code_runs_in_settings` holds why that is
+    /// a state of its own rather than the sealed box.
+    HowCodeRuns(alo_capability::HowCodeRuns),
 }
 
 impl SettingsRow {
@@ -117,6 +131,7 @@ impl SettingsRow {
             Self::Shortcut(_) => SettingsSection::Shortcuts,
             Self::Granted(_) => SettingsSection::Granted,
             Self::UsingAnother(_) => SettingsSection::Answering,
+            Self::HowCodeRuns(_) => SettingsSection::HowCodeRuns,
             Self::ShellIntegration | Self::APlaceToReturnTo => SettingsSection::Terminal,
         }
     }
@@ -188,6 +203,10 @@ pub(crate) struct Open {
     pub(crate) shell_integration: TheShellIntegration,
     /// What Settings found about keeping a place to return to.
     pub(crate) a_place_to_return_to: TheShellIntegration,
+    /// How code the agent writes or fetches runs, as this machine's setting
+    /// says — including *nobody has chosen*, which is why this is not a
+    /// `KeptSection`. `crate::how_code_runs_in_settings` holds that argument.
+    pub(crate) how_code_runs: HowCodeRunsHere,
     /// Which row has the focus, counted from the first.
     pub(crate) focus: usize,
     /// Whether Settings waits for a chord for the focused shortcut.
@@ -227,6 +246,7 @@ impl SettingsWindow {
                 places.shell(),
                 places.folder(),
             ),
+            how_code_runs: HowCodeRunsHere::at_sign_in(places.how_code_runs()),
             focus: 0,
             waiting_for_a_chord: false,
         });
@@ -453,6 +473,14 @@ impl Open {
                 SettingsSection::Terminal,
                 self.a_place_to_return_to.add(doors.strings),
             ),
+            // **The level is written before the tick moves.** A tick that moved
+            // first would tell somebody their machine runs code at a level it
+            // does not, which on this setting is the difference between a
+            // sealed box and full trust.
+            SettingsRow::HowCodeRuns(level) => SettingsDid::Kept(
+                SettingsSection::HowCodeRuns,
+                self.how_code_runs.picked(*level),
+            ),
         }
     }
 
@@ -469,7 +497,18 @@ impl Open {
             // file of alo's: putting it back as alo ships it would throw away
             // whatever else is in it. `settings_shell_integration`'s header
             // says the same thing where somebody would look for it.
-            SettingsSection::Answering | SettingsSection::Granted | SettingsSection::Terminal => {
+            // **Not offered for how code runs either, and for a sharper
+            // reason.** Putting this back as shipped would mean writing a file
+            // saying the sealed box — which is not what the release ships. The
+            // release ships *no file*, because nobody has chosen, and there is
+            // no way to put a person back into *not having chosen* that is
+            // honest once they have: deleting their file would make the machine
+            // claim they never answered. `crate::how_code_runs_in_settings`
+            // carries the whole argument.
+            SettingsSection::Answering
+            | SettingsSection::Granted
+            | SettingsSection::Terminal
+            | SettingsSection::HowCodeRuns => {
                 return None;
             }
         };

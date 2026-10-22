@@ -197,6 +197,7 @@ fn a_way_with_nothing_to_choose_is_absent_rather_than_disabled() {
         &var.join("grants"),
         &var.join("pairings"),
         &var.join("agentd.sock"),
+        &var.join("how-code-runs.toml"),
     );
     let mut window = SettingsWindow::closed();
     let opened = window.opened_by_hand(&places, noon());

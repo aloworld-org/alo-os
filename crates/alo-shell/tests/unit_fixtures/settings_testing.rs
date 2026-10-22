@@ -85,6 +85,7 @@ impl Machine {
             self.places.grants(),
             self.places.pairings(),
             self.places.daemon(),
+            self.places.how_code_runs(),
         )
     }
 
@@ -141,6 +142,10 @@ pub(crate) fn a_persons_machine(what: &str) -> Machine {
         // flattens a daemon that is not there into the next sign-in, because
         // the change is already on the disk by the time it knocks.
         &machine_files.join("agentd.sock"),
+        // **Absent on purpose**, which is a person who has not chosen how code
+        // runs — the state the section keeps apart from the sealed box, and the
+        // one a fresh machine is in.
+        &machine_files.join("how-code-runs.toml"),
     );
 
     let mut grants = Grants::default();
