@@ -1,0 +1,35 @@
+[package]
+name = "alo-back"
+version = "0.0.1"
+description = "Puts one folder back as it was, from a place this machine kept before a command."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "alo-back"
+path = "src/main.rs"
+
+[dependencies]
+# Reading the places kept and putting a folder back. Every decision is there;
+# this crate is the order they happen in and the one question it asks.
+alo-as-it-was = { path = "../alo-as-it-was" }
+
+# Whatever translations this machine has, loaded onto `alo-as-it-was`'s words.
+#
+# **This is why the command is a crate of its own.** `alo-saying` depends on
+# every crate that declares words, so a crate whose words it collects cannot
+# depend on it — and `alo-as-it-was`'s words are collected like everyone
+# else's, which is what gets them checked against a translator's file. The
+# loading therefore happens here, exactly as `alo-before` is its own crate.
+alo-saying = { path = "../alo-saying" }
+
+# Saying one of those words.
+alo-strings = { path = "../alo-strings" }
+
+# Whose places these are.
+rustix = { workspace = true, features = ["process"] }
+
+[lints]
+workspace = true
