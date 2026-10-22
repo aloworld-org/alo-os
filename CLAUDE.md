@@ -527,15 +527,53 @@ next lane relitigates.*
   made it fetchable; only a pull request makes it **reviewable,
   mergeable and finishable by somebody else.**
 
-  **Measured on 2026-10-22**, the day this was written. Five branches on
-  the remote, three with no pull request: one carried 198 lines another
-  lane had written and could not land alone; one carried a finished
-  feature — every installed application's own icon on the Dock — that
-  sat gated and green for **six hours** with no door; and the whole
-  evening's throughput ran through one person opening pull requests by
-  hand, four times, because the lane that wrote them could not. *Work
-  finished and sitting still was the single largest cost of that day,
-  and not one line of it was a hard problem.*
+  **Measured on 2026-10-22**, the day this was written, and every figure
+  below can be retaken. Five branches on the remote, three with no pull
+  request. One had been sitting for **two days** — pushed on 2026-10-20,
+  a whole new crate, 10 files and 2,440 insertions, which is GitHub's own
+  figure for it and anybody can ask again — and it could not have landed
+  even if somebody had found it, because nothing anywhere in the
+  workspace names the crate it adds. One carried a finished feature — every installed application's
+  own icon on the Dock — that sat gated and green for **six hours** with
+  no door. The third was this rule, which sat pushed and unopened until
+  another lane opened it on the writer's behalf. And the whole evening's
+  throughput ran through one person opening pull requests by hand, four
+  times, because the lane that wrote them could not. *Work finished and
+  sitting still was the single largest cost of that day, and not one
+  line of it was a hard problem.*
+
+  *An earlier draft of this paragraph cited one of those branches as
+  carrying "198 lines". No ref that still exists matches that figure —
+  the branch had landed and been deleted — so the claim could not be
+  retaken by anybody reading it, which is what **measured before
+  claimed** forbids, in the document that forbids it. Replacing it took
+  two tries, and the second try was wrong in a more interesting way than
+  the first, so both are recorded: **a line count has two independent
+  ways to be false, and they are easy to mistake for each other.***
+
+  - *A **stale baseline**. A diff against a local `main` eight commits
+    behind read 10,442 insertions where `origin/main` gives 3,974.
+    Another lane hit it the same day at 247 commits behind, where one
+    changed file read as 3,945 lines across 53. The squash queue means a
+    stale `main` still lists commits normally, so nothing looks wrong.
+    **Diff against `origin/main`, never `main`.***
+  - *A **two-dot diff across an old merge-base**. `origin/main..branch`
+    answers *what changes if the tree becomes the branch*, so it also
+    counts undoing everything `origin/main` gained since the base. For
+    the two-day branch above, whose base is 45 commits back, that reads
+    195 files and 24,528 deletions — and this draft published it as
+    "merging it would remove 24.5k lines". **No merge does that.** The
+    squash is computed from the merge-base, GitHub reports `+2440 −0`,
+    and the three-dot diff agrees to the line. The lane that caught it
+    was the one the wrong figure was aimed at.*
+
+  *The two are distinguishable with one check: where the merge-base **is**
+  `origin/main`, two-dot and three-dot are identical — measured here at
+  37 files and 3,974 insertions either way. A gap between them is
+  therefore a statement about the base's age and nothing else. The
+  corrections are recorded rather than made silently, because a
+  constitution that quietly repairs its own evidence teaches the
+  opposite of what this clause asks for.*
 
   **The pull request is opened when the branch is pushed**, which is the
   moment there is a commit — not when the work feels presentable. A
@@ -562,8 +600,18 @@ next lane relitigates.*
   and under *say whether a measurement was performed once or runs
   forever* it is neither: **it runs when somebody chooses to follow it.**
   A lane that wants it caught should ask the owner for a check that
-  lists branches with no pull request, which is one API call and would
-  have found all three on the day this was written.
+  lists branches with no pull request. **It is one API call, and it has
+  been run by hand**: on the day this was written, one GraphQL query
+  over `refs/heads/` with `associatedPullRequests` found both branches
+  that were still open gaps. It also returned **two standing false
+  positives** — the default branch and a `gh-readonly-queue/*` ref,
+  neither of which can have a pull request — so a check built from it
+  excludes those two by prefix. That exclusion is the whole design
+  problem: *a check with permanent false positives is one lanes learn to
+  skip*, and a skipped check is worse than none, because it is counted.
+  Nothing in this repository runs it yet, and this sentence is not
+  permission to add it — apparatus on the landing path is the owner's
+  call.
 
 - **Stack your own dependent work.** Branch off your own branch rather
   than waiting for it to land. Waiting for your own pull request is
