@@ -82,6 +82,7 @@ mod a_chord_reaches_its_action;
 mod a_click_brings_a_window_back;
 mod a_display_has_gone;
 mod a_frame_per_display;
+pub mod a_key_fills_in_a_provider;
 pub mod a_key_reaches_a_task_window;
 mod a_key_reaches_settings;
 mod a_key_reaches_the_docks_surfaces;
