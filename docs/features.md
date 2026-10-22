@@ -455,10 +455,25 @@ file carries it with a tier.*
   origin, `program`**, because a pseudoterminal is the only thing that writes to
   a transcript today — including the person's own typing, which the shell echoes
   back and which is therefore the program's bytes. The other three become
-  reachable when alo itself writes into a transcript. **Not built**: the source
-  qualifier — `· cargo test` — which the design puts inside the region as a
-  caption rather than in the 96-wide column, and which belongs with rich
-  results.
+  reachable when alo itself writes into a transcript.
+  **The source qualifier is built, and this said *Not built* until 2026-10-22.**
+  It is in the design's own form rather than ADR 0113's: the design puts the
+  detail **inside the region as a caption** instead of in the 96-wide column, and
+  that caption is drawn — `crates/alo-shell/src/the_terminals_cells_are_drawn.rs`
+  fills what printed a result into *Source: {what} · Not independently verified*
+  and draws it under the summary, in the **program's** region, which the design's
+  third rule asks for and a test holds.
+  *Both this line and `docs/design/the-terminal-window.md` said it was owed, and
+  both gave the same reason — that it **belongs with rich results, which are not
+  built**. Rich results were built on 2026-10-18: the test result #761, the
+  benchmark #803 and the file diff #804. Two documents went stale together
+  because they shared one premise, which is why a note that defers to another
+  promise has to name it: when that promise lands, the deferral is what somebody
+  has to come back and re-read.*
+  **What was not checked**: whether the caption sits at the design's measured
+  inset — 17 in, 862×22, 38 below the summary's row. The content and the region
+  are right; the geometry is the next thing to measure off the frame, and it is
+  not claimed here.
 - ★ **And alo says what it measured apart from what it worked out.** One rule
   over everything below, because it is the same rule four of them would
   otherwise repeat: *blocked reading from the keyboard* is a measurement and
