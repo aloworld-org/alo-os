@@ -70,6 +70,37 @@ pub trait TheMachine {
 
     /// Do nothing for a while.
     fn pause(&mut self, for_as_long_as: Duration);
+
+    /// Write a file onto a whole device, erasing what was on it.
+    ///
+    /// **The only call in this program that destroys something a person did not
+    /// ask alo OS to install onto.** `docs/features.md` carries the longest
+    /// warning in the document about it: *a stick that is written by mistake is
+    /// somebody's photographs.* So it is a method of its own rather than
+    /// [`Self::write`] with a device path — a seam a reader can find, and one no
+    /// other road in this crate can reach by accident.
+    ///
+    /// `device` is the device as this machine names it, which on Windows means a
+    /// physical-drive path and not a drive letter: a letter names a volume, and
+    /// writing a whole-disk image through one would write inside the partition
+    /// it already has rather than replacing the partition table.
+    ///
+    /// `told` is called as it goes, with how many bytes have been written and
+    /// how many there are in all, so a person watching sees
+    /// `installing.how-far-the-write-has-got` move. It is called from this
+    /// thread; nothing here is asynchronous.
+    ///
+    /// # Errors
+    /// Whatever the device said. A refusal here has written **some** of the
+    /// image in the general case, which is why
+    /// `installing.leave-the-stick-in` warns before this starts rather than
+    /// after it fails.
+    fn wrote_the_device(
+        &mut self,
+        device: &str,
+        from: &Path,
+        told: &mut dyn FnMut(u64, u64),
+    ) -> std::io::Result<()>;
 }
 
 #[cfg(test)]
@@ -141,6 +172,15 @@ pub(crate) mod tests {
 
         fn write(&mut self, _file: &std::path::Path, _bytes: &[u8]) -> std::io::Result<()> {
             panic!("a question writes no file")
+        }
+
+        fn wrote_the_device(
+            &mut self,
+            _device: &str,
+            _from: &std::path::Path,
+            _told: &mut dyn FnMut(u64, u64),
+        ) -> std::io::Result<()> {
+            panic!("a question writes no device")
         }
 
         fn pause(&mut self, _for_as_long_as: std::time::Duration) {

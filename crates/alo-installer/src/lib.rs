@@ -84,6 +84,7 @@ mod what_replacing_destroys;
 mod where_alo_os_goes;
 mod windows_volume;
 mod words;
+mod writing_the_stick;
 
 pub use a_test_build::{ThisBuild, this_build, what_was_built};
 pub use administrator::HIGH_MANDATORY_LEVEL;
@@ -137,3 +138,4 @@ pub use words::{
     WordsError, declare_into, installer_words,
 };
 pub use words::{STICK_NONE_PLUGGED_IN, STICK_WILL_RESTART};
+pub use writing_the_stick::{THE_IMAGE, Written, write_the_stick};
