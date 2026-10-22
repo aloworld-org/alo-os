@@ -107,6 +107,19 @@ mod tests {
             unreachable!("the point of no return runs no program of its own")
         }
 
+        fn how_big_is(&mut self, _file: &Path) -> Option<u64> {
+            unreachable!("the point of no return asks about no file of its own")
+        }
+
+        fn wrote_the_device(
+            &mut self,
+            _device: &str,
+            _from: &Path,
+            _told: &mut dyn FnMut(u64, u64),
+        ) -> std::io::Result<()> {
+            unreachable!("the point of no return writes no device: a stick is its own road")
+        }
+
         fn downloaded_into(&mut self) -> std::io::Result<PathBuf> {
             unreachable!("nothing here looks for the download")
         }
