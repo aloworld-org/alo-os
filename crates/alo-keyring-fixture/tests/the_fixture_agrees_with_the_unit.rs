@@ -3,7 +3,7 @@
 //! **This is the guard for the fault that actually happened.** On 2026-10-22
 //! the unit shipped `StandardInput=null` — end of file, which is not an empty
 //! password — and no test could see it, because the fixture fed
-//! `A_SYNTHETIC_PASSWORD` instead. The daemon started, systemd called the unit
+//! a synthetic password of its own instead. The daemon started, systemd called
 //! `active`, it took `org.freedesktop.secrets` on the bus, and it created no
 //! collection at all, so every key a person tried to keep died on *object does
 //! not exist at path …/collection/login*.
