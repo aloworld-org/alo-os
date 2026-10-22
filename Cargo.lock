@@ -697,6 +697,8 @@ dependencies = [
  "alo-appearance",
  "alo-applications",
  "alo-arranging",
+ "alo-asking",
+ "alo-capability",
  "alo-changing",
  "alo-choosing",
  "alo-dividing",

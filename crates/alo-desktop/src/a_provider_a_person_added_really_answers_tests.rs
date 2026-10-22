@@ -29,8 +29,11 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
+use alo_asking::Vetting;
+use alo_capability::Grantee;
+use alo_egress::Indicator;
 use alo_keyring_fixture::AKeyringOfOurOwn;
-use alo_models::{SecretRef, SourcePolicy, trying::Trying};
+use alo_models::{SecretRef, SourcePolicy};
 use alo_secrets::TheKeyring;
 use alo_setting_up::a_provider_is_filled_in::AProviderBeingAddded;
 
@@ -115,14 +118,45 @@ fn a_provider_a_person_added_is_one_that_really_answers() {
     println!("the key was found in the keyring by that name");
 
     // And now the one that costs money: a real service, asked whether this
-    // key works, through the only file that knows what a provider's API looks
-    // like.
-    let tried = Trying::provider(provider, Some(&found))
-        .under(&SourcePolicy::Anywhere)
+    // key works — **through `alo_asking::Vetting`, which is the door that puts
+    // the request on the indicator.**
+    //
+    // This reached `alo_models::Trying` directly until 2026-10-22, and
+    // `alo-asking`'s own guard caught it: *nothing that ships reaches the wire
+    // except through the door that shows it*, which reads every shipped source
+    // and permits three files. A `_tests.rs` under `src/` is shipped source to
+    // that guard, and rightly — the request it made was real, to
+    // api.openai.com, **with nothing on the egress indicator.** Law 1 is that
+    // every network egress is visible at the moment it happens, and the test
+    // closest to what a person does in Settings was the one going round it.
+    //
+    // So the indicator is asked before and after rather than passed in and
+    // ignored. Quiet first, because a test that cannot tell its own request
+    // from somebody else's proves nothing about either.
+    let mut indicator = Indicator::default();
+    assert!(
+        indicator.is_quiet(),
+        "the indicator was already showing something before this test sent anything"
+    );
+
+    let vetted = Vetting::provider(provider, Some(&found))
+        .under(
+            &Grantee::named("@settings"),
+            &SourcePolicy::Anywhere,
+            &mut indicator,
+            std::time::SystemTime::now(),
+        )
         .expect(
             "a provider a person added answers -- the key, the endpoint and the settings file \
              were every one of them written by the road under test, so a refusal here is that \
              road rather than the service",
         );
-    println!("THE PROVIDER ANSWERED: {tried:?}");
+    println!("the indicator showed the request while it was in flight");
+
+    let answer = vetted.ended(&mut indicator);
+    println!("THE PROVIDER ANSWERED: {answer:?}");
+    assert!(
+        answer.is_a_working_provider(),
+        "the provider this road saved did not answer: {answer:?}"
+    );
 }

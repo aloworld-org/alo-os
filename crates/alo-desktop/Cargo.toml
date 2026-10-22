@@ -97,3 +97,22 @@ workspace = true
 # measured against the implementation a machine would really have rather than
 # against a stub whose refusals we wrote ourselves.
 alo-keyring-fixture = { path = "../alo-keyring-fixture" }
+
+# **The door that shows an egress, for the one test that makes a real request.**
+#
+# `a_provider_a_person_added_really_answers_tests.rs` asks a live provider
+# whether the key this road saved works. It reached `alo_models::Trying`
+# directly until 2026-10-22, which is the wire with no indicator — caught by
+# `alo-asking`'s own guard, *nothing that ships reaches the wire except through
+# the door that shows it*. `Vetting` is that door.
+#
+# **Dev only, and the direction matters.** `alo-desktop` does not test a
+# provider as part of what it does; it saves one. A `--package` release build
+# compiles no dev-dependency, so this links nothing into the shipped binary and
+# says nothing about whether the desktop may depend on the asking crate.
+alo-asking = { path = "../alo-asking" }
+
+# Whose authority an egress is under, which `Vetting::under` requires by name
+# so that what the indicator shows and what a record says cannot disagree about
+# who asked. Dev only, for the same reason as `alo-asking` above.
+alo-capability = { path = "../alo-capability" }
