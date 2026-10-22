@@ -62,6 +62,27 @@ pub enum ToAPerson {
         /// in.
         changes: Vec<Standing>,
     },
+    /// A place to return to was kept before the person's next command, or was
+    /// not and this is why.
+    ///
+    /// [ADR 0130](../../../docs/decisions/0130-what-takes-the-bracket-before-a-persons-own-command.md)
+    /// option B, accepted 2026-10-22.
+    ///
+    /// **`why_not` is [`None`] when one was kept, and that is deliberate.** A
+    /// sentence before every command a person runs is noise they would learn to
+    /// scroll past, and the thing they need to hear is the one that does not
+    /// happen. ADR 0045's third term already points this way for the agent's
+    /// own turns — *a machine too full to snapshot still runs the turn* — so
+    /// the command runs either way and the only question is whether they were
+    /// told.
+    APlaceToReturnTo {
+        /// Whether a place was kept.
+        kept: bool,
+        /// What to tell them when one was not, in their own language, worded by
+        /// the service so the screen and the record cannot become two accounts
+        /// of one moment.
+        why_not: Option<Wording>,
+    },
     /// The change they declined is written down, and nothing ran.
     Declined,
     /// What is granted was read again, and this is how many grants that came to.
@@ -422,6 +443,9 @@ impl ToAPerson {
         match frame::reply(line)? {
             Told::Did(done) => Ok(Self::Did(done)),
             Told::Waiting { changes } => Ok(Self::Waiting { changes }),
+            Told::APlaceToReturnTo { kept, why_not } => {
+                Ok(Self::APlaceToReturnTo { kept, why_not })
+            }
             Told::Declined {} => Ok(Self::Declined),
             Told::Granted { holding } => Ok(Self::Granted { holding }),
             Told::Refused(wording) => Ok(Self::Refused(wording)),
@@ -509,6 +533,9 @@ impl From<ToAPerson> for Told {
         match told {
             ToAPerson::Did(done) => Self::Did(done),
             ToAPerson::Waiting { changes } => Self::Waiting { changes },
+            ToAPerson::APlaceToReturnTo { kept, why_not } => {
+                Self::APlaceToReturnTo { kept, why_not }
+            }
             ToAPerson::Declined => Self::Declined {},
             ToAPerson::Granted { holding } => Self::Granted { holding },
             ToAPerson::Refused(wording) => Self::Refused(wording),

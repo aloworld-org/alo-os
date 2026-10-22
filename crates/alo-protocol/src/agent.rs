@@ -136,7 +136,8 @@ impl FromAnAgent {
             // record naming it and a line on the indicator. This one has none
             // of those, which is exactly why it is refused here: an agent that
             // could send it would have a road to a provider that nothing shows.
-            | Asked::TheirOwnQuestion { .. } => Err(NotUnderstood::NotForAnAgent),
+            | Asked::TheirOwnQuestion { .. }
+            | Asked::APlaceToReturnTo => Err(NotUnderstood::NotForAnAgent),
         }
     }
 

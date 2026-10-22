@@ -1,8 +1,15 @@
 # ADR 0130 — What takes the bracket before a person's own command
 
-**Status:** **proposed, 2026-10-21**, by the Mac lane. Three options are laid
-out with what each costs; **B is recommended**. Nothing is built in the change
-that records this.
+**Status:** **accepted, 2026-10-22, by the owner** — option **B**, asked for by
+name after the three were laid out with what each costs. Proposed 2026-10-21 by
+the Mac lane.
+
+**What the acceptance settles and what it does not.** It settles that the
+person's own shell asks a service, which takes the bracket — not a mark, and not
+a kernel observer yet. It does not settle how a person turns it on; that is
+[ADR 0127](0127-a-persons-own-commands-are-bracketed-in-a-session-they-asked-for.md)'s,
+which says a row in Settings under Terminal and which had not been built when
+this was accepted.
 **Context:** [ADR 0127](0127-a-persons-own-commands-are-bracketed-in-a-session-they-asked-for.md)
 (a person's own commands are bracketed in a session they asked for — accepted,
 and this is the question it did not reach),

@@ -152,7 +152,8 @@ impl AboutAPairing {
             | FromAPerson::Workspaces
             | FromAPerson::OpenWorkspace { .. }
             | FromAPerson::Advertised
-            | FromAPerson::TheirOwnQuestion { .. } => None,
+            | FromAPerson::TheirOwnQuestion { .. }
+            | FromAPerson::APlaceToReturnTo => None,
         }
     }
 }

@@ -242,6 +242,11 @@ pub enum FromAPerson {
         /// What they asked, as they typed it.
         question: String,
     },
+    /// Their shell is about to run a command they typed, and wants a place to
+    /// return to first.
+    ///
+    /// ADR 0130 option B. Carries nothing: the moment is the whole request.
+    APlaceToReturnTo,
 }
 
 impl FromAPerson {
@@ -276,6 +281,7 @@ impl FromAPerson {
             Asked::OpenWorkspace { machine } => Ok(Self::OpenWorkspace { machine }),
             Asked::Advertised {} => Ok(Self::Advertised),
             Asked::TheirOwnQuestion { question } => Ok(Self::TheirOwnQuestion { question }),
+            Asked::APlaceToReturnTo => Ok(Self::APlaceToReturnTo),
             Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } => {
                 Err(NotUnderstood::NotForAPerson)
             }
@@ -312,7 +318,8 @@ impl FromAPerson {
             | Self::Workspaces
             | Self::OpenWorkspace { .. }
             | Self::Advertised
-            | Self::TheirOwnQuestion { .. } => None,
+            | Self::TheirOwnQuestion { .. }
+            | Self::APlaceToReturnTo => None,
         }
     }
 
@@ -393,6 +400,7 @@ impl From<FromAPerson> for Asked {
             FromAPerson::OpenWorkspace { machine } => Self::OpenWorkspace { machine },
             FromAPerson::Advertised => Self::Advertised {},
             FromAPerson::TheirOwnQuestion { question } => Self::TheirOwnQuestion { question },
+            FromAPerson::APlaceToReturnTo => Self::APlaceToReturnTo,
         }
     }
 }

@@ -320,6 +320,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-before"
+version = "0.0.1"
+dependencies = [
+ "alo-protocol",
+ "rustix 1.1.4",
+]
+
+[[package]]
 name = "alo-bluetooth"
 version = "0.0.1"
 dependencies = [

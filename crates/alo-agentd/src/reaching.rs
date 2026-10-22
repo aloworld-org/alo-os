@@ -80,9 +80,8 @@ pub fn answered_to(
         | FromAPerson::Workspaces
         | FromAPerson::OpenWorkspace { .. }
         | FromAPerson::Advertised
-        | FromAPerson::TheirOwnQuestion { .. } => {
-            ToAPerson::refused(&rereading::what_to_say(strings))
-        }
+        | FromAPerson::TheirOwnQuestion { .. }
+        | FromAPerson::APlaceToReturnTo => ToAPerson::refused(&rereading::what_to_say(strings)),
         FromAPerson::Approve { number } => match under(arriving, number, now) {
             Some(waiting) => {
                 let shared = network.locked();
