@@ -17,6 +17,14 @@
 > head, the queue builds its own commit on current `main`, CI checks that, and it
 > merges. Verified end to end on `#363` — no status typed by anyone at any point.
 >
+> **And the pull request is opened at the push, not at the end.** `CLAUDE.md`
+> made that a rule on 2026-10-22 — *every branch has a pull request, and every
+> pull request says what it is* — after a day on which three branches sat on the
+> remote with no pull request, one of them carrying a finished feature that was
+> gated, green and invisible for six hours. The four steps above are one act
+> rather than four decisions: a branch pushed and not opened has done the step
+> that costs nothing and skipped the one that lets anybody else act on it.
+>
 > **Why the sections below are wrong rather than merely dated.** We built a
 > second integration protocol *around* GitHub's merge queue, and it defeated most
 > of the benefit the queue exists to provide. The queue already builds an
