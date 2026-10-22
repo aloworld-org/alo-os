@@ -1422,6 +1422,22 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     // rows means taking them from the grid, which resizes the person's shell,
     // and `docs/design/the-terminal-window.md` leaves this family of overflow
     // open on purpose.*
+    // **And the pair that answers whether the block grows upward**, which is the
+    // owner's decision of 2026-10-22 on where alo's room comes from.
+    //
+    // Both carry **two marks**, so three of alo's four rows beneath the
+    // transcript are spoken for and exactly one is left for the prose. Under the
+    // old rule a long explanation there was capped at that one row however well
+    // it wrapped, so both of these took the same number of rows. A block that
+    // grows over the transcript above it takes more for the longer one, and that
+    // difference is the whole of what this step asks.
+    let marked_briefly = "MARKS: destructive, elevated\nIt deletes /important.";
+    let marked_at_length = "MARKS: destructive, elevated\nIt removes the directory /important \
+                            and every file beneath it, without moving anything to a wastebasket \
+                            first, so nothing can be restored afterwards by ordinary means. It \
+                            also asks for administrator rights, which means it can reach files \
+                            that are not yours as well as the ones that are.";
+
     let briefly = "MARKS: none\nIt deletes /important and everything under it.";
     let at_length = "MARKS: none\nIt removes the directory /important and every file beneath \
                      it, without moving anything to a wastebasket first, so nothing can be \
@@ -1461,6 +1477,32 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         Ok(rows_with_ink(&frame, &without))
     };
+
+    let marked_brief_rows = rows_for(
+        marked_briefly,
+        "marked-briefly",
+        &mut server,
+        &mut nested,
+        &mut labels,
+    )?;
+    let marked_long_rows = rows_for(
+        marked_at_length,
+        "marked-at-length",
+        &mut server,
+        &mut nested,
+        &mut labels,
+    )?;
+    if marked_long_rows <= marked_brief_rows {
+        return Err(format!(
+            "a long explanation carrying two marks took no more rows than a short one \
+             ({marked_long_rows} against {marked_brief_rows}), so alo's block did not grow over \
+             the transcript and the prose was capped at the one row the marks left it. The block \
+             is placed by `starts_at` in `the_terminals_cells_are_drawn`: it is measured whole \
+             and its foot kept, so a block too tall to sit beneath the transcript begins further \
+             up instead of being cut."
+        )
+        .into());
+    }
 
     let briefly_rows = rows_for(
         briefly,

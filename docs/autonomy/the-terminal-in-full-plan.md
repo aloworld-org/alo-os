@@ -346,7 +346,7 @@ more rows. Truncation and wrapping answer exactly that question differently —
 both put ink on the screen, only one puts it on a second row. Restoring
 `Wrap::None` fails it, `5 against 5`.
 
-### The room alo's block has is a different question, and it is open
+### The room alo's block has — settled by the owner, 2026-10-22
 
 **Four rows**, between the grid's last line and the transcript's foot at
 1440×960. Each mark takes one and the disclaimer takes one, so with two marks
@@ -360,12 +360,28 @@ than something chosen here — `WhatACommandWillDo::and_not_a_guarantee` has no
 shape that omits it. **Prose longer than the room is still shortened and still
 says nothing about it**, though it is now cut at a word rather than mid-word.
 
-**Giving alo's block more rows means taking them from the grid, which resizes
-the person's shell**, and that is a decision rather than a tuning.
-`docs/design/the-terminal-window.md` leaves this family of overflow open in as
-many words, for a benchmark bar that overruns: *left open deliberately; this is
-exactly the sort of thing that gets invented once and then cited as the design.*
-So it is recorded here and not invented.
+**The owner was shown five shapes and chose the fourth: alo's block keeps its
+foot and grows upward over the transcript.** The one it was weighed against was
+reserving rows from the grid — and the grid's row count reaches the person's
+shell through `TIOCSWINSZ`, so every program they run would open shorter because
+alo might one day have something long to say. Covering transcript that is
+usually blank costs them nothing they were using.
+
+**Built the same day.** The block is measured whole before any of it is placed —
+`how_tall_alos_line_is`, then `starts_at` in `the_terminals_cells_are_drawn` —
+because where it begins depends on how tall it turns out to be. A real model's
+572-character answer with two marks now draws in full: four wrapped rows, both
+marks, the disclaimer. Held by a comparison in the nested fixture where a long
+explanation **carrying two marks** must take more rows than a short one; under
+the old rule both were capped at the one row the marks left, and the mutation
+fails it `7 against 7`.
+
+**What is still capped, and it is now the only case:** a block taller than the
+whole transcript. It cannot grow past the top, so there the prose is still
+shortened. `docs/design/the-terminal-window.md` leaves this family of overflow
+open — *left open deliberately; this is exactly the sort of thing that gets
+invented once and then cited as the design* — and this is the half of it the
+owner has now settled.
 
 *Three faults were found on the way, all by measuring and none by reading. The
 first edit landed in the **wrong function**, because `shaped.placed(across,
