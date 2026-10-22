@@ -95,6 +95,8 @@
 #[cfg(unix)]
 mod believing;
 #[cfg(unix)]
+mod how_code_runs;
+#[cfg(unix)]
 mod keeping;
 #[cfg(unix)]
 mod machine_names;
@@ -105,10 +107,13 @@ mod pairings;
 mod refusing;
 #[cfg(test)]
 mod testing;
+mod the_level;
 #[cfg(unix)]
 mod whose;
 mod written;
 
+#[cfg(unix)]
+pub use how_code_runs::{THE_LEVEL, the_level_kept, the_level_remembered};
 #[cfg(unix)]
 pub use keeping::{THE_FOLDER, THE_GRANTS, kept, remembered};
 #[cfg(unix)]
@@ -118,6 +123,10 @@ pub use names::{MachineNames, NotNames, THE_NAMES_FORMAT};
 #[cfg(unix)]
 pub use pairings::{THE_PAIRINGS, pairings_kept, pairings_remembered};
 pub use refusing::NotRemembered;
+pub use the_level::{
+    ASKING_EACH_TIME, AT_FULL_TRUST, IN_A_SEALED_BOX, NotTheLevel, THE_LEVEL_FORMAT,
+    the_level_called, the_word_for,
+};
 #[cfg(unix)]
 pub use whose::{
     Moved, could_not_tell_whose, moved_to_whoever_had_them, the_persons_grants, this_person,
