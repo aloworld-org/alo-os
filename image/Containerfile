@@ -154,7 +154,9 @@ RUN cargo build --release --target ${THE_TARGET} \
       --package alo-giving-a-folder \
       --package alo-agent \
       --package alo-try \
-      --package alo-ask
+      --package alo-ask \
+      --package alo-before \
+      --package alo-back
 
 # ---------------------------------------------------------------------------
 # The office engine, fetched pinned and checked before it is trusted
@@ -339,6 +341,30 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-try /usr/bin/alo-try
 # reads the person's settings, and for a provider it asks `alo-agentd` on the
 # socket that service already binds.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-ask /usr/bin/alo-ask
+
+# **The two commands a place to return to is made of**, both absent from every
+# image built before 2026-10-22 — and the first of them absent on the day the
+# feature that needs it landed.
+#
+# `crates/alo-terminal/shell-integration/alo-before.bash` sets
+# `PS0='$(alo-before)'`, so the row a person turns on in Settings writes a line
+# into their own `.bashrc` that runs this **before every command they type**. An
+# image without it does not quietly do nothing: `bash` reports a command not
+# found on the error stream before each command, for ever, because `PS0` is
+# expanded every time. **Worse than the feature simply being absent**, and found
+# the same way `alo-ask` was — by asking what a person at a machine could
+# actually run, rather than what the workspace builds.
+#
+# `alo-back` is the other half: the command a person types to put a folder back
+# as it was. `/usr/bin` for `alo-try` and `alo-ask`'s reason — a person types
+# both of these, and `alo-before` is run by the person's own shell, which needs
+# it on the same path.
+#
+# `crates/alo-image/tests/what_the_image_owes_the_terminal.rs` now holds this:
+# every command the shell integration names has to be a command this file
+# ships. That check is what did not exist, and it is why this gap could open.
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-before /usr/bin/alo-before
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-back /usr/bin/alo-back
 
 # **The broker, and the one look this machine takes on its way up.** Both in
 # libexec for the reason the loader and the opener are there: nobody runs either

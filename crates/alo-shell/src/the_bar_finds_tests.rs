@@ -8,7 +8,9 @@
 
 use alo_strings::Strings;
 
-use super::{WhatARowDoes, what_the_bar_finds, where_these_came_from};
+use super::{
+    WhatARowDoes, nothing_can_answer_a_question, what_the_bar_finds, where_these_came_from,
+};
 
 /// What a fresh machine has, as `alo_software::what_this_machine_has` prints
 /// it: one identifier per line, no names anywhere.
@@ -267,5 +269,58 @@ fn enter_does_nothing_when_the_bar_does_not_have_the_keyboard() {
         1,
         "with the keyboard in the field the same Enter did nothing either, so this test has \
          been measuring a broken fixture"
+    );
+}
+
+/// **A machine with nothing chosen to answer says so, in the place the count
+/// goes.**
+///
+/// The fault this is written for: until 2026-10-22 a person typed a question on
+/// such a machine, pressed Enter, and met silence — the request was taken,
+/// `a_task_for` answered `None`, and the `if let` that received it had no
+/// `else`. They had no way to find out why, and pressing again did the same
+/// thing.
+#[test]
+fn a_machine_with_nothing_chosen_to_answer_says_so() {
+    let strings = english();
+    let said = nothing_can_answer_a_question(&strings);
+    assert!(
+        said.starts_with("On this computer"),
+        "the line has to be the same shape as the count it replaces, or it reads as a \
+         different line appearing rather than this one changing: {said:?}"
+    );
+    assert!(
+        said.contains("answer questions"),
+        "the one fact the rows below cannot carry is missing: {said:?}"
+    );
+}
+
+/// **It is not a key**, which is how a sentence that was never declared reaches
+/// a person looking like prose.
+///
+/// `alo-strings` answers a key it does not hold with the key in guillemets. That
+/// is the right behaviour and it is also why this assertion exists: the fault
+/// would otherwise be invisible on a screen.
+#[test]
+fn the_line_is_a_sentence_and_not_an_undeclared_key() {
+    let strings = english();
+    let said = nothing_can_answer_a_question(&strings);
+    assert!(
+        !said.starts_with('\u{ab}'),
+        "no sentence is declared for this line, so a person is shown its key: {said:?}"
+    );
+}
+
+/// **The two lines are different**, so a person can tell which they are reading.
+///
+/// A sentence that came out the same as the count would be a line that changed
+/// nothing, and the test above would still pass on it.
+#[test]
+fn the_two_lines_a_person_can_see_are_not_the_same_line() {
+    let strings = english();
+    assert_ne!(
+        nothing_can_answer_a_question(&strings),
+        where_these_came_from(0, &strings),
+        "nothing chosen and nothing found are two different facts and must read as two"
     );
 }

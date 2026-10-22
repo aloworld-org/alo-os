@@ -13,11 +13,18 @@
     reason = "in a test, a panic naming what was measured is the failure being reported"
 )]
 
+use std::time::{Duration, SystemTime};
+
 use alo_protocol::ToAPerson;
 use alo_strings::Strings;
 
 use super::{a_name_for, kept};
 use crate::the_bracket_this_turn_takes::WhereBracketsGo;
+
+/// A fixed moment, so nothing here depends on the clock.
+fn noon() -> SystemTime {
+    SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000)
+}
 
 /// This crate's own words, which is what the sentence is rendered from.
 fn in_english() -> Strings {
@@ -34,7 +41,7 @@ fn in_english() -> Strings {
 /// undone. So it is answered the same way rather than silently.
 #[test]
 fn a_session_with_no_home_keeps_no_place_and_says_so() {
-    let answered = kept(None, "whatever", &in_english());
+    let answered = kept(None, "whatever", noon(), &in_english());
     match answered {
         ToAPerson::APlaceToReturnTo { kept, why_not } => {
             assert!(!kept, "there was nowhere to keep one");
@@ -63,7 +70,7 @@ fn a_folder_that_cannot_be_made_keeps_no_place() {
     std::fs::write(&at, b"not a directory").unwrap();
 
     let goes = WhereBracketsGo::of_a_session(&at, 1000, Some(std::ffi::OsStr::new("/")));
-    let answered = kept(goes.as_ref(), "whatever", &in_english());
+    let answered = kept(goes.as_ref(), "whatever", noon(), &in_english());
     match answered {
         ToAPerson::APlaceToReturnTo { kept, why_not } => {
             assert!(!kept, "nothing could be made there");
@@ -97,8 +104,7 @@ fn a_relative_home_names_no_session() {
 /// and a person's own is told apart from a turn's.
 #[test]
 fn two_moments_are_two_names() {
-    use std::time::{Duration, SystemTime};
-    let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
+    let now = noon();
     let later = now + Duration::from_secs(1);
     assert_ne!(a_name_for(now, 7), a_name_for(later, 7));
     assert_ne!(a_name_for(now, 7), a_name_for(now, 8));

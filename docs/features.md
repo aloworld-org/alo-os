@@ -622,9 +622,27 @@ file carries it with a tier.*
   outcome search above it already is. The sentence is narrowed here rather than
   only in the ADR, because a promise narrowed in a decision and left standing in
   this file is the fault law 5's own paragraph was added for.
-  **Not built**: *choose one, and your files are as they were* — that is the
-  snapshot half. It needs the filesystem this list promises, which no scrolling
-  can supply, and it needed that decision, which it now has.
+  **The snapshot half is built, 2026-10-22**
+  ([ADR 0130](decisions/0130-what-takes-the-bracket-before-a-persons-own-command.md)):
+  the person's own shell asks this machine before each command and the machine
+  takes a read-only copy of their home.
+  **And *your files are as they were* is built, 2026-10-22** — `alo-back`, in
+  the terminal: the places kept are listed newest first, and naming one and a
+  folder puts that folder back as it was, with what is in it now moved beside it
+  rather than deleted. **Narrowed a second time here, by
+  [ADR 0127](decisions/0127-a-persons-own-commands-are-bracketed-in-a-session-they-asked-for.md)
+  term 2**, which is the narrowing that decision said would be carried into this
+  file by the change that built it: *your files are as they were* is, honestly,
+  **the folder you picked, now — or all of them, at your next sign-in.** Nothing
+  can swap a directory somebody is living in, so the whole home waits for a
+  sign-in; a privileged helper that did it anyway was refused outright, as a new
+  privileged path whose job would be deleting a person's home.
+  **Not built**: *scroll up, choose one*. The choosing is by naming a place, not
+  yet by picking a row of scrollback, and the reason is in ADR 0130: **alo never
+  learns which command a place belongs to**, deliberately, so a place carries a
+  moment and no command. Pairing a row to a place is the piece of this line that
+  is left, and it is a surface rather than a mechanism — everything underneath
+  it now works.
 - ★ **Bisect the machine, not the repository.** *It worked yesterday* becomes a
   command: walk the snapshots to find when something broke, including everything
   version control never held — installed packages, caches, configuration, a

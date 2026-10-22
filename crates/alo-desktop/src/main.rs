@@ -583,6 +583,34 @@ mod running {
             }
         }
 
+        /// The same reading, one moment earlier and without a request.
+        ///
+        /// **The same two calls, deliberately, and not a third opinion.**
+        /// `a_task_for` above answers *can this request become a task*; this
+        /// answers *could any request*, which is the part that does not depend
+        /// on what somebody typed. Written as the same pair in the same order so
+        /// that the Bar's line and the task it would open cannot disagree — a
+        /// line promising an answer above a request that is then dropped would
+        /// be worse than the silence it replaced.
+        ///
+        /// It is this binary's for `a_task_for`'s reason, the two environment
+        /// variables, and the shell still never reads a settings file.
+        ///
+        /// **And it is now a third reader of that pair**, which is worth saying
+        /// where somebody will meet it: `a_provider_was_filled_in` above writes
+        /// the file these two read. All three locate it the same way, and a
+        /// change to any one of them has to move the other two or this machine
+        /// will save a provider it cannot find.
+        fn anything_is_chosen_to_answer(&self) -> bool {
+            let Some(at) = alo_choosing::where_it_is(
+                std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+                std::env::var_os("HOME").as_deref(),
+            ) else {
+                return false;
+            };
+            alo_choosing::what_answers_here(&at).is_some()
+        }
+
         /// through the same one place that answers it.
         fn the_settings_places(&mut self) -> Option<alo_shell::SettingsPlaces> {
             Some(alo_shell::SettingsPlaces::of(

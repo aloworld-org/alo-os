@@ -482,9 +482,23 @@ pub const NO_PLACE_TO_RETURN_TO: Word = Word::saying(
      to return to\" is a copy of their own files as they are at that moment.",
 );
 
+/// What a place kept before a person's own command is written down as.
+pub const BEFORE_A_COMMAND_YOU_TYPED: Word = Word::saying(
+    "agentd.before-a-command-you-typed",
+    "before a command you typed in the terminal",
+)
+.noting(
+    "Written down beside a copy of a person's files, and read by them later, when they are \
+     deciding whether to go back to it. Every other such note says what the agent was approved to \
+     do; this one says a person did it themselves, and alo deliberately never learns which command \
+     it was. Past tense, and a fragment rather than a sentence: it completes \"your files as they \
+     were\".",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 32] = [
+pub const EVERY_WORD: [Word; 33] = [
     NO_PLACE_TO_RETURN_TO,
+    BEFORE_A_COMMAND_YOU_TYPED,
     A_WORKSPACE_HERE_IS_NOT_THE_SYSTEMS,
     A_WORKSPACE_HERE_COULD_NOT_BE_READ,
     A_WORKSPACE_HERE_NAMES_NO_USABLE_PORT,
