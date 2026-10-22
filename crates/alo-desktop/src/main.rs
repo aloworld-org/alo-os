@@ -919,6 +919,7 @@ mod running {
                 // the `Server` — and the heading is a sentence, which the
                 // drawing path may not word. `what_only_the_server_knows` sets
                 // both, at the one site that builds a frame.
+                what_each_application_draws: &alo_dock::artwork::NOTHING,
                 the_dock_has_open: &alo_shell::NOTHING,
                 the_docks_words: crate::no_words(),
                 dock: &self.dock,

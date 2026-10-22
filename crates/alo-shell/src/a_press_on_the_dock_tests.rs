@@ -888,6 +888,7 @@ fn a_press_where_each_letter_is_drawn_reaches_that_letters_entry() {
         ),
         // No keyboard on this bar: this test is about where a press lands.
         None,
+        &alo_dock::artwork::NOTHING,
         &mut fonts,
     )
     .expect("a Dock of two entries lays out on a 1280 x 800 display");

@@ -158,6 +158,14 @@ pub struct DesktopFrame<'a> {
     /// control to open one with, so this is only ever true on a Dock that has
     /// something behind it.
     pub the_dock_has_open: &'a crate::WhatTheDockHasOpen,
+    /// What each application draws on the Dock, where it draws anything.
+    ///
+    /// **Filled from the `Server` by `crate::what_the_server_tells_a_frame`**,
+    /// like `market` and `the_bar` beside it, because which file holds an
+    /// application icon is a reading of the machine and this crate may not take
+    /// one. `TheArtwork::NOTHING` is a Dock of first letters, which is the
+    /// decided fallback (`docs/design/the-alo-dock.md`) and not a failure.
+    pub what_each_application_draws: &'a alo_dock::artwork::TheArtwork,
     /// **How many physical pixels this display draws for one logical one**, in
     /// hundredths: 100 is one to one, 200 is a dense screen.
     ///
@@ -469,6 +477,12 @@ pub(crate) fn frame_pictures(
         desktop.look,
         crate::desktop_raster::Shown {
             the_dock_has_open: desktop.the_dock_has_open,
+            // **Read off the frame**, which is the whole point of the field:
+            // `what_the_server_tells_a_frame` put the machine's artwork there.
+            // A literal `NOTHING` here is exactly the mistake `market` made two
+            // fields below, and it would draw a Dock of letters on a machine
+            // with every icon loaded.
+            what_each_application_draws: desktop.what_each_application_draws,
             the_docks_words: desktop.the_docks_words,
             running: &running,
             filling: &filling,

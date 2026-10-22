@@ -317,6 +317,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     // shell's own window and `desktop_check` is the fixture
                     // that puts eyes on it.
                     market: None,
+                    what_each_application_draws: &alo_dock::artwork::NOTHING,
                     the_dock_has_open: &alo_shell::NOTHING,
                     the_docks_words: no_words(),
                     // **The Dock is told what is open, which is the chain two

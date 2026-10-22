@@ -40,7 +40,7 @@ impl Server {
     /// merging would keep artwork for an application that has since been
     /// removed, under a name the Dock may now give to something else.
     pub fn its_applications_draw(&mut self, artwork: alo_dock::artwork::TheArtwork) {
-        self.what_each_application_draws = artwork;
+        self.what_each_application_draws = std::sync::Arc::new(artwork);
     }
 
     /// What this application draws, or [`None`] where it draws its first

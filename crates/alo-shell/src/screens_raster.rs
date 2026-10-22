@@ -136,6 +136,12 @@ pub(crate) fn picture(
         // anybody is typing on, and a focus ring drawn in it would say a person
         // had landed on a slot of a Dock that is a thumbnail.
         None,
+        // **Nothing, and this one is not the `market` mistake.** This picture
+        // draws no applications at all -- the paragraph above says so and says
+        // why -- so there is no badge for an icon to go on. An empty artwork
+        // here cannot hide a machine's icons, because there is nothing on this
+        // thumbnail for them to be hidden from.
+        &alo_dock::artwork::NOTHING,
         fonts,
     )?;
     let warming = place.warming();

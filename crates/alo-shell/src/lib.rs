@@ -186,6 +186,7 @@ mod where_the_docks_surface_is;
 /// What a press on the Dock does: the decision, with no act in it.
 mod a_press_on_the_dock;
 mod an_application_is_started;
+mod an_icon_is_drawn_on_its_badge;
 mod what_each_application_draws;
 mod what_the_dock_is_filled_with;
 pub use an_application_is_started::{AWayToStartApplications, AsksAnApplicationToStart};

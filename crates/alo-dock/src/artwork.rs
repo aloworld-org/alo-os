@@ -118,6 +118,97 @@ impl APicture {
     pub fn pixels(&self) -> &[u8] {
         &self.pixels
     }
+
+    /// The same picture at this size, for drawing into a box.
+    ///
+    /// **Here rather than in the raster**, because it is arithmetic with a
+    /// right answer and the raster is the file nobody wants to open. The Dock
+    /// draws into a box whose size depends on the display's scale, so the
+    /// scaling cannot be done where the picture is read — and a wrong answer
+    /// here is a soft or fringed icon rather than a crash, which is exactly the
+    /// kind of fault that survives a review and not a test.
+    ///
+    /// # Averaged over alpha, which is what stops a dark fringe
+    ///
+    /// Each destination pixel is the average of the source pixels inside it.
+    /// Averaging red, green and blue **on their own** would mix in the colour
+    /// of the fully transparent pixels around an icon's edge — usually black —
+    /// and every icon would come out with a dark halo. So the colours are
+    /// weighted by alpha and divided by the alpha that was there, which is the
+    /// same thing a premultiplied composite does and is why the edge of a
+    /// rounded icon stays its own colour.
+    ///
+    /// A destination pixel with no opacity under it keeps no colour, because
+    /// there is no colour there to keep.
+    #[must_use]
+    pub fn scaled_to(&self, across: u32, down: u32) -> Self {
+        if across == 0 || down == 0 || (across == self.across && down == self.down) {
+            return self.clone();
+        }
+        let mut out = vec![0_u8; across as usize * down as usize * 4];
+        for row in 0..down {
+            // The source rows this destination row covers, at least one.
+            let from_row = row * self.down / down;
+            let to_row = (((row + 1) * self.down).div_ceil(down))
+                .max(from_row + 1)
+                .min(self.down);
+            for column in 0..across {
+                let from_column = column * self.across / across;
+                let to_column = (((column + 1) * self.across).div_ceil(across))
+                    .max(from_column + 1)
+                    .min(self.across);
+                let (mut red, mut green, mut blue, mut alpha, mut counted) =
+                    (0_u64, 0_u64, 0_u64, 0_u64, 0_u64);
+                for source_row in from_row..to_row {
+                    for source_column in from_column..to_column {
+                        let at = (source_row as usize * self.across as usize
+                            + source_column as usize)
+                            * 4;
+                        // **Asked for rather than indexed**, which the lints
+                        // require and which is right here for a reason beyond
+                        // them: every bound in this loop is arithmetic on two
+                        // sizes, and a picture whose bytes did not match its
+                        // size would panic in a compositor rather than draw one
+                        // icon wrongly. `APicture::of` already refuses that, so
+                        // this is unreachable — and unreachable is exactly
+                        // where a panic is least welcome and least noticed.
+                        let Some([one_red, one_green, one_blue, opacity]) = self
+                            .pixels
+                            .get(at..at + 4)
+                            .and_then(|four| <[u8; 4]>::try_from(four).ok())
+                        else {
+                            continue;
+                        };
+                        let opacity = u64::from(opacity);
+                        red += u64::from(one_red) * opacity;
+                        green += u64::from(one_green) * opacity;
+                        blue += u64::from(one_blue) * opacity;
+                        alpha += opacity;
+                        counted += 1;
+                    }
+                }
+                let at = (row as usize * across as usize + column as usize) * 4;
+                let mixed = |total: u64| {
+                    total
+                        .checked_div(alpha)
+                        .map_or(0, |each| u8::try_from(each).unwrap_or(u8::MAX))
+                };
+                if let Some(there) = out.get_mut(at..at + 4) {
+                    there.copy_from_slice(&[
+                        mixed(red),
+                        mixed(green),
+                        mixed(blue),
+                        u8::try_from(alpha / counted.max(1)).unwrap_or(u8::MAX),
+                    ]);
+                }
+            }
+        }
+        Self {
+            across,
+            down,
+            pixels: out,
+        }
+    }
 }
 
 /// What artwork this machine has, by the application that draws it.
@@ -127,6 +218,22 @@ impl APicture {
 /// (`docs/design/the-alo-dock.md`).
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TheArtwork(BTreeMap<AppId, APicture>);
+
+/// A machine with no artwork, borrowable for as long as the program runs.
+///
+/// **For the frame types that carry a borrow of this**, and for every example
+/// and test that draws a Dock without caring what is on it. The alternative is
+/// an `Option<&TheArtwork>` on each of them, and this repository has already
+/// paid for one of those: `market` was written `None` at a frame-building site,
+/// reached the raster as nothing, and cost a release. An empty map says the
+/// same thing and cannot be confused with *nobody filled this in*.
+///
+/// **A `static` and not an associated `const`**, which it was for an hour. A
+/// `const` is a value copied in at each use, and `&TheArtwork::NOTHING` is then
+/// a borrow of a temporary -- which the compiler cannot promote to `'static`
+/// here, because a `BTreeMap` has a `Drop` implementation and nothing with one
+/// is ever promoted. Five call sites refused to compile and said so.
+pub static NOTHING: TheArtwork = TheArtwork(BTreeMap::new());
 
 impl TheArtwork {
     /// A machine whose applications all draw their first letter.

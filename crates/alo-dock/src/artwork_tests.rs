@@ -99,3 +99,109 @@ fn the_first_picture_for_an_application_is_the_one_it_keeps() {
     );
     assert_eq!(artwork.how_many(), 1);
 }
+
+/// Scaling a picture into the box the Dock draws it in.
+mod scaled_into_the_box_it_is_drawn_in {
+    use super::super::APicture;
+
+    /// A picture of one solid opaque colour, which must survive any scaling.
+    fn solid(across: u32, down: u32, colour: [u8; 4]) -> APicture {
+        let mut pixels = Vec::new();
+        for _ in 0..across * down {
+            pixels.extend_from_slice(&colour);
+        }
+        APicture::of(across, down, pixels).unwrap()
+    }
+
+    #[test]
+    fn the_size_asked_for_is_the_size_returned() {
+        let scaled = solid(64, 64, [1, 2, 3, 255]).scaled_to(32, 32);
+        assert_eq!((scaled.across(), scaled.down()), (32, 32));
+        assert_eq!(scaled.pixels().len(), 32 * 32 * 4);
+    }
+
+    #[test]
+    fn a_picture_already_the_right_size_comes_back_unchanged() {
+        let before = solid(48, 48, [9, 8, 7, 255]);
+        let after = before.scaled_to(48, 48);
+        assert_eq!(after, before);
+    }
+
+    #[test]
+    fn one_solid_colour_is_the_same_colour_after_scaling_down() {
+        let scaled = solid(64, 64, [200, 100, 50, 255]).scaled_to(16, 16);
+        for pixel in scaled.pixels().as_chunks::<4>().0 {
+            let pixel = *pixel;
+            assert_eq!(
+                pixel,
+                [200, 100, 50, 255],
+                "averaging must not shift a flat colour"
+            );
+        }
+    }
+
+    #[test]
+    fn one_solid_colour_is_the_same_colour_after_scaling_up() {
+        let scaled = solid(8, 8, [200, 100, 50, 255]).scaled_to(32, 32);
+        for pixel in scaled.pixels().as_chunks::<4>().0 {
+            let pixel = *pixel;
+            assert_eq!(pixel, [200, 100, 50, 255]);
+        }
+    }
+
+    #[test]
+    fn a_transparent_edge_does_not_darken_the_colour_beside_it() {
+        // **The fault this is here for.** Half the source is opaque white and
+        // half is fully transparent black — which is what the pixels outside a
+        // rounded icon actually are. Averaging the colours on their own gives
+        // 127 grey; weighting them by alpha keeps the white.
+        let mut pixels = Vec::new();
+        for _ in 0..2 {
+            pixels.extend_from_slice(&[255, 255, 255, 255]);
+            pixels.extend_from_slice(&[0, 0, 0, 0]);
+        }
+        let halved = APicture::of(2, 2, pixels).unwrap().scaled_to(1, 1);
+        let pixel: [u8; 4] = halved.pixels().try_into().unwrap();
+        assert_eq!(
+            pixel.first_chunk::<3>(),
+            Some(&[255, 255, 255]),
+            "the colour under the opacity is white, and the transparent black beside it is \
+             not a colour at all -- averaging it in is what puts a dark halo round every icon"
+        );
+        assert_eq!(
+            pixel.last().copied(),
+            Some(127),
+            "and the opacity itself is halved, which is the part that is a real average"
+        );
+    }
+
+    #[test]
+    fn a_fully_transparent_picture_scales_to_a_fully_transparent_one() {
+        let scaled = solid(4, 4, [0, 0, 0, 0]).scaled_to(2, 2);
+        assert!(
+            scaled
+                .pixels()
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .all(|pixel| pixel[3] == 0),
+            "nothing opaque went in, so nothing opaque comes out"
+        );
+    }
+
+    #[test]
+    fn a_size_with_no_area_is_refused_by_returning_the_picture_unscaled() {
+        // Nothing can be drawn into a box with no area, and inventing an empty
+        // picture would hand the raster a buffer its own size check refuses.
+        let before = solid(4, 4, [1, 1, 1, 255]);
+        assert_eq!(before.scaled_to(0, 4), before);
+        assert_eq!(before.scaled_to(4, 0), before);
+    }
+
+    #[test]
+    fn a_picture_that_is_not_square_scales_into_a_square_box() {
+        let scaled = solid(64, 16, [5, 5, 5, 255]).scaled_to(32, 32);
+        assert_eq!((scaled.across(), scaled.down()), (32, 32));
+        assert_eq!(scaled.pixels().len(), 32 * 32 * 4);
+    }
+}

@@ -545,6 +545,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         // Nothing opened the market here, and a shut window and a display it is
         // not on are the same thing to a drawing.
         market: None,
+        what_each_application_draws: &alo_dock::artwork::NOTHING,
         the_dock_has_open: &alo_shell::NOTHING,
         the_docks_words: no_words(),
         dock: &dock,

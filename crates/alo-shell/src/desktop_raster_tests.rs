@@ -54,6 +54,7 @@ fn drawn_with(
         crate::desktop_raster::Shown {
             market: None,
             tasks: &[],
+            what_each_application_draws: &alo_dock::artwork::NOTHING,
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
             the_docks_words: crate::desktop_testing::no_words(),
             running: &running_shows(running, &strings),
@@ -111,6 +112,7 @@ fn drawn_with_an_open_list(
         crate::desktop_raster::Shown {
             market: None,
             tasks: &[],
+            what_each_application_draws: &alo_dock::artwork::NOTHING,
             the_dock_has_open: &crate::what_the_dock_has_open::MORE_APPS,
             the_docks_words: crate::desktop_testing::no_words(),
             running: &running_shows(&RunningWindow::closed(), &strings),
@@ -157,6 +159,7 @@ fn drawn_at(
         crate::desktop_raster::Shown {
             market: None,
             tasks: &[],
+            what_each_application_draws: &alo_dock::artwork::NOTHING,
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
             the_docks_words: crate::desktop_testing::no_words(),
             running: &running_shows(running, &strings),
@@ -583,6 +586,7 @@ fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
             crate::desktop_raster::Shown {
                 market: None,
                 tasks: &[],
+                what_each_application_draws: &alo_dock::artwork::NOTHING,
                 the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
                 the_docks_words: crate::desktop_testing::no_words(),
                 running: &running_shows(&running, &strings),
@@ -1048,6 +1052,7 @@ fn a_task_window_reaches_the_desktop_picture_and_is_painted() {
             crate::desktop_raster::Shown {
                 tasks,
                 market: None,
+                what_each_application_draws: &alo_dock::artwork::NOTHING,
                 the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
                 the_docks_words: crate::desktop_testing::no_words(),
                 running: &running_shows(&running, &strings),
@@ -1134,6 +1139,7 @@ fn a_task_window_too_small_is_left_out_rather_than_refusing_the_frame() {
         crate::desktop_raster::Shown {
             market: None,
             tasks: &impossible,
+            what_each_application_draws: &alo_dock::artwork::NOTHING,
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
             the_docks_words: crate::desktop_testing::no_words(),
             running: &running_shows(&running, &strings),
