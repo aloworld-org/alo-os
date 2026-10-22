@@ -70,11 +70,35 @@ use std::time::{Duration, Instant};
 
 use alo_secrets::TheBus;
 
-/// The password this fixture unlocks its own keyring with.
+/// A password this fixture can unlock a keyring with, for the tests where
+/// having one is the point.
 ///
 /// Synthetic, and a credential to nothing: it exists for the length of one test
 /// and unlocks a keyring made in a temporary directory.
+///
+/// **It is no longer what [`AKeyringOfOurOwn::started`] uses**, and the reason
+/// is in [`WHAT_THE_UNIT_PUTS_ON_STDIN`].
 pub const A_SYNTHETIC_PASSWORD: &str = "a-fixture-password-not-a-credential";
+
+/// What the image's own unit puts on the daemon's standard input: one newline,
+/// which is a password of no characters.
+///
+/// **This is the default because a default can be silently wrong everywhere.**
+/// Until 2026-10-22 the convenient constructor fed [`A_SYNTHETIC_PASSWORD`],
+/// which `image/usr/lib/systemd/system/alo-keyring.service` never sends, and
+/// **38 call sites across `alo-agentd`, `alo-desktop` and `alo-secrets` proved
+/// things about a keyring this machine does not have.** The unit meanwhile
+/// shipped `StandardInput=null` — end of file, which is not an empty password —
+/// and no test could see it, because no test ran the configuration that ships.
+///
+/// So the shipping configuration is now what a test gets by writing nothing,
+/// and a test that wants a password has to say so in its own text. Convenience
+/// is what produced the divergence, so convenience is what had to move.
+///
+/// `tests/the_fixture_agrees_with_the_unit.rs` reads
+/// `StandardInputData=` out of the unit, decodes it, and asserts it is these
+/// bytes — so the two cannot drift apart again in either direction.
+pub const WHAT_THE_UNIT_PUTS_ON_STDIN: &[u8] = b"\n";
 
 /// A keyring of this test's own: a bus, a daemon, and a place for both.
 pub struct AKeyringOfOurOwn {
@@ -96,7 +120,13 @@ pub struct AKeyringOfOurOwn {
 }
 
 impl AKeyringOfOurOwn {
-    /// Start one, or say plainly why this machine cannot.
+    /// Start one **unlocked the way this machine unlocks it**, or say plainly
+    /// why this machine cannot.
+    ///
+    /// The password is [`WHAT_THE_UNIT_PUTS_ON_STDIN`] — one newline, no
+    /// characters — because that is what the image's unit sends. A test that
+    /// needs a password-bearing keyring asks for one by name with
+    /// [`Self::started_with_a_password_of_its_own`].
     ///
     /// # Panics
     /// When `dbus-daemon` or `gnome-keyring-daemon` is not installed, naming
@@ -104,7 +134,22 @@ impl AKeyringOfOurOwn {
     /// machine in the world, including the ones with no Secret Service at all.
     #[must_use]
     pub fn started(what: &str) -> Self {
-        Self::start(what, true)
+        Self::start_unlocked_by(what, true, WHAT_THE_UNIT_PUTS_ON_STDIN)
+    }
+
+    /// One unlocked with [`A_SYNTHETIC_PASSWORD`], for the tests where having a
+    /// password is the subject rather than an accident.
+    ///
+    /// **Say in the test why it wants one.** This existed as the default until
+    /// 2026-10-22 and that is how 38 call sites came to measure a keyring the
+    /// image does not ship — the whole argument is in
+    /// [`WHAT_THE_UNIT_PUTS_ON_STDIN`].
+    ///
+    /// # Panics
+    /// As [`Self::started`].
+    #[must_use]
+    pub fn started_with_a_password_of_its_own(what: &str) -> Self {
+        Self::start_unlocked_by(what, true, A_SYNTHETIC_PASSWORD.as_bytes())
     }
 
     /// One whose bus's policy can be rewritten and reloaded while it runs.
@@ -117,7 +162,7 @@ impl AKeyringOfOurOwn {
     /// As [`Self::started`].
     #[must_use]
     pub fn started_where_the_bus_can_refuse(what: &str) -> Self {
-        Self::start(what, true)
+        Self::start_unlocked_by(what, true, WHAT_THE_UNIT_PUTS_ON_STDIN)
     }
 
     /// A real bus with **no Secret Service on it at all**.
@@ -133,38 +178,7 @@ impl AKeyringOfOurOwn {
     /// When `dbus-daemon` is not installed, or its socket never appears.
     #[must_use]
     pub fn a_bus_with_no_keyring_on_it(what: &str) -> Self {
-        Self::start(what, false)
-    }
-
-    /// A keyring unlocked with **an empty password**, which is what the image's
-    /// own unit does.
-    ///
-    /// `image/usr/lib/systemd/system/alo-keyring.service` sends one newline on
-    /// standard input, so the login keyring is created and unlocked with a
-    /// password of no characters — argued in that file, and resting on ADR 0054
-    /// encrypting the disk underneath it.
-    ///
-    /// **This exists because the fixture's divergence from that unit hid a
-    /// bug.** Every constructor above feeds [`A_SYNTHETIC_PASSWORD`], and the
-    /// unit shipped `StandardInput=null`, which is end of file and **not** an
-    /// empty password: the daemon started, systemd reported it `active`, it
-    /// served `org.freedesktop.secrets` — and created no collection at all, so
-    /// no key could be stored. Every test passed, because no test ran the
-    /// configuration that shipped. What is worth proving in CI is therefore not
-    /// that a keyring works, but that a keyring **unlocked the way this machine
-    /// unlocks it** works.
-    ///
-    /// # Panics
-    /// As [`Self::started`].
-    #[must_use]
-    pub fn started_with_an_empty_password(what: &str) -> Self {
-        Self::start_unlocked_by(what, true, b"\n")
-    }
-
-    /// The three of them, which differ only in whether anything is put on the
-    /// bus.
-    fn start(what: &str, serving: bool) -> Self {
-        Self::start_unlocked_by(what, serving, A_SYNTHETIC_PASSWORD.as_bytes())
+        Self::start_unlocked_by(what, false, WHAT_THE_UNIT_PUTS_ON_STDIN)
     }
 
     /// All of them, which differ in what reaches the daemon's standard input.

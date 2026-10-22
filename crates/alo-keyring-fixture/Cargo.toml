@@ -39,3 +39,9 @@ zbus = { version = "5.19", default-features = false }
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+# To decode the unit's `StandardInputData=` and compare it with the bytes this
+# fixture feeds, so the two cannot drift apart again. Already in this
+# workspace's lock file for `alo-terminal`, at the same version.
+base64 = "0.22"

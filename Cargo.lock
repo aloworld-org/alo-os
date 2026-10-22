@@ -1119,6 +1119,7 @@ name = "alo-keyring-fixture"
 version = "0.0.1"
 dependencies = [
  "alo-secrets",
+ "base64 0.22.1",
  "rustix 1.1.4",
  "secret-service",
  "zbus",

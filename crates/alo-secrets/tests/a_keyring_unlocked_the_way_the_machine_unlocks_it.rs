@@ -1,14 +1,15 @@
 //! A key goes in and comes back out of a keyring unlocked with **no password**,
 //! which is the configuration the image actually ships.
 //!
-//! `a_real_keyring_answers.rs` and `a_key_a_person_added_is_kept.rs` prove
-//! [`TheKeyring`] against a real daemon, and every fixture in both feeds
-//! `A_SYNTHETIC_PASSWORD`. The image's unit feeds one newline, so its login
-//! keyring has a password of no characters — argued in
+//! The image's unit sends one newline on the daemon's standard input, so its
+//! login keyring has a password of no characters — argued in
 //! `image/usr/lib/systemd/system/alo-keyring.service`, resting on ADR 0054
-//! encrypting the disk underneath it.
+//! encrypting the disk underneath it. Since 2026-10-22
+//! `AKeyringOfOurOwn::started` feeds exactly that, so **every** keyring test in
+//! this repository runs the shipping configuration; this is the file that names
+//! it as its subject rather than inheriting it.
 //!
-//! # Why this is a file rather than one more case in those
+//! # Why this is a file rather than one more case in the others
 //!
 //! **The difference between those two stdin bytes shipped as a bug** on
 //! 2026-10-22, and nothing here could see it. The unit said
@@ -54,7 +55,7 @@ const A_SYNTHETIC_SECRET: &str = "sk-live-FIXTURE-ONLY-9c2f41";
 /// and reads with another.
 #[test]
 fn a_key_is_kept_and_handed_back_with_no_password_on_the_keyring() {
-    let keyring = AKeyringOfOurOwn::started_with_an_empty_password("no-password");
+    let keyring = AKeyringOfOurOwn::started("no-password");
     let ours = TheKeyring::opened(&keyring.bus()).expect("the keyring opens on its own bus");
     let named = SecretRef::named("provider/OpenAI");
 
@@ -84,7 +85,7 @@ fn a_key_is_kept_and_handed_back_with_no_password_on_the_keyring() {
 /// satisfy the first test exactly as a correct one does.
 #[test]
 fn a_name_nothing_was_filed_under_is_still_missing() {
-    let keyring = AKeyringOfOurOwn::started_with_an_empty_password("no-password-missing");
+    let keyring = AKeyringOfOurOwn::started("no-password-missing");
     let ours = TheKeyring::opened(&keyring.bus()).expect("the keyring opens on its own bus");
     ours.keep(
         &SecretRef::named("provider/OpenAI"),
