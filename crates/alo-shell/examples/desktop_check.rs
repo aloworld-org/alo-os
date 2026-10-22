@@ -380,6 +380,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             &[],
                             &mut labels,
                             DesktopFrame {
+                                what_each_application_draws: &alo_dock::artwork::NOTHING,
                                 tasks: &a_task_window,
                                 market: Some(the_market_window),
                                 display_scale: 100,

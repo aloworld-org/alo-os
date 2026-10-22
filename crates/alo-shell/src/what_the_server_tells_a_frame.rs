@@ -91,6 +91,12 @@ pub(crate) struct WhatTheLaneBuilt<'a> {
     /// **Borrowed from a bundle the lane keeps alive**, for `market`'s reason:
     /// the rows hold strings that were said this frame.
     pub(crate) the_bar: Option<crate::bar_raster::TheBarOnTheDisplay<'a>>,
+    /// What each application draws on the Dock, lent by the lane.
+    ///
+    /// **Lent rather than read off the server inside**, because the frame holds
+    /// it for as long as it lives and the lane uses the server mutably after
+    /// building one. The lane keeps an `Arc` and lends that.
+    pub(crate) what_each_application_draws: &'a alo_dock::artwork::TheArtwork,
 }
 
 /// Fill the fields of `frame` that only `server` and the lane can answer.
@@ -111,6 +117,7 @@ pub(crate) fn what_only_the_server_knows<'a>(
         tasks,
         market,
         the_bar,
+        what_each_application_draws,
     } = built;
     frame.tasks = tasks;
     // **Whether a person has the market open**, which a desktop's own state
@@ -120,6 +127,17 @@ pub(crate) fn what_only_the_server_knows<'a>(
     // **The Bar, for `market`'s reason exactly**: what was typed and what it
     // found are decided by presses, and presses reach the `Server`.
     frame.the_bar = the_bar;
+    // **What each application draws, which only the server has.** Read off the
+    // machine once at stand-up and kept there; a desktop's own state cannot
+    // know it, for `market`'s reason exactly. An empty one is a Dock of first
+    // letters, which is the decided fallback and not a gap.
+    //
+    // **Lent by the lane rather than taken from the server here**, which is a
+    // borrow-checker fact with a design in it: a frame holds this reference for
+    // as long as it lives, and the lane uses the server mutably several times
+    // after building one. So the lane keeps an `Arc` of its own and lends that
+    // -- one refcount per frame, never a copy of every icon on the machine.
+    frame.what_each_application_draws = what_each_application_draws;
     frame.windows = windows;
     // A desktop's own state cannot know that a window has taken the whole
     // screen, and the Dock gives way to one that has.

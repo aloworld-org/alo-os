@@ -66,6 +66,7 @@ impl crate::TheDesktop for ADesktop {
         crate::DesktopFrame {
             tasks: &[],
             market: None,
+            what_each_application_draws: &alo_dock::artwork::NOTHING,
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
             the_docks_words: crate::desktop_testing::no_words(),
             dock: &self.dock,

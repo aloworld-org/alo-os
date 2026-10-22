@@ -51,6 +51,9 @@ fn a_session_with_no_seat_refuses_by_naming_the_seat() {
         // refused before the Dock is filled is refused before a chord could
         // reach anything.
         None,
+        // And no artwork, for the fourth time the same reason: nothing is drawn
+        // at all, so there is no box for an application picture to go in.
+        &alo_dock::artwork::TheArtwork::none(),
     )
     .err()
     .unwrap();

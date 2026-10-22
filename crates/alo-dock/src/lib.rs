@@ -196,6 +196,7 @@
 pub mod a_dock_entry;
 pub mod a_list_the_dock_opens;
 pub mod announcing;
+pub mod artwork;
 pub mod changes;
 pub mod clicking;
 pub mod dock;

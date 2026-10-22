@@ -703,7 +703,9 @@ dependencies = [
  "alo-dock",
  "alo-egress",
  "alo-formats",
+ "alo-icons",
  "alo-indicator",
+ "alo-installed",
  "alo-keyboards",
  "alo-networks",
  "alo-portals",
@@ -717,6 +719,7 @@ dependencies = [
  "alo-sound",
  "alo-strings",
  "alo-tasks",
+ "image",
  "jiff",
  "zbus",
 ]
@@ -952,6 +955,10 @@ dependencies = [
  "alo-saying",
  "alo-strings",
 ]
+
+[[package]]
+name = "alo-icons"
+version = "0.0.1"
 
 [[package]]
 name = "alo-image"

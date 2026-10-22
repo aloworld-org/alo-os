@@ -138,6 +138,8 @@ pub(crate) struct Shown<'a> {
     /// reason: a person opened it with a press, presses reach the `Server`, and
     /// this crate's drawing half has no way to know.
     pub(crate) the_dock_has_open: &'a crate::WhatTheDockHasOpen,
+    /// What each application draws on the Dock, where it draws anything.
+    pub(crate) what_each_application_draws: &'a alo_dock::artwork::TheArtwork,
     /// Everything on the Dock that a person reads, already said by the lane.
     pub(crate) the_docks_words: &'a crate::the_docks_words::TheDocksWords,
     /// The windows a person put aside, which the panel at the edge shows.
@@ -263,6 +265,7 @@ pub(crate) fn picture(
         the_docks_words,
         the_keyboard_is_on_the_bar,
         the_bar,
+        what_each_application_draws,
     } = shown;
     // **The count the desktop handed over, not a constant.** This passed a
     // literal `0` until 2026-10-09, with a comment saying a bar holding nothing
@@ -279,6 +282,7 @@ pub(crate) fn picture(
         in_more_apps,
         (the_dock_has_open, the_docks_words),
         the_keyboard_is_on_the_bar,
+        what_each_application_draws,
         fonts,
     )?;
 

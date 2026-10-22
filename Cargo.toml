@@ -20,6 +20,7 @@ members = [
   "crates/alo-agent",
   "crates/alo-arranging",
   "crates/alo-playing",
+  "crates/alo-icons",
   "crates/alo-installed",
   "crates/alo-adapters",
   "crates/alo-accounts",
