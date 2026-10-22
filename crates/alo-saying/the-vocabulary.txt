@@ -607,6 +607,7 @@ dock.announced.some-put-aside	{app}, {windows} open, {aside} minimised
 dock.announced.where	on the canvas, {across} across and {down} down
 dock.bar.found.applications	On this computer  ·  {how_many} applications
 dock.bar.found.one-application	On this computer  ·  {how_many} application
+dock.bar.nothing-can-answer	On this computer  ·  nothing is chosen yet to answer questions
 dock.bar.row.application	{what}  ·  Application
 dock.composer.key	alo
 dock.composer.prompt	Find, open, or ask…
