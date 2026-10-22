@@ -47,6 +47,7 @@ mod running {
     use std::sync::Arc;
 
     use alo_portald::ThisMachine;
+    use alo_portals::the_machine::TheMachine;
     use alo_portals::{AnswersFile, Backend, Sandboxes, ThePlace};
     use alo_secrets::{TheBus, TheKeyring};
 
@@ -187,11 +188,20 @@ mod running {
             machine.their_folder().display(),
             answers.display()
         );
-        eprintln!(
-            "alo-portald: OpenURI will refuse every request. Nothing in this repository \
-             can say what a person has installed, so what-opens-what is unread rather \
-             than empty; alo_portald::this_machine says why."
-        );
+        // **What it can answer, said at the start**, because the sentence that
+        // used to be here — *OpenURI will refuse every request* — outlived the
+        // thing it described by as long as nobody tried it.
+        match machine.applications() {
+            Some(applications) => eprintln!(
+                "alo-portald: OpenURI answers from {} installed application(s)",
+                applications.installed.how_many()
+            ),
+            None => eprintln!(
+                "alo-portald: OpenURI will refuse every request. This machine's desktop \
+                 entries could not be read, so what-opens-what is unread rather than empty; \
+                 alo_portald::this_machine says why that is a refusal and not an answer."
+            ),
+        }
 
         let backend = Backend::answering_from(
             Arc::new(machine),

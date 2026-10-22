@@ -62,6 +62,7 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
 use alo_applications::application::Application;
+use alo_applications::declared::Declared;
 use alo_applications::installed::Installed;
 
 /// The directories desktop entries live in, most specific first.
@@ -109,7 +110,11 @@ pub fn where_entries_live(
 pub fn read(places: &[PathBuf]) -> Installed {
     let mut installed = Installed::nothing();
     for place in places {
-        for (identifier, named) in entries_under(place) {
+        // The third is what the entry declares it opens, which this answer is
+        // not about; `read_with_what_they_open` is the caller that wants it,
+        // and both come off one walk so the two cannot disagree about which
+        // entries counted.
+        for (identifier, named, _) in entries_under(place) {
             if let Ok(application) = Application::called(&identifier, &named) {
                 // `add` answers false for an identifier already held, which is
                 // how an earlier directory wins without this loop having to
@@ -121,11 +126,45 @@ pub fn read(places: &[PathBuf]) -> Installed {
     installed
 }
 
-/// Every readable, listable entry under one `applications/` directory.
+/// What each installed application declares it opens, read from the same
+/// entries [`read`] reads.
+///
+/// **Both, from one walk.** `read` answers what is installed and this answers
+/// what they open, and a caller wanting both — the portal answering *what opens
+/// this* wants exactly both — would otherwise walk the filesystem twice and get
+/// two lists that can disagree about which entries counted.
+///
+/// Earlier places win, which is [`read`]'s own rule and for its own reason: a
+/// person's own `~/.local/share/applications` overrides what the image ships,
+/// so an application they have replaced declares what their copy declares.
+#[must_use]
+pub fn read_with_what_they_open(places: &[PathBuf]) -> (Installed, Declared) {
+    let mut installed = Installed::nothing();
+    let mut declared = Declared::nothing();
+    for place in places {
+        for (identifier, named, opens) in entries_under(place) {
+            let Ok(application) = Application::called(&identifier, &named) else {
+                continue;
+            };
+            // **Declared before installed**, because `add` answers whether this
+            // identifier was new and a second entry for one application must
+            // not declare its kinds twice. The declaration is keyed by the
+            // identifier either way, so the order only decides whether the
+            // borrow is still ours.
+            if installed.add(application.clone()) {
+                declared.declares_media_types(&application, opens.iter().map(String::as_str));
+            }
+        }
+    }
+    (installed, declared)
+}
+
+/// Every readable, listable entry under one `applications/` directory, as its
+/// identifier, the name it is shown under, and the media types it declares.
 ///
 /// Walked into subdirectories, because a desktop file ID may contain them —
 /// `kde4/konsole.desktop` is the identifier `kde4-konsole`.
-fn entries_under(place: &Path) -> Vec<(String, String)> {
+fn entries_under(place: &Path) -> Vec<(String, String, Vec<String>)> {
     let mut found = Vec::new();
     walk(place, place, &mut found);
     found
@@ -133,7 +172,7 @@ fn entries_under(place: &Path) -> Vec<(String, String)> {
 
 /// The walk itself, carrying the directory it began in so an identifier can be
 /// built from the path relative to it.
-fn walk(root: &Path, at: &Path, into: &mut Vec<(String, String)>) {
+fn walk(root: &Path, at: &Path, into: &mut Vec<(String, String, Vec<String>)>) {
     let Ok(entries) = std::fs::read_dir(at) else {
         return;
     };
@@ -143,10 +182,10 @@ fn walk(root: &Path, at: &Path, into: &mut Vec<(String, String)>) {
             walk(root, &path, into);
         } else if path.extension() == Some(OsStr::new("desktop"))
             && let Ok(text) = std::fs::read_to_string(&path)
-            && let Some(named) = the_name_in(&text)
+            && let Some((named, opens)) = what_the_entry_says(&text)
             && let Some(identifier) = the_identifier_of(root, &path)
         {
-            into.push((identifier, named));
+            into.push((identifier, named, opens));
         }
     }
 }
@@ -169,9 +208,23 @@ fn the_identifier_of(root: &Path, path: &Path) -> Option<String> {
 /// `Name`, so this takes the unlocalised one; showing a person their own
 /// language means asking `alo-strings` which language that is, and this crate
 /// has no business holding that answer.
-fn the_name_in(text: &str) -> Option<String> {
+/// What an entry says about itself: the name it is shown under, and the media
+/// types it declares it opens.
+///
+/// **One pass, two answers**, because they come off the same lines of the same
+/// file and reading it twice would be two chances to disagree about which
+/// entries count. The refusals are the name's and are unchanged: a `Type` that
+/// is not `Application`, a `NoDisplay` or a `Hidden`, or no `Name` at all means
+/// this entry is not an application a person has.
+///
+/// **A missing `MimeType` is an empty list and not a refusal.** Most
+/// applications declare none — a terminal, a settings panel — and an entry
+/// without the line is an application that opens nothing, which is a true
+/// answer about it rather than a reason to leave it out of what is installed.
+fn what_the_entry_says(text: &str) -> Option<(String, Vec<String>)> {
     let mut inside = false;
     let mut named = None;
+    let mut opens: Vec<String> = Vec::new();
     for line in text.lines() {
         let line = line.trim();
         if line.starts_with('[') {
@@ -192,10 +245,22 @@ fn the_name_in(text: &str) -> Option<String> {
             ("Type", kind) if kind != "Application" => return None,
             ("NoDisplay" | "Hidden", "true") => return None,
             ("Name", shown) if !shown.is_empty() => named = Some(shown.to_owned()),
+            // **Semicolon separated, and a trailing one is ordinary.** The
+            // desktop entry specification writes a list that way and most
+            // entries end it with a separator, so an empty piece is the shape
+            // of the format rather than an application declaring nothing.
+            ("MimeType", listed) => {
+                opens = listed
+                    .split(';')
+                    .map(str::trim)
+                    .filter(|it| !it.is_empty())
+                    .map(str::to_owned)
+                    .collect();
+            }
             _ => {}
         }
     }
-    named
+    named.map(|named| (named, opens))
 }
 
 #[cfg(test)]
