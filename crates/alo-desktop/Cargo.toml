@@ -46,6 +46,14 @@ alo-appearance = { path = "../alo-appearance" }
 # like the battery and the network above.
 alo-arranging = { path = "../alo-arranging" }
 alo-choosing = { path = "../alo-choosing" }
+# The keyring a provider's key is kept in, and the flow that says what a
+# person typed. Both are here rather than in alo-shell because saving is a
+# writing of the machine, and that crate shows rather than measures.
+alo-secrets = { path = "../alo-secrets" }
+# The key and the reference to it, which WhatToSave carries and this binary
+# has to be able to name on the way to the keyring.
+alo-models = { path = "../alo-models" }
+alo-setting-up = { path = "../alo-setting-up" }
 # The task a request becomes.
 alo-tasks = { path = "../alo-tasks" }
 alo-shortcuts = { path = "../alo-shortcuts" }
@@ -83,3 +91,9 @@ path = "src/main.rs"
 
 [lints]
 workspace = true
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+# A real Secret Service on a bus nobody else can reach, so the save road is
+# measured against the implementation a machine would really have rather than
+# against a stub whose refusals we wrote ourselves.
+alo-keyring-fixture = { path = "../alo-keyring-fixture" }

@@ -250,6 +250,33 @@ pub trait TheDesktop {
         None
     }
 
+    /// Save a provider a person has just filled in, and say whether it took.
+    ///
+    /// **Asked rather than done here, for [`Self::a_task_for`]'s reason
+    /// exactly.** Saving is two writes to this machine — a key to the keyring
+    /// and a provider to the person's own settings — and
+    /// `tests/settings_source.rs` holds the whole shell to never naming a
+    /// settings file. A compositor that opened a keyring would be a compositor
+    /// measuring. So a screen collects what was typed and this carries the
+    /// asking; `alo-desktop` is where both writes happen, and the order they
+    /// happen in is argued there.
+    ///
+    /// `false` is the honest default and agrees with [`Self::a_task_for`]'s
+    /// [`None`]: a desktop that has not been taught to save cannot, and saying
+    /// so is what lets a screen tell a person it did not happen rather than
+    /// show them a provider that is not there.
+    ///
+    /// **Whether it worked, and not why.** The three ways it fails are named
+    /// where they are produced; what a surface needs here is whether to clear
+    /// the form. A reason crossing this boundary would be a refusal from a
+    /// crate this one may not read, in English this one did not write.
+    fn a_provider_was_filled_in(
+        &mut self,
+        _saving: &alo_setting_up::a_provider_is_filled_in::WhatToSave,
+    ) -> bool {
+        false
+    }
+
     /// opened a person's settings file would be a compositor measuring.
     fn the_settings_places(&mut self) -> Option<crate::SettingsPlaces> {
         None
