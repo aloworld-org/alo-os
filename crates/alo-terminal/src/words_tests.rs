@@ -63,6 +63,7 @@ fn every_word_in_a_group() -> impl Iterator<Item = Word> {
         .chain(ABOUT_A_BENCHMARK_A_PROGRAM_PRINTED)
         .chain(ABOUT_A_DIFF_A_PROGRAM_PRINTED)
         .chain(ABOUT_THE_SHELL_INTEGRATION)
+        .chain(ABOUT_KEEPING_A_PLACE)
 }
 
 /// **Every word in the array is in exactly one group.**
@@ -176,6 +177,21 @@ const ABOUT_A_DIFF_A_PROGRAM_PRINTED: [Word; 2] =
 ///
 /// They are also the only words here that name a file on the person's own disk,
 /// which is why three of them take a `{file}` that is never translated.
+/// **What a row offering to keep a place to return to says before it is
+/// pressed**, which is the offer and what it costs.
+///
+/// A group of their own rather than two more in the one above, because they are
+/// about a different promise: that row adds shell integration, this one asks
+/// alo to copy the person's files before each command. The outcome words —
+/// already there, would be added, was added, would not take the change — are
+/// shared by both rows and stay where they are.
+///
+/// **The cost is on the row and not found out afterwards**, which is law 5's
+/// *anything with a risk is offered with the risk in plain words*: copies take
+/// disk, and taking one before every command spends ADR 0045's window faster,
+/// so an older mistake may stop being undoable.
+const ABOUT_KEEPING_A_PLACE: [Word; 2] = [A_PLACE_TO_RETURN_TO, WHAT_KEEPING_ONE_COSTS];
+
 const ABOUT_THE_SHELL_INTEGRATION: [Word; 8] = [
     ALO_CAN_READ_WHAT_YOU_TYPE,
     WHAT_IT_REVEALS,
@@ -226,7 +242,8 @@ fn the_groups_are_the_whole_list() {
             + ABOUT_A_RESULT_A_PROGRAM_PRINTED.len()
             + ABOUT_A_BENCHMARK_A_PROGRAM_PRINTED.len()
             + ABOUT_A_DIFF_A_PROGRAM_PRINTED.len()
-            + ABOUT_THE_SHELL_INTEGRATION.len(),
+            + ABOUT_THE_SHELL_INTEGRATION.len()
+            + ABOUT_KEEPING_A_PLACE.len(),
         EVERY_WORD.len(),
         "a word is declared and in no group, so no rule is applied to it"
     );

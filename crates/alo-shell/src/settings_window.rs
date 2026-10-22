@@ -95,6 +95,8 @@ pub enum SettingsRow {
     /// file, and says so. There is one of these rows, so it carries nothing —
     /// what it would act on is the section's own answer.
     ShellIntegration,
+    /// Keep a place to return to before each command (ADR 0130).
+    APlaceToReturnTo,
     /// Whether alo may use another model or API when the one the person chose
     /// is not available: Enter chooses it.
     ///
@@ -115,7 +117,7 @@ impl SettingsRow {
             Self::Shortcut(_) => SettingsSection::Shortcuts,
             Self::Granted(_) => SettingsSection::Granted,
             Self::UsingAnother(_) => SettingsSection::Answering,
-            Self::ShellIntegration => SettingsSection::Terminal,
+            Self::ShellIntegration | Self::APlaceToReturnTo => SettingsSection::Terminal,
         }
     }
 }
@@ -184,6 +186,8 @@ pub(crate) struct Open {
     pub(crate) granted: GrantedSection,
     /// Whether alo's shell integration is in the person's startup file.
     pub(crate) shell_integration: TheShellIntegration,
+    /// What Settings found about keeping a place to return to.
+    pub(crate) a_place_to_return_to: TheShellIntegration,
     /// Which row has the focus, counted from the first.
     pub(crate) focus: usize,
     /// Whether Settings waits for a chord for the focused shortcut.
@@ -218,6 +222,11 @@ impl SettingsWindow {
             shortcuts: KeptSection::at_sign_in(places.kept(alo_shortcuts::keeping::THE_FILE)),
             granted,
             shell_integration: TheShellIntegration::at_sign_in(places.shell(), places.folder()),
+            a_place_to_return_to: TheShellIntegration::about(
+                alo_terminal::where_the_integration_stands::WhichOne::APlaceToReturnTo,
+                places.shell(),
+                places.folder(),
+            ),
             focus: 0,
             waiting_for_a_chord: false,
         });
@@ -372,6 +381,13 @@ impl Open {
         if self.shell_integration.offers_a_row() {
             rows.push(SettingsRow::ShellIntegration);
         }
+        // **Beneath the integration**, because keeping a place needs it: the
+        // line this row adds calls a command that asks the service, and a
+        // person who has not added the integration above has not added the
+        // shell's side of any of this. The order says so without a sentence.
+        if self.a_place_to_return_to.offers_a_row() {
+            rows.push(SettingsRow::APlaceToReturnTo);
+        }
         rows.extend(self.granted.rows(now).into_iter().map(SettingsRow::Granted));
         rows
     }
@@ -432,6 +448,10 @@ impl Open {
             SettingsRow::ShellIntegration => SettingsDid::Kept(
                 SettingsSection::Terminal,
                 self.shell_integration.add(doors.strings),
+            ),
+            SettingsRow::APlaceToReturnTo => SettingsDid::Kept(
+                SettingsSection::Terminal,
+                self.a_place_to_return_to.add(doors.strings),
             ),
         }
     }

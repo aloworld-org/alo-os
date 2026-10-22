@@ -22,9 +22,26 @@ use alo_strings::{Filling, Strings};
 
 use crate::the_snippet_a_person_installs::{self as snippet, Added, NotAdded};
 
+/// Which of the two things a person may add this row is about.
+///
+/// **Two rows and not one**, because they are two choices. The integration
+/// tells alo where a prompt is and what was typed; the place-keeping asks alo
+/// to copy the person's files before each command, which costs disk and spends
+/// [ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md)'s undo
+/// window. Somebody who wanted the first did not thereby ask for the second.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WhichOne {
+    /// alo learning where the prompt is and what was typed (ADR 0123).
+    TheIntegration,
+    /// A place to return to, kept before each command (ADR 0130).
+    APlaceToReturnTo,
+}
+
 /// What Settings found about the integration, and what the last press did.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WhereItStands {
+    /// Which of the two this stands for.
+    which: WhichOne,
     /// What there is to offer this person.
     what: What,
     /// What the last press said, in this crate's words.
@@ -84,6 +101,16 @@ impl WhereItStands {
     /// the environment.
     #[must_use]
     pub fn read(shell: Option<&str>, folder: Option<&Path>) -> Self {
+        Self::read_about(WhichOne::TheIntegration, shell, folder)
+    }
+
+    /// The same, for a named one of the two.
+    #[must_use]
+    pub fn read_about(which: WhichOne, shell: Option<&str>, folder: Option<&Path>) -> Self {
+        let already_there = |held: &str, shell: &str| match which {
+            WhichOne::TheIntegration => snippet::already_in(held, shell),
+            WhichOne::APlaceToReturnTo => snippet::snapshots_already_in(held, shell),
+        };
         let what = match (shell, folder) {
             (None, _) => What::NotSaid,
             (Some(shell), folder) => match (snippet::the_startup_file_of(shell), folder) {
@@ -93,7 +120,7 @@ impl WhereItStands {
                     let at = folder.join(named);
                     let already = std::fs::read_to_string(&at)
                         .ok()
-                        .and_then(|held| snippet::already_in(&held, shell))
+                        .and_then(|held| already_there(&held, shell))
                         .unwrap_or(false);
                     What::Offered {
                         shell: shell.to_owned(),
@@ -103,7 +130,11 @@ impl WhereItStands {
                 }
             },
         };
-        Self { what, told: None }
+        Self {
+            which,
+            what,
+            told: None,
+        }
     }
 
     /// The sentences said above the row: why there is none, and what the last
@@ -157,16 +188,19 @@ impl WhereItStands {
         let What::Offered { at, already, .. } = &self.what else {
             return Vec::new();
         };
+        let (offer, costs) = match self.which {
+            WhichOne::TheIntegration => (
+                crate::words::ALO_CAN_READ_WHAT_YOU_TYPE.key(),
+                crate::words::WHAT_IT_REVEALS.key(),
+            ),
+            WhichOne::APlaceToReturnTo => (
+                crate::words::A_PLACE_TO_RETURN_TO.key(),
+                crate::words::WHAT_KEEPING_ONE_COSTS.key(),
+            ),
+        };
         vec![
-            strings
-                .say(
-                    &crate::words::ALO_CAN_READ_WHAT_YOU_TYPE.key(),
-                    &Filling::nothing(),
-                )
-                .into_text(),
-            strings
-                .say(&crate::words::WHAT_IT_REVEALS.key(), &Filling::nothing())
-                .into_text(),
+            strings.say(&offer, &Filling::nothing()).into_text(),
+            strings.say(&costs, &Filling::nothing()).into_text(),
             strings
                 .say(
                     &if *already {
@@ -192,7 +226,10 @@ impl WhereItStands {
             return WhatThePressDid::ThereWasNothingToAdd;
         };
         let file = named(at);
-        match snippet::add_to(at, shell) {
+        match match self.which {
+            WhichOne::TheIntegration => snippet::add_to(at, shell),
+            WhichOne::APlaceToReturnTo => snippet::add_snapshots_to(at, shell),
+        } {
             // **Appended and already-there are one answer to a person.** They
             // pressed, and now it is there; which of the two it was is this
             // crate's business and not news.

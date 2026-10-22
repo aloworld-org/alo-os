@@ -232,23 +232,36 @@ fn shortcuts(open: &Open, strings: &Strings) -> SectionWords {
     }
 }
 
-/// The terminal: whether alo may read what a person types in it.
+/// The terminal: whether alo may read what a person types in it, and whether a
+/// place to return to is kept before each command.
 ///
-/// **One row, and three reasons there may be none** — no folder, a shell alo
-/// ships nothing for, or a session that did not say which shell. The first two
-/// say so above the row that is not there; the third says nothing, because
-/// there is nothing true to say about a shell nobody named.
+/// **Two rows, and three reasons there may be none of either** — no folder, a
+/// shell alo ships nothing for, or a session that did not say which shell. The
+/// first two say so above the rows that are not there; the third says nothing,
+/// because there is nothing true to say about a shell nobody named.
+///
+/// **The sentences above come from the first row only**, because all three of
+/// those reasons are about the shell and the folder and are therefore the same
+/// for both. Saying them twice would tell a person with no folder, twice, that
+/// there is nowhere to add anything.
 fn terminal(open: &Open, strings: &Strings) -> SectionWords {
     let section = &open.shell_integration;
-    let lines = if section.offers_a_row() {
-        vec![LineWords {
+    let keeping = &open.a_place_to_return_to;
+    let mut lines = Vec::new();
+    if section.offers_a_row() {
+        lines.push(LineWords {
             row: Some(SettingsRow::ShellIntegration),
             parts: section.row(strings),
             chosen: section.is_already_there(),
-        }]
-    } else {
-        Vec::new()
-    };
+        });
+    }
+    if keeping.offers_a_row() {
+        lines.push(LineWords {
+            row: Some(SettingsRow::APlaceToReturnTo),
+            parts: keeping.row(strings),
+            chosen: keeping.is_already_there(),
+        });
+    }
     SectionWords {
         section: SettingsSection::Terminal,
         said: section.said(strings),
