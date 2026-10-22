@@ -24,9 +24,10 @@ mod running {
     use std::process::ExitCode;
 
     use alo_installer::{
-        Ended, OnThisMachine, PRESS_ENTER_TO_CLOSE, Released, Removed, Switched, THE_DEFAULTS_WORD,
-        THE_REMOVALS_WORD, THE_SWITCHS_WORD, TheDefault, TheMachine, install, installer_words,
-        remove_alo_os, restart_into_alo_os, which_system_starts,
+        Ended, OnThisMachine, PRESS_ENTER_TO_CLOSE, Released, Removed, Started, Switched,
+        THE_DEFAULTS_WORD, THE_REMOVALS_WORD, THE_STICKS_WORD, THE_SWITCHS_WORD, TheDefault,
+        TheMachine, install, installer_words, remove_alo_os, restart_into_alo_os, start_the_stick,
+        which_system_starts,
     };
     use alo_strings::{Filling, Strings};
 
@@ -34,9 +35,10 @@ mod running {
     ///
     /// **Started with one of this crate's own words as its only argument it does
     /// one other thing instead**: `THE_SWITCHS_WORD` offers to restart this
-    /// computer into alo OS, `THE_DEFAULTS_WORD` shows and changes which system
-    /// it starts when nobody chooses, and `THE_REMOVALS_WORD` removes alo OS
-    /// again. That is
+    /// computer into alo OS, `THE_STICKS_WORD` offers to restart it into a
+    /// device a person plugs in, `THE_DEFAULTS_WORD` shows and changes which
+    /// system it starts when nobody chooses, and `THE_REMOVALS_WORD` removes
+    /// alo OS again. That is
     /// how the copy the installer leaves behind is started, a start with no
     /// argument is an install as it always was, and any other argument is
     /// refused rather than guessed at.
@@ -84,6 +86,29 @@ mod running {
                     | Removed::DiskNotCleared => ExitCode::FAILURE,
                 };
             }
+            // **The road that starts a device a person plugs in.** The same
+            // shape as the switch above it: one word, one act, nothing on any
+            // disk changed. `docs/features.md`: *and Windows starts the stick,
+            // so nobody hunts for a boot key.*
+            [one] if one == THE_STICKS_WORD => {
+                let started = start_the_stick(&mut machine, &strings);
+                if started == (Started::Restarting { restarted: true }) {
+                    return ExitCode::SUCCESS;
+                }
+                let _read =
+                    machine.ask(&strings.say(&PRESS_ENTER_TO_CLOSE.key(), &Filling::nothing()));
+                return match started {
+                    // A person who declined, or a device the firmware does not
+                    // list, are both ordinary ends rather than failures: the
+                    // machine is as it was and they were told why.
+                    Started::Restarting { .. }
+                    | Started::NotAgreed
+                    | Started::NotThatName
+                    | Started::NotListed
+                    | Started::NothingPluggedIn => ExitCode::SUCCESS,
+                    Started::NotRead | Started::NotSet => ExitCode::FAILURE,
+                };
+            }
             [one] if one == THE_DEFAULTS_WORD => {
                 let ended = which_system_starts(&mut machine, &strings);
                 let _read =
@@ -98,7 +123,8 @@ mod running {
             _ => {
                 eprintln!(
                     "alo-installer: it takes no argument, or {THE_SWITCHS_WORD}, \
-                     {THE_DEFAULTS_WORD} or {THE_REMOVALS_WORD} and nothing else."
+                     {THE_STICKS_WORD}, {THE_DEFAULTS_WORD} or {THE_REMOVALS_WORD} \
+                     and nothing else."
                 );
                 return ExitCode::FAILURE;
             }
