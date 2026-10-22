@@ -54,10 +54,12 @@ that boots.
    open is where the security bug lives. Small files are how the
    capability model stays reviewable by somebody who did not write
    it.
-5. **The person chooses. alo never takes the choice away.** On their
-   own machine, a person decides what alo OS does. Every protection is
-   a default they can change, not a wall. Anything with a risk is
-   offered with the risk in plain words and switched on by the person.
+5. **The person chooses. alo never takes the choice away.**
+   *The owner, 2026-10-14: "we are not dictators and we give the users a
+   choice to choose."* On their own machine, a person decides what alo OS
+   does. Every protection is a default they can change, not a wall.
+   Anything with a risk is offered with the risk in plain words and
+   switched on by the person.
    It is never removed from them "for their own good". Two kinds of
    protection stay on at every setting, because neither takes a choice
    away: those that restrict nothing (the record, undo, the egress
@@ -256,8 +258,17 @@ cannot demonstrate.
   in this product, not a feature request.
 - **Reads answer, changes wait.** A read runs inside the turn. Any
   change to the machine is proposed with a sentence describing it and
-  waits for one approval. What a person approves is that sentence,
-  and an approval is never a session.
+  waits for one approval. What a person approves is that sentence.
+  **An approval is not a session at the default setting**, and a person
+  may choose otherwise:
+  [ADR 0064](docs/decisions/0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md)'s
+  third level is *the agent runs code directly on the machine, without
+  asking*, switched on for one project or for everything and off again
+  whenever they like. **This clause read "an approval is never a
+  session" until 2026-10-14**, which 0064 had contradicted since the day
+  it was accepted. At every level the run is recorded, the files are
+  snapshotted before it, and what leaves is shown — because none of
+  those three takes a choice away.
 - **Contracts outlive code.** The agent verbs, the application-adapter
   SDK, D-Bus interfaces, config keys, the image format and the update
   channel are public surfaces. Third parties build adapters against
@@ -266,8 +277,14 @@ cannot demonstrate.
 - **The network is not authority.** Machines discover each other with no
   configuration and trust none of them for it. Using another machine
   takes a deliberate pairing on both; an agent reaching across acts
-  only under a grant made on the machine it acts upon. There is no
-  trusted-network setting, and there will not be one (ADR 0003).
+  only under a grant made on the machine it acts upon. **No
+  trusted-network setting is on by default** (ADR 0003), and a person
+  may opt in on their own network, told in the sentence that switches it
+  on that it also trusts every device on that network. **This clause
+  read "there is no trusted-network setting, and there will not be one"
+  until 2026-10-14**, while `docs/features.md` had been saying *a person
+  may opt in* — so the constitution and the feature list disagreed, and
+  the constitution was the one promising something nobody had decided.
 - **Whose machine it is, is answerable in ten seconds.** A machine is
   personal, or it is managed by an organisation that sets policy and
   holds a recovery key — and on a managed machine the person is told
