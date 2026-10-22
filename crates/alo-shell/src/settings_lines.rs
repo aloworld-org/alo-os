@@ -116,6 +116,30 @@ fn answering(open: &Open, strings: &Strings, now: SystemTime) -> SectionWords {
         }
     }
 
+    // **The one row that is always here**, because every other row in this
+    // section exists only for something the person already has — which is why
+    // a fresh machine offered *not at all* and nothing else, and why this
+    // section could say truthfully that adding a provider was reachable from
+    // nowhere. A row that appeared once somebody had a provider would be a
+    // door that opens after you are through it.
+    if section.a_provider_can_be_added() {
+        lines.push(LineWords {
+            row: Some(SettingsRow::AddAProvider),
+            parts: vec![
+                strings
+                    .say(
+                        &crate::the_providers_words::ADDING_A_PROVIDER.key(),
+                        &Filling::nothing(),
+                    )
+                    .into_text(),
+            ],
+            // **Never ticked.** The mark means *this is what your settings say
+            // now*, and an action is not a state: ticking it would say a
+            // person had chosen to be adding a provider.
+            chosen: false,
+        });
+    }
+
     // **And, beneath the four, what alo may do when their choice is not
     // available** — `docs/features.md`: *Unless the person says otherwise, in
     // Settings*, the owner's instruction of 2026-10-18.

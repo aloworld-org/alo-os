@@ -188,6 +188,14 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
         },
     );
     server.settings = window;
+    // **The form is opened here and not in the window**, because the keys that
+    // fill it in reach the seat rather than the window — see
+    // `crate::a_provider_is_added_in_settings`, where the form being open is
+    // itself the mode. The window's part is to say a person asked.
+    if let Some(SettingsDid::AddingAProvider) = did {
+        server.a_provider_is_added();
+        return;
+    }
     if let Some(SettingsDid::Kept(SettingsSection::Shortcuts, SettingsKept::Written)) = did
         && let Some(bound) = server.settings.shortcuts().cloned()
     {

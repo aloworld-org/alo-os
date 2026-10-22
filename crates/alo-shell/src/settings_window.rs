@@ -95,6 +95,15 @@ pub enum SettingsRow {
     /// file, and says so. There is one of these rows, so it carries nothing —
     /// what it would act on is the section's own answer.
     ShellIntegration,
+    /// Add a provider: Enter opens the form that asks for its name, its
+    /// address, its key and the model to ask for.
+    ///
+    /// **One row carrying nothing**, which is `ShellIntegration`'s shape and
+    /// for its reason: there is one of these, and what it acts on is the
+    /// section it is in. Until it existed `settings_answering` was right in
+    /// its own words -- *adding a provider … is not reachable from this list*
+    /// -- and a person on a fresh machine could not make it answer them.
+    AddAProvider,
     /// Keep a place to return to before each command (ADR 0130).
     APlaceToReturnTo,
     /// Whether alo may use another model or API when the one the person chose
@@ -118,6 +127,7 @@ impl SettingsRow {
             Self::Granted(_) => SettingsSection::Granted,
             Self::UsingAnother(_) => SettingsSection::Answering,
             Self::ShellIntegration | Self::APlaceToReturnTo => SettingsSection::Terminal,
+            Self::AddAProvider => SettingsSection::Answering,
         }
     }
 }
@@ -172,6 +182,12 @@ pub enum SettingsDid {
     StoppedWaiting,
     /// The window closed.
     Closed,
+    /// A person asked to add a provider, so a form should open.
+    ///
+    /// **The window says so and does not do it**: the form lives on the
+    /// `Server` because the keys that fill it in reach the seat, not this
+    /// window. See `crate::a_provider_is_added_in_settings`.
+    AddingAProvider,
 }
 
 /// What opening Settings read, for the host's log: every file of the
@@ -361,6 +377,15 @@ impl Open {
         for (_, choices) in self.answering.offered(&pairings, now) {
             rows.extend(choices.into_iter().map(SettingsRow::Answer));
         }
+        // **Always offered, and that is the point of it.** Every other row in
+        // this section exists only for something the person already has, which
+        // is why a fresh machine offered *not at all* and nothing else — and
+        // why `settings_answering` could say truthfully that adding a provider
+        // was reachable from nowhere. A row that appeared only once somebody
+        // had a provider would be a door that opens after you are through it.
+        if self.answering.a_provider_can_be_added() {
+            rows.push(SettingsRow::AddAProvider);
+        }
         // **Beneath the four, and in the same order they are drawn in.** This
         // list and `crate::settings_lines` are two readers of one question, and
         // `every_setting_the_machine_has_is_in_one_window` holds them to each
@@ -457,6 +482,11 @@ impl Open {
                 doors.now,
                 doors.strings,
             )),
+            // **Answered rather than kept.** Nothing is written by pressing
+            // this: it opens a form, and what a person types in it is saved
+            // when they press Enter again. A `Kept` here would tell the
+            // section a change had landed that has not been made yet.
+            SettingsRow::AddAProvider => SettingsDid::AddingAProvider,
             SettingsRow::ShellIntegration => SettingsDid::Kept(
                 SettingsSection::Terminal,
                 self.shell_integration.add(doors.strings),
