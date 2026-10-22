@@ -92,8 +92,14 @@ pub fn kept(
             // second snapshot of their whole home for every command they run.
             ASideOfTheTurn::Kept(_) => {
                 // **And write down that it is there, or it is there for ever.**
-                // `alo_letting_go::found` reads a place by its `kept.json` and
-                // *steps over* a directory whose note will not read — which is
+                // The privileged remover's own reader —
+                // `crates/alo-letting-go/src/found.rs`, named by file because
+                // `crates/alo-letting-go/tests/a_turn_cannot_arrive_at_this_road.rs`
+                // forbids anything a turn runs inside from spelling that crate's
+                // Rust path, and it is right to: forgetting is a road only a
+                // person may take (ADR 0045, narrowed 2026-09-22) — reads a place
+                // by its `kept.json` and *steps over* a directory whose note will
+                // not read, which is
                 // how the privileged remover avoids touching what it does not
                 // understand. A place with no note is therefore never swept, so
                 // a person who turned this on would accumulate one read-only

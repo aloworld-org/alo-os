@@ -74,6 +74,17 @@ mod tests {
 
     /// **A directory with no permissions on it is still removed**, which is the
     /// case the ordinary remover will not do and the reason this file exists.
+    ///
+    /// # It is declared unrunnable on the gate's hosted runner, and why
+    ///
+    /// That runner runs **as root**, and root ignores a mode — so
+    /// `remove_dir_all` succeeds there and the control below fires. It is in
+    /// `.github/the-tests-a-hosted-runner-cannot-run.txt` with that
+    /// measurement, which is a statement about the runner and not about this
+    /// test: it passes on every lane's machine, as the person, which is who
+    /// runs it on a real one. **The control is not dropped to make the runner
+    /// green**, because a test that passes there while measuring nothing is the
+    /// trade that file exists to refuse.
     #[test]
     fn a_directory_with_no_permissions_is_removed() {
         let at = a_directory("no-permissions");

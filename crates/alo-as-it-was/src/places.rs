@@ -18,7 +18,10 @@
 //!
 //! # A place with no note is not a place
 //!
-//! It is also not news. `alo_letting_go::found` steps such a directory over
+//! It is also not news. The privileged remover's own reader —
+//! `crates/alo-letting-go/src/found.rs`, named by file rather than by its Rust
+//! path, because that crate's own guard forbids anything a turn runs inside from
+//! spelling it and this crate is in a turn's graph — steps such a directory over
 //! rather than sweep something it does not understand, so a half-written place
 //! stays on the disk; it is left out here for the same reason, and counted in
 //! [`Places::stepped_over`] so that nothing disappears silently.

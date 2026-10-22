@@ -38,7 +38,9 @@ fn a_place_with_a_note_and_a_copy_is_found() {
 ///
 /// This is the fault this file exists for. `alo-agentd` kept a copy before every
 /// command a person typed and wrote no note beside it, from the change that
-/// built it until the change that added this crate. `alo_letting_go::found`
+/// built it until the change that added this crate. The privileged remover's
+/// own reader — `crates/alo-letting-go/src/found.rs`, by file and not by its Rust
+/// path, for the reason `places.rs`'s header gives —
 /// steps such a directory over rather than sweep something it cannot read, so
 /// **nothing could ever remove one** — a person who turned the row on would
 /// accumulate a read-only copy of their whole home per command, for ever. It is

@@ -309,14 +309,24 @@ fn a_taken_set_aside_name_is_refused_before_anything_is_touched() {
     );
 }
 
-/// **A copy that cannot be read refuses, and the folder is exactly as it was.**
+/// **A copy that cannot be made refuses, and the folder is exactly as it was.**
 ///
 /// The clause that matters is the second one. A failed copy that left the folder
 /// half-replaced would be the worst outcome this act has, so the test asserts
 /// the folder's contents rather than only the error.
+///
+/// # The cause is the snapshot going away, and not a permission
+///
+/// It was a permission until 2026-10-22, and **that version passed as a person
+/// and failed on the gate's runner, which runs as root**: root ignores a mode,
+/// so `cp` succeeded and no refusal arrived. The cause here is the source being
+/// gone between the plan and the act, which is a real race rather than a
+/// contrivance — nothing holds a place open, and `crate::putting_back`
+/// deliberately plans first and copies second. **It denies root exactly as it
+/// denies anybody**, so what this measures no longer depends on who runs it.
 #[test]
-fn a_copy_that_cannot_be_read_changes_nothing() {
-    let machine = AMachine::called("cannot-read");
+fn a_copy_that_cannot_be_made_changes_nothing() {
+    let machine = AMachine::called("cannot-copy");
     let folder = machine.a_folder("src", "as it was");
     let place = machine.a_place_kept("1000-7-their-own", at(1));
     std::fs::write(folder.join("a-file"), "changed since").unwrap();
@@ -329,12 +339,11 @@ fn a_copy_that_cannot_be_read_changes_nothing() {
     )
     .unwrap();
 
-    // Unreadable to this process, which is what a permission on somebody else's
-    // file looks like from here.
-    let inside = place.join("before").join("src");
-    set_mode(&inside, 0o000);
+    // The place is let go of between the plan and the act — which is what the
+    // privileged remover does on a timer, to the oldest place, under disk
+    // pressure (ADR 0045 terms 1 and 5).
+    std::fs::remove_dir_all(place.join("before")).unwrap();
     let refused = go_back(&goes);
-    set_mode(&inside, 0o700);
 
     assert!(
         matches!(refused, Err(NotGoingBack::NotCopied { .. })),
@@ -403,10 +412,4 @@ fn only_the_last_rename_failing_says_the_folder_went_back() {
         Some(&true),
         "and it is the one where only the last rename failed, which is last on the list"
     );
-}
-
-/// Set a path's mode, for the one test that needs a permission.
-fn set_mode(at: &Path, mode: u32) {
-    use std::os::unix::fs::PermissionsExt;
-    let _ = std::fs::set_permissions(at, std::fs::Permissions::from_mode(mode));
 }
