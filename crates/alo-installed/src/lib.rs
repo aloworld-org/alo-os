@@ -50,10 +50,20 @@
 //!
 //! # What this crate does not do
 //!
-//! **It does not read an icon.** A desktop entry names one, and turning a name
-//! into an image is an icon-theme lookup — directory precedence, sizes,
-//! fallbacks, rasterising — which is a separate decision and not this crate's.
-//! What is here is the list.
+//! **It does not turn an icon into a picture.** A desktop entry *names* one,
+//! and that name is read here by [`read_with_their_icons`] on the same walk as
+//! everything else. Turning it into a file is an icon-theme lookup — directory
+//! precedence, sizes, fallbacks, rasterising — which is a separate decision and
+//! not this crate's.
+//!
+//! *This said **it does not read an icon** until 2026-10-22, and that was the
+//! whole sentence on the subject. It was true when written, it was read as the
+//! boundary, and so nothing anywhere read the field: every application on the
+//! Dock drew its first letter, which `docs/design/the-alo-dock.md` decided as
+//! the fallback for an application **with no artwork** and which had quietly
+//! become the answer for all of them. ADR 0101 is the owner's ruling that it
+//! should not be — first letters are a missing-icon fallback, not the finished
+//! Dock — and the name had to be read before anything could honour it.*
 //!
 //! **And it does not execute anything.** `Exec` is parsed by nobody here;
 //! opening is `alo_applications::opener`'s, behind the grant that governs it.
@@ -64,6 +74,9 @@ use std::path::{Path, PathBuf};
 use alo_applications::application::Application;
 use alo_applications::declared::Declared;
 use alo_applications::installed::Installed;
+
+mod icons;
+pub use icons::Icons;
 
 /// The directories desktop entries live in, most specific first.
 ///
@@ -110,12 +123,8 @@ pub fn where_entries_live(
 pub fn read(places: &[PathBuf]) -> Installed {
     let mut installed = Installed::nothing();
     for place in places {
-        // The third is what the entry declares it opens, which this answer is
-        // not about; `read_with_what_they_open` is the caller that wants it,
-        // and both come off one walk so the two cannot disagree about which
-        // entries counted.
-        for (identifier, named, _) in entries_under(place) {
-            if let Ok(application) = Application::called(&identifier, &named) {
+        for entry in entries_under(place) {
+            if let Ok(application) = Application::called(&entry.identifier, &entry.said.named) {
                 // `add` answers false for an identifier already held, which is
                 // how an earlier directory wins without this loop having to
                 // ask first.
@@ -142,8 +151,8 @@ pub fn read_with_what_they_open(places: &[PathBuf]) -> (Installed, Declared) {
     let mut installed = Installed::nothing();
     let mut declared = Declared::nothing();
     for place in places {
-        for (identifier, named, opens) in entries_under(place) {
-            let Ok(application) = Application::called(&identifier, &named) else {
+        for entry in entries_under(place) {
+            let Ok(application) = Application::called(&entry.identifier, &entry.said.named) else {
                 continue;
             };
             // **Declared before installed**, because `add` answers whether this
@@ -152,19 +161,83 @@ pub fn read_with_what_they_open(places: &[PathBuf]) -> (Installed, Declared) {
             // identifier either way, so the order only decides whether the
             // borrow is still ours.
             if installed.add(application.clone()) {
-                declared.declares_media_types(&application, opens.iter().map(String::as_str));
+                declared.declares_media_types(
+                    &application,
+                    entry.said.opens.iter().map(String::as_str),
+                );
             }
         }
     }
     (installed, declared)
 }
 
-/// Every readable, listable entry under one `applications/` directory, as its
-/// identifier, the name it is shown under, and the media types it declares.
+/// What each installed application calls its icon, off the same walk again.
+///
+/// **A third answer from one reading, for [`read_with_what_they_open`]'s own
+/// reason.** A caller wanting the list and the icon names would otherwise walk
+/// twice and could get two lists disagreeing about which entries counted — and
+/// here that disagreement would be invisible, because an application whose icon
+/// went missing looks exactly like one that never named an icon.
+///
+/// **The name only, never a picture.** `Icon` holds either an absolute path or
+/// a theme name, and turning the second into a file is an icon-theme lookup
+/// that this crate's own header declines and `alo-icons` performs.
+///
+/// An application that named no icon is simply absent from [`Icons`], which is
+/// ordinary: the specification does not require the key, and the Dock's answer
+/// for one — its first letter — is already decided in
+/// `docs/design/the-alo-dock.md`.
+#[must_use]
+pub fn read_with_their_icons(places: &[PathBuf]) -> (Installed, Icons) {
+    let mut installed = Installed::nothing();
+    let mut icons = Icons::nothing();
+    for place in places {
+        for entry in entries_under(place) {
+            let Ok(application) = Application::called(&entry.identifier, &entry.said.named) else {
+                continue;
+            };
+            // Named before added, exactly as the media types are and for the
+            // same reason: `add` answers whether this identifier was new, and
+            // `Icons::declares` keeps the first, so a second entry for one
+            // application cannot overwrite the icon the first named.
+            if installed.add(application)
+                && let Some(named) = entry.said.icon.as_deref()
+            {
+                icons.declares(&entry.identifier, named);
+            }
+        }
+    }
+    (installed, icons)
+}
+
+/// One desktop entry that counted, as the walk found it.
+///
+/// **A struct rather than the tuple this was.** The walk now carries four
+/// things, and `(String, String, Vec<String>, Option<String>)` is a shape no
+/// reader keeps straight — two of its four are `String`, and a call site with
+/// those two swapped would compile and name every application after its icon.
+struct Entry {
+    /// Its desktop file ID.
+    identifier: String,
+    /// What the entry said about itself.
+    said: Said,
+}
+
+/// What one entry said about itself, off one reading of one file.
+struct Said {
+    /// The name a person is shown.
+    named: String,
+    /// The media types it declares it opens, possibly none.
+    opens: Vec<String>,
+    /// What it calls its icon, where it named one.
+    icon: Option<String>,
+}
+
+/// Every readable, listable entry under one `applications/` directory.
 ///
 /// Walked into subdirectories, because a desktop file ID may contain them —
 /// `kde4/konsole.desktop` is the identifier `kde4-konsole`.
-fn entries_under(place: &Path) -> Vec<(String, String, Vec<String>)> {
+fn entries_under(place: &Path) -> Vec<Entry> {
     let mut found = Vec::new();
     walk(place, place, &mut found);
     found
@@ -172,7 +245,7 @@ fn entries_under(place: &Path) -> Vec<(String, String, Vec<String>)> {
 
 /// The walk itself, carrying the directory it began in so an identifier can be
 /// built from the path relative to it.
-fn walk(root: &Path, at: &Path, into: &mut Vec<(String, String, Vec<String>)>) {
+fn walk(root: &Path, at: &Path, into: &mut Vec<Entry>) {
     let Ok(entries) = std::fs::read_dir(at) else {
         return;
     };
@@ -182,10 +255,10 @@ fn walk(root: &Path, at: &Path, into: &mut Vec<(String, String, Vec<String>)>) {
             walk(root, &path, into);
         } else if path.extension() == Some(OsStr::new("desktop"))
             && let Ok(text) = std::fs::read_to_string(&path)
-            && let Some((named, opens)) = what_the_entry_says(&text)
+            && let Some(said) = what_the_entry_says(&text)
             && let Some(identifier) = the_identifier_of(root, &path)
         {
-            into.push((identifier, named, opens));
+            into.push(Entry { identifier, said });
         }
     }
 }
@@ -197,34 +270,38 @@ fn the_identifier_of(root: &Path, path: &Path) -> Option<String> {
     Some(spelled.replace('/', "-"))
 }
 
-/// The `Name` of an entry a person should see, or [`None`].
+/// What an entry says about itself: the name it is shown under, the media types
+/// it declares it opens, and what it calls its icon.
 ///
 /// Reads only the `[Desktop Entry]` group: a desktop file may carry further
-/// groups — one per action — and each has its own `Name`. Taking the first
-/// `Name` anywhere in the file would name an application after one of its
-/// right-click actions.
+/// groups — one per action — and each has its own `Name` and its own `Icon`.
+/// Taking the first of either anywhere in the file would name an application
+/// after one of its right-click actions, and draw that action's picture.
 ///
 /// **Localised keys are left for later and left alone.** `Name[de]` is not
 /// `Name`, so this takes the unlocalised one; showing a person their own
 /// language means asking `alo-strings` which language that is, and this crate
 /// has no business holding that answer.
-/// What an entry says about itself: the name it is shown under, and the media
-/// types it declares it opens.
 ///
-/// **One pass, two answers**, because they come off the same lines of the same
-/// file and reading it twice would be two chances to disagree about which
-/// entries count. The refusals are the name's and are unchanged: a `Type` that
-/// is not `Application`, a `NoDisplay` or a `Hidden`, or no `Name` at all means
-/// this entry is not an application a person has.
+/// **One pass, three answers**, because they come off the same lines of the
+/// same file and reading it three times would be three chances to disagree
+/// about which entries counted. The refusals are the name's and are unchanged:
+/// a `Type` that is not `Application`, a `NoDisplay` or a `Hidden`, or no
+/// `Name` at all means this entry is not an application a person has.
 ///
 /// **A missing `MimeType` is an empty list and not a refusal.** Most
 /// applications declare none — a terminal, a settings panel — and an entry
 /// without the line is an application that opens nothing, which is a true
 /// answer about it rather than a reason to leave it out of what is installed.
-fn what_the_entry_says(text: &str) -> Option<(String, Vec<String>)> {
+///
+/// **A missing `Icon` is [`None`] and not a refusal either**, for the same
+/// reason and with a decided consequence: the Dock draws that application's
+/// first letter.
+fn what_the_entry_says(text: &str) -> Option<Said> {
     let mut inside = false;
     let mut named = None;
     let mut opens: Vec<String> = Vec::new();
+    let mut icon: Option<String> = None;
     for line in text.lines() {
         let line = line.trim();
         if line.starts_with('[') {
@@ -257,10 +334,16 @@ fn what_the_entry_says(text: &str) -> Option<(String, Vec<String>)> {
                     .map(str::to_owned)
                     .collect();
             }
+            // **An empty Icon line is no icon, not an icon called nothing.** An
+            // entry written by a packaging script sometimes carries the key
+            // with nothing after it, and an empty name would send the lookup
+            // hunting for a file called nothing and report *not found* for a
+            // reason that is really *never named*.
+            ("Icon", called) if !called.is_empty() => icon = Some(called.to_owned()),
             _ => {}
         }
     }
-    named.map(|named| (named, opens))
+    named.map(|named| Said { named, opens, icon })
 }
 
 #[cfg(test)]

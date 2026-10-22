@@ -55,6 +55,7 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                 let frame = |egress| DesktopFrame {
                     tasks: &[],
                     market: None,
+                    what_each_application_draws: &alo_dock::artwork::NOTHING,
                     the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
                     the_docks_words: crate::desktop_testing::no_words(),
                     in_use: &[],
@@ -180,6 +181,7 @@ fn a_desktop_frame_whose_indicator_was_never_told_is_refused_whole() {
     let frame = DesktopFrame {
         tasks: &[],
         market: None,
+        what_each_application_draws: &alo_dock::artwork::NOTHING,
         the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
         the_docks_words: crate::desktop_testing::no_words(),
         in_use: &[],
@@ -234,6 +236,7 @@ fn the_record_window_sits_in_the_desktop_frame() {
     let desktop = DesktopFrame {
         tasks: &[],
         market: None,
+        what_each_application_draws: &alo_dock::artwork::NOTHING,
         the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
         the_docks_words: crate::desktop_testing::no_words(),
         in_use: &[],
@@ -301,6 +304,7 @@ fn the_frame_carries_whether_the_panel_is_revealed() {
             DesktopFrame {
                 tasks: &[],
                 market: None,
+                what_each_application_draws: &alo_dock::artwork::NOTHING,
                 the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
                 the_docks_words: crate::desktop_testing::no_words(),
                 in_use: &[],
@@ -405,6 +409,7 @@ fn the_frame_carries_the_market_a_person_opened() {
             showing,
             words: &the_markets_words,
         }),
+        what_each_application_draws: &alo_dock::artwork::NOTHING,
         the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
         the_docks_words: crate::desktop_testing::no_words(),
         in_use: &[],
@@ -474,6 +479,7 @@ fn the_frame_carries_the_slot_the_keyboard_is_on() {
         let frame = DesktopFrame {
             tasks: &[],
             market: None,
+            what_each_application_draws: &alo_dock::artwork::NOTHING,
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
             the_docks_words: crate::desktop_testing::no_words(),
             in_use: &[],

@@ -202,6 +202,13 @@ pub struct Server {
     /// measures, and a session nobody has told has no terminal to open rather
     /// than a guess at one. See `crate::a_chord_opens_a_terminal`.
     pub(crate) the_terminal: Option<alo_dock::AppId>,
+    /// What each application draws on the Dock, where it draws anything.
+    ///
+    /// **Empty is the decided fallback and not a fault**: every application
+    /// then draws its first letter, which `docs/design/the-alo-dock.md` rules
+    /// is the answer for one with no artwork. See
+    /// `crate::what_each_application_draws` for why it is handed in.
+    pub(crate) what_each_application_draws: std::sync::Arc<alo_dock::artwork::TheArtwork>,
     /// **alo's own terminal**, when a person has opened one.
     ///
     /// Distinct from [`Self::the_terminal`] above, and the pair is worth
@@ -622,6 +629,7 @@ impl Server {
             clipboard: crate::what_is_on_the_clipboard::TheClipboard::new(),
             // Nobody has asked for a provider to be saved.
             asked_to_save_a_provider: None,
+            what_each_application_draws: std::sync::Arc::new(alo_dock::artwork::TheArtwork::none()),
             what_was_typed_into_more_apps: alo_dock::WhatTheyTyped::nothing(),
             pins_owed_to_the_disk: None,
             // The keyboard starts with the work, which is where a person's

@@ -968,6 +968,12 @@ pub(crate) fn picture(
     // pointer — and `crate::screens_raster`'s preview, which has no keyboard on
     // it at all.
     the_keyboard_is_on: Option<usize>,
+    // **What each application draws, where it draws anything.** Handed in
+    // because which file holds an application icon is a reading of the machine
+    // and this crate shows rather than measures; `alo-desktop` reads it once at
+    // stand-up. An empty one is a Dock of first letters, which ADR 0101 calls
+    // the missing-icon fallback and `docs/design/the-alo-dock.md` decides.
+    what_each_application_draws: &alo_dock::artwork::TheArtwork,
     fonts: &mut FontSystem,
 ) -> Result<DockPicture, RenderError> {
     let (width, height) = size;
@@ -1140,6 +1146,49 @@ pub(crate) fn picture(
         room: size,
     });
 
+    // **Each application's own icon, drawn onto the badge just made for it.**
+    // ADR 0101: *real applications retain their actual application icons; first
+    // letters are a missing-icon fallback, not the finished Dock.*
+    // `dock_surface`'s own note on `badges` says this is where it goes — each
+    // is *centred in its 48 × 48 target, so a real icon replaces one without
+    // the slot moving or resizing.*
+    //
+    // **Onto the surface, not beside it.** The badge **is** the artwork box, so
+    // compositing into the same buffer needs no second texture and no change to
+    // `desktop_paint`'s positional order — and it shows the circle through a
+    // rounded icon's transparent corners, which is what gives every slot on the
+    // bar one silhouette.
+    //
+    // An application with no artwork is absent from this list and its letter is
+    // inked below exactly as before.
+    let pictures: Vec<(Rectangle<i32, Physical>, &alo_dock::artwork::APicture)> = places
+        .each()
+        .iter()
+        .filter_map(|place| {
+            let alo_dock::places::WhatIsHere::Application(app) = place.what() else {
+                return None;
+            };
+            let picture = what_each_application_draws.of(app)?;
+            let along = i32::try_from(place.from_the_start()).unwrap_or(i32::MAX);
+            let (left, top) = a_slot_at(band, layout.edge(), along, icon);
+            // The badge's own box: `GLYPH` centred in the `ICON` target. The
+            // same inset the badges were built with, read the same way rather
+            // than written again as a number.
+            let inset = (icon - badge_is) / 2;
+            Some((
+                Rectangle::new(
+                    (left + inset, top + inset).into(),
+                    (badge_is, badge_is).into(),
+                ),
+                picture,
+            ))
+        })
+        .collect();
+    let mut surface = surface;
+    if let Some(panel) = surface.as_mut() {
+        crate::an_icon_is_drawn_on_its_badge::pictures_onto(panel, &pictures);
+    }
+
     // **One letter per application, which is what a Dock icon is today.** The
     // owner ruled on 2026-10-10 that an application with no artwork shows its
     // first letter, and `alo-applications` names an icon in none of its files —
@@ -1189,6 +1238,18 @@ pub(crate) fn picture(
         let mut one_character = [0_u8; 4];
         let label = i32::try_from(alo_dock::measures::A_LABEL_IS).unwrap_or(13);
         let (mark, size, ground, ink) = match place.what() {
+            // **An application that drew its own icon gets no letter.** Its
+            // artwork was composited onto this badge above, and inking a letter
+            // on top of it would put a character across the middle of every
+            // real icon — `painted_text::centred` paints an opaque box, so it
+            // would not even be a letter over a picture but a badge-coloured
+            // tile where the picture was. That is the fault the paragraph above
+            // records for the Dock's own ground, met a second way.
+            alo_dock::places::WhatIsHere::Application(app)
+                if what_each_application_draws.of(app).is_some() =>
+            {
+                continue;
+            }
             alo_dock::places::WhatIsHere::Application(app) => (
                 app.first_letter(),
                 initial,
@@ -1560,6 +1621,7 @@ mod tests {
                 &apps,
                 (&open, crate::desktop_testing::no_words()),
                 None,
+                &alo_dock::artwork::NOTHING,
                 &mut fonts(),
             )
             .expect("a Dock with its overview open");
@@ -1632,6 +1694,7 @@ mod tests {
                 &apps,
                 closed(),
                 the_keyboard_is_on,
+                &alo_dock::artwork::NOTHING,
                 &mut fonts(),
             )
             .expect("a Dock of four applications lays out on a 1920 x 1080 display");
@@ -1689,6 +1752,7 @@ mod tests {
                 &apps,
                 closed(),
                 the_keyboard_is_on,
+                &alo_dock::artwork::NOTHING,
                 &mut fonts(),
             )
             .expect("a Dock of four applications lays out on a 1920 x 1080 display")
@@ -1785,6 +1849,7 @@ mod tests {
                 &apps,
                 (open, words),
                 None,
+                &alo_dock::artwork::NOTHING,
                 &mut fonts(),
             )
             .expect("a Dock with a surface open");
@@ -1898,6 +1963,7 @@ mod tests {
                 &on_the_dock(4),
                 closed(),
                 None,
+                &alo_dock::artwork::NOTHING,
                 &mut fonts(),
             )
             .unwrap();
@@ -1954,6 +2020,7 @@ mod tests {
                 &on_the_dock(holding),
                 closed(),
                 None,
+                &alo_dock::artwork::NOTHING,
                 &mut fonts(),
             )
             .unwrap();
@@ -1996,6 +2063,7 @@ mod tests {
             &held,
             closed(),
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();
@@ -2069,6 +2137,7 @@ mod tests {
                 &held,
                 closed(),
                 None,
+                &alo_dock::artwork::NOTHING,
                 &mut fonts(),
             )
             .unwrap();
@@ -2162,6 +2231,7 @@ mod tests {
                 &crowded,
                 how,
                 None,
+                &alo_dock::artwork::NOTHING,
                 &mut fonts(),
             )
             .unwrap()
@@ -2211,6 +2281,7 @@ mod tests {
             &crowded,
             closed(),
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();
@@ -2222,6 +2293,7 @@ mod tests {
             &crowded,
             open,
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();
@@ -2269,6 +2341,7 @@ mod tests {
             &on_the_dock(4),
             open,
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();
@@ -2280,6 +2353,7 @@ mod tests {
             &on_the_dock(4),
             closed(),
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();
@@ -2308,6 +2382,7 @@ mod tests {
             &[],
             open,
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();
@@ -2342,6 +2417,7 @@ mod tests {
                 &crowded,
                 opened(),
                 None,
+                &alo_dock::artwork::NOTHING,
                 &mut fonts(),
             )
             .unwrap();
@@ -2401,6 +2477,7 @@ mod tests {
                 &on_the_dock(3),
                 closed(),
                 None,
+                &alo_dock::artwork::NOTHING,
                 &mut fonts(),
             )
             .unwrap();
@@ -2418,6 +2495,7 @@ mod tests {
                 &pinned,
                 closed(),
                 None,
+                &alo_dock::artwork::NOTHING,
                 &mut fonts(),
             )
             .unwrap();
@@ -2468,6 +2546,7 @@ mod tests {
             &on_the_dock(3),
             closed(),
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();
@@ -2550,6 +2629,7 @@ mod tests {
                 &on_the_dock(3),
                 closed(),
                 None,
+                &alo_dock::artwork::NOTHING,
                 &mut fonts(),
             )
             .unwrap();
@@ -2643,6 +2723,7 @@ mod tests {
             &held,
             closed(),
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();
@@ -2683,6 +2764,7 @@ mod tests {
             &on_the_dock(4),
             closed(),
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();
@@ -2694,6 +2776,7 @@ mod tests {
             &on_the_dock(4),
             closed(),
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();
@@ -2705,6 +2788,7 @@ mod tests {
             &on_the_dock(4),
             closed(),
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();
@@ -2750,6 +2834,7 @@ mod tests {
                         &on_the_dock(4),
                         closed(),
                         None,
+                        &alo_dock::artwork::NOTHING,
                         &mut fonts()
                     ),
                     Err(RenderError::DesktopScene)
@@ -2778,6 +2863,7 @@ mod tests {
             &held,
             closed(),
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();
@@ -2853,6 +2939,7 @@ mod tests {
                 &held,
                 closed(),
                 None,
+                &alo_dock::artwork::NOTHING,
                 &mut fonts(),
             )
             .unwrap();
@@ -2905,6 +2992,7 @@ mod tests {
             &[],
             closed(),
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();
@@ -2950,6 +3038,7 @@ mod tests {
             &held,
             closed(),
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();

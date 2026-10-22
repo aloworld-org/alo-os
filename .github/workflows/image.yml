@@ -1,15 +1,27 @@
 # Build `image/Containerfile` at a commit of main and push it to the registry as
 # a candidate. Never sign it.
 #
-# Why this is not yet the road, 2026-09-15. The image carries the model's
-# weights — 4.5 GB of them — on top of a bootc base, a Rust toolchain build
-# stage and the model runtime, and a GitHub-hosted runner's disk does not hold
-# the build: the disk written from it measured 9.6 GB on 2026-09-12
-# (`docs/booting.md`), the build stages need room beside the result, and a
-# standard runner has roughly 14 GB free before anything is installed. Until a runner
-# can hold it, alo OS is built and pushed by the machine that built it (ADR 0033
-# §3), and this file is what that road becomes when a runner can. It runs only
-# when somebody asks it to, so it is never a red run nobody asked for.
+# **This IS the road, and has been since the weights left — corrected 2026-10-22.**
+#
+# What stood here said it was not: *the image carries the model's weights — 4.5 GB
+# of them — and a GitHub-hosted runner's disk does not hold the build*, measured at
+# 9.6 GB on 2026-09-12 against roughly 14 GB free. That was true when it was
+# written. [ADR 0095](../../docs/decisions/0095-the-release-carries-no-model-and-a-person-brings-their-own.md)
+# then took the model out of the release — 4.87 GiB of it — and the premise went
+# with it.
+#
+# **The evidence is this workflow's own history**, which is one query away and
+# which nobody ran: it succeeded on `ubuntu-24.04` on 2026-10-19 at 10:45Z and
+# again at 19:57Z. A paragraph saying a thing cannot be done, above a job that
+# has done it twice.
+#
+# *The lane repeated the stale sentence to the owner twice on 2026-10-22 as a
+# reason not to dispatch, having read the comment and not the run list. A comment
+# explaining why something is impossible is the most expensive kind to leave
+# stale, because it is read instead of the thing it describes.*
+#
+# It still runs only when somebody asks it to, so it is never a red run nobody
+# asked for — and that is a choice about noise, not about capacity.
 #
 # What it may never do, and `crates/alo-image` (`workflow.rs`) holds it to each:
 #

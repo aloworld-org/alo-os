@@ -53,13 +53,54 @@ on the list at all, and the measurement that found it is in the item itself.
 - **One application starts and draws.** *The ask exists and has never been done
   on real hardware — it needs a session bus and a D-Bus-activatable
   application, and the gate machine has neither.*
-- **A person asks the agent in plain words, and the agent does it.** *The
-  composer is drawn and takes no typing; nothing joins it to the agent. A local
+- **A person asks the agent in plain words, and the agent does it.** *A local
   model answers today and nothing leaves the machine — measured at the
-  interface, `tx+0` across three asks with a control. What is missing is the
-  road between a person's words and that, the sentence a change is proposed
-  with, the one approval, and the Settings row where a person chooses how code
-  runs.*
+  interface, `tx+0` across three asks with a control.*
+  *This item named four missing things: the road between a person's words and
+  that, the sentence a change is proposed with, the one approval, and the
+  Settings row where a person chooses how code runs. **Three of the four are
+  built.** The sentence it opened with — "the composer is drawn and takes no
+  typing; nothing joins it to the agent" — was true when written and is false
+  now.*
+  *Built:*
+  - *the **road**. `alo-shell`'s `what_a_person_asked_goes_to_the_agent` hands
+    each request to a thread of its own, which writes one line to the socket
+    [ADR 0109](docs/decisions/0109-a-persons-words-reach-the-agent-through-a-socket-systemd-opens-as-the-agent.md)
+    decided on and systemd opens as the **agent's own user** — the thing
+    neither the shell nor the daemon may do, because the shell runs as the
+    person and `alo-agentd` refuses to run as root. Enter in the Dock's
+    composer had recorded a request and opened a task window for some time
+    before this, and nothing sent it anywhere, so a person could ask and watch
+    a window open with nothing behind it;*
+  - *the **sentence**, in `alo-approving`: a change waits on a sentence that is
+    about something, so a path nothing is at is refused **before** a person
+    reads a sentence naming it;*
+  - *the **one approval**, which `alo-approving` and `alo-turn` have held with
+    tests since before this item was written — one approval causes exactly one
+    execution, and every execution and every refusal leaves a record.*
+  ***What is still missing is the fourth, and it is a sharper gap than "not
+  built yet".*** *The three levels exist and are enforced:
+  `alo_capability::HowCodeRuns` names `InASealedBox`, `AskingEachTime` and
+  `AtFullTrust`, and `alo-running` refuses what a run was not given, with the
+  record and the refusal both tested. **What does not exist is anywhere to keep
+  the person's answer.** `HowCodeRuns` carries only `const fn` accessors —
+  nothing reads it from a person's settings and nothing writes it there — the
+  settings store holds no key for it, and no surface in `alo-shell` or
+  `alo-desktop` names it. So the mechanism is complete, the enforcement is
+  tested, and **the choice law 2 and
+  [ADR 0064](docs/decisions/0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md)
+  are both about cannot be made by anybody.** `alo-try` pinning
+  `InASealedBox` is **not** that gap and should not be read as one: a person
+  who typed `try` asked for a sealed box for that one command whatever their
+  default says, which is what the word is for.*
+  ***And none of it has run on a machine.*** *Every proof above is a test on a
+  development machine. The one link with no test at all is systemd starting
+  `alo-asking@.service`: the image tests read the unit's own text and assert
+  what it says, which is a check that would pass while the socket never
+  accepted a connection.*
+  *Measured by hand on 2026-10-22, against a control each time. **None of these
+  four measurements runs on a build** — they are a reading of the tree on one
+  day, and the next person to touch this item should take them again.*
 
 - **A person installs an application, and the agent can work with it.** *The
   installing is built and has run. `alo-software` is twenty-nine source

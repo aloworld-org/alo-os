@@ -221,6 +221,7 @@ fn with_night_light_off_the_dock_is_drawn_exactly_as_it_was_decided() {
             ),
             // No keyboard on this bar: this test is about where a press lands.
             None,
+            &alo_dock::artwork::NOTHING,
             &mut fonts(),
         )
         .unwrap();

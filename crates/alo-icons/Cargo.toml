@@ -1,0 +1,13 @@
+[package]
+name = "alo-icons"
+version = "0.0.1"
+description = "Where an application's icon is on this machine, by the icon theme rules."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

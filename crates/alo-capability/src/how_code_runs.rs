@@ -61,9 +61,16 @@ pub enum HowCodeRuns {
     /// the broker; limits on processor, memory and time; thrown away after each
     /// run. **The lock is the kernel's, not the agent's promise.**
     ///
-    /// The box is not built. A machine at this level therefore runs nothing,
-    /// which is the honest behaviour of a default whose enforcement does not
-    /// exist yet — and not a reason to make some other level the default.
+    /// **The box runs a command as of 2026-10-16.** `alo-running` is it, and
+    /// `alo-running/tests/the_kernel_refuses_what_a_run_was_not_given.rs`
+    /// measures it end to end on a real kernel: the same command, the same
+    /// box, one line different in the bound, reading the file in one case and
+    /// `EACCES` in the other.
+    ///
+    /// *This read "the box is not built. A machine at this level therefore
+    /// runs nothing" until 2026-10-22, and had been false for six days —
+    /// nothing fails when a comment naming what is missing stops being true.
+    /// `docs/features.md` had the correct date the whole time.*
     #[default]
     InASealedBox,
     /// The agent shows the exact command, and it runs once the person approves.

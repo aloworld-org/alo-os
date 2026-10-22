@@ -176,6 +176,7 @@ fn what_is_drawn_on_two_desktops_carries_the_indicator_and_the_question() {
                 DesktopFrame {
                     tasks: &[],
                     market: None,
+                    what_each_application_draws: &alo_dock::artwork::NOTHING,
                     the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
                     the_docks_words: crate::desktop_testing::no_words(),
                     dock: &dock,

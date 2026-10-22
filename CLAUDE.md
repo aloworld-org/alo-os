@@ -7,7 +7,7 @@ discipline. You are that team. Everything here is absolute;
 everything else is judgment.
 
 The workplace that runs on it lives in `alo-workplace`, and it is
-three products over one platform — **mail, meet and sites** — which
+two products over one platform — **mail and meet** — which
 **ship as separate applications**, each installed, updated, granted
 and opened on its own ([ADR 0122](docs/decisions/0122-the-workplace-ships-as-separate-applications.md)).
 *Projects instead of applications* is the layer above them, not the
@@ -54,10 +54,12 @@ that boots.
    open is where the security bug lives. Small files are how the
    capability model stays reviewable by somebody who did not write
    it.
-5. **The person chooses. alo never takes the choice away.** On their
-   own machine, a person decides what alo OS does. Every protection is
-   a default they can change, not a wall. Anything with a risk is
-   offered with the risk in plain words and switched on by the person.
+5. **The person chooses. alo never takes the choice away.**
+   *The owner, 2026-10-14: "we are not dictators and we give the users a
+   choice to choose."* On their own machine, a person decides what alo OS
+   does. Every protection is a default they can change, not a wall.
+   Anything with a risk is offered with the risk in plain words and
+   switched on by the person.
    It is never removed from them "for their own good". Two kinds of
    protection stay on at every setting, because neither takes a choice
    away: those that restrict nothing (the record, undo, the egress
@@ -256,8 +258,17 @@ cannot demonstrate.
   in this product, not a feature request.
 - **Reads answer, changes wait.** A read runs inside the turn. Any
   change to the machine is proposed with a sentence describing it and
-  waits for one approval. What a person approves is that sentence,
-  and an approval is never a session.
+  waits for one approval. What a person approves is that sentence.
+  **An approval is not a session at the default setting**, and a person
+  may choose otherwise:
+  [ADR 0064](docs/decisions/0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md)'s
+  third level is *the agent runs code directly on the machine, without
+  asking*, switched on for one project or for everything and off again
+  whenever they like. **This clause read "an approval is never a
+  session" until 2026-10-14**, which 0064 had contradicted since the day
+  it was accepted. At every level the run is recorded, the files are
+  snapshotted before it, and what leaves is shown — because none of
+  those three takes a choice away.
 - **Contracts outlive code.** The agent verbs, the application-adapter
   SDK, D-Bus interfaces, config keys, the image format and the update
   channel are public surfaces. Third parties build adapters against
@@ -266,8 +277,14 @@ cannot demonstrate.
 - **The network is not authority.** Machines discover each other with no
   configuration and trust none of them for it. Using another machine
   takes a deliberate pairing on both; an agent reaching across acts
-  only under a grant made on the machine it acts upon. There is no
-  trusted-network setting, and there will not be one (ADR 0003).
+  only under a grant made on the machine it acts upon. **No
+  trusted-network setting is on by default** (ADR 0003), and a person
+  may opt in on their own network, told in the sentence that switches it
+  on that it also trusts every device on that network. **This clause
+  read "there is no trusted-network setting, and there will not be one"
+  until 2026-10-14**, while `docs/features.md` had been saying *a person
+  may opt in* — so the constitution and the feature list disagreed, and
+  the constitution was the one promising something nobody had decided.
 - **Whose machine it is, is answerable in ten seconds.** A machine is
   personal, or it is managed by an organisation that sets policy and
   holds a recovery key — and on a managed machine the person is told
@@ -516,6 +533,121 @@ next lane relitigates.*
   is what the remote holds**, never what a working copy holds. *It is
   fixed on my machine* is not an answer to *is it fixed*; the question
   is about `main`, and the honest reply names what `origin` shows.
+- **Every branch has a pull request, and every pull request says what it
+  is.** *The owner's instruction, 2026-10-22.* Two halves of one rule,
+  because each without the other leaves work nobody can act on.
+
+  **A branch with no pull request is work nobody can see.** It does not
+  gate, it does not queue, it does not land, and it is invisible to
+  everyone but the lane that pushed it — which is the same fault
+  *nothing stays on a local disk* names, one step further along. Pushing
+  made it fetchable; only a pull request makes it **reviewable,
+  mergeable and finishable by somebody else.**
+
+  **Measured on 2026-10-22**, the day this was written, and every figure
+  below can be retaken. Five branches on the remote, three with no pull
+  request. One had been sitting for **two days** — pushed on 2026-10-20,
+  a whole new crate, 10 files and 2,440 insertions, which is GitHub's own
+  figure for it and anybody can ask again — and it could not have landed
+  even if somebody had found it, because nothing anywhere in the
+  workspace names the crate it adds. One carried a finished feature — every installed application's
+  own icon on the Dock — that sat gated and green for **six hours** with
+  no door. The third was this rule, which sat pushed and unopened until
+  another lane opened it on the writer's behalf. And the whole evening's
+  throughput ran through one person opening pull requests by hand, four
+  times, because the lane that wrote them could not. *Work finished and
+  sitting still was the single largest cost of that day, and not one
+  line of it was a hard problem.*
+
+  *An earlier draft of this paragraph cited one of those branches as
+  carrying "198 lines". No ref that still exists matches that figure —
+  the branch had landed and been deleted — so the claim could not be
+  retaken by anybody reading it, which is what **measured before
+  claimed** forbids, in the document that forbids it. Replacing it took
+  two tries, and the second try was wrong in a more interesting way than
+  the first, so both are recorded: **a line count has two independent
+  ways to be false, and they are easy to mistake for each other.***
+
+  - *A **stale baseline**. A diff against a local `main` eight commits
+    behind read 10,442 insertions where `origin/main` gives 3,974.
+    Another lane hit it the same day at 247 commits behind, where one
+    changed file read as 3,945 lines across 53. The squash queue means a
+    stale `main` still lists commits normally, so nothing looks wrong.
+    **Diff against `origin/main`, never `main`.***
+  - *A **two-dot diff across an old merge-base**. `origin/main..branch`
+    answers *what changes if the tree becomes the branch*, so it also
+    counts undoing everything `origin/main` gained since the base. For
+    the two-day branch above, whose base is 45 commits back, that reads
+    195 files and 24,528 deletions — and this draft published it as
+    "merging it would remove 24.5k lines". **No merge does that.** The
+    squash is computed from the merge-base, GitHub reports `+2440 −0`,
+    and the three-dot diff agrees to the line. The lane that caught it
+    was the one the wrong figure was aimed at.*
+
+  *The two are distinguishable without measuring anything. Three-dot
+  **is** `merge-base..branch`, so where the merge-base is `origin/main`
+  the two forms are the same command and must agree. **A gap between
+  them is therefore a statement about the base's age and nothing else** —
+  true by definition, and it will never decay.*
+
+  *This draft said it the other way round, as a figure: "measured at 37
+  files and 3,974 insertions either way". **It was false forty minutes
+  later**, when one pull request landed and that branch's base went one
+  commit behind — 45 files and +4,005/−400 against 37 and +3,974/−10.
+  Any landing ends such a condition, so the honest form of that sentence
+  had a half-life of one merge. It is the family **Forbidden** already
+  names as publishing a measurement as a standing property, and it
+  happened in the sentence explaining how line counts go wrong.*
+
+  *Which gives the generalisation worth more than any of the three
+  figures. What made GitHub's `+2440 −0` usable was not that it was
+  small or that it was right: it was **recomputed on read**, from the
+  merge-base, every time anybody asks. The "198 lines" depended on a
+  tree that no longer existed and the "either way" on a tree state that
+  lasted under an hour. **Cite a figure a reader can re-derive from a
+  live source; a figure that describes a tree is a figure with an expiry
+  date nobody wrote on it.** The corrections are all recorded rather
+  than made silently, because a constitution that quietly repairs its
+  own evidence teaches the opposite of what this clause asks for.*
+
+  **The pull request is opened when the branch is pushed**, which is the
+  moment there is a commit — not when the work feels presentable. A
+  draft is a pull request. An empty one with a title is a pull request.
+  What is forbidden is a branch on the remote with nothing pointing at
+  it.
+
+  **And it says what it is.** A pull request whose body is *No
+  description provided* hands a reviewer a diff and asks them to
+  reconstruct the argument from it. The commit bodies carry the
+  reasoning — that rule is above — but a reader opening twelve commits
+  cold has no map, and the one thing they most need is the thing a diff
+  cannot show: **what a person could not do before, and can now.** Three
+  lines is enough. The same day, both of this lane's own pull requests
+  said *No description provided*, which is why this clause is here and
+  not left as a courtesy.
+
+  **Nothing checks this, and saying so is the point.** The merge queue
+  enforces the first half at the last possible moment — a branch cannot
+  land without a pull request — and that is exactly where enforcement is
+  worth nothing, because the cost is paid in the hours before. No gate
+  reads the remote's branch list, and no gate can read a body and judge
+  whether it says anything. So this is a discipline rather than a test,
+  and under *say whether a measurement was performed once or runs
+  forever* it is neither: **it runs when somebody chooses to follow it.**
+  A lane that wants it caught should ask the owner for a check that
+  lists branches with no pull request. **It is one API call, and it has
+  been run by hand**: on the day this was written, one GraphQL query
+  over `refs/heads/` with `associatedPullRequests` found both branches
+  that were still open gaps. It also returned **two standing false
+  positives** — the default branch and a `gh-readonly-queue/*` ref,
+  neither of which can have a pull request — so a check built from it
+  excludes those two by prefix. That exclusion is the whole design
+  problem: *a check with permanent false positives is one lanes learn to
+  skip*, and a skipped check is worse than none, because it is counted.
+  Nothing in this repository runs it yet, and this sentence is not
+  permission to add it — apparatus on the landing path is the owner's
+  call.
+
 - **Stack your own dependent work.** Branch off your own branch rather
   than waiting for it to land. Waiting for your own pull request is
   serialisation a lane does to itself.

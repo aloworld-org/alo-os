@@ -1820,13 +1820,97 @@ pub enum WordsError {
     List(#[from] VocabularyError),
 }
 
-/// Everything this crate can say, as a vocabulary of its own.
+/// Everything this program can say, as a vocabulary of its own.
+///
+/// **This crate's words and `alo-installing`'s, because the program says both.**
+/// It declared only this crate's until 2026-10-22, and
+/// `crate::writing_the_stick` says `installing.*` — the sentences a translator
+/// met in the crate that owns the stick's screens. So **every one of its 24
+/// sentences reached a person as `«installing.write-a-stick»`**, a key in
+/// guillemets, which is what `alo-strings` shows for a key no phrase was
+/// declared for.
+///
+/// It was found by running the program on real Windows, and the contrast in two
+/// consecutive lines of its output is the whole of it:
+///
+/// ```text
+/// SAID : «installing.write-a-stick»
+/// SAID : No device you can start from is plugged into this computer, so nothing
+///        was changed. Plug the stick in and start this again
+/// ```
+///
+/// The second is `STICK_NONE_PLUGGED_IN`, which is this crate's own. The first is
+/// not.
+///
+/// **No test could see it, and that is the part worth remembering.** The road's
+/// own tests built their `Strings` from
+/// `alo_saying::everything_this_machine_can_say()` — the **whole machine's**
+/// vocabulary, which does include `alo-installing` — so they read in good
+/// English while the program printed keys. They now build from this function,
+/// which is what `main.rs` uses, so the test's subject is the program's.
+///
+/// Declaring a second crate's words is the shape `alo-shell`'s `booting.rs`
+/// already uses, and no key is moved: ADR 0068 makes a moved key a declaration
+/// and nothing here moves one.
 ///
 /// # Errors
-/// [`WordsError`], which the list above cannot cause.
+/// [`WordsError`], which neither list can cause. A collision between the two
+/// cannot happen either — one prefixes `installer.`, the other `installing.` —
+/// and would be reported here rather than silently dropping a sentence.
 pub fn installer_words() -> Result<Vocabulary, WordsError> {
     let mut vocabulary = Vocabulary::empty();
     declare_into(&mut vocabulary)?;
+    Ok(vocabulary)
+}
+
+/// Everything **this program** says, which is two crates' words and not one.
+///
+/// **Not [`installer_words`], and the difference is load-bearing.** That one
+/// means *the words this crate declares*, and
+/// `alo_saying::everything_this_machine_can_say` counts on it meaning exactly
+/// that — two of its tests sum each crate's own list and compare the total, so
+/// widening it broke the machine's vocabulary accounting. Found by those tests
+/// within a minute of trying it.
+///
+/// So the program's vocabulary is assembled here instead, which is also the
+/// shape `alo-shell`'s `booting.rs` uses for four of them.
+///
+/// **The fault this exists for.** `main.rs` built its `Strings` from
+/// `installer_words()`, and `crate::writing_the_stick` says `installing.*` —
+/// the sentences a translator met in the crate that owns the stick's screens.
+/// So **every one of its 24 sentences reached a person as
+/// `«installing.write-a-stick»`**, a key in guillemets, which is what
+/// `alo-strings` correctly shows for a key no phrase was declared for.
+///
+/// Found by running the program on real Windows. The contrast in two
+/// consecutive lines of its output is the whole of it:
+///
+/// ```text
+/// SAID : «installing.write-a-stick»
+/// SAID : No device you can start from is plugged into this computer, so nothing
+///        was changed. Plug the stick in and start this again
+/// ```
+///
+/// The second is `STICK_NONE_PLUGGED_IN`, this crate's own. The first is not.
+///
+/// **No test could see it**, because the road's own tests built their `Strings`
+/// from the **whole machine's** vocabulary, which does include
+/// `alo-installing` — so they read in good English while the program printed
+/// keys. They now build from here, so the test's subject is the program's.
+///
+/// No key is moved; ADR 0068 makes a moved key a declaration and nothing here
+/// moves one.
+///
+/// # Errors
+/// [`WordsError`], which neither list can cause. A collision between the two
+/// cannot happen — one prefixes `installer.`, the other `installing.` — and
+/// would be reported here rather than silently dropping a sentence.
+pub fn what_this_program_says() -> Result<Vocabulary, WordsError> {
+    let mut vocabulary = installer_words()?;
+    alo_installing::declare_into(&mut vocabulary).map_err(|why| match why {
+        alo_installing::WordsError::Word(what) => WordsError::Word(what),
+        alo_installing::WordsError::List(what) => WordsError::List(what),
+    })?;
     Ok(vocabulary)
 }
 

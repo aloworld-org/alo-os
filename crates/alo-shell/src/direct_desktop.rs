@@ -1299,6 +1299,12 @@ impl LoopInput for Desk<'_> {
                 results: &found,
                 chosen: server.which_row_in_the_bar,
             });
+        // **An `Arc` of its own, lent to the frame.** The frame holds the
+        // reference for as long as it lives and this lane uses the server
+        // mutably afterwards, so the borrow cannot come from the server here.
+        // One refcount per frame, never a copy of every icon.
+        let what_each_application_draws =
+            std::sync::Arc::clone(&server.what_each_application_draws);
         what_only_the_server_knows(
             &mut frame,
             server,
@@ -1308,6 +1314,7 @@ impl LoopInput for Desk<'_> {
                 in_more_apps: &in_more_apps,
                 the_dock_has_open: &the_dock_has_open,
                 the_docks_words: &the_docks_words,
+                what_each_application_draws: &what_each_application_draws,
                 tasks: &the_task_windows,
                 market: the_market,
                 the_bar,
@@ -1498,6 +1505,12 @@ impl LoopInput for Desk<'_> {
             let named = FrameTarget::metadata(other)?.name;
             let size = FrameTarget::size(other);
             let mut frame = self.desktop.now();
+            // **An `Arc` of its own, lent to the frame.** The frame holds the
+            // reference for as long as it lives and this lane uses the server
+            // mutably afterwards, so the borrow cannot come from the server here.
+            // One refcount per frame, never a copy of every icon.
+            let what_each_application_draws =
+                std::sync::Arc::clone(&server.what_each_application_draws);
             what_only_the_server_knows(
                 &mut frame,
                 server,
@@ -1507,6 +1520,7 @@ impl LoopInput for Desk<'_> {
                     in_more_apps: &in_more_apps,
                     the_dock_has_open: &the_dock_has_open,
                     the_docks_words: &the_docks_words,
+                    what_each_application_draws: &what_each_application_draws,
                     // **None on an extra display, and that is a named gap.** A
                     // task window belongs to the display it was placed on, and
                     // nothing records which that was — the position is one

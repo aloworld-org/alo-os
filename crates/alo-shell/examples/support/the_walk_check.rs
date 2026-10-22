@@ -575,6 +575,7 @@ impl<'a> TheDesk<'a> {
             // would be one nobody asked for, sitting over every screen the
             // walk is checking.
             market: None,
+            what_each_application_draws: &alo_dock::artwork::NOTHING,
             the_dock_has_open: &alo_shell::NOTHING,
             the_docks_words: no_words(),
             dock: self.dock,

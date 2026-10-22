@@ -102,6 +102,7 @@ pub fn stand_the_desktop_up(
     asks_an_application_to_start: Option<crate::AWayToStartApplications>,
     what_this_machine_offers: &alo_dock::pinning::Discovery,
     the_terminal: Option<alo_dock::AppId>,
+    the_artwork: &alo_dock::artwork::TheArtwork,
 ) -> Result<StoodUp, WouldNotStand> {
     let mut server = Server::bind_keyboard(
         display.runtime,
@@ -151,6 +152,12 @@ pub fn stand_the_desktop_up(
     if let Some(terminal) = the_terminal {
         server.its_terminal_is(terminal);
     }
+    // **What each application draws on the Dock, handed in for the reason the
+    // two above are**: which file holds an application icon is a reading of
+    // this machine, and this crate shows rather than measures
+    // (`crate::what_the_dock_is_filled_with`). An empty one is a Dock of first
+    // letters, which is the decided fallback and not a failure.
+    server.its_applications_draw(the_artwork.clone());
     // **What this person's Dock is pinned to, worked out once.** Two readings
     // meet here and neither is this crate's to take: what they kept, which is a
     // file in their folder, and what the machine has, which is a scan. Both

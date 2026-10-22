@@ -375,11 +375,29 @@ file carries it with a tier.*
   read as a request costs you reading one sentence rather than an action
   **Decided by the owner 2026-10-18**
   ([ADR 0124](decisions/0124-one-command-asks-alo-from-the-terminal-and-asking-means-acting.md)).
-  **Not built**: `alo-ask` is the command and it only answers — measured the
-  same day, it names the agent, the broker, a proposal and an approval **zero**
-  times. *The owner ruled three times on 2026-10-18 — that it acts, that there
-  is one of it, and that it works out which you meant — so the promise is
-  theirs; the wording of this line is the lane's*
+  **Built 2026-10-21, and this line said *Not built* until 2026-10-22.** All
+  three of the owner's rulings hold: there is **one** command; it **works out
+  which you meant**, by asking the model on this machine to answer with one word
+  and treating anything else as *could not tell*; and an acting sentence goes to
+  **the agent's own door** — `alo-asking.socket`, which systemd opens as the
+  agent (ADR 0109) — rather than being answered.
+  *The road and not the mention count: `main.rs` matches `WhatItWants::Acting`
+  and returns `the_agent_was_asked`, which connects to the agent's socket and
+  reads what came back. The 2026-10-18 measurement counted **mentions**, and
+  mentions and roads are different populations — a crate can name a thing
+  hundreds of times with nothing calling it, which is this repository's own
+  commonest fault. This says which line dispatches.*
+  **Nothing here approves anything, deliberately.** The command writes a
+  sentence and reads what came back; the proposal is the daemon's to put and the
+  approval is the person's to give. ADR 0124's own words: *the classifier is not
+  what protects the person — the approval is.*
+  **Not built**: nothing of this promise. What is left is that **nobody has seen
+  it on a machine**, which is true of six other starred terminal lines and is
+  waiting on an image.
+  *The measurement that said* zero *was correct on 2026-10-18 and false from the
+  moment the road landed. Nothing re-read it, which is why a measurement written
+  into a promise has to carry its date — and this one did, which is how it was
+  caught.*
 - ★ **And you decide whether alo may use it.** **alo can open a terminal for
   you** — that is an ordinary thing to ask an assistant for, and it hands alo
   nothing: a terminal window opens onto a prompt waiting for a keystroke, and
@@ -437,10 +455,25 @@ file carries it with a tier.*
   origin, `program`**, because a pseudoterminal is the only thing that writes to
   a transcript today — including the person's own typing, which the shell echoes
   back and which is therefore the program's bytes. The other three become
-  reachable when alo itself writes into a transcript. **Not built**: the source
-  qualifier — `· cargo test` — which the design puts inside the region as a
-  caption rather than in the 96-wide column, and which belongs with rich
-  results.
+  reachable when alo itself writes into a transcript.
+  **The source qualifier is built, and this said *Not built* until 2026-10-22.**
+  It is in the design's own form rather than ADR 0113's: the design puts the
+  detail **inside the region as a caption** instead of in the 96-wide column, and
+  that caption is drawn — `crates/alo-shell/src/the_terminals_cells_are_drawn.rs`
+  fills what printed a result into *Source: {what} · Not independently verified*
+  and draws it under the summary, in the **program's** region, which the design's
+  third rule asks for and a test holds.
+  *Both this line and `docs/design/the-terminal-window.md` said it was owed, and
+  both gave the same reason — that it **belongs with rich results, which are not
+  built**. Rich results were built on 2026-10-18: the test result #761, the
+  benchmark #803 and the file diff #804. Two documents went stale together
+  because they shared one premise, which is why a note that defers to another
+  promise has to name it: when that promise lands, the deferral is what somebody
+  has to come back and re-read.*
+  **What was not checked**: whether the caption sits at the design's measured
+  inset — 17 in, 862×22, 38 below the summary's row. The content and the region
+  are right; the geometry is the next thing to measure off the frame, and it is
+  not claimed here.
 - ★ **And alo says what it measured apart from what it worked out.** One rule
   over everything below, because it is the same rule four of them would
   otherwise repeat: *blocked reading from the keyboard* is a measurement and
@@ -643,6 +676,11 @@ file carries it with a tier.*
   moment and no command. Pairing a row to a place is the piece of this line that
   is left, and it is a surface rather than a mechanism — everything underneath
   it now works.
+  [ADR 0132](decisions/0132-how-a-person-picks-a-place-to-return-to-from-the-scrollback.md)
+  proposes it with three roads and what each costs, measured: it is a decision
+  rather than a commit because every road adds to a published contract, and the
+  cheapest-looking one is the one `docs/contracts/shell-integration-marks.md`
+  makes a promise about.
 - ★ **Bisect the machine, not the repository.** *It worked yesterday* becomes a
   command: walk the snapshots to find when something broke, including everything
   version control never held — installed packages, caches, configuration, a
@@ -1453,7 +1491,18 @@ find.*
   on.** What is owed after it: the three protections ADR 0064 keeps on at every
   level are the caller's, and nothing calls this yet — the record, the snapshot
   taken first, and the egress indicator — as are the setting and the surface
-  above. **And where a box's control group lives on a booted machine is open**:
+  above.
+  **The setting a person makes it in exists as of 2026-10-22.**
+  `/var/lib/alo/how-code-runs.toml`, beside the grants and held to the same
+  three rules about who may have written it — because a file somebody else
+  could write into saying `at-full-trust` is an escalation to running code
+  without asking. `docs/contracts/how-code-runs-file.md` is its contract.
+  **It keeps three states apart and that is the point of it**: a level the
+  person chose, *no file at all* for a person who has not chosen, and a
+  refusal — so neither a machine nobody has opened the setting on nor a file
+  that will not read can report the sealed box as somebody's decision. What is
+  owed after it is the **surface**: nothing in `alo-shell` or `alo-desktop`
+  offers the three levels yet, so the choice still cannot be made by anybody. **And where a box's control group lives on a booted machine is open**:
   it cannot go under `alo-bounding`'s turn root, which was measured rather than
   reasoned about and is in `docs/quirks.md`.
 - Update checking can be turned off, saying that security fixes stop arriving while it is off

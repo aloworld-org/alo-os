@@ -25,9 +25,9 @@ mod running {
 
     use alo_installer::{
         Ended, OnThisMachine, PRESS_ENTER_TO_CLOSE, Released, Removed, Started, Switched,
-        THE_DEFAULTS_WORD, THE_REMOVALS_WORD, THE_STICKS_WORD, THE_SWITCHS_WORD, TheDefault,
-        TheMachine, install, installer_words, remove_alo_os, restart_into_alo_os, start_the_stick,
-        which_system_starts,
+        THE_DEFAULTS_WORD, THE_REMOVALS_WORD, THE_STICKS_WORD, THE_SWITCHS_WORD, THE_WRITINGS_WORD,
+        TheDefault, TheMachine, Written, install, remove_alo_os, restart_into_alo_os,
+        start_the_stick, what_this_program_says, which_system_starts, write_the_stick,
     };
     use alo_strings::{Filling, Strings};
 
@@ -43,7 +43,7 @@ mod running {
     /// argument is an install as it always was, and any other argument is
     /// refused rather than guessed at.
     pub(crate) fn run() -> ExitCode {
-        let vocabulary = match installer_words() {
+        let vocabulary = match what_this_program_says() {
             Ok(vocabulary) => vocabulary,
             Err(why) => {
                 eprintln!("alo-installer: its own words would not declare: {why}");
@@ -109,6 +109,36 @@ mod running {
                     Started::NotRead | Started::NotSet => ExitCode::FAILURE,
                 };
             }
+            // **The road that writes a device a person plugs in**, and the
+            // sibling of the one above it: that one starts a stick that already
+            // exists, this one makes one. `docs/features.md`, the owner's
+            // ruling of 2026-10-20: *let's build 1 and 2.*
+            //
+            // **The only road in this program that destroys something nobody
+            // asked alo OS to install onto**, which is why every refusal is
+            // reported and only two outcomes touched the device at all.
+            [one] if one == THE_WRITINGS_WORD => {
+                let written = write_the_stick(&mut machine, &strings);
+                let _read =
+                    machine.ask(&strings.say(&PRESS_ENTER_TO_CLOSE.key(), &Filling::nothing()));
+                return match written {
+                    // A person who declined, a name that matched nothing, a
+                    // device too small and a machine with nothing plugged in are
+                    // all ordinary ends rather than failures: the device is as
+                    // it was and they were told why.
+                    Written::Written { .. }
+                    | Written::NotAgreed
+                    | Written::NotThatName
+                    | Written::TooSmall { .. }
+                    | Written::NothingPluggedIn => ExitCode::SUCCESS,
+                    // These two are a machine that could not do what was asked:
+                    // nothing to write, or a device that stopped answering with
+                    // the stick now unusable.
+                    Written::NoImage | Written::NotRead | Written::NotWritten { .. } => {
+                        ExitCode::FAILURE
+                    }
+                };
+            }
             [one] if one == THE_DEFAULTS_WORD => {
                 let ended = which_system_starts(&mut machine, &strings);
                 let _read =
@@ -123,7 +153,8 @@ mod running {
             _ => {
                 eprintln!(
                     "alo-installer: it takes no argument, or {THE_SWITCHS_WORD}, \
-                     {THE_STICKS_WORD}, {THE_DEFAULTS_WORD} or {THE_REMOVALS_WORD} \
+                     {THE_STICKS_WORD}, {THE_WRITINGS_WORD}, {THE_DEFAULTS_WORD} or \
+                     {THE_REMOVALS_WORD} \
                      and nothing else."
                 );
                 return ExitCode::FAILURE;

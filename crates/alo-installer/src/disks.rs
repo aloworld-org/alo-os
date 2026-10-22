@@ -284,6 +284,44 @@ impl Disk {
         self.bus_type.eq_ignore_ascii_case(THE_BUS_A_STICK_IS_ON)
     }
 
+    /// Windows' physical-drive path for this disk.
+    ///
+    /// **A drive letter is not this.** A letter names a volume inside a
+    /// partition; a whole-disk image replaces the partition table itself, so
+    /// writing one through a letter would write inside the partition that is
+    /// already there. `crate::writing_the_stick` is the one caller and that is
+    /// the fault it exists to avoid.
+    #[must_use]
+    pub fn physical_drive(&self) -> String {
+        format!(r"\\.\PhysicalDrive{}", self.number)
+    }
+
+    /// Whether Windows says it will not write this disk.
+    ///
+    /// A device with its switch on, or one Windows has decided is read-only,
+    /// answers true — and a write is refused before a person is asked for
+    /// consent rather than after it fails half-way.
+    pub const fn is_read_only(&self) -> bool {
+        self.is_read_only
+    }
+
+    /// How big it is, written out for a person — *About 4 GB*.
+    ///
+    /// **Rounded and prefixed with *About*, deliberately.** It fills
+    /// `installing.what-goes-from-the-stick`, whose note asks for *About 4 GB of
+    /// files*: a person deciding whether this is the right stick recognises it
+    /// by roughly how big it is, and an exact byte count is both unreadable and
+    /// a precision this does not have.
+    #[must_use]
+    pub fn about_how_big(&self) -> String {
+        let gb = self.size / 1_000_000_000;
+        if gb == 0 {
+            let mb = self.size / 1_000_000;
+            return format!("About {mb} MB");
+        }
+        format!("About {gb} GB")
+    }
+
     /// Its size in bytes.
     #[must_use]
     pub fn size(&self) -> u64 {

@@ -54,6 +54,19 @@ struct OnlyReading {
 }
 
 impl TheMachine for OnlyReading {
+    fn how_big_is(&mut self, _file: &Path) -> Option<u64> {
+        unreachable!("this machine only reads: asking a file's size is its own road")
+    }
+
+    fn wrote_the_device(
+        &mut self,
+        _device: &str,
+        _from: &Path,
+        _told: &mut dyn FnMut(u64, u64),
+    ) -> std::io::Result<()> {
+        unreachable!("this machine only reads: writing a device is its own road")
+    }
+
     fn say(&mut self, said: &Said) {
         eprintln!("{}", said.text());
     }
