@@ -1,0 +1,122 @@
+[Unit]
+# The keyring a person's provider key lives in.
+#
+# ADR 0022, accepted 2026-09-08: a provider's key lives in the **Secret
+# Service**, reached over the person's own session bus. That decision named
+# three things standing in its way and the first two were the image — no
+# package and no unit. The package is in `image/Containerfile`; this is the
+# unit, and until both existed no key could be stored on an alo machine at all.
+#
+# **What it is for, in a person's terms.** They open Settings, paste the key
+# their provider gave them, and the machine has somewhere to put it. Without
+# this service every attempt answers `Unavailable` — which is what
+# `crates/alo-portals/src/no_keyring_here.rs` was written to say honestly, and
+# it is the reason asking alo does nothing on a fresh machine.
+Description=alo OS keyring: where a provider's key is kept
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0022-where-a-providers-key-is-kept.md
+
+# The person's own session, and the whole of this service's lifetime — the same
+# shape as `alo-portald.service` and for its reasons. `user@1000.service` is the
+# person's systemd manager: logind starts it when they sign in and stops it when
+# their last session ends. After=, so `/run/user/1000` and the bus inside it
+# exist before this process does. BindsTo=, so signing out takes the keyring
+# with the session rather than leaving one open on a machine nobody is at.
+BindsTo=user@1000.service
+After=user@1000.service
+
+# It serves a name on the session bus, so the bus must be there first.
+After=dbus.socket
+
+# **Before the portal backend, and this is correctness rather than tidiness.**
+# `alo-portald` asks for the keyring **once, at start-up**, and takes
+# `NoKeyringHere` for the whole session when nothing answers — it does not try
+# again. So a portal that started first would refuse every secret until the
+# person signed out and in, on a machine that has a perfectly good keyring
+# running beside it. That is the failure this ordering exists to prevent, and
+# it would look exactly like having no keyring at all.
+Before=alo-portald.service
+
+[Service]
+# **Not `--daemonize`.** The daemon's own default is to fork and print an
+# address for a shell to export, which under systemd is a service that exits
+# zero at once and a keyring that is gone. `--foreground` makes the process
+# systemd supervises the same process that serves the bus name.
+#
+# **`--components=secrets` and nothing else.** gnome-keyring also offers an SSH
+# agent and a PKCS#11 module; neither is asked for, because a component nobody
+# uses is a surface nobody is watching. The Secret Service is the one thing
+# ADR 0022 names.
+#
+# **`--unlock` reads a password from standard input**, and `StandardInput=null`
+# below is what makes that password empty — see the paragraph under it, which
+# is where that decision is argued rather than here.
+Type=exec
+ExecStart=/usr/bin/gnome-keyring-daemon --foreground --components=secrets --unlock
+
+# **Unlocked with no password, which is a decision and not an oversight.**
+#
+# The standard road is `pam_gnome_keyring` in the `auth` stack, which unlocks
+# the login keyring with the password a person just typed. **That hook has
+# nothing to work with here.** alo OS ships two PAM stacks —
+# `/usr/lib/pam.d/alo-compositor` and `/usr/lib/pam.d/alo-desktop` — and both
+# authenticate with `pam_permit.so`. They exist to open a systemd session
+# (`pam_systemd.so`), not to check anybody. The password is checked by
+# `alo-accounts` against an Argon2id hash, and `alo-sessiond`'s own header says
+# it *turns a number somebody has already authenticated into a session*.
+#
+# So PAM never sees a password on this machine, and the alternative is carrying
+# one between two components — which ADR 0018 calls a real loss rather than a
+# detail.
+#
+# What protects the key instead is the disk. ADR 0054 encrypts the root
+# filesystem and has the person write down a recovery key and type it back
+# before the install finishes, so a key at rest is behind that passphrase
+# already. A second password on the keyring would guard against a threat the
+# first one covers, at the cost of a prompt in the middle of adding a provider.
+#
+# **What this does not protect against, stated plainly:** anything running as
+# this person on an unlocked, signed-in machine can ask the Secret Service for
+# this key — exactly as it could read their files. That is the same boundary
+# the rest of the session has, and it is the boundary `alo-agentd` runs outside
+# of (ADR 0001 §5).
+#
+# `--unlock` reads a password from standard input; an empty one is what makes
+# the login keyring open without asking. A person who wants a password on their
+# keyring is a setting this does not offer yet, and that is written here rather
+# than left to be discovered.
+ExecStartPre=/usr/bin/install -d -m 0700 -o alo -g alo /home/alo/.local/share/keyrings
+StandardInput=null
+
+# **The uid it runs as is the person**, which is load-bearing for the same
+# reason `alo-portald.service` gives: `TheBus::of_this_process` takes the uid
+# from the kernel and refuses a bus that is not that uid's. A keyring served by
+# anybody else is one this machine's own client will not talk to.
+User=alo
+Group=alo
+
+# A system unit inherits none of the person's session, so it is stated. The
+# literal 1000 is deliberate: `%U` in a system unit expands to 0, before `User=`
+# is resolved — a trap this repository has already paid for, carried in
+# `docs/quirks.md`.
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+Environment=HOME=/home/alo
+Environment=XDG_DATA_HOME=/home/alo/.local/share
+
+# It holds no privilege. It keeps one person's secrets, on that person's own
+# bus, as that person.
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+
+# A keyring that died should come back: what a person notices otherwise is a
+# provider that worked yesterday and cannot be asked today. Not `always`, for
+# `alo-portald.service`'s reason — signing out is how this ends, and `BindsTo=`
+# is what should end it then.
+Restart=on-failure
+RestartSec=2
+
+[Install]
+# The person's manager, not `multi-user.target`: a keyring started at boot is
+# one open before anybody has signed in.
+WantedBy=user@1000.service

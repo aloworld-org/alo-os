@@ -429,6 +429,38 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-convertd /usr/libexec
 # anything — the whole of what that unit was for.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-portald /usr/libexec/alo-portald
 
+# **A keyring, because until this line no key could live on this machine.**
+#
+# [ADR 0022](../docs/decisions/0022-where-a-providers-key-is-kept.md), accepted
+# 2026-09-08: a provider's key lives in the **Secret Service**, reached over the
+# person's own session bus. That decision named three things standing in its way
+# and the first was this file: *"A keyring is a package and a unit that nobody
+# has added."* It stayed unadded, and the consequence was not subtle —
+# `alo-portald` opened the Secret Service at start-up and **exited** when it
+# could not, restarting 78 times on a booted machine on 2026-10-14, which is why
+# `crates/alo-portals/src/no_keyring_here.rs` exists at all.
+#
+# **What it costs a person without this.** `alo-secrets` is a finished,
+# encrypted client of a Secret Service and `TheKeyring::keep` can store a
+# provider's key — against a real `gnome-keyring-daemon`, which is what this
+# package provides and what that crate's own fixture starts. With no service on
+# the machine, every one of those answers `Unavailable`: a person can type their
+# OpenAI key into a settings screen and there is nowhere on their computer to
+# put it. That is the whole of why asking alo does nothing on a fresh machine.
+#
+# **Proved by running it, not by finding it.** `--version` loads the binary and
+# resolves its libraries, which `test -x` does not — this repository has shipped
+# three releases of a converter that `test -x` passed and that died at launch on
+# eleven missing libraries. The D-Bus service file is checked separately,
+# because a daemon that runs and is not activatable on the bus is a daemon
+# nothing can reach.
+RUN dnf install --assumeyes --setopt=install_weak_deps=False \
+      gnome-keyring \
+ && dnf clean all \
+ && /usr/bin/gnome-keyring-daemon --version | grep -q 'gnome-keyring-daemon' \
+ && grep -rqs 'org.freedesktop.secrets' /usr/share/dbus-1/services/ \
+ && echo "a keyring: a Secret Service daemon that runs, and a bus name it can be reached by"
+
 # **The tool a person's applications are installed with**, and the place they
 # come from. `alo_software::asked::THE_TOOL` is the absolute path
 # `/usr/bin/flatpak`: without it every install refuses for a missing program
@@ -1088,6 +1120,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/systemd/system/alo-compositor.service \
                /usr/lib/systemd/system/alo-desktop.service \
                /usr/lib/systemd/system/alo-portald.service \
+               /usr/lib/systemd/system/alo-keyring.service \
                /usr/lib/systemd/system/alo-shipping.service \
                /usr/lib/pam.d/alo-compositor \
                /usr/lib/pam.d/alo-desktop \
@@ -1102,6 +1135,12 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                      alo-modeld.service alo-convertd.socket \
                      alo-asking.socket \
                      alo-compositor.service alo-portald.service \
+                     # The keyring, enabled for the person's own manager like
+                     # the portal beside it: a keyring open before anybody has
+                     # signed in is a keyring open on nobody's behalf. Without
+                     # this line no key can be stored on this machine at all,
+                     # which is ADR 0022's first named obstacle.
+                     alo-keyring.service \
                      alo-shipping.service alo-desktop.service \
                      # The broker and the one look. The broker's other two units declare no
                      # `[Install]` and are started by the broker, which is how
