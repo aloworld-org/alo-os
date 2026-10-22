@@ -322,86 +322,61 @@ are exercised where a gate can see them. **The socket round trip to
 `alo-agentd` is still not exercised anywhere**, because that fixture has no
 daemon and no model behind it — said here rather than left to be assumed.
 
-### And looking at the frame found a defect no assertion could — 2026-10-22
+### Looking at the frame found a defect no assertion could, and it is fixed — 2026-10-22
 
-**A long explanation is cut off mid-word and its tail is lost.** Not wrapped,
-not scrolled, not marked as shortened. Measured on the fixture above at
-1440×960:
+**A long explanation was cut off mid-word and its tail was lost.** Not wrapped,
+not scrolled, not marked as shortened. alo's lines were laid out unbounded and
+`inked` cropped whatever overran the room, so at 1440×960 a 286-character reply
+drew as `…so nothing can be restored afterwar` and stopped — losing *it can
+reach files that are not yours as well as the ones that are*, which is the half
+a person deciding whether to press Enter most needs.
 
-| the reply | what was drawn |
-|---|---|
-| 137 characters | all of it, ending at x=1130 of 1440 |
-| 286 characters | `…so nothing can be restored afterwar` — **stopped**, ink ending at x=1214 |
+**Fixed.** `shaped_into_alos_row` wraps at `room`, which is the width the
+transcript leaves after the gutter and is read off the display's own rectangle
+rather than being a figure somebody chose. The caller advances by **rows
+actually drawn** rather than by lines, and that same running total is what
+`alo_terminal::regions_of` is given, so the gutter's `alo` label still captions
+the right rows. `WhatAloSaid::lines()` still answers how many *lines* alo said,
+which is what it is for; it cannot answer rows, because that needs a width and a
+font and `alo-terminal` has neither.
 
-What the second one lost was *it can reach files that are not yours as well as
-the ones that are* — which is the half a person deciding whether to press Enter
-most needs. The cause is `Wrap::None`, set on every text buffer in
-`the_terminals_cells_are_drawn.rs`; the clip at x=1214 rather than 1440 says it
-is the terminal's own text area and not the display's edge.
+Held by a comparison in the nested fixture: a brief explanation and a long one,
+**the same marks and differing only in length**, where the long one must take
+more rows. Truncation and wrapping answer exactly that question differently —
+both put ink on the screen, only one puts it on a second row. Restoring
+`Wrap::None` fails it, `5 against 5`.
 
-**This is `CLAUDE.md`'s own rule about screen size** — *a control that falls off
-a small panel is a bug and not a tuning problem* — and a model's two-sentence
-answer passes 137 characters without trying.
+### The room alo's block has is a different question, and it is open
 
-**The fix is not a tidy-up, which is why it is written here rather than done.**
-`WhatAloSaid::the_lines()` is drawn one row each, *and* its count feeds
-`alo_terminal::regions_of`, which places the gutter's `alo` label; a line that
-wrapped without the count agreeing would caption the wrong row, and
-`what_alo_said_tests.rs` already asserts the two cannot disagree. So wrapping
-belongs in `alo-terminal` beside the count — but the width it must wrap to is a
-pixel measure held by the shell's font system, which `alo-terminal` has no
-access to. **Where wrapping lives, and what width it is given, is the question
-to settle**, and the law about screen sizes says the answer is a measure derived
-from the display rather than a constant.
+**Four rows**, between the grid's last line and the transcript's foot at
+1440×960. Each mark takes one and the disclaimer takes one, so with two marks
+there is exactly **one** row left for the prose — and a long explanation there
+cannot wrap however correct the wrapping is.
 
-*Found by writing the frame out and reading it. The fixture's own assertion
-counts rows of ink and passed on the truncated frame, as it would on any
-truncation: **the check cannot see the fault it sits next to.***
+What the drawing now guarantees is narrower than *it always fits*: each line is
+capped to leave one row for every line still to come, so the marks and the
+disclaimer are never the casualty. That rests on something already stated rather
+than something chosen here — `WhatACommandWillDo::and_not_a_guarantee` has no
+shape that omits it. **Prose longer than the room is still shortened and still
+says nothing about it**, though it is now cut at a word rather than mid-word.
 
-> **This decision was made on 2026-10-18 and reached `main` on 2026-10-21**,
-> because it was written onto a branch for which **no pull request was ever
-> opened**. For three days this section read *the asking is one decision away*
-> and two further sections read *blocked*, while the answer sat on a pushed
-> branch nobody could see. `CLAUDE.md` names the fault — *a branch pushed at
-> 07:37Z was gated four times … no pull request had ever been opened* — and it
-> is cheaper to find than this: `gh pr list --head <branch>` answers it in one
-> call, and **three** of this lane's branches answered *none ever opened*.
+**Giving alo's block more rows means taking them from the grid, which resizes
+the person's shell**, and that is a decision rather than a tuning.
+`docs/design/the-terminal-window.md` leaves this family of overflow open in as
+many words, for a benchmark bar that overruns: *left open deliberately; this is
+exactly the sort of thing that gets invented once and then cited as the design.*
+So it is recorded here and not invented.
 
-**What that decision also settles** and should be answered with it: whether the
-explanation says **where it was answered** — on this machine, on this network,
-or with a provider. `docs/features.md` makes that a permanent area in the task
-window, and a sentence drawn in the terminal is the same promise in a smaller
-space.
-
-**Depends on:**
-[ADR 0123](../decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md),
-proposed 2026-10-17 by this lane under the rule that a machine unblocks itself
-rather than waiting for somebody with less context, and **accepted by the owner
-on 2026-10-18**. It was *outside this plan* until somebody wrote it; that
-phrasing was the blocker, not the decision. **This task is now buildable** — the
-terms it rests on are 1 to 7, which are the accepted half.
-
-**alo does not know what a person has typed**, measured 2026-10-17: nothing
-keeps the typed line, `the_command_in_front` is a process already running, and
-the grid is `alacritty_terminal` with a `VoidListener`. Reading it off the
-screen would decide what the *person* typed from what a *program* printed;
-keeping our own copy of forwarded bytes diverges the first time somebody
-presses Up, silently. Shell integration is the real road and is a new
-mechanism, a published contract, and a decision about a sequence any program
-can forge.
-
-**`alo_terminal::WhatACommandWillDo` is built** — the plain words, the three
-marks and a disclaimer no shape of the type can omit. **No chord was bound**,
-because one bound to a surface that cannot work is what
-`alo-shell`'s `tests/the_road_every_action_takes.rs` refuses.
-
-*This task was called the cheapest of the remaining six. It priced the asking
-and assumed the input was free.*
-
-A person types a command and asks what it will do before running it. The model is
-asked; `alo-asking`, `alo-answering` and `alo-instructing` exist and a turn
-already carries a question to one. **This is the one line here not marked ★**, and
-it is the cheapest of the remaining six.
+*Three faults were found on the way, all by measuring and none by reading. The
+first edit landed in the **wrong function**, because `shaped.placed(across,
+down, bottom)` ends three of them and the first match was taken. The capped
+prose leaked a **one-pixel smear** of its clipped next row — at y=737 where the
+row below began at 741 — and the fixture's own assertion counted that smear as a
+wrapped row, so it passed for a reason that had nothing to do with wrapping; the
+buffer is now bounded in height as well as width. And the short-against-long
+comparison first **varied the marks as well as the length**, so it compared 6
+rows against 7 and failed correctly: removing two marks removes two rows. A
+check that varies two things measures neither.*
 
 ### 4. Find a command by what it did
 
