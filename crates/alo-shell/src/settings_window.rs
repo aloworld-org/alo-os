@@ -408,6 +408,23 @@ impl Open {
         if self.a_place_to_return_to.offers_a_row() {
             rows.push(SettingsRow::APlaceToReturnTo);
         }
+        // **The three levels, always all three.** Unlike every section above,
+        // this one has no file to be missing: a person who has not chosen is
+        // offered the choice, which is the whole point of the section, and the
+        // file that would not read is the same three rows with none marked.
+        //
+        // **This was drawn and not acted on for one commit**, and
+        // `every_setting_the_machine_has_is_in_one_window` caught it in under a
+        // second — *a row is acted on that is not drawn, or drawn and not acted
+        // on*. A person would have seen three levels and pressing one would
+        // have done nothing. The comment two blocks up records the same test
+        // catching the same class before; this is the third time it has paid
+        // for itself.
+        rows.extend(
+            alo_capability::HowCodeRuns::ALL
+                .into_iter()
+                .map(SettingsRow::HowCodeRuns),
+        );
         rows.extend(self.granted.rows(now).into_iter().map(SettingsRow::Granted));
         rows
     }
