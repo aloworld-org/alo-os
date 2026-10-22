@@ -53,6 +53,10 @@ struct Scripted {
     corrupting: Vec<PathBuf>,
     /// Every program that ran, in order.
     ran: Vec<Program>,
+    /// Every device written, with the file written onto it.
+    wrote: Vec<(String, PathBuf)>,
+    /// Devices whose write refuses, with what they say.
+    refusing: Vec<&'static str>,
     /// Every sentence said, in order.
     said: Vec<String>,
     /// Every question asked.
@@ -217,6 +221,8 @@ impl Scripted {
         ]);
         (
             Self {
+                wrote: Vec::new(),
+                refusing: Vec::new(),
                 answers,
                 failing: Vec::new(),
                 typed: "Msft Virtual Disk\n".to_owned(),
@@ -263,6 +269,29 @@ fn beneath(root: &Path, inside: &str) -> PathBuf {
 }
 
 impl TheMachine for Scripted {
+    fn how_big_is(&mut self, file: &Path) -> Option<u64> {
+        self.files.get(file).map(|bytes| bytes.len() as u64)
+    }
+
+    fn wrote_the_device(
+        &mut self,
+        device: &str,
+        from: &std::path::Path,
+        told: &mut dyn FnMut(u64, u64),
+    ) -> std::io::Result<()> {
+        // **Recorded before it is refused**, so a test can assert that a
+        // refusing device was still the one named — a writer that refused the
+        // wrong device would otherwise look the same from outside.
+        self.wrote.push((device.to_owned(), from.to_path_buf()));
+        let all = self.files.get(from).map_or(0, |bytes| bytes.len() as u64);
+        told(0, all);
+        if self.refusing.contains(&device) {
+            return Err(std::io::Error::other("the device stopped answering"));
+        }
+        told(all, all);
+        Ok(())
+    }
+
     fn say(&mut self, said: &Said) {
         assert!(said.unfilled().is_empty(), "unfilled: {}", said.text());
         assert!(!said.is_a_bug(), "a key with no sentence: {}", said.text());

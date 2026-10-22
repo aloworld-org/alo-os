@@ -130,3 +130,45 @@ by the project view instead, which is where the promise was made.
 rather than per kind of work. Rejected because a person who wants to read all
 their mail would have no way to, and because grants would then be per client
 and per capability, which multiplies rather than clarifies.
+
+## Amended, 2026-10-22 — `sites` is out of scope, and two remain
+
+**The owner, asked what alo OS should finish before going to market:** *"we can
+first remove the sites."*
+
+So **mail and meet stand; `sites` does not.** The decision above is otherwise
+unchanged: they ship as separate applications, each installed, updated, granted
+and opened on its own, and the project view is the layer above them.
+
+**Out of scope, not abandoned.** This is read as *not now* rather than *not
+ever*, because that is the reading that loses nothing: a product taken out of a
+plan can be put back, and one deleted from a decision takes its reasoning with
+it. If the owner meant it is gone for good, say so and this paragraph becomes one
+line.
+
+**Why it was the right one to drop, and the ADR had already half-said it.** *What
+follows* above records that the owner named `alo-mails` and `alo-meets`
+themselves — *"Mails our own, alo mails"* — and that **`sites` had not been named
+by them at all**. A product nobody has chosen a name for is the one furthest from
+being built, and it was the only one of the three in that position.
+
+**What this does not change.** `products/sites` stays in the workplace
+repository; nothing here deletes anything there. What changes is that alo OS
+makes no promise to deliver it, so it is not owed an identifier, a source, a
+release or a licence, and `crates/alo-software` has nothing to add for it.
+
+### What is still owed for the two that remain, and it is not small
+
+Neither mail nor meet is reachable on a machine today. Measured 2026-10-22:
+**neither is named in `crates/alo-software/shipped.toml`, nor in
+`catalogue.toml`, nor anywhere in `image/`.** A person on alo OS cannot get mail
+at all, five days after this decision was accepted.
+
+The question this ADR left open is the blocker and is still open: *whether alo's
+own applications sit in the same catalogue as everybody else's, or are shipped
+with the machine like the seven in `shipped.toml`, is a separate decision and is
+not taken here.* Under it sits a harder one that is nobody's in this repository:
+**the catalogue refuses an entry without an identifier, a source, a release and a
+licence**, and the other eight entries have all four because Flathub publishes
+them. Nothing publishes `alo-mails`. Until something does, neither road can be
+taken whichever the owner picks.

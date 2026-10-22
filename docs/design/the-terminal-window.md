@@ -314,10 +314,21 @@ The reading taken, and the reason:
   Those are visual properties, and `CLAUDE.md` makes the design the visual
   truth. The uppercase in ADR 0113 is how its examples are written, not a
   stated typographic rule.
-- **The qualifier is not dropped, it is owed.** The design puts the source
-  detail inside the region as a caption — `Source: cargo test output · Not
-  independently verified` — rather than in the gutter. That belongs with rich
-  results, which are not built, so it is recorded here rather than guessed at.
+- **The qualifier is not dropped, and it is no longer owed — 2026-10-22.** The
+  design puts the source detail inside the region as a caption — `Source: cargo
+  test output · Not independently verified` — rather than in the gutter, and
+  **that caption is drawn**: `the_terminals_cells_are_drawn.rs` fills what
+  printed a result into the sentence and places it under the summary, in the
+  program's region, which the third rule below asks for.
+  *This bullet said it* belongs with rich results, which are not built *from the
+  day it was written until 2026-10-22. Rich results were built on 2026-10-18 —
+  #761, #803, #804 — and `docs/features.md` carried the same deferral, with the
+  same premise, and went stale on the same day. **A note that defers to another
+  promise has to name it**, because when that promise lands the deferral is the
+  thing somebody has to come back and re-read, and nothing else points at it.*
+  **Still to measure**: whether the caption sits at the inset this file records
+  — 17 in, 862×22, 38 below the summary's row. The content and the region are
+  right; the geometry has not been compared against the frame.
 
 This is written down because it is a deliberate departure from one of two
 documents that disagree, and `CLAUDE.md` asks for exactly that: *a deliberate
