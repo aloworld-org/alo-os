@@ -250,6 +250,35 @@ pub trait TheDesktop {
         None
     }
 
+    /// Whether anything on this machine is chosen to answer a question.
+    ///
+    /// **Asked without a request, because the answer does not depend on one.**
+    /// [`Self::a_task_for`] already knows this — it is the first thing it finds
+    /// out — but it can only say so *after* a person has pressed Enter, and by
+    /// then the only honest thing left is to drop what they typed. This is the
+    /// same fact one moment earlier, while the Bar is still open and they are
+    /// still typing.
+    ///
+    /// **What it is for:** the line under the Bar's field, which otherwise counts
+    /// the applications it found. `alo_dock::words::NOTHING_CAN_ANSWER_A_QUESTION`
+    /// is what it says. Until 2026-10-22 nothing said anything: a question on a
+    /// machine with nothing chosen was taken, dropped, and never mentioned, so a
+    /// person pressed Enter and met silence and had no way to find out why.
+    ///
+    /// **Why not a notification afterwards.** Because alo OS has none, and the
+    /// reason is structural rather than unfinished: `alo_notifying::deciding::arrives`
+    /// is the only road to a `Shown`, it wants a `Seat<Notification>`, a seat
+    /// wants an `alo_accounts::Session`, and `alo-compositor` — the one binary
+    /// that holds a real one — signs a person in and exits with *nothing yet to
+    /// draw in it*. Measured 2026-10-22. Prevention is both earlier and reachable.
+    ///
+    /// `false` is the honest default, and it agrees with [`Self::a_task_for`]'s:
+    /// a desktop that has not been taught to read the choice cannot answer, and
+    /// should say so rather than imply it can.
+    fn anything_is_chosen_to_answer(&self) -> bool {
+        false
+    }
+
     /// opened a person's settings file would be a compositor measuring.
     fn the_settings_places(&mut self) -> Option<crate::SettingsPlaces> {
         None
@@ -1188,10 +1217,28 @@ impl LoopInput for Desk<'_> {
         } else {
             Vec::new()
         };
-        let where_from = if bar_is_open {
+        // **The line under the field, and what it says when nothing can answer.**
+        //
+        // A person typing a question on a machine where nothing is chosen to
+        // answer one used to be told nothing at all: the request was taken on
+        // Enter, `a_task_for` said `None`, and the `if let` further down had no
+        // `else`. They met silence, pressed again, and met silence again.
+        //
+        // Asked here rather than at the drop, because here the Bar is still on
+        // the screen and they are still typing — and because telling them
+        // afterwards would need a notification alo OS cannot make (see
+        // `TheDesktop::anything_is_chosen_to_answer` for the measurement).
+        //
+        // It replaces the count rather than joining it. The applications it
+        // found are in the rows directly below, where a person can see them; the
+        // one fact those rows cannot carry is that a question will not be
+        // answered.
+        let where_from = if !bar_is_open {
+            String::new()
+        } else if self.desktop.anything_is_chosen_to_answer() {
             crate::the_bar_finds::where_these_came_from(found.len(), self.strings)
         } else {
-            String::new()
+            crate::the_bar_finds::nothing_can_answer_a_question(self.strings)
         };
         let the_bar = bar_is_open
             .then(|| crate::where_the_bar_opens::where_the_bar_opens(size))

@@ -24,12 +24,18 @@
 //! # `alo-agentd` is not here, and the reason is not that it is a daemon
 //!
 //! It is Linux, and every module in it is compiled out anywhere else. A
-//! vocabulary assembled here would then hold three fewer strings on a host with
-//! no daemon than on a machine with one, so one host would refuse a translation
-//! file the other accepted — the exact failure this file exists to prevent, in
-//! its platform-shaped form. The daemon declares its own three on top of this
-//! one, and [`crate::loading`] is why leaving a line out is survivable rather
-//! than the end of somebody's language.
+//! vocabulary assembled here would then hold every string that crate declares
+//! fewer on a host with no daemon than on a machine with one, so one host would
+//! refuse a translation file the other accepted — the exact failure this file
+//! exists to prevent, in its platform-shaped form. The daemon declares its own
+//! on top of this one, and [`crate::loading`] is why leaving a line out is
+//! survivable rather than the end of somebody's language.
+//!
+//! **The figure lives in one place and not two.** This paragraph said *three*
+//! from the day it was written until 2026-10-22, while the crate grew to
+//! thirty-three — because the only check on that number holds it against
+//! [`DELIBERATELY_APART`]'s reason, which is the sentence a person reads, and
+//! this one is prose nothing counts. So this one no longer carries a number.
 //!
 //! # What a failure here means
 //!
@@ -111,6 +117,7 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-enrolling",
     "alo-files",
     "alo-finding",
+    "alo-as-it-was",
     "alo-granted",
     "alo-greeting",
     "alo-handing",
@@ -169,7 +176,7 @@ pub const EVERY_LIST: &[&str] = &[
 pub const DELIBERATELY_APART: [(&str, &str); 1] = [(
     "alo-agentd",
     "it is Linux, and every module in it is compiled out anywhere else, so a \
-     vocabulary assembled here would hold 31 fewer strings on a host with no \
+     vocabulary assembled here would hold 33 fewer strings on a host with no \
      daemon than on a machine with one — and one host would then refuse a \
      translation file the other accepted. It declares its own list on top of \
      this one, which is the rule docs/contracts/translations.md states for \
@@ -309,6 +316,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
     )?;
     declare(&mut vocabulary, "alo-files", alo_files::words::declare_into)?;
     declare(&mut vocabulary, "alo-finding", alo_finding::declare_into)?;
+    declare(
+        &mut vocabulary,
+        "alo-as-it-was",
+        alo_as_it_was::words::declare_into,
+    )?;
     declare(&mut vocabulary, "alo-granted", alo_granted::declare_into)?;
     declare(&mut vocabulary, "alo-greeting", alo_greeting::declare_into)?;
     declare(&mut vocabulary, "alo-handing", alo_handing::declare_into)?;
@@ -476,6 +488,7 @@ mod tests {
         ("alo-enrolling", "enrolling.that-does-not-open-this-machine"),
         ("alo-files", "files.failed.not-a-file-verb"),
         ("alo-finding", "finding.not-absolute"),
+        ("alo-as-it-was", "as-it-was.nothing-is-kept"),
         ("alo-granted", "granted.nothing-granted"),
         ("alo-greeting", "greeting.make-an-account"),
         ("alo-handing", "handing.offered-for-this-question"),
@@ -599,6 +612,7 @@ mod tests {
             alo_enrolling::words::enrolling_words().unwrap().how_many(),
             alo_files::file_words().unwrap().how_many(),
             alo_finding::finding_words().unwrap().how_many(),
+            alo_as_it_was::words::as_it_was_words().unwrap().how_many(),
             alo_granted::granted_words().unwrap().how_many(),
             alo_greeting::greeting_words().unwrap().how_many(),
             alo_handing::handing_words().unwrap().how_many(),

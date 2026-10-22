@@ -1,6 +1,7 @@
 # The tests that fail on a GitHub-hosted runner and pass on every lane's machine.
 #
-# **This list is empty, and it reached zero by being satisfied.**
+# **One line, added 2026-10-22. It was empty before that, and had reached zero by
+# being satisfied** — the note below is the history of how.
 #
 # `gate.yml` reads this file to tell **a failure this runner causes** from **a failure
 # in the change under test**. Until it existed the workflow could only ask *which gate
@@ -52,3 +53,29 @@
 #
 # Format: one test per line, exactly as nextest names it in a FAIL line —
 # `<crate>::<binary> <test>`. Blank lines and `#` comments are ignored.
+
+# **The runner runs as root, and this test's control says root is the wrong
+# question.** `crates/alo-as-it-was/src/removing.rs` exists because
+# `std::fs::remove_dir_all` will not descend a directory `cp` left at mode `000`
+# — which is what it leaves when a copy out of an unreadable place fails. The
+# test sets a tree to `000`, asserts **the ordinary remover cannot** (its
+# control), then asserts this crate's can.
+#
+# Measured on the gate's runner, 2026-10-22: the control fired with *if the
+# ordinary remover can do this, this file has no reason to exist.* That is the
+# control doing its job — **root ignores a mode**, so `remove_dir_all` succeeded
+# and the premise the test is about does not hold there. Exit code of the gates
+# step: 1; the `FAIL` line is the one below, verbatim.
+#
+# **A line is a statement about the runner, never about the test**, and this is
+# exactly that: the test is right, it passes on every lane's machine as the
+# person, and the one thing it needs is not being root. Dropping its control
+# instead would leave a test that passes on the runner **while measuring
+# nothing**, which is the trade this file exists to refuse.
+#
+# Its sibling in the same crate was *not* put here. It provoked the same refusal
+# with a permission, and it was rewritten to provoke it by the place being let go
+# of between the plan and the act — a real race that denies root exactly as it
+# denies anybody. **Where a cause can be made independent of who runs it, that is
+# the fix and this list is not.**
+alo-as-it-was removing::tests::a_directory_with_no_permissions_is_removed

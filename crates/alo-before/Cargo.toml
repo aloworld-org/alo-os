@@ -1,0 +1,26 @@
+[package]
+name = "alo-before"
+version = "0.0.1"
+description = "Asks this machine for a place to return to, before a command a person typed runs."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "alo-before"
+path = "src/main.rs"
+
+[dependencies]
+# The wire, and where this person's door is. The shape of the request and the
+# reply are the contract's, not this command's — it words nothing and decides
+# nothing.
+alo-protocol = { path = "../alo-protocol" }
+
+# The sentence a person reads when no place was kept is the service's, rendered
+# by it, so the screen and the record cannot become two accounts of one moment.
+# This prints it and does not compose it.
+rustix = { workspace = true, features = ["process"] }
+
+[lints]
+workspace = true

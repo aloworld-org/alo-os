@@ -337,3 +337,29 @@ fn what_is_leaving_changes_the_frame_a_display_is_handed() {
         "a machine with something leaving handed the display the same frame as one with nothing"
     );
 }
+
+/// **A desktop that takes the defaults says it cannot answer, and makes no
+/// task** — the two answers agree, and both say no.
+///
+/// They are two readings of one fact, asked at two moments:
+/// `anything_is_chosen_to_answer` while a person is still typing, and
+/// `a_task_for` after they press Enter. **If they can disagree, the Bar promises
+/// an answer above a request that is then dropped**, which is worse than the
+/// silence this change was written to remove — a person who was told it would
+/// work has been lied to rather than left guessing.
+///
+/// Held on the defaults because that is the pair this crate owns; `alo-desktop`
+/// implements both from the same two calls in the same order, and its own doc
+/// comment says why.
+#[test]
+fn a_desktop_that_takes_the_defaults_cannot_answer_and_says_so() {
+    let mut desktop = ADesktop::with(None);
+    assert!(
+        !crate::TheDesktop::anything_is_chosen_to_answer(&desktop),
+        "the default must not claim this machine can answer a question"
+    );
+    assert!(
+        crate::TheDesktop::a_task_for(&mut desktop, "what is in my calendar").is_none(),
+        "and it must not make a task either — the two answers have to agree"
+    );
+}

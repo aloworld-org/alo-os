@@ -158,6 +158,21 @@ pub(crate) fn where_these_came_from(how_many: usize, strings: &Strings) -> Strin
         .into_text()
 }
 
+/// The same line, when nothing on this machine is chosen to answer a question.
+///
+/// **In the place the count goes, worded to the same shape**, so that the two
+/// read as one line changing rather than two different lines appearing. It is
+/// about questions only — typing an application's name still opens it, and those
+/// rows are directly below this line.
+pub(crate) fn nothing_can_answer_a_question(strings: &Strings) -> String {
+    strings
+        .say(
+            &words::NOTHING_CAN_ANSWER_A_QUESTION.key(),
+            &Filling::nothing(),
+        )
+        .into_text()
+}
+
 #[cfg(test)]
 #[path = "the_bar_finds_tests.rs"]
 mod tests;

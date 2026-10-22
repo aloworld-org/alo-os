@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
   "crates/alo-folded-light",
+  "crates/alo-before",
   "crates/alo-reached",
   "crates/alo-shell",
   "crates/alo-terminal",
@@ -9,6 +10,8 @@ members = [
   "tools/graphics-check",
   "tools/what-a-gate-needs-in-memory",
   "crates/alo-giving-a-folder",
+  "crates/alo-as-it-was",
+  "crates/alo-back",
   "crates/alo-kept-undo",
   "crates/alo-running",
   "crates/alo-try",

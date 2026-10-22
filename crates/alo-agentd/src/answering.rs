@@ -189,6 +189,22 @@ pub fn what_a_person_said(
                 None => ToAPerson::refused(&rereading::what_to_say(strings)),
             })
         }
+        // **A place to return to, kept before a command the person typed.**
+        //
+        // Answered whether or not a turn holds the machine, for the same reason
+        // their own question is: a person runs a command at their own prompt at
+        // any hour, and nothing about it belongs to an agent's turn.
+        //
+        // **The session's own brackets folder**, read here rather than carried,
+        // because `WhereBracketsGo::for_this_session` is where this crate reads
+        // the environment for that and a second reader would be a second answer
+        // about one machine.
+        Ok(FromAPerson::APlaceToReturnTo) => Ok(crate::a_place_to_return_to::kept(
+            crate::the_bracket_this_turn_takes::WhereBracketsGo::for_this_session().as_ref(),
+            &crate::a_place_to_return_to::a_name_for(now, std::process::id()),
+            now,
+            strings,
+        )),
         Ok(answered) => {
             // A pairing is neither the turn's nor the grants file's, and it
             // is answered whether or not a turn holds the machine: the
@@ -281,7 +297,10 @@ fn answered_to(
         | FromAPerson::Workspaces
         | FromAPerson::OpenWorkspace { .. }
         | FromAPerson::Advertised
-        | FromAPerson::TheirOwnQuestion { .. } => {
+        | FromAPerson::TheirOwnQuestion { .. }
+        // A place to return to is answered before this, for the same reason
+        // the knock is: it is the person's own and not the turn's.
+        | FromAPerson::APlaceToReturnTo => {
             ToAPerson::refused(&rereading::what_to_say(strings))
         }
         FromAPerson::Approve { number } => match under(turning, number, now) {

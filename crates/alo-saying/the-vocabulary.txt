@@ -218,6 +218,25 @@ approving.no	No
 approving.no-compositor	The agent has a change waiting for your answer and it cannot be put to you: the desktop is not running. Sign in to the desktop, and ask the agent again
 approving.nothing-to-answer	No change is waiting for your answer here. Ask the agent again if you still want it
 approving.nothing-to-show-on	The agent has a change waiting for your answer and it cannot be put to you: no screen is connected. Connect a screen, and ask the agent again
+as-it-was.a-link-rather-than-a-folder	what was kept at {at} is a link rather than a folder, and this does not follow one
+as-it-was.how-to-ask	to put one folder back as it was, name a place from this list and the folder
+as-it-was.it-is-as-it-was	{folder} is as it was. what was in it is at {aside}
+as-it-was.no-such-place	{named} is not one of the places kept on this machine
+as-it-was.not-a-folder	{folder} is not a folder on this machine
+as-it-was.not-copied	the folder could not be copied out of that place, and nothing has been changed: {why}
+as-it-was.not-in-that-place	{folder} was not there when that place was kept, so there is nothing to put back
+as-it-was.not-in-your-home	{folder} is not inside your own home, and this puts back nothing else
+as-it-was.not-swapped	the folder has not been put back and nothing has been changed: {why}
+as-it-was.nothing-is-kept	alo has not kept any place for you to return to on this machine
+as-it-was.nowhere-to-set-aside	{at} is already there, so what is in the folder now has nowhere to go — move it out of the way first
+as-it-was.one-is-half-done	{at} is still there from a go-back that did not finish — look at what is in it, then move it out of the way
+as-it-was.set-aside-under-the-working-name	{folder} is as it was, but what was in it is still at {at} rather than where this said it would be: {why}
+as-it-was.something-was-not-read	something kept on this machine could not be read, and has been left exactly where it is: {why}
+as-it-was.that-is-not-its-name	that is not the folder's name, so nothing has been changed
+as-it-was.the-whole-home	your whole home cannot go back while you are signed in — one folder at a time can
+as-it-was.this-is-what-would-happen	{folder} will be as it was at {taken}, and what is in it now will be at {aside}
+as-it-was.type-its-name	type the folder's own name to go on, or anything else to stop
+as-it-was.what-you-can-return-to	places you can return to, newest first
 asking.question.no-model	choose a model for this question to be answered by
 asking.question.nothing	there is nothing to ask yet — write the question first
 asking.vetting.cannot-be-tested-from-here	this provider cannot be tested from here, so nothing was sent — save it if you are sure of it, and the first question put to it will say whether it answers
@@ -588,6 +607,7 @@ dock.announced.some-put-aside	{app}, {windows} open, {aside} minimised
 dock.announced.where	on the canvas, {across} across and {down} down
 dock.bar.found.applications	On this computer  ·  {how_many} applications
 dock.bar.found.one-application	On this computer  ·  {how_many} application
+dock.bar.nothing-can-answer	On this computer  ·  nothing is chosen yet to answer questions
 dock.bar.row.application	{what}  ·  Application
 dock.composer.key	alo
 dock.composer.prompt	Find, open, or ask…
@@ -1774,6 +1794,7 @@ tasks.window.scope	Permissions and model choices apply to this task.
 telling.carry-on	You can carry on. Nothing else on this machine depends on the agent, and nothing here is waiting for you to do anything about this
 telling.runs-them-anyway	That is said once: alo OS will run these weights whenever you choose them, and will not mention their size again by itself
 telling.the-agent-cannot-answer	The agent cannot answer right now
+terminal.a-place-to-return-to	keep a place to return to before each command, so I can put my files back
 terminal.benchmark.from-hyperfine	hyperfine output
 terminal.benchmark.lower	{what} · {percent}% lower in this comparison
 terminal.benchmark.scale	Same linear scale · Lower is faster
@@ -1809,6 +1830,7 @@ terminal.waiting.computing	still computing
 terminal.waiting.keyboard	waiting for the keyboard
 terminal.waiting.network	waiting for the network
 terminal.waiting.not-known	waiting for something alo cannot identify
+terminal.what-keeping-one-costs	what it costs: disk, and how far back undo reaches. Nothing leaves this machine
 terminal.who.alo	alo
 terminal.who.program	program
 terminal.who.system	system

@@ -344,6 +344,28 @@ pub const NOT_INDEPENDENTLY_VERIFIED: Word = Word::saying(
      short: it is under every such summary.",
 );
 
+/// The row that offers to keep a place to return to before each command.
+pub const A_PLACE_TO_RETURN_TO: Word = Word::saying(
+    "terminal.a-place-to-return-to",
+    "keep a place to return to before each command, so I can put my files back",
+)
+.noting(
+    "A row in Settings, under Terminal. Pressing it adds a few lines to the person's own shell \
+     startup file, after which alo takes a copy of their files before each command they run. \
+     \"A place to return to\" is that copy.",
+);
+
+/// What keeping one costs, said on the row rather than found out.
+pub const WHAT_KEEPING_ONE_COSTS: Word = Word::saying(
+    "terminal.what-keeping-one-costs",
+    "what it costs: disk, and how far back undo reaches. Nothing leaves this machine",
+)
+.noting(
+    "Said beneath the row above, before the person presses it. Copies take disk space, and alo \
+     keeps a limited number of them — so taking one before every command means the oldest are \
+     forgotten sooner, and an older mistake may no longer be undoable.",
+);
+
 /// The row in Settings that offers to add the shell integration.
 ///
 /// **The row names what it gives, not what it writes.** A row called *shell
@@ -453,7 +475,9 @@ pub const IT_WOULD_NOT_TAKE_THE_CHANGE: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 29] = [
+pub const EVERY_WORD: [Word; 31] = [
+    A_PLACE_TO_RETURN_TO,
+    WHAT_KEEPING_ONE_COSTS,
     A_PROGRAM,
     ALO,
     THE_SYSTEM,

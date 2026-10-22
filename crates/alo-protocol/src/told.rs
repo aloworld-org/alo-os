@@ -73,6 +73,17 @@ pub(crate) enum Told {
         /// in.
         changes: Vec<Standing>,
     },
+    /// A place to return to, kept or not, before a person's next command.
+    ///
+    /// ADR 0130 option B. `why_not` is absent when one was kept: the thing a
+    /// person needs told is the one that did not happen.
+    APlaceToReturnTo {
+        /// Whether one was kept.
+        kept: bool,
+        /// Why not, where one was not.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        why_not: Option<Wording>,
+    },
     /// The person said no, and it is written down.
     ///
     /// Nothing is carried about why, because nothing was asked: *no* is the
