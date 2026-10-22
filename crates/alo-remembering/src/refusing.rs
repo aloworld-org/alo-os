@@ -240,6 +240,19 @@ pub enum NotRemembered {
     )]
     NotMachineNames(#[from] crate::names::NotNames),
 
+    /// The level a person chose for running code was not the level
+    /// `crate::the_level` reads, or could not be written down.
+    ///
+    /// Refused whole, and **never replaced by the default**, which is the one
+    /// thing this arm exists to prevent: a file that will not read is a
+    /// question about what somebody chose that this machine cannot answer, and
+    /// answering it with *in a sealed box* would be a default wearing their
+    /// decision. A file that is simply not there is not this arm — it is a
+    /// person who has not chosen, and `crate::the_level_remembered` answers
+    /// `Ok(None)` for it.
+    #[error("the level this machine kept for running code was not believed: {0}")]
+    NotTheLevel(#[from] crate::the_level::NotTheLevel),
+
     /// The file could not be written down.
     #[error("this machine's list could not be written to {}: {why}", at.display())]
     NotWritten {

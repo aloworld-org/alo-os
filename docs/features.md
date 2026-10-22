@@ -1491,7 +1491,18 @@ find.*
   on.** What is owed after it: the three protections ADR 0064 keeps on at every
   level are the caller's, and nothing calls this yet — the record, the snapshot
   taken first, and the egress indicator — as are the setting and the surface
-  above. **And where a box's control group lives on a booted machine is open**:
+  above.
+  **The setting a person makes it in exists as of 2026-10-22.**
+  `/var/lib/alo/how-code-runs.toml`, beside the grants and held to the same
+  three rules about who may have written it — because a file somebody else
+  could write into saying `at-full-trust` is an escalation to running code
+  without asking. `docs/contracts/how-code-runs-file.md` is its contract.
+  **It keeps three states apart and that is the point of it**: a level the
+  person chose, *no file at all* for a person who has not chosen, and a
+  refusal — so neither a machine nobody has opened the setting on nor a file
+  that will not read can report the sealed box as somebody's decision. What is
+  owed after it is the **surface**: nothing in `alo-shell` or `alo-desktop`
+  offers the three levels yet, so the choice still cannot be made by anybody. **And where a box's control group lives on a booted machine is open**:
   it cannot go under `alo-bounding`'s turn root, which was measured rather than
   reasoned about and is in `docs/quirks.md`.
 - Update checking can be turned off, saying that security fixes stop arriving while it is off
