@@ -32,7 +32,7 @@ fn with_ctrl() -> ModifiersState {
 #[test]
 fn a_letter_the_seat_made_is_typed() {
     assert_eq!(
-        FillingInKey::of(Keysym::a, plain(), Some('a')),
+        FillingInKey::of(Keysym::a, &plain(), Some('a')),
         FillingInKey::Typed('a')
     );
     // **Whatever this person's layout says, not what this file would guess.**
@@ -41,11 +41,11 @@ fn a_letter_the_seat_made_is_typed() {
     // because a provider name and a key both carry letters this repository
     // would get wrong if it worked them out itself.
     assert_eq!(
-        FillingInKey::of(Keysym::ssharp, plain(), Some('ß')),
+        FillingInKey::of(Keysym::ssharp, &plain(), Some('ß')),
         FillingInKey::Typed('ß')
     );
     assert_eq!(
-        FillingInKey::of(Keysym::NoSymbol, plain(), Some('न')),
+        FillingInKey::of(Keysym::NoSymbol, &plain(), Some('न')),
         FillingInKey::Typed('न'),
         "a layout this build has no symbol constant for still types what it made"
     );
@@ -56,7 +56,7 @@ fn space_is_a_space_here_and_chooses_a_row_everywhere_else() {
     // **The press this file exists for, with both readings asserted.** An API
     // key has no spaces in it; a provider called "My Work Account" does.
     assert_eq!(
-        FillingInKey::of(Keysym::space, plain(), Some(' ')),
+        FillingInKey::of(Keysym::space, &plain(), Some(' ')),
         FillingInKey::Typed(' ')
     );
     assert_eq!(
@@ -72,7 +72,7 @@ fn backspace_rubs_out_here_and_puts_a_shortcut_back_everywhere_else() {
     // a person's shortcut back to what it ships with while they thought they
     // were correcting a typo in a key.
     assert_eq!(
-        FillingInKey::of(Keysym::BackSpace, plain(), None),
+        FillingInKey::of(Keysym::BackSpace, &plain(), None),
         FillingInKey::RubOut
     );
     assert_eq!(
@@ -85,7 +85,7 @@ fn backspace_rubs_out_here_and_puts_a_shortcut_back_everywhere_else() {
 #[test]
 fn enter_saves_here_and_chooses_a_row_everywhere_else() {
     assert_eq!(
-        FillingInKey::of(Keysym::Return, plain(), Some('\r')),
+        FillingInKey::of(Keysym::Return, &plain(), Some('\r')),
         FillingInKey::Save
     );
     assert_eq!(
@@ -100,7 +100,7 @@ fn escape_gives_up_on_the_form_rather_than_closing_the_window() {
     // A person pressing Escape to get out of a half-typed key does not mean
     // "and throw away everything else I came here for".
     assert_eq!(
-        FillingInKey::of(Keysym::Escape, plain(), None),
+        FillingInKey::of(Keysym::Escape, &plain(), None),
         FillingInKey::GiveUp
     );
     assert_eq!(
@@ -113,24 +113,24 @@ fn escape_gives_up_on_the_form_rather_than_closing_the_window() {
 #[test]
 fn tab_and_the_arrows_move_between_fields() {
     assert_eq!(
-        FillingInKey::of(Keysym::Tab, plain(), None),
+        FillingInKey::of(Keysym::Tab, &plain(), None),
         FillingInKey::NextField
     );
     assert_eq!(
-        FillingInKey::of(Keysym::Tab, with_shift(), None),
+        FillingInKey::of(Keysym::Tab, &with_shift(), None),
         FillingInKey::FieldBefore
     );
     assert_eq!(
-        FillingInKey::of(Keysym::ISO_Left_Tab, plain(), None),
+        FillingInKey::of(Keysym::ISO_Left_Tab, &plain(), None),
         FillingInKey::FieldBefore,
         "the symbol a layout sends for shift and tab together"
     );
     assert_eq!(
-        FillingInKey::of(Keysym::Down, plain(), None),
+        FillingInKey::of(Keysym::Down, &plain(), None),
         FillingInKey::NextField
     );
     assert_eq!(
-        FillingInKey::of(Keysym::Up, plain(), None),
+        FillingInKey::of(Keysym::Up, &plain(), None),
         FillingInKey::FieldBefore
     );
 }
@@ -140,16 +140,16 @@ fn control_and_v_is_a_paste_and_not_the_letter_v() {
     // Read as a letter it would put a `v` in the middle of somebody's key,
     // which is the one typo they would never find by looking.
     assert_eq!(
-        FillingInKey::of(Keysym::v, with_ctrl(), Some('v')),
+        FillingInKey::of(Keysym::v, &with_ctrl(), Some('v')),
         FillingInKey::Paste
     );
     assert_eq!(
-        FillingInKey::of(Keysym::V, with_ctrl(), Some('V')),
+        FillingInKey::of(Keysym::V, &with_ctrl(), Some('V')),
         FillingInKey::Paste
     );
     // The control at the other end: without control held it is a letter.
     assert_eq!(
-        FillingInKey::of(Keysym::v, plain(), Some('v')),
+        FillingInKey::of(Keysym::v, &plain(), Some('v')),
         FillingInKey::Typed('v')
     );
 }
@@ -171,7 +171,7 @@ fn a_chord_meant_for_the_shell_does_not_land_in_a_field() {
         with_ctrl(),
     ] {
         assert_eq!(
-            FillingInKey::of(Keysym::t, held, Some('t')),
+            FillingInKey::of(Keysym::t, &held, Some('t')),
             FillingInKey::Nothing
         );
     }
@@ -181,7 +181,7 @@ fn a_chord_meant_for_the_shell_does_not_land_in_a_field() {
 fn a_press_that_makes_no_character_and_means_nothing_here_is_nothing() {
     // A function key, say. Not refused loudly, not typed: nothing happened.
     assert_eq!(
-        FillingInKey::of(Keysym::F5, plain(), None),
+        FillingInKey::of(Keysym::F5, &plain(), None),
         FillingInKey::Nothing
     );
 }
@@ -191,7 +191,7 @@ fn shift_and_a_letter_is_the_capital_the_seat_made() {
     // Shift is not in the refused list, because shift is how a person types a
     // capital — and provider names and keys both have them.
     assert_eq!(
-        FillingInKey::of(Keysym::A, with_shift(), Some('A')),
+        FillingInKey::of(Keysym::A, &with_shift(), Some('A')),
         FillingInKey::Typed('A')
     );
 }

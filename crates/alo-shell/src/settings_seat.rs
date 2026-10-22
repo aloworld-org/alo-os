@@ -54,6 +54,16 @@ impl Server {
                     SettingsPress {
                         key: SettingsKey::of(pressed, held),
                         chord: chord_of(unshifted, held),
+                        // **The character this person's own layout makes of
+                        // the press**, asked of the seat rather than worked
+                        // out from the symbol. A `ß`, an `é` or a Devanagari
+                        // letter is whatever their keyboard says it is, and
+                        // this closure is the one place that knows.
+                        filling: crate::a_key_fills_in_a_provider::FillingInKey::of(
+                            pressed,
+                            held,
+                            pressed.key_char(),
+                        ),
                     }
                 }))
             },

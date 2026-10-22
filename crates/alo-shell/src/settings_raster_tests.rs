@@ -21,7 +21,11 @@ fn drawn_at(window: &SettingsWindow, size: (i32, i32), look: SettingsLook) -> Se
 
 /// A key that means `key`.
 fn key(key: SettingsKey) -> SettingsPress {
-    SettingsPress { key, chord: None }
+    SettingsPress {
+        key,
+        chord: None,
+        filling: crate::a_key_fills_in_a_provider::FillingInKey::Nothing,
+    }
 }
 
 /// **Closed Settings draws nothing.**

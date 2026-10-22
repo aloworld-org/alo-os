@@ -137,6 +137,17 @@ pub(crate) fn the_key_settings_took(
 ) -> Result<(), InputError> {
     match server.settings_key(key.code, key.state, key.time) {
         Ok(Some(press)) => {
+            // **The form first, when there is one.** A press read as a row's
+            // while somebody is typing into a field is the fault
+            // `crate::a_key_fills_in_a_provider` exists to prevent: backspace
+            // would put their shortcut back to what it ships with while they
+            // thought they were correcting a typo in an API key.
+            //
+            // `None` means no form is open, and only then does the window see
+            // the press at all.
+            if server.a_key_fills_in_the_provider(press.filling).is_some() {
+                return Ok(());
+            }
             the_press_is_carried_out(server, press, strings);
             Ok(())
         }

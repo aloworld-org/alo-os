@@ -69,7 +69,7 @@ impl FillingInKey {
     /// must not work out for itself. A `ß`, a `é` or a Devanagari letter is
     /// whatever their keyboard says it is.
     #[must_use]
-    pub fn of(key: Keysym, held: ModifiersState, typed: Option<char>) -> Self {
+    pub fn of(key: Keysym, held: &ModifiersState, typed: Option<char>) -> Self {
         // **Control+V before anything else**, because `v` is also a letter and
         // the chord has to be read as a chord. The logo key and Alt are not
         // this form's: a chord meant for the shell must not land in a field as

@@ -247,6 +247,12 @@ pub struct Server {
     /// removal on the frame after it was made. See
     /// `crate::what_the_dock_is_filled_with`.
     pub(crate) what_the_dock_is_pinned_to: alo_dock::Holding,
+    /// The provider a person is filling in, while they are.
+    ///
+    /// **`None` is the ordinary state and is also the mode**: there is no
+    /// flag saying whether a form is open, because a form being open is a
+    /// form existing. See `crate::a_provider_is_added_in_settings`.
+    pub(crate) filling_in: Option<alo_setting_up::a_provider_is_filled_in::AProviderBeingAddded>,
     /// What a person has typed into *More apps*' search field.
     ///
     /// **Here and not beside the open-surface state**, which is where the
@@ -597,6 +603,8 @@ impl Server {
             asks_an_application_to_start: None,
             // Nothing has been worked out yet; the stand-up fills it.
             what_the_dock_is_pinned_to: alo_dock::Holding::nothing(),
+            // Nobody is adding a provider until they ask to.
+            filling_in: None,
             what_was_typed_into_more_apps: alo_dock::WhatTheyTyped::nothing(),
             pins_owed_to_the_disk: None,
             // The keyboard starts with the work, which is where a person's

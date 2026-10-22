@@ -131,6 +131,18 @@ pub struct SettingsPress {
     /// The modifiers held and the key pressed, when the key is one a shortcut
     /// can be made of.
     pub chord: Option<(Modifiers, Key)>,
+    /// What the same press means while a person is filling in a provider.
+    ///
+    /// **Read off the same press rather than translated again**, which is
+    /// `crate::a_key_reaches_settings`' own rule one level down: *one reading
+    /// of what libinput said … so a machine cannot disagree with itself about
+    /// which key a person pressed depending on what is on the screen.* Two
+    /// readings taken at two moments could answer about two different keys on
+    /// a keyboard whose layout changed between them.
+    ///
+    /// Which of these three is acted on is decided by whether a form is open,
+    /// and nothing here decides it.
+    pub filling: crate::a_key_fills_in_a_provider::FillingInKey,
 }
 
 /// What a key press reaches outside the window, handed in for that press.

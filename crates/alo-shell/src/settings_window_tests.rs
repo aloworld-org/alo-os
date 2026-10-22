@@ -24,7 +24,11 @@ use alo_shortcuts::Modifier;
 
 /// A key that means `key` and makes no chord.
 fn key(key: SettingsKey) -> SettingsPress {
-    SettingsPress { key, chord: None }
+    SettingsPress {
+        key,
+        chord: None,
+        filling: crate::a_key_fills_in_a_provider::FillingInKey::Nothing,
+    }
 }
 
 /// A press that is the chord `held` + `pressed` and means nothing to the list.
@@ -32,6 +36,7 @@ fn chord(held: Modifiers, pressed: Key) -> SettingsPress {
     SettingsPress {
         key: SettingsKey::Nothing,
         chord: Some((held, pressed)),
+        filling: crate::a_key_fills_in_a_provider::FillingInKey::Nothing,
     }
 }
 
