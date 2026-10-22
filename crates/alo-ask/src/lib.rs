@@ -121,6 +121,8 @@
 //! `docs/autonomy/the-terminal-in-full-plan.md` — written there as work and a
 //! named block, rather than left here as a justification.
 
+pub mod answering_or_acting;
+pub mod at_the_agents_door;
 pub mod at_the_daemons_door;
 pub mod beside_an_answer;
 pub mod saying;

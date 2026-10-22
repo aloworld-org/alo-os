@@ -817,6 +817,18 @@ file carries it with a tier.*
   page**: it rewinds this machine's files, and it does not recall a push,
   un-send an email, or undo anything that already left. A reversibility
   overstated once is one nobody trusts again
+- ★ **Ask alo from the terminal, and asking means acting.** One command, and
+  you never say which you meant: `alo-ask open the text editor` is a request and
+  `alo-ask may the tenant sublet?` is a question, typed the same way at the same
+  prompt. A request is **proposed, never performed** — alo says what it would do
+  and what grant the work needs, and nothing happens until you approve it, which
+  is *reads answer, changes wait* in the terminal rather than only in the dock.
+  *A misread question costs you reading one sentence, because a proposal nobody
+  approves does not run* ([ADR 0124](decisions/0124-one-command-asks-alo-from-the-terminal-and-asking-means-acting.md)).
+  **Partly built, 2026-10-22**: the road to the agent and the deciding between
+  the two are built and tested; what decides is a model, and on a machine whose
+  only model is small the deciding is unreliable — measured at 1 correct in 8 on
+  requests. The approval is what protects you, and it is unconditional either way
 - ★ **Ask what a command actually did** — `alo watch cargo build` — and the
   answer comes **from the kernel rather than from what the command printed**. A
   command that lies in its output lies to every other tool; it cannot lie to the

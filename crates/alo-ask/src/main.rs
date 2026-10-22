@@ -96,6 +96,63 @@ const THE_STRICTEST_RULE: SourcePolicy = SourcePolicy::ThisMachineOnly;
 /// today precisely because this door never reads it.
 const WHO_IS_ASKING: &str = "alo-ask";
 
+/// Which road a sentence takes, asked of the model on this machine.
+///
+/// **The verdict is read in `alo_ask::answering_or_acting` and asked here**,
+/// which is this file's own division: the part with a rule in it is testable
+/// without a runtime, and the part that reaches one is the order a real machine
+/// does things in.
+///
+/// A model that will not answer is [`WhatItWants::CannotTell`] rather than a
+/// failure of its own, because the person asked for something and the thing to
+/// tell them is that alo could not tell which — not that a classification step
+/// they never asked for did not work.
+fn the_road_this_takes(
+    put: &Question,
+    runtime: &Ollama,
+    strings: &Strings,
+) -> alo_ask::answering_or_acting::WhatItWants {
+    let Ok(answering) = Answering::chosen(InferenceSource::ThisMachine, &THE_STRICTEST_RULE) else {
+        return alo_ask::answering_or_acting::WhatItWants::CannotTell;
+    };
+    let who = Grantee::named(WHO_IS_ASKING);
+    let asking = Asking::by(&who, answering, &[], &THE_STRICTEST_RULE);
+    let _ = strings;
+    match asking.to_this_machine(put, runtime) {
+        Ok(answer) => alo_ask::answering_or_acting::what_the_reply_says(answer.text()),
+        Err(_) => alo_ask::answering_or_acting::WhatItWants::CannotTell,
+    }
+}
+
+/// **What alo was asked to do, handed to the agent.**
+///
+/// [ADR 0124](../../../docs/decisions/0124-one-command-asks-alo-from-the-terminal-and-asking-means-acting.md)
+/// term 2: the one command *proposes, says what grant the work needs, and waits
+/// for an approval before anything happens*. None of those three is this
+/// function's. It writes the sentence to ADR 0109's door and prints what came
+/// back; the agent decides which verb it means, the daemon puts the proposal,
+/// and the person approves it. **Nothing here can act**, which is why a
+/// classifier being wrong costs a sentence rather than a change.
+fn the_agent_was_asked(typed: &str, strings: &Strings) -> ExitCode {
+    let at = std::path::Path::new(alo_protocol::where_the_door_is::WHERE_A_PERSONS_WORDS_GO);
+    match alo_ask::at_the_agents_door::what_the_agent_says(at, typed) {
+        Ok(said) => {
+            println!("{said}");
+            ExitCode::SUCCESS
+        }
+        // **Its own English, and no fallback to answering.** A command that met
+        // a missing agent and quietly answered the request instead would be the
+        // silent substitution ADR 0008 forbids, arriving as robustness — and the
+        // person would be told about their request rather than have it done,
+        // with nothing saying which happened.
+        Err(why) => {
+            eprintln!("alo-ask: {why}");
+            let _ = strings;
+            ExitCode::FAILURE
+        }
+    }
+}
+
 /// Ask the daemon to put the question to the provider the person chose.
 ///
 /// One connection, one line, one answer. Everything a person can read here is
@@ -301,6 +358,40 @@ fn main() -> ExitCode {
     // name is not a failure to report here either: it is a question without a
     // model in it, and `Question::asked` refuses it with the sentence that tells
     // the person to choose one.
+    // **Which of the two this sentence is, decided before it is treated as
+    // either.** ADR 0124 term 4, the owner's words: *it should be smart enough
+    // to know if the question needs answering or acting.* So the same model that
+    // would answer is asked which it is, and the person says nothing.
+    //
+    // **A question costs two asks for this**, which is the price of there being
+    // one command. The alternative is a flag, and a flag is the person being
+    // made to say what term 4 says they never say.
+    let which = match Question::asked(
+        &alo_ask::answering_or_acting::the_question_about(&asked),
+        &of_model,
+    ) {
+        Ok(put) => the_road_this_takes(&put, &runtime, &strings),
+        Err(not_a_question) => {
+            eprintln!("{}", not_a_question.said(&strings));
+            return ExitCode::FAILURE;
+        }
+    };
+    match which {
+        alo_ask::answering_or_acting::WhatItWants::Acting => {
+            return the_agent_was_asked(&asked, &strings);
+        }
+        // **Nothing is guessed.** ADR 0124 leaves open what happens when the
+        // reading is genuinely ambiguous, and this lane's reading — recorded in
+        // the ADR and marked as the owner's to overturn — is that it asks,
+        // because the standing rule is *never a silent fallback* and choosing
+        // between two readings in silence is a silent choice between them.
+        alo_ask::answering_or_acting::WhatItWants::CannotTell => {
+            eprintln!("{}", Unanswered::NotAnswered.said(&strings));
+            return ExitCode::FAILURE;
+        }
+        alo_ask::answering_or_acting::WhatItWants::Answering => {}
+    }
+
     let question = match Question::asked(&asked, &of_model) {
         Ok(question) => question,
         Err(not_a_question) => {
