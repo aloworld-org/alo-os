@@ -323,3 +323,180 @@ fn the_persons_own_copy_declares_what_theirs_declares() {
     let _ = std::fs::remove_dir_all(&theirs);
     let _ = std::fs::remove_dir_all(&shipped);
 }
+
+/// What an entry calls its icon, read off the same walk as everything else.
+///
+/// **Every one of these failed before the `Icon` arm existed**, which is the
+/// only reason to trust them: the walk already carried the field and the
+/// parser left it [`None`], so each assertion below ran against a reader that
+/// compiled, found the entry, and reported no icon for it.
+mod what_an_entry_calls_its_icon {
+    use super::{a_place_holding, read_with_their_icons};
+
+    #[test]
+    fn an_application_that_names_one_has_it_read_back_by_identifier() {
+        let place = a_place_holding(&[(
+            "org.gnome.Nautilus.desktop",
+            "[Desktop Entry]\nType=Application\nName=Files\nIcon=org.gnome.Nautilus\n",
+        )]);
+        let (installed, icons) = read_with_their_icons(&[place]);
+        assert!(
+            installed.has("org.gnome.Nautilus"),
+            "the control: the entry counted as installed, so a missing icon below is the \
+             icon reading and not the walk"
+        );
+        assert_eq!(
+            icons.named("org.gnome.Nautilus"),
+            Some("org.gnome.Nautilus")
+        );
+    }
+
+    #[test]
+    fn an_icon_name_need_not_look_like_an_identifier() {
+        // The two shapes the specification allows, and the Dock has to carry
+        // both: a bare theme name, and an absolute path to a file.
+        let place = a_place_holding(&[
+            (
+                "firefox.desktop",
+                "[Desktop Entry]\nType=Application\nName=Firefox\nIcon=firefox\n",
+            ),
+            (
+                "weather.desktop",
+                "[Desktop Entry]\nType=Application\nName=Weather\nIcon=/usr/share/pixmaps/w.png\n",
+            ),
+        ]);
+        let (_installed, icons) = read_with_their_icons(&[place]);
+        assert_eq!(icons.named("firefox"), Some("firefox"));
+        assert_eq!(icons.named("weather"), Some("/usr/share/pixmaps/w.png"));
+    }
+
+    #[test]
+    fn an_application_with_no_icon_line_is_installed_and_absent_from_the_icons() {
+        let place = a_place_holding(&[(
+            "terminal.desktop",
+            "[Desktop Entry]\nType=Application\nName=Terminal\n",
+        )]);
+        let (installed, icons) = read_with_their_icons(&[place]);
+        assert!(
+            installed.has("terminal"),
+            "no icon is not a reason to leave an application out of what is installed"
+        );
+        assert_eq!(
+            icons.named("terminal"),
+            None,
+            "and it is absent rather than present-and-empty, which is what lets the Dock \
+             tell *named nothing* from *named something unreadable*"
+        );
+    }
+
+    #[test]
+    fn an_empty_icon_line_is_no_icon_rather_than_an_icon_called_nothing() {
+        let place = a_place_holding(&[(
+            "packaged.desktop",
+            "[Desktop Entry]\nType=Application\nName=Packaged\nIcon=\n",
+        )]);
+        let (installed, icons) = read_with_their_icons(&[place]);
+        assert!(installed.has("packaged"), "the control: the entry counted");
+        assert_eq!(
+            icons.named("packaged"),
+            None,
+            "an empty name would send the lookup hunting for a file called nothing, and \
+             report *not found* for what is really *never named*"
+        );
+    }
+
+    #[test]
+    fn an_icon_belonging_to_an_action_is_not_the_applications() {
+        // A desktop file carries one group per right-click action, and each
+        // may name its own icon. Reading the first Icon anywhere in the file
+        // would draw the action's picture on the Dock.
+        let place = a_place_holding(&[(
+            "browser.desktop",
+            "[Desktop Entry]\nType=Application\nName=Browser\n\
+             [Desktop Action NewWindow]\nName=New Window\nIcon=window-new\n",
+        )]);
+        let (installed, icons) = read_with_their_icons(&[place]);
+        assert!(installed.has("browser"), "the control: the entry counted");
+        assert_eq!(
+            icons.named("browser"),
+            None,
+            "the application named no icon; window-new belongs to one of its actions"
+        );
+    }
+
+    #[test]
+    fn the_applications_own_icon_is_kept_when_an_action_names_one_after_it() {
+        // The same trap from the other side: an application that *does* name
+        // an icon must keep its own, not take the action's.
+        let place = a_place_holding(&[(
+            "editor.desktop",
+            "[Desktop Entry]\nType=Application\nName=Editor\nIcon=text-editor\n\
+             [Desktop Action NewWindow]\nName=New Window\nIcon=window-new\n",
+        )]);
+        let (_installed, icons) = read_with_their_icons(&[place]);
+        assert_eq!(icons.named("editor"), Some("text-editor"));
+    }
+
+    #[test]
+    fn the_persons_own_directory_names_the_icon() {
+        let theirs = a_place_holding(&[(
+            "browser.desktop",
+            "[Desktop Entry]\nType=Application\nName=Their Browser\nIcon=the-one-they-chose\n",
+        )]);
+        let shipped = a_place_holding(&[(
+            "browser.desktop",
+            "[Desktop Entry]\nType=Application\nName=Shipped Browser\nIcon=what-we-shipped\n",
+        )]);
+        let (_installed, icons) = read_with_their_icons(&[theirs, shipped]);
+        assert_eq!(
+            icons.named("browser"),
+            Some("the-one-they-chose"),
+            "earlier directories win, as they already do for the name and the media types"
+        );
+    }
+
+    #[test]
+    fn an_entry_a_person_should_not_see_contributes_no_icon() {
+        // The three refusals are the name's and are unchanged; what this adds
+        // is that none of them leaks an icon for an application that is not
+        // listed. A hidden entry with an icon would put artwork in the map
+        // under an identifier nothing on the Dock can match.
+        let place = a_place_holding(&[
+            (
+                "helper.desktop",
+                "[Desktop Entry]\nType=Application\nName=Helper\nIcon=helper\nNoDisplay=true\n",
+            ),
+            (
+                "masked.desktop",
+                "[Desktop Entry]\nType=Application\nName=Masked\nIcon=masked\nHidden=true\n",
+            ),
+            (
+                "pointer.desktop",
+                "[Desktop Entry]\nType=Link\nName=Pointer\nIcon=pointer\n",
+            ),
+            (
+                "real.desktop",
+                "[Desktop Entry]\nType=Application\nName=Real\nIcon=real\n",
+            ),
+        ]);
+        let (_installed, icons) = read_with_their_icons(&[place]);
+        assert_eq!(
+            icons.named("real"),
+            Some("real"),
+            "the control: a listable entry in the same directory did get its icon, so the \
+             three absences below are the refusals and not an empty walk"
+        );
+        assert_eq!(icons.named("helper"), None);
+        assert_eq!(icons.named("masked"), None);
+        assert_eq!(icons.named("pointer"), None);
+        assert_eq!(icons.how_many(), 1);
+    }
+
+    #[test]
+    fn a_machine_with_no_entries_names_no_icons() {
+        let place = a_place_holding(&[]);
+        let (installed, icons) = read_with_their_icons(&[place]);
+        assert_eq!(installed.how_many(), 0);
+        assert!(icons.is_empty());
+    }
+}
