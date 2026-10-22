@@ -47,9 +47,19 @@ Before=alo-portald.service
 # uses is a surface nobody is watching. The Secret Service is the one thing
 # ADR 0022 names.
 #
-# **`--unlock` reads a password from standard input**, and `StandardInput=null`
-# below is what makes that password empty — see the paragraph under it, which
-# is where that decision is argued rather than here.
+# **`--unlock` reads a password from standard input**, and `StandardInputData=`
+# below is what delivers an empty one — see the paragraph under it, which is
+# where that decision is argued rather than here.
+#
+# **This said `StandardInput=null` until it was run.** Measured on 2026-10-22
+# under systemd 255, with this unit, the real daemon and a real Secret Service
+# client: `null` is **end of file, which is not an empty password.** The daemon
+# starts, systemd reports the unit `active`, it takes and serves
+# `org.freedesktop.secrets` — and it creates no collection at all, so the
+# `default` alias reads `/` and every attempt to store a key dies on *object
+# does not exist at path .../collection/login*. One newline byte on standard
+# input instead, and the same unit creates `login.keyring`, points `default` at
+# it, and a key written by one process is read back by another.
 Type=exec
 ExecStart=/usr/bin/gnome-keyring-daemon --foreground --components=secrets --unlock
 
@@ -84,8 +94,27 @@ ExecStart=/usr/bin/gnome-keyring-daemon --foreground --components=secrets --unlo
 # the login keyring open without asking. A person who wants a password on their
 # keyring is a setting this does not offer yet, and that is written here rather
 # than left to be discovered.
-ExecStartPre=/usr/bin/install -d -m 0700 -o alo -g alo /home/alo/.local/share/keyrings
-StandardInput=null
+# **The keyrings directory is not made here**, and this unit used to make it
+# with `ExecStartPre=/usr/bin/install -d … /home/alo/.local/share/keyrings`.
+# It is `image/usr/lib/tmpfiles.d/alo.conf`'s job, beside the two directories
+# already there for the same person, and it names `/var/home/alo/...` — the
+# real path — because that file's own comment asks nobody to create a directory
+# through the `/home` symlink. What this unit gained by dropping it: starting
+# the keyring no longer depends on a `mkdir` succeeding first.
+
+# **One newline byte, and that is the empty password.** `Cg==` is base64 for
+# `\n`, which is what `StandardInputData=` takes. `--unlock` reads until the
+# first newline, so this delivers a password of zero characters — the decision
+# argued above — rather than nothing at all.
+#
+# It is declarative on purpose. The other way to put a byte on a service's
+# standard input is `ExecStart=/bin/sh -c 'printf … | …'`, which buys a shell
+# in the one unit on this machine whose whole job is holding a person's
+# secrets, and loses `Type=exec`: systemd would then supervise the shell
+# rather than the process serving the bus name, which is the fault the
+# `--foreground` paragraph above exists to avoid.
+StandardInput=data
+StandardInputData=Cg==
 
 # **The uid it runs as is the person**, which is load-bearing for the same
 # reason `alo-portald.service` gives: `TheBus::of_this_process` takes the uid

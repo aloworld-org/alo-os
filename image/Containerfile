@@ -480,6 +480,16 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-portald /usr/libexec/
 # eleven missing libraries. The D-Bus service file is checked separately,
 # because a daemon that runs and is not activatable on the bus is a daemon
 # nothing can reach.
+#
+# **What these two lines cannot prove, said here because they once stood in for
+# it.** Neither starts the service, so neither can see whether a key can
+# actually be stored. On 2026-10-22 both passed on a unit that started, went
+# `active`, took `org.freedesktop.secrets` — and created no collection, so
+# every key a person tried to keep failed on *object does not exist at path
+# …/collection/login*. A build step cannot start a unit; what settles it is a
+# round trip under systemd, written up in
+# `docs/misreadings/a-service-that-starts-and-serves-nothing.md`. These lines
+# are the floor, not the proof.
 RUN dnf install --assumeyes --setopt=install_weak_deps=False \
       gnome-keyring \
  && dnf clean all \
