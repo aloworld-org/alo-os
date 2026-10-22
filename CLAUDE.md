@@ -7,7 +7,7 @@ discipline. You are that team. Everything here is absolute;
 everything else is judgment.
 
 The workplace that runs on it lives in `alo-workplace`, and it is
-three products over one platform — **mail, meet and sites** — which
+two products over one platform — **mail and meet** — which
 **ship as separate applications**, each installed, updated, granted
 and opened on its own ([ADR 0122](docs/decisions/0122-the-workplace-ships-as-separate-applications.md)).
 *Projects instead of applications* is the layer above them, not the
