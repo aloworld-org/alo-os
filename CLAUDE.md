@@ -567,13 +567,31 @@ next lane relitigates.*
     and the three-dot diff agrees to the line. The lane that caught it
     was the one the wrong figure was aimed at.*
 
-  *The two are distinguishable with one check: where the merge-base **is**
-  `origin/main`, two-dot and three-dot are identical — measured here at
-  37 files and 3,974 insertions either way. A gap between them is
-  therefore a statement about the base's age and nothing else. The
-  corrections are recorded rather than made silently, because a
-  constitution that quietly repairs its own evidence teaches the
-  opposite of what this clause asks for.*
+  *The two are distinguishable without measuring anything. Three-dot
+  **is** `merge-base..branch`, so where the merge-base is `origin/main`
+  the two forms are the same command and must agree. **A gap between
+  them is therefore a statement about the base's age and nothing else** —
+  true by definition, and it will never decay.*
+
+  *This draft said it the other way round, as a figure: "measured at 37
+  files and 3,974 insertions either way". **It was false forty minutes
+  later**, when one pull request landed and that branch's base went one
+  commit behind — 45 files and +4,005/−400 against 37 and +3,974/−10.
+  Any landing ends such a condition, so the honest form of that sentence
+  had a half-life of one merge. It is the family **Forbidden** already
+  names as publishing a measurement as a standing property, and it
+  happened in the sentence explaining how line counts go wrong.*
+
+  *Which gives the generalisation worth more than any of the three
+  figures. What made GitHub's `+2440 −0` usable was not that it was
+  small or that it was right: it was **recomputed on read**, from the
+  merge-base, every time anybody asks. The "198 lines" depended on a
+  tree that no longer existed and the "either way" on a tree state that
+  lasted under an hour. **Cite a figure a reader can re-derive from a
+  live source; a figure that describes a tree is a figure with an expiry
+  date nobody wrote on it.** The corrections are all recorded rather
+  than made silently, because a constitution that quietly repairs its
+  own evidence teaches the opposite of what this clause asks for.*
 
   **The pull request is opened when the branch is pushed**, which is the
   moment there is a commit — not when the work feels presentable. A
