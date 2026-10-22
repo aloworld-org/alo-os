@@ -46,6 +46,9 @@
 mod readings;
 
 #[cfg(target_os = "linux")]
+mod the_artwork_each_application_has;
+
+#[cfg(target_os = "linux")]
 mod what_this_machine_offers;
 
 /// What this process does on the machine alo OS is for.
@@ -127,6 +130,21 @@ mod running {
             "alo-desktop: the Dock's default roles resolve to {:?}",
             offers.roles
         );
+        // **Said out loud because a Dock of letters has four causes.** ADR 0101
+        // is the owner's ruling that an application draws its own icon and a
+        // letter is the fallback; when a machine shows letters anyway, this is
+        // the line that says whether its entries named no icon, named one that
+        // is not installed, named a scalable one nothing here can rasterise, or
+        // named one that would not decode. Without it the four are one symptom.
+        eprintln!(
+            "alo-desktop: {} applications draw their own icon; {} named none, {} named one that \
+             is not on this machine, {} have only a scalable one, {} would not decode",
+            offers.artwork_went.drew_a_picture,
+            offers.artwork_went.named_none,
+            offers.artwork_went.named_one_that_is_not_here,
+            offers.artwork_went.only_scalable,
+            offers.artwork_went.would_not_decode,
+        );
         // **What the chord opens, in the order it tries them.** Since
         // `alo_shell::a_chord_opens_a_terminal` was written, the chord opens
         // **alo's own** terminal and reaches the installed one only when that
@@ -188,6 +206,7 @@ mod running {
             // `crate::what_this_machine_offers`.
             &offers.roles,
             offers.terminal.clone(),
+            &offers.artwork,
         ) {
             Ok(stood) => {
                 // **What the seat made of a person's input, said out loud.**

@@ -57,6 +57,16 @@ alo-dock = { path = "../alo-dock" }
 # only a binary sees both. See `crate::what_this_machine_offers`.
 alo-software = { path = "../alo-software" }
 alo-applications = { path = "../alo-applications" }
+# What applications this machine has and what each calls its icon, read off
+# its desktop entries. The shell may not take a reading of the machine; this
+# binary is where readings are taken and handed over as data.
+alo-installed = { path = "../alo-installed" }
+# Where the icon one of them named actually is, by the icon theme rules.
+alo-icons = { path = "../alo-icons" }
+# The one decoder in this workspace, already pinned by alo-shell at the same
+# version. PNG only here: nothing in this repository rasterises an SVG, and
+# ADR 0101 puts a rasteriser behind the dependency and ADR process.
+image = { version = "=0.25.10", default-features = false, features = ["png"] }
 
 # Where this person's grants and pairings are kept, which Settings reads at the
 # moment a person opens it. For those two paths only: `this_persons_grants`

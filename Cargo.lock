@@ -672,7 +672,9 @@ dependencies = [
  "alo-dock",
  "alo-egress",
  "alo-formats",
+ "alo-icons",
  "alo-indicator",
+ "alo-installed",
  "alo-keyboards",
  "alo-networks",
  "alo-portals",
@@ -686,6 +688,7 @@ dependencies = [
  "alo-sound",
  "alo-strings",
  "alo-tasks",
+ "image",
  "jiff",
  "zbus",
 ]
