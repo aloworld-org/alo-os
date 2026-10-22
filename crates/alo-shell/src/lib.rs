@@ -82,7 +82,6 @@ mod a_chord_reaches_its_action;
 mod a_click_brings_a_window_back;
 mod a_display_has_gone;
 mod a_frame_per_display;
-/// Typing into a task window's reply box.
 pub mod a_key_reaches_a_task_window;
 mod a_key_reaches_settings;
 mod a_key_reaches_the_docks_surfaces;
@@ -93,6 +92,7 @@ mod a_person_pins_and_unpins;
 mod a_press_in_the_menu;
 mod a_press_on_an_edge;
 mod a_press_on_the_sign_in_screen;
+/// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;
 mod access_bus;
 mod access_contrast;

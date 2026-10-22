@@ -1628,6 +1628,7 @@ dependencies = [
  "alo-saying",
  "alo-strings",
  "thiserror 2.0.20",
+ "unicode-segmentation",
 ]
 
 [[package]]
