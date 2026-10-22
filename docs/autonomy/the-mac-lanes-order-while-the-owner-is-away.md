@@ -702,9 +702,22 @@ command. The two roads are a new mark in
 `docs/contracts/shell-integration-marks.md` carrying the place's name, which is a
 published surface and therefore a decision; or pairing by nearest-preceding
 moment, which is a guess at exactly the seam where being wrong costs somebody
-their files. **Neither is this lane's to take.** Everything underneath the
-surface now works, which is the opposite of the usual order here and worth
-saying.
+their files. **Neither is this lane's to take**, and both are written up with
+their measurements in
+[ADR 0132](../decisions/0132-how-a-person-picks-a-place-to-return-to-from-the-scrollback.md).
+Everything underneath the surface now works, which is the opposite of the usual
+order here and worth saying.
+
+**One measurement in that ADR is a finding on its own.** Of the five things
+`AShellSaid` can be, **four reach no production code**:
+`APromptIsAboutToBeDrawn`, `ThePromptHasEnded`, `TheCommandIsRunning` and
+`TheCommandFinished` are named only in tests, and `TheyTyped` is the one with a
+caller. Counted across 3,015 files with a control for a variant that does not
+exist. They are parsed, tested and in a published contract, and the two that
+would tell the terminal where a command's output begins are exactly the two
+*scroll up, choose one* needs. **A seventh instance of the shape this document
+exists for**, and it was found by asking what the missing half would need rather
+than by auditing the marks.
 
 **Bisect the machine is still blocked, and on the comparer rather than on the
 bracket.** ADR 0127's own table says so: task 8 needs *the bracket **and** the

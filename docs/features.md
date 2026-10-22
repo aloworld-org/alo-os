@@ -643,6 +643,11 @@ file carries it with a tier.*
   moment and no command. Pairing a row to a place is the piece of this line that
   is left, and it is a surface rather than a mechanism — everything underneath
   it now works.
+  [ADR 0132](decisions/0132-how-a-person-picks-a-place-to-return-to-from-the-scrollback.md)
+  proposes it with three roads and what each costs, measured: it is a decision
+  rather than a commit because every road adds to a published contract, and the
+  cheapest-looking one is the one `docs/contracts/shell-integration-marks.md`
+  makes a promise about.
 - ★ **Bisect the machine, not the repository.** *It worked yesterday* becomes a
   command: walk the snapshots to find when something broke, including everything
   version control never held — installed packages, caches, configuration, a
