@@ -469,7 +469,6 @@ pub const A_WORKSPACE_HERE_NAMES_NO_USABLE_PORT: Word = Word::saying(
      does not announce a guess and colleagues will not find it.",
 );
 
-/// Everything this crate can say.
 /// A command the person is about to run, with nowhere to keep a place for it.
 pub const NO_PLACE_TO_RETURN_TO: Word = Word::saying(
     "agentd.no-place-to-return-to",
@@ -483,6 +482,7 @@ pub const NO_PLACE_TO_RETURN_TO: Word = Word::saying(
      to return to\" is a copy of their own files as they are at that moment.",
 );
 
+/// Everything this crate can say.
 pub const EVERY_WORD: [Word; 32] = [
     NO_PLACE_TO_RETURN_TO,
     A_WORKSPACE_HERE_IS_NOT_THE_SYSTEMS,

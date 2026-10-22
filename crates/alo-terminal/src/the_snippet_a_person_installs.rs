@@ -220,8 +220,6 @@ pub fn add_snapshots_to(startup: &std::path::Path, shell: &str) -> Result<Added,
 /// file that does not exist yet is **not** an error: a person who has never
 /// edited one still gets the integration.
 pub fn add_to(startup: &std::path::Path, shell: &str) -> Result<Added, NotAdded> {
-    use std::io::Write as _;
-
     let snippet =
         for_the_shell_called(shell).ok_or_else(|| NotAdded::NoIntegrationFor(shell.to_owned()))?;
     appended(startup, snippet)

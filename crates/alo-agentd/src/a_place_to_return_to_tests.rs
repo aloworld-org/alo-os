@@ -8,7 +8,9 @@
 
 #![expect(
     clippy::unwrap_used,
-    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+    clippy::expect_used,
+    clippy::panic,
+    reason = "in a test, a panic naming what was measured is the failure being reported"
 )]
 
 use alo_protocol::ToAPerson;
