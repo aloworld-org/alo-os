@@ -923,6 +923,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-icons"
+version = "0.0.1"
+
+[[package]]
 name = "alo-image"
 version = "0.0.1"
 dependencies = [
