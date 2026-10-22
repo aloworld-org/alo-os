@@ -135,7 +135,7 @@ pub use words::{
     REMAINS_FAST_STARTUP_OFF, REMOVE_IS_GONE, REMOVE_NOT_AGREED, REMOVE_NOT_FOUND,
     REMOVE_NOT_THERE, REMOVE_TYPE_THE_DISKS_NAME, REMOVE_WILL_ERASE, STARTING, SWITCH_AGREED,
     SWITCH_NOT_AGREED, SWITCH_NOT_READ, SWITCH_NOT_SET, SWITCH_NOT_THERE, SWITCH_WILL_RESTART,
-    WordsError, declare_into, installer_words,
+    WordsError, declare_into, installer_words, what_this_program_says,
 };
 pub use words::{STICK_NONE_PLUGGED_IN, STICK_WILL_RESTART};
 pub use writing_the_stick::{THE_IMAGE, THE_WRITINGS_WORD, Written, write_the_stick};

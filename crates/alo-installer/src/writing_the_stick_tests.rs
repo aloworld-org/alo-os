@@ -90,6 +90,16 @@ impl TheMachine for AMachine {
             "a gap reached a person: {}",
             said.text()
         );
+        // **A key is not a sentence.** `alo-strings` shows a key it holds no
+        // phrase for as `«key»`, which is the right behaviour and is also how
+        // 24 undeclared sentences reached a person looking like something. Held
+        // here as well as by the vocabulary above, because this is the assertion
+        // that names *which* sentence rather than failing a whole road.
+        assert!(
+            !said.text().starts_with('\u{ab}'),
+            "no phrase is declared for this, so a person is shown its key: {}",
+            said.text()
+        );
         self.said.push(said.text().to_owned());
     }
 
@@ -149,9 +159,20 @@ impl TheMachine for AMachine {
     }
 }
 
-/// This repository's own words, in English.
+/// **The vocabulary this program actually has**, which is what `main.rs` builds.
+///
+/// This was `alo_saying::everything_this_machine_can_say()` — the **whole
+/// machine's** vocabulary — until 2026-10-22, and that is why these tests read
+/// in good English while the program printed `«installing.write-a-stick»` to a
+/// person. The machine's vocabulary includes `alo-installing`; the installer's
+/// did not.
+///
+/// **The right measurement of the wrong subject.** Nothing about the assertions
+/// was wrong; they were asked of a vocabulary no copy of this program has ever
+/// held. Found by running the program on Windows, which is the only thing that
+/// could have found it.
 fn english() -> Strings {
-    Strings::of(alo_saying::everything_this_machine_can_say().expect("the machine's vocabulary"))
+    Strings::of(crate::words::what_this_program_says().expect("this program's vocabulary"))
 }
 
 /// One removable device and one fixed disk, as Windows prints them.

@@ -26,8 +26,8 @@ mod running {
     use alo_installer::{
         Ended, OnThisMachine, PRESS_ENTER_TO_CLOSE, Released, Removed, Started, Switched,
         THE_DEFAULTS_WORD, THE_REMOVALS_WORD, THE_STICKS_WORD, THE_SWITCHS_WORD, THE_WRITINGS_WORD,
-        TheDefault, TheMachine, Written, install, installer_words, remove_alo_os,
-        restart_into_alo_os, start_the_stick, which_system_starts, write_the_stick,
+        TheDefault, TheMachine, Written, install, remove_alo_os, restart_into_alo_os,
+        start_the_stick, what_this_program_says, which_system_starts, write_the_stick,
     };
     use alo_strings::{Filling, Strings};
 
@@ -43,7 +43,7 @@ mod running {
     /// argument is an install as it always was, and any other argument is
     /// refused rather than guessed at.
     pub(crate) fn run() -> ExitCode {
-        let vocabulary = match installer_words() {
+        let vocabulary = match what_this_program_says() {
             Ok(vocabulary) => vocabulary,
             Err(why) => {
                 eprintln!("alo-installer: its own words would not declare: {why}");
