@@ -622,6 +622,31 @@ pub const ONE_APPLICATION_HERE: Word = Word::saying(
      sentences rather than merging them into one with a plural rule.",
 );
 
+/// The line under the field when nothing on this machine can answer a question.
+///
+/// **Said as a person types, not after they press Enter.** Until 2026-10-22 a
+/// question on a machine where nothing was chosen to answer was taken, dropped
+/// and never mentioned — `direct_desktop`'s `if let Some(task)` had no `else` —
+/// so somebody pressed Enter and met silence, pressed it again and met silence
+/// again. Telling them afterwards would need a notification, and alo OS has
+/// none: a notification needs a seat, a seat needs a session, and the binary
+/// that holds one signs a person in and exits. **This line is already on the
+/// screen while they are still typing**, which is both earlier and cheaper, and
+/// it is ADR 0009's *says so once, where it happened, and continues* read
+/// literally.
+///
+/// It replaces the count of applications rather than joining it, and that is a
+/// choice: the applications are in the rows directly below, where the person can
+/// see them, and a person who typed a question needs the one fact the rows
+/// cannot show them.
+pub const NOTHING_CAN_ANSWER_A_QUESTION: Word = Word::saying(
+    "dock.bar.nothing-can-answer",
+    "On this computer  \u{b7}  nothing is chosen yet to answer questions",
+)
+.noting(
+    "The line under the Bar's field, in the place where the count of applications otherwise goes,      and worded to the same shape so the two read as one line changing rather than two different      lines. It is about questions only: typing the name of an application still opens it, and      those rows are visible below this line. Not a failure and not an error — nobody has chosen      yet. A person chooses in Settings.",
+);
+
 /// Every string this crate can say, in the order a translator meets them: the
 /// two answers about whether it gives way, where the dock keeps its names, the
 /// two refusals, what is said about the person's own file, what a reader is
@@ -632,10 +657,11 @@ pub const ONE_APPLICATION_HERE: Word = Word::saying(
 /// beside the other settings' words because this list's order is the order a
 /// translator meets them in, and a translator who has already done this file
 /// should find the new ones together rather than hunting a diff.
-pub const EVERY_WORD: [Word; 45] = [
+pub const EVERY_WORD: [Word; 46] = [
     AN_APPLICATION_ROW,
     APPLICATIONS_HERE,
     ONE_APPLICATION_HERE,
+    NOTHING_CAN_ANSWER_A_QUESTION,
     ALWAYS_SHOWN,
     GIVES_WAY_TO_A_WINDOW,
     NAMES_BESIDE,
