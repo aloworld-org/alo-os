@@ -42,14 +42,21 @@ impl Server {
     pub fn its_applications_draw(&mut self, artwork: alo_dock::artwork::TheArtwork) {
         self.what_each_application_draws = std::sync::Arc::new(artwork);
     }
-
-    /// What this application draws, or [`None`] where it draws its first
-    /// letter.
-    #[must_use]
-    pub fn what_this_application_draws(
-        &self,
-        application: &alo_dock::AppId,
-    ) -> Option<&alo_dock::artwork::APicture> {
-        self.what_each_application_draws.of(application)
-    }
 }
+
+// **There is no per-application getter here, and there was until `alo-reached`
+// refused it.**
+//
+// `what_this_application_draws(&AppId) -> Option<&APicture>` looked like the
+// natural companion to the setter above and nothing ever called it. The road a
+// picture really takes does not pass through this type: `crate::server` holds
+// the whole `TheArtwork` behind an `Arc`, `crate::direct_desktop` clones that
+// handle into the frame, and `crate::dock_raster` asks
+// `TheArtwork::of(app)` itself at the moment it inks a cell. A getter on
+// `Server` would be a second spelling of `TheArtwork::of` reachable only by
+// borrowing the server, which the raster does not have and must not need.
+//
+// So it was written for a caller that the design does not want, which is the
+// second of the three answers `alo-reached` offers and the honest one here.
+// Written down rather than deleted silently, because the next person to add a
+// setter to this file will feel the same pull.
