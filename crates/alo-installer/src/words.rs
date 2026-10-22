@@ -1512,8 +1512,127 @@ pub const REMOVE_FAST_STARTUP_IS_STILL_OFF: Word = Word::saying(
      back: it is the person's to change, which is why it is named rather than restored.",
 );
 
+/// One device on the list, which is its own name and nothing else.
+///
+/// **A sentence whose whole content is a filling**, which looks odd and is
+/// right: a device is named by its maker and never translated, and a row that
+/// added a word around it would read differently in 24 languages while the
+/// thing it names does not. `alo_installing`'s `A_DISK_AND_ITS_SIZE` is the
+/// same shape for the same reason.
+pub const STICK_A_DEVICE: Word = Word::saying("installer.stick.a-device", "{device}").noting(
+    "One row of the list of devices. {device} is what the maker calls it, as Windows reports it, \
+     and is never translated. Do not add a word, a bullet or a number around it.",
+);
+
+// ---------------------------------------------------------------------------
+// Starting the stick, so nobody hunts for a boot key.
+//
+// `docs/features.md`: **And Windows starts the stick, so nobody hunts for a
+// boot key.** *The program running on Windows offers to restart straight into
+// it — no two-second window, no F2, F10, F12 or Esc that differs on every
+// machine.* The owner's own note on that line says why it is worth a road of
+// its own: **this is where people are lost before they begin, and it is not a
+// technical obstacle — it is a trivia question about their own laptop.**
+// ---------------------------------------------------------------------------
+
+/// The first line of the road that restarts into a stick.
+pub const STICK_STARTING: Word = Word::saying(
+    "installer.stick.starting",
+    "This restarts this computer into a device you plug in, so you do not have to press the right \
+     button while it starts. Nothing on any disk is changed",
+)
+.noting(
+    "The first line of the road that points the next start at a removable device. Nothing is \
+     written to any disk on this road — it sets which device the computer starts from once.",
+);
+
+/// No removable device is plugged in.
+pub const STICK_NONE_PLUGGED_IN: Word = Word::saying(
+    "installer.stick.none-plugged-in",
+    "No device you can start from is plugged into this computer, so nothing was changed. Plug the \
+     stick in and start this again",
+)
+.noting(
+    "Said when no removable device was found at all. The commonest reason is the obvious one, so \
+     the sentence says what to do rather than only what happened.",
+);
+
+/// Which device, with the list under it.
+pub const STICK_WHICH_ONE: Word = Word::saying(
+    "installer.stick.which-one",
+    "These are the devices you can start from:",
+)
+.noting("The line above the list of removable devices, each named on its own line below it.");
+
+/// Type the device's own name to agree.
+pub const STICK_TYPE_THE_NAME: Word = Word::saying(
+    "installer.stick.type-the-name",
+    "To restart into one of them, type its name exactly as it appears above and press Enter. To \
+     leave everything as it is, press Enter without typing anything",
+)
+.noting(
+    "The device's own name is typed back rather than a number chosen, which is the same consent \
+     the disk already takes. Do not translate the device's name; it is what the maker calls it.",
+);
+
+/// What was typed is not one of the devices.
+pub const STICK_NOT_THAT_NAME: Word = Word::saying(
+    "installer.stick.not-that-name",
+    "That is not the name of a device above, so nothing was changed",
+)
+.noting(
+    "Said when what a person typed matches none of the devices listed. It does not guess at what \
+     they meant: a near miss on this road points the computer at the wrong device.",
+);
+
+/// The firmware does not list that device.
+pub const STICK_FIRMWARE_DOES_NOT_LIST_IT: Word = Word::saying(
+    "installer.stick.firmware-does-not-list-it",
+    "This computer does not list {device} among the things it can start, so it cannot be chosen \
+     for you. Nothing was changed, and you can still pick it from this computer's own start-up \
+     menu",
+)
+.noting(
+    "{device} is the device's own name and is not translated. Said when the firmware keeps no \
+     entry for the device, which is ordinary on a computer that has never started from it. The \
+     sentence ends with what the person can still do, because the road they came for is closed \
+     and another one is open.",
+);
+
+/// What will happen, before it is agreed to.
+pub const STICK_WILL_RESTART: Word = Word::saying(
+    "installer.stick.will-restart",
+    "This computer will restart into {device} once. The next time it starts after that, it starts \
+     as it does today",
+)
+.noting(
+    "{device} is the device's own name, not translated. Said before the question that agrees. \
+     **Once** is the whole promise of this road: the next start only, never the order and never \
+     the default.",
+);
+
+/// The next start could not be set.
+pub const STICK_NOT_SET: Word = Word::saying(
+    "installer.stick.not-set",
+    "This computer would not let the next start be changed, so nothing was changed",
+)
+.noting(
+    "Said when the firmware refused the change. The next start is forgotten rather than left half \
+     set, so the computer starts as it did before.",
+);
+
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 145] = [
+pub const EVERY_WORD: [Word; 154] = [
+    // Starting a stick, so nobody hunts for a boot key.
+    STICK_STARTING,
+    STICK_NONE_PLUGGED_IN,
+    STICK_WHICH_ONE,
+    STICK_A_DEVICE,
+    STICK_TYPE_THE_NAME,
+    STICK_NOT_THAT_NAME,
+    STICK_FIRMWARE_DOES_NOT_LIST_IT,
+    STICK_WILL_RESTART,
+    STICK_NOT_SET,
     TOO_BIG_FOR_THE_AREA,
     A_TEST_BUILD_FROM,
     A_TEST_BUILD,

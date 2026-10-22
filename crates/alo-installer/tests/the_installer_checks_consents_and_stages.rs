@@ -1801,3 +1801,189 @@ fn a_disk_that_would_not_be_erased_is_said_and_not_pretended_about() {
     assert!(machine.kinds().contains(&"remove-entry"));
     assert!(!machine.kinds().contains(&"remove-what-was-left"));
 }
+
+// ---------------------------------------------------------------------------
+// Starting a stick, so nobody hunts for a boot key.
+//
+// `docs/features.md`: *The program running on Windows offers to restart
+// straight into it — no two-second window, no F2, F10, F12 or Esc that differs
+// on every machine.* The owner's note on that line: **this is where people are
+// lost before they begin, and it is not a technical obstacle — it is a trivia
+// question about their own laptop.**
+// ---------------------------------------------------------------------------
+
+/// Firmware entries including one for the SanDisk in `DISKS`.
+const ENTRIES_WITH_A_STICK: &str = "\
+Windows Boot Manager
+identifier              {bootmgr}
+description             Windows Boot Manager
+
+Firmware Application
+identifier              {b2721d73-1db4-4c62-bf78-c548a880142d}
+description             UEFI: SanDisk Ultra, Partition 1
+";
+
+/// The default disks with a SanDisk plugged in beside them.
+///
+/// **The default fixture holds no removable device**, which the first run of
+/// these tests proved by answering *nothing is plugged in* to every one of
+/// them -- including the control that asserts exactly that, which passed for
+/// the wrong reason. A fixture that does not exercise a surface removes it
+/// from every guard over that surface.
+const DISKS_WITH_A_STICK: &str = r#"[
+  {"Number":0,"FriendlyName":"Samsung SSD 980 1TB","SerialNumber":"S64ANS0T123456A","BusType":"NVMe","UniqueId":"","Size":1000204886016,"PartitionStyle":"GPT","IsReadOnly":false,"Partitions":[]},
+  {"Number":4,"FriendlyName":"SanDisk Ultra","SerialNumber":"4C530001","BusType":"USB","UniqueId":"","Size":64023257088,"PartitionStyle":"RAW","IsReadOnly":false,"Partitions":[]}
+]"#;
+
+/// A machine with a stick plugged in, and the person about to type.
+fn asked_to_start_a_stick(typed: &str, then: &str) -> Scripted {
+    let (mut machine, _) = Scripted::installable();
+    machine = machine.answering("disks", DISKS_WITH_A_STICK);
+    machine = machine.answering("entries", ENTRIES_WITH_A_STICK);
+    machine.typed = format!("{typed}\n");
+    machine.then_typed = vec![format!("{then}\n")];
+    machine
+}
+
+/// **The whole road, and it sets the next start and nothing else.**
+///
+/// Never the order, never the default, and nothing written to any disk —
+/// which is the promise the road is made of.
+#[test]
+fn starting_a_stick_sets_the_next_start_and_touches_no_disk() {
+    let mut machine = asked_to_start_a_stick("SanDisk Ultra", alo_installer::SWITCH_AGREED.says());
+    let started = alo_installer::start_the_stick(&mut machine, &strings());
+
+    assert_eq!(
+        started,
+        alo_installer::Started::Restarting { restarted: true },
+        "{:#?}",
+        machine.said
+    );
+    // Read the disks, read the entries, set the next start, restart. **No
+    // shrink, no partition, no format**: a road that touched a disk would show
+    // it here, and this is the assertion that says so rather than the prose.
+    assert_eq!(machine.kinds(), ["disks", "entries", "next", "restart"]);
+    // **Compared by what it says, not against the unfilled sentence.** The
+    // line a person reads has the device in it;  renders the word
+    // with no filling, so comparing the two asks whether the device name is
+    // literally . The first run of this test failed for exactly
+    // that, with the correct line printed beside it.
+    assert!(
+        machine
+            .said
+            .iter()
+            .any(|said| said.contains("SanDisk Ultra") && said.contains("once")),
+        "the person was not told what would happen: {:#?}",
+        machine.said
+    );
+}
+
+/// **A device the firmware does not list is said so, not guessed at.**
+///
+/// Ordinary on a computer that has never started from it. The honest answer
+/// leaves the person their own start-up menu rather than pointing the next
+/// start at whichever removable entry came first.
+#[test]
+fn a_stick_the_firmware_does_not_list_is_refused_and_nothing_is_set() {
+    // **The stick is plugged in; what is missing is the firmware's entry.**
+    // Both halves matter: without the stick this passes by finding nothing
+    // plugged in, which is a different refusal reached for a different reason
+    // — and that is exactly what it did on its first run.
+    let (mut machine, _) = Scripted::installable();
+    machine = machine.answering("disks", DISKS_WITH_A_STICK);
+    machine = machine.answering("entries", ENTRIES_WITH_ALO_OS);
+    machine.typed = "SanDisk Ultra\n".to_owned();
+    let started = alo_installer::start_the_stick(&mut machine, &strings());
+
+    assert_eq!(
+        started,
+        alo_installer::Started::NotListed,
+        "{:#?}",
+        machine.said
+    );
+    assert_eq!(
+        machine.kinds(),
+        ["disks", "entries"],
+        "the next start was set for a device the firmware does not list"
+    );
+}
+
+/// **A name that is not one of the devices is refused, and not guessed.**
+///
+/// A near miss on this road points the computer at a different device, and the
+/// person who mistyped is the one least able to tell which they got.
+#[test]
+fn a_name_that_matches_no_device_is_refused_rather_than_guessed() {
+    for typed in ["SanDisk", "sandisk ultra", "Samsung SSD 870 EVO", "1"] {
+        let mut machine = asked_to_start_a_stick(typed, alo_installer::SWITCH_AGREED.says());
+        let started = alo_installer::start_the_stick(&mut machine, &strings());
+        assert_eq!(
+            started,
+            alo_installer::Started::NotThatName,
+            "{typed:?} was accepted: {:#?}",
+            machine.said
+        );
+        assert_eq!(machine.kinds(), ["disks"], "{typed:?} reached the firmware");
+    }
+}
+
+/// **The control for the refusals above.** Every one of them would hold on a
+/// road that refused everything — including the real device's own name, which
+/// the first test proves is accepted. This asserts the pair rather than
+/// trusting that two tests in one file disagree.
+#[test]
+fn the_device_that_is_plugged_in_is_the_one_that_is_accepted() {
+    let accepted = {
+        let mut machine =
+            asked_to_start_a_stick("SanDisk Ultra", alo_installer::SWITCH_AGREED.says());
+        alo_installer::start_the_stick(&mut machine, &strings())
+    };
+    let refused = {
+        let mut machine =
+            asked_to_start_a_stick("SanDisk Ultr", alo_installer::SWITCH_AGREED.says());
+        alo_installer::start_the_stick(&mut machine, &strings())
+    };
+    assert_ne!(
+        accepted, refused,
+        "one letter short was treated the same as the device's own name"
+    );
+}
+
+/// **Nothing typed is how a person declines**, and it reaches no firmware.
+#[test]
+fn a_person_who_types_nothing_has_declined() {
+    let mut machine = asked_to_start_a_stick("", "");
+    let started = alo_installer::start_the_stick(&mut machine, &strings());
+    assert_eq!(started, alo_installer::Started::NotAgreed);
+    assert_eq!(machine.kinds(), ["disks"]);
+}
+
+/// **A machine with nothing removable says so**, and says what to do.
+///
+/// The second control: the tests above all have a stick in. A road that
+/// found devices where there are none would pass every one of them.
+#[test]
+fn a_machine_with_no_stick_in_it_says_so_rather_than_offering_a_disk() {
+    let (mut machine, _) = Scripted::installable();
+    // The default disks hold no USB device at all.
+    machine = machine.answering(
+        "disks",
+        r#"[{"Number":0,"FriendlyName":"Samsung SSD 870 EVO","SerialNumber":"S5","BusType":"SATA","UniqueId":"","Size":68719476736,"PartitionStyle":"GPT","IsReadOnly":false,"Partitions":[]}]"#,
+    );
+    let started = alo_installer::start_the_stick(&mut machine, &strings());
+
+    assert_eq!(started, alo_installer::Started::NothingPluggedIn);
+    assert_eq!(
+        machine.kinds(),
+        ["disks"],
+        "a machine with no stick reached the firmware"
+    );
+    assert!(
+        machine
+            .said
+            .contains(&sentence(alo_installer::STICK_NONE_PLUGGED_IN)),
+        "{:#?}",
+        machine.said
+    );
+}

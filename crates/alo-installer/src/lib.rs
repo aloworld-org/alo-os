@@ -76,6 +76,7 @@ mod sequence;
 mod sizes;
 mod staging;
 mod starting;
+mod starting_the_stick;
 mod switching;
 mod the_point_of_no_return;
 mod the_replacing_road;
@@ -119,6 +120,7 @@ pub use security_chip::SecurityChip;
 pub use sequence::install;
 pub use sizes::{GIB, MIB, THE_AREA, THE_LEAST_DISK, WINDOWS_KEEPS_FREE};
 pub use starting::Starting;
+pub use starting_the_stick::{Started, THE_STICKS_WORD, start_the_stick};
 pub use switching::{Switched, THE_SWITCHS_WORD, restart_into_alo_os};
 pub use the_point_of_no_return::crossed;
 pub use the_replacing_road::may_replace;
@@ -134,3 +136,4 @@ pub use words::{
     SWITCH_NOT_AGREED, SWITCH_NOT_READ, SWITCH_NOT_SET, SWITCH_NOT_THERE, SWITCH_WILL_RESTART,
     WordsError, declare_into, installer_words,
 };
+pub use words::{STICK_NONE_PLUGGED_IN, STICK_WILL_RESTART};

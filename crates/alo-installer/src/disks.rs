@@ -24,6 +24,13 @@ use crate::identities::DiskNumber;
 use crate::naming;
 use crate::sizes::THE_LEAST_DISK;
 
+/// What Windows calls the bus a stick is on.
+///
+/// Its own word, compared without case because `Get-Disk` has reported both
+/// spellings across versions and a comparison that cared would be a bug that
+/// only appears on somebody else's Windows. See [`Disk::is_removable`].
+const THE_BUS_A_STICK_IS_ON: &str = "USB";
+
 /// The GPT types the image's own partitions carry, so that the disk alo OS is
 /// on can be recognised again when it is time to remove it
 /// (`crate::removing`).
@@ -247,6 +254,34 @@ impl Disk {
     #[must_use]
     pub fn number(&self) -> DiskNumber {
         DiskNumber(self.number)
+    }
+
+    /// Whether this is a device a person plugs in rather than a disk this
+    /// computer runs on.
+    ///
+    /// **`docs/features.md` makes this a promise and not a convenience**:
+    /// *the devices offered are removable ones and never the disk this
+    /// computer runs on*. It is written beside the heaviest warning in that
+    /// document, because the one destructive thing in this product that
+    /// reaches a device a person did not choose for alo OS is writing a stick,
+    /// and *a stick that is written by mistake is somebody's photographs*.
+    ///
+    /// # Read from the bus, and why that is the honest test
+    ///
+    /// Windows reports `BusType` for every disk, and `USB` is what it says of
+    /// the thing a person calls a stick. There is no *removable* flag worth
+    /// reading instead: `Get-Disk` has no such field, and the ones that look
+    /// like it describe the **media** rather than the device, so a hard disk
+    /// in a USB caddy answers the same as a memory stick.
+    ///
+    /// **That ambiguity is deliberately resolved towards caution.** A disk in
+    /// a USB enclosure *is* removable by this test, and offering it is right:
+    /// it is not the disk this computer runs on, a person is shown its own
+    /// name, and nothing happens until they type that name. Refusing it would
+    /// mean refusing an external disk somebody deliberately plugged in.
+    #[must_use]
+    pub fn is_removable(&self) -> bool {
+        self.bus_type.eq_ignore_ascii_case(THE_BUS_A_STICK_IS_ON)
     }
 
     /// Its size in bytes.
@@ -516,5 +551,36 @@ pub(crate) mod tests {
         assert_eq!(Disks::read(None), None);
         assert_eq!(Disks::read(Some("[]")), None);
         assert_eq!(Disks::read(Some("{}")), None);
+    }
+}
+#[cfg(test)]
+mod a_removable_device {
+    #![expect(
+        clippy::expect_used,
+        clippy::indexing_slicing,
+        reason = "in a test, a panic naming what is wrong is the failure being reported"
+    )]
+
+    use super::Disks;
+
+    const ONE_OF_EACH: &str = r#"[
+      {"Number":0,"FriendlyName":"Samsung SSD 980 1TB","SerialNumber":"S6","BusType":"NVMe","UniqueId":"","Size":1000204886016,"PartitionStyle":"GPT","IsReadOnly":false,"Partitions":[]},
+      {"Number":4,"FriendlyName":"SanDisk Ultra","SerialNumber":"4C","BusType":"USB","UniqueId":"","Size":64023257088,"PartitionStyle":"RAW","IsReadOnly":false,"Partitions":[]}
+    ]"#;
+
+    /// **The USB one is removable and the NVMe one is not**, which is the whole
+    /// of the promise *the devices offered are removable ones and never the
+    /// disk this computer runs on*.
+    #[test]
+    fn the_usb_one_is_removable_and_the_built_in_one_is_not() {
+        let disks = Disks::read(Some(ONE_OF_EACH)).expect("two disks read");
+        let removable: Vec<_> = disks.every().filter(|d| d.is_removable()).collect();
+        assert_eq!(
+            removable.len(),
+            1,
+            "every disk: {:?}",
+            disks.every().count()
+        );
+        assert_eq!(disks.shown_name(removable[0]), "SanDisk Ultra");
     }
 }

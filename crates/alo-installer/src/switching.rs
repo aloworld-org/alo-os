@@ -141,7 +141,7 @@ pub fn restart_into_alo_os(machine: &mut impl TheMachine, strings: &Strings) -> 
 
 /// Whether what the person typed is the word that agrees, in their language or
 /// in the source — the same rule as the answers in `crate::asking`.
-fn agreed(typed: &str, strings: &Strings) -> bool {
+pub(crate) fn agreed(typed: &str, strings: &Strings) -> bool {
     let typed: String = typed
         .split_whitespace()
         .collect::<Vec<_>>()
