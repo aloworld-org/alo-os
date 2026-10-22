@@ -843,6 +843,31 @@ fn alos_own_line(
     shaped_into_alos_row(fonts, said, goes, line, colours, Wrap::None, 1).map(|(drawn, _)| drawn)
 }
 
+/// How many rows one of alo's lines would take, without drawing it.
+///
+/// **The block is measured before any of it is placed**, because where it
+/// starts depends on how tall it turns out to be — see the caller. The width it
+/// wraps to does not depend on which row a line lands on, so this can be asked
+/// before the rows are decided.
+fn how_tall_alos_line_is(fonts: &mut FontSystem, said: &str, goes: WhereTheCellsGo) -> usize {
+    let (across, _) = goes.the_cell_at(0, 0);
+    let room = goes.transcript.loc.x + goes.transcript.size.w - goes.inset.0 - across;
+    if room <= 0 {
+        return 1;
+    }
+    let mut buffer = Buffer::new(fonts, goes.label_metrics());
+    buffer.set_wrap(fonts, Wrap::Word);
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "a width in pixels is four digits at most on any display this product lays out for"
+    )]
+    let wide = room as f32;
+    buffer.set_size(fonts, Some(wide), None);
+    buffer.set_text(fonts, said, &alos_own_text(), Shaping::Advanced);
+    buffer.shape_until_scroll(fonts, false);
+    buffer.layout_runs().count().max(1)
+}
+
 /// One of alo's own lines, **wrapped at the room it has**, and how many rows it
 /// took.
 ///
@@ -1472,26 +1497,59 @@ pub(crate) fn picture(
     let rows_in_all = lines_in(goes.the_room().size.h, goes.metrics.line_height);
     let alos_first_row = a_diffs_first_line + how_tall_the_diff_is;
     let alos_lines = what_alo_said.the_lines();
-    let how_many = alos_lines.len();
-    let mut alos_rows = 0_usize;
-    for (which, line) in alos_lines.into_iter().enumerate() {
-        let text = match &line {
+    // **The words first, then how tall each is, then where the block starts.**
+    // Three passes rather than one, because the third needs the second: a block
+    // that will not fit beneath the transcript grows **upward** over it, and
+    // nothing can know how far up until the wrapping is known.
+    let said_lines: Vec<String> = alos_lines
+        .into_iter()
+        .map(|line| match &line {
             alo_terminal::AloSLine::InOurWords(key) => says
                 .say(key, &alo_strings::Filling::nothing())
                 .text()
                 .to_owned(),
             alo_terminal::AloSLine::AsTheModelSaidIt(prose) => prose.clone(),
-        };
-        let beneath = alos_first_row + alos_rows;
+        })
+        .collect();
+    let how_tall: Vec<usize> = said_lines
+        .iter()
+        .map(|said| how_tall_alos_line_is(fonts, said, goes))
+        .collect();
+    let all_of_it: usize = how_tall.iter().sum();
+
+    // **The block keeps its foot and grows over what is above it**, which is the
+    // owner's decision of 2026-10-22 on where alo's room comes from.
+    //
+    // The alternative was to take rows from the grid, and the grid's row count
+    // is sent to the person's shell through `TIOCSWINSZ` — so every program they
+    // run would open shorter because alo might one day have something long to
+    // say. Covering transcript that is usually blank costs them nothing they
+    // were using; shrinking their shell costs them something permanently.
+    //
+    // **It still cannot grow past the top of the transcript**, and a block
+    // taller than the whole region is capped there — the one case where prose is
+    // still shortened. `docs/design/the-terminal-window.md` leaves this family
+    // of overflow open, and this is the half of it the owner has now settled.
+    let foot = alos_first_row.saturating_add(all_of_it);
+    let starts_at = if foot > rows_in_all {
+        alos_first_row.saturating_sub(foot - rows_in_all)
+    } else {
+        alos_first_row
+    };
+
+    let mut alos_rows = 0_usize;
+    for (which, said) in said_lines.iter().enumerate() {
+        let beneath = starts_at.saturating_add(alos_rows);
         // One row kept back for each line still to come, so the last of them —
-        // the disclaimer — always has somewhere to go.
-        let still_to_come = how_many.saturating_sub(which).saturating_sub(1);
+        // the disclaimer — always has somewhere to go even where the whole block
+        // is taller than the transcript.
+        let still_to_come: usize = how_tall.iter().skip(which.saturating_add(1)).sum();
         let at_most = rows_in_all
             .saturating_sub(beneath)
             .saturating_sub(still_to_come)
             .max(1);
         if let Some((drawn, rows)) =
-            alos_own_wrapped_line(fonts, &text, goes, beneath, (ground, ink), at_most)
+            alos_own_wrapped_line(fonts, said, goes, beneath, (ground, ink), at_most)
         {
             placed.push(drawn);
             alos_rows = alos_rows.saturating_add(rows);
@@ -1506,7 +1564,7 @@ pub(crate) fn picture(
     // design's own rule and not a convenience: *PROGRAM includes parsed rich
     // results*. A summary drawn in alo's region would label a stranger's
     // arithmetic as alo's interpretation.
-    for region in alo_terminal::regions_of(a_diffs_first_line + how_tall_the_diff_is, alos_rows) {
+    for region in alo_terminal::regions_of(starts_at, alos_rows) {
         let said = says.say(
             &region.who.the_word().key(),
             &alo_strings::Filling::nothing(),
