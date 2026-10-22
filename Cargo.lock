@@ -272,6 +272,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-as-it-was"
+version = "0.0.1"
+dependencies = [
+ "alo-agentd",
+ "alo-kept-undo",
+ "alo-letting-go",
+ "alo-protocol",
+ "alo-strings",
+ "rustix 1.1.4",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-ask"
 version = "0.0.1"
 dependencies = [
@@ -317,6 +330,16 @@ dependencies = [
  "alo-models",
  "alo-record",
  "sha2 0.10.9",
+]
+
+[[package]]
+name = "alo-back"
+version = "0.0.1"
+dependencies = [
+ "alo-as-it-was",
+ "alo-saying",
+ "alo-strings",
+ "rustix 1.1.4",
 ]
 
 [[package]]
@@ -1520,6 +1543,7 @@ dependencies = [
  "alo-appearance",
  "alo-applications",
  "alo-approving",
+ "alo-as-it-was",
  "alo-asking",
  "alo-bluetooth",
  "alo-cameras",

@@ -1,0 +1,36 @@
+[package]
+name = "alo-as-it-was"
+version = "0.0.1"
+description = "Puts one folder back as it was before a command a person typed, from the place that was kept."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Where the machine keeps a place to return to, and the note beside it that says
+# when. This crate reads that layout and never re-decides it: a second answer
+# about where an undo lives is how one of them goes stale.
+alo-kept-undo = { path = "../alo-kept-undo" }
+
+# The sentences a person reads, declared here and said in their own language.
+alo-strings = { path = "../alo-strings" }
+
+# `renameat2` with `RENAME_EXCHANGE`, which is the one call in this crate that
+# has to be atomic, and the person's own uid.
+rustix = { workspace = true, features = ["fs", "process"] }
+
+# Every refusal is a typed one a caller can match on.
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+# The whole road, measured on a real filesystem: the daemon's own handler keeps
+# the place, the privileged remover's own reader has to be able to see it, and
+# this crate puts the folder back. Each one is the real thing and not a stand-in,
+# which is the entire point of `tests/on_a_real_btrfs_machine.rs`.
+alo-agentd = { path = "../alo-agentd" }
+alo-letting-go = { path = "../alo-letting-go" }
+alo-protocol = { path = "../alo-protocol" }
