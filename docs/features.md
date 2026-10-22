@@ -375,11 +375,29 @@ file carries it with a tier.*
   read as a request costs you reading one sentence rather than an action
   **Decided by the owner 2026-10-18**
   ([ADR 0124](decisions/0124-one-command-asks-alo-from-the-terminal-and-asking-means-acting.md)).
-  **Not built**: `alo-ask` is the command and it only answers — measured the
-  same day, it names the agent, the broker, a proposal and an approval **zero**
-  times. *The owner ruled three times on 2026-10-18 — that it acts, that there
-  is one of it, and that it works out which you meant — so the promise is
-  theirs; the wording of this line is the lane's*
+  **Built 2026-10-21, and this line said *Not built* until 2026-10-22.** All
+  three of the owner's rulings hold: there is **one** command; it **works out
+  which you meant**, by asking the model on this machine to answer with one word
+  and treating anything else as *could not tell*; and an acting sentence goes to
+  **the agent's own door** — `alo-asking.socket`, which systemd opens as the
+  agent (ADR 0109) — rather than being answered.
+  *The road and not the mention count: `main.rs` matches `WhatItWants::Acting`
+  and returns `the_agent_was_asked`, which connects to the agent's socket and
+  reads what came back. The 2026-10-18 measurement counted **mentions**, and
+  mentions and roads are different populations — a crate can name a thing
+  hundreds of times with nothing calling it, which is this repository's own
+  commonest fault. This says which line dispatches.*
+  **Nothing here approves anything, deliberately.** The command writes a
+  sentence and reads what came back; the proposal is the daemon's to put and the
+  approval is the person's to give. ADR 0124's own words: *the classifier is not
+  what protects the person — the approval is.*
+  **Not built**: nothing of this promise. What is left is that **nobody has seen
+  it on a machine**, which is true of six other starred terminal lines and is
+  waiting on an image.
+  *The measurement that said* zero *was correct on 2026-10-18 and false from the
+  moment the road landed. Nothing re-read it, which is why a measurement written
+  into a promise has to carry its date — and this one did, which is how it was
+  caught.*
 - ★ **And you decide whether alo may use it.** **alo can open a terminal for
   you** — that is an ordinary thing to ask an assistant for, and it hands alo
   nothing: a terminal window opens onto a prompt waiting for a keystroke, and
