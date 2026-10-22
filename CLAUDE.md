@@ -516,6 +516,55 @@ next lane relitigates.*
   is what the remote holds**, never what a working copy holds. *It is
   fixed on my machine* is not an answer to *is it fixed*; the question
   is about `main`, and the honest reply names what `origin` shows.
+- **Every branch has a pull request, and every pull request says what it
+  is.** *The owner's instruction, 2026-10-22.* Two halves of one rule,
+  because each without the other leaves work nobody can act on.
+
+  **A branch with no pull request is work nobody can see.** It does not
+  gate, it does not queue, it does not land, and it is invisible to
+  everyone but the lane that pushed it — which is the same fault
+  *nothing stays on a local disk* names, one step further along. Pushing
+  made it fetchable; only a pull request makes it **reviewable,
+  mergeable and finishable by somebody else.**
+
+  **Measured on 2026-10-22**, the day this was written. Five branches on
+  the remote, three with no pull request: one carried 198 lines another
+  lane had written and could not land alone; one carried a finished
+  feature — every installed application's own icon on the Dock — that
+  sat gated and green for **six hours** with no door; and the whole
+  evening's throughput ran through one person opening pull requests by
+  hand, four times, because the lane that wrote them could not. *Work
+  finished and sitting still was the single largest cost of that day,
+  and not one line of it was a hard problem.*
+
+  **The pull request is opened when the branch is pushed**, which is the
+  moment there is a commit — not when the work feels presentable. A
+  draft is a pull request. An empty one with a title is a pull request.
+  What is forbidden is a branch on the remote with nothing pointing at
+  it.
+
+  **And it says what it is.** A pull request whose body is *No
+  description provided* hands a reviewer a diff and asks them to
+  reconstruct the argument from it. The commit bodies carry the
+  reasoning — that rule is above — but a reader opening twelve commits
+  cold has no map, and the one thing they most need is the thing a diff
+  cannot show: **what a person could not do before, and can now.** Three
+  lines is enough. The same day, both of this lane's own pull requests
+  said *No description provided*, which is why this clause is here and
+  not left as a courtesy.
+
+  **Nothing checks this, and saying so is the point.** The merge queue
+  enforces the first half at the last possible moment — a branch cannot
+  land without a pull request — and that is exactly where enforcement is
+  worth nothing, because the cost is paid in the hours before. No gate
+  reads the remote's branch list, and no gate can read a body and judge
+  whether it says anything. So this is a discipline rather than a test,
+  and under *say whether a measurement was performed once or runs
+  forever* it is neither: **it runs when somebody chooses to follow it.**
+  A lane that wants it caught should ask the owner for a check that
+  lists branches with no pull request, which is one API call and would
+  have found all three on the day this was written.
+
 - **Stack your own dependent work.** Branch off your own branch rather
   than waiting for it to land. Waiting for your own pull request is
   serialisation a lane does to itself.
