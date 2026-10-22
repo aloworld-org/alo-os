@@ -71,6 +71,32 @@ pub trait TheMachine {
     /// Do nothing for a while.
     fn pause(&mut self, for_as_long_as: Duration);
 
+    /// How many bytes a file holds, or [`None`] when it is not there.
+    ///
+    /// **Added 2026-10-22, and the reason is a fault this replaced.** The road
+    /// that writes a stick asked *is the image there* by calling
+    /// [`Self::read`] — *a whole file* — and throwing every byte away. The image
+    /// is **gigabytes**: `docs/booting.md` measured a written disk at 9.6 GB.
+    /// On the kind of laptop a person writes a stick from that is an
+    /// out-of-memory failure **before the first warning is drawn**, and on a
+    /// large one a multi-second stall for a question `metadata` answers in
+    /// microseconds.
+    ///
+    /// **No test could have found it.** A fake's `read` returns a small `Vec`,
+    /// which is correct and fast and says nothing about the real thing. Found by
+    /// the desktop lane reading the code, which is the only mechanism that
+    /// finds this family.
+    ///
+    /// It answers the size rather than a yes, because the write road needs the
+    /// size anyway: a device smaller than the image is a refusal somebody will
+    /// want, and asking twice would be two answers about one file.
+    ///
+    /// # Errors
+    /// Nothing. A file that is not there, or cannot be asked about, is [`None`]
+    /// — from here those are one thing, and the sentence a person reads is the
+    /// same either way.
+    fn how_big_is(&mut self, file: &Path) -> Option<u64>;
+
     /// Write a file onto a whole device, erasing what was on it.
     ///
     /// **The only call in this program that destroys something a person did not
@@ -172,6 +198,10 @@ pub(crate) mod tests {
 
         fn write(&mut self, _file: &std::path::Path, _bytes: &[u8]) -> std::io::Result<()> {
             panic!("a question writes no file")
+        }
+
+        fn how_big_is(&mut self, _file: &std::path::Path) -> Option<u64> {
+            panic!("a question asks about no file")
         }
 
         fn wrote_the_device(

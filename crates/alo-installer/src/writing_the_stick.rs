@@ -82,6 +82,15 @@ pub enum Written {
     NoImage,
     /// The disks could not be read.
     NotRead,
+    /// The device is smaller than the image, so nothing was erased.
+    TooSmall {
+        /// The device, as a person was shown it.
+        device: String,
+        /// How many bytes it holds.
+        holds: u64,
+        /// How many the image needs.
+        needs: u64,
+    },
     /// The device refused part-way through, and the stick is now unusable.
     NotWritten {
         /// What the device said.
@@ -101,7 +110,7 @@ pub fn write_the_stick(machine: &mut impl TheMachine, strings: &Strings) -> Writ
     // name, only to be told there is nothing to write, has been walked through a
     // consent for no reason — and the next time they are asked they will read it
     // less carefully.
-    let Some(image) = the_image(machine) else {
+    let Some((image, how_big)) = the_image(machine) else {
         say(
             machine,
             strings,
@@ -189,6 +198,25 @@ pub fn write_the_stick(machine: &mut impl TheMachine, strings: &Strings) -> Writ
         return Written::NotThatName;
     };
     let named = disks.shown_name(chosen);
+
+    // **A stick the image does not fit on is refused before it is erased.**
+    // Writing as far as it goes would leave a person a wiped device that starts
+    // nothing, having told them it was ready — and the device they chose is the
+    // one thing in this road alo OS destroys. Reachable only now that the size
+    // is asked for rather than the file being read.
+    if chosen.size() < how_big {
+        say(
+            machine,
+            strings,
+            said::CHOOSE_ANOTHER_STICK,
+            &Filling::nothing(),
+        );
+        return Written::TooSmall {
+            device: named,
+            holds: chosen.size(),
+            needs: how_big,
+        };
+    }
 
     say(
         machine,
@@ -311,18 +339,40 @@ fn reported(how_far: &[String]) -> Vec<String> {
     }
 }
 
-/// The alo OS beside this program, or nothing.
+/// The alo OS beside this program and how big it is, or nothing.
 ///
 /// Beside the installer for `crate::environment`'s reason: what a person
 /// downloaded from the release page arrived together, so the image is where this
 /// program is rather than somewhere a person has to find.
-fn the_image(machine: &mut impl TheMachine) -> Option<std::path::PathBuf> {
+///
+/// **It asks the size and does not read the file.** This called
+/// `TheMachine::read` — *a whole file* — and discarded every byte, to answer
+/// *is it there*. The image is gigabytes, so on the kind of laptop a person
+/// writes a stick from that was an out-of-memory failure **before the first
+/// warning was drawn**. Found by the desktop lane reading the code on
+/// 2026-10-22; no test here could have seen it, because a fake's `read` returns
+/// a small `Vec` and is correct and fast about nothing.
+fn the_image(machine: &mut impl TheMachine) -> Option<(std::path::PathBuf, u64)> {
     let beside = machine.downloaded_into().ok()?.join(THE_IMAGE);
-    machine.read(&beside).ok().map(|_| beside)
+    let how_big = machine.how_big_is(&beside)?;
+    Some((beside, how_big))
 }
 
 /// What the written image is called beside the installer.
 pub const THE_IMAGE: &str = "alo-os.raw";
+
+/// The word that asks this program to write a device a person plugs in.
+///
+/// **A word and not a flag**, as the other four roads are and in the same
+/// shape: a person reads it in a sentence the program printed and types it
+/// back. `crate::THE_STICKS_WORD` is its sibling — that one *starts* a stick
+/// that already exists and writes nothing, this one makes one.
+///
+/// *Added in the same change as the road, because a road nothing reaches is the
+/// fault this repository has found seven times. It was missing for the length of
+/// one review: `write_the_stick` was declared, exported and tested, and no word
+/// a person could type arrived at it — found by the desktop lane, not by me.*
+pub const THE_WRITINGS_WORD: &str = "write-the-stick";
 
 /// This computer's disks, or nothing when they could not be read.
 fn the_disks(machine: &mut impl TheMachine) -> Option<Disks> {

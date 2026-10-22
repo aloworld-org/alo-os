@@ -99,6 +99,10 @@ impl TheMachine for OnThisMachine {
         std::fs::write(file, bytes)
     }
 
+    fn how_big_is(&mut self, file: &Path) -> Option<u64> {
+        std::fs::metadata(file).ok().map(|what| what.len())
+    }
+
     /// Write a file onto a whole device, erasing what was on it.
     ///
     /// **This has never run.** It is written, it compiles for Windows, and no

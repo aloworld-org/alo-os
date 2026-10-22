@@ -42,6 +42,11 @@ struct AMachine {
     wrote: Vec<(String, PathBuf)>,
     /// Whether a write refuses.
     refuses: bool,
+    /// How big the image is, in bytes.
+    image_is: u64,
+    /// Whether reading any file refuses, so that a road which reads one is
+    /// caught rather than merely slow.
+    refuse_reads: bool,
 }
 
 impl AMachine {
@@ -58,6 +63,10 @@ impl AMachine {
             said: Vec::new(),
             wrote: Vec::new(),
             refuses: false,
+            // Smaller than the 32 GB stick in the fixtures, so the ordinary
+            // road is not the too-small one.
+            image_is: 8_000_000_000,
+            refuse_reads: false,
         }
     }
 
@@ -68,6 +77,13 @@ impl AMachine {
 }
 
 impl TheMachine for AMachine {
+    fn how_big_is(&mut self, file: &Path) -> Option<u64> {
+        self.files
+            .iter()
+            .any(|had| had == file)
+            .then_some(self.image_is)
+    }
+
     fn say(&mut self, said: &Said) {
         assert!(
             said.unfilled().is_empty(),
@@ -101,6 +117,10 @@ impl TheMachine for AMachine {
     }
 
     fn read(&mut self, file: &Path) -> std::io::Result<Vec<u8>> {
+        assert!(
+            !self.refuse_reads,
+            "this road read {file:?}, and the only thing it needs of a file is its size"
+        );
         if self.files.iter().any(|had| had == file) {
             return Ok(vec![0_u8; 8]);
         }
@@ -354,6 +374,110 @@ fn space_around_the_name_is_not_a_mistake() {
             device: "SanDisk Ultra".to_owned()
         },
         "{:?}",
+        machine.everything_said()
+    );
+}
+
+/// **A person can reach this road by typing a word, and the word is dispatched.**
+///
+/// The fault this is written for was in this change for the length of one
+/// review: `write_the_stick` was declared, exported, and covered by the ten
+/// tests above, and **no word a person could type arrived at it.** Found by the
+/// desktop lane reading `main.rs`, not by any of these tests — because a test
+/// that calls the function directly cannot see that nothing else does.
+///
+/// So this reads `main.rs` off the disk. That is a blunt instrument and it is
+/// the right one here: the question is not *does the function work*, which the
+/// ten above answer, but *is there a road from a person to it*, which only the
+/// dispatch can answer.
+#[test]
+fn a_person_can_reach_this_road_by_typing_a_word() {
+    let main = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src")
+            .join("main.rs"),
+    )
+    .expect("this crate has a main.rs");
+
+    // The control. A read that came back empty would make both assertions below
+    // pass against nothing, which is this repository's commonest false green.
+    assert!(
+        main.len() > 1000,
+        "read {} bytes of main.rs, so this test is broken rather than the dispatch",
+        main.len()
+    );
+    // **The dispatch, not the names.** This asserted `contains("THE_WRITINGS_WORD")`
+    // and `contains("write_the_stick")` until it was mutated — and **both are
+    // satisfied by the `use` statement at the top of the file**, so deleting the
+    // whole match arm left the test green. That is *a mention is not a call*,
+    // which this repository has a note named after, written by me into the guard
+    // whose only job was to catch it.
+    //
+    // So: the shape of the arm and the shape of the call, neither of which an
+    // import can contain.
+    assert!(
+        main.contains("one == THE_WRITINGS_WORD"),
+        "no word reaches the writer: `main.rs` has no arm matching THE_WRITINGS_WORD. \
+         Importing the name is not dispatching it."
+    );
+    assert!(
+        main.contains("write_the_stick(&mut machine"),
+        "the word is matched and the road is not taken: `main.rs` matches \
+         THE_WRITINGS_WORD and never calls write_the_stick with the machine"
+    );
+}
+
+/// **A device the image does not fit on is refused before it is erased.**
+///
+/// Writing as far as it goes would leave a person a wiped stick that starts
+/// nothing, having been told it was ready — and the device they named is the one
+/// thing this road destroys.
+///
+/// Reachable only because the presence check now asks the image's **size**
+/// rather than reading the whole file; the fault that replaced read the entire
+/// image into memory to answer *is it there*.
+#[test]
+fn a_device_the_image_does_not_fit_on_is_refused_before_it_is_erased() {
+    let mut machine = AMachine::with(ONE_STICK_AND_THE_SYSTEM_DISK, "SanDisk Ultra", true);
+    // Bigger than the 32 GB stick in the fixture.
+    machine.image_is = 64_000_000_000;
+    let went = write_the_stick(&mut machine, &english());
+
+    assert!(
+        matches!(went, Written::TooSmall { .. }),
+        "{went:?}: {}",
+        machine.everything_said()
+    );
+    assert!(
+        machine.wrote.is_empty(),
+        "a stick too small for the image was written anyway: {:?}",
+        machine.wrote
+    );
+}
+
+/// **The image is never read to find out whether it is there.**
+///
+/// The fault the desktop lane found: `TheMachine::read` is *a whole file*, so
+/// asking *is the image there* by calling it allocated **gigabytes** and threw
+/// them away — an out-of-memory failure on a laptop, before the first warning
+/// was drawn.
+///
+/// No test could see it from the outside, because a fake's `read` returns a
+/// small `Vec` and is correct and fast about nothing. So this holds the fake to
+/// refusing: if this road ever reads the image again, `AMachine::read` is never
+/// asked for it and the one that is asked is `how_big_is`.
+#[test]
+fn the_image_is_asked_about_and_never_read() {
+    let mut machine = AMachine::with(ONE_STICK_AND_THE_SYSTEM_DISK, "SanDisk Ultra", true);
+    machine.refuse_reads = true;
+    let went = write_the_stick(&mut machine, &english());
+
+    assert_eq!(
+        went,
+        Written::Written {
+            device: "SanDisk Ultra".to_owned()
+        },
+        "the road read a file it only needed the size of: {}",
         machine.everything_said()
     );
 }

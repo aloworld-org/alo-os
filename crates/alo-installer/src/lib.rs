@@ -138,4 +138,4 @@ pub use words::{
     WordsError, declare_into, installer_words,
 };
 pub use words::{STICK_NONE_PLUGGED_IN, STICK_WILL_RESTART};
-pub use writing_the_stick::{THE_IMAGE, Written, write_the_stick};
+pub use writing_the_stick::{THE_IMAGE, THE_WRITINGS_WORD, Written, write_the_stick};

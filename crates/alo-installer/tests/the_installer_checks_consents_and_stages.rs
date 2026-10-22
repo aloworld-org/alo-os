@@ -269,6 +269,10 @@ fn beneath(root: &Path, inside: &str) -> PathBuf {
 }
 
 impl TheMachine for Scripted {
+    fn how_big_is(&mut self, file: &Path) -> Option<u64> {
+        self.files.get(file).map(|bytes| bytes.len() as u64)
+    }
+
     fn wrote_the_device(
         &mut self,
         device: &str,

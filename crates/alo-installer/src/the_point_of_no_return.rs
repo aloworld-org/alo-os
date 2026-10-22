@@ -107,6 +107,10 @@ mod tests {
             unreachable!("the point of no return runs no program of its own")
         }
 
+        fn how_big_is(&mut self, _file: &Path) -> Option<u64> {
+            unreachable!("the point of no return asks about no file of its own")
+        }
+
         fn wrote_the_device(
             &mut self,
             _device: &str,
