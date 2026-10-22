@@ -36,6 +36,17 @@
 # prints whatever is here.
 NAME="alo OS"
 ID=alo
+
+# **What `os-release(5)` asks of an image shipped whole**, which is what alo OS
+# is, and ADR 0097 rule 7's table: IMAGE_ID names the image and IMAGE_VERSION
+# names the build it came from. The specification's own words, read in the VM on
+# 2026-10-08: "if the image updates are built and shipped as comprehensive
+# units, IMAGE_ID+IMAGE_VERSION is the best fit."
+#
+# IMAGE_VERSION is not here: it is one build's identifier and this file is the
+# same in every build, so the Containerfile appends it from THE_BUILD. A value
+# written here would name whichever build somebody last edited it in.
+IMAGE_ID=alo
 ID_LIKE=fedora
 VERSION="2026.10"
 VERSION_ID=42

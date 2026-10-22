@@ -929,6 +929,19 @@ COPY image/etc/alo/ /etc/alo/
 # hiding it.
 COPY image/usr/lib/os-release /usr/lib/os-release
 
+# **Which build this is, appended rather than written into the file.** ADR 0097
+# rule 7: `IMAGE_VERSION` is the build identifier, and rule 4 is why it is not
+# the product version — a candidate carries a build identifier and no product
+# version, and tagging a candidate with the release made a second build of one
+# release impossible until 2026-10-21.
+#
+# **Empty is honest and is what a local build gets.** A machine built by
+# somebody's own `podman build` has no candidate identifier, and inventing one
+# would put a name in `os-release` that names nothing. `os-release(5)` reads an
+# empty value as unset, which is exactly true of it.
+ARG THE_BUILD=
+RUN printf 'IMAGE_VERSION="%s"\n' "$THE_BUILD" >> /usr/lib/os-release
+
 # **What this machine will accept as an update, and how it finds out.** ADR 0036
 # says an unsigned build is never staged; `alo_updating::apply` passes
 # `--enforce-container-sigpolicy` on every instruction, and this is the policy it
