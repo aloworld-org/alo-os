@@ -177,6 +177,42 @@ fn it_makes_no_support_promise() {
 fn what_it_is_built_on_is_stated_plainly() {
     let stated = every_field(&read(WHAT_IT_SAYS));
     assert_eq!(says(&stated, "ID_LIKE"), "fedora");
+    // **ADR 0097 rule 7's other two rows, and this test is the one the ADR
+    // assigned to this lane.**
+    //
+    // It was never written, and that absence is why thirteen days and two
+    // images went by under a scheme the owner had already replaced: the three
+    // fields above were asserted from 2026-10-07, so the half of rule 7 that
+    // had a test stayed right and the half that did not was simply absent. A
+    // decision with no check is a decision that can quietly not happen.
+    //
+    // `IMAGE_ID` names the image and is the same in every build, so it is in
+    // the file. `IMAGE_VERSION` is one build's identifier and is **not** —
+    // the recipe appends it from `THE_BUILD`, because a value written into the
+    // file would name whichever build somebody last edited it in.
+    assert_eq!(
+        says(&stated, "IMAGE_ID"),
+        "alo",
+        "os-release(5)'s field for an image shipped whole, which ADR 0097 rule 7 sets to alo"
+    );
+    assert!(
+        !stated.iter().any(|(key, _)| key == "IMAGE_VERSION"),
+        "IMAGE_VERSION belongs to one build and must not be written into the file every build \
+         shares; the recipe appends it"
+    );
+    let recipe = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../image/Containerfile"),
+    )
+    .expect("the Containerfile");
+    assert!(
+        recipe.contains("ARG THE_BUILD="),
+        "the recipe takes the build identifier as an argument"
+    );
+    assert!(
+        recipe.contains("IMAGE_VERSION=") && recipe.contains("$THE_BUILD"),
+        "and appends it to os-release as IMAGE_VERSION, which is rule 7's row for it"
+    );
+
     assert_eq!(says(&stated, "VERSION_ID"), "42");
     assert_eq!(says(&stated, "PLATFORM_ID"), "platform:f42");
 }

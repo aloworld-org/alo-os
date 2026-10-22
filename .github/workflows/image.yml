@@ -107,6 +107,7 @@ jobs:
         run: |
           podman build -f image/Containerfile \
             --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            --build-arg "THE_BUILD=$BUILD" \
             -t "$REGISTRY:$BUILD" .
 
       - name: Push the candidate
