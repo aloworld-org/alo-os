@@ -41,7 +41,7 @@ because a reader starting from it would conclude this goal is unreachable.*
 | ★ | reads who is speaking | **usable** — `you`, `alo`, `system`, `program` in the gutter |
 | ★ | sees measured apart from worked-out | **usable** — the same gutter's `system` against `alo` |
 | ★ | asks why a command is waiting | **built, reachable, and drawing nothing a person could read** until #778 on 2026-10-17: the chord put `alo` in the gutter and the sentence it labels went into the gutter's own 80-pixel box, under the word. Now drawn, and **seen under a nested compositor** (step 8c); **still never seen on a machine** |
-| ★ | scrolls back through output | **usable** |
+| ★ | scrolls back through output | **usable for the whole promise since 2026-10-22, and this cell said *usable* for five days while half of it did not exist.** `docs/features.md`'s bullet is one promise in two halves — *scroll up, choose one, **and your files are as they were before it ran***. The scrolling landed 2026-10-15 and this cell has said *usable* since. The second half existed **nowhere in this repository**: a search of every crate found `snapshot`, `delete`, `create`, `list` and `show`, and nothing that put a file back. It is built now — the bracket #928 and the restore #930, both 2026-10-22. **Never seen on a machine**, and until this morning the command the first half needs was in no image at all (see the note under step 5). *The failure is this document's own, and it is the shape task 11 named: a correct answer to the question above hides the question below it. Scrolling works, which is true, and nobody asked* and then what? |
 | ★ | runs a command touching nothing | **built**, #817 — `try ./install.sh` runs sealed on a real kernel and is refused what it was not given. **Never seen on a machine.** *This cell said* the kernel box does not *until 2026-10-17,* the surface is unspecified *until 2026-10-18, and* still blocked on where a person's own run writes its record *for part of 2026-10-18 — which ADR 0125 settled* |
 | ★ | scopes one command | **built**, #818 — `try --only-here` works on a kernel, and `--offline` turned out to be already true of any boxed run. **Never seen on a machine.** *This cell said* blocked — a per-command narrowing is `alo-capability`, another lane's *until 2026-10-18, and all three parts of that were wrong: see task 5 of* the-terminal-in-full-plan.md |
 | ★ | finds a command by what it did | **the verb is built and offered**, #812 on 2026-10-18, after the owner chose the surface. Reachable by the agent, which is what *a question to alo* means; **never seen on a machine** |
@@ -59,17 +59,27 @@ is in each row:*
 
 | | how many | which |
 |---|---|---|
-| **usable** — all four conditions | **4** | opens a terminal and types; reads who is speaking; sees measured apart from worked-out; scrolls back |
-| **built and reachable, never seen on a machine** | **6**, and it was **2** at the start of 2026-10-18 | asks why a command is waiting (#755); reads output that is not a character grid (#761); asks what a command will do first (#805) — **these three are in `main`**. And three more **landing rather than landed as this was written**: finds a command by what it did (#812), runs a command touching nothing (#817), scopes one command (#818). *Built* has to mean *in `main`*, so the split is named rather than averaged. **The first two were also broken on screen until 2026-10-17** — see the rows above and step 8c; a nested compositor is not a machine, and neither is a kernel test |
+| **usable** — all four conditions | **3**, and it was read as **4** | opens a terminal and types; reads who is speaking; sees measured apart from worked-out. ***scrolls back* leaves this row**: its promise has two halves, the second was never built, and the four conditions are about a promise rather than about a mechanism. It moves to *built and reachable, never seen on a machine* on 2026-10-22 now that both halves exist |
+| **built and reachable, never seen on a machine** | **7** on 2026-10-22, **6** before it, and **2** at the start of 2026-10-18 | asks why a command is waiting (#755); reads output that is not a character grid (#761); asks what a command will do first (#805) — **these three are in `main`**. And three more **landing rather than landed as this was written**: finds a command by what it did (#812), runs a command touching nothing (#817), scopes one command (#818). *Built* has to mean *in `main`*, so the split is named rather than averaged. **The first two were also broken on screen until 2026-10-17** — see the rows above and step 8c; a nested compositor is not a machine, and neither is a kernel test |
 | waiting on this lane's own earlier steps | **1**, and it was **2** | hands somebody a session to replay, behind the rest of rich results |
 | **blocked on a decision or another lane** | **2**, and it was **5** | decides whether alo may use it; **bisects the machine**, moved here at 2026-10-17 when the bracket landed and did not open it (step 5). **Three left this row on 2026-10-18**: *finds a command by what it did*, when the owner chose the surface; *runs a command touching nothing*, when they chose the gesture and ADR 0125 settled the record; and *scopes one command*, which turned out never to have been blocked — its stated dependency on `alo-capability` was a claim about a different ADR's work, and the owner's permission to widen that crate was not needed |
 | unowned | **0** | — *this row held* **runs a command touching nothing** *until 2026-10-17, when measuring found the box built (#729, 2026-10-16) and demonstrated on a real kernel. It moved to* blocked*, and on 2026-10-18 to its own row above, when the owner chose the surface it was waiting on* |
 
-*The four counts are **4 + 6 + 1 + 2 = 13**, which is the whole list. Stated as
-a sum because this table was edited three times across 2026-10-18 and -19, and
-the first edit left it summing to eleven: two promises were taken out of* blocked *and only one was
-put anywhere. **A row that moves has to arrive somewhere**, and a table of
-counts is the one place that can be checked by adding up.*
+*The four counts are **3 + 7 + 1 + 2 = 13** as of 2026-10-22, and were
+**4 + 6 + 1 + 2 = 13** before it — *scrolls back* moved one row down when the
+second half of its promise was built, so the sum is unchanged and the row it left
+is one smaller. Stated as a sum because this table was edited three times across
+2026-10-18 and -19, and the first edit left it summing to eleven: two promises
+were taken out of* blocked *and only one was put anywhere. **A row that moves has
+to arrive somewhere**, and a table of counts is the one place that can be checked
+by adding up.*
+
+***And a sum cannot catch what this row was wrong about**, which is the reason the
+count moved at all. The thirteen always added up while* scrolls back *sat in*
+usable *with half its promise unbuilt: the arithmetic is over rows, and the fault
+was inside one. So the sum is worth keeping and is not the check it reads like —
+what found this was reading `docs/features.md`'s sentence beside the cell, which
+is the only thing that can.*
 
 ***And the second edit moved one row too many.*** It created a row called *the
 surface is chosen and nothing is built* and put **runs a command touching
@@ -647,6 +657,59 @@ saying twice: *a correct answer to the question above can hide the question
 below it.* ADR 0127 answered *how does a person ask* correctly and completely,
 and the question underneath — *what is allowed to take a snapshot* — went
 untouched for two days.
+
+### Both halves are built — 2026-10-22
+
+**The decision came and both halves landed the same day.**
+[ADR 0130](../decisions/0130-what-takes-the-bracket-before-a-persons-own-command.md)
+was accepted as option **B** — the person's own shell asks a service, which takes
+the snapshot — and:
+
+| | |
+|---|---|
+| the bracket | **#928.** `alo-before` in the shell's `PS0`, which ADR 0130 chose because `PS0` is **synchronous**: measured 2026-10-21, a two-second `PS0` held the command 2.02 s and it ran 5.4 ms after. So *before it ran* is true by construction rather than by timing |
+| *and your files are as they were* | **#930.** `alo-as-it-was` and the `alo-back` command: the places kept listed newest first, and naming one and a folder puts that folder back. One atomic moment, `renameat2` with `RENAME_EXCHANGE`; the copy is the base's own `cp -a --reflink=auto`, which is the road ADR 0045 chose |
+| what was in the folder | **set aside beside it, never deleted** — [ADR 0131](../decisions/0131-what-happens-to-what-is-in-a-folder-when-it-goes-back.md), proposed. ADR 0045's *an undo never overwrites a later change* is enforced there by a comparer, and ADR 0127 says a person's command *compares nothing*; so the term is met the other way |
+
+**Three faults were found by trying to use it, and none of them was red.**
+
+1. **#928 wrote no note beside the snapshot.** `alo_letting_go::found` reads a
+   place by its `kept.json` and *steps over* a directory whose note will not
+   read, so **no place a person's command kept could ever be swept or found** —
+   a read-only copy of the whole home per command, for ever. Fixed in #930. The
+   mutation that reproduces it is in that change and the real-machine test fails
+   on it. *The sweeper itself still does not ship, which is a separate gap named
+   in `crates/alo-image/tests/every_unit_a_crate_keeps_reaches_the_machine.rs`
+   since 2026-10-17 and is the owner's; without the note it could never have
+   worked even once it ships.*
+2. **`alo-before` was in no image.** Not built, not copied, named nowhere under
+   `image/` — on the day the feature landed. `alo-before.bash` sets
+   `PS0='$(alo-before)'`, so the Settings row would have put a *command not
+   found* in front of **every command the person typed**, for ever, because `PS0`
+   is expanded each time. Worse than absent. Fixed in #930, with the check that
+   did not exist: `what_the_image_owes_the_terminal.rs` now holds every `alo-…`
+   command the shell integration names to a `--package` and a `COPY` in the
+   recipe. **Third time in this shape** — `alo-shipping` in the wrong package,
+   `alo-ask` mentioned in 151 files and shipped by none, and this.
+3. **This document called the promise *usable* for five days**, which is the row
+   above and this lane's own fault rather than anybody else's.
+
+**What is still not built, and it is a surface:** *scroll up, choose one*. The
+choosing is by naming a place. Pairing a row of scrollback to a place needs
+something alo deliberately does not know — **ADR 0130 settled that alo never
+learns which command a place belongs to**, so a place carries a moment and no
+command. The two roads are a new mark in
+`docs/contracts/shell-integration-marks.md` carrying the place's name, which is a
+published surface and therefore a decision; or pairing by nearest-preceding
+moment, which is a guess at exactly the seam where being wrong costs somebody
+their files. **Neither is this lane's to take.** Everything underneath the
+surface now works, which is the opposite of the usual order here and worth
+saying.
+
+**Bisect the machine is still blocked, and on the comparer rather than on the
+bracket.** ADR 0127's own table says so: task 8 needs *the bracket **and** the
+comparer*, and ADR 0045 gave the comparing path to the third PC in
+`the-broker-and-the-disk-plan.md`. The bracket is no longer what it waits on.
 
 ### 6. Explain a command before it runs — **measured blocked and then decided, 2026-10-17**
 
