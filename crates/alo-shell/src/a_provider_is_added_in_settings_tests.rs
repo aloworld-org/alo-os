@@ -311,3 +311,117 @@ fn a_paste_that_arrives_after_the_form_closed_is_dropped() {
         ""
     );
 }
+
+/// Fill the form in the way a person adding OpenAI would.
+fn filled_in(server: &mut crate::Server) {
+    server.a_provider_is_added();
+    types(server, "OpenAI");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(server, "https://api.openai.com");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(server, "sk-not-a-real-key");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(server, "gpt-4o-mini");
+}
+
+#[test]
+fn pressing_enter_puts_the_provider_aside_for_the_loop_to_save() {
+    let (_directory, mut server) = a_server();
+    filled_in(&mut server);
+
+    assert!(
+        server.take_the_provider_to_save().is_none(),
+        "the control: nothing is waiting until they press Enter"
+    );
+    assert_eq!(
+        server.a_key_fills_in_the_provider(FillingInKey::Save),
+        Some(WhatFillingInDid::SaveIt)
+    );
+
+    let saving = server
+        .take_the_provider_to_save()
+        .expect("a provider is waiting to be saved");
+    assert_eq!(saving.provider.name, "OpenAI");
+    assert_eq!(saving.model, "gpt-4o-mini");
+    assert!(
+        server.take_the_provider_to_save().is_none(),
+        "taken rather than read, so one Enter saves once however many frames pass"
+    );
+}
+
+#[test]
+fn the_form_stays_open_until_the_caller_says_it_was_saved() {
+    // **The moment a person most needs their key to still be there.** A
+    // keyring that is locked, or a settings file that will not read, both end
+    // here -- and they cannot see the key to type it again.
+    let (_directory, mut server) = a_server();
+    filled_in(&mut server);
+    server.a_key_fills_in_the_provider(FillingInKey::Save);
+    let _ = server.take_the_provider_to_save();
+
+    assert_eq!(
+        server
+            .a_provider_is_being_filled_in()
+            .expect("the form is still open")
+            .what_is_in(WhichField::Key),
+        "sk-not-a-real-key",
+        "what they pasted is still on the screen"
+    );
+
+    server.that_provider_was_saved();
+    assert!(
+        server.a_provider_is_being_filled_in().is_none(),
+        "and only then does the form go"
+    );
+}
+
+#[test]
+fn an_address_that_is_not_one_names_the_field_rather_than_the_form() {
+    // Every field is filled and one is wrong, which is a different thing to
+    // say to a person than "you have not finished".
+    let (_directory, mut server) = a_server();
+    server.a_provider_is_added();
+    types(&mut server, "OpenAI");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(&mut server, "api.openai.com");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(&mut server, "sk-not-a-real-key");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(&mut server, "gpt-4o-mini");
+
+    assert_eq!(
+        server.a_key_fills_in_the_provider(FillingInKey::Save),
+        Some(WhatFillingInDid::NotRight(WhichField::Address))
+    );
+    assert!(
+        server.take_the_provider_to_save().is_none(),
+        "and nothing was put aside to save"
+    );
+}
+
+#[test]
+fn an_empty_form_is_not_finished_rather_than_wrong() {
+    // **The control for the test above.** A surface given one answer for both
+    // would tell somebody staring at an empty form that their address is
+    // wrong, which is a sentence about a field they have not reached.
+    let (_directory, mut server) = a_server();
+    server.a_provider_is_added();
+    assert_eq!(
+        server.a_key_fills_in_the_provider(FillingInKey::Save),
+        Some(WhatFillingInDid::NotFinished)
+    );
+}
+
+#[test]
+fn giving_up_takes_away_what_was_waiting_to_be_saved() {
+    // A person who gave up has not asked for it to be written anyway, and a
+    // frame loop that found it afterwards would save a provider they had just
+    // abandoned.
+    let (_directory, mut server) = a_server();
+    filled_in(&mut server);
+    server.a_key_fills_in_the_provider(FillingInKey::Save);
+    server.a_key_fills_in_the_provider(FillingInKey::GiveUp);
+
+    assert!(server.take_the_provider_to_save().is_none());
+    assert!(server.a_provider_is_being_filled_in().is_none());
+}

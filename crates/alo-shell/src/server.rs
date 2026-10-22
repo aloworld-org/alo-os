@@ -259,6 +259,13 @@ pub struct Server {
     /// for in one frame and arrives in another: the selection belongs to
     /// another client, which writes when it gets round to it.
     pub(crate) clipboard: crate::what_is_on_the_clipboard::TheClipboard,
+    /// A provider a person pressed Enter on, waiting for the loop to save it.
+    ///
+    /// **Put aside rather than saved where the press arrived**, because
+    /// saving is two writes to the machine and this crate shows rather than
+    /// measures. The same shape `asked_alo` has for a question.
+    pub(crate) asked_to_save_a_provider:
+        Option<alo_setting_up::a_provider_is_filled_in::WhatToSave>,
     /// What a person has typed into *More apps*' search field.
     ///
     /// **Here and not beside the open-surface state**, which is where the
@@ -613,6 +620,8 @@ impl Server {
             filling_in: None,
             // Nothing has been pasted, and nothing is being waited for.
             clipboard: crate::what_is_on_the_clipboard::TheClipboard::new(),
+            // Nobody has asked for a provider to be saved.
+            asked_to_save_a_provider: None,
             what_was_typed_into_more_apps: alo_dock::WhatTheyTyped::nothing(),
             pins_owed_to_the_disk: None,
             // The keyboard starts with the work, which is where a person's

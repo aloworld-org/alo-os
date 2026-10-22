@@ -49,12 +49,20 @@ pub enum WhatFillingInDid {
     /// machine and this crate shows rather than measures — see
     /// `crate::TheDesktop::a_provider_was_filled_in`.
     SaveIt,
-    /// They asked for it to be saved and something is still wrong.
+    /// They asked for it to be saved and a field is still empty.
     ///
     /// The form stays open with what they typed still in it, which is the
     /// whole point: a form that cleared itself on a refusal would take away a
     /// 164-character key because an address was missing a colon.
     NotFinished,
+    /// Every field is filled and one of them is wrong. **This one.**
+    ///
+    /// **Told apart from [`Self::NotFinished`] on purpose.** A person who has
+    /// typed nothing and a person whose address is missing its `https://` need
+    /// different things said to them, and a surface given one answer for both
+    /// would tell somebody staring at an empty form that their address is
+    /// wrong.
+    NotRight(WhichField),
     /// They gave up. The form is gone and Settings is still open.
     GaveUp,
     /// They asked to paste, and the selection's owner has been asked for it.
@@ -95,6 +103,37 @@ impl Server {
     /// Give up on the form, leaving Settings as it was.
     pub fn that_provider_is_not_being_added(&mut self) {
         self.filling_in = None;
+        // **And what was waiting to be saved goes with it.** A person who gave
+        // up has not asked for it to be written anyway, and a frame loop that
+        // found it afterwards would save a provider they had just abandoned.
+        self.asked_to_save_a_provider = None;
+    }
+
+    /// Take the provider a person asked to save, if they did.
+    ///
+    /// **Taken rather than read**, which is `Server::take_what_was_asked_of_alo`'s
+    /// rule and for its reason: one Enter saves once, however many frames pass
+    /// before the loop asks.
+    ///
+    /// The form is **left open** until the caller says it worked — see
+    /// [`Server::that_provider_was_saved`]. Closing it here would throw a
+    /// person's key away the moment a keyring refused.
+    pub fn take_the_provider_to_save(
+        &mut self,
+    ) -> Option<alo_setting_up::a_provider_is_filled_in::WhatToSave> {
+        self.asked_to_save_a_provider.take()
+    }
+
+    /// The provider was saved, so the form has done its job.
+    ///
+    /// **Only the caller knows.** Saving is two writes to the machine and this
+    /// crate neither makes them nor watches them, so a form that closed itself
+    /// on `SaveIt` would be guessing — and guessing wrong exactly when a
+    /// keyring was locked or a settings file would not read, which is when a
+    /// person most needs what they typed to still be there.
+    pub fn that_provider_was_saved(&mut self) {
+        self.filling_in = None;
+        self.asked_to_save_a_provider = None;
     }
 
     /// Carry one press out against the form, and say what came of it.
@@ -138,14 +177,35 @@ impl Server {
             // caller that checked only the second would refuse a person who
             // had filled nothing in with a sentence about an address.
             FillingInKey::Save => {
-                if form.every_field_is_filled() {
-                    WhatFillingInDid::SaveIt
-                } else {
-                    WhatFillingInDid::NotFinished
+                if !form.every_field_is_filled() {
+                    return Some(WhatFillingInDid::NotFinished);
+                }
+                match form.what_it_would_save() {
+                    Ok(saving) => {
+                        // **Put aside for the frame loop rather than saved
+                        // here.** Saving is two writes to the machine and this
+                        // crate shows rather than measures; the loop is where
+                        // `TheDesktop` is in scope, which is the same shape
+                        // `Server::a_person_asked_alo` already has for a
+                        // question. Taken rather than read, so one Enter saves
+                        // once however many frames pass.
+                        self.asked_to_save_a_provider = Some(saving);
+                        WhatFillingInDid::SaveIt
+                    }
+                    // **The field to put the mark on, not a sentence.** Which
+                    // of the four is wrong is the form's answer, and the words
+                    // belong to the crate that owns the refusal.
+                    Err(why) => WhatFillingInDid::NotRight(why.which_field()),
                 }
             }
+            // **Through the one door that clears both**, rather than setting
+            // the form to `None` here. A test caught this: giving up left a
+            // provider waiting in `asked_to_save_a_provider`, so the next
+            // frame would have saved the one they had just abandoned. Two
+            // places that forget a form is two places that can disagree about
+            // what forgetting it means.
             FillingInKey::GiveUp => {
-                self.filling_in = None;
+                self.that_provider_is_not_being_added();
                 WhatFillingInDid::GaveUp
             }
             // **Asked for here and arriving later**, which is why this is not

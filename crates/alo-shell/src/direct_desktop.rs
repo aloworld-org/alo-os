@@ -1016,6 +1016,28 @@ impl LoopInput for Desk<'_> {
         // would type into a surface that could never reply. The request is not
         // queued either — queueing it would mean a window appearing later for
         // something they typed and gave up on.
+        // **What a person pasted, put in the field, here.** Asked once a frame
+        // and almost always answering with nothing — the selection belongs to
+        // another client, which writes when it gets round to it, so the press
+        // of Control+V and the characters arriving are different frames. See
+        // `crate::what_is_on_the_clipboard` for why none of it waits.
+        let _ = server.that_paste_arrived();
+
+        // **And a provider a person pressed Enter on is saved, here.** Taken
+        // rather than read, so one Enter saves once however many frames pass;
+        // and asked of the desktop rather than done, because saving is two
+        // writes to this machine and this crate shows rather than measures.
+        //
+        // **The form is closed only when it worked.** A keyring that is locked
+        // or a settings file that will not read both leave what they typed on
+        // the screen — which is the one moment a person most needs their key
+        // to still be there, because they cannot see it to type it again.
+        if let Some(saving) = server.take_the_provider_to_save()
+            && self.desktop.a_provider_was_filled_in(&saving)
+        {
+            server.that_provider_was_saved();
+        }
+
         for request in server.take_what_was_asked_of_alo() {
             if let Some(task) = self.desktop.a_task_for(&request) {
                 let which = server.tasks_mut().and_now_this_one(task);
