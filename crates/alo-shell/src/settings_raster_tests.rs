@@ -16,7 +16,7 @@ use alo_shortcuts::Action;
 /// Settings as it stands, drawn on an output of `size`.
 fn drawn_at(window: &SettingsWindow, size: (i32, i32), look: SettingsLook) -> SettingsPicture {
     let mut labels = WindowControlLabels::new().unwrap();
-    picture(window, &words(), &mut labels, size, look, noon()).unwrap()
+    picture(window, &words(), &mut labels, size, look, noon(), None).unwrap()
 }
 
 /// A key that means `key`.
@@ -142,7 +142,15 @@ fn the_focused_row_is_always_in_view_and_a_frame_too_small_is_refused() {
 
     let mut labels = WindowControlLabels::new().unwrap();
     assert!(matches!(
-        picture(&window, &strings, &mut labels, (1920, 90), light(), noon()),
+        picture(
+            &window,
+            &strings,
+            &mut labels,
+            (1920, 90),
+            light(),
+            noon(),
+            None
+        ),
         Err(RenderError::SettingsScene)
     ));
 }

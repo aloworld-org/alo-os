@@ -152,6 +152,12 @@ pub(crate) fn picture(
     size: (i32, i32),
     look: SettingsLook,
     now: SystemTime,
+    // **The provider a person is filling in, when they are.** Handed in
+    // rather than read off the window, because the form lives on the `Server`
+    // and this function is given the window -- see
+    // `crate::a_provider_is_added_in_settings` for why the form being open is
+    // itself the mode.
+    filling_in: Option<&alo_setting_up::a_provider_is_filled_in::AProviderBeingAddded>,
 ) -> Result<SettingsPicture, RenderError> {
     let mut drawn = SettingsPicture::empty(size);
     let Some(open) = window.open() else {
@@ -183,7 +189,19 @@ pub(crate) fn picture(
     let mut blocks = Vec::new();
     let mut focus_at = None;
     let mut section_at = 0;
-    for (which, section) in sections(open, strings, now).into_iter().enumerate() {
+    // **A form replaces the rows rather than joining them.** Every key is the
+    // form's while one is open, so the rows behind it are rows a person
+    // cannot reach -- drawing them would be drawing a list that does not
+    // respond. See `crate::a_provider_being_added_is_drawn`.
+    let showing = filling_in.map_or_else(
+        || sections(open, strings, now),
+        |form| {
+            vec![crate::a_provider_being_added_is_drawn::the_form(
+                form, strings,
+            )]
+        },
+    );
+    for (which, section) in showing.into_iter().enumerate() {
         if which > 0 {
             blocks.push(Block::Rule);
         }

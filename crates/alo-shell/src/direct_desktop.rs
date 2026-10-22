@@ -1740,6 +1740,11 @@ impl LoopInput for Desk<'_> {
                 contrast: frame.look.contrast(),
             },
             std::time::SystemTime::now(),
+            // **Read off the server**, which is where the form lives. A
+            // literal `None` here would draw the rows behind a form a person
+            // is typing into -- the same shape of mistake `market` made at a
+            // frame-building site and that cost a release.
+            server.a_provider_is_being_filled_in(),
         )?;
         // **The frame is drawn through the per-display road, with one display
         // on it.** `more-than-one-display-plan.md` task 4. This desk builds one
