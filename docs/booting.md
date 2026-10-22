@@ -35,8 +35,50 @@ It is the same image, not a second recipe: `bootc install to-disk` installs the
 container it is running as, so what lands on the disk is exactly what
 `image/Containerfile` produced, or the command fails.
 
+## It builds an x86 machine, and this document did not say so until 2026-10-22
+
+**Everything below produces a disk that boots on an Intel or AMD PC, and on
+nothing else.** `docs/hardware.md` certifies exactly that — *Intel 8th
+generation or newer, or Ryzen 3000 or newer*, a Lenovo ThinkPad T14 — so this is
+the product working as decided, not a limitation to route around.
+
+It is said here because the document never mentioned an architecture at all, and
+somebody on an Apple Silicon Mac therefore follows it and fails deep inside a C
+compiler. **Measured 2026-10-22**, adding `--platform linux/arm64` to the build
+below:
+
+```text
+warning: ring@0.17.14: cc1: error: unrecognized command-line option '-m64'
+error: failed to run custom build command for `ring v0.17.14`
+```
+
+That error names neither the architecture nor this recipe, and it arrives after
+about twenty minutes of downloading a toolchain.
+
+**Three things pin it, and the pinned base is not one of them** — that base is a
+manifest list carrying `amd64`, `arm64`, `ppc64le` and `s390x`, measured the
+same day:
+
+| what | where |
+|---|---|
+| our own Rust target | `ARG THE_TARGET=x86_64-unknown-linux-musl` |
+| the office engine | fetched from a URL with `x86_64` in its path, pinned by `sha256` |
+| the model runtime | fetched as `ollama-linux-amd64.tar.zst`, pinned by `sha256` |
+
+So an `arm64` image is **not a build argument.** It needs `arm64` builds of two
+rented engines, each pinned by its own checksum, and *engines are configured,
+never patched* means picking different upstream artefacts rather than altering
+these. That is a decision, and nobody has taken it.
+
+**What to do if your machine is not x86:** build the image on an x86 runner —
+`.github/workflows/image.yml` does this and has succeeded — and boot the disk on
+an x86 machine. Emulating x86 to run the build is possible and is hours, not
+minutes, because the build is a whole Rust workspace in release.
+
 ## What you need installed
 
+- **An x86-64 Linux machine**, for the reason the section above gives. Not an
+  Apple Silicon Mac, and not an `arm64` server.
 - **Podman**, on a Linux machine or in WSL2. Upstream's install path runs the
   bootable container as a privileged container and reads the image out of
   `/var/lib/containers`, which is podman's store. Docker can build the image;
