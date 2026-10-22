@@ -28,7 +28,7 @@
 use std::path::Path;
 
 use alo_strings::Strings;
-use alo_terminal::where_the_integration_stands::{WhatThePressDid, WhereItStands};
+use alo_terminal::where_the_integration_stands::{WhatThePressDid, WhereItStands, WhichOne};
 
 use crate::settings_kept::SettingsKept;
 
@@ -42,8 +42,20 @@ pub(crate) struct TheShellIntegration {
 impl TheShellIntegration {
     /// Read once when Settings opens, like every other section.
     pub(crate) fn at_sign_in(shell: Option<&str>, folder: Option<&Path>) -> Self {
+        Self::about(WhichOne::TheIntegration, shell, folder)
+    }
+
+    /// The same, for a named one of the two things a person may add.
+    ///
+    /// **One forwarder and not two.** The two rows differ in the words they say
+    /// and the lines they append, both of which `alo-terminal` decides; what
+    /// this file does — carry the state Settings read when it opened, and turn
+    /// a press into a `SettingsKept` — is identical for them, and a second copy
+    /// of it is the fault `docs/misreadings/a-check-fixed-in-one-place-leaves-its-copy.md`
+    /// is named after.
+    pub(crate) fn about(which: WhichOne, shell: Option<&str>, folder: Option<&Path>) -> Self {
         Self {
-            stands: WhereItStands::read(shell, folder),
+            stands: WhereItStands::read_about(which, shell, folder),
         }
     }
 

@@ -31,6 +31,19 @@
 /// Shipped as bytes rather than a path: see this module's header.
 const FOR_BASH: &str = include_str!("../shell-integration/alo.bash");
 
+/// What a person adds to keep a place to return to before each command, for
+/// `bash`.
+///
+/// **A second fragment and not part of the first**, because they are two
+/// choices. The integration above tells alo where a person's prompt is and what
+/// they typed; this one asks alo to snapshot their files before each command
+/// they run, which costs disk and spends
+/// [ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md)'s undo
+/// window. Somebody who wanted the first did not thereby ask for the second,
+/// and folding them together would turn installing shell integration into
+/// turning on snapshots without being asked.
+const SNAPSHOTS_FOR_BASH: &str = include_str!("../shell-integration/alo-before.bash");
+
 /// The key the snippet binds, as a person would describe it.
 ///
 /// `Ctrl`+`X` `Ctrl`+`A`. The owner chose the `Ctrl`+`X` family on 2026-10-18
@@ -153,6 +166,41 @@ pub fn already_in(startup: &str, shell: &str) -> Option<bool> {
     Some(startup.contains(the_line_it_begins_with(snippet)))
 }
 
+/// What a person adds to be able to go back, for this shell, or [`None`] where
+/// alo ships nothing for it.
+#[must_use]
+pub fn for_snapshots_in_the_shell_called(name: &str) -> Option<&'static str> {
+    match name.rsplit('/').next().unwrap_or(name) {
+        "bash" => Some(SNAPSHOTS_FOR_BASH),
+        _ => None,
+    }
+}
+
+/// Whether a startup file already asks for a place to return to.
+///
+/// [`None`] where alo ships nothing for that shell, for [`already_in`]'s
+/// reason: *there is nothing to look for* and *it is not there* are different
+/// answers.
+#[must_use]
+pub fn snapshots_already_in(startup: &str, shell: &str) -> Option<bool> {
+    let snippet = for_snapshots_in_the_shell_called(shell)?;
+    Some(startup.contains(the_line_it_begins_with(snippet)))
+}
+
+/// Add the place-keeping fragment to a shell's startup file, once.
+///
+/// The same rules as [`add_to`] and for the same reasons: a press is the
+/// prompt, it appends and never rewrites, and a file that is not there yet is
+/// not an error.
+///
+/// # Errors
+/// As [`add_to`].
+pub fn add_snapshots_to(startup: &std::path::Path, shell: &str) -> Result<Added, NotAdded> {
+    let snippet = for_snapshots_in_the_shell_called(shell)
+        .ok_or_else(|| NotAdded::NoIntegrationFor(shell.to_owned()))?;
+    appended(startup, snippet)
+}
+
 /// Add the snippet to a shell's startup file, once, and never twice.
 ///
 /// **This is the one-press way [ADR 0123](../../../docs/decisions/0123-alo-learns-what-a-person-typed-from-the-shell-not-the-screen.md)
@@ -172,10 +220,21 @@ pub fn already_in(startup: &str, shell: &str) -> Option<bool> {
 /// file that does not exist yet is **not** an error: a person who has never
 /// edited one still gets the integration.
 pub fn add_to(startup: &std::path::Path, shell: &str) -> Result<Added, NotAdded> {
-    use std::io::Write as _;
-
     let snippet =
         for_the_shell_called(shell).ok_or_else(|| NotAdded::NoIntegrationFor(shell.to_owned()))?;
+    appended(startup, snippet)
+}
+
+/// Append one snippet to a startup file, once, whichever snippet it is.
+///
+/// **One appending rule rather than two**, because the rule is the delicate
+/// part — a newline where the file did not end with one, a blank line between
+/// what was there and what is added, and never a rewrite — and two copies of it
+/// is the fault `docs/misreadings/a-check-fixed-in-one-place-leaves-its-copy.md`
+/// is named after.
+fn appended(startup: &std::path::Path, snippet: &str) -> Result<Added, NotAdded> {
+    use std::io::Write as _;
+
     let at = || startup.display().to_string();
 
     let held = match std::fs::read_to_string(startup) {

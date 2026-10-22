@@ -1774,6 +1774,7 @@ tasks.window.scope	Permissions and model choices apply to this task.
 telling.carry-on	You can carry on. Nothing else on this machine depends on the agent, and nothing here is waiting for you to do anything about this
 telling.runs-them-anyway	That is said once: alo OS will run these weights whenever you choose them, and will not mention their size again by itself
 telling.the-agent-cannot-answer	The agent cannot answer right now
+terminal.a-place-to-return-to	keep a place to return to before each command, so I can put my files back
 terminal.benchmark.from-hyperfine	hyperfine output
 terminal.benchmark.lower	{what} · {percent}% lower in this comparison
 terminal.benchmark.scale	Same linear scale · Lower is faster
@@ -1809,6 +1810,7 @@ terminal.waiting.computing	still computing
 terminal.waiting.keyboard	waiting for the keyboard
 terminal.waiting.network	waiting for the network
 terminal.waiting.not-known	waiting for something alo cannot identify
+terminal.what-keeping-one-costs	what it costs: disk, and how far back undo reaches. Nothing leaves this machine
 terminal.who.alo	alo
 terminal.who.program	program
 terminal.who.system	system

@@ -133,6 +133,9 @@ impl ToAnAgent {
             }),
             Told::Refused(wording) => Ok(Self::Refused(wording)),
             Told::Waiting { .. }
+            // A place to return to is kept for a person's own command, and an
+            // agent's turns are bracketed at an approval by a different road.
+            | Told::APlaceToReturnTo { .. }
             | Told::Declined {}
             | Told::Granted { .. }
             | Told::Pairing(_)

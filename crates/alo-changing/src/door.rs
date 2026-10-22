@@ -134,6 +134,7 @@ impl TheDaemonsDoor {
             // because the change already stands and the next start reads it.
             ToAPerson::Did(_)
             | ToAPerson::Waiting { .. }
+            | ToAPerson::APlaceToReturnTo { .. }
             | ToAPerson::Declined
             | ToAPerson::Pairing(_)
             | ToAPerson::Confirmed { .. }

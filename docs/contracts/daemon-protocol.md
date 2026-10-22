@@ -440,6 +440,43 @@ wire's own port). **None names a path, an owner or a mode** — those stay in th
 service log, for whoever installed the server. There is no field for an address, a
 hostname, a name, a model or a pairing, because the advertisement carries none.
 
+### `a-place-to-return-to` — the person's shell is about to run their command
+
+```json
+{"a-place-to-return-to":null}
+```
+
+Added 2026-10-22, additively.
+[ADR 0130](../decisions/0130-what-takes-the-bracket-before-a-persons-own-command.md)
+option B. The person's own shell sends this **before** each command they typed,
+and the service takes a snapshot of their files so they can go back. What sends
+it is `alo-before`, run from the shell's `PS0`.
+
+**It carries nothing, and that is the whole of it.** Not the command, not its
+arguments, not the directory it will run in. The snapshot does not depend on any
+of them, and a request carrying what a person typed would be handing this
+service a copy of every command they run for no use it could make of it.
+
+**Why not the shell's own mark.** `../contracts/shell-integration-marks.md`
+promises that a forged OSC 133 mark *cannot make alo do anything*, and any
+program in the session can print one — so a snapshot taken on a mark would make
+that sentence false. The mark is also too late: bash prints it and then execs,
+while alo reads the pseudoterminal on its own schedule, so a snapshot begun when
+the mark is *seen* can begin after the command has written. A shell's `PS0` is
+expanded **and waited for** before the command runs, measured at 2.02 s for a
+two-second expansion on `bash` 5.2.21, so *before it ran* is true by
+construction rather than by timing.
+
+**An agent sending this is refused**, in the same words as an agent trying to
+approve something. An agent's own turns are bracketed by the service at the
+moment a change is approved, which is a different moment for a different reason;
+conflating a person's request with an agent's is what ADR 0125 marked as the
+part most likely to be got wrong.
+
+**Nothing is granted and nothing is proposed.** This is not a change an agent
+asked for — it is a person's own machine doing what they turned on in Settings —
+so no grant is consulted and nothing waits for an approval.
+
 ### `their-own-question` — a question the person asked themselves
 
 ```json
@@ -509,7 +546,25 @@ it.
 {"pairings":{"paired":[{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","may":[…],"made_ago":60,"ends_in":86340,"may_answer_questions":true,"called":"the studio machine"}],"waiting":[]}}
 {"chosen-to-answer":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine"}}
 {"machine-named":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine","became":"kept"}}
+{"a-place-to-return-to":{"kept":true}}
+{"a-place-to-return-to":{"kept":false,"why_not":{"text":"this command is about to run and alo could not keep a place to return to, so you will not be able to undo it","came_from":"translation"}}}
 ```
+
+`a-place-to-return-to` answers whether a snapshot was taken before the person's
+next command. **`why_not` is absent when one was kept**, and that is the whole
+shape: a sentence before every command a person runs is noise they would learn
+to scroll past, and the one worth telling them is the one that did not happen.
+
+**It is never a refusal.** The command runs either way —
+[ADR 0045](../decisions/0045-what-undoing-rewinds-to.md)'s third term is *a
+machine too full to snapshot still runs the turn*, and a person whose disk is
+full still gets to run `ls`. A service that refused here would be a machine that
+stopped working to protect a feature.
+
+**A session with no home is answered the same way as a snapshot that failed.**
+They are different states of the machine and one answer to the person, because
+what they need to know is identical: the next command cannot be undone. The
+sentence is rendered **by the daemon**, for the reason every one here is.
 
 `answered` is the **same message** the agent's door sends, arriving at the
 person's — a second shape for it would be two things to keep in step, and what

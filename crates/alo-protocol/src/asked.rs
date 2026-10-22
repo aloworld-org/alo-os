@@ -99,6 +99,22 @@ pub(crate) enum Asked {
         /// What they asked, as they typed it.
         question: String,
     },
+    /// The person's shell is about to run a command they typed, and is asking
+    /// for a place to return to before it does.
+    ///
+    /// [ADR 0130](../../../docs/decisions/0130-what-takes-the-bracket-before-a-persons-own-command.md),
+    /// accepted 2026-10-22, option B. **Nothing about the command is on the
+    /// wire** — not its text, not its arguments, not its working directory.
+    /// This asks for a snapshot of the person's own files and says *now*, and a
+    /// request that carried what they typed would be sending alo a copy of
+    /// every command they run for a snapshot that does not depend on it.
+    ///
+    /// **It is a person's and not an agent's**, by the same rule
+    /// [`Asked::TheirOwnQuestion`] is: ADR 0125 marked conflating the two as the
+    /// part most likely to be got wrong, and the agent's own turns are bracketed
+    /// by `alo_agentd::TheTurnsBracket` at an approval, which is a different
+    /// moment for a different reason.
+    APlaceToReturnTo,
     /// The person approved the change waiting under this number.
     Approve {
         /// The number they answered.

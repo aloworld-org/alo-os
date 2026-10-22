@@ -469,8 +469,22 @@ pub const A_WORKSPACE_HERE_NAMES_NO_USABLE_PORT: Word = Word::saying(
      does not announce a guess and colleagues will not find it.",
 );
 
+/// A command the person is about to run, with nowhere to keep a place for it.
+pub const NO_PLACE_TO_RETURN_TO: Word = Word::saying(
+    "agentd.no-place-to-return-to",
+    "this command is about to run and alo could not keep a place to return to, so you will not \
+     be able to undo it",
+)
+.noting(
+    "Said once, before a command a person typed themselves, when the snapshot alo would take \
+     beforehand could not be taken — the disk is full, or the machine's filesystem cannot do it. \
+     The command still runs: alo does not stop a person working to protect a feature. \"A place \
+     to return to\" is a copy of their own files as they are at that moment.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 31] = [
+pub const EVERY_WORD: [Word; 32] = [
+    NO_PLACE_TO_RETURN_TO,
     A_WORKSPACE_HERE_IS_NOT_THE_SYSTEMS,
     A_WORKSPACE_HERE_COULD_NOT_BE_READ,
     A_WORKSPACE_HERE_NAMES_NO_USABLE_PORT,
