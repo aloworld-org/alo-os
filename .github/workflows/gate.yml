@@ -235,36 +235,45 @@ jobs:
       # translated from Fedora's names to this runner's, so there is one answer
       # to *what does this workspace need to build* rather than two that drift.
       # `systemd-devel` is `libudev-dev` here, which is the one that failed.
-      # **This step gets its own clock, because three gates died on it in one
-      # day and none of them said so.**
+      # **The two steps that download get their own clock**, because three
+      # gates died on them in one day and the cancellation named no step.
       #
-      # Measured 2026-10-23 across every run of this workflow: installing these
-      # packages takes **0.5 to 0.8 minutes** when the package servers are
-      # well. On 2026-10-23 it took 12.1, 18.9 and 27.3 minutes on three
-      # separate runs, each of which then hit `timeout-minutes: 45` and was
-      # cancelled — one of them before `the nine gates` had started at all.
+      # Measured 2026-10-23, from each job's own `started_at → completed_at`,
+      # per attempt — a listing reports only the last attempt of each run, which
+      # is the fault `docs/misreadings/a-record-that-un-measures-itself.md`
+      # names.
       #
-      # `#942` is the control: the same branch at the same commit took 12.1
-      # minutes here on one run and 0.5 on the next, and passed the second time
-      # with twenty minutes to spare. So this is not the suite growing and not
-      # the job's limit being mean. It is one step that normally costs half a
-      # minute occasionally costing half an hour.
+      # |                  | apt  | windows | the nine gates | total |
+      # |------------------|------|---------|----------------|-------|
+      # | four successes   | 0.5–0.8 | 0.4–0.7 | 14.8–21.6   | 17–24 |
+      # | #942 attempt 1   | 12.1 | 18.0    | killed at 14.1 | 45.3  |
+      # | #947 attempt 1   | 27.3 | 17.0    | never ran      | 45.4  |
       #
-      # **Raising the job's limit would have hidden it**, which is why that was
-      # considered and rejected: the gate would start passing at 55 minutes
-      # having spent half of them waiting on a mirror, and the next person would
-      # read 55 minutes as what this suite costs. A `cancelled` job also names
-      # no step, so the evidence lives only at `/actions/runs/<id>/attempts/1`
-      # and a rerun erases the listing — `docs/misreadings/a-record-that-un-measures-itself.md`.
+      # **Both download steps inflate together, by twenty to thirty times.** So
+      # this is not a slow package server and it is not the suite growing: it is
+      # the runner's network, and it reaches everything that fetches. `#942` and
+      # `#947` are each a control — the same commit measured twice, 45 minutes
+      # and cancelled, then 23.6 and 16.1 minutes and green, with no change.
       #
-      # Six minutes is roughly eight times the measured cost and leaves the job
-      # thirty-nine for a suite that needs twenty-two. A slow server now fails
-      # **this** step, by name, in six minutes rather than consuming the budget
-      # and leaving a cancellation with no stated reason. The answer either way
-      # is to run it again; the difference is whether anybody can tell why.
+      # **Raising `timeout-minutes: 45` was tried in draft and rejected.** A
+      # normal gate finishes in 17–24 minutes; the limit is not what binds. A
+      # larger one would let the gate pass having spent half its time fetching,
+      # and the next reader would take that figure for the cost of the suite.
+      #
+      # **Eight minutes, and not six.** Six was measured wrong: this change's
+      # own first gate failed here at 6.2 minutes, on a run that would have
+      # finished near 28 and passed. A clock that turns passing runs into
+      # failures is worse than the silence it replaces. Eight is ten to sixteen
+      # times the measured cost, and the worst case it permits —
+      # 8 + 8 + 21.6 + about 1 — is 38.6 against a budget of 45, so a doubly
+      # slowed run that would still have passed, still does.
+      #
+      # What this does **not** do is make the network faster, and it
+      # deliberately does not retry: a retry would restore the silence. If these
+      # steps begin failing often, that is the signal to cache what they fetch.
       - name: the libraries this workspace links, and a compositor for the
               fixtures that start their own
-        timeout-minutes: 6
+        timeout-minutes: 8
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends --yes \
@@ -439,6 +448,10 @@ jobs:
       # *runs* — that last one is the candidate's Windows job, which runs
       # `reading_this_windows` against a real Windows.
       - name: the installer still compiles for Windows
+        # Eight minutes, for the reason the step above carries: this fetches a
+        # toolchain target and a cross-linker, and it is the other step that
+        # went from half a minute to eighteen on the runs that died.
+        timeout-minutes: 8
         run: |
           rustup target add x86_64-pc-windows-gnu
           sudo apt-get install --yes --no-install-recommends gcc-mingw-w64-x86-64
