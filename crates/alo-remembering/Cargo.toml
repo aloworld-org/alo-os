@@ -14,6 +14,7 @@ repository.workspace = true
 # `Grant::checked` before there is a list at all — so a file edited into
 # granting the whole machine is refused by the crate that owns that rule.
 alo-capability = { path = "../alo-capability" }
+alo-strings = { path = "../alo-strings" }
 
 # The pairings themselves, for the second file this crate keeps. The same
 # argument as above: what a pairing is, what it permits, when it ends and how

@@ -250,8 +250,21 @@ pub enum NotRemembered {
     /// decision. A file that is simply not there is not this arm — it is a
     /// person who has not chosen, and `crate::the_level_remembered` answers
     /// `Ok(None)` for it.
-    #[error("the level this machine kept for running code was not believed: {0}")]
-    NotTheLevel(#[from] crate::the_level::NotTheLevel),
+    #[error("the level kept at {} was not believed: {why}", at.display())]
+    NotTheLevel {
+        /// Where it is.
+        ///
+        /// **Carried, where the tuple variant this replaced carried nothing.**
+        /// Every sentence `crate::words` has for this arm names the file,
+        /// because the file is the thing a person acts on — and the first
+        /// version of `said` reached a person with a literal `{path}` in the
+        /// middle of it. `tests/every_refusal_a_person_can_meet_has_a_sentence.rs`
+        /// is what caught that, by walking the road rather than by reading the
+        /// list of holes.
+        at: PathBuf,
+        /// What `crate::the_level` refused about the text.
+        why: crate::the_level::NotTheLevel,
+    },
 
     /// The file could not be written down.
     #[error("this machine's list could not be written to {}: {why}", at.display())]
@@ -261,6 +274,98 @@ pub enum NotRemembered {
         /// What the machine said.
         why: String,
     },
+}
+
+impl NotRemembered {
+    /// The sentence a person reads for this refusal, where there is one.
+    ///
+    /// **`None` is not an oversight and is the larger half of this enum.** Its
+    /// twenty arms are reached by two roads with two different readers: the
+    /// grants, the pairings and the machine names are read by `alo-agentd` at
+    /// start, into a service log, where English is correct and
+    /// [`NotAGrant`](Self::NotAGrant)'s own documentation says so — *nobody
+    /// reading a service log has a vocabulary loaded*. The level a person chose
+    /// for running code is read by a **surface**, and a surface that cannot say
+    /// why is a surface that shows a person `{why:?}` or nothing.
+    ///
+    /// So the six arms the level road can produce have sentences and the
+    /// fourteen it cannot do not, following `alo-choosing`'s rule in its own
+    /// words: *a sentence for a refusal that cannot happen is a string a
+    /// translator was handed for nothing.* `crate::words` carries the whole
+    /// argument and
+    /// `tests/every_refusal_a_person_can_meet_has_a_sentence.rs` holds the
+    /// split, so an arm that gains a road gains a sentence or fails a test.
+    ///
+    /// [`NotThere`](Self::NotThere) is **deliberately among the unworded**: on
+    /// the level road it is not a refusal at all but `Ok(None)`, a person who
+    /// has not chosen, and a sentence for it would be a machine telling
+    /// somebody off for never having opened a screen.
+    ///
+    /// Never fails and never panics: a [`Strings`](alo_strings::Strings) that
+    /// was never given [`crate::declare_into`] answers with the key, marked,
+    /// and the level is unread either way.
+    #[must_use]
+    pub fn said(&self, strings: &alo_strings::Strings) -> Option<alo_strings::Said> {
+        use alo_strings::Filling;
+
+        let word = match self {
+            Self::ALink { .. } => crate::words::LEVEL_A_LINK,
+            Self::NotRead { .. } => crate::words::LEVEL_NOT_READ,
+            Self::SomebodyElses { .. } => crate::words::LEVEL_SOMEBODY_ELSES,
+            Self::WritableByOthers { .. } => crate::words::LEVEL_WRITABLE_BY_OTHERS,
+            Self::NotWritten { .. } => crate::words::LEVEL_NOT_WRITTEN,
+            Self::NotTheLevel { why, .. } => why.word(),
+            // The grants road. A log reads these, and
+            // `crate::words` says why they are not translated.
+            Self::NotThere { .. }
+            | Self::NotTheShape { .. }
+            | Self::AnotherFormat { .. }
+            | Self::NewerThanItsFormat { .. }
+            | Self::GrantedToNobody { .. }
+            | Self::GrantedToTwo { .. }
+            | Self::NoSuchFacility { .. }
+            | Self::ReachesNothing { .. }
+            | Self::ReachesTwoThings { .. }
+            | Self::NotAGrant { .. }
+            | Self::NotOneList(_)
+            | Self::NotAMoment { .. }
+            | Self::NotPairings(_)
+            | Self::NotMachineNames(_) => return None,
+        };
+
+        let filling = match self.the_file() {
+            Some(at) => Filling::of("path", at.to_string_lossy().into_owned()),
+            // `LEVEL_NOT_WRITTEN_DOWN` is the one sentence with no path in it:
+            // the level would not turn into text, which is a fault in alo OS
+            // rather than anything about a file.
+            None => Filling::nothing(),
+        };
+        let filling = match self {
+            Self::NotTheLevel { why, .. } => match why.filling_beyond_the_path() {
+                Some((name, value)) => filling.and(name, value),
+                None => filling,
+            },
+            _ => filling,
+        };
+        Some(strings.say(&word.key(), &filling))
+    }
+
+    /// The file this refusal is about, where it is about one.
+    ///
+    /// Private, and only [`said`](Self::said) uses it: a public accessor with
+    /// no caller outside this crate is the fault `alo-reached` exists for.
+    fn the_file(&self) -> Option<&std::path::Path> {
+        match self {
+            Self::ALink { at }
+            | Self::NotRead { at, .. }
+            | Self::SomebodyElses { at, .. }
+            | Self::WritableByOthers { at, .. }
+            | Self::NotWritten { at, .. }
+            | Self::NotThere { at }
+            | Self::NotTheLevel { at, .. } => Some(at),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]

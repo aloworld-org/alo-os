@@ -190,6 +190,43 @@ pub fn written(chose: HowCodeRuns) -> Result<String, NotTheLevel> {
     })
 }
 
+impl NotTheLevel {
+    /// The sentence a person reads for this refusal.
+    ///
+    /// Every arm has one, because every arm of this enum is reachable from the
+    /// Settings surface — unlike `crate::NotRemembered`, whose grants arms are
+    /// read by a daemon into a log. `crate::words` has the argument.
+    #[must_use]
+    pub const fn word(&self) -> alo_strings::Word {
+        match self {
+            Self::NotTheShape { .. } => crate::words::LEVEL_NOT_THE_SHAPE,
+            Self::AnotherFormat { .. } => crate::words::LEVEL_FROM_A_NEWER_ALO_OS,
+            Self::SaysNothing => crate::words::LEVEL_SAYS_NOTHING,
+            Self::NoSuchLevel { .. } => crate::words::LEVEL_NO_SUCH_LEVEL,
+            Self::NotWrittenDown { .. } => crate::words::LEVEL_NOT_WRITTEN_DOWN,
+        }
+    }
+
+    /// What this refusal puts into its sentence besides the path.
+    ///
+    /// Only [`NoSuchLevel`](Self::NoSuchLevel) has anything: the word the file
+    /// actually said, quoted back exactly as written, because it is data and is
+    /// never translated. The parser's own words and the format numbers are
+    /// deliberately **not** carried — they name rows in a file most people did
+    /// not open, and a person acts on *this file is not for me* rather than on
+    /// a column number.
+    #[must_use]
+    pub fn filling_beyond_the_path(&self) -> Option<(&'static str, String)> {
+        match self {
+            Self::NoSuchLevel { said } => Some(("said", said.clone())),
+            Self::NotTheShape { .. }
+            | Self::AnotherFormat { .. }
+            | Self::SaysNothing
+            | Self::NotWrittenDown { .. } => None,
+        }
+    }
+}
+
 #[cfg(test)]
 #[expect(
     clippy::expect_used,
