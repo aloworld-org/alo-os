@@ -266,15 +266,34 @@ pub trait TheDesktop {
     /// so is what lets a screen tell a person it did not happen rather than
     /// show them a provider that is not there.
     ///
-    /// **Whether it worked, and not why.** The three ways it fails are named
-    /// where they are produced; what a surface needs here is whether to clear
-    /// the form. A reason crossing this boundary would be a refusal from a
-    /// crate this one may not read, in English this one did not write.
+    /// **Which of four things happened** — not a `bool`, and not the reason
+    /// underneath it.
+    ///
+    /// This said *whether it worked, and not why* until 2026-10-23, for a
+    /// reason that was right and a consequence that was not: a refusal crossing
+    /// here must not be another crate's error in English this crate did not
+    /// write. It does not have to be.
+    /// [`crate::a_provider_is_added_in_settings::WhyNotSaved`] is **this
+    /// crate's own** four cases, and the caller maps its failures onto them —
+    /// so the words stay where words belong and the surface still learns enough
+    /// to say something.
+    ///
+    /// **What the `bool` cost.** On a booted machine a person filled this form
+    /// in, pressed Enter, and the screen did not change. The save ran, the
+    /// keyring refused, `alo-desktop` wrote *there is no keyring on this
+    /// machine, so a provider's key has nowhere to go* — to the service log —
+    /// and `false` arrived here carrying nothing a surface could draw. The
+    /// caller's own comment said that showing it was separate work. *Separate*
+    /// and *silent* are the same thing to whoever is sitting there.
+    ///
+    /// # Errors
+    /// [`crate::a_provider_is_added_in_settings::WhyNotSaved`], which the
+    /// surface draws above the form it leaves open.
     fn a_provider_was_filled_in(
         &mut self,
         _saving: &alo_setting_up::a_provider_is_filled_in::WhatToSave,
-    ) -> bool {
-        false
+    ) -> Result<(), crate::a_provider_is_added_in_settings::WhyNotSaved> {
+        Err(crate::a_provider_is_added_in_settings::WhyNotSaved::ThereIsNoKeyring)
     }
 
     /// Whether anything on this machine is chosen to answer a question.
@@ -1061,10 +1080,19 @@ impl LoopInput for Desk<'_> {
         // or a settings file that will not read both leave what they typed on
         // the screen — which is the one moment a person most needs their key
         // to still be there, because they cannot see it to type it again.
-        if let Some(saving) = server.take_the_provider_to_save()
-            && self.desktop.a_provider_was_filled_in(&saving)
-        {
-            server.that_provider_was_saved();
+        // **Both arms, because the `&&` here swallowed a refusal.** It read
+        //
+        //     if let Some(saving) = take_the_provider_to_save()
+        //         && self.desktop.a_provider_was_filled_in(&saving) { .. }
+        //
+        // and short-circuited: a save that failed did nothing at all — the form
+        // was not told, nothing was drawn, and the provider had already been
+        // taken. A person pressed Enter and the machine answered with silence.
+        if let Some(saving) = server.take_the_provider_to_save() {
+            match self.desktop.a_provider_was_filled_in(&saving) {
+                Ok(()) => server.that_provider_was_saved(),
+                Err(why) => server.that_provider_was_not_saved(why),
+            }
         }
 
         for request in server.take_what_was_asked_of_alo() {
@@ -1805,7 +1833,15 @@ impl LoopInput for Desk<'_> {
             // literal `None` here would draw the rows behind a form a person
             // is typing into -- the same shape of mistake `market` made at a
             // frame-building site and that cost a release.
-            server.a_provider_is_being_filled_in(),
+            // **The form and what the machine answered about it**, read off
+            // the same server: a form drawn without the answer is a form that
+            // met a person with silence.
+            server.a_provider_is_being_filled_in().map(|form| {
+                crate::settings_raster::AFormOnScreen {
+                    form,
+                    not_saved: server.why_the_provider_was_not_saved(),
+                }
+            }),
         )?;
         // **The frame is drawn through the per-display road, with one display
         // on it.** `more-than-one-display-plan.md` task 4. This desk builds one

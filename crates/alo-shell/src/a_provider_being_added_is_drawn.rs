@@ -50,17 +50,31 @@ const A_HIDDEN_LETTER: char = '•';
 ///
 /// `which` is the field with the keyboard; it is the one a caret belongs in
 /// and the one the focus ring goes round.
-pub(crate) fn the_form(form: &AProviderBeingAddded, strings: &Strings) -> SectionWords {
+pub(crate) fn the_form(
+    form: &AProviderBeingAddded,
+    not_saved: Option<crate::a_provider_is_added_in_settings::WhyNotSaved>,
+    strings: &Strings,
+) -> SectionWords {
     let which = form.which_field();
+    // **The refusal goes above the fields rather than below them.** Somebody
+    // who pressed Enter is looking at the top of the form for what happened,
+    // and a sentence under the last field is one they reach after deciding
+    // nothing happened at all — which is what a machine told a person on
+    // 2026-10-23: the save ran, the keyring refused, and the screen did not
+    // change.
+    let mut lines_said = vec![
+        said(strings, &crate::the_providers_words::ADDING_A_PROVIDER),
+        said(strings, &crate::the_providers_words::WHAT_TO_DO_WITH_IT),
+    ];
+    if let Some(why) = not_saved {
+        lines_said.push(said(strings, &why.the_word()));
+    }
     SectionWords {
         // **The section it belongs under**, so a person reads it where they
         // were: this is how their questions get answered, and the list of what
         // can answer them is what this form is adding to.
         section: SettingsSection::Answering,
-        said: vec![
-            said(strings, &crate::the_providers_words::ADDING_A_PROVIDER),
-            said(strings, &crate::the_providers_words::WHAT_TO_DO_WITH_IT),
-        ],
+        said: lines_said,
         lines: WhichField::EVERY
             .into_iter()
             .map(|field| one_field(form, field, which, strings))

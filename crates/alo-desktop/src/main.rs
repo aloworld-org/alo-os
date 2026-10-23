@@ -65,7 +65,7 @@ mod running {
     };
     use alo_shell::{
         ADisplayToStandOn, DesktopFrame, DesktopLook, DirectFrame, EgressStatus, FillingWindow,
-        RunningWindow, TheDesktop,
+        RunningWindow, TheDesktop, WhyNotSaved,
     };
 
     /// The name of this desktop's socket inside its runtime directory.
@@ -559,17 +559,17 @@ mod running {
         fn a_provider_was_filled_in(
             &mut self,
             saving: &alo_setting_up::a_provider_is_filled_in::WhatToSave,
-        ) -> bool {
+        ) -> Result<(), WhyNotSaved> {
             let Some(at) = alo_choosing::where_it_is(
                 std::env::var_os("XDG_CONFIG_HOME").as_deref(),
                 std::env::var_os("HOME").as_deref(),
             ) else {
                 eprintln!("alo-desktop: this person has no settings file to save a provider in");
-                return false;
+                return Err(WhyNotSaved::ThereIsNowhereToKeep);
             };
             let Ok(bus) = alo_secrets::TheBus::of_this_process() else {
                 eprintln!("alo-desktop: this session has no bus, so there is no keyring to ask");
-                return false;
+                return Err(WhyNotSaved::ThereIsNoKeyring);
             };
             let Ok(keyring) = alo_secrets::TheKeyring::opened(&bus) else {
                 // **The machine this is most likely to be**, so it says which:
@@ -580,12 +580,12 @@ mod running {
                     "alo-desktop: there is no keyring on this machine, so a provider's key has \
                      nowhere to go"
                 );
-                return false;
+                return Err(WhyNotSaved::ThereIsNoKeyring);
             };
             match crate::a_provider_a_person_added_is_saved::a_provider_a_person_added_is_saved(
                 &keyring, &at, saving,
             ) {
-                Ok(()) => true,
+                Ok(()) => Ok(()),
                 Err(why) => {
                     // **Said on the error stream and not shown**, which is this
                     // binary's own shape: the words a person reads belong to
@@ -597,7 +597,19 @@ mod running {
                         "alo-desktop: that provider was not saved -- {}",
                         why.what_did_not_happen()
                     );
-                    false
+                    // **Which of the four, for the screen**, while the line
+                    // above keeps the detail for whoever reads the log. The
+                    // mapping is this binary's because the failures are, and
+                    // the words are the shell's because words are.
+                    Err(match why {
+                        crate::a_provider_a_person_added_is_saved::NotSaved::KeyNotKept(_) => {
+                            WhyNotSaved::TheKeyWasNotKept
+                        }
+                        crate::a_provider_a_person_added_is_saved::NotSaved::SettingsWouldNotRead(
+                            _,
+                        ) => WhyNotSaved::TheSettingsWouldNotRead,
+                        _ => WhyNotSaved::TheSettingsWouldNotRead,
+                    })
                 }
             }
         }

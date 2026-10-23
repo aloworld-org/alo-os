@@ -4,6 +4,7 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
+use crate::a_provider_is_added_in_settings::WhyNotSaved;
 use alo_setting_up::a_provider_is_filled_in::{AProviderBeingAddded, WhichField};
 use alo_strings::{Strings, Vocabulary};
 
@@ -26,7 +27,7 @@ fn types(form: &mut AProviderBeingAddded, what: &str) {
 
 /// What is drawn to the right of the label on this field's line.
 fn what_is_shown(form: &AProviderBeingAddded, field: WhichField) -> String {
-    let drawn = the_form(form, &strings());
+    let drawn = the_form(form, None, &strings());
     let at = WhichField::EVERY
         .iter()
         .position(|each| *each == field)
@@ -43,7 +44,7 @@ fn what_is_shown(form: &AProviderBeingAddded, field: WhichField) -> String {
 
 #[test]
 fn there_is_a_line_for_each_of_the_four_fields() {
-    let drawn = the_form(&AProviderBeingAddded::empty(), &strings());
+    let drawn = the_form(&AProviderBeingAddded::empty(), None, &strings());
     assert_eq!(drawn.lines.len(), 4);
     // And a heading and a line saying what to do, above them.
     assert_eq!(drawn.said.len(), 2);
@@ -53,7 +54,7 @@ fn there_is_a_line_for_each_of_the_four_fields() {
 fn every_label_is_a_sentence_and_not_a_literal() {
     // The i18n law: a label written into the drawing is a label nobody can
     // translate. Each of these comes back from the vocabulary.
-    let drawn = the_form(&AProviderBeingAddded::empty(), &strings());
+    let drawn = the_form(&AProviderBeingAddded::empty(), None, &strings());
     let labels: Vec<&str> = drawn
         .lines
         .iter()
@@ -151,7 +152,7 @@ fn the_field_with_the_keyboard_is_the_one_marked() {
     // row, which is the one piece of state this section has.
     let mut form = AProviderBeingAddded::empty();
     form.to_the_next_field();
-    let drawn = the_form(&form, &strings());
+    let drawn = the_form(&form, None, &strings());
     let marked: Vec<bool> = drawn.lines.iter().map(|line| line.chosen).collect();
     assert_eq!(marked, vec![false, true, false, false]);
 }
@@ -160,6 +161,62 @@ fn the_field_with_the_keyboard_is_the_one_marked() {
 fn no_line_is_a_row_a_person_acts_on() {
     // Enter saves the whole form rather than acting on the line the keyboard
     // is in, so a row here would put one action on four lines.
-    let drawn = the_form(&AProviderBeingAddded::empty(), &strings());
+    let drawn = the_form(&AProviderBeingAddded::empty(), None, &strings());
     assert!(drawn.lines.iter().all(|line| line.row.is_none()));
+}
+
+/// **A save that did not happen says so, above the form.**
+///
+/// On 2026-10-23 a person on a booted machine filled this form in, pressed
+/// Enter, and the screen did not change: the save ran, the keyring refused,
+/// and the reason went to the service log. This is that silence as a test.
+#[test]
+fn a_provider_that_was_not_saved_says_which_of_the_four_happened() {
+    let form = AProviderBeingAddded::empty();
+    let quiet = the_form(&form, None, &strings());
+
+    for why in [
+        WhyNotSaved::ThereIsNoKeyring,
+        WhyNotSaved::TheKeyWasNotKept,
+        WhyNotSaved::TheSettingsWouldNotRead,
+        WhyNotSaved::ThereIsNowhereToKeep,
+    ] {
+        let told = the_form(&form, Some(why), &strings());
+        assert_eq!(
+            told.said.len(),
+            quiet.said.len() + 1,
+            "{why:?} drew no sentence, which is the silence this test is for"
+        );
+        let sentence = told.said.last().expect("a sentence was added");
+        assert!(
+            !sentence.contains('«'),
+            "{why:?} reached a person as a key: {sentence}"
+        );
+        assert!(
+            sentence.contains("still here"),
+            "{why:?} does not tell them their typing survived: {sentence}"
+        );
+    }
+}
+
+/// **The four say four different things**, so a person knows which machine
+/// they have.
+///
+/// Without this the type could answer one sentence for every case and every
+/// assertion above would still pass — which is the shape of *something went
+/// wrong*, the sentence `WhyNotSaved` exists to avoid.
+#[test]
+fn the_four_refusals_are_four_different_sentences() {
+    let form = AProviderBeingAddded::empty();
+    let mut seen = std::collections::BTreeSet::new();
+    for why in [
+        WhyNotSaved::ThereIsNoKeyring,
+        WhyNotSaved::TheKeyWasNotKept,
+        WhyNotSaved::TheSettingsWouldNotRead,
+        WhyNotSaved::ThereIsNowhereToKeep,
+    ] {
+        let told = the_form(&form, Some(why), &strings());
+        seen.insert(told.said.last().expect("a sentence").clone());
+    }
+    assert_eq!(seen.len(), 4, "the four refusals are not four sentences");
 }

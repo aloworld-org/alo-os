@@ -273,6 +273,15 @@ pub struct Server {
     /// measures. The same shape `asked_alo` has for a question.
     pub(crate) asked_to_save_a_provider:
         Option<alo_setting_up::a_provider_is_filled_in::WhatToSave>,
+    /// Why the provider on screen was not saved, when it was not.
+    ///
+    /// **Beside the form rather than inside it**, because the form holds what a
+    /// person typed and this holds what the machine answered. They clear at
+    /// different moments: what they typed stays until it saves, and the answer
+    /// goes the instant they touch a key, because by then it is about a form
+    /// that no longer exists.
+    pub(crate) a_provider_was_not_saved:
+        Option<crate::a_provider_is_added_in_settings::WhyNotSaved>,
     /// What a person has typed into *More apps*' search field.
     ///
     /// **Here and not beside the open-surface state**, which is where the
@@ -629,6 +638,8 @@ impl Server {
             clipboard: crate::what_is_on_the_clipboard::TheClipboard::new(),
             // Nobody has asked for a provider to be saved.
             asked_to_save_a_provider: None,
+            // Nothing has failed to save, which is not the same as having saved.
+            a_provider_was_not_saved: None,
             what_each_application_draws: std::sync::Arc::new(alo_dock::artwork::TheArtwork::none()),
             what_was_typed_into_more_apps: alo_dock::WhatTheyTyped::nothing(),
             pins_owed_to_the_disk: None,

@@ -157,7 +157,7 @@ pub(crate) fn picture(
     // and this function is given the window -- see
     // `crate::a_provider_is_added_in_settings` for why the form being open is
     // itself the mode.
-    filling_in: Option<&alo_setting_up::a_provider_is_filled_in::AProviderBeingAddded>,
+    filling_in: Option<AFormOnScreen<'_>>,
 ) -> Result<SettingsPicture, RenderError> {
     let mut drawn = SettingsPicture::empty(size);
     let Some(open) = window.open() else {
@@ -195,9 +195,11 @@ pub(crate) fn picture(
     // respond. See `crate::a_provider_being_added_is_drawn`.
     let showing = filling_in.map_or_else(
         || sections(open, strings, now),
-        |form| {
+        |on_screen| {
             vec![crate::a_provider_being_added_is_drawn::the_form(
-                form, strings,
+                on_screen.form,
+                on_screen.not_saved,
+                strings,
             )]
         },
     );
@@ -371,3 +373,17 @@ fn placed(inked: &mut Vec<Inked>, shaped: Shaped, text: String, x: i32, y: i32) 
 #[cfg(test)]
 #[path = "settings_raster_tests.rs"]
 mod tests;
+
+/// The provider form on screen, and what the machine answered about it.
+///
+/// **One value rather than two arguments**, because a refusal without a form is
+/// not a state this surface can be in: the sentence is *about* what is on the
+/// screen, and a form that has closed takes its answer with it. Two `Option`s
+/// side by side made that combination representable and nothing refused it.
+#[derive(Debug, Clone, Copy)]
+pub struct AFormOnScreen<'a> {
+    /// What a person has typed so far.
+    pub form: &'a alo_setting_up::a_provider_is_filled_in::AProviderBeingAddded,
+    /// Why the last attempt to save it did not happen, when one did not.
+    pub not_saved: Option<crate::a_provider_is_added_in_settings::WhyNotSaved>,
+}
