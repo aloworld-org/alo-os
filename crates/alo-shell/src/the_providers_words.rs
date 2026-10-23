@@ -69,13 +69,23 @@ pub const ITS_MODEL: Word = Word::saying("shell.provider.model", "Model").noting
 );
 
 /// Every sentence this form says.
-pub const THE_PROVIDERS_WORDS: [Word; 6] = [
+///
+/// **The four refusals are in here**, which is the whole point of the list: a
+/// word declared and left out of it reaches a person as its own key, and this
+/// form drew six of those on a booted machine on 2026-10-23 for that fault one
+/// layer up. The length is written out so that adding a `Word` above and
+/// forgetting this line does not compile.
+pub const THE_PROVIDERS_WORDS: [Word; 10] = [
     ADDING_A_PROVIDER,
     WHAT_TO_DO_WITH_IT,
     ITS_NAME,
     ITS_ADDRESS,
     ITS_KEY,
     ITS_MODEL,
+    NOT_SAVED_NO_KEYRING,
+    NOT_SAVED_KEY_NOT_KEPT,
+    NOT_SAVED_SETTINGS_WOULD_NOT_READ,
+    NOT_SAVED_NOWHERE_TO_KEEP,
 ];
 
 /// Why this form's wording would not declare.
@@ -105,3 +115,40 @@ pub fn declare_the_providers_words(vocabulary: &mut Vocabulary) -> Result<(), Pr
     *vocabulary = prepared;
     Ok(())
 }
+
+/// What a person is told when their provider was not saved.
+///
+/// **Four sentences and not one**, because the four are four different machines
+/// and a person does something different about each. *Something went wrong* is
+/// the sentence this set exists to avoid.
+///
+/// They live here rather than in `alo-desktop` because that binary is where the
+/// writes are made, not where words belong — its own
+/// `what_did_not_happen` is English for a service log and says so. A person
+/// reads these.
+pub const NOT_SAVED_NO_KEYRING: Word = Word::saying(
+    "shell.provider.not-saved.no-keyring",
+    "This computer has nowhere to keep a key yet, so nothing was saved. What you typed is still here.",
+)
+.noting("Shown under the form when the machine has no keyring at all.");
+
+/// The key could not be kept, for a reason the keyring gave.
+pub const NOT_SAVED_KEY_NOT_KEPT: Word = Word::saying(
+    "shell.provider.not-saved.key-not-kept",
+    "The key could not be kept, so nothing else was tried. What you typed is still here.",
+)
+.noting("Shown when the keyring is there and refused the key.");
+
+/// The settings file is there and would not read.
+pub const NOT_SAVED_SETTINGS_WOULD_NOT_READ: Word = Word::saying(
+    "shell.provider.not-saved.settings",
+    "Your settings file could not be read, so it was left exactly as it was. What you typed is still here.",
+)
+.noting("Shown when the key was kept and the settings file refused — ADR 0038: a file that will not read is never written over.");
+
+/// This person has nowhere to keep settings.
+pub const NOT_SAVED_NOWHERE_TO_KEEP: Word = Word::saying(
+    "shell.provider.not-saved.nowhere",
+    "This sign-in has no folder to keep settings in, so nothing was saved. What you typed is still here.",
+)
+.noting("Shown for a session with no home directory.");

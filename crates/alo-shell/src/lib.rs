@@ -95,6 +95,7 @@ mod a_press_on_an_edge;
 mod a_press_on_the_sign_in_screen;
 mod a_provider_being_added_is_drawn;
 pub mod a_provider_is_added_in_settings;
+pub use a_provider_is_added_in_settings::WhyNotSaved;
 /// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;
 mod access_bus;

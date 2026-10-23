@@ -134,6 +134,8 @@ impl Server {
     pub fn that_provider_was_saved(&mut self) {
         self.filling_in = None;
         self.asked_to_save_a_provider = None;
+        // A refusal about a form that is gone is a sentence about nothing.
+        self.a_provider_was_not_saved = None;
     }
 
     /// Carry one press out against the form, and say what came of it.
@@ -141,6 +143,11 @@ impl Server {
     /// Answers [`None`] when no form is open, which is the caller's signal to
     /// read the press as a row's instead.
     pub fn a_key_fills_in_the_provider(&mut self, key: FillingInKey) -> Option<WhatFillingInDid> {
+        // **The refusal goes the moment they touch a key**, because from that
+        // key onwards it describes a form that no longer exists. Leaving it up
+        // would have a person correcting the address while the screen still
+        // says their key could not be kept.
+        self.a_provider_was_not_saved = None;
         let form = self.filling_in.as_mut()?;
         Some(match key {
             FillingInKey::Typed(letter) => {
@@ -291,3 +298,67 @@ impl Server {
 #[cfg(test)]
 #[path = "a_provider_is_added_in_settings_tests.rs"]
 mod tests;
+
+/// Why a provider a person filled in was not saved.
+///
+/// **Four, because the four are four different machines** and a person does
+/// something different about each: one has no keyring at all, one has a keyring
+/// that refused, one has a settings file that will not read, and one is a
+/// sign-in with nowhere to keep anything. *Something went wrong* is the
+/// sentence this type exists to avoid.
+///
+/// **It carries no detail from underneath**, and that is deliberate. The
+/// reasons below it — a D-Bus error, a parse failure — are for the service log,
+/// where `alo-desktop` already writes them. What reaches a screen is which of
+/// the four happened, in the person's own language.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WhyNotSaved {
+    /// This machine has no keyring, so a key has nowhere to go.
+    ThereIsNoKeyring,
+    /// The keyring is there and would not keep the key.
+    TheKeyWasNotKept,
+    /// The settings file is there and would not read, so it was left alone.
+    TheSettingsWouldNotRead,
+    /// This sign-in has no folder to keep settings in.
+    ThereIsNowhereToKeep,
+}
+
+impl WhyNotSaved {
+    /// The sentence a person reads.
+    #[must_use]
+    pub const fn the_word(self) -> alo_strings::Word {
+        match self {
+            Self::ThereIsNoKeyring => crate::the_providers_words::NOT_SAVED_NO_KEYRING,
+            Self::TheKeyWasNotKept => crate::the_providers_words::NOT_SAVED_KEY_NOT_KEPT,
+            Self::TheSettingsWouldNotRead => {
+                crate::the_providers_words::NOT_SAVED_SETTINGS_WOULD_NOT_READ
+            }
+            Self::ThereIsNowhereToKeep => crate::the_providers_words::NOT_SAVED_NOWHERE_TO_KEEP,
+        }
+    }
+}
+
+impl Server {
+    /// The provider was **not** saved, and this is why.
+    ///
+    /// **The form stays open and keeps what they typed**, which is the whole
+    /// reason this exists beside [`Server::that_provider_was_saved`]: a person
+    /// whose key could not be kept should not have to type it again to find out
+    /// why.
+    ///
+    /// **Written because a machine did this silently.** On 2026-10-23, on a
+    /// booted image, a person filled this form in, pressed Enter, and the
+    /// screen did not change — the save ran, the keyring refused, and
+    /// `alo-desktop` wrote the reason to the service log where nobody at a
+    /// desktop reads it. The caller returned a `bool`, so the reason was
+    /// destroyed one layer below the surface that could have drawn it.
+    pub fn that_provider_was_not_saved(&mut self, why: WhyNotSaved) {
+        self.a_provider_was_not_saved = Some(why);
+    }
+
+    /// Why the provider on screen was not saved, when it was not.
+    #[must_use]
+    pub const fn why_the_provider_was_not_saved(&self) -> Option<WhyNotSaved> {
+        self.a_provider_was_not_saved
+    }
+}
