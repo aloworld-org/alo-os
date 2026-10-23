@@ -162,8 +162,25 @@ StandardInputData=Cg==
 
 # It holds no privilege. It keeps one person's secrets, on that person's own
 # bus, as that person.
-CapabilityBoundingSet=
-AmbientCapabilities=
+# **No capability directives, because a user manager may not apply them.**
+#
+# `CapabilityBoundingSet=` and `AmbientCapabilities=` were carried over when
+# this unit moved out of `system/`, where PID 1 is root and can drop
+# capabilities on a child. Here the manager belongs to the person, runs as
+# uid 1000, and dropping capabilities needs CAP_SETPCAP which it has not got.
+# A booted machine said so 183 times in one session:
+#
+#   alo-keyring.service: Failed to drop capabilities: Operation not permitted
+#   Failed at step CAPABILITIES spawning /usr/bin/gnome-keyring-daemon
+#   Main process exited, code=exited, status=218/CAPABILITIES
+#
+# **Nothing is given up by removing them.** A service started by an
+# unprivileged user manager holds no capabilities to begin with, so the
+# bounding set was restricting a process that already had none. The
+# restriction was real in `system/` and is a tautology here.
+#
+# `NoNewPrivileges=` stays: it is a prctl any process may set on itself, and
+# of the three it is the one that still does something.
 NoNewPrivileges=yes
 
 # A keyring that died should come back: what a person notices otherwise is a
