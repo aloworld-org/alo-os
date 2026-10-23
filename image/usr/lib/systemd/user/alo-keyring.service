@@ -15,26 +15,52 @@
 Description=alo OS keyring: where a provider's key is kept
 Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0022-where-a-providers-key-is-kept.md
 
-# The person's own session, and the whole of this service's lifetime — the same
-# shape as `alo-portald.service` and for its reasons. `user@1000.service` is the
-# person's systemd manager: logind starts it when they sign in and stops it when
-# their last session ends. After=, so `/run/user/1000` and the bus inside it
-# exist before this process does. BindsTo=, so signing out takes the keyring
-# with the session rather than leaving one open on a machine nobody is at.
-BindsTo=user@1000.service
-After=user@1000.service
+# **This is a user unit, and it was a system unit until 2026-10-23.**
+#
+# As a system unit it could not start at all. Measured on a booted machine:
+# **364 failed starts in three hours**, two seconds apart, every one of them
+#
+#   alo-keyring.service: Unable to locate executable
+#   '/usr/bin/gnome-keyring-daemon': Permission denied
+#   avc: denied { execute } ... comm="(g-daemon)"
+#     scontext=system_u:system_r:init_t:s0
+#     tcontext=system_u:object_r:gkeyringd_exec_t:s0 permissive=0
+#
+# The binary is labelled correctly. What SELinux refuses is **PID 1 executing
+# it**: Fedora's policy lets a person's own session run `gkeyringd_exec_t` and
+# does not let `init_t`. A system unit is started by PID 1 whatever `User=`
+# says, because the exec happens before the drop to that user.
+#
+# `alo-portald.service` is the same shape and works, which is the contrast that
+# settles it: that is **our own** binary under `/usr/libexec`, generically
+# labelled, so PID 1 may execute it. This one is Fedora's, and carries Fedora's
+# policy with it.
+#
+# So the keyring now belongs to the person's own systemd, which is what this
+# file's `[Install]` section already asked for — *the person's manager, not
+# `multi-user.target`*. It was installed in the wrong directory.
+# `BindsTo=`/`After=user@1000.service` are gone because a unit inside that
+# manager is already bound to it, and `User=`/`Group=` are gone because the
+# manager already runs as the person.
 
 # It serves a name on the session bus, so the bus must be there first.
 After=dbus.socket
 
-# **Before the portal backend, and this is correctness rather than tidiness.**
+# **The portal ordering is gone, and its absence is the finding.**
+#
 # `alo-portald` asks for the keyring **once, at start-up**, and takes
-# `NoKeyringHere` for the whole session when nothing answers — it does not try
-# again. So a portal that started first would refuse every secret until the
-# person signed out and in, on a machine that has a perfectly good keyring
-# running beside it. That is the failure this ordering exists to prevent, and
-# it would look exactly like having no keyring at all.
-Before=alo-portald.service
+# `NoKeyringHere` for the whole session when nothing answers. It is a *system*
+# unit ordered `After=user@1000.service`; this is a *user* unit inside that
+# manager. **systemd orders units within one manager**, so `Before=` naming the
+# portal here would read as a guarantee and be none. It is left out rather than
+# written and believed.
+#
+# What stands in its place is the shape of the start: the user manager brings
+# its own units up while `alo-portald` is still waiting on
+# `user@1000.service`. **That is a likely order, not a guaranteed one**, and
+# the honest repair is for the portal to ask again rather than keep its first
+# answer for the session — a change in `alo-portals`, named here so the next
+# reader finds the argument rather than the gap.
 
 [Service]
 # **Not `--daemonize`.** The daemon's own default is to fork and print an
@@ -116,21 +142,23 @@ ExecStart=/usr/bin/gnome-keyring-daemon --foreground --components=secrets --unlo
 StandardInput=data
 StandardInputData=Cg==
 
-# **The uid it runs as is the person**, which is load-bearing for the same
-# reason `alo-portald.service` gives: `TheBus::of_this_process` takes the uid
-# from the kernel and refuses a bus that is not that uid's. A keyring served by
-# anybody else is one this machine's own client will not talk to.
-User=alo
-Group=alo
+# **No `User=` and no `Group=`, because the manager is already the person's.**
+# They were here while this was a system unit, and they are what made the uid
+# right while the exec still happened as PID 1 — which is what SELinux refused.
+# `TheBus::of_this_process` takes the uid from the kernel and refuses a bus
+# that is not that uid's, and inside the person's own manager that uid is
+# theirs by construction rather than by a line.
 
-# A system unit inherits none of the person's session, so it is stated. The
-# literal 1000 is deliberate: `%U` in a system unit expands to 0, before `User=`
-# is resolved — a trap this repository has already paid for, carried in
-# `docs/quirks.md`.
-Environment=XDG_RUNTIME_DIR=/run/user/1000
-Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
-Environment=HOME=/home/alo
-Environment=XDG_DATA_HOME=/home/alo/.local/share
+# **Nothing is stated that the manager already knows.** A user unit inherits
+# `XDG_RUNTIME_DIR` and `DBUS_SESSION_BUS_ADDRESS` from the manager that starts
+# it, so naming them here would be this file asserting the session's own facts
+# — and the literal `1000` that a system unit needed is exactly the kind of
+# assertion that is wrong on the second machine. `HOME` is the person's too.
+#
+# `XDG_DATA_HOME` is **not** inherited: it is unset unless something sets it,
+# and `gnome-keyring-daemon` falls back to `$HOME/.local/share`, which is where
+# `tmpfiles.d/alo.conf` makes the keyrings directory. So the default is the
+# right answer here, and saying it would only repeat the fallback.
 
 # It holds no privilege. It keeps one person's secrets, on that person's own
 # bus, as that person.
@@ -139,13 +167,21 @@ AmbientCapabilities=
 NoNewPrivileges=yes
 
 # A keyring that died should come back: what a person notices otherwise is a
-# provider that worked yesterday and cannot be asked today. Not `always`, for
-# `alo-portald.service`'s reason — signing out is how this ends, and `BindsTo=`
-# is what should end it then.
+# provider that worked yesterday and cannot be asked today. Not `always` —
+# signing out ends the manager, and the manager ending is what ends this.
+#
+# **It is also what made the fault above legible.** Two seconds apart for three
+# hours wrote 364 identical failures into the log, and a reader who saw one
+# might have read it as a hiccup. The count is what said *this never worked*.
 Restart=on-failure
 RestartSec=2
 
 [Install]
-# The person's manager, not `multi-user.target`: a keyring started at boot is
-# one open before anybody has signed in.
-WantedBy=user@1000.service
+# **`default.target`, which is the person's own.** Inside a user manager that
+# is the target reached when their session comes up; `user@1000.service` was
+# the right answer for a *system* unit asking to be pulled in by the manager,
+# and is meaningless from inside it.
+#
+# Enabled with `systemctl --global enable`, which links it for every person's
+# manager rather than for one uid — so this file no longer names 1000 anywhere.
+WantedBy=default.target

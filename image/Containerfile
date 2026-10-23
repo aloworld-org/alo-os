@@ -1156,7 +1156,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/systemd/system/alo-compositor.service \
                /usr/lib/systemd/system/alo-desktop.service \
                /usr/lib/systemd/system/alo-portald.service \
-               /usr/lib/systemd/system/alo-keyring.service \
+               /usr/lib/systemd/user/alo-keyring.service \
                /usr/lib/systemd/system/alo-shipping.service \
                /usr/lib/pam.d/alo-compositor \
                /usr/lib/pam.d/alo-desktop \
@@ -1171,17 +1171,34 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                      alo-modeld.service alo-convertd.socket \
                      alo-asking.socket \
                      alo-compositor.service alo-portald.service \
-                     # The keyring, enabled for the person's own manager like
-                     # the portal beside it: a keyring open before anybody has
-                     # signed in is a keyring open on nobody's behalf. Without
-                     # this line no key can be stored on this machine at all,
-                     # which is ADR 0022's first named obstacle.
-                     alo-keyring.service \
                      alo-shipping.service alo-desktop.service \
                      # The broker and the one look. The broker's other two units declare no
                      # `[Install]` and are started by the broker, which is how
                      # `alo-convertd.service` is already handled.
                      alo-brokerd.service alo-looking-once.service \
+    \
+ # **The keyring is enabled `--global`, in every person's own manager**, and
+ # that is the fix for a machine on which no key could be stored at all.
+ #
+ # It was a system unit enabled beside the daemons above until 2026-10-23, and
+ # it never once started on a booted machine: SELinux refuses **PID 1**
+ # executing `gkeyringd_exec_t`, which is the label Fedora gives
+ # `gnome-keyring-daemon`. 364 failed starts in three hours, two seconds apart.
+ # `alo-portald` is the same shape and works because it is *our* binary under
+ # `/usr/libexec`, generically labelled; this one is Fedora's and carries
+ # Fedora's policy. A person's own manager may execute it, and does.
+ #
+ # Without this line no key can be stored on this machine at all, which is
+ # ADR 0022's first named obstacle.
+ && systemctl --global enable alo-keyring.service \
+ \
+ # **The link is checked, not assumed.** `systemctl --global enable` on a unit
+ # it cannot find exits 0 and writes nothing, so the proof that the enable did
+ # something is the symlink it should have made — the same reason `--version`
+ # is run beside it rather than `test -x`.
+ && test -L /etc/systemd/user/default.target.wants/alo-keyring.service \
+ && /usr/bin/gnome-keyring-daemon --version | grep -q 'gnome-keyring-daemon' \
+ && echo "the keyring is enabled in every person's own manager, and the daemon it names runs" \
  && bootc container lint
 
 # The logins, made here rather than only at boot — and then checked, which is
