@@ -235,8 +235,36 @@ jobs:
       # translated from Fedora's names to this runner's, so there is one answer
       # to *what does this workspace need to build* rather than two that drift.
       # `systemd-devel` is `libudev-dev` here, which is the one that failed.
+      # **This step gets its own clock, because three gates died on it in one
+      # day and none of them said so.**
+      #
+      # Measured 2026-10-23 across every run of this workflow: installing these
+      # packages takes **0.5 to 0.8 minutes** when the package servers are
+      # well. On 2026-10-23 it took 12.1, 18.9 and 27.3 minutes on three
+      # separate runs, each of which then hit `timeout-minutes: 45` and was
+      # cancelled — one of them before `the nine gates` had started at all.
+      #
+      # `#942` is the control: the same branch at the same commit took 12.1
+      # minutes here on one run and 0.5 on the next, and passed the second time
+      # with twenty minutes to spare. So this is not the suite growing and not
+      # the job's limit being mean. It is one step that normally costs half a
+      # minute occasionally costing half an hour.
+      #
+      # **Raising the job's limit would have hidden it**, which is why that was
+      # considered and rejected: the gate would start passing at 55 minutes
+      # having spent half of them waiting on a mirror, and the next person would
+      # read 55 minutes as what this suite costs. A `cancelled` job also names
+      # no step, so the evidence lives only at `/actions/runs/<id>/attempts/1`
+      # and a rerun erases the listing — `docs/misreadings/a-record-that-un-measures-itself.md`.
+      #
+      # Six minutes is roughly eight times the measured cost and leaves the job
+      # thirty-nine for a suite that needs twenty-two. A slow server now fails
+      # **this** step, by name, in six minutes rather than consuming the budget
+      # and leaving a cancellation with no stated reason. The answer either way
+      # is to run it again; the difference is whether anybody can tell why.
       - name: the libraries this workspace links, and a compositor for the
               fixtures that start their own
+        timeout-minutes: 6
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends --yes \
