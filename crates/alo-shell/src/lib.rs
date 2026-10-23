@@ -225,6 +225,7 @@ mod flip_gate;
 mod frame_edges;
 mod frame_handle;
 mod frame_name;
+mod how_code_runs_in_settings;
 mod in_use_mark;
 mod in_use_paint;
 mod in_use_raster;

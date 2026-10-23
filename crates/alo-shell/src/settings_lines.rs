@@ -65,6 +65,7 @@ pub(crate) fn sections(open: &Open, strings: &Strings, now: SystemTime) -> Vec<S
         dock(open, strings),
         shortcuts(open, strings),
         terminal(open, strings),
+        how_code_runs(open, strings),
         granted(open, strings, now),
     ];
     drawn.retain(|section| !section.said.is_empty() || !section.lines.is_empty());
@@ -330,6 +331,75 @@ fn granted(open: &Open, strings: &Strings, now: SystemTime) -> SectionWords {
     SectionWords {
         section: SettingsSection::Granted,
         said,
+        lines,
+    }
+}
+
+/// How code the agent writes or fetches runs: ADR 0064's three levels.
+///
+/// **The three levels, each with its own cost, and then what every level
+/// keeps.** The names and the costs are `alo_capability::HowCodeRuns`'s
+/// answers, as everything else here is its crate's: nothing is worded in this
+/// file.
+///
+/// **A person who has not chosen has no row marked**, which is why `chosen` is
+/// compared against an `Option` rather than a value — and why there is no
+/// shipped default to fall back on. `crate::how_code_runs_in_settings` holds
+/// that argument.
+///
+/// **The three always-on protections are a line with no row**, like the four
+/// ways of answering above: they are not a choice and must not read as one.
+/// They are drawn at all because ADR 0064 keeps them on *at full trust too*,
+/// and somebody reading only the cost of full trust would not know what they
+/// still have.
+///
+/// **Nothing is said above the rows yet when the file will not read.**
+/// `alo_remembering::NotRemembered` has no `said`, so there is no sentence in
+/// the person's own language for why — and inventing one here would be
+/// hardcoded English in the crate that draws. The section knows it did not
+/// read; the words are owed by the crate that owns the file.
+fn how_code_runs(open: &Open, strings: &Strings) -> SectionWords {
+    let section = &open.how_code_runs;
+    let chosen = section.chosen();
+    let mut lines: Vec<LineWords> = alo_capability::HowCodeRuns::ALL
+        .into_iter()
+        .map(|level| {
+            let mut parts = vec![
+                strings
+                    .say(&level.the_word().key(), &Filling::nothing())
+                    .into_text(),
+            ];
+            parts.extend(
+                level
+                    .what_it_costs()
+                    .map(|cost| strings.say(&cost.key(), &Filling::nothing()).into_text()),
+            );
+            LineWords {
+                row: Some(SettingsRow::HowCodeRuns(level)),
+                parts,
+                chosen: chosen == Some(level),
+            }
+        })
+        .collect();
+
+    lines.push(LineWords {
+        row: None,
+        parts: alo_capability::HowCodeRuns::what_stays_on(
+            alo_capability::HowCodeRuns::InASealedBox,
+        )
+        .into_iter()
+        .map(|stays| {
+            strings
+                .say(&stays.the_word().key(), &Filling::nothing())
+                .into_text()
+        })
+        .collect(),
+        chosen: false,
+    });
+
+    SectionWords {
+        section: SettingsSection::HowCodeRuns,
+        said: Vec::new(),
         lines,
     }
 }

@@ -208,6 +208,7 @@ fn a_way_with_nothing_to_choose_is_absent_rather_than_disabled() {
         &var.join("grants"),
         &var.join("pairings"),
         &var.join("agentd.sock"),
+        &var.join("how-code-runs.toml"),
     );
     let mut window = SettingsWindow::closed();
     let opened = window.opened_by_hand(&places, noon());
@@ -963,12 +964,24 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
     let opened = window.opened_by_hand(&machine.with_no_folder(), noon());
     assert!(opened.not_remembered.is_empty());
     let rows = window.rows(noon());
+    // **The sections whose file is the machine's rather than the person's
+    // folder.** Granted was the only one of those until 2026-10-22; how code
+    // runs is the second, kept at `/var/lib/alo/how-code-runs.toml` beside the
+    // grants because ADR 0064 makes running code a grant. A session with no
+    // home directory can still keep it, so it is still offered — which is what
+    // this test is about: *nothing it could **not** keep*, rather than nothing.
     assert!(
-        rows.iter()
-            .all(|row| row.section() == SettingsSection::Granted),
+        rows.iter().all(|row| matches!(
+            row.section(),
+            SettingsSection::Granted | SettingsSection::HowCodeRuns
+        )),
         "{rows:?}"
     );
-    assert_eq!(rows.len(), 2);
+    assert_eq!(
+        rows.len(),
+        5,
+        "one grant, one pairing, and the three levels"
+    );
     assert_eq!(window.appearance(), Some(&Appearance::shipped()));
     assert_eq!(window.dock(), Some(&Dock::shipped()));
     assert_eq!(window.shortcuts(), Some(&Shortcuts::shipped()));
@@ -1045,7 +1058,7 @@ fn moving_between_rows_and_sections_changes_nothing() {
         window.pressed(key(SettingsKey::NextSection), doors(&strings, &door));
     }
     assert_eq!(
-        firsts[..6],
+        firsts[..7],
         [
             SettingsSection::Answering,
             SettingsSection::Appearance,
@@ -1054,15 +1067,20 @@ fn moving_between_rows_and_sections_changes_nothing() {
             // Between the shortcuts and the grants, which is where
             // `settings_lines` draws it.
             SettingsSection::Terminal,
+            // And between the terminal and the grants: this **is** a grant —
+            // the separate one ADR 0064 makes running code — so a person reads
+            // the grant they are giving before the list of ones they gave.
+            SettingsSection::HowCodeRuns,
             SettingsSection::Granted,
         ]
     );
     window.pressed(key(SettingsKey::PreviousSection), doors(&strings, &door));
     assert_eq!(
         window.focused(noon()).unwrap(),
-        // One section back from the grants is the terminal's single row, and
-        // it was the first shortcut until the terminal section existed.
-        SettingsRow::ShellIntegration
+        // One section back from the grants is the first of the three levels —
+        // it was the terminal's single row until how code runs got a surface,
+        // and the first shortcut before the terminal section existed.
+        SettingsRow::HowCodeRuns(alo_capability::HowCodeRuns::InASealedBox)
     );
     for pressed in [SettingsKey::Last, SettingsKey::First, SettingsKey::Nothing] {
         window.pressed(key(pressed), doors(&strings, &door));

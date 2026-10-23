@@ -31,6 +31,15 @@ pub struct SettingsPlaces {
     pairings: PathBuf,
     /// The socket the person's daemon listens on, which a revocation knocks at.
     daemon: PathBuf,
+    /// How code the agent writes or fetches runs: `alo_remembering::THE_LEVEL`.
+    ///
+    /// The machine's, beside the grants, because ADR 0064 makes running code a
+    /// grant and its contract holds the file to the same three rules about who
+    /// may have written it. **Handed over rather than taken from the
+    /// constant**, which is this file's rule for every other path here, and is
+    /// what lets a test point the section at a file of its own rather than at
+    /// the machine's.
+    how_code_runs: PathBuf,
     /// The shell this account uses, as the session was told it.
     ///
     /// **Handed over rather than read here**, which is this file's rule for
@@ -59,6 +68,7 @@ impl SettingsPlaces {
         grants: &Path,
         pairings: &Path,
         daemon: &Path,
+        how_code_runs: &Path,
     ) -> Self {
         Self {
             folder: alo_choosing::where_the_folder_is(config_home, home),
@@ -66,6 +76,7 @@ impl SettingsPlaces {
             grants: grants.to_owned(),
             pairings: pairings.to_owned(),
             daemon: daemon.to_owned(),
+            how_code_runs: how_code_runs.to_owned(),
             // Lossy on purpose: a shell whose path is not text is a shell this
             // crate cannot match against a name anyway, and losing a byte is
             // better than refusing to draw the rest of Settings.
@@ -116,6 +127,11 @@ impl SettingsPlaces {
     pub(crate) fn daemon(&self) -> &Path {
         &self.daemon
     }
+
+    /// Where this machine's level of running code is kept.
+    pub(crate) fn how_code_runs(&self) -> &Path {
+        &self.how_code_runs
+    }
 }
 
 #[cfg(test)]
@@ -134,6 +150,7 @@ mod tests {
         let grants = Path::new("/var/lib/alo/grants");
         let pairings = Path::new("/var/lib/alo/pairings");
         let door = Path::new("/run/alo/1000/agentd.sock");
+        let level = Path::new("/var/lib/alo/how-code-runs.toml");
         let places = SettingsPlaces::of(
             None,
             Some(OsStr::new("/home/ada")),
@@ -141,6 +158,7 @@ mod tests {
             grants,
             pairings,
             door,
+            level,
         );
         assert_eq!(places.daemon(), door);
         let folder = alo_choosing::where_the_folder_is(None, Some(OsStr::new("/home/ada")));
@@ -165,7 +183,15 @@ mod tests {
             (Some(OsStr::new("relative/config")), None),
             (None, Some(OsStr::new("relative-home"))),
         ] {
-            let nowhere = SettingsPlaces::of(config_home, home, None, grants, pairings, door);
+            let nowhere = SettingsPlaces::of(
+                config_home,
+                home,
+                None,
+                grants,
+                pairings,
+                door,
+                Path::new("/var/lib/alo/how-code-runs.toml"),
+            );
             assert_eq!(nowhere.folder(), None);
             assert_eq!(nowhere.kept(alo_dock::keeping::THE_FILE), None);
             assert_eq!(nowhere.choosing(), None);

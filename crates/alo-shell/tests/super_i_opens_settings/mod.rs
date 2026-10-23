@@ -41,6 +41,7 @@ fn nothing_kept_yet(dir: &Path) -> SettingsPlaces {
         &dir.join("grants"),
         &dir.join("pairings"),
         &dir.join("agentd.sock"),
+        &dir.join("how-code-runs.toml"),
     )
 }
 

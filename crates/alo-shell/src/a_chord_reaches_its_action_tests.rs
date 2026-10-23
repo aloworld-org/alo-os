@@ -100,6 +100,7 @@ fn every_action_this_release_declares_has_a_road() {
             &runtime.path().join("grants"),
             &runtime.path().join("pairings"),
             &runtime.path().join("daemon"),
+            &runtime.path().join("how-code-runs.toml"),
         ));
         let mut shortcuts = Shortcuts::shipped();
         shortcuts.unbind(*action);

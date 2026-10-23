@@ -658,6 +658,7 @@ mod running {
                 &alo_remembering::this_persons_grants(),
                 std::path::Path::new(alo_remembering::THE_PAIRINGS),
                 &alo_changing::this_persons_door(),
+                std::path::Path::new(alo_remembering::THE_LEVEL),
             ))
         }
 
