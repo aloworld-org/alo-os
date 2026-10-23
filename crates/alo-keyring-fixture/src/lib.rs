@@ -236,6 +236,49 @@ impl AKeyringOfOurOwn {
             return ours;
         }
 
+        ours.put_a_keyring_on_the_bus();
+        ours
+    }
+
+    /// Put a real Secret Service on this fixture's bus, **after the bus is
+    /// already up and answering**.
+    ///
+    /// This is the order a booted machine really has: the session bus, the
+    /// portal backend and the keyring are three user units, and nothing makes
+    /// the backend wait for the keyring. A machine where the keyring wins the
+    /// race and a machine where it loses are both ordinary, and only one of
+    /// them was ever tested.
+    ///
+    /// Call it on a bus from [`Self::a_bus_with_no_keyring_on_it`] to get the
+    /// second: a backend that looked, found nothing, and is asked again once a
+    /// keyring is there. [`Self::started`] reaches the same state by calling
+    /// this immediately, so the two differ in timing and in nothing else.
+    ///
+    /// # Panics
+    /// When `gnome-keyring-daemon` is not installed, or never takes the name.
+    /// A keyring is also not started twice: the fixture would leak the first
+    /// daemon and the bus would hand the name to whichever won, which is the
+    /// state `a_bus_with_no_keyring_on_it` exists to say is never worth
+    /// creating by destruction.
+    pub fn a_keyring_arrives(&mut self) {
+        assert!(
+            self.keyring.is_none(),
+            "this fixture already has a keyring; starting a second would leak the first \
+             and leave the name to whichever won"
+        );
+        self.put_a_keyring_on_the_bus();
+    }
+
+    /// Start the daemon, unlock it the way the image's unit does, and wait for
+    /// it to own `org.freedesktop.secrets`.
+    ///
+    /// Shared by [`Self::started`], which calls it as the bus comes up, and
+    /// [`Self::a_keyring_arrives`], which calls it later. **One body, so the
+    /// two cannot drift**: a keyring that arrives late is the same keyring,
+    /// unlocked with the same password and isolated the same way, or the late
+    /// case would be testing something the early case is not.
+    fn put_a_keyring_on_the_bus(&mut self) {
+        let at = self.place.join("bus");
         // `--unlock` reads the password from stdin, and is incompatible with
         // `--start` — measured, not supposed. `--replace` is deliberately absent.
         let mut keyring = Command::new("gnome-keyring-daemon")
@@ -243,9 +286,9 @@ impl AKeyringOfOurOwn {
             .arg("--unlock")
             .arg("--components=secrets")
             .arg("--control-directory")
-            .arg(ours.place.join("control"))
-            .env("XDG_DATA_HOME", ours.place.join("data"))
-            .env("XDG_RUNTIME_DIR", ours.place.join("run"))
+            .arg(self.place.join("control"))
+            .env("XDG_DATA_HOME", self.place.join("data"))
+            .env("XDG_RUNTIME_DIR", self.place.join("run"))
             .env(
                 "DBUS_SESSION_BUS_ADDRESS",
                 format!("unix:path={}", at.display()),
@@ -253,7 +296,7 @@ impl AKeyringOfOurOwn {
             .stdin(Stdio::piped())
             .stdout(Stdio::null())
             .stderr(Stdio::from(
-                std::fs::File::create(ours.place.join("keyring.err")).expect("a log can be made"),
+                std::fs::File::create(self.place.join("keyring.err")).expect("a log can be made"),
             ))
             .spawn()
             .expect(
@@ -266,9 +309,8 @@ impl AKeyringOfOurOwn {
                 .write_all(WHAT_THE_UNIT_PUTS_ON_STDIN)
                 .expect("the daemon is listening");
         }
-        ours.keyring = Some(keyring);
-        ours.wait_until_it_serves();
-        ours
+        self.keyring = Some(keyring);
+        self.wait_until_it_serves();
     }
 
     /// The bus it is on, as this crate checks one.

@@ -118,7 +118,6 @@ pub mod kept_answer_said;
 pub mod kept_outcome;
 mod kept_outcome_said;
 pub mod network_state;
-pub mod no_keyring_here;
 pub mod not_a_request;
 pub mod not_recorded;
 pub mod open_with;

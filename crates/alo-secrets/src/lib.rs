@@ -89,6 +89,7 @@ mod bus;
 mod kept_secret;
 mod refusing;
 mod store;
+mod the_keyring_when_it_is_asked;
 mod withheld;
 
 pub use application::{
@@ -98,4 +99,5 @@ pub use bus::{TheBus, WHERE_SESSIONS_ARE};
 pub use kept_secret::KeptSecret;
 pub use refusing::NotStored;
 pub use store::TheKeyring;
+pub use the_keyring_when_it_is_asked::TheKeyringWhenItIsAsked;
 pub use withheld::Withheld;
