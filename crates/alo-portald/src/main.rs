@@ -49,7 +49,7 @@ mod running {
     use alo_portald::ThisMachine;
     use alo_portals::the_machine::TheMachine;
     use alo_portals::{AnswersFile, Backend, Sandboxes, ThePlace};
-    use alo_secrets::{TheBus, TheKeyring};
+    use alo_secrets::{TheBus, TheKeyringWhenItIsAsked};
 
     /// Where a caller's sandbox is read from.
     const THE_PROCESSES: &str = "/proc";
@@ -70,10 +70,11 @@ mod running {
             }
         };
 
-        // **A machine with no keyring still opens files.**
+        // **A machine with no keyring still opens files, and a keyring that
+        // comes up late is still a keyring.**
         //
         // This exited here until 2026-10-16, and a booted machine showed what
-        // that costs: the image installs no Secret Service at all, so there
+        // that costs: the image installed no Secret Service at all, so there
         // was never a keyring to open, and the service could only crash-loop —
         // `restart counter is at 78` by the time anybody looked.
         //
@@ -82,22 +83,22 @@ mod running {
         // took down every portal, and a person could not open a file dialog on
         // a machine whose only fault was having nowhere to keep a secret.
         //
-        // Now the Secret portal answers `Unavailable` — the word that contract
-        // already had for *the keyring is not there* — and everything else
-        // works. An application asking for its secret is told no; it is not
-        // told the portal is missing, because it is not.
+        // The repair for that opened the keyring **here**, once, and kept
+        // whatever it found. That was the second half of the same fault, found
+        // on 2026-10-23: the keyring and this service are both user units and
+        // nothing orders them, so on a machine where this one started first
+        // every later request was told *there is no keyring* — about a machine
+        // that had one by then. A reading taken at one moment, published as a
+        // standing property.
+        //
+        // So the question is asked when a secret is asked for, which is the
+        // only moment its answer is about. Nothing above is given up: a
+        // missing keyring is still `Unavailable` on that one portal, every
+        // other portal is still unaffected, and this service still never
+        // exits. `alo_secrets::TheKeyringWhenItIsAsked` carries the cost of
+        // opening per request and why it is the right one.
         let keyring: Arc<dyn alo_portals::keeping_secrets::KeepsSecrets> =
-            match TheKeyring::opened(&bus) {
-                Ok(keyring) => Arc::new(keyring),
-                Err(why) => {
-                    eprintln!(
-                        "alo-portald: this machine has no keyring to answer the Secret portal \
-                         from ({why:?}), so a secret will be refused as unavailable. Every other \
-                         portal is unaffected and this service is staying up."
-                    );
-                    Arc::new(alo_portals::no_keyring_here::NoKeyringHere)
-                }
-            };
+            Arc::new(TheKeyringWhenItIsAsked::on(bus.clone()));
 
         // **Where the answers go is `alo-portals`' decision, not this crate's.**
         // `ThePlace` reads it off this login's own variables — the state home, or
