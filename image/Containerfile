@@ -963,6 +963,23 @@ LABEL alo.disk.file="alo-os.raw"
 LABEL org.opencontainers.image.version="2026.10"
 
 COPY image/usr/lib/systemd/system/ /usr/lib/systemd/system/
+# **And the units the person's own manager runs**, which is a second directory
+# and not a detail. `alo-keyring.service` moved here from `system/` so that it
+# is started by the manager that owns the session bus it serves — PID 1 may not
+# execute the keyring daemon, and a system unit cannot reach `/run/user/1000`.
+#
+# **This line was missing when that move was made**, and the image build is
+# what caught it: the unit was in the tree, the `chmod` and
+# `systemctl --global enable` lines named it, and nothing had put it in the
+# image, so the build stopped at
+# `chmod: cannot access '/usr/lib/systemd/user/alo-keyring.service'`.
+#
+# The gates did not catch it and could not: **they do not build the image.** A
+# green suite says the code is right about a machine; only building says the
+# machine has the code. That is this repository's *a check that stands in for
+# the thing is not the thing*, in the one place where the thing is a file being
+# somewhere.
+COPY image/usr/lib/systemd/user/ /usr/lib/systemd/user/
 COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
 COPY image/usr/lib/tmpfiles.d/ /usr/lib/tmpfiles.d/
 # The greeter's PAM stack, which is what gives it a logind session and so a
