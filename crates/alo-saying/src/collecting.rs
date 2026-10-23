@@ -147,6 +147,7 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-proxy",
     "alo-record",
     "alo-recounting",
+    "alo-remembering",
     "alo-sessiond",
     "alo-setting-up",
     "alo-shortcuts",
@@ -390,6 +391,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         "alo-recounting",
         alo_recounting::declare_into,
     )?;
+    declare(
+        &mut vocabulary,
+        "alo-remembering",
+        alo_remembering::declare_into,
+    )?;
     declare(&mut vocabulary, "alo-sessiond", alo_sessiond::declare_into)?;
     declare(
         &mut vocabulary,
@@ -518,6 +524,7 @@ mod tests {
         ("alo-proxy", "proxy.the-proxy.none"),
         ("alo-record", "record.only-what-alo-did"),
         ("alo-recounting", "recounting.nothing-to-tell"),
+        ("alo-remembering", "remembering.level.not-read"),
         ("alo-sessiond", "signing-in.not-opened"),
         ("alo-setting-up", "setup.the-question"),
         ("alo-shortcuts", "shortcuts.action.the-agent"),
@@ -642,6 +649,7 @@ mod tests {
             alo_proxy::proxy_words().unwrap().how_many(),
             alo_record::record_words().unwrap().how_many(),
             alo_recounting::recounting_words().unwrap().how_many(),
+            alo_remembering::remembering_words().unwrap().how_many(),
             alo_sessiond::sessiond_words().unwrap().how_many(),
             alo_setting_up::setting_up_words().unwrap().how_many(),
             alo_shortcuts::shortcut_words().unwrap().how_many(),

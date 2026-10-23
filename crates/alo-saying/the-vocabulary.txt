@@ -1619,6 +1619,16 @@ recounting.outcome.the-grants-said-no	the agent asked to do this and it was refu
 recounting.outcome.the-person-said-no	the agent asked to do this and the person at this machine said no
 recounting.outcome.updated	this machine started on an updated version of its system, after the person restarted it
 recounting.outcome.workspace-opened	the person at this machine opened a workspace found on the network
+remembering.level.a-link	{path} is a link to somewhere else, and this is read only as a real file, so this machine does not know how you want code run
+remembering.level.from-a-newer-alo-os	{path} was written by a newer alo OS than this one, so this machine does not know how you want code run
+remembering.level.no-such-level	{path} says {said}, which is not one of the three levels, so this machine does not know how you want code run
+remembering.level.not-read	{path} could not be read, so this machine does not know how you want code run
+remembering.level.not-the-shape	{path} is not the shape this file takes, so this machine does not know how you want code run
+remembering.level.not-written	{path} could not be written, so how code runs has not been changed
+remembering.level.not-written-down	the level you chose could not be written down, so how code runs has not been changed
+remembering.level.says-nothing	{path} is there and says no level, so this machine does not know how you want code run
+remembering.level.somebody-elses	{path} belongs to somebody else, so this machine does not know how you want code run
+remembering.level.writable-by-others	{path} can be changed by others on this machine, so this machine does not know how you want code run
 setup.choice.not-at-all	not at all
 setup.choice.not-at-all.is	nothing answers questions, and everything else on this computer works the same way
 setup.choice.on-a-machine-on-this-network	on a machine on your network

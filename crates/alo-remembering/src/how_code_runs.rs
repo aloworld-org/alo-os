@@ -69,7 +69,16 @@ pub const THE_LEVEL: &str = "/var/lib/alo/how-code-runs.toml";
 /// refuses about the text, including a file that says no level at all.
 pub fn the_level_remembered(at: &Path) -> Result<Option<HowCodeRuns>, NotRemembered> {
     match read_believed(at) {
-        Ok(text) => Ok(Some(crate::the_level::read(&text)?)),
+        Ok(text) => match crate::the_level::read(&text) {
+            Ok(chose) => Ok(Some(chose)),
+            // **The path is attached here and nowhere else.** `the_level` reads
+            // text and does not know which file it came from; every sentence
+            // for this refusal names the file, so the reader supplies it.
+            Err(why) => Err(NotRemembered::NotTheLevel {
+                at: at.to_owned(),
+                why,
+            }),
+        },
         // **The one arm that is not a failure.** Nothing has been chosen on
         // this machine, which every other refusal is deliberately told apart
         // from.
@@ -86,7 +95,10 @@ pub fn the_level_remembered(at: &Path) -> Result<Option<HowCodeRuns>, NotRemembe
 /// folder that is not there, which is refused rather than made — and
 /// [`NotRemembered::NotTheLevel`] for a level that cannot be written down.
 pub fn the_level_kept(at: &Path, chose: HowCodeRuns) -> Result<(), NotRemembered> {
-    let text = crate::the_level::written(chose)?;
+    let text = crate::the_level::written(chose).map_err(|why| NotRemembered::NotTheLevel {
+        at: at.to_owned(),
+        why,
+    })?;
     replaced_whole(at, &text)
 }
 
@@ -198,9 +210,10 @@ mod tests {
         std::fs::set_permissions(&at, std::fs::Permissions::from_mode(OURS_ALONE)).unwrap();
         assert!(matches!(
             the_level_remembered(&at),
-            Err(NotRemembered::NotTheLevel(
-                crate::the_level::NotTheLevel::SaysNothing
-            ))
+            Err(NotRemembered::NotTheLevel {
+                why: crate::the_level::NotTheLevel::SaysNothing,
+                ..
+            })
         ));
     }
 
