@@ -370,9 +370,28 @@ mod running {
                 "alo-desktop: the status area's readings — {}",
                 missing.said()
             );
-            let strings = alo_strings::Strings::of(
-                alo_saying::everything_this_machine_can_say().map_err(|why| why.to_string())?,
-            );
+            // **`alo_shell::what_this_machine_can_say`, not
+            // `alo_saying::everything_this_machine_can_say`.**
+            //
+            // The second reads the shipped bundle and nothing else. The first
+            // reads it and then adds `alo-shell`'s **own** words, which
+            // `alo-saying` cannot collect — that crate is a dependency of
+            // `alo-shell` and a dependency cannot point both ways.
+            //
+            // **Found by signing in**, on 2026-10-23. Settings drew
+            // `«shell.provider.adding»` where it should have said *Add a
+            // provider*: a person on a fresh machine met a raw key in the one
+            // row that lets them make this machine answer their questions.
+            // `alo-compositor` has always called the first of these and this
+            // process the second, so the vocabulary was whole before sign-in
+            // and short after it.
+            //
+            // Nothing in `alo-shell` was wrong — the words were declared and
+            // tested. This process built its `Strings` by the other road, which
+            // is the fault `booting.rs` already names about a different file:
+            // *declared nowhere but in an example, which means its strings have
+            // never been sayable on a real machine.*
+            let strings = alo_shell::what_this_machine_can_say().map_err(|why| why.to_string())?;
             // **The indicator is told before the first frame, including that
             // nothing is leaving.** A desktop whose indicator has never been
             // told anything is refused before any of it is drawn, because
