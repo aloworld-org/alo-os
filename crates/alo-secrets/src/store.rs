@@ -38,6 +38,14 @@ pub(crate) const PROVIDERS: &str = "dev.alo.Provider";
 /// What the reference itself is filed under.
 const REFERRED_TO_AS: &str = "reference";
 
+/// What a person sees against the item if they open their keyring with another
+/// program.
+///
+/// **Not the reference**, which is a name this product chose and means nothing
+/// to them; and not the provider's name, because the label is written once and
+/// a provider can be renamed. It says what the item is.
+const THE_LABEL_A_PERSON_READS: &str = "a provider key kept by alo OS";
+
 /// The person's keyring, open on a bus this crate chose.
 pub struct TheKeyring {
     /// The service, holding the connection it was handed.
@@ -121,6 +129,77 @@ impl TheKeyring {
         // is not logged, not returned on the error path, and not kept.
         let said = std::str::from_utf8(&held).map_err(|_| NotStored::Missing)?;
         Secret::typed(said).map_err(|_| NotStored::Missing)
+    }
+
+    /// Keep this key under this reference, replacing whatever was there.
+    ///
+    /// **The other half of [`Self::look_up`], and this crate had only one of
+    /// them until 2026-10-22.** A person could not add a provider to their own
+    /// machine, because there was nowhere to put its key: the reading side was
+    /// finished, encrypted and tested against a real `gnome-keyring-daemon`,
+    /// and nothing anywhere in alo OS could write a secret. `alo-setting-up`
+    /// already modelled *a provider the person is adding here* and
+    /// `alo_choosing::Choosing::setting_up` already wrote the two halves of the
+    /// settings file; the key itself had no home.
+    ///
+    /// # Replacing rather than adding a second
+    ///
+    /// `create_item` is asked to replace, so a person who pastes a new key
+    /// over an old one has one key afterwards. Two items under one reference
+    /// would make [`Self::look_up`] answer with whichever the service returned
+    /// first — a machine that works today and stops tomorrow for no reason the
+    /// person could see.
+    ///
+    /// # The attributes are [`Self::look_up`]'s, read from the same constants
+    ///
+    /// A key filed under anything else is a key this machine cannot find
+    /// again, which is the one way this function can appear to work and not.
+    /// Both sides name `FILED_UNDER`, `PROVIDERS` and `REFERRED_TO_AS` rather
+    /// than spelling them, so they cannot drift apart.
+    ///
+    /// # Errors
+    ///
+    /// [`NotStored::Locked`] when the collection will not open — **and nothing
+    /// is unlocked here**, for [`Self::look_up`]'s reason: unlocking is a
+    /// person answering a prompt and not a daemon deciding for them.
+    /// [`NotStored::Denied`] when the service refuses this caller, and
+    /// [`NotStored::Unavailable`] when there is no service to ask.
+    pub fn keep(&self, named: &SecretRef, key: &Secret) -> Result<(), NotStored> {
+        let collection = self
+            .service
+            .get_default_collection()
+            .map_err(as_not_stored)?;
+        // **Refused before it is written, not after.** A locked collection that
+        // accepted a write would prompt the person in the middle of a settings
+        // screen, and a daemon answering that prompt for them is the thing the
+        // reading side refuses to do.
+        if collection.is_locked().map_err(as_not_stored)? {
+            return Err(NotStored::Locked);
+        }
+        let mut filed = HashMap::new();
+        filed.insert(FILED_UNDER, PROVIDERS);
+        filed.insert(REFERRED_TO_AS, named.as_str());
+        // **The bytes are lent, not taken.** `Secret` has no accessor by
+        // design; `kept_by` hands them to this one write and its success type
+        // is `()`, so nothing here can carry a key back out.
+        key.kept_by(|bytes| {
+            collection
+                .create_item(
+                    // What a person sees if they open their keyring with
+                    // another program.
+                    THE_LABEL_A_PERSON_READS,
+                    filed,
+                    bytes,
+                    // Replace: see above.
+                    true,
+                    // The content type a Secret Service item carries. A key is
+                    // text a person pasted, and saying so is what lets another
+                    // keyring program show it rather than offer to save a file.
+                    "text/plain",
+                )
+                .map_err(as_not_stored)?;
+            Ok(())
+        })
     }
 
     /// The service, for the other door onto the same keyring: an

@@ -250,6 +250,33 @@ pub trait TheDesktop {
         None
     }
 
+    /// Save a provider a person has just filled in, and say whether it took.
+    ///
+    /// **Asked rather than done here, for [`Self::a_task_for`]'s reason
+    /// exactly.** Saving is two writes to this machine — a key to the keyring
+    /// and a provider to the person's own settings — and
+    /// `tests/settings_source.rs` holds the whole shell to never naming a
+    /// settings file. A compositor that opened a keyring would be a compositor
+    /// measuring. So a screen collects what was typed and this carries the
+    /// asking; `alo-desktop` is where both writes happen, and the order they
+    /// happen in is argued there.
+    ///
+    /// `false` is the honest default and agrees with [`Self::a_task_for`]'s
+    /// [`None`]: a desktop that has not been taught to save cannot, and saying
+    /// so is what lets a screen tell a person it did not happen rather than
+    /// show them a provider that is not there.
+    ///
+    /// **Whether it worked, and not why.** The three ways it fails are named
+    /// where they are produced; what a surface needs here is whether to clear
+    /// the form. A reason crossing this boundary would be a refusal from a
+    /// crate this one may not read, in English this one did not write.
+    fn a_provider_was_filled_in(
+        &mut self,
+        _saving: &alo_setting_up::a_provider_is_filled_in::WhatToSave,
+    ) -> bool {
+        false
+    }
+
     /// Whether anything on this machine is chosen to answer a question.
     ///
     /// **Asked without a request, because the answer does not depend on one.**
@@ -1018,6 +1045,28 @@ impl LoopInput for Desk<'_> {
         // would type into a surface that could never reply. The request is not
         // queued either — queueing it would mean a window appearing later for
         // something they typed and gave up on.
+        // **What a person pasted, put in the field, here.** Asked once a frame
+        // and almost always answering with nothing — the selection belongs to
+        // another client, which writes when it gets round to it, so the press
+        // of Control+V and the characters arriving are different frames. See
+        // `crate::what_is_on_the_clipboard` for why none of it waits.
+        let _ = server.that_paste_arrived();
+
+        // **And a provider a person pressed Enter on is saved, here.** Taken
+        // rather than read, so one Enter saves once however many frames pass;
+        // and asked of the desktop rather than done, because saving is two
+        // writes to this machine and this crate shows rather than measures.
+        //
+        // **The form is closed only when it worked.** A keyring that is locked
+        // or a settings file that will not read both leave what they typed on
+        // the screen — which is the one moment a person most needs their key
+        // to still be there, because they cannot see it to type it again.
+        if let Some(saving) = server.take_the_provider_to_save()
+            && self.desktop.a_provider_was_filled_in(&saving)
+        {
+            server.that_provider_was_saved();
+        }
+
         for request in server.take_what_was_asked_of_alo() {
             if let Some(task) = self.desktop.a_task_for(&request) {
                 let which = server.tasks_mut().and_now_this_one(task);
@@ -1752,6 +1801,11 @@ impl LoopInput for Desk<'_> {
                 contrast: frame.look.contrast(),
             },
             std::time::SystemTime::now(),
+            // **Read off the server**, which is where the form lives. A
+            // literal `None` here would draw the rows behind a form a person
+            // is typing into -- the same shape of mistake `market` made at a
+            // frame-building site and that cost a release.
+            server.a_provider_is_being_filled_in(),
         )?;
         // **The frame is drawn through the per-display road, with one display
         // on it.** `more-than-one-display-plan.md` task 4. This desk builds one

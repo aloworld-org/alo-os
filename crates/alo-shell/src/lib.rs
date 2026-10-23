@@ -82,7 +82,7 @@ mod a_chord_reaches_its_action;
 mod a_click_brings_a_window_back;
 mod a_display_has_gone;
 mod a_frame_per_display;
-/// Typing into a task window's reply box.
+pub mod a_key_fills_in_a_provider;
 pub mod a_key_reaches_a_task_window;
 mod a_key_reaches_settings;
 mod a_key_reaches_the_docks_surfaces;
@@ -93,6 +93,9 @@ mod a_person_pins_and_unpins;
 mod a_press_in_the_menu;
 mod a_press_on_an_edge;
 mod a_press_on_the_sign_in_screen;
+mod a_provider_being_added_is_drawn;
+pub mod a_provider_is_added_in_settings;
+/// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;
 mod access_bus;
 mod access_contrast;
@@ -179,6 +182,7 @@ mod dock_raster;
 /// rasterised with alpha because neither is a rectangle.
 mod dock_surface;
 mod the_keyboard_on_the_docks_surfaces;
+pub mod what_is_on_the_clipboard;
 mod where_the_docks_surface_is;
 
 /// Where the Dock is on one display: the band on its edge and the slots
@@ -383,6 +387,7 @@ pub mod the_machines_keyboard;
 pub mod the_markets_words;
 mod the_panel_reveals;
 mod the_pointer_in_pixels;
+pub mod the_providers_words;
 mod the_session_holds_its_screens;
 /// The task windows a person opened by asking alo for something.
 pub mod the_tasks_a_person_opened;

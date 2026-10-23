@@ -22,6 +22,12 @@ alo-models = { path = "../alo-models" }
 # Everything a person reads: the four choices, the line beside each, and every
 # way an answer goes nowhere.
 alo-strings = { path = "../alo-strings" }
+# Graphemes, so one backspace in a form takes back one thing a reader calls a
+# letter. The same crate and the same reason `alo-dock` gives for an
+# application's first letter: a `char` is half a letter in most of the world's
+# scripts, and cutting one wrongly breaks it for exactly the languages with the
+# least software in them already.
+unicode-segmentation = { workspace = true }
 
 # One type only: `WordsError`, which is alo OS's own list contradicting itself
 # and keeps its English for whoever is fixing the list. Nothing a person reads

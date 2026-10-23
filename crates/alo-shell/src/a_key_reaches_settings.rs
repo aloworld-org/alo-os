@@ -137,6 +137,17 @@ pub(crate) fn the_key_settings_took(
 ) -> Result<(), InputError> {
     match server.settings_key(key.code, key.state, key.time) {
         Ok(Some(press)) => {
+            // **The form first, when there is one.** A press read as a row's
+            // while somebody is typing into a field is the fault
+            // `crate::a_key_fills_in_a_provider` exists to prevent: backspace
+            // would put their shortcut back to what it ships with while they
+            // thought they were correcting a typo in an API key.
+            //
+            // `None` means no form is open, and only then does the window see
+            // the press at all.
+            if server.a_key_fills_in_the_provider(press.filling).is_some() {
+                return Ok(());
+            }
             the_press_is_carried_out(server, press, strings);
             Ok(())
         }
@@ -177,6 +188,14 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
         },
     );
     server.settings = window;
+    // **The form is opened here and not in the window**, because the keys that
+    // fill it in reach the seat rather than the window — see
+    // `crate::a_provider_is_added_in_settings`, where the form being open is
+    // itself the mode. The window's part is to say a person asked.
+    if let Some(SettingsDid::AddingAProvider) = did {
+        server.a_provider_is_added();
+        return;
+    }
     if let Some(SettingsDid::Kept(SettingsSection::Shortcuts, SettingsKept::Written)) = did
         && let Some(bound) = server.settings.shortcuts().cloned()
     {

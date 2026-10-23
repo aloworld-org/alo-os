@@ -155,6 +155,10 @@ fn frame_pictures(
         size,
         settings.look,
         settings.now,
+        // **Nothing, and this one is not that mistake.** The nested road draws
+        // a Settings window for a check, and nothing in it opens a form --
+        // there is no `Server` here to hold one.
+        None,
     )?;
     let question = match approval {
         Some(approval) => Some(crate::approval_raster::picture(

@@ -697,6 +697,8 @@ dependencies = [
  "alo-appearance",
  "alo-applications",
  "alo-arranging",
+ "alo-asking",
+ "alo-capability",
  "alo-changing",
  "alo-choosing",
  "alo-dividing",
@@ -707,12 +709,16 @@ dependencies = [
  "alo-indicator",
  "alo-installed",
  "alo-keyboards",
+ "alo-keyring-fixture",
+ "alo-models",
  "alo-networks",
  "alo-portals",
  "alo-power",
  "alo-put-aside",
  "alo-remembering",
  "alo-saying",
+ "alo-secrets",
+ "alo-setting-up",
  "alo-shell",
  "alo-shortcuts",
  "alo-software",
@@ -1122,6 +1128,7 @@ name = "alo-keyring-fixture"
 version = "0.0.1"
 dependencies = [
  "alo-secrets",
+ "base64 0.22.1",
  "rustix 1.1.4",
  "secret-service",
  "zbus",
@@ -1659,6 +1666,7 @@ dependencies = [
  "alo-saying",
  "alo-strings",
  "thiserror 2.0.20",
+ "unicode-segmentation",
 ]
 
 [[package]]

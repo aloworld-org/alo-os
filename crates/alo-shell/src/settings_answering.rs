@@ -229,6 +229,27 @@ impl AnsweringSection {
         )
     }
 
+    /// Whether a provider could be added here at all.
+    ///
+    /// **A settings file that reads, and nothing else.** Unlike every other
+    /// row in this section it does not depend on what the person already has —
+    /// that is the point of it, and a row appearing once somebody had a
+    /// provider would be a door that opens after they are through it.
+    ///
+    /// What it does depend on is somewhere to write the answer. A session with
+    /// no folder cannot keep one, and
+    /// `a_session_with_no_folder_offers_nothing_it_could_not_keep` is the test
+    /// that caught this row being offered there — which would have been a form
+    /// a person filled in and could not save, with their key already in the
+    /// keyring and nothing naming it.
+    ///
+    /// A file that is there and will not read is refused too, for ADR 0038's
+    /// reason and `Choosing::at`'s: writing over it would take away the edit
+    /// that was about to fix it.
+    pub(crate) const fn a_provider_can_be_added(&self) -> bool {
+        matches!(&self.choosing, Some(Ok(_)))
+    }
+
     /// The person said whether alo may use another, through `alo-choosing`'s
     /// door.
     pub(crate) fn say_whether_another_may_be_used(

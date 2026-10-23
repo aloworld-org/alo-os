@@ -46,6 +46,14 @@ alo-appearance = { path = "../alo-appearance" }
 # like the battery and the network above.
 alo-arranging = { path = "../alo-arranging" }
 alo-choosing = { path = "../alo-choosing" }
+# The keyring a provider's key is kept in, and the flow that says what a
+# person typed. Both are here rather than in alo-shell because saving is a
+# writing of the machine, and that crate shows rather than measures.
+alo-secrets = { path = "../alo-secrets" }
+# The key and the reference to it, which WhatToSave carries and this binary
+# has to be able to name on the way to the keyring.
+alo-models = { path = "../alo-models" }
+alo-setting-up = { path = "../alo-setting-up" }
 # The task a request becomes.
 alo-tasks = { path = "../alo-tasks" }
 alo-shortcuts = { path = "../alo-shortcuts" }
@@ -93,3 +101,28 @@ path = "src/main.rs"
 
 [lints]
 workspace = true
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+# A real Secret Service on a bus nobody else can reach, so the save road is
+# measured against the implementation a machine would really have rather than
+# against a stub whose refusals we wrote ourselves.
+alo-keyring-fixture = { path = "../alo-keyring-fixture" }
+
+# **The door that shows an egress, for the one test that makes a real request.**
+#
+# `a_provider_a_person_added_really_answers_tests.rs` asks a live provider
+# whether the key this road saved works. It reached `alo_models::Trying`
+# directly until 2026-10-22, which is the wire with no indicator — caught by
+# `alo-asking`'s own guard, *nothing that ships reaches the wire except through
+# the door that shows it*. `Vetting` is that door.
+#
+# **Dev only, and the direction matters.** `alo-desktop` does not test a
+# provider as part of what it does; it saves one. A `--package` release build
+# compiles no dev-dependency, so this links nothing into the shipped binary and
+# says nothing about whether the desktop may depend on the asking crate.
+alo-asking = { path = "../alo-asking" }
+
+# Whose authority an egress is under, which `Vetting::under` requires by name
+# so that what the indicator shows and what a record says cannot disagree about
+# who asked. Dev only, for the same reason as `alo-asking` above.
+alo-capability = { path = "../alo-capability" }

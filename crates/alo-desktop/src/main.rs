@@ -46,6 +46,9 @@
 mod readings;
 
 #[cfg(target_os = "linux")]
+mod a_provider_a_person_added_is_saved;
+
+#[cfg(target_os = "linux")]
 mod the_artwork_each_application_has;
 
 #[cfg(target_os = "linux")]
@@ -541,6 +544,64 @@ mod running {
             Some(alo_tasks::ATask::asked_for(request, answers))
         }
 
+        /// Save a provider a person filled in: the key, then the settings.
+        ///
+        /// **The same two environment variables `a_task_for` reads, in the
+        /// same order**, so the file this writes is the file that is read back
+        /// when they press Enter. Two different readings of where settings
+        /// live is how a machine saves a provider it cannot then find.
+        ///
+        /// The keyring is opened per save rather than held. A person adds a
+        /// provider once or twice in the life of a machine, and a connection
+        /// kept open for that is one more thing to be wrong when they finally
+        /// do — `TheBus::of_this_process` takes the uid from the kernel, so
+        /// opening it here is opening the person's own.
+        fn a_provider_was_filled_in(
+            &mut self,
+            saving: &alo_setting_up::a_provider_is_filled_in::WhatToSave,
+        ) -> bool {
+            let Some(at) = alo_choosing::where_it_is(
+                std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+                std::env::var_os("HOME").as_deref(),
+            ) else {
+                eprintln!("alo-desktop: this person has no settings file to save a provider in");
+                return false;
+            };
+            let Ok(bus) = alo_secrets::TheBus::of_this_process() else {
+                eprintln!("alo-desktop: this session has no bus, so there is no keyring to ask");
+                return false;
+            };
+            let Ok(keyring) = alo_secrets::TheKeyring::opened(&bus) else {
+                // **The machine this is most likely to be**, so it says which:
+                // an image with no Secret Service is exactly what ADR 0022
+                // named as the first thing standing in the way, and it stayed
+                // that way until `alo-keyring.service` was added.
+                eprintln!(
+                    "alo-desktop: there is no keyring on this machine, so a provider's key has \
+                     nowhere to go"
+                );
+                return false;
+            };
+            match crate::a_provider_a_person_added_is_saved::a_provider_a_person_added_is_saved(
+                &keyring, &at, saving,
+            ) {
+                Ok(()) => true,
+                Err(why) => {
+                    // **Said on the error stream and not shown**, which is this
+                    // binary's own shape: the words a person reads belong to
+                    // the crate that owns them, and a surface that will say
+                    // this is separate work. What is here is enough for
+                    // somebody reading the service log to know which of the
+                    // writes did not happen.
+                    eprintln!(
+                        "alo-desktop: that provider was not saved -- {}",
+                        why.what_did_not_happen()
+                    );
+                    false
+                }
+            }
+        }
+
         /// The same reading, one moment earlier and without a request.
         ///
         /// **The same two calls, deliberately, and not a third opinion.**
@@ -553,6 +614,12 @@ mod running {
         ///
         /// It is this binary's for `a_task_for`'s reason, the two environment
         /// variables, and the shell still never reads a settings file.
+        ///
+        /// **And it is now a third reader of that pair**, which is worth saying
+        /// where somebody will meet it: `a_provider_was_filled_in` above writes
+        /// the file these two read. All three locate it the same way, and a
+        /// change to any one of them has to move the other two or this machine
+        /// will save a provider it cannot find.
         fn anything_is_chosen_to_answer(&self) -> bool {
             let Some(at) = alo_choosing::where_it_is(
                 std::env::var_os("XDG_CONFIG_HOME").as_deref(),

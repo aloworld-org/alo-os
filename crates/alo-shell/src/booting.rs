@@ -231,6 +231,12 @@ pub fn what_this_machine_can_say() -> Result<Strings, WouldNotStand> {
         .map_err(|why| WouldNotStand::Words(why.to_string()))?;
     crate::first_start_words::declare_first_start_words(&mut vocabulary)
         .map_err(|why| WouldNotStand::Words(why.to_string()))?;
+    // **The form that adds a provider**, declared here for the reason the note
+    // above gives: a sentence a surface can say and this function has not
+    // declared is a sentence never sayable on a real machine, which is the
+    // fault that note records this repository already having once.
+    crate::the_providers_words::declare_the_providers_words(&mut vocabulary)
+        .map_err(|why| WouldNotStand::Words(why.to_string()))?;
     Ok(Strings::of(vocabulary))
 }
 

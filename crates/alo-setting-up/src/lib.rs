@@ -107,6 +107,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod a_provider_is_filled_in;
 pub mod agent;
 pub mod answering;
 pub mod nudging;

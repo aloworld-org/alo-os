@@ -128,6 +128,43 @@ impl Secret {
     pub fn carried_by<Any>(&self, request: RequestBuilder<Any>) -> RequestBuilder<Any> {
         request.header("authorization", self.bearer())
     }
+
+    /// Hand this key to one keyring write, and to nothing else.
+    ///
+    /// **The second of exactly two things a key may do**, added on 2026-10-22
+    /// because the first was not enough to finish the product: a person could
+    /// test a provider and never save it. `alo-secrets` could `look_up` a key
+    /// and had no way to put one there, so a machine could use a key stored by
+    /// some other means and no person could ever store one. ADR 0022 settles
+    /// that a provider's key lives in the Secret Service; this is how it gets
+    /// in.
+    ///
+    /// # Why this does not undo the rule this file opens with
+    ///
+    /// The rule is that a key does not become a value another crate holds.
+    /// **It cannot be returned through this**: the closure's success type is
+    /// `()`, so no shape of call hands the bytes back. What a caller learns is
+    /// whether the write failed and why.
+    ///
+    /// That is narrower than an accessor and wider than nothing, and the
+    /// honest description of the difference is this — a caller determined to
+    /// keep the bytes could copy them into something it already holds, and no
+    /// type system prevents that here or in [`Self::carried_by`], where a
+    /// request builder could be a fake that records its headers. What the
+    /// signature does is make keeping them deliberate and visible at the call
+    /// site rather than ordinary.
+    ///
+    /// **And `alo-models` does not learn what a keyring is**, which is the
+    /// other half of why it is shaped this way: the write belongs to the
+    /// caller, and this lends it the bytes for the length of that one call,
+    /// exactly as `carried_by` lends a request its header.
+    ///
+    /// # Errors
+    ///
+    /// Whatever the write answered with. This adds none of its own.
+    pub fn kept_by<E>(&self, keep: impl FnOnce(&[u8]) -> Result<(), E>) -> Result<(), E> {
+        keep(self.0.as_bytes())
+    }
 }
 
 /// Says that there is a key, and nothing about what it is.

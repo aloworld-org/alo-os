@@ -24,7 +24,11 @@ use alo_shortcuts::Modifier;
 
 /// A key that means `key` and makes no chord.
 fn key(key: SettingsKey) -> SettingsPress {
-    SettingsPress { key, chord: None }
+    SettingsPress {
+        key,
+        chord: None,
+        filling: crate::a_key_fills_in_a_provider::FillingInKey::Nothing,
+    }
 }
 
 /// A press that is the chord `held` + `pressed` and means nothing to the list.
@@ -32,6 +36,7 @@ fn chord(held: Modifiers, pressed: Key) -> SettingsPress {
     SettingsPress {
         key: SettingsKey::Nothing,
         chord: Some((held, pressed)),
+        filling: crate::a_key_fills_in_a_provider::FillingInKey::Nothing,
     }
 }
 
@@ -117,6 +122,12 @@ fn every_setting_the_machine_has_is_in_one_window() {
                 model: "harbour-small".to_owned(),
             }),
             &SettingsRow::Answer(SettingsChoice::NotAtAll),
+            // **Beneath the four ways and above the question about them**,
+            // because it is how the list of ways gets longer. It is the one
+            // row here that does not depend on what the person already has —
+            // every other appears only for something they have, which is why
+            // a fresh machine was offered *not at all* and nothing else.
+            &SettingsRow::AddAProvider,
             // **Beneath the four**, and only because this person chose a
             // provider: *Unless the person says otherwise, in Settings*. The
             // test below asserts they are absent for somebody who chose a
@@ -207,15 +218,28 @@ fn a_way_with_nothing_to_choose_is_absent_rather_than_disabled() {
         .filter(|section| section.section == SettingsSection::Answering)
         .flat_map(|section| section.lines)
         .collect();
-    assert_eq!(lines.len(), 1, "{lines:#?}");
+    // **The ways, and not every line in the section.** `Add a provider` is a
+    // line here too and is deliberately not a way: it is the one row that does
+    // not depend on what the person already has, which is the whole reason it
+    // exists — a fresh machine could otherwise be told only *not at all*, with
+    // no road to anything else. This test is about the four ways being absent
+    // rather than drawn and disabled, so it asks about those.
+    let ways: Vec<_> = lines
+        .iter()
+        .filter(|line| matches!(line.row, Some(SettingsRow::Answer(_))))
+        .collect();
+    assert_eq!(ways.len(), 1, "{lines:#?}");
     assert_eq!(
-        lines[0].row,
+        ways[0].row,
         Some(SettingsRow::Answer(SettingsChoice::NotAtAll))
     );
     assert!(
-        !lines[0].chosen,
-        "nobody has answered, so nothing is chosen"
+        lines
+            .iter()
+            .any(|line| line.row == Some(SettingsRow::AddAProvider)),
+        "and the one row always offered is here: {lines:#?}"
     );
+    assert!(!ways[0].chosen, "nobody has answered, so nothing is chosen");
 
     // Every line that is not a row is a way to answer with a choice under it.
     let machine = a_persons_machine("absent");

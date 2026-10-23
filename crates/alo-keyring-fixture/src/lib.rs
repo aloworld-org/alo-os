@@ -37,7 +37,10 @@
 //! - **`--components=secrets`** and nothing else: no pkcs11, no ssh agent.
 //! - **Never `--replace`.** That is the flag that would make this fixture the
 //!   machine's normal keyring, which is exactly what it must not become.
-//! - **A synthetic password**, which unlocks nothing that exists anywhere else.
+//! - **The password the image's own unit sends**, which is one newline and so
+//!   unlocks nothing that exists anywhere else — see
+//!   [`WHAT_THE_UNIT_PUTS_ON_STDIN`], which is where that stopped being a
+//!   synthetic password of the fixture's own and why.
 //!
 //! # Who uses it, and why it is a crate
 //!
@@ -70,11 +73,36 @@ use std::time::{Duration, Instant};
 
 use alo_secrets::TheBus;
 
-/// The password this fixture unlocks its own keyring with.
+/// What the image's own unit puts on the daemon's standard input: one newline,
+/// which is a password of no characters.
 ///
-/// Synthetic, and a credential to nothing: it exists for the length of one test
-/// and unlocks a keyring made in a temporary directory.
-pub const A_SYNTHETIC_PASSWORD: &str = "a-fixture-password-not-a-credential";
+/// **It is the only password this fixture has, because a default can be
+/// silently wrong everywhere.** Until 2026-10-22 the convenient constructor fed
+/// a synthetic password of its own, which
+/// `image/usr/lib/systemd/system/alo-keyring.service` never sends, and **38
+/// call sites across `alo-agentd`, `alo-desktop` and `alo-secrets` proved
+/// things about a keyring this machine does not have.** The unit meanwhile
+/// shipped `StandardInput=null` — end of file, which is not an empty password —
+/// and no test could see it, because no test ran the configuration that ships.
+/// Convenience produced the divergence, so convenience is what moved.
+///
+/// `tests/the_fixture_agrees_with_the_unit.rs` reads `StandardInputData=` out
+/// of the unit, decodes it, and asserts it is these bytes — so the two cannot
+/// drift apart again in either direction.
+///
+/// # What the 40 tests using this do and do not prove
+///
+/// They all now run the configuration that ships, which is worth having. **They
+/// are not the guard, and must not be read as one.** Measured on 2026-10-22:
+/// `alo-agentd` gives 13 suites and 0 failures with the synthetic password and
+/// 13 suites and 0 failures with this one, so **not one of the 40 is sensitive
+/// to the setting.** They were green on a password that does not ship and they
+/// are green on the byte that does — which is exactly how the bug survived
+/// them. The only things that fail when this is wrong are
+/// `the_fixture_agrees_with_the_unit.rs` here,
+/// `alo-image/tests/the_keyring_is_unlocked_with_an_empty_password.rs`, and
+/// `alo-secrets/tests/a_keyring_unlocked_the_way_the_machine_unlocks_it.rs`.
+pub const WHAT_THE_UNIT_PUTS_ON_STDIN: &[u8] = b"\n";
 
 /// A keyring of this test's own: a bus, a daemon, and a place for both.
 pub struct AKeyringOfOurOwn {
@@ -96,7 +124,22 @@ pub struct AKeyringOfOurOwn {
 }
 
 impl AKeyringOfOurOwn {
-    /// Start one, or say plainly why this machine cannot.
+    /// Start one **unlocked the way this machine unlocks it**, or say plainly
+    /// why this machine cannot.
+    ///
+    /// The password is [`WHAT_THE_UNIT_PUTS_ON_STDIN`] — one newline, no
+    /// characters — because that is what the image's unit sends.
+    ///
+    /// **There is no constructor for a keyring with a password of its own**, and
+    /// that is deliberate rather than missing. `alo-secrets`'s
+    /// `application` module settles it: a collection is a unit of locking, so a
+    /// collection with its own password would be a second lock, which *where a
+    /// person's other secrets are, under the same lock* rules out — and making
+    /// one on a real keyring puts a password prompt on the screen. Every item
+    /// this machine files goes **inside the person's default collection**, the
+    /// one their sign-in unlocks. So the machine has one lock, this fixture
+    /// offers the one the machine has, and a constructor for the other would be
+    /// a shape with no product behind it.
     ///
     /// # Panics
     /// When `dbus-daemon` or `gnome-keyring-daemon` is not installed, naming
@@ -111,7 +154,7 @@ impl AKeyringOfOurOwn {
     ///
     /// Since every bus is started from a configuration file this is
     /// [`Self::started`] under the name the refusal tests read best by — same
-    /// isolation, same synthetic password, still never `--replace`.
+    /// isolation, same password, still never `--replace`.
     ///
     /// # Panics
     /// As [`Self::started`].
@@ -137,7 +180,7 @@ impl AKeyringOfOurOwn {
     }
 
     /// The three of them, which differ only in whether anything is put on the
-    /// bus.
+    /// bus. All are unlocked with [`WHAT_THE_UNIT_PUTS_ON_STDIN`].
     fn start(what: &str, serving: bool) -> Self {
         // Only characters a D-Bus address may carry unescaped: the socket
         // under this directory becomes one, and `(` from a thread id is exactly
@@ -220,7 +263,7 @@ impl AKeyringOfOurOwn {
         {
             let mut telling = keyring.stdin.take().expect("stdin was asked for");
             telling
-                .write_all(A_SYNTHETIC_PASSWORD.as_bytes())
+                .write_all(WHAT_THE_UNIT_PUTS_ON_STDIN)
                 .expect("the daemon is listening");
         }
         ours.keyring = Some(keyring);
