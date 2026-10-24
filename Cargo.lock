@@ -1625,6 +1625,7 @@ dependencies = [
  "alo-tasks",
  "alo-telling",
  "alo-terminal",
+ "alo-their-folders",
  "alo-turn",
  "serde",
  "thiserror 2.0.20",
@@ -1871,6 +1872,15 @@ dependencies = [
  "base64 0.22.1",
  "rustix 1.1.4",
  "tempfile",
+ "thiserror 2.0.20",
+]
+
+[[package]]
+name = "alo-their-folders"
+version = "0.0.1"
+dependencies = [
+ "alo-saying",
+ "alo-strings",
  "thiserror 2.0.20",
 ]
 

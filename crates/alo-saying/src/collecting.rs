@@ -158,6 +158,7 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-tasks",
     "alo-telling",
     "alo-terminal",
+    "alo-their-folders",
     "alo-turn",
 ];
 
@@ -417,6 +418,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         &mut vocabulary,
         "alo-terminal",
         alo_terminal::words::declare_into,
+    )?;
+    declare(
+        &mut vocabulary,
+        "alo-their-folders",
+        alo_their_folders::declare_into,
     )?;
     declare(&mut vocabulary, "alo-turn", alo_turn::declare_into)?;
     Ok(vocabulary)
