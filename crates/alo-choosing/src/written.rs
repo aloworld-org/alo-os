@@ -385,6 +385,23 @@ pub(crate) struct ProviderAsWritten {
     /// default does not cover.
     #[serde(default = "needs_a_key")]
     pub(crate) needs_a_key: bool,
+    /// **Which models this provider is known to offer**, as whoever added it
+    /// named them.
+    ///
+    /// Absent is none, which is what a provider added before this field
+    /// existed has. Nothing here asks a provider what it offers — that is a
+    /// request to the wire and `alo_asking::Vetting` is the only door to one —
+    /// so this is exactly what a person typed.
+    ///
+    /// **This field is the whole of a provider that was not written down.**
+    /// `alo_models::Provider` has carried `models` throughout; this form did
+    /// not, so a provider with a model went in and one without came back. The
+    /// round-trip check in `crate::writing` caught it and refused the write —
+    /// *the settings read back from the text written for them were different
+    /// settings* — measured on a booted machine on 2026-10-24, which is the
+    /// check doing exactly what it is for: a lossy write is refused rather
+    /// than made quietly.
+    pub(crate) models: Option<Vec<String>>,
 }
 
 /// What a provider that says nothing about a credential is taken to need.
@@ -410,7 +427,13 @@ impl ProviderAsWritten {
         // is where this provider's credential lives, and the file has nowhere
         // to say otherwise.
         let key = self.needs_a_key.then(|| a_key_for(&self.name));
-        Provider::checked(&self.name, &self.endpoint, region, key)
+        let provider = Provider::checked(&self.name, &self.endpoint, region, key)?;
+        // **The models come back as they went out**, which is what makes the
+        // round trip hold. `Provider::checked` does not take them.
+        Ok(Provider {
+            models: self.models.unwrap_or_default(),
+            ..provider
+        })
     }
 }
 
