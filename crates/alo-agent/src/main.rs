@@ -145,6 +145,13 @@ fn run() -> Result<ExitCode, String> {
     Ok(said(&happened))
 }
 
+/// How much of one step is worth putting in a service log.
+///
+/// A verb's answer can be `AStep::THE_MOST_OF_AN_ANSWER` — two thousand
+/// bytes — and eight of those is a reason nobody finds. This is a line a
+/// person reads, not the record: `alo-record` keeps the whole of it.
+const A_LINE_WORTH_READING: usize = 160;
+
 /// What happened, in words, and what the shell should make of it.
 ///
 /// **A change waiting is a success and not a failure**, which is the one of
@@ -180,6 +187,30 @@ fn said(happened: &WhatHappened) -> ExitCode {
                  again",
                 after.len()
             );
+            // **And what it tried, which this said nothing about.** Measured on
+            // a booted machine on 2026-10-24: a real question reached a real
+            // provider, eight rounds ran, and the only thing the machine said
+            // was the sentence above. The reason each round failed was built in
+            // `crate::driving` — `not a request: …` and the error — pushed onto
+            // the steps, and then reduced to a count.
+            //
+            // **The machine's side of each step, never the model's.** `asked`
+            // carries the person's words and whatever a verb read for them;
+            // this is what the daemon answered, which is a diagnosis.
+            // `AStep::what_came_back` carries the same argument.
+            //
+            // Cut at `A_LINE_WORTH_READING`, because a verb's answer can be
+            // two thousand bytes and eight of those in a service log is a
+            // reason nobody finds.
+            for (which, step) in after.iter().enumerate() {
+                let line = step.what_came_back();
+                let shown = line
+                    .char_indices()
+                    .nth(A_LINE_WORTH_READING)
+                    .map_or(line, |(at, _)| &line[..at]);
+                let cut = if shown.len() < line.len() { " …" } else { "" };
+                eprintln!("alo-agent:   step {}: {shown}{cut}", which + 1);
+            }
             ExitCode::FAILURE
         }
         WhatHappened::TheMachineCouldNotBeAsked { why, after } => {
