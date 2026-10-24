@@ -145,3 +145,56 @@ Two consequences worth writing down, because both are what the decision was for:
   measured under these words, so the rule could be applied without twelve entries
   falling silently to *not measured*. A decision of this shape taken before that
   measurement would have been a decision to blank the catalogue.
+
+## Amended 2026-10-24 — decision 2 names a fourth set, and a regrade is owed
+
+**Decision 2 said the set a turn shows is `OneExamplePerDoor`, because it was
+measured: 80 of 80 against 71 of 80.** That measurement stands and is not
+disputed. What this amendment adds is a fact the decision did not have.
+
+**Under `OneExamplePerDoor`, a question that needs no verb cannot be expressed
+at all.** The text opens *answer with one line of JSON and nothing else* and
+then offers exactly two shapes, `read` and `propose` — both of them verbs that
+act on this machine. There is no shape for an answer.
+
+`alo_agent::driving` is the other half and is not wrong either: a reply that is
+**not** JSON is taken as the answer in words, which is how a turn ends in an
+answer at all. So one half expects prose and the other forbids it.
+
+**Measured on a booted machine on 2026-10-24.** A real question — *what is the
+capital of uganda* — went through the alo Bar to a real provider with a real
+key. Eight rounds ran and the turn ended `ItRanOutOfRounds`. Each round the
+model answered with JSON that was not a request, because under these
+instructions nothing else was available to it.
+
+So the 80 of 80 is a measurement of **driving the verbs**. On answering a
+question the set it names scores nothing — not badly, inexpressibly. A
+measurement of one is not an answer about the other.
+
+### What changes
+
+`Instructions::SHOWN_TO_A_TURN` is `Instructions::AnsweringInWords`: everything
+`OneExamplePerDoor` says, plus one paragraph telling a model that a question it
+can simply answer is answered in plain words. The two differ by that paragraph
+and nothing else, held by a test, so anything a regrade finds is attributable
+to those four sentences.
+
+### What is owed, and the risk it has to measure
+
+**A regrade of the fixed ten under `answering-in-words`, on
+`qwen2.5-7b-instruct`** — the model the 80 of 80 was earned on. Any other model
+gives a number about a different thing and does not settle this.
+
+**The risk is specific and worth stating before anybody measures it**: the new
+paragraph could tempt a model to answer in words where it should have driven a
+verb — *"I cannot see your files"* instead of `list_folder`. That is the one
+way the 80 of 80 could degrade, and it is what the fixed ten would catch.
+
+**It is not graded on the machine that made this change**, which has no model:
+`ollama` reports `models=0`. The regrade belongs where a local model can run.
+
+**What was done instead, and it is not a grade.** The walk that follows this
+change asks the machine two questions: one needing no verb, which must be
+answered in words, and one needing a verb, which must still drive it. Two
+answers are evidence about the risk above and are **not** the fixed ten. They
+are recorded as what they are.
