@@ -85,6 +85,7 @@ mod a_frame_per_display;
 pub mod a_key_fills_in_a_provider;
 pub mod a_key_reaches_a_task_window;
 mod a_key_reaches_settings;
+mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
 mod a_key_reaches_the_market;
 mod a_key_types_into_more_apps;
@@ -378,6 +379,7 @@ pub mod the_application_door;
 pub mod the_application_doors_place;
 pub mod the_bar_finds;
 mod the_bars_pressable_slots;
+mod the_bars_seat;
 /// The Dock's composer as a field a person types a request into.
 pub mod the_composer_a_person_types_in;
 mod the_desk_is_reconciled;
