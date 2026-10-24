@@ -53,7 +53,7 @@ use std::path::Path;
 use alo_image::THE_IMAGE;
 
 /// Where the unit lives, relative to `image/`.
-const THE_UNIT: &str = "usr/lib/systemd/system/alo-keyring.service";
+const THE_UNIT: &str = "usr/lib/systemd/user/alo-keyring.service";
 
 /// What the unit must say, and why each half of it.
 ///

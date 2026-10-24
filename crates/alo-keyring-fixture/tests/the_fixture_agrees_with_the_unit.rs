@@ -38,7 +38,7 @@ use alo_keyring_fixture::WHAT_THE_UNIT_PUTS_ON_STDIN;
 /// file.
 const THE_UNIT: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../../image/usr/lib/systemd/system/alo-keyring.service"
+    "/../../image/usr/lib/systemd/user/alo-keyring.service"
 );
 
 /// What the unit declares, decoded.

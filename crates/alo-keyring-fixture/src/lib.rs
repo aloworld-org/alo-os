@@ -79,7 +79,7 @@ use alo_secrets::TheBus;
 /// **It is the only password this fixture has, because a default can be
 /// silently wrong everywhere.** Until 2026-10-22 the convenient constructor fed
 /// a synthetic password of its own, which
-/// `image/usr/lib/systemd/system/alo-keyring.service` never sends, and **38
+/// `image/usr/lib/systemd/user/alo-keyring.service` never sends, and **38
 /// call sites across `alo-agentd`, `alo-desktop` and `alo-secrets` proved
 /// things about a keyring this machine does not have.** The unit meanwhile
 /// shipped `StandardInput=null` — end of file, which is not an empty password —

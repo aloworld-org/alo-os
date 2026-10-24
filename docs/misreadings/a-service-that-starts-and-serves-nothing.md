@@ -5,7 +5,7 @@ in a change that was gated green and about to land.
 
 ## What was concluded
 
-`image/usr/lib/systemd/system/alo-keyring.service`, in its own words:
+`image/usr/lib/systemd/user/alo-keyring.service`, in its own words:
 
 > **`--unlock` reads a password from standard input**, and `StandardInput=null`
 > below is what makes that password empty

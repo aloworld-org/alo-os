@@ -3,7 +3,7 @@
 //!
 //! The image's unit sends one newline on the daemon's standard input, so its
 //! login keyring has a password of no characters — argued in
-//! `image/usr/lib/systemd/system/alo-keyring.service`, resting on ADR 0054
+//! `image/usr/lib/systemd/user/alo-keyring.service`, resting on ADR 0054
 //! encrypting the disk underneath it. Since 2026-10-22
 //! `AKeyringOfOurOwn::started` feeds exactly that, so **every** keyring test in
 //! this repository runs the shipping configuration; this is the file that names
