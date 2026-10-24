@@ -1341,6 +1341,7 @@ impl LoopInput for Desk<'_> {
                 origin: &where_from,
                 results: &found,
                 chosen: server.which_row_in_the_bar,
+                display: size,
             });
         // **An `Arc` of its own, lent to the frame.** The frame holds the
         // reference for as long as it lives and this lane uses the server
