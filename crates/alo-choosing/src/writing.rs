@@ -218,6 +218,10 @@ impl ProviderAsWritten {
                 Region::Unknown => None,
             },
             needs_a_key: provider.key.is_some(),
+            // **Empty is absent**, so a provider with no models writes no key
+            // at all rather than an empty list — and reads back as the empty
+            // list it was, which is what the round-trip check compares.
+            models: (!provider.models.is_empty()).then(|| provider.models.clone()),
         }
     }
 }
@@ -468,13 +472,33 @@ mod tests {
         assert!(!text.contains("region"), "{text}");
     }
 
-    /// **A provider carrying something this file cannot hold is refused, and
-    /// nothing is written.** The list of model names a provider offers is a
-    /// public field on `alo_models::Provider` and has no key here; a writer that
-    /// dropped it would answer `Ok(())` for a provider the machine afterwards
-    /// describes differently.
+    /// **A provider's models are written down and read back unchanged.**
+    ///
+    /// This test replaces one that asserted the opposite, and the reason it
+    /// did is worth keeping. It read:
+    ///
+    /// > **A provider carrying something this file cannot hold is refused, and
+    /// > nothing is written.** The list of model names a provider offers is a
+    /// > public field on `alo_models::Provider` and has no key here; a writer
+    /// > that dropped it would answer `Ok(())` for a provider the machine
+    /// > afterwards describes differently.
+    ///
+    /// Every word of that was true and the refusal was the right behaviour
+    /// **for a file that could not hold them**. What it protected against was a
+    /// silent lie, not against the field existing.
+    ///
+    /// What it cost: a person who added a provider could never choose it.
+    /// `alo_shell::settings_answering` offers a model under *my provider*, and
+    /// one of the four with nothing under it is left out rather than drawn —
+    /// so the save was refused on a booted machine on 2026-10-24 with *the
+    /// settings read back from the text written for them were different
+    /// settings*, which is this exact check firing on a real machine.
+    ///
+    /// So the file holds them now, and the refusal it was tested for cannot
+    /// arise. The round-trip is asserted instead, which is the property the
+    /// old test was defending.
     #[test]
-    fn a_provider_this_file_cannot_hold_is_refused_rather_than_trimmed() {
+    fn a_providers_models_are_written_and_read_back_unchanged() {
         let mut providers = mistral();
         providers
             .configured
@@ -483,15 +507,36 @@ mod tests {
             .models
             .push("mistral-small-latest".to_owned());
 
-        let refused = written(
+        let text = written(
             &settings(None, Brought::default(), providers, Vec::new()),
             &somewhere(),
         )
-        .unwrap_err();
+        // A provider with a model is something this file can now hold.
+        .unwrap();
 
         assert!(
-            matches!(refused, NotWritten::NotExpressible { .. }),
-            "{refused:?}"
+            text.contains("mistral-small-latest"),
+            "the model was not written into the file at all: {text}"
+        );
+    }
+
+    /// **A provider with no models writes no key for them**, rather than an
+    /// empty list.
+    ///
+    /// The control at the other end. Writing `models = []` would read back as
+    /// the empty list it was and round-trip fine, so this is not about
+    /// correctness — it is about a settings file a person can open, where a
+    /// key they never set does not appear.
+    #[test]
+    fn a_provider_with_no_models_writes_no_key_for_them() {
+        let text = written(
+            &settings(None, Brought::default(), mistral(), Vec::new()),
+            &somewhere(),
+        )
+        .unwrap();
+        assert!(
+            !text.contains("models"),
+            "a provider that offers nothing wrote a key for it anyway: {text}"
         );
     }
 
@@ -646,13 +691,24 @@ mod tests {
     /// gets is `crate::unwritten`'s — which says only that nothing changed.
     #[test]
     fn a_reason_kept_for_a_maintainer_is_not_a_sentence_for_a_person() {
-        let mut providers = mistral();
+        // **A credential kept somewhere this file cannot name**, which is a
+        // refusal that still exists. This test used a provider carrying
+        // models, because that was refused too — it is not any more, since
+        // the file holds them (`a_providers_models_are_written_and_read_back_
+        // unchanged`). What this test is about is how a refusal is worded, not
+        // which refusal it is, so it is repointed rather than deleted.
+        let mut providers = Providers::default();
         providers
-            .configured
-            .first_mut()
-            .unwrap()
-            .models
-            .push("mistral-small-latest".to_owned());
+            .add(
+                Provider::checked(
+                    "Mistral",
+                    "https://api.mistral.ai",
+                    Region::Unknown,
+                    Some(SecretRef::named("somewhere/else")),
+                )
+                .unwrap(),
+            )
+            .unwrap();
         let refused = written(
             &settings(None, Brought::default(), providers, Vec::new()),
             &somewhere(),
