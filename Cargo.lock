@@ -1711,6 +1711,7 @@ dependencies = [
  "alo-networks",
  "alo-notifying",
  "alo-overlay",
+ "alo-picking",
  "alo-portals",
  "alo-power",
  "alo-put-aside",

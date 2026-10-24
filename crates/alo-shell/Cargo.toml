@@ -120,6 +120,11 @@ alo-put-aside = { path = "../alo-put-aside" }
 # The list of grants a person sees: rows derived from the machine's own grants,
 # and the words for revoking one. Read, and revoked only through `alo-changing`.
 alo-granted = { path = "../alo-granted" }
+# The one act on this machine that **makes** a grant: a person standing in a
+# folder and choosing it. Where they are standing, the three moves, and what may
+# never be picked are all that crate's; this one shows them as rows and routes a
+# key press to them, and makes no grant itself.
+alo-picking = { path = "../alo-picking" }
 # Everything the sign-in screen does that is not drawing — authenticate, then
 # knock — composed once, there, and called here.
 alo-greeting = { path = "../alo-greeting" }
