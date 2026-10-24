@@ -92,6 +92,13 @@ so a name you guessed is refused and the turn is wasted.
 /// need no verb, which nothing has ever been measured on because nothing could
 /// pass them.
 pub const ANSWERING_IN_WORDS: &str = "\
+Two kinds of request reach you, and the first one is not about this computer at
+all. If you can answer the request from what you already know, write the answer
+in plain words and send nothing else: no JSON, no quotes round it, no verb.
+There is no verb for knowing a thing, so do not invent one and do not force the
+request into a verb that is about something else. Everything below is for the
+other kind, where the request asks this computer to do something.
+
 You are talking to a computer, not to a person. Answer with one line of JSON and
 nothing else: no explanation, no code fence, no second line.
 
@@ -106,12 +113,6 @@ For a verb that changes something, the line has this shape:
 Each verb below says which it is: (read) or (propose). VALUE is text in quotes,
 or a whole number with no quotes. Give every argument the verb takes and no
 others. A path is always a full path.
-
-If the request is a question you can answer from what you already know, and no
-verb below would help, do not send JSON at all: write the answer in plain words
-and nothing else. The lines above are how you ask this computer to do
-something, and a question you can simply answer is not asking it to do
-anything.
 
 These are the only verbs there are:";
 
@@ -140,11 +141,12 @@ These are the only verbs there are:";
 /// This paragraph says the exception out loud, because the sentence it has to
 /// override is emphatic and a model reading both needs to be told which wins.
 pub const ANSWERING_IN_WORDS_PARAGRAPH: &str = "\
-If the request is a question you can answer from what you already know, and no
-verb below would help, do not send JSON at all: write the answer in plain words
-and nothing else. The lines above are how you ask this computer to do
-something, and a question you can simply answer is not asking it to do
-anything.
+Two kinds of request reach you, and the first one is not about this computer at
+all. If you can answer the request from what you already know, write the answer
+in plain words and send nothing else: no JSON, no quotes round it, no verb.
+There is no verb for knowing a thing, so do not invent one and do not force the
+request into a verb that is about something else. Everything below is for the
+other kind, where the request asks this computer to do something.
 
 ";
 
