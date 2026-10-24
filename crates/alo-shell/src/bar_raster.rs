@@ -21,7 +21,7 @@
 //! results beyond that are real and are simply not on the screen yet.
 
 use cosmic_text::{FontSystem, Metrics};
-use smithay::utils::{Physical, Rectangle};
+use smithay::utils::{Physical, Rectangle, Size};
 
 use crate::painted::{Inked, Washed};
 use crate::the_bar_finds::AResult;
@@ -40,6 +40,22 @@ pub struct TheBarOnTheDisplay<'a> {
     pub results: &'a [AResult],
     /// Which row the keyboard is on, if any.
     pub chosen: Option<usize>,
+    /// **The display, so the panel's shadow can be kept on it.**
+    ///
+    /// `crate::dock_surface::ADocksSurface::room` is the screen, and it is
+    /// what the rasteriser clamps the texture to so a shadow does not run off
+    /// the edge. This field exists because the Bar passed **its own panel's
+    /// size** there instead, and the clamp then cut the panel off at its own
+    /// width: measured on a booted machine on 2026-10-23, a panel 604 wide was
+    /// drawn 276 wide, with the field and the status line running out of it
+    /// onto bare canvas. `left = (338 - reach)` and
+    /// `right = (338 + 604 + reach).min(604)` — the arithmetic and the pixels
+    /// agreed to the pixel.
+    ///
+    /// `crate::dock_raster` has always passed the display here and says so on
+    /// the field: *the display, so the list can be kept on it.* The Bar was
+    /// the one caller that did not.
+    pub display: Size<i32, Physical>,
 }
 
 /// The Bar as one washed panel and the ink on it.
@@ -94,7 +110,7 @@ pub(crate) fn picture(
         well_is: palette.badge,
         rings: &rings,
         ring_is: palette.ink,
-        room: (places.panel.size.w, places.panel.size.h),
+        room: (bar.display.w, bar.display.h),
     })?;
 
     // The sentences, each placed where its box is. `sentence` wraps and
@@ -148,3 +164,7 @@ fn inset(at: Rectangle<i32, Physical>) -> Rectangle<i32, Physical> {
         ((at.size.w - AIR * 2).max(1), at.size.h).into(),
     )
 }
+
+#[cfg(test)]
+#[path = "bar_raster_tests.rs"]
+mod tests;
