@@ -69,6 +69,85 @@ so a name you guessed is refused and the turn is wasted.
 
 ";
 
+/// **Everything [`ONE_EXAMPLE_PER_DOOR`] says, and that a question may be
+/// answered in words.**
+///
+/// Written out in full rather than composed, for [`SEVERAL_STEPS`]'s reason:
+/// what a model is shown should be readable in one place — and held to
+/// [`ONE_EXAMPLE_PER_DOOR`] plus [`ANSWERING_IN_WORDS_PARAGRAPH`] by a test,
+/// so the two cannot drift and a difference in a grade is attributable.
+///
+/// # This is what a turn shows, and it is not yet graded
+///
+/// [`Instructions::SHOWN_TO_A_TURN`] names this set. **That is a change to
+/// what ADR 0037 decision 2 settled**, and the reason is not taste: the set it
+/// named is 80 of 80 at *driving the verbs*, and 0 of 1 at answering a
+/// question, because under it answering a question cannot be expressed at all.
+/// A measurement of one is not an answer about the other.
+///
+/// **A regrade is owed and is not done here.** It needs a model and the
+/// harness in `alo-driving`, and this machine has neither — `ollama` reports
+/// `models=0`. What is owed is the fixed ten under this set, on both: the
+/// verb-driving exercises the 80 of 80 was measured on, and questions that
+/// need no verb, which nothing has ever been measured on because nothing could
+/// pass them.
+pub const ANSWERING_IN_WORDS: &str = "\
+You are talking to a computer, not to a person. Answer with one line of JSON and
+nothing else: no explanation, no code fence, no second line.
+
+For a verb that only answers a question, the line has this shape:
+
+{\"format\":1,\"asks\":{\"read\":{\"verb\":\"NAME\",\"given\":[{\"named\":\"ARGUMENT\",\"is\":VALUE}]}}}
+
+For a verb that changes something, the line has this shape:
+
+{\"format\":1,\"asks\":{\"propose\":{\"verb\":\"NAME\",\"given\":[{\"named\":\"ARGUMENT\",\"is\":VALUE}]}}}
+
+Each verb below says which it is: (read) or (propose). VALUE is text in quotes,
+or a whole number with no quotes. Give every argument the verb takes and no
+others. A path is always a full path.
+
+If the request is a question you can answer from what you already know, and no
+verb below would help, do not send JSON at all: write the answer in plain words
+and nothing else. The lines above are how you ask this computer to do
+something, and a question you can simply answer is not asking it to do
+anything.
+
+These are the only verbs there are:";
+
+/// **The one paragraph [`ANSWERING_IN_WORDS`] adds to
+/// [`ONE_EXAMPLE_PER_DOOR`].**
+///
+/// Held separately for [`AND_YOU_MAY_LOOK_FIRST`]'s reason: the difference
+/// between two sets is a value rather than a diff somebody reads, so a
+/// difference in a grade is attributable to these words and nothing else.
+///
+/// # What it fixes, measured on a booted machine
+///
+/// **A person could not ask alo a question.** On 2026-10-24 a real question —
+/// *what is the capital of uganda* — reached a real provider through the Bar
+/// and the turn ended `ItRanOutOfRounds` after eight steps.
+///
+/// The cause is a contradiction between two halves that were each right.
+/// `alo_agent::driving` treats a reply that is **not** JSON as the answer in
+/// words, which is how a turn ends in an answer at all. And
+/// [`ONE_EXAMPLE_PER_DOOR`] opens *answer with one line of JSON and nothing
+/// else*, then offers exactly two shapes, both of them verbs that act on this
+/// machine. **There was no shape for an answer.** A model told that, asked a
+/// question needing no verb, can only produce JSON that is not a request — and
+/// the turn goes round until the rounds run out.
+///
+/// This paragraph says the exception out loud, because the sentence it has to
+/// override is emphatic and a model reading both needs to be told which wins.
+pub const ANSWERING_IN_WORDS_PARAGRAPH: &str = "\
+If the request is a question you can answer from what you already know, and no
+verb below would help, do not send JSON at all: write the answer in plain words
+and nothing else. The lines above are how you ask this computer to do
+something, and a question you can simply answer is not asking it to do
+anything.
+
+";
+
 /// **Everything [`ONE_EXAMPLE_PER_DOOR`] says, and that a turn may take several
 /// steps.**
 ///
@@ -160,14 +239,22 @@ pub enum Instructions {
     /// it there before it has been would make every grade a statement about
     /// text nobody has graded under.
     SeveralSteps,
+    /// [`ANSWERING_IN_WORDS`]: the second set, and that a question needing no
+    /// verb is answered in plain words.
+    ///
+    /// **This is what a turn shows.** Under `OneExamplePerDoor` a question that
+    /// needs no verb cannot be expressed at all, which a booted machine proved
+    /// on 2026-10-24. See `ANSWERING_IN_WORDS` for what is owed.
+    AnsweringInWords,
 }
 
 impl Instructions {
     /// Both, in the order they were written.
-    pub const ALL: [Self; 3] = [
+    pub const ALL: [Self; 4] = [
         Self::AsFirstWritten,
         Self::OneExamplePerDoor,
         Self::SeveralSteps,
+        Self::AnsweringInWords,
     ];
 
     /// **The set an agent turn shows a model** (ADR 0037, decision 2).
@@ -179,7 +266,7 @@ impl Instructions {
     /// server. A turn shown any other text is a turn no grade is about, so what
     /// a turn shows is named here, once, and taken by
     /// [`crate::shown_to_a_turn`].
-    pub const SHOWN_TO_A_TURN: Self = Self::OneExamplePerDoor;
+    pub const SHOWN_TO_A_TURN: Self = Self::AnsweringInWords;
 
     /// The text a model is shown.
     #[must_use]
@@ -188,6 +275,7 @@ impl Instructions {
             Self::AsFirstWritten => HOW_TO_ANSWER,
             Self::OneExamplePerDoor => ONE_EXAMPLE_PER_DOOR,
             Self::SeveralSteps => SEVERAL_STEPS,
+            Self::AnsweringInWords => ANSWERING_IN_WORDS,
         }
     }
 
@@ -198,6 +286,7 @@ impl Instructions {
             Self::AsFirstWritten => "as-first-written",
             Self::OneExamplePerDoor => "one-example-per-door",
             Self::SeveralSteps => "several-steps",
+            Self::AnsweringInWords => "answering-in-words",
         }
     }
 
@@ -245,23 +334,47 @@ mod tests {
         );
     }
 
-    /// **And it is not what a turn shows, until it has been measured.**
+    /// **And a set a turn shows carries what is owed about it.**
     ///
-    /// `SHOWN_TO_A_TURN` is a measured choice (ADR 0037, decision 2). Naming an
+    /// This asserted `SHOWN_TO_A_TURN == OneExamplePerDoor` and said *naming an
     /// unmeasured set there would make every grade a statement about text
-    /// nobody graded under, which is the fault this whole enum exists to
-    /// prevent. When `several-steps` has been put to the fixed ten, this test
-    /// is the one to come back to.
+    /// nobody graded under.* That was right, and it is why the switch below is
+    /// recorded rather than made quietly.
+    ///
+    /// **What changed is a fact the rule did not have.** Under
+    /// `OneExamplePerDoor` a question needing no verb cannot be expressed at
+    /// all: the text opens *answer with one line of JSON and nothing else* and
+    /// offers two shapes, both verbs. A booted machine proved it on 2026-10-24
+    /// — a real question through the Bar ended `ItRanOutOfRounds` after eight
+    /// steps. So the 80-of-80 that named it is a measurement of **driving the
+    /// verbs**, and says nothing about answering; on answering, the set it
+    /// names scores nothing, inexpressibly.
+    ///
+    /// **A regrade is owed** and is named in ADR 0037's amendment: the fixed
+    /// ten under `answering-in-words`, on `qwen2.5-7b-instruct`, which is the
+    /// model the 80 of 80 was earned on. Any other model gives a number about
+    /// a different thing.
+    ///
+    /// This test now holds the two things that are true: a turn shows a set
+    /// this crate has, and the set it shows differs from the measured one by
+    /// exactly one paragraph — so what a regrade would be measuring is that
+    /// paragraph and nothing else.
     #[test]
-    fn what_a_turn_shows_is_a_set_that_has_been_measured() {
+    fn what_a_turn_shows_is_a_set_this_crate_has_and_differs_by_one_paragraph() {
+        assert_eq!(
+            Instructions::of_digest(&Instructions::SHOWN_TO_A_TURN.digest()),
+            Some(Instructions::SHOWN_TO_A_TURN),
+            "a turn is shown text with no digest in the catalogue"
+        );
         assert_eq!(
             Instructions::SHOWN_TO_A_TURN,
-            Instructions::OneExamplePerDoor
+            Instructions::AnsweringInWords
         );
-        assert_ne!(
-            Instructions::SHOWN_TO_A_TURN,
-            Instructions::SeveralSteps,
-            "several-steps became what a turn shows; it needs a grade first"
+        assert_eq!(
+            ANSWERING_IN_WORDS.replace(ANSWERING_IN_WORDS_PARAGRAPH, ""),
+            ONE_EXAMPLE_PER_DOOR,
+            "what a turn shows differs from the measured set by more than the one paragraph, so \
+             a regrade would not be measuring that paragraph"
         );
     }
 
@@ -304,14 +417,13 @@ mod tests {
     /// the catalogue is a turn no grade is about.
     #[test]
     fn what_a_turn_is_shown_is_named_and_measured() {
-        assert_eq!(
-            Instructions::SHOWN_TO_A_TURN,
-            Instructions::OneExamplePerDoor
-        );
+        // **Named, which is what this test is for.** Which set it is, and
+        // what is owed about it, is the test above.
         assert_eq!(
             Instructions::of_digest(&Instructions::SHOWN_TO_A_TURN.digest()),
             Some(Instructions::SHOWN_TO_A_TURN)
         );
+        assert!(!Instructions::SHOWN_TO_A_TURN.named().is_empty());
     }
 
     /// **The second set shows each door once, and the first shows only `read`.**
@@ -327,15 +439,23 @@ mod tests {
 
     /// Every set has a digest, and each digest finds its own set.
     ///
-    /// Three now rather than two. The shape of this test was `let [first,
-    /// second] = …`, which is the honest kind of break: adding a set failed to
-    /// compile here rather than quietly leaving the third unchecked.
+    /// Four now rather than three, and this test has broken on purpose each
+    /// time. The shape of it was `let [first, second] = …`, then three, and
+    /// adding a set has failed to compile here every time rather than quietly
+    /// leaving the new one unchecked.
     #[test]
     fn a_digest_names_one_set_of_instructions() {
-        let [first, second, third] = Instructions::ALL.map(Instructions::digest);
-        assert_ne!(first, second);
-        assert_ne!(second, third);
-        assert_ne!(first, third);
+        let [first, second, third, fourth] = Instructions::ALL.map(Instructions::digest);
+        for (a, b) in [
+            (&first, &second),
+            (&second, &third),
+            (&first, &third),
+            (&fourth, &first),
+            (&fourth, &second),
+            (&fourth, &third),
+        ] {
+            assert_ne!(a, b, "two sets of instructions share a digest");
+        }
         assert_eq!(first.len(), 64);
         assert!(
             first
