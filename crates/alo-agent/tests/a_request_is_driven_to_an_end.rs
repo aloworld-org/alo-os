@@ -412,3 +412,76 @@ fn every_request_it_makes_is_one_an_agent_may_make() {
         }
     }
 }
+
+/// **A turn that got nowhere can say what it tried.**
+///
+/// This is the state a booted machine was in on 2026-10-24: a real question
+/// reached a real provider, eight rounds ran, and the only thing the machine
+/// said was *it got nowhere in 8 step(s)*. The reason each round failed was
+/// built, pushed onto the steps, and then reduced to a count — so there was
+/// nothing to act on and no way to tell a provider answering badly from one
+/// not answering at all.
+///
+/// The shape here is the one the machine really hit: the model replies with
+/// something that **looks like a request and is not one**, which
+/// `crate::driving` records as *not a request* and goes round again.
+#[test]
+fn a_turn_that_got_nowhere_says_why_each_round_failed() {
+    let verbs = the_verbs();
+    let answers = (0..3)
+        .map(|_| the_model_said("{\"this\": \"is json and is not a request\"}"))
+        .collect();
+    let mut door = ADoorThatAnswers::with(answers);
+    let happened = driving(
+        "what is the capital of uganda",
+        &verbs,
+        &mut door,
+        HowFar::of(3),
+        Instructions::SHOWN_TO_A_TURN,
+    );
+
+    let WhatHappened::ItRanOutOfRounds { after } = happened else {
+        panic!("a model that never answers should run out of rounds: {happened:?}");
+    };
+    assert_eq!(after.len(), 3, "the rounds were not all kept");
+
+    for (which, step) in after.iter().enumerate() {
+        let said = step.what_came_back();
+        assert!(
+            said.contains("not a request"),
+            "step {} says nothing a person could act on: {said:?}",
+            which + 1
+        );
+    }
+}
+
+/// **And what it says is the machine's side, never the model's.**
+///
+/// The control. `AStep` holds both lines and only one of them is safe to put
+/// in a service log: the person's words and whatever a verb read for them are
+/// on the other side. A diagnosis that leaked the question would be a worse
+/// bargain than no diagnosis.
+#[test]
+fn what_a_step_says_does_not_carry_the_question() {
+    let verbs = the_verbs();
+    let answers = (0..2)
+        .map(|_| the_model_said("{\"not\": \"a request\"}"))
+        .collect();
+    let mut door = ADoorThatAnswers::with(answers);
+    let happened = driving(
+        "a question nobody else should read",
+        &verbs,
+        &mut door,
+        HowFar::of(2),
+        Instructions::SHOWN_TO_A_TURN,
+    );
+    let WhatHappened::ItRanOutOfRounds { after } = happened else {
+        panic!("{happened:?}");
+    };
+    for step in &after {
+        assert!(
+            !step.what_came_back().contains("nobody else should read"),
+            "the diagnosis carried the person's own question"
+        );
+    }
+}

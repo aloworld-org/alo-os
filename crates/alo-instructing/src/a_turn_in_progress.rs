@@ -83,6 +83,24 @@ impl AStep {
         }
     }
 
+    /// **What the daemon answered, for whoever is reading a log.**
+    ///
+    /// A turn that ends in `ItRanOutOfRounds` printed one sentence about eight
+    /// steps and nothing about any of them — measured on a booted machine on
+    /// 2026-10-24, where a real question reached a real provider and the only
+    /// thing the machine said was *it got nowhere in 8 step(s)*. The reason
+    /// each round failed was built, pushed onto the steps, and then reduced to
+    /// a count.
+    ///
+    /// **The model's own line is deliberately not exposed.** `asked` carries
+    /// the person's words and whatever a verb read for them; this side carries
+    /// what the machine said back, which for a round that failed to parse is
+    /// *not a request: …* and the error — a diagnosis, not their content.
+    #[must_use]
+    pub fn what_came_back(&self) -> &str {
+        &self.came_back
+    }
+
     /// The answer as the model is shown it, cut if it is long and saying so.
     ///
     /// Cut on a character boundary, because cutting a UTF-8 string by bytes
