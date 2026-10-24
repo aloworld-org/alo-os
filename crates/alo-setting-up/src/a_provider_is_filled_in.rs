@@ -344,13 +344,33 @@ impl AProviderBeingAddded {
         let provider = Provider::checked(
             &self.name,
             &self.address,
-            // **Unknown, and that is a fact rather than a gap.** The person has
-            // not said where this service runs and this screen has no way to
-            // find out; `Region`'s own words are *as whoever added it stated*.
             Region::Unknown,
             Some(filed_under.clone()),
         )
         .map_err(NotYetAProvider::TheProvider)?;
+        // **The provider carries the model the person named**, and until
+        // 2026-10-23 it did not: `Provider::checked` leaves `models` empty and
+        // the model travelled beside the provider in `WhatToSave` instead of
+        // in it. The provider was then written to the person's own list
+        // knowing no models at all.
+        //
+        // What that cost is the whole point of filling this form in.
+        // `alo_shell::settings_answering` offers **a model** under *my
+        // provider* — `provider.models`, flattened — and *one of the four with
+        // nothing under it is absent rather than drawn*. So a person added a
+        // provider, the key was kept, the choice was written, and Settings
+        // showed them no row to choose and no way to change their mind.
+        // Measured on a booted machine: the save succeeded, and the answering
+        // section still read *nothing is chosen yet to answer questions*.
+        //
+        // **The person naming one is the only thing this machine knows.**
+        // Nothing here asks a provider what it offers — that is a request to
+        // the wire and `alo_asking::Vetting` is the only door to it — so the
+        // list is exactly what they typed, and it is one model long.
+        let provider = Provider {
+            models: vec![model.to_owned()],
+            ..provider
+        };
         Ok(WhatToSave {
             provider,
             key,

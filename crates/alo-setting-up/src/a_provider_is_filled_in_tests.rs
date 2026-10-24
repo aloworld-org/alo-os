@@ -362,3 +362,68 @@ fn the_key_is_filed_under_the_name_as_it_will_be_saved() {
         "what the provider refers to and where the key goes are one value"
     );
 }
+
+/// **The provider a person added offers the model they named.**
+///
+/// This is the row Settings draws. `alo_shell::settings_answering` lists, under
+/// *my provider*, each model `provider.models` holds — and **one of the four
+/// with nothing under it is absent rather than drawn and disabled**. So a
+/// provider saved with an empty list is a provider a person can never choose:
+/// the key is kept, the choice is written, and the screen offers no row to
+/// select and no way to change their mind.
+///
+/// Measured on a booted machine on 2026-10-23: the save succeeded — no error
+/// on the service log, the form closed, which it only does when it worked —
+/// and the answering section still read *nothing is chosen yet to answer
+/// questions*.
+///
+/// `Provider::checked` does not take models and leaves the list empty, and the
+/// model travelled beside the provider in [`WhatToSave`] rather than in it.
+/// Deleting the two lines that put it in makes this test fail.
+#[test]
+fn the_provider_offers_the_model_the_person_named() {
+    let saving = one_a_person_filled_in()
+        .what_it_would_save()
+        .expect("a filled-in form has something to save");
+    assert_eq!(
+        saving.provider.models,
+        vec!["gpt-4o-mini".to_owned()],
+        "the provider was saved knowing no models, so Settings draws no row for it and the \
+         person who just added it cannot choose it"
+    );
+}
+
+/// **The model is the one typed, trimmed, and nothing else is invented.**
+///
+/// The control at the other end. The test above would pass on a provider that
+/// claimed every model in the world; this holds the list to exactly what the
+/// person said, because nothing here asks a provider what it offers — that is
+/// a request to the wire, and `alo_asking::Vetting` is the only door to one.
+#[test]
+fn the_model_list_is_exactly_what_was_typed() {
+    let mut form = AProviderBeingAddded::empty();
+    types(&mut form, "OpenAI");
+    form.to_the_next_field();
+    types(&mut form, "https://api.openai.com");
+    form.to_the_next_field();
+    types(&mut form, "sk-not-a-real-key");
+    form.to_the_next_field();
+    types(&mut form, "  o3-mini  ");
+    let saving = form
+        .what_it_would_save()
+        .expect("a filled-in form has something to save");
+    assert_eq!(
+        saving.provider.models.len(),
+        1,
+        "more than one model was invented"
+    );
+    assert_eq!(
+        saving.provider.models,
+        vec!["o3-mini".to_owned()],
+        "the model was not trimmed the way the field it came from is"
+    );
+    assert_eq!(
+        saving.model, "o3-mini",
+        "what travels beside the provider and what is in it disagree"
+    );
+}
