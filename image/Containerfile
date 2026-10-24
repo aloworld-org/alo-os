@@ -152,6 +152,7 @@ RUN cargo build --release --target ${THE_TARGET} \
       --package alo-brokerd \
       --package alo-looking-once \
       --package alo-giving-a-folder \
+      --package alo-their-folders \
       --package alo-agent \
       --package alo-try \
       --package alo-ask \
@@ -409,6 +410,19 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-looking-once /usr/lib
 # already running as root are 113,587 and 2,160 lines against this one's
 # hundred.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-giving-a-folder /usr/libexec/alo-giving-a-folder
+
+# **The folders a person expects in their home**, made in their own session.
+#
+# In libexec because nobody runs it by hand: the person's own systemd manager
+# starts it as `alo-their-folders.service` at every sign-in.
+#
+# **It needs no capability at all**, which is what makes it different from the
+# one above. A program already running as the person makes folders that are
+# theirs by the ordinary rules. The reason it cannot live in a system unit is
+# the other side of the same fact: `alo-compositor` is root with
+# `CapabilityBoundingSet=` and `AmbientCapabilities=` both empty, so it has no
+# `CAP_DAC_OVERRIDE` either and a person's `0700` home is closed to it.
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-their-folders /usr/libexec/alo-their-folders
 
 # **The agent itself, in `bin` rather than `libexec`, because something other
 # than systemd runs it.**
@@ -1174,6 +1188,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/systemd/system/alo-desktop.service \
                /usr/lib/systemd/system/alo-portald.service \
                /usr/lib/systemd/user/alo-keyring.service \
+               /usr/lib/systemd/user/alo-their-folders.service \
                /usr/lib/systemd/system/alo-shipping.service \
                /usr/lib/pam.d/alo-compositor \
                /usr/lib/pam.d/alo-desktop \
@@ -1209,11 +1224,30 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
  # ADR 0022's first named obstacle.
  && systemctl --global enable alo-keyring.service \
  \
+ # **The folders a person expects, enabled in every person's own manager** for
+ # the same reason and by the same road. Without this line a fresh machine
+ # gives a person a home folder holding nothing but three hidden shell files.
+ #
+ # It is enabled rather than started by whoever makes the account, because the
+ # account is made by `alo-compositor` and that process may not write in a
+ # person's home at all. Their own manager may, and does, at every sign-in.
+ && systemctl --global enable alo-their-folders.service \
+ \
  # **The link is checked, not assumed.** `systemctl --global enable` on a unit
  # it cannot find exits 0 and writes nothing, so the proof that the enable did
  # something is the symlink it should have made — the same reason `--version`
  # is run beside it rather than `test -x`.
  && test -L /etc/systemd/user/default.target.wants/alo-keyring.service \
+ && test -L /etc/systemd/user/default.target.wants/alo-their-folders.service \
+ \
+ # **And the program is run, not stat-ed.** `test -x` on a binary stood in for
+ # one *starting* three times in this repository and shipped a converter that
+ # died at launch on eleven missing libraries. So this starts it — which is
+ # what proves it links — and asks for the one answer it can give with no
+ # side effects at all: with `HOME` unset it has nowhere to make anything,
+ # says so, and makes nothing. Running it any other way would furnish the
+ # build container's own home folder.
+ && env -u HOME /usr/libexec/alo-their-folders 2>&1 | grep -q 'HOME is not set' \
  && /usr/bin/gnome-keyring-daemon --version | grep -q 'gnome-keyring-daemon' \
  && echo "the keyring is enabled in every person's own manager, and the daemon it names runs" \
  && bootc container lint
