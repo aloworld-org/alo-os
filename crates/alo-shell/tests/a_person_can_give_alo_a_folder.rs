@@ -107,8 +107,7 @@ fn the_pickers_rows_are_drawn() {
     );
 
     assert!(
-        shipped.contains("a_folder_is_picked_in_settings")
-            || shipped.contains("PickingRow"),
+        shipped.contains("SettingsRow::Picking("),
         "nothing draws the picker's rows, so a person who opened it would see the grants list \
          underneath it instead of their own folders"
     );
@@ -118,22 +117,25 @@ fn the_pickers_rows_are_drawn() {
 /// nothing, which is the Bar's fault of 2026-10-23 in another place.
 #[test]
 fn a_key_press_reaches_the_picker() {
-    let keys = read("a_key_reaches_settings.rs");
     let window = read("settings_window.rs");
-    let shipped = format!(
-        "{}{}",
-        production_part_of(&keys),
-        production_part_of(&window)
-    );
+    let section = read("settings_granted.rs");
+    let in_the_window = production_part_of(&window);
+    let in_the_section = production_part_of(&section);
 
     assert!(
-        shipped.contains("SettingsKey"),
-        "neither file still reads a key, so nothing below is measuring what it claims"
+        in_the_window.contains("SettingsKey"),
+        "settings_window.rs no longer reads a key, so nothing below is measuring what it claims"
     );
 
+    // Both ends of the road, because either alone can be built and do nothing.
     assert!(
-        shipped.contains(".act("),
-        "nothing calls AFolderBeingPicked::act, so a person can move the ring over their folders \
-         and pressing Enter does nothing at all"
+        in_the_window.contains("SettingsRow::Picking(picking) =>"),
+        "a press on one of the picker's rows is not acted on in the window, so a person can move \
+         the ring over their own folders and pressing Enter does nothing at all"
+    );
+    assert!(
+        in_the_section.contains(".act("),
+        "the window routes the press and nothing hands it to AFolderBeingPicked::act, so the \
+         picker never moves"
     );
 }

@@ -9,6 +9,8 @@
 
 #![expect(
     clippy::unwrap_used,
+    clippy::panic,
+    clippy::expect_used,
     reason = "in a test, a panic on an unexpected Err is the failure being reported"
 )]
 

@@ -42,8 +42,18 @@
 
 use std::path::Path;
 
-use alo_picking::{Chosen, Folders, NotPicked, Picker};
+use alo_picking::{Chosen, NotPicked, Picker};
 use alo_strings::{Filling, Said, Strings};
+
+/// The one road to a disk, re-exported so that the window can name a `Folders`
+/// without naming `alo-picking`.
+///
+/// **That is a rule rather than a tidiness.** `tests/settings_source.rs`
+/// refuses `alo_picking` in any Settings file but the one that may carry a
+/// pick to the disk, so that there is exactly one road to a grant. The window
+/// needs the trait to hand one in and makes no grant, so it names this module
+/// — which is what it is actually wired to — and the rule stays whole.
+pub use alo_picking::Folders;
 
 use crate::how_long_a_grant_lasts::HowLong;
 use crate::the_pickers_words::{HOW_LONG, PICK_THIS_FOLDER, UP_ONE_FOLDER};

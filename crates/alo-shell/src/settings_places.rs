@@ -47,6 +47,23 @@ pub struct SettingsPlaces {
     /// given the answer. `None` where the session did not say, which is a
     /// different answer from a shell alo ships nothing for.
     shell: Option<String>,
+    /// The person's home folder, where the picker starts.
+    ///
+    /// **Separate from `folder` above**, which is where their settings are
+    /// kept — usually `.config/alo` inside this. A picker that opened in the
+    /// settings folder would put somebody two levels below their own files
+    /// before they had pressed anything.
+    home: Option<PathBuf>,
+    /// The agent this machine has, by the name its grants use.
+    ///
+    /// **Handed over rather than read here**, which is this file's rule for
+    /// everything else. It is the machine description's `name`, and it has to
+    /// be that exact name: a grant written under any other is one the daemon
+    /// will never match. [`None`] where the session did not say, and then **no
+    /// folder can be given** — a picker that granted to a guess would walk a
+    /// person through choosing a folder and hand them a grant that does
+    /// nothing at all.
+    agent: Option<String>,
 }
 
 impl SettingsPlaces {
@@ -61,6 +78,10 @@ impl SettingsPlaces {
     /// is worse than no button, and is a state this signature makes
     /// unreachable: the one telling carries all four.
     #[must_use]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "every place arrives together on purpose; the doc above says why"
+    )]
     pub fn of(
         config_home: Option<&OsStr>,
         home: Option<&OsStr>,
@@ -69,6 +90,7 @@ impl SettingsPlaces {
         pairings: &Path,
         daemon: &Path,
         how_code_runs: &Path,
+        agent: Option<&str>,
     ) -> Self {
         Self {
             folder: alo_choosing::where_the_folder_is(config_home, home),
@@ -81,7 +103,26 @@ impl SettingsPlaces {
             // crate cannot match against a name anyway, and losing a byte is
             // better than refusing to draw the rest of Settings.
             shell: shell.map(|shell| shell.to_string_lossy().into_owned()),
+            // Lossy for the shell's reason, and the picker refuses a name it
+            // cannot use anyway.
+            home: home.map(PathBuf::from),
+            agent: agent.map(str::to_owned),
         }
+    }
+
+    /// The person's home folder, where the picker starts.
+    #[must_use]
+    pub fn home(&self) -> Option<&Path> {
+        self.home.as_deref()
+    }
+
+    /// The agent a folder would be given to, by the name the grants use.
+    ///
+    /// [`None`] where the session did not say, which is the one state in which
+    /// Settings offers no way to give a folder at all.
+    #[must_use]
+    pub fn agent(&self) -> Option<&str> {
+        self.agent.as_deref()
     }
 
     /// The shell this account uses, as the session was told it.
@@ -159,6 +200,7 @@ mod tests {
             pairings,
             door,
             level,
+            None,
         );
         assert_eq!(places.daemon(), door);
         let folder = alo_choosing::where_the_folder_is(None, Some(OsStr::new("/home/ada")));
@@ -191,6 +233,7 @@ mod tests {
                 pairings,
                 door,
                 Path::new("/var/lib/alo/how-code-runs.toml"),
+                None,
             );
             assert_eq!(nowhere.folder(), None);
             assert_eq!(nowhere.kept(alo_dock::keeping::THE_FILE), None);

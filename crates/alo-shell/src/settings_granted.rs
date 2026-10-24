@@ -10,11 +10,21 @@
 //! answered with the one `alo_changing::Gone`. There is no second path for a
 //! pairing here, and no way to revoke anything but a row a person saw.
 //!
-//! # Nothing is granted from here
+//! # And one grant is made from here, by a person picking a folder
 //!
-//! Making a grant is `alo-picking`: a person standing in a folder and choosing
-//! it. This section lists and revokes. It has no *revoke everything*, and
-//! nothing an agent asks reaches it.
+//! **This section said *nothing is granted from here* until 2026-10-24, and
+//! that sentence was true and was the fault.** Making a grant is
+//! `alo-picking` — a person standing in a folder and choosing it — and nothing
+//! on the machine built a picker, so the list this section draws could only
+//! ever say *nothing granted*, every file verb was refused forever, and the
+//! refusal a person met named an act the interface did not have.
+//!
+//! So the one row that makes a grant lives here, beside the list it appears
+//! in: `crate::a_folder_is_picked_in_settings` holds the walking and the two
+//! questions, and [`GrantedSection::act_on`] is where a pick becomes
+//! `alo_changing::Changing::granted`. There is still no *revoke everything*,
+//! and **nothing an agent asks reaches any of it** — a grant comes from a
+//! person pressing a key in this window and from nowhere else.
 //!
 //! # Read once, and a list that did not read is not a list
 //!
@@ -30,11 +40,15 @@ use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 use alo_capability::Grants;
-use alo_changing::{Changing, Door, Gone, NotChanged, Row, SeenPairing};
+use alo_changing::{Changing, Door, Gone, Made, NotChanged, Row, SeenPairing};
 use alo_granted::{Listing, Revoked};
 use alo_nearby::{MachineId, MayAskIts, Pairings};
+use alo_picking::{Chosen, Folders, Granting};
 use alo_remembering::NotRemembered;
-use alo_strings::Strings;
+use alo_strings::{Filling, Strings};
+
+use crate::a_folder_is_picked_in_settings::{AFolderBeingPicked, PickingRow, WhatPickingDid};
+use crate::how_long_a_grant_lasts::HowLong;
 
 /// What revoking a row did.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -62,6 +76,29 @@ pub(crate) struct GrantedSection {
     unpaired: Vec<MachineId>,
     /// What the section says about the last revocation.
     told: Vec<String>,
+    /// The person's home folder, where a picker opens.
+    home: Option<PathBuf>,
+    /// The agent a folder would be given to, by the name the grants use.
+    agent: Option<String>,
+    /// A picker, while one is open.
+    ///
+    /// **Its presence is the mode**, which is
+    /// `crate::a_provider_is_added_in_settings`' rule: there is no flag beside
+    /// it that could disagree with what is on the screen.
+    picking: Option<AFolderBeingPicked>,
+}
+
+/// What giving alo a folder did.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SettingsGave {
+    /// The list changed and should be drawn again.
+    ItChanged,
+    /// Nothing happened.
+    Nothing,
+    /// alo was given the folder, which is now in the list below.
+    ItWasGiven,
+    /// It was not given, and the section says why.
+    ItWasNotGiven,
 }
 
 impl GrantedSection {
@@ -70,6 +107,8 @@ impl GrantedSection {
     pub(crate) fn at_sign_in(
         grants_at: &Path,
         pairings_at: &Path,
+        home: Option<&Path>,
+        agent: Option<&str>,
         now: SystemTime,
     ) -> (Self, Vec<NotRemembered>) {
         let mut refused = Vec::new();
@@ -96,9 +135,140 @@ impl GrantedSection {
                 pairings,
                 unpaired: Vec::new(),
                 told: Vec::new(),
+                home: home.map(Path::to_owned),
+                agent: agent.map(str::to_owned),
+                picking: None,
             },
             refused,
         )
+    }
+
+    /// Whether a person can give alo a folder from here at all.
+    ///
+    /// Three things have to be true, and each absence is a different machine
+    /// rather than a failure: the session has to have said where home is, the
+    /// machine has to have said what its agent is called — a grant under any
+    /// other name is one the daemon will never match — and the grants file has
+    /// to have read, because a grant is added to the list that was read and a
+    /// list that did not read would be written over with one grant in it.
+    ///
+    /// Where it is false the row is **absent** rather than drawn and refusing,
+    /// which is `crate::settings_window`'s own rule: *a setting the machine
+    /// has no road to change from a window yet is absent rather than greyed
+    /// out*.
+    pub(crate) const fn a_folder_can_be_given(&self) -> bool {
+        self.home.is_some() && self.agent.is_some() && self.grants.is_some()
+    }
+
+    /// The picker, while one is open.
+    pub(crate) const fn picking(&self) -> Option<&AFolderBeingPicked> {
+        self.picking.as_ref()
+    }
+
+    /// A person asked to give alo a folder: open a picker in their home.
+    ///
+    /// A picker that will not open says so and leaves the section as it was —
+    /// a home folder that is not there, or one this machine will not read, is
+    /// `alo-picking`'s refusal and is shown in its words.
+    pub(crate) fn give_alo_a_folder(
+        &mut self,
+        folders: &dyn Folders,
+        strings: &Strings,
+    ) -> SettingsGave {
+        let Some(home) = self.home.clone() else {
+            return SettingsGave::Nothing;
+        };
+        match AFolderBeingPicked::standing_in(&home, folders) {
+            Ok(picking) => {
+                self.picking = Some(picking);
+                self.told.clear();
+                SettingsGave::ItChanged
+            }
+            Err(why) => {
+                self.told = vec![why.said(strings).into_text()];
+                SettingsGave::ItWasNotGiven
+            }
+        }
+    }
+
+    /// Stop picking without giving anything away.
+    pub(crate) fn that_folder_is_not_being_given(&mut self) {
+        self.picking = None;
+    }
+
+    /// The person pressed Enter on one of the picker's rows.
+    ///
+    /// Every move is the picker's; the only thing that happens here is the
+    /// grant, at the moment they say how long.
+    pub(crate) fn act_on(
+        &mut self,
+        row: &PickingRow,
+        folders: &dyn Folders,
+        daemon: &dyn Door,
+        now: SystemTime,
+        strings: &Strings,
+    ) -> SettingsGave {
+        let Some(picking) = &mut self.picking else {
+            return SettingsGave::Nothing;
+        };
+        match picking.act(row, folders, strings) {
+            WhatPickingDid::ItChanged => SettingsGave::ItChanged,
+            WhatPickingDid::Nothing => SettingsGave::Nothing,
+            WhatPickingDid::GiveItThisFolder { chosen, how_long } => {
+                self.give_it(&chosen, how_long, daemon, now, strings)
+            }
+        }
+    }
+
+    /// Make the grant the person just asked for, and close the picker.
+    ///
+    /// **The picker closes whichever way this goes.** A person who has
+    /// answered both questions has finished asking; leaving them inside a
+    /// folder chooser with a sentence under it would make them wonder whether
+    /// to answer again.
+    fn give_it(
+        &mut self,
+        chosen: &Chosen,
+        how_long: HowLong,
+        daemon: &dyn Door,
+        now: SystemTime,
+        strings: &Strings,
+    ) -> SettingsGave {
+        self.picking = None;
+        let (Some(grants), Some(agent)) = (&mut self.grants, self.agent.clone()) else {
+            // Unreachable: `a_folder_can_be_given` is what put the row there.
+            // An arm rather than an unwrap, because a window that panicked on
+            // a key press is a machine nobody can use.
+            return SettingsGave::Nothing;
+        };
+        let granting = Granting::to(&agent, how_long.lasting());
+        match Changing::of(grants, &self.grants_at, daemon).granted(&granting, chosen, now) {
+            Ok(Made::Granted { .. }) => {
+                self.told = chosen
+                    .folder()
+                    .map(|folder| {
+                        strings
+                            .say(
+                                &crate::the_pickers_words::IT_WAS_GIVEN.key(),
+                                &Filling::of(
+                                    crate::the_pickers_words::THE_FOLDER,
+                                    folder.display().to_string(),
+                                ),
+                            )
+                            .into_text()
+                    })
+                    .into_iter()
+                    .collect();
+                SettingsGave::ItWasGiven
+            }
+            // The picker was closed without picking, which cannot arrive here
+            // — `WhatPickingDid::GiveItThisFolder` only carries a folder.
+            Ok(Made::Nothing) => SettingsGave::Nothing,
+            Err(why) => {
+                self.told = vec![why.said(strings).into_text()];
+                SettingsGave::ItWasNotGiven
+            }
+        }
     }
 
     /// The pairings in force: as read, less every one revoked since — none

@@ -663,6 +663,35 @@ mod running {
 
         /// through the same one place that answers it.
         fn the_settings_places(&mut self) -> Option<alo_shell::SettingsPlaces> {
+            /// The agent this machine has, by the name its grants use.
+            ///
+            /// **Read from the machine's own description through the crate
+            /// that owns it**, and not parsed again here:
+            /// `/etc/alo/agentd.toml` has one reader and
+            /// `docs/contracts/machine-description.md` is a public surface, so
+            /// a second opinion about what `name` means is a second thing to
+            /// keep in step.
+            ///
+            /// It has to be this exact name. A grant written under any other
+            /// is one `alo-agentd` will never match, so a picker that guessed
+            /// would walk a person through choosing a folder and hand them
+            /// nothing at all.
+            ///
+            /// `None` when the description cannot be read or believed — a
+            /// machine somebody is still standing up, or one whose description
+            /// was written by the wrong hands. Settings then offers no way to
+            /// give a folder, which is this repository's rule for a setting
+            /// with no road: absent rather than there and broken.
+            fn the_agent_this_machine_has() -> Option<String> {
+                let us = alo_agentd::unix::us().ok()?;
+                alo_agentd::described::Described::at(
+                    std::path::Path::new(alo_agentd::described::THE_DESCRIPTION),
+                    us,
+                )
+                .ok()
+                .map(|described| described.agent().to_owned())
+            }
+
             Some(alo_shell::SettingsPlaces::of(
                 std::env::var_os("XDG_CONFIG_HOME").as_deref(),
                 std::env::var_os("HOME").as_deref(),
@@ -671,6 +700,7 @@ mod running {
                 std::path::Path::new(alo_remembering::THE_PAIRINGS),
                 &alo_changing::this_persons_door(),
                 std::path::Path::new(alo_remembering::THE_LEVEL),
+                the_agent_this_machine_has().as_deref(),
             ))
         }
 

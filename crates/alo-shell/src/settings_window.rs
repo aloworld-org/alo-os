@@ -11,9 +11,11 @@
 //! 2. **appearance** — the accent, through `alo_appearance::keeping`;
 //! 3. **the dock** — its edge, through `alo_dock::keeping`;
 //! 4. **shortcuts** — each action's chord, through `alo_shortcuts::keeping`;
-//! 5. **what has been granted to what** — the grants and the pairings in one
-//!    list, revoked with `alo_changing::Changing::revoked`
-//!    (`crate::settings_granted`).
+//! 5. **what has been granted to what** — the row that gives alo a folder,
+//!    then the grants and the pairings in one list, revoked with
+//!    `alo_changing::Changing::revoked` (`crate::settings_granted`). The row
+//!    opens `crate::a_folder_is_picked_in_settings`, which is the one way a
+//!    grant is made on this machine.
 //!
 //! # This window decides nothing
 //!
@@ -48,6 +50,7 @@ use alo_remembering::NotRemembered;
 use alo_shortcuts::{Action, Chord, Key, Modifiers, Shortcuts};
 use alo_strings::Strings;
 
+use crate::a_folder_is_picked_in_settings::{Folders, PickingRow};
 use crate::how_code_runs_in_settings::HowCodeRunsHere;
 use crate::settings_answering::{AnsweringSection, SettingsAnswered, SettingsChoice};
 use crate::settings_granted::{GrantedSection, SettingsRevoked};
@@ -98,6 +101,20 @@ pub enum SettingsRow {
     Shortcut(Action),
     /// A grant or a pairing: Enter revokes it.
     Granted(Row),
+    /// Give alo a folder: Enter opens the picker.
+    ///
+    /// **One row carrying nothing**, which is [`Self::AddAProvider`]'s shape
+    /// and for its reason: there is one of these, and what it acts on is the
+    /// section it is in. Until it existed this window was right in the grants
+    /// section's own words — *nothing is granted from here* — and so nothing
+    /// on the machine could grant alo a folder at all.
+    GrantAFolder,
+    /// One row of the picker, while a person is in it: Enter acts on it.
+    ///
+    /// The moves are rows rather than new keys, so the picker is worked with
+    /// the four this window already has.
+    /// `crate::a_folder_is_picked_in_settings` says why.
+    Picking(PickingRow),
     /// alo's shell integration: Enter adds it to the person's shell startup
     /// file, and says so. There is one of these rows, so it carries nothing —
     /// what it would act on is the section's own answer.
@@ -138,7 +155,7 @@ impl SettingsRow {
             Self::Accent(_) => SettingsSection::Appearance,
             Self::Hiding(_) => SettingsSection::Dock,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
-            Self::Granted(_) => SettingsSection::Granted,
+            Self::Granted(_) | Self::GrantAFolder | Self::Picking(_) => SettingsSection::Granted,
             Self::UsingAnother(_) => SettingsSection::Answering,
             Self::HowCodeRuns(_) => SettingsSection::HowCodeRuns,
             Self::ShellIntegration | Self::APlaceToReturnTo => SettingsSection::Terminal,
@@ -178,6 +195,13 @@ pub struct SettingsDoors<'a> {
     /// The daemon's door, which hears a grant's revocation and revokes a
     /// pairing.
     pub daemon: &'a dyn Door,
+    /// The one road to a disk, which the picker walks.
+    ///
+    /// **A trait rather than the filesystem**, which is `alo-picking`'s own
+    /// division and is why every rule about what a person may pick is tested
+    /// against a folder tree written down in a test. It is also the only thing
+    /// in this window that reads anything outside the person's own settings.
+    pub folders: &'a dyn Folders,
     /// The moment of the press, for the grants and pairings in force.
     pub now: SystemTime,
 }
@@ -197,6 +221,8 @@ pub enum SettingsDid {
     StoppedWaiting,
     /// The window closed.
     Closed,
+    /// A person moved through the picker, or gave alo a folder.
+    Gave(crate::settings_granted::SettingsGave),
     /// A person asked to add a provider, so a form should open.
     ///
     /// **The window says so and does not do it**: the form lives on the
@@ -260,8 +286,13 @@ impl SettingsWindow {
     /// Every section is read once, here, from where `places` says it is kept.
     /// Reopening an open window reads everything again.
     pub fn opened_by_hand(&mut self, places: &SettingsPlaces, now: SystemTime) -> SettingsOpened {
-        let (granted, not_remembered) =
-            GrantedSection::at_sign_in(places.grants(), places.pairings(), now);
+        let (granted, not_remembered) = GrantedSection::at_sign_in(
+            places.grants(),
+            places.pairings(),
+            places.home(),
+            places.agent(),
+            now,
+        );
         self.open = Some(Open {
             answering: AnsweringSection::at_sign_in(places.choosing()),
             appearance: KeptSection::at_sign_in(places.kept(alo_appearance::keeping::THE_FILE)),
@@ -380,6 +411,19 @@ impl SettingsWindow {
                 }
             }
             SettingsKey::Close => {
+                // **Escape gives up on the picker and leaves Settings open.**
+                // `crate::a_key_fills_in_a_provider` keeps the same rule for
+                // the same reason: a person pressing Escape to get out of a
+                // folder chooser has not asked to throw away everything else
+                // they came here for.
+                if let Some(open) = &mut self.open
+                    && open.granted.picking().is_some()
+                {
+                    open.granted.that_folder_is_not_being_given();
+                    return Some(SettingsDid::Gave(
+                        crate::settings_granted::SettingsGave::ItChanged,
+                    ));
+                }
                 self.open = None;
                 return Some(SettingsDid::Closed);
             }
@@ -462,6 +506,23 @@ impl Open {
                 .into_iter()
                 .map(SettingsRow::HowCodeRuns),
         );
+        // **The picker takes the section over while it is open**, rather than
+        // appearing above the list of grants. A person walking their own
+        // folders with the grants they already have underneath would be moving
+        // the ring through two unrelated lists, and the key that opens a folder
+        // and the key that revokes a grant would be the same key a row apart.
+        if let Some(picking) = self.granted.picking() {
+            rows.extend(picking.rows().into_iter().map(SettingsRow::Picking));
+            return rows;
+        }
+        // **Above the list, and always offered when it can be.** It is the one
+        // row in this section that is not something the person already has —
+        // the same argument `AddAProvider` makes a hundred lines up, and the
+        // same fault it fixes: a row that appeared only once somebody had a
+        // grant would be a door that opens after you are through it.
+        if self.granted.a_folder_can_be_given() {
+            rows.push(SettingsRow::GrantAFolder);
+        }
         rows.extend(self.granted.rows(now).into_iter().map(SettingsRow::Granted));
         rows
     }
@@ -524,6 +585,20 @@ impl Open {
             // when they press Enter again. A `Kept` here would tell the
             // section a change had landed that has not been made yet.
             SettingsRow::AddAProvider => SettingsDid::AddingAProvider,
+            // **Nothing is granted by pressing this**: it opens the picker.
+            // The grant is made further in, when the person has chosen a
+            // folder *and* said how long — two answers, and this row is
+            // neither of them.
+            SettingsRow::GrantAFolder => {
+                SettingsDid::Gave(self.granted.give_alo_a_folder(doors.folders, doors.strings))
+            }
+            SettingsRow::Picking(picking) => SettingsDid::Gave(self.granted.act_on(
+                picking,
+                doors.folders,
+                doors.daemon,
+                doors.now,
+                doors.strings,
+            )),
             SettingsRow::ShellIntegration => SettingsDid::Kept(
                 SettingsSection::Terminal,
                 self.shell_integration.add(doors.strings),
