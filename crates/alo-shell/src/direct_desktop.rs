@@ -823,6 +823,21 @@ impl LoopInput for Desk<'_> {
                         server, update, extent,
                     )
                 }
+                // **Then the alo Bar, when it holds the keyboard.** Behind
+                // Settings and the market and in front of the Dock's own
+                // surfaces, which is the order those layers are drawn in: a
+                // person with Settings open who presses a letter is typing
+                // into Settings, whatever the Bar was doing behind it.
+                //
+                // **This arm is the whole of what was missing.**
+                // `crate::a_chord_opens_the_bar` took the keyboard for the
+                // composer and nothing ever handed it a key — measured on a
+                // booted machine on 2026-10-23, twenty-nine characters typed
+                // into a field that stayed empty.
+                // `crate::a_key_reaches_the_bar` has the account.
+                else if server.the_bar_is_taking_the_keys() {
+                    crate::a_key_reaches_the_bar::a_key_reaches_the_bar(server, update, extent)
+                }
                 // **Escape closes what the Dock has open**, and only then.
                 // Asked after Settings because Settings is in front of the
                 // Dock when both are up: a person pressing Escape at a
