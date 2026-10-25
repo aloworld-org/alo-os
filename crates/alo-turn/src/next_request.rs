@@ -117,7 +117,15 @@ impl Held {
         let request = asked.trim();
         match self {
             Self::ToTheEnvelope if !request.is_empty() => {
-                Cow::Owned(shown_to_a_turn(verbs, request))
+                // **Not said, because this side does not know and must not
+                // pretend to.** `alo-turn` holds the rule that a question
+                // asks the grants nothing, and the agent that built this
+                // request has already named what it may reach.
+                Cow::Owned(shown_to_a_turn(
+                    verbs,
+                    &alo_instructing::WhatItMayReach::not_said(),
+                    request,
+                ))
             }
             Self::ToTheEnvelope | Self::InWords => Cow::Borrowed(asked),
         }
@@ -430,7 +438,14 @@ mod tests {
 
         let shown = what_the_model_was_shown(the_body_of(&request));
         shown_in_the_products_words(&shown, &the_machines_verbs(), WHAT_NEXT);
-        assert_eq!(shown, shown_to_a_turn(&the_machines_verbs(), WHAT_NEXT));
+        assert_eq!(
+            shown,
+            shown_to_a_turn(
+                &the_machines_verbs(),
+                &alo_instructing::WhatItMayReach::not_said(),
+                WHAT_NEXT
+            )
+        );
     }
 
     /// **A person's question in words reaches the model as they wrote it**:
@@ -551,7 +566,11 @@ mod tests {
                     )
                 } else {
                     turning.asking(
-                        &shown_to_a_turn(&the_machines_verbs(), WHAT_NEXT),
+                        &shown_to_a_turn(
+                            &the_machines_verbs(),
+                            &alo_instructing::WhatItMayReach::not_said(),
+                            WHAT_NEXT,
+                        ),
                         "mistral-small-latest",
                         permission,
                         &answers,
@@ -668,7 +687,11 @@ mod tests {
                     )
                 } else {
                     turning.asking(
-                        &shown_to_a_turn(&the_machines_verbs(), WHAT_NEXT),
+                        &shown_to_a_turn(
+                            &the_machines_verbs(),
+                            &alo_instructing::WhatItMayReach::not_said(),
+                            WHAT_NEXT,
+                        ),
                         "a-model",
                         permission,
                         &answers,

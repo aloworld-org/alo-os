@@ -35,8 +35,8 @@ use alo_strings::Language;
 
 use crate::instructions::Instructions;
 use crate::shown::shown_to_a_model;
-use crate::what_it_may_reach::WhatItMayReach;
 use crate::the_language_asked_in::the_language_of;
+use crate::what_it_may_reach::WhatItMayReach;
 
 /// **The clause, for a language that was read from the request.**
 ///
@@ -90,7 +90,11 @@ mod tests {
     fn the_clause_is_added_after_the_request_and_the_graded_text_is_unchanged() {
         let verbs = the_verbs();
         let asked = "wo ist die Rechnung von Northstar?";
-        let with = shown_to_a_turn_answering_in_the_language_asked_in(&verbs, &WhatItMayReach::nothing(), asked);
+        let with = shown_to_a_turn_answering_in_the_language_asked_in(
+            &verbs,
+            &WhatItMayReach::nothing(),
+            asked,
+        );
         let without = shown_to_a_turn(&verbs, &WhatItMayReach::nothing(), asked);
         assert!(with.starts_with(&without), "the graded text moved");
         assert!(with.contains(Instructions::SHOWN_TO_A_TURN.text()));
@@ -104,7 +108,11 @@ mod tests {
         let verbs = the_verbs();
         for unreadable in ["Northstar", "2026-09-16", ""] {
             assert_eq!(
-                shown_to_a_turn_answering_in_the_language_asked_in(&verbs, &WhatItMayReach::nothing(), unreadable),
+                shown_to_a_turn_answering_in_the_language_asked_in(
+                    &verbs,
+                    &WhatItMayReach::nothing(),
+                    unreadable
+                ),
                 shown_to_a_turn(&verbs, &WhatItMayReach::nothing(), unreadable),
                 "{unreadable:?}"
             );

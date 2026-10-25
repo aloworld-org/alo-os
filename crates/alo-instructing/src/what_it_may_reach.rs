@@ -46,15 +46,34 @@ use std::path::Path;
 /// put a folder in front of a model that nobody granted.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct WhatItMayReach {
-    /// The folders, sorted and without repeats.
-    folders: Vec<String>,
+    /// The folders, sorted and without repeats — [`None`] where whoever built
+    /// this does not know what is granted and must not pretend to.
+    folders: Option<Vec<String>>,
 }
 
 impl WhatItMayReach {
-    /// A machine where nothing has been granted.
+    /// **Nobody said**, so a model is told nothing about what it may reach.
+    ///
+    /// Not the same as nothing being granted, and the difference is a sentence
+    /// that would be false. `alo-agentd` wraps an agent's next request for the
+    /// pinned runtime and **does not know this person's grants** — `alo-turn`
+    /// holds the rule that a question asks the grants nothing. A daemon that
+    /// said *you have been granted no folder* there would contradict the
+    /// agent's own correct list, inside the same text.
+    ///
+    /// So this says nothing at all, and the side that knows is the side that
+    /// speaks.
+    #[must_use]
+    pub fn not_said() -> Self {
+        Self { folders: None }
+    }
+
+    /// A machine where nothing has been granted, and this is known.
     #[must_use]
     pub fn nothing() -> Self {
-        Self::default()
+        Self {
+            folders: Some(Vec::new()),
+        }
     }
 
     /// These folders, sorted and deduplicated.
@@ -72,36 +91,47 @@ impl WhatItMayReach {
             .collect();
         folders.sort_unstable();
         folders.dedup();
-        Self { folders }
+        Self {
+            folders: Some(folders),
+        }
     }
 
-    /// Whether anything has been granted.
+    /// Whether this says nothing at all, because nobody knew.
+    #[must_use]
+    pub const fn was_not_said(&self) -> bool {
+        self.folders.is_none()
+    }
+
+    /// Whether it is known that nothing has been granted.
     #[must_use]
     pub fn is_nothing(&self) -> bool {
-        self.folders.is_empty()
+        self.folders.as_ref().is_some_and(Vec::is_empty)
     }
 
-    /// The folders, as they are shown.
+    /// The folders, as they are shown — empty when nothing was said as well as
+    /// when nothing was granted, which [`Self::was_not_said`] tells apart.
     #[must_use]
     pub fn folders(&self) -> &[String] {
-        &self.folders
+        self.folders.as_deref().unwrap_or_default()
     }
 
-    /// What a model is told, which is a list or a sentence and never an empty
-    /// list.
+    /// What a model is told: a list, a sentence, or — where nobody knew —
+    /// nothing at all.
     #[must_use]
     pub fn told(&self) -> String {
-        if self.folders.is_empty() {
+        let Some(folders) = &self.folders else {
+            return String::new();
+        };
+        if folders.is_empty() {
             return "\n\nYou have not been granted any folder on this computer. Every verb that \
                     reads a file will be refused whatever path you name, so do not guess one. Say \
                     that nothing has been granted, and that a person grants a folder by picking \
                     it in Settings."
                 .to_owned();
         }
-        let mut text = String::from(
-            "\n\nThe folders you may reach, and nothing else on this computer:\n",
-        );
-        for folder in &self.folders {
+        let mut text =
+            String::from("\n\nThe folders you may reach, and nothing else on this computer:\n");
+        for folder in folders {
             text.push_str("  ");
             text.push_str(folder);
             text.push('\n');
@@ -130,6 +160,29 @@ mod tests {
         assert!(told.contains("picking it in Settings"), "{told}");
     }
 
+    /// **Nobody said is silence, not a claim.** The daemon wraps an agent's
+    /// next request and does not know this person's grants; a sentence there
+    /// saying nothing was granted would contradict the agent's own correct
+    /// list inside the same text.
+    #[test]
+    fn nobody_having_said_tells_a_model_nothing_at_all() {
+        let it = WhatItMayReach::not_said();
+        assert!(it.was_not_said());
+        assert!(!it.is_nothing(), "not said is not the same as nothing");
+        assert_eq!(it.told(), "");
+    }
+
+    /// And the two are never confused: nothing granted still speaks.
+    #[test]
+    fn nothing_granted_and_nobody_saying_are_different_things() {
+        assert_ne!(
+            WhatItMayReach::not_said().told(),
+            WhatItMayReach::nothing().told()
+        );
+        assert!(WhatItMayReach::nothing().is_nothing());
+        assert!(!WhatItMayReach::nothing().was_not_said());
+    }
+
     /// The folder a person granted is named, in full.
     #[test]
     fn a_granted_folder_is_named_so_it_need_not_be_guessed() {
@@ -144,7 +197,12 @@ mod tests {
     #[test]
     fn no_folder_appears_that_was_not_granted() {
         let told = WhatItMayReach::these([Path::new("/home/alo/Documents")]).told();
-        for never in ["/home/alo/Pictures", "/home/alo/Downloads", "/etc", "/home/alo\n"] {
+        for never in [
+            "/home/alo/Pictures",
+            "/home/alo/Downloads",
+            "/etc",
+            "/home/alo\n",
+        ] {
             assert!(!told.contains(never), "{never} reached a model: {told}");
         }
     }

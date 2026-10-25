@@ -214,8 +214,8 @@ pub fn shown_in_progress(
 mod tests {
     use super::{AStep, ATurnInProgress, shown_to_a_turn_in_progress};
     use crate::shown::shown_to_a_turn;
-    use crate::what_it_may_reach::WhatItMayReach;
     use crate::testing::the_verbs;
+    use crate::what_it_may_reach::WhatItMayReach;
 
     /// **A turn that has asked nothing is shown what it was shown before**, to
     /// the byte. The grade every model holds was earned through
@@ -226,7 +226,10 @@ mod tests {
         let verbs = the_verbs();
         let nothing: [AStep; 0] = [];
         assert_eq!(
-            shown_to_a_turn_in_progress(&verbs, ATurnInProgress::of("tidy my invoices", &nothing, &WhatItMayReach::nothing())),
+            shown_to_a_turn_in_progress(
+                &verbs,
+                ATurnInProgress::of("tidy my invoices", &nothing, &WhatItMayReach::nothing())
+            ),
             shown_to_a_turn(&verbs, &WhatItMayReach::nothing(), "tidy my invoices")
         );
     }
@@ -238,7 +241,10 @@ mod tests {
         let asked = r#"{"format":1,"asks":{"read":{"verb":"list_folder","given":[]}}}"#;
         let came_back = r#"{"format":1,"tells":{"did":{"listed":{"things":[]}}}}"#;
         let steps = [AStep::of(asked, came_back)];
-        let shown = shown_to_a_turn_in_progress(&verbs, ATurnInProgress::of("tidy", &steps, &WhatItMayReach::nothing()));
+        let shown = shown_to_a_turn_in_progress(
+            &verbs,
+            ATurnInProgress::of("tidy", &steps, &WhatItMayReach::nothing()),
+        );
 
         assert!(shown.contains(asked), "the line it wrote is not shown back");
         assert!(shown.contains(came_back), "the answer is not shown");
@@ -266,7 +272,10 @@ mod tests {
         let verbs = the_verbs();
         let long = "x".repeat(AStep::THE_MOST_OF_AN_ANSWER + 500);
         let steps = [AStep::of("{}", &long)];
-        let shown = shown_to_a_turn_in_progress(&verbs, ATurnInProgress::of("read it", &steps, &WhatItMayReach::nothing()));
+        let shown = shown_to_a_turn_in_progress(
+            &verbs,
+            ATurnInProgress::of("read it", &steps, &WhatItMayReach::nothing()),
+        );
         assert!(
             shown.contains("was longer than that and was cut here"),
             "a shortened answer did not say so"
@@ -278,7 +287,10 @@ mod tests {
         // And one that just fits is not cut.
         let fits = "y".repeat(AStep::THE_MOST_OF_AN_ANSWER);
         let steps = [AStep::of("{}", &fits)];
-        let shown = shown_to_a_turn_in_progress(&verbs, ATurnInProgress::of("read it", &steps, &WhatItMayReach::nothing()));
+        let shown = shown_to_a_turn_in_progress(
+            &verbs,
+            ATurnInProgress::of("read it", &steps, &WhatItMayReach::nothing()),
+        );
         assert!(shown.contains(&fits), "an answer at the bound was cut");
         assert!(!shown.contains("was cut here"));
     }
@@ -293,7 +305,10 @@ mod tests {
         // the offsets this could have chosen.
         let long = "é".repeat(AStep::THE_MOST_OF_AN_ANSWER);
         let steps = [AStep::of("{}", &long)];
-        let shown = shown_to_a_turn_in_progress(&verbs, ATurnInProgress::of("read it", &steps, &WhatItMayReach::nothing()));
+        let shown = shown_to_a_turn_in_progress(
+            &verbs,
+            ATurnInProgress::of("read it", &steps, &WhatItMayReach::nothing()),
+        );
         assert!(shown.contains("was cut here"));
     }
 
@@ -306,7 +321,10 @@ mod tests {
             AStep::of("asked-first", "answered-first"),
             AStep::of("asked-second", "answered-second"),
         ];
-        let shown = shown_to_a_turn_in_progress(&verbs, ATurnInProgress::of("a job", &steps, &WhatItMayReach::nothing()));
+        let shown = shown_to_a_turn_in_progress(
+            &verbs,
+            ATurnInProgress::of("a job", &steps, &WhatItMayReach::nothing()),
+        );
         let first = shown.find("asked-first").unwrap();
         let second = shown.find("asked-second").unwrap();
         assert!(first < second, "the steps are shown newest first");

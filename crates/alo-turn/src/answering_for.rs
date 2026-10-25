@@ -430,8 +430,11 @@ mod tests {
     fn a_question_a_paired_machine_asks_reaches_this_model_untouched() {
         // What the reception machine's turn composed for its agent's next
         // request, arriving here as a question.
-        let composed =
-            alo_instructing::shown_to_a_turn(&alo_files::file_verbs().unwrap(), "list my invoices");
+        let composed = alo_instructing::shown_to_a_turn(
+            &alo_files::file_verbs().unwrap(),
+            &alo_instructing::WhatItMayReach::not_said(),
+            "list my invoices",
+        );
         let question = Question::asked(&composed, "a-model").unwrap();
         let runtime = Stub::answering("{\"format\":1}");
         let mut record = Record::default();

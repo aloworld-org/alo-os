@@ -764,6 +764,23 @@ struct Desk<'a> {
     reader: Option<crate::TheReaderIsTold>,
 }
 
+/// The folders this person has granted, for a request about to be sent.
+///
+/// A free function rather than a method, because the two call sites are in a
+/// trait implementation. `crate::what_the_agent_may_reach` holds why the
+/// person's own side is what names them.
+fn the_folders_to_send(server: &Server) -> Vec<std::path::PathBuf> {
+    server
+        .settings_places
+        .as_ref()
+        .map_or_else(Vec::new, |places| {
+            crate::what_the_agent_may_reach::what_the_agent_may_reach(
+                places,
+                std::time::SystemTime::now(),
+            )
+        })
+}
+
 impl LoopInput for Desk<'_> {
     /// Route the input, then tell the desktop where the pointer ended up.
     ///
@@ -927,6 +944,7 @@ impl LoopInput for Desk<'_> {
             self.asking.ask(
                 crate::what_a_person_asked_goes_to_the_agent::WhoAsked::TheTerminal,
                 &request,
+                &the_folders_to_send(server),
             );
         }
         server.meet_what_was_pressed_on_an_edge();
@@ -1121,6 +1139,7 @@ impl LoopInput for Desk<'_> {
                 self.asking.ask(
                     crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(which),
                     &request,
+                    &the_folders_to_send(server),
                 );
             }
         }

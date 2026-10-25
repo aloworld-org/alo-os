@@ -67,7 +67,12 @@ mod tests {
     #[test]
     fn the_text_describes_each_verb_in_the_words_the_verb_declared() {
         let verbs = the_verbs();
-        let text = shown_to_a_model(Instructions::AsFirstWritten, &verbs, &WhatItMayReach::nothing(), "do something");
+        let text = shown_to_a_model(
+            Instructions::AsFirstWritten,
+            &verbs,
+            &WhatItMayReach::nothing(),
+            "do something",
+        );
         for verb in verbs.all() {
             assert!(text.contains(verb.name()), "{}", verb.name());
             assert!(text.contains(verb.purpose_as_written()), "{}", verb.name());
@@ -82,7 +87,12 @@ mod tests {
     /// been measured on something nobody asked it.
     #[test]
     fn every_bound_a_verb_declared_is_in_the_text() {
-        let text = shown_to_a_model(Instructions::AsFirstWritten, &the_verbs(), &WhatItMayReach::nothing(), "do something");
+        let text = shown_to_a_model(
+            Instructions::AsFirstWritten,
+            &the_verbs(),
+            &WhatItMayReach::nothing(),
+            "do something",
+        );
         assert!(text.contains("a full path"), "{text}");
         assert!(text.contains("at most 255 characters"), "{text}");
         assert!(text.contains("a whole number from 1 to 1000"), "{text}");
@@ -101,7 +111,12 @@ mod tests {
     /// told which is which.
     #[test]
     fn the_text_says_which_door_each_verb_takes() {
-        let text = shown_to_a_model(Instructions::AsFirstWritten, &the_verbs(), &WhatItMayReach::nothing(), "do something");
+        let text = shown_to_a_model(
+            Instructions::AsFirstWritten,
+            &the_verbs(),
+            &WhatItMayReach::nothing(),
+            "do something",
+        );
         assert!(text.contains("list_folder (read)"), "{text}");
         assert!(text.contains("move_file (propose)"), "{text}");
     }
@@ -136,9 +151,14 @@ mod tests {
             assert_eq!(shown, instructions.text());
             assert_eq!(
                 rest,
-                shown_to_a_model(Instructions::AsFirstWritten, &verbs, &WhatItMayReach::nothing(), request)
-                    .split_at(Instructions::AsFirstWritten.text().len())
-                    .1
+                shown_to_a_model(
+                    Instructions::AsFirstWritten,
+                    &verbs,
+                    &WhatItMayReach::nothing(),
+                    request
+                )
+                .split_at(Instructions::AsFirstWritten.text().len())
+                .1
             );
         }
     }
@@ -152,9 +172,17 @@ mod tests {
         let request = "what is in /home/anna";
         assert_eq!(
             shown_to_a_turn(&verbs, &WhatItMayReach::nothing(), request),
-            shown_to_a_model(Instructions::SHOWN_TO_A_TURN, &verbs, &WhatItMayReach::nothing(), request)
+            shown_to_a_model(
+                Instructions::SHOWN_TO_A_TURN,
+                &verbs,
+                &WhatItMayReach::nothing(),
+                request
+            )
         );
-        assert!(shown_to_a_turn(&verbs, &WhatItMayReach::nothing(), request).starts_with(Instructions::SHOWN_TO_A_TURN.text()));
+        assert!(
+            shown_to_a_turn(&verbs, &WhatItMayReach::nothing(), request)
+                .starts_with(Instructions::SHOWN_TO_A_TURN.text())
+        );
     }
 
     /// A registry with a verb this system does not ship tells a model about it

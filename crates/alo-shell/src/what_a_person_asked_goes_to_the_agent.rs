@@ -142,9 +142,14 @@ impl TheAgentsDoor {
     /// is a machine where nothing is listening for a person's words, which is
     /// what a desktop with no daemon running looks like. It comes back as an
     /// answer saying so.
-    pub fn ask(&self, who: WhoAsked, request: &str) {
+    /// `may_reach` is the folders this person has granted. They travel with
+    /// the request so the model is not left guessing a path —
+    /// `crate::what_the_agent_may_reach` holds why this side is the one that
+    /// says so, and why naming a wrong one costs a round and nothing else.
+    pub fn ask(&self, who: WhoAsked, request: &str, may_reach: &[std::path::PathBuf]) {
         let socket = self.socket.clone();
         let request = request.to_owned();
+        let may_reach: Vec<std::path::PathBuf> = may_reach.to_vec();
         let posting = self.posting.clone();
         // A thread that cannot be started is reported the same way a socket
         // that cannot be reached is: as something wrong with the machine,
@@ -152,7 +157,7 @@ impl TheAgentsDoor {
         let started = std::thread::Builder::new()
             .name("alo-asking".to_owned())
             .spawn(move || {
-                let came_back = ask_and_wait(&socket, &request);
+                let came_back = ask_and_wait(&socket, &request, &may_reach);
                 drop(posting.send(came_back.into_what_came_back(who)));
             });
         if let Err(why) = started {
@@ -213,7 +218,7 @@ impl Said {
 /// would hand a person *a change is waiting for you to answer, as number 7* and
 /// drop the sentence they are being asked to approve. Which is the one thing on
 /// this wire that must never be lost.
-fn ask_and_wait(socket: &Path, request: &str) -> Said {
+fn ask_and_wait(socket: &Path, request: &str, may_reach: &[std::path::PathBuf]) -> Said {
     let machine = |why: &dyn std::fmt::Display| Said::TheMachine(format!("{why}"));
 
     let Ok(mut talking) = UnixStream::connect(socket) else {
@@ -228,8 +233,23 @@ fn ask_and_wait(socket: &Path, request: &str) -> Said {
     if let Err(why) = talking.set_write_timeout(Some(PATIENCE)) {
         return machine(&why);
     }
+    // **The folders this person granted, first, and only when there are any.**
+    // A line that does not begin with the marker is the request itself, which
+    // is what keeps `alo-ask` and every other caller written before this
+    // working unchanged. Tab-separated because a folder may hold a space and
+    // may not hold a tab on any filesystem alo OS stands up on.
+    let folders = may_reach
+        .iter()
+        .map(|folder| folder.display().to_string())
+        .collect::<Vec<String>>()
+        .join("\t");
+    let said = if folders.is_empty() {
+        format!("{request}\n")
+    } else {
+        format!("alo-may-reach:{folders}\n{request}\n")
+    };
     if let Err(why) = talking
-        .write_all(format!("{request}\n").as_bytes())
+        .write_all(said.as_bytes())
         .and_then(|()| talking.flush())
     {
         return machine(&why);
