@@ -46,7 +46,7 @@ use std::time::SystemTime;
 use serde::{Deserialize, Serialize};
 
 use crate::a_terminal_for_the_agent::ATerminalForTheAgent;
-use crate::grant::{Grant, Grantee};
+use crate::grant::{Grant, Grantee, Until};
 use crate::persons_own::is_a_persons_own;
 use crate::reach::Ask;
 use crate::refusing::NotGranted;
@@ -682,7 +682,7 @@ mod tests {
             grantee,
             reach: Reach::Application(identifier.to_owned()),
             granted_at: noon(),
-            expires: noon() + hour(),
+            expires: Until::AMoment(noon() + hour()),
         };
         let alo = Grantee::named("@alo");
         let grants = Grants {
@@ -720,7 +720,7 @@ mod tests {
             grantee,
             reach: Reach::Application(identifier.to_owned()),
             granted_at: noon(),
-            expires: noon() + hour(),
+            expires: Until::AMoment(noon() + hour()),
         };
         let alo = Grantee::named("@alo");
         let mail = crate::Applicant::named("org.example.Mail");

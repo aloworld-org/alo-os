@@ -169,3 +169,43 @@ compromise. The verb list is auditable by reading it. A sandbox is not.
 Rejected as the default and kept as a last resort. It cannot be verified after
 the fact, which breaks §7, and on a machine sold on auditability that is not a
 trade we can make quietly.
+
+---
+
+## Amended 2026-10-25 — a grant may last until the person removes it
+
+§3 says grants are **expiring by default**, and one sentence later that *there
+is no grant that outlives the reason it was made*. The two pull apart, and the
+code read the second: `Grant` stores `expires: SystemTime`, with no way to say
+*never*, so `alo-picking` could only offer lengths and a person had to come
+back and grant the same folder again.
+
+**The owner settled it on 2026-10-25**, in these words:
+
+> I think it should be like an agent here, Claude co work or Claude code — I
+> can give an agent full access or remove it but there is no time limit. We can
+> put the time limits but also we should add where the user can put so as he
+> does not need to come back every one hour or month to change.
+
+So **until I remove it** is one of the lengths a person may choose, beside an
+hour, a day and a month. *Expiring by default* stands and is what it says: a
+default, which law 5 makes theirs to change. *No grant outlives the reason it
+was made* is narrowed to what it was protecting — a grant nobody can see and
+nobody remembers — and that is now carried by visibility instead of by a clock:
+it is in the one list, it says **until you remove it** where another says a
+time, and one press revokes it.
+
+Nothing else in §3 moves. A grant is still enumerated, still visible where a
+person can find it, still revocable in one action, and there is still no grant
+to `/`.
+
+### What this costs, written here because it is the part to argue with
+
+A grant that never expires is the one a person forgets. The clock used to be
+the backstop; now the list is the only one. That raises what the grants section
+of Settings owes a person — it must be findable, it must read plainly, and an
+endless grant must never be indistinguishable from a timed one at a glance.
+
+**And it is not a default.** The shortest length is still the row the ring lands
+on, so the least a person can give stays the cheapest to choose, and *until I
+remove it* is a deliberate reach rather than the path of least resistance.
