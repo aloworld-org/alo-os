@@ -240,7 +240,7 @@ pub fn what_this_machine_can_say() -> Result<Strings, WouldNotStand> {
     // **The surface that gives alo a folder**, declared here for the same
     // reason. `alo-picking` words the picker's own refusals and `alo-saying`
     // collects those; what is declared here is this window's part — the row
-    // that opens the picker, the two moves, and the three lengths a person may
+    // that opens the picker, the two moves, and the four lengths a person may
     // give a folder for.
     crate::the_pickers_words::declare_the_pickers_words(&mut vocabulary)
         .map_err(|why| WouldNotStand::Words(why.to_string()))?;
