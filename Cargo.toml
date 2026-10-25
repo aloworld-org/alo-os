@@ -10,6 +10,7 @@ members = [
   "tools/graphics-check",
   "tools/what-a-gate-needs-in-memory",
   "crates/alo-giving-a-folder",
+  "crates/alo-their-folders",
   "crates/alo-as-it-was",
   "crates/alo-back",
   "crates/alo-kept-undo",

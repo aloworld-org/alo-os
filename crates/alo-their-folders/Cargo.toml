@@ -1,0 +1,27 @@
+[package]
+name = "alo-their-folders"
+version = "0.0.1"
+description = "The ordinary folders a person expects to find in their home — Documents, Downloads and Pictures — named in their own language and recorded where applications look."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The names a person reads, which here are also the names on the disk. Every
+# other crate uses this for sentences; this one uses it for three nouns, and
+# that is the whole reason the folders can be Dokumente on a German machine
+# without a second list anywhere.
+alo-strings = { path = "../alo-strings" }
+
+# The one derive this crate rents, for the refusals a caller has to tell apart.
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary. This crate's own tests are written against its
+# own list; the acceptance test asks whether what this crate says survives
+# being put beside everybody else's.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

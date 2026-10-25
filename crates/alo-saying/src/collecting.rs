@@ -158,6 +158,7 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-tasks",
     "alo-telling",
     "alo-terminal",
+    "alo-their-folders",
     "alo-turn",
 ];
 
@@ -418,6 +419,11 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         "alo-terminal",
         alo_terminal::words::declare_into,
     )?;
+    declare(
+        &mut vocabulary,
+        "alo-their-folders",
+        alo_their_folders::declare_into,
+    )?;
     declare(&mut vocabulary, "alo-turn", alo_turn::declare_into)?;
     Ok(vocabulary)
 }
@@ -535,6 +541,7 @@ mod tests {
         ("alo-tasks", "tasks.status.working"),
         ("alo-telling", "telling.carry-on"),
         ("alo-terminal", "terminal.who.program"),
+        ("alo-their-folders", "their-folders.documents"),
         ("alo-turn", "turn.closed"),
     ];
 
@@ -660,6 +667,7 @@ mod tests {
             alo_tasks::task_words().unwrap().how_many(),
             alo_telling::telling_words().unwrap().how_many(),
             alo_terminal::words::terminal_words().unwrap().how_many(),
+            alo_their_folders::their_folders_words().unwrap().how_many(),
             alo_turn::turn_words().unwrap().how_many(),
         ];
         assert_eq!(each.len(), EVERY_LIST.len());

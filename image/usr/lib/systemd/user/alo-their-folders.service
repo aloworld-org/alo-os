@@ -1,0 +1,63 @@
+# The folders a person expects in their home, made in their own session.
+#
+# A person's home folder held nothing but three hidden shell files until this
+# unit: no Documents, no Downloads, no Pictures. Every other desktop operating
+# system makes these when an account is created, and `docs/features.md` says to
+# be ordinary everywhere it is not the point.
+[Unit]
+Description=alo OS: the folders this person expects in their home
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/crates/alo-their-folders/src/lib.rs
+
+# Nothing to wait for. It writes under $HOME, which the manager that started
+# this already has, and it talks to no bus, no socket and no network.
+[Service]
+Type=oneshot
+RemainAfterExit=no
+ExecStart=/usr/libexec/alo-their-folders
+
+# **In the person's own manager, which is the whole design.** A program already
+# running as them makes folders that are theirs by the ordinary rules, so this
+# needs no capability at all — and a system unit could not do it anyway:
+# alo-compositor is root with CapabilityBoundingSet= and AmbientCapabilities=
+# both empty, so it has no CAP_DAC_OVERRIDE and a person's 0700 home is closed
+# to it. ADR 0119 met the same wall and spent a capability; this one does not
+# have to, which is the better answer where it is available.
+#
+# There is no User= line for the same reason: a user unit is already the
+# person, and naming one would be a second opinion about who that is.
+
+# It opens one directory and needs nothing else, so everything else is shut.
+# ProtectHome= is deliberately absent and would break this: $HOME is the one
+# place it writes.
+ProtectSystem=strict
+PrivateTmp=yes
+PrivateNetwork=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+# A oneshot that prints nothing is indistinguishable from one that never ran,
+# which this repository has already paid for once. It names each folder it
+# made, and every refusal, on the journal.
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+# **default.target, which is the person's own.** Enabled with
+# `systemctl --global enable` in the image, so every person on the machine has
+# it rather than whoever happened to be set up first.
+#
+# It runs at every sign-in and not only the first. `made_for` is unchanged by a
+# second run, so this repairs a machine somebody deleted a folder on — and
+# there is no first-boot condition to get wrong, which matters here because
+# ConditionFirstBoot= does not fire on this image at all (`docs/quirks.md`).
+WantedBy=default.target

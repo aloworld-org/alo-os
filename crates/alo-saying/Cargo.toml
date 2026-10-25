@@ -95,6 +95,7 @@ alo-sleeping = { path = "../alo-sleeping" }
 alo-software = { path = "../alo-software" }
 alo-telling = { path = "../alo-telling" }
 alo-terminal = { path = "../alo-terminal" }
+alo-their-folders = { path = "../alo-their-folders" }
 alo-turn = { path = "../alo-turn" }
 
 # `alo-agentd` is deliberately not here: it is Linux, and a vocabulary that was
