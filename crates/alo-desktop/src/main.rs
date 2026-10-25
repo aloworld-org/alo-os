@@ -665,31 +665,34 @@ mod running {
         fn the_settings_places(&mut self) -> Option<alo_shell::SettingsPlaces> {
             /// The agent this machine has, by the name its grants use.
             ///
-            /// **Read from the machine's own description through the crate
-            /// that owns it**, and not parsed again here:
-            /// `/etc/alo/agentd.toml` has one reader and
-            /// `docs/contracts/machine-description.md` is a public surface, so
-            /// a second opinion about what `name` means is a second thing to
-            /// keep in step.
+            /// **This machine's unit file says so**, which is the road this
+            /// binary already takes for the other fact a machine differs by:
+            /// `ALO_KEYBOARD` is handed over the same way, two lines up in the
+            /// same file. It has to be the exact name `/etc/alo/agentd.toml`
+            /// carries, because a grant written under any other is one
+            /// `alo-agentd` will never match — so the image asserts that the
+            /// two agree at build time, which is where a drift between them is
+            /// cheap to find.
             ///
-            /// It has to be this exact name. A grant written under any other
-            /// is one `alo-agentd` will never match, so a picker that guessed
-            /// would walk a person through choosing a folder and hand them
-            /// nothing at all.
+            /// **It is not read from the description here, and that was
+            /// measured rather than preferred.** Reading it through the crate
+            /// that owns that file is the obvious answer and was built first;
+            /// it makes this binary depend on `alo-agentd`, which depends on
+            /// `alo-bounding`, whose build compiles the eBPF programmes for
+            /// the kernel boundary. One string from a TOML file then drags the
+            /// whole kernel half into the desktop's compile, and the image
+            /// build failed on a stage with no `bpf-linker`. **No test saw
+            /// it**: the toolchain is present on a developer's machine, and
+            /// only building what ships does not have it.
             ///
-            /// `None` when the description cannot be read or believed — a
-            /// machine somebody is still standing up, or one whose description
-            /// was written by the wrong hands. Settings then offers no way to
-            /// give a folder, which is this repository's rule for a setting
-            /// with no road: absent rather than there and broken.
+            /// `None` where the unit did not say, and then Settings offers no
+            /// way to give a folder at all — this repository's rule for a
+            /// setting with no road: absent rather than there and broken.
             fn the_agent_this_machine_has() -> Option<String> {
-                let us = alo_agentd::unix::us().ok()?;
-                alo_agentd::described::Described::at(
-                    std::path::Path::new(alo_agentd::described::THE_DESCRIPTION),
-                    us,
-                )
-                .ok()
-                .map(|described| described.agent().to_owned())
+                std::env::var("ALO_AGENT")
+                    .ok()
+                    .map(|name| name.trim().to_owned())
+                    .filter(|name| !name.is_empty())
             }
 
             Some(alo_shell::SettingsPlaces::of(

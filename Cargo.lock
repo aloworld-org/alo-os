@@ -694,7 +694,6 @@ name = "alo-desktop"
 version = "0.1.0"
 dependencies = [
  "alo-access",
- "alo-agentd",
  "alo-appearance",
  "alo-applications",
  "alo-arranging",

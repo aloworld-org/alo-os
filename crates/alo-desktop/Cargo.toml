@@ -81,12 +81,6 @@ image = { version = "=0.25.10", default-features = false, features = ["png"] }
 # asks the kernel whose session this is, so this crate keeps its own rule that
 # a desktop never takes a person's number from a variable.
 alo-remembering = { path = "../alo-remembering" }
-# **For one question: what this machine's agent is called.** A grant has to be
-# written under the exact name `alo-agentd` matches against, and that name
-# lives in the machine description. Read through the crate that owns that file
-# rather than parsed again here: it is a public contract, and a second reader
-# is a second thing to keep in step.
-alo-agentd = { path = "../alo-agentd" }
 # For one path: the socket this person's daemon listens on, which a revocation
 # in Settings knocks at. Named by the crate that owns the door rather than
 # spelled here, and keyed by the same one kernel question as the grants above.

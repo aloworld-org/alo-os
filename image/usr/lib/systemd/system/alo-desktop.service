@@ -110,6 +110,27 @@ PAMName=alo-desktop
 
 Environment=ALO_KEYBOARD=gb
 
+# **The agent this machine has, by the name its grants use.** Settings needs it
+# to write the grant a person makes by picking a folder, and it has to be the
+# exact name `/etc/alo/agentd.toml` carries: a grant under any other name is one
+# `alo-agentd` will never match, so a person would walk through choosing a
+# folder and be handed nothing.
+#
+# **One source of truth, and it is checked rather than trusted.** The
+# description is the source and this line is a copy, so the image build asserts
+# that the two agree. Where this is unset Settings offers no way to give a
+# folder at all — that window's rule for a setting with no road is absent rather
+# than there and broken.
+#
+# **Handed over here rather than read from the description by the desktop**, and
+# that was measured rather than preferred. Reading it through the crate that
+# owns that file makes this binary depend on `alo-agentd`, which depends on
+# `alo-bounding`, whose build compiles the kernel boundary's eBPF programmes —
+# so one string from a TOML file dragged the whole kernel half into the
+# desktop's compile, and the image build failed on a stage with no
+# `bpf-linker`. No test saw it; only building what ships did.
+Environment=ALO_AGENT=alo
+
 # The socket this person's clients connect to goes in a directory systemd makes
 # and takes away. 0700: a desktop whose socket a second account could reach is
 # a desktop that is not this person's.
