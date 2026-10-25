@@ -79,10 +79,24 @@ use crate::refusing::NotRemembered;
 
 /// The newest shape of grants file this alo OS writes and reads.
 ///
-/// Format 2 adds grants to applications and over facilities (ADR 0040). The
-/// older [`THE_FIRST_FORMAT`] is read as well, and written whenever the list
-/// fits in it.
-pub const THE_FORMAT: u32 = 2;
+/// Format 2 adds grants to applications and over facilities (ADR 0040).
+/// **Format 3 adds `expires = "removed"`** — a grant that runs until the
+/// person takes it away, which ADR 0001 as amended on 2026-10-25 allows.
+///
+/// Older formats are read as well, and the lowest one that holds what is being
+/// written is what gets written — so a machine with no endless grant writes
+/// exactly what it wrote before. A machine with one declares format 3, and an
+/// older reader **refuses the whole file** rather than reading `"removed"` as a
+/// moment. Failing closed is the only safe direction for a key that says *this
+/// never ends*.
+pub const THE_FORMAT: u32 = 3;
+
+/// The shape before a grant could run until it is removed.
+///
+/// Named rather than written as `2`, so that the one thing format 3 changed —
+/// what `expires` may hold, and nothing else — stays legible where a format is
+/// chosen.
+pub const THE_FORMAT_BEFORE_ENDLESS_GRANTS: u32 = 2;
 
 /// The first shape of grants file, which holds only agents' grants over a
 /// folder, a file or an application.
@@ -130,8 +144,52 @@ struct KeptGrant {
     facility: Option<String>,
     /// When it was made, in seconds since 1970.
     granted: u64,
-    /// When it stops, in seconds since 1970.
-    expires: u64,
+    /// When it stops: seconds since 1970, or the word `removed`.
+    ///
+    /// **Format 3.** A file holding the word declares format 3, so a reader
+    /// that predates it refuses the file whole rather than meeting a string
+    /// where it expected a number.
+    expires: Stops,
+}
+
+/// When a grant stops, as the file says it.
+///
+/// `untagged`, so a number reads as a moment and the one word reads as *never*
+/// — the shape `docs/contracts/grants-file.md` describes, and the reason every
+/// file written before format 3 reads back unchanged.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+enum Stops {
+    /// At this second since 1970.
+    AtASecond(u64),
+    /// Not until the person removes it.
+    WhenRemoved(TheWord),
+}
+
+/// The one word `expires` may be instead of a number.
+///
+/// A type rather than a `String`, so nothing else in that position is read as
+/// *this grant never ends*. `"Removed"`, `"never"` and `"for ever"` are all
+/// refused, and the file is refused with them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TheWord;
+
+impl Serialize for TheWord {
+    fn serialize<S: serde::Serializer>(&self, serialiser: S) -> Result<S::Ok, S::Error> {
+        serialiser.serialize_str("removed")
+    }
+}
+
+impl<'de> Deserialize<'de> for TheWord {
+    fn deserialize<D: serde::Deserializer<'de>>(reader: D) -> Result<Self, D::Error> {
+        let said = String::deserialize(reader)?;
+        if said == "removed" {
+            return Ok(Self);
+        }
+        Err(serde::de::Error::custom(format!(
+            "expires is a whole number of seconds or the word \"removed\", and this says {said:?}"
+        )))
+    }
 }
 
 impl KeptGrant {
@@ -190,7 +248,13 @@ impl KeptGrant {
 
     /// The first key this line names that its file's format does not have.
     fn newer_than(&self, format: u32) -> Option<&'static str> {
-        if format >= THE_FORMAT {
+        // **Checked before the earlier keys**, because this one is newer: a
+        // format-2 file holding `expires = "removed"` must be refused for that
+        // and not for an `applicant` it may also legitimately hold.
+        if format < THE_FORMAT && matches!(self.expires, Stops::WhenRemoved(_)) {
+            return Some("expires = \"removed\"");
+        }
+        if format >= THE_FORMAT_BEFORE_ENDLESS_GRANTS {
             return None;
         }
         if self.applicant.is_some() {
@@ -213,16 +277,31 @@ impl KeptGrant {
         let grantee = self.grantee()?;
         let reach = self.reach()?;
         let granted = at_second(self.granted);
-        // Saturating rather than checked, because a file saying a grant ended
-        // before it began is a file `Grant::checked` refuses in its own words —
-        // zero lasts no time — and that is the sentence worth reading.
-        let lasting = Duration::from_secs(self.expires.saturating_sub(self.granted));
-        let grant = Grant::checked_for(&grantee, reach, granted, lasting).map_err(|why| {
-            NotRemembered::NotAGrant {
-                handle: self.handle,
-                said: why.word().says(),
+        let made = |why: alo_capability::GrantError| NotRemembered::NotAGrant {
+            handle: self.handle,
+            said: why.word().says(),
+        };
+        let grant = match self.expires {
+            // Saturating rather than checked, because a file saying a grant
+            // ended before it began is a file `Grant::checked` refuses in its
+            // own words — zero lasts no time — and that is the sentence worth
+            // reading.
+            Stops::AtASecond(second) => {
+                let lasting = Duration::from_secs(second.saturating_sub(self.granted));
+                Grant::checked_for(&grantee, reach, granted, lasting).map_err(made)?
             }
-        })?;
+            // **The same checks, and no length to get wrong.** ADR 0001 as
+            // amended on 2026-10-25: a grant may run until the person removes
+            // it, and everything else about it is held to exactly what a timed
+            // one is held to.
+            Stops::WhenRemoved(_) => Grant::checked_until_removed(
+                &grantee,
+                reach,
+                granted,
+                alo_capability::ATerminalForTheAgent::NotAtAll,
+            )
+            .map_err(made)?,
+        };
         Ok(Held {
             id: GrantId::numbered(self.handle),
             grant,
@@ -299,14 +378,24 @@ pub fn written(grants: &Grants, now: SystemTime) -> Result<String, NotRemembered
     let mut lines = Vec::new();
     for held in grants.active_at(now) {
         let granted = as_seconds(held.grant.granted_at, held.id)?;
-        let expires = as_seconds(held.grant.expires, held.id)?;
-        // A grant whose whole-second end is not after its whole-second start
-        // ends inside the second this is being written in. It is over by the
-        // time anybody reads the file, and writing it would produce a line the
-        // reader refuses — a grant that lasts no time is not a grant.
-        if expires <= granted {
-            continue;
-        }
+        let expires = match held.grant.expires {
+            alo_capability::Until::AMoment(moment) => {
+                let second = as_seconds(moment, held.id)?;
+                // A grant whose whole-second end is not after its whole-second
+                // start ends inside the second this is being written in. It is
+                // over by the time anybody reads the file, and writing it would
+                // produce a line the reader refuses — a grant that lasts no
+                // time is not a grant.
+                if second <= granted {
+                    continue;
+                }
+                Stops::AtASecond(second)
+            }
+            // **No second to compare**, and nothing to skip: a grant that runs
+            // until the person removes it is never over by the time somebody
+            // reads the file.
+            alo_capability::Until::Removed(_) => Stops::WhenRemoved(TheWord),
+        };
         let (mut folder, mut file, mut application, mut facility) = (None, None, None, None);
         match &held.grant.reach {
             Reach::Folder(path) => folder = Some(path.clone()),
@@ -333,12 +422,18 @@ pub fn written(grants: &Grants, now: SystemTime) -> Result<String, NotRemembered
         });
     }
     // The lowest format that holds what is written, so a machine with no
-    // application's grant writes exactly what it wrote before format 2.
+    // application's grant writes exactly what it wrote before format 2, and a
+    // machine with no endless grant writes exactly what it wrote before 3.
     let format = if lines
+        .iter()
+        .any(|line| matches!(line.expires, Stops::WhenRemoved(_)))
+    {
+        THE_FORMAT
+    } else if lines
         .iter()
         .any(|line| line.newer_than(THE_FIRST_FORMAT).is_some())
     {
-        THE_FORMAT
+        THE_FORMAT_BEFORE_ENDLESS_GRANTS
     } else {
         THE_FIRST_FORMAT
     };
@@ -365,6 +460,76 @@ mod tests {
     /// A machine on which one folder has been granted for an hour.
     fn one_folder_granted() -> Grants {
         crate::testing::granted_in("/home/ada/Invoices")
+    }
+
+    /// The same folder, granted until she removes it.
+    fn one_folder_until_removed() -> Grants {
+        let mut grants = Grants::default();
+        grants.grant(
+            Grant::checked_until_removed(
+                &Grantee::named(HERS),
+                alo_capability::Reach::Folder(std::path::PathBuf::from("/home/ada/Invoices")),
+                noon(),
+                alo_capability::ATerminalForTheAgent::NotAtAll,
+            )
+            .unwrap(),
+        );
+        grants
+    }
+
+    /// **The whole point, on the disk.** A grant given until it is removed is
+    /// written as the one word, reads back, and still permits a century later
+    /// where an hour's grant has long stopped.
+    #[test]
+    fn a_grant_until_removed_survives_the_file_and_the_clock() {
+        let text = written(&one_folder_until_removed(), noon()).unwrap();
+        assert!(text.contains("format = 3"), "{text}");
+        assert!(text.contains(r#"expires = "removed""#), "{text}");
+
+        let read = read(&text, noon()).unwrap();
+        let ask = Ask::path("/home/ada/Invoices/march.pdf");
+        let a_century = noon() + Duration::from_secs(100 * 365 * 24 * 60 * 60);
+        assert!(read.permits(&Grantee::named(HERS), &ask, a_century));
+    }
+
+    /// **A machine with no endless grant writes exactly what it wrote before.**
+    /// The format is the lowest that holds what is in it, so format 3 does not
+    /// arrive on every machine because one line of code changed.
+    #[test]
+    fn a_file_with_no_endless_grant_is_not_written_as_format_three() {
+        let text = written(&one_folder_granted(), noon()).unwrap();
+        assert!(text.contains("format = 1"), "{text}");
+        assert!(!text.contains("removed"), "{text}");
+    }
+
+    /// **An older reader refuses the file rather than misreading the word.**
+    /// This is the direction that matters: a reader that skipped the line, or
+    /// took `"removed"` for a moment, would be deciding on its own what *never
+    /// ends* means.
+    #[test]
+    fn a_format_two_file_holding_the_word_is_refused_whole() {
+        let text = written(&one_folder_until_removed(), noon())
+            .unwrap()
+            .replace("format = 3", "format = 2");
+        let refused = read(&text, noon()).unwrap_err();
+        assert!(
+            format!("{refused:?}").contains("expires"),
+            "the refusal does not name the key: {refused:?}"
+        );
+    }
+
+    /// **The one word, and nothing that looks like it.** A hand-edited file
+    /// saying almost the right thing is refused rather than read as for ever.
+    #[test]
+    fn nothing_but_the_one_word_means_until_removed() {
+        let text = written(&one_folder_until_removed(), noon()).unwrap();
+        for almost in ["Removed", "remove", "never", "for ever", "none"] {
+            let bad = text.replace(r#""removed""#, &format!("{almost:?}"));
+            assert!(
+                read(&bad, noon()).is_err(),
+                "{almost:?} was read as a grant that never ends"
+            );
+        }
     }
 
     /// **What was written reads back and still permits what it permitted** —
@@ -482,7 +647,12 @@ mod tests {
     /// grant in the file is looked at.
     #[test]
     fn grants_from_an_alo_os_this_is_not_are_refused() {
-        for (format, refused) in [("format = 3", 3), ("format = 0", 0)] {
+        // **One above the newest, and one below the first.** This said 3 until
+        // 2026-10-25, when 3 became a format this alo OS reads — so the test
+        // moved up with it rather than being deleted. A number written here by
+        // hand goes stale the day a format is added, which is why the sentence
+        // below is asked of the constants instead.
+        for (format, refused) in [("format = 4", 4), ("format = 0", 0)] {
             let other = written(&one_folder_granted(), noon())
                 .unwrap()
                 .replace("format = 1", format);
@@ -491,9 +661,13 @@ mod tests {
                 Err(NotRemembered::AnotherFormat { format }) if format == refused
             ));
         }
-        // And the refusal says which formats this alo OS does read.
-        let said = NotRemembered::AnotherFormat { format: 3 }.to_string();
-        assert!(said.contains("formats 1 to 2"), "{said}");
+        // And the refusal says which formats this alo OS does read, in the
+        // numbers it really has rather than ones repeated here.
+        let said = NotRemembered::AnotherFormat { format: 4 }.to_string();
+        assert!(
+            said.contains(&format!("formats {THE_FIRST_FORMAT} to {THE_FORMAT}")),
+            "{said}"
+        );
     }
 
     /// The camera granted to Cheese beside a folder granted to the agent.
