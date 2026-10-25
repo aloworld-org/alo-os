@@ -1,6 +1,6 @@
 //! The lengths a person may give a folder for, and how long each one is.
 //!
-//! [ADR 0001](../../../docs/decisions/0001-the-agent-is-the-interface.md) §3
+//! [ADR 0001](../../../docs/decisions/0001-the-capability-model.md) §3
 //! says grants are *expiring by default* and that *there is no grant that
 //! outlives the reason it was made*. It does not say how long, and
 //! `alo_picking::Granting::of` refuses both zero and no end — so a length has
