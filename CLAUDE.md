@@ -138,6 +138,36 @@ without them has not been finished, it has been abandoned.
   was.** Both read as *measured* a week later. So a report that describes a
   measurement names where it will run again — a test, a build step, a gate — or
   says outright that it will not.
+- **Nothing counts as done until a person can reach it.** A crate can be
+  complete, gated, documented, translated and **invisible**, and every other
+  line in this file calls that finished. So the last question of any piece of
+  work is *what does a person press to get at this?* — and where the answer is
+  nothing, the work is not done, it is **parked**. Name the surface, or say
+  outright in the report that nothing reaches it yet.
+
+  **Measured 2026-10-25, which is why this is here.** The list of verbs a model
+  is actually offered is four lines in `alo-turn`'s `machine.rs`: the six file
+  verbs, `alo-software`'s, three of `alo-applications`' and `alo-record`'s.
+  Everything else this repository has built and tested — the application
+  adapters and the whole accessibility fallback, printing, converting, search,
+  capturing, measuring, the network and printer settings, appearance — is
+  **not on it**. Roughly ten crates of finished work that no person on a real
+  machine can reach, every one of them green.
+
+  The sharpest part is `alo-declared`, a crate whose stated job is *"every verb
+  alo OS ships, on one list"*. It exists to feed **two workspace tests**, and
+  the daemon does not use it. We built a complete list of everything we can do
+  and pointed it at our own tests instead of at a person.
+
+  *The owner, on being shown this: "I see like we keep building build we are
+  not finishing."* Five separate instances were found and closed in the eight
+  hours before this rule was written — a grant nothing could make, folders that
+  did not exist to grant, an agent never told its grants, a grant that always
+  expired, and a grant with no end that had no row to revoke it by. **Not one
+  of the five was caught by a test.** Every one was found by somebody trying to
+  use the thing. That is the argument: our tests check that each end works, and
+  nothing checks that the two ends meet. `docs/walks/` is where the meeting is
+  checked.
 
 **A check that stands in for the thing is not the thing**, and this repository
 has rediscovered that four times in four sets of clothes. It is written here
