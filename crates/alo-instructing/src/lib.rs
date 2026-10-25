@@ -53,6 +53,7 @@ pub mod instructions;
 pub mod shown;
 pub mod the_language_asked_in;
 pub mod verb_as_told;
+pub mod what_it_may_reach;
 
 #[cfg(test)]
 mod testing;
@@ -66,3 +67,4 @@ pub use instructions::{
 };
 pub use shown::{shown_to_a_model, shown_to_a_turn};
 pub use the_language_asked_in::the_language_of;
+pub use what_it_may_reach::WhatItMayReach;
