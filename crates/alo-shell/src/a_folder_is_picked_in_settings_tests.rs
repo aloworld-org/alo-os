@@ -183,7 +183,11 @@ fn picking_a_folder_asks_how_long_rather_than_granting_it() {
             .map(PickingRow::For)
             .collect::<Vec<_>>()
     );
-    assert_eq!(picking.rows().len(), 4, "a length was added and not offered");
+    assert_eq!(
+        picking.rows().len(),
+        4,
+        "a length was added and not offered"
+    );
 }
 
 /// And the heading changes with the step, so the list is never the lengths
