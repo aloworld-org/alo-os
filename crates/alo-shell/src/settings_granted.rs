@@ -43,7 +43,7 @@ use alo_capability::Grants;
 use alo_changing::{Changing, Door, Gone, Made, NotChanged, Row, SeenPairing};
 use alo_granted::{Listing, Revoked};
 use alo_nearby::{MachineId, MayAskIts, Pairings};
-use alo_picking::{Chosen, Folders, Granting};
+use alo_picking::{Chosen, Folders};
 use alo_remembering::NotRemembered;
 use alo_strings::{Filling, Strings};
 
@@ -241,7 +241,11 @@ impl GrantedSection {
             // a key press is a machine nobody can use.
             return SettingsGave::Nothing;
         };
-        let granting = Granting::to(&agent, how_long.lasting());
+        // **The length decides which kind of grant it is**, in
+        // `HowLong::granting_to` and nowhere else: this call site held a
+        // duration until 2026-10-25, and a duration has no value that means
+        // *until the person removes it*.
+        let granting = how_long.granting_to(&agent);
         match Changing::of(grants, &self.grants_at, daemon).granted(&granting, chosen, now) {
             Ok(Made::Granted { .. }) => {
                 self.told = chosen

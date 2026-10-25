@@ -433,7 +433,10 @@ fn the_terminal_is_a_persons_and_no_verb_reaches_it() {
             grantee: alo.clone(),
             reach,
             granted_at: noon(),
-            expires: noon() + hour(),
+            // `expires` became an `alo_capability::Until` on 2026-10-25, when a
+            // grant could first run until the person removed it. A moment is
+            // still a moment; it just has to say so now.
+            expires: alo_capability::Until::AMoment(noon() + hour()),
         },
     };
     let grants = Grants::remembered(

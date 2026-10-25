@@ -170,7 +170,7 @@ fn a_mixed_list_has_no_row_told_apart_but_by_the_name() {
     assert_ne!(agents.to(), applications.to());
     assert_eq!(agents.over(), applications.over());
     assert_eq!(agents.granted_at(), applications.granted_at());
-    assert_eq!(agents.expires_in(), applications.expires_in());
+    assert_eq!(agents.lasts(), applications.lasts());
     assert_ne!(agents.id(), applications.id());
 
     // The sentence is one clause for both, in English and in German.

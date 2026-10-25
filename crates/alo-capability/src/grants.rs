@@ -424,7 +424,7 @@ fn why_not(grantee: &Grantee, ask: &Ask, lapsed: Option<&Held>) -> NotGranted {
 mod tests {
     use super::*;
     use crate::a_terminal_for_the_agent::ATerminalForTheAgent;
-    use crate::grant::GrantError;
+    use crate::grant::{GrantError, Until};
     use crate::reach::Reach;
     use std::path::PathBuf;
     use std::time::Duration;
@@ -682,7 +682,7 @@ mod tests {
             grantee,
             reach: Reach::Application(identifier.to_owned()),
             granted_at: noon(),
-            expires: noon() + hour(),
+            expires: Until::AMoment(noon() + hour()),
         };
         let alo = Grantee::named("@alo");
         let grants = Grants {
@@ -720,7 +720,7 @@ mod tests {
             grantee,
             reach: Reach::Application(identifier.to_owned()),
             granted_at: noon(),
-            expires: noon() + hour(),
+            expires: Until::AMoment(noon() + hour()),
         };
         let alo = Grantee::named("@alo");
         let mail = crate::Applicant::named("org.example.Mail");

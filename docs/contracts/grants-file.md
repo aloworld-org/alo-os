@@ -78,17 +78,48 @@ expires = 1760086400
 
 | Key | Meaning |
 |---|---|
-| `format` | Which shape the file is in. Required. `1` or `2`. |
+| `format` | Which shape the file is in. Required. `1`, `2` or `3`. |
 | `next` | The handle the next grant made on this machine is given. A handle is never reused. |
 | `handle` | What a person revokes this grant by. Unique in the file, and below `next`. |
 | `agent` | The agent the grant is for, by its name. |
-| `applicant` | The application the grant is for, by its identifier. **Format 2 only.** |
+| `applicant` | The application the grant is for, by its identifier. **Format 2 and above.** |
 | `folder` | A folder and everything in it, by its full path. |
 | `file` | Exactly one file, by its full path. |
 | `application` | One installed application, by its identifier. |
-| `facility` | Something this machine has that is not a path (below). **Format 2 only.** |
+| `facility` | Something this machine has that is not a path (below). **Format 2 and above.** |
 | `granted` | When it was made, in whole seconds since 1970. |
-| `expires` | When it stops, in whole seconds since 1970. Never absent. |
+| `expires` | When it stops: whole seconds since 1970, or the word `"removed"`. Never absent. The word is **format 3 and above**. |
+
+### `expires = "removed"`
+
+A grant that runs until the person takes it away. ADR 0001, amended
+2026-10-25: grants are expiring **by default**, and a person may choose a
+folder be given until they remove it rather than coming back every hour.
+
+```toml
+format = 3
+
+[[grant]]
+handle = 0
+agent = "@files"
+folder = "/home/ada/Invoices"
+granted = 1760000000
+expires = "removed"
+```
+
+Three rules, and the first two are what keep this safe to add to a file other
+software already reads:
+
+- **The word is the only word.** `"Removed"`, `"never"`, `"for ever"` and
+  anything else in that position is refused, and the file is refused with it.
+  Nothing spelt almost right becomes *for ever*.
+- **A file holding it declares format 3**, so a reader that predates this
+  refuses the whole file rather than meeting a string where it expected a
+  number. That direction is deliberate: failing closed is the only safe way to
+  be wrong about a key meaning *this never ends*.
+- **The lowest format that holds the file is what is written.** A machine with
+  no endless grant still writes `format = 1`, exactly as it did before — so
+  format 3 does not arrive on a machine that is not using it.
 
 Every grant names **exactly one** of `agent` and `applicant`, and **exactly
 one** of `folder`, `file`, `application` and `facility`. A key nobody declared

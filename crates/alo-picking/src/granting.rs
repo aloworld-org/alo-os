@@ -19,10 +19,18 @@
 //! folder itself. Nothing here looks at a parent, and nothing here has a path
 //! of its own.
 //!
-//! **It cannot make a grant that does not end.** The duration is this type's
-//! and is required to make one at all, so a caller cannot omit it and get a
-//! default that outlives the reason the folder was picked. `Grant::checked`
-//! refuses a zero one, in its own words.
+//! **It cannot make a grant that does not end by accident.** How long is this
+//! type's and is required to make one at all, so a caller cannot omit it and
+//! get a default that outlives the reason the folder was picked.
+//! `Grant::checked` refuses a zero one, in its own words.
+//!
+//! **A grant that never ends is a thing a person asks for**, and said so:
+//! [`Granting::to_until_removed`] is a different call from [`Granting::to`],
+//! not a duration somebody could pass by mistake. This paragraph read *it
+//! cannot make a grant that does not end* until 2026-10-25, when the owner
+//! amended ADR 0001 — *I can give an agent full access or remove it but there
+//! is no time limit* — and the protection moved from the type to the list a
+//! person can see.
 //!
 //! # It does not read the clock
 //!
@@ -49,7 +57,24 @@ pub struct Granting {
     /// The agent, by the name the system knows it by.
     grantee: String,
     /// How long a grant made from a pick lasts.
-    lasting: Duration,
+    lasting: ForHowLong,
+}
+
+/// How long a grant made from a pick runs for.
+///
+/// **One value rather than a duration that might mean for ever**, which is the
+/// rule `alo_capability::Until` keeps one layer down: *no time left* and *no
+/// end* are opposite facts, and a `Duration` big enough to stand for *never* is
+/// a number somebody will one day compare against.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ForHowLong {
+    /// This long, and then it stops.
+    Lasting(Duration),
+    /// Until the person takes it away.
+    ///
+    /// ADR 0001, amended 2026-10-25 by the owner: a person may give a folder
+    /// without coming back every hour or month to give it again.
+    UntilRemoved,
 }
 
 impl Granting {
@@ -58,7 +83,16 @@ impl Granting {
     pub fn to(grantee: &str, lasting: Duration) -> Self {
         Self {
             grantee: grantee.to_owned(),
-            lasting,
+            lasting: ForHowLong::Lasting(lasting),
+        }
+    }
+
+    /// Grants to this agent until the person takes it away.
+    #[must_use]
+    pub fn to_until_removed(grantee: &str) -> Self {
+        Self {
+            grantee: grantee.to_owned(),
+            lasting: ForHowLong::UntilRemoved,
         }
     }
 
@@ -70,7 +104,7 @@ impl Granting {
 
     /// How long a grant made from a pick would last.
     #[must_use]
-    pub fn lasting(&self) -> Duration {
+    pub const fn lasting(&self) -> ForHowLong {
         self.lasting
     }
 
@@ -95,7 +129,19 @@ impl Granting {
         let Chosen::Folder(picked) = chosen else {
             return Ok(None);
         };
-        let grant = Grant::checked(&self.grantee, picked.reach(), now, self.lasting)?;
+        let grant = match self.lasting {
+            ForHowLong::Lasting(lasting) => {
+                Grant::checked(&self.grantee, picked.reach(), now, lasting)?
+            }
+            // **The same checks, and no length to get wrong.** Everything
+            // else about the grant is held to exactly what a timed one is.
+            ForHowLong::UntilRemoved => Grant::checked_until_removed(
+                &alo_capability::Grantee::named(&self.grantee),
+                picked.reach(),
+                now,
+                alo_capability::ATerminalForTheAgent::NotAtAll,
+            )?,
+        };
         Ok(Some(grants.grant(grant)))
     }
 }
@@ -235,7 +281,85 @@ mod tests {
     fn a_granting_says_who_it_is_for_and_how_long_it_lasts() {
         let granting = for_an_hour();
         assert_eq!(granting.grantee(), HERS);
-        assert_eq!(granting.lasting(), hour());
+        assert_eq!(granting.lasting(), ForHowLong::Lasting(hour()));
+
+        let endless = Granting::to_until_removed(HERS);
+        assert_eq!(endless.grantee(), HERS);
+        assert_eq!(endless.lasting(), ForHowLong::UntilRemoved);
+    }
+
+    /// **A grant made to last until it is removed does not run out**, which is
+    /// the owner's decision of 2026-10-25 seen from the picker: the folder is
+    /// still reachable a year later, and the only thing that stops it is the
+    /// person taking it back.
+    ///
+    /// A year rather than an hour on purpose. An hour later would pass on a
+    /// grant that simply had a longer duration, which is the implementation
+    /// this one is not.
+    #[test]
+    fn a_grant_made_until_removed_is_still_there_a_year_later() {
+        let machine = WrittenDown::a_home_folder();
+        let mut grants = Grants::default();
+        let id = Granting::to_until_removed(HERS)
+            .of(&a_folder_picked(&machine), &mut grants, noon())
+            .unwrap()
+            .unwrap();
+
+        let ask = Ask::path("/home/anna/Invoices/march.pdf");
+        let hers = Grantee::named(HERS);
+        let a_year = Duration::from_secs(365 * 24 * 60 * 60);
+        assert!(grants.permits(&hers, &ask, noon()));
+        assert!(grants.permits(&hers, &ask, noon() + a_year));
+
+        // And the person's own way out is the one thing that ends it.
+        assert!(grants.revoke(id));
+        assert!(!grants.permits(&hers, &ask, noon()));
+    }
+
+    /// **It cannot widen what was picked either**, which is the half of this
+    /// file's promise that has nothing to do with time: the endless road goes
+    /// through the same reach as the timed one, so the folder above the one
+    /// picked is no more reachable than before.
+    #[test]
+    fn a_grant_made_until_removed_reaches_no_further_than_the_folder() {
+        let machine = WrittenDown::a_home_folder();
+        let mut grants = Grants::default();
+        Granting::to_until_removed(HERS)
+            .of(&a_folder_picked(&machine), &mut grants, noon())
+            .unwrap();
+
+        let hers = Grantee::named(HERS);
+        for out_of_reach in ["/home/anna/taxes.pdf", "/home/anna", "/etc/shadow"] {
+            assert!(
+                !grants.permits(&hers, &Ask::path(out_of_reach), noon()),
+                "{out_of_reach}"
+            );
+        }
+    }
+
+    /// **Picking nothing grants nothing on this road too.** The timed road has
+    /// its own test above; a second constructor is a second place the check
+    /// could have been left out.
+    #[test]
+    fn picking_nothing_grants_nothing_until_removed_either() {
+        let mut grants = Grants::default();
+        let nothing = Granting::to_until_removed(HERS)
+            .of(&Chosen::Nothing, &mut grants, noon())
+            .unwrap();
+        assert_eq!(nothing, None);
+        assert!(grants.is_empty());
+    }
+
+    /// **And a grant to nobody is still refused**, which is the one
+    /// `GrantError` this road can still arrive at.
+    #[test]
+    fn a_grant_until_removed_to_no_agent_is_refused() {
+        let machine = WrittenDown::a_home_folder();
+        let mut grants = Grants::default();
+        let refused =
+            Granting::to_until_removed("   ").of(&a_folder_picked(&machine), &mut grants, noon());
+        assert_eq!(refused, Err(GrantError::Anonymous));
+        assert!(grants.is_empty());
     }
 
     /// Two picks of one folder are one grant rather than two rows, which is

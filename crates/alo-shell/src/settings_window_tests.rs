@@ -17,10 +17,15 @@ use crate::settings_testing::{
     CountingDoor, Machine, PROVIDER, RECEPTION, a_persons_machine, bytes, doors, noon, words,
 };
 use alo_capability::Grants;
-use alo_changing::{Changing, Gone, Stood, Unpaired};
+use alo_changing::{Changing, Gone, Row, Stood, Unpaired};
 use alo_choosing::{Choosing, MayUseAnother, Picked};
 use alo_granted::Listing;
 use alo_shortcuts::Modifier;
+use alo_strings::Filling;
+
+use crate::a_folder_is_picked_in_settings::PickingRow;
+use crate::how_long_a_grant_lasts::HowLong;
+use crate::settings_granted::SettingsGave;
 
 /// A key that means `key` and makes no chord.
 fn key(key: SettingsKey) -> SettingsPress {
@@ -1126,4 +1131,106 @@ fn moving_between_rows_and_sections_changes_nothing() {
         assert_eq!(bytes(&machine.kept(file)), None);
     }
     assert_eq!(door.knocks.get(), 0);
+}
+
+/// **A folder given until the person removes it is on the list, and the list
+/// says so** — the walk a person actually makes: open the picker, go into the
+/// folder, give it, choose the length that does not end. Then the three
+/// things that have to be true of it, because none of them is expiry any
+/// more:
+///
+/// 1. it is a row, at the moment it was made and a year later;
+/// 2. the row reads differently from every other row, in the words
+///    `picker.it-lasts-until-removed` declares;
+/// 3. the machine's own file holds it as `expires = "removed"`, so it is
+///    still there after a restart.
+///
+/// **What this would have caught.** `Grant::expires_in` answers `None` both
+/// for a grant that has run out and for one that never will, and the list
+/// dropped a row whenever it was `None`. So the grant was in force, the
+/// daemon honoured it, and there was no row to take it back by. Measured on
+/// 2026-10-25 before the fix: `Listing::of` gave **zero** rows for it.
+#[test]
+fn a_folder_given_until_removed_is_on_the_list_and_says_so() {
+    let machine = a_persons_machine("until-removed");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+
+    // The walk: the row that opens the picker, into Invoices, give it, and
+    // the last of the four lengths.
+    assert_eq!(
+        chosen(&mut window, &SettingsRow::GrantAFolder, &strings, &door),
+        Some(SettingsDid::Gave(SettingsGave::ItChanged))
+    );
+    for row in [
+        PickingRow::IntoFolder(String::from("Invoices")),
+        PickingRow::PickThisFolder,
+    ] {
+        assert_eq!(
+            chosen(&mut window, &SettingsRow::Picking(row), &strings, &door),
+            Some(SettingsDid::Gave(SettingsGave::ItChanged))
+        );
+    }
+    assert_eq!(
+        chosen(
+            &mut window,
+            &SettingsRow::Picking(PickingRow::For(HowLong::UntilIRemoveIt)),
+            &strings,
+            &door
+        ),
+        Some(SettingsDid::Gave(SettingsGave::ItWasGiven))
+    );
+
+    // 1. It is a row now, and it is a row a year on. The fixture's own
+    //    hour-long grant is the control at the other end: it is a row now and
+    //    gone by then, so a list that simply kept everything fails here.
+    let a_year = std::time::Duration::from_secs(365 * 24 * 60 * 60);
+    let rows = |at| {
+        window
+            .rows(at)
+            .into_iter()
+            .filter(|row| matches!(row, SettingsRow::Granted(Row::Grant(_))))
+            .count()
+    };
+    assert_eq!(rows(noon()), 2, "the hour-long grant and the endless one");
+    assert_eq!(rows(noon() + a_year), 1, "only the endless one is left");
+
+    // 2. The row says what it is, in the declared words and not in ours.
+    let until_removed = strings
+        .say(
+            &crate::the_pickers_words::IT_LASTS_UNTIL_REMOVED.key(),
+            &Filling::nothing(),
+        )
+        .into_text();
+    let lines: Vec<Vec<String>> = sections(window.open().unwrap(), &strings, noon() + a_year)
+        .into_iter()
+        .filter(|section| section.section == SettingsSection::Granted)
+        .flat_map(|section| section.lines)
+        .filter(|line| matches!(line.row, Some(SettingsRow::Granted(Row::Grant(_)))))
+        .map(|line| line.parts)
+        .collect();
+    assert_eq!(lines.len(), 1, "{lines:?}");
+    assert!(
+        lines[0].contains(&until_removed),
+        "the row does not say it lasts until removed: {lines:?}"
+    );
+    assert!(!until_removed.is_empty(), "the word is not declared");
+
+    // And the control: the hour-long grant's row does **not** say it, so the
+    // sentence is about this grant rather than about every row.
+    let an_hour_in = sections(window.open().unwrap(), &strings, noon())
+        .into_iter()
+        .filter(|section| section.section == SettingsSection::Granted)
+        .flat_map(|section| section.lines)
+        .filter(|line| matches!(line.row, Some(SettingsRow::Granted(Row::Grant(_)))))
+        .filter(|line| !line.parts.contains(&until_removed))
+        .count();
+    assert_eq!(an_hour_in, 1, "the grant that ends says it does not");
+
+    // 3. The machine's own file holds it, in the word the contract names, so
+    //    it is still there at the next sign-in.
+    let kept = String::from_utf8(std::fs::read(machine.grants()).unwrap()).unwrap();
+    assert!(kept.contains("expires = \"removed\""), "{kept}");
+    assert!(kept.contains("format = 3"), "{kept}");
 }

@@ -200,7 +200,7 @@ pub use arg::{Arg, ArgError, Given, Takes, Value};
 pub use authorised::{Authorised, NotAuthorised, Refused};
 pub use call::{Call, CallError};
 pub use facility::Facility;
-pub use grant::{Grant, GrantError};
+pub use grant::{Grant, GrantError, TheWordRemoved, Until};
 pub use grantee::{Applicant, Grantee};
 pub use grants::{GrantId, Grants, Held, NotOneList};
 pub use how_code_runs::{AlwaysOn, HowCodeRuns};

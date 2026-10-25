@@ -12,6 +12,34 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **You can give alo a folder until you take it back.** Settings asks how long
+  when you give it one, and the answers are *for an hour*, *for a day*, *for a
+  month* and now **until I remove it**. Nobody has to come back every month to
+  hand over the same folder again.
+
+  *It is the last of the four rows, not the first, and the ring still lands on
+  the shortest.* A grant that never ends is the one somebody forgets, so
+  reaching it is a deliberate move rather than the default.
+
+  *And it is the one row on the list that says what it is.* Beside it you read
+  **until you remove it** where the other grants show a length of time, because
+  this is the one grant that cannot protect you by running out — being easy to
+  find is all the protection it has.
+
+  *What was wrong and is fixed in the same change:* a grant with no end **did
+  not appear on the list at all**. The machine honoured it, kept it across
+  restarts, and showed you nothing to take it back by. It is written up in
+  `docs/misreadings/a-none-that-meant-two-opposite-things-hid-a-grant.md`,
+  because the mechanism is one anybody could walk into: the question *how much
+  longer has this got* answered *nothing* both for a grant that had run out and
+  for one that never would.
+
+  *Asked for by the owner:* "I can give an agent full access or remove it but
+  there is no time limit … we should add where the user can put so as he does
+  not need to come back every one hour or month to change." ADR 0001 is amended
+  to match, and *grants expire by default* still stands — the default is a
+  length.
+
 - **You can open a terminal.** `Ctrl`+`Alt`+`T` — the chord GNOME, Ubuntu,
   Cinnamon and Xfce all use, so the habit you arrive with works. Press it twice
   and you get two terminals, which is what every other system does.

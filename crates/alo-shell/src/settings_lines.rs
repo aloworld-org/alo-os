@@ -349,7 +349,30 @@ fn granted(open: &Open, strings: &Strings, now: SystemTime) -> SectionWords {
     }
     lines.extend(section.rows(now).into_iter().map(|row| {
         let parts = match &row {
-            Row::Grant(seen) => vec![seen.said(strings).into_text()],
+            Row::Grant(seen) => {
+                let mut parts = vec![seen.said(strings).into_text()];
+                // **The one grant whose row has to say more than who and
+                // what.** Every other length protects a person by running
+                // out; this one cannot, so the row is the whole of its
+                // protection and it must not read like the others. Where
+                // another row would show how long is left, this one says it
+                // has no end — which is also why it is not a countdown of
+                // the time left beside it: nothing here has ever
+                // drawn a time, and a surface that showed three rows with a
+                // number and one with nothing would read as a grant that had
+                // already run out.
+                if seen.lasts().is_until_removed() {
+                    parts.push(
+                        strings
+                            .say(
+                                &crate::the_pickers_words::IT_LASTS_UNTIL_REMOVED.key(),
+                                &Filling::nothing(),
+                            )
+                            .into_text(),
+                    );
+                }
+                parts
+            }
             Row::Pairing(seen) => {
                 let mut parts = vec![
                     seen.called()

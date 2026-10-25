@@ -18,11 +18,22 @@
 //!   ask it, never watched, and a grant to the camera would be the opposite;
 //! - a terminal is granted to an agent never ([`GrantError::APersonsOwn`],
 //!   ADR 0043), because whatever is typed into one runs;
-//! - **it ends.** [`Grant::checked`] takes how long it lasts and refuses zero,
-//!   and there is no variant meaning "for ever". A grant that outlives the
-//!   reason it was made is the failure this crate exists to make impossible,
-//!   and the reliable way to prevent it is to leave the type no way to express
-//!   it.
+//! - **it ends, unless the person said otherwise.** [`Grant::checked`] takes
+//!   how long it lasts and refuses zero; [`Grant::checked_until_removed`] makes
+//!   the one a person asked to keep until they take it away.
+//!
+//! **That last clause said the opposite until 2026-10-25**, and said it as a
+//! principle: *there is no variant meaning "for ever" … the reliable way to
+//! prevent it is to leave the type no way to express it*. The owner amended
+//! ADR 0001 that day, and the reasoning is in the amendment rather than
+//! repeated here. What matters at this file's level is that the protection did
+//! not go away, it **moved**: a grant that never ends used to be prevented by a
+//! clock and is now carried by the list a person can see — it says *until you
+//! remove it* where another says a time, and one press revokes it. [`Until`] is
+//! one field rather than a moment beside a flag so that the list and the daemon
+//! cannot disagree about which kind a grant is.
+//!
+//! The rest of the paragraph above is unchanged and still enforced.
 //!
 //! Nothing here reads the clock: the moment a grant starts is passed in, and so
 //! is the moment any later question is asked about it.
@@ -128,8 +139,105 @@ pub struct Grant {
     /// When it was made — shown in the list, so a person can see what they did
     /// and when.
     pub granted_at: SystemTime,
-    /// When it stops. Not optional, on purpose.
-    pub expires: SystemTime,
+    /// When it stops, or that it does not until the person removes it.
+    ///
+    /// **One field rather than a moment beside a flag**, which is the whole
+    /// reason this is an enum: two fields could disagree about whether a grant
+    /// ends, and the one that goes wrong is a grant the daemon honours for ever
+    /// while the list tells a person it ran out at five.
+    pub expires: Until,
+}
+
+/// When a grant stops.
+///
+/// **Amended into ADR 0001 on 2026-10-25.** It was a `SystemTime` and nothing
+/// else, so every grant ran out and a person had to come back and grant the
+/// same folder again — which the owner ruled against: *I can give an agent full
+/// access or remove it, but there is no time limit*.
+///
+/// *Expiring by default* stands: this is what law 5 calls a default a person
+/// may change. What §3 protected with a clock is now protected by the list — an
+/// endless grant is in it, says so in words, and one press revokes it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Until {
+    /// It stops at this moment.
+    ///
+    /// Serialises as the number `docs/contracts/grants-file.md` has always
+    /// described, so every grant written before this reads back unchanged.
+    AMoment(SystemTime),
+    /// It runs until the person takes it away.
+    ///
+    /// Serialises as the one word `removed`, which is why this is `untagged`:
+    /// a reader meeting a number gets a moment and a reader meeting the word
+    /// gets no end, and neither needs a version field.
+    Removed(TheWordRemoved),
+}
+
+/// The one word an endless grant is written as, and nothing else accepted.
+///
+/// A type of its own rather than a bare string, so that nothing can put another
+/// word in the file and have it read back as *for ever*.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TheWordRemoved;
+
+impl Serialize for TheWordRemoved {
+    fn serialize<S: serde::Serializer>(&self, serialiser: S) -> Result<S::Ok, S::Error> {
+        serialiser.serialize_str("removed")
+    }
+}
+
+impl<'de> Deserialize<'de> for TheWordRemoved {
+    fn deserialize<D: serde::Deserializer<'de>>(reader: D) -> Result<Self, D::Error> {
+        let said = String::deserialize(reader)?;
+        if said == "removed" {
+            return Ok(Self);
+        }
+        Err(serde::de::Error::custom(format!(
+            "a grant stops at a moment or at \"removed\", and this says {said:?}"
+        )))
+    }
+}
+
+impl Until {
+    /// A grant that runs until the person takes it away.
+    #[must_use]
+    pub const fn removed() -> Self {
+        Self::Removed(TheWordRemoved)
+    }
+
+    /// Whether a grant carrying this is still running at that moment.
+    #[must_use]
+    pub fn reaches(self, now: SystemTime) -> bool {
+        match self {
+            Self::AMoment(moment) => moment > now,
+            Self::Removed(_) => true,
+        }
+    }
+
+    /// How much is left, or [`None`] for one that has run out **and** for one
+    /// that never will.
+    ///
+    /// The two are told apart by [`Self::is_until_removed`] rather than by
+    /// this, because *no time left* and *no end* are opposite facts and a
+    /// person reading one as the other is the mistake this type exists to
+    /// prevent.
+    #[must_use]
+    pub fn left(self, now: SystemTime) -> Option<Duration> {
+        match self {
+            Self::AMoment(moment) => moment
+                .duration_since(now)
+                .ok()
+                .filter(|left| !left.is_zero()),
+            Self::Removed(_) => None,
+        }
+    }
+
+    /// Whether this runs until the person takes it away.
+    #[must_use]
+    pub const fn is_until_removed(self) -> bool {
+        matches!(self, Self::Removed(_))
+    }
 }
 
 impl Grant {
@@ -224,12 +332,50 @@ impl Grant {
         if lasting.is_zero() {
             return Err(GrantError::NoTime);
         }
-        let expires = from.checked_add(lasting).ok_or(GrantError::NoEnd)?;
+        let expires = Until::AMoment(from.checked_add(lasting).ok_or(GrantError::NoEnd)?);
         Ok(Self {
             grantee,
             reach,
             granted_at: from,
             expires,
+        })
+    }
+
+    /// A grant that runs **until the person removes it**.
+    ///
+    /// The fourth door onto this one constructor, beside [`Self::checked`],
+    /// [`Self::checked_for`] and [`Self::checked_for_when`] — a door rather
+    /// than a fifth argument, because 219 call sites pass a `Duration` and a
+    /// grant with no end is a different thing to say rather than a different
+    /// number to say it with.
+    ///
+    /// **Everything else about it is checked the same way.** It goes through
+    /// the same validation by handing it a duration it is certain to accept and
+    /// then replacing the moment that came out — so a nameless grantee, a
+    /// relative path, a `..`, the whole machine and a person's own terminal are
+    /// all refused here exactly as they are for a grant of an hour. The only
+    /// difference between the two is when they stop.
+    ///
+    /// ADR 0001, amended 2026-10-25, is why this exists at all.
+    ///
+    /// # Errors
+    /// As [`Self::checked_for_when`], less [`GrantError::NoTime`] and
+    /// [`GrantError::NoEnd`], which are about a length and there is none.
+    pub fn checked_until_removed(
+        grantee: &Grantee,
+        reach: Reach,
+        from: SystemTime,
+        terminal: ATerminalForTheAgent,
+    ) -> Result<Self, GrantError> {
+        // **An hour, thrown away.** Any non-zero length that cannot overflow
+        // does, and the moment it produced is replaced below; what is being
+        // borrowed is every other check in there, so that this road cannot
+        // drift from the one beside it.
+        let timed =
+            Self::checked_for_when(grantee, reach, from, Duration::from_secs(60 * 60), terminal)?;
+        Ok(Self {
+            expires: Until::removed(),
+            ..timed
         })
     }
 
@@ -240,16 +386,25 @@ impl Grant {
     /// less.
     #[must_use]
     pub fn is_active_at(&self, now: SystemTime) -> bool {
-        self.expires > now
+        self.expires.reaches(now)
     }
 
-    /// How much of the grant is left, or `None` once it has expired.
+    /// How much of the grant is left, or `None` once it has expired — **and
+    /// also `None` for one that runs until the person removes it.**
+    ///
+    /// Those two are opposite facts and this does not tell them apart, which
+    /// `Until::left` says and [`Self::lasts_until_removed`] is for. A surface
+    /// that showed *no time left* for an endless grant would tell a person the
+    /// opposite of what their machine is doing.
     #[must_use]
     pub fn expires_in(&self, now: SystemTime) -> Option<Duration> {
-        self.expires
-            .duration_since(now)
-            .ok()
-            .filter(|d| !d.is_zero())
+        self.expires.left(now)
+    }
+
+    /// Whether this grant runs until the person takes it away.
+    #[must_use]
+    pub const fn lasts_until_removed(&self) -> bool {
+        self.expires.is_until_removed()
     }
 
     /// Whether this grant is for that grantee.
@@ -326,6 +481,101 @@ mod tests {
 
     fn granted() -> Grant {
         Grant::checked("@files", invoices(), noon(), hour()).unwrap()
+    }
+
+    /// The same grant, given until the person takes it away.
+    fn until_removed() -> Grant {
+        Grant::checked_until_removed(
+            &Grantee::named("@files"),
+            invoices(),
+            noon(),
+            ATerminalForTheAgent::NotAtAll,
+        )
+        .unwrap()
+    }
+
+    /// **ADR 0001 as the owner amended it on 2026-10-25.** A grant given until
+    /// it is removed is still running a century later, where an hour's grant
+    /// stopped at one o'clock.
+    #[test]
+    fn a_grant_until_removed_outlives_any_clock() {
+        let a_century = noon() + Duration::from_secs(100 * 365 * 24 * 60 * 60);
+        assert!(until_removed().is_active_at(a_century));
+        assert!(!granted().is_active_at(noon() + hour()));
+    }
+
+    /// **No time left and no end are opposite facts**, and nothing may read one
+    /// as the other. Both answer `None` for how much is left, so the question
+    /// that tells them apart is a different one.
+    #[test]
+    fn running_out_and_never_ending_are_never_confused() {
+        let after = noon() + hour();
+        assert_eq!(granted().expires_in(after), None);
+        assert_eq!(until_removed().expires_in(after), None);
+
+        assert!(until_removed().lasts_until_removed());
+        assert!(!granted().lasts_until_removed());
+    }
+
+    /// Everything else about a grant is checked the same way, which is what
+    /// borrowing the other road's validation buys.
+    #[test]
+    fn a_grant_until_removed_is_refused_for_every_reason_a_timed_one_is() {
+        for (reach, why) in [
+            (
+                Reach::Folder(PathBuf::from("/")),
+                GrantError::TheWholeMachine,
+            ),
+            (
+                Reach::Folder(PathBuf::from("Invoices")),
+                GrantError::NotAFullPath,
+            ),
+            (
+                Reach::Folder(PathBuf::from("/home/anna/../etc")),
+                GrantError::CouldLeadElsewhere,
+            ),
+        ] {
+            let refused = Grant::checked_until_removed(
+                &Grantee::named("@files"),
+                reach,
+                noon(),
+                ATerminalForTheAgent::NotAtAll,
+            );
+            assert_eq!(refused, Err(why));
+        }
+        assert_eq!(
+            Grant::checked_until_removed(
+                &Grantee::named(""),
+                invoices(),
+                noon(),
+                ATerminalForTheAgent::NotAtAll,
+            ),
+            Err(GrantError::Anonymous)
+        );
+    }
+
+    /// **It reads back as what it was written as**, and the one word is the
+    /// only word accepted — so nothing in a hand-edited file becomes *for ever*
+    /// by being spelt almost right.
+    #[test]
+    fn an_endless_grant_survives_the_disk_and_nothing_else_does() {
+        let written = serde_json::to_string(&until_removed()).unwrap();
+        assert!(written.contains("removed"), "{written}");
+        assert_eq!(
+            serde_json::from_str::<Grant>(&written).unwrap(),
+            until_removed()
+        );
+
+        let timed = serde_json::to_string(&granted()).unwrap();
+        assert_eq!(serde_json::from_str::<Grant>(&timed).unwrap(), granted());
+
+        for almost in ["Removed", "remove", "for ever", "never"] {
+            let bad = written.replace("removed", almost);
+            assert!(
+                serde_json::from_str::<Grant>(&bad).is_err(),
+                "{almost:?} was read as an endless grant"
+            );
+        }
     }
 
     /// ADR 0001 §3, stated as a test because it is the sentence somebody will

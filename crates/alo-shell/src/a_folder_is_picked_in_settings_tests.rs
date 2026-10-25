@@ -169,17 +169,28 @@ fn picking_a_folder_asks_how_long_rather_than_granting_it() {
 
     assert_eq!(did, WhatPickingDid::ItChanged);
     assert!(picking.is_saying_how_long());
+    // **Every length, derived rather than listed.** This spelled out three
+    // by hand and broke on 2026-10-25 when a fourth was added — which is
+    // exactly what listing them again would set up for the next person. The
+    // order is held by `how_long_a_grant_lasts`' own test (shortest first,
+    // the endless one last), so this one asks only that the picker offers
+    // the whole list and nothing beside it.
     assert_eq!(
         picking.rows(),
-        vec![
-            PickingRow::For(HowLong::AnHour),
-            PickingRow::For(HowLong::ADay),
-            PickingRow::For(HowLong::AMonth),
-        ]
+        HowLong::ALL
+            .iter()
+            .copied()
+            .map(PickingRow::For)
+            .collect::<Vec<_>>()
+    );
+    assert_eq!(
+        picking.rows().len(),
+        4,
+        "a length was added and not offered"
     );
 }
 
-/// And the heading changes with the step, so the list is never three lengths
+/// And the heading changes with the step, so the list is never the lengths
 /// under a heading asking for a folder.
 #[test]
 fn the_heading_says_which_of_the_two_questions_is_being_asked() {
