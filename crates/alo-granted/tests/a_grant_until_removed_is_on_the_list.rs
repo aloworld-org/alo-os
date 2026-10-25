@@ -24,7 +24,9 @@
 
 #![expect(
     clippy::unwrap_used,
-    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+    clippy::panic,
+    clippy::indexing_slicing,
+    reason = "in a test, a panic on an unexpected None, Err or variant is the failure being reported"
 )]
 
 use std::path::PathBuf;
