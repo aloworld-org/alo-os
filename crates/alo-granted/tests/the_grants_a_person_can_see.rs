@@ -23,7 +23,7 @@ use std::time::{Duration, SystemTime};
 use alo_capability::{
     Arg, Ask, Authorised, Call, Effect, Given, Grant, Grantee, Grants, Reach, Requires, Takes, Verb,
 };
-use alo_granted::{Listing, Revoked};
+use alo_granted::{Lasts, Listing, Revoked};
 use alo_strings::{Strings, Word};
 
 /// A fixed moment, so that everything about time here is arithmetic.
@@ -117,7 +117,7 @@ fn a_kept_list_read_back_off_a_disk_is_the_list_a_person_sees() {
     let row = listing.rows().first().unwrap();
     assert_eq!(row.to(), "@files");
     assert_eq!(row.granted_at(), noon());
-    assert_eq!(row.expires_in(), hour());
+    assert_eq!(row.lasts(), Lasts::For(hour()));
     assert_eq!(row.id(), grants.active_at(noon()).next().unwrap().id);
 
     let said = row.said(&what_the_machine_can_say());

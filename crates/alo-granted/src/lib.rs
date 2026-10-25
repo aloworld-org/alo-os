@@ -24,6 +24,9 @@
 //! - [`Seen`] — one row: who has been granted what, since when, and for how
 //!   much longer — an agent or an application, in the same shape — with no
 //!   constructor a caller can reach;
+//! - [`Lasts`] — how much longer one has: a stretch of time, or nothing to
+//!   wait for. **The row that has nothing to wait for is the one that most
+//!   needs to be here**, because it cannot protect a person by running out;
 //! - [`Revoked`] — what revoking a row comes back as: done and already
 //!   stopped, or a stale row that changed nothing at all.
 //!
@@ -130,6 +133,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod lasts;
 pub mod listing;
 pub mod revoking;
 pub mod seen;
@@ -138,6 +142,7 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use lasts::Lasts;
 pub use listing::Listing;
 pub use revoking::Revoked;
 pub use seen::Seen;

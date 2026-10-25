@@ -769,8 +769,13 @@ file carries it with a tier.*
   development environment*, holding reviewable commands, the permissions it
   needs and the inputs you can change, and checking its assumptions still hold
   before it runs. **It stores which permissions it needs, never a grant** —
-  grants expire ([ADR 0001](decisions/0001-the-capability-model.md) §3), and a
-  saved action must not become a way to hold one that does not. *So that nothing
+  a grant is yours to give and yours to take back ([ADR
+  0001](decisions/0001-the-capability-model.md) §3), and a saved action must
+  not become a way to hold one you did not give. *This read* — grants expire,
+  and a saved action must not become a way to hold one that does not — until
+  2026-10-25, when a length that does not expire was added. The rule is
+  unchanged and the reason is stronger: an action that could carry a grant
+  could now carry one with no end. *So that nothing
   asks a model to invent the same sequence every morning*
 - **Tell me when it finishes, if it fails, or when the server is ready.** Asked
   for explicitly, shown in the panel of put-aside windows, and **reported from
@@ -959,6 +964,15 @@ each portal request is a grant in the sense of ADR 0001.
 - ★ **Application verbs**: open, focus, arrange, close
 - ★ **Context on invocation**: focused window, selection, open document — offered, never watched
 - ★ Grants: pick a folder, see what is granted, revoke it, and it expires
+- ★ **You choose how long: an hour, a day, a month, or until you remove it.**
+  Grants are expiring *by default* and the shortest length is the row the ring
+  lands on, but nobody has to come back every month to give the same folder
+  again. The one that does not end is the last row rather than the first, and
+  it is the one row on the list that says what it is — because it cannot
+  protect you by running out, so being findable is all the protection it has
+  ([ADR 0001](decisions/0001-the-capability-model.md) §3, amended 2026-10-25
+  by the owner: *I can give an agent full access or remove it but there is no
+  time limit*)
 - Every execution recorded with its origin, approval and grant
 - ★ **The grant is a boundary the kernel imposes, not a rule the daemon follows** (ADR 0013). For the length of one turn, everything outside the grant is *unreachable* — Landlock for the files, seccomp for the syscalls, an eBPF programme on the turn's own cgroup for the sockets. A verb that overreached would fail at the syscall, not be talked out of it
 - ★ **And the kernel is taught what a turn is** (ADR 0015) — our own programs on the kernel's security hooks, the same ones SELinux and AppArmor use, carrying a grant the daemon wrote into shared memory when the turn began. **No kernel is patched and no fork is kept**: they are loaded at boot and verified by the kernel before they run

@@ -51,32 +51,53 @@ pub const UP_ONE_FOLDER: Word = Word::saying("picker.up-one-folder", "Up one fol
 /// The question asked once a folder is chosen.
 pub const HOW_LONG: Word = Word::saying(
     "picker.how-long",
-    "How long should alo be able to read it? It will stop on its own",
+    "How long should alo be able to read it? You can take it back whenever you like",
 )
 .noting(
-    "alo is the assistant built into alo OS, not a person. The heading over the three lengths \
-     below, shown after a person has chosen a folder. The second sentence matters: it tells them \
-     the access ends by itself, so that choosing the longest option is not a decision they can \
-     forget about forever.",
+    "alo is the assistant built into alo OS, not a person. The heading over the four lengths \
+     below, shown after a person has chosen a folder. The second sentence said 'It will stop on \
+     its own' until 2026-10-25, when a length that does not stop on its own was added and the \
+     sentence stopped being true of all four. What replaced it is true of every one of them and \
+     does the same work: whatever they choose, it is theirs to undo.",
 );
 
 /// The shortest length offered.
 pub const FOR_AN_HOUR: Word = Word::saying("picker.for-an-hour", "For an hour").noting(
-    "One of three lengths of time a person chooses between when giving alo a folder. For somebody \
+    "One of four lengths of time a person chooses between when giving alo a folder. For somebody \
      who wants one piece of work done now and no more than that.",
 );
 
 /// A working day.
 pub const FOR_A_DAY: Word = Word::saying("picker.for-a-day", "For a day").noting(
-    "One of three lengths of time a person chooses between when giving alo a folder. A working \
+    "One of four lengths of time a person chooses between when giving alo a folder. A working \
      day, which outlasts restarting the machine.",
 );
 
 /// A month.
 pub const FOR_A_MONTH: Word = Word::saying("picker.for-a-month", "For a month").noting(
-    "One of three lengths of time a person chooses between when giving alo a folder. For the \
+    "One of four lengths of time a person chooses between when giving alo a folder. For the \
      folder somebody actually works in and would otherwise have to choose again every morning. \
      Thirty days, which is what a month means everywhere else in software.",
+);
+
+/// The length that does not end.
+pub const UNTIL_I_REMOVE_IT: Word = Word::saying("picker.until-i-remove-it", "Until I remove it")
+    .noting(
+        "One of four lengths of time a person chooses between when giving alo a folder, and the \
+         only one that does not end by itself: alo keeps being able to read the folder until the \
+         person takes it back in Settings. Written in the first person because it is the person's \
+         own decision, so 'I' and not 'you'.",
+    );
+
+/// What the list says beside a grant that does not end.
+pub const IT_LASTS_UNTIL_REMOVED: Word = Word::saying(
+    "picker.it-lasts-until-removed",
+    "until you remove it",
+)
+.noting(
+    "Shown in the list of what has been granted, where another grant shows how long is left. It \
+     must not read like a length of time: this grant has no end until the person takes it away. \
+     Lower case, because it follows the name of what was granted in the same line.",
 );
 
 /// Said when a folder was given, naming it.
@@ -98,7 +119,7 @@ pub const IT_WAS_GIVEN: Word = Word::saying(
 pub const THE_FOLDER: &str = "folder";
 
 /// Every string this file declares, in the order a translator meets them.
-pub const THE_PICKERS_WORDS: [Word; 8] = [
+pub const THE_PICKERS_WORDS: [Word; 10] = [
     GRANT_A_FOLDER,
     PICK_THIS_FOLDER,
     UP_ONE_FOLDER,
@@ -106,6 +127,8 @@ pub const THE_PICKERS_WORDS: [Word; 8] = [
     FOR_AN_HOUR,
     FOR_A_DAY,
     FOR_A_MONTH,
+    UNTIL_I_REMOVE_IT,
+    IT_LASTS_UNTIL_REMOVED,
     IT_WAS_GIVEN,
 ];
 

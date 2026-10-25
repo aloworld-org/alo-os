@@ -58,6 +58,7 @@ use std::time::{Duration, SystemTime};
 use alo_capability::{Agent, Grant, GrantId, Grants, Held, Reach};
 use alo_strings::{Filling, Said, Strings};
 
+use crate::lasts::Lasts;
 use crate::revoking::Revoked;
 use crate::words;
 
@@ -83,7 +84,7 @@ use crate::words;
 /// let listing = Listing::of(&grants, noon);
 /// let row = listing.rows().first().expect("one grant, one row");
 /// assert_eq!(row.to(), "@files");
-/// assert_eq!(row.expires_in(), hour);
+/// assert_eq!(row.lasts(), alo_granted::Lasts::For(hour));
 /// # Ok::<(), alo_capability::GrantError>(())
 /// ```
 ///
@@ -118,9 +119,15 @@ pub struct Seen {
     over: Reach,
     /// When the person made it.
     granted_at: SystemTime,
-    /// How much of it was left at the moment the list was derived. Never
-    /// zero: an expired grant never becomes a row at all.
-    left: Duration,
+    /// How much longer it has, at the moment the list was derived. Never a
+    /// zero duration: an expired grant never becomes a row at all.
+    ///
+    /// **Not a `Duration`**, since ADR 0001 was amended on 2026-10-25: a
+    /// grant that runs until the person removes it has no number to put here,
+    /// and the one it would have been given — `None`, or a very large
+    /// duration — is the same value an expired grant has. That is how an
+    /// endless grant came to have no row at all.
+    lasts: Lasts,
 }
 
 impl Seen {
@@ -132,12 +139,23 @@ impl Seen {
     /// road to a `Held` outside a test is the machine's own [`Grants`].
     pub(crate) fn of(held: &Held, now: SystemTime) -> Option<Self> {
         let grant: &Grant = &held.grant;
-        grant.expires_in(now).map(|left| Self {
+        // **The endless one is asked about first.** `Grant::expires_in`
+        // answers `None` both for a grant that has run out and for one that
+        // never will, so a road that started from it dropped the row that
+        // most needs to exist. `Grant::lasts_until_removed` is the question
+        // that tells them apart, and it is asked before anything reads a
+        // duration.
+        let lasts = if grant.lasts_until_removed() {
+            Lasts::UntilRemoved
+        } else {
+            Lasts::For(grant.expires_in(now)?)
+        };
+        Some(Self {
             id: held.id,
             to: grant.grantee.as_str().to_owned(),
             over: grant.reach.clone(),
             granted_at: grant.granted_at,
-            left,
+            lasts,
         })
     }
 
@@ -169,15 +187,19 @@ impl Seen {
         self.granted_at
     }
 
-    /// How much of it was left at the moment the list was derived. Never
-    /// zero.
+    /// How much longer it has, at the moment the list was derived — a
+    /// stretch of time, or nothing to wait for.
     ///
     /// A duration rather than a formatted time, for `alo-capability`'s own
     /// reason: formatting an expiry here would hardcode a calendar as well as
     /// a language, and neither decision belongs to this crate.
+    ///
+    /// **This replaced `expires_in`, which could not answer** once a grant
+    /// could run until the person removed it: its return type was a
+    /// `Duration`, and there is no honest one for that grant.
     #[must_use]
-    pub const fn expires_in(&self) -> Duration {
-        self.left
+    pub const fn lasts(&self) -> Lasts {
+        self.lasts
     }
 
     /// The row, in the language the person reads: who has been granted what,
@@ -186,7 +208,7 @@ impl Seen {
     ///
     /// The times are deliberately not in it — they are shown beside the row
     /// by whoever displays it, from [`Seen::granted_at`] and
-    /// [`Seen::expires_in`].
+    /// [`Seen::lasts`].
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
         let filling = Filling::of(words::WHO, self.to.clone())
@@ -262,7 +284,7 @@ mod tests {
             &Reach::Folder(std::path::PathBuf::from("/home/anna/Invoices"))
         );
         assert_eq!(row.granted_at(), noon());
-        assert_eq!(row.expires_in(), hour());
+        assert_eq!(row.lasts(), Lasts::For(hour()));
 
         let said = row.said(&in_english());
         assert!(!said.is_a_bug(), "the row is not declared");
