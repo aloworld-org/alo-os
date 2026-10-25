@@ -2811,7 +2811,7 @@ endpoint = \"https://{at}\"
     /// sends the request and nothing it sends replaces the instructions.
     #[test]
     fn an_agents_next_request_is_shown_the_products_words_through_the_door() {
-        use alo_instructing::{Instructions, shown_to_a_turn};
+        use alo_instructing::{Instructions, WhatItMayReach, shown_to_a_turn};
 
         let (runtime, served) = crate::testing::a_runtime_served(AN_ENVELOPE);
         let mut questions = Questions::already_found_pinned(
@@ -2837,7 +2837,14 @@ endpoint = \"https://{at}\"
 
         let shown = what_the_model_was_shown(&crate::testing::the_body_of(&served.join().unwrap()));
         let verbs = alo_files::file_verbs().unwrap();
-        assert_eq!(shown, shown_to_a_turn(&verbs, "list my invoices"));
+        // `not_said` and not `nothing`: this asks through the daemon with
+        // `Grants::default()`, and the daemon's own road composes with
+        // `not_said`, so any other value asserts against a prompt it never
+        // sends.
+        assert_eq!(
+            shown,
+            shown_to_a_turn(&verbs, &WhatItMayReach::not_said(), "list my invoices")
+        );
 
         let which = Instructions::ALL
             .into_iter()

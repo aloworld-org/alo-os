@@ -421,7 +421,19 @@ fn a_real_model_is_asked_in_words_and_a_file_really_moves() {
         // has finished, so what it covers is exactly what a person waits
         // through.
         let pressed_enter = Instant::now();
-        let happened = driving(&request, &offered, &mut door, HowFar::of(6), instructions);
+        // **`not_said` keeps this test measuring what it measured.** It is
+        // the one test that proves the agent renames a real file, and
+        // telling its model about the granted folder would change the
+        // prompt it is graded on. That is a deliberate change to make, not
+        // one a compile fix should make on the way past.
+        let happened = driving(
+            &request,
+            &offered,
+            &alo_instructing::WhatItMayReach::not_said(),
+            &mut door,
+            HowFar::of(6),
+            instructions,
+        );
         let enter_to_done = pressed_enter.elapsed();
         let this_machine = enter_to_done.saturating_sub(door.asking_a_model);
         println!("\n--- Enter to done ---");
