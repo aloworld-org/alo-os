@@ -34,7 +34,7 @@ use std::time::{Duration, SystemTime};
 use alo_agent::{HowFar, NotAnswered, TheDoor, WhatHappened, driving};
 use alo_capability::{Approvals, Given, Grant, Grantee, Grants, Proposal, Reach, Verbs};
 use alo_files::{OnThisMachine, Resolving as _};
-use alo_instructing::Instructions;
+use alo_instructing::{Instructions, WhatItMayReach};
 use alo_protocol::{Done, FromAnAgent, Standing, ToAnAgent, Wording};
 use alo_strings::Strings;
 
@@ -225,6 +225,7 @@ fn what_a_read_found_is_shown_back_on_the_next_round() {
     let happened = driving(
         "tidy my invoices",
         &verbs,
+        &WhatItMayReach::not_said(),
         &mut door,
         HowFar::THE_ORDINARY,
         Instructions::SHOWN_TO_A_TURN,
@@ -263,6 +264,7 @@ fn an_accepted_proposal_waits_for_the_person() {
     let happened = driving(
         "rename it",
         &verbs,
+        &WhatItMayReach::not_said(),
         &mut door,
         HowFar::THE_ORDINARY,
         Instructions::SHOWN_TO_A_TURN,
@@ -291,6 +293,7 @@ fn words_that_are_not_a_request_are_the_answer() {
     match driving(
         "where is it?",
         &verbs,
+        &WhatItMayReach::not_said(),
         &mut door,
         HowFar::THE_ORDINARY,
         Instructions::SHOWN_TO_A_TURN,
@@ -321,6 +324,7 @@ fn a_refused_read_is_told_back_and_the_turn_goes_on() {
     let happened = driving(
         "tidy",
         &verbs,
+        &WhatItMayReach::not_said(),
         &mut door,
         HowFar::THE_ORDINARY,
         Instructions::SHOWN_TO_A_TURN,
@@ -350,6 +354,7 @@ fn a_turn_that_gets_nowhere_stops_and_keeps_what_it_did() {
     match driving(
         "go round for ever",
         &verbs,
+        &WhatItMayReach::not_said(),
         &mut door,
         HowFar::of(3),
         Instructions::SHOWN_TO_A_TURN,
@@ -369,6 +374,7 @@ fn a_door_that_cannot_be_reached_says_so_in_english() {
     match driving(
         "anything",
         &verbs,
+        &WhatItMayReach::not_said(),
         &mut door,
         HowFar::THE_ORDINARY,
         Instructions::SHOWN_TO_A_TURN,
@@ -398,6 +404,7 @@ fn every_request_it_makes_is_one_an_agent_may_make() {
     driving(
         "tidy",
         &verbs,
+        &WhatItMayReach::not_said(),
         &mut door,
         HowFar::THE_ORDINARY,
         Instructions::SHOWN_TO_A_TURN,
@@ -435,6 +442,7 @@ fn a_turn_that_got_nowhere_says_why_each_round_failed() {
     let happened = driving(
         "what is the capital of uganda",
         &verbs,
+        &WhatItMayReach::not_said(),
         &mut door,
         HowFar::of(3),
         Instructions::SHOWN_TO_A_TURN,
@@ -471,6 +479,7 @@ fn what_a_step_says_does_not_carry_the_question() {
     let happened = driving(
         "a question nobody else should read",
         &verbs,
+        &WhatItMayReach::not_said(),
         &mut door,
         HowFar::of(2),
         Instructions::SHOWN_TO_A_TURN,

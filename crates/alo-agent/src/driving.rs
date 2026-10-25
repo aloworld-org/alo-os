@@ -50,7 +50,7 @@
 //! person's settings**, and law 1's indicator is lit by it rather than by us.
 
 use alo_capability::Verbs;
-use alo_instructing::{AStep, ATurnInProgress, Instructions, shown_in_progress};
+use alo_instructing::{AStep, ATurnInProgress, Instructions, WhatItMayReach, shown_in_progress};
 use alo_protocol::{Answered, FromAnAgent, ToAnAgent};
 
 use crate::how_far::HowFar;
@@ -70,6 +70,7 @@ use crate::what_happened::WhatHappened;
 pub fn driving(
     request: &str,
     verbs: &Verbs,
+    may_reach: &WhatItMayReach,
     door: &mut dyn TheDoor,
     how_far: HowFar,
     instructions: Instructions,
@@ -77,7 +78,11 @@ pub fn driving(
     let mut steps: Vec<AStep> = Vec::new();
 
     for _ in 0..how_far.rounds() {
-        let shown = shown_in_progress(instructions, verbs, ATurnInProgress::of(request, &steps));
+        let shown = shown_in_progress(
+            instructions,
+            verbs,
+            ATurnInProgress::of(request, &steps, may_reach),
+        );
         let asked = FromAnAgent::Ask {
             question: shown,
             answered: Answered::AsTheNextRequest,

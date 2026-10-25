@@ -13,15 +13,30 @@ use alo_capability::Verbs;
 
 use crate::instructions::Instructions;
 use crate::verb_as_told::as_told;
+use crate::what_it_may_reach::WhatItMayReach;
 
-/// **The whole text a model is shown**, under the given [`Instructions`]: how to
-/// answer, every verb the registry declares, and the request last.
+/// **The whole text a model is shown**, under the given [`Instructions`]: how
+/// to answer, every verb the registry declares, **what it may reach**, and the
+/// request last.
+///
+/// `may_reach` is taken rather than assumed, for the same reason the verbs
+/// are: a model is told what this machine really holds. It was told nothing at
+/// all until 2026-10-24, and a turn with a real grant to
+/// `/home/alo/Documents` spent all eight of its rounds guessing
+/// `/home/user/…` and being refused — `crate::what_it_may_reach` carries the
+/// measurement.
 #[must_use]
-pub fn shown_to_a_model(instructions: Instructions, verbs: &Verbs, request: &str) -> String {
+pub fn shown_to_a_model(
+    instructions: Instructions,
+    verbs: &Verbs,
+    may_reach: &WhatItMayReach,
+    request: &str,
+) -> String {
     let mut text = String::from(instructions.text());
     for verb in verbs.all() {
         text.push_str(&as_told(verb));
     }
+    text.push_str(&may_reach.told());
     text.push_str("\n\nThe request: ");
     text.push_str(request);
     text
@@ -33,8 +48,8 @@ pub fn shown_to_a_model(instructions: Instructions, verbs: &Verbs, request: &str
 /// A turn takes this rather than the set, so that what a turn shows and what a
 /// grade was earned under cannot come apart by somebody passing the other one.
 #[must_use]
-pub fn shown_to_a_turn(verbs: &Verbs, request: &str) -> String {
-    shown_to_a_model(Instructions::SHOWN_TO_A_TURN, verbs, request)
+pub fn shown_to_a_turn(verbs: &Verbs, may_reach: &WhatItMayReach, request: &str) -> String {
+    shown_to_a_model(Instructions::SHOWN_TO_A_TURN, verbs, may_reach, request)
 }
 
 #[cfg(test)]
@@ -52,7 +67,12 @@ mod tests {
     #[test]
     fn the_text_describes_each_verb_in_the_words_the_verb_declared() {
         let verbs = the_verbs();
-        let text = shown_to_a_model(Instructions::AsFirstWritten, &verbs, "do something");
+        let text = shown_to_a_model(
+            Instructions::AsFirstWritten,
+            &verbs,
+            &WhatItMayReach::nothing(),
+            "do something",
+        );
         for verb in verbs.all() {
             assert!(text.contains(verb.name()), "{}", verb.name());
             assert!(text.contains(verb.purpose_as_written()), "{}", verb.name());
@@ -67,7 +87,12 @@ mod tests {
     /// been measured on something nobody asked it.
     #[test]
     fn every_bound_a_verb_declared_is_in_the_text() {
-        let text = shown_to_a_model(Instructions::AsFirstWritten, &the_verbs(), "do something");
+        let text = shown_to_a_model(
+            Instructions::AsFirstWritten,
+            &the_verbs(),
+            &WhatItMayReach::nothing(),
+            "do something",
+        );
         assert!(text.contains("a full path"), "{text}");
         assert!(text.contains("at most 255 characters"), "{text}");
         assert!(text.contains("a whole number from 1 to 1000"), "{text}");
@@ -86,7 +111,12 @@ mod tests {
     /// told which is which.
     #[test]
     fn the_text_says_which_door_each_verb_takes() {
-        let text = shown_to_a_model(Instructions::AsFirstWritten, &the_verbs(), "do something");
+        let text = shown_to_a_model(
+            Instructions::AsFirstWritten,
+            &the_verbs(),
+            &WhatItMayReach::nothing(),
+            "do something",
+        );
         assert!(text.contains("list_folder (read)"), "{text}");
         assert!(text.contains("move_file (propose)"), "{text}");
     }
@@ -98,6 +128,7 @@ mod tests {
         let text = shown_to_a_model(
             Instructions::AsFirstWritten,
             &the_verbs(),
+            &WhatItMayReach::nothing(),
             "list what is in /home/anna",
         );
         assert!(
@@ -115,14 +146,19 @@ mod tests {
         let verbs = the_verbs();
         let request = "rename /home/anna/scan001.pdf to march.pdf";
         for instructions in Instructions::ALL {
-            let text = shown_to_a_model(instructions, &verbs, request);
+            let text = shown_to_a_model(instructions, &verbs, &WhatItMayReach::nothing(), request);
             let (shown, rest) = text.split_at(instructions.text().len());
             assert_eq!(shown, instructions.text());
             assert_eq!(
                 rest,
-                shown_to_a_model(Instructions::AsFirstWritten, &verbs, request)
-                    .split_at(Instructions::AsFirstWritten.text().len())
-                    .1
+                shown_to_a_model(
+                    Instructions::AsFirstWritten,
+                    &verbs,
+                    &WhatItMayReach::nothing(),
+                    request
+                )
+                .split_at(Instructions::AsFirstWritten.text().len())
+                .1
             );
         }
     }
@@ -135,10 +171,18 @@ mod tests {
         let verbs = the_verbs();
         let request = "what is in /home/anna";
         assert_eq!(
-            shown_to_a_turn(&verbs, request),
-            shown_to_a_model(Instructions::SHOWN_TO_A_TURN, &verbs, request)
+            shown_to_a_turn(&verbs, &WhatItMayReach::nothing(), request),
+            shown_to_a_model(
+                Instructions::SHOWN_TO_A_TURN,
+                &verbs,
+                &WhatItMayReach::nothing(),
+                request
+            )
         );
-        assert!(shown_to_a_turn(&verbs, request).starts_with(Instructions::SHOWN_TO_A_TURN.text()));
+        assert!(
+            shown_to_a_turn(&verbs, &WhatItMayReach::nothing(), request)
+                .starts_with(Instructions::SHOWN_TO_A_TURN.text())
+        );
     }
 
     /// A registry with a verb this system does not ship tells a model about it
@@ -148,7 +192,7 @@ mod tests {
     fn a_verb_from_somewhere_else_is_told_of_like_any_other() {
         let mut verbs = the_verbs();
         verbs.declare(a_verb_of_somebody_elses()).unwrap();
-        let text = shown_to_a_turn(&verbs, "water the kitchen");
+        let text = shown_to_a_turn(&verbs, &WhatItMayReach::nothing(), "water the kitchen");
         assert!(text.contains("water_the_plants (propose)"), "{text}");
         assert!(text.contains("one name, at most 64 characters"), "{text}");
     }

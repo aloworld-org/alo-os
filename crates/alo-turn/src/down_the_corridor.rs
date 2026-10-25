@@ -319,7 +319,11 @@ mod tests {
     /// that text, neither holds a schema, and both leave.
     #[test]
     fn an_agents_next_request_down_the_corridor_is_shown_this_machines_words_and_asked_as_before() {
-        let shown = alo_instructing::shown_to_a_turn(&alo_files::file_verbs().unwrap(), ASKED);
+        let shown = alo_instructing::shown_to_a_turn(
+            &alo_files::file_verbs().unwrap(),
+            &alo_instructing::WhatItMayReach::not_said(),
+            ASKED,
+        );
         let pairings = paired_with_the_studio(&[MayAskIts::Models]);
         let strings = in_english();
         let mut bodies = Vec::new();

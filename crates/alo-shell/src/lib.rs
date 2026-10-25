@@ -422,6 +422,7 @@ pub mod what_alo_asks_about_a_command;
 mod what_an_application_act_asks_for;
 #[cfg(test)]
 mod what_an_application_act_asks_for_tests;
+pub mod what_the_agent_may_reach;
 mod what_the_dock_has_open;
 /// One keypress, read as what a person typed: the compositor's half of the
 /// terminal's keyboard, where the keymap is. `alo_terminal` turns the answer

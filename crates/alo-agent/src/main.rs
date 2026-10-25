@@ -72,7 +72,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use alo_agent::{AtTheDaemonsSocket, HowFar, WhatHappened, driving};
-use alo_instructing::Instructions;
+use alo_instructing::{Instructions, WhatItMayReach};
 
 /// Where the daemon's doors live, which the image makes at boot.
 ///
@@ -138,6 +138,7 @@ fn run() -> Result<ExitCode, String> {
     let happened = driving(
         &asked.request,
         &verbs,
+        &asked.may_reach,
         &mut door,
         HowFar::THE_ORDINARY,
         Instructions::SHOWN_TO_A_TURN,
@@ -229,7 +230,28 @@ struct Asked {
     request: String,
     /// Where the daemon's socket is, when it was given.
     at: Option<PathBuf>,
+    /// The folders the asking side says this person has granted.
+    ///
+    /// **A hint for the model, never a capability**, which is what makes it
+    /// safe for the asking side to set — unlike *who is asking*, which the
+    /// kernel answers and a request may not carry. Nothing here permits
+    /// anything: every verb is still decided by `alo-agentd` against the
+    /// grants it reads for itself. An asking side that named a folder nobody
+    /// granted would only send the model to a path the daemon refuses, which
+    /// is the behaviour this change exists to stop rather than a way round it.
+    ///
+    /// Empty where nothing said, which is every caller that predates this —
+    /// `alo-ask` writes one line and still does.
+    may_reach: WhatItMayReach,
 }
+
+/// The marker a line of granted folders begins with.
+///
+/// **A marker rather than a second channel**, because the connection
+/// `alo-asking.socket` hands over is one stream and a request is one line.
+/// Anything that does not begin with this *is* the request, so every caller
+/// written before this one keeps working unchanged.
+const THE_FOLDERS: &str = "alo-may-reach:";
 
 /// Read the arguments.
 ///
@@ -265,13 +287,24 @@ fn what_was_asked() -> Result<Asked, String> {
             _ => words.push(argument),
         }
     }
+    let mut may_reach = WhatItMayReach::nothing();
     let request = if words.is_empty() {
         // **One line from the input**, so a shell can pipe a person's words in
         // without quoting them. A request is one line because a turn is one
         // request; anything longer is a conversation and this is not one.
         let mut line = String::new();
-        std::io::BufRead::read_line(&mut std::io::stdin().lock(), &mut line)
+        let input = &mut std::io::stdin().lock();
+        std::io::BufRead::read_line(input, &mut line)
             .map_err(|why| format!("nothing could be read from the input: {why}"))?;
+        // **An optional first line naming the folders this person granted.**
+        // A line that does not begin with the marker is the request itself, so
+        // `alo-ask` and anything else written before this keeps working.
+        if let Some(folders) = line.trim_end().strip_prefix(THE_FOLDERS) {
+            may_reach = WhatItMayReach::these(folders.split('\t').map(Path::new));
+            line.clear();
+            std::io::BufRead::read_line(input, &mut line)
+                .map_err(|why| format!("nothing could be read from the input: {why}"))?;
+        }
         line
     } else {
         words.join(" ")
@@ -284,7 +317,11 @@ fn what_was_asked() -> Result<Asked, String> {
             .to_owned(),
         );
     }
-    Ok(Asked { request, at })
+    Ok(Asked {
+        request,
+        at,
+        may_reach,
+    })
 }
 
 /// The person at the other end of this process's input, when there is one.

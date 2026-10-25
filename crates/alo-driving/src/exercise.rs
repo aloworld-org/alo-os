@@ -27,7 +27,7 @@
 //! sentence, and the crate header has why the words are in English.
 
 use alo_capability::Verbs;
-use alo_instructing::{Instructions, shown_to_a_model};
+use alo_instructing::{Instructions, WhatItMayReach, shown_to_a_model};
 
 /// One request put to a model, and the verb a correct answer calls.
 ///
@@ -91,7 +91,18 @@ pub fn prompt(exercise: &Exercise, verbs: &Verbs) -> String {
 /// shown one text built by one function (ADR 0037).
 #[must_use]
 pub fn prompt_under(instructions: Instructions, exercise: &Exercise, verbs: &Verbs) -> String {
-    shown_to_a_model(instructions, verbs, exercise.asked())
+    // **Silence, and not an empty list.** This is the grading harness: the
+    // doc above says every model faces the same text for the same registry,
+    // which is what makes two grades comparable. An exercise has no person
+    // and no grants, so `not_said` is the true answer — and it leaves the
+    // prompt as it was before a turn could carry granted folders, so a grade
+    // measured today still compares with one measured before that.
+    shown_to_a_model(
+        instructions,
+        verbs,
+        &WhatItMayReach::not_said(),
+        exercise.asked(),
+    )
 }
 
 #[cfg(test)]
@@ -113,12 +124,22 @@ mod tests {
         for instructions in Instructions::ALL {
             assert_eq!(
                 prompt_under(instructions, &exercise, &verbs),
-                shown_to_a_model(instructions, &verbs, exercise.asked())
+                shown_to_a_model(
+                    instructions,
+                    &verbs,
+                    &WhatItMayReach::not_said(),
+                    exercise.asked(),
+                )
             );
         }
         assert_eq!(
             prompt(&exercise, &verbs),
-            shown_to_a_model(Instructions::AsFirstWritten, &verbs, exercise.asked()),
+            shown_to_a_model(
+                Instructions::AsFirstWritten,
+                &verbs,
+                &WhatItMayReach::not_said(),
+                exercise.asked(),
+            ),
             "the unnamed prompt is the instructions every existing grade was earned under"
         );
     }
