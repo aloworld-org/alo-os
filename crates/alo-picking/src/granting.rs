@@ -303,7 +303,7 @@ mod tests {
         let id = Granting::to_until_removed(HERS)
             .of(&a_folder_picked(&machine), &mut grants, noon())
             .unwrap()
-            .expect("a folder was picked");
+            .unwrap();
 
         let ask = Ask::path("/home/anna/Invoices/march.pdf");
         let hers = Grantee::named(HERS);
