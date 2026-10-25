@@ -1264,6 +1264,25 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
 # So the numbers are asserted. A base update that takes one of them fails the
 # build with the number in front of somebody, instead of shipping a machine
 # whose description names a login that is not there.
+# **The agent's name is in two files, so the build holds them to each other.**
+#
+# `/etc/alo/agentd.toml` is the source: it is what `alo-agentd` reads and what
+# every grant is matched against. `alo-desktop.service` carries a copy, because
+# Settings needs that name to write a grant a person makes by picking a folder,
+# and reading it from the description inside the desktop would make that binary
+# depend on the daemon — which drags the kernel boundary's eBPF build into the
+# desktop's compile and failed this very build on 2026-10-24.
+#
+# A copy nothing checks is a copy that drifts, and this drift is silent in the
+# worst way: a person walks through choosing a folder, a grant is written under
+# a name the daemon never matches, and alo still cannot read their files with
+# nothing on any screen saying why. So the build refuses instead of shipping it.
+RUN described="$(sed -n 's/^name *= *"\(.*\)"/\1/p' /etc/alo/agentd.toml | head -1)" \
+ && unit="$(sed -n 's/^Environment=ALO_AGENT=//p' /usr/lib/systemd/system/alo-desktop.service | head -1)" \
+ && test -n "$described" \
+ && test "$described" = "$unit" \
+ && echo "the agent is called '$described' in both the description and the desktop's unit"
+
 RUN systemd-sysusers \
  && test "$(id -u alo)" = 1000 \
  && test "$(id -u alo-agent)" = 60989 \

@@ -86,6 +86,7 @@ impl Machine {
             self.places.pairings(),
             self.places.daemon(),
             self.places.how_code_runs(),
+            self.places.agent(),
         )
     }
 
@@ -146,6 +147,13 @@ pub(crate) fn a_persons_machine(what: &str) -> Machine {
         // runs — the state the section keeps apart from the sealed box, and the
         // one a fresh machine is in.
         &machine_files.join("how-code-runs.toml"),
+        // **A real agent name, so the row that gives alo a folder exists in
+        // this fixture.** The comment on the shell above records what `None`
+        // here costs: a row that is neither drawn nor acted on makes
+        // `every_setting_the_machine_has_is_in_one_window` agree with itself
+        // about nothing, and deleting it from the acted-on list would leave
+        // that test green.
+        Some("alo"),
     );
 
     let mut grants = Grants::default();
@@ -245,6 +253,7 @@ pub(crate) fn doors<'a>(
     SettingsDoors {
         strings,
         daemon,
+        folders: &alo_picking::OnThisDisk,
         now: noon(),
     }
 }

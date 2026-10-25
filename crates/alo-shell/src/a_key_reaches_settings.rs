@@ -180,6 +180,11 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
         SettingsDoors {
             strings,
             daemon: &door,
+            // **The real disk, and the only road out of Settings onto one.**
+            // Handed in here rather than reached for inside the window, so
+            // that every rule about what a person may pick stays testable
+            // against a folder tree written down in a test.
+            folders: &alo_picking::OnThisDisk,
             // **The one clock read on this road.** A press is a thing that
             // happened at a moment, and the grants and pairings in force are
             // the ones in force then. Every layer below takes it as an

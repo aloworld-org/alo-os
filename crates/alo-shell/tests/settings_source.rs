@@ -366,11 +366,20 @@ const WORDING: [&str; 6] = [
     "concat!",
 ];
 
-/// Granting, or revoking any way but `alo_changing::Changing::revoked`.
-const GRANTING: [&str; 12] = [
-    "Granting",
-    "alo_picking",
-    ".granted(",
+/// Making or revoking by a road of this window's own, which no Settings file
+/// may do anywhere.
+///
+/// **This list held `Granting`, `alo_picking` and `.granted(` until
+/// 2026-10-24**, when *Settings grants nothing* stopped being the rule. That
+/// sentence was true until then and it was the fault: nothing anywhere on the
+/// machine could make a grant, so the list this window draws could only ever
+/// say *nothing granted*, and every file verb was refused forever.
+///
+/// The rule became narrower rather than weaker — **a grant is made from a
+/// folder a person picked and from nothing else.** Those three words moved to
+/// [`PICKING`], which one file may use; everything left here still forbids
+/// this window inventing a grant, a revocation or a write of its own.
+const GRANTING: [&str; 9] = [
     ".grant(",
     ".revoke(",
     "revoke_on",
@@ -381,6 +390,21 @@ const GRANTING: [&str; 12] = [
     "reset_everything",
     "put_everything_back",
 ];
+
+/// Making a grant from a folder a person picked, which only
+/// `settings_granted.rs` may do.
+///
+/// Three words rather than one, so that all three ends are held: the grant's
+/// own type, the crate that seals a picked folder, and the call that carries
+/// it to the disk. A Settings file reaching for any of them is a second road
+/// to a grant, which is the thing this file exists to keep at one.
+///
+/// **`a_folder_is_picked_in_settings.rs` is not among the files checked here**,
+/// because this test reads `settings_*.rs` and that is not one. It holds the
+/// walking and makes no grant — `GiveItThisFolder` is handed back to the
+/// section — but nothing in *this* file is what says so, and that is a gap
+/// named here rather than left to be discovered.
+const PICKING: [&str; 3] = ["Granting", "alo_picking", ".granted("];
 
 /// Answering setup again, which is asked once.
 const RE_ASKING: [&str; 3] = ["SettingUp", ".answer(", ".setting_up("];
@@ -427,8 +451,16 @@ fn what_settings_must_not_do(named: &str, code: &[(usize, String)]) -> Vec<(usiz
                 }
             }
         }
-        if named != "settings_granted.rs" && text.contains("Changing::of") {
-            found.push((*line, "Changing::of"));
+        if named != "settings_granted.rs" {
+            if text.contains("Changing::of") {
+                found.push((*line, "Changing::of"));
+            }
+            // **The one file that may make a grant, and only from a pick.**
+            for word in PICKING {
+                if text.contains(word) {
+                    found.push((*line, word));
+                }
+            }
         }
         if named != "settings_answering.rs"
             && (text.contains("answered_by") || text.contains("Choosing::at"))
@@ -439,14 +471,21 @@ fn what_settings_must_not_do(named: &str, code: &[(usize, String)]) -> Vec<(usiz
     found
 }
 
-/// **Settings words nothing, grants nothing, revokes one way, writes only
-/// through each setting's keeper, and has no agent's road into it.** Every
-/// sentence is a crate's; a grant is `alo-picking`'s to make; a grant and a
-/// pairing are revoked with `alo_changing::Changing::revoked` alone; a setting
-/// reaches a disk through the crate that owns it; and no turn, approval or
-/// overlay is named in a Settings file.
+/// **Settings words nothing, grants only from a pick, revokes one way, writes
+/// only through each setting's keeper, and has no agent's road into it.**
+/// Every sentence is a crate's; a grant is still `alo-picking`'s to make and
+/// `settings_granted.rs` is the one file that may carry one to the disk; a
+/// grant and a pairing are revoked with `alo_changing::Changing::revoked`
+/// alone; a setting reaches a disk through the crate that owns it; and no
+/// turn, approval or overlay is named in a Settings file.
+///
+/// **This said *grants nothing* until 2026-10-24.** That was true, enforced,
+/// and was the fault: no road existed for a person to grant anything, so the
+/// list this window draws could only ever say *nothing granted* and every file
+/// verb on every alo machine was refused forever. The rule narrowed to one
+/// file rather than being dropped — see [`GRANTING`] and [`PICKING`].
 #[test]
-fn settings_words_nothing_grants_nothing_and_changes_only_through_the_owning_crates() {
+fn settings_grants_only_from_a_pick_and_changes_only_through_the_owning_crates() {
     let mut refused = Vec::new();
     let mut revoking = Vec::new();
     for (named, code) in the_settings_files() {
@@ -456,9 +495,16 @@ fn settings_words_nothing_grants_nothing_and_changes_only_through_the_owning_cra
         for (line, text) in &code {
             if text.contains("Changing::of") {
                 revoking.push(format!("src/{named}:{line}"));
+                // **Two things a `Changing` may be, and no third.** Revoking a
+                // row a person saw, or making the grant a person's pick means.
+                // Anything else is this window changing the machine by a road
+                // of its own, which is what this file is here to keep from
+                // existing.
                 assert!(
-                    text.contains(".revoked(row, now)"),
-                    "src/{named}:{line} makes a Changing for something other than revoking a row: {text}"
+                    text.contains(".revoked(row, now)")
+                        || text.contains(".granted(&granting, chosen, now)"),
+                    "src/{named}:{line} makes a Changing for something other than revoking a row \
+                     or granting a picked folder: {text}"
                 );
             }
         }
@@ -468,10 +514,15 @@ fn settings_words_nothing_grants_nothing_and_changes_only_through_the_owning_cra
         "Settings does what it must not:\n{}",
         refused.join("\n")
     );
+    // **Two, and the test above says which two they may be.** One revokes —
+    // a grant and a pairing by the same call, which is what the one list
+    // means — and one carries a person's pick to the disk. This was `1` until
+    // 2026-10-24, when nothing could grant anything.
     assert_eq!(
         revoking.len(),
-        1,
-        "a grant and a pairing are revoked by one call: {revoking:?}"
+        2,
+        "a grant and a pairing are revoked by one call, and one call grants a picked folder: \
+         {revoking:?}"
     );
 }
 
@@ -495,15 +546,25 @@ fn a_settings_file_that_words_grants_or_writes_around_its_keeper_is_refused() {
             "let chosen = \"chosen\";",
             "a string a person could read",
         ),
+        // **These two named `settings_granted.rs` until 2026-10-24**, when
+        // that file became the one place a person's pick becomes a grant. The
+        // rule did not go away — it narrowed to one file — so the cases moved
+        // to a file it still bites in rather than being deleted. A guard
+        // nobody can fail is not a guard.
         (
-            "settings_granted.rs",
+            "settings_window.rs",
             "let granting: Granting = Granting::to(who, lasting);",
             "Granting",
         ),
         (
-            "settings_granted.rs",
+            "settings_window.rs",
             "changing.granted(&granting, &chosen, now)?;",
             ".granted(",
+        ),
+        (
+            "settings_lines.rs",
+            "let picked = alo_picking::Picker::standing_in(at, folders)?;",
+            "alo_picking",
         ),
         (
             "settings_granted.rs",

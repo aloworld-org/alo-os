@@ -663,6 +663,38 @@ mod running {
 
         /// through the same one place that answers it.
         fn the_settings_places(&mut self) -> Option<alo_shell::SettingsPlaces> {
+            /// The agent this machine has, by the name its grants use.
+            ///
+            /// **This machine's unit file says so**, which is the road this
+            /// binary already takes for the other fact a machine differs by:
+            /// `ALO_KEYBOARD` is handed over the same way, two lines up in the
+            /// same file. It has to be the exact name `/etc/alo/agentd.toml`
+            /// carries, because a grant written under any other is one
+            /// `alo-agentd` will never match — so the image asserts that the
+            /// two agree at build time, which is where a drift between them is
+            /// cheap to find.
+            ///
+            /// **It is not read from the description here, and that was
+            /// measured rather than preferred.** Reading it through the crate
+            /// that owns that file is the obvious answer and was built first;
+            /// it makes this binary depend on `alo-agentd`, which depends on
+            /// `alo-bounding`, whose build compiles the eBPF programmes for
+            /// the kernel boundary. One string from a TOML file then drags the
+            /// whole kernel half into the desktop's compile, and the image
+            /// build failed on a stage with no `bpf-linker`. **No test saw
+            /// it**: the toolchain is present on a developer's machine, and
+            /// only building what ships does not have it.
+            ///
+            /// `None` where the unit did not say, and then Settings offers no
+            /// way to give a folder at all — this repository's rule for a
+            /// setting with no road: absent rather than there and broken.
+            fn the_agent_this_machine_has() -> Option<String> {
+                std::env::var("ALO_AGENT")
+                    .ok()
+                    .map(|name| name.trim().to_owned())
+                    .filter(|name| !name.is_empty())
+            }
+
             Some(alo_shell::SettingsPlaces::of(
                 std::env::var_os("XDG_CONFIG_HOME").as_deref(),
                 std::env::var_os("HOME").as_deref(),
@@ -671,6 +703,7 @@ mod running {
                 std::path::Path::new(alo_remembering::THE_PAIRINGS),
                 &alo_changing::this_persons_door(),
                 std::path::Path::new(alo_remembering::THE_LEVEL),
+                the_agent_this_machine_has().as_deref(),
             ))
         }
 

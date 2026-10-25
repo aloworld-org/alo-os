@@ -297,37 +297,79 @@ fn terminal(open: &Open, strings: &Strings) -> SectionWords {
 /// What has been granted to what.
 fn granted(open: &Open, strings: &Strings, now: SystemTime) -> SectionWords {
     let section = &open.granted;
+
+    // **While a picker is open it is the whole section.** A person walking
+    // their own folders with the grants they already have underneath would be
+    // moving one ring through two unrelated lists, and the key that opens a
+    // folder would be the key that revokes a grant a row away.
+    //
+    // This and `Open::rows` are two readers of one question, held to each
+    // other by `every_setting_the_machine_has_is_in_one_window` — *a row is
+    // acted on that is not drawn, or drawn and not acted on*.
+    if let Some(picking) = section.picking() {
+        let mut said = vec![picking.asking(strings).into_text()];
+        said.extend(picking.told().map(str::to_owned));
+        return SectionWords {
+            section: SettingsSection::Granted,
+            said,
+            lines: picking
+                .rows()
+                .into_iter()
+                .map(|row| LineWords {
+                    parts: vec![picking.said(&row, strings)],
+                    row: Some(SettingsRow::Picking(row)),
+                    chosen: false,
+                })
+                .collect(),
+        };
+    }
+
     let mut said: Vec<String> = section.told().to_vec();
     if let Some(nothing) = section.nothing_granted(now) {
         said.extend(nothing.said(strings).map(alo_strings::Said::into_text));
     }
-    let lines = section
-        .rows(now)
-        .into_iter()
-        .map(|row| {
-            let parts = match &row {
-                Row::Grant(seen) => vec![seen.said(strings).into_text()],
-                Row::Pairing(seen) => {
-                    let mut parts = vec![
-                        seen.called()
-                            .unwrap_or_else(|| seen.machine().as_str())
-                            .to_owned(),
-                    ];
-                    parts.extend(section.may(seen).into_iter().map(|may| {
-                        strings
-                            .say(&may.word().key(), &Filling::nothing())
-                            .into_text()
-                    }));
-                    parts
-                }
-            };
-            LineWords {
-                row: Some(SettingsRow::Granted(row)),
-                parts,
-                chosen: false,
+    // **Above the list, and the only row here that is not something they
+    // already have.** `AddAProvider` makes the same argument in the answering
+    // section: a row that appeared once somebody had a grant would be a door
+    // that opens after you are through it.
+    let mut lines = Vec::new();
+    if section.a_folder_can_be_given() {
+        lines.push(LineWords {
+            row: Some(SettingsRow::GrantAFolder),
+            parts: vec![
+                strings
+                    .say(
+                        &crate::the_pickers_words::GRANT_A_FOLDER.key(),
+                        &Filling::nothing(),
+                    )
+                    .into_text(),
+            ],
+            chosen: false,
+        });
+    }
+    lines.extend(section.rows(now).into_iter().map(|row| {
+        let parts = match &row {
+            Row::Grant(seen) => vec![seen.said(strings).into_text()],
+            Row::Pairing(seen) => {
+                let mut parts = vec![
+                    seen.called()
+                        .unwrap_or_else(|| seen.machine().as_str())
+                        .to_owned(),
+                ];
+                parts.extend(section.may(seen).into_iter().map(|may| {
+                    strings
+                        .say(&may.word().key(), &Filling::nothing())
+                        .into_text()
+                }));
+                parts
             }
-        })
-        .collect();
+        };
+        LineWords {
+            row: Some(SettingsRow::Granted(row)),
+            parts,
+            chosen: false,
+        }
+    }));
     SectionWords {
         section: SettingsSection::Granted,
         said,

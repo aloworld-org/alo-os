@@ -87,6 +87,11 @@ fn the_two_rows(window: &SettingsWindow) -> (SettingsRow, SettingsRow) {
         .rows(noon())
         .into_iter()
         .filter(|row| row.section() == SettingsSection::Granted)
+        // **The row that opens the picker is in this section and is not one of
+        // the list's rows.** This helper is about the grant and the pairing —
+        // what the one list holds and how both are revoked — and the row that
+        // gives alo a folder sits above them making neither claim.
+        .filter(|row| !matches!(row, SettingsRow::GrantAFolder))
         .collect();
     assert_eq!(granted.len(), 2, "{granted:?}");
     (granted[0].clone(), granted[1].clone())
@@ -209,6 +214,7 @@ fn a_way_with_nothing_to_choose_is_absent_rather_than_disabled() {
         &var.join("pairings"),
         &var.join("agentd.sock"),
         &var.join("how-code-runs.toml"),
+        Some("alo"),
     );
     let mut window = SettingsWindow::closed();
     let opened = window.opened_by_hand(&places, noon());
@@ -261,7 +267,24 @@ fn a_way_with_nothing_to_choose_is_absent_rather_than_disabled() {
         .into_iter()
         .find(|section| section.section == SettingsSection::Granted)
         .unwrap();
-    assert!(granted.lines.is_empty());
+    // **The one row here is the way in, and it is the whole point of it.**
+    // This asserted an empty list until 2026-10-24, when it was true and was
+    // the fault: a person on a machine with nothing granted was shown a
+    // sentence saying so and *no way to grant anything*, which is why every
+    // file verb on every alo machine was refused forever. The row that gives
+    // alo a folder is drawn exactly when there is nothing granted as well as
+    // when there is something — a door that opened once you were through it
+    // would be no door at all.
+    assert_eq!(
+        granted
+            .lines
+            .iter()
+            .map(|line| line.row.clone())
+            .collect::<Vec<_>>(),
+        [Some(SettingsRow::GrantAFolder)],
+        "{:?}",
+        granted.lines
+    );
     assert_eq!(
         granted.said,
         [Listing::of(&Grants::default(), noon())
@@ -845,6 +868,10 @@ fn a_grant_and_a_pairing_are_revoked_the_same_way() {
         window
             .rows(noon())
             .iter()
+            // The row that gives alo a folder stays whatever is revoked: it is
+            // the way in, not a thing the person has, and it is exactly when
+            // the list is empty that they most need it.
+            .filter(|row| !matches!(row, SettingsRow::GrantAFolder))
             .all(|row| row.section() != SettingsSection::Granted),
         "a revoked row is still drawn"
     );
