@@ -62,6 +62,30 @@ finding and not noise.** The question to ask is not *was this already here* but
 field that was always unused look identical to clippy and are not the same
 event. Here, `git diff origin/main --stat` answered it in one line.
 
+## And the same shape twice more in the hour after
+
+Writing this entry did not stop it. Both repeats were the same move: **ask a
+question in a form that can only answer *nothing here*, get nothing, and read
+it as *nothing is wrong*.**
+
+- The two dead-field lints were reported to the owner as **pre-existing**.
+  `git diff origin/main --stat -- crates/alo-desktop/src/readings.rs` showed
+  that file unchanged, which was true, and the conclusion was generalised to
+  the *other* file — which had been changed, by this very deletion. Clippy
+  going clean the moment the file was restored is what settled it. The check
+  was real, its scope was one file, and the sentence it was used to support
+  covered two.
+- `pgrep -c -f "[p]odman|[b]uildah"` answered `0` while `podman build` and
+  `buildah-oci-runtime` were both running: the shell ate the quoting and the
+  pattern never ran. This is `driving-the-qemu-machine-here.md`'s pgrep fault
+  in a new costume, and it was briefly read as *the build died at once*.
+
+The cure above is written for the editing case. The general one is
+`a-search-with-no-output-is-not-a-search-that-found-nothing.md`: **make the
+query prove it ran before believing a zero**, and keep the scope of a check
+inside the scope of the sentence it is used to support.
+
 *Written 2026-10-24, the same hour it happened, by the lane that did it. The
 80 lines never reached the remote: clippy's two complaints arrived before the
-push.*
+push. The section above was added an hour later, after the same mechanism
+produced two more wrong statements — one of them to the owner.*
