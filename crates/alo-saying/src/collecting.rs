@@ -541,6 +541,7 @@ mod tests {
         ("alo-tasks", "tasks.status.working"),
         ("alo-telling", "telling.carry-on"),
         ("alo-terminal", "terminal.who.program"),
+        ("alo-their-folders", "their-folders.documents"),
         ("alo-turn", "turn.closed"),
     ];
 
@@ -666,6 +667,7 @@ mod tests {
             alo_tasks::task_words().unwrap().how_many(),
             alo_telling::telling_words().unwrap().how_many(),
             alo_terminal::words::terminal_words().unwrap().how_many(),
+            alo_their_folders::their_folders_words().unwrap().how_many(),
             alo_turn::turn_words().unwrap().how_many(),
         ];
         assert_eq!(each.len(), EVERY_LIST.len());
