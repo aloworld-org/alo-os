@@ -25,6 +25,7 @@ use alo_strings::Filling;
 
 use crate::a_folder_is_picked_in_settings::PickingRow;
 use crate::how_long_a_grant_lasts::HowLong;
+use crate::settings_granted::SettingsGave;
 
 /// A key that means `key` and makes no chord.
 fn key(key: SettingsKey) -> SettingsPress {

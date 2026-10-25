@@ -53,7 +53,7 @@
 //! [`Seen::revoke_on`] is that one action taken on the machine value rather
 //! than on its list, and answers the same two ways.
 
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 
 use alo_capability::{Agent, Grant, GrantId, Grants, Held, Reach};
 use alo_strings::{Filling, Said, Strings};

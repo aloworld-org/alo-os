@@ -30,9 +30,7 @@
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
-use alo_capability::{
-    ATerminalForTheAgent, Ask, Grant, Grantee, Grants, Reach,
-};
+use alo_capability::{ATerminalForTheAgent, Ask, Grant, Grantee, Grants, Reach};
 use alo_granted::{Lasts, Listing, Revoked};
 
 /// A fixed moment, so everything about time here is arithmetic.
@@ -54,13 +52,8 @@ fn invoices() -> Reach {
 fn a_machine_with_an_endless_grant() -> Grants {
     let mut grants = Grants::default();
     grants.grant(
-        Grant::checked_until_removed(
-            &files(),
-            invoices(),
-            noon(),
-            ATerminalForTheAgent::NotAtAll,
-        )
-        .unwrap(),
+        Grant::checked_until_removed(&files(), invoices(), noon(), ATerminalForTheAgent::NotAtAll)
+            .unwrap(),
     );
     grants
 }

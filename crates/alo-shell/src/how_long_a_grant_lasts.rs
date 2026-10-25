@@ -89,12 +89,7 @@ impl HowLong {
     /// one, so the least they can give is the one that costs no decision —
     /// which is the right way round for a list whose other end hands over a
     /// folder until they come back for it.
-    pub const ALL: [Self; 4] = [
-        Self::AnHour,
-        Self::ADay,
-        Self::AMonth,
-        Self::UntilIRemoveIt,
-    ];
+    pub const ALL: [Self; 4] = [Self::AnHour, Self::ADay, Self::AMonth, Self::UntilIRemoveIt];
 
     /// The grant this length means, to this agent.
     ///

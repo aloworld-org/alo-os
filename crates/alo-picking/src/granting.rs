@@ -329,11 +329,7 @@ mod tests {
             .unwrap();
 
         let hers = Grantee::named(HERS);
-        for out_of_reach in [
-            "/home/anna/taxes.pdf",
-            "/home/anna",
-            "/etc/shadow",
-        ] {
+        for out_of_reach in ["/home/anna/taxes.pdf", "/home/anna", "/etc/shadow"] {
             assert!(
                 !grants.permits(&hers, &Ask::path(out_of_reach), noon()),
                 "{out_of_reach}"
@@ -360,8 +356,8 @@ mod tests {
     fn a_grant_until_removed_to_no_agent_is_refused() {
         let machine = WrittenDown::a_home_folder();
         let mut grants = Grants::default();
-        let refused = Granting::to_until_removed("   ")
-            .of(&a_folder_picked(&machine), &mut grants, noon());
+        let refused =
+            Granting::to_until_removed("   ").of(&a_folder_picked(&machine), &mut grants, noon());
         assert_eq!(refused, Err(GrantError::Anonymous));
         assert!(grants.is_empty());
     }

@@ -115,7 +115,7 @@ mod testing;
 
 pub use browsing::Picker;
 pub use folders::{Folders, Inside, MOST_SHOWN, NotShown};
-pub use granting::Granting;
+pub use granting::{ForHowLong, Granting};
 pub use on_this_disk::OnThisDisk;
 pub use picked::{Chosen, Picked};
 pub use refusing::NotPicked;
