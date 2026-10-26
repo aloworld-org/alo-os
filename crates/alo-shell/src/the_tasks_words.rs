@@ -194,18 +194,23 @@ impl TheTasksWords {
 
 /// Which kind of block one turn is drawn as.
 ///
-/// **A question and a proposal are a person's to answer, and are drawn as
-/// alo's words rather than as an account** — the approval card they belong in
-/// is its own surface and is not built, so until it is they read as what alo
-/// said. Named here rather than silently mapped: a reader should be able to see
-/// that the card is missing rather than wonder why a question looks like a
-/// reply.
+/// **A proposal is drawn as the approval card**, which the design calls *the
+/// same shell as an activity block* — built 2026-10-26, and the waiting one
+/// carries Allow once and Deny under it.
+///
+/// **A question is still drawn as alo's words.** It is a person's to answer
+/// too, and its card is not built, so until it is it reads as what alo said.
+/// Named here rather than silently mapped: a reader should be able to see that
+/// card is missing rather than wonder why a question looks like a reply.
 fn whose(turn: &alo_tasks::Turn) -> alo_tasks::WhoseBlock {
     match turn.who() {
         alo_tasks::WhoSaidIt::ThePerson => alo_tasks::WhoseBlock::ThePersons,
-        alo_tasks::WhoSaidIt::Alo
-        | alo_tasks::WhoSaidIt::AloAsking
-        | alo_tasks::WhoSaidIt::AloProposing => alo_tasks::WhoseBlock::Alos,
+        alo_tasks::WhoSaidIt::Alo | alo_tasks::WhoSaidIt::AloAsking => alo_tasks::WhoseBlock::Alos,
+        // **A proposal is a card** — the design's approval card is *the same
+        // shell as an activity block*, which is this. Every proposal is one,
+        // answered or not; only the one still waiting has the two answers
+        // under it.
+        alo_tasks::WhoSaidIt::AloProposing => alo_tasks::WhoseBlock::AnAccount,
     }
 }
 

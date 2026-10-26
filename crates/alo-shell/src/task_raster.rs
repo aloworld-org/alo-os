@@ -135,6 +135,10 @@ const THE_KIND_IS_TALL: u32 = 16;
 /// The status's column on the right.
 const THE_STATUS_IS_WIDE: u32 = 260;
 
+/// How much taller a card is for its two answers: the gap above the row, and
+/// the row.
+const THE_ANSWERS_TAKE: u32 = m::GAP + m::A_CONTROL_IS;
+
 /// A logical measure as a pixel count.
 fn px(of: u32) -> i32 {
     i32::try_from(of).unwrap_or(i32::MAX)
@@ -290,6 +294,14 @@ pub(crate) fn furniture(
             } else {
                 tall
             };
+            // **And a card with answers under it, by the choices row and the
+            // gap above it**, so the row is inside the card rather than over
+            // whatever is said next.
+            let tall = if one.answers.is_some() {
+                tall + THE_ANSWERS_TAKE
+            } else {
+                tall
+            };
             (one.whose, tall)
         })
         .collect();
@@ -311,6 +323,76 @@ pub(crate) fn furniture(
     // design draws a real one at `radius/md` with 16 inside, and a picture of a
     // real draw is what showed the difference — no test could, because every
     // test was about where the words are.
+    // **The two answers on the waiting card**, placed before the panel is made
+    // because they are shapes in its raster. Allow once is a well in
+    // `text/primary`; Deny is its border, drawn as a ring like the reply
+    // field's; and the answer the keyboard is on has the navy outline.
+    let mut the_answers: Vec<AWell> = Vec::new();
+    let mut rings = vec![field];
+    let mut outlines: Vec<Rectangle<i32, Physical>> = Vec::new();
+    let mut where_the_answers_are: Option<(u32, u32, u32, u32)> = None;
+    for (one, block) in said.iter().zip(blocks.each()) {
+        let Some(answers) = one.answers else {
+            continue;
+        };
+        if !block.is_in_view(scrolled, view) {
+            continue;
+        }
+        let left = m::INSIDE_THE_CONVERSATION + block.from_the_left + m::INSIDE_A_BLOCK;
+        let down = (top_of_the_column + block.from_the_top.saturating_sub(scrolled) + block.tall)
+            .saturating_sub(m::INSIDE_A_BLOCK + m::A_CONTROL_IS);
+        // **Each label measured here, to be centred on its button later.** The
+        // font system is free now; once the writer below takes it, it is not.
+        let mut width_of = |words: &str, ground: [u8; 3], ink: [u8; 3], room: u32| -> u32 {
+            let shaped = crate::task_text::shaped(
+                fonts,
+                crate::task_text::ToWrite {
+                    words,
+                    style: AStyle::Label,
+                    ground,
+                    ink,
+                },
+                px(room),
+                measure,
+            );
+            u32::try_from(shaped.width.max(0)).unwrap_or(0)
+        };
+        let allow_is = width_of(
+            answers.allow_once,
+            palette.ink,
+            palette.surface,
+            m::ALLOW_ONCE_IS_WIDE,
+        );
+        let deny_is = width_of(answers.deny, palette.cool, palette.ink, m::DENY_IS_WIDE);
+        where_the_answers_are = Some((left, down, allow_is, deny_is));
+        let (ax, ay) = inside(left, down);
+        let allow = Rectangle::new(
+            (ax, ay).into(),
+            (px(m::ALLOW_ONCE_IS_WIDE), px(m::A_CONTROL_IS)).into(),
+        );
+        let (dx, dy) = inside(left + m::ALLOW_ONCE_IS_WIDE + m::GAP, down);
+        let deny = Rectangle::new(
+            (dx, dy).into(),
+            (px(m::DENY_IS_WIDE), px(m::A_CONTROL_IS)).into(),
+        );
+        the_answers.push(AWell {
+            at: allow,
+            corner: m::A_CONTROLS_CORNER,
+        });
+        rings.push(deny);
+        match answers.selected {
+            Some(crate::a_change_waiting_reaches_the_person::WhichAnswer::AllowOnce) => {
+                outlines.push(crate::dock_raster::a_focus_ring(allow));
+            }
+            Some(crate::a_change_waiting_reaches_the_person::WhichAnswer::Deny) => {
+                outlines.push(crate::dock_raster::a_focus_ring(deny));
+            }
+            // **Nothing is preselected, so nothing is outlined** until the
+            // person moves to an answer.
+            None => {}
+        }
+    }
+
     for block in blocks.each() {
         if !block.whose.is_in_a_bubble() || !block.is_in_view(scrolled, view) {
             continue;
@@ -337,9 +419,13 @@ pub(crate) fn furniture(
             mark: palette.ink,
             wells: &wells,
             well_is: palette.cool,
-            rings: &[field],
+            rings: &rings,
             ring_is: palette.edge,
-            in_primary: crate::dock_surface::InPrimary::NOTHING,
+            in_primary: crate::dock_surface::InPrimary {
+                wells: &the_answers,
+                outlines: &outlines,
+                colour: palette.ink,
+            },
         },
     )
     .ok_or(NoTaskPicture::TooSmall(TooSmall::NotTallEnough {
@@ -526,16 +612,56 @@ pub(crate) fn furniture(
         };
         // The block's place in the content, less how far the view has scrolled.
         let down = top_of_the_column + block.from_the_top.saturating_sub(scrolled) + padding;
+        // **The words keep to the space above the answers.** They are centred in
+        // the band they are given, so a band that included the row would put
+        // the sentence on top of the buttons.
+        let below = if one.answers.is_some() {
+            THE_ANSWERS_TAKE
+        } else {
+            0
+        };
         write(
             one.words,
             style_of(block.whose),
             ground_of(block.whose, &palette),
             palette.ink,
             m::INSIDE_THE_CONVERSATION + block.from_the_left + padding,
-            (down, block.tall.saturating_sub(padding * 2)),
+            (down, block.tall.saturating_sub(padding * 2 + below)),
             block.wide.saturating_sub(padding * 2),
             false,
         );
+        // **The two labels, in the design's Label/Medium**, each on its own
+        // button's ground: white on the navy of Allow once, navy on the card
+        // under Deny.
+        if let (Some(answers), Some((left, row, allow_is, deny_is))) =
+            (one.answers, where_the_answers_are)
+        {
+            // Centred on the button: the label's own width, measured above,
+            // and the half of what is left over on each side. Two pixels of
+            // room so the measured width never wraps when shaped again.
+            let centred = |button: u32, label: u32| button.saturating_sub(label) / 2;
+            write(
+                answers.allow_once,
+                AStyle::Label,
+                palette.ink,
+                palette.surface,
+                left + centred(m::ALLOW_ONCE_IS_WIDE, allow_is),
+                (row, m::A_CONTROL_IS),
+                (allow_is + 2).min(m::ALLOW_ONCE_IS_WIDE),
+                false,
+            );
+            let deny_starts = left + m::ALLOW_ONCE_IS_WIDE + m::GAP;
+            write(
+                answers.deny,
+                AStyle::Label,
+                palette.cool,
+                palette.ink,
+                deny_starts + centred(m::DENY_IS_WIDE, deny_is),
+                (row, m::A_CONTROL_IS),
+                (deny_is + 2).min(m::DENY_IS_WIDE),
+                false,
+            );
+        }
     }
 
     // *Permissions and model choices apply to this task.*
