@@ -205,6 +205,45 @@ impl AChangeWaiting {
     }
 }
 
+impl crate::Server {
+    /// What the agent said came back to a task window: put it in the
+    /// conversation, and put in front of the person whatever the daemon is
+    /// now holding for them.
+    ///
+    /// **Here and not in the frame loop**, so that a test can prove what it
+    /// never does: **it never touches the keyboard.** A question arriving is
+    /// not a reason to move it — see `crate::the_tasks_seat`.
+    ///
+    /// Asked when an answer arrives rather than once a frame: a turn ends by
+    /// answering or by leaving a change waiting, so this is the moment one can
+    /// exist. A machine never told where its daemon is asks nothing.
+    pub(crate) fn an_answer_came_back(
+        &mut self,
+        which: crate::the_tasks_a_person_opened::WhichTask,
+        said: String,
+        the_machines_fault: bool,
+        daemon: Option<&dyn Answering>,
+    ) {
+        // **The fields, not the methods**, so the compiler can see the question
+        // and the task are different parts of the server.
+        let waiting = &mut self.the_change_waiting;
+        let Some(task) = self.the_tasks.the_mut(which) else {
+            return;
+        };
+        // The machine failing and the agent answering are told apart, because a
+        // person reads them differently: an answer belongs in the conversation
+        // and *this machine could not be asked* belongs beside it.
+        if the_machines_fault {
+            task.and_then(alo_tasks::Act::done(said));
+        } else {
+            task.alo_says(Turn::from_alo(said));
+        }
+        if let Some(daemon) = daemon {
+            waiting.arrived(task, daemon);
+        }
+    }
+}
+
 #[cfg(test)]
 #[expect(
     clippy::panic,

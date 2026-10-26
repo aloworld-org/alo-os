@@ -90,6 +90,7 @@ mod a_key_reaches_settings;
 mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
 mod a_key_reaches_the_market;
+mod a_key_reaches_the_task_in_front;
 mod a_key_types_into_more_apps;
 mod a_new_window_is_placed;
 mod a_person_pins_and_unpins;
@@ -400,6 +401,7 @@ pub mod the_providers_words;
 mod the_session_holds_its_screens;
 /// The task windows a person opened by asking alo for something.
 pub mod the_tasks_a_person_opened;
+mod the_tasks_seat;
 /// Everything in a task window that a person reads, said once a frame.
 mod the_tasks_words;
 /// alo's own terminal: the shell it runs, the screen it keeps, and when it has

@@ -855,6 +855,16 @@ impl LoopInput for Desk<'_> {
                 else if server.the_bar_is_taking_the_keys() {
                     crate::a_key_reaches_the_bar::a_key_reaches_the_bar(server, update, extent)
                 }
+                // **Then the task window holding the keyboard**, behind the Bar
+                // because the Bar is drawn over it: a person who presses
+                // Super+A in a task window is typing into the Bar, and when the
+                // Bar lets go the keys come back here. Until 2026-10-26 nothing
+                // routed a key to a task window at all.
+                else if server.a_task_is_taking_the_keys() {
+                    crate::a_key_reaches_the_task_in_front::a_key_reaches_the_task(
+                        server, update, extent,
+                    )
+                }
                 // **Escape closes what the Dock has open**, and only then.
                 // Asked after Settings because Settings is in front of the
                 // Dock when both are up: a person pressing Escape at a
@@ -1131,6 +1141,10 @@ impl LoopInput for Desk<'_> {
         for request in server.take_what_was_asked_of_alo() {
             if let Some(task) = self.desktop.a_task_for(&request) {
                 let which = server.tasks_mut().and_now_this_one(task);
+                // **The window a person just asked for takes the keyboard**, the
+                // way any window they open does. The Bar let go of it when they
+                // pressed Enter.
+                server.this_task_took_the_keyboard(which);
                 // **And the request goes to the agent**, which until ADR 0109
                 // nothing did: a person pressed Enter, a window opened, and
                 // that was the end of the road. `ask` hands it to a thread and
@@ -1207,36 +1221,18 @@ impl LoopInput for Desk<'_> {
         for came in self.asking.whatever_came_back() {
             match came.who {
                 crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(which) => {
-                    // **The fields, not the methods.** `tasks_mut` borrows the
-                    // whole server and the question lives on it too; taken
-                    // directly, the compiler can see they are different
-                    // fields.
-                    let waiting = &mut server.the_change_waiting;
                     let daemon = server
                         .settings_places
                         .as_ref()
                         .map(|places| alo_changing::TheDaemonsDoor::at(places.daemon()));
-                    if let Some(task) = server.the_tasks.the_mut(which) {
-                        // The machine failing and the agent answering are told
-                        // apart, because a person reads them differently: an
-                        // answer belongs in the conversation and *this machine
-                        // could not be asked* belongs beside it as something
-                        // wrong with the machine.
-                        if came.the_machines_fault {
-                            task.and_then(alo_tasks::Act::done(came.said));
-                        } else {
-                            task.alo_says(alo_tasks::Turn::from_alo(came.said));
-                        }
-                        // **And whatever the daemon is holding for them**,
-                        // asked here rather than once a frame: a turn ends
-                        // either by answering or by leaving a change waiting,
-                        // so this is the moment one might exist. A machine
-                        // nobody told where its daemon is asks nothing, and a
-                        // person sees what they always saw.
-                        if let Some(daemon) = daemon.as_ref() {
-                            waiting.arrived(task, daemon);
-                        }
-                    }
+                    server.an_answer_came_back(
+                        which,
+                        came.said,
+                        came.the_machines_fault,
+                        daemon
+                            .as_ref()
+                            .map(|door| door as &dyn alo_changing::Answering),
+                    );
                 }
                 // **An explanation of a command, into the terminal that asked.**
                 //

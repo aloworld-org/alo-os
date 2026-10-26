@@ -372,6 +372,13 @@ pub struct Server {
     /// is how somebody approves the fourth one without reading it.* Nothing is
     /// lost: the daemon holds the rest, and answering one brings up the next.
     pub(crate) the_change_waiting: crate::a_change_waiting_reaches_the_person::AChangeWaiting,
+    /// Which task window holds the keyboard, if one does.
+    ///
+    /// **The one a person just asked for, never one a question arrived in** —
+    /// `crate::the_tasks_seat` has the reason, and it is a safety reason: a
+    /// proposal that could take the keyboard could be approved by somebody
+    /// typing *Tab* and *Enter* into a document.
+    pub(crate) the_task_with_the_keyboard: Option<crate::the_tasks_a_person_opened::WhichTask>,
     /// The Dock's composer, as a field a person types a request into.
     ///
     /// **One per machine and not one per display**, because there is one
@@ -664,6 +671,7 @@ impl Server {
             the_settings_entry_is_called: String::new(),
             the_applications_entry_is_called: String::new(),
             the_tasks: crate::the_tasks_a_person_opened::TheTasks::none_yet(),
+            the_task_with_the_keyboard: None,
             the_change_waiting:
                 crate::a_change_waiting_reaches_the_person::AChangeWaiting::nothing_yet(),
             the_composer: crate::the_composer_a_person_types_in::TheComposer::empty(),
