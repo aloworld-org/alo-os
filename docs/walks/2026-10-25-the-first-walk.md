@@ -69,10 +69,14 @@ does not know. Whether that is the difference has not been measured.
 
 - a model shown the current text **does** look before proposing, reliably;
 - the fault is therefore not that a turn forbids looking;
-- `SeveralSteps` tells a model *"You may send more than one line"* and
-  `alo_protocol::FromAnAgent::read` refuses exactly that with
-  `MoreThanOneMessage` — the instructions and the protocol disagree, which is
-  worth its own investigation and was found only by running this;
+- `SeveralSteps`' sentence *"You may send more than one line, one at a time"*
+  **can be misread, and was**: a model sent two lines in one response and
+  `alo_protocol::FromAnAgent::read` refused it as `MoreThanOneMessage`. The
+  text and the protocol agree — the text says a line at a time and the refusal
+  means *more than one message where one was expected* — so this is a sentence
+  to sharpen rather than a disagreement to resolve. **It was first written up
+  here as the two contradicting each other, from seeing the refusal once and
+  not reading what it meant.**;
 - a measurement of one sample is worthless here: three runs of this exercise
   gave three different pictures before rounds were added.
 
