@@ -27,7 +27,7 @@
 //! [`Inside::there_are_more`] says so, and `picking.more-than-shown` is the
 //! sentence for it.
 
-use std::path::{Component, Path};
+use std::path::{Component, Path, PathBuf};
 
 /// The most folders one listing shows.
 ///
@@ -51,6 +51,9 @@ pub struct Inside {
     could_not_be_named: usize,
     /// Whether there were more than [`MOST_SHOWN`] of them.
     there_are_more: bool,
+    /// Where the folder listed really is, when the disk said — see
+    /// [`Inside::and_really_is`].
+    really: Option<PathBuf>,
 }
 
 impl Inside {
@@ -80,7 +83,27 @@ impl Inside {
             names: kept,
             could_not_be_named,
             there_are_more,
+            really: None,
         }
+    }
+
+    /// The same listing, saying where the folder listed **really is** — every
+    /// link on the way to it followed.
+    ///
+    /// Answered by the disk in the same breath as the listing, so the place a
+    /// grant records is the place that was shown, and never a second question
+    /// asked later. A listing written down by a test may leave it out, and a
+    /// pick made from one records no real place.
+    #[must_use]
+    pub fn and_really_is(mut self, really: PathBuf) -> Self {
+        self.really = Some(really);
+        self
+    }
+
+    /// Where the folder listed really is, when the disk said.
+    #[must_use]
+    pub fn really(&self) -> Option<&Path> {
+        self.really.as_deref()
     }
 
     /// The same, and this many things in that folder could not be named or

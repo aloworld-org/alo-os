@@ -142,6 +142,12 @@ impl Granting {
                 alo_capability::ATerminalForTheAgent::NotAtAll,
             )?,
         };
+        // **Where the folder really is, recorded on the grant** — without it,
+        // a folder reached through a link is refused by every file verb.
+        let grant = match picked.really() {
+            Some(really) => grant.really_at(really.to_path_buf())?,
+            None => grant,
+        };
         Ok(Some(grants.grant(grant)))
     }
 }
@@ -377,5 +383,69 @@ mod tests {
             .of(&a_folder_picked(&machine), &mut grants, noon())
             .unwrap();
         assert_eq!(grants.len(), 1);
+    }
+
+    /// **A folder picked through a link is granted where it really is**, on a
+    /// real disk laid out the way this image lays a home out — `home` a link
+    /// to `var-home`. The walk of 2026-10-26 is why: every file verb was
+    /// refused, because the grant knew only the path a person reads.
+    ///
+    /// The control is that the path as picked is still what the grant shows.
+    #[cfg(unix)]
+    #[test]
+    fn a_folder_picked_through_a_link_is_granted_where_it_really_is() {
+        let root = std::env::temp_dir().join(format!("alo-picking-really-{}", std::process::id()));
+        let _gone = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("var-home").join("anna").join("Invoices")).unwrap();
+        std::os::unix::fs::symlink(root.join("var-home"), root.join("home")).unwrap();
+        let really =
+            std::fs::canonicalize(root.join("var-home").join("anna").join("Invoices")).unwrap();
+
+        // **In the person's own folder, one below the link**, which is where a
+        // session opens the picker: the picker refuses to stand in a link
+        // itself, and `/home/alo` is not one — `/home` is.
+        let home = root.join("home").join("anna");
+        let mut picker = Picker::standing_in(&home, &crate::OnThisDisk).unwrap();
+        picker.go_into("Invoices", &crate::OnThisDisk).unwrap();
+        let mut grants = Grants::default();
+        for_an_hour()
+            .of(&picker.pick().unwrap(), &mut grants, noon())
+            .unwrap();
+
+        let grant = &grants.active_at(noon()).next().unwrap().grant;
+        assert_eq!(
+            grant.reach.as_path(),
+            Some(home.join("Invoices").as_path()),
+            "the control: the grant still shows the folder as it was picked"
+        );
+        assert_eq!(grant.really.as_deref(), Some(really.as_path()));
+        assert!(
+            grants
+                .permitting_where_it_really_is(
+                    &Grantee::named(HERS),
+                    &really.join("march.pdf"),
+                    noon()
+                )
+                .is_ok(),
+            "a file where the picked folder really is was refused"
+        );
+
+        let _gone = std::fs::remove_dir_all(&root);
+    }
+
+    /// **A listing that does not say where it really is grants no real
+    /// place**, rather than guessing one: the grant answers about the path
+    /// picked, as every grant did before.
+    #[test]
+    fn a_pick_with_no_real_place_records_none() {
+        let machine = WrittenDown::a_home_folder();
+        let mut grants = Grants::default();
+
+        for_an_hour()
+            .of(&a_folder_picked(&machine), &mut grants, noon())
+            .unwrap();
+
+        let grant = &grants.active_at(noon()).next().unwrap().grant;
+        assert_eq!(grant.really, None);
     }
 }

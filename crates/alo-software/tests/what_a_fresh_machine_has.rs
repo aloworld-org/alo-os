@@ -432,6 +432,9 @@ fn the_terminal_is_a_persons_and_no_verb_reaches_it() {
         grant: Grant {
             grantee: alo.clone(),
             reach,
+            // Nothing here is on a disk, so no real place was recorded; see
+            // `alo_capability::Grant::really`.
+            really: None,
             granted_at: noon(),
             // `expires` became an `alo_capability::Until` on 2026-10-25, when a
             // grant could first run until the person removed it. A moment is

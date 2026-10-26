@@ -39,7 +39,7 @@
 
 use std::path::{Path, PathBuf};
 
-use alo_capability::{Ask, Authorised, Grants, Refused, Value};
+use alo_capability::{Authorised, Grants, Refused, Value};
 use alo_strings::{Filling, Strings};
 
 use crate::answer::Answer;
@@ -287,7 +287,11 @@ fn may_create(
 ) -> Result<(), Refused> {
     let authorised = touching.authorised();
     let under = authorised.under();
-    if let Err(why) = grants.permitting(under, &Ask::Path(creating.to_owned()), authorised.at()) {
+    // **Where it really is**, because `creating` is built from a real path —
+    // the folder a link led to, joined with a name — and is never one an
+    // agent wrote. Asked against what a person picked, it was refused on
+    // every machine whose `/home` is a link.
+    if let Err(why) = grants.permitting_where_it_really_is(under, creating, authorised.at()) {
         return Err(Refused::worded_elsewhere(
             touching.call().clone(),
             strings.say(

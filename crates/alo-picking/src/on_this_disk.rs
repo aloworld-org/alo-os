@@ -75,7 +75,13 @@ impl Folders for OnThisDisk {
                 Err(_) => could_not_be_named = could_not_be_named.saturating_add(1),
             }
         }
-        Ok(Inside::these(names).and_could_not_be_named(could_not_be_named))
+        // **Where it really is, asked of the folder just listed**, so a grant
+        // made from a pick here records the place that was shown. Only the
+        // folder itself is followed — it was refused above if it is a link —
+        // so what this follows is a link on the way to it, such as this
+        // image's `/home`, which is `/var/home`.
+        let listed = Inside::these(names).and_could_not_be_named(could_not_be_named);
+        Ok(fs::canonicalize(folder).map_or(listed.clone(), |really| listed.and_really_is(really)))
     }
 }
 
