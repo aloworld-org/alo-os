@@ -339,6 +339,7 @@ pub(crate) fn furniture(
             well_is: palette.cool,
             rings: &[field],
             ring_is: palette.edge,
+            in_primary: crate::dock_surface::InPrimary::NOTHING,
         },
     )
     .ok_or(NoTaskPicture::TooSmall(TooSmall::NotTallEnough {

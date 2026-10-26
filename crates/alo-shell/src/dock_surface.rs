@@ -105,6 +105,38 @@ pub(crate) struct AWell {
     pub(crate) corner: u32,
 }
 
+/// Shapes drawn in the design's `text/primary`, which on an approval card is two
+/// things at once: the ground of the *Primary* answer, and the keyboard's
+/// outline — *focus uses a visible navy outline*
+/// (`docs/design/the-ask-alo-task-window.md`).
+///
+/// **A set of its own rather than more `wells` and `rings`.** A panel has one
+/// colour for each, and the task window already spends its rings on the reply
+/// field's grey border — so a navy focus outline drawn as a ring there would
+/// be grey, and indistinguishable from a border. Every panel that draws
+/// nothing in it says [`Self::NOTHING`], one line, so adding this did not add
+/// three fields to every surface that never needed them.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct InPrimary<'a> {
+    /// Wells filled in it — the *Primary* answer.
+    pub(crate) wells: &'a [AWell],
+    /// Outlines in it, each the **outer** rectangle, already stood off from
+    /// what it marks: the keyboard's place.
+    pub(crate) outlines: &'a [Rectangle<i32, Physical>],
+    /// The colour, `text/primary`.
+    pub(crate) colour: [u8; 3],
+}
+
+impl InPrimary<'static> {
+    /// Nothing drawn in it, which is every panel except one carrying a
+    /// question.
+    pub(crate) const NOTHING: Self = Self {
+        wells: &[],
+        outlines: &[],
+        colour: [0, 0, 0],
+    };
+}
+
 /// What the surface is drawn out of.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct ADocksSurface<'a> {
@@ -165,6 +197,9 @@ pub(crate) struct ADocksSurface<'a> {
     /// What colour they are. Navy in the light appearance; see
     /// `alo_dock::measures::THE_FOCUS_RING_IS_THICK`.
     pub(crate) ring_is: [u8; 3],
+    /// Shapes in `text/primary`: the Primary answer and the keyboard's
+    /// outline on an approval card. [`InPrimary::NOTHING`] everywhere else.
+    pub(crate) in_primary: InPrimary<'a>,
     /// The display, so the raster can be kept on it.
     ///
     /// **The shadow's reach puts the raster past the screen's edge** — the Dock
@@ -273,24 +308,8 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
                 .fold(0.0_f32, f32::max)
                 * inside;
             // Every well, by the same rounded form the composer's field uses.
-            let well = of
-                .wells
-                .iter()
-                .map(|well| {
-                    let at = well.at;
-                    let (wx, wy) = (
-                        (at.loc.x - area.loc.x) as f32,
-                        (at.loc.y - area.loc.y) as f32,
-                    );
-                    let (w, h) = (at.size.w as f32 / 2.0, at.size.h as f32 / 2.0);
-                    // Clamped to half the shorter side, so a radius larger than
-                    // the shape draws a capsule rather than collapsing.
-                    let r = (well.corner as f32).min(w).min(h);
-                    let d = rounded(px, py, wx + w, wy + h, w, h, r);
-                    (0.5 - d).clamp(0.0, 1.0)
-                })
-                .fold(0.0_f32, f32::max)
-                * inside;
+            let well = under_a_well(of.wells, px, py, area) * inside;
+            let well_in_primary = under_a_well(of.in_primary.wells, px, py, area) * inside;
             let badge = of
                 .badges
                 .iter()
@@ -317,25 +336,8 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
             // with the item's own radius would run closer at the corners than
             // along the flats. The design's node measured 16 against a card of
             // 12, which is this sum.
-            let ring = of
-                .rings
-                .iter()
-                .map(|at| {
-                    let (rx, ry) = (
-                        (at.loc.x - area.loc.x) as f32,
-                        (at.loc.y - area.loc.y) as f32,
-                    );
-                    let (w, h) = (at.size.w as f32 / 2.0, at.size.h as f32 / 2.0);
-                    let r = ((THE_COMPOSERS_CORNER + THE_FOCUS_RING_STANDS_OFF) as f32)
-                        .min(w)
-                        .min(h);
-                    let d = rounded(px, py, rx + w, ry + h, w, h, r);
-                    let outer = (0.5 - d).clamp(0.0, 1.0);
-                    let inner = (0.5 - (d + THE_FOCUS_RING_IS_THICK as f32)).clamp(0.0, 1.0);
-                    (outer - inner).clamp(0.0, 1.0)
-                })
-                .fold(0.0_f32, f32::max)
-                * inside;
+            let ring = on_an_outline(of.rings, px, py, area) * inside;
+            let outline_in_primary = on_an_outline(of.in_primary.outlines, px, py, area) * inside;
 
             // Composited back to front: shadow, fill, hairline, accent.
             let mut colour = [0.0_f32; 3];
@@ -348,6 +350,9 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
                 // **The wells under the badges**, so a circle drawn on a row
                 // sits on it rather than under it.
                 (well, of.well_is),
+                // **The Primary answer over the plain wells**, so a card's
+                // own ground never covers it.
+                (well_in_primary, of.in_primary.colour),
                 (badge, of.badge),
                 // **The mark after the badge**, so a running dot sits on the
                 // circle rather than under it.
@@ -358,6 +363,10 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
                 // ring is the one thing on this panel that must not be the
                 // shape that loses.
                 (ring, of.ring_is),
+                // **And the keyboard's outline after even the rings**, for
+                // the ring's own reason: it is the one mark that tells a
+                // person where their next key press will land.
+                (outline_in_primary, of.in_primary.colour),
             ] {
                 if over <= 0.0 {
                     continue;
@@ -422,6 +431,7 @@ pub(crate) fn a_panel(
         well_is: on_it.well_is,
         rings: on_it.rings,
         ring_is: on_it.ring_is,
+        in_primary: on_it.in_primary,
     })
 }
 
@@ -465,6 +475,63 @@ pub(crate) struct APanelsShapes<'a> {
     pub(crate) rings: &'a [Rectangle<i32, Physical>],
     /// What colour they are.
     pub(crate) ring_is: [u8; 3],
+    /// Shapes in `text/primary`: the Primary answer and the keyboard's
+    /// outline on an approval card. [`InPrimary::NOTHING`] everywhere else.
+    pub(crate) in_primary: InPrimary<'a>,
+}
+
+/// How much of the pixel at `(px, py)` is under any of these wells.
+///
+/// **The one formulation of a well**, shared by every colour of them. Clamped
+/// to half the shorter side, so a radius larger than the shape draws a capsule
+/// rather than collapsing.
+fn under_a_well(wells: &[AWell], px: f32, py: f32, area: Rectangle<i32, Physical>) -> f32 {
+    wells
+        .iter()
+        .map(|well| {
+            let at = well.at;
+            let (wx, wy) = (
+                (at.loc.x - area.loc.x) as f32,
+                (at.loc.y - area.loc.y) as f32,
+            );
+            let (w, h) = (at.size.w as f32 / 2.0, at.size.h as f32 / 2.0);
+            let r = (well.corner as f32).min(w).min(h);
+            let d = rounded(px, py, wx + w, wy + h, w, h, r);
+            (0.5 - d).clamp(0.0, 1.0)
+        })
+        .fold(0.0_f32, f32::max)
+}
+
+/// How much of the pixel at `(px, py)` is on any of these outlines.
+///
+/// **The one formulation of an outline**, by the hairline's own rule: two
+/// distances a line apart, and the difference between them is the stroke. The
+/// radius is the item's corner plus the stand-off, because the ring is outside
+/// the item by that much on every side — the design's node measured 16 against
+/// a card of 12, which is this sum.
+fn on_an_outline(
+    outlines: &[Rectangle<i32, Physical>],
+    px: f32,
+    py: f32,
+    area: Rectangle<i32, Physical>,
+) -> f32 {
+    outlines
+        .iter()
+        .map(|at| {
+            let (rx, ry) = (
+                (at.loc.x - area.loc.x) as f32,
+                (at.loc.y - area.loc.y) as f32,
+            );
+            let (w, h) = (at.size.w as f32 / 2.0, at.size.h as f32 / 2.0);
+            let r = ((THE_COMPOSERS_CORNER + THE_FOCUS_RING_STANDS_OFF) as f32)
+                .min(w)
+                .min(h);
+            let d = rounded(px, py, rx + w, ry + h, w, h, r);
+            let outer = (0.5 - d).clamp(0.0, 1.0);
+            let inner = (0.5 - (d + THE_FOCUS_RING_IS_THICK as f32)).clamp(0.0, 1.0);
+            (outer - inner).clamp(0.0, 1.0)
+        })
+        .fold(0.0_f32, f32::max)
 }
 
 /// The signed distance from a point to a rounded rectangle: negative inside,

@@ -35,6 +35,7 @@ fn a_surface(against: Edge) -> super::Washed {
         well_is: [0xF5, 0xF6, 0xF7],
         rings: &[],
         ring_is: [0, 0, 0],
+        in_primary: super::InPrimary::NOTHING,
     })
     .expect("a panel with area rasterises")
 }
@@ -238,6 +239,7 @@ fn a_panel_with_no_area_draws_nothing() {
             well_is: [0, 0, 0],
             rings: &[],
             ring_is: [0, 0, 0],
+            in_primary: super::InPrimary::NOTHING,
         });
         assert!(nothing.is_none(), "a {w} by {h} panel rasterised something");
     }
@@ -274,6 +276,7 @@ fn nothing_in_the_surface_scales_on_its_own() {
             well_is: [0, 0, 0],
             rings: &[],
             ring_is: [0, 0, 0],
+            in_primary: super::InPrimary::NOTHING,
         })
         .expect("a panel with area rasterises")
     };
@@ -324,6 +327,7 @@ fn a_wells_corner_comes_from_the_well_and_not_from_a_constant() {
             well_is: [0, 0, 0],
             rings: &[],
             ring_is: [0, 0, 0],
+            in_primary: super::InPrimary::NOTHING,
         })
         .expect("a panel with area rasterises")
     };
@@ -378,5 +382,96 @@ fn a_wells_corner_comes_from_the_well_and_not_from_a_constant() {
         corner_of(&sharp)[3],
         "both corners sit on an opaque panel, which is why alpha cannot be the \
          measurement here"
+    );
+}
+
+/// One panel, with these wells and rings plain and these in `text/primary`.
+fn a_card(
+    wells: &[super::AWell],
+    rings: &[Rectangle<i32, smithay::utils::Physical>],
+    in_primary: super::InPrimary<'_>,
+) -> super::Washed {
+    surface(ADocksSurface {
+        marks: &[],
+        mark: [0, 0, 0],
+        panel: Rectangle::new((0, 0).into(), (400, 200).into()),
+        fill: [255, 255, 255],
+        edge: [255, 255, 255],
+        accent: [255, 255, 255],
+        against: Edge::Bottom,
+        accent_is: 0,
+        room: (800, 600),
+        badges: &[],
+        badge: [0, 0, 0],
+        wells,
+        well_is: NAVY,
+        rings,
+        ring_is: NAVY,
+        in_primary,
+    })
+    .expect("a panel with area rasterises")
+}
+
+/// The design's `text/primary`, `#102a43`.
+const NAVY: [u8; 3] = [0x10, 0x2A, 0x43];
+
+/// **The Primary answer is a well, drawn by the well's own arithmetic, in its
+/// own colour.** Byte for byte the same as a plain well of that colour — so
+/// there is one formulation of a well in the painter, as its comment says —
+/// and the control shows the well drew at all, since two empty rasters are
+/// equal too.
+#[test]
+fn a_primary_well_draws_exactly_as_a_plain_well_in_its_colour() {
+    let answer = super::AWell {
+        at: Rectangle::new((40, 60).into(), (144, 48).into()),
+        corner: 12,
+    };
+    let plain = a_card(&[answer], &[], super::InPrimary::NOTHING);
+    let primary = a_card(
+        &[],
+        &[],
+        super::InPrimary {
+            wells: &[answer],
+            outlines: &[],
+            colour: NAVY,
+        },
+    );
+    let nothing = a_card(&[], &[], super::InPrimary::NOTHING);
+
+    assert_ne!(
+        nothing.pixels, plain.pixels,
+        "the control: no well was drawn at all"
+    );
+    assert_eq!(
+        plain.pixels, primary.pixels,
+        "the Primary answer drew differently from a well of the same colour"
+    );
+}
+
+/// **The keyboard's outline is a ring, by the ring's own arithmetic, in its
+/// own colour** — which is what lets it be navy on a panel whose rings are
+/// already grey borders.
+#[test]
+fn the_keyboards_outline_draws_exactly_as_a_ring_in_its_colour() {
+    let around = Rectangle::new((36, 56).into(), (152, 56).into());
+    let plain = a_card(&[], &[around], super::InPrimary::NOTHING);
+    let primary = a_card(
+        &[],
+        &[],
+        super::InPrimary {
+            wells: &[],
+            outlines: &[around],
+            colour: NAVY,
+        },
+    );
+    let nothing = a_card(&[], &[], super::InPrimary::NOTHING);
+
+    assert_ne!(
+        nothing.pixels, plain.pixels,
+        "the control: no ring was drawn at all"
+    );
+    assert_eq!(
+        plain.pixels, primary.pixels,
+        "the keyboard's outline drew differently from a ring of the same colour"
     );
 }
