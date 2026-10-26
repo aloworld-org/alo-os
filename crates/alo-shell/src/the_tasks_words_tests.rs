@@ -14,6 +14,7 @@ use alo_tasks::{ATask, WhoseBlock};
 use smithay::utils::Rectangle;
 
 use super::TheTasksWords;
+use crate::a_change_waiting_reaches_the_person::WhichAnswer;
 
 /// A machine's whole vocabulary, in English.
 fn words() -> alo_strings::Strings {
@@ -44,17 +45,22 @@ fn a_task_with_nowhere_to_be_is_left_out() {
     let strings = words();
     let tasks = [a_task(), a_task()];
 
-    let both = TheTasksWords::said(&tasks, &[Some(somewhere()), Some(somewhere())], &strings);
+    let both = TheTasksWords::said(
+        &tasks,
+        &[Some(somewhere()), Some(somewhere())],
+        &strings,
+        None,
+    );
     assert_eq!(both.as_displayed().len(), 2);
 
-    let one = TheTasksWords::said(&tasks, &[Some(somewhere()), None], &strings);
+    let one = TheTasksWords::said(&tasks, &[Some(somewhere()), None], &strings, None);
     assert_eq!(
         one.as_displayed().len(),
         1,
         "a task with nowhere to be was given a window anyway"
     );
 
-    let neither = TheTasksWords::said(&tasks, &[None, None], &strings);
+    let neither = TheTasksWords::said(&tasks, &[None, None], &strings, None);
     assert!(neither.as_displayed().is_empty());
 }
 
@@ -63,7 +69,7 @@ fn a_task_with_nowhere_to_be_is_left_out() {
 #[test]
 fn the_title_is_the_persons_words_and_the_rest_is_said() {
     let strings = words();
-    let said = TheTasksWords::said(&[a_task()], &[Some(somewhere())], &strings);
+    let said = TheTasksWords::said(&[a_task()], &[Some(somewhere())], &strings, None);
     let drawn = said.as_displayed();
     let one = drawn.first().expect("one window");
 
@@ -97,7 +103,7 @@ fn the_status_is_the_word_the_task_chose() {
         )
         .into_text();
 
-    let said = TheTasksWords::said(&[task], &[Some(somewhere())], &strings);
+    let said = TheTasksWords::said(&[task], &[Some(somewhere())], &strings, None);
     let drawn = said.as_displayed();
 
     assert_eq!(drawn.first().expect("one window").words.status, expected);
@@ -113,7 +119,7 @@ fn where_it_happens_is_the_sentence_alo_models_already_says() {
     let strings = words();
     let expected = InferenceSource::ThisMachine.said(&strings).into_text();
 
-    let said = TheTasksWords::said(&[a_task()], &[Some(somewhere())], &strings);
+    let said = TheTasksWords::said(&[a_task()], &[Some(somewhere())], &strings, None);
     let drawn = said.as_displayed();
 
     assert_eq!(
@@ -134,7 +140,7 @@ fn where_it_happens_is_the_sentence_alo_models_already_says() {
 #[test]
 fn the_models_name_is_empty_because_a_task_does_not_carry_one() {
     let strings = words();
-    let said = TheTasksWords::said(&[a_task()], &[Some(somewhere())], &strings);
+    let said = TheTasksWords::said(&[a_task()], &[Some(somewhere())], &strings, None);
     let drawn = said.as_displayed();
 
     assert!(
@@ -148,7 +154,7 @@ fn the_models_name_is_empty_because_a_task_does_not_carry_one() {
 #[test]
 fn what_was_said_keeps_its_order_and_its_speaker() {
     let strings = words();
-    let said = TheTasksWords::said(&[a_task()], &[Some(somewhere())], &strings);
+    let said = TheTasksWords::said(&[a_task()], &[Some(somewhere())], &strings, None);
     let drawn = said.as_displayed();
     let one = drawn.first().expect("one window");
 
@@ -166,11 +172,153 @@ fn what_was_said_keeps_its_order_and_its_speaker() {
 #[test]
 fn nothing_is_shared_with_a_task_yet_and_the_window_says_nothing() {
     let strings = words();
-    let said = TheTasksWords::said(&[a_task()], &[Some(somewhere())], &strings);
+    let said = TheTasksWords::said(&[a_task()], &[Some(somewhere())], &strings, None);
     let drawn = said.as_displayed();
     let one = drawn.first().expect("one window");
 
     assert_eq!(one.how_many_files, 0);
     assert!(one.words.files.is_empty());
     assert!(one.words.how_many_files.is_empty());
+}
+
+/// The machine's vocabulary **with the shell's card words declared**, as the
+/// shell declares them at boot. `alo-saying` does not collect the shell's own
+/// words, so without this the answers would be a fallback, not *Allow once*.
+fn words_with_the_card() -> alo_strings::Strings {
+    let mut vocabulary =
+        alo_saying::everything_this_machine_can_say().expect("the machine's vocabulary");
+    crate::the_cards_words::declare_the_cards_words(&mut vocabulary)
+        .expect("the card's words declare");
+    alo_strings::Strings::of(vocabulary)
+}
+
+/// A task with a change waiting for the person to answer.
+fn a_task_asking(sentence: &str) -> ATask {
+    let mut task = a_task();
+    task.is_asking(sentence);
+    task.alo_says(Turn::alo_proposing(sentence));
+    task
+}
+
+/// **The waiting proposal carries the two answers, worded, and which one the
+/// keyboard is on.**
+#[test]
+fn the_waiting_proposal_carries_the_two_answers() {
+    let strings = words_with_the_card();
+    let sentence = "Rename march.pdf to invoice-march.pdf";
+    let tasks = [a_task_asking(sentence)];
+
+    let said = TheTasksWords::said(&tasks, &[Some(somewhere())], &strings, None);
+    let drawn = said.as_displayed();
+    let window = drawn.first().expect("one window");
+
+    let carrying: Vec<_> = window
+        .said
+        .iter()
+        .filter(|one| one.answers.is_some())
+        .collect();
+    assert_eq!(
+        carrying.len(),
+        1,
+        "the answers were not under exactly one block"
+    );
+    let proposal = carrying[0];
+    assert_eq!(
+        proposal.words, sentence,
+        "the answers sit under something else"
+    );
+
+    let answers = proposal.answers.expect("answers");
+    assert_eq!(answers.allow_once, "Allow once");
+    assert_eq!(answers.deny, "Deny");
+    assert_eq!(answers.selected, None, "an answer was preselected");
+}
+
+/// The keyboard's place reaches the drawing.
+#[test]
+fn the_selected_answer_reaches_the_drawing() {
+    let strings = words_with_the_card();
+    let tasks = [a_task_asking("Rename march.pdf")];
+
+    let said = TheTasksWords::said(
+        &tasks,
+        &[Some(somewhere())],
+        &strings,
+        Some(WhichAnswer::Deny),
+    );
+    let drawn = said.as_displayed();
+    let answers = drawn
+        .first()
+        .expect("one window")
+        .said
+        .iter()
+        .find_map(|one| one.answers)
+        .expect("answers under the proposal");
+    assert_eq!(answers.selected, Some(WhichAnswer::Deny));
+}
+
+/// **A proposal already answered carries no answers**, so a person cannot
+/// answer the same change twice by finding its old card.
+#[test]
+fn an_answered_proposal_carries_no_answers() {
+    let strings = words_with_the_card();
+    let mut task = a_task_asking("Rename march.pdf");
+    task.allow_once();
+
+    let said = TheTasksWords::said(&[task], &[Some(somewhere())], &strings, None);
+    let drawn = said.as_displayed();
+    assert!(
+        drawn
+            .first()
+            .expect("one window")
+            .said
+            .iter()
+            .all(|one| one.answers.is_none()),
+        "an answered proposal still offered its answers"
+    );
+}
+
+/// **Only the latest proposal carries them**: the earlier one was answered,
+/// and two cards with answers under them is two questions at once.
+#[test]
+fn only_the_latest_proposal_carries_the_answers() {
+    let strings = words_with_the_card();
+    let mut task = a_task_asking("Rename march.pdf");
+    task.allow_once();
+    task.is_asking("Archive Pictures");
+    task.alo_says(Turn::alo_proposing("Archive Pictures"));
+
+    let said = TheTasksWords::said(&[task], &[Some(somewhere())], &strings, None);
+    let drawn = said.as_displayed();
+    let window = drawn.first().expect("one window");
+    let carrying: Vec<_> = window
+        .said
+        .iter()
+        .filter(|one| one.answers.is_some())
+        .collect();
+    assert_eq!(carrying.len(), 1, "more than one proposal offered answers");
+    assert_eq!(carrying[0].words, "Archive Pictures");
+}
+
+/// **A task that is not asking draws no answers at all**, whatever selection
+/// the machine holds — the selection belongs to the one task asking.
+#[test]
+fn a_task_not_asking_draws_no_answers_whatever_is_selected() {
+    let strings = words_with_the_card();
+    let said = TheTasksWords::said(
+        &[a_task()],
+        &[Some(somewhere())],
+        &strings,
+        Some(WhichAnswer::AllowOnce),
+    );
+    let drawn = said.as_displayed();
+    assert!(
+        drawn
+            .first()
+            .expect("one window")
+            .said
+            .iter()
+            .all(|one| one.answers.is_none()),
+        "a task with nothing waiting drew answers"
+    );
 }

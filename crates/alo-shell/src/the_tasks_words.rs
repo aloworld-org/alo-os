@@ -52,6 +52,15 @@ struct ATasksWords {
     how_many_files: String,
     /// What was said, oldest first.
     said: Vec<(alo_tasks::WhoseBlock, String)>,
+    /// Which of `said` carries the two answers: the latest proposal, while
+    /// this task is still asking. [`None`] when nothing in it is waiting.
+    answers_after: Option<usize>,
+    /// *Allow once*, said once for this task.
+    allow_once: String,
+    /// *Deny*, said once for this task.
+    deny: String,
+    /// Which answer the keyboard is on, and [`None`] until the person moves.
+    selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
 }
 
 /// Every task window's words, said once for this frame.
@@ -68,10 +77,15 @@ impl TheTasksWords {
     /// task with no position yet is **left out**: a window nothing has placed is
     /// a window with nowhere to be drawn, and inventing a position here would be
     /// a second placer.
+    ///
+    /// `selected` is which answer the person's keyboard is on, for the one
+    /// question that stands on this machine. It reaches only the task that is
+    /// asking, because only that task draws the two answers.
     pub(crate) fn said(
         tasks: &[ATask],
         placed: &[Option<Rectangle<i32, Physical>>],
         strings: &Strings,
+        selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
     ) -> Self {
         let say =
             |word: alo_strings::Word| strings.say(&word.key(), &Filling::nothing()).into_text();
@@ -119,6 +133,18 @@ impl TheTasksWords {
                         .iter()
                         .map(|turn| (whose(turn), turn.said().to_owned()))
                         .collect(),
+                    // **The latest proposal, and only while the task is
+                    // asking.** Every earlier proposal was answered and draws
+                    // no answers, and a task that is not asking draws none at
+                    // all — whatever its conversation still holds.
+                    answers_after: task.permissions().asking().and_then(|_| {
+                        task.conversation().each().iter().rposition(|turn| {
+                            matches!(turn.who(), alo_tasks::WhoSaidIt::AloProposing)
+                        })
+                    }),
+                    allow_once: say(crate::the_cards_words::ALLOW_ONCE),
+                    deny: say(crate::the_cards_words::DENY),
+                    selected,
                 })
             })
             .collect();
@@ -148,12 +174,17 @@ impl TheTasksWords {
                 said: one
                     .said
                     .iter()
-                    .map(|(whose, words)| WhatWasSaid {
+                    .enumerate()
+                    .map(|(at, (whose, words))| WhatWasSaid {
                         whose: *whose,
                         words,
-                        // Nothing fills these yet: a proposal is drawn as words
-                        // and its two answers are not under it.
-                        answers: None,
+                        answers: (one.answers_after == Some(at)).then_some(
+                            crate::task_text::TheTwoAnswers {
+                                allow_once: &one.allow_once,
+                                deny: &one.deny,
+                                selected: one.selected,
+                            },
+                        ),
                     })
                     .collect(),
             })

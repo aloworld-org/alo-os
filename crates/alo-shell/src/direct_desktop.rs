@@ -1280,6 +1280,7 @@ impl LoopInput for Desk<'_> {
             server.tasks().each(),
             server.tasks().where_each_went(),
             self.strings,
+            server.the_change_waiting.selected(),
         );
         let the_task_windows = the_tasks_words.as_displayed();
         // **A copy of the market window for the frame, and only while it is
