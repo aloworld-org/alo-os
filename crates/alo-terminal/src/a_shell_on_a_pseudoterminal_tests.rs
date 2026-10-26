@@ -328,13 +328,26 @@ fn a_command_reading_the_terminal_is_waiting_for_the_keyboard() {
         .a_person_typed(b"cat\n")
         .expect("what a person types reaches the shell");
 
-    // Wait until `cat` is really in front, rather than guessing at a delay.
+    // Wait until `cat` is really in front **and has settled**, rather than
+    // guessing at a delay.
+    //
+    // **Settled, and not merely in front**, which is the repair of 2026-10-26:
+    // this took the first answer, and on a loaded hosted runner the first
+    // answer can arrive while `cat` is still starting — `StillComputing`, which
+    // is true of that moment. It failed one run in the forty failed runs before
+    // it, on a change that touched nothing here. The claim is about the answer
+    // once `cat` is blocked reading, so the last answer within the same five
+    // seconds is what is judged, and one that never becomes the keyboard still
+    // fails below, naming what it said.
     let mut waiting = None;
     for _ in 0..200 {
         drop(shell.what_it_wrote(&mut screen));
         if let Some(what) = shell.why_the_command_in_front_is_waiting() {
+            let settled = what.why == WhyItIsWaiting::ForTheKeyboard;
             waiting = Some(what);
-            break;
+            if settled {
+                break;
+            }
         }
         std::thread::sleep(std::time::Duration::from_millis(25));
     }
