@@ -38,6 +38,7 @@
 //! Nothing here reads the clock: the moment a grant starts is passed in, and so
 //! is the moment any later question is asked about it.
 
+use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
 use alo_strings::{Filling, Said, Strings};
@@ -45,7 +46,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::a_terminal_for_the_agent::ATerminalForTheAgent;
 pub use crate::grantee::Grantee;
-use crate::path::{is_a_root, is_usable};
+use crate::path::{is_a_root, is_exactly, is_inside, is_usable};
 use crate::persons_own::is_a_persons_own;
 use crate::reach::{Ask, Reach};
 use crate::words;
@@ -136,6 +137,21 @@ pub struct Grant {
     pub grantee: Grantee,
     /// What it covers.
     pub reach: Reach,
+    /// Where the folder or file it covers **really is** on this machine,
+    /// worked out when it was granted — [`None`] where nothing was.
+    ///
+    /// [`Self::reach`] holds the path a person picked, reads in the list, and
+    /// an agent writes. On an image whose `/home` is a link to `/var/home`
+    /// those are a different place from where the files are, to a check that
+    /// follows every link — and every file verb was refused, walking a booted
+    /// machine on 2026-10-26. So the real place is recorded here and
+    /// [`Self::covers_where_it_really_is`] asks about it.
+    ///
+    /// **Fixed when granted, never followed later**: a granted folder swapped
+    /// afterwards for a link to somewhere else is still refused, because this
+    /// still names where the folder was.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub really: Option<PathBuf>,
     /// When it was made — shown in the list, so a person can see what they did
     /// and when.
     pub granted_at: SystemTime,
@@ -336,9 +352,44 @@ impl Grant {
         Ok(Self {
             grantee,
             reach,
+            really: None,
             granted_at: from,
             expires,
         })
+    }
+
+    /// The same grant, recording where its folder or file really is.
+    ///
+    /// Held to every rule the picked path is held to — a full path, not the
+    /// whole machine, nothing that could lead elsewhere — by the same check. A
+    /// grant over an application or a facility has no place on a disk and is
+    /// returned as it was.
+    ///
+    /// # Errors
+    /// [`GrantError`], as for the path a person picked.
+    pub fn really_at(mut self, really: PathBuf) -> Result<Self, GrantError> {
+        if self.reach.as_path().is_none() {
+            return Ok(self);
+        }
+        checked_reach(Reach::Folder(really.clone()))?;
+        self.really = Some(really);
+        Ok(self)
+    }
+
+    /// Whether this grant covers a path **where it really is** — the question
+    /// asked once every link in that path has been followed.
+    ///
+    /// Asked of [`Self::really`] when the grant has one, and otherwise of the
+    /// path that was picked, which is where it really is on a machine with no
+    /// link in the way. A grant over an application or a facility covers no
+    /// path.
+    #[must_use]
+    pub fn covers_where_it_really_is(&self, real: &Path) -> bool {
+        match (&self.reach, &self.really) {
+            (Reach::Folder(_), Some(really)) => is_inside(really, real),
+            (Reach::File(_), Some(really)) => is_exactly(really, real),
+            (reach, _) => reach.covers(&Ask::Path(real.to_owned())),
+        }
     }
 
     /// A grant that runs **until the person removes it**.

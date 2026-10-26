@@ -78,13 +78,14 @@ expires = 1760086400
 
 | Key | Meaning |
 |---|---|
-| `format` | Which shape the file is in. Required. `1`, `2` or `3`. |
+| `format` | Which shape the file is in. Required. `1`, `2`, `3` or `4`. |
 | `next` | The handle the next grant made on this machine is given. A handle is never reused. |
 | `handle` | What a person revokes this grant by. Unique in the file, and below `next`. |
 | `agent` | The agent the grant is for, by its name. |
 | `applicant` | The application the grant is for, by its identifier. **Format 2 and above.** |
 | `folder` | A folder and everything in it, by its full path. |
 | `file` | Exactly one file, by its full path. |
+| `really` | Where that folder or file really is, every link on the way to it followed, recorded when it was granted. Only beside `folder` or `file`, and optional. **Format 4 and above.** |
 | `application` | One installed application, by its identifier. |
 | `facility` | Something this machine has that is not a path (below). **Format 2 and above.** |
 | `granted` | When it was made, in whole seconds since 1970. |
@@ -120,6 +121,46 @@ software already reads:
 - **The lowest format that holds the file is what is written.** A machine with
   no endless grant still writes `format = 1`, exactly as it did before — so
   format 3 does not arrive on a machine that is not using it.
+
+### `really`
+
+Where a granted folder or file **really is**. `folder` is the path a person
+picked and reads in the list, and the one an agent writes; before anything is
+touched, `alo-files` follows every link in the path asked about and asks the
+grants again about where it leads. On an image whose `/home` is a link to
+`/var/home`, the folder picked and the place it leads are different paths, and
+without this key every file verb was refused — found walking a booted machine
+on 2026-10-26.
+
+```toml
+format = 4
+
+[[grant]]
+handle = 0
+agent = "alo"
+folder = "/home/alo/Documents"
+really = "/var/home/alo/Documents"
+granted = 1760000000
+expires = "removed"
+```
+
+- **Recorded when the folder is picked, never followed later.** A granted folder
+  later swapped for a link to somewhere else is still refused, because `really`
+  still names where the folder was. The path a person picked is what the first
+  question, *as written*, is asked against; `really` is what the second, *where
+  it leads*, is asked against.
+- **Held to the rules `folder` is**: a full path, not the whole machine, nothing
+  that steps upwards. A file naming `really = "/"` is refused as a grant to the
+  whole machine would be.
+- **A file holding it declares format 4**, and an older reader refuses the whole
+  file. A reader that skipped the key would keep the grant and refuse every file
+  verb under it, saying nothing about why.
+- **Grants written before format 4 are given it when the file is read**, by
+  following their `folder` on that disk — once, on the first read after an
+  update, and written down with them at the next change. That one moment is
+  weaker than a grant made today, and is said here rather than hidden. A folder
+  that cannot be followed is left without one and refuses anything behind a
+  link rather than guessing.
 
 Every grant names **exactly one** of `agent` and `applicant`, and **exactly
 one** of `folder`, `file`, `application` and `facility`. A key nobody declared

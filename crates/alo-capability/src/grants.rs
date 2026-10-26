@@ -41,6 +41,7 @@
 //! not anything has run since. [`Grants::forget_expired`] exists to keep the
 //! list short, and removing it would change nothing about what is permitted.
 
+use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 use serde::{Deserialize, Serialize};
@@ -336,6 +337,69 @@ impl Grants {
         }
         self.searched(grantee, ask, now)
             .map_err(|lapsed| why_not(grantee, ask, lapsed))
+    }
+
+    /// Which grant lets this agent reach a path **where it really is** — once
+    /// every link in it has been followed — or why none does.
+    ///
+    /// The second of the two questions `alo_files::Touching` asks, and the
+    /// one [`Grant::really`] exists for: [`Self::permitting`] answers about the
+    /// path as it was written, against what a person picked; this answers
+    /// about where that path leads, against where what they picked really is.
+    ///
+    /// # Errors
+    /// [`NotGranted`], as for [`Self::permitting`]: an application never, an
+    /// expired grant that would have covered it as lapsed, and otherwise never
+    /// granted.
+    pub fn permitting_where_it_really_is(
+        &self,
+        grantee: &Grantee,
+        real: &Path,
+        now: SystemTime,
+    ) -> Result<GrantId, NotGranted> {
+        let ask = Ask::Path(real.to_owned());
+        if grantee.is_an_application() {
+            return Err(NotGranted::Never {
+                agent: grantee.as_str().to_owned(),
+                wanted: ask,
+            });
+        }
+        let covering = |held: &&Held| {
+            held.grant.is_for(grantee) && held.grant.covers_where_it_really_is(real)
+        };
+        self.held
+            .iter()
+            .filter(covering)
+            .find(|held| held.grant.is_active_at(now))
+            .map(|held| held.id)
+            .ok_or_else(|| why_not(grantee, &ask, self.held.iter().find(covering)))
+    }
+
+    /// Record where each grant's folder or file really is, for the grants that
+    /// do not say — those made before [`Grant::really`] existed.
+    ///
+    /// **Only those.** A grant that recorded its real place keeps it, so this
+    /// can never move a grant that was fixed when it was made. A path `really`
+    /// cannot answer for — gone, or unreadable — is left as it was and answers
+    /// about the path picked, which refuses anything behind a link rather than
+    /// guessing.
+    ///
+    /// Worked out when the grants are read rather than when they were made,
+    /// which is the one thing about this that is weaker than a grant made
+    /// today: it happens once for each old grant, on the first read after an
+    /// update, and the place is then written down with it.
+    pub fn recording_where_each_really_is(&mut self, really: impl Fn(&Path) -> Option<PathBuf>) {
+        for held in &mut self.held {
+            if held.grant.really.is_some() {
+                continue;
+            }
+            let Some(found) = held.grant.reach.as_path().and_then(&really) else {
+                continue;
+            };
+            if let Ok(recorded) = held.grant.clone().really_at(found) {
+                held.grant = recorded;
+            }
+        }
     }
 
     /// The one search both doors make: the grant that permits this grantee this
@@ -681,6 +745,7 @@ mod tests {
         let by_hand = |grantee: Grantee, identifier: &str| Grant {
             grantee,
             reach: Reach::Application(identifier.to_owned()),
+            really: None,
             granted_at: noon(),
             expires: Until::AMoment(noon() + hour()),
         };
@@ -719,6 +784,7 @@ mod tests {
         let by_hand = |grantee: Grantee, identifier: &str| Grant {
             grantee,
             reach: Reach::Application(identifier.to_owned()),
+            really: None,
             granted_at: noon(),
             expires: Until::AMoment(noon() + hour()),
         };
@@ -882,5 +948,189 @@ mod tests {
         );
         assert_ne!(existing, next);
         assert_eq!(read.active_at(noon()).count(), 2);
+    }
+
+    /// Anna's invoices, picked at `/home/anna/Invoices` and really at
+    /// `/var/home/anna/Invoices`, the way this image lays a home out.
+    fn granted_where_it_really_is() -> Grants {
+        let mut grants = Grants::default();
+        grants.grant(
+            granted_for(hour())
+                .unwrap()
+                .really_at(PathBuf::from("/var/home/anna/Invoices"))
+                .unwrap(),
+        );
+        grants
+    }
+
+    /// **A grant covers where its folder really is**, which is the walk of
+    /// 2026-10-26: every file verb refused because `/home` is a link.
+    ///
+    /// The control is the first assertion: the path as picked is still what
+    /// the first question is answered against.
+    #[test]
+    fn a_grant_covers_where_its_folder_really_is() {
+        let grants = granted_where_it_really_is();
+        let real = Path::new("/var/home/anna/Invoices/march.pdf");
+
+        assert!(
+            grants.permits(&files(), &march(), noon()),
+            "the control: the path as picked is still covered as written"
+        );
+        assert!(
+            grants
+                .permitting_where_it_really_is(&files(), real, noon())
+                .is_ok(),
+            "a file where the granted folder really is was refused"
+        );
+    }
+
+    /// **But not anywhere a link could lead**: a folder swapped for a link to
+    /// somewhere else after it was granted is still refused, because the real
+    /// place was fixed when it was granted.
+    #[test]
+    fn where_it_really_is_is_fixed_when_granted_and_not_followed_later() {
+        let grants = granted_where_it_really_is();
+
+        for elsewhere in [
+            "/etc/shadow",
+            "/var/home/anna/Taxes/2024.pdf",
+            "/var/home/anna",
+            "/home/anna/Invoices/march.pdf",
+        ] {
+            assert!(
+                grants
+                    .permitting_where_it_really_is(&files(), Path::new(elsewhere), noon())
+                    .is_err(),
+                "{elsewhere} was permitted as where the invoices really are"
+            );
+        }
+    }
+
+    /// **A grant with no real place recorded answers about the path picked**,
+    /// which is every grant made before this and every machine with no link in
+    /// the way.
+    #[test]
+    fn a_grant_with_no_real_place_answers_about_the_path_picked() {
+        let grants = one_grant();
+
+        assert!(
+            grants
+                .permitting_where_it_really_is(
+                    &files(),
+                    Path::new("/home/anna/Invoices/march.pdf"),
+                    noon()
+                )
+                .is_ok()
+        );
+        assert!(
+            grants
+                .permitting_where_it_really_is(
+                    &files(),
+                    Path::new("/var/home/anna/Invoices/march.pdf"),
+                    noon()
+                )
+                .is_err(),
+            "a grant that recorded no real place covered one anyway"
+        );
+    }
+
+    /// **An expired grant permits nothing where it really is either**, and the
+    /// refusal says it lapsed rather than that it never was.
+    #[test]
+    fn an_expired_grant_is_lapsed_where_it_really_is() {
+        let grants = granted_where_it_really_is();
+        let later = noon() + hour() + hour();
+
+        let refused = grants.permitting_where_it_really_is(
+            &files(),
+            Path::new("/var/home/anna/Invoices/march.pdf"),
+            later,
+        );
+
+        assert!(
+            matches!(refused, Err(NotGranted::Lapsed { .. })),
+            "{refused:?}"
+        );
+    }
+
+    /// **The real place is held to the rules the picked path is held to**, and
+    /// a grant with no place on a disk is left as it was.
+    #[test]
+    fn the_real_place_is_held_to_the_rules_of_a_grant() {
+        for (really, refused) in [
+            ("/", GrantError::TheWholeMachine),
+            ("var/home/anna", GrantError::NotAFullPath),
+            ("/var/home/../etc", GrantError::CouldLeadElsewhere),
+        ] {
+            assert_eq!(
+                granted_for(hour())
+                    .unwrap()
+                    .really_at(PathBuf::from(really)),
+                Err(refused),
+                "{really}"
+            );
+        }
+
+        let terminal = Grant::checked(
+            "@files",
+            Reach::Application("org.example.Editor".to_owned()),
+            noon(),
+            hour(),
+        )
+        .unwrap();
+        assert_eq!(
+            terminal.clone().really_at(PathBuf::from("/var/home/anna")),
+            Ok(terminal),
+            "a grant over an application was given a place on a disk"
+        );
+    }
+
+    /// **A grant made before the real place existed is given one when read**,
+    /// and a grant that already recorded one keeps it — so a grant fixed when
+    /// it was made is never moved by being read again.
+    #[test]
+    fn only_a_grant_with_no_real_place_is_given_one() {
+        let mut grants = one_grant();
+        grants.grant(
+            Grant::checked(
+                "@files",
+                Reach::Folder(PathBuf::from("/home/anna/Taxes")),
+                noon(),
+                hour(),
+            )
+            .unwrap()
+            .really_at(PathBuf::from("/var/home/anna/Taxes"))
+            .unwrap(),
+        );
+        grants.grant(
+            Grant::checked(
+                "@files",
+                Reach::Folder(PathBuf::from("/home/anna/Gone")),
+                noon(),
+                hour(),
+            )
+            .unwrap(),
+        );
+
+        grants.recording_where_each_really_is(|path| match path.to_str() {
+            Some("/home/anna/Invoices") => Some(PathBuf::from("/var/home/anna/Invoices")),
+            Some("/home/anna/Taxes") => Some(PathBuf::from("/somewhere/else")),
+            _ => None,
+        });
+
+        let really: Vec<Option<&Path>> = grants
+            .active_at(noon())
+            .map(|held| held.grant.really.as_deref())
+            .collect();
+        assert_eq!(
+            really,
+            [
+                Some(Path::new("/var/home/anna/Invoices")),
+                Some(Path::new("/var/home/anna/Taxes")),
+                None,
+            ],
+            "an old grant was not given its place, a fixed one was moved, or a missing one was guessed"
+        );
     }
 }

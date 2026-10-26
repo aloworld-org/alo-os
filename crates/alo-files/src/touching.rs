@@ -118,9 +118,12 @@ impl Touching {
                     ));
                 }
             };
-            // 3. And whether the grants cover that.
+            // 3. And whether the grants cover that — against where each
+            // granted folder **really is**, fixed when it was granted
+            // (`alo_capability::Grant::really`), and not against the path a
+            // person picked, which on this image is itself behind a link.
             if grants
-                .permitting(&under, &Ask::Path(resolved.as_path().to_owned()), at)
+                .permitting_where_it_really_is(&under, resolved.as_path(), at)
                 .is_err()
             {
                 return Err(Refused::worded_elsewhere(

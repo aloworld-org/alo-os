@@ -172,7 +172,12 @@ impl Picker {
         if is_a_root(&self.at) {
             return Err(NotPicked::TheWholeMachine);
         }
-        Ok(Chosen::Folder(Picked::folder_chosen(self.at.clone())))
+        // Where it really is comes from the listing being shown, not from a
+        // fresh question: picking asks the machine nothing further.
+        Ok(Chosen::Folder(Picked::folder_chosen(
+            self.at.clone(),
+            self.showing.really().map(Path::to_path_buf),
+        )))
     }
 
     /// Close the picker without picking anything.

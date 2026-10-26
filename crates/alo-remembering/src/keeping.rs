@@ -68,7 +68,14 @@ pub const THE_GRANTS: &str = "/var/lib/alo/grants.toml";
 /// written; and everything [`crate::read`] refuses about the text itself.
 pub fn remembered(at: &Path, now: SystemTime) -> Result<Grants, NotRemembered> {
     let text = read_believed(at)?;
-    crate::read(&text, now)
+    let mut grants = crate::read(&text, now)?;
+    // **Where each older grant's folder really is**, for the grants written
+    // before a grant recorded it — `alo_capability::Grants::recording_where_
+    // each_really_is` says why only those, and why this is the one moment that
+    // is weaker than a grant made today. Here because this is where the file
+    // comes off the disk; `crate::read` reads text and touches nothing.
+    grants.recording_where_each_really_is(|path| std::fs::canonicalize(path).ok());
+    Ok(grants)
 }
 
 /// What is granted at this moment, written whole to this path.
@@ -210,5 +217,30 @@ mod tests {
             &Ask::path("/home/ada/Invoices/march.pdf"),
             noon() + an_hour()
         ));
+    }
+
+    /// **A grant written before a grant recorded where its folder really is
+    /// gets its real place when it is read** — on a real disk, through a link
+    /// laid out the way this image lays out `/home`. This is what lets the
+    /// folders a person granted before the update keep working.
+    #[test]
+    fn an_older_grant_is_given_where_its_folder_really_is_when_read() {
+        let folder = a_folder_of_our_own("older-grant");
+        std::fs::create_dir_all(folder.join("var-home").join("Invoices")).unwrap();
+        std::os::unix::fs::symlink(folder.join("var-home"), folder.join("home")).unwrap();
+        let picked = folder.join("home").join("Invoices");
+        let really = std::fs::canonicalize(folder.join("var-home").join("Invoices")).unwrap();
+        let at = folder.join("grants.toml");
+        kept(&at, &granted_in(picked.to_str().unwrap()), noon()).unwrap();
+        assert!(
+            !std::fs::read_to_string(&at).unwrap().contains("really"),
+            "the control: the file was written as an older grant, without its real place"
+        );
+
+        let found = remembered(&at, noon()).unwrap();
+
+        let grant = &found.active_at(noon()).next().unwrap().grant;
+        assert_eq!(grant.really.as_deref(), Some(really.as_path()));
+        let _cleared = std::fs::remove_dir_all(&folder);
     }
 }

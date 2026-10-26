@@ -221,3 +221,88 @@ fn a_link_out_of_a_granted_folder_is_refused_on_a_real_filesystem() {
 
     let _ = fs::remove_dir_all(&root);
 }
+
+/// A home laid out the way this image lays one out: `home` is a link to
+/// `var-home`, and the folder a person picks is reached through it.
+///
+/// Answers the folder as picked, and where it really is.
+#[cfg(unix)]
+fn a_home_behind_a_link(root: &Path) -> (PathBuf, PathBuf) {
+    let really = root.join("var-home").join("anna").join("Invoices");
+    fs::create_dir_all(&really).unwrap();
+    fs::write(really.join("march.pdf"), b"an invoice").unwrap();
+    std::os::unix::fs::symlink(root.join("var-home"), root.join("home")).unwrap();
+    let picked = root.join("home").join("anna").join("Invoices");
+    (picked, OnThisMachine.real(&really).unwrap().into_path_buf())
+}
+
+/// **A folder picked through a link may be touched, once its grant records
+/// where it really is** — the walk of 2026-10-26, where `/home` is a link to
+/// `/var/home` and every file verb was refused.
+///
+/// The control is the same grant without the real place, refused in the
+/// words that walk read in the machine's record.
+#[cfg(unix)]
+#[test]
+fn a_folder_picked_through_a_link_may_be_touched_where_it_really_is() {
+    let root = a_folder_of_our_own("behind-a-link");
+    let (picked, really) = a_home_behind_a_link(&root);
+    let call = verbs()
+        .call("read_file", &[("file", as_given(&picked.join("march.pdf")))])
+        .unwrap();
+
+    let without = granting(&picked);
+    let authorised = Authorised::read(&call, &files(), &without, noon()).unwrap();
+    let refused = Touching::of(authorised, &without, &OnThisMachine, &in_english()).unwrap_err();
+    assert!(
+        refused.said(&in_english()).text().contains("really leads to"),
+        "the control: a grant without its real place was not refused"
+    );
+
+    let mut with = Grants::default();
+    with.grant(
+        Grant::checked("@files", Reach::Folder(picked.clone()), noon(), hour())
+            .unwrap()
+            .really_at(really)
+            .unwrap(),
+    );
+    let authorised = Authorised::read(&call, &files(), &with, noon()).unwrap();
+    assert!(
+        Touching::of(authorised, &with, &OnThisMachine, &in_english()).is_ok(),
+        "a file in a folder picked through a link was refused although its grant records where it is"
+    );
+
+    let _ = fs::remove_dir_all(&root);
+}
+
+/// **And the escape is still refused through it**: a link inside that folder
+/// pointing outside it leads somewhere the real place does not cover.
+#[cfg(unix)]
+#[test]
+fn a_link_out_of_a_folder_picked_through_a_link_is_still_refused() {
+    let root = a_folder_of_our_own("behind-a-link-escape");
+    let (picked, really) = a_home_behind_a_link(&root);
+    let elsewhere = root.join("Elsewhere");
+    fs::create_dir_all(&elsewhere).unwrap();
+    fs::write(elsewhere.join("secret.txt"), b"not an invoice").unwrap();
+    std::os::unix::fs::symlink(elsewhere.join("secret.txt"), really.join("april.pdf")).unwrap();
+
+    let mut grants = Grants::default();
+    grants.grant(
+        Grant::checked("@files", Reach::Folder(picked.clone()), noon(), hour())
+            .unwrap()
+            .really_at(really)
+            .unwrap(),
+    );
+    let call = verbs()
+        .call("read_file", &[("file", as_given(&picked.join("april.pdf")))])
+        .unwrap();
+    let authorised = Authorised::read(&call, &files(), &grants, noon()).unwrap();
+
+    let refused = Touching::of(authorised, &grants, &OnThisMachine, &in_english()).unwrap_err();
+    let said = refused.said(&in_english());
+    assert!(said.text().contains("really leads to"), "{said}");
+    assert!(said.text().contains("secret.txt"), "{said}");
+
+    let _ = fs::remove_dir_all(&root);
+}

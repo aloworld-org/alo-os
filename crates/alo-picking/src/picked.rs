@@ -27,18 +27,34 @@ use crate::words;
 /// Sealed: see this module's documentation. Holding one is knowing that
 /// somebody stood in this folder in a picker and chose it.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Picked(PathBuf);
+pub struct Picked {
+    /// The folder as the person stood in it and reads it.
+    at: PathBuf,
+    /// Where it really is, every link on the way to it followed, when the
+    /// disk said — `alo_capability::Grant::really` is why.
+    really: Option<PathBuf>,
+}
 
 impl Picked {
     /// The one place a pick comes from.
-    pub(crate) fn folder_chosen(at: PathBuf) -> Self {
-        Self(at)
+    pub(crate) fn folder_chosen(at: PathBuf, really: Option<PathBuf>) -> Self {
+        Self { at, really }
     }
 
     /// The folder itself.
     #[must_use]
     pub fn folder(&self) -> &Path {
-        &self.0
+        &self.at
+    }
+
+    /// Where the folder really is, when the disk said as it was shown.
+    ///
+    /// Recorded on the grant made from this pick, so the grant covers the
+    /// folder that was shown even where the path a person reads goes through a
+    /// link — this image's `/home`, which is `/var/home`.
+    #[must_use]
+    pub fn really(&self) -> Option<&Path> {
+        self.really.as_deref()
     }
 
     /// What a grant made from this pick covers: **this folder**, and never the
@@ -50,7 +66,7 @@ impl Picked {
     /// because the only path this type holds is the one that was picked.
     #[must_use]
     pub fn reach(&self) -> Reach {
-        Reach::Folder(self.0.clone())
+        Reach::Folder(self.at.clone())
     }
 
     /// What this pick will let the agent do, in the language the person reads.
@@ -62,7 +78,7 @@ impl Picked {
     pub fn said(&self, strings: &Strings) -> Said {
         strings.say(
             &words::COVERS.key(),
-            &Filling::of(words::THE_FOLDER, self.0.display().to_string()),
+            &Filling::of(words::THE_FOLDER, self.at.display().to_string()),
         )
     }
 }
@@ -106,7 +122,7 @@ mod tests {
 
     /// The folder these tests are about.
     fn invoices() -> Picked {
-        Picked::folder_chosen(PathBuf::from("/home/anna/Invoices"))
+        Picked::folder_chosen(PathBuf::from("/home/anna/Invoices"), None)
     }
 
     /// **What a pick covers is the folder picked**, which is the one thing

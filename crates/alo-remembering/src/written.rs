@@ -89,7 +89,18 @@ use crate::refusing::NotRemembered;
 /// older reader **refuses the whole file** rather than reading `"removed"` as a
 /// moment. Failing closed is the only safe direction for a key that says *this
 /// never ends*.
-pub const THE_FORMAT: u32 = 3;
+///
+/// **Format 4 adds `really`** — where a granted folder or file really is, every
+/// link on the way to it followed, recorded when it was granted
+/// (`alo_capability::Grant::really`). A machine whose grants record none writes
+/// format 3 or lower, exactly as before; an older reader meeting `really`
+/// refuses the file rather than dropping the key and refusing every file verb.
+pub const THE_FORMAT: u32 = 4;
+
+/// The shape before a grant recorded where its folder really is.
+///
+/// Named for the one thing format 4 changed, as the format before it is.
+pub const THE_FORMAT_BEFORE_REAL_PLACES: u32 = 3;
 
 /// The shape before a grant could run until it is removed.
 ///
@@ -135,6 +146,10 @@ struct KeptGrant {
     /// Exactly one file.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     file: Option<PathBuf>,
+    /// Where that folder or file really is, recorded when it was granted.
+    /// Format 4 only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    really: Option<PathBuf>,
     /// One installed application, by its identifier.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     application: Option<String>,
@@ -248,10 +263,12 @@ impl KeptGrant {
 
     /// The first key this line names that its file's format does not have.
     fn newer_than(&self, format: u32) -> Option<&'static str> {
-        // **Checked before the earlier keys**, because this one is newer: a
-        // format-2 file holding `expires = "removed"` must be refused for that
-        // and not for an `applicant` it may also legitimately hold.
-        if format < THE_FORMAT && matches!(self.expires, Stops::WhenRemoved(_)) {
+        // **Newest first**, so a file is refused for the newest key it should
+        // not hold rather than for an older one it may legitimately hold.
+        if format < THE_FORMAT && self.really.is_some() {
+            return Some("really");
+        }
+        if format < THE_FORMAT_BEFORE_REAL_PLACES && matches!(self.expires, Stops::WhenRemoved(_)) {
             return Some("expires = \"removed\"");
         }
         if format >= THE_FORMAT_BEFORE_ENDLESS_GRANTS {
@@ -301,6 +318,13 @@ impl KeptGrant {
                 alo_capability::ATerminalForTheAgent::NotAtAll,
             )
             .map_err(made)?,
+        };
+        // **Held to the rules a picked path is held to**, by the crate that
+        // owns them — a file hand-edited into `really = "/"` is refused as a
+        // grant to the whole machine would be.
+        let grant = match &self.really {
+            Some(really) => grant.really_at(really.clone()).map_err(made)?,
+            None => grant,
         };
         Ok(Held {
             id: GrantId::numbered(self.handle),
@@ -415,6 +439,7 @@ pub fn written(grants: &Grants, now: SystemTime) -> Result<String, NotRemembered
             applicant,
             folder,
             file,
+            really: held.grant.really.clone(),
             application,
             facility,
             granted,
@@ -422,13 +447,16 @@ pub fn written(grants: &Grants, now: SystemTime) -> Result<String, NotRemembered
         });
     }
     // The lowest format that holds what is written, so a machine with no
-    // application's grant writes exactly what it wrote before format 2, and a
-    // machine with no endless grant writes exactly what it wrote before 3.
-    let format = if lines
+    // application's grant writes exactly what it wrote before format 2, a
+    // machine with no endless grant exactly what it wrote before 3, and one
+    // whose grants record no real place exactly what it wrote before 4.
+    let format = if lines.iter().any(|line| line.really.is_some()) {
+        THE_FORMAT
+    } else if lines
         .iter()
         .any(|line| matches!(line.expires, Stops::WhenRemoved(_)))
     {
-        THE_FORMAT
+        THE_FORMAT_BEFORE_REAL_PLACES
     } else if lines
         .iter()
         .any(|line| line.newer_than(THE_FIRST_FORMAT).is_some())
@@ -456,6 +484,7 @@ mod tests {
     use super::*;
     use crate::testing::{HERS, an_hour as hour, noon};
     use alo_capability::Ask;
+    use std::path::Path;
 
     /// A machine on which one folder has been granted for an hour.
     fn one_folder_granted() -> Grants {
@@ -935,5 +964,66 @@ mod tests {
             "an expired grant's handle was handed out again"
         );
         assert_eq!(next.as_u64(), 2);
+    }
+
+    /// One folder granted for an hour, recording where it really is — the way
+    /// this image lays a home out, `/home` a link to `/var/home`.
+    fn one_folder_granted_where_it_really_is() -> Grants {
+        let mut grants = Grants::default();
+        grants.grant(
+            Grant::checked(HERS, Reach::Folder("/home/ada/Invoices".into()), noon(), hour())
+                .unwrap()
+                .really_at("/var/home/ada/Invoices".into())
+                .unwrap(),
+        );
+        grants
+    }
+
+    /// **Where a folder really is survives the file**, written as format 4 and
+    /// read back as the grant it was — and it still covers the file where it
+    /// really is, which is the question every file verb asks.
+    #[test]
+    fn where_a_folder_really_is_survives_the_file() {
+        let text = written(&one_folder_granted_where_it_really_is(), noon()).unwrap();
+        assert!(text.contains("format = 4"), "{text}");
+        assert!(text.contains(r#"really = "/var/home/ada/Invoices""#), "{text}");
+
+        let read = read(&text, noon()).unwrap();
+        assert!(
+            read.permitting_where_it_really_is(
+                &Grantee::named(HERS),
+                Path::new("/var/home/ada/Invoices/march.pdf"),
+                noon()
+            )
+            .is_ok(),
+            "a grant read back no longer covers where its folder really is"
+        );
+    }
+
+    /// **An older reader refuses the file rather than dropping the key**, which
+    /// would leave every file verb refused and nothing saying why.
+    #[test]
+    fn a_format_three_file_naming_where_a_folder_really_is_is_refused_whole() {
+        let text = written(&one_folder_granted_where_it_really_is(), noon())
+            .unwrap()
+            .replace("format = 4", "format = 3");
+        let refused = read(&text, noon()).unwrap_err();
+        assert!(
+            format!("{refused:?}").contains("really"),
+            "the refusal does not name the key: {refused:?}"
+        );
+    }
+
+    /// **A real place hand-edited to the whole machine is refused** by the
+    /// crate that owns that rule, as the picked path would be.
+    #[test]
+    fn a_real_place_of_the_whole_machine_is_refused() {
+        let text = written(&one_folder_granted_where_it_really_is(), noon())
+            .unwrap()
+            .replace(r#"really = "/var/home/ada/Invoices""#, r#"really = "/""#);
+        assert!(
+            matches!(read(&text, noon()), Err(NotRemembered::NotAGrant { .. })),
+            "a grant whose real place is the whole machine was believed"
+        );
     }
 }
