@@ -159,8 +159,19 @@ fn the_frame_loop_turns_a_request_into_a_task_and_draws_it() {
         "production never drains what came back, so an agent could answer and nobody would \
          ever see it"
     );
+    // **Both halves of putting an answer into its task**, followed to where the
+    // code now lives. Until 2026-10-26 the frame loop did it inline and this
+    // asserted `task.alo_says(` there; it moved into
+    // `Server::an_answer_came_back` so a test could prove a question arriving
+    // never takes the keyboard. Asserting only the call would pass if the
+    // method stopped putting the answer anywhere, so the method is read too.
     assert!(
-        shipped.contains("task.alo_says("),
+        shipped.contains("server.an_answer_came_back("),
+        "production never hands what came back to the task it belongs to"
+    );
+    let the_road = read("a_change_waiting_reaches_the_person.rs");
+    assert!(
+        production_part_of(&the_road).contains("task.alo_says("),
         "production never puts an answer into the task it belongs to"
     );
     assert!(

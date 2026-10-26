@@ -116,6 +116,18 @@ pub const THE_ONE_BUTTONS_CORNER: u32 = A_CONTROL_IS / 2;
 /// A square control's corners — Attach and Permissions.
 pub const A_CONTROLS_CORNER: u32 = 12;
 
+/// *Allow once* on an approval card: Primary, 144 wide, `A_CONTROL_IS` high.
+///
+/// `docs/design/the-ask-alo-task-window.md`, *The approval card*.
+pub const ALLOW_ONCE_IS_WIDE: u32 = 144;
+
+/// *Deny* on an approval card: Quiet, 104 wide.
+///
+/// **Narrower because its label is shorter, not because it is secondary** —
+/// the design says so in as many words, and both are 48 high and neither is
+/// behind anything.
+pub const DENY_IS_WIDE: u32 = 104;
+
 /// How wide the control naming the model is.
 pub const THE_MODEL_CONTROL_IS_WIDE: u32 = 176;
 

@@ -2,6 +2,7 @@
 #![cfg(target_os = "linux")]
 
 mod a_chord_reaches_its_action;
+mod a_click_gives_the_keyboard;
 mod a_frame_is_never_lost;
 mod a_frame_is_never_lost_while_dragging;
 mod a_frame_is_where_it_looks;

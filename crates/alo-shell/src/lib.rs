@@ -71,6 +71,7 @@
 
 #![cfg(target_os = "linux")]
 
+pub mod a_change_waiting_reaches_the_person;
 /// The chord that asks why a command is waiting, which was the only road to an
 /// answer that was already built.
 mod a_chord_asks_why_a_command_is_waiting;
@@ -89,6 +90,7 @@ mod a_key_reaches_settings;
 mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
 mod a_key_reaches_the_market;
+mod a_key_reaches_the_task_in_front;
 mod a_key_types_into_more_apps;
 mod a_new_window_is_placed;
 mod a_person_pins_and_unpins;
@@ -382,6 +384,7 @@ pub mod the_application_doors_place;
 pub mod the_bar_finds;
 mod the_bars_pressable_slots;
 mod the_bars_seat;
+pub mod the_cards_words;
 /// The Dock's composer as a field a person types a request into.
 pub mod the_composer_a_person_types_in;
 mod the_desk_is_reconciled;
@@ -398,6 +401,7 @@ pub mod the_providers_words;
 mod the_session_holds_its_screens;
 /// The task windows a person opened by asking alo for something.
 pub mod the_tasks_a_person_opened;
+mod the_tasks_seat;
 /// Everything in a task window that a person reads, said once a frame.
 mod the_tasks_words;
 /// alo's own terminal: the shell it runs, the screen it keeps, and when it has

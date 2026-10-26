@@ -57,14 +57,20 @@ fn what_was_said() -> Vec<crate::task_text::WhatWasSaid<'static>> {
         crate::task_text::WhatWasSaid {
             whose: alo_tasks::WhoseBlock::ThePersons,
             words: "Make a six-slide launch presentation from these two files.",
+            // Not a change waiting to be answered, so nothing under it.
+            answers: None,
         },
         crate::task_text::WhatWasSaid {
             whose: alo_tasks::WhoseBlock::Alos,
             words: "I\u{2019}ll read the two files, shape the story, and build a draft.",
+            // Not a change waiting to be answered, so nothing under it.
+            answers: None,
         },
         crate::task_text::WhatWasSaid {
             whose: alo_tasks::WhoseBlock::AnAccount,
             words: "Reading your documents",
+            // Not a change waiting to be answered, so nothing under it.
+            answers: None,
         },
     ]
 }
@@ -472,5 +478,156 @@ fn a_persons_words_are_drawn_further_right_than_alos() {
         request > reply,
         "a person's request was drawn at x {request} and alo's reply at x \
          {reply}, so the side no longer says whose words they are"
+    );
+}
+
+/// The design's frame, with a change waiting at the end of it.
+fn with_a_card(
+    selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
+    answering: bool,
+) -> TaskPicture {
+    let files = two_files();
+    let mut said = what_was_said();
+    said.push(crate::task_text::WhatWasSaid {
+        whose: alo_tasks::WhoseBlock::AnAccount,
+        words: "Rename march.pdf to invoice-march.pdf in /home/anna/Invoices",
+        answers: answering.then_some(crate::task_text::TheTwoAnswers {
+            allow_once: "Allow once",
+            deny: "Deny",
+            selected,
+        }),
+    });
+    let mut fonts = cosmic_text::FontSystem::new();
+    furniture(
+        Rectangle::new((120, 80).into(), (1040, 800).into()),
+        a_look(),
+        2,
+        &the_words(&files),
+        &said,
+        &mut fonts,
+    )
+    .expect("the size the design was drawn at")
+}
+
+/// How dark a piece of ink is at its darkest — its ground, for a label.
+fn darkest(ink: &crate::painted::Inked) -> u16 {
+    ink.pixels
+        .iter()
+        .map(|[r, g, b]| u16::from(*r) + u16::from(*g) + u16::from(*b))
+        .min()
+        .unwrap_or(u16::MAX)
+}
+
+/// How light a piece of ink is at its lightest.
+fn lightest(ink: &crate::painted::Inked) -> u16 {
+    ink.pixels
+        .iter()
+        .map(|[r, g, b]| u16::from(*r) + u16::from(*g) + u16::from(*b))
+        .max()
+        .unwrap_or(0)
+}
+
+/// **A waiting card draws its two answers**: two more pieces of text, after
+/// the card's sentence, **below** it, Allow once before Deny — and the panel
+/// itself differs, because the buttons are shapes in it.
+///
+/// The control is the same card with no answers under it, so this cannot pass
+/// by the card drawing nothing in both.
+#[test]
+fn a_waiting_card_draws_its_two_answers() {
+    let without = with_a_card(None, false);
+    let with = with_a_card(None, true);
+
+    assert_ne!(
+        without.panel.pixels, with.panel.pixels,
+        "the answers drew no shape at all"
+    );
+    assert_eq!(
+        with.inked.len(),
+        without.inked.len() + 2,
+        "the two answers were not written"
+    );
+
+    // The inks run in the same order until the card's answers, which come
+    // straight after its sentence.
+    let first_new = without
+        .inked
+        .iter()
+        .zip(&with.inked)
+        .position(|(old, new)| old.area != new.area)
+        .expect("the answers' labels are somewhere among the ink");
+    let ink = |at: usize| {
+        with.inked
+            .get(at)
+            .expect("a piece of ink the order says is there")
+    };
+    let sentence = ink(first_new
+        .checked_sub(1)
+        .expect("the card's sentence comes before them"));
+    let allow = ink(first_new);
+    let deny = ink(first_new + 1);
+
+    let sentence_ends = sentence.area.loc.y + sentence.area.size.h;
+    assert!(
+        allow.area.loc.y >= sentence_ends && deny.area.loc.y >= sentence_ends,
+        "the answers are not below the sentence they answer"
+    );
+    assert!(
+        allow.area.loc.x < deny.area.loc.x,
+        "Allow once is not first in reading order"
+    );
+}
+
+/// **Allow once is Primary and Deny is Quiet**: the first is written on the
+/// navy of its button and the second on the card's pale ground.
+#[test]
+fn allow_once_is_on_navy_and_deny_is_on_the_card() {
+    let without = with_a_card(None, false);
+    let with = with_a_card(None, true);
+    let first_new = without
+        .inked
+        .iter()
+        .zip(&with.inked)
+        .position(|(old, new)| old.area != new.area)
+        .expect("the answers' labels are somewhere among the ink");
+    let ink = |at: usize| {
+        with.inked
+            .get(at)
+            .expect("a piece of ink the order says is there")
+    };
+    let allow = ink(first_new);
+    let deny = ink(first_new + 1);
+
+    assert!(
+        darkest(allow) < 3 * 90,
+        "Allow once's ground is not dark: it is not drawn as Primary"
+    );
+    assert!(
+        lightest(deny) > 3 * 200,
+        "Deny's ground is not light: it is not drawn as Quiet"
+    );
+}
+
+/// **Nothing is outlined until the keyboard moves**, and the outline goes
+/// where it moves to.
+///
+/// Three rasters that must all differ: no answer selected, Allow once, Deny.
+/// If the outline were drawn regardless, the first two would agree; if it did
+/// not follow the selection, the last two would.
+#[test]
+fn the_outline_appears_only_where_the_keyboard_is() {
+    use crate::a_change_waiting_reaches_the_person::WhichAnswer;
+
+    let none = with_a_card(None, true);
+    let allow = with_a_card(Some(WhichAnswer::AllowOnce), true);
+    let deny = with_a_card(Some(WhichAnswer::Deny), true);
+
+    assert_ne!(
+        none.panel.pixels, allow.panel.pixels,
+        "an outline was drawn before the keyboard moved, or never"
+    );
+    assert_ne!(
+        allow.panel.pixels, deny.panel.pixels,
+        "the outline did not move with the selection"
     );
 }

@@ -275,6 +275,7 @@ fn an_accepted_proposal_waits_for_the_person() {
             number: answered_by,
             sentence,
             after,
+            ..
         } => {
             assert_eq!(answered_by, number);
             assert_eq!(sentence, expected);

@@ -160,6 +160,12 @@ impl TheComposer {
             return WhatTheComposerDid::Nothing;
         }
         let asked = std::mem::take(&mut self.typed);
+        // **And the keyboard leaves the field**, which the open-an-application
+        // path's comment already said asking alo does — and it did not. Kept,
+        // the next thing a person typed went back into the Bar instead of the
+        // task window they had just asked for: seen on a booted machine on
+        // 2026-10-25.
+        self.has_the_keyboard = false;
         WhatTheComposerDid::TheyAsked(asked)
     }
 }
@@ -227,6 +233,9 @@ impl crate::Server {
             // exactly this, so it is the one used rather than a second way of
             // emptying the same field.
             self.which_row_in_the_bar = None;
+            // **A task window lets go as well**: launching something is
+            // choosing it, so what is typed next belongs to it.
+            self.the_task_gave_the_keyboard_up();
             return self.the_composer.pressed(ComposerKey::Clear);
         }
         let what = self.the_composer.pressed(key);

@@ -310,14 +310,20 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         alo_shell::task_text::WhatWasSaid {
                             whose: alo_tasks::WhoseBlock::ThePersons,
                             words: "Tidy my invoices folder and tell me what you moved.",
+                            // A check of the drawing, with no change waiting in it.
+                            answers: None,
                         },
                         alo_shell::task_text::WhatWasSaid {
                             whose: alo_tasks::WhoseBlock::Alos,
                             words: "I\u{2019}ll look through them and say what I changed.",
+                            // A check of the drawing, with no change waiting in it.
+                            answers: None,
                         },
                         alo_shell::task_text::WhatWasSaid {
                             whose: alo_tasks::WhoseBlock::AnAccount,
                             words: "Reading your folder",
+                            // A check of the drawing, with no change waiting in it.
+                            answers: None,
                         },
                     ];
                     let a_task_window = [alo_shell::task_raster::ATaskOnTheDisplay {

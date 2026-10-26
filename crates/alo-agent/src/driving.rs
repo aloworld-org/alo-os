@@ -15,8 +15,9 @@
 //! 3. Read the answer as a line of the protocol.
 //! 4. A **read** goes to the machine, and what came back becomes a step. Round
 //!    again.
-//! 5. A **propose** goes to the machine and the turn **ends**: a change waits
-//!    for a person, and waiting for them is not something an agent does.
+//! 5. A **propose** goes to the machine and the loop **ends**: a change waits
+//!    for a person. The turn itself is held open until they answer, by
+//!    `crate::holding_the_turn`, because the change lives in it.
 //! 6. A model that answered in words rather than asking for anything has
 //!    finished the request.
 //!
@@ -153,6 +154,7 @@ pub fn driving(
                         number: standing.number(),
                         sentence: standing.sentence().text().to_owned(),
                         after: steps,
+                        stands_for: standing.lapses_in().map(std::time::Duration::from_secs),
                     };
                 }
                 // **A refused proposal is a step too, for the same reason a

@@ -529,6 +529,7 @@ fn the_overflow_list(
                 well_is: palette.badge,
                 rings: &rings,
                 ring_is: palette.ink,
+                in_primary: crate::dock_surface::InPrimary::NOTHING,
             },
         ) {
             panels.push(washed);
@@ -851,6 +852,7 @@ fn the_overflow_list(
             well_is: palette.badge,
             rings: &rings,
             ring_is: palette.ink,
+            in_primary: crate::dock_surface::InPrimary::NOTHING,
         },
     ) {
         panels.push(washed);
@@ -1119,6 +1121,7 @@ pub(crate) fn picture(
         // lands is not covered by anything.
         rings: &rings,
         ring_is: palette.ink,
+        in_primary: crate::dock_surface::InPrimary::NOTHING,
         // **The bar's own marks are still flat**, and visibly so: the Dock's
         // surface is painted before `solids`, so a mark pushed there lands on
         // top of it. That is why the bar's indicators have always been visible

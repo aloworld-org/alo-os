@@ -319,6 +319,7 @@ pub(crate) fn picture(
             well_is: cool,
             rings: &[],
             ring_is: edge,
+            in_primary: crate::dock_surface::InPrimary::NOTHING,
         },
     )?;
 

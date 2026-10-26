@@ -23,7 +23,7 @@
 
 use alo_strings::Direction;
 use alo_tasks::ATask;
-use smithay::utils::{Logical, Physical, Rectangle};
+use smithay::utils::{Logical, Physical, Point, Rectangle};
 
 /// Which task a person is looking at or talking to.
 ///
@@ -110,6 +110,24 @@ impl TheTasks {
     #[must_use]
     pub fn where_each_went(&self) -> &[Option<Rectangle<i32, Physical>>] {
         &self.placed
+    }
+
+    /// The task window under this point on the screen, if one is.
+    ///
+    /// **The last opened answers first**, because it is drawn last and so is
+    /// in front: a press where two windows overlap belongs to the one a person
+    /// can see. A window nothing has placed is not under anything.
+    #[must_use]
+    pub fn the_one_under(&self, point: Point<i32, Physical>) -> Option<WhichTask> {
+        self.placed
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(at, placed)| {
+                placed
+                    .filter(|window| window.contains(point))
+                    .map(|_| WhichTask(at))
+            })
     }
 
     /// Put the window of every task that has nowhere to be.

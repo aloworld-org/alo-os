@@ -1736,6 +1736,7 @@ dependencies = [
  "jiff",
  "pixman",
  "rustix 1.1.4",
+ "serde_json",
  "smithay",
  "tempfile",
  "thiserror 2.0.20",

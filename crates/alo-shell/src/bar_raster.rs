@@ -110,6 +110,7 @@ pub(crate) fn picture(
         well_is: palette.badge,
         rings: &rings,
         ring_is: palette.ink,
+        in_primary: crate::dock_surface::InPrimary::NOTHING,
         room: (bar.display.w, bar.display.h),
     })?;
 

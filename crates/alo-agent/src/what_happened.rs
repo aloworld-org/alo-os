@@ -10,8 +10,16 @@
 //! `CLAUDE.md`: *reads answer, changes wait*. So a turn reads as far as it needs
 //! to and then proposes once, and the proposal is where the loop stops —
 //! because what happens next is a person reading a sentence, which is not
-//! something an agent does and not something this crate may wait for. The
-//! approval arrives on the **other** door, which this crate cannot reach.
+//! something an agent does. The approval arrives on the **other** door, which
+//! this crate cannot reach.
+//!
+//! **The loop stops; the turn does not.** This said until 2026-10-26 that the
+//! proposal was not something this crate may wait for, and the process exited
+//! on it — which ended the turn with the question inside it, so nothing was
+//! ever waiting by the time the person's shell asked. The loop still ends at
+//! the proposal; [`crate::holding_the_turn`] keeps the turn open after it until
+//! the person has answered, for as long as [`WhatHappened::AChangeIsWaiting`]'s
+//! `stands_for` and no longer.
 //!
 //! A turn that proposed twice would be a turn asking a person two questions
 //! about one request, and the second would arrive with the first unanswered. So
@@ -32,6 +40,14 @@ pub enum WhatHappened {
         sentence: String,
         /// Every read this turn made on the way, oldest first.
         after: Vec<AStep>,
+        /// How long the daemon said the question stands, and [`None`] when it
+        /// did not say.
+        ///
+        /// **The daemon's figure, not one chosen here** — `proposal-seconds` in
+        /// the machine's description. It bounds how long the turn is held open
+        /// for a person who never answers; a person who answers ends the hold
+        /// at once.
+        stands_for: Option<std::time::Duration>,
     },
     /// The request needed no change, and this is the answer to it.
     ///

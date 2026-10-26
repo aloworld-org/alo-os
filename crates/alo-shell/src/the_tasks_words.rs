@@ -52,6 +52,15 @@ struct ATasksWords {
     how_many_files: String,
     /// What was said, oldest first.
     said: Vec<(alo_tasks::WhoseBlock, String)>,
+    /// Which of `said` carries the two answers: the latest proposal, while
+    /// this task is still asking. [`None`] when nothing in it is waiting.
+    answers_after: Option<usize>,
+    /// *Allow once*, said once for this task.
+    allow_once: String,
+    /// *Deny*, said once for this task.
+    deny: String,
+    /// Which answer the keyboard is on, and [`None`] until the person moves.
+    selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
 }
 
 /// Every task window's words, said once for this frame.
@@ -68,10 +77,15 @@ impl TheTasksWords {
     /// task with no position yet is **left out**: a window nothing has placed is
     /// a window with nowhere to be drawn, and inventing a position here would be
     /// a second placer.
+    ///
+    /// `selected` is which answer the person's keyboard is on, for the one
+    /// question that stands on this machine. It reaches only the task that is
+    /// asking, because only that task draws the two answers.
     pub(crate) fn said(
         tasks: &[ATask],
         placed: &[Option<Rectangle<i32, Physical>>],
         strings: &Strings,
+        selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
     ) -> Self {
         let say =
             |word: alo_strings::Word| strings.say(&word.key(), &Filling::nothing()).into_text();
@@ -119,6 +133,18 @@ impl TheTasksWords {
                         .iter()
                         .map(|turn| (whose(turn), turn.said().to_owned()))
                         .collect(),
+                    // **The latest proposal, and only while the task is
+                    // asking.** Every earlier proposal was answered and draws
+                    // no answers, and a task that is not asking draws none at
+                    // all — whatever its conversation still holds.
+                    answers_after: task.permissions().asking().and_then(|_| {
+                        task.conversation().each().iter().rposition(|turn| {
+                            matches!(turn.who(), alo_tasks::WhoSaidIt::AloProposing)
+                        })
+                    }),
+                    allow_once: say(crate::the_cards_words::ALLOW_ONCE),
+                    deny: say(crate::the_cards_words::DENY),
+                    selected,
                 })
             })
             .collect();
@@ -148,9 +174,17 @@ impl TheTasksWords {
                 said: one
                     .said
                     .iter()
-                    .map(|(whose, words)| WhatWasSaid {
+                    .enumerate()
+                    .map(|(at, (whose, words))| WhatWasSaid {
                         whose: *whose,
                         words,
+                        answers: (one.answers_after == Some(at)).then_some(
+                            crate::task_text::TheTwoAnswers {
+                                allow_once: &one.allow_once,
+                                deny: &one.deny,
+                                selected: one.selected,
+                            },
+                        ),
                     })
                     .collect(),
             })
@@ -160,18 +194,23 @@ impl TheTasksWords {
 
 /// Which kind of block one turn is drawn as.
 ///
-/// **A question and a proposal are a person's to answer, and are drawn as
-/// alo's words rather than as an account** — the approval card they belong in
-/// is its own surface and is not built, so until it is they read as what alo
-/// said. Named here rather than silently mapped: a reader should be able to see
-/// that the card is missing rather than wonder why a question looks like a
-/// reply.
+/// **A proposal is drawn as the approval card**, which the design calls *the
+/// same shell as an activity block* — built 2026-10-26, and the waiting one
+/// carries Allow once and Deny under it.
+///
+/// **A question is still drawn as alo's words.** It is a person's to answer
+/// too, and its card is not built, so until it is it reads as what alo said.
+/// Named here rather than silently mapped: a reader should be able to see that
+/// card is missing rather than wonder why a question looks like a reply.
 fn whose(turn: &alo_tasks::Turn) -> alo_tasks::WhoseBlock {
     match turn.who() {
         alo_tasks::WhoSaidIt::ThePerson => alo_tasks::WhoseBlock::ThePersons,
-        alo_tasks::WhoSaidIt::Alo
-        | alo_tasks::WhoSaidIt::AloAsking
-        | alo_tasks::WhoSaidIt::AloProposing => alo_tasks::WhoseBlock::Alos,
+        alo_tasks::WhoSaidIt::Alo | alo_tasks::WhoSaidIt::AloAsking => alo_tasks::WhoseBlock::Alos,
+        // **A proposal is a card** — the design's approval card is *the same
+        // shell as an activity block*, which is this. Every proposal is one,
+        // answered or not; only the one still waiting has the two answers
+        // under it.
+        alo_tasks::WhoSaidIt::AloProposing => alo_tasks::WhoseBlock::AnAccount,
     }
 }
 

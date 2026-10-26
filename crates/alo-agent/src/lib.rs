@@ -41,12 +41,14 @@
 
 pub mod at_the_daemons_socket;
 pub mod driving;
+pub mod holding_the_turn;
 pub mod how_far;
 pub mod the_door;
 pub mod what_happened;
 
 pub use at_the_daemons_socket::AtTheDaemonsSocket;
 pub use driving::driving;
+pub use holding_the_turn::{Held, held_until_answered};
 pub use how_far::HowFar;
 pub use the_door::{NotAnswered, TheDoor};
 pub use what_happened::WhatHappened;
