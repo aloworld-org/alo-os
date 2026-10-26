@@ -479,6 +479,50 @@ cannot demonstrate.
   reports written in this repository's own vocabulary to somebody who had not
   asked to learn it.*
 
+- **Say whether you checked it, or whether it merely fits.** When you tell
+  somebody *why* something is broken, say which of the two you have: a cause
+  you **confirmed**, or a story that **fits the evidence so far**. Both are
+  worth saying. Only one is worth acting on, and from outside they sound
+  identical.
+
+  **The cheapest thing that could disprove it comes first.** Usually that is
+  reading the code you are about to describe, running the thing once more, or
+  looking at the surface again instead of at a screenshot of it. If that costs
+  a minute and the claim is going into a report, a commit or a decision, it is
+  not optional.
+
+  *Asked for by the owner on 2026-10-25, in these words:* **"did you check
+  that, or does it just fit"** — after five causes were given in one day with
+  more confidence than the checking behind them:
+
+  - *the provider was not saved* — it was; the list had not redrawn;
+  - *that field drops keystrokes* — it draws four dots however many arrive,
+    and the earlier note blaming input lag was itself wrong;
+  - *a turn's instructions stop the model looking first* — measured, it looked
+    first **5 of 5** under those exact instructions;
+  - *the instructions and the protocol contradict each other* — they agree; a
+    model misread one sentence;
+  - *these strings break the vocabulary snapshot* — that check does not cover
+    them.
+
+  Every one was a wrong **explanation** rather than a wrong change, and each
+  was corrected in writing; three were caught before reaching `main`. **The
+  failure is not carelessness and will not be fixed by trying harder.** The
+  first explanation that fits all the evidence feels like the answer, and when
+  the evidence is three observations it is usually just the first story that
+  fits — the feeling of having understood arrives whether or not it is true.
+
+  **It bites hardest when the guess is pessimistic.** *It is broken, it was not
+  saved, it dropped the keys* reads as diligence, so nobody argues with it and
+  it is reported unchecked. One of the five above was a blocker announced to
+  the owner that did not exist.
+
+  **What actually catches it is structure, not care**, and all three are
+  cheap: print the evidence beside the verdict so the two can disagree; run a
+  measurement more than once, because the first run of one above agreed with
+  the conclusion that was wrong; and read the thing you are describing rather
+  than describing it from memory.
+
 - **State your own errors, and record the ones that could be repeated.**
   Say it in the moment, to whoever is relying on the claim — plainly, once,
   without ceremony — and then put the ones somebody else could walk into in
