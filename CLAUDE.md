@@ -737,6 +737,23 @@ next lane relitigates.*
   minutes and catch what otherwise costs a full gate to discover. An
   unlisted omission is how *the cheap checks passed* becomes a claim
   somebody leans on.
+- **No real image is built while any branch but `main` exists.** *The
+  owner, 2026-10-26: "it is not allowed to build the image if all the
+  branches are not merged to main", because those features have to be in
+  the image too.* A real image is any image a person installs, or that is
+  called a candidate or a release, and it is built **only from `main`**,
+  and only once **every branch in this repository** has been merged or
+  deleted. Not only branches with a pull request: a branch nobody opened
+  one for is still work the image would be missing. So the road is to land
+  or close every branch, delete it, and then build.
+  **A walk image is the one exception.** A lane may build an image from a
+  branch on its own machine, to try that branch on a booted machine before
+  it merges. That image is never pushed, published, pinned or handed to
+  anybody, and a report about it names the branch and commit it came from.
+  **The rule is a step, not a sentence:** `image.yml` asks GitHub for every
+  branch before it builds and refuses if any but `main` is there, failing
+  closed when the list cannot be read. `crates/alo-image` (`workflow.rs`)
+  holds the workflow to it.
 - **Delete a landed branch by asking whether its pull request merged.**
   The queue squash-merges, so a landed branch is never reachable from
   `main` and `git branch --merged` reports nothing. Fifty-six local

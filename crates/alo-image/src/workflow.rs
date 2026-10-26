@@ -78,6 +78,12 @@ const LOOK: &str = "skopeo inspect";
 /// The branch a candidate is built from.
 const MAIN: &str = "refs/heads/main";
 
+/// What asks GitHub for every branch this repository has.
+const THE_BRANCHES: &str = "repos/${{ github.repository }}/branches";
+
+/// What builds the image.
+const BUILD: &str = "podman build";
+
 /// What makes a Release.
 const PUBLISH: &str = "gh release create";
 
@@ -219,6 +225,18 @@ impl TheWorkflow {
         matches!((first(LOOK), first(PUSH)), (Some(look), Some(push)) if look < push)
     }
 
+    /// Whether it asks for every branch before it builds, so an image is never
+    /// built while one has not reached main.
+    ///
+    /// The owner's rule of 2026-10-26, in `CLAUDE.md`. **Before** rather than
+    /// anywhere, for `looks_before_it_pushes`'s reason: a check that ran after
+    /// the build would describe an image that already exists.
+    #[must_use]
+    pub fn asks_for_every_branch_before_it_builds(&self) -> bool {
+        let first = |what: &str| self.live.iter().position(|line| line.contains(what));
+        matches!((first(THE_BRANCHES), first(BUILD)), (Some(asked), Some(built)) if asked < built)
+    }
+
     /// Whether it makes a Release at all.
     ///
     /// **Not a refusal any more, and that is ADR 0096.** This read `false` for
@@ -323,6 +341,26 @@ mod tests {
         assert!(!read.signs());
         assert!(read.pushes_to(crate::THE_REGISTRY));
         assert!(read.looks_before_it_pushes());
+        assert!(read.asks_for_every_branch_before_it_builds());
+    }
+
+    /// **A workflow that builds without asking for every branch is caught**,
+    /// and so is one that asks only after it has built.
+    #[test]
+    fn a_workflow_that_builds_while_a_branch_is_unmerged_is_caught() {
+        let ask = "names=$(gh api --paginate \"repos/${{ github.repository }}/branches\" --jq '.[].name')";
+        assert!(
+            !with(ask, "names=main").asks_for_every_branch_before_it_builds(),
+            "a workflow that never asked for the branches read as asking"
+        );
+
+        let late = TheWorkflow::read(
+            "    - run: podman build -t x .\n    - run: gh api \"repos/${{ github.repository }}/branches\"\n",
+        );
+        assert!(
+            !late.asks_for_every_branch_before_it_builds(),
+            "a workflow asking after it built read as asking before"
+        );
     }
 
     /// **A workflow that signs is caught**, however it spells it: the command,
