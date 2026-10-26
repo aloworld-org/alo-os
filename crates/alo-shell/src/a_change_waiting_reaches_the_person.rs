@@ -46,11 +46,41 @@
 use alo_changing::{Answered, Answering};
 use alo_tasks::{ATask, Turn};
 
-/// The change a person is being asked about, and the number to answer it by.
+use crate::approval_keys::ApprovalKey;
+
+/// The change a person is being asked about, the number to answer it by, and
+/// which answer their keyboard is on.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct AChangeWaiting {
     /// The number the daemon answers by, while one is in front of the person.
     number: Option<u64>,
+    /// Which answer is selected, and [`None`] until they move to one.
+    ///
+    /// **Nothing is preselected.** A question that opens with an answer under
+    /// the finger is a question answered by somebody pressing Enter to make a
+    /// dialogue go away, which is not an approval of anything.
+    selected: Option<WhichAnswer>,
+}
+
+/// The two answers, in reading order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WhichAnswer {
+    /// Allow this one action. **Not a grant, and it widens nothing.**
+    AllowOnce,
+    /// Say no. Nothing happens and nothing is recorded about why.
+    Deny,
+}
+
+/// What a press on a waiting question did.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum WhatThePressDid {
+    /// The selection moved, so the screen is drawn again.
+    ItMoved,
+    /// An answer was given, and this is what the daemon said — [`None`] when
+    /// it said nothing at all.
+    ItWasAnswered(Option<Answered>),
+    /// Nothing happened, which includes Enter with nothing selected.
+    Nothing,
 }
 
 /// What putting a question in front of a person did.
@@ -72,7 +102,11 @@ impl AChangeWaiting {
     /// Nothing is being asked.
     #[must_use]
     pub const fn nothing_yet() -> Self {
-        Self { number: None }
+        Self {
+            number: None,
+            // **Nothing preselected**, here as well as after every answer.
+            selected: None,
+        }
     }
 
     /// Whether a change is in front of the person now.
@@ -111,6 +145,7 @@ impl AChangeWaiting {
     /// which a surface treats the same way: nothing to show.
     pub fn allow_once(&mut self, task: &mut ATask, daemon: &dyn Answering) -> Option<Answered> {
         let number = self.number.take()?;
+        self.selected = None;
         task.allow_once();
         daemon.approve(number)
     }
@@ -118,8 +153,55 @@ impl AChangeWaiting {
     /// They said no. Nothing is carried about why, because nothing was asked.
     pub fn deny(&mut self, task: &mut ATask, daemon: &dyn Answering) -> Option<Answered> {
         let number = self.number.take()?;
+        self.selected = None;
         task.deny();
         daemon.decline(number)
+    }
+
+    /// Which answer their keyboard is on, and [`None`] until they move to one.
+    #[must_use]
+    pub const fn selected(&self) -> Option<WhichAnswer> {
+        self.selected
+    }
+
+    /// One key press on the question in front of them.
+    ///
+    /// **Enter with nothing selected does nothing**, which is *nothing
+    /// proceeds on silence* in the one place it can be got wrong: a person who
+    /// presses Enter to dismiss something has not answered it.
+    ///
+    /// **Escape says no** whatever is selected and whether or not anything is,
+    /// because leaving a question unanswered is a refusal rather than a maybe.
+    pub fn pressed(
+        &mut self,
+        key: ApprovalKey,
+        task: &mut ATask,
+        daemon: &dyn Answering,
+    ) -> WhatThePressDid {
+        if !self.is_asking() {
+            return WhatThePressDid::Nothing;
+        }
+        match key {
+            // **Two answers, so next and previous are the same move.** Written
+            // as one arm rather than two identical ones: a third answer would
+            // make them differ, and then they would be written differently.
+            ApprovalKey::NextAnswer | ApprovalKey::PreviousAnswer => {
+                self.selected = Some(match self.selected {
+                    None | Some(WhichAnswer::Deny) => WhichAnswer::AllowOnce,
+                    Some(WhichAnswer::AllowOnce) => WhichAnswer::Deny,
+                });
+                WhatThePressDid::ItMoved
+            }
+            ApprovalKey::Choose => match self.selected {
+                Some(WhichAnswer::AllowOnce) => {
+                    WhatThePressDid::ItWasAnswered(self.allow_once(task, daemon))
+                }
+                Some(WhichAnswer::Deny) => WhatThePressDid::ItWasAnswered(self.deny(task, daemon)),
+                None => WhatThePressDid::Nothing,
+            },
+            ApprovalKey::Decline => WhatThePressDid::ItWasAnswered(self.deny(task, daemon)),
+            ApprovalKey::Nothing => WhatThePressDid::Nothing,
+        }
     }
 }
 

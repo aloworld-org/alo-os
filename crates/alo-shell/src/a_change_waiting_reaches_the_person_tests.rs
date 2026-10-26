@@ -7,7 +7,8 @@ use alo_changing::{Done, Standing};
 use alo_models::InferenceSource;
 use alo_tasks::ATask;
 
-use super::{AChangeWaiting, WhatArrived};
+use super::{AChangeWaiting, WhatArrived, WhatThePressDid, WhichAnswer};
+use crate::approval_keys::ApprovalKey;
 
 /// A daemon that holds what a test tells it to, and remembers what it was
 /// told.
@@ -215,4 +216,113 @@ fn a_daemon_holding_nothing_draws_no_question() {
 
     assert_eq!(waiting.arrived(&mut task, &daemon), WhatArrived::Nothing);
     assert!(!waiting.is_asking());
+}
+
+/// **Nothing is preselected**, and Enter on a question nobody has moved on
+/// answers nothing at all.
+///
+/// A person who presses Enter to make something go away has not approved
+/// anything. A surface that opened with *Allow once* under the finger would
+/// pass every other test in this file and would be wrong in the one way that
+/// matters.
+#[test]
+fn enter_with_nothing_selected_answers_nothing() {
+    let daemon = ADaemon::holding(vec![standing(7, "Delete everything")]);
+    let mut task = a_task();
+    let mut waiting = AChangeWaiting::nothing_yet();
+    waiting.arrived(&mut task, &daemon);
+
+    assert_eq!(waiting.selected(), None, "an answer was preselected");
+    assert_eq!(
+        waiting.pressed(ApprovalKey::Choose, &mut task, &daemon),
+        WhatThePressDid::Nothing
+    );
+    assert!(daemon.approved.borrow().is_empty(), "Enter approved it");
+    assert!(daemon.declined.borrow().is_empty(), "Enter declined it");
+    assert!(
+        waiting.is_asking(),
+        "the question was taken down unanswered"
+    );
+}
+
+/// **Both answers are reachable, and Tab reaches them in reading order.**
+#[test]
+fn tab_moves_between_the_two_answers() {
+    let daemon = ADaemon::holding(vec![standing(7, "Rename march.pdf")]);
+    let mut task = a_task();
+    let mut waiting = AChangeWaiting::nothing_yet();
+    waiting.arrived(&mut task, &daemon);
+
+    assert_eq!(
+        waiting.pressed(ApprovalKey::NextAnswer, &mut task, &daemon),
+        WhatThePressDid::ItMoved
+    );
+    assert_eq!(waiting.selected(), Some(WhichAnswer::AllowOnce));
+
+    waiting.pressed(ApprovalKey::NextAnswer, &mut task, &daemon);
+    assert_eq!(waiting.selected(), Some(WhichAnswer::Deny));
+
+    // And back, because with two answers next and previous are one move.
+    waiting.pressed(ApprovalKey::PreviousAnswer, &mut task, &daemon);
+    assert_eq!(waiting.selected(), Some(WhichAnswer::AllowOnce));
+}
+
+/// Choosing the selected answer sends it, by the number the daemon gave.
+#[test]
+fn choosing_an_answer_sends_that_answer() {
+    let daemon = ADaemon::holding(vec![standing(7, "Rename march.pdf")]);
+    let mut task = a_task();
+    let mut waiting = AChangeWaiting::nothing_yet();
+    waiting.arrived(&mut task, &daemon);
+
+    waiting.pressed(ApprovalKey::NextAnswer, &mut task, &daemon);
+    let did = waiting.pressed(ApprovalKey::Choose, &mut task, &daemon);
+    assert!(matches!(did, WhatThePressDid::ItWasAnswered(Some(_))));
+    assert_eq!(*daemon.approved.borrow(), [7]);
+    assert!(!waiting.is_asking());
+    assert_eq!(
+        waiting.selected(),
+        None,
+        "a selection outlived its question"
+    );
+}
+
+/// **Escape says no**, whatever is selected and whether or not anything is.
+///
+/// Leaving a question a person did not answer is a refusal rather than a
+/// maybe, which is what `alo_access::leaving` says Escape means here.
+#[test]
+fn escape_declines_whatever_is_selected() {
+    let daemon = ADaemon::holding(vec![standing(4, "Delete everything")]);
+    let mut task = a_task();
+    let mut waiting = AChangeWaiting::nothing_yet();
+    waiting.arrived(&mut task, &daemon);
+
+    // Nothing selected, and it still says no.
+    let did = waiting.pressed(ApprovalKey::Decline, &mut task, &daemon);
+    assert!(matches!(did, WhatThePressDid::ItWasAnswered(Some(_))));
+    assert_eq!(*daemon.declined.borrow(), [4]);
+    assert!(daemon.approved.borrow().is_empty());
+}
+
+/// A press with no question in front of the person does nothing, which is a
+/// window somebody left open and came back to.
+#[test]
+fn a_press_with_nothing_waiting_does_nothing() {
+    let daemon = ADaemon::holding(Vec::new());
+    let mut task = a_task();
+    let mut waiting = AChangeWaiting::nothing_yet();
+
+    for key in [
+        ApprovalKey::NextAnswer,
+        ApprovalKey::Choose,
+        ApprovalKey::Decline,
+    ] {
+        assert_eq!(
+            waiting.pressed(key, &mut task, &daemon),
+            WhatThePressDid::Nothing
+        );
+    }
+    assert!(daemon.approved.borrow().is_empty());
+    assert!(daemon.declined.borrow().is_empty());
 }
