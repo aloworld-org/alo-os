@@ -203,6 +203,12 @@ thiserror.workspace = true
 zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
 drm = "=0.14.1"
 
+[dev-dependencies]
+# Read by `a_change_waiting_reaches_the_person`'s stand-in daemon, which builds
+# its waiting changes from the wire form a real daemon sends rather than from a
+# constructor only tests call — so the test breaks if that shape drifts.
+serde_json = "1"
+
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 # The agent's own reader, used to read this machine's tree back off the bus:
 # one description, read by the reader a blind person uses and by the one an

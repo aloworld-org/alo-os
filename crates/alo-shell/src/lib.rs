@@ -71,6 +71,7 @@
 
 #![cfg(target_os = "linux")]
 
+pub mod a_change_waiting_reaches_the_person;
 /// The chord that asks why a command is waiting, which was the only road to an
 /// answer that was already built.
 mod a_chord_asks_why_a_command_is_waiting;

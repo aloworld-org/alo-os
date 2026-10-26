@@ -106,6 +106,9 @@ pub mod unpairing;
 pub mod where_the_door_is;
 pub mod words;
 
+/// Re-exported because [`Answering::waiting`] hands these back: a caller
+/// that cannot name one cannot hold it in a signature or a test.
+pub use alo_protocol::{Done, Standing};
 pub use answered::Answered;
 pub use answering::Answering;
 #[cfg(unix)]
