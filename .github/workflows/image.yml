@@ -30,6 +30,11 @@
 #   an agent or a workflow runs on. An unsigned push is a candidate, not a
 #   publish — nothing pins it, and no installer writes it to a disk;
 # - run unless a person asks it to, or from anything but main;
+# - build while any branch but main exists in this repository. The owner's rule
+#   of 2026-10-26, in CLAUDE.md: a real image carries everything, so every
+#   branch is merged or deleted first. A walk image built on a lane's own
+#   machine to try a branch before it merges is not this road and is never
+#   published;
 # - push a release whose tag already exists. A published tag never moves, so a
 #   candidate for a version already in the registry is refused before it is
 #   built;
@@ -56,6 +61,28 @@ jobs:
       REGISTRY: ghcr.io/aloworld-org/alo-os
     steps:
       - uses: actions/checkout@v4
+
+      # **First, before anything is built: every branch has reached main.**
+      #
+      # Fails closed. The list is read into a variable on its own, so a GitHub
+      # that cannot be asked stops the job here rather than reading as *no
+      # branches*; and the list must name main, so an answer that came back
+      # empty is refused rather than believed.
+      - name: Refuse while any branch is unmerged
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          names=$(gh api --paginate "repos/${{ github.repository }}/branches" --jq '.[].name')
+          if ! printf '%s\n' "$names" | grep -qx main; then
+            echo "the branch list did not name main, so it was not read and nothing is built" >&2
+            exit 1
+          fi
+          others=$(printf '%s\n' "$names" | grep -vx main || true)
+          if [ -n "$others" ]; then
+            echo "an image is built only once every branch has reached main; these have not:" >&2
+            printf '  %s\n' $others >&2
+            exit 1
+          fi
 
       # The product version is the year and the month (ADR 0097, accepted
       # 2026-10-08). The pattern below read three numbers until 2026-10-21 and
