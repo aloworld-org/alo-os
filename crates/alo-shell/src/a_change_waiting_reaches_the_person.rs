@@ -11,7 +11,7 @@
 //!
 //! Walking a booted machine on 2026-10-25 it said *a change is waiting for you
 //! to answer, as number 0* and there was nothing on the machine to answer with
-//! — `docs/walks/2026-10-25-the-first-walk.md`.
+//! — `docs/walks/the-first-walk.md`.
 //!
 //! # What it holds, and why it is one and not a list
 //!
