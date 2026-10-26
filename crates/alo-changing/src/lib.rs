@@ -90,6 +90,7 @@
 
 #[cfg(unix)]
 pub mod answered;
+pub mod answering;
 pub mod changing;
 #[cfg(unix)]
 pub mod door;
@@ -106,6 +107,7 @@ pub mod where_the_door_is;
 pub mod words;
 
 pub use answered::Answered;
+pub use answering::Answering;
 #[cfg(unix)]
 pub use changing::Changing;
 #[cfg(unix)]

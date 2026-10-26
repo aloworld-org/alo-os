@@ -42,6 +42,7 @@ use alo_nearby::MachineId;
 use alo_protocol::{AfterRevoking, FromAPerson, Standing, ToAPerson};
 
 use crate::answered::Answered;
+use crate::answering::Answering;
 use crate::knocking::Knocking;
 use crate::seen_pairing::SeenPairing;
 use crate::stood::Stood;
@@ -95,46 +96,6 @@ impl TheDaemonsDoor {
                 .filter_map(SeenPairing::told)
                 .collect(),
         )
-    }
-
-    /// Everything proposed and not yet answered, in the order it was asked —
-    /// or [`None`] when no daemon answered.
-    ///
-    /// **The list the turn holds, not one assembled beside it**, which is what
-    /// `alo_protocol::ToAPerson::waiting` exists to guarantee: each change
-    /// carries its own number, its own sentence in the language the person
-    /// reads, how long is left to answer it, and which machine proposed it.
-    /// A surface draws those and invents nothing.
-    #[must_use]
-    pub fn waiting(&self) -> Option<Vec<Standing>> {
-        match self.asked(&FromAPerson::Waiting).ok()? {
-            ToAPerson::Waiting { changes } => Some(changes),
-            // Any other answer is not one this request can earn.
-            _ => None,
-        }
-    }
-
-    /// The person approved the change standing under this number.
-    ///
-    /// **Worth exactly one execution**, and that is not this crate's rule to
-    /// keep: `alo_capability::Approved::redeem` keeps it, and a second answer
-    /// to the same number is refused there. This sends one line and reports
-    /// what came back.
-    ///
-    /// [`None`] when no daemon answered. [`Some`] carries what the change did,
-    /// or the daemon's own refusal in its own words — a surface shows that
-    /// text rather than deciding what it meant.
-    #[must_use]
-    pub fn approve(&self, number: u64) -> Option<Answered> {
-        self.answer(&FromAPerson::Approve { number })
-    }
-
-    /// The person said no to the change standing under this number.
-    ///
-    /// Nothing is carried about why, because nothing was asked.
-    #[must_use]
-    pub fn decline(&self, number: u64) -> Option<Answered> {
-        self.answer(&FromAPerson::Decline { number })
     }
 
     /// What an approve or a decline came back as.
@@ -244,5 +205,45 @@ impl Knocking for TheDaemonsDoor {
     /// sign-in — see this module's header for why that is the honest floor.
     fn knock(&self) -> Stood {
         self.answered().unwrap_or(Stood::AtTheNextSignIn)
+    }
+}
+
+/// The running daemon, asked what is waiting and told the answer.
+impl Answering for TheDaemonsDoor {
+    /// Everything proposed and not yet answered, in the order it was asked —
+    /// or [`None`] when no daemon answered.
+    ///
+    /// **The list the turn holds, not one assembled beside it**, which is what
+    /// `alo_protocol::ToAPerson::waiting` exists to guarantee: each change
+    /// carries its own number, its own sentence in the language the person
+    /// reads, how long is left to answer it, and which machine proposed it.
+    /// A surface draws those and invents nothing.
+    fn waiting(&self) -> Option<Vec<Standing>> {
+        match self.asked(&FromAPerson::Waiting).ok()? {
+            ToAPerson::Waiting { changes } => Some(changes),
+            // Any other answer is not one this request can earn.
+            _ => None,
+        }
+    }
+
+    /// The person approved the change standing under this number.
+    ///
+    /// **Worth exactly one execution**, and that is not this crate's rule to
+    /// keep: `alo_capability::Approved::redeem` keeps it, and a second answer
+    /// to the same number is refused there. This sends one line and reports
+    /// what came back.
+    ///
+    /// [`None`] when no daemon answered. [`Some`] carries what the change did,
+    /// or the daemon's own refusal in its own words — a surface shows that
+    /// text rather than deciding what it meant.
+    fn approve(&self, number: u64) -> Option<Answered> {
+        self.answer(&FromAPerson::Approve { number })
+    }
+
+    /// The person said no to the change standing under this number.
+    ///
+    /// Nothing is carried about why, because nothing was asked.
+    fn decline(&self, number: u64) -> Option<Answered> {
+        self.answer(&FromAPerson::Decline { number })
     }
 }
