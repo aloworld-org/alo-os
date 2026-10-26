@@ -57,14 +57,23 @@ fn what_was_said() -> Vec<crate::task_text::WhatWasSaid<'static>> {
         crate::task_text::WhatWasSaid {
             whose: alo_tasks::WhoseBlock::ThePersons,
             words: "Make a six-slide launch presentation from these two files.",
+            // Nothing fills these yet: a proposal is drawn as words
+            // and its two answers are not under it.
+            answers: None,
         },
         crate::task_text::WhatWasSaid {
             whose: alo_tasks::WhoseBlock::Alos,
             words: "I\u{2019}ll read the two files, shape the story, and build a draft.",
+            // Nothing fills these yet: a proposal is drawn as words
+            // and its two answers are not under it.
+            answers: None,
         },
         crate::task_text::WhatWasSaid {
             whose: alo_tasks::WhoseBlock::AnAccount,
             words: "Reading your documents",
+            // Nothing fills these yet: a proposal is drawn as words
+            // and its two answers are not under it.
+            answers: None,
         },
     ]
 }

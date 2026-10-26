@@ -124,6 +124,28 @@ pub struct WhatWasSaid<'a> {
     pub whose: alo_tasks::WhoseBlock,
     /// The words, already in the language the person reads.
     pub words: &'a str,
+    /// The two answers under it, when this block is a change waiting to be
+    /// answered, and [`None`] for everything else said in a conversation.
+    ///
+    /// **A proposal is the one thing said in a conversation that a person
+    /// acts on**, so it is the one thing that carries anything beyond its
+    /// words.
+    pub answers: Option<TheTwoAnswers<'a>>,
+}
+
+/// The two answers drawn under a proposal, and which one the keyboard is on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TheTwoAnswers<'a> {
+    /// *Allow once*, in the language the person reads.
+    pub allow_once: &'a str,
+    /// *Deny*, in the language the person reads.
+    pub deny: &'a str,
+    /// Which one is selected, and [`None`] until they move to one.
+    ///
+    /// **Nothing is preselected**, so this is `None` when a question first
+    /// appears — and a drawing that marked one anyway would be showing an
+    /// answer the person has not chosen.
+    pub selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
 }
 
 /// One thing to be written into the window.

@@ -151,6 +151,9 @@ impl TheTasksWords {
                     .map(|(whose, words)| WhatWasSaid {
                         whose: *whose,
                         words,
+                        // Nothing fills these yet: a proposal is drawn as words
+                        // and its two answers are not under it.
+                        answers: None,
                     })
                     .collect(),
             })
