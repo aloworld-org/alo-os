@@ -44,13 +44,37 @@ Asked three times for something to be **read**, alo three times proposed a
 | list my documents folder | install `org.kde.krita` from flathub |
 | list my pictures folder | archive `/home/alo/Pictures/` into `/home/alo/Documents/` |
 
-**The cause is the text a turn shows.** `Instructions::SHOWN_TO_A_TURN` is
-`OneExamplePerDoor`, whose first sentence is *"Answer with one line of JSON and
-nothing else: no explanation, no code fence, no second line."* The paragraph
-that tells a model it may look first — *"send a read line first; you will be
-shown its answer"* — is in `SeveralSteps`, which a turn does not show. So a
-model asked anything it must look up has no way to look, and sends the only
-other shape it knows.
+**The cause is not known, and the first answer given here was wrong.**
+
+This report originally said the cause was the text a turn shows:
+`Instructions::SHOWN_TO_A_TURN` is `OneExamplePerDoor`, whose first sentence is
+*"Answer with one line of JSON and nothing else: no explanation, no code fence,
+no second line."*, while the paragraph permitting a model to look first lives in
+`SeveralSteps`, which a turn does not show. It is a tidy explanation and it fits
+all three observations above.
+
+**It does not survive measurement.** `does_a_model_look_before_it_proposes`
+asks a question built to require looking — *the only PDF in a folder, name not
+remembered* — and under `OneExamplePerDoor`, the very text accused here,
+`gpt-4o` went through the **read** door in **5 of 5** rounds. A model shown that
+text looks first perfectly well.
+
+So the three proposals above have some other cause, and what distinguishes the
+walk from the measurement is still open. The most visible difference is the
+request: the walk asked short, vague things — *"what is in my documents
+folder"* — where the exercise is specific about what it wants and about what it
+does not know. Whether that is the difference has not been measured.
+
+**What is now known, and was not before:**
+
+- a model shown the current text **does** look before proposing, reliably;
+- the fault is therefore not that a turn forbids looking;
+- `SeveralSteps` tells a model *"You may send more than one line"* and
+  `alo_protocol::FromAnAgent::read` refuses exactly that with
+  `MoreThanOneMessage` — the instructions and the protocol disagree, which is
+  worth its own investigation and was found only by running this;
+- a measurement of one sample is worthless here: three runs of this exercise
+  gave three different pictures before rounds were added.
 
 ### What this walk ruled out, and this is the useful part
 
@@ -85,7 +109,11 @@ every candidate maxes out does not choose between them.*
 with `ALO_PROVIDER_INSTRUCTIONS=several-steps`, which is `#[ignore]`d because it
 leaves the machine.
 
-## Why the fix was not landed
+## Why the one-line change was not landed, and why it would not have helped
+
+**It would not have fixed this.** See the correction above: the text it would
+have replaced is not what stopped the walk. The section is kept because the
+guard tests it ran into are worth knowing about.
 
 `SHOWN_TO_A_TURN = SeveralSteps` is one line, and three guard tests refuse it:
 
