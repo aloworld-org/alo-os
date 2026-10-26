@@ -89,6 +89,7 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 #[cfg(unix)]
+pub mod answered;
 pub mod changing;
 #[cfg(unix)]
 pub mod door;
@@ -104,6 +105,7 @@ pub mod unpairing;
 pub mod where_the_door_is;
 pub mod words;
 
+pub use answered::Answered;
 #[cfg(unix)]
 pub use changing::Changing;
 #[cfg(unix)]
