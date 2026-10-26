@@ -7,6 +7,7 @@ use super::ATask;
 use crate::activity::Act;
 use crate::changed::WhatChanged;
 use crate::conversation::Turn;
+use crate::permissions::Answered;
 
 /// A provider, as a person would name it.
 fn a_provider() -> InferenceSource {
@@ -212,4 +213,72 @@ fn a_finished_task_says_complete() {
     task.alo_says(Turn::from_alo("Your presentation is ready."));
 
     assert_eq!(task.what_is_happening(), crate::words::COMPLETE);
+}
+
+/// **A task carries the question and hands back the answer**, and the sentence
+/// it shows is the one it was given, unchanged.
+#[test]
+fn a_task_can_be_asked_and_answers_once() {
+    let mut task = a_task();
+    assert_eq!(task.permissions().asking(), None);
+
+    let sentence = "Rename march.pdf to invoice-march.pdf in /home/anna/Invoices";
+    task.is_asking(sentence);
+    assert_eq!(task.permissions().asking(), Some(sentence));
+
+    assert_eq!(task.allow_once(), Answered::AllowedOnce);
+    assert_eq!(
+        task.permissions().asking(),
+        None,
+        "the question stayed up after it was answered"
+    );
+}
+
+/// **A second press is not a refusal the person made.** A stale window and a
+/// double press both arrive here, and answering them *Denied* would record a
+/// no that nobody said.
+#[test]
+fn answering_twice_says_nothing_was_asked_rather_than_denied() {
+    let mut task = a_task();
+    task.is_asking("Rename march.pdf");
+    assert_eq!(task.allow_once(), Answered::AllowedOnce);
+
+    assert_eq!(task.allow_once(), Answered::NothingWasAsked);
+    assert_eq!(task.deny(), Answered::NothingWasAsked);
+}
+
+/// Saying no is its own answer and leaves nothing behind.
+#[test]
+fn denying_answers_the_question_and_keeps_nothing() {
+    let mut task = a_task();
+    task.is_asking("Delete everything in /home/anna");
+    assert_eq!(task.deny(), Answered::Denied);
+    assert_eq!(task.permissions().asking(), None);
+}
+
+/// **Allowing once widens nothing**, which is why `ThePermissions` can answer
+/// a question without any way to grant.
+///
+/// The failure this refuses is the kind-sounding one — *they allowed it once,
+/// so stop asking* — and it is how an approval becomes a session. So the next
+/// question is asked exactly as the first was, and the standing grants the
+/// task holds are no more numerous after a yes than before it.
+#[test]
+fn allowing_once_does_not_widen_what_the_task_holds() {
+    let mut task = a_task();
+    let held_before = task.permissions().how_many_grants();
+
+    task.is_asking("Rename march.pdf");
+    assert_eq!(task.allow_once(), Answered::AllowedOnce);
+    assert_eq!(
+        task.permissions().how_many_grants(),
+        held_before,
+        "saying yes once granted something standing"
+    );
+
+    // Asked again, it asks again: a yes did not become a session.
+    task.is_asking("Rename april.pdf");
+    assert_eq!(task.permissions().asking(), Some("Rename april.pdf"));
+    assert_eq!(task.deny(), Answered::Denied);
+    assert_eq!(task.permissions().how_many_grants(), held_before);
 }

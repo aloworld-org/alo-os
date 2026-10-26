@@ -21,7 +21,7 @@ use alo_models::InferenceSource;
 
 use crate::activity::{Act, TheActivity};
 use crate::conversation::{TheConversation, Turn};
-use crate::permissions::ThePermissions;
+use crate::permissions::{Answered, ThePermissions};
 use crate::stopping::Stopping;
 use crate::which_model::WhichModel;
 
@@ -112,6 +112,32 @@ impl ATask {
     #[must_use]
     pub const fn stopping(&self) -> &Stopping {
         &self.stopping
+    }
+
+    /// A change is waiting for this person, and this is the sentence they
+    /// answer.
+    ///
+    /// **The sentence is taken whole.** It arrives already worded by whoever
+    /// proposed the change, in the language the person reads, and nothing here
+    /// shortens it, heads it or rewraps it into a different claim — what a
+    /// person approves is that sentence, so a task that edited it would be
+    /// asking a different question from the one that will be carried out.
+    pub fn is_asking(&mut self, sentence: impl Into<String>) {
+        self.permissions.is_asking(sentence);
+    }
+
+    /// They allowed the one action being asked about. **Nothing is widened.**
+    ///
+    /// Answers [`crate::Answered::NothingWasAsked`] when nothing was, which is
+    /// a stale window or a second press and is not a refusal the person made.
+    pub fn allow_once(&mut self) -> Answered {
+        self.permissions.allow_once()
+    }
+
+    /// They said no. Nothing happened, and nothing is recorded about why,
+    /// because nothing was asked.
+    pub fn deny(&mut self) -> Answered {
+        self.permissions.deny()
     }
 
     /// A follow-up, which stays in this window.
