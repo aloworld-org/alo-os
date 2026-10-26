@@ -9,7 +9,7 @@ use smithay::{
         GesturePinchUpdateEvent, MotionEvent, PointerHandle,
     },
     reexports::wayland_server::{Resource, protocol::wl_surface::WlSurface},
-    utils::{Logical, Point, SERIAL_COUNTER, Serial},
+    utils::{Logical, Physical, Point, SERIAL_COUNTER, Serial},
     wayland::compositor::get_parent,
 };
 
@@ -261,6 +261,20 @@ impl Server {
                 return Ok(false);
             }
             self.the_overflow_closes();
+            // **A press on a task window gives it the keyboard, and goes no
+            // further.** A task window is the shell's, drawn over the
+            // applications, so a press on it was never a press on whatever
+            // application is underneath — until 2026-10-26 it fell through to
+            // that application, because nothing hit-tested a task window at
+            // all. Ordinary focus, settled by the owner the same day: the
+            // window a person clicks has the keyboard.
+            let on_the_screen =
+                Point::<i32, Physical>::from((location.x as i32, location.y as i32));
+            if let Some(which) = self.tasks().the_one_under(on_the_screen) {
+                self.the_composer.it_gave_the_keyboard_up();
+                self.this_task_took_the_keyboard(which);
+                return Ok(false);
+            }
         }
         // **Taking hold of a frame by an edge or a corner**, which is the only way
         // a frame resizes — ADR 0071, and the road that replaces the
@@ -338,6 +352,39 @@ impl Server {
                 return Ok(false);
             }
             self.pointer_motion(location.x, location.y, time)?;
+        }
+        // **A press on an application gives it the keyboard**, and the Bar and
+        // any task window let go — ordinary focus, settled by the owner on
+        // 2026-10-26. Until then a click delivered the press and left the
+        // keyboard wherever it was, so a person who had typed into the Bar and
+        // then clicked into their editor went on typing into the Bar.
+        //
+        // **Not during a popup grab**, which owns its own focus and is
+        // dismissed above when a press lands outside it. **And not again for a
+        // window that already has the keyboard**: activating it twice would
+        // tell the application it lost the keyboard and got it back.
+        if state == ButtonState::Pressed
+            && self.surfaces.popup_grab.is_none()
+            && let Some(location) = self.surfaces.pointer.as_ref().map(|p| p.location)
+            && let Some(window) = self.the_window_under(location)
+        {
+            self.the_composer.it_gave_the_keyboard_up();
+            self.the_task_gave_the_keyboard_up();
+            let already = self
+                .surfaces
+                .keyboard
+                .as_ref()
+                .and_then(|keyboard| keyboard.handle.current_focus());
+            // **The keyboard, and not a raise.** `activate_window` would also
+            // bring the window to the front, and a raise re-hits the pointer,
+            // which sent the application a second motion event in the middle of
+            // a click — `native_reader_pointer_host_routing_excludes_covered_
+            // input_and_drains_inactive_buttons` counts them and caught it.
+            // Whether a click should also stack a window on top is a question
+            // about the canvas, and not one this change was asked.
+            if already.as_ref() != Some(&window) {
+                let _ = self.keyboard_focus(Some(&window));
+            }
         }
         let pointer = self
             .surfaces
@@ -621,6 +668,30 @@ impl Server {
         &self,
         location: Point<f64, Logical>,
     ) -> Option<(WlSurface, Point<f64, Logical>)> {
+        self.what_is_under(location)
+            .map(|(_, surface, origin)| (surface, origin))
+            .filter(|(surface, _)| self.surfaces.popup_allows_pointer(surface))
+    }
+
+    /// The application window under this point, as its root surface, if a
+    /// mapped one is.
+    ///
+    /// **The same hit test as [`Self::pointer_target`]**, through the one
+    /// function both read, so the window a press is delivered to and the window
+    /// that is given the keyboard for it can never be two different windows.
+    /// A popup's own tree is not a window and answers nothing here.
+    pub(crate) fn the_window_under(&self, location: Point<f64, Logical>) -> Option<WlSurface> {
+        self.what_is_under(location)
+            .map(|(root, _, _)| root)
+            .filter(|root| self.surfaces.mapped_toplevel(root).is_some())
+    }
+
+    /// The tree a point lands in: its root, the surface under the point, and
+    /// that surface's origin in the plane's units.
+    fn what_is_under(
+        &self,
+        location: Point<f64, Logical>,
+    ) -> Option<(WlSurface, WlSurface, Point<f64, Logical>)> {
         let on_the_plane = self.surfaces.on_the_plane(location);
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
         crate::scene::trees(&roots, &self.popup_surfaces(), self.the_camera())
@@ -633,9 +704,8 @@ impl Server {
                     (0, 0),
                     WindowSurfaceType::ALL,
                 )
-                .map(|(surface, offset)| (surface, origin + offset.to_f64()))
+                .map(|(surface, offset)| (root.clone(), surface, origin + offset.to_f64()))
             })
-            .filter(|(surface, _)| self.surfaces.popup_allows_pointer(surface))
     }
 }
 

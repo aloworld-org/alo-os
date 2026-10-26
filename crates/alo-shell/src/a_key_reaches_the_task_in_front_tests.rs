@@ -271,3 +271,55 @@ fn a_question_in_another_window_cannot_be_answered_from_this_one() {
         "another window's change was approved"
     );
 }
+
+/// **A click on a task window gives it the keyboard, and the Bar lets go.**
+///
+/// Before 2026-10-26 nothing hit-tested a task window, so a press on one fell
+/// through to whatever application was underneath. The control is that no task
+/// held the keyboard before the click.
+#[test]
+fn a_click_on_a_task_window_gives_it_the_keyboard() {
+    let (_runtime, mut server) = a_session();
+    server.enable_pointer().expect("a pointer on this seat");
+    let which = server.tasks_mut().and_now_this_one(ATask::asked_for(
+        "tidy my invoices",
+        InferenceSource::ThisMachine,
+    ));
+    let view = smithay::utils::Rectangle::new((0, 0).into(), (1280, 800).into());
+    server.tasks_mut().put_whatever_has_nowhere_to_be(
+        view,
+        alo_strings::Direction::LeftToRight,
+        &[],
+    );
+    let window = server
+        .tasks()
+        .where_each_went()
+        .get(which.at())
+        .copied()
+        .flatten()
+        .expect("the task window was placed");
+    server.the_composer.it_took_the_keyboard();
+    assert!(
+        !server.a_task_is_taking_the_keys(),
+        "the control: a task held it already"
+    );
+
+    let (x, y) = (f64::from(window.loc.x + 20), f64::from(window.loc.y + 20));
+    server.pointer_motion(x, y, 1).expect("the pointer moved");
+    let delivered = server
+        .pointer_button(0x110, smithay::backend::input::ButtonState::Pressed, 2)
+        .expect("the press was handled");
+
+    assert!(
+        !delivered,
+        "a press on a task window reached an application behind it"
+    );
+    assert!(
+        server.a_task_is_taking_the_keys(),
+        "the task window did not take the keyboard"
+    );
+    assert!(
+        !server.the_bar_is_taking_the_keys(),
+        "the Bar kept the keyboard"
+    );
+}
