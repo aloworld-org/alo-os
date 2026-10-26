@@ -105,6 +105,9 @@ impl TheDaemonsDoor {
             ToAPerson::Refused(wording) => Some(Answered::Refused {
                 told: wording.text().to_owned(),
             }),
+            // **A decline the daemon kept**, which this read as no answer
+            // until 2026-10-26 — see `Answered::Declined`.
+            ToAPerson::Declined => Some(Answered::Declined),
             _ => None,
         }
     }

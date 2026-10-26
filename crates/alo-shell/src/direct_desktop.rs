@@ -862,7 +862,7 @@ impl LoopInput for Desk<'_> {
                 // routed a key to a task window at all.
                 else if server.a_task_is_taking_the_keys() {
                     crate::a_key_reaches_the_task_in_front::a_key_reaches_the_task(
-                        server, update, extent,
+                        server, update, extent, strings,
                     )
                 }
                 // **Escape closes what the Dock has open**, and only then.

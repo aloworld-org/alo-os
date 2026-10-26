@@ -52,8 +52,36 @@ pub const DENY: Word = Word::saying("the-card.deny", "Deny").noting(
      is secondary — both are equally reachable and neither is behind anything.",
 );
 
+/// What the conversation says once an allowed change was carried out.
+pub const IT_WAS_DONE: Word = Word::saying("the-card.it-was-done", "Done.").noting(
+    "Said by the agent in the conversation straight after the person pressed Allow once and the \
+     machine carried the change out. The change itself is the sentence on the card just above, \
+     so this says only that it happened. Say it only as a completed fact — not \"working on it\", \
+     not \"will do\".",
+);
+
+/// What the conversation says once the person said no.
+pub const YOU_SAID_NO: Word =
+    Word::saying("the-card.you-said-no", "You said no, so nothing was changed.").noting(
+        "Said by the agent in the conversation straight after the person pressed Deny and the \
+         machine recorded it. Both halves matter: it was the person's choice, and nothing on the \
+         computer changed because of the request. It is not an error and should not read as one, \
+         and it does not ask why.",
+    );
+
+/// What the conversation says when the machine gave no answer at all.
+pub const NO_WORD_BACK: Word = Word::saying(
+    "the-card.no-word-back",
+    "This computer did not say what happened to that change.",
+)
+.noting(
+    "Said in the conversation when the person answered and the part of alo OS that carries changes \
+     out never replied. It must not suggest the change was or was not made: nobody knows, and that \
+     is the whole message.",
+);
+
 /// Every string this file declares, in the order a translator meets them.
-pub const THE_CARDS_WORDS: [Word; 2] = [ALLOW_ONCE, DENY];
+pub const THE_CARDS_WORDS: [Word; 5] = [ALLOW_ONCE, DENY, IT_WAS_DONE, YOU_SAID_NO, NO_WORD_BACK];
 
 /// Why this file's words could not be declared.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]

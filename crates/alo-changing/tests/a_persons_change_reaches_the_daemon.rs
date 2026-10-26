@@ -475,3 +475,50 @@ fn a_grant_the_machine_refuses_is_not_written_and_not_knocked() {
     assert!(grants.is_empty());
     assert!(!refused.said(&in_english()).is_a_bug());
 }
+
+/// A daemon on this socket that reads one line, answers it with `answer`
+/// when there is one, and closes.
+fn a_daemon_answering_once(
+    socket: &Path,
+    answer: Option<ToAPerson>,
+) -> std::thread::JoinHandle<String> {
+    let listener = UnixListener::bind(socket).unwrap();
+    std::thread::spawn(move || {
+        let (stream, _) = listener.accept().unwrap();
+        let mut line = String::new();
+        BufReader::new(&stream).read_line(&mut line).unwrap();
+        if let Some(answer) = answer {
+            (&stream)
+                .write_all(answer.written().unwrap().as_bytes())
+                .unwrap();
+            (&stream).write_all(b"\n").unwrap();
+        }
+        line
+    })
+}
+
+/// **A decline the daemon kept is told apart from no answer at all.** Until
+/// 2026-10-26 this door read `Declined` as nothing, so a person who pressed
+/// Deny could not be told it was kept. The control is a daemon that closes
+/// without a word, which is still nothing.
+#[test]
+fn a_decline_the_daemon_kept_is_not_read_as_no_answer() {
+    use alo_changing::{Answered, Answering};
+    let folder = a_folder_of_our_own("declined");
+
+    let socket = folder.join("kept.sock");
+    let daemon = a_daemon_answering_once(&socket, Some(ToAPerson::Declined));
+    let answered = TheDaemonsDoor::at(&socket).decline(7);
+    let asked = daemon.join().unwrap();
+    assert_eq!(answered, Some(Answered::Declined));
+    assert!(
+        FromAPerson::read(asked.trim_end()).unwrap() == FromAPerson::Decline { number: 7 },
+        "the door asked something other than a decline of 7: {asked}"
+    );
+
+    let silent = folder.join("silent.sock");
+    let daemon = a_daemon_answering_once(&silent, None);
+    let answered = TheDaemonsDoor::at(&silent).decline(7);
+    daemon.join().unwrap();
+    assert_eq!(answered, None, "a daemon that said nothing was read as an answer");
+}

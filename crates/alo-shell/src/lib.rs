@@ -423,6 +423,7 @@ pub mod what_a_person_asked_goes_to_the_agent;
 /// From *a person asked for this application* to *it is here*.
 pub mod what_a_person_installs;
 pub mod what_alo_asks_about_a_command;
+mod what_an_answer_did;
 /// Which window each of the three acts asks for, decided without a compositor.
 mod what_an_application_act_asks_for;
 #[cfg(test)]
