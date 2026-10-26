@@ -75,6 +75,7 @@ pub mod a_change_waiting_reaches_the_person;
 /// The chord that asks why a command is waiting, which was the only road to an
 /// answer that was already built.
 mod a_chord_asks_why_a_command_is_waiting;
+mod a_chord_in_a_task_window;
 mod a_chord_moves_between_applications;
 mod a_chord_moves_the_keyboard_between_areas;
 mod a_chord_opens_a_terminal;

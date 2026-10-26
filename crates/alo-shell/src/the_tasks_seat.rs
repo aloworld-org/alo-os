@@ -24,6 +24,10 @@
 //! being typed. One reading of the symbol yields both meanings it can have
 //! here — as typing, and as an answer to a waiting change — and
 //! `crate::a_key_reaches_the_task_in_front` decides which applies.
+//!
+//! **Except a shortcut**, which is carried out rather than typed:
+//! `crate::a_chord_in_a_task_window` says why, and which ones take the keyboard
+//! with them.
 
 use smithay::{backend::input::KeyState, input::keyboard::FilterResult, utils::SERIAL_COUNTER};
 
@@ -32,13 +36,22 @@ use crate::composer_keys::{ComposerKey, Composing};
 use crate::the_tasks_a_person_opened::WhichTask;
 use crate::{InputError, Server};
 
+/// What the seat took from one press while a task window held the keyboard.
+enum TheTaskTook {
+    /// A shortcut this person has bound, to be carried out rather than typed.
+    AChord(alo_shortcuts::Chord),
+    /// A key, as typing and as an answer to a waiting change.
+    AKey(ComposerKey, ApprovalKey),
+}
+
 impl Server {
     /// What one key means to the task window holding the keyboard, as typing
     /// and as an answer, or [`None`] where it is not a press.
     ///
-    /// **Built from `Server::the_bars_key`, line for line**, because the two
-    /// answer the same question about the same seat. What differs is that this
-    /// reads the symbol twice over, once in each vocabulary a task window has.
+    /// **Built from `Server::the_bars_key`**, because the two answer the same
+    /// question about the same seat. What differs is that this reads the symbol
+    /// twice over, once in each vocabulary a task window has, and that a bound
+    /// shortcut is carried out here and answers [`None`].
     ///
     /// # Errors
     /// [`InputError::Unavailable`] for a display bound without a keyboard, and
@@ -64,28 +77,49 @@ impl Server {
         if handle.pressed_keys().contains(&code) == (state == KeyState::Pressed) {
             return Ok(None);
         }
-        let meant = handle.input::<Option<(ComposerKey, ApprovalKey)>, _>(
+        // **A shortcut is asked about first**, inside the same filter and for
+        // `crate::keyboard`'s reason: this call is what advances XKB, so the
+        // modifiers are this press's own. Taken out and put back so the filter
+        // can read them while the seat holds `surfaces`.
+        let shortcuts = self.shortcuts.take();
+        let meant = handle.input::<Option<TheTaskTook>, _>(
             &mut self.surfaces,
             code,
             state,
             SERIAL_COUNTER.next_serial(),
             time,
             |_, held, symbol| {
-                FilterResult::Intercept((state == KeyState::Pressed).then(|| {
-                    let symbol = symbol.modified_sym();
-                    // `Composing::No` for `the_bars_key`'s reason: this
-                    // compositor runs no input method.
-                    (
-                        ComposerKey::of(symbol, held, Composing::No),
-                        ApprovalKey::of(symbol, held),
-                    )
-                }))
+                if state != KeyState::Pressed {
+                    return FilterResult::Intercept(None);
+                }
+                if let Some(chord) = Self::the_chord_a_key_makes(shortcuts.as_ref(), &symbol, held)
+                {
+                    return FilterResult::Intercept(Some(TheTaskTook::AChord(chord)));
+                }
+                let symbol = symbol.modified_sym();
+                // `Composing::No` for `the_bars_key`'s reason: this
+                // compositor runs no input method.
+                FilterResult::Intercept(Some(TheTaskTook::AKey(
+                    ComposerKey::of(symbol, held, Composing::No),
+                    ApprovalKey::of(symbol, held),
+                )))
             },
         );
+        self.shortcuts = shortcuts;
         if let Some(keyboard) = self.surfaces.keyboard.as_mut() {
             keyboard.time = time;
         }
-        Ok(meant.flatten())
+        match meant.flatten() {
+            // **Carried out here and never typed**, so a shortcut does what it
+            // names in a task window as it does everywhere else —
+            // `crate::a_chord_in_a_task_window` has the account.
+            Some(TheTaskTook::AChord(chord)) => {
+                let _ = self.a_chord_in_a_task_window(chord);
+                Ok(None)
+            }
+            Some(TheTaskTook::AKey(typed, answering)) => Ok(Some((typed, answering))),
+            None => Ok(None),
+        }
     }
 
     /// Whether a task window is the thing taking keys right now.
