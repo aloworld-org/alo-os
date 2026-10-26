@@ -90,7 +90,9 @@
 
 #[cfg(unix)]
 pub mod answered;
+#[cfg(unix)]
 pub mod answering;
+#[cfg(unix)]
 pub mod changing;
 #[cfg(unix)]
 pub mod door;
@@ -108,8 +110,14 @@ pub mod words;
 
 /// Re-exported because [`Answering::waiting`] hands these back: a caller
 /// that cannot name one cannot hold it in a signature or a test.
+///
+/// **Unix only, as the wire is**: `alo-protocol` is a Unix dependency of this
+/// crate, because the daemon's door is a Unix socket.
+#[cfg(unix)]
 pub use alo_protocol::{Done, Standing};
+#[cfg(unix)]
 pub use answered::Answered;
+#[cfg(unix)]
 pub use answering::Answering;
 #[cfg(unix)]
 pub use changing::Changing;
