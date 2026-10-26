@@ -359,6 +359,19 @@ pub struct Server {
     /// **Empty until somebody asks for something**, which is the honest state
     /// of a machine nobody has spoken to.
     pub(crate) the_tasks: crate::the_tasks_a_person_opened::TheTasks,
+    /// The change waiting for this person to answer, and which answer their
+    /// keyboard is on.
+    ///
+    /// **One per machine and not one per task**, for the reason the composer
+    /// below gives about the keyboard: there is one person reading, so there
+    /// is one question, whichever task proposed it. Settled by the owner on
+    /// 2026-10-26.
+    ///
+    /// `alo_tasks::permissions` is why it is not a queue — *a list of pending
+    /// approvals is a list a person clears by clicking, and clicking through
+    /// is how somebody approves the fourth one without reading it.* Nothing is
+    /// lost: the daemon holds the rest, and answering one brings up the next.
+    pub(crate) the_change_waiting: crate::a_change_waiting_reaches_the_person::AChangeWaiting,
     /// The Dock's composer, as a field a person types a request into.
     ///
     /// **One per machine and not one per display**, because there is one
@@ -651,6 +664,8 @@ impl Server {
             the_settings_entry_is_called: String::new(),
             the_applications_entry_is_called: String::new(),
             the_tasks: crate::the_tasks_a_person_opened::TheTasks::none_yet(),
+            the_change_waiting:
+                crate::a_change_waiting_reaches_the_person::AChangeWaiting::nothing_yet(),
             the_composer: crate::the_composer_a_person_types_in::TheComposer::empty(),
             asked_alo: Vec::new(),
             edges_revealed: Vec::new(),

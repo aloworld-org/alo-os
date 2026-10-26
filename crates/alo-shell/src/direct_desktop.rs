@@ -1207,7 +1207,16 @@ impl LoopInput for Desk<'_> {
         for came in self.asking.whatever_came_back() {
             match came.who {
                 crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(which) => {
-                    if let Some(task) = server.tasks_mut().the_mut(which) {
+                    // **The fields, not the methods.** `tasks_mut` borrows the
+                    // whole server and the question lives on it too; taken
+                    // directly, the compiler can see they are different
+                    // fields.
+                    let waiting = &mut server.the_change_waiting;
+                    let daemon = server
+                        .settings_places
+                        .as_ref()
+                        .map(|places| alo_changing::TheDaemonsDoor::at(places.daemon()));
+                    if let Some(task) = server.the_tasks.the_mut(which) {
                         // The machine failing and the agent answering are told
                         // apart, because a person reads them differently: an
                         // answer belongs in the conversation and *this machine
@@ -1217,6 +1226,15 @@ impl LoopInput for Desk<'_> {
                             task.and_then(alo_tasks::Act::done(came.said));
                         } else {
                             task.alo_says(alo_tasks::Turn::from_alo(came.said));
+                        }
+                        // **And whatever the daemon is holding for them**,
+                        // asked here rather than once a frame: a turn ends
+                        // either by answering or by leaving a change waiting,
+                        // so this is the moment one might exist. A machine
+                        // nobody told where its daemon is asks nothing, and a
+                        // person sees what they always saw.
+                        if let Some(daemon) = daemon.as_ref() {
+                            waiting.arrived(task, daemon);
                         }
                     }
                 }
