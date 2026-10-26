@@ -53,10 +53,14 @@
 //!
 //! # Two things it turned up that were not being looked for
 //!
-//! - **The instructions and the protocol disagree.** `SeveralSteps` tells a
-//!   model *"You may send more than one line"*; `alo_protocol::FromAnAgent::read`
-//!   refuses exactly that with `MoreThanOneMessage`. A model that does as it is
-//!   told is refused by the reader.
+//! - **A sentence in `SeveralSteps` can be misread, and was.** It says *"You
+//!   may send more than one line, one at a time"*; a model sent two in one
+//!   response and `alo_protocol::FromAnAgent::read` refused it as
+//!   `MoreThanOneMessage`. The two **agree** — the text says a line at a time
+//!   and the refusal means *more than one message where one was expected* — so
+//!   what this found is a sentence worth sharpening, not a contradiction. It
+//!   was written up here as a contradiction first, from seeing the refusal
+//!   once without reading what it meant.
 //! - **One sample here is worthless.** Three runs of this exercise gave three
 //!   different pictures before `rounds` was added, and the first of them agreed
 //!   with the conclusion that turned out to be wrong. That is why the claim
