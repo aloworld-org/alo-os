@@ -50,7 +50,10 @@ use crate::approval_keys::ApprovalKey;
 
 /// The change a person is being asked about, the number to answer it by, and
 /// which answer their keyboard is on.
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+///
+/// **Not `Clone` and not compared whole**, because it holds the socket keeping
+/// the agent's turn open, and there is one of those per question.
+#[derive(Debug, Default)]
 pub struct AChangeWaiting {
     /// The number the daemon answers by, while one is in front of the person.
     number: Option<u64>,
@@ -60,6 +63,13 @@ pub struct AChangeWaiting {
     /// the finger is a question answered by somebody pressing Enter to make a
     /// dialogue go away, which is not an approval of anything.
     selected: Option<WhichAnswer>,
+    /// The socket the request was asked on, which keeps the agent's turn — and
+    /// the change in it — alive while the person reads.
+    ///
+    /// **Let go only after the daemon has carried the answer out**, never
+    /// before: the change is carried out inside the turn, so closing this
+    /// first would end the turn under the very answer it was waiting for.
+    the_turn: Option<std::os::unix::net::UnixStream>,
 }
 
 /// The two answers, in reading order.
@@ -106,7 +116,16 @@ impl AChangeWaiting {
             number: None,
             // **Nothing preselected**, here as well as after every answer.
             selected: None,
+            the_turn: None,
         }
+    }
+
+    /// The question now in front of the person is held open by this socket.
+    ///
+    /// Kept until they answer — see the field — so the agent that proposed it
+    /// keeps its turn, and with it the change, for as long as it is on screen.
+    pub(crate) fn and_its_turn_is_held_by(&mut self, the_turn: std::os::unix::net::UnixStream) {
+        self.the_turn = Some(the_turn);
     }
 
     /// Whether a change is in front of the person now.
@@ -147,7 +166,11 @@ impl AChangeWaiting {
         let number = self.number.take()?;
         self.selected = None;
         task.allow_once();
-        daemon.approve(number)
+        let answered = daemon.approve(number);
+        // **Only now does the agent go**: the change was carried out inside
+        // its turn, so the turn ends after the answer and never under it.
+        self.the_turn = None;
+        answered
     }
 
     /// They said no. Nothing is carried about why, because nothing was asked.
@@ -155,7 +178,9 @@ impl AChangeWaiting {
         let number = self.number.take()?;
         self.selected = None;
         task.deny();
-        daemon.decline(number)
+        let answered = daemon.decline(number);
+        self.the_turn = None;
+        answered
     }
 
     /// Which answer their keyboard is on, and [`None`] until they move to one.
@@ -222,6 +247,7 @@ impl crate::Server {
         which: crate::the_tasks_a_person_opened::WhichTask,
         said: String,
         the_machines_fault: bool,
+        the_turn: Option<std::os::unix::net::UnixStream>,
         daemon: Option<&dyn Answering>,
     ) {
         // **The fields, not the methods**, so the compiler can see the question
@@ -238,8 +264,15 @@ impl crate::Server {
         } else {
             task.alo_says(Turn::from_alo(said));
         }
-        if let Some(daemon) = daemon {
-            waiting.arrived(task, daemon);
+        // **A question that arrived keeps the agent's turn open** until the
+        // person answers it. Anything else — an answer in words, a refusal, a
+        // question already standing, no daemon — lets the agent go now, by
+        // dropping the socket here.
+        if let Some(daemon) = daemon
+            && waiting.arrived(task, daemon) == WhatArrived::AQuestion
+            && let Some(the_turn) = the_turn
+        {
+            waiting.and_its_turn_is_held_by(the_turn);
         }
     }
 }

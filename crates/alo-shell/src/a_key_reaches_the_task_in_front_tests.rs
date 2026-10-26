@@ -12,7 +12,9 @@
 )]
 
 use std::cell::RefCell;
+use std::io::Read as _;
 use std::os::unix::fs::PermissionsExt;
+use std::os::unix::net::UnixStream;
 
 use alo_changing::{Answered, Answering, Done, Standing};
 use alo_models::InferenceSource;
@@ -36,6 +38,37 @@ struct ADaemon {
     holding: Vec<Standing>,
     approved: RefCell<Vec<u64>>,
     declined: RefCell<Vec<u64>>,
+    /// The agent's end of the turn's socket, when a test hands one over.
+    agents_end: Option<UnixStream>,
+    /// Whether the turn was still open each time an answer arrived here.
+    open_when_answered: RefCell<Vec<bool>>,
+}
+
+impl ADaemon {
+    /// Note whether the agent still holds its turn, as the answer arrives.
+    fn notes_the_turn(&self) {
+        if let Some(agents_end) = &self.agents_end {
+            self.open_when_answered
+                .borrow_mut()
+                .push(still_open(agents_end));
+        }
+    }
+}
+
+/// Whether the shell still holds its end: a read that would wait is open, and
+/// one that reads nothing at all is closed.
+fn still_open(agents_end: &UnixStream) -> bool {
+    agents_end
+        .set_nonblocking(true)
+        .expect("the agent's end can be asked without waiting");
+    let open = matches!(
+        (&*agents_end).read(&mut [0_u8; 1]),
+        Err(why) if why.kind() == std::io::ErrorKind::WouldBlock
+    );
+    agents_end
+        .set_nonblocking(false)
+        .expect("the agent's end waits again");
+    open
 }
 
 impl Answering for ADaemon {
@@ -44,11 +77,13 @@ impl Answering for ADaemon {
     }
 
     fn approve(&self, number: u64) -> Option<Answered> {
+        self.notes_the_turn();
         self.approved.borrow_mut().push(number);
         Some(Answered::It(Box::new(Done::Renamed { now_at: None })))
     }
 
     fn decline(&self, number: u64) -> Option<Answered> {
+        self.notes_the_turn();
         self.declined.borrow_mut().push(number);
         Some(Answered::It(Box::new(Done::Renamed { now_at: None })))
     }
@@ -140,7 +175,13 @@ fn tab_reaches_the_answers_and_enter_gives_the_one_selected() {
     let (_runtime, mut server) = a_session();
     let which = a_task_holding_the_keyboard(&mut server);
     let daemon = holding(7, "Rename march.pdf");
-    server.an_answer_came_back(which, "I can do that.".to_owned(), false, Some(&daemon));
+    server.an_answer_came_back(
+        which,
+        "I can do that.".to_owned(),
+        false,
+        None,
+        Some(&daemon),
+    );
 
     press(&mut server, TAB, &daemon);
     assert_eq!(
@@ -162,7 +203,7 @@ fn enter_with_no_answer_selected_sends_the_reply_and_approves_nothing() {
     let (_runtime, mut server) = a_session();
     let which = a_task_holding_the_keyboard(&mut server);
     let daemon = holding(7, "Delete everything");
-    server.an_answer_came_back(which, "Shall I?".to_owned(), false, Some(&daemon));
+    server.an_answer_came_back(which, "Shall I?".to_owned(), false, None, Some(&daemon));
 
     press(&mut server, A, &daemon);
     press(&mut server, ENTER, &daemon);
@@ -188,7 +229,7 @@ fn escape_on_a_selected_answer_says_no() {
     let (_runtime, mut server) = a_session();
     let which = a_task_holding_the_keyboard(&mut server);
     let daemon = holding(4, "Delete everything");
-    server.an_answer_came_back(which, "Shall I?".to_owned(), false, Some(&daemon));
+    server.an_answer_came_back(which, "Shall I?".to_owned(), false, None, Some(&daemon));
 
     press(&mut server, TAB, &daemon);
     press(&mut server, ESCAPE, &daemon);
@@ -233,7 +274,7 @@ fn a_question_arriving_never_takes_the_keyboard() {
     ));
     let daemon = holding(7, "Rename march.pdf");
 
-    server.an_answer_came_back(which, "Shall I?".to_owned(), false, Some(&daemon));
+    server.an_answer_came_back(which, "Shall I?".to_owned(), false, None, Some(&daemon));
 
     assert!(
         server.the_change_waiting.is_asking(),
@@ -255,7 +296,7 @@ fn a_question_in_another_window_cannot_be_answered_from_this_one() {
         InferenceSource::ThisMachine,
     ));
     let daemon = holding(7, "Rename march.pdf");
-    server.an_answer_came_back(asking, "Shall I?".to_owned(), false, Some(&daemon));
+    server.an_answer_came_back(asking, "Shall I?".to_owned(), false, None, Some(&daemon));
     let _typing_here = a_task_holding_the_keyboard(&mut server);
 
     press(&mut server, TAB, &daemon);
@@ -321,5 +362,76 @@ fn a_click_on_a_task_window_gives_it_the_keyboard() {
     assert!(
         !server.the_bar_is_taking_the_keys(),
         "the Bar kept the keyboard"
+    );
+}
+
+/// **The agent keeps its turn while the question is on screen, and loses it
+/// only after the answer was carried out.**
+///
+/// The change lives in the agent's turn, so a turn that ended first would take
+/// the change with it — which is what the walk of 2026-10-26 saw: alo proposed
+/// the right change and the card never came. The daemon here notes whether the
+/// turn was still open at the moment each answer reached it.
+#[test]
+fn the_agents_turn_is_held_until_the_person_answers() {
+    for (answer, the_answer_is) in [(ENTER, "allowed"), (ESCAPE, "denied")] {
+        let (_runtime, mut server) = a_session();
+        let which = a_task_holding_the_keyboard(&mut server);
+        let (ours, agents_end) = UnixStream::pair().expect("a socket pair");
+        let daemon = ADaemon {
+            agents_end: Some(agents_end),
+            ..holding(7, "Rename march.pdf")
+        };
+
+        server.an_answer_came_back(
+            which,
+            "Shall I?".to_owned(),
+            false,
+            Some(ours),
+            Some(&daemon),
+        );
+        let held = daemon.agents_end.as_ref().is_some_and(still_open);
+        assert!(held, "the turn ended before the person was asked");
+
+        press(&mut server, TAB, &daemon);
+        press(&mut server, answer, &daemon);
+
+        assert_eq!(
+            *daemon.open_when_answered.borrow(),
+            [true],
+            "the turn was not open when the {the_answer_is} change reached the daemon"
+        );
+        let after = daemon.agents_end.as_ref().is_some_and(still_open);
+        assert!(
+            !after,
+            "the turn was still held after it was {the_answer_is}"
+        );
+    }
+}
+
+/// **An answer with nothing waiting lets the agent go at once.** A held turn
+/// would only keep the next request out.
+#[test]
+fn an_answer_with_nothing_waiting_lets_the_agent_go() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task_holding_the_keyboard(&mut server);
+    let (ours, agents_end) = UnixStream::pair().expect("a socket pair");
+    let daemon = ADaemon::default();
+
+    server.an_answer_came_back(
+        which,
+        "It is in Invoices.".to_owned(),
+        false,
+        Some(ours),
+        Some(&daemon),
+    );
+
+    assert!(
+        !server.the_change_waiting.is_asking(),
+        "the control: nothing was waiting"
+    );
+    assert!(
+        !still_open(&agents_end),
+        "the agent was kept with nothing to wait for"
     );
 }

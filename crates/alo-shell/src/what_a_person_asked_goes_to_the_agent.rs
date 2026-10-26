@@ -83,7 +83,11 @@ pub enum WhoAsked {
 }
 
 /// What came back for one request.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// **Not `Clone` and not compared whole**, because it can carry the request's
+/// socket, which is neither: one request has one line to its agent, and a copy
+/// of it would be a second person able to end that agent's turn.
+#[derive(Debug)]
 pub struct WhatCameBack {
     /// Who asked, so an answer reaches the thing waiting for it.
     pub who: WhoAsked,
@@ -96,6 +100,16 @@ pub struct WhatCameBack {
     /// the conversation, and *this machine could not be asked* belongs beside it
     /// as something wrong with the machine.
     pub the_machines_fault: bool,
+    /// The socket this request was asked on, still open, when the agent
+    /// answered.
+    ///
+    /// **It keeps the agent's turn alive.** An agent that proposed a change
+    /// holds its turn — and the change in it — until this closes, and then
+    /// leaves (`alo_agent::holding_the_turn`). So it is kept while the question
+    /// is on the person's screen and dropped once they have answered; dropped
+    /// at once, which is what happens to it for any other answer, it lets an
+    /// agent with nothing waiting go immediately.
+    pub the_turn: Option<UnixStream>,
 }
 
 /// The door a person's words go out of.
@@ -165,6 +179,7 @@ impl TheAgentsDoor {
                 who,
                 said: format!("this machine could not ask: {why}"),
                 the_machines_fault: true,
+                the_turn: None,
             }));
         }
     }
@@ -187,8 +202,8 @@ impl TheAgentsDoor {
 
 /// What one request's thread found.
 enum Said {
-    /// The agent answered, in words.
-    TheAgent(String),
+    /// The agent answered, in words, on this socket.
+    TheAgent(String, UnixStream),
     /// The machine could not be asked.
     TheMachine(String),
 }
@@ -197,15 +212,17 @@ impl Said {
     /// The same thing, addressed to whoever asked.
     fn into_what_came_back(self, who: WhoAsked) -> WhatCameBack {
         match self {
-            Self::TheAgent(said) => WhatCameBack {
+            Self::TheAgent(said, socket) => WhatCameBack {
                 who,
                 said,
                 the_machines_fault: false,
+                the_turn: Some(socket),
             },
             Self::TheMachine(said) => WhatCameBack {
                 who,
                 said,
                 the_machines_fault: true,
+                the_turn: None,
             },
         }
     }
@@ -254,11 +271,13 @@ fn ask_and_wait(socket: &Path, request: &str, may_reach: &[std::path::PathBuf]) 
     {
         return machine(&why);
     }
-    // **Shut this end for writing**, so the agent's read of one line ends
-    // rather than waiting for a second. Without it an agent reading to the end
-    // of input would wait for this side to go away, and this side is waiting
-    // for the agent: both would wait for ever.
-    drop(talking.shutdown(std::net::Shutdown::Write));
+    // **This end is not shut for writing**, and it was until 2026-10-26. A
+    // shut writing side is a close the agent reads at once, and the agent now
+    // waits on exactly that to learn the person has answered
+    // (`alo_agent::holding_the_turn`) — so shutting it here ended every
+    // agent's turn before the card it was holding open could be drawn.
+    // `alo-agent` reads one line, or two with the folders, and stops at each
+    // newline, so it never needed the shut to know the request had ended.
 
     let mut heard = String::new();
     let mut reading = BufReader::new(&talking);
@@ -276,7 +295,8 @@ fn ask_and_wait(socket: &Path, request: &str, may_reach: &[std::path::PathBuf]) 
         // to a caller it will not serve. From here it is the machine.
         return Said::TheMachine("your agent closed without answering".to_owned());
     }
-    Said::TheAgent(heard.to_owned())
+    // **Handed back still open**, for `WhatCameBack::the_turn`'s reason.
+    Said::TheAgent(heard.to_owned(), talking)
 }
 
 #[cfg(test)]

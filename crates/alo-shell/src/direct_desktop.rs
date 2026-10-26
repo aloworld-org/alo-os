@@ -1229,6 +1229,7 @@ impl LoopInput for Desk<'_> {
                         which,
                         came.said,
                         came.the_machines_fault,
+                        came.the_turn,
                         daemon
                             .as_ref()
                             .map(|door| door as &dyn alo_changing::Answering),

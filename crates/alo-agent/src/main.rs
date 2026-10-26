@@ -143,7 +143,23 @@ fn run() -> Result<ExitCode, String> {
         HowFar::THE_ORDINARY,
         Instructions::SHOWN_TO_A_TURN,
     );
-    Ok(said(&happened))
+    let code = said(&happened);
+    // **And the turn is held open while the person answers**, because the
+    // change waiting is inside it: exiting here ended the turn with the
+    // question in it, and the person's shell then found nothing to put on the
+    // card. `alo_agent::holding_the_turn` has the whole account.
+    if let WhatHappened::AChangeIsWaiting {
+        stands_for: Some(stands_for),
+        ..
+    } = &happened
+    {
+        let _ = std::io::Write::flush(&mut std::io::stdout());
+        let held = alo_agent::held_until_answered(std::io::stdout(), std::io::stdin(), *stands_for);
+        eprintln!("alo-agent: the turn was held, and ended: {held:?}");
+    }
+    // The turn ends here, as the daemon's connection closes.
+    drop(door);
+    Ok(code)
 }
 
 /// How much of one step is worth putting in a service log.
@@ -172,6 +188,7 @@ fn said(happened: &WhatHappened) -> ExitCode {
             number,
             sentence,
             after,
+            ..
         } => {
             println!("a change is waiting for you to answer, as number {number}:");
             println!("  {sentence}");
