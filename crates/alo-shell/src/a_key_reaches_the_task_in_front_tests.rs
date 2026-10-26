@@ -101,7 +101,10 @@ fn in_english() -> alo_strings::Strings {
 }
 
 /// What alo said last in this task.
-fn the_last_thing_said(server: &Server, which: crate::the_tasks_a_person_opened::WhichTask) -> String {
+fn the_last_thing_said(
+    server: &Server,
+    which: crate::the_tasks_a_person_opened::WhichTask,
+) -> String {
     server
         .tasks()
         .the(which)
@@ -576,7 +579,11 @@ fn still_waiting(server: &Server, which: crate::the_tasks_a_person_opened::Which
 fn the_person_is_told_what_their_answer_did() {
     for (keys, says_nothing, told) in [
         (&[TAB, ENTER][..], false, "Done."),
-        (&[TAB, ESCAPE][..], false, "You said no, so nothing was changed."),
+        (
+            &[TAB, ESCAPE][..],
+            false,
+            "You said no, so nothing was changed.",
+        ),
         (
             &[TAB, ENTER][..],
             true,
@@ -590,7 +597,10 @@ fn the_person_is_told_what_their_answer_did() {
             ..holding(7, "Rename march.pdf")
         };
         server.an_answer_came_back(which, "Shall I?".to_owned(), false, None, Some(&daemon));
-        assert!(still_waiting(&server, which), "the control: a question was waiting");
+        assert!(
+            still_waiting(&server, which),
+            "the control: a question was waiting"
+        );
 
         for &key in keys {
             press(&mut server, key, &daemon);

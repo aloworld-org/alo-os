@@ -61,13 +61,16 @@ pub const IT_WAS_DONE: Word = Word::saying("the-card.it-was-done", "Done.").noti
 );
 
 /// What the conversation says once the person said no.
-pub const YOU_SAID_NO: Word =
-    Word::saying("the-card.you-said-no", "You said no, so nothing was changed.").noting(
-        "Said by the agent in the conversation straight after the person pressed Deny and the \
+pub const YOU_SAID_NO: Word = Word::saying(
+    "the-card.you-said-no",
+    "You said no, so nothing was changed.",
+)
+.noting(
+    "Said by the agent in the conversation straight after the person pressed Deny and the \
          machine recorded it. Both halves matter: it was the person's choice, and nothing on the \
          computer changed because of the request. It is not an error and should not read as one, \
          and it does not ask why.",
-    );
+);
 
 /// What the conversation says when the machine gave no answer at all.
 pub const NO_WORD_BACK: Word = Word::saying(

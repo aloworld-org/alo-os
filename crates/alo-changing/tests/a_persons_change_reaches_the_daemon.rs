@@ -520,5 +520,8 @@ fn a_decline_the_daemon_kept_is_not_read_as_no_answer() {
     let daemon = a_daemon_answering_once(&silent, None);
     let answered = TheDaemonsDoor::at(&silent).decline(7);
     daemon.join().unwrap();
-    assert_eq!(answered, None, "a daemon that said nothing was read as an answer");
+    assert_eq!(
+        answered, None,
+        "a daemon that said nothing was read as an answer"
+    );
 }
