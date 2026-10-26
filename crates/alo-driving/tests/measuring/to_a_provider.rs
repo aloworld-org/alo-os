@@ -87,6 +87,40 @@ fn put_to_a_provider(
 /// the rule: `alo_asking::Hosted::ask` is private and reachable only through a
 /// door that has already obtained an `alo_egress::Departing`, so law 1's
 /// indicator shows each one and the record keeps it.
+/// **One prompt put to a provider**, scored by whoever asked.
+///
+/// `the_fixed_set_put_to_a_provider` below carries the whole ten and grades
+/// them; this carries one and hands back what the model said. It exists for
+/// `does_a_model_look_before_it_proposes`, which asks a question the fixed ten
+/// deliberately cannot ask — every one of them names the file it is about, so
+/// none of them can measure whether a model finds out first.
+///
+/// **It leaves the machine**, exactly as the set does and for the same reason:
+/// the only road is a door that already holds an `alo_egress::Departing`, so
+/// the indicator shows it and the record keeps it.
+///
+/// # Errors
+/// What the provider said, when it would not answer.
+pub fn one_prompt_put_to_a_provider(
+    text: &str,
+    model: &str,
+    provider: &alo_models::Provider,
+    key: &alo_models::Secret,
+    in_the_envelope: bool,
+) -> Result<String, String> {
+    let hosted = alo_asking::Hosted::provider(provider, Some(key));
+    let mut indicator = alo_egress::Indicator::default();
+    put_to_a_provider(
+        text,
+        model,
+        &hosted,
+        &Grantee::named("@measuring"),
+        &SourcePolicy::Anywhere,
+        &mut indicator,
+        in_the_envelope,
+    )
+}
+
 pub fn the_fixed_set_put_to_a_provider(
     model: &str,
     provider: &alo_models::Provider,
