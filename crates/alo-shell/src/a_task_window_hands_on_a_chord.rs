@@ -57,7 +57,7 @@ const fn sends_the_keyboard_elsewhere(action: Action) -> bool {
 impl Server {
     /// Carry out a shortcut pressed in the task window holding the keyboard,
     /// and let go of the keyboard if it went somewhere else.
-    pub(crate) fn a_chord_in_a_task_window(&mut self, chord: Chord) -> WhatTheChordCameTo {
+    pub(crate) fn a_task_window_hands_on_a_chord(&mut self, chord: Chord) -> WhatTheChordCameTo {
         let came_to = self.the_chord_does_what_it_names(chord);
         if let WhatTheChordCameTo::Carried(action) = came_to
             && sends_the_keyboard_elsewhere(action)

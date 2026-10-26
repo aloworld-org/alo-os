@@ -26,8 +26,8 @@
 //! `crate::a_key_reaches_the_task_in_front` decides which applies.
 //!
 //! **Except a shortcut**, which is carried out rather than typed:
-//! `crate::a_chord_in_a_task_window` says why, and which ones take the keyboard
-//! with them.
+//! `crate::a_task_window_hands_on_a_chord` says why, and which ones take the
+//! keyboard with them.
 
 use smithay::{backend::input::KeyState, input::keyboard::FilterResult, utils::SERIAL_COUNTER};
 
@@ -112,9 +112,9 @@ impl Server {
         match meant.flatten() {
             // **Carried out here and never typed**, so a shortcut does what it
             // names in a task window as it does everywhere else —
-            // `crate::a_chord_in_a_task_window` has the account.
+            // `crate::a_task_window_hands_on_a_chord` has the account.
             Some(TheTaskTook::AChord(chord)) => {
-                let _ = self.a_chord_in_a_task_window(chord);
+                let _ = self.a_task_window_hands_on_a_chord(chord);
                 Ok(None)
             }
             Some(TheTaskTook::AKey(typed, answering)) => Ok(Some((typed, answering))),

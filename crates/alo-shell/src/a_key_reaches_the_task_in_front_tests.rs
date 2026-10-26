@@ -482,7 +482,11 @@ fn a_shortcut_in_a_task_window_is_carried_out_and_not_typed() {
     let daemon = ADaemon::default();
 
     press(&mut server, T, &daemon);
-    assert_eq!(draft(&server, which), "t", "the control: a plain t is typed");
+    assert_eq!(
+        draft(&server, which),
+        "t",
+        "the control: a plain t is typed"
+    );
 
     press_holding(&mut server, &[LEFT_CTRL, LEFT_ALT], T, &daemon);
 
