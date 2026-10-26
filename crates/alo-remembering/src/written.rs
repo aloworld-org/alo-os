@@ -681,10 +681,17 @@ mod tests {
         // moved up with it rather than being deleted. A number written here by
         // hand goes stale the day a format is added, which is why the sentence
         // below is asked of the constants instead.
-        for (format, refused) in [("format = 4", 4), ("format = 0", 0)] {
+        //
+        // **Asked of the constant now**, because it went stale exactly as
+        // predicted: 4 became a format on 2026-10-26.
+        let above = THE_FORMAT + 1;
+        for (format, refused) in [
+            (format!("format = {above}"), above),
+            ("format = 0".to_owned(), 0),
+        ] {
             let other = written(&one_folder_granted(), noon())
                 .unwrap()
-                .replace("format = 1", format);
+                .replace("format = 1", &format);
             assert!(matches!(
                 read(&other, noon()),
                 Err(NotRemembered::AnotherFormat { format }) if format == refused
@@ -971,10 +978,15 @@ mod tests {
     fn one_folder_granted_where_it_really_is() -> Grants {
         let mut grants = Grants::default();
         grants.grant(
-            Grant::checked(HERS, Reach::Folder("/home/ada/Invoices".into()), noon(), hour())
-                .unwrap()
-                .really_at("/var/home/ada/Invoices".into())
-                .unwrap(),
+            Grant::checked(
+                HERS,
+                Reach::Folder("/home/ada/Invoices".into()),
+                noon(),
+                hour(),
+            )
+            .unwrap()
+            .really_at("/var/home/ada/Invoices".into())
+            .unwrap(),
         );
         grants
     }
@@ -986,7 +998,10 @@ mod tests {
     fn where_a_folder_really_is_survives_the_file() {
         let text = written(&one_folder_granted_where_it_really_is(), noon()).unwrap();
         assert!(text.contains("format = 4"), "{text}");
-        assert!(text.contains(r#"really = "/var/home/ada/Invoices""#), "{text}");
+        assert!(
+            text.contains(r#"really = "/var/home/ada/Invoices""#),
+            "{text}"
+        );
 
         let read = read(&text, noon()).unwrap();
         assert!(

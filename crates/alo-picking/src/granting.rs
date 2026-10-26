@@ -396,11 +396,16 @@ mod tests {
     fn a_folder_picked_through_a_link_is_granted_where_it_really_is() {
         let root = std::env::temp_dir().join(format!("alo-picking-really-{}", std::process::id()));
         let _gone = std::fs::remove_dir_all(&root);
-        std::fs::create_dir_all(root.join("var-home").join("Invoices")).unwrap();
+        std::fs::create_dir_all(root.join("var-home").join("anna").join("Invoices")).unwrap();
         std::os::unix::fs::symlink(root.join("var-home"), root.join("home")).unwrap();
-        let really = std::fs::canonicalize(root.join("var-home").join("Invoices")).unwrap();
+        let really =
+            std::fs::canonicalize(root.join("var-home").join("anna").join("Invoices")).unwrap();
 
-        let mut picker = Picker::standing_in(&root.join("home"), &crate::OnThisDisk).unwrap();
+        // **In the person's own folder, one below the link**, which is where a
+        // session opens the picker: the picker refuses to stand in a link
+        // itself, and `/home/alo` is not one — `/home` is.
+        let home = root.join("home").join("anna");
+        let mut picker = Picker::standing_in(&home, &crate::OnThisDisk).unwrap();
         picker.go_into("Invoices", &crate::OnThisDisk).unwrap();
         let mut grants = Grants::default();
         for_an_hour()
@@ -410,7 +415,7 @@ mod tests {
         let grant = &grants.active_at(noon()).next().unwrap().grant;
         assert_eq!(
             grant.reach.as_path(),
-            Some(root.join("home").join("Invoices").as_path()),
+            Some(home.join("Invoices").as_path()),
             "the control: the grant still shows the folder as it was picked"
         );
         assert_eq!(grant.really.as_deref(), Some(really.as_path()));

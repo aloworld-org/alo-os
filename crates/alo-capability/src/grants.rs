@@ -364,9 +364,8 @@ impl Grants {
                 wanted: ask,
             });
         }
-        let covering = |held: &&Held| {
-            held.grant.is_for(grantee) && held.grant.covers_where_it_really_is(real)
-        };
+        let covering =
+            |held: &&Held| held.grant.is_for(grantee) && held.grant.covers_where_it_really_is(real);
         self.held
             .iter()
             .filter(covering)
@@ -1084,6 +1083,17 @@ mod tests {
             Ok(terminal),
             "a grant over an application was given a place on a disk"
         );
+    }
+
+    /// **A real place that is the path picked is not recorded**, so a machine
+    /// with no link in the way keeps writing the grants file it wrote before.
+    #[test]
+    fn a_real_place_that_is_the_path_picked_is_not_recorded() {
+        let grant = granted_for(hour())
+            .unwrap()
+            .really_at(PathBuf::from("/home/anna/Invoices"))
+            .unwrap();
+        assert_eq!(grant.really, None);
     }
 
     /// **A grant made before the real place existed is given one when read**,

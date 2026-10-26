@@ -365,13 +365,21 @@ impl Grant {
     /// grant over an application or a facility has no place on a disk and is
     /// returned as it was.
     ///
+    /// **A real place that is the picked path is not recorded**: it says
+    /// nothing the grant does not, and recording it would move every machine
+    /// with no link in the way onto a newer grants file for no reason —
+    /// `alo_remembering` writes the lowest format that holds the list.
+    ///
     /// # Errors
     /// [`GrantError`], as for the path a person picked.
     pub fn really_at(mut self, really: PathBuf) -> Result<Self, GrantError> {
-        if self.reach.as_path().is_none() {
+        let Some(picked) = self.reach.as_path() else {
+            return Ok(self);
+        };
+        checked_reach(Reach::Folder(really.clone()))?;
+        if is_exactly(picked, &really) {
             return Ok(self);
         }
-        checked_reach(Reach::Folder(really.clone()))?;
         self.really = Some(really);
         Ok(self)
     }

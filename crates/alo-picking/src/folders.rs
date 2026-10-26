@@ -87,13 +87,6 @@ impl Inside {
         }
     }
 
-    /// The same, and this many things in that folder could not be named or
-    /// read at all.
-    ///
-    /// A machine can hold a name that is not text — bytes no language decodes
-    /// — and a directory entry the machine will not describe. Neither can be
-    /// shown and neither is silently forgotten: the count is what a surface
-    /// can say *something* is here that this list does not show.
     /// The same listing, saying where the folder listed **really is** — every
     /// link on the way to it followed.
     ///
@@ -113,6 +106,13 @@ impl Inside {
         self.really.as_deref()
     }
 
+    /// The same, and this many things in that folder could not be named or
+    /// read at all.
+    ///
+    /// A machine can hold a name that is not text — bytes no language decodes
+    /// — and a directory entry the machine will not describe. Neither can be
+    /// shown and neither is silently forgotten: the count is what a surface
+    /// can say *something* is here that this list does not show.
     #[must_use]
     pub fn and_could_not_be_named(mut self, how_many: usize) -> Self {
         self.could_not_be_named = self.could_not_be_named.saturating_add(how_many);

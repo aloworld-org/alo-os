@@ -248,14 +248,20 @@ fn a_folder_picked_through_a_link_may_be_touched_where_it_really_is() {
     let root = a_folder_of_our_own("behind-a-link");
     let (picked, really) = a_home_behind_a_link(&root);
     let call = verbs()
-        .call("read_file", &[("file", as_given(&picked.join("march.pdf")))])
+        .call(
+            "read_file",
+            &[("file", as_given(&picked.join("march.pdf")))],
+        )
         .unwrap();
 
     let without = granting(&picked);
     let authorised = Authorised::read(&call, &files(), &without, noon()).unwrap();
     let refused = Touching::of(authorised, &without, &OnThisMachine, &in_english()).unwrap_err();
     assert!(
-        refused.said(&in_english()).text().contains("really leads to"),
+        refused
+            .said(&in_english())
+            .text()
+            .contains("really leads to"),
         "the control: a grant without its real place was not refused"
     );
 
@@ -295,7 +301,10 @@ fn a_link_out_of_a_folder_picked_through_a_link_is_still_refused() {
             .unwrap(),
     );
     let call = verbs()
-        .call("read_file", &[("file", as_given(&picked.join("april.pdf")))])
+        .call(
+            "read_file",
+            &[("file", as_given(&picked.join("april.pdf")))],
+        )
         .unwrap();
     let authorised = Authorised::read(&call, &files(), &grants, noon()).unwrap();
 
