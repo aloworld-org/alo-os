@@ -435,3 +435,94 @@ fn an_answer_with_nothing_waiting_lets_the_agent_go() {
         "the agent was kept with nothing to wait for"
     );
 }
+
+/// evdev's codes for the modifiers and letters the shortcut tests hold.
+const LEFT_CTRL: u32 = 29;
+const LEFT_ALT: u32 = 56;
+const LEFT_SUPER: u32 = 125;
+const T: u32 = 20;
+
+/// Hold these keys down, press and release one more, then let go of them in
+/// reverse — the way a person presses a shortcut.
+fn press_holding(server: &mut Server, held: &[u32], code: u32, daemon: &ADaemon) {
+    let mut one = |code, state| {
+        the_key_the_task_took(
+            server,
+            crate::DirectKeyEvent {
+                code,
+                state,
+                time: 1,
+            },
+            Some(daemon),
+        )
+        .expect("the seat took the key");
+    };
+    for &down in held {
+        one(down, KeyState::Pressed);
+    }
+    one(code, KeyState::Pressed);
+    one(code, KeyState::Released);
+    for &up in held.iter().rev() {
+        one(up, KeyState::Released);
+    }
+}
+
+/// **Ctrl+Alt+T in a task window opens the terminal, types nothing, and the
+/// keyboard goes with it.**
+///
+/// Found walking a booted machine on 2026-10-26: with a task window holding
+/// the keyboard, every shortcut was swallowed. The control is a plain `t`,
+/// which is typed — so the shortcut was told apart by its modifiers, not by
+/// the task refusing the letter.
+#[test]
+fn a_shortcut_in_a_task_window_is_carried_out_and_not_typed() {
+    let (_runtime, mut server) = a_session();
+    server.the_shortcuts_are(alo_shortcuts::Shortcuts::shipped());
+    let which = a_task_holding_the_keyboard(&mut server);
+    let daemon = ADaemon::default();
+
+    press(&mut server, T, &daemon);
+    assert_eq!(
+        draft(&server, which),
+        "t",
+        "the control: a plain t is typed"
+    );
+
+    press_holding(&mut server, &[LEFT_CTRL, LEFT_ALT], T, &daemon);
+
+    assert_eq!(
+        draft(&server, which),
+        "t",
+        "the shortcut was typed into the reply box"
+    );
+    assert!(
+        server.alos_own_terminal().is_some(),
+        "Ctrl+Alt+T in a task window opened no terminal"
+    );
+    assert!(
+        !server.a_task_is_taking_the_keys(),
+        "the terminal opened and the task kept the keyboard, so typing would not reach it"
+    );
+}
+
+/// **The agent's shortcut leaves the task holding the keyboard**, because the
+/// Bar is in front of it: when the Bar lets go, typing comes back to the task.
+#[test]
+fn a_shortcut_to_a_surface_in_front_leaves_the_task_its_keyboard() {
+    let (_runtime, mut server) = a_session();
+    server.the_shortcuts_are(alo_shortcuts::Shortcuts::shipped());
+    let which = a_task_holding_the_keyboard(&mut server);
+    let daemon = ADaemon::default();
+
+    press_holding(&mut server, &[LEFT_SUPER], A, &daemon);
+
+    assert!(
+        server.the_bar_is_taking_the_keys(),
+        "Super+A in a task window did not open the Bar"
+    );
+    assert!(
+        server.a_task_is_taking_the_keys(),
+        "the task let go for a surface drawn in front of it"
+    );
+    assert_eq!(draft(&server, which), "", "the shortcut was typed");
+}
