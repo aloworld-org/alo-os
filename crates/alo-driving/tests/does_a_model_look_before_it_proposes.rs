@@ -34,7 +34,7 @@
 //! On a booted machine on 2026-10-25 a person granted `/home/alo/Documents`,
 //! asked three times for something to be read, and got three proposals to
 //! change instead: install GIMP, install Krita, archive Pictures into
-//! Documents. `docs/walks/2026-10-25-the-first-walk.md` is the report.
+//! Documents. `docs/walks/the-first-walk.md` is the report.
 //!
 //! The explanation offered at the time was that a turn shows
 //! `Instructions::OneExamplePerDoor`, whose first sentence forbids a second
@@ -240,7 +240,7 @@ fn a_model_looks_before_it_proposes_only_when_it_is_told_it_may() {
         rounds,
         "told it may send a read line first, the model still proposed without looking in {} of \
          {rounds} rounds. That is what this measurement exists to detect, and it would mean the \
-         switch named in docs/walks/2026-10-25-the-first-walk.md does not fix the walk's fault",
+         switch named in docs/walks/the-first-walk.md does not fix the walk's fault",
         rounds - new
     );
 
