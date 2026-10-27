@@ -1233,6 +1233,7 @@ impl LoopInput for Desk<'_> {
                         daemon
                             .as_ref()
                             .map(|door| door as &dyn alo_changing::Answering),
+                        self.strings,
                     );
                 }
                 // **An explanation of a command, into the terminal that asked.**

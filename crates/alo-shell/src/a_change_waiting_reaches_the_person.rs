@@ -249,6 +249,7 @@ impl crate::Server {
         the_machines_fault: bool,
         the_turn: Option<std::os::unix::net::UnixStream>,
         daemon: Option<&dyn Answering>,
+        strings: &alo_strings::Strings,
     ) {
         // **The fields, not the methods**, so the compiler can see the question
         // and the task are different parts of the server.
@@ -261,6 +262,19 @@ impl crate::Server {
         // and *this machine could not be asked* belongs beside it.
         if the_machines_fault {
             task.and_then(alo_tasks::Act::done(said));
+            // **And the turn ends in the conversation too.** Until 2026-10-27
+            // the reason went beside the conversation and nothing went in it, so
+            // the person's request stayed the last thing said and the window
+            // read *alo is working* for as long as it was open.
+            task.alo_says(Turn::from_alo(
+                strings
+                    .say(
+                        &crate::the_cards_words::IT_STOPPED_WITHOUT_FINISHING.key(),
+                        &alo_strings::Filling::nothing(),
+                    )
+                    .text()
+                    .to_owned(),
+            ));
         } else {
             task.alo_says(Turn::from_alo(said));
         }

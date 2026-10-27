@@ -83,8 +83,33 @@ pub const NO_WORD_BACK: Word = Word::saying(
      is the whole message.",
 );
 
+/// What the conversation says when alo stopped without an answer or a change.
+///
+/// Beside the card's own outcomes because it is the same kind of line: the last
+/// one in a conversation, saying how a turn ended. Without it a turn that gave
+/// up left the person's request as the last thing said, and the window read
+/// *alo is working* for as long as it stayed open (the fifth Demo 1 walk,
+/// 2026-10-27).
+pub const IT_STOPPED_WITHOUT_FINISHING: Word = Word::saying(
+    "the-card.it-stopped-without-finishing",
+    "alo stopped without finishing this.",
+)
+.noting(
+    "Said by the agent in the conversation when it stopped without an answer and without anything \
+     to approve: it could not get further, or this computer could not be reached. The reason is \
+     shown beside the conversation, so this says only that it stopped. It must not claim anything \
+     was or was not changed, and it is not an apology.",
+);
+
 /// Every string this file declares, in the order a translator meets them.
-pub const THE_CARDS_WORDS: [Word; 5] = [ALLOW_ONCE, DENY, IT_WAS_DONE, YOU_SAID_NO, NO_WORD_BACK];
+pub const THE_CARDS_WORDS: [Word; 6] = [
+    ALLOW_ONCE,
+    DENY,
+    IT_WAS_DONE,
+    YOU_SAID_NO,
+    NO_WORD_BACK,
+    IT_STOPPED_WITHOUT_FINISHING,
+];
 
 /// Why this file's words could not be declared.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
