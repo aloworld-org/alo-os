@@ -3622,6 +3622,8 @@ would catch a mistake in it is not its own unit test — it is
 `a_turn_granted_a_folder_opens_a_file_inside_it`, because a wrong conversion
 refuses the granted file rather than allowing an ungranted one, which is a
 failure in the safe direction and therefore the failure nobody notices.
+On btrfs it was also not enough, and that test could not show it: see
+`docs/quirks/btrfs-gives-every-subvolume-its-own-device-number.md` (2026-10-26).
 **Date:** 2026-09-04
 
 ### `Path::is_absolute` answers about the host, not about the path
