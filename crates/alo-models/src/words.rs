@@ -306,10 +306,16 @@ pub const NONE_CLEARS_THE_BAR: Word = Word::saying(
 /// shows, and none has been measured again (ADR 0133).
 pub const NOT_MEASURED_AGAIN: Word = Word::saying(
     "models.agent.not-measured-again",
-    "the models that run on this machine were measured with instructions alo OS no longer gives      them, and have not been measured again yet, so alo OS will not give one the agent",
+    "every model that runs here was graded with instructions alo OS no longer gives a model, and \
+     none has been graded again yet, so alo OS will not give one the agent",
 )
 .noting(
-    "Said when the models here were measured, and the instructions an agent turn gives a model      have changed since, so those measurements no longer say how the models would do. Neither of      the two lines above is true then: they were measured, and nothing says they are not good      enough. \"Instructions\" are the words alo OS shows a model at the start of a turn. Do not      soften it into \"might not work\", and do not suggest the models failed.",
+    "Said when the models that fit were graded, and the instructions an agent turn gives a model \
+     have changed since, so those grades no longer say how the models would do. Neither of the \
+     two lines above is true then: they were graded, and nothing says they are not good enough. \
+     The grading was done on other machines, so do not say it happened here. \"Instructions\" are \
+     the words alo OS shows a model at the start of a turn. Do not soften it into \"might not \
+     work\", and do not suggest the models failed.",
 );
 
 /// A model on this machine that this catalogue never listed.

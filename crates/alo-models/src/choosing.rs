@@ -504,8 +504,11 @@ mod tests {
         for other in [&nothing, &unmeasured, &failed] {
             assert_ne!(&not_again, other);
         }
-        assert!(not_again.contains("were measured"), "{not_again}");
-        assert!(not_again.contains("not been measured again"), "{not_again}");
+        assert!(not_again.contains("was graded"), "{not_again}");
+        assert!(
+            not_again.contains("none has been graded again"),
+            "{not_again}"
+        );
     }
 
     /// Both lines are read in the reader's own language, and a machine that had

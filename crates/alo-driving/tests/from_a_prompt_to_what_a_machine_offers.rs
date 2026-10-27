@@ -347,7 +347,7 @@ fn no_machine_is_given_a_local_agent_until_one_is_graded_again() {
 
     let strings = Strings::of(model_words().unwrap());
     let [why, _, _] = refused.lines(&strings);
-    assert!(why.text().contains("not been measured again"), "{why}");
+    assert!(why.text().contains("none has been graded again"), "{why}");
 
     // Every model that was measured still runs here. What they lost is the
     // agent, and only because somebody looked.

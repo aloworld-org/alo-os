@@ -52,9 +52,8 @@ const THE_TABLE: [Situation; 5] = [
         &[
             (
                 models::NOT_MEASURED_AGAIN,
-                "the models that run on this machine were measured with instructions alo OS no \
-                 longer gives them, and have not been measured again yet, so alo OS will not give \
-                 one the agent",
+                "every model that runs here was graded with instructions alo OS no longer gives a \
+                 model, and none has been graded again yet, so alo OS will not give one the agent",
             ),
             (
                 models::WEIGHTS_YOU_ALREADY_HAVE,
