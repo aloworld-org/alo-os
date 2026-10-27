@@ -124,13 +124,23 @@ fn the_digest_the_catalogue_decides_by_is_the_one_a_turn_is_shown() {
         Some(Instructions::SHOWN_TO_A_TURN)
     );
 
-    // And at least one shipped entry is decided by it, so the constant is not
-    // matching nothing at all.
+    // **No shipped entry is decided by it yet, by the owner's decision of
+    // 2026-10-27** (ADR 0133). This asserted that at least one was, so that the
+    // constant was not matching nothing; it now matches nothing on purpose,
+    // until a local model is graded again under the words a turn shows. When
+    // one is, this is the line to turn back into `any`.
     let shipped = Catalogue::built_in().unwrap();
     assert!(
-        shipped
+        !shipped
             .models
             .iter()
-            .any(|entry| entry.grade_for_the_turn().1 == alo_models::AskedTheWay::AsATurnAsks)
+            .any(|entry| entry.grade_for_the_turn().1 == alo_models::AskedTheWay::AsATurnAsks),
+        "an entry is graded under the words a turn shows; turn this back into `any`"
+    );
+    // And the words the grades set aside were earned under are words this
+    // crate still has, so every one of them can be run again.
+    assert_eq!(
+        Instructions::of_digest(alo_models::THE_WORDS_A_TURN_SHOWED_BEFORE),
+        Some(Instructions::OneExamplePerDoor)
     );
 }

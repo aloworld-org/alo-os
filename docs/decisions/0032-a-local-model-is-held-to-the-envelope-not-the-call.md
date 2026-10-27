@@ -116,6 +116,13 @@ plain object of name to value, which no envelope constraint reaches.
   protocol's rule — an agent's line is a request or it is not understood — so
   the cost is a failure mode removed rather than a freedom taken away; but it is
   written here so nobody discovers it as a surprise.
+
+  *Discovered as one anyway, on 2026-10-27. The agent's loop, written after
+  this decision, ends a turn with an answer only when the reply is not JSON, so
+  a question held to this envelope could not be answered at all. A request to
+  read ended in a proposal to install something nobody asked for.
+  [ADR 0133](0133-a-question-is-answered-inside-the-envelope.md) adds an answer
+  door to the envelope.*
 - **The runtime's grammar is now part of the measurement.** A runtime upgrade can
   move a grade by changing how it builds the grammar, as 0.34.0's key ordering
   shows. `THE_PINNED_RUNTIME` already makes an upgrade deliberate; a grade

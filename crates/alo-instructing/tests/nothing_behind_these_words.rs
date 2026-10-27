@@ -15,6 +15,11 @@
 //! never a second list here. It opens nothing either — it is the vocabulary,
 //! and `nothing_in_this_crate_reaches_anything` below still holds over this
 //! crate's own source.
+//!
+//! `serde_json` answers it too, since 2026-10-27: a model answers the person in
+//! the one shape it writes that is not a line of `alo-protocol` (ADR 0133), and
+//! this is the crate that told it the shape, so it is the one that reads it. It
+//! parses a string it is handed and opens nothing.
 
 #![expect(
     clippy::unwrap_used,
@@ -25,7 +30,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// What the shipped crate carries, and the whole of it.
-const WHAT_IT_CARRIES: [&str; 3] = ["alo-capability", "alo-strings", "ring"];
+const WHAT_IT_CARRIES: [&str; 4] = ["alo-capability", "alo-strings", "ring", "serde_json"];
 
 /// What would let this crate reach anything but its caller.
 const A_WAY_OFF_THE_WORDS: [&str; 12] = [
