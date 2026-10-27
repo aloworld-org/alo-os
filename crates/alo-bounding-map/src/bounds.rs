@@ -317,10 +317,11 @@ impl Bounds {
     /// destinations.
     ///
     /// For the kernel's file hooks, which ask where a turn may be and never
-    /// where it may connect. Reading the destinations as well cost each of
-    /// them about a hundred bytes of stack they did not have: the kernel
-    /// allows a program 512 bytes across its calls, and the file hooks used
-    /// exactly 512 before btrfs was taught to them (measured on 2026-10-26).
+    /// where it may connect. The kernel allows a program 512 bytes of stack
+    /// across its calls, and with the destinations unpacked as well, teaching
+    /// the walk btrfs took it past that: 6.19.14 refused the program with
+    /// *combined stack size of 3 calls is 608* on 2026-10-26, and loaded it
+    /// once the file hooks read the places alone.
     ///
     /// It answers [`Self::holds`] exactly as [`Self::of_words`] would. Used for
     /// a departure by mistake, it would refuse every destination, which is the

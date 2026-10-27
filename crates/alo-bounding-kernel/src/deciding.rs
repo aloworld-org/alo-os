@@ -794,9 +794,9 @@ struct Fields {
 ///
 /// Fetched at the step that needs them rather than kept in [`Fields`], because
 /// every hook holds its own copy of [`Fields`] and the kernel allows a program
-/// 512 bytes of stack across its calls. Kept there, these 32 bytes made the
-/// image's kernel refuse to load the program: *combined stack size of 3 calls
-/// is 672*, measured on 6.19.14 on 2026-10-26.
+/// 512 bytes of stack across its calls. With these kept there, 6.19.14
+/// refused to load the program: *combined stack size of 3 calls is 672*, on
+/// 2026-10-26. `Bounds::places_of_words` is the rest of that story.
 #[derive(Clone, Copy)]
 struct Btrfs {
     /// `struct btrfs_inode`'s `vfs_inode.i_ino`, which with

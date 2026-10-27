@@ -72,12 +72,23 @@ btrfs_root.anon_dev at byte 888, type dev_t
 
 ## Our response
 
-Not fixed yet, and the choice is the owner's, because it changes what the
-deepest guard in the product compares. Proposed: on a filesystem whose
-`s_magic` is btrfs's, the kernel program compares the subvolume's own number
-(the one `stat` already reports) rather than the superblock's, with the offsets
-read from BTF like every other field. A test on a real loop-mounted btrfs would
-hold both directions: a granted file opens, and a file in another subvolume with
-the same inode number is refused.
+Fixed on 2026-10-26, as the owner chose: on a filesystem whose `s_magic` is
+btrfs's, the kernel program reads the subvolume's own number, through
+`btrfs_inode.root->anon_dev`, which is the number `stat` reports. The offsets
+come from BTF like every other field. A kernel that does not describe btrfs gets
+a boundary that refuses every btrfs file rather than one that guesses.
 
-Every measurement above was made once, by hand. Nothing runs it again yet.
+Teaching the walk this ran into a second limit: the kernel allows a program 512
+bytes of stack across its calls, and 6.19.14 refused the boundary at 672 and
+then 608. The file hooks now read only the places in a grant and never its
+destinations (`Bounds::places_of_words`), and the program loads.
+
+Three tests in `crates/alo-bounding/tests/the_kernel_refuses.rs` hold both
+directions on a real loop-mounted btrfs: a granted file opens; the same inode
+number in another subvolume is refused; a snapshot of the granted folder is
+refused. **They passed once, by hand,** on 2026-10-26, on the image kernel
+6.19.14-101.fc42 booted in qemu with SELinux enforcing. CI does not run them:
+the kernel tests need root and a kernel that started the BPF LSM, and no
+workflow provides one.
+
+The measurements in the sections above were also made once, by hand.
