@@ -133,22 +133,31 @@ impl DesktopPicture {
         // way to the Dock is a placement question, and
         // `docs/design/where-a-new-window-opens.md` is where it would be
         // settled; it is not settled here and this does not pretend to.
-        for (texture, area) in tasks {
-            crate::painted::wash(frame, texture, *area)?;
-        }
-        // **And their words, after their panels.** A task window's panel is one
-        // texture with its rounded shapes drawn into it; its text is inked onto
-        // the ground it sits on and painted over the panel.
+        // **Each window whole — its panel, then its words — before the next**,
+        // so the window in front covers the words of the one behind it.
+        // `crate::task_layers` says why the order matters and is where it is
+        // tested; it was every panel first and every window's words after them,
+        // which put the first window's words over the second window's panel.
         //
-        // **This was missing and no test could have said so.** The words were
-        // shaped, measured, placed and asserted — `the_words_are_drawn_and_an_
-        // empty_window_draws_none` holds the count at twelve — and the list
-        // never reached a frame. Every test was about the list; none was about
-        // the painting. What found it was looking at a picture of a real draw,
-        // which is what `examples/desktop_check.rs` exists for and says so in
-        // its own header: *it needs eyes, and eyes need pictures.*
-        for task in &self.tasks {
-            crate::painted::paint(frame, &[], &task.inked)?;
+        // **The words were once missing altogether, and no test could have said
+        // so.** They were shaped, measured, placed and asserted —
+        // `the_words_are_drawn_and_an_empty_window_draws_none` holds the count at
+        // twelve — and the list never reached a frame. What found it was looking
+        // at a picture of a real draw, which is what `examples/desktop_check.rs`
+        // exists for and says so in its own header: *it needs eyes, and eyes
+        // need pictures.*
+        for layer in crate::task_layers::in_painting_order(
+            self.tasks.iter().map(|task| task.inked.as_slice()),
+            tasks,
+        ) {
+            match layer {
+                crate::task_layers::TaskLayer::Panel((texture, area)) => {
+                    crate::painted::wash(frame, texture, *area)?;
+                }
+                crate::task_layers::TaskLayer::Words(inked) => {
+                    crate::painted::paint(frame, &[], inked)?;
+                }
+            }
         }
         // **The market, and until 2026-10-18 nothing painted it at all.**
         //
