@@ -149,11 +149,6 @@ impl Model {
     }
 }
 
-/// Whether this measurement was made the way an agent turn asks.
-fn the_way_a_turn_asks(on: &MeasuredOn) -> bool {
-    asked_as_a_turn_asks_under(on, THE_WORDS_A_TURN_SHOWS)
-}
-
 /// Whether this measurement was made the way an agent turn asks, under these
 /// words: in the envelope alone, through the pinned runtime.
 fn asked_as_a_turn_asks_under(on: &MeasuredOn, words: &str) -> bool {
@@ -171,6 +166,11 @@ mod tests {
     use super::*;
     use crate::Catalogue;
     use crate::testing::in_english;
+
+    /// Whether this measurement was made the way an agent turn asks now.
+    fn the_way_a_turn_asks(on: &MeasuredOn) -> bool {
+        asked_as_a_turn_asks_under(on, THE_WORDS_A_TURN_SHOWS)
+    }
 
     /// The digest the first instructions have, which is **not** the turn's.
     const THE_FIRST_INSTRUCTIONS: &str =
