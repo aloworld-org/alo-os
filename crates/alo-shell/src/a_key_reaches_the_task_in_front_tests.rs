@@ -210,6 +210,7 @@ fn tab_reaches_the_answers_and_enter_gives_the_one_selected() {
         false,
         None,
         Some(&daemon),
+        &in_english(),
     );
 
     press(&mut server, TAB, &daemon);
@@ -232,7 +233,14 @@ fn enter_with_no_answer_selected_sends_the_reply_and_approves_nothing() {
     let (_runtime, mut server) = a_session();
     let which = a_task_holding_the_keyboard(&mut server);
     let daemon = holding(7, "Delete everything");
-    server.an_answer_came_back(which, "Shall I?".to_owned(), false, None, Some(&daemon));
+    server.an_answer_came_back(
+        which,
+        "Shall I?".to_owned(),
+        false,
+        None,
+        Some(&daemon),
+        &in_english(),
+    );
 
     press(&mut server, A, &daemon);
     press(&mut server, ENTER, &daemon);
@@ -258,7 +266,14 @@ fn escape_on_a_selected_answer_says_no() {
     let (_runtime, mut server) = a_session();
     let which = a_task_holding_the_keyboard(&mut server);
     let daemon = holding(4, "Delete everything");
-    server.an_answer_came_back(which, "Shall I?".to_owned(), false, None, Some(&daemon));
+    server.an_answer_came_back(
+        which,
+        "Shall I?".to_owned(),
+        false,
+        None,
+        Some(&daemon),
+        &in_english(),
+    );
 
     press(&mut server, TAB, &daemon);
     press(&mut server, ESCAPE, &daemon);
@@ -303,7 +318,14 @@ fn a_question_arriving_never_takes_the_keyboard() {
     ));
     let daemon = holding(7, "Rename march.pdf");
 
-    server.an_answer_came_back(which, "Shall I?".to_owned(), false, None, Some(&daemon));
+    server.an_answer_came_back(
+        which,
+        "Shall I?".to_owned(),
+        false,
+        None,
+        Some(&daemon),
+        &in_english(),
+    );
 
     assert!(
         server.the_change_waiting.is_asking(),
@@ -325,7 +347,14 @@ fn a_question_in_another_window_cannot_be_answered_from_this_one() {
         InferenceSource::ThisMachine,
     ));
     let daemon = holding(7, "Rename march.pdf");
-    server.an_answer_came_back(asking, "Shall I?".to_owned(), false, None, Some(&daemon));
+    server.an_answer_came_back(
+        asking,
+        "Shall I?".to_owned(),
+        false,
+        None,
+        Some(&daemon),
+        &in_english(),
+    );
     let _typing_here = a_task_holding_the_keyboard(&mut server);
 
     press(&mut server, TAB, &daemon);
@@ -418,6 +447,7 @@ fn the_agents_turn_is_held_until_the_person_answers() {
             false,
             Some(ours),
             Some(&daemon),
+            &in_english(),
         );
         let held = daemon.agents_end.as_ref().is_some_and(still_open);
         assert!(held, "the turn ended before the person was asked");
@@ -453,6 +483,7 @@ fn an_answer_with_nothing_waiting_lets_the_agent_go() {
         false,
         Some(ours),
         Some(&daemon),
+        &in_english(),
     );
 
     assert!(
@@ -596,7 +627,14 @@ fn the_person_is_told_what_their_answer_did() {
             says_nothing,
             ..holding(7, "Rename march.pdf")
         };
-        server.an_answer_came_back(which, "Shall I?".to_owned(), false, None, Some(&daemon));
+        server.an_answer_came_back(
+            which,
+            "Shall I?".to_owned(),
+            false,
+            None,
+            Some(&daemon),
+            &in_english(),
+        );
         assert!(
             still_waiting(&server, which),
             "the control: a question was waiting"
@@ -612,4 +650,48 @@ fn the_person_is_told_what_their_answer_did() {
             "the task still waits after it was answered with {keys:?}"
         );
     }
+}
+
+/// **A turn that stopped without answering says so, and stops working.**
+/// Found walking a booted machine on 2026-10-27: a request went round eight
+/// times and the agent gave up, which reaches the shell as *the machine could
+/// not be asked*. The reason went beside the conversation and nothing went in
+/// it, so the window read *alo is working* for as long as it stayed open.
+#[test]
+fn a_turn_that_stopped_without_answering_says_so_and_is_no_longer_working() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task_holding_the_keyboard(&mut server);
+    let is_working = |server: &Server| {
+        server
+            .tasks()
+            .the(which)
+            .expect("the task is open")
+            .what_is_happening()
+            .key()
+            == alo_tasks::words::ALO_IS_WORKING.key()
+    };
+    assert!(
+        is_working(&server),
+        "a request just sent is alo's to answer"
+    );
+
+    let daemon = holding(7, "Rename march.pdf");
+    server.an_answer_came_back(
+        which,
+        "your agent closed without answering".to_owned(),
+        true,
+        None,
+        Some(&daemon),
+        &in_english(),
+    );
+
+    assert!(!is_working(&server), "the window still says alo is working");
+    assert_eq!(
+        the_last_thing_said(&server, which),
+        "alo stopped without finishing this."
+    );
+    assert!(
+        !server.the_change_waiting.is_asking(),
+        "a turn that stopped left a question standing"
+    );
 }
