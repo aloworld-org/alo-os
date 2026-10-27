@@ -642,6 +642,17 @@ pub fn granted(turn: u64) -> Option<Bounds> {
     Some(Bounds::of_words(words))
 }
 
+/// The places a turn was granted and none of where it may connect, for the
+/// hooks that decide files.
+///
+/// The same lookup and the same [`None`] as [`granted`]. Leaving the
+/// destinations unread is what keeps a file hook inside the 512 bytes of stack
+/// the kernel allows; `Bounds::places_of_words` says what it cost.
+pub fn granted_places(turn: u64) -> Option<Bounds> {
+    let words = *unsafe { BOUNDS.get(turn) }?;
+    Some(Bounds::places_of_words(words))
+}
+
 /// Where a field sits in this kernel, as the daemon found it.
 pub fn offset(field: Field) -> Option<u64> {
     FIELDS.get(field.index()).map(|found| u64::from(*found))

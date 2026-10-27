@@ -296,6 +296,38 @@ impl Bounds {
     #[must_use]
     pub const fn of_words(words: [u64; WORDS]) -> Self {
         let [
+            ..,
+            shown,
+            one_high,
+            one_low,
+            one_both,
+            two_high,
+            two_low,
+            two_both,
+        ] = words;
+        Self {
+            shown: Departures::of_words([
+                shown, one_high, one_low, one_both, two_high, two_low, two_both,
+            ]),
+            ..Self::places_of_words(words)
+        }
+    }
+
+    /// The places of a bound read back out of the map, and **none** of its
+    /// destinations.
+    ///
+    /// For the kernel's file hooks, which ask where a turn may be and never
+    /// where it may connect. Reading the destinations as well cost each of
+    /// them about a hundred bytes of stack they did not have: the kernel
+    /// allows a program 512 bytes across its calls, and the file hooks used
+    /// exactly 512 before btrfs was taught to them (measured on 2026-10-26).
+    ///
+    /// It answers [`Self::holds`] exactly as [`Self::of_words`] would. Used for
+    /// a departure by mistake, it would refuse every destination, which is the
+    /// safe way for it to be wrong.
+    #[must_use]
+    pub const fn places_of_words(words: [u64; WORDS]) -> Self {
+        let [
             how_many,
             device_one,
             inode_one,
@@ -305,17 +337,9 @@ impl Bounds {
             inode_three,
             device_four,
             inode_four,
-            shown,
-            one_high,
-            one_low,
-            one_both,
-            two_high,
-            two_low,
-            two_both,
+            ..,
         ] = words;
-        let shown = Departures::of_words([
-            shown, one_high, one_low, one_both, two_high, two_low, two_both,
-        ]);
+        let shown = Departures::none();
         let how_many = if how_many < PLACES as u64 {
             how_many as usize
         } else {
@@ -383,6 +407,26 @@ mod tests {
         );
         assert_eq!(bound.len(), 2);
         assert!(!bound.is_empty());
+    }
+
+    /// The file hooks' reading of a bound: the same places, so the same answer
+    /// from [`Bounds::holds`], and no destination at all, so a departure asked
+    /// of it by mistake is refused rather than allowed.
+    #[test]
+    fn the_places_alone_are_the_same_places_and_reach_no_destination() {
+        let frankfurt = Departure::of(crate::Family::Four, 0x0102_0304, 443);
+        let invoices = Place::of(64, 100);
+        let bound = Bounds::of(&[invoices, Place::of(65, 7)])
+            .expect("two is not too many")
+            .and_shown(Departures::of(&[frankfurt]).expect("one is not too many"));
+        assert!(bound.may_leave(frankfurt));
+
+        let places = Bounds::places_of_words(bound.words());
+        assert!(places.each().eq(bound.each()));
+        assert!(places.holds(invoices));
+        assert!(!places.holds(Place::of(64, 101)));
+        assert!(places.departures().is_empty());
+        assert!(!places.may_leave(frankfurt));
     }
 
     /// Every width from one place up to the most there are, because the count is
