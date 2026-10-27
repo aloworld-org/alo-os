@@ -790,12 +790,15 @@ struct Fields {
     super_device: u64,
     /// `struct super_block`'s `s_magic`.
     super_magic: u64,
-    /// Where btrfs keeps a subvolume's own number, or [`None`] on a kernel
-    /// that did not say.
-    btrfs: Option<Btrfs>,
 }
 
 /// The three steps from an inode on btrfs to its subvolume's device number.
+///
+/// Fetched at the step that needs them rather than kept in [`Fields`], because
+/// every hook holds its own copy of [`Fields`] and the kernel allows a program
+/// 512 bytes of stack across its calls. Kept there, these 32 bytes made the
+/// image's kernel refuse to load the program: *combined stack size of 3 calls
+/// is 672*, measured on 6.19.14 on 2026-10-26.
 #[derive(Clone, Copy)]
 struct Btrfs {
     /// `struct btrfs_inode`'s `vfs_inode.i_ino`, which with
@@ -825,7 +828,6 @@ impl Fields {
             inode_number: kernel::offset(Field::InodeNumber)?,
             super_device: kernel::offset(Field::SuperDevice)?,
             super_magic: kernel::offset(Field::SuperMagic)?,
-            btrfs: Btrfs::found(),
         })
     }
 
@@ -842,7 +844,7 @@ impl Fields {
         let filesystem = kernel::word_at(entry.wrapping_add(self.dentry_super))?;
         let number = kernel::word_at(inode.wrapping_add(self.inode_number))?;
         let device = if kernel::word_at(filesystem.wrapping_add(self.super_magic))? == BTRFS_MAGIC {
-            let btrfs = self.btrfs?;
+            let btrfs = Btrfs::found()?;
             // `inode` is the address of `vfs_inode` inside btrfs's own inode,
             // so where that one begins is as far back as `vfs_inode` is in.
             let around = inode
