@@ -675,13 +675,14 @@ fn a_turn_that_stopped_without_answering_says_so_and_is_no_longer_working() {
         "a request just sent is alo's to answer"
     );
 
-    let daemon = holding(7, "Rename march.pdf");
+    // No daemon to ask: a turn that gave up left nothing waiting, which is
+    // the case this is about.
     server.an_answer_came_back(
         which,
         "your agent closed without answering".to_owned(),
         true,
         None,
-        Some(&daemon),
+        None,
         &in_english(),
     );
 
