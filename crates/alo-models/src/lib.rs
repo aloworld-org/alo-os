@@ -73,7 +73,7 @@ pub use chat_template::ChatTemplate;
 pub use choosing::NoAgentHere;
 pub use costing::Cost;
 pub use driving::Driving;
-pub use graded_for_turns::{AskedTheWay, THE_WORDS_A_TURN_SHOWS};
+pub use graded_for_turns::{AskedTheWay, THE_WORDS_A_TURN_SHOWED_BEFORE, THE_WORDS_A_TURN_SHOWS};
 pub use measured_on::MeasuredOn;
 pub use ollama::{Ollama, found_on_this_machine};
 pub use pinned::THE_PINNED_RUNTIME;

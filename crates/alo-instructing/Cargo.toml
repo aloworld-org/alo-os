@@ -20,6 +20,9 @@ alo-strings = { path = "../alo-strings" }
 # text, from the primitives the workspace already trusts rather than a second
 # hashing crate.
 ring = { workspace = true }
+# Reading a model's answer to the person (`src/an_answer.rs`, ADR 0133): the
+# one shape a model writes that is not a line of `alo-protocol`.
+serde_json = { workspace = true }
 
 [lints]
 workspace = true

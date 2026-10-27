@@ -79,6 +79,12 @@ when it is wired, by the turn.
    80** against **65 of 80** through `llama.cpp`'s own server (tasks 16 and 17).
    ADR 0034 left this to the turn; the turn had no words at all, and the lane
    that made the measurement is the one that owns naming which text they are.
+
+   *Since 2026-10-27 the set is `Instructions::EveryDoorAndAnAnswer`, which is
+   this one plus the door a question is answered through. Under this one, a
+   question could not be answered at all. The owner chose to set aside every
+   local model's turn grade until it is earned again under the new words:
+   [ADR 0133](0133-a-question-is-answered-inside-the-envelope.md).*
 3. **No grade moves until a turn is composed from here.** `alo-agentd` and
    `alo-turn` are another lane's, and until they compose what they show a model
    from `alo-instructing`, a turn is still shown whatever its caller wrote —

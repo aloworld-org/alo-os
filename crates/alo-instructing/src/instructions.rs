@@ -145,6 +145,76 @@ so a name you guessed is refused and the turn is wasted.
 
 These are the only verbs there are:";
 
+/// **The one paragraph [`EVERY_DOOR_AND_AN_ANSWER`] adds to
+/// [`ONE_EXAMPLE_PER_DOOR`]**: the shape a model answers a person in.
+///
+/// Held separately for [`AND_YOU_MAY_LOOK_FIRST`]'s reason: a test asserts that
+/// taking it out gives [`ONE_EXAMPLE_PER_DOOR`] back, so a measured difference
+/// between the two is these words and nothing else.
+pub const AND_AN_ANSWER: &str = "\
+When the request wants anything done (a file renamed, moved or archived, an
+application opened, brought to the front or closed), propose it, even when it
+also says how things are now.
+
+When the request only asks to be told something, and what you have been shown
+already tells it, answer the person with a line of this shape:
+
+{\"format\":1,\"asks\":{\"answer\":{\"text\":\"YOUR ANSWER, IN PLAIN WORDS\"}}}
+
+An answer does nothing, so never say in one that something was done, is being
+done or will be done. Never propose a change the request did not ask for.
+
+";
+
+/// **Everything [`ONE_EXAMPLE_PER_DOOR`] says, and the shape a question is
+/// answered in** — what a turn shows since 2026-10-27
+/// ([ADR 0133](../../../docs/decisions/0133-a-question-is-answered-inside-the-envelope.md)).
+///
+/// # What it fixes, measured
+///
+/// A turn's reply is held to a shape — by the pinned runtime's grammar and by a
+/// provider's strict schema (ADR 0032, ADR 0107) — and until this the shape had
+/// only `read` and `propose` in it, so a request that asked for no change had no
+/// way to end. On booted machines on 2026-10-25 and 2026-10-27, *list my
+/// documents folder* ended in proposals to install Krita and GIMP. On
+/// 2026-10-27, `crates/alo-agentd/tests/a_question_is_answered_in_words.rs` put
+/// six such requests to `gpt-4o` under [`ONE_EXAMPLE_PER_DOOR`] and **none** was
+/// answered; two rewordings asking for an answer in plain words, with the shape
+/// unchanged, answered none of six and none of nine, because the shape would
+/// not let a plain-words line be written at all.
+///
+/// Written out in full rather than composed, for [`SEVERAL_STEPS`]' reason, and
+/// held to [`ONE_EXAMPLE_PER_DOOR`] plus [`AND_AN_ANSWER`] by a test.
+pub const EVERY_DOOR_AND_AN_ANSWER: &str = "\
+You are talking to a computer, not to a person. Answer with one line of JSON and
+nothing else: no explanation, no code fence, no second line.
+
+For a verb that only answers a question, the line has this shape:
+
+{\"format\":1,\"asks\":{\"read\":{\"verb\":\"NAME\",\"given\":[{\"named\":\"ARGUMENT\",\"is\":VALUE}]}}}
+
+For a verb that changes something, the line has this shape:
+
+{\"format\":1,\"asks\":{\"propose\":{\"verb\":\"NAME\",\"given\":[{\"named\":\"ARGUMENT\",\"is\":VALUE}]}}}
+
+Each verb below says which it is: (read) or (propose). VALUE is text in quotes,
+or a whole number with no quotes. Give every argument the verb takes and no
+others. A path is always a full path.
+
+When the request wants anything done (a file renamed, moved or archived, an
+application opened, brought to the front or closed), propose it, even when it
+also says how things are now.
+
+When the request only asks to be told something, and what you have been shown
+already tells it, answer the person with a line of this shape:
+
+{\"format\":1,\"asks\":{\"answer\":{\"text\":\"YOUR ANSWER, IN PLAIN WORDS\"}}}
+
+An answer does nothing, so never say in one that something was done, is being
+done or will be done. Never propose a change the request did not ask for.
+
+These are the only verbs there are:";
+
 /// **Which instructions a model was shown.**
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Instructions {
@@ -160,26 +230,33 @@ pub enum Instructions {
     /// it there before it has been would make every grade a statement about
     /// text nobody has graded under.
     SeveralSteps,
+    /// [`EVERY_DOOR_AND_AN_ANSWER`]: the second set, and the shape a question
+    /// is answered in. What a turn shows since 2026-10-27.
+    EveryDoorAndAnAnswer,
 }
 
 impl Instructions {
-    /// Both, in the order they were written.
-    pub const ALL: [Self; 3] = [
+    /// Every set, in the order they were written.
+    pub const ALL: [Self; 4] = [
         Self::AsFirstWritten,
         Self::OneExamplePerDoor,
         Self::SeveralSteps,
+        Self::EveryDoorAndAnAnswer,
     ];
 
-    /// **The set an agent turn shows a model** (ADR 0037, decision 2).
+    /// **The set an agent turn shows a model** (ADR 0037, decision 2, as ADR
+    /// 0133 amends it).
     ///
-    /// The choice is a measured one rather than a taste: on an Apple M3 with
-    /// 8 GB the same weights drove the verbs 80 of 80 under these and 71 of 80
-    /// under [`Self::AsFirstWritten`], through the pinned runtime, in the
-    /// envelope — and 80 of 80 against 65 of 80 through `llama.cpp`'s own
-    /// server. A turn shown any other text is a turn no grade is about, so what
-    /// a turn shows is named here, once, and taken by
-    /// [`crate::shown_to_a_turn`].
-    pub const SHOWN_TO_A_TURN: Self = Self::OneExamplePerDoor;
+    /// It was [`Self::OneExamplePerDoor`] until 2026-10-27, a measured choice:
+    /// on an Apple M3 with 8 GB the same weights drove the verbs 80 of 80 under
+    /// it and 71 of 80 under [`Self::AsFirstWritten`]. It is
+    /// [`Self::EveryDoorAndAnAnswer`] now because under the old set a question
+    /// could not be answered at all, and the owner chose that **every local
+    /// model's grade for a turn is set aside** until it is earned again under
+    /// this text, rather than ship a turn that cannot answer (ADR 0133). A turn
+    /// shown any other text is a turn no grade is about, so what a turn shows is
+    /// named here, once, and taken by [`crate::shown_to_a_turn`].
+    pub const SHOWN_TO_A_TURN: Self = Self::EveryDoorAndAnAnswer;
 
     /// The text a model is shown.
     #[must_use]
@@ -188,6 +265,7 @@ impl Instructions {
             Self::AsFirstWritten => HOW_TO_ANSWER,
             Self::OneExamplePerDoor => ONE_EXAMPLE_PER_DOOR,
             Self::SeveralSteps => SEVERAL_STEPS,
+            Self::EveryDoorAndAnAnswer => EVERY_DOOR_AND_AN_ANSWER,
         }
     }
 
@@ -198,6 +276,7 @@ impl Instructions {
             Self::AsFirstWritten => "as-first-written",
             Self::OneExamplePerDoor => "one-example-per-door",
             Self::SeveralSteps => "several-steps",
+            Self::EveryDoorAndAnAnswer => "every-door-and-an-answer",
         }
     }
 
@@ -245,23 +324,52 @@ mod tests {
         );
     }
 
-    /// **And it is not what a turn shows, until it has been measured.**
+    /// **The fourth set is the second plus one paragraph, and nothing else**,
+    /// for the third set's reason above.
+    #[test]
+    fn the_fourth_set_is_the_second_plus_one_paragraph() {
+        assert!(
+            EVERY_DOOR_AND_AN_ANSWER.contains(AND_AN_ANSWER),
+            "the paragraph the fourth set is supposed to add is not in it"
+        );
+        assert_eq!(
+            EVERY_DOOR_AND_AN_ANSWER.replace(AND_AN_ANSWER, ""),
+            ONE_EXAMPLE_PER_DOOR,
+            "the fourth set differs from the second by more than that paragraph"
+        );
+    }
+
+    /// **What a turn shows is the set ADR 0133 chose, and no other.**
     ///
-    /// `SHOWN_TO_A_TURN` is a measured choice (ADR 0037, decision 2). Naming an
-    /// unmeasured set there would make every grade a statement about text
-    /// nobody graded under, which is the fault this whole enum exists to
-    /// prevent. When `several-steps` has been put to the fixed ten, this test
-    /// is the one to come back to.
+    /// `SHOWN_TO_A_TURN` is a decided choice (ADR 0037, decision 2, as ADR 0133
+    /// amends it). Naming another set there would make every grade a statement
+    /// about text nobody graded under, which is the fault this whole enum
+    /// exists to prevent. When `several-steps` has been put to the fixed ten,
+    /// this test is the one to come back to.
     #[test]
     fn what_a_turn_shows_is_a_set_that_has_been_measured() {
         assert_eq!(
             Instructions::SHOWN_TO_A_TURN,
-            Instructions::OneExamplePerDoor
+            Instructions::EveryDoorAndAnAnswer
         );
         assert_ne!(
             Instructions::SHOWN_TO_A_TURN,
             Instructions::SeveralSteps,
             "several-steps became what a turn shows; it needs a grade first"
+        );
+    }
+
+    /// **The set every local model's turn grade was earned under is unchanged**,
+    /// so those grades still name text that exists and can be re-run. It
+    /// stopped being what a turn shows on 2026-10-27 (ADR 0133); it did not
+    /// stop being what they measured.
+    #[test]
+    fn the_set_the_local_grades_were_earned_under_is_unchanged() {
+        assert_eq!(
+            Instructions::OneExamplePerDoor.digest(),
+            "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02",
+            "ONE_EXAMPLE_PER_DOOR changed; every grade earned under it now names text that no \
+             longer exists"
         );
     }
 
@@ -299,14 +407,14 @@ mod tests {
     /// The digest the first instructions had on 2026-09-14.
     const FIRST_WRITTEN_DIGEST: &str = include_str!("instructions_first_written.sha256");
 
-    /// **The set a turn shows is one this crate has**, and it is the one the
-    /// measurements of 2026-09-14 named. A turn shown text with no digest in
-    /// the catalogue is a turn no grade is about.
+    /// **The set a turn shows is one this crate has**, and it is the one ADR
+    /// 0133 named. A turn shown text with no digest here is a turn no grade can
+    /// ever be about.
     #[test]
     fn what_a_turn_is_shown_is_named_and_measured() {
         assert_eq!(
             Instructions::SHOWN_TO_A_TURN,
-            Instructions::OneExamplePerDoor
+            Instructions::EveryDoorAndAnAnswer
         );
         assert_eq!(
             Instructions::of_digest(&Instructions::SHOWN_TO_A_TURN.digest()),
@@ -327,15 +435,18 @@ mod tests {
 
     /// Every set has a digest, and each digest finds its own set.
     ///
-    /// Three now rather than two. The shape of this test was `let [first,
-    /// second] = …`, which is the honest kind of break: adding a set failed to
-    /// compile here rather than quietly leaving the third unchecked.
+    /// Four now. The shape of this test was `let [first, second] = …`, which
+    /// is the honest kind of break: adding a set failed to compile here rather
+    /// than quietly leaving the new one unchecked.
     #[test]
     fn a_digest_names_one_set_of_instructions() {
-        let [first, second, third] = Instructions::ALL.map(Instructions::digest);
+        let [first, second, third, fourth] = Instructions::ALL.map(Instructions::digest);
         assert_ne!(first, second);
         assert_ne!(second, third);
         assert_ne!(first, third);
+        assert_ne!(fourth, first);
+        assert_ne!(fourth, second);
+        assert_ne!(fourth, third);
         assert_eq!(first.len(), 64);
         assert!(
             first
@@ -353,6 +464,10 @@ mod tests {
         assert_eq!(
             Instructions::of_digest(&third),
             Some(Instructions::SeveralSteps)
+        );
+        assert_eq!(
+            Instructions::of_digest(&fourth),
+            Some(Instructions::EveryDoorAndAnAnswer)
         );
         assert_eq!(Instructions::of_digest(&"0".repeat(64)), None);
         assert!(

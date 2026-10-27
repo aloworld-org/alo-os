@@ -56,7 +56,21 @@ use crate::words;
 /// `alo-driving`'s `every_grade_names_instructions_this_crate_has.rs` holds the
 /// two to each other, so the day the text changes this constant fails a test
 /// instead of quietly matching nothing.
+///
+/// **It changed on 2026-10-27, and no local model is graded under it yet.**
+/// The words a turn shows gained the door a question is answered through
+/// (ADR 0133), and the owner chose that every local model's grade for a turn,
+/// earned under `93a7f458…`, is set aside until it is earned again under this
+/// text. Those grades are still in the catalogue, naming the text they were
+/// earned under; this file simply no longer reads them.
 pub const THE_WORDS_A_TURN_SHOWS: &str =
+    "cf522fc50729caf13ce79d9fcb3fd44d48b95cc531316b9e4dac4a67c84ff406";
+
+/// **The words a turn showed until 2026-10-27**, which every local model's
+/// grade for a turn was earned under. Named so those grades can be found and
+/// re-run, and so a test can hold that none of them was lost and none of them
+/// is read (ADR 0133).
+pub const THE_WORDS_A_TURN_SHOWED_BEFORE: &str =
     "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02";
 
 /// The runtime this product pins, as a grade spells its name.
@@ -105,25 +119,40 @@ impl Model {
     /// The entry's grade earned the way a turn asks, wherever it is written:
     /// the entry's own envelope grade, or one of the grades written beside it.
     fn as_a_turn_asks(&self) -> Option<Driving> {
+        self.graded_under(THE_WORDS_A_TURN_SHOWS)
+    }
+
+    /// **The grade it earned the way a turn asked before 2026-10-27**, under
+    /// [`THE_WORDS_A_TURN_SHOWED_BEFORE`]. Never what decides — ADR 0133 set
+    /// these aside — and read only so a machine can say truthfully that its
+    /// models *were* measured, and have not been measured again yet.
+    #[must_use]
+    pub fn as_a_turn_asked_before(&self) -> Option<Driving> {
+        self.graded_under(THE_WORDS_A_TURN_SHOWED_BEFORE)
+    }
+
+    /// The grade earned asked the way a turn asks, under these words.
+    fn graded_under(&self, words: &str) -> Option<Driving> {
         let its_own = match (
             &self.measured_in_the_envelope,
             self.drives_verbs_in_the_envelope,
         ) {
-            (Some(on), Some(grade)) if the_way_a_turn_asks(on) => Some(grade),
+            (Some(on), Some(grade)) if asked_as_a_turn_asks_under(on, words) => Some(grade),
             _ => None,
         };
         its_own.or_else(|| {
             self.also_under
                 .iter()
-                .find(|also| the_way_a_turn_asks(&also.measured_in_the_envelope))
+                .find(|also| asked_as_a_turn_asks_under(&also.measured_in_the_envelope, words))
                 .map(|also| also.drives_verbs_in_the_envelope)
         })
     }
 }
 
-/// Whether this measurement was made the way an agent turn asks.
-fn the_way_a_turn_asks(on: &MeasuredOn) -> bool {
-    on.instructions.as_deref() == Some(THE_WORDS_A_TURN_SHOWS)
+/// Whether this measurement was made the way an agent turn asks, under these
+/// words: in the envelope alone, through the pinned runtime.
+fn asked_as_a_turn_asks_under(on: &MeasuredOn, words: &str) -> bool {
+    on.instructions.as_deref() == Some(words)
         && on.held_to.is_none()
         && on.runtime.starts_with(THE_PINNED_RUNTIMES_NAME)
 }
@@ -137,6 +166,11 @@ mod tests {
     use super::*;
     use crate::Catalogue;
     use crate::testing::in_english;
+
+    /// Whether this measurement was made the way an agent turn asks now.
+    fn the_way_a_turn_asks(on: &MeasuredOn) -> bool {
+        asked_as_a_turn_asks_under(on, THE_WORDS_A_TURN_SHOWS)
+    }
 
     /// The digest the first instructions have, which is **not** the turn's.
     const THE_FIRST_INSTRUCTIONS: &str =
@@ -166,10 +200,39 @@ mod tests {
                 model.id
             );
         }
+        // **None yet, by the owner's decision of 2026-10-27** (ADR 0133): the
+        // words a turn shows changed, and every grade earned the way a turn
+        // asked was earned under the words before. The test below holds that
+        // those grades are all still there and that none of them is read.
+        assert_eq!(
+            found, 0,
+            "an entry is graded under the words a turn shows; this count and ADR 0133 are the \
+             places to say so"
+        );
+    }
+
+    /// **The grades earned under the words a turn showed before are all kept,
+    /// and none of them decides** (ADR 0133). Task 20 measured every entry this
+    /// machine can hold, thirteen of them, under those words; each still names
+    /// them, so each can be run again, and each now has no grade for the turn.
+    #[test]
+    fn the_grades_under_the_words_before_are_kept_and_not_read() {
+        let mut kept = 0;
+        for model in Catalogue::built_in().unwrap().models {
+            if model.as_a_turn_asked_before().is_some() {
+                kept += 1;
+                assert_eq!(
+                    model.grade_for_the_turn().1,
+                    AskedTheWay::NotTheWayATurnAsks,
+                    "{} is decided by a grade earned under the words before",
+                    model.id
+                );
+                assert!(!model.can_be_the_agent(), "{}", model.id);
+            }
+        }
         assert!(
-            found >= 13,
-            "the shipped catalogue has {found} entries measured the way a turn asks, and task 20 \
-             measured every entry this machine can hold"
+            kept >= 13,
+            "{kept} entries keep a grade under the words before; task 20 measured thirteen"
         );
     }
 
@@ -260,10 +323,17 @@ mod tests {
             Some(Driving::Sometimes),
             "the grade under the first instructions stays"
         );
+        // **The grade the turn's words earned is kept, and no longer decides**
+        // (ADR 0133): it was earned under the words a turn showed before.
+        assert_eq!(
+            qwen.as_a_turn_asked_before(),
+            Some(Driving::Reliably),
+            "the grade the words before earned is kept"
+        );
         assert_eq!(
             qwen.grade_for_the_turn(),
-            (Driving::Reliably, AskedTheWay::AsATurnAsks),
-            "and the one the turn's words earned is what decides"
+            (Driving::NotMeasured, AskedTheWay::NotTheWayATurnAsks),
+            "and it no longer decides"
         );
     }
 

@@ -314,20 +314,32 @@ fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
 /// either — which is what it always meant. Both state `min_ram_gb = 10`; eight
 /// gigabytes is where it still applies: five entries fit there, whose licences let
 /// an organisation rely on them, and all five were measured.
+///
+/// **And on 2026-10-27 the words a turn shows changed** (ADR 0133): they gained
+/// the door a question is answered through, without which a question could not
+/// be answered at all. The owner chose to set every turn grade aside until it
+/// is earned again under the new words, so **no machine is given a local agent
+/// today**, and each is told why in a sentence of its own: its models *were*
+/// measured, and have not been measured again yet — with every other answer
+/// still open beneath it. When a model is graded again, this is the test to
+/// turn back.
 #[test]
-fn the_catalogue_we_ship_now_gives_a_machine_with_room_an_agent() {
+fn no_machine_is_given_a_local_agent_until_one_is_graded_again() {
     let shipped = Catalogue::built_in().unwrap();
-    let given = shipped.agent_for_cpu(16.0).unwrap();
-    assert_eq!(given.id, "qwen3-8b");
-    assert_eq!(
-        given.grade_for_the_turn(),
-        (Driving::Reliably, alo_models::AskedTheWay::AsATurnAsks)
+    let with_room = shipped.agent_for_cpu(16.0).unwrap_err();
+    assert!(
+        matches!(
+            with_room,
+            NoAgentHere::NotMeasuredAgain { to_choose_from, measured }
+                if to_choose_from > 0 && measured > 0
+        ),
+        "{with_room:?}"
     );
 
     let refused = shipped.agent_for_cpu(8.0).unwrap_err();
     assert_eq!(
         refused,
-        NoAgentHere::NoneClearsTheBar {
+        NoAgentHere::NotMeasuredAgain {
             to_choose_from: 5,
             measured: 5,
         }
@@ -335,7 +347,7 @@ fn the_catalogue_we_ship_now_gives_a_machine_with_room_an_agent() {
 
     let strings = Strings::of(model_words().unwrap());
     let [why, _, _] = refused.lines(&strings);
-    assert!(why.text().contains("often enough"), "{why}");
+    assert!(why.text().contains("none has been graded again"), "{why}");
 
     // Every model that was measured still runs here. What they lost is the
     // agent, and only because somebody looked.

@@ -1265,6 +1265,7 @@ menus.refused.not-on-this-menu	that is not something this menu offers, so nothin
 models.agent.elsewhere	you can use a model on a machine you have paired with on your network, or a provider you add — whichever you prefer, and alo OS will not choose for you
 models.agent.none-clears-the-bar	the models that run on this machine do not produce a workable instruction often enough to be given the agent
 models.agent.none-measured	no model that runs on this machine has been measured driving the verbs, so alo OS will not give one the agent
+models.agent.not-measured-again	every model that runs here was graded with instructions alo OS no longer gives a model, and none has been graded again yet, so alo OS will not give one the agent
 models.agent.nothing-to-choose-from	no model in this catalogue both runs on this machine and can be used without reading a licence first
 models.agent.weights-you-already-have	you can point alo OS at weights you already have on this machine, and it will run them — this catalogue is what alo OS offers, not everything it can run
 models.brought.already-brought	you already have weights called {name}
