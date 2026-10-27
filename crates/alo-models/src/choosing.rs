@@ -87,6 +87,17 @@ pub enum NoAgentHere {
         /// the difference is why this carries two numbers rather than one.
         measured: usize,
     },
+    /// There were models to choose from, some were measured the way a turn
+    /// asked under the words it showed before 2026-10-27, and none has been
+    /// measured under the words it shows now (ADR 0133). Neither *nobody
+    /// measured* nor *not good enough* is true of it, so it has a sentence of
+    /// its own.
+    NotMeasuredAgain {
+        /// How many models run here and may be used.
+        to_choose_from: usize,
+        /// How many of those were measured under the words a turn showed before.
+        measured: usize,
+    },
 }
 
 impl NoAgentHere {
@@ -96,7 +107,8 @@ impl NoAgentHere {
         match self {
             Self::NothingToChooseFrom => 0,
             Self::NoneMeasured { to_choose_from }
-            | Self::NoneClearsTheBar { to_choose_from, .. } => to_choose_from,
+            | Self::NoneClearsTheBar { to_choose_from, .. }
+            | Self::NotMeasuredAgain { to_choose_from, .. } => to_choose_from,
         }
     }
 
@@ -105,7 +117,9 @@ impl NoAgentHere {
     pub fn measured(self) -> usize {
         match self {
             Self::NothingToChooseFrom | Self::NoneMeasured { .. } => 0,
-            Self::NoneClearsTheBar { measured, .. } => measured,
+            Self::NoneClearsTheBar { measured, .. } | Self::NotMeasuredAgain { measured, .. } => {
+                measured
+            }
         }
     }
 
@@ -116,6 +130,7 @@ impl NoAgentHere {
             Self::NothingToChooseFrom => words::NOTHING_TO_CHOOSE_FROM,
             Self::NoneMeasured { .. } => words::NONE_MEASURED,
             Self::NoneClearsTheBar { .. } => words::NONE_CLEARS_THE_BAR,
+            Self::NotMeasuredAgain { .. } => words::NOT_MEASURED_AGAIN,
         }
     }
 
@@ -182,6 +197,12 @@ impl Catalogue {
             .iter()
             .filter(|model| model.grade_for_the_turn().0.has_been_measured())
             .count();
+        // **Measured, under words a turn no longer shows** (ADR 0133): counted
+        // so the refusal can say they were, rather than that nobody measured.
+        let measured_before = choices
+            .iter()
+            .filter(|model| model.as_a_turn_asked_before().is_some())
+            .count();
         choices
             .into_iter()
             .filter(|model| model.can_be_the_agent())
@@ -191,7 +212,12 @@ impl Catalogue {
                     .cmp(&rank(b))
                     .then(a.parameters_b.total_cmp(&b.parameters_b))
             })
-            .ok_or(if measured == 0 {
+            .ok_or(if measured == 0 && measured_before > 0 {
+                NoAgentHere::NotMeasuredAgain {
+                    to_choose_from,
+                    measured: measured_before,
+                }
+            } else if measured == 0 {
                 NoAgentHere::NoneMeasured { to_choose_from }
             } else {
                 NoAgentHere::NoneClearsTheBar {
@@ -365,6 +391,10 @@ mod tests {
                 to_choose_from: 3,
                 measured: 3,
             },
+            NoAgentHere::NotMeasuredAgain {
+                to_choose_from: 3,
+                measured: 3,
+            },
         ] {
             let [why, _, elsewhere] = refusal.lines(&strings);
             assert!(!why.text().is_empty(), "{refusal:?}");
@@ -389,6 +419,10 @@ mod tests {
             NoAgentHere::NothingToChooseFrom,
             NoAgentHere::NoneMeasured { to_choose_from: 3 },
             NoAgentHere::NoneClearsTheBar {
+                to_choose_from: 3,
+                measured: 3,
+            },
+            NoAgentHere::NotMeasuredAgain {
                 to_choose_from: 3,
                 measured: 3,
             },
@@ -458,6 +492,20 @@ mod tests {
         assert_ne!(unmeasured, failed);
         assert_ne!(nothing, failed);
         assert!(unmeasured.contains("has been measured"), "{unmeasured}");
+
+        // **And a fourth, since 2026-10-27** (ADR 0133): measured, under words
+        // a turn no longer shows. Saying *nobody measured* would deny a
+        // measurement that was made, and *not often enough* would invent a
+        // verdict nobody reached.
+        let not_again = said(NoAgentHere::NotMeasuredAgain {
+            to_choose_from: 2,
+            measured: 2,
+        });
+        for other in [&nothing, &unmeasured, &failed] {
+            assert_ne!(&not_again, other);
+        }
+        assert!(not_again.contains("were measured"), "{not_again}");
+        assert!(not_again.contains("not been measured again"), "{not_again}");
     }
 
     /// Both lines are read in the reader's own language, and a machine that had
@@ -490,6 +538,10 @@ mod tests {
             NoAgentHere::NothingToChooseFrom => 0,
             NoAgentHere::NoneMeasured { to_choose_from } => to_choose_from,
             NoAgentHere::NoneClearsTheBar {
+                to_choose_from,
+                measured,
+            }
+            | NoAgentHere::NotMeasuredAgain {
                 to_choose_from,
                 measured,
             } => to_choose_from + measured,

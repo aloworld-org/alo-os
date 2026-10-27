@@ -119,17 +119,31 @@ impl Model {
     /// The entry's grade earned the way a turn asks, wherever it is written:
     /// the entry's own envelope grade, or one of the grades written beside it.
     fn as_a_turn_asks(&self) -> Option<Driving> {
+        self.graded_under(THE_WORDS_A_TURN_SHOWS)
+    }
+
+    /// **The grade it earned the way a turn asked before 2026-10-27**, under
+    /// [`THE_WORDS_A_TURN_SHOWED_BEFORE`]. Never what decides — ADR 0133 set
+    /// these aside — and read only so a machine can say truthfully that its
+    /// models *were* measured, and have not been measured again yet.
+    #[must_use]
+    pub fn as_a_turn_asked_before(&self) -> Option<Driving> {
+        self.graded_under(THE_WORDS_A_TURN_SHOWED_BEFORE)
+    }
+
+    /// The grade earned asked the way a turn asks, under these words.
+    fn graded_under(&self, words: &str) -> Option<Driving> {
         let its_own = match (
             &self.measured_in_the_envelope,
             self.drives_verbs_in_the_envelope,
         ) {
-            (Some(on), Some(grade)) if the_way_a_turn_asks(on) => Some(grade),
+            (Some(on), Some(grade)) if asked_as_a_turn_asks_under(on, words) => Some(grade),
             _ => None,
         };
         its_own.or_else(|| {
             self.also_under
                 .iter()
-                .find(|also| the_way_a_turn_asks(&also.measured_in_the_envelope))
+                .find(|also| asked_as_a_turn_asks_under(&also.measured_in_the_envelope, words))
                 .map(|also| also.drives_verbs_in_the_envelope)
         })
     }
@@ -137,7 +151,13 @@ impl Model {
 
 /// Whether this measurement was made the way an agent turn asks.
 fn the_way_a_turn_asks(on: &MeasuredOn) -> bool {
-    on.instructions.as_deref() == Some(THE_WORDS_A_TURN_SHOWS)
+    asked_as_a_turn_asks_under(on, THE_WORDS_A_TURN_SHOWS)
+}
+
+/// Whether this measurement was made the way an agent turn asks, under these
+/// words: in the envelope alone, through the pinned runtime.
+fn asked_as_a_turn_asks_under(on: &MeasuredOn, words: &str) -> bool {
+    on.instructions.as_deref() == Some(words)
         && on.held_to.is_none()
         && on.runtime.starts_with(THE_PINNED_RUNTIMES_NAME)
 }
@@ -199,7 +219,7 @@ mod tests {
     fn the_grades_under_the_words_before_are_kept_and_not_read() {
         let mut kept = 0;
         for model in Catalogue::built_in().unwrap().models {
-            if earned_under_the_words_before(&model).is_some() {
+            if model.as_a_turn_asked_before().is_some() {
                 kept += 1;
                 assert_eq!(
                     model.grade_for_the_turn().1,
@@ -280,31 +300,6 @@ mod tests {
         )));
     }
 
-    /// **The grade an entry earned the way a turn asked before 2026-10-27**,
-    /// read exactly as `Model::as_a_turn_asks` reads one, under the words
-    /// before: its own envelope grade, or one of those written beside it.
-    fn earned_under_the_words_before(model: &crate::catalogue::Model) -> Option<Driving> {
-        let before = |on: &MeasuredOn| {
-            on.instructions.as_deref() == Some(THE_WORDS_A_TURN_SHOWED_BEFORE)
-                && on.held_to.is_none()
-                && on.runtime.starts_with(THE_PINNED_RUNTIMES_NAME)
-        };
-        let its_own = match (
-            &model.measured_in_the_envelope,
-            model.drives_verbs_in_the_envelope,
-        ) {
-            (Some(on), Some(grade)) if before(on) => Some(grade),
-            _ => None,
-        };
-        its_own.or_else(|| {
-            model
-                .also_under
-                .iter()
-                .find(|also| before(&also.measured_in_the_envelope))
-                .map(|also| also.drives_verbs_in_the_envelope)
-        })
-    }
-
     /// **No grade is rewritten**: every entry keeps the grades it had, whether
     /// or not any of them is the one that decides.
     #[test]
@@ -331,7 +326,7 @@ mod tests {
         // **The grade the turn's words earned is kept, and no longer decides**
         // (ADR 0133): it was earned under the words a turn showed before.
         assert_eq!(
-            earned_under_the_words_before(&qwen),
+            qwen.as_a_turn_asked_before(),
             Some(Driving::Reliably),
             "the grade the words before earned is kept"
         );

@@ -302,6 +302,16 @@ pub const NONE_CLEARS_THE_BAR: Word = Word::saying(
      numbers shown beside this line rather than inside it.",
 );
 
+/// Models run here and were measured, under instructions a turn no longer
+/// shows, and none has been measured again (ADR 0133).
+pub const NOT_MEASURED_AGAIN: Word = Word::saying(
+    "models.agent.not-measured-again",
+    "the models that run on this machine were measured with instructions alo OS no longer gives      them, and have not been measured again yet, so alo OS will not give one the agent",
+)
+.noting(
+    "Said when the models here were measured, and the instructions an agent turn gives a model      have changed since, so those measurements no longer say how the models would do. Neither of      the two lines above is true then: they were measured, and nothing says they are not good      enough. \"Instructions\" are the words alo OS shows a model at the start of a turn. Do not      soften it into \"might not work\", and do not suggest the models failed.",
+);
+
 /// A model on this machine that this catalogue never listed.
 pub const WEIGHTS_YOU_ALREADY_HAVE: Word = Word::saying(
     "models.agent.weights-you-already-have",
@@ -1011,7 +1021,7 @@ pub const NO_ARTEFACT_YET: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 67] = [
+pub const EVERY_WORD: [Word; 68] = [
     ON_THIS_MACHINE,
     AT_THIS_MACHINES_ADDRESS,
     ON_A_PAIRED_MACHINE,
@@ -1024,6 +1034,7 @@ pub const EVERY_WORD: [Word; 67] = [
     NOTHING_TO_CHOOSE_FROM,
     NONE_MEASURED,
     NONE_CLEARS_THE_BAR,
+    NOT_MEASURED_AGAIN,
     WEIGHTS_YOU_ALREADY_HAVE,
     THE_OTHER_PLACES,
     PROVIDER_UNNAMED,

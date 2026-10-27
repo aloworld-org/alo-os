@@ -66,9 +66,14 @@ fn a_model_measured_rarely_can_still_be_chosen_to_answer_questions() {
         "the grade is shown, so the machine it was earned on must be too"
     );
     assert_eq!(
+        entry.as_a_turn_asked_before(),
+        Some(Driving::Rarely),
+        "it was measured the way a turn asked before 2026-10-27, and that grade is kept"
+    );
+    assert_eq!(
         entry.grade_for_the_turn(),
-        (Driving::Rarely, AskedTheWay::AsATurnAsks),
-        "it was measured the way a turn asks, and that is the grade that decides"
+        (Driving::NotMeasured, AskedTheWay::NotTheWayATurnAsks),
+        "and it no longer decides (ADR 0133)"
     );
     assert!(!entry.can_be_the_agent());
 
@@ -77,22 +82,23 @@ fn a_model_measured_rarely_can_still_be_chosen_to_answer_questions() {
     assert_eq!(chosen.source(), InferenceSource::ThisMachine);
 }
 
-/// **A machine with room is given the agent** (task 19). Two entries clear the
-/// bar in the words a turn shows; the ordering — comfortable before workable,
-/// then larger — picks between them, and the grade read is the one the turn's
-/// own words earned.
+/// **A machine with room was given the agent** (task 19), and since 2026-10-27
+/// is told instead that its models were measured and have not been measured
+/// again (ADR 0133). The entry it was given is still graded `reliably` under
+/// the words a turn showed before, and that grade is kept to be earned again.
 #[test]
-fn a_machine_with_room_is_given_the_model_that_clears_the_bar() {
+fn a_machine_with_room_is_told_its_models_have_not_been_measured_again() {
     let shipped = Catalogue::built_in().unwrap();
-    let given = shipped.agent_for_cpu(SIXTEEN_GIGABYTES).unwrap();
-    assert_eq!(given.id, CLEARS_THE_BAR);
-    assert_eq!(
-        given.grade_for_the_turn(),
-        (Driving::Reliably, AskedTheWay::AsATurnAsks)
+    let refused = shipped.agent_for_cpu(SIXTEEN_GIGABYTES).unwrap_err();
+    assert!(
+        matches!(refused, NoAgentHere::NotMeasuredAgain { measured, .. } if measured > 0),
+        "{refused:?}"
     );
-    assert!(given.can_be_the_agent());
+    let was_given = shipped.get(CLEARS_THE_BAR).unwrap();
+    assert_eq!(was_given.as_a_turn_asked_before(), Some(Driving::Reliably));
+    assert!(!was_given.can_be_the_agent());
     assert_eq!(
-        given.drives_verbs_in_the_envelope,
+        was_given.drives_verbs_in_the_envelope,
         Some(Driving::Sometimes),
         "the grade under the first instructions is kept and is not what decided"
     );
@@ -105,11 +111,14 @@ fn a_machine_with_room_is_given_the_model_that_clears_the_bar() {
 fn the_refusal_is_the_one_for_a_measurement_that_was_made() {
     let shipped = Catalogue::built_in().unwrap();
     let refused = shipped.agent_for_cpu(EIGHT_GIGABYTES).unwrap_err();
+    // Since 2026-10-27 (ADR 0133) those measurements were made under words a
+    // turn no longer shows, which has a sentence of its own — still one for a
+    // measurement that was made.
     assert!(
-        matches!(refused, NoAgentHere::NoneClearsTheBar { measured, .. } if measured > 0),
+        matches!(refused, NoAgentHere::NotMeasuredAgain { measured, .. } if measured > 0),
         "{refused:?}"
     );
-    assert_eq!(refused.word(), words::NONE_CLEARS_THE_BAR);
+    assert_eq!(refused.word(), words::NOT_MEASURED_AGAIN);
 
     let strings = what_this_machine_can_say();
     let [why, brought, elsewhere] = refused.lines(&strings);
@@ -121,7 +130,7 @@ fn the_refusal_is_the_one_for_a_measurement_that_was_made() {
         why.text(),
         strings
             .say(
-                &words::NONE_CLEARS_THE_BAR.key(),
+                &words::NOT_MEASURED_AGAIN.key(),
                 &alo_strings::Filling::nothing()
             )
             .text()
@@ -205,14 +214,16 @@ fn an_offer_says_which_way_the_grade_that_decides_was_earned() {
         Some(Driving::Sometimes),
         "and so is the grade under the first instructions"
     );
+    // Task 20 measured this entry the way a turn asked; since 2026-10-27 that
+    // grade is kept and not read (ADR 0133), and the sentence says so.
+    assert_eq!(entry.as_a_turn_asked_before(), Some(Driving::Reliably));
     let (grade, asked) = entry.grade_for_the_turn();
     assert_eq!(
         (grade, asked),
-        (Driving::Reliably, AskedTheWay::AsATurnAsks),
-        "task 20 measured this entry the way a turn asks, and that is the grade read"
+        (Driving::NotMeasured, AskedTheWay::NotTheWayATurnAsks)
     );
-    assert!(entry.can_be_the_agent());
-    let said = asked.said(&strings);
+    assert!(!entry.can_be_the_agent());
+    let said = AskedTheWay::AsATurnAsks.said(&strings);
     assert!(said.text().contains("the way an agent turn asks"), "{said}");
     assert!(!said.text().contains("models.graded"), "{said}");
 
@@ -224,7 +235,14 @@ fn an_offer_says_which_way_the_grade_that_decides_was_earned() {
         .models
         .iter()
         .partition(|model| model.grade_for_the_turn().1 == AskedTheWay::AsATurnAsks);
-    assert!(asked_that_way.len() >= 13, "{}", asked_that_way.len());
+    assert!(asked_that_way.is_empty(), "{}", asked_that_way.len());
+    assert!(
+        another_way
+            .iter()
+            .filter(|model| model.as_a_turn_asked_before().is_some())
+            .count()
+            >= 13
+    );
     assert!(
         another_way
             .iter()

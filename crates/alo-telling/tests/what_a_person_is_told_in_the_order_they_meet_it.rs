@@ -47,12 +47,14 @@ type Situation = (&'static str, &'static [(Word, &'static str)]);
 /// **Every line a person reads, in the order they meet it.**
 const THE_TABLE: [Situation; 5] = [
     (
-        "The model the catalogue recommends, on a machine with room for none that clear the bar",
+        "The model the catalogue recommends, on a machine whose models were measured under \
+         instructions a turn no longer shows (ADR 0133)",
         &[
             (
-                models::NONE_CLEARS_THE_BAR,
-                "the models that run on this machine do not produce a workable instruction often \
-                 enough to be given the agent",
+                models::NOT_MEASURED_AGAIN,
+                "the models that run on this machine were measured with instructions alo OS no \
+                 longer gives them, and have not been measured again yet, so alo OS will not give \
+                 one the agent",
             ),
             (
                 models::WEIGHTS_YOU_ALREADY_HAVE,
@@ -238,21 +240,19 @@ fn what_a_person_reads(strings: &Strings) -> Vec<(&'static str, Vec<Said>)> {
     ]
 }
 
-/// **A machine with room reads no refusal, because it is given a model** (task
-/// 19). The first row of the table is what a person meets when nothing that
-/// clears the bar fits; where something does, there is nothing to read and an
-/// entry to run.
+/// **A machine with room reads the same first row as one without, for now.**
+/// From task 19 a machine with room for an entry that cleared the bar was given
+/// it and read no refusal. Since 2026-10-27 the words a turn shows have changed
+/// and every grade under the old ones is set aside until earned again (ADR
+/// 0133), so both machines read why — and the reason is the same one. When a
+/// model is graded again, this is the test to turn back.
 #[test]
-fn a_machine_with_room_is_given_a_model_rather_than_a_sentence() {
+fn a_machine_with_room_reads_the_same_reason_until_a_model_is_graded_again() {
     let shipped = Catalogue::built_in().unwrap();
-    // Since task 19 two entries clear the bar in the words a turn shows, so a
-    // machine with room for one is given it.
-    let given = shipped.agent_for_cpu(SIXTEEN_GIGABYTES).unwrap();
-    assert!(given.can_be_the_agent());
-    assert!(
-        shipped.agent_for_cpu(EIGHT_GIGABYTES).is_err(),
-        "and a machine that cannot hold either is still told so"
-    );
+    let with_room = shipped.agent_for_cpu(SIXTEEN_GIGABYTES).unwrap_err();
+    let without = shipped.agent_for_cpu(EIGHT_GIGABYTES).unwrap_err();
+    assert_eq!(with_room.word(), without.word());
+    assert_eq!(with_room.word(), models::NOT_MEASURED_AGAIN);
 }
 
 /// **The sequence a person reads is the table**, word for word and in order.

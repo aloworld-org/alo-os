@@ -319,24 +319,35 @@ fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
 /// the door a question is answered through, without which a question could not
 /// be answered at all. The owner chose to set every turn grade aside until it
 /// is earned again under the new words, so **no machine is given a local agent
-/// today**, and each is told why in the sentence for a model nobody has
-/// measured that way — with every other answer still open beneath it. When a
-/// model is graded again, this is the test to turn back.
+/// today**, and each is told why in a sentence of its own: its models *were*
+/// measured, and have not been measured again yet — with every other answer
+/// still open beneath it. When a model is graded again, this is the test to
+/// turn back.
 #[test]
 fn no_machine_is_given_a_local_agent_until_one_is_graded_again() {
     let shipped = Catalogue::built_in().unwrap();
     let with_room = shipped.agent_for_cpu(16.0).unwrap_err();
     assert!(
-        matches!(with_room, NoAgentHere::NoneMeasured { to_choose_from } if to_choose_from > 0),
+        matches!(
+            with_room,
+            NoAgentHere::NotMeasuredAgain { to_choose_from, measured }
+                if to_choose_from > 0 && measured > 0
+        ),
         "{with_room:?}"
     );
 
     let refused = shipped.agent_for_cpu(8.0).unwrap_err();
-    assert_eq!(refused, NoAgentHere::NoneMeasured { to_choose_from: 5 });
+    assert_eq!(
+        refused,
+        NoAgentHere::NotMeasuredAgain {
+            to_choose_from: 5,
+            measured: 5,
+        }
+    );
 
     let strings = Strings::of(model_words().unwrap());
     let [why, _, _] = refused.lines(&strings);
-    assert!(why.text().contains("will not give one the agent"), "{why}");
+    assert!(why.text().contains("not been measured again"), "{why}");
 
     // Every model that was measured still runs here. What they lost is the
     // agent, and only because somebody looked.
