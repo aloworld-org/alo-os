@@ -37,7 +37,10 @@
 /// which is what kind of file it was handed — then the two a link-local
 /// destination needs to be decided on its interface (ADR 0041), and last the
 /// one that says whether a message carries control messages, which can move an
-/// IPv4 datagram off the interface its socket is held to (ADR 0044).
+/// IPv4 datagram off the interface its socket is held to (ADR 0044). The last
+/// four tell one btrfs subvolume from another, which the filesystem's own
+/// device number cannot
+/// (`docs/quirks/btrfs-gives-every-subvolume-its-own-device-number.md`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Field {
     /// `struct file`'s `f_path` — where the open's own path begins.
@@ -130,14 +133,50 @@ pub enum Field {
     /// control messages is decided as a message held to no interface. The bytes
     /// of the control messages are not read.
     MessageControlLength,
+
+    /// `struct super_block`'s `s_magic` — which kind of filesystem this is.
+    ///
+    /// Read to ask one question: is this btrfs, whose device number is the
+    /// subvolume's rather than the filesystem's?
+    SuperMagic,
+
+    /// `struct btrfs_inode`'s `vfs_inode.i_ino` — the inode number again, as
+    /// btrfs's own inode holds it.
+    ///
+    /// Read for **where** it is, never for what it is. btrfs keeps the inode the
+    /// program holds inside a larger one of its own, and the distance between
+    /// this offset and [`Field::InodeNumber`]'s is where the larger one begins.
+    /// Asked this way, rather than for `vfs_inode` itself, because a `struct
+    /// inode` is a different size on every kernel and an inode number is not, so
+    /// the width check still means something.
+    BtrfsInodeNumber,
+
+    /// `struct btrfs_inode`'s `root` — the subvolume this inode is in.
+    BtrfsInodeRoot,
+
+    /// `struct btrfs_root`'s `anon_dev` — the device number btrfs gives that
+    /// subvolume, which is the one `stat` reports as `st_dev`.
+    BtrfsRootDevice,
 }
+
+/// What `s_magic` holds on a btrfs filesystem, as `include/uapi/linux/magic.h`
+/// names it (`BTRFS_SUPER_MAGIC`).
+pub const BTRFS_MAGIC: u64 = 0x9123_683E;
+
+/// What the loader writes into a slot for a field this kernel does not
+/// describe, which only a field [`Field::only_btrfs_has`] may be.
+///
+/// Not zero, because zero is a real offset. A program that finds this in a
+/// slot it needs refuses: it cannot tell one subvolume from another, so it
+/// does not guess.
+pub const NOT_IN_THIS_KERNEL: u32 = u32::MAX;
 
 impl Field {
     /// Every field the program needs, in the order it needs them.
     ///
     /// The loader walks this, so a field added here is a field looked up rather
     /// than a field silently left at zero.
-    pub const ALL: [Self; 17] = [
+    pub const ALL: [Self; 21] = [
         Self::FilePath,
         Self::PathDentry,
         Self::DentryParent,
@@ -155,7 +194,27 @@ impl Field {
         Self::SockBoundInterface,
         Self::MessageNameLength,
         Self::MessageControlLength,
+        Self::SuperMagic,
+        Self::BtrfsInodeNumber,
+        Self::BtrfsInodeRoot,
+        Self::BtrfsRootDevice,
     ];
+
+    /// Whether this field belongs to btrfs rather than to every kernel.
+    ///
+    /// A kernel that builds btrfs as a module describes its structures
+    /// somewhere other than `/sys/kernel/btf/vmlinux`, and a kernel without
+    /// btrfs has none. Neither is a reason to impose no boundary on any other
+    /// filesystem, so these three are written as [`NOT_IN_THIS_KERNEL`] there
+    /// and every file on btrfs is refused instead. The image's kernel builds
+    /// btrfs in and describes all three.
+    #[must_use]
+    pub const fn only_btrfs_has(self) -> bool {
+        matches!(
+            self,
+            Self::BtrfsInodeNumber | Self::BtrfsInodeRoot | Self::BtrfsRootDevice
+        )
+    }
 
     /// The slot in the map this field's offset is written into and read out of.
     #[must_use]
@@ -178,6 +237,10 @@ impl Field {
             Self::SockBoundInterface => 14,
             Self::MessageNameLength => 15,
             Self::MessageControlLength => 16,
+            Self::SuperMagic => 17,
+            Self::BtrfsInodeNumber => 18,
+            Self::BtrfsInodeRoot => 19,
+            Self::BtrfsRootDevice => 20,
         }
     }
 
@@ -189,7 +252,7 @@ impl Field {
             Self::PathDentry => "path",
             Self::DentryParent | Self::DentryInode | Self::DentrySuper => "dentry",
             Self::InodeNumber | Self::InodeMode => "inode",
-            Self::SuperDevice => "super_block",
+            Self::SuperDevice | Self::SuperMagic => "super_block",
             Self::SocketSock => "socket",
             Self::SockFamily
             | Self::SockPort
@@ -197,6 +260,8 @@ impl Field {
             | Self::SockAddress6
             | Self::SockBoundInterface => "sock",
             Self::MessageName | Self::MessageNameLength | Self::MessageControlLength => "msghdr",
+            Self::BtrfsInodeNumber | Self::BtrfsInodeRoot => "btrfs_inode",
+            Self::BtrfsRootDevice => "btrfs_root",
         }
     }
 
@@ -230,6 +295,10 @@ impl Field {
             Self::SockBoundInterface => "__sk_common.skc_bound_dev_if",
             Self::MessageNameLength => "msg_namelen",
             Self::MessageControlLength => "msg_controllen",
+            Self::SuperMagic => "s_magic",
+            Self::BtrfsInodeNumber => "vfs_inode.i_ino",
+            Self::BtrfsInodeRoot => "root",
+            Self::BtrfsRootDevice => "anon_dev",
         }
     }
 
@@ -251,13 +320,15 @@ impl Field {
             | Self::DentryInode
             | Self::DentrySuper
             | Self::SocketSock
-            | Self::MessageName => 8,
+            | Self::MessageName
+            | Self::BtrfsInodeRoot => 8,
             // `__kernel_size_t`, which is an `unsigned long`.
             Self::MessageControlLength => 8,
-            // `unsigned long` on the machines alo OS certifies.
-            Self::InodeNumber => 8,
+            // `unsigned long` on the machines alo OS certifies, and a magic
+            // number is one too.
+            Self::InodeNumber | Self::BtrfsInodeNumber | Self::SuperMagic => 8,
             // `dev_t`, which is thirty-two bits and has been since 2.6.
-            Self::SuperDevice => 4,
+            Self::SuperDevice | Self::BtrfsRootDevice => 4,
             // A family and a port are both sixteen bits, in every `sockaddr`
             // there is and in the socket that remembers them — and so is a
             // mode, which is `umode_t`, an `unsigned short`.
@@ -280,7 +351,7 @@ mod tests {
     /// step through the beginning of a `struct file` and refuse everything.
     #[test]
     fn every_field_is_in_the_list_exactly_once() {
-        assert_eq!(Field::ALL.len(), 17);
+        assert_eq!(Field::ALL.len(), 21);
         for (slot, field) in Field::ALL.iter().enumerate() {
             assert_eq!(field.index() as usize, slot);
         }
@@ -323,5 +394,27 @@ mod tests {
                 field.member()
             );
         }
+    }
+
+    /// Only the three fields btrfs itself declares may be absent. `s_magic` is
+    /// every filesystem's, and a kernel without it is one where the program
+    /// could not even ask whether a file is on btrfs.
+    #[test]
+    fn only_the_three_btrfs_structures_may_be_absent() {
+        for field in Field::ALL {
+            assert_eq!(
+                field.only_btrfs_has(),
+                field.structure().starts_with("btrfs_"),
+                "{field:?}"
+            );
+        }
+    }
+
+    /// The marker for an absent field is no offset any of these structures
+    /// has, so it cannot be read as one.
+    #[test]
+    fn the_marker_for_an_absent_field_is_not_an_offset() {
+        const { assert!(NOT_IN_THIS_KERNEL != 0) };
+        const { assert!(NOT_IN_THIS_KERNEL > 1 << 20) };
     }
 }

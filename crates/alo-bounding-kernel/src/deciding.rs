@@ -123,7 +123,7 @@
 //! program to make the calls for it, because starting one opens the program's
 //! own file and that is a `file_open`.
 
-use alo_bounding_map::{Bounds, Field, Place, reaches};
+use alo_bounding_map::{BTRFS_MAGIC, Field, NOT_IN_THIS_KERNEL, Place, Places, reaches};
 
 use crate::kernel;
 
@@ -140,12 +140,12 @@ pub(crate) const REFUSED: i32 = -13;
 
 /// Whether this open may go ahead.
 pub fn decide(file: u64) -> i32 {
-    let Some(granted) = kernel::granted(kernel::turn()) else {
+    let Some(granted) = kernel::granted_places(kernel::turn()) else {
         // Not a turn. This is the answer for every other process on the
         // machine, and nothing about it is remembered.
         return ALLOWED;
     };
-    if inside(file, granted) {
+    if inside(file, &granted) {
         ALLOWED
     } else {
         REFUSED
@@ -227,13 +227,13 @@ const A_PIPE: u16 = 0o010_000;
 /// way to its contents this hook does not see. `docs/quirks.md` names it
 /// beside what closed here, and why the committed suite cannot reproduce it.
 pub fn decide_use(file: u64) -> i32 {
-    let Some(granted) = kernel::granted(kernel::turn()) else {
+    let Some(granted) = kernel::granted_places(kernel::turn()) else {
         // Not a turn, and this is almost every read and write on the machine.
         return ALLOWED;
     };
     match kind_of(file) {
         Some(A_SOCKET | A_PIPE) => ALLOWED,
-        Some(_) if inside(file, granted) => ALLOWED,
+        Some(_) if inside(file, &granted) => ALLOWED,
         _ => REFUSED,
     }
 }
@@ -325,7 +325,7 @@ fn kind_at(entry: u64) -> Option<u16> {
 ///
 /// Allowed, and nothing is remembered.
 pub fn decide_asking(path: u64) -> i32 {
-    let Some(granted) = kernel::granted(kernel::turn()) else {
+    let Some(granted) = kernel::granted_places(kernel::turn()) else {
         // Not a turn, and this is almost every `stat` on the machine.
         return ALLOWED;
     };
@@ -334,7 +334,7 @@ pub fn decide_asking(path: u64) -> i32 {
     };
     match kind_at(entry) {
         Some(A_SOCKET | A_PIPE) => ALLOWED,
-        Some(_) if entry_inside(entry, granted) => ALLOWED,
+        Some(_) if entry_inside(entry, &granted) => ALLOWED,
         _ => REFUSED,
     }
 }
@@ -531,7 +531,7 @@ pub fn decide_link(old_entry: u64, new_entry: u64) -> i32 {
 /// folder a `move_file` takes a file out of is not a place its call named, and
 /// widening a bound to include it is the thing this must not do.
 fn a_name_being_made(old_entry: u64, new_entry: u64) -> i32 {
-    let Some(granted) = kernel::granted(kernel::turn()) else {
+    let Some(granted) = kernel::granted_places(kernel::turn()) else {
         // Not a turn, and this is almost every rename and link on the machine.
         return ALLOWED;
     };
@@ -541,7 +541,7 @@ fn a_name_being_made(old_entry: u64, new_entry: u64) -> i32 {
     let Some(new_folder) = kernel::word_at(new_entry.wrapping_add(fields.dentry_parent)) else {
         return REFUSED;
     };
-    if upwards_from(old_entry, &fields, granted) && upwards_from(new_folder, &fields, granted) {
+    if upwards_from(old_entry, &fields, &granted) && upwards_from(new_folder, &fields, &granted) {
         ALLOWED
     } else {
         REFUSED
@@ -625,7 +625,7 @@ pub fn decide_delete(entry: u64) -> i32 {
 /// made on the machine, and for all of them it is one hash lookup and a
 /// return.
 pub fn decide_making(entry: u64) -> i32 {
-    let Some(granted) = kernel::granted(kernel::turn()) else {
+    let Some(granted) = kernel::granted_places(kernel::turn()) else {
         // Not a turn, and this is almost every file and folder made on the
         // machine.
         return ALLOWED;
@@ -636,7 +636,7 @@ pub fn decide_making(entry: u64) -> i32 {
     let Some(folder) = kernel::word_at(entry.wrapping_add(fields.dentry_parent)) else {
         return REFUSED;
     };
-    if upwards_from(folder, &fields, granted) {
+    if upwards_from(folder, &fields, &granted) {
         ALLOWED
     } else {
         REFUSED
@@ -696,12 +696,12 @@ pub fn decide_attribute(entry: u64) -> i32 {
 /// walk from different places or come to different answers about the same
 /// entry.
 fn this_entry(entry: u64) -> i32 {
-    let Some(granted) = kernel::granted(kernel::turn()) else {
+    let Some(granted) = kernel::granted_places(kernel::turn()) else {
         // Not a turn, and this is almost every delete, attribute change and
         // question about a file on the machine.
         return ALLOWED;
     };
-    if entry_inside(entry, granted) {
+    if entry_inside(entry, &granted) {
         ALLOWED
     } else {
         REFUSED
@@ -712,7 +712,7 @@ fn this_entry(entry: u64) -> i32 {
 ///
 /// The fetch of the fields and the walk, for the hooks that already hold an
 /// entry; [`inside`] is the same for the hooks that hold a file.
-fn entry_inside(entry: u64, granted: Bounds) -> bool {
+fn entry_inside(entry: u64, granted: &Places) -> bool {
     let Some(fields) = Fields::found() else {
         return false;
     };
@@ -720,7 +720,7 @@ fn entry_inside(entry: u64, granted: Bounds) -> bool {
 }
 
 /// Whether the file this open is for lies at or under a granted place.
-fn inside(file: u64, granted: Bounds) -> bool {
+fn inside(file: u64, granted: &Places) -> bool {
     let Some(fields) = Fields::found() else {
         return false;
     };
@@ -750,7 +750,7 @@ fn entry_of(file: u64, fields: &Fields) -> Option<u64> {
 /// place is met or the top of the filesystem is. Two copies of it would be two
 /// answers to *is this inside* waiting to disagree, and one of them would be on
 /// the hook nobody was looking at.
-fn upwards_from(entry: u64, fields: &Fields, granted: Bounds) -> bool {
+fn upwards_from(entry: u64, fields: &Fields, granted: &Places) -> bool {
     let mut at = entry;
     let mut ended = false;
     reaches(granted, || {
@@ -790,8 +790,26 @@ struct Fields {
     super_device: u64,
 }
 
+/// The three steps from an inode on btrfs to its subvolume's device number.
+///
+/// Fetched at the step that needs them rather than kept in [`Fields`], because
+/// every hook holds its own copy of [`Fields`] and the kernel allows a program
+/// 512 bytes of stack across its calls. With these kept there, 6.19.14
+/// refused to load the program: *combined stack size of 3 calls is 672*, on
+/// 2026-10-26. `alo_bounding_map::Places` is the rest of that story.
+#[derive(Clone, Copy)]
+struct Btrfs {
+    /// `struct btrfs_inode`'s `vfs_inode.i_ino`, which with
+    /// [`Fields::inode_number`] says where btrfs's inode begins.
+    inode_number: u64,
+    /// `struct btrfs_inode`'s `root`.
+    root: u64,
+    /// `struct btrfs_root`'s `anon_dev`.
+    device: u64,
+}
+
 impl Fields {
-    /// The seven offsets, or [`None`] if the daemon did not put them there.
+    /// The offsets, or [`None`] if the daemon did not put them there.
     ///
     /// [`None`] cannot happen on a machine whose boundary loaded — the daemon
     /// fills the map before it attaches the program — and it refuses rather
@@ -811,11 +829,48 @@ impl Fields {
     }
 
     /// Which filesystem, and which inode, a directory entry names.
+    ///
+    /// On btrfs the device is the subvolume's rather than the filesystem's,
+    /// because btrfs numbers inodes per subvolume and the filesystem's number
+    /// would make one grant name a place in every subvolume and every snapshot
+    /// at once. It is the number `stat` reports there, which is what the daemon
+    /// wrote down. [`None`] when this kernel did not say where btrfs keeps it,
+    /// and the walk refuses.
     fn place_of(&self, entry: u64) -> Option<Place> {
         let inode = kernel::word_at(entry.wrapping_add(self.dentry_inode))?;
         let filesystem = kernel::word_at(entry.wrapping_add(self.dentry_super))?;
         let number = kernel::word_at(inode.wrapping_add(self.inode_number))?;
-        let device = kernel::half_word_at(filesystem.wrapping_add(self.super_device))?;
+        let magic = kernel::offset(Field::SuperMagic)?;
+        // Where the device number is, rather than the number, so that one read
+        // serves both filesystems: each read takes a slot of the 512 bytes of
+        // stack the kernel allows, and the walk had none to spare.
+        let device_at = if kernel::word_at(filesystem.wrapping_add(magic))? == BTRFS_MAGIC {
+            let btrfs = Btrfs::found()?;
+            // `inode` is the address of `vfs_inode` inside btrfs's own inode,
+            // so where that one begins is as far back as `vfs_inode` is in.
+            let around = inode
+                .wrapping_add(self.inode_number)
+                .wrapping_sub(btrfs.inode_number);
+            let root = kernel::word_at(around.wrapping_add(btrfs.root))?;
+            root.wrapping_add(btrfs.device)
+        } else {
+            filesystem.wrapping_add(self.super_device)
+        };
+        let device = kernel::half_word_at(device_at)?;
         Some(Place::of(u64::from(device), number))
+    }
+}
+
+impl Btrfs {
+    /// The three offsets, or [`None`] if any of them is
+    /// [`NOT_IN_THIS_KERNEL`] — a kernel that does not describe btrfs, where
+    /// every file on btrfs is refused.
+    fn found() -> Option<Self> {
+        let said = |field| kernel::offset(field).filter(|at| *at != u64::from(NOT_IN_THIS_KERNEL));
+        Some(Self {
+            inode_number: said(Field::BtrfsInodeNumber)?,
+            root: said(Field::BtrfsInodeRoot)?,
+            device: said(Field::BtrfsRootDevice)?,
+        })
     }
 }

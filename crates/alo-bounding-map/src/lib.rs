@@ -61,9 +61,9 @@ mod field;
 mod reaching;
 
 pub use bound::Place;
-pub use bounds::{Bounds, PLACES, WORDS};
+pub use bounds::{Bounds, PLACES, Places, WORDS};
 pub use departure::{
     DESTINATIONS, Departure, Departures, Family, keeps_its_interface, needs_an_interface,
 };
-pub use field::Field;
+pub use field::{BTRFS_MAGIC, Field, NOT_IN_THIS_KERNEL};
 pub use reaching::{DEPTH, reaches};

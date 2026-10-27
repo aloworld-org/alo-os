@@ -8,13 +8,13 @@
 //!
 //! # One walk, and every granted place asked at each step
 //!
-//! A turn is bound to several places ([`Bounds`]), and there are two ways to ask
+//! A turn is bound to several places ([`Places`]), and there are two ways to ask
 //! about them: walk once per place, or walk once and compare each step against
 //! all of them. It is the second, and the reason is what the two halves cost.
 //! **A step is four reads of kernel memory; a comparison is two numbers.** So a
 //! second walk would multiply the expensive half by the number of places, and
 //! asking all of them at each step adds nothing the verifier has to think about
-//! — the loop is still [`DEPTH`] steps long, and the inner one is [`Bounds`]'
+//! — the loop is still [`DEPTH`] steps long, and the inner one is [`Places`]'
 //! own fixed width.
 //!
 //! # Three rules, and each of them fails closed
@@ -38,7 +38,7 @@
 //! somebody an error message instead of costing them a file.
 
 use crate::bound::Place;
-use crate::bounds::Bounds;
+use crate::bounds::Places;
 
 /// How far up the tree the kernel looks before it gives up and refuses.
 ///
@@ -64,16 +64,16 @@ pub const DEPTH: usize = 32;
 /// let granted = Bounds::of(&[invoices, archive]).expect("two is not too many");
 ///
 /// let mut chain = [Place::of(64, 300), invoices].into_iter();
-/// assert!(reaches(granted, || chain.next()));
+/// assert!(reaches(&granted.places(), || chain.next()));
 ///
 /// // The second place a call named answers the same walk.
 /// let mut into = [Place::of(64, 301), archive].into_iter();
-/// assert!(reaches(granted, || into.next()));
+/// assert!(reaches(&granted.places(), || into.next()));
 ///
 /// let mut elsewhere = [Place::of(64, 300), Place::of(64, 2)].into_iter();
-/// assert!(!reaches(granted, || elsewhere.next()));
+/// assert!(!reaches(&granted.places(), || elsewhere.next()));
 /// ```
-pub fn reaches(granted: Bounds, mut step: impl FnMut() -> Option<Place>) -> bool {
+pub fn reaches(granted: &Places, mut step: impl FnMut() -> Option<Place>) -> bool {
     let mut taken = 0;
     while taken < DEPTH {
         match step() {
@@ -92,7 +92,7 @@ pub fn reaches(granted: Bounds, mut step: impl FnMut() -> Option<Place>) -> bool
 )]
 mod tests {
     use super::*;
-    use crate::bounds::PLACES;
+    use crate::bounds::{Bounds, PLACES};
 
     /// Walks the chain a real open produces: the file, then each directory
     /// above it, ending at the top of the filesystem.
@@ -111,7 +111,7 @@ mod tests {
     fn a_file_under_the_granted_folder_is_inside_it() {
         let granted = Place::of(64, 100);
         let chain = [Place::of(64, 501), Place::of(64, 400), granted];
-        assert!(reaches(only(granted), walking(&chain)));
+        assert!(reaches(&only(granted).places(), walking(&chain)));
     }
 
     /// A grant over one document — what a person had open when they invoked the
@@ -120,7 +120,7 @@ mod tests {
     fn the_granted_file_itself_is_inside_the_grant() {
         let granted = Place::of(64, 501);
         let chain = [granted, Place::of(64, 400)];
-        assert!(reaches(only(granted), walking(&chain)));
+        assert!(reaches(&only(granted).places(), walking(&chain)));
     }
 
     /// The refusal this whole mechanism exists for: a file whose directories
@@ -129,7 +129,7 @@ mod tests {
     fn a_file_the_walk_never_meets_is_refused() {
         let granted = Place::of(64, 100);
         let chain = [Place::of(64, 900), Place::of(64, 800), Place::of(64, 2)];
-        assert!(!reaches(only(granted), walking(&chain)));
+        assert!(!reaches(&only(granted).places(), walking(&chain)));
     }
 
     /// **The second place a call named answers the same walk**, and so does the
@@ -147,10 +147,10 @@ mod tests {
         let bound = Bounds::of(&granted).expect("four is not too many");
         for place in granted {
             let chain = [Place::of(64, 999), Place::of(64, 998), place];
-            assert!(reaches(bound, walking(&chain)), "{place:?}");
+            assert!(reaches(&bound.places(), walking(&chain)), "{place:?}");
         }
         let nowhere_near = [Place::of(64, 999), Place::of(66, 901)];
-        assert!(!reaches(bound, walking(&nowhere_near)));
+        assert!(!reaches(&bound.places(), walking(&nowhere_near)));
     }
 
     /// **A turn bound to nowhere reaches nothing**, which is what an entry whose
@@ -164,7 +164,7 @@ mod tests {
         words[2] = 100;
         let nowhere = Bounds::of_words(words);
         let chain = [Place::of(64, 501), Place::of(64, 100)];
-        assert!(!reaches(nowhere, walking(&chain)));
+        assert!(!reaches(&nowhere.places(), walking(&chain)));
     }
 
     /// A folder on another filesystem with the granted folder's inode number is
@@ -174,10 +174,10 @@ mod tests {
     fn the_granted_inode_on_another_filesystem_is_not_the_grant() {
         let granted = Place::of(64, 100);
         let chain = [Place::of(65, 501), Place::of(65, 100)];
-        assert!(!reaches(only(granted), walking(&chain)));
+        assert!(!reaches(&only(granted).places(), walking(&chain)));
 
         let both = Bounds::of(&[granted, Place::of(65, 700)]).expect("two is not too many");
-        assert!(!reaches(both, walking(&chain)));
+        assert!(!reaches(&both.places(), walking(&chain)));
     }
 
     /// A kernel that will not answer, and a filesystem whose top has been
@@ -187,9 +187,9 @@ mod tests {
     #[test]
     fn a_walk_that_cannot_be_taken_refuses() {
         let granted = only(Place::of(64, 100));
-        assert!(!reaches(granted, || None));
+        assert!(!reaches(&granted.places(), || None));
         let mut given = 0;
-        assert!(!reaches(granted, || {
+        assert!(!reaches(&granted.places(), || {
             given += 1;
             (given < 3).then(|| Place::of(64, 900))
         }));
@@ -207,7 +207,7 @@ mod tests {
         let met = Place::of(64, 100);
         let granted = Bounds::of(&[met; PLACES]).expect("PLACES is not too many");
         let mut given: u64 = 0;
-        let deep = reaches(granted, || {
+        let deep = reaches(&granted.places(), || {
             given += 1;
             Some(if given > DEPTH as u64 {
                 met
@@ -218,7 +218,7 @@ mod tests {
         assert!(!deep);
 
         let mut given: u64 = 0;
-        let just_inside = reaches(granted, || {
+        let just_inside = reaches(&granted.places(), || {
             given += 1;
             Some(if given == DEPTH as u64 {
                 met

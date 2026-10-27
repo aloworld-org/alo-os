@@ -5,7 +5,7 @@
 //! machine, and a test that read the real one would pass or fail for reasons
 //! belonging to whoever built the kernel rather than to this repository.
 //!
-//! So this builds a small one — the structures with the seventeen members the
+//! So this builds a small one — the structures with the twenty-one members the
 //! program looks for, in a layout chosen to be *wrong* in the ways a real
 //! kernel is inconvenient: a device number reached through two names before it
 //! is an integer, a member that is a structure rather than a pointer to one, a
@@ -39,6 +39,12 @@ pub fn type_information_with_a_narrow_inode_number() -> Vec<u8> {
     written(Kernel::WithANarrowInodeNumber)
 }
 
+/// A kernel that says nothing about btrfs, which is what one that builds btrfs
+/// as a module looks like from `/sys/kernel/btf/vmlinux`.
+pub fn type_information_without_btrfs() -> Vec<u8> {
+    written(Kernel::WithoutBtrfs)
+}
+
 /// A kernel whose `struct file` holds an anonymous member of its own type.
 ///
 /// No compiler would emit it, which is exactly why it is here: this file is
@@ -49,7 +55,7 @@ pub fn type_information_that_points_into_itself() -> Vec<u8> {
     written(Kernel::ThatPointsIntoItself)
 }
 
-/// Which of the four fixtures is being written.
+/// Which of the five fixtures is being written.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kernel {
     /// One this boundary can be imposed on.
@@ -63,6 +69,9 @@ enum Kernel {
 
     /// One whose anonymous member leads back to where it started.
     ThatPointsIntoItself,
+
+    /// One with no btrfs structures in it.
+    WithoutBtrfs,
 }
 
 /// The fixture, in whichever of its three shapes.
@@ -115,7 +124,11 @@ fn written(kernel: Kernel) -> Vec<u8> {
         super_block,
         "super_block",
         900,
-        &[("s_blocksize", unsigned_long, 0), ("s_dev", dev_t, 8)],
+        &[
+            ("s_blocksize", unsigned_long, 0),
+            ("s_dev", dev_t, 8),
+            ("s_magic", unsigned_long, 48),
+        ],
     );
     writing.structure(
         path,
@@ -241,6 +254,27 @@ fn written(kernel: Kernel) -> Vec<u8> {
             ("msg_controllen", unsigned_long, 48),
         ],
     );
+
+    // btrfs keeps the inode every other filesystem would hand over inside one
+    // of its own, behind a pointer to the subvolume. Embedded four hundred
+    // bytes in, so the inode number inside it is found as a sum.
+    if kernel != Kernel::WithoutBtrfs {
+        let btrfs_root = writing.reserve();
+        let btrfs_root_pointer = writing.pointer_to(btrfs_root);
+        let btrfs_inode = writing.reserve();
+        writing.structure(
+            btrfs_root,
+            "btrfs_root",
+            1000,
+            &[("fs_info", unsigned_long, 0), ("anon_dev", dev_t, 120)],
+        );
+        writing.structure(
+            btrfs_inode,
+            "btrfs_inode",
+            1100,
+            &[("root", btrfs_root_pointer, 0), ("vfs_inode", inode, 400)],
+        );
+    }
 
     writing.finished()
 }

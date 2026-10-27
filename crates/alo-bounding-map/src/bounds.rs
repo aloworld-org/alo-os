@@ -189,12 +189,11 @@ impl Bounds {
 
     /// Whether `place` is one of the places this turn was bound to.
     ///
-    /// Asked once per step of the walk in [`crate::reaches`], against every
-    /// place at once: the walk is what costs, and comparing four pairs of
-    /// numbers is free beside a read of kernel memory.
+    /// [`Places::holds`] answers, so that the walk, which holds only the
+    /// places, cannot come to a different answer than the whole bound.
     #[must_use]
     pub fn holds(&self, place: Place) -> bool {
-        self.each().any(|here| here == place)
+        self.places().holds(place)
     }
 
     /// The places, and nothing beyond the count.
@@ -296,6 +295,73 @@ impl Bounds {
     #[must_use]
     pub const fn of_words(words: [u64; WORDS]) -> Self {
         let [
+            ..,
+            shown,
+            one_high,
+            one_low,
+            one_both,
+            two_high,
+            two_low,
+            two_both,
+        ] = words;
+        let Places { held, how_many } = Places::of_words(words);
+        Self {
+            held,
+            how_many,
+            shown: Departures::of_words([
+                shown, one_high, one_low, one_both, two_high, two_low, two_both,
+            ]),
+        }
+    }
+
+    /// The places alone, which is all a walk asks about.
+    #[must_use]
+    pub const fn places(&self) -> Places {
+        Places {
+            held: self.held,
+            how_many: self.how_many,
+        }
+    }
+}
+
+/// The places of a bound and nothing else: what the kernel's file hooks hold.
+///
+/// A file hook asks where a turn may be and never where it may connect, and
+/// the kernel allows a program 512 bytes of stack across its calls. Holding a
+/// whole [`Bounds`] took the hooks past that once the walk learned btrfs:
+/// 6.19.14 refused the program with *combined stack size of 3 calls is 608* on
+/// 2026-10-26. An empty [`Departures`] is no cheaper, because it is zeroes the
+/// program has to write, and `bpf-linker` 0.12 refuses the `memset` that
+/// becomes. So the hooks hold this, and there are no destinations in it to be
+/// right or wrong about.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Places {
+    /// The places, with everything from `how_many` onwards [`NOWHERE`].
+    held: [Place; PLACES],
+
+    /// How many of them are a turn's, which is never more than [`PLACES`].
+    how_many: usize,
+}
+
+impl Places {
+    /// Whether `place` is one of these.
+    ///
+    /// Asked once per step of the walk in [`crate::reaches`], against every
+    /// place at once: the walk is what costs, and comparing four pairs of
+    /// numbers is free beside a read of kernel memory.
+    #[must_use]
+    pub fn holds(&self, place: Place) -> bool {
+        self.held
+            .iter()
+            .take(self.how_many)
+            .any(|here| *here == place)
+    }
+
+    /// The places of a bound read back out of the map, clamped as
+    /// [`Bounds::of_words`] says, which reads its own places through this.
+    #[must_use]
+    pub const fn of_words(words: [u64; WORDS]) -> Self {
+        let [
             how_many,
             device_one,
             inode_one,
@@ -305,17 +371,8 @@ impl Bounds {
             inode_three,
             device_four,
             inode_four,
-            shown,
-            one_high,
-            one_low,
-            one_both,
-            two_high,
-            two_low,
-            two_both,
+            ..,
         ] = words;
-        let shown = Departures::of_words([
-            shown, one_high, one_low, one_both, two_high, two_low, two_both,
-        ]);
         let how_many = if how_many < PLACES as u64 {
             how_many as usize
         } else {
@@ -327,11 +384,7 @@ impl Bounds {
             take([device_three, inode_three], how_many > 2),
             take([device_four, inode_four], how_many > 3),
         ];
-        Self {
-            held,
-            how_many,
-            shown,
-        }
+        Self { held, how_many }
     }
 }
 
@@ -383,6 +436,37 @@ mod tests {
         );
         assert_eq!(bound.len(), 2);
         assert!(!bound.is_empty());
+    }
+
+    /// The file hooks' reading of a bound answers as the whole bound does,
+    /// through either door, with destinations in the words beside it.
+    #[test]
+    fn the_places_alone_answer_as_the_whole_bound_does() {
+        let frankfurt = Departure::of(crate::Family::Four, 0x0102_0304, 443);
+        let invoices = Place::of(64, 100);
+        let bound = Bounds::of(&[invoices, Place::of(65, 7)])
+            .expect("two is not too many")
+            .and_shown(Departures::of(&[frankfurt]).expect("one is not too many"));
+
+        let read = Places::of_words(bound.words());
+        assert_eq!(read, bound.places());
+        for place in [invoices, Place::of(65, 7), Place::of(64, 101), NOWHERE] {
+            assert_eq!(read.holds(place), bound.holds(place), "{place:?}");
+        }
+        assert!(read.holds(invoices));
+        assert!(!read.holds(Place::of(64, 101)));
+    }
+
+    /// The slots beyond the count are never held, even when the words in them
+    /// name a real place: a count read wrongly narrows, never widens.
+    #[test]
+    fn the_places_alone_hold_nothing_beyond_the_count() {
+        let mut words = [0; WORDS];
+        words[..5].copy_from_slice(&[1, 64, 100, 64, 200]);
+        let read = Places::of_words(words);
+        assert!(read.holds(Place::of(64, 100)));
+        assert!(!read.holds(Place::of(64, 200)));
+        assert!(!Places::of_words([0; WORDS]).holds(NOWHERE));
     }
 
     /// Every width from one place up to the most there are, because the count is

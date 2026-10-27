@@ -27,12 +27,19 @@
 /// reach a different folder on a USB stick.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Place {
-    /// The filesystem, as `super_block->s_dev` holds it.
+    /// The filesystem, as `super_block->s_dev` holds it — or on btrfs the
+    /// subvolume, as `btrfs_root->anon_dev` holds it.
     ///
-    /// This is *not* what `stat` reports in `st_dev`: the two are different
-    /// packings of the same major and minor numbers, and comparing one against
-    /// the other never matches. `alo-bounding` converts, and `docs/quirks.md`
-    /// records it.
+    /// The second is what `stat` reports there, and it is the only one of the
+    /// two that tells a subvolume or a snapshot from the folder it copies:
+    /// btrfs numbers inodes per subvolume, so (filesystem, inode) names one
+    /// place in each of them at once
+    /// (`docs/quirks/btrfs-gives-every-subvolume-its-own-device-number.md`).
+    ///
+    /// Either way this is *not* what `stat` reports in `st_dev`: the two are
+    /// different packings of the same major and minor numbers, and comparing
+    /// one against the other never matches. `alo-bounding` converts, and
+    /// `docs/quirks.md` records it.
     device: u64,
 
     /// The inode, as `inode->i_ino` holds it.

@@ -1,6 +1,6 @@
-//! The seventeen offsets, found in this kernel and checked before they are used.
+//! The twenty-one offsets, found in this kernel and checked before they are used.
 //!
-//! [`Field`] says which seventeen and how wide each should be; `btf.rs` says where
+//! [`Field`] says which twenty-one and how wide each should be; `btf.rs` says where
 //! this kernel keeps them. This file is the meeting of the two, and the two
 //! refusals that come out of it.
 //!
@@ -16,7 +16,7 @@
 //! So a width that does not match is a refusal at start-up with both numbers in
 //! it, rather than a boundary that is imposed and wrong.
 
-use alo_bounding_map::Field;
+use alo_bounding_map::{Field, NOT_IN_THIS_KERNEL};
 
 use crate::{btf::Types, failing::NotBounded};
 
@@ -33,12 +33,24 @@ impl Offsets {
     /// The first field that is missing or the wrong width ends this, because
     /// there is nothing useful to do with six of seven: a walk missing one step
     /// is a walk that refuses everything.
+    ///
+    /// The one exception is a field [`Field::only_btrfs_has`]. A kernel that
+    /// does not describe btrfs is written [`NOT_IN_THIS_KERNEL`] for it, and
+    /// the program refuses every file on btrfs rather than every file there is.
+    /// A field that **is** described at the wrong width is refused even then,
+    /// because that kernel is wrong rather than silent.
     pub fn found(types: &Types) -> Result<Self, NotBounded> {
         let mut found = [0; Field::ALL.len()];
         for field in Field::ALL {
-            let member = types
-                .member(field.structure(), field.member())
-                .ok_or_else(|| NotBounded::missing(field))?;
+            let Some(member) = types.member(field.structure(), field.member()) else {
+                if !field.only_btrfs_has() {
+                    return Err(NotBounded::missing(field));
+                }
+                if let Some(slot) = found.get_mut(field.index() as usize) {
+                    *slot = NOT_IN_THIS_KERNEL;
+                }
+                continue;
+            };
             if member.width != field.width() {
                 return Err(NotBounded::wrong_width(field, member.width));
             }
@@ -75,12 +87,12 @@ mod tests {
     use super::*;
     use crate::testing;
 
-    /// The ordinary case, against the fixture: seventeen fields, each at the offset
+    /// The ordinary case, against the fixture: twenty-one fields, each at the offset
     /// the type information gives.
     #[test]
     fn every_field_is_found_where_this_kernel_keeps_it() {
         let types = Types::read(testing::some_type_information()).expect("the fixture reads");
-        let offsets = Offsets::found(&types).expect("the fixture has all seventeen");
+        let offsets = Offsets::found(&types).expect("the fixture has all twenty-one");
         assert_eq!(offsets.at(Field::FilePath), 16);
         assert_eq!(offsets.at(Field::PathDentry), 8);
         assert_eq!(offsets.at(Field::DentryParent), 24);
@@ -109,7 +121,33 @@ mod tests {
         // The one an IPv4 destination held to an interface needs (ADR 0044):
         // whether a message carries control messages, eight bytes wide.
         assert_eq!(offsets.at(Field::MessageControlLength), 48);
+        // The four that tell a btrfs subvolume from its filesystem: the magic
+        // number, btrfs's own inode number measured as a sum through the inode
+        // it embeds, the subvolume at the very front of it, and that
+        // subvolume's device number.
+        assert_eq!(offsets.at(Field::SuperMagic), 48);
+        assert_eq!(offsets.at(Field::BtrfsInodeNumber), 432);
+        assert_eq!(offsets.at(Field::BtrfsInodeRoot), 0);
+        assert_eq!(offsets.at(Field::BtrfsRootDevice), 120);
         assert_eq!(offsets.each().count(), Field::ALL.len());
+    }
+
+    /// A kernel that does not describe btrfs still has a boundary, and the
+    /// three btrfs slots say so rather than holding an offset of zero, which
+    /// the program would read as the start of a structure.
+    #[test]
+    fn a_kernel_that_does_not_describe_btrfs_is_bounded_without_it() {
+        let types =
+            Types::read(testing::type_information_without_btrfs()).expect("the fixture reads");
+        let offsets = Offsets::found(&types).expect("every other field is there");
+        for field in Field::ALL {
+            if field.only_btrfs_has() {
+                assert_eq!(offsets.at(field), NOT_IN_THIS_KERNEL, "{field:?}");
+            } else {
+                assert_ne!(offsets.at(field), NOT_IN_THIS_KERNEL, "{field:?}");
+            }
+        }
+        assert_eq!(offsets.at(Field::SuperMagic), 48);
     }
 
     /// A kernel with no `struct file` at all — far enough from what alo OS

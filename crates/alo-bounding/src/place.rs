@@ -21,6 +21,15 @@
 //! So the major and the minor are taken apart and put back together the
 //! kernel's way. `docs/quirks.md` records it, because it is exactly the kind of
 //! thing that is obvious for ten minutes and then costs somebody an afternoon.
+//!
+//! # On btrfs it is not even the same device
+//!
+//! btrfs reports each subvolume's own device number from `stat`, not the
+//! filesystem's, and every alo OS disk is btrfs. That number is kept here
+//! unchanged, because it is the only one that tells a folder from its copy in
+//! a snapshot; the kernel program reads the subvolume's number on btrfs for the
+//! same reason
+//! (`docs/quirks/btrfs-gives-every-subvolume-its-own-device-number.md`).
 
 use std::{os::linux::fs::MetadataExt, path::Path};
 
