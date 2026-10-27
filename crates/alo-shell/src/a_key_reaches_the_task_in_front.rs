@@ -38,6 +38,7 @@ pub(crate) fn a_key_reaches_the_task(
     server: &mut Server,
     update: InputUpdate<'_>,
     extent: (i32, i32),
+    strings: &alo_strings::Strings,
 ) -> Result<(), InputError> {
     let InputUpdate::Event(event) = update else {
         return server.libinput_update(update, extent);
@@ -58,6 +59,7 @@ pub(crate) fn a_key_reaches_the_task(
         daemon
             .as_ref()
             .map(|door| door as &dyn alo_changing::Answering),
+        strings,
     )
 }
 
@@ -73,13 +75,14 @@ pub(crate) fn the_key_the_task_took(
     server: &mut Server,
     key: crate::DirectKeyEvent,
     daemon: Option<&dyn alo_changing::Answering>,
+    strings: &alo_strings::Strings,
 ) -> Result<(), InputError> {
     let Some(which) = server.the_task_with_the_keyboard else {
         return Ok(());
     };
     match server.the_tasks_key(key.code, key.state, key.time) {
         Ok(Some((typed, answering))) => {
-            server.a_key_reached_the_task(which, typed, answering, daemon);
+            server.a_key_reached_the_task(which, typed, answering, daemon, strings);
             Ok(())
         }
         // A release, a repeat, and a code evdev does not have.
@@ -97,6 +100,7 @@ impl Server {
         typed: ComposerKey,
         answering: ApprovalKey,
         daemon: Option<&dyn alo_changing::Answering>,
+        strings: &alo_strings::Strings,
     ) {
         let the_question_is_here = self
             .the_tasks
@@ -113,8 +117,18 @@ impl Server {
         if for_the_card && let Some(daemon) = daemon {
             // **The fields, not the methods**, so the compiler can see the
             // question and the task are different parts of the server.
-            if let Some(task) = self.the_tasks.the_mut(which) {
-                drop(self.the_change_waiting.pressed(answering, task, daemon));
+            if let Some(task) = self.the_tasks.the_mut(which)
+                && let crate::a_change_waiting_reaches_the_person::WhatThePressDid::ItWasAnswered(
+                    answered,
+                ) = self.the_change_waiting.pressed(answering, task, daemon)
+            {
+                // **The person is told what their answer did**, which nothing
+                // did until 2026-10-26 — `crate::what_an_answer_did` says why.
+                // It is also what moves the task off *waiting for your
+                // permission*: the conversation no longer ends on a question.
+                task.alo_says(alo_tasks::Turn::from_alo(
+                    crate::what_an_answer_did::what_an_answer_did(answered.as_ref(), strings),
+                ));
             }
             return;
         }

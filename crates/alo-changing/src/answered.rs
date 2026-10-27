@@ -39,6 +39,14 @@ pub enum Answered {
         /// What to show them, unchanged.
         told: String,
     },
+    /// The person said no, and the daemon recorded it: nothing was done.
+    ///
+    /// **A case of its own since 2026-10-26.** The daemon has always answered a
+    /// decline with `ToAPerson::Declined`, and this door read it as no answer
+    /// at all — so a surface could not tell *you said no and it was kept* from
+    /// *this machine never replied*, which are opposite things to tell a
+    /// person.
+    Declined,
 }
 
 impl Answered {
@@ -47,7 +55,7 @@ impl Answered {
     pub fn did(&self) -> Option<&Done> {
         match self {
             Self::It(done) => Some(done),
-            Self::Refused { .. } => None,
+            Self::Refused { .. } | Self::Declined => None,
         }
     }
 
@@ -55,7 +63,7 @@ impl Answered {
     #[must_use]
     pub fn told(&self) -> Option<&str> {
         match self {
-            Self::It(_) => None,
+            Self::It(_) | Self::Declined => None,
             Self::Refused { told } => Some(told),
         }
     }

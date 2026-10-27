@@ -42,6 +42,8 @@ struct ADaemon {
     agents_end: Option<UnixStream>,
     /// Whether the turn was still open each time an answer arrived here.
     open_when_answered: RefCell<Vec<bool>>,
+    /// Whether it answers nothing at all, as a daemon that never replied.
+    says_nothing: bool,
 }
 
 impl ADaemon {
@@ -79,14 +81,40 @@ impl Answering for ADaemon {
     fn approve(&self, number: u64) -> Option<Answered> {
         self.notes_the_turn();
         self.approved.borrow_mut().push(number);
-        Some(Answered::It(Box::new(Done::Renamed { now_at: None })))
+        (!self.says_nothing).then(|| Answered::It(Box::new(Done::Renamed { now_at: None })))
     }
 
+    /// `Declined`, which is what the real daemon answers a kept decline with.
     fn decline(&self, number: u64) -> Option<Answered> {
         self.notes_the_turn();
         self.declined.borrow_mut().push(number);
-        Some(Answered::It(Box::new(Done::Renamed { now_at: None })))
+        (!self.says_nothing).then_some(Answered::Declined)
     }
+}
+
+/// The card's words, untranslated — what a person reads after answering.
+fn in_english() -> alo_strings::Strings {
+    let mut vocabulary = alo_strings::Vocabulary::empty();
+    crate::the_cards_words::declare_the_cards_words(&mut vocabulary)
+        .expect("the card's words declare");
+    alo_strings::Strings::of(vocabulary)
+}
+
+/// What alo said last in this task.
+fn the_last_thing_said(
+    server: &Server,
+    which: crate::the_tasks_a_person_opened::WhichTask,
+) -> String {
+    server
+        .tasks()
+        .the(which)
+        .expect("the task is open")
+        .conversation()
+        .each()
+        .last()
+        .expect("something was said")
+        .said()
+        .to_owned()
 }
 
 /// A daemon holding one change, read from the wire form a daemon sends.
@@ -140,6 +168,7 @@ fn press(server: &mut Server, code: u32, daemon: &ADaemon) {
                 time: 1,
             },
             Some(daemon),
+            &in_english(),
         )
         .expect("the seat took the key");
     }
@@ -454,6 +483,7 @@ fn press_holding(server: &mut Server, held: &[u32], code: u32, daemon: &ADaemon)
                 time: 1,
             },
             Some(daemon),
+            &in_english(),
         )
         .expect("the seat took the key");
     };
@@ -525,4 +555,61 @@ fn a_shortcut_to_a_surface_in_front_leaves_the_task_its_keyboard() {
         "the task let go for a surface drawn in front of it"
     );
     assert_eq!(draft(&server, which), "", "the shortcut was typed");
+}
+
+/// Whether this task still says it is waiting for the person.
+fn still_waiting(server: &Server, which: crate::the_tasks_a_person_opened::WhichTask) -> bool {
+    server
+        .tasks()
+        .the(which)
+        .expect("the task is open")
+        .what_is_happening()
+        .key()
+        == alo_tasks::words::WAITING_FOR_YOUR_PERMISSION.key()
+}
+
+/// **After an answer, the person is told what it did, and the task stops
+/// waiting.** Found walking a booted machine on 2026-10-26: Allow once was
+/// pressed, the daemon refused, and the screen said nothing — the task still
+/// read *Waiting for your permission*.
+///
+/// Each of the three answers a daemon can give, pressed the way a person
+/// presses them; the control is that every one was waiting before.
+#[test]
+fn the_person_is_told_what_their_answer_did() {
+    for (keys, says_nothing, told) in [
+        (&[TAB, ENTER][..], false, "Done."),
+        (
+            &[TAB, ESCAPE][..],
+            false,
+            "You said no, so nothing was changed.",
+        ),
+        (
+            &[TAB, ENTER][..],
+            true,
+            "This computer did not say what happened to that change.",
+        ),
+    ] {
+        let (_runtime, mut server) = a_session();
+        let which = a_task_holding_the_keyboard(&mut server);
+        let daemon = ADaemon {
+            says_nothing,
+            ..holding(7, "Rename march.pdf")
+        };
+        server.an_answer_came_back(which, "Shall I?".to_owned(), false, None, Some(&daemon));
+        assert!(
+            still_waiting(&server, which),
+            "the control: a question was waiting"
+        );
+
+        for &key in keys {
+            press(&mut server, key, &daemon);
+        }
+
+        assert_eq!(the_last_thing_said(&server, which), told);
+        assert!(
+            !still_waiting(&server, which),
+            "the task still waits after it was answered with {keys:?}"
+        );
+    }
 }
