@@ -94,6 +94,15 @@ with it.
    model as its agent.
 5. **The last line of a continued turn names the three ways on**: a read, a
    proposal, or an answer.
+6. **An answer is only for a request that asks to be told something, and it
+   never says something was done.** The first wording, *"when what you have
+   been shown already answers the request"*, failed the fixed ten's `focus`
+   exercise three rounds in three. That request reads *Anna **already** has
+   org.alo.Writer running … and wants it in front*, and `gpt-4o` answered
+   *"org.alo.Writer is already running; focusing it now"*. It did nothing and
+   said it was doing it, which is worse for a person than no answer. The
+   paragraph now says a request to have anything done is proposed, and that an
+   answer does nothing, so it never says anything was done.
 
 ## What it costs
 

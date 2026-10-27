@@ -64,7 +64,7 @@ use crate::words;
 /// text. Those grades are still in the catalogue, naming the text they were
 /// earned under; this file simply no longer reads them.
 pub const THE_WORDS_A_TURN_SHOWS: &str =
-    "220d5647b2563258bf20b1c0274f2734879e861a98e38ac0a35ed632ca51239f";
+    "c1df556032b70dd99e6cef1ef6baff4847884bb1c7cdedaccf0acddbab5cd84d";
 
 /// **The words a turn showed until 2026-10-27**, which every local model's
 /// grade for a turn was earned under. Named so those grades can be found and

@@ -220,8 +220,8 @@ pub fn shown_in_progress(
 /// [`shown_in_progress`] returns before reaching here.
 pub const WHAT_TO_SEND_NEXT: &str = "\
 Send the next line: a read line if you still need something, a propose line if \
-the request asks for a change, or an answer line if what came back already \
-answers the request.";
+the request asks for anything to be done, or an answer line if the request only \
+asks to be told something and what came back tells it.";
 
 #[cfg(test)]
 #[expect(
