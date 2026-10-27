@@ -414,7 +414,7 @@ mod tests {
     /// has, so it cannot be read as one.
     #[test]
     fn the_marker_for_an_absent_field_is_not_an_offset() {
-        assert_ne!(NOT_IN_THIS_KERNEL, 0);
-        assert!(NOT_IN_THIS_KERNEL > 1 << 20);
+        const { assert!(NOT_IN_THIS_KERNEL != 0) };
+        const { assert!(NOT_IN_THIS_KERNEL > 1 << 20) };
     }
 }
