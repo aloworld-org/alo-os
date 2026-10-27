@@ -201,10 +201,27 @@ pub fn shown_in_progress(
     }
     // Last, for `shown.rs`'s reason: nothing after the instruction can be
     // mistaken for part of what came back.
-    text.push_str("\nAnswer with the next line of JSON, or with the propose line that finishes ");
-    text.push_str("the request.");
+    text.push('\n');
+    text.push_str(WHAT_TO_SEND_NEXT);
     text
 }
+
+/// **The last thing a model reads on a continued turn**, and the three ways it
+/// may go on.
+///
+/// Until 2026-10-27 this offered two: *the next line of JSON, or the propose
+/// line that finishes the request*. With the reply held to a shape that had no
+/// answer in it, a request that needed no change had no way to end, and the one
+/// way out this told a model about was a proposal. On booted machines the same
+/// request ended in proposals to install Krita, GIMP and Inkscape (ADR 0133).
+///
+/// **No grade is about this text.** It is shown only once a turn has taken a
+/// step, and every grade is earned on a first round, which
+/// [`shown_in_progress`] returns before reaching here.
+pub const WHAT_TO_SEND_NEXT: &str = "\
+Send the next line: a read line if you still need something, a propose line if \
+the request asks for a change, or an answer line if what came back already \
+answers the request.";
 
 #[cfg(test)]
 #[expect(
@@ -256,12 +273,22 @@ mod tests {
         // answer comes last.
         let request_at = shown.find("The request: tidy").unwrap();
         let answer_at = shown.find(came_back).unwrap();
-        let next_at = shown.find("Answer with the next line").unwrap();
+        let next_at = shown.find(super::WHAT_TO_SEND_NEXT).unwrap();
         assert!(
             request_at < answer_at,
             "the request moved after the answers"
         );
         assert!(answer_at < next_at, "the instruction is not last");
+        assert!(shown.ends_with(super::WHAT_TO_SEND_NEXT));
+    }
+
+    /// **A continued turn is told it may answer**, and is not told that a
+    /// proposal is what finishes every request — the wording that left a
+    /// question with no way to end.
+    #[test]
+    fn a_continued_turn_may_end_in_an_answer_and_is_not_steered_to_a_proposal() {
+        assert!(super::WHAT_TO_SEND_NEXT.contains("an answer line"));
+        assert!(!super::WHAT_TO_SEND_NEXT.contains("propose line that finishes the request"));
     }
 
     /// **A long answer is cut and says it was cut.** The number is asserted

@@ -25,9 +25,19 @@ pub const THE_PROTOCOL_FORMAT: u64 = 1;
 /// protocol refuses or refuse one it reads.
 pub const THE_DOORS: [&str; 3] = ["read", "propose", "ask"];
 
+/// **The door a model answers the person through**, beside the three above and
+/// not one of them: it is what a model says to the person, not what an agent
+/// asks the machine, so `alo-protocol` does not read it and the daemon never
+/// sees it. Until 2026-10-27 the envelope had no such door, and a question put
+/// through it could not be answered at all
+/// ([ADR 0133](../../../docs/decisions/0133-a-question-is-answered-inside-the-envelope.md)).
+/// `alo-driving`'s tests hold it to `alo_instructing::THE_ANSWER_DOOR`, the
+/// crate that reads it.
+pub const THE_ANSWER: &str = "answer";
+
 /// **The schema an agent turn's question carries**: an object with the
-/// protocol's version and an `asks` holding exactly one door, whose contents are
-/// any object.
+/// protocol's version and an `asks` holding exactly one door — one of
+/// [`THE_DOORS`], or [`THE_ANSWER`] — whose contents are any object.
 #[must_use]
 pub fn the_envelope() -> Value {
     let one_door = |door: &str| {
@@ -42,7 +52,7 @@ pub fn the_envelope() -> Value {
         "type": "object",
         "properties": {
             "format": { "type": "integer", "enum": [THE_PROTOCOL_FORMAT] },
-            "asks": { "oneOf": THE_DOORS.iter().map(|door| one_door(door)).collect::<Vec<_>>() },
+            "asks": { "oneOf": THE_DOORS.iter().chain([&THE_ANSWER]).map(|door| one_door(door)).collect::<Vec<_>>() },
         },
         "required": ["format", "asks"],
         "additionalProperties": false,
@@ -121,6 +131,22 @@ pub fn the_envelope_a_provider_accepts() -> Value {
             },
         })
     };
+    // **The answer, specified as fully as a provider requires**: one field,
+    // the words. A door whose contents were any object cannot be said to a
+    // provider, for the reason above.
+    let the_answer = json!({
+        "type": "object",
+        "additionalProperties": false,
+        "required": [THE_ANSWER],
+        "properties": {
+            THE_ANSWER: {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["text"],
+                "properties": { "text": { "type": "string" } },
+            },
+        },
+    });
     json!({
         "type": "object",
         "additionalProperties": false,
@@ -129,7 +155,7 @@ pub fn the_envelope_a_provider_accepts() -> Value {
             "format": { "type": "integer", "enum": [THE_PROTOCOL_FORMAT] },
             // `anyOf` and not `oneOf`: a provider refuses `oneOf`, and the
             // branches forbid each other's keys so the two mean the same.
-            "asks": { "anyOf": THE_DOORS.iter().map(|door| one_door(door)).collect::<Vec<_>>() },
+            "asks": { "anyOf": THE_DOORS.iter().map(|door| one_door(door)).chain([the_answer]).collect::<Vec<_>>() },
         },
     })
 }
@@ -154,7 +180,7 @@ mod tests {
             super::the_envelope_a_provider_accepts(),
         ] {
             let text = schema.to_string();
-            for door in super::THE_DOORS {
+            for door in super::THE_DOORS.iter().chain([&super::THE_ANSWER]) {
                 assert!(text.contains(door), "{door} is missing from {text}");
             }
             assert!(
@@ -185,8 +211,8 @@ mod tests {
             .unwrap()
             .as_array()
             .unwrap();
-        assert_eq!(doors.len(), THE_DOORS.len());
-        for (schema, door) in doors.iter().zip(THE_DOORS) {
+        assert_eq!(doors.len(), THE_DOORS.len() + 1);
+        for (schema, door) in doors.iter().zip(THE_DOORS.iter().chain([&THE_ANSWER])) {
             let inside = schema.pointer(&format!("/properties/{door}")).unwrap();
             assert_eq!(inside, &json!({ "type": "object" }), "{door}");
             assert_eq!(schema.get("required").unwrap(), &json!([door]));

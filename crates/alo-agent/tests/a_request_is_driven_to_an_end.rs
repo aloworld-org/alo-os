@@ -306,6 +306,69 @@ fn words_that_are_not_a_request_are_the_answer() {
     }
 }
 
+/// **An answer in the held shape ends the turn with its words** (ADR 0133).
+///
+/// A reply held to the envelope cannot be a line that is not JSON, so before
+/// this door existed *list my documents folder* read the folder and then had no
+/// way to say what it found. This is the second round of exactly that: a read,
+/// what it found, and the answer — and the answer is never sent to the machine,
+/// because it is said to the person.
+#[test]
+fn an_answer_after_a_read_ends_the_turn_with_its_words() {
+    let verbs = the_verbs();
+    let mut door = ADoorThatAnswers::with(vec![
+        the_model_said(&a_read_of("/home/anna/Documents")),
+        Ok(it_listed("march.pdf\nnotes.txt")),
+        the_model_said(
+            r#"{"format":1,"asks":{"answer":{"text":"Your Documents folder has march.pdf and notes.txt."}}}"#,
+        ),
+    ]);
+    match driving(
+        "what is in my documents folder",
+        &verbs,
+        &WhatItMayReach::not_said(),
+        &mut door,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+    ) {
+        WhatHappened::ItWasAnsweredInWords { said, after } => {
+            assert_eq!(said, "Your Documents folder has march.pdf and notes.txt.");
+            assert_eq!(after.len(), 1, "the read it did was dropped");
+        }
+        other => panic!("{other:?}"),
+    }
+    assert_eq!(
+        door.asked.len(),
+        3,
+        "the answer was sent to the machine as though it were a request: {:?}",
+        door.asked
+    );
+}
+
+/// **An answer is the first thing it may say, too**: a turn shows the answer's
+/// shape from the first round (ADR 0133, the owner's choice).
+#[test]
+fn an_answer_on_the_first_round_is_the_answer() {
+    let verbs = the_verbs();
+    let mut door = ADoorThatAnswers::with(vec![the_model_said(
+        r#"{"format":1,"asks":{"answer":{"text":"I can only work with the folders you gave me."}}}"#,
+    )]);
+    match driving(
+        "what is the weather",
+        &verbs,
+        &WhatItMayReach::not_said(),
+        &mut door,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+    ) {
+        WhatHappened::ItWasAnsweredInWords { said, after } => {
+            assert_eq!(said, "I can only work with the folders you gave me.");
+            assert!(after.is_empty());
+        }
+        other => panic!("{other:?}"),
+    }
+}
+
 /// **A refused read is a step, not an end**: the model is told so and may ask
 /// for something else, which is the behaviour `driving`'s header argues for and
 /// a test is the only way to hold.

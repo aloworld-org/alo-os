@@ -107,6 +107,16 @@ pub fn driving(
             Err(not_answered) => return could_not_be_asked(not_answered, steps),
         };
 
+        // **An answer to the person ends the turn**, in the shape a held reply
+        // can take (ADR 0133). Read before the protocol, because it is not a
+        // line of it: it is said to the person, never sent to the machine.
+        if let Some(answer) = alo_instructing::the_answer_in(&said) {
+            return WhatHappened::ItWasAnsweredInWords {
+                said: answer,
+                after: steps,
+            };
+        }
+
         // What the model wrote, as it wrote it. The model is shown this back
         // rather than a re-rendering of it — `alo_instructing::AStep` says why.
         let next = match FromAnAgent::read(&said) {

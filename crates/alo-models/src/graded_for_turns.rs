@@ -56,8 +56,15 @@ use crate::words;
 /// `alo-driving`'s `every_grade_names_instructions_this_crate_has.rs` holds the
 /// two to each other, so the day the text changes this constant fails a test
 /// instead of quietly matching nothing.
+///
+/// **It changed on 2026-10-27, and no local model is graded under it yet.**
+/// The words a turn shows gained the door a question is answered through
+/// (ADR 0133), and the owner chose that every local model's grade for a turn,
+/// earned under `93a7f458…`, is set aside until it is earned again under this
+/// text. Those grades are still in the catalogue, naming the text they were
+/// earned under; this file simply no longer reads them.
 pub const THE_WORDS_A_TURN_SHOWS: &str =
-    "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02";
+    "220d5647b2563258bf20b1c0274f2734879e861a98e38ac0a35ed632ca51239f";
 
 /// The runtime this product pins, as a grade spells its name.
 ///

@@ -268,6 +268,23 @@ fn one_turn(key: &str, endpoint: &str, model: &str, request: &str, instructions:
     for line in door.lines.iter().filter(|line| !line.contains("\"ask\"")) {
         println!("    {line}");
     }
+    // **What the model was shown on its second round**, when asked for: the
+    // first read's answer is in it or it is not, and that is a question about
+    // a prompt rather than about the model.
+    if std::env::var_os("ALO_SHOW_SECOND_PROMPT").is_some()
+        && let Some(second) = door.lines.iter().filter(|line| line.contains("\"ask\"")).nth(1)
+    {
+        let question = serde_json::from_str::<serde_json::Value>(second)
+            .ok()
+            .and_then(|value| {
+                value
+                    .pointer("/asks/ask/question")
+                    .and_then(serde_json::Value::as_str)
+                    .map(str::to_owned)
+            })
+            .unwrap_or_else(|| second.clone());
+        println!("--- the second prompt ---\n{question}\n--- end ---");
+    }
     let ended = match (&happened, first_proposal(&door.lines)) {
         (_, Some(verb)) => Ended::Proposed(verb),
         (WhatHappened::ItWasAnsweredInWords { said, .. }, None) => {
@@ -298,7 +315,7 @@ fn a_request_to_read_is_answered_and_proposes_nothing() {
         Ok("one-example-per-door") => Instructions::OneExamplePerDoor,
         Ok("several-steps") => Instructions::SeveralSteps,
         Ok("as-first-written") => Instructions::AsFirstWritten,
-        Ok("answers-in-words") => Instructions::AnswersInWords,
+        Ok("every-door-and-an-answer") => Instructions::EveryDoorAndAnAnswer,
         Ok(other) => panic!("ALO_INSTRUCTIONS is one of the four sets, not `{other}`"),
     };
     println!(
