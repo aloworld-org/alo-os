@@ -79,10 +79,11 @@ impl AsAMachineHasIt {
         let imposed = Imposed::once(&pinned).unwrap_or_else(|why| {
             panic!(
                 "the boundary could not be imposed on this kernel, so nothing below is being \
-                 tested: {why}\n\
+                 tested: {}\n\
                  This needs root, `CONFIG_BPF_LSM=y`, and `bpf` in the list of security modules \
                  the kernel *started* — `cat /sys/kernel/security/lsm`, which is not the same \
-                 question as how the kernel was built. `docs/hardware.md` has the three commands."
+                 question as how the kernel was built. `docs/hardware.md` has the three commands.",
+                every_cause_of(&why)
             )
         });
         let boundary = Boundary::opened(&pinned).unwrap_or_else(|why| {
@@ -106,6 +107,22 @@ impl AsAMachineHasIt {
     pub fn pinned(&self) -> &Pinned {
         &self.pinned
     }
+}
+
+/// An error and every cause beneath it, one to a line.
+///
+/// The headline alone says *would not attach*. The reason, which is usually the
+/// verifier's own account, sits two causes down, and a test that printed only
+/// the headline sent somebody to boot a machine a second time to read it.
+fn every_cause_of(why: &dyn std::error::Error) -> String {
+    let mut all = why.to_string();
+    let mut beneath = why.source();
+    while let Some(cause) = beneath {
+        all.push_str("\n  because: ");
+        all.push_str(&cause.to_string());
+        beneath = cause.source();
+    }
+    all
 }
 
 impl Drop for AsAMachineHasIt {
