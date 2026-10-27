@@ -56,7 +56,7 @@ use aya_ebpf::{
     programs::LsmContext,
 };
 
-use alo_bounding_map::{Bounds, Field, WORDS};
+use alo_bounding_map::{Bounds, Field, Places, WORDS};
 
 use crate::{deciding, departing};
 
@@ -645,12 +645,11 @@ pub fn granted(turn: u64) -> Option<Bounds> {
 /// The places a turn was granted and none of where it may connect, for the
 /// hooks that decide files.
 ///
-/// The same lookup and the same [`None`] as [`granted`]. Leaving the
-/// destinations unread is what keeps a file hook inside the 512 bytes of stack
-/// the kernel allows; `Bounds::places_of_words` says what it cost.
-pub fn granted_places(turn: u64) -> Option<Bounds> {
+/// The same lookup and the same [`None`] as [`granted`]. [`Places`] says why
+/// a file hook holds no more than this.
+pub fn granted_places(turn: u64) -> Option<Places> {
     let words = *unsafe { BOUNDS.get(turn) }?;
-    Some(Bounds::places_of_words(words))
+    Some(Places::of_words(words))
 }
 
 /// Where a field sits in this kernel, as the daemon found it.

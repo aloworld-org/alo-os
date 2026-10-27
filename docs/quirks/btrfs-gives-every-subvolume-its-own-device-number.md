@@ -81,7 +81,7 @@ a boundary that refuses every btrfs file rather than one that guesses.
 Teaching the walk this ran into a second limit: the kernel allows a program 512
 bytes of stack across its calls, and 6.19.14 refused the boundary at 672 and
 then 608. The file hooks now read only the places in a grant and never its
-destinations (`Bounds::places_of_words`), and the program loads.
+destinations (`alo_bounding_map::Places`), and the program loads.
 
 Three tests in `crates/alo-bounding/tests/the_kernel_refuses.rs` hold both
 directions on a real loop-mounted btrfs: a granted file opens; the same inode

@@ -123,7 +123,7 @@
 //! program to make the calls for it, because starting one opens the program's
 //! own file and that is a `file_open`.
 
-use alo_bounding_map::{BTRFS_MAGIC, Bounds, Field, NOT_IN_THIS_KERNEL, Place, reaches};
+use alo_bounding_map::{BTRFS_MAGIC, Field, NOT_IN_THIS_KERNEL, Place, Places, reaches};
 
 use crate::kernel;
 
@@ -712,7 +712,7 @@ fn this_entry(entry: u64) -> i32 {
 ///
 /// The fetch of the fields and the walk, for the hooks that already hold an
 /// entry; [`inside`] is the same for the hooks that hold a file.
-fn entry_inside(entry: u64, granted: &Bounds) -> bool {
+fn entry_inside(entry: u64, granted: &Places) -> bool {
     let Some(fields) = Fields::found() else {
         return false;
     };
@@ -720,7 +720,7 @@ fn entry_inside(entry: u64, granted: &Bounds) -> bool {
 }
 
 /// Whether the file this open is for lies at or under a granted place.
-fn inside(file: u64, granted: &Bounds) -> bool {
+fn inside(file: u64, granted: &Places) -> bool {
     let Some(fields) = Fields::found() else {
         return false;
     };
@@ -750,7 +750,7 @@ fn entry_of(file: u64, fields: &Fields) -> Option<u64> {
 /// place is met or the top of the filesystem is. Two copies of it would be two
 /// answers to *is this inside* waiting to disagree, and one of them would be on
 /// the hook nobody was looking at.
-fn upwards_from(entry: u64, fields: &Fields, granted: &Bounds) -> bool {
+fn upwards_from(entry: u64, fields: &Fields, granted: &Places) -> bool {
     let mut at = entry;
     let mut ended = false;
     reaches(granted, || {
@@ -796,7 +796,7 @@ struct Fields {
 /// every hook holds its own copy of [`Fields`] and the kernel allows a program
 /// 512 bytes of stack across its calls. With these kept there, 6.19.14
 /// refused to load the program: *combined stack size of 3 calls is 672*, on
-/// 2026-10-26. `Bounds::places_of_words` is the rest of that story.
+/// 2026-10-26. `alo_bounding_map::Places` is the rest of that story.
 #[derive(Clone, Copy)]
 struct Btrfs {
     /// `struct btrfs_inode`'s `vfs_inode.i_ino`, which with
