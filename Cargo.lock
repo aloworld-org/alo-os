@@ -1064,6 +1064,7 @@ dependencies = [
  "alo-models",
  "alo-strings",
  "ring",
+ "serde_json",
 ]
 
 [[package]]

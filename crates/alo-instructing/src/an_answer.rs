@@ -52,6 +52,10 @@ pub fn the_answer_in(line: &str) -> Option<String> {
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None is the failure being reported"
+)]
 mod tests {
     use super::the_answer_in;
 
