@@ -841,8 +841,7 @@ impl Fields {
         let inode = kernel::word_at(entry.wrapping_add(self.dentry_inode))?;
         let filesystem = kernel::word_at(entry.wrapping_add(self.dentry_super))?;
         let number = kernel::word_at(inode.wrapping_add(self.inode_number))?;
-        let device = if kernel::word_at(filesystem.wrapping_add(self.super_magic))? == BTRFS_MAGIC
-        {
+        let device = if kernel::word_at(filesystem.wrapping_add(self.super_magic))? == BTRFS_MAGIC {
             let btrfs = self.btrfs?;
             // `inode` is the address of `vfs_inode` inside btrfs's own inode,
             // so where that one begins is as far back as `vfs_inode` is in.

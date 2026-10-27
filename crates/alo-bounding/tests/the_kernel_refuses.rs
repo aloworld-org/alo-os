@@ -335,7 +335,10 @@ impl OnBtrfs {
                 "subvolume",
                 "snapshot",
                 "-r",
-                made.at.join("one").to_str().expect("a temporary path is text"),
+                made.at
+                    .join("one")
+                    .to_str()
+                    .expect("a temporary path is text"),
                 made.at
                     .join("one-before")
                     .to_str()
@@ -363,7 +366,9 @@ fn must(program: &str, args: &[&str]) {
     let done = Command::new(program)
         .args(args)
         .output()
-        .unwrap_or_else(|why| panic!("`{program}` could not be run, so nothing here was tested: {why}"));
+        .unwrap_or_else(|why| {
+            panic!("`{program}` could not be run, so nothing here was tested: {why}")
+        });
     assert!(
         done.status.success(),
         "`{program} {args:?}` did not work, so nothing here was tested: {}",
