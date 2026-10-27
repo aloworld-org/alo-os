@@ -152,14 +152,17 @@ These are the only verbs there are:";
 /// taking it out gives [`ONE_EXAMPLE_PER_DOOR`] back, so a measured difference
 /// between the two is these words and nothing else.
 pub const AND_AN_ANSWER: &str = "\
-When the request only asks to be told something, and what you have been
-shown already tells it, answer the person with a line of this shape:
+When the request wants anything done (a file renamed, moved or archived, an
+application opened, brought to the front or closed), propose it, even when it
+also says how things are now.
+
+When the request only asks to be told something, and what you have been shown
+already tells it, answer the person with a line of this shape:
 
 {\"format\":1,\"asks\":{\"answer\":{\"text\":\"YOUR ANSWER, IN PLAIN WORDS\"}}}
 
-When the request asks for anything to be done, propose it instead. An answer
-does nothing, so never say in one that something was done or is being done.
-Never propose a change the request did not ask for.
+An answer does nothing, so never say in one that something was done, is being
+done or will be done. Never propose a change the request did not ask for.
 
 ";
 
@@ -198,14 +201,17 @@ Each verb below says which it is: (read) or (propose). VALUE is text in quotes,
 or a whole number with no quotes. Give every argument the verb takes and no
 others. A path is always a full path.
 
-When the request only asks to be told something, and what you have been
-shown already tells it, answer the person with a line of this shape:
+When the request wants anything done (a file renamed, moved or archived, an
+application opened, brought to the front or closed), propose it, even when it
+also says how things are now.
+
+When the request only asks to be told something, and what you have been shown
+already tells it, answer the person with a line of this shape:
 
 {\"format\":1,\"asks\":{\"answer\":{\"text\":\"YOUR ANSWER, IN PLAIN WORDS\"}}}
 
-When the request asks for anything to be done, propose it instead. An answer
-does nothing, so never say in one that something was done or is being done.
-Never propose a change the request did not ask for.
+An answer does nothing, so never say in one that something was done, is being
+done or will be done. Never propose a change the request did not ask for.
 
 These are the only verbs there are:";
 
