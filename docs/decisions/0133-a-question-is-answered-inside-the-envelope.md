@@ -54,6 +54,25 @@ token outside the shape be written. A prompt printed on the second round showed
 that the model had been given the folder's listing; it had no way to answer
 with it.
 
+### And under the words this decision chose
+
+The same test and the fixed ten (`crates/alo-driving/tests/against_a_model_at_a_provider.rs`),
+`gpt-4o` at OpenAI, three rounds each, on 2026-10-27:
+
+| what a turn showed | requests to read answered | fixed ten drove |
+|---|---|---|
+| `one-example-per-door`, as it was | 0 of 9 | 30 of 30 |
+| `every-door-and-an-answer`, final wording (digest `cf522fc5…`) | **9 of 9** | **30 of 30** |
+
+**One weakness the count hides.** *"what does the note in Documents say"* was
+answered in three rounds out of three, with *"there is nothing at
+…/Documents/note.txt"*. The file is `notes.txt`. The model guessed a name
+instead of listing the folder first. That is truthful and unhelpful, and it is
+the looking-first question `SeveralSteps` was written for, not this one.
+
+Both runs were made once, by hand. They ask a paid provider, so both tests are
+`#[ignore]`d and CI does not run them.
+
 ## The options put to the owner
 
 1. **An answer door, from the second round on.** No local model's grade is
