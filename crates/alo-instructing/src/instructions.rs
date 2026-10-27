@@ -145,6 +145,64 @@ so a name you guessed is refused and the turn is wasted.
 
 These are the only verbs there are:";
 
+/// **The one paragraph [`ANSWERS_IN_WORDS`] adds to [`ONE_EXAMPLE_PER_DOOR`].**
+///
+/// Held separately for [`AND_YOU_MAY_LOOK_FIRST`]'s reason: a test asserts that
+/// taking it out gives [`ONE_EXAMPLE_PER_DOOR`] back, so a measured difference
+/// between the two is these words and nothing else.
+pub const AND_ANSWER_WHEN_YOU_KNOW: &str = "\
+When what you have been shown already answers the request, and the request
+asks for no change, do not ask for anything more: answer the person instead,
+in plain words, as one line that is not JSON. Never propose a change the
+request did not ask for.
+
+";
+
+/// **Everything [`ONE_EXAMPLE_PER_DOOR`] says, and that a question is answered
+/// in words.**
+///
+/// # What it fixes, measured
+///
+/// A turn ends with an answer only when the model writes a line that is not
+/// JSON (`alo_agent::driving`), and [`ONE_EXAMPLE_PER_DOOR`] tells it to write
+/// nothing but JSON — so a request that asks for no change has no way to end.
+/// On booted machines on 2026-10-25 and 2026-10-27, *list my documents folder*
+/// ended in proposals to install Krita and GIMP. On 2026-10-27,
+/// `crates/alo-agentd/tests/a_question_is_answered_in_words.rs` put six such
+/// requests to `gpt-4o` under [`ONE_EXAMPLE_PER_DOOR`] and **none** was
+/// answered: the model read what it needed, then read it again until the turn
+/// ran out, or proposed a rename or an archive nobody asked for.
+///
+/// Written out in full rather than composed, for [`SEVERAL_STEPS`]' reason, and
+/// held to [`ONE_EXAMPLE_PER_DOOR`] plus [`AND_ANSWER_WHEN_YOU_KNOW`] by a test.
+///
+/// **Not yet what a turn shows.** Every local model's grade for a turn was
+/// earned under [`ONE_EXAMPLE_PER_DOOR`]'s digest (`alo_models`'
+/// `THE_WORDS_A_TURN_SHOWS`), so showing this instead takes the agent from each
+/// of them until it is graded again.
+pub const ANSWERS_IN_WORDS: &str = "\
+You are talking to a computer, not to a person. Answer with one line of JSON and
+nothing else: no explanation, no code fence, no second line.
+
+For a verb that only answers a question, the line has this shape:
+
+{\"format\":1,\"asks\":{\"read\":{\"verb\":\"NAME\",\"given\":[{\"named\":\"ARGUMENT\",\"is\":VALUE}]}}}
+
+For a verb that changes something, the line has this shape:
+
+{\"format\":1,\"asks\":{\"propose\":{\"verb\":\"NAME\",\"given\":[{\"named\":\"ARGUMENT\",\"is\":VALUE}]}}}
+
+Each verb below says which it is: (read) or (propose). VALUE is text in quotes,
+or a whole number with no quotes. Give every argument the verb takes and no
+others. A path is always a full path.
+
+When what you have been shown already answers the request, and the request
+asks for no change, do not ask for anything more: answer the person instead,
+in plain words, as one line that is not JSON. Never propose a change the
+request did not ask for.
+
+These are the only verbs there are:";
+
 /// **Which instructions a model was shown.**
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Instructions {
@@ -160,14 +218,21 @@ pub enum Instructions {
     /// it there before it has been would make every grade a statement about
     /// text nobody has graded under.
     SeveralSteps,
+    /// [`ANSWERS_IN_WORDS`]: the second set, and that a question is answered
+    /// in words.
+    ///
+    /// **Not yet what a turn shows**, for the reason [`ANSWERS_IN_WORDS`]
+    /// gives: every local model's grade for a turn is under another digest.
+    AnswersInWords,
 }
 
 impl Instructions {
-    /// Both, in the order they were written.
-    pub const ALL: [Self; 3] = [
+    /// Every set, in the order they were written.
+    pub const ALL: [Self; 4] = [
         Self::AsFirstWritten,
         Self::OneExamplePerDoor,
         Self::SeveralSteps,
+        Self::AnswersInWords,
     ];
 
     /// **The set an agent turn shows a model** (ADR 0037, decision 2).
@@ -188,6 +253,7 @@ impl Instructions {
             Self::AsFirstWritten => HOW_TO_ANSWER,
             Self::OneExamplePerDoor => ONE_EXAMPLE_PER_DOOR,
             Self::SeveralSteps => SEVERAL_STEPS,
+            Self::AnswersInWords => ANSWERS_IN_WORDS,
         }
     }
 
@@ -198,6 +264,7 @@ impl Instructions {
             Self::AsFirstWritten => "as-first-written",
             Self::OneExamplePerDoor => "one-example-per-door",
             Self::SeveralSteps => "several-steps",
+            Self::AnswersInWords => "answers-in-words",
         }
     }
 
@@ -242,6 +309,21 @@ mod tests {
             SEVERAL_STEPS.replace(AND_YOU_MAY_LOOK_FIRST, ""),
             ONE_EXAMPLE_PER_DOOR,
             "the third set differs from the second by more than that paragraph"
+        );
+    }
+
+    /// **The fourth set is the second plus one paragraph, and nothing else**,
+    /// for the third set's reason above.
+    #[test]
+    fn the_fourth_set_is_the_second_plus_one_paragraph() {
+        assert!(
+            ANSWERS_IN_WORDS.contains(AND_ANSWER_WHEN_YOU_KNOW),
+            "the paragraph the fourth set is supposed to add is not in it"
+        );
+        assert_eq!(
+            ANSWERS_IN_WORDS.replace(AND_ANSWER_WHEN_YOU_KNOW, ""),
+            ONE_EXAMPLE_PER_DOOR,
+            "the fourth set differs from the second by more than that paragraph"
         );
     }
 
@@ -327,15 +409,18 @@ mod tests {
 
     /// Every set has a digest, and each digest finds its own set.
     ///
-    /// Three now rather than two. The shape of this test was `let [first,
-    /// second] = …`, which is the honest kind of break: adding a set failed to
-    /// compile here rather than quietly leaving the third unchecked.
+    /// Four now. The shape of this test was `let [first, second] = …`, which
+    /// is the honest kind of break: adding a set failed to compile here rather
+    /// than quietly leaving the new one unchecked.
     #[test]
     fn a_digest_names_one_set_of_instructions() {
-        let [first, second, third] = Instructions::ALL.map(Instructions::digest);
+        let [first, second, third, fourth] = Instructions::ALL.map(Instructions::digest);
         assert_ne!(first, second);
         assert_ne!(second, third);
         assert_ne!(first, third);
+        assert_ne!(fourth, first);
+        assert_ne!(fourth, second);
+        assert_ne!(fourth, third);
         assert_eq!(first.len(), 64);
         assert!(
             first
@@ -353,6 +438,10 @@ mod tests {
         assert_eq!(
             Instructions::of_digest(&third),
             Some(Instructions::SeveralSteps)
+        );
+        assert_eq!(
+            Instructions::of_digest(&fourth),
+            Some(Instructions::AnswersInWords)
         );
         assert_eq!(Instructions::of_digest(&"0".repeat(64)), None);
         assert!(

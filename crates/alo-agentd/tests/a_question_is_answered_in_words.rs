@@ -298,7 +298,8 @@ fn a_request_to_read_is_answered_and_proposes_nothing() {
         Ok("one-example-per-door") => Instructions::OneExamplePerDoor,
         Ok("several-steps") => Instructions::SeveralSteps,
         Ok("as-first-written") => Instructions::AsFirstWritten,
-        Ok(other) => panic!("ALO_INSTRUCTIONS is one of the three sets, not `{other}`"),
+        Ok("answers-in-words") => Instructions::AnswersInWords,
+        Ok(other) => panic!("ALO_INSTRUCTIONS is one of the four sets, not `{other}`"),
     };
     println!(
         "model {model} at {endpoint}, under {} (sha256 {}), {rounds} round(s) each",
