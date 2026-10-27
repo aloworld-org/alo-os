@@ -156,7 +156,13 @@ fn first_proposal(lines: &[String]) -> Option<String> {
 }
 
 /// One turn: a request in a person's words, over a folder they granted.
-fn one_turn(key: &str, endpoint: &str, model: &str, request: &str, instructions: Instructions) -> Ended {
+fn one_turn(
+    key: &str,
+    endpoint: &str,
+    model: &str,
+    request: &str,
+    instructions: Instructions,
+) -> Ended {
     let keyring = alo_keyring_fixture::AKeyringOfOurOwn::started("a-question-is-answered");
     let named = format!("provider/{THE_PROVIDER}");
     {
@@ -173,7 +179,13 @@ fn one_turn(key: &str, endpoint: &str, model: &str, request: &str, instructions:
         attributes.insert("xdg:schema", "dev.alo.Provider");
         attributes.insert("reference", named.as_str());
         collection
-            .create_item("the owner's test provider key", attributes, key.as_bytes(), true, "text/plain")
+            .create_item(
+                "the owner's test provider key",
+                attributes,
+                key.as_bytes(),
+                true,
+                "text/plain",
+            )
             .expect("an item can be stored");
     }
 
@@ -216,7 +228,8 @@ fn one_turn(key: &str, endpoint: &str, model: &str, request: &str, instructions:
     let strings = starting::what_this_machine_says()
         .expect("this machine's own words")
         .into_strings();
-    let mut writing = Writing::opening(&theirs.join("record.jsonl")).expect("a record can be opened");
+    let mut writing =
+        Writing::opening(&theirs.join("record.jsonl")).expect("a record can be opened");
     let mut indicator = Indicator::default();
     let mut bounding = NothingIsBounded;
 
@@ -227,7 +240,8 @@ fn one_turn(key: &str, endpoint: &str, model: &str, request: &str, instructions:
             .expect("a grant over a folder this person owns"),
     );
 
-    let offered = alo_turn::the_verbs_a_whole_machine_offers().expect("the machine's verbs declare");
+    let offered =
+        alo_turn::the_verbs_a_whole_machine_offers().expect("the machine's verbs declare");
     let may_reach = WhatItMayReach::these([documents.as_path()]);
     let mut machine = Machine::carrying_out_file_verbs(
         &strings,
@@ -272,7 +286,11 @@ fn one_turn(key: &str, endpoint: &str, model: &str, request: &str, instructions:
     // first read's answer is in it or it is not, and that is a question about
     // a prompt rather than about the model.
     if std::env::var_os("ALO_SHOW_SECOND_PROMPT").is_some()
-        && let Some(second) = door.lines.iter().filter(|line| line.contains("\"ask\"")).nth(1)
+        && let Some(second) = door
+            .lines
+            .iter()
+            .filter(|line| line.contains("\"ask\""))
+            .nth(1)
     {
         let question = serde_json::from_str::<serde_json::Value>(second)
             .ok()
@@ -302,7 +320,8 @@ fn one_turn(key: &str, endpoint: &str, model: &str, request: &str, instructions:
 #[test]
 #[ignore = "asks a real provider, costs money, and leaves the machine: run it by name"]
 fn a_request_to_read_is_answered_and_proposes_nothing() {
-    let key = std::env::var("ALO_PROVIDER_KEY").expect("ALO_PROVIDER_KEY names the key to ask with");
+    let key =
+        std::env::var("ALO_PROVIDER_KEY").expect("ALO_PROVIDER_KEY names the key to ask with");
     let endpoint =
         std::env::var("ALO_PROVIDER").unwrap_or_else(|_| "https://api.openai.com".to_owned());
     let model = std::env::var("ALO_PROVIDER_MODEL").unwrap_or_else(|_| "gpt-4o".to_owned());

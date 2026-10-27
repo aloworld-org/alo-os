@@ -101,8 +101,11 @@ with it.
   hosted provider is unaffected. A machine that answers on itself has no agent
   until then, which is the cost the owner chose over a turn that cannot
   answer. `crates/alo-driving/tests/every_grade_names_instructions_this_crate_has.rs`
-  asks that at least one shipped entry be decided by the words a turn shows.
-  It fails until one is graded again, and it is meant to.
+  used to require that at least one shipped entry be decided by the words a
+  turn shows. It now requires that **none** is, and says to turn the check back
+  the day one is graded again. `crates/alo-models/src/graded_for_turns.rs`
+  holds that all thirteen grades set aside are still in the catalogue, under
+  words this repository can still show a model.
 - **A model can now end a turn by answering instead of acting.** The answer
   changes nothing on the machine, so the person loses nothing by it; at worst
   they ask again. The fixed ten under the new words is recorded in the change

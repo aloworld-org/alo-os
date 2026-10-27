@@ -73,7 +73,9 @@ mod tests {
     #[test]
     fn an_answer_is_read_as_its_words() {
         assert_eq!(
-            the_answer_in(r#"{"format":1,"asks":{"answer":{"text":"Two files: march.pdf and notes.txt."}}}"#),
+            the_answer_in(
+                r#"{"format":1,"asks":{"answer":{"text":"Two files: march.pdf and notes.txt."}}}"#
+            ),
             Some("Two files: march.pdf and notes.txt.".to_owned())
         );
     }

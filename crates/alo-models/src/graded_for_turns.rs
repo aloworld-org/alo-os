@@ -289,7 +289,10 @@ mod tests {
                 && on.held_to.is_none()
                 && on.runtime.starts_with(THE_PINNED_RUNTIMES_NAME)
         };
-        let its_own = match (&model.measured_in_the_envelope, model.drives_verbs_in_the_envelope) {
+        let its_own = match (
+            &model.measured_in_the_envelope,
+            model.drives_verbs_in_the_envelope,
+        ) {
             (Some(on), Some(grade)) if before(on) => Some(grade),
             _ => None,
         };

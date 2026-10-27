@@ -62,7 +62,10 @@ fn the_answer_is_read_by_the_agent_and_never_by_the_protocol() {
     let line = format!(
         r#"{{"format":{THE_PROTOCOL_FORMAT},"asks":{{"{THE_ANSWER}":{{"text":"two files"}}}}}}"#
     );
-    assert_eq!(alo_instructing::the_answer_in(&line).as_deref(), Some("two files"));
+    assert_eq!(
+        alo_instructing::the_answer_in(&line).as_deref(),
+        Some("two files")
+    );
     assert!(
         FromAnAgent::read(&line).is_err(),
         "the protocol reads an answer from an agent, so it could reach the daemon"
