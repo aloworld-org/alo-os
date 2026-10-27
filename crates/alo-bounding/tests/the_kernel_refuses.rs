@@ -284,6 +284,175 @@ fn a_process_that_is_not_a_turn_reaches_what_it_always_could() {
     fs::read(&key).expect("this process is not a turn and may read its own files");
 }
 
+/// A btrfs filesystem on a loop device, with two subvolumes made the same way
+/// and a read-only snapshot of the first, taken down however the test ends.
+///
+/// Every alo OS disk is btrfs, and btrfs numbers inodes per subvolume: made in
+/// the same order, `one/Invoices/march.pdf` and `two/Invoices/march.pdf` have
+/// the same inode number, and the snapshot repeats it a third time. What tells
+/// them apart is the device number each subvolume has of its own
+/// (`docs/quirks/btrfs-gives-every-subvolume-its-own-device-number.md`).
+///
+/// Needs `truncate`, `mkfs.btrfs`, `btrfs`, `mount` and a loop device, and
+/// fails naming whichever is missing rather than skipping.
+struct OnBtrfs {
+    /// Where the backing file and the mount point are.
+    under: PathBuf,
+    /// Where it is mounted.
+    at: PathBuf,
+}
+
+impl OnBtrfs {
+    /// Made, mounted and filled.
+    fn made(named: &str) -> Self {
+        let under = env::temp_dir().join(format!("{named}-{}", std::process::id()));
+        let at = under.join("mnt");
+        fs::create_dir_all(&at).expect("a mount point can be made");
+        let disk = under.join("disk.img");
+        let disk = disk.to_str().expect("a temporary path is text");
+        let mounted = at.to_str().expect("a temporary path is text");
+        must("truncate", &["-s", "256M", disk]);
+        must("mkfs.btrfs", &["-q", disk]);
+        must("mount", &["-o", "loop", disk, mounted]);
+        let made = Self { under, at };
+        for subvolume in ["one", "two"] {
+            let there = made.at.join(subvolume);
+            must(
+                "btrfs",
+                &[
+                    "subvolume",
+                    "create",
+                    there.to_str().expect("a temporary path is text"),
+                ],
+            );
+            fs::create_dir(there.join("Invoices")).expect("a folder can be made");
+            fs::write(there.join("Invoices/march.pdf"), b"not a real invoice")
+                .expect("a file can be written");
+        }
+        must(
+            "btrfs",
+            &[
+                "subvolume",
+                "snapshot",
+                "-r",
+                made.at.join("one").to_str().expect("a temporary path is text"),
+                made.at
+                    .join("one-before")
+                    .to_str()
+                    .expect("a temporary path is text"),
+            ],
+        );
+        made
+    }
+
+    /// A path inside it.
+    fn at(&self, path: &str) -> PathBuf {
+        self.at.join(path)
+    }
+}
+
+impl Drop for OnBtrfs {
+    fn drop(&mut self) {
+        let _ = Command::new("umount").arg(&self.at).status();
+        let _ = fs::remove_dir_all(&self.under);
+    }
+}
+
+/// Run a program that has to work, or fail the test naming it.
+fn must(program: &str, args: &[&str]) {
+    let done = Command::new(program)
+        .args(args)
+        .output()
+        .unwrap_or_else(|why| panic!("`{program}` could not be run, so nothing here was tested: {why}"));
+    assert!(
+        done.status.success(),
+        "`{program} {args:?}` did not work, so nothing here was tested: {}",
+        String::from_utf8_lossy(&done.stderr)
+    );
+}
+
+/// The device and inode `stat` reports, which is what the daemon writes down.
+fn stat_of(path: &Path) -> (u64, u64) {
+    use std::os::linux::fs::MetadataExt;
+    let known = fs::metadata(path).expect("the file is there");
+    (known.st_dev(), known.st_ino())
+}
+
+/// On btrfs, the granted folder's own file opens.
+///
+/// Until 2026-10-26 it did not: the daemon wrote down the subvolume's device
+/// number and the kernel compared the filesystem's, so every file on every alo
+/// OS disk was refused. The fourth walk found it, and
+/// [`a_turn_granted_a_folder_opens_a_file_inside_it`] could not, because it
+/// runs on whatever filesystem the temporary directory is on.
+#[test]
+fn on_btrfs_a_turn_granted_a_folder_opens_a_file_inside_it() {
+    let disk = OnBtrfs::made("alo-bounding-btrfs-inside");
+    let outcome = a_turn(
+        "alo-bounding-btrfs-inside",
+        &[&disk.at("one/Invoices")],
+        &disk.at("one/Invoices/march.pdf"),
+        Still::Bound,
+    );
+    assert_eq!(outcome, Outcome::Opened);
+}
+
+/// The same inode number in another subvolume is somewhere else, and the
+/// kernel refuses it.
+///
+/// This is what keying the boundary on the filesystem's own number would get
+/// wrong: the two files below are on one filesystem with one inode number, and
+/// the grant is for only one of them.
+#[test]
+fn on_btrfs_the_same_inode_in_another_subvolume_is_refused() {
+    let disk = OnBtrfs::made("alo-bounding-btrfs-other");
+    let (granted, other) = (disk.at("one/Invoices"), disk.at("two/Invoices"));
+    assert_eq!(
+        stat_of(&granted).1,
+        stat_of(&other).1,
+        "the two folders were meant to share an inode number, and without that this proves nothing"
+    );
+    assert_ne!(stat_of(&granted).0, stat_of(&other).0);
+    let outcome = a_turn(
+        "alo-bounding-btrfs-other",
+        &[&granted],
+        &disk.at("two/Invoices/march.pdf"),
+        Still::Bound,
+    );
+    assert_eq!(
+        outcome,
+        Outcome::Refused(13),
+        "a file in another subvolume with the granted folder's inode number was opened"
+    );
+}
+
+/// A snapshot of the granted folder is not the granted folder.
+///
+/// Undo keeps its brackets as read-only snapshots of the person's home, with
+/// every inode number of the original. A grant on `Invoices` reaching the copy
+/// of `Invoices` in a bracket would be a grant nobody made.
+#[test]
+fn on_btrfs_a_snapshot_of_the_granted_folder_is_refused() {
+    let disk = OnBtrfs::made("alo-bounding-btrfs-snapshot");
+    let (granted, copy) = (disk.at("one/Invoices"), disk.at("one-before/Invoices"));
+    assert_eq!(
+        stat_of(&granted).1,
+        stat_of(&copy).1,
+        "a snapshot repeats its original's inode numbers, and without that this proves nothing"
+    );
+    let outcome = a_turn(
+        "alo-bounding-btrfs-snapshot",
+        &[&granted],
+        &disk.at("one-before/Invoices/march.pdf"),
+        Still::Bound,
+    );
+    assert_eq!(
+        outcome,
+        Outcome::Refused(13),
+        "the copy of a granted folder in a snapshot was opened"
+    );
+}
+
 /// The work of a turn, which is a second process because a cgroup holds
 /// processes.
 ///

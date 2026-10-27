@@ -123,7 +123,7 @@
 //! program to make the calls for it, because starting one opens the program's
 //! own file and that is a `file_open`.
 
-use alo_bounding_map::{Bounds, Field, Place, reaches};
+use alo_bounding_map::{BTRFS_MAGIC, Bounds, Field, NOT_IN_THIS_KERNEL, Place, reaches};
 
 use crate::kernel;
 
@@ -788,10 +788,27 @@ struct Fields {
     inode_number: u64,
     /// `struct super_block`'s `s_dev`.
     super_device: u64,
+    /// `struct super_block`'s `s_magic`.
+    super_magic: u64,
+    /// Where btrfs keeps a subvolume's own number, or [`None`] on a kernel
+    /// that did not say.
+    btrfs: Option<Btrfs>,
+}
+
+/// The three steps from an inode on btrfs to its subvolume's device number.
+#[derive(Clone, Copy)]
+struct Btrfs {
+    /// `struct btrfs_inode`'s `vfs_inode.i_ino`, which with
+    /// [`Fields::inode_number`] says where btrfs's inode begins.
+    inode_number: u64,
+    /// `struct btrfs_inode`'s `root`.
+    root: u64,
+    /// `struct btrfs_root`'s `anon_dev`.
+    device: u64,
 }
 
 impl Fields {
-    /// The seven offsets, or [`None`] if the daemon did not put them there.
+    /// The offsets, or [`None`] if the daemon did not put them there.
     ///
     /// [`None`] cannot happen on a machine whose boundary loaded — the daemon
     /// fills the map before it attaches the program — and it refuses rather
@@ -807,15 +824,50 @@ impl Fields {
             dentry_super: kernel::offset(Field::DentrySuper)?,
             inode_number: kernel::offset(Field::InodeNumber)?,
             super_device: kernel::offset(Field::SuperDevice)?,
+            super_magic: kernel::offset(Field::SuperMagic)?,
+            btrfs: Btrfs::found(),
         })
     }
 
     /// Which filesystem, and which inode, a directory entry names.
+    ///
+    /// On btrfs the device is the subvolume's rather than the filesystem's,
+    /// because btrfs numbers inodes per subvolume and the filesystem's number
+    /// would make one grant name a place in every subvolume and every snapshot
+    /// at once. It is the number `stat` reports there, which is what the daemon
+    /// wrote down. [`None`] when this kernel did not say where btrfs keeps it,
+    /// and the walk refuses.
     fn place_of(&self, entry: u64) -> Option<Place> {
         let inode = kernel::word_at(entry.wrapping_add(self.dentry_inode))?;
         let filesystem = kernel::word_at(entry.wrapping_add(self.dentry_super))?;
         let number = kernel::word_at(inode.wrapping_add(self.inode_number))?;
-        let device = kernel::half_word_at(filesystem.wrapping_add(self.super_device))?;
+        let device = if kernel::word_at(filesystem.wrapping_add(self.super_magic))? == BTRFS_MAGIC
+        {
+            let btrfs = self.btrfs?;
+            // `inode` is the address of `vfs_inode` inside btrfs's own inode,
+            // so where that one begins is as far back as `vfs_inode` is in.
+            let around = inode
+                .wrapping_add(self.inode_number)
+                .wrapping_sub(btrfs.inode_number);
+            let root = kernel::word_at(around.wrapping_add(btrfs.root))?;
+            kernel::half_word_at(root.wrapping_add(btrfs.device))?
+        } else {
+            kernel::half_word_at(filesystem.wrapping_add(self.super_device))?
+        };
         Some(Place::of(u64::from(device), number))
+    }
+}
+
+impl Btrfs {
+    /// The three offsets, or [`None`] if any of them is
+    /// [`NOT_IN_THIS_KERNEL`] — a kernel that does not describe btrfs, where
+    /// every file on btrfs is refused.
+    fn found() -> Option<Self> {
+        let said = |field| kernel::offset(field).filter(|at| *at != u64::from(NOT_IN_THIS_KERNEL));
+        Some(Self {
+            inode_number: said(Field::BtrfsInodeNumber)?,
+            root: said(Field::BtrfsInodeRoot)?,
+            device: said(Field::BtrfsRootDevice)?,
+        })
     }
 }
