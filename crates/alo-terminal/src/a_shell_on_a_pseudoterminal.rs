@@ -45,8 +45,8 @@
 
 use crate::why_a_command_is_waiting::WhyItIsWaiting;
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::io::{Read as _, Write as _};
-use std::path::PathBuf;
 
 use alacritty_terminal::event::WindowSize;
 use alacritty_terminal::grid::Dimensions as _;
@@ -54,6 +54,7 @@ use alacritty_terminal::tty::{self, Options, Pty, Shell};
 
 use crate::how_big_the_grid_is::HowBig;
 use crate::terminal_output_becomes_a_grid::TerminalOutput;
+use crate::where_a_shell_starts::WhereItStarts;
 
 /// How much is taken from the shell in one read.
 ///
@@ -107,6 +108,8 @@ pub struct AShellOnAPseudoterminal {
             crate::what_the_shell_says_about_the_prompt::NotRead,
         >,
     >,
+    /// Which folder the shell was started in, kept so it can be asked.
+    started_in: WhereItStarts,
 }
 
 /// What this terminal calls itself to the programs it runs.
@@ -148,17 +151,35 @@ fn what_the_child_is_told() -> HashMap<String, String> {
 }
 
 impl AShellOnAPseudoterminal {
-    /// Start the person's own shell.
+    /// Start the person's own shell, in their home folder.
     ///
-    /// **Names no program**, so the system answers with theirs. The working
-    /// directory is where this process already is, which is the behaviour of
-    /// every terminal a person has used.
+    /// **Names no program**, so the system answers with theirs. `home` is the
+    /// session's `$HOME`, and the shell starts there — which is the behaviour
+    /// of every terminal a person has used. Until 2026-10-28 this said *the
+    /// working directory is where this process already is*, and on a machine
+    /// that is `/`, because the compositor is started there.
+    ///
+    /// **A home that cannot be used still gets a shell**, in `/`, and
+    /// [`Self::where_it_started`] says why; `crate::where_a_shell_starts` gives
+    /// the reasons for both halves of that.
     ///
     /// # Errors
     /// [`NoShell::ItWouldNotStart`] if the pseudoterminal could not be opened
     /// or the shell could not be run.
-    pub fn the_persons_own(size: HowBig) -> Result<Self, NoShell> {
-        Self::started(size, None, None)
+    pub fn the_persons_own(size: HowBig, home: Option<&OsStr>) -> Result<Self, NoShell> {
+        Self::started(size, None, WhereItStarts::for_a_home(home))
+    }
+
+    /// Which folder this shell was started in, and whether it was the person's
+    /// home.
+    ///
+    /// **Where it started, not where it is.** A person who types `cd` has
+    /// moved, and this does not follow them; it answers the one question a
+    /// caller has at the moment a terminal opens — *did it open at home, and if
+    /// not, why not* — so the answer can be said rather than lost.
+    #[must_use]
+    pub const fn where_it_started(&self) -> &WhereItStarts {
+        &self.started_in
     }
 
     /// Start one named program on a pseudoterminal instead of the person's
@@ -176,18 +197,22 @@ impl AShellOnAPseudoterminal {
             program.to_owned(),
             args.iter().map(|arg| (*arg).to_owned()).collect(),
         );
-        Self::started(size, Some(shell), None)
+        Self::started(size, Some(shell), WhereItStarts::for_a_home(None))
     }
 
     /// The one road the two above take.
+    ///
+    /// **The folder is always named**, never left to the engine. Left out, the
+    /// child inherits whatever folder this process is standing in, which is how
+    /// a person's terminal came to open at the top of the disk.
     fn started(
         size: HowBig,
         shell: Option<Shell>,
-        working_directory: Option<PathBuf>,
+        started_in: WhereItStarts,
     ) -> Result<Self, NoShell> {
         let options = Options {
             shell,
-            working_directory,
+            working_directory: Some(started_in.the_folder().to_path_buf()),
             // **The child's output is not drained when it exits.** Draining is
             // for a terminal that is closing and wants the last of what a
             // program said; this is a library, and whoever owns the terminal
@@ -201,6 +226,7 @@ impl AShellOnAPseudoterminal {
             pty,
             hearing: crate::what_the_shell_says_about_the_prompt::WhatTheShellSays::new(),
             heard: Vec::new(),
+            started_in,
         })
     }
 

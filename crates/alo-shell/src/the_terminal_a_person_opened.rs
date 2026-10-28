@@ -110,14 +110,27 @@ pub(crate) struct TheTerminal {
 }
 
 impl TheTerminal {
-    /// Start the person's own shell on a grid this big.
+    /// Start the person's own shell on a grid this big, in the home folder
+    /// `home` names — the session's `$HOME`.
+    ///
+    /// **A home that cannot be used is said, not hidden.** The shell still
+    /// starts, in `/`, and the reason goes to the error stream, because *never
+    /// a silent fallback*: a person whose terminal opens somewhere unexpected
+    /// is owed a line somebody mending the machine can find.
     ///
     /// # Errors
     /// Whatever stopped the pseudoterminal from opening or the shell from
     /// running.
-    pub(crate) fn opened(size: HowBig) -> Result<Self, alo_terminal::NoShell> {
+    pub(crate) fn opened(
+        size: HowBig,
+        home: Option<&std::ffi::OsStr>,
+    ) -> Result<Self, alo_terminal::NoShell> {
+        let shell = AShellOnAPseudoterminal::the_persons_own(size, home)?;
+        if let alo_terminal::WhereItStarts::NotTheirHome(why) = shell.where_it_started() {
+            eprintln!("alo-shell: alo's own terminal did not open at home: {why}");
+        }
         Ok(Self {
-            shell: AShellOnAPseudoterminal::the_persons_own(size)?,
+            shell,
             screen: TerminalOutput::of(size),
             finished: false,
             what_alo_said: alo_terminal::WhatAloSaid::nothing(),
@@ -379,7 +392,10 @@ impl crate::Server {
         if self.alos_own_terminal.is_some() {
             return true;
         }
-        match TheTerminal::opened(size) {
+        // **The session's own `$HOME`**, which is the person's: the compositor
+        // runs in their session, and `crate::settings_places` reads the same
+        // variable for the same person.
+        match TheTerminal::opened(size, std::env::var_os("HOME").as_deref()) {
             Ok(terminal) => {
                 self.alos_own_terminal = Some(terminal);
                 true
