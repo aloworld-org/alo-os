@@ -980,6 +980,25 @@ mod what_leaves {
         assert_eq!(FromAPerson::WatchWhatLeaves.number(), None);
     }
 
+    /// **The line `docs/contracts/daemon-protocol.md` shows is one this crate
+    /// reads**, so the example a third party copies cannot drift from the wire.
+    #[test]
+    fn the_contracts_example_reads() {
+        let example = r#"{"format":1,"tells":{"leaving":{"lines":[{"agent":{"agent":"@alo","why":"asking","destination":{"provider":{"provider":"openai","region":{"declared":"the US"}}}}}]}}}"#;
+        let contract = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../docs/contracts/daemon-protocol.md"),
+        )
+        .unwrap();
+        let inner = r#"{"leaving":{"lines":[{"agent":{"agent":"@alo","why":"asking","destination":{"provider":{"provider":"openai","region":{"declared":"the US"}}}}}]}}"#;
+        assert!(
+            contract.contains(inner),
+            "the contract no longer shows this line"
+        );
+        let read = ToAPerson::read(example).unwrap();
+        assert_eq!(read.lines_leaving().map(<[_]>::len), Some(1));
+    }
+
     /// **An agent may not watch what leaves, and is never told it.** An agent
     /// that could would learn when another agent's question reached the
     /// network; the indicator is the person's.

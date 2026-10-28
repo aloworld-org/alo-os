@@ -534,6 +534,40 @@ ADR 0126 is the whole of why.
 What comes back is `answered`, or `refused` with the sentence of whoever refused
 it.
 
+### `watch-what-leaves` — the desktop is told what this service is sending
+
+```json
+{"watch-what-leaves":{}}
+```
+
+Added 2026-10-27, additively ([ADR 0134](../decisions/0134-the-desktop-is-told-what-alo-agentd-sends.md)).
+This service opens the connection to a provider and holds the indicator that
+shows it; the desktop is where a person looks. Until this request nothing carried
+one to the other, and a question sent to a provider left a machine whose screen
+said nothing.
+
+The answer is the list as it stands, as `leaving`. **The connection is then
+given over**: it is no longer the person's door, nothing sent on it is read, and
+every time the indicator changes — **inside the call that changes it, before the
+connection to the network is opened** — it is written the whole list again. So
+Settings can knock while a desktop watches, and the desktop learns of a question
+before it leaves.
+
+- **The whole list every time**, never a change to it, so a desktop that missed
+  a message, or arrived late, is right on the next one.
+- **A desktop that cannot take a list at once is dropped**, never waited for:
+  a screen that froze must not hold an agent's question up. The desktop sees its
+  connection end, shows *cannot tell*, and asks again. At most four desktops
+  are told; the oldest goes.
+- **With nobody watching, a departure still happens** and the record still
+  writes it down — the owner's default, 2026-10-27.
+- **An agent sending this is refused**, and an agent is never told `leaving`:
+  an agent that could watch would learn when another agent's question reached
+  the network.
+- **A service started with nobody to tell** answers `refused`, in the words
+  *this part of alo OS cannot show you what is leaving this machine* — never
+  an empty list, which would read as nothing is leaving.
+
 ## What comes back
 
 ```json
@@ -547,6 +581,7 @@ it.
 {"chosen-to-answer":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine"}}
 {"machine-named":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine","became":"kept"}}
 {"a-place-to-return-to":{"kept":true}}
+{"leaving":{"lines":[{"agent":{"agent":"@alo","why":"asking","destination":{"provider":{"provider":"openai","region":{"declared":"the US"}}}}}]}}
 {"a-place-to-return-to":{"kept":false,"why_not":{"text":"this command is about to run and alo could not keep a place to return to, so you will not be able to undo it","came_from":"translation"}}}
 ```
 
