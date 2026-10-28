@@ -15,12 +15,12 @@ use alo_notifying::{Became, Missed};
 use smithay::utils::{Point, Size};
 
 /// Everything this machine can say, with nothing translated.
-fn words() -> Strings {
+pub(super) fn words() -> Strings {
     Strings::of(alo_saying::everything_this_machine_can_say().unwrap())
 }
 
 /// The ordinary light look, read left to right.
-fn light() -> NotificationLook {
+pub(super) fn light() -> NotificationLook {
     NotificationLook {
         scheme: Scheme::Light,
         scale: TextScale::ordinary(),
@@ -38,12 +38,12 @@ fn an_open_seat() -> Seat<alo_notifying::Notification> {
 }
 
 /// One notification alo OS sent, shown because nothing is holding it.
-fn from_the_machine(title: &str, body: &str, offering: &[(&str, &str)]) -> Shown {
+pub(super) fn from_the_machine(title: &str, body: &str, offering: &[(&str, &str)]) -> Shown {
     shown(from_alo_os(title, body, offering).unwrap())
 }
 
 /// One notification the agent sent, shown for the same reason.
-fn from_an_agent(title: &str) -> Shown {
+pub(super) fn from_an_agent(title: &str) -> Shown {
     shown(from_the_agent(&Grantee::named("@mail"), title, "", &[]).unwrap())
 }
 
