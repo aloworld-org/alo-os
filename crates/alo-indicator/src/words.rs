@@ -126,6 +126,20 @@ pub const NOTHING_IS_LEAVING: Word = Word::saying(
      time on one machine and must not disagree.",
 );
 
+/// The indicator cannot tell whether alo OS's service is sending anything.
+pub const CANNOT_TELL: Word = Word::saying(
+    "indicator.cannot-tell",
+    "alo OS cannot tell whether your agent is sending anything — its service is not answering",
+)
+.noting(
+    "Shown where the network indicator is, when the part of alo OS that sends questions to a \
+     provider is not reporting to the screen: not started yet, stopped, or restarting. It must \
+     never read as \"nothing is leaving\" — the whole point is that the screen does not know. \
+     \"Your agent\" is the assistant built into alo OS, which is software and not a person, so \
+     the grammar should be that of a thing. A whole sentence, announced on its own by a screen \
+     reader.",
+);
+
 /// A lit indicator, with what it is lit for counted.
 pub const HOW_MANY_ARE_LEAVING: Counted = Counted {
     named: "indicator.how-many-are-leaving",
@@ -183,7 +197,12 @@ pub const NOTHING_TO_SHOW_ON: Word = Word::saying(
 ///
 /// The countable one is not here — it is declared beneath, because it is
 /// declared differently.
-pub const EVERY_WORD: [Word; 3] = [NOTHING_IS_LEAVING, NO_COMPOSITOR, NOTHING_TO_SHOW_ON];
+pub const EVERY_WORD: [Word; 4] = [
+    NOTHING_IS_LEAVING,
+    CANNOT_TELL,
+    NO_COMPOSITOR,
+    NOTHING_TO_SHOW_ON,
+];
 
 /// Every countable string this crate can say.
 pub const EVERY_COUNTED: [Counted; 1] = [HOW_MANY_ARE_LEAVING];

@@ -34,7 +34,7 @@
 //! the indicator's home in the dock's status area at v0.5, which is a decision
 //! about furniture that this value does not need to know.
 
-use alo_egress::{Indicator, Shown};
+use alo_egress::{Indicator, Reported, Shown};
 use alo_strings::{Said, Strings};
 
 use crate::lamp::Lamp;
@@ -94,6 +94,9 @@ pub struct Drawn {
     lamp: Lamp,
     /// Every line the indicator was showing, oldest first.
     lines: Vec<Shown>,
+    /// Every line `alo-agentd`'s indicator said it was showing, oldest first
+    /// (ADR 0134). Empty from [`Drawn::of`].
+    reported: Vec<Reported>,
 }
 
 impl Drawn {
@@ -105,7 +108,26 @@ impl Drawn {
         Self {
             lamp: Lamp::of(indicator),
             lines: indicator.showing().to_vec(),
+            reported: Vec::new(),
         }
+    }
+
+    /// What this machine's indicator **and** `alo-agentd`'s stand at, right
+    /// now — the service's lines after this machine's, and *cannot tell* while
+    /// the service has not said (ADR 0134).
+    #[must_use]
+    pub fn of_both(indicator: &Indicator, daemon: &crate::FromTheDaemon) -> Self {
+        Self {
+            lamp: Lamp::of_both(indicator, daemon),
+            lines: indicator.showing().to_vec(),
+            reported: daemon.lines().to_vec(),
+        }
+    }
+
+    /// What `alo-agentd`'s indicator said it was showing, oldest first.
+    #[must_use]
+    pub fn reported(&self) -> &[Reported] {
+        &self.reported
     }
 
     /// The light.
@@ -134,10 +156,21 @@ impl Drawn {
     /// destination or a reason, only the [`Shown`] that carries both.
     #[must_use]
     pub fn lines_said(&self, strings: &Strings) -> Vec<Said> {
-        self.lines
+        let mut said: Vec<Said> = self
+            .lines
             .iter()
             .map(|line| line.said(strings))
-            .collect::<Vec<_>>()
+            .chain(self.reported.iter().map(|line| line.said(strings)))
+            .collect();
+        // **A row of its own, after whatever is known to be leaving**, so a
+        // screen that cannot tell says so in the list as well as in the light.
+        if self.lamp.cannot_tell() {
+            said.push(strings.say(
+                &crate::words::CANNOT_TELL.key(),
+                &alo_strings::Filling::nothing(),
+            ));
+        }
+        said
     }
 }
 
@@ -231,5 +264,82 @@ mod tests {
         assert!(drawn.lamp().is_dark());
         assert!(drawn.lines().is_empty());
         assert!(drawn.lines_said(&in_english()).is_empty());
+    }
+
+    /// **A desktop the service has not told is never dark**: it reads *cannot
+    /// tell*, in the light and as a row, even with nothing of its own leaving.
+    #[test]
+    fn not_told_is_cannot_tell_and_never_dark() {
+        let strings = in_english();
+        for not_told in [
+            crate::FromTheDaemon::NotYetHeard,
+            crate::FromTheDaemon::Unreachable,
+        ] {
+            let drawn = Drawn::of_both(&Indicator::default(), &not_told);
+            assert!(!drawn.lamp().is_dark(), "{not_told:?}");
+            assert!(drawn.lamp().cannot_tell());
+            let said: Vec<String> = drawn
+                .lines_said(&strings)
+                .into_iter()
+                .map(alo_strings::Said::into_text)
+                .collect();
+            assert_eq!(
+                said,
+                [
+                    "alo OS cannot tell whether your agent is sending anything — its service is not answering"
+                ]
+            );
+            assert_eq!(
+                drawn.lamp_said(&strings).text(),
+                "alo OS cannot tell whether your agent is sending anything — its service is not answering"
+            );
+        }
+    }
+
+    /// **What the service told is drawn beside this machine's own**, in its own
+    /// words, and the light counts both.
+    #[test]
+    fn the_services_lines_are_drawn_beside_the_machines_own() {
+        let strings = in_english();
+        let mut indicator = Indicator::default();
+        let departing = indicator
+            .beginning(&EgressPolicy::Anywhere, fetching(), noon())
+            .unwrap();
+        let mut service = Indicator::default();
+        let asking = service
+            .beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon())
+            .unwrap();
+        let told = crate::FromTheDaemon::Told(crate::ToldByTheDaemon::heard(
+            service
+                .showing()
+                .iter()
+                .map(alo_egress::Reported::of)
+                .collect(),
+        ));
+        let drawn = Drawn::of_both(&indicator, &told);
+        assert_eq!(drawn.lamp().how_many(), 2);
+        assert!(!drawn.lamp().cannot_tell());
+        let said = drawn.lines_said(&strings);
+        assert_eq!(said.len(), 2);
+        assert_eq!(
+            said.get(1).map(alo_strings::Said::text),
+            service
+                .showing()
+                .first()
+                .map(|line| line.said(&strings))
+                .as_ref()
+                .map(alo_strings::Said::text)
+        );
+        assert!(indicator.ended(departing));
+        assert!(service.ended(asking));
+
+        let quiet = Drawn::of_both(
+            &indicator,
+            &crate::FromTheDaemon::Told(crate::ToldByTheDaemon::heard(Vec::new())),
+        );
+        assert!(
+            quiet.lamp().is_dark(),
+            "told nothing is leaving, and it is dark"
+        );
     }
 }

@@ -6,6 +6,19 @@ protocol, agent capability, D-Bus interface or stored format changes. What
 may leave is `alo-egress`'s decision and what the indicator says is
 `alo-indicator`'s; this document describes only the drawing surface.
 
+**Since 2026-10-27 it is also fed by a protocol** ([ADR 0134](../decisions/0134-the-desktop-is-told-what-alo-agentd-sends.md)):
+`alo-agentd`'s own indicator, told on the person's socket by
+`watch-what-leaves` (`docs/contracts/daemon-protocol.md`). The desktop draws
+with `alo_indicator::Indicating::show_both(compositor, &indicator, &daemon)`:
+the machine's own lines, then the service's, counted together. While the
+service has not told the desktop, or has stopped (`FromTheDaemon::NotYetHeard`,
+`FromTheDaemon::Unreachable`), the lamp is **not dark**: it reads *alo OS cannot
+tell whether your agent is sending anything — its service is not answering*,
+and that sentence is drawn as a row of its own. It never refuses the frame.
+Only `alo_indicator::watching` can make the `ToldByTheDaemon` the service's
+lines arrive in, from the person's own door after checking that its directory
+is theirs alone and that the process listening runs as them.
+
 ## Values
 
 `EgressStatus` implements `alo_indicator::Compositor`. One belongs to one
@@ -20,7 +33,8 @@ away, dismisses, hides or turns the indicator off.
 - `EgressStatus::is_told()` says whether a picture has been accepted.
 
 A picture reaches it only through `alo_indicator::Indicating::show`, which
-builds it from the machine's own `alo_egress::Indicator`. When an output goes
+builds it from the machine's own `alo_egress::Indicator`, or `show_both`,
+which adds what `alo-agentd` told. When an output goes
 away the host drops its `EgressStatus` and calls `Indicating::show(None, …)`,
 whose refusal forgets what was drawn; a new output gets a new `EgressStatus`
 and is told on the next call.

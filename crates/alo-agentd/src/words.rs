@@ -495,8 +495,21 @@ pub const BEFORE_A_COMMAND_YOU_TYPED: Word = Word::saying(
      were\".",
 );
 
+/// Said to a desktop that asked to be told what leaves, by a service that was
+/// started with nobody to tell it to.
+pub const NOBODY_IS_TOLD_WHAT_LEAVES: Word = Word::saying(
+    "agentd.nobody-is-told-what-leaves",
+    "this part of alo OS cannot show you what is leaving this machine",
+)
+.noting(
+    "Said to the desktop when it asked alo OS's background service to tell it what that service \
+     is sending over the network, and the service has no way to. The desktop then shows that it \
+     cannot tell whether anything is leaving. Plain and factual; it is not an error the person \
+     caused.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 33] = [
+pub const EVERY_WORD: [Word; 34] = [
     NO_PLACE_TO_RETURN_TO,
     BEFORE_A_COMMAND_YOU_TYPED,
     A_WORKSPACE_HERE_IS_NOT_THE_SYSTEMS,
@@ -520,6 +533,7 @@ pub const EVERY_WORD: [Word; 33] = [
     THE_CHOSEN_MACHINE_DID_NOT_ANSWER,
     A_TURN_IS_UNDER_WAY,
     SOMEBODY_IS_ALREADY_ANSWERING,
+    NOBODY_IS_TOLD_WHAT_LEAVES,
     NOTHING_ANSWERS_QUESTIONS,
     NOTHING_WAS_ASKED,
     NO_ROAD_TO_THAT_PROVIDER,

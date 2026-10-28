@@ -165,6 +165,13 @@ pub enum ToAPerson {
         /// Which model was asked, as it was named when the question was put.
         model: String,
     },
+    /// What this service's indicator shows now, oldest first (ADR 0134): the
+    /// answer to [`FromAPerson::WatchWhatLeaves`](crate::FromAPerson), and every
+    /// message after it on that connection. **The whole list every time.**
+    Leaving {
+        /// One line per thing leaving.
+        lines: Vec<alo_egress::Reported>,
+    },
 }
 
 impl ToAPerson {
@@ -427,6 +434,23 @@ impl ToAPerson {
         }
     }
 
+    /// What an indicator shows, as the desktop is told it.
+    #[must_use]
+    pub fn leaving(showing: &[alo_egress::Shown]) -> Self {
+        Self::Leaving {
+            lines: showing.iter().map(alo_egress::Reported::of).collect(),
+        }
+    }
+
+    /// The lines told, when this is what leaves.
+    #[must_use]
+    pub fn lines_leaving(&self) -> Option<&[alo_egress::Reported]> {
+        match self {
+            Self::Leaving { lines } => Some(lines),
+            _ => None,
+        }
+    }
+
     /// It did not happen, in the words of whoever refused it.
     #[must_use]
     pub fn refused(said: &Said) -> Self {
@@ -477,6 +501,7 @@ impl ToAPerson {
                 came_from,
                 model,
             }),
+            Told::Leaving { lines } => Ok(Self::Leaving { lines }),
             Told::Proposed(_) => Err(NotUnderstood::NotAnAnswerForAPerson),
         }
     }
@@ -567,6 +592,7 @@ impl From<ToAPerson> for Told {
                 came_from,
                 model,
             },
+            ToAPerson::Leaving { lines } => Self::Leaving { lines },
         }
     }
 }
@@ -911,3 +937,85 @@ mod tests {
 )]
 #[path = "a_persons_own_question_tests.rs"]
 mod a_persons_own_question;
+
+/// **What leaves crosses the person's door whole, and never reaches an agent**
+/// (ADR 0134).
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+mod what_leaves {
+    use alo_capability::Grantee;
+    use alo_egress::{Destination, Reported, Why};
+
+    use crate::{FromAPerson, FromAnAgent, NotUnderstood, ToAPerson, ToAnAgent};
+
+    fn asking_openai() -> Reported {
+        Reported::Agent {
+            agent: Grantee::named("@alo"),
+            why: Why::Asking,
+            destination: Destination::at("api.openai.com").unwrap(),
+        }
+    }
+
+    #[test]
+    fn the_list_and_the_request_read_back() {
+        let told = ToAPerson::Leaving {
+            lines: vec![asking_openai()],
+        };
+        let written = told.written().unwrap();
+        assert_eq!(ToAPerson::read(&written).unwrap(), told);
+        assert_eq!(
+            ToAPerson::read(&written).unwrap().lines_leaving(),
+            Some(&[asking_openai()][..])
+        );
+
+        let asked = FromAPerson::WatchWhatLeaves.written().unwrap();
+        assert_eq!(asked, r#"{"format":1,"asks":{"watch-what-leaves":{}}}"#);
+        assert_eq!(
+            FromAPerson::read(&asked).unwrap(),
+            FromAPerson::WatchWhatLeaves
+        );
+        assert_eq!(FromAPerson::WatchWhatLeaves.number(), None);
+    }
+
+    /// **The line `docs/contracts/daemon-protocol.md` shows is one this crate
+    /// reads**, so the example a third party copies cannot drift from the wire.
+    #[test]
+    fn the_contracts_example_reads() {
+        let example = r#"{"format":1,"tells":{"leaving":{"lines":[{"agent":{"agent":"@alo","why":"asking","destination":{"provider":{"provider":"openai","region":{"declared":"the US"}}}}}]}}}"#;
+        let contract = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../docs/contracts/daemon-protocol.md"),
+        )
+        .unwrap();
+        let inner = r#"{"leaving":{"lines":[{"agent":{"agent":"@alo","why":"asking","destination":{"provider":{"provider":"openai","region":{"declared":"the US"}}}}}]}}"#;
+        assert!(
+            contract.contains(inner),
+            "the contract no longer shows this line"
+        );
+        let read = ToAPerson::read(example).unwrap();
+        assert_eq!(read.lines_leaving().map(<[_]>::len), Some(1));
+    }
+
+    /// **An agent may not watch what leaves, and is never told it.** An agent
+    /// that could would learn when another agent's question reached the
+    /// network; the indicator is the person's.
+    #[test]
+    fn an_agent_may_not_watch_and_is_never_told() {
+        assert_eq!(
+            FromAnAgent::read(r#"{"format":1,"asks":{"watch-what-leaves":{}}}"#),
+            Err(NotUnderstood::NotForAnAgent)
+        );
+        let written = ToAPerson::Leaving {
+            lines: vec![asking_openai()],
+        }
+        .written()
+        .unwrap();
+        assert_eq!(
+            ToAnAgent::read(&written),
+            Err(NotUnderstood::NotAnAnswerForAnAgent)
+        );
+    }
+}

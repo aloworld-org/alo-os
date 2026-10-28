@@ -33,6 +33,17 @@
 //! is a different feature, and it will be a different type with the report in
 //! its name.
 //!
+//! **That type exists since 2026-10-27**: [`crate::ToldByTheDaemon`], what
+//! `alo-agentd`'s own indicator shows, which only `crate::watching` can make,
+//! from the person's own socket (ADR 0134). [`Lamp::of_both`] takes it beside
+//! the machine's own indicator, and still takes no number.
+//!
+//! # Cannot tell is a state, and it is never dark
+//!
+//! A desktop not told by the service draws *alo OS cannot tell* — lit with no
+//! count rather than dark, because a dark light that might be wrong is the
+//! silent failure law 1 forbids.
+//!
 //! # A number, not a boolean
 //!
 //! The lamp knows how many, because the surface next to it is the list and the
@@ -99,6 +110,9 @@ pub struct Lamp {
     /// Filled by [`Lamp::of`] and by nothing else, which is the whole
     /// guarantee this type makes.
     lit: Option<NonZeroUsize>,
+    /// Whether the service's indicator could not be read, so the lamp cannot
+    /// say nothing is leaving. Never true from [`Lamp::of`].
+    cannot_tell: bool,
 }
 
 impl Lamp {
@@ -113,13 +127,37 @@ impl Lamp {
             } else {
                 NonZeroUsize::new(indicator.showing().len())
             },
+            cannot_tell: false,
         }
+    }
+
+    /// What this machine's indicator **and** `alo-agentd`'s are showing,
+    /// right now: lit for the sum, and *cannot tell* while the service has not
+    /// said or has stopped saying (ADR 0134).
+    #[must_use]
+    pub fn of_both(indicator: &Indicator, daemon: &crate::FromTheDaemon) -> Self {
+        Self {
+            lit: NonZeroUsize::new(
+                indicator
+                    .showing()
+                    .len()
+                    .saturating_add(daemon.lines().len()),
+            ),
+            cannot_tell: daemon.cannot_tell(),
+        }
+    }
+
+    /// Whether the lamp cannot say whether alo OS's service is sending
+    /// anything.
+    #[must_use]
+    pub const fn cannot_tell(self) -> bool {
+        self.cannot_tell
     }
 
     /// Whether the light is dark: nothing is leaving this machine.
     #[must_use]
     pub const fn is_dark(self) -> bool {
-        self.lit.is_none()
+        self.lit.is_none() && !self.cannot_tell
     }
 
     /// Whether the light is lit: something is.
@@ -141,6 +179,7 @@ impl Lamp {
     #[must_use]
     pub const fn word(self) -> Option<Word> {
         match self.lit {
+            None if self.cannot_tell => Some(words::CANNOT_TELL),
             None => Some(words::NOTHING_IS_LEAVING),
             Some(_) => None,
         }
@@ -164,6 +203,7 @@ impl Lamp {
     #[must_use]
     pub fn said(self, strings: &Strings) -> Said {
         match self.lit {
+            None if self.cannot_tell => strings.say(&words::CANNOT_TELL.key(), &Filling::nothing()),
             None => strings.say(&words::NOTHING_IS_LEAVING.key(), &Filling::nothing()),
             Some(how_many) => strings.count(
                 &words::HOW_MANY_ARE_LEAVING.key(),

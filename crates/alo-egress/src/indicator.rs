@@ -131,9 +131,30 @@ pub struct Indicator {
     showing: Vec<Shown>,
     /// The next line number. Never reused.
     next: u64,
+    /// Whoever is told what is showing, every time it changes.
+    ///
+    /// **None by default**, which is every indicator in a process that shows
+    /// its own list. `alo-agentd` sets one so the desktop is told what the
+    /// service is sending (ADR 0134).
+    telling: Option<Box<dyn crate::telling::Telling>>,
 }
 
 impl Indicator {
+    /// This indicator, telling `whom` what it shows every time that changes —
+    /// inside the call that changed it, before that call returns.
+    #[must_use]
+    pub fn told_to(mut self, whom: Box<dyn crate::telling::Telling>) -> Self {
+        self.telling = Some(whom);
+        self
+    }
+
+    /// Tell whoever listens what is showing now.
+    fn told(&self) {
+        if let Some(telling) = &self.telling {
+            telling.now_showing(&self.showing);
+        }
+    }
+
     /// Ask the policy, and — if it permits — begin showing this egress.
     ///
     /// The two are one call because they must not be two: an egress that was
@@ -292,6 +313,9 @@ impl Indicator {
         let id = ShownId(self.next);
         self.next += 1;
         self.showing.push(Shown { id, at, showing });
+        // **Told before the caller holds what lets it leave**, which is
+        // `crate::telling`'s whole rule.
+        self.told();
         id
     }
 
@@ -318,7 +342,11 @@ impl Indicator {
     fn take_off(&mut self, id: ShownId) -> bool {
         let before = self.showing.len();
         self.showing.retain(|shown| shown.id != id);
-        self.showing.len() < before
+        let taken = self.showing.len() < before;
+        if taken {
+            self.told();
+        }
+        taken
     }
 
     /// What is leaving right now, oldest first.
@@ -630,5 +658,72 @@ mod tests {
         assert!(written.contains("itself"), "{written}");
         assert!(written.contains("fetching-a-model"), "{written}");
         assert_eq!(underway.shown().as_u64(), 0);
+    }
+
+    /// A listener that writes down every list it was told.
+    #[derive(Debug, Default, Clone)]
+    struct Listening(std::sync::Arc<std::sync::Mutex<Vec<Vec<ShownId>>>>);
+
+    impl crate::telling::Telling for Listening {
+        fn now_showing(&self, showing: &[Shown]) {
+            self.0
+                .lock()
+                .unwrap()
+                .push(showing.iter().map(Shown::id).collect());
+        }
+    }
+
+    impl Listening {
+        fn told(&self) -> Vec<Vec<ShownId>> {
+            self.0.lock().unwrap().clone()
+        }
+    }
+
+    /// **The listener has been told before the caller holds the departure.**
+    /// What a caller needs to open a connection exists only once the line is
+    /// on the list it was told, so nothing reaches the network ahead of the
+    /// screen (ADR 0134).
+    #[test]
+    fn a_listener_is_told_before_the_departure_is_handed_back() {
+        let listening = Listening::default();
+        let mut indicator = Indicator::default().told_to(Box::new(listening.clone()));
+        let departing = indicator
+            .beginning(&EgressPolicy::Anywhere, asking_alo(), noon())
+            .unwrap();
+        assert_eq!(listening.told(), [vec![departing.shown()]]);
+
+        assert!(indicator.ended(departing));
+        assert_eq!(
+            listening.told().last(),
+            Some(&Vec::new()),
+            "ended and not told"
+        );
+        assert_eq!(listening.told().len(), 2);
+    }
+
+    /// **A refused egress tells nobody anything**, because nothing left and
+    /// the list did not change.
+    #[test]
+    fn a_refused_egress_tells_nobody() {
+        let listening = Listening::default();
+        let mut indicator = Indicator::default().told_to(Box::new(listening.clone()));
+        assert!(
+            indicator
+                .beginning(&EgressPolicy::NothingLeaves, asking_alo(), noon())
+                .is_err()
+        );
+        assert!(listening.told().is_empty(), "{:?}", listening.told());
+    }
+
+    /// **The machine's own errands are told too**, on the same list, so a
+    /// desktop showing what the service sends shows what the service fetches.
+    #[test]
+    fn an_errand_of_the_machines_own_is_told_as_well() {
+        let listening = Listening::default();
+        let mut indicator = Indicator::default().told_to(Box::new(listening.clone()));
+        let underway = indicator.beginning_on_its_own(fetching_a_model(), noon());
+        assert_eq!(listening.told(), [vec![underway.shown()]]);
+        assert!(indicator.ended_on_its_own(underway));
+        assert_eq!(listening.told().len(), 2);
     }
 }

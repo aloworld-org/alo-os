@@ -115,6 +115,13 @@ pub(crate) enum Asked {
     /// by `alo_agentd::TheTurnsBracket` at an approval, which is a different
     /// moment for a different reason.
     APlaceToReturnTo,
+    /// The desktop asks to be told what this service's indicator shows, now
+    /// and every time it changes (ADR 0134).
+    ///
+    /// **Carries nothing.** It is a person's and never an agent's: an agent
+    /// that could watch what leaves could learn when another agent's turn
+    /// reached the network, and the indicator is the person's.
+    WatchWhatLeaves {},
     /// The person approved the change waiting under this number.
     Approve {
         /// The number they answered.

@@ -12,6 +12,12 @@ whose provider half this blocks; `docs/contracts/daemon-protocol.md`;
 `docs/contracts/native-egress-indicator.md`; `crates/alo-egress`,
 `crates/alo-ask`, `crates/alo-agentd`, `crates/alo-agent`.
 
+> **Amended 2026-10-27 by [ADR 0134](0134-the-desktop-is-told-what-alo-agentd-sends.md).**
+> The table below calls `alo-agentd`'s indicator *the single one law 1's surface
+> is drawn from*. It was not drawn anywhere: nothing carried it to the desktop,
+> and a question sent to a provider left a booted machine with the status area
+> dark. ADR 0134 is the road that draws it.
+
 ## What the owner decided, 2026-10-18
 
 **Accepted**, and the reason they gave widens it. Asked whether a short-lived

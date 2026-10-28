@@ -146,6 +146,9 @@ pub mod indicating;
 pub mod lamp;
 pub mod refusing;
 pub mod surface;
+pub mod told;
+#[cfg(unix)]
+pub mod watching;
 pub mod words;
 
 #[cfg(test)]
@@ -156,4 +159,5 @@ pub use indicating::{Drew, Indicating};
 pub use lamp::Lamp;
 pub use refusing::NotShown;
 pub use surface::{Compositor, SurfaceRefused};
+pub use told::{FromTheDaemon, ToldByTheDaemon};
 pub use words::{Counted, Word, WordsError, declare_into, indicator_words};

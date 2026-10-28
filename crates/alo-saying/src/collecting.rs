@@ -178,7 +178,7 @@ pub const EVERY_LIST: &[&str] = &[
 pub const DELIBERATELY_APART: [(&str, &str); 1] = [(
     "alo-agentd",
     "it is Linux, and every module in it is compiled out anywhere else, so a \
-     vocabulary assembled here would hold 33 fewer strings on a host with no \
+     vocabulary assembled here would hold 34 fewer strings on a host with no \
      daemon than on a machine with one — and one host would then refuse a \
      translation file the other accepted. It declares its own list on top of \
      this one, which is the rule docs/contracts/translations.md states for \

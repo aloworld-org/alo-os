@@ -146,7 +146,9 @@ impl ToAnAgent {
             | Told::MachineNamed { .. }
             | Told::Workspaces { .. }
             | Told::WorkspaceOpened(_)
-            | Told::Advertised(_) => Err(NotUnderstood::NotAnAnswerForAnAgent),
+            | Told::Advertised(_)
+            // What leaves is told to the person's desktop and never to an agent.
+            | Told::Leaving { .. } => Err(NotUnderstood::NotAnAnswerForAnAgent),
         }
     }
 

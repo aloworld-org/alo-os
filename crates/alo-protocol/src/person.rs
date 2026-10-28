@@ -247,6 +247,10 @@ pub enum FromAPerson {
     ///
     /// ADR 0130 option B. Carries nothing: the moment is the whole request.
     APlaceToReturnTo,
+    /// The desktop asks to be told what this service's indicator shows, now
+    /// and every time it changes (ADR 0134). The connection it is asked on is
+    /// given over to that and answers nothing else.
+    WatchWhatLeaves,
 }
 
 impl FromAPerson {
@@ -282,6 +286,7 @@ impl FromAPerson {
             Asked::Advertised {} => Ok(Self::Advertised),
             Asked::TheirOwnQuestion { question } => Ok(Self::TheirOwnQuestion { question }),
             Asked::APlaceToReturnTo => Ok(Self::APlaceToReturnTo),
+            Asked::WatchWhatLeaves {} => Ok(Self::WatchWhatLeaves),
             Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } => {
                 Err(NotUnderstood::NotForAPerson)
             }
@@ -319,7 +324,8 @@ impl FromAPerson {
             | Self::OpenWorkspace { .. }
             | Self::Advertised
             | Self::TheirOwnQuestion { .. }
-            | Self::APlaceToReturnTo => None,
+            | Self::APlaceToReturnTo
+            | Self::WatchWhatLeaves => None,
         }
     }
 
@@ -401,6 +407,7 @@ impl From<FromAPerson> for Asked {
             FromAPerson::Advertised => Self::Advertised {},
             FromAPerson::TheirOwnQuestion { question } => Self::TheirOwnQuestion { question },
             FromAPerson::APlaceToReturnTo => Self::APlaceToReturnTo,
+            FromAPerson::WatchWhatLeaves => Self::WatchWhatLeaves {},
         }
     }
 }

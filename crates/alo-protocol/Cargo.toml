@@ -33,6 +33,11 @@ alo-software = { path = "../alo-software" }
 # leaves. It was a dev-dependency until 2026-10-18, when the record gained a
 # verb and its answer had to cross.
 alo-record = { path = "../alo-record" }
+# What another process's indicator is showing, on the way to the desktop (ADR
+# 0134): `alo_egress::Reported` is the one shape a line takes on the wire. A
+# leaf already in this crate's graph through `alo-record`; a dev-dependency
+# until 2026-10-27.
+alo-egress = { path = "../alo-egress" }
 # Every refusal in this crate is read by somebody, so none of them is English.
 alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
@@ -47,7 +52,6 @@ workspace = true
 # real disk. None of this is compiled into the crate.
 [dev-dependencies]
 alo-context = { path = "../alo-context" }
-alo-egress = { path = "../alo-egress" }
 alo-turn = { path = "../alo-turn" }
 # What an application is. Used only by
 # `tests/an_installation_as_a_client_sees_it.rs`, which has to really install

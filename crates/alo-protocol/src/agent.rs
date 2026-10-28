@@ -137,7 +137,9 @@ impl FromAnAgent {
             // of those, which is exactly why it is refused here: an agent that
             // could send it would have a road to a provider that nothing shows.
             | Asked::TheirOwnQuestion { .. }
-            | Asked::APlaceToReturnTo => Err(NotUnderstood::NotForAnAgent),
+            | Asked::APlaceToReturnTo
+            // What leaves is shown to the person, and watching it is theirs.
+            | Asked::WatchWhatLeaves {} => Err(NotUnderstood::NotForAnAgent),
         }
     }
 

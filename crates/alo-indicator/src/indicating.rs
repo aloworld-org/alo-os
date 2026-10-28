@@ -144,11 +144,26 @@ impl Indicating {
     /// compositor, or one that refuses, it answers with a refusal that has a
     /// sentence in it and forgets whatever it believed was on the screen.
     pub fn show(&mut self, compositor: Option<&mut dyn Compositor>, indicator: &Indicator) -> Drew {
+        self.shown(compositor, Drawn::of(indicator))
+    }
+
+    /// Show this machine's indicator **and** what `alo-agentd` said its own
+    /// shows, as one list (ADR 0134). Exactly [`Indicating::show`] otherwise.
+    pub fn show_both(
+        &mut self,
+        compositor: Option<&mut dyn Compositor>,
+        indicator: &Indicator,
+        daemon: &crate::FromTheDaemon,
+    ) -> Drew {
+        self.shown(compositor, Drawn::of_both(indicator, daemon))
+    }
+
+    /// Hand one picture to the compositor, unless it is the one already shown.
+    fn shown(&mut self, compositor: Option<&mut dyn Compositor>, drawn: Drawn) -> Drew {
         let Some(compositor) = compositor else {
             self.showing = None;
             return Drew::Refused(NotShown::NoCompositor);
         };
-        let drawn = Drawn::of(indicator);
         if self.showing.as_ref() == Some(&drawn) {
             return Drew::Unchanged;
         }

@@ -38,6 +38,7 @@
 //! sentence whoever made it worded, and no answer here quotes back what a
 //! client sent.
 
+use alo_egress::Reported;
 use serde::{Deserialize, Serialize};
 
 use crate::advertised::Advertised;
@@ -185,6 +186,15 @@ pub(crate) enum Told {
     /// holds, never a file read again. Nothing the advertisement does not carry
     /// has a field.
     Advertised(Advertised),
+    /// What this service's indicator shows now, oldest first: the answer to
+    /// `watch-what-leaves`, and every message after it on that connection.
+    ///
+    /// **The whole list every time**, never a change to it, for the
+    /// indicator's own reason: a list is still right after a missed message.
+    Leaving {
+        /// One line per thing leaving.
+        lines: Vec<Reported>,
+    },
 }
 
 #[cfg(test)]
