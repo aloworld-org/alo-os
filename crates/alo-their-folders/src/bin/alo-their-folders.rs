@@ -51,10 +51,13 @@
 //! # Today these names are English, and that is not this program's doing
 //!
 //! `alo_their_folders` names each folder through `alo_strings`, so a machine
-//! that prefers German makes `Dokumente`. Nothing on this machine loads
-//! translations or prefers a language yet — the first-start language sheet
-//! carries out a keyboard layout and nothing else — so every machine makes the
-//! English names until that is built. The one line to change when it is, is
+//! that prefers German makes `Dokumente`. **This program does not prefer one
+//! yet.** Since 2026-10-28 the first-start sheet's language is kept and given
+//! to the person as their reading language (`alo_shell::the_language_set_up_in`,
+//! run by their desktop), but this program loads no translations and asks no
+//! settings, so every machine makes the English names until it does — and it
+//! runs beside the desktop at sign-in, so on a first sign-in it could not
+//! count on the language having been written yet. The one line to change is
 //! the `Strings` built below.
 
 use std::path::Path;

@@ -529,6 +529,17 @@ may-use-another = true
 |---|---|
 | `languages` | The languages they read, best first, as tags: `["de", "en"]`. |
 
+**The language picked on the first-start sheet is written here** — the owner's
+decision of 2026-10-28, so a machine speaks and writes dates in it from the
+first minute. The sheet is answered as root before anybody has an account, so
+it is kept first in `/etc/alo/language.toml` (`format = 1`, `language = "de"`,
+readable by everyone on the machine, kept by
+`alo_formats::the_machines_language`); the person's own desktop, at sign-in,
+writes it here through `alo_choosing::Choosing::reading` **when `[reading]`
+names nothing**, and never over a language they named. A person who later
+empties the list is given it again at the next sign-in, because an empty list
+is a person who has not said.
+
 Tags are written the way the rest of the world writes them: `de`, `pt-BR`,
 `sr-Latn-RS`. A list rather than one language, because a person names their own
 second language and alo OS infers nothing from a first. The broader form of each
