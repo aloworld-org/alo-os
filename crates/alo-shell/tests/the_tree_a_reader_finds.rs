@@ -33,6 +33,7 @@
 mod one_heavy_fixture_at_a_time;
 
 use std::io::{BufRead as _, BufReader};
+use std::os::unix::process::CommandExt as _;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant, SystemTime};
@@ -105,6 +106,10 @@ struct ASession {
     accessibility: String,
     /// What it started, killed when it is dropped.
     processes: Vec<Child>,
+    /// The process group everything above runs in, and everything **they**
+    /// start too: the accessibility bus the launcher forks and the registry
+    /// that bus activates are not ours to wait for, so they are reached here.
+    group: Option<rustix::process::Pid>,
     /// Held while this session's processes are up, so this crate's other
     /// process-heavy fixture is not starting a headless compositor and seven
     /// children at the same moment. Dropped last, after the processes below.
@@ -144,27 +149,35 @@ impl ASession {
             ),
         )
         .unwrap();
+        // The session bus leads a process group of its own, so that dropping
+        // this reaches everything started under it — see `Drop`.
         let mut daemon = Command::new(on_the_path("dbus-daemon"))
             .arg(format!("--config-file={}", config.display()))
             .args(["--nofork", "--print-address"])
+            .process_group(0)
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .spawn()
             .unwrap();
-        let mut session = String::new();
-        BufReader::new(daemon.stdout.take().unwrap())
-            .read_line(&mut session)
-            .unwrap();
-        let session = session.trim().to_owned();
-        assert!(!session.is_empty(), "dbus-daemon printed no address");
-
+        let group = rustix::process::Pid::from_child(&daemon);
+        let printed = daemon.stdout.take();
+        // Owned before anything below can panic, so a bus that never answers
+        // is still stopped on the way out.
         let mut this = Self {
             place,
-            session,
+            session: String::new(),
             accessibility: String::new(),
             _heavy: heavy,
             processes: vec![daemon],
+            group: Some(group),
         };
+        let mut session = String::new();
+        BufReader::new(printed.unwrap())
+            .read_line(&mut session)
+            .unwrap();
+        this.session = session.trim().to_owned();
+        assert!(!this.session.is_empty(), "dbus-daemon printed no address");
+
         let launcher = found(
             &[
                 "/usr/libexec/at-spi-bus-launcher",
@@ -183,6 +196,7 @@ impl ASession {
             .env("GSETTINGS_BACKEND", "memory")
             .env("LANG", "C.UTF-8")
             .arg("--launch-immediately")
+            .process_group(group.as_raw_nonzero().get())
             .stdout(Stdio::null())
             .stderr(Stdio::null());
         this.processes.push(command.spawn().unwrap());
@@ -203,7 +217,21 @@ impl ASession {
 }
 
 impl Drop for ASession {
+    /// Stop everything this session started, including what its children
+    /// started.
+    ///
+    /// **Killing the launcher does not stop the bus it launched.** The
+    /// launcher forks the accessibility bus's own `dbus-daemon`, and a killed
+    /// launcher never tells it to go: until 2026-10-28 every run of this file
+    /// left one daemon behind per session, holding the file descriptors of
+    /// whatever started the test, and on a machine whose builds share a lock
+    /// that meant the lock was never let go. So the whole group is killed
+    /// first, while the leader is still unwaited and its number cannot have
+    /// been given to anybody else, and only then are our own children reaped.
     fn drop(&mut self) {
+        if let Some(group) = self.group.take() {
+            let _ = rustix::process::kill_process_group(group, rustix::process::Signal::KILL);
+        }
         for process in &mut self.processes {
             let _ = process.kill();
             let _ = process.wait();
@@ -590,5 +618,79 @@ fn the_served_tree_follows_the_windows_that_open() {
         names_under_the_windows_open(&session, bus.answers_as()),
         vec!["Ledger for March".to_owned()],
         "a reader was still told about a window that had gone"
+    );
+}
+
+/// Every process on this machine that names `place` in its command line or
+/// its environment, as `pid command`.
+///
+/// Read off `/proc` rather than asked of the fixture, because the fixture's
+/// own list is exactly what missed the bus its launcher forked: what is
+/// looked for is any process at all that belongs to this session, by the one
+/// thing every one of them carries — the launcher, the bus it forks and the
+/// registry that bus activates all inherit `XDG_RUNTIME_DIR`, and the session
+/// bus names its configuration file on its command line.
+fn still_running_under(place: &std::path::Path) -> Vec<String> {
+    let wanted = place.as_os_str().as_encoded_bytes();
+    let mentions = |bytes: &[u8]| bytes.windows(wanted.len()).any(|it| it == wanted);
+    let mut found = Vec::new();
+    for entry in std::fs::read_dir("/proc").unwrap().flatten() {
+        let name = entry.file_name();
+        let Some(pid) = name
+            .to_str()
+            .filter(|it| it.bytes().all(|b| b.is_ascii_digit()))
+        else {
+            continue;
+        };
+        let command = std::fs::read(entry.path().join("cmdline")).unwrap_or_default();
+        let environment = std::fs::read(entry.path().join("environ")).unwrap_or_default();
+        if mentions(&command) || mentions(&environment) {
+            let shown: String = String::from_utf8_lossy(&command).replace('\0', " ");
+            found.push(format!("{pid} {shown}"));
+        }
+    }
+    found
+}
+
+/// **Nothing a session started outlives it**, the bus its launcher forked
+/// included.
+///
+/// Found on 2026-10-28 by the processes it left: each run of this file left
+/// one accessibility bus per session alive for ever, and each held the file
+/// descriptors of whatever started the test — on the build machine, a lock
+/// every other build waited on. A process that has exited leaves an empty
+/// command line, so a dead one is not counted.
+#[test]
+fn nothing_a_session_started_outlives_it() {
+    let session = ASession::started();
+    let place = session.place.clone();
+    // The registry is activated on first use, so the session is used rather
+    // than only started: a reader asks it what is running.
+    session
+        .reader()
+        .applications()
+        .expect("the registry answers");
+    // **Proof the search can see the process that used to escape** before its
+    // silence is believed: the launcher is found only through its environment,
+    // and the bus it forks is the one that was left behind.
+    let running = still_running_under(&place);
+    for which in ["at-spi-bus-launcher", "at-spi2/accessibility.conf"] {
+        assert!(
+            running.iter().any(|it| it.contains(which)),
+            "{which} was not found running under the session while it ran, so \
+             this looks in the wrong place and its silence below would mean nothing: \
+             {running:?}"
+        );
+    }
+    drop(session);
+    let started = Instant::now();
+    let mut left = still_running_under(&place);
+    while !left.is_empty() && started.elapsed() < PATIENCE {
+        std::thread::sleep(Duration::from_millis(100));
+        left = still_running_under(&place);
+    }
+    assert!(
+        left.is_empty(),
+        "the session was dropped and these are still running: {left:?}"
     );
 }
