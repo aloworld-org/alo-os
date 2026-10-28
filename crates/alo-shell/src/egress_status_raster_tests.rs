@@ -683,3 +683,58 @@ fn high_contrast_draws_the_indicator_and_its_mark_in_the_other_palette() {
         );
     }
 }
+
+/// **On a two-times output the rows are twice as tall and clear a Dock drawn
+/// twice the size.**
+///
+/// The rows sit on the Dock's corner, and the Dock is drawn at its display's
+/// scale; a row sized by the text size alone was half the size it should be
+/// beside it. The same output at 100 and at 200: the row's height and how far
+/// down it sits double exactly, its far end stays the same margin from the far
+/// corner, and it is still above the band.
+#[test]
+fn at_two_hundred_the_rows_double_and_clear_a_doubled_dock() {
+    let mut indicator = Indicator::default();
+    drop(indicator.beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon()));
+    let at = |size: (i32, i32), per_cent: u16| {
+        let mut labels = WindowControlLabels::new().unwrap();
+        picture(
+            &handed(&indicator),
+            &words(),
+            &Dock::shipped(),
+            &mut labels,
+            TheRoom {
+                size,
+                panel: None,
+                scale: crate::display_scale::DisplayScale::of_per_cent(per_cent),
+            },
+            light(),
+            0,
+        )
+        .unwrap()
+    };
+    let (one, two) = (at((1920, 1080), 100), at((3840, 2160), 200));
+    let (a, b) = (
+        one.rows.first().unwrap().area,
+        two.rows.first().unwrap().area,
+    );
+    assert_eq!(b.size.h, 2 * a.size.h, "the row's height");
+    assert_eq!(b.loc.y, 2 * a.loc.y, "how far down the row sits");
+    assert_eq!(
+        b.loc.x + b.size.w,
+        2 * (a.loc.x + a.size.w),
+        "the row's far end"
+    );
+    let dock = crate::where_the_dock_is::where_the_dock_is(
+        &Dock::shipped(),
+        (3840, 2160),
+        &[],
+        crate::display_scale::DisplayScale::of_per_cent(200),
+    )
+    .unwrap();
+    assert!(
+        b.loc.y + b.size.h <= dock.band.loc.y,
+        "the row {b:?} runs into the doubled Dock {:?}",
+        dock.band
+    );
+}

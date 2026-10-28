@@ -19,7 +19,8 @@
 //! **Those are the Dock's.** Since 2026-10-28 the corner and the shadow arrive
 //! as a `crate::how_a_panel_is_raised::Raised` — a look at a display's scale —
 //! so the terminal's body is drawn here too, with `Elevation/Floating`'s
-//! shadow at its own display's scale, and the Dock is drawn exactly as before.
+//! shadow at its own display's scale. The Dock passes its display's scale too,
+//! with its band and slots, and at 100 it draws exactly the pixels it did before.
 //!
 //! # Why this is a raster and not more rectangles
 //!
@@ -200,9 +201,9 @@ pub(crate) struct ADocksSurface<'a> {
     /// the hairline, the shadow, each well's corner and each ring — so a panel
     /// cannot be drawn with one measure scaled and the rest not. That was this
     /// file's fault once: it multiplied the radius alone by the display's scale
-    /// and drew an 18 radius as 36 on a Dock band still 76 tall. The Dock asks
-    /// for `HowItIsRaised::unscaled` for that reason, and
-    /// `crate::how_a_panel_is_raised` says why.
+    /// and drew an 18 radius as 36 on a Dock band still 76 tall. A panel whose
+    /// geometry is not scaled asks for `HowItIsRaised::unscaled` for that
+    /// reason, and `crate::how_a_panel_is_raised` says which ones do.
     pub(crate) raised: Raised,
 }
 

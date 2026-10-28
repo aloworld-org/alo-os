@@ -55,8 +55,13 @@ fn on_the_dock(how_many: usize) -> Vec<alo_dock::OnTheDock> {
 fn on_the_edge(edge: Edge, how_many: usize) -> TheDocksPlaces {
     let mut dock = Dock::shipped();
     dock.set_edge(edge);
-    where_the_dock_is(&dock, (1920, 1080), &on_the_dock(how_many))
-        .unwrap_or_else(|why| panic!("{edge:?} would not lay out: {why:?}"))
+    where_the_dock_is(
+        &dock,
+        (1920, 1080),
+        &on_the_dock(how_many),
+        crate::display_scale::DisplayScale::ONE,
+    )
+    .unwrap_or_else(|why| panic!("{edge:?} would not lay out: {why:?}"))
 }
 
 /// A point on the screen, `along` units down the bar and across its middle.
@@ -396,8 +401,13 @@ fn a_press_on_a_native_entry_asks_for_the_action() {
         let mut dock = Dock::shipped();
         dock.set_edge(edge);
         let shown = with_settings_last(3);
-        let dock = where_the_dock_is(&dock, (1920, 1080), &shown)
-            .unwrap_or_else(|why| panic!("{edge:?} would not lay out: {why:?}"));
+        let dock = where_the_dock_is(
+            &dock,
+            (1920, 1080),
+            &shown,
+            crate::display_scale::DisplayScale::ONE,
+        )
+        .unwrap_or_else(|why| panic!("{edge:?} would not lay out: {why:?}"));
 
         let native: Vec<_> = dock
             .places
@@ -435,8 +445,13 @@ fn the_applications_beside_a_native_entry_are_still_applications() {
         let mut dock = Dock::shipped();
         dock.set_edge(edge);
         let shown = with_settings_last(3);
-        let dock = where_the_dock_is(&dock, (1920, 1080), &shown)
-            .unwrap_or_else(|why| panic!("{edge:?} would not lay out: {why:?}"));
+        let dock = where_the_dock_is(
+            &dock,
+            (1920, 1080),
+            &shown,
+            crate::display_scale::DisplayScale::ONE,
+        )
+        .unwrap_or_else(|why| panic!("{edge:?} would not lay out: {why:?}"));
 
         let applications: Vec<_> = dock
             .places
@@ -742,8 +757,13 @@ fn a_press_on_the_market_entry_asks_for_the_market() {
         let mut dock = Dock::shipped();
         dock.set_edge(edge);
         let shown = with_the_market_last(3);
-        let dock = where_the_dock_is(&dock, (1920, 1080), &shown)
-            .unwrap_or_else(|why| panic!("{edge:?} would not lay out: {why:?}"));
+        let dock = where_the_dock_is(
+            &dock,
+            (1920, 1080),
+            &shown,
+            crate::display_scale::DisplayScale::ONE,
+        )
+        .unwrap_or_else(|why| panic!("{edge:?} would not lay out: {why:?}"));
 
         let place = dock
             .places

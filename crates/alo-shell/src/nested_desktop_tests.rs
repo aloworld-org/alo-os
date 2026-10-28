@@ -636,3 +636,76 @@ fn every_picture_a_frame_holds_reaches_the_layers_a_display_paints() {
     let without = frame_pictures(frame, None, None, &mut labels, size, None).unwrap();
     assert!(without.layers(&[]).terminal.is_none());
 }
+
+/// **The display's scale reaches the Dock and the indicator on it, through the
+/// frame**, which is the road `crate::direct_desktop` takes for each display
+/// with that display's own scale.
+///
+/// Two displays: a one-to-one 1920 × 1080 and a two-times 3840 × 2160. The
+/// second's Dock is exactly twice the first's, and its indicator rows are
+/// twice as tall and still clear of it — so the frame carried the scale to
+/// both, rather than to the Dock alone and leaving the rows sitting on it.
+#[test]
+fn a_two_times_display_draws_its_dock_and_its_indicator_twice_the_size() {
+    let strings = words();
+    let mut labels = WindowControlLabels::new().unwrap();
+    let running = RunningWindow::closed();
+    let filling = FillingWindow::closed();
+    let mut indicator = Indicator::default();
+    drop(indicator.beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon()));
+    let mut lit = EgressStatus::on_an_output();
+    assert_eq!(
+        Indicating::nowhere().show(Some(&mut lit), &indicator),
+        Drew::Shown
+    );
+    let dock = Dock::shipped();
+    let mut at = |size: (i32, i32), display_scale: u16| {
+        let frame = DesktopFrame {
+            tasks: &[],
+            market: None,
+            what_each_application_draws: &alo_dock::artwork::NOTHING,
+            the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
+            the_docks_words: crate::desktop_testing::no_words(),
+            in_use: &[],
+            notifications: &[],
+            capturing: None,
+            division: crate::desktop_testing::an_undivided_display(),
+            offer: crate::desktop_testing::nothing_offered(),
+            windows: &[],
+            put_aside: crate::desktop_testing::nothing_put_aside(),
+            panel_is_revealed: false,
+            filling_the_screen: false,
+            display_scale,
+            on_the_dock: &[],
+            in_more_apps: &[],
+            the_keyboard_is_on_the_bar: None,
+            the_bar: None,
+            dock: &dock,
+            look: noon_look(&an_appearance(), Direction::LeftToRight),
+            strings: &strings,
+            egress: &lit,
+            running: &running,
+            filling: &filling,
+        };
+        frame_pictures(frame, None, None, &mut labels, size, None).unwrap()
+    };
+    let one = at((1920, 1080), 100);
+    let two = at((3840, 2160), 200);
+    let (band_one, band_two) = (
+        one.desktop.dock.as_ref().unwrap().band,
+        two.desktop.dock.as_ref().unwrap().band,
+    );
+    assert_eq!(band_two.size.h, 2 * band_one.size.h, "the Dock's thickness");
+    assert_eq!(band_two.size.w, 2 * band_one.size.w, "the Dock's length");
+    assert_eq!(band_two.loc.y, 2 * band_one.loc.y, "where the Dock sits");
+    let (row_one, row_two) = (
+        one.status.rows.first().unwrap().area,
+        two.status.rows.first().unwrap().area,
+    );
+    assert_eq!(row_two.size.h, 2 * row_one.size.h, "the indicator's row");
+    assert_eq!(row_two.loc.y, 2 * row_one.loc.y, "where the row sits");
+    assert!(
+        row_two.loc.y + row_two.size.h <= band_two.loc.y,
+        "the row {row_two:?} runs into the Dock {band_two:?}"
+    );
+}

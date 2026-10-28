@@ -59,8 +59,16 @@ pub(crate) struct TheSurfaceAsDrawn {
     /// is taken and does nothing, and must not be read as a press on whatever
     /// item the arithmetic would put there.
     pub(crate) viewport: Rectangle<i32, Physical>,
-    /// Which face, and its layout.
+    /// Which face, and its layout — in `alo_dock`'s logical measures.
     pub(crate) face: WhichFace,
+    /// The display's scale the face was drawn at.
+    ///
+    /// **The face is logical and a press is not.** The popover and the viewport
+    /// are rectangles on the screen, in pixels; the grid and the rows inside them
+    /// are `alo_dock`'s, in its measures. So a press inside the viewport is
+    /// divided by this before the face is asked which item it is on — the same
+    /// scale the draw multiplied by, read from the draw rather than asked again.
+    pub(crate) scale: crate::display_scale::DisplayScale,
 }
 
 /// What a press on, or off, the open surface should do.
@@ -106,15 +114,19 @@ pub(crate) fn what_a_press_on_the_surface_does(
     // own scroll, so nothing here may add it as well.
     let across = at.x.saturating_sub(drawn.viewport.loc.x);
     let down = at.y.saturating_sub(drawn.viewport.loc.y);
-    let (Ok(across), Ok(down)) = (u32::try_from(across), u32::try_from(down)) else {
+    if across < 0 || down < 0 {
         // `contains` already refused a point above or left of the viewport, so
         // this is unreachable rather than a case — and it is written as a
         // refusal rather than an `unwrap` because `clippy::unwrap_used` is
         // denied and because a negative offset is not worth ending a session
         // over.
         return WhatAPressOnTheSurfaceDoes::TakenAndNothingDone;
-    };
-    let (across, down) = (alo_dock::Room::pixels(across), alo_dock::Room::pixels(down));
+    }
+    // **Back to logical**, which is what the face measures in.
+    let (across, down) = (
+        alo_dock::Room::pixels(drawn.scale.logical(across)),
+        alo_dock::Room::pixels(drawn.scale.logical(down)),
+    );
     let which = match drawn.face {
         WhichFace::TheOverview(grid) => grid.which_cell_is_at(across, down),
         WhichFace::TheWindowsOf(rows) => rows.which_row_is_at(down),

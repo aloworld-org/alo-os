@@ -325,8 +325,13 @@ fn a_press_the_dock_takes_is_counted_as_landing() -> Result<(), InputError> {
         alo_dock::ANativeAction::Applications,
     ));
     let on_the_dock = holding.showing(&alo_dock::Windows::none());
-    let places =
-        where_the_dock_is(&dock, EXTENT, &on_the_dock).expect("a dock this display can hold");
+    let places = where_the_dock_is(
+        &dock,
+        EXTENT,
+        &on_the_dock,
+        crate::display_scale::DisplayScale::ONE,
+    )
+    .expect("a dock this display can hold");
     let first = places
         .places
         .each()
@@ -394,8 +399,13 @@ fn a_press_on_the_markets_entry_opens_the_market() -> Result<(), InputError> {
         alo_dock::ANativeAction::Applications,
     ));
     let on_the_dock = holding.showing(&alo_dock::Windows::none());
-    let places =
-        where_the_dock_is(&dock, EXTENT, &on_the_dock).expect("a dock this display can hold");
+    let places = where_the_dock_is(
+        &dock,
+        EXTENT,
+        &on_the_dock,
+        crate::display_scale::DisplayScale::ONE,
+    )
+    .expect("a dock this display can hold");
 
     // The slot the layout itself calls the market's.
     let market = places
@@ -470,8 +480,13 @@ fn a_dock_filled_the_way_a_fresh_machine_fills_it_opens_the_market() -> Result<(
         "a fresh machine's Dock came out empty, so nothing it draws can be pressed"
     );
 
-    let places = where_the_dock_is(&alo_dock::Dock::shipped(), EXTENT, &on_the_dock)
-        .expect("a dock this display can hold");
+    let places = where_the_dock_is(
+        &alo_dock::Dock::shipped(),
+        EXTENT,
+        &on_the_dock,
+        crate::display_scale::DisplayScale::ONE,
+    )
+    .expect("a dock this display can hold");
     let market = places
         .places
         .each()
@@ -553,8 +568,13 @@ fn an_empty_panel_does_not_claim_a_press_meant_for_the_dock() -> Result<(), Inpu
     let _owed = server
         .its_dock_is_filled_from_what_they_kept(&ThePins::NeverSet, &Discovery::Completed(vec![]));
     let on_the_dock = server.what_this_persons_dock_holds();
-    let places = where_the_dock_is(&alo_dock::Dock::shipped(), EXTENT, &on_the_dock)
-        .expect("a dock this display can hold");
+    let places = where_the_dock_is(
+        &alo_dock::Dock::shipped(),
+        EXTENT,
+        &on_the_dock,
+        crate::display_scale::DisplayScale::ONE,
+    )
+    .expect("a dock this display can hold");
     let market = places
         .places
         .each()
@@ -646,8 +666,13 @@ fn a_seat_says_how_many_dock_slots_were_recorded() {
     let _owed = server
         .its_dock_is_filled_from_what_they_kept(&ThePins::NeverSet, &Discovery::Completed(vec![]));
     let on_the_dock = server.what_this_persons_dock_holds();
-    let places = where_the_dock_is(&alo_dock::Dock::shipped(), EXTENT, &on_the_dock)
-        .expect("a dock this display can hold");
+    let places = where_the_dock_is(
+        &alo_dock::Dock::shipped(),
+        EXTENT,
+        &on_the_dock,
+        crate::display_scale::DisplayScale::ONE,
+    )
+    .expect("a dock this display can hold");
     let how_many = places.places.each().len();
     server.the_docks_slots_were_drawn("a-display", places);
 
@@ -692,8 +717,13 @@ fn the_keyboard_alone_opens_the_market() -> Result<(), InputError> {
     let _owed = server
         .its_dock_is_filled_from_what_they_kept(&ThePins::NeverSet, &Discovery::Completed(vec![]));
     let on_the_dock = server.what_this_persons_dock_holds();
-    let places = where_the_dock_is(&alo_dock::Dock::shipped(), EXTENT, &on_the_dock)
-        .expect("a dock this display can hold");
+    let places = where_the_dock_is(
+        &alo_dock::Dock::shipped(),
+        EXTENT,
+        &on_the_dock,
+        crate::display_scale::DisplayScale::ONE,
+    )
+    .expect("a dock this display can hold");
 
     // Which Tab stop the market is, counted the way the keyboard counts them.
     let market = places

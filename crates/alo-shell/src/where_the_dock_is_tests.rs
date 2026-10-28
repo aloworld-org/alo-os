@@ -112,19 +112,56 @@ fn the_four_edges_are_four_different_bands() {
 #[test]
 fn a_display_too_small_or_too_large_is_refused() {
     let dock = Dock::shipped();
-    assert!(where_the_dock_is(&dock, (100, 100), &on_the_dock(1)).is_err());
-    assert!(where_the_dock_is(&dock, (100_000, 1080), &on_the_dock(1)).is_err());
-    assert!(where_the_dock_is(&dock, (1920, 100_000), &on_the_dock(1)).is_err());
+    assert!(
+        where_the_dock_is(
+            &dock,
+            (100, 100),
+            &on_the_dock(1),
+            crate::display_scale::DisplayScale::ONE
+        )
+        .is_err()
+    );
+    assert!(
+        where_the_dock_is(
+            &dock,
+            (100_000, 1080),
+            &on_the_dock(1),
+            crate::display_scale::DisplayScale::ONE
+        )
+        .is_err()
+    );
+    assert!(
+        where_the_dock_is(
+            &dock,
+            (1920, 100_000),
+            &on_the_dock(1),
+            crate::display_scale::DisplayScale::ONE
+        )
+        .is_err()
+    );
     // The premise: an ordinary display is not refused.
-    assert!(where_the_dock_is(&dock, (1920, 1080), &on_the_dock(1)).is_ok());
+    assert!(
+        where_the_dock_is(
+            &dock,
+            (1920, 1080),
+            &on_the_dock(1),
+            crate::display_scale::DisplayScale::ONE
+        )
+        .is_ok()
+    );
 }
 
 /// The Dock on this edge of a 1920 × 1080 display, holding `how_many`.
 fn on_the_edge(edge: Edge, how_many: usize) -> TheDocksPlaces {
     let mut dock = Dock::shipped();
     dock.set_edge(edge);
-    where_the_dock_is(&dock, (1920, 1080), &on_the_dock(how_many))
-        .unwrap_or_else(|why| panic!("{edge:?} would not lay out: {why:?}"))
+    where_the_dock_is(
+        &dock,
+        (1920, 1080),
+        &on_the_dock(how_many),
+        crate::display_scale::DisplayScale::ONE,
+    )
+    .unwrap_or_else(|why| panic!("{edge:?} would not lay out: {why:?}"))
 }
 
 /// **A press in the middle of a slot reaches that slot, on every edge.**

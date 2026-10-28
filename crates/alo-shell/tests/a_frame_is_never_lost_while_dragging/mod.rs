@@ -385,12 +385,16 @@ fn a_motion_leaving_twenty_six_pixels_of_the_name_clear_is_allowed() {
 //
 // # What settled it
 //
-// `desktop_raster_tests::the_dock_band_and_the_panel_column_do_not_move_with_the_displays_scale`
-// draws one display at 100, 125, 150 and 200 per cent and finds the Dock's band
-// and the panel's reserved column **identical at all four**. They are laid out
-// from the room, which arrives already divided by the scale. So they are
-// logical, the floor they are compared against is logical, and there is nothing
-// to convert. Their `Physical` marker is satisfied by construction and says
+// The test now named
+// `desktop_raster_tests::the_dock_band_moves_with_the_displays_scale_and_the_panel_column_does_not_yet`
+// drew one display at 100, 125, 150 and 200 per cent and found the Dock's band
+// and the panel's reserved column **identical at all four**. That was read as
+// *they are logical*; it was truer to say they were unscaled. The room is the
+// display's own pixels and neither went through the scale. **Since 2026-10-28
+// the Dock's band does**, so it grows on a dense display. Both are still the
+// rectangles the display really covers, in the pixels windows are drawn in —
+// clients are told scale one — so the floor is compared in that same space and
+// there is still nothing to convert. Their `Physical` marker is satisfied by construction and says
 // nothing either way — the trap this module's header records two lanes losing an
 // hour to, and a third hour here.
 //

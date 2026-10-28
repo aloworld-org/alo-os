@@ -32,6 +32,7 @@ fn an_overview(pinned: usize, others: usize) -> TheSurfaceAsDrawn {
         popover: Rectangle::new(at(500, 100), (448, 536).into()),
         viewport: Rectangle::new(at(524, 220), (400, viewport_is_tall).into()),
         face: WhichFace::TheOverview(grid),
+        scale: crate::display_scale::DisplayScale::ONE,
     }
 }
 
@@ -43,6 +44,7 @@ fn a_window_list(how_many: usize) -> TheSurfaceAsDrawn {
         popover: Rectangle::new(at(500, 100), (448, 536).into()),
         viewport: Rectangle::new(at(524, 268), (400, viewport_is_tall).into()),
         face: WhichFace::TheWindowsOf(rows),
+        scale: crate::display_scale::DisplayScale::ONE,
     }
 }
 

@@ -1817,9 +1817,11 @@ impl LoopInput for Desk<'_> {
                 what_is_leaving: pictures.status.band,
                 top_controls: pictures.desktop.top_controls,
                 // **No scale is handed over, because these rectangles are in
-                // the room they were laid out from and the handle floor is in
-                // the same space.** Measured, not assumed: see
-                // `desktop_raster_tests::the_dock_band_and_the_panel_column_do_not_move_with_the_displays_scale`.
+                // the pixels this display draws, and windows are drawn in the
+                // same pixels.** The Dock's band went through the display's
+                // scale to get there since 2026-10-28 and the panel's column
+                // has not yet: see
+                // `desktop_raster_tests::the_dock_band_moves_with_the_displays_scale_and_the_panel_column_does_not_yet`.
                 // The division below is the one surface that *does* convert,
                 // and it reads the scale itself.
             },

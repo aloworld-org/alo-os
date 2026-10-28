@@ -180,7 +180,11 @@ fn a_card_is_drawn_at_the_other_end_from_what_is_leaving() {
     // comparing only the no-panel case would not see it.
     let column = Rectangle::new(Point::from((1808, 0)), Size::from((112, 1080)));
     for panel in [None, Some(column)] {
-        let room = TheRoom { size, panel };
+        let room = TheRoom {
+            size,
+            panel,
+            scale: crate::display_scale::DisplayScale::ONE,
+        };
         let status = Place::of(layout, room, measure.px(8), Direction::LeftToRight);
         let cards = Place::of_the_other_end(layout, room, measure.px(8), Direction::LeftToRight);
 
