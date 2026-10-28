@@ -16,12 +16,17 @@
 //!    anything at all.
 //! 3. **Is somebody signed in already?** A second session nobody asked for is a
 //!    machine with two of everything.
-//! 4. **Their place for what an undo would put back**, which only a privileged
+//! 4. **Their place for what an undo would put back, then their own name**,
+//!    each of which only a privileged
 //!    process can make ([ADR 0121](../../../docs/decisions/0121-the-thing-that-opens-a-session-makes-the-persons-folder.md)).
 //!    After 3, so a knock nobody asked for causes no work; before 5, because
 //!    the session is what writes into the folder. **The only step whose failure
 //!    is not a refusal** — `crate::their_folder` says why, at length, and
 //!    `CLAUDE.md` law 5 is the reason that decides it.
+//!    The name ([ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md))
+//!    is placed the same way for the same reasons: after 3, and before 5
+//!    because the session is what starts the desktop that reads it. Its
+//!    failure refuses nobody either (`crate::their_name`).
 //! 5. **Then, and only then, open one.**
 //!
 //! Reversing any two of 1, 2, 3 and 5 would give something away. Asking `logind` first
@@ -42,11 +47,12 @@ use crate::asking::{Answered, Knock};
 use crate::door::Door;
 use crate::logind::Logind;
 use crate::their_folder::TheirFolder;
+use crate::their_name::TheirName;
 use crate::words::{ALREADY_SIGNED_IN, NOBODY_HERE, NOT_OPENED, NOT_YOURS_TO_ASK};
 
 /// The decision this privileged component makes, and the only one it makes.
 #[derive(Debug)]
-pub struct Opening<A: TheAccounts, L: Logind, F: TheirFolder> {
+pub struct Opening<A: TheAccounts, L: Logind, F: TheirFolder, N: TheirName> {
     /// Who may knock.
     door: Door,
     /// The accounts this machine has.
@@ -55,19 +61,22 @@ pub struct Opening<A: TheAccounts, L: Logind, F: TheirFolder> {
     logind: L,
     /// What makes a person their place for what an undo would put back.
     folders: F,
+    /// What gives a person their own name, where their desktop can read it.
+    names: N,
     /// Whether one is open, which is the whole of this component's memory.
     signed_in: bool,
 }
 
-impl<A: TheAccounts, L: Logind, F: TheirFolder> Opening<A, L, F> {
-    /// This door, these accounts, this way of opening a session, and this way
-    /// of making a person their folder.
-    pub const fn at(door: Door, accounts: A, logind: L, folders: F) -> Self {
+impl<A: TheAccounts, L: Logind, F: TheirFolder, N: TheirName> Opening<A, L, F, N> {
+    /// This door, these accounts, this way of opening a session, this way of
+    /// making a person their folder, and this way of giving them their name.
+    pub const fn at(door: Door, accounts: A, logind: L, folders: F, names: N) -> Self {
         Self {
             door,
             accounts,
             logind,
             folders,
+            names,
             signed_in: false,
         }
     }
@@ -118,6 +127,15 @@ impl<A: TheAccounts, L: Logind, F: TheirFolder> Opening<A, L, F> {
         // feature nothing yet writes to. The journal is where this goes, and
         // `a_folder_that_was_not_made_refuses_nobody` is what holds it.
         if let Err(why) = self.folders.made_for(knock.person()) {
+            eprintln!("alo-sessiond: {why}");
+        }
+
+        // **Their name, after their folder and for the same reasons.** Before
+        // the session, because the session is what starts the desktop that
+        // reads it; and a failure refuses nobody, because what it costs is a
+        // word in a strip (`crate::their_name`).
+        // `a_name_that_was_not_given_refuses_nobody` is what holds it.
+        if let Err(why) = self.names.given_to(knock.person()) {
             eprintln!("alo-sessiond: {why}");
         }
 
@@ -198,6 +216,39 @@ mod tests {
         }
     }
 
+    /// A way of giving a name that always manages it — the uninteresting case,
+    /// for [`Giving`]'s reason.
+    #[derive(Debug, Clone, Copy, Default)]
+    struct Naming;
+
+    impl TheirName for Naming {
+        fn given_to(&self, _person: u32) -> Result<(), NotTheirs> {
+            Ok(())
+        }
+    }
+
+    /// A way of giving a name that never manages it.
+    #[derive(Debug, Clone, Copy, Default)]
+    struct NotNaming;
+
+    impl TheirName for NotNaming {
+        fn given_to(&self, person: u32) -> Result<(), NotTheirs> {
+            Err(NotTheirs::NotFinished {
+                person,
+                unit: "alo-giving-a-name@test.service".to_owned(),
+                said: "a test said so".to_owned(),
+            })
+        }
+    }
+
+    /// [`Counting`] counts names as well, so one value can be handed as either.
+    impl TheirName for Counting {
+        fn given_to(&self, _person: u32) -> Result<(), NotTheirs> {
+            *self.0.borrow_mut() += 1;
+            Ok(())
+        }
+    }
+
     /// The greeter's group, on the image this repository ships.
     const THE_GREETER: u32 = 60990;
 
@@ -262,6 +313,7 @@ mod tests {
             Numbered(vec![THE_PERSON]),
             Willing::default(),
             Giving,
+            Naming,
         );
 
         let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
@@ -277,7 +329,7 @@ mod tests {
     #[test]
     fn a_caller_that_is_not_the_surface_is_refused_before_anything_is_asked() {
         let logind = Willing::default();
-        let mut opening = Opening::at(the_door(), Unreadable, logind, Giving);
+        let mut opening = Opening::at(the_door(), Unreadable, logind, Giving, Naming);
 
         for knocker in [0, THE_PERSON, 60989, THE_GREETER + 1] {
             let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), knocker);
@@ -305,6 +357,7 @@ mod tests {
             Numbered(vec![THE_PERSON]),
             Willing::default(),
             Giving,
+            Naming,
         );
 
         for nobody in [0, 1, 999, 1001, 60989, u32::MAX] {
@@ -332,6 +385,7 @@ mod tests {
             Numbered(vec![THE_PERSON]),
             Willing::default(),
             Giving,
+            Naming,
         );
         assert_eq!(
             opening.heard(Knock::on_behalf_of(0), THE_GREETER),
@@ -348,6 +402,7 @@ mod tests {
             Numbered(vec![THE_PERSON]),
             Willing::default(),
             Giving,
+            Naming,
         );
         assert_eq!(
             opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER),
@@ -374,6 +429,7 @@ mod tests {
             Numbered(vec![THE_PERSON]),
             Unwilling::default(),
             Giving,
+            Naming,
         );
 
         let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
@@ -393,6 +449,7 @@ mod tests {
             Numbered(vec![THE_PERSON]),
             Unwilling::default(),
             Giving,
+            Naming,
         );
         drop(opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER));
 
@@ -407,7 +464,7 @@ mod tests {
     /// asked, and nobody is told they do not exist.
     #[test]
     fn accounts_that_will_not_read_are_the_machines_failure_and_not_a_persons() {
-        let mut opening = Opening::at(the_door(), Unreadable, Willing::default(), Giving);
+        let mut opening = Opening::at(the_door(), Unreadable, Willing::default(), Giving, Naming);
 
         let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
 
@@ -425,6 +482,7 @@ mod tests {
             Numbered(vec![THE_PERSON]),
             Unwilling::default(),
             Giving,
+            Naming,
         );
 
         for (knock, knocker) in [
@@ -455,6 +513,7 @@ mod tests {
             Numbered(vec![THE_PERSON]),
             Willing::default(),
             NotGiving,
+            Naming,
         );
 
         let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
@@ -484,6 +543,7 @@ mod tests {
             Numbered(vec![THE_PERSON]),
             Willing::default(),
             counted.clone(),
+            Naming,
         );
 
         assert_eq!(
@@ -517,6 +577,7 @@ mod tests {
                 Numbered(vec![THE_PERSON]),
                 Willing::default(),
                 counted.clone(),
+                Naming,
             );
 
             let answered = opening.heard(Knock::on_behalf_of(person), knocked_by);
@@ -547,6 +608,7 @@ mod tests {
             Numbered(vec![THE_PERSON]),
             Willing::default(),
             counted.clone(),
+            Naming,
         );
 
         assert_eq!(
@@ -561,6 +623,64 @@ mod tests {
             counted.how_many(),
             1,
             "two knocks asked for {} folders",
+            counted.how_many()
+        );
+    }
+    /// **A name that could not be given refuses nobody.**
+    ///
+    /// The cost of failing is a word: the person's terminal says `Local` alone
+    /// rather than `Local · anna`. Turning them away over it would take their
+    /// machine away to protect a label — `CLAUDE.md` law 5, and
+    /// `crate::their_name` at length.
+    #[test]
+    fn a_name_that_was_not_given_refuses_nobody() {
+        let mut opening = Opening::at(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            Giving,
+            NotNaming,
+        );
+
+        let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
+
+        assert_eq!(
+            answered,
+            Answered::Opened,
+            "a person was turned away because their name could not be given"
+        );
+        assert!(opening.is_signed_in());
+    }
+
+    /// **The name is asked for once per sign-in, and never for a refused
+    /// knock** — the folder's rule, held for the second unit separately, so a
+    /// later change that moved one call and not the other fails here.
+    #[test]
+    fn the_name_is_asked_for_once_and_never_for_a_refused_knock() {
+        let counted = Counting::default();
+        let mut opening = Opening::at(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            Giving,
+            counted.clone(),
+        );
+
+        // A caller who may not knock, and a number nobody here has.
+        drop(opening.heard(Knock::on_behalf_of(THE_PERSON), THE_PERSON));
+        drop(opening.heard(Knock::on_behalf_of(THE_PERSON + 7), THE_GREETER));
+        assert_eq!(counted.how_many(), 0, "a refused knock asked for a name");
+
+        assert_eq!(
+            opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER),
+            Answered::Opened
+        );
+        // And a second knock once somebody is signed in.
+        drop(opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER));
+        assert_eq!(
+            counted.how_many(),
+            1,
+            "one sign-in asked for {} names",
             counted.how_many()
         );
     }

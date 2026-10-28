@@ -210,7 +210,10 @@ failure here, signs them in.
 - **`machine.rs` was split in the same change.** Adding systemd's manager to the
   file that holds `logind` took it to 475 lines with two reasons to change;
   `CLAUDE.md` law 4 says split in the change that discovered it, so
-  `crates/alo-sessiond/src/making_a_folder.rs` is its own file.
+  `making_a_folder.rs` is its own file. *It was renamed
+  `crates/alo-sessiond/src/starting_their_units.rs` on 2026-10-28, when
+  [ADR 0135](0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
+  gave it a second unit to start in the same shape.*
 - **`alo-sessiond` gains no dependency.** It already carries `zbus` for
   `logind`, and the unit's name is read off the image rather than imported from
   `alo-giving-a-folder` — a constant compared with another crate's constant

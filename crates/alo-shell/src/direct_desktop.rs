@@ -173,6 +173,22 @@ pub trait TheDesktop {
         alo_shortcuts::Shortcuts::shipped()
     }
 
+    /// **The name of the person this desktop is for**, as they typed it when
+    /// they made their account — asked for once, as the session starts.
+    ///
+    /// The shell asks and does not read, for [`Self::the_shortcuts`]'s reason:
+    /// the name is a file `alo-giving-a-name` writes at every sign-in
+    /// ([ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)),
+    /// and reading a file is the desktop binary's, not this crate's.
+    ///
+    /// **[`None`] by default, and that is a real answer**: an account made
+    /// before the name was given, or a machine where the helper could not run.
+    /// The terminal's strip then says `Local` alone. It never says the login's
+    /// own name, which is `alo` on every machine and is nobody's name.
+    fn whose_desktop_this_is(&mut self) -> Option<String> {
+        None
+    }
+
     /// **What this person has settled about their displays** — their
     /// appearance, their night light and the arrangements they have kept.
     ///
@@ -2203,14 +2219,13 @@ pub(crate) fn drawn_terminal(
             a_test_result: terminal.a_test_result(),
             a_benchmark: terminal.a_benchmark(),
             a_diff: terminal.a_diff(),
-            // **No name yet.** The person's name is in the account store the
-            // sign-in screen reads, which this process cannot read and nothing
-            // hands on — and this process's own account is `alo` on every
-            // machine. `crate::the_terminals_strip` says why it is left out.
+            // **The person's own name, as the desktop was told it at sign-in**
+            // (ADR 0135), or none — never this process's login, which is `alo`
+            // on every machine.
             the_strip: crate::the_terminals_strip::WhatTheStripSays {
                 the_folder: terminal.the_folder(),
                 runs: alo_terminal::WhereTheShellRuns::OnThisMachine,
-                who: None,
+                who: server.whose_desktop_this_is(),
             },
         },
         size,

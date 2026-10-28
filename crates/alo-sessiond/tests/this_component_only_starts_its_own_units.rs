@@ -1,6 +1,6 @@
 //! What this privileged component may say to systemd, read off its own source.
 //!
-//! `crates/alo-sessiond/src/making_a_folder.rs` declares `EVERY_METHOD` as the
+//! `crates/alo-sessiond/src/starting_their_units.rs` declares `EVERY_METHOD` as the
 //! whole list of what it calls, and its own `call` refuses anything not on it.
 //! That guard is real at run time; **this is the check that the list stays
 //! short**, because a later change could add a method to the constant as easily
@@ -9,7 +9,8 @@
 //! [ADR 0121](../../../docs/decisions/0121-the-thing-that-opens-a-session-makes-the-persons-folder.md)
 //! is where this component was allowed to start a unit at all, and this file is
 //! the bound that decision was granted under: one unit, named by a constant,
-//! instanced by a number, and three read-or-start methods.
+//! instanced by a number, and three read-or-start methods. [ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
+//! added a second unit under the same bound, and nothing else.
 //!
 //! # Why read the source rather than test the behaviour
 //!
@@ -41,7 +42,7 @@ fn the_source() -> String {
 
 /// Where that file is.
 fn where_it_is() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("src/making_a_folder.rs")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("src/starting_their_units.rs")
 }
 
 /// Every systemd method that changes something, and none of them may appear.
@@ -122,22 +123,58 @@ fn the_file_this_reads_is_the_one_that_talks_to_systemd() {
     }
 }
 
-/// **The unit's name is built from a number and nothing else.**
+/// **Each unit's name is built from a constant and a number, and nothing else.**
 ///
-/// `CLAUDE.md` law 2: no spelling of *start whatever unit this names*. The
-/// instance comes from a `u32` parameter, so the only text in the name is a
+/// `CLAUDE.md` law 2: no spelling of *start whatever unit this names*. Each
+/// instance comes from a `u32` parameter, so the only text in a name is a
 /// constant of this repository. A `&str` parameter arriving here later is what
 /// this catches.
 #[test]
-fn the_unit_is_named_by_a_constant_and_instanced_by_a_number() {
+fn each_unit_is_named_by_a_constant_and_instanced_by_a_number() {
     let source = the_source();
-    assert!(
-        source.contains(r#"format!("{THE_UNIT}@{person}.service")"#),
-        "the unit's name is no longer a constant plus a number: {}",
+    for (built, by) in [
+        (
+            r#"format!("{THE_UNIT}@{person}.service")"#,
+            "fn made_for(&self, person: u32)",
+        ),
+        (
+            r#"format!("{THE_NAMES_UNIT}@{person}.service")"#,
+            "fn given_to(&self, person: u32)",
+        ),
+    ] {
+        assert!(
+            source.contains(built),
+            "a unit's name is no longer a constant plus a number — {built} is missing from {}",
+            where_it_is().display()
+        );
+        assert!(
+            source.contains(by),
+            "the number is no longer a u32 in `{by}`, so something other than a number can reach \
+             a unit name"
+        );
+    }
+}
+
+/// **And there are two units, not a third.**
+///
+/// A unit name is built in exactly two places, and the function that starts
+/// one is private — so the set of things a sign-in can start is the two
+/// constants, and a third arriving is a decision this test makes somebody take
+/// on purpose.
+#[test]
+fn this_component_builds_two_unit_names_and_no_more() {
+    let source = the_source();
+    let built = source.matches(r#"@{person}.service")"#).count();
+    assert_eq!(
+        built,
+        2,
+        "{} builds {built} unit names, and ADR 0121 and ADR 0135 allow two",
         where_it_is().display()
     );
     assert!(
-        source.contains("fn made_for(&self, person: u32)"),
-        "the number is no longer a u32, so something other than a number can reach a unit name"
+        source.contains("\nfn started_and_finished(")
+            && !source.contains("pub fn started_and_finished("),
+        "the function that starts a unit by name is public, or gone, in {}",
+        where_it_is().display()
     );
 }

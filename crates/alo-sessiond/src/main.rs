@@ -42,7 +42,7 @@ mod running {
     use alo_sessiond::listening::Listening;
     use alo_sessiond::{
         Answered, Door, Opening, THE_DOOR, TheMachinesAccounts, TheMachinesFolders,
-        TheMachinesLogind, our_group,
+        TheMachinesLogind, TheMachinesNames, our_group,
     };
 
     /// Open the door and answer whoever knocks, until this service is stopped.
@@ -83,6 +83,7 @@ mod running {
             TheMachinesAccounts,
             TheMachinesLogind::default(),
             TheMachinesFolders,
+            TheMachinesNames,
         );
         loop {
             match listening.answer_one(&mut opening) {

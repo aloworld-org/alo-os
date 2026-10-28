@@ -152,6 +152,7 @@ RUN cargo build --release --target ${THE_TARGET} \
       --package alo-brokerd \
       --package alo-looking-once \
       --package alo-giving-a-folder \
+      --package alo-giving-a-name \
       --package alo-their-folders \
       --package alo-agent \
       --package alo-try \
@@ -410,6 +411,16 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-looking-once /usr/lib
 # already running as root are 113,587 and 2,160 lines against this one's
 # hundred.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-giving-a-folder /usr/libexec/alo-giving-a-folder
+
+# **A person's own name, given to them at every sign-in** (ADR 0135).
+#
+# The name a person typed when they made their account is in
+# /etc/alo/accounts.toml, which their desktop must not read. This copies that
+# one name to /var/lib/alo-names/<number>, mode 0600 and the person's, started
+# as `alo-giving-a-name@<account number>.service` by alo-sessiond. The same
+# shape as the folder helper above and for the same reason: the capability
+# lives in a small unit of its own rather than in anything already root.
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-giving-a-name /usr/libexec/alo-giving-a-name
 
 # **The folders a person expects in their home**, made in their own session.
 #
@@ -1184,6 +1195,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/systemd/system/alo-asking.socket \
                /usr/lib/systemd/system/alo-asking@.service \
                /usr/lib/systemd/system/alo-giving-a-folder@.service \
+               /usr/lib/systemd/system/alo-giving-a-name@.service \
                /usr/lib/systemd/system/alo-convertd.service \
                /usr/lib/systemd/system/alo-compositor.service \
                /usr/lib/systemd/system/alo-desktop.service \

@@ -694,6 +694,7 @@ name = "alo-desktop"
 version = "0.1.0"
 dependencies = [
  "alo-access",
+ "alo-accounts",
  "alo-appearance",
  "alo-applications",
  "alo-arranging",
@@ -906,6 +907,14 @@ name = "alo-giving-a-folder"
 version = "0.0.1"
 dependencies = [
  "alo-kept-undo",
+ "rustix 1.1.4",
+]
+
+[[package]]
+name = "alo-giving-a-name"
+version = "0.0.1"
+dependencies = [
+ "alo-accounts",
  "rustix 1.1.4",
 ]
 
