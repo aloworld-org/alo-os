@@ -4,9 +4,9 @@
 //! the property is the order of the calls in the function both roads end in,
 //! and a picture test would need two surfaces built to overlap on one pixel for
 //! every pair. Until 2026-10-28 alo's own terminal was painted after Settings
-//! and the record, so a terminal covered Settings opened behind it — invisible
-//! to every test, because no frame on a real display carried a terminal before
-//! #974.
+//! and the record, so a terminal covered Settings opened behind it, and the
+//! card a person approves a change on — invisible to every test, because no
+//! frame on a real display carried a terminal before #974.
 
 /// `scene_drawing.rs`, as text.
 const SOURCE: &str = include_str!("scene_drawing.rs");
@@ -20,33 +20,37 @@ fn painted_at(call: &str) -> usize {
         "`{call}` should be painted exactly once, and is painted {} times",
         found.len()
     );
-    found[0]
+    found.first().copied().unwrap_or_default()
 }
 
-/// **A terminal is a window among windows**: above the desktop it sits on,
-/// and under the record, Settings and the question, which no window covers.
+/// **A terminal is a window among windows**: painted where a client's window
+/// is, under the Dock and the task windows, and under the record, Settings and
+/// the question, which no window covers.
 #[test]
-fn the_terminal_is_painted_above_the_desktop_and_under_every_surface_of_alos() {
-    let desktop = painted_at("desktop.paint(&mut frame, &washed)");
+fn the_terminal_is_painted_where_a_window_is_under_every_surface_of_alos() {
     let terminal = painted_at("terminal.paint(&mut frame)");
-    let record = painted_at("record.paint(&mut frame)");
-    let settings = painted_at("settings.paint(&mut frame)");
-    let approval = painted_at("approval.paint(&mut frame)");
 
-    assert!(
-        desktop < terminal,
-        "the terminal is painted under the desktop"
-    );
-    assert!(
-        terminal < record,
-        "the terminal is painted over the record, so a terminal covers what the machine did"
-    );
-    assert!(
-        terminal < settings,
-        "the terminal is painted over Settings, so a setting being changed is covered"
-    );
-    assert!(
-        terminal < approval,
-        "the terminal is painted over the question a person is asked to approve"
-    );
+    for (surface, call) in [
+        (
+            "the Dock and the task windows, so it covers a change waiting for approval",
+            "desktop.paint(&mut frame, &washed)",
+        ),
+        (
+            "the record, so it covers what the machine did",
+            "record.paint(&mut frame)",
+        ),
+        (
+            "Settings, so it covers a setting being changed",
+            "settings.paint(&mut frame)",
+        ),
+        (
+            "the question a person is asked to approve",
+            "approval.paint(&mut frame)",
+        ),
+    ] {
+        assert!(
+            terminal < painted_at(call),
+            "the terminal is painted over {surface}"
+        );
+    }
 }
