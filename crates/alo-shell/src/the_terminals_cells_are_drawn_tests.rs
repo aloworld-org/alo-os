@@ -29,6 +29,13 @@ use crate::WindowControlLabels;
 /// A display the size of the design's own frames.
 const A_DISPLAY: (i32, i32) = (1440, 1040);
 
+/// How many flat shapes a terminal paints before anything a program wrote: the
+/// window's hairline, its panel, and the transcript's ground.
+///
+/// Three since 2026-10-28, when the window gained a visible edge; it was two
+/// while the window was one rectangle in the canvas's own colour.
+const THE_WINDOW_AND_ITS_TRANSCRIPT: usize = 3;
+
 /// The vocabulary the gutter's four words are said from.
 ///
 /// `alo-terminal` declares them; the shell holds one vocabulary that every
@@ -553,7 +560,7 @@ fn a_cursor_is_drawn_and_a_hidden_one_is_not() {
     );
     assert_eq!(
         hidden.solids.len(),
-        2,
+        THE_WINDOW_AND_ITS_TRANSCRIPT,
         "with the cursor hidden there should be only the window and the transcript"
     );
 }
@@ -614,7 +621,7 @@ fn a_beam_cursor_leaves_the_character_alone() {
     // One extra solid for the beam, and the text inked once.
     assert_eq!(
         drawn.solids.len(),
-        3,
+        THE_WINDOW_AND_ITS_TRANSCRIPT + 1,
         "a beam should add exactly one shape to the window and the transcript"
     );
     // **Counted in the cells' room**, because the gutter's label is an inked
@@ -646,7 +653,7 @@ fn a_hollow_block_is_drawn_as_its_edges() {
     .expect("a terminal");
     assert_eq!(
         block.solids.len(),
-        3,
+        THE_WINDOW_AND_ITS_TRANSCRIPT + 1,
         "a filled block is one shape over the window and the transcript"
     );
 }
@@ -854,7 +861,7 @@ fn a_plain_screen_paints_no_extra_background() {
     // The window, the transcript, and the cursor. Nothing else.
     assert_eq!(
         drawn.solids.len(),
-        3,
+        THE_WINDOW_AND_ITS_TRANSCRIPT + 1,
         "a screen with no coloured backgrounds painted {} solids; it should paint the window, \
          the transcript and the cursor",
         drawn.solids.len()
