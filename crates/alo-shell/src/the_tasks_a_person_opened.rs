@@ -65,23 +65,50 @@ pub struct TheTasks {
     /// windows, and a window that moves under a hand is one somebody closes by
     /// accident.
     open: Vec<ATask>,
-    /// Where each task's window was put, in the same order.
+    /// Where each task's window is, in the same order.
     ///
     /// **Placed once and then kept**, which is the design's own requirement:
     /// *apply default placement once; later redraws or remapping must not
     /// unexpectedly reposition it.* A position recomputed each frame is a
     /// window that jumps when somebody else's opens.
     ///
-    /// [`None`] until something places it. A task exists the moment somebody
-    /// asks, and the frame that places it is the next one — so *asked for and
-    /// not yet anywhere* is a real state rather than a gap.
+    /// [`ItsWindow::NowhereYet`] until something places it. A task exists the
+    /// moment somebody asks, and the frame that places it is the next one — so
+    /// *asked for and not yet anywhere* is a real state rather than a gap.
     ///
     /// **A parallel list, and held to it by `debug_assert` at every door that
     /// changes either.** Two vectors that must stay the same length is a shape
     /// worth distrusting; it is this way because `ATask` is `alo-tasks`' and a
     /// window's position is the shell's, and putting a screen rectangle inside
     /// the model would be the shell's state kept in the wrong crate.
-    placed: Vec<Option<Rectangle<i32, Physical>>>,
+    placed: Vec<ItsWindow>,
+}
+
+/// Where one task's window is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ItsWindow {
+    /// Asked for, and not yet placed.
+    NowhereYet,
+    /// On the screen, here.
+    At(Rectangle<i32, Physical>),
+    /// The person closed it.
+    ///
+    /// **Its place in the list is kept**, and that is the point of this state
+    /// rather than removing the task. A [`WhichTask`] is a place in the list,
+    /// and an answer still on its way from the agent carries one — so a list
+    /// that closed up the gap would hand the next task's answer to the task
+    /// after it. A closed window is never placed, drawn or pressed again.
+    Closed,
+}
+
+impl ItsWindow {
+    /// Where it is on the screen, if anywhere.
+    const fn on_the_screen(self) -> Option<Rectangle<i32, Physical>> {
+        match self {
+            Self::At(at) => Some(at),
+            Self::NowhereYet | Self::Closed => None,
+        }
+    }
 }
 
 impl TheTasks {
@@ -101,15 +128,43 @@ impl TheTasks {
     /// setting makes the task and this holds it.
     pub fn and_now_this_one(&mut self, task: ATask) -> WhichTask {
         self.open.push(task);
-        self.placed.push(None);
+        self.placed.push(ItsWindow::NowhereYet);
         debug_assert_eq!(self.open.len(), self.placed.len());
         WhichTask(self.open.len() - 1)
     }
 
-    /// Where each task's window is, in the order the tasks opened.
+    /// Where each task's window is, in the order the tasks opened, and
+    /// [`None`] for one not yet placed or closed.
     #[must_use]
-    pub fn where_each_went(&self) -> &[Option<Rectangle<i32, Physical>>] {
-        &self.placed
+    pub fn where_each_went(&self) -> Vec<Option<Rectangle<i32, Physical>>> {
+        self.placed
+            .iter()
+            .map(|window| window.on_the_screen())
+            .collect()
+    }
+
+    /// The person closed this task's window. Answers whether one was open to
+    /// close.
+    ///
+    /// **Bookkeeping only**: whether a window *may* close is
+    /// `crate::closing_a_task_window`'s question, and this is the step after
+    /// it has been answered.
+    pub(crate) fn closed(&mut self, which: WhichTask) -> bool {
+        match self.placed.get_mut(which.at()) {
+            Some(window) if *window != ItsWindow::Closed => {
+                *window = ItsWindow::Closed;
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// Whether this task's window is still open — placed or about to be.
+    #[must_use]
+    pub fn is_open(&self, which: WhichTask) -> bool {
+        self.placed
+            .get(which.at())
+            .is_some_and(|window| *window != ItsWindow::Closed)
     }
 
     /// The task window under this point on the screen, if one is.
@@ -125,6 +180,7 @@ impl TheTasks {
             .rev()
             .find_map(|(at, placed)| {
                 placed
+                    .on_the_screen()
                     .filter(|window| window.contains(point))
                     .map(|_| WhichTask(at))
             })
@@ -148,7 +204,9 @@ impl TheTasks {
         debug_assert_eq!(self.open.len(), self.placed.len());
         let mut placed = 0;
         for which in 0..self.placed.len() {
-            if self.placed.get(which).is_some_and(Option::is_some) {
+            // **Only a window nothing has placed**: one on the screen stays
+            // where it is, and a closed one is never put back.
+            if self.placed.get(which) != Some(&ItsWindow::NowhereYet) {
                 continue;
             }
             // **Front-to-back: the newest first.** That makes the most recently
@@ -159,7 +217,7 @@ impl TheTasks {
                 .placed
                 .iter()
                 .rev()
-                .filter_map(|at| *at)
+                .filter_map(|window| window.on_the_screen())
                 .map(|at| {
                     Rectangle::new((at.loc.x, at.loc.y).into(), (at.size.w, at.size.h).into())
                 })
@@ -173,7 +231,7 @@ impl TheTasks {
                 continue;
             };
             if let Some(slot) = self.placed.get_mut(which) {
-                *slot = Some(crate::where_a_task_window_opens::as_a_frame_draws_it(at));
+                *slot = ItsWindow::At(crate::where_a_task_window_opens::as_a_frame_draws_it(at));
                 placed += 1;
             }
         }
@@ -200,16 +258,20 @@ impl TheTasks {
         self.open.get_mut(place)
     }
 
-    /// Every task, oldest first.
+    /// Every task, oldest first — **closed ones included**, because a task's
+    /// place in this list is how it is named; [`Self::is_open`] says which.
     #[must_use]
     pub fn each(&self) -> &[ATask] {
         &self.open
     }
 
-    /// How many are open.
+    /// How many windows are open: every task the person has not closed.
     #[must_use]
     pub fn how_many(&self) -> usize {
-        self.open.len()
+        self.placed
+            .iter()
+            .filter(|window| **window != ItsWindow::Closed)
+            .count()
     }
 
     /// Which tasks are waiting for the person to answer something.
@@ -223,6 +285,7 @@ impl TheTasks {
             .enumerate()
             .filter(|(_, task)| task.is_waiting_for_the_person())
             .map(|(at, _)| WhichTask(at))
+            .filter(|which| self.is_open(*which))
     }
 }
 

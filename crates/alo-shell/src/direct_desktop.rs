@@ -1303,7 +1303,7 @@ impl LoopInput for Desk<'_> {
         // The raster borrows these strings.
         let the_tasks_words = crate::the_tasks_words::TheTasksWords::said(
             server.tasks().each(),
-            server.tasks().where_each_went(),
+            &server.tasks().where_each_went(),
             self.strings,
             server.the_change_waiting.selected(),
         );

@@ -230,6 +230,20 @@ and how a disabled Stop is drawn. **Both have to be decided rather than
 measured, and this file is where that is recorded.** They are not in the export
 and must not be reported as if they were.
 
+## Closing is promised in words and not drawn
+
+`docs/features.md` promises that closing a running task offers **Stop and
+close**, **Keep running** and **Cancel**. No frame draws that sheet, and the
+frames' `External window edge` above each task window is not drawn on one
+yet.
+
+**What is built, 2026-10-28:** Alt+F4 in a task window whose work is over —
+complete, or confirmed stopped — closes it and gives the keyboard back. On a
+task still working, stopping, or waiting for the person it does nothing at
+all, which is *Cancel*: no stop is asked and a waiting change is neither
+approved nor declined. The two other choices wait on a Stop that reaches the
+agent and on the right-hand panel holding a task.
+
 ## The approval card, 920 × 152
 
 `417:27797`, inside the conversation scroll, `bg/cool`, p 16, radius

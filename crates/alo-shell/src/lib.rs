@@ -109,6 +109,8 @@ mod a_task_window_scrolls;
 /// **Public because `task_text::WhatWasSaid` carries its marks**, as
 /// `task_text` is public for `task_raster`'s reason.
 pub mod alos_marked_words;
+/// Closing a task window, and which ones may close.
+pub mod closing_a_task_window;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 /// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;

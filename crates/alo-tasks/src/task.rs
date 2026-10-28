@@ -270,6 +270,23 @@ impl ATask {
         }
     }
 
+    /// Whether its window may close without asking the person anything.
+    ///
+    /// **Only a task whose work is over**: finished on its own, or stopped and
+    /// confirmed stopped. A task alo is still working on, one asked to stop and
+    /// not yet stopped, and one waiting for the person — a change to approve,
+    /// or a question — are all still running. `docs/features.md` promises that
+    /// closing one of those *asks*, with three named choices, and never kills
+    /// it silently or leaves it running with nowhere to find it.
+    ///
+    /// **Read from [`Self::what_is_happening`]** rather than worked out again,
+    /// so the status a person reads and what closing does cannot disagree.
+    #[must_use]
+    pub fn may_close_without_asking(&self) -> bool {
+        let happening = self.what_is_happening();
+        happening == crate::words::COMPLETE || happening == crate::words::STOPPED
+    }
+
     /// What the right-hand panel shows while this is minimised.
     #[must_use]
     pub fn in_the_panel(&self) -> InThePanel {
