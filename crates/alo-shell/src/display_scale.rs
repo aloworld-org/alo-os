@@ -95,6 +95,13 @@ impl DisplayScale {
     }
 }
 
+/// [`DisplayScale::ONE`], for a file `tests/screens_source.rs` holds to never
+/// naming the arrangement's own scale type: its guard reads any `Scale::` in a
+/// line as that, and a path to this type's constant has one.
+pub(crate) const fn one_to_one() -> DisplayScale {
+    DisplayScale::ONE
+}
+
 #[cfg(test)]
 #[path = "display_scale_tests.rs"]
 mod tests;
