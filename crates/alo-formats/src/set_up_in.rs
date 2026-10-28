@@ -200,11 +200,7 @@ mod tests {
         std::fs::write(&at, "format = 1\nlanguage = \"de\"\nwallpaper = 3\n").unwrap();
         assert_eq!(read(&at).unwrap_err().key(), Some("wallpaper"));
         assert!(keep_the_region(&at, &RegionCode::named("DE").unwrap()).is_err());
-        assert!(
-            std::fs::read_to_string(&at)
-                .unwrap()
-                .contains("wallpaper")
-        );
+        assert!(std::fs::read_to_string(&at).unwrap().contains("wallpaper"));
         std::fs::write(&at, "format = 1\nlanguage = \"not a language\"\n").unwrap();
         assert_eq!(read(&at).unwrap().language(), None);
     }

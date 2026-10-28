@@ -321,6 +321,7 @@ mod recovery_screen;
 mod recovery_seat;
 #[cfg(test)]
 mod recovery_testing;
+mod region_sheet;
 mod resize_cursor;
 mod resize_transaction;
 mod resource_device;
@@ -422,6 +423,8 @@ mod the_panel_reveals;
 pub mod the_pickers_words;
 mod the_pointer_in_pixels;
 pub mod the_providers_words;
+mod the_region_a_person_chose;
+pub mod the_regions_offered;
 pub mod the_reply_boxs_words;
 mod the_session_holds_its_screens;
 /// The task windows a person opened by asking alo for something.

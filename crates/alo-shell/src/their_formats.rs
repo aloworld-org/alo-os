@@ -116,7 +116,8 @@ impl TheirFormats {
     /// The same person, after they chose something else.
     #[must_use]
     pub fn with(&self, chosen: Chosen) -> Self {
-        Self::of(chosen, self.reading.as_deref()).where_the_machine_was_set_up(self.set_up_in.clone())
+        Self::of(chosen, self.reading.as_deref())
+            .where_the_machine_was_set_up(self.set_up_in.clone())
     }
 
     /// The same person in a zone given rather than looked up — for a test, or
