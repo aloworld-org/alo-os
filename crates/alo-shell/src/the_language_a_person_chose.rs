@@ -121,7 +121,11 @@ mod tests {
     #[test]
     fn a_language_that_could_not_be_kept_is_said_and_tried_again() {
         let (folder, _) = a_file();
-        let nowhere = folder.path().join("no such folder").join("language.toml");
+        // A file where the folder should be: no disk, and no user, can put
+        // anything inside it.
+        let not_a_folder = folder.path().join("a file, not a folder");
+        std::fs::write(&not_a_folder, "").unwrap();
+        let nowhere = not_a_folder.join("language.toml");
         let mut chose = TheLanguageAPersonChose::nothing_yet();
         assert!(matches!(
             chose.chose(Some("de"), &nowhere),

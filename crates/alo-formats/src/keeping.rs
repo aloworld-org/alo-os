@@ -252,7 +252,7 @@ mod tests {
         keep(&at, &chosen).unwrap();
         assert_eq!(
             std::fs::read_to_string(&at).unwrap(),
-            "format = 1\nregion = \"BE\"\n",
+            "format = 1\n\nregion = \"BE\"\n",
             "the file keeps something besides the region"
         );
         chosen.written_as_in(Some("FR")).unwrap();

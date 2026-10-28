@@ -133,7 +133,7 @@ mod tests {
         assert_eq!(read(&at).unwrap(), Some(Language::written("de").unwrap()));
         assert_eq!(
             std::fs::read_to_string(&at).unwrap(),
-            "format = 1\nlanguage = \"de\"\n"
+            "format = 1\n\nlanguage = \"de\"\n"
         );
     }
 
