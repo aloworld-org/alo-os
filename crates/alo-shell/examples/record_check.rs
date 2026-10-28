@@ -113,6 +113,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Err(refused.said(&strings).into_text().into());
     }
 
+    // Whoever runs this check reads the record the way a person who has
+    // chosen nothing does: the source language, with CLDR's own region for it.
+    let formats = alo_formats::TheirFormats::of(alo_formats::Chosen::default(), None);
     let mut submitted = 0;
     let mut draw = |what: &str,
                     window: &RecordWindow,
@@ -148,6 +151,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 scheme,
                                 scale: TextScale::ordinary(),
                                 reading,
+                            },
+                            clock: alo_shell::RecordClock {
+                                formats: &formats,
+                                now: SystemTime::now(),
                             },
                         },
                         None,

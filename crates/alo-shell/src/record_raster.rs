@@ -42,6 +42,7 @@ use smithay::utils::{Physical, Rectangle};
 
 use crate::painted::{Inked, Solid};
 use crate::painted_text::Shaped;
+use crate::record_clock::RecordClock;
 use crate::record_lines::{EntryWords, newest_first};
 use crate::record_room::{Room, framed, rule};
 use crate::{RecordLook, RecordShows, RenderError, WindowControlLabels};
@@ -60,6 +61,10 @@ pub(crate) struct TextDrawn {
 pub(crate) struct EntryDrawn {
     /// The words it was drawn from.
     pub(crate) words: EntryWords,
+    /// The day above it, when it is the first of its day in view.
+    pub(crate) day: Option<TextDrawn>,
+    /// The time of day at its head, before the clause.
+    pub(crate) time: Option<TextDrawn>,
     /// The clause at its head.
     pub(crate) clause: TextDrawn,
     /// Whose authority it was under, when the record names anybody.
@@ -129,6 +134,7 @@ pub(crate) fn picture(
     labels: &mut WindowControlLabels,
     size: (i32, i32),
     look: RecordLook,
+    clock: RecordClock<'_>,
 ) -> Result<RecordPicture, RenderError> {
     let mut drawn = RecordPicture::empty(size);
     match shows {
@@ -187,7 +193,7 @@ pub(crate) fn picture(
             y += 1 + 2 * room.gap;
             let entries_top = y;
 
-            for words in newest_first(account, moved_past, strings) {
+            for words in newest_first(account, moved_past, strings, clock) {
                 let Some(entry) = entry_at(fonts, words, room, look.reading, y, bottom) else {
                     if drawn.entries.is_empty() {
                         return Err(RenderError::RecordScene);
@@ -239,7 +245,26 @@ fn entry_at(
     bottom: i32,
 ) -> Option<(EntryDrawn, i32, Vec<Inked>)> {
     let (after_x, after_width) = room.after_box(reading);
-    let clause = room.shaped(fonts, &words.clause, room.inner);
+    // **The day is a line of its own, across the whole of the text**, above
+    // the entry it heads — frame `82:887`'s scope line, once per day.
+    let day = words
+        .day
+        .as_deref()
+        .map(|day| room.shaped(fonts, day, room.inner));
+    let day_height = day.as_ref().map_or(0, |shaped| shaped.height + room.gap);
+    // **The time leads the head row, in the reading direction**, and the
+    // clause takes what is left of it: `17:38  alo shortened the
+    // introduction`. Cropped to its ink, so the gap after it is the gap the
+    // design draws rather than whatever the box was wrapped inside.
+    let time = words
+        .time
+        .as_deref()
+        .map(|time| room.shaped(fonts, time, room.inner).cropped_to_its_ink());
+    let time_room = time.as_ref().map_or(0, |shaped| {
+        room.time_column.max(shaped.width_of_box + 2 * room.gap)
+    });
+    let clause_width = (room.inner - time_room).max(room.measure.px(80));
+    let clause = room.shaped(fonts, &words.clause, clause_width);
     let agent = words
         .agent
         .as_deref()
@@ -249,7 +274,11 @@ fn entry_at(
         .iter()
         .map(|text| room.shaped(fonts, text, after_width))
         .collect();
-    let height = clause.height
+    let head_height = clause
+        .height
+        .max(time.as_ref().map_or(0, |shaped| shaped.height));
+    let height = day_height
+        + head_height
         + agent.as_ref().map_or(0, |shaped| shaped.height)
         + after.iter().map(|shaped| shaped.height).sum::<i32>();
     if y + height > bottom {
@@ -257,9 +286,27 @@ fn entry_at(
     }
     let mut inked = Vec::new();
     let mut at = y;
-    let clause_height = clause.height;
-    let clause = placed(&mut inked, clause, words.clause.clone(), room.text_x, at);
-    at += clause_height;
+    let day = match (day, &words.day) {
+        (Some(shaped), Some(said)) => {
+            let drawn = placed(&mut inked, shaped, said.clone(), room.text_x, at);
+            at += day_height;
+            Some(drawn)
+        }
+        _ => None,
+    };
+    let (time_x, clause_x) = match reading {
+        Direction::RightToLeft => (
+            room.text_x + room.inner - time.as_ref().map_or(0, |shaped| shaped.width_of_box),
+            room.text_x + room.inner - time_room - clause_width,
+        ),
+        Direction::LeftToRight => (room.text_x, room.text_x + time_room),
+    };
+    let time = match (time, &words.time) {
+        (Some(shaped), Some(said)) => Some(placed(&mut inked, shaped, said.clone(), time_x, at)),
+        _ => None,
+    };
+    let clause = placed(&mut inked, clause, words.clause.clone(), clause_x, at);
+    at += head_height;
     let agent = match (agent, &words.agent) {
         (Some(shaped), Some(name)) => {
             let rows = shaped.height;
@@ -278,6 +325,8 @@ fn entry_at(
     Some((
         EntryDrawn {
             words,
+            day,
+            time,
             clause,
             agent,
             after: after_drawn,
@@ -298,3 +347,7 @@ fn placed(inked: &mut Vec<Inked>, shaped: Shaped, text: String, x: i32, y: i32) 
 #[cfg(test)]
 #[path = "record_raster_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "record_times_tests.rs"]
+mod times_tests;

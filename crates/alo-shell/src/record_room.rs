@@ -92,6 +92,14 @@ pub(crate) struct Room {
     pub(crate) inner: i32,
     /// How far an entry's words after its clause are set in.
     pub(crate) indent: i32,
+    /// How far the clause starts from the time at the head of an entry.
+    ///
+    /// Frame `82:887` sets the time at 73 and the title at 129 on every
+    /// entry: **56 logical pixels from the start of one to the start of the
+    /// other**, so the clauses line up whatever the minutes are. A time wider
+    /// than that — a twelve-hour clock's *12:58 PM* — pushes its own clause
+    /// along rather than being drawn over it.
+    pub(crate) time_column: i32,
     /// The rail's left edge.
     pub(crate) rail_x: i32,
     /// The rail's width.
@@ -137,6 +145,7 @@ impl Room {
             text_x,
             inner,
             indent: measure.px(20),
+            time_column: measure.px(56),
             rail_x,
             rail,
             pad,

@@ -35,6 +35,9 @@ pub struct RecordFrame<'a> {
     pub strings: &'a Strings,
     /// Their scheme, text scale and reading direction.
     pub look: RecordLook,
+    /// How they write a time and a day, and the moment *today* is measured
+    /// from.
+    pub clock: crate::RecordClock<'a>,
 }
 
 impl Nested {
@@ -145,6 +148,7 @@ fn frame_pictures(
         labels,
         size,
         record.look,
+        record.clock,
     )?;
     let question = match approval {
         Some(approval) => Some(crate::approval_raster::picture(
@@ -200,6 +204,7 @@ mod tests {
             window: &window,
             strings: &strings,
             look: light(),
+            clock: crate::record_testing::a_clock(),
         };
 
         let never_told = EgressStatus::on_an_output();

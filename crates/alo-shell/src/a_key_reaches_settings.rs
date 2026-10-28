@@ -207,6 +207,16 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
         let _ = server.the_record_is_opened();
         return;
     }
+    // **A region kept is told to the seat at once**, which passes it to the
+    // desktop's clock on the next frame and writes the next record opened
+    // the new way. `crate::the_formats_are_told` is the one copy.
+    if let Some(SettingsDid::Kept(SettingsSection::Formats, SettingsKept::Written)) = did
+        && let Some(chosen) = server.settings.formats().cloned()
+    {
+        let formats = server.the_formats().with(chosen);
+        server.the_formats_are(formats);
+        return;
+    }
     if let Some(SettingsDid::Kept(SettingsSection::Shortcuts, SettingsKept::Written)) = did
         && let Some(bound) = server.settings.shortcuts().cloned()
     {

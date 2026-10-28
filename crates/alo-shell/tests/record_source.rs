@@ -46,6 +46,7 @@ fn the_record_files() -> Vec<(String, Vec<(usize, String)>)> {
         names,
         [
             "nested_record.rs",
+            "record_clock.rs",
             "record_keys.rs",
             "record_lines.rs",
             "record_paint.rs",

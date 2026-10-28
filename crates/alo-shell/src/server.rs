@@ -487,6 +487,15 @@ pub struct Server {
     /// Told rather than read for `settings_places`' reason: the description
     /// that names the record's path is a file, and this crate opens none.
     pub(crate) recounting: Option<Result<alo_recounting::Recounting, alo_recounting::NotRecounted>>,
+    /// **How this person writes a time and a day**, told by the desktop at
+    /// sign-in and again by Settings when they choose a region.
+    ///
+    /// Until a desktop says, the rule `alo_formats::TheirFormats` holds for a
+    /// person who has chosen nothing and named no language — never one region
+    /// for everybody. See `crate::the_formats_are_told`.
+    pub(crate) formats: alo_formats::TheirFormats,
+    /// Whether the formats changed since the desktop was last told.
+    pub(crate) formats_untold: bool,
     /// **What this person's Places remember**, as the last keep left it.
     ///
     /// Held here for the same reason the shortcuts above are: a chord is
@@ -703,6 +712,9 @@ impl Server {
             record: crate::RecordWindow::on_an_output(),
             // Nobody has told this seat where the record is kept.
             recounting: None,
+            // Nobody has told this seat how this person writes a time.
+            formats: alo_formats::TheirFormats::of(alo_formats::Chosen::default(), None),
+            formats_untold: false,
             // Shut, and a press on the person's own Dock is what opens it.
             market: crate::MarketWindow::closed(),
             // Nobody has told this seat what the machine already has.

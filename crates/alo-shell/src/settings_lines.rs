@@ -9,6 +9,8 @@
 //!   the person's own data, never translated;
 //! - **appearance** and **the dock**: `alo_appearance::Accent::said` and
 //!   `alo_dock::Hiding::said`;
+//! - **how dates and times are written**: `alo_formats`' own row for the
+//!   language, then each region as CLDR names it in the person's language;
 //! - **shortcuts**: `alo_shortcuts::Action::said`, and the chord as
 //!   `alo_shortcuts::Chord::shown` writes it — nothing beside an action with no
 //!   shortcut;
@@ -62,6 +64,7 @@ pub(crate) fn sections(open: &Open, strings: &Strings, now: SystemTime) -> Vec<S
     let mut drawn = vec![
         answering(open, strings, now),
         appearance(open, strings),
+        formats(open, strings),
         dock(open, strings),
         shortcuts(open, strings),
         terminal(open, strings),
@@ -194,6 +197,26 @@ fn appearance(open: &Open, strings: &Strings) -> SectionWords {
     SectionWords {
         section: SettingsSection::Appearance,
         said,
+        lines,
+    }
+}
+
+/// How dates and times are written: the language's own way, then every
+/// region, each named by CLDR in the person's language.
+fn formats(open: &Open, strings: &Strings) -> SectionWords {
+    let section = &open.formats;
+    let lines = section
+        .choices()
+        .into_iter()
+        .map(|choice| LineWords {
+            row: Some(SettingsRow::WrittenAs(choice)),
+            parts: vec![section.called(choice, strings)],
+            chosen: section.is_chosen(choice),
+        })
+        .collect();
+    SectionWords {
+        section: SettingsSection::Formats,
+        said: section.said(strings),
         lines,
     }
 }

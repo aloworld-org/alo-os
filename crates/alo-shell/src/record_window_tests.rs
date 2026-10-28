@@ -91,9 +91,18 @@ fn asking_the_agent_what_it_did_reaches_the_same_account() {
         &mut labels,
         (1920, 1080),
         light(),
+        crate::record_testing::a_clock(),
     )
     .unwrap();
-    let drawn_asked = picture(asked.shows(), &strings, &mut labels, (1920, 1080), light()).unwrap();
+    let drawn_asked = picture(
+        asked.shows(),
+        &strings,
+        &mut labels,
+        (1920, 1080),
+        light(),
+        crate::record_testing::a_clock(),
+    )
+    .unwrap();
     assert_eq!(drawn_by_hand, drawn_asked);
 }
 

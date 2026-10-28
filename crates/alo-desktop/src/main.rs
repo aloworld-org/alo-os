@@ -353,8 +353,10 @@ mod running {
         /// A display nobody has divided, which is what this one is: the
         /// `Server` holds no division and task 16 is the one that gives it one.
         division: alo_dividing::Division,
-        /// The way this person writes a time, kept so every refresh uses it.
-        region: alo_formats::Regionally,
+        /// How this person writes a time, kept so every refresh uses it — read
+        /// from their folder at sign-in and replaced when they choose a region
+        /// in Settings (`the_formats_are_now`).
+        formats: alo_formats::TheirFormats,
         /// When the readings were last taken.
         read_at: std::time::Instant,
         /// What the seat had made of this person's input when it was last said
@@ -375,7 +377,8 @@ mod running {
         fn made() -> Result<Self, String> {
             // **Read once here and again every frame** — see `read_again`.
             let at = crate::readings::At::now()?;
-            let (readings, missing) = crate::readings::taken(&at, &the_region()?)?;
+            let formats = their_formats_at_sign_in();
+            let (readings, missing) = crate::readings::taken(&at, &formats)?;
             eprintln!(
                 "alo-desktop: the status area's readings — {}",
                 missing.said()
@@ -521,7 +524,7 @@ mod running {
                 filling: FillingWindow::closed(),
                 status: readings,
                 division: a_display_nobody_has_divided()?,
-                region: the_region()?,
+                formats,
                 read_at: std::time::Instant::now(),
                 // Nothing has been said because nothing has arrived, and the
                 // seat's own three numbers start here too.
@@ -743,6 +746,24 @@ mod running {
             &mut self,
         ) -> Option<Result<alo_recounting::Recounting, alo_recounting::NotRecounted>> {
             Some(alo_recounting::Recounting::on_this_machine())
+        }
+
+        /// How this person writes a time, as read at sign-in, so the record and
+        /// the clock start from one answer.
+        fn their_formats(&mut self) -> Option<alo_formats::TheirFormats> {
+            Some(self.formats.clone())
+        }
+
+        /// They chose another region in Settings: the clock is rewritten on this
+        /// frame rather than at the next second's reading, so the choice is seen
+        /// to have worked the moment it is made.
+        fn the_formats_are_now(&mut self, formats: &alo_formats::TheirFormats) {
+            self.formats = formats.clone();
+            if let Ok(at) = crate::readings::At::now()
+                && let Ok((readings, _)) = crate::readings::taken(&at, &self.formats)
+            {
+                self.status = readings;
+            }
         }
 
         /// What this person's chords mean, read from their own folder.
@@ -1061,7 +1082,7 @@ mod running {
             let Ok(at) = crate::readings::At::now() else {
                 return;
             };
-            if let Ok((readings, _)) = crate::readings::taken(&at, &self.region) {
+            if let Ok((readings, _)) = crate::readings::taken(&at, &self.formats) {
                 self.status = readings;
             }
         }
@@ -1203,21 +1224,58 @@ mod running {
             }
         }
     }
-    /// The clock this machine really keeps, and the honest absence of the rest.
+
+    /// **How this person writes a time**, read once at sign-in: `formats.toml`
+    /// in their folder, and the first language their `settings.toml` names.
     ///
-    /// The clock is here and the other three are not because of what each looks
-    /// like when it is wrong. A clock that never moves is a machine a person can
-    /// see is dead; a battery reading that never moves is a machine lying about
-    /// how much time they have left. Every one of the four is this machine's,
-    /// and the ones it could not read are absent rather than invented.
+    /// The status area's clock was written as English in Great Britain for
+    /// everybody until 2026-10-28, from a figure typed here. Now it is what the
+    /// person chose in Settings, and where they chose nothing,
+    /// `alo_formats::TheirFormats`' rule: the language they read, with CLDR's
+    /// own region for it.
     ///
-    /// The way a person writes a time. English in Great Britain until a person
-    /// has somewhere to say otherwise — where that is kept is a settings
-    /// question and not this process's to answer.
-    fn the_region() -> Result<alo_formats::Regionally, String> {
-        alo_formats::Regionally::reading("en")
-            .and_then(|reading| reading.in_region("GB"))
-            .map_err(|why| format!("a region nobody writes in: {why:?}"))
+    /// **A file that did not read is said and used for nothing**, the folder's
+    /// rule (ADR 0038): the clock is written the language's way and the line
+    /// below names the file and what was wrong, for whoever reads the journal.
+    /// Settings says the same to the person, in their language.
+    fn their_formats_at_sign_in() -> alo_formats::TheirFormats {
+        let config_home = std::env::var_os("XDG_CONFIG_HOME");
+        let home = std::env::var_os("HOME");
+        let reading = alo_choosing::where_it_is(config_home.as_deref(), home.as_deref())
+            .and_then(|at| alo_choosing::Settings::at(&at).ok())
+            .and_then(|settings| {
+                settings
+                    .languages()
+                    .first()
+                    .map(|language| language.tag().to_owned())
+            });
+        let chosen =
+            match alo_choosing::where_the_folder_is(config_home.as_deref(), home.as_deref()) {
+                Some(folder) => {
+                    let (chosen, not_read) = alo_formats::keeping::at_sign_in(
+                        &folder.join(alo_formats::keeping::THE_FILE),
+                    );
+                    if let Some(why) = not_read {
+                        eprintln!(
+                            "alo-desktop: this person's date and time settings at {} did not read \
+                         ({:?}), so dates and times are written the way their language writes them",
+                            why.at().display(),
+                            why.why()
+                        );
+                    }
+                    chosen
+                }
+                None => alo_formats::Chosen::default(),
+            };
+        let formats = alo_formats::TheirFormats::of(chosen, reading.as_deref());
+        if let Some(zone) = formats.zone_not_found() {
+            eprintln!(
+                "alo-desktop: this person chose the time zone {}, which this machine's zone \
+                 database does not have, so the machine's own zone is used",
+                zone.name()
+            );
+        }
+        formats
     }
 
     /// The time of day the appearance is asked about, from the same clock.

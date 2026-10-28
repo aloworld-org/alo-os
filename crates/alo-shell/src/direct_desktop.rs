@@ -343,6 +343,26 @@ pub trait TheDesktop {
         None
     }
 
+    /// **How this person writes a time and a day**, asked for once as the
+    /// session starts: what they chose in `formats.toml` and the language they
+    /// read.
+    ///
+    /// **The shell asks and does not read**, for the settings places' reason.
+    /// `None` leaves the seat on `alo_formats::TheirFormats`' rule for a
+    /// person who has chosen nothing — and the record is still written that way
+    /// rather than one region's way for everybody.
+    fn their_formats(&mut self) -> Option<alo_formats::TheirFormats> {
+        None
+    }
+
+    /// **They chose another way of writing a time**, in Settings, and the
+    /// status area's clock is this desktop's to write.
+    ///
+    /// Called on the frame after the change and never on a frame where
+    /// nothing changed. Nothing by default: a desktop that writes no clock has
+    /// nothing to rewrite.
+    fn the_formats_are_now(&mut self, _formats: &alo_formats::TheirFormats) {}
+
     /// The canvas layout this person left, asked for once as the session
     /// starts.
     ///
@@ -550,6 +570,12 @@ impl crate::DirectSession {
             // breath.
             if let Some(recounting) = desktop.the_recounting() {
                 server.the_record_is_kept(recounting);
+            }
+            // And how this person writes a time, for the same reason and in the
+            // same breath. `crate::the_formats_are_told` says why there is one
+            // copy and where it goes.
+            if let Some(formats) = desktop.their_formats() {
+                server.the_formats_are(formats);
             }
             match setup {
                 Ok((output, painter, input, others)) => crate::direct_loop::run_with_input(
@@ -1054,6 +1080,12 @@ impl LoopInput for Desk<'_> {
         // Taking them instead would lose them on any `?` below, and they own
         // live scanout.
         let others = &mut self.others;
+        // **A region chosen in Settings reaches the clock on the next frame**,
+        // before the readings are taken, so the first clock drawn after the
+        // choice is already written the new way.
+        if let Some(formats) = server.the_formats_to_tell() {
+            self.desktop.the_formats_are_now(&formats);
+        }
         // Asked before the frame is made, never after: a frame drawn from
         // readings taken after it would show a person the moment before.
         self.desktop.refreshed();
