@@ -57,18 +57,21 @@ fn what_was_said() -> Vec<crate::task_text::WhatWasSaid<'static>> {
         crate::task_text::WhatWasSaid {
             whose: alo_tasks::WhoseBlock::ThePersons,
             words: "Make a six-slide launch presentation from these two files.",
+            marks: &[],
             // Not a change waiting to be answered, so nothing under it.
             answers: None,
         },
         crate::task_text::WhatWasSaid {
             whose: alo_tasks::WhoseBlock::Alos,
             words: "I\u{2019}ll read the two files, shape the story, and build a draft.",
+            marks: &[],
             // Not a change waiting to be answered, so nothing under it.
             answers: None,
         },
         crate::task_text::WhatWasSaid {
             whose: alo_tasks::WhoseBlock::AnAccount,
             words: "Reading your documents",
+            marks: &[],
             // Not a change waiting to be answered, so nothing under it.
             answers: None,
         },
@@ -523,6 +526,7 @@ fn with_a_card(
     said.push(crate::task_text::WhatWasSaid {
         whose: alo_tasks::WhoseBlock::AnAccount,
         words: "Rename march.pdf to invoice-march.pdf in /home/anna/Invoices",
+        marks: &[],
         answers: answering.then_some(crate::task_text::TheTwoAnswers {
             allow_once: "Allow once",
             deny: "Deny",
@@ -679,11 +683,13 @@ fn a_long_answer() -> Vec<crate::task_text::WhatWasSaid<'static>> {
         crate::task_text::WhatWasSaid {
             whose: alo_tasks::WhoseBlock::ThePersons,
             words: "Explain what an invoice is.",
+            marks: &[],
             answers: None,
         },
         crate::task_text::WhatWasSaid {
             whose: alo_tasks::WhoseBlock::Alos,
             words: LONG,
+            marks: &[],
             answers: None,
         },
     ]

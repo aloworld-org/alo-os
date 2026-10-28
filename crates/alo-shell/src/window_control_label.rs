@@ -111,6 +111,10 @@ impl WindowControlLabels {
             // nicety: without these, neither of alo's typefaces could be drawn
             // at the weight its own design specifies.
             include_bytes!("../fonts/Manrope-SemiBold.ttf").to_vec(),
+            // **And Regular, which `Body/Large` is.** Without it a task
+            // window's messages drew at SemiBold, and alo's bold — the
+            // design's SemiBold — could not be told from them.
+            include_bytes!("../fonts/Manrope-Regular.ttf").to_vec(),
             include_bytes!("../fonts/GeistMono-Medium.ttf").to_vec(),
             // **And the weight a bold cell asks for.** A program setting bold
             // makes the terminal ask for Geist Mono at 700, and a family is
@@ -188,7 +192,7 @@ impl WindowControlLabels {
             // first face's family this database's sans-serif, so the family
             // here is already Manrope — but cosmic-text honours a family only
             // among faces whose weight matches **exactly**, and `Attrs::new()`
-            // means weight 400. Nothing in the Manrope family is 400, so this
+            // means weight 400. Nothing in the Manrope family was 400 then, so this
             // asked for sans-serif, failed to match, left the family and drew
             // **Inter** — every window control label on this machine, in the
             // wrong typeface, with no error.

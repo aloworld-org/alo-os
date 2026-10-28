@@ -24,6 +24,7 @@ use alo_strings::{Filling, Strings};
 use alo_tasks::ATask;
 use smithay::utils::{Physical, Rectangle};
 
+use crate::alos_marked_words::MarkedWords;
 use crate::task_raster::ATaskOnTheDisplay;
 use crate::task_text::{TheWordsInATaskWindow, WhatWasSaid};
 
@@ -55,7 +56,7 @@ struct ATasksWords {
     /// How many files are shared, as a sentence.
     how_many_files: String,
     /// What was said, oldest first.
-    said: Vec<(alo_tasks::WhoseBlock, String)>,
+    said: Vec<(alo_tasks::WhoseBlock, MarkedWords)>,
     /// Which of `said` carries the two answers: the latest proposal, while
     /// this task is still asking. [`None`] when nothing in it is waiting.
     answers_after: Option<usize>,
@@ -186,7 +187,8 @@ impl TheTasksWords {
                     .enumerate()
                     .map(|(at, (whose, words))| WhatWasSaid {
                         whose: *whose,
-                        words,
+                        words: words.text(),
+                        marks: words.marks(),
                         answers: (one.answers_after == Some(at)).then_some(
                             crate::task_text::TheTwoAnswers {
                                 allow_once: &one.allow_once,
@@ -203,17 +205,17 @@ impl TheTasksWords {
 
 /// The words one turn is drawn with.
 ///
-/// **alo's replies and questions without their Markdown marks**, and
-/// everything else exactly as it was said: a person's words are theirs, and a
-/// proposal is the sentence they approve. `crate::alos_words_without_markup`
-/// says why the marks are removed rather than rendered.
-fn as_drawn(turn: &alo_tasks::Turn) -> String {
+/// **alo's replies and questions with their Markdown read into bold,
+/// headings and code**, and everything else exactly as it was said: a
+/// person's words are theirs, and a proposal is the sentence they approve.
+/// `crate::alos_marked_words` says what is drawn and what is only taken out.
+fn as_drawn(turn: &alo_tasks::Turn) -> MarkedWords {
     match turn.who() {
         alo_tasks::WhoSaidIt::Alo | alo_tasks::WhoSaidIt::AloAsking => {
-            crate::alos_words_without_markup::without_markup(turn.said())
+            MarkedWords::read_from(turn.said())
         }
         alo_tasks::WhoSaidIt::ThePerson | alo_tasks::WhoSaidIt::AloProposing => {
-            turn.said().to_owned()
+            MarkedWords::as_said(turn.said())
         }
     }
 }

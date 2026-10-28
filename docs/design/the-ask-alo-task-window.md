@@ -160,6 +160,10 @@ are Label/Medium; the `alo task · Work` line and the shared-file count are
 Label/Small; message bodies are Body/Large; activity lines are Body/Medium. The
 processing destination is **12 / 22 Regular**, which matches no named style.
 
+**Bold, headings and code inside alo's answers** are drawn in styles from
+this table — the owner's decision of 2026-10-28, in
+[emphasis-in-alos-answers.md](emphasis-in-alos-answers.md).
+
 ## The seven states, from the component set
 
 **`417:28422` is the component set, and one read of it returned every variant.**
