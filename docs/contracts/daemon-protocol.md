@@ -149,8 +149,8 @@ machine's registry** — the instructions a turn shows and every verb, as
 once. `alo-agent` builds the whole text a turn shows (what the turn may reach,
 the request, the steps so far and, for a follow-up, the conversation before
 it), and wrapping that again showed a model the instructions and every verb
-twice (the pull request that added this records the real request that showed
-it). Nothing
+twice (measured on the daemon's own road with the fix switched off: the runtime
+received the instructions twice). Nothing
 changes for any other text: the product's instructions still come first and
 whole, a question that only looks like them — the instructions followed by
 verbs of its own — is wrapped like any client text, and the graded

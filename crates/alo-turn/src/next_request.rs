@@ -121,7 +121,7 @@ impl Held {
             // machine's verbs, what the turn may reach, the request, and every
             // step since — and until 2026-10-28 this wrapped all of it in the
             // instructions and the verbs again, so a model read both twice
-            // (the pull request records the real request that showed it). A question that
+            // (the runtime received both, measured with this arm switched off). A question that
             // begins with exactly the words this would have put first, for
             // this registry, has nothing to be wrapped in: the product's
             // instructions are still first and still whole, and nothing the
