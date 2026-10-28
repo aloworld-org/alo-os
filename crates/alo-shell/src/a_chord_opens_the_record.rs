@@ -53,7 +53,7 @@ impl crate::Server {
         look: crate::DesktopLook,
     ) -> Option<crate::RecordFrame<'a>> {
         self.record.is_open().then_some(crate::RecordFrame {
-            window: &self.record,
+            window: self.the_record_window(),
             strings,
             look: crate::RecordLook {
                 scheme: look.scheme(),

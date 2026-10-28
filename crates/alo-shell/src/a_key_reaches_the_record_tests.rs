@@ -58,7 +58,9 @@ fn tapped(server: &mut Server, code: u32) {
 #[test]
 fn escape_closes_the_record() {
     let (_runtime, mut server) = a_session("escape-closes-the-record");
-    server.the_record_is_kept(Ok(crate::record_testing::an_afternoon_kept().recounting()));
+    // **Bound, not a temporary**: the record's folder goes when this does.
+    let kept = crate::record_testing::an_afternoon_kept();
+    server.the_record_is_kept(Ok(kept.recounting()));
     server.the_record_is_opened();
     assert!(server.the_record_is_taking_the_keys());
 
@@ -74,7 +76,9 @@ fn escape_closes_the_record() {
 #[test]
 fn down_moves_to_an_older_entry() {
     let (_runtime, mut server) = a_session("down-moves-the-record");
-    server.the_record_is_kept(Ok(crate::record_testing::an_afternoon_kept().recounting()));
+    // **Bound, not a temporary**: the record's folder goes when this does.
+    let kept = crate::record_testing::an_afternoon_kept();
+    server.the_record_is_kept(Ok(kept.recounting()));
     server.the_record_is_opened();
 
     tapped(&mut server, KEY_DOWN);
@@ -88,7 +92,9 @@ fn down_moves_to_an_older_entry() {
 #[test]
 fn a_letter_does_nothing() {
     let (_runtime, mut server) = a_session("a-letter-at-the-record");
-    server.the_record_is_kept(Ok(crate::record_testing::an_afternoon_kept().recounting()));
+    // **Bound, not a temporary**: the record's folder goes when this does.
+    let kept = crate::record_testing::an_afternoon_kept();
+    server.the_record_is_kept(Ok(kept.recounting()));
     server.the_record_is_opened();
 
     tapped(&mut server, KEY_A);

@@ -96,7 +96,9 @@ fn the_two_rows(window: &SettingsWindow) -> (SettingsRow, SettingsRow) {
         // the list's rows.** This helper is about the grant and the pairing —
         // what the one list holds and how both are revoked — and the row that
         // gives alo a folder sits above them making neither claim.
-        .filter(|row| !matches!(row, SettingsRow::GrantAFolder))
+        // So is the row that opens the record, since 2026-10-27, for the same
+        // reason.
+        .filter(|row| !matches!(row, SettingsRow::GrantAFolder | SettingsRow::SeeWhatAloDid))
         .collect();
     assert_eq!(granted.len(), 2, "{granted:?}");
     (granted[0].clone(), granted[1].clone())
@@ -286,7 +288,14 @@ fn a_way_with_nothing_to_choose_is_absent_rather_than_disabled() {
             .iter()
             .map(|line| line.row.clone())
             .collect::<Vec<_>>(),
-        [Some(SettingsRow::GrantAFolder)],
+        // And the record's row above it since 2026-10-27, which is offered
+        // whether or not anything is granted: the record answers *what
+        // happened*, and a machine with nothing granted now may have done
+        // things under a grant since taken back.
+        [
+            Some(SettingsRow::SeeWhatAloDid),
+            Some(SettingsRow::GrantAFolder)
+        ],
         "{:?}",
         granted.lines
     );
@@ -1011,8 +1020,8 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
     );
     assert_eq!(
         rows.len(),
-        5,
-        "one grant, one pairing, and the three levels"
+        6,
+        "one grant, one pairing, the row that opens the record, and the three levels"
     );
     assert_eq!(window.appearance(), Some(&Appearance::shipped()));
     assert_eq!(window.dock(), Some(&Dock::shipped()));
