@@ -68,6 +68,6 @@ pub use instructions::{
     AND_AN_ANSWER, AND_YOU_MAY_LOOK_FIRST, EVERY_DOOR_AND_AN_ANSWER, HOW_TO_ANSWER, Instructions,
     ONE_EXAMPLE_PER_DOOR, SEVERAL_STEPS,
 };
-pub use shown::{shown_to_a_model, shown_to_a_turn};
+pub use shown::{shown_to_a_model, shown_to_a_turn, the_products_words};
 pub use the_language_asked_in::the_language_of;
 pub use what_it_may_reach::WhatItMayReach;

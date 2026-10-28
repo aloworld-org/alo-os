@@ -142,6 +142,20 @@ rather than refused, but its prompt is shown to the model as a request, so it
 should send the request alone. A question `in-words` is shown to the model
 exactly as written, and so is a question a paired machine asks this one.
 
+**One exception, added 2026-10-28, and it is the agent's own text.** A
+question that already **begins with exactly the product's words for this
+machine's registry** — the instructions a turn shows and every verb, as
+`alo_instructing::the_products_words` builds them — is shown as it was sent,
+once. `alo-agent` builds the whole text a turn shows (what the turn may reach,
+the request, the steps so far and, for a follow-up, the conversation before
+it), and wrapping that again showed a model the instructions and every verb
+twice (the pull request that added this records the real request that showed
+it). Nothing
+changes for any other text: the product's instructions still come first and
+whole, a question that only looks like them — the instructions followed by
+verbs of its own — is wrapped like any client text, and the graded
+instructions and their digest are untouched.
+
 The daemon reads that decision out of the person's own settings file
 (`docs/contracts/person-settings.md`), once at the first question of each turn
 — so a model chosen in Settings answers the next turn, and two questions in one
