@@ -227,10 +227,46 @@ fn is_the_windows_own(pixel: &[u8; 4]) -> bool {
     .any(|it| [blue, green, red] == [it.blue(), it.green(), it.red()])
 }
 
+/// Whether a pixel is the window's shadow falling on the bare desktop: the
+/// desktop's own colour darkened toward `#07131F` by no more than the design's
+/// `Elevation/Floating` alpha, `0x24`.
+///
+/// **The window has had a shadow since 2026-10-28**, and it reaches past both
+/// sides of the window on every row. Counted as ink, it lit every row from the
+/// strip to the foot, so `rows_with_ink` saw one run of rows whatever the
+/// terminal printed — the fixture failed with *0 rows gained* while four had
+/// been drawn. A shadow is the window's own, like its panel.
+///
+/// Solved per channel: the share of shadow that turns `there` into `here`.
+/// All three must agree, which a glyph's edge on the white panel does not do.
+fn is_the_windows_shadow(here: &[u8; 4], there: &[u8; 4]) -> bool {
+    /// The shadow's colour, blue, green and red as the kept frame stores them.
+    const THE_SHADOW: [f32; 3] = [31.0, 19.0, 7.0];
+    /// The darkest the shadow gets, with a little room for rounding.
+    const AT_MOST: f32 = 36.0 / 255.0 + 0.01;
+    let shares: Vec<f32> = (0..3)
+        .filter_map(|channel| {
+            let (now, before) = (
+                f32::from(*here.get(channel)?),
+                f32::from(*there.get(channel)?),
+            );
+            let toward = *THE_SHADOW.get(channel)?;
+            Some((before - now) / (before - toward))
+        })
+        .collect();
+    let (Some(least), Some(most)) = (
+        shares.iter().copied().reduce(f32::min),
+        shares.iter().copied().reduce(f32::max),
+    ) else {
+        return false;
+    };
+    shares.len() == 3 && least > 0.0 && most <= AT_MOST && most - least < 0.03
+}
+
 /// Whether a pixel of a frame is the terminal's ink: not the bare desktop's, and
-/// not the window's own panel or hairline.
+/// not the window's own panel, hairline or shadow.
 fn is_ink(here: &[u8; 4], there: &[u8; 4]) -> bool {
-    here != there && !is_the_windows_own(here)
+    here != there && !is_the_windows_own(here) && !is_the_windows_shadow(here, there)
 }
 
 /// How much ink a frame has inside one band of rows.
