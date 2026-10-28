@@ -283,11 +283,10 @@ fn handed_to_the_card(desktop: &ADesktop) -> Vec<u8> {
         &[],
         &[],
         &crate::Cursor::Default,
-        crate::scene_native::NativeLayers {
-            desktop: Some(&pictures.desktop),
-            status: Some(&pictures.status),
-            ..crate::scene_native::NativeLayers::nothing()
-        },
+        // **The production layers, not a hand-picked few.** A literal here
+        // named the desktop and the status area only — the same omission the
+        // direct backend made, copied into the test that checks it.
+        pictures.layers(&[]),
     )
     .unwrap();
     let pixels = log.borrow().pixels.clone();

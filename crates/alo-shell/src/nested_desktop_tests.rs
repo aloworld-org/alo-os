@@ -537,3 +537,100 @@ fn the_frame_carries_the_slot_the_keyboard_is_on() {
         "two pictures of the same frame differ, so this test cannot say anything"
     );
 }
+
+/// **Every picture a frame holds reaches the layers a display paints.**
+///
+/// Until 2026-10-27 the direct backend built its layers by hand and named three
+/// of them: alo's own terminal, the camera-and-microphone indicator and the
+/// notifications were laid out every frame and dropped. On a booted machine
+/// `Ctrl+Alt+T` opened a terminal nobody could see, and nothing failed, so
+/// nothing said so. Both backends now take their layers from
+/// [`DesktopPictures::layers`], and this holds that one place to the whole
+/// list.
+#[test]
+fn every_picture_a_frame_holds_reaches_the_layers_a_display_paints() {
+    let strings = words();
+    let mut labels = WindowControlLabels::new().unwrap();
+    let dock = Dock::shipped();
+    let running = RunningWindow::closed();
+    let filling = FillingWindow::closed();
+    let mut told = EgressStatus::on_an_output();
+    assert_eq!(
+        Indicating::nowhere().show(Some(&mut told), &Indicator::default()),
+        Drew::Shown
+    );
+    let frame = DesktopFrame {
+        tasks: &[],
+        market: None,
+        what_each_application_draws: &alo_dock::artwork::NOTHING,
+        the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
+        the_docks_words: crate::desktop_testing::no_words(),
+        in_use: &[],
+        notifications: &[],
+        capturing: None,
+        division: crate::desktop_testing::an_undivided_display(),
+        offer: crate::desktop_testing::nothing_offered(),
+        windows: &[],
+        put_aside: crate::desktop_testing::nothing_put_aside(),
+        panel_is_revealed: true,
+        filling_the_screen: false,
+        display_scale: 100,
+        on_the_dock: &[],
+        in_more_apps: &[],
+        the_keyboard_is_on_the_bar: None,
+        the_bar: None,
+        dock: &dock,
+        look: noon_look(&an_appearance(), Direction::LeftToRight),
+        strings: &strings,
+        egress: &told,
+        running: &running,
+        filling: &filling,
+    };
+    let size = (1920, 1080);
+
+    // A terminal drawn by the production drawing, from the production fonts.
+    let mut vocabulary = alo_strings::Vocabulary::empty();
+    alo_terminal::words::declare_into(&mut vocabulary).unwrap();
+    let the_terminals_words = alo_strings::Strings::of(vocabulary);
+    let screen = alo_terminal::TerminalOutput::of(alo_terminal::HowBig::of(80, 24, 100).unwrap());
+    let terminal = crate::the_terminals_cells_are_drawn::picture(
+        &mut labels.fonts,
+        crate::the_terminals_cells_are_drawn::Shows {
+            screen: &screen,
+            what_alo_said: &alo_terminal::WhatAloSaid::nothing(),
+            a_test_result: None,
+            a_benchmark: None,
+            a_diff: None,
+        },
+        size,
+        1.0,
+        alo_appearance::Scheme::Light,
+        &the_terminals_words,
+        None,
+    )
+    .unwrap();
+
+    let with_one = frame_pictures(frame, None, None, &mut labels, size, Some(terminal)).unwrap();
+    let layers = with_one.layers(&[]);
+    assert!(
+        layers.terminal.is_some(),
+        "a frame holding alo's own terminal handed the painter no terminal, which is a \
+         person pressing Ctrl+Alt+T and seeing nothing"
+    );
+    assert!(layers.desktop.is_some(), "the desktop was not handed on");
+    assert!(layers.status.is_some(), "what is leaving was not handed on");
+    assert!(
+        layers.in_use.is_some(),
+        "what is watching or listening was not handed on"
+    );
+    assert!(
+        layers.notifications.is_some(),
+        "the notifications were not handed on"
+    );
+
+    // **The control**: with no terminal open, none is handed on, so the
+    // assertion above is about the picture and not about the field always
+    // being filled.
+    let without = frame_pictures(frame, None, None, &mut labels, size, None).unwrap();
+    assert!(without.layers(&[]).terminal.is_none());
+}
