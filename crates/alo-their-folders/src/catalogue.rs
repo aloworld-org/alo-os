@@ -60,7 +60,9 @@ pub enum NotACatalogue {
 /// The two byte orders a catalogue may be written in.
 #[derive(Clone, Copy)]
 enum Order {
+    /// Least significant byte first, as every machine this runs on writes.
     Little,
+    /// Most significant byte first.
     Big,
 }
 
