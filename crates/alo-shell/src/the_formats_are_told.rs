@@ -19,7 +19,7 @@
 //! Nothing watches the file, which is the folder's rule (ADR 0038): a hand edit
 //! is read at the next sign-in.
 
-use alo_formats::TheirFormats;
+use crate::TheirFormats;
 
 use crate::Server;
 
@@ -56,9 +56,9 @@ impl Server {
 mod tests {
     use std::os::unix::fs::PermissionsExt as _;
 
-    use alo_formats::{Chosen, TheirFormats};
+    use alo_formats::Chosen;
 
-    use crate::Server;
+    use crate::{Server, TheirFormats};
 
     fn belgian() -> TheirFormats {
         let mut chosen = Chosen::default();

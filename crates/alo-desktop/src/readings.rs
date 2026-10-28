@@ -26,10 +26,10 @@
 //! one absence, that is the shape of the type the shell already has, and the
 //! log says which cause it was.
 
-use alo_formats::TheirFormats;
 use alo_networks::{HowFar, Metered, Reaching};
 use alo_power::TheBattery;
 use alo_shell::StatusItems;
+use alo_shell::TheirFormats;
 
 /// The moment a reading is taken at.
 ///

@@ -348,10 +348,10 @@ pub trait TheDesktop {
     /// read.
     ///
     /// **The shell asks and does not read**, for the settings places' reason.
-    /// `None` leaves the seat on `alo_formats::TheirFormats`' rule for a
+    /// `None` leaves the seat on `crate::TheirFormats`' rule for a
     /// person who has chosen nothing — and the record is still written that way
     /// rather than one region's way for everybody.
-    fn their_formats(&mut self) -> Option<alo_formats::TheirFormats> {
+    fn their_formats(&mut self) -> Option<crate::TheirFormats> {
         None
     }
 
@@ -361,7 +361,7 @@ pub trait TheDesktop {
     /// Called on the frame after the change and never on a frame where
     /// nothing changed. Nothing by default: a desktop that writes no clock has
     /// nothing to rewrite.
-    fn the_formats_are_now(&mut self, _formats: &alo_formats::TheirFormats) {}
+    fn the_formats_are_now(&mut self, _formats: &crate::TheirFormats) {}
 
     /// The canvas layout this person left, asked for once as the session
     /// starts.

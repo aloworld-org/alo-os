@@ -18,7 +18,7 @@
 //!
 //! The first language in the person's own `settings.toml`, read through
 //! `alo_choosing` at the path Settings was handed — the same language
-//! `alo-desktop` hands `alo_formats::TheirFormats`, so the list is named in the
+//! `alo-desktop` hands `crate::TheirFormats`, so the list is named in the
 //! language the formats default to. A person who has named none reads the
 //! machine's source language, and so does this list.
 

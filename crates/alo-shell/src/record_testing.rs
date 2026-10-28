@@ -206,16 +206,16 @@ pub(crate) fn ours_alone(path: &Path) {
 
 /// How the fixture's person writes a time: Great Britain's way, in universal
 /// time, so nothing here depends on where the test runs.
-pub(crate) fn written_as_in(region: &str) -> alo_formats::TheirFormats {
+pub(crate) fn written_as_in(region: &str) -> crate::TheirFormats {
     let mut chosen = alo_formats::Chosen::default();
     chosen.written_as_in(Some(region), "en").unwrap();
-    alo_formats::TheirFormats::of(chosen, Some("en")).in_zone(jiff::tz::TimeZone::UTC)
+    crate::TheirFormats::of(chosen, Some("en")).in_zone(jiff::tz::TimeZone::UTC)
 }
 
 /// The clock every drawing test reads the record at: Great Britain's way, an
 /// hour after the afternoon began — so every entry in it is *today*.
 pub(crate) fn a_clock() -> crate::RecordClock<'static> {
-    static BRITISH: std::sync::OnceLock<alo_formats::TheirFormats> = std::sync::OnceLock::new();
+    static BRITISH: std::sync::OnceLock<crate::TheirFormats> = std::sync::OnceLock::new();
     crate::RecordClock {
         formats: BRITISH.get_or_init(|| written_as_in("GB")),
         now: noon() + hour(),

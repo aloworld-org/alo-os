@@ -29,19 +29,11 @@
 
 use std::time::SystemTime;
 
+use alo_formats::{Chosen, Regionally, THE_SOURCE_LANGUAGE, Timezone, words};
 use alo_strings::{Filling, Strings};
 use jiff::Timestamp;
 use jiff::civil::Date;
 use jiff::tz::TimeZone;
-
-use crate::keeping::Chosen;
-use crate::regionally::Regionally;
-use crate::timezone::Timezone;
-use crate::words;
-
-/// The language a machine shows when nobody has named one: its source, which
-/// `alo-strings` holds English to be.
-pub const THE_SOURCE_LANGUAGE: &str = "en";
 
 /// **One person's way of writing a moment.**
 #[derive(Debug, Clone)]
@@ -319,7 +311,7 @@ mod tests {
     /// **The headings are words, the date is CLDR's.**
     #[test]
     fn the_heading_is_said_in_the_vocabulary() {
-        let strings = Strings::of(crate::words::formats_words().unwrap());
+        let strings = Strings::of(alo_formats::formats_words().unwrap());
         assert_eq!(TheDay::Today.said(&strings), "Today");
         assert_eq!(TheDay::Yesterday.said(&strings), "Yesterday");
         assert_eq!(

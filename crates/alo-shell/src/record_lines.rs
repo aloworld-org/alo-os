@@ -4,7 +4,7 @@
 //! Nothing here is worded. Each entry is:
 //!
 //! - **the day it happened**, above the first entry of each day in view —
-//!   `alo_formats::TheDay`: *Today*, *Yesterday*, or the date as the person's
+//!   `crate::TheDay`: *Today*, *Yesterday*, or the date as the person's
 //!   region writes one (frame `82:887`, and the owner's decision of 2026-10-28
 //!   that every change of day gets one);
 //! - **the time of day** at its head, as the person's region writes it, before
@@ -36,7 +36,7 @@
 //! above it — out of view — was the same day: a person who has moved down the
 //! record is otherwise reading times with no day to them.
 
-use alo_formats::TheDay;
+use crate::TheDay;
 use alo_recounting::{Account, Outcome, Told};
 use alo_strings::Strings;
 

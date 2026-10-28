@@ -9,13 +9,13 @@
 //! Both are the person's: the time as their region writes one, the day where
 //! they are, and *today* measured from the moment this frame was drawn. So the
 //! window is handed the person's [`TheirFormats`] and that moment, and decides
-//! neither — `alo_formats::TheirFormats` is the one answer the status area's
+//! neither — `crate::TheirFormats` is the one answer the status area's
 //! clock asks too, so the clock and the record cannot disagree about what time
 //! something happened.
 
 use std::time::SystemTime;
 
-use alo_formats::TheirFormats;
+use crate::TheirFormats;
 
 /// The person's way of writing a moment, and the moment the record is read at.
 #[derive(Debug, Clone, Copy)]

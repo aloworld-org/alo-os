@@ -53,7 +53,7 @@ pub const FORMAT: i64 = 1;
 /// **What a person chose about how things are written, and where they are.**
 ///
 /// Every field absent is a person who has chosen nothing, and the machine
-/// follows the rule in [`crate::TheirFormats::regionally`].
+/// follows the rule in `alo_shell::TheirFormats::regionally`.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Chosen {

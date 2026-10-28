@@ -26,9 +26,6 @@ alo-kept = { path = "../alo-kept" }
 # Maltese and Irish. It is confined to `region_names.rs`, so an upgrade that
 # moves that API breaks one file loudly rather than anything quietly.
 icu = { version = "2", features = ["compiled_data", "unstable"] }
-# A moment turned into a day and a time where the person is. The same pin
-# `alo-shell` and `alo-desktop` already use, with the zone database bundled.
-jiff = { version = "0.2", default-features = false, features = ["std", "tzdb-bundle-always"] }
 serde = { workspace = true }
 thiserror = { workspace = true }
 

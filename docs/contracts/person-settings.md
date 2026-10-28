@@ -2356,6 +2356,20 @@ them* in Settings removes `regionally` from the file. A zone not named is the
 machine's own; a zone named that the zone database does not have is the
 machine's own too, and the session's log says which name it could not find.
 
+### How Settings reaches it
+
+By the same four calls as the three sections walked in
+[A Settings surface](#a-settings-surface-from-sign-in-to-the-next-change):
+`alo_formats::keeping::THE_FILE` for its name inside the folder,
+`alo_formats::keeping::at_sign_in` at sign-in, `alo_formats::keeping::keep` for
+a change and `alo_formats::keeping::put_back_as_shipped` for a file that did
+not read. **They are named here and not in that section's table**, because
+that table is held to exactly the calls
+`crates/alo-choosing/tests/one_persons_folder_from_sign_in_to_the_next_change.rs`
+walks, and that walk does not reach `formats.toml` yet. A row there with no
+walk behind it was refused by that test on 2026-10-28, which is the test doing
+its job.
+
 ### A file that does not read
 
 Refused whole, like every file in the folder: dates and times are written the
@@ -2389,7 +2403,6 @@ name its own crate declares, and that path is all the crate is handed.
 | Appearance | `alo_appearance::keeping::THE_FILE` | `alo_appearance::keeping::at_sign_in` | `alo_appearance::keeping::keep` | `alo_appearance::keeping::put_back_as_shipped` |
 | Dock | `alo_dock::keeping::THE_FILE` | `alo_dock::keeping::at_sign_in` | `alo_dock::keeping::keep` | `alo_dock::keeping::put_back_as_shipped` |
 | Shortcuts | `alo_shortcuts::keeping::THE_FILE` | `alo_shortcuts::keeping::at_sign_in` | `alo_shortcuts::keeping::keep` | `alo_shortcuts::keeping::put_back_as_shipped` |
-| How dates and times are written | `alo_formats::keeping::THE_FILE` | `alo_formats::keeping::at_sign_in` | `alo_formats::keeping::keep` | `alo_formats::keeping::put_back_as_shipped` |
 
 - **Drawn at sign-in** answers what the section draws and, when its file did
   not read, the refusal beside it. That section is drawn as the release ships

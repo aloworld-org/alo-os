@@ -429,6 +429,10 @@ mod the_terminals_frame;
 mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
 mod their_displays;
+/// How one person writes a moment: what they chose, the language they read,
+/// and the zone they are in. Here rather than in `alo-formats`, whose header
+/// says why.
+mod their_formats;
 mod top_controls_region;
 /// What a person typed, on its way to their agent and back (ADR 0109).
 pub mod what_a_person_asked_goes_to_the_agent;
@@ -702,6 +706,7 @@ pub use scene_replacement::SceneReplacement;
 pub use scene_scanout::ActiveScene;
 pub use screens::{ScreenPlace, Screens, TheRoom};
 pub use the_markets_words::TheMarketsWords;
+pub use their_formats::{TheDay, TheirFormats};
 
 // **The types a desktop needs to answer `their_displays`, re-exported so that
 // answering costs it no new crate edge** — `more-than-one-display-plan.md`

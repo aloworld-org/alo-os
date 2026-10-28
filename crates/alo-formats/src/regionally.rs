@@ -8,6 +8,10 @@ use icu::decimal::DecimalFormatter;
 use icu::locale::Locale;
 use serde::{Deserialize, Serialize};
 
+/// The language a machine shows when nobody has named one: its source, which
+/// `alo-strings` holds English to be.
+pub const THE_SOURCE_LANGUAGE: &str = "en";
+
 /// **A language, and the region whose way of writing things a person wants.**
 ///
 /// The two apart: a Portuguese speaker in Belgium is `pt` and `BE`, and neither
@@ -40,9 +44,10 @@ impl Regionally {
     /// The machine's source language with no region: what is written where
     /// nobody has named anything, and what a language CLDR refused falls back
     /// to rather than to nothing.
-    pub(crate) fn the_source() -> Self {
+    #[must_use]
+    pub fn the_source() -> Self {
         Self {
-            language: crate::THE_SOURCE_LANGUAGE.to_owned(),
+            language: THE_SOURCE_LANGUAGE.to_owned(),
             region: None,
         }
     }

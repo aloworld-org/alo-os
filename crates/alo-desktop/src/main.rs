@@ -356,7 +356,7 @@ mod running {
         /// How this person writes a time, kept so every refresh uses it — read
         /// from their folder at sign-in and replaced when they choose a region
         /// in Settings (`the_formats_are_now`).
-        formats: alo_formats::TheirFormats,
+        formats: alo_shell::TheirFormats,
         /// When the readings were last taken.
         read_at: std::time::Instant,
         /// What the seat had made of this person's input when it was last said
@@ -750,14 +750,14 @@ mod running {
 
         /// How this person writes a time, as read at sign-in, so the record and
         /// the clock start from one answer.
-        fn their_formats(&mut self) -> Option<alo_formats::TheirFormats> {
+        fn their_formats(&mut self) -> Option<alo_shell::TheirFormats> {
             Some(self.formats.clone())
         }
 
         /// They chose another region in Settings: the clock is rewritten on this
         /// frame rather than at the next second's reading, so the choice is seen
         /// to have worked the moment it is made.
-        fn the_formats_are_now(&mut self, formats: &alo_formats::TheirFormats) {
+        fn the_formats_are_now(&mut self, formats: &alo_shell::TheirFormats) {
             self.formats = formats.clone();
             if let Ok(at) = crate::readings::At::now()
                 && let Ok((readings, _)) = crate::readings::taken(&at, &self.formats)
@@ -1231,14 +1231,14 @@ mod running {
     /// The status area's clock was written as English in Great Britain for
     /// everybody until 2026-10-28, from a figure typed here. Now it is what the
     /// person chose in Settings, and where they chose nothing,
-    /// `alo_formats::TheirFormats`' rule: the language they read, with CLDR's
+    /// `alo_shell::TheirFormats`' rule: the language they read, with CLDR's
     /// own region for it.
     ///
     /// **A file that did not read is said and used for nothing**, the folder's
     /// rule (ADR 0038): the clock is written the language's way and the line
     /// below names the file and what was wrong, for whoever reads the journal.
     /// Settings says the same to the person, in their language.
-    fn their_formats_at_sign_in() -> alo_formats::TheirFormats {
+    fn their_formats_at_sign_in() -> alo_shell::TheirFormats {
         let config_home = std::env::var_os("XDG_CONFIG_HOME");
         let home = std::env::var_os("HOME");
         let reading = alo_choosing::where_it_is(config_home.as_deref(), home.as_deref())
@@ -1267,7 +1267,7 @@ mod running {
                 }
                 None => alo_formats::Chosen::default(),
             };
-        let formats = alo_formats::TheirFormats::of(chosen, reading.as_deref());
+        let formats = alo_shell::TheirFormats::of(chosen, reading.as_deref());
         if let Some(zone) = formats.zone_not_found() {
             eprintln!(
                 "alo-desktop: this person chose the time zone {}, which this machine's zone \

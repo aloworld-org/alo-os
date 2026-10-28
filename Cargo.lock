@@ -897,7 +897,6 @@ dependencies = [
  "alo-kept",
  "alo-strings",
  "icu",
- "jiff",
  "serde",
  "thiserror 2.0.20",
 ]

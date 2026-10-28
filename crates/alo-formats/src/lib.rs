@@ -25,9 +25,13 @@
 //!
 //! # One answer for every surface
 //!
-//! [`TheirFormats`] is what a clock, the record and the lock screen ask: what
-//! the person chose, the language they read, the zone they are in, and the one
-//! rule for where they chose nothing.
+//! `alo_shell::TheirFormats` is what a clock, the record and the lock screen
+//! ask: what the person chose, the language they read, the zone they are in,
+//! and the one rule for where they chose nothing. It lives in `alo-shell`
+//! rather than here because it turns a moment into a day with `jiff`, and
+//! this crate is reached by every daemon through `alo-saying`: `jiff`'s graph
+//! reaches `defmt`, which links a system library a musl image does not have
+//! (`crates/alo-image/tests/no_daemon_links_a_system_library.rs`).
 //!
 //! # A timezone is not looked up behind somebody's back
 //!
@@ -41,7 +45,6 @@ pub mod keeping;
 pub mod region_names;
 pub mod regionally;
 pub mod regions;
-pub mod their_formats;
 pub mod timezone;
 mod unkept;
 pub mod words;
@@ -49,8 +52,7 @@ pub mod words;
 pub use cannot_reach::{Missing, what_cldr_has_that_this_cannot_reach};
 pub use keeping::Chosen;
 pub use region_names::{NamedRegion, the_regions_named_in};
-pub use regionally::{FirstDay, NotARegion, Regionally};
-pub use their_formats::{THE_SOURCE_LANGUAGE, TheDay, TheirFormats};
+pub use regionally::{FirstDay, NotARegion, Regionally, THE_SOURCE_LANGUAGE};
 pub use timezone::{FollowingTheNetwork, Timezone};
 pub use unkept::{FileNotRead, FileNotWritten};
 pub use words::{WordsError, declare_into, formats_words};
