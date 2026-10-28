@@ -392,3 +392,39 @@ fn a_body_too_short_for_a_note_begins_it_at_nothing() {
         "one pixel taller is one pixel down, so zero is not the only answer"
     );
 }
+
+/// **The strip's measures put its words where the design draws them**, at the
+/// design's own strip width: the folder centred at row 19, and `Local · disan`
+/// ending at 924 — 854 plus its 70-wide box — of a 1038-wide strip.
+///
+/// And the right-hand figure is the sum it says it is, so a change to the
+/// padding or the menu's room cannot leave it standing unexamined.
+#[test]
+fn the_strips_words_sit_where_the_design_draws_them() {
+    use super::{
+        BESIDE_THE_FOLDER, THE_FOLDERS_LINE, WHERE_AND_WHO_END_BEFORE_THE_EDGE, WHERE_AND_WHOS_LINE,
+    };
+    const THE_STRIP_IS_WIDE: u32 = 1038;
+    const THE_MENU: u32 = 44;
+    const THE_ROWS_SLACK: u32 = 34;
+    assert_eq!(
+        (A_STRIP - THE_FOLDERS_LINE) / 2,
+        19,
+        "the folder is not centred at row 19"
+    );
+    assert_eq!(
+        (A_STRIP - WHERE_AND_WHOS_LINE) / 2,
+        19,
+        "Local · disan is not centred at row 19"
+    );
+    assert_eq!(
+        THE_STRIP_IS_WIDE - WHERE_AND_WHO_END_BEFORE_THE_EDGE,
+        854 + 70,
+        "Local · disan does not end where the design's box does"
+    );
+    assert_eq!(
+        WHERE_AND_WHO_END_BEFORE_THE_EDGE,
+        BESIDE_THE_FOLDER + THE_MENU + THE_ROWS_SLACK + AN_INSET,
+        "the figure is not the gap, the menu's room, the row's slack and the padding"
+    );
+}

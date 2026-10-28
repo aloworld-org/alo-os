@@ -412,6 +412,7 @@ pub(crate) fn furniture(
         palette.surface,
         palette.edge,
         (at.loc.x + at.size.w, at.loc.y + at.size.h),
+        crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
         APanelsShapes {
             circles: &button,
             circle: palette.the_one_button,

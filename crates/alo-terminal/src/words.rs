@@ -471,11 +471,19 @@ pub const IT_WOULD_NOT_TAKE_THE_CHANGE: Word = Word::saying(
      neither translated. Nothing was written when this is said.",
 );
 
+/// Where the shell in front of the person is running: on this machine.
+pub const ON_THIS_MACHINE: Word = Word::saying("terminal.where.this-machine", "Local").noting(
+    "Shown in the strip across the top of the terminal, beside the name of the person signed \
+     in: \"Local \u{b7} disan\". It says the shell is running on this computer, not on another \
+     machine that has been paired with it. One short word, because the strip is narrow. It is \
+     about where the program runs, not about a local network or a local language.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 31] = [
+pub const EVERY_WORD: [Word; 32] = [
     A_PLACE_TO_RETURN_TO,
     WHAT_KEEPING_ONE_COSTS,
     A_PROGRAM,
@@ -507,6 +515,7 @@ pub const EVERY_WORD: [Word; 31] = [
     NO_INTEGRATION_FOR_THIS_SHELL,
     NOWHERE_TO_ADD_IT,
     IT_WOULD_NOT_TAKE_THE_CHANGE,
+    ON_THIS_MACHINE,
 ];
 
 /// How many lines a recognised diff took away.

@@ -189,6 +189,9 @@ mod dock_raster;
 /// The Dock's own surface: a rounded panel with a hairline and a shadow,
 /// rasterised with alpha because neither is a rectangle.
 mod dock_surface;
+/// How a rounded panel is lifted off what is behind it — its corner and its
+/// shadow — at the display scale its geometry is laid out in.
+mod how_a_panel_is_raised;
 mod the_keyboard_on_the_docks_surfaces;
 pub mod what_is_on_the_clipboard;
 mod where_the_docks_surface_is;
@@ -423,6 +426,9 @@ mod the_terminals_cells_are_drawn;
 /// hairline round it, in the design's colours, so the terminal reads as a window
 /// rather than as text on the desktop.
 mod the_terminals_frame;
+/// The strip across the top of alo's own terminal: the folder the shell is in,
+/// where the shell runs, and who is signed in.
+mod the_terminals_strip;
 mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
 mod their_displays;

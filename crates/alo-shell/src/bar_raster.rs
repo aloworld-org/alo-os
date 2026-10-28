@@ -96,6 +96,7 @@ pub(crate) fn picture(
     }
 
     let panel = crate::dock_surface::surface(crate::dock_surface::ADocksSurface {
+        raised: crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
         panel: places.panel,
         fill: palette.dock,
         edge: palette.edge,

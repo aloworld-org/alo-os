@@ -308,3 +308,61 @@ fn a_program_whose_name_has_a_space_is_still_read_correctly() {
          was found by counting from the left"
     );
 }
+
+/// **A process is read in the folder it is in**, and two processes in two
+/// folders read as two folders — the control, because a reader that answered
+/// the test's own folder for everything would pass a single case.
+#[test]
+fn a_process_is_read_in_the_folder_it_is_in() {
+    let one = tempfile::tempdir().expect("a folder for the first process");
+    let other = tempfile::tempdir().expect("a folder for the second process");
+    let in_folder = |folder: &std::path::Path| {
+        Command::new("sleep")
+            .arg("30")
+            .current_dir(folder)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("the test's own command starts")
+    };
+    let mut first = in_folder(one.path());
+    let mut second = in_folder(other.path());
+    let (read_first, read_second) = (
+        where_this_process_is(first.id()),
+        where_this_process_is(second.id()),
+    );
+    let _ = first.kill();
+    let _ = first.wait();
+    let _ = second.kill();
+    let _ = second.wait();
+
+    let real = |folder: &std::path::Path| folder.canonicalize().expect("the folder is there");
+    assert_eq!(
+        read_first,
+        Some(real(one.path())),
+        "the first process was not read in its own folder"
+    );
+    assert_eq!(
+        read_second,
+        Some(real(other.path())),
+        "the second process was not read in its own folder"
+    );
+}
+
+/// **A process that has gone has no folder**, and that is a [`None`] rather
+/// than a fault, because it is the ordinary race.
+#[test]
+fn a_process_that_has_gone_is_in_no_folder() {
+    let mut gone = Command::new("true")
+        .stdin(Stdio::null())
+        .spawn()
+        .expect("the test's own command starts");
+    let process = gone.id();
+    let _ = gone.wait();
+    assert_eq!(
+        where_this_process_is(process),
+        None,
+        "a process that has exited and been reaped was read as being somewhere"
+    );
+}

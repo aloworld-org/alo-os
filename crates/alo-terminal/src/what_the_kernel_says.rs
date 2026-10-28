@@ -20,7 +20,7 @@
 //! make a routine race look like a fault.
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::why_a_command_is_waiting::{TheEvidence, WhatItReadsFrom};
 
@@ -63,6 +63,25 @@ pub fn what_this_process_is_called(process: u32) -> Option<String> {
         return None;
     }
     Some(said.to_owned())
+}
+
+/// The folder this process is in, as the kernel records it.
+///
+/// `/proc/PID/cwd` — a link the kernel keeps to the process's own working
+/// folder, so a shell that has just run `cd` answers with where it went. **Read
+/// when it is asked and never watched**: nothing here keeps it, polls it or is
+/// told when it changes, and a caller decides when the question is worth
+/// asking.
+///
+/// A folder that has been deleted out from under the process comes back as the
+/// kernel writes it, with ` (deleted)` after the path. That is left as it is:
+/// it is true, and it is what a person in that folder most needs to know.
+///
+/// [`None`] where the process is gone or the link cannot be read, which is the
+/// ordinary case rather than an error — the same as [`what_this_process_is_called`].
+#[must_use]
+pub fn where_this_process_is(process: u32) -> Option<PathBuf> {
+    fs::read_link(Path::new("/proc").join(process.to_string()).join("cwd")).ok()
 }
 
 /// Whether the kernel has this process on a processor.

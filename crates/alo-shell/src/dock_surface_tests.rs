@@ -20,6 +20,7 @@ use super::{ADocksSurface, surface};
 /// A Dock's surface at the ordinary scale, with colours a test can tell apart.
 fn a_surface(against: Edge) -> super::Washed {
     surface(ADocksSurface {
+        raised: crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
         marks: &[],
         mark: [0, 0, 0],
         panel: Rectangle::new((200, 400).into(), (600, 76).into()),
@@ -224,6 +225,7 @@ fn the_accent_lies_on_the_face_that_looks_at_the_canvas() {
 fn a_panel_with_no_area_draws_nothing() {
     for (w, h) in [(0, 76), (600, 0), (0, 0)] {
         let nothing = surface(ADocksSurface {
+            raised: crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
             marks: &[],
             mark: [0, 0, 0],
             panel: Rectangle::new((200, 400).into(), (w, h).into()),
@@ -261,6 +263,7 @@ fn a_panel_with_no_area_draws_nothing() {
 fn nothing_in_the_surface_scales_on_its_own() {
     let of = |panel: Rectangle<i32, smithay::utils::Physical>| {
         surface(ADocksSurface {
+            raised: crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
             marks: &[],
             mark: [0, 0, 0],
             panel,
@@ -312,6 +315,7 @@ fn a_wells_corner_comes_from_the_well_and_not_from_a_constant() {
     let square = Rectangle::new((20, 20).into(), (80, 80).into());
     let of = |corner: u32| {
         surface(ADocksSurface {
+            raised: crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
             marks: &[],
             mark: [0, 0, 0],
             panel: Rectangle::new((0, 0).into(), (200, 120).into()),
@@ -392,6 +396,7 @@ fn a_card(
     in_primary: super::InPrimary<'_>,
 ) -> super::Washed {
     surface(ADocksSurface {
+        raised: crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
         marks: &[],
         mark: [0, 0, 0],
         panel: Rectangle::new((0, 0).into(), (400, 200).into()),
@@ -473,5 +478,164 @@ fn the_keyboards_outline_draws_exactly_as_a_ring_in_its_colour() {
     assert_eq!(
         plain.pixels, primary.pixels,
         "the keyboard's outline drew differently from a ring of the same colour"
+    );
+}
+
+/// One FNV-1a hash of a raster's bytes, so a whole Dock can be compared with a
+/// Dock drawn before a change in one line.
+fn hashed(drawn: &super::Washed) -> u64 {
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for byte in &drawn.pixels {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x0100_0000_01b3);
+    }
+    hash
+}
+
+/// **The Dock is drawn pixel for pixel as it was before the rasteriser took a
+/// look and a scale.**
+///
+/// The hashes below were taken on 2026-10-28 by this same fixture run against
+/// the rasteriser as it stood on `main` at `95f513e5`, before
+/// `crate::how_a_panel_is_raised` existed — once, by hand, and recorded here so
+/// this test repeats the comparison on every build. The fixture carries every
+/// kind of shape a panel can hold — a badge, a mark, two wells of two radii,
+/// a ring, a Primary well and the keyboard's outline — on all four edges, and
+/// one panel clipped at the screen's corner, so a change to any of them moves a
+/// hash.
+#[test]
+fn the_dock_is_drawn_exactly_as_it_was_before_the_look() {
+    const BEFORE: [(&str, u64); 5] = [
+        ("Bottom", 0x6fbb_1a94_ee2a_ed99),
+        ("Top", 0x4b6a_b111_c247_d5e1),
+        ("Left", 0x7b10_2fef_1bdb_c579),
+        ("Right", 0xe3e4_729a_6038_5839),
+        ("clipped", 0xca8c_d6ce_4c8f_c899),
+    ];
+    let badges = [Rectangle::new((260, 424).into(), (28, 28).into())];
+    let marks = [Rectangle::new((272, 466).into(), (4, 3).into())];
+    let wells = [
+        super::AWell {
+            at: Rectangle::new((400, 412).into(), (200, 40).into()),
+            corner: 12,
+        },
+        super::AWell {
+            at: Rectangle::new((620, 412).into(), (60, 40).into()),
+            corner: 8,
+        },
+    ];
+    let rings = [Rectangle::new((396, 408).into(), (208, 48).into())];
+    let primary = [super::AWell {
+        at: Rectangle::new((700, 412).into(), (60, 40).into()),
+        corner: 12,
+    }];
+    let outlines = [Rectangle::new((696, 408).into(), (68, 48).into())];
+    let mut now = Vec::new();
+    for against in [Edge::Bottom, Edge::Top, Edge::Left, Edge::Right] {
+        let drawn = surface(ADocksSurface {
+            raised: crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
+            marks: &marks,
+            mark: [0x10, 0x2A, 0x43],
+            panel: Rectangle::new((200, 400).into(), (600, 76).into()),
+            fill: [255, 255, 255],
+            edge: [0xE7, 0xEB, 0xEF],
+            accent: [0x11, 0x22, 0x33],
+            against,
+            accent_is: 2,
+            room: (1920, 1080),
+            badges: &badges,
+            badge: [0xEE, 0xF2, 0xF4],
+            wells: &wells,
+            well_is: [0xF5, 0xF6, 0xF7],
+            rings: &rings,
+            ring_is: [0x22, 0x33, 0x44],
+            in_primary: super::InPrimary {
+                wells: &primary,
+                outlines: &outlines,
+                colour: [0x10, 0x2A, 0x43],
+            },
+        })
+        .expect("a panel with area rasterises");
+        assert_eq!(
+            drawn.area,
+            Rectangle::new((168, 368).into(), (664, 140).into()),
+            "the {against:?} Dock's raster moved"
+        );
+        now.push(hashed(&drawn));
+    }
+    let clipped = surface(ADocksSurface {
+        raised: crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
+        marks: &[],
+        mark: [0, 0, 0],
+        panel: Rectangle::new((8, 8).into(), (300, 76).into()),
+        fill: [255, 255, 255],
+        edge: [0xE7, 0xEB, 0xEF],
+        accent: [0x11, 0x22, 0x33],
+        against: Edge::Bottom,
+        accent_is: 0,
+        room: (1920, 1080),
+        badges: &[],
+        badge: [0, 0, 0],
+        wells: &[],
+        well_is: [0, 0, 0],
+        rings: &[],
+        ring_is: [0, 0, 0],
+        in_primary: super::InPrimary::NOTHING,
+    })
+    .expect("a panel");
+    assert_eq!(
+        clipped.area,
+        Rectangle::new((0, 0).into(), (340, 116).into()),
+        "the clipped Dock's raster moved"
+    );
+    now.push(hashed(&clipped));
+    for ((which, before), now) in BEFORE.iter().zip(now) {
+        assert_eq!(
+            now, *before,
+            "the {which} Dock's pixels changed: {now:#018x} where it drew {before:#018x}"
+        );
+    }
+}
+
+/// **The rasteriser draws a look at the scale it is given**: the same panel
+/// at 200% becomes solid along its top edge about twice as far in as at 100%.
+#[test]
+fn at_two_hundred_percent_the_rasterisers_corner_doubles() {
+    use crate::how_a_panel_is_raised::HowItIsRaised;
+    let panel = Rectangle::new((200, 200).into(), (600, 300).into());
+    let reach = |scale: f64| {
+        let drawn = surface(ADocksSurface {
+            raised: HowItIsRaised::THE_DOCKS.at(scale),
+            marks: &[],
+            mark: [0, 0, 0],
+            panel,
+            fill: [255, 255, 255],
+            edge: [0xE7, 0xEB, 0xEF],
+            accent: [0, 0, 0],
+            against: Edge::Bottom,
+            accent_is: 0,
+            room: (1920, 1080),
+            badges: &[],
+            badge: [0, 0, 0],
+            wells: &[],
+            well_is: [0, 0, 0],
+            rings: &[],
+            ring_is: [0, 0, 0],
+            in_primary: super::InPrimary::NOTHING,
+        })
+        .expect("a panel with area rasterises");
+        let (left, top) = (200 - drawn.area.loc.x, 200 - drawn.area.loc.y);
+        (0..200)
+            .find(|step| pixel(&drawn, left + step, top + 1)[3] == 255)
+            .unwrap_or_else(|| panic!("the top edge never becomes solid at {scale}"))
+    };
+    let (ordinary, dense) = (reach(1.0), reach(2.0));
+    assert!(
+        (ordinary - 18).abs() <= 4,
+        "at 100% the corner reaches {ordinary}"
+    );
+    assert!(
+        (dense - 36).abs() <= 6,
+        "at 200% the corner reaches {dense}"
     );
 }

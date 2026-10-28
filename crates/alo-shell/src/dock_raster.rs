@@ -517,6 +517,7 @@ fn the_overflow_list(
             palette.dock,
             palette.edge,
             room,
+            crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
             crate::dock_surface::APanelsShapes {
                 circles: &[],
                 circle: palette.badge,
@@ -843,6 +844,7 @@ fn the_overflow_list(
         palette.dock,
         palette.edge,
         room,
+        crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
         crate::dock_surface::APanelsShapes {
             circles: &circles,
             circle: palette.badge,
@@ -1116,6 +1118,7 @@ pub(crate) fn picture(
         .into_iter()
         .collect();
     let surface = crate::dock_surface::surface(crate::dock_surface::ADocksSurface {
+        raised: crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
         // **Drawn last of all on the panel**, which `ADocksSurface::rings` is
         // specified to do: the one mark that says where the next key press
         // lands is not covered by anything.

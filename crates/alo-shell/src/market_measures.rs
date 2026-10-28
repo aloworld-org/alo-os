@@ -24,16 +24,15 @@
 //!
 //! # The window's corner is the Dock's, not the design's
 //!
-//! The design asks `radius/xl`, 28. **It is drawn with 18**, because
-//! `crate::dock_surface::a_panel` takes no radius — it uses
-//! `alo_dock::measures::THE_DOCKS_CORNER` for every panel it draws, and this
-//! window is its third caller.
+//! The design asks `radius/xl`, 28. **It is drawn with 18**, because this
+//! window asks `crate::dock_surface::a_panel` for the Dock's own look.
 //!
-//! That is a gap rather than a decision, and it is written here rather than
-//! fixed because making the radius a parameter widens a function the Dock, the
-//! Ask alo window and this one all draw through. Its own change, with its own
-//! callers to check. There is deliberately no constant for 28 below: a number
-//! nothing reads is not a record, and this paragraph is.
+//! That is a gap rather than a decision. **The radius has been a parameter
+//! since 2026-10-28** — it arrives with `crate::how_a_panel_is_raised`, which
+//! the terminal's body draws through at its own corner and shadow — so closing
+//! it is a look of this window's own, which changes what a person sees and was
+//! not part of that change. There is deliberately no constant for 28 below: a
+//! number nothing reads is not a record, and this paragraph is.
 //!
 //! # Why the window is 632 and not 640
 //!

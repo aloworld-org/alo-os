@@ -43,8 +43,9 @@
 //! # What is not here yet
 //!
 //! Colour per cell, bold, the cursor's own block, the selection, the
-//! scrollback's position, the identity strip, the note under the transcript and
-//! the gutter ADR 0113 describes. The grid carries attributes and this draws
+//! scrollback's position, the note under the transcript and the gutter ADR
+//! 0113 describes. *Several of those have since been built; the strip across
+//! the top is drawn by `crate::the_terminals_strip`.* The grid carries attributes and this draws
 //! one ground and one ink. `docs/design/the-terminal-window.md` records what
 //! each is measured as, and the sessions strip is recorded there as **a
 //! silence**: the design places it over the transcript's own rows and does not
@@ -56,7 +57,7 @@ use cosmic_text::{Buffer, FontSystem, Metrics, Shaping, Wrap};
 use smithay::backend::renderer::Frame;
 use smithay::utils::{Physical, Rectangle};
 
-use crate::painted::{Inked, Solid};
+use crate::painted::{Inked, Solid, Washed};
 use crate::painted_text::{ALOS_OWN_MONO, alos_own_mono, alos_own_mono_at, alos_own_text, inked};
 
 /// How much of the display's width the window takes: 1040 of 1440.
@@ -74,16 +75,42 @@ pub(crate) struct TerminalPicture {
     /// terminal was laid out for another display on — which is the check every
     /// other native picture in this crate makes, and for the same reason.
     pub(crate) size: (i32, i32),
-    /// Flat shapes — the window and the transcript's ground — painted first.
+    /// The window's body — its rounded panel, hairline and shadow — painted
+    /// first of all, under everything else here.
+    ///
+    /// A raster rather than a [`Solid`] because a corner and a shadow are
+    /// partial coverage; `crate::the_terminals_frame` draws it. [`None`] only
+    /// for a window with no room, which [`picture`] refuses before this.
+    pub(crate) panel: Option<Washed>,
+    /// Flat shapes — the transcript's ground, each run's own and the cursor —
+    /// painted on the panel.
     pub(crate) solids: Vec<Solid>,
     /// The cells, painted after the shapes.
     pub(crate) inked: Vec<Inked>,
+    /// The strip across the top: the folder, where the shell runs and who.
+    ///
+    /// **Kept apart from the cells**, because it is the terminal speaking
+    /// about itself rather than anything a program wrote, and every count of
+    /// what a program drew is a count of [`Self::inked`] alone.
+    pub(crate) strip: Vec<Inked>,
 }
 
 impl TerminalPicture {
     /// Whether there is nothing to paint.
     pub(crate) fn is_empty(&self) -> bool {
-        self.solids.is_empty() && self.inked.is_empty()
+        self.panel.is_none()
+            && self.solids.is_empty()
+            && self.inked.is_empty()
+            && self.strip.is_empty()
+    }
+
+    /// The raster to upload before a frame opens: the window's body.
+    ///
+    /// **Separate from [`Self::paint`]** for the reason
+    /// `crate::desktop_paint`'s own `washed` gives: importing a texture needs
+    /// the renderer, and a frame borrows it for as long as it is open.
+    pub(crate) fn washed(&self) -> Option<&Washed> {
+        self.panel.as_ref()
     }
 
     /// Refuse a picture that would draw outside the output it was laid out for.
@@ -101,20 +128,34 @@ impl TerminalPicture {
         let output: Rectangle<i32, Physical> = Rectangle::from_size(size);
         let inside = |area: Rectangle<i32, Physical>| output.contains_rect(area);
         if self.size == (size.w, size.h)
+            && self.panel.iter().all(|panel| inside(panel.area))
             && self.solids.iter().all(|solid| inside(solid.area))
             && self.inked.iter().all(|ink| inside(ink.area))
+            && self.strip.iter().all(|ink| inside(ink.area))
         {
             return Ok(());
         }
         Err(crate::RenderError::TerminalScene)
     }
 
-    /// Paint the shapes, then the cells.
+    /// Paint the body, then the shapes, then the cells and the strip.
+    ///
+    /// `panel` is the texture [`Self::washed`] asked for, already uploaded;
+    /// [`None`] paints no body, which is what a renderer that could not take
+    /// the raster leaves.
     ///
     /// # Errors
     /// Whatever the renderer refused.
-    pub(crate) fn paint(&self, frame: &mut impl Frame) -> Result<(), crate::RenderError> {
-        crate::painted::paint(frame, &self.solids, &self.inked)
+    pub(crate) fn paint<F: Frame>(
+        &self,
+        frame: &mut F,
+        panel: Option<&(F::TextureId, Rectangle<i32, Physical>)>,
+    ) -> Result<(), crate::RenderError> {
+        if let Some((texture, area)) = panel {
+            crate::painted::wash(frame, texture, *area)?;
+        }
+        crate::painted::paint(frame, &self.solids, &self.inked)?;
+        crate::painted::paint(frame, &[], &self.strip)
     }
 }
 
@@ -1147,6 +1188,9 @@ pub(crate) struct Shows<'a> {
     ///
     /// In the program's own region, under the same rule as the two above.
     pub(crate) a_diff: Option<&'a alo_terminal::ADiff>,
+    /// What the strip across the top says: the folder the shell is in, where
+    /// it runs and who is signed in. `crate::the_terminals_strip` draws it.
+    pub(crate) the_strip: crate::the_terminals_strip::WhatTheStripSays<'a>,
 }
 
 /// What joins the parts of a recognised result's summary.
@@ -1177,6 +1221,7 @@ pub(crate) fn picture(
         a_test_result,
         a_benchmark,
         a_diff,
+        the_strip,
     } = shows;
     let (window, transcript) =
         where_the_window_goes(size, scale).ok_or(NothingToDrawWith::TheresNoRoom)?;
@@ -1582,15 +1627,26 @@ pub(crate) fn picture(
         }
     }
 
-    // **The window's body first** — its hairline and the panel inside it — then
-    // the transcript's ground on the panel. The transcript is on the panel's
-    // own white in the design's render, so the second solid is the same colour
-    // as the panel and is kept because each run's ground is laid on it.
-    let mut solids = crate::the_terminals_frame::the_body(window, scale, colours);
-    solids.push(Solid {
+    // **The window's body first** — its rounded panel, hairline and shadow, as
+    // one raster — then the transcript's ground on the panel. The transcript is
+    // on the panel's own white in the design's render, so that solid is the
+    // same colour as the panel and is kept because each run's ground is laid
+    // on it.
+    let panel = crate::the_terminals_frame::the_body(window, size, scale, colours);
+    let mut solids = vec![Solid {
         area: transcript,
         colour: ground,
-    });
+    }];
+    // **The strip across the top**, in `text/muted` like the note: the folder
+    // the shell is in, where it runs and who is signed in.
+    let strip = crate::the_terminals_strip::the_strip(
+        fonts,
+        says,
+        the_strip,
+        window,
+        scale,
+        (ground, muted),
+    );
     let mut cells: Vec<Inked> = placed;
     // **Each run's own ground goes under the cells**, after the transcript's
     // and before the characters.
@@ -1607,8 +1663,10 @@ pub(crate) fn picture(
     }
     Ok(TerminalPicture {
         size,
+        panel,
         solids,
         inked: cells,
+        strip,
     })
 }
 
