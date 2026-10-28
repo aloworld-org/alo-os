@@ -326,3 +326,64 @@ fn a_press_with_nothing_waiting_does_nothing() {
     assert!(daemon.approved.borrow().is_empty());
     assert!(daemon.declined.borrow().is_empty());
 }
+
+/// **The agent's announcement of a waiting change is not said twice.** Found
+/// walking a booted machine on 2026-10-28: the conversation read *a change is
+/// waiting for you to answer, as number 0:* and the sentence, directly above
+/// the card that already showed the sentence. The control is words of alo's
+/// own, which are kept before the card.
+#[test]
+fn the_agents_announcement_is_not_said_above_the_card() {
+    let sentence = "rename /home/alo/Documents/march-invoice.pdf to invoice-march.pdf";
+    for (said, kept) in [
+        (
+            format!("a change is waiting for you to answer, as number 0:\n  {sentence}\n"),
+            false,
+        ),
+        ("I can rename that for you.".to_owned(), true),
+    ] {
+        let daemon = ADaemon::holding(vec![standing(0, sentence)]);
+        let mut task = a_task();
+        let mut waiting = AChangeWaiting::nothing_yet();
+
+        assert_eq!(
+            waiting.arrived_after(Some(said.clone()), &mut task, &daemon),
+            WhatArrived::AQuestion
+        );
+
+        let turns: Vec<&str> = task
+            .conversation()
+            .each()
+            .iter()
+            .map(alo_tasks::Turn::said)
+            .collect();
+        let expected: Vec<&str> = if kept {
+            vec!["tidy my invoices", said.as_str(), sentence]
+        } else {
+            vec!["tidy my invoices", sentence]
+        };
+        assert_eq!(turns, expected, "for {said:?}");
+        assert!(
+            !turns.iter().any(|turn| turn.contains("as number")),
+            "the daemon's number reached the conversation"
+        );
+    }
+}
+
+/// **With nothing waiting, the agent's words are all there is**, and are kept
+/// whatever they say.
+#[test]
+fn with_nothing_waiting_the_agents_words_are_kept() {
+    let daemon = ADaemon::holding(Vec::new());
+    let mut task = a_task();
+    let mut waiting = AChangeWaiting::nothing_yet();
+
+    assert_eq!(
+        waiting.arrived_after(Some("It is in Invoices.".to_owned()), &mut task, &daemon),
+        WhatArrived::Nothing
+    );
+    assert_eq!(
+        task.conversation().each().last().map(alo_tasks::Turn::said),
+        Some("It is in Invoices.")
+    );
+}
