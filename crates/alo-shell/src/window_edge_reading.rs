@@ -182,6 +182,9 @@ pub fn the_controls_of(decorations: Decorations, fits: HowItFits) -> Vec<OnTheEd
         // movement and a menu and nothing else, so the width makes no
         // difference here — there is nothing to drop.
         (Decorations::TheApplicationDraws, _) => vec![OnTheEdge::Move, OnTheEdge::Menu],
+        // **Close only**, at either width: minimise and maximise wait for the
+        // right-hand panel to hold a task, and a task window does not move.
+        (Decorations::ATaskWindow, _) => vec![OnTheEdge::Close],
     }
 }
 

@@ -101,6 +101,16 @@ pub(crate) fn where_one_more_goes(
     reading: Direction,
     fixed: &[Rectangle<i32, Logical>],
 ) -> Option<Rectangle<i32, Logical>> {
+    // **Below its own edge.** A task window carries the design's external
+    // edge above it, and Close is on that edge — so a window placed at the
+    // very top of the view would have its Close off the screen, and the one
+    // pointer road to closing it would be gone. The edge's own height comes
+    // off the top of the view before anything is sized or placed.
+    let edge = crate::window_edge::THE_REGION_IS_TALL;
+    let view = Rectangle::new(
+        Point::from((view.loc.x, view.loc.y + edge)),
+        Size::from((view.size.w, (view.size.h - edge).max(0))),
+    );
     let wanted = what_size_it_asks_for(view.size)?;
     // **The newest is the active one.** `already` is front-to-back, so the
     // first is the window a person most recently had opened for them — and

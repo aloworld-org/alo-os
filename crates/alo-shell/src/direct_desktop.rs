@@ -1335,7 +1335,7 @@ impl LoopInput for Desk<'_> {
         // The raster borrows these strings.
         let the_tasks_words = crate::the_tasks_words::TheTasksWords::said(
             server.tasks().each(),
-            server.tasks().where_each_went(),
+            &server.tasks().where_each_went(),
             self.strings,
             server.the_change_waiting.selected(),
         );
@@ -1608,12 +1608,20 @@ impl LoopInput for Desk<'_> {
         // now.** Built after the pictures because both want the font system
         // mutably and neither outlives this frame. See
         // `crate::every_windows_edge` for why it is per display.
-        let edges = crate::every_windows_edge::every_windows_edge(
+        let mut edges = crate::every_windows_edge::every_windows_edge(
             server,
             self.labels,
             this_display.1,
             u32::from(this_display.0),
         );
+        // **And each task window's, carrying Close.** On this display only,
+        // because the task windows are drawn on this display only.
+        edges.extend(crate::a_task_windows_edge::every_task_windows_edge(
+            server,
+            &mut self.labels.fonts,
+            this_display.1,
+            u32::from(this_display.0),
+        ));
         // **Where the fixed controls ended up, handed to the drag that has to
         // avoid them.** The draw is the only place that knows: these are laid
         // out here and nowhere else. Without this line

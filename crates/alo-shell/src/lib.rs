@@ -104,11 +104,15 @@ pub mod a_provider_is_added_in_settings;
 mod a_task_window_hands_on_a_chord;
 /// Scrolling a task window's conversation.
 mod a_task_window_scrolls;
+/// A task window's edge, carrying Close.
+mod a_task_windows_edge;
 /// alo's words read for the emphasis a model marks in Markdown.
 ///
 /// **Public because `task_text::WhatWasSaid` carries its marks**, as
 /// `task_text` is public for `task_raster`'s reason.
 pub mod alos_marked_words;
+/// Closing a task window, and which ones may close.
+pub mod closing_a_task_window;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 /// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;

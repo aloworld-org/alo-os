@@ -196,3 +196,21 @@ fn a_right_to_left_reader_gets_the_mirrored_side() {
         ltr.loc.x
     );
 }
+
+/// **A window is never placed where its edge would leave the view**, so the
+/// Close on that edge can always be reached.
+#[test]
+fn a_window_leaves_room_above_it_for_its_edge() {
+    for view in [
+        Rectangle::new((0, 0).into(), (1280, 800).into()),
+        Rectangle::new((0, 0).into(), (1920, 1080).into()),
+        a_large_view(),
+    ] {
+        let at =
+            where_one_more_goes(view, &[], Direction::LeftToRight, &[]).expect("room for a window");
+        assert!(
+            at.loc.y - crate::window_edge::THE_REGION_IS_TALL >= view.loc.y,
+            "on {view:?} the window at {at:?} leaves its edge above the view"
+        );
+    }
+}
