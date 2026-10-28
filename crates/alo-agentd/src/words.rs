@@ -502,7 +502,10 @@ pub const NOBODY_IS_TOLD_WHAT_LEAVES: Word = Word::saying(
     "this part of alo OS cannot show you what is leaving this machine",
 )
 .noting(
-    "Said to the desktop when it asked alo OS's background service to tell it what that service      is sending over the network, and the service has no way to. The desktop then shows that it      cannot tell whether anything is leaving. Plain and factual; it is not an error the person      caused.",
+    "Said to the desktop when it asked alo OS's background service to tell it what that service \
+     is sending over the network, and the service has no way to. The desktop then shows that it \
+     cannot tell whether anything is leaving. Plain and factual; it is not an error the person \
+     caused.",
 );
 
 /// Everything this crate can say.

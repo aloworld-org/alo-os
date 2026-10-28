@@ -132,7 +132,12 @@ pub const CANNOT_TELL: Word = Word::saying(
     "alo OS cannot tell whether your agent is sending anything — its service is not answering",
 )
 .noting(
-    "Shown where the network indicator is, when the part of alo OS that sends questions to a \n     provider is not reporting to the screen: not started yet, stopped, or restarting. It must \n     never read as \"nothing is leaving\" — the whole point is that the screen does not know. \n     \"Your agent\" is the assistant built into alo OS. A whole sentence, announced on its own by \n     a screen reader.",
+    "Shown where the network indicator is, when the part of alo OS that sends questions to a \
+     provider is not reporting to the screen: not started yet, stopped, or restarting. It must \
+     never read as \"nothing is leaving\" — the whole point is that the screen does not know. \
+     \"Your agent\" is the assistant built into alo OS, which is software and not a person, so \
+     the grammar should be that of a thing. A whole sentence, announced on its own by a screen \
+     reader.",
 );
 
 /// A lit indicator, with what it is lit for counted.
