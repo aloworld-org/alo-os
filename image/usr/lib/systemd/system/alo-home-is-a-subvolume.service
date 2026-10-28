@@ -1,0 +1,51 @@
+[Unit]
+# **The person's home, made as a btrfs subvolume before anything else makes it.**
+#
+# ADR 0045's undo takes a read-only snapshot of the home before an agent's
+# change, and a snapshot can only be taken of a subvolume. `bootc install
+# --filesystem btrfs` makes none (docs/quirks.md, 2026-09-21), and
+# `tmpfiles.d/alo.conf` made the home with a `d` line: an ordinary directory.
+# So every snapshot was refused with *Not a Btrfs subvolume*, and on a booted
+# machine on 2026-10-28 `alo-back` answered *alo has not kept any place for
+# you to return to* after a rename the person had approved.
+#
+# **Why a unit and not tmpfiles' own `v` line.** `v` makes a subvolume only
+# when `/` is itself one, and on this image `/` is a read-only composefs
+# overlay with `/var` bound from btrfs: a `v` line would quietly make the same
+# plain directory. So this runs first, and the `d` and `z` lines in
+# `tmpfiles.d/alo.conf` then give the subvolume its owner, mode and label
+# exactly as they gave the directory.
+#
+# **A home that already exists is left alone**, subvolume or not: a person's
+# files are never moved to make room for an undo. Such a machine keeps
+# answering that there is nothing to return to, as it always has.
+Description=alo OS: the person's home is made as a place undo can keep
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0045-what-undoing-rewinds-to.md
+DefaultDependencies=no
+RequiresMountsFor=/var/home
+Before=systemd-tmpfiles-setup.service
+ConditionPathExists=!/var/home/alo
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+# `-p` makes `/var/home` if a base ever ships without it, which is the one
+# parent a fresh machine may not have.
+ExecStart=/usr/sbin/btrfs subvolume create -p /var/home/alo
+
+User=root
+Group=root
+NoNewPrivileges=yes
+# **No capability at all.** `/var/home` is root's own directory, so making a
+# subvolume in it is ordinary permission (docs/quirks.md: *taking a read-only
+# snapshot needs no capability*, and making a subvolume is the same check).
+CapabilityBoundingSet=
+# No other sandboxing: this runs before `systemd-tmpfiles-setup`, and a
+# namespace set up that early is one more thing that can fail before the
+# machine has a home at all. It runs one fixed command and touches no network.
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=sysinit.target

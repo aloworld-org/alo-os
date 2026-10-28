@@ -740,6 +740,7 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False upower \
         exit 1; \
       fi; \
     done \
+ && /usr/sbin/btrfs --version \
  && test -e /usr/lib/systemd/system/systemd-suspend.service \
  && test -e /usr/lib/systemd/system/chronyd.service \
  && ls /usr/lib/firmware/i915 > /dev/null \
@@ -1208,6 +1209,9 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                      # `[Install]` and are started by the broker, which is how
                      # `alo-convertd.service` is already handled.
                      alo-brokerd.service alo-looking-once.service \
+                     # The home is made as a subvolume before tmpfiles makes it,
+                     # so an undo has something to snapshot (ADR 0045, 2026-10-28).
+                     alo-home-is-a-subvolume.service \
     \
  # **The keyring is enabled `--global`, in every person's own manager**, and
  # that is the fix for a machine on which no key could be stored at all.

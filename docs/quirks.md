@@ -6753,6 +6753,16 @@ on this machine* — which it already does
 change is on ext4 and is not converted: it keeps that answer for good, which is
 why the argument had to land before the certified laptop was installed.
 **Date:** 2026-09-21.
+**Made, 2026-10-28:** `alo-home-is-a-subvolume.service` runs
+`btrfs subvolume create -p /var/home/alo` before `systemd-tmpfiles-setup`, when
+no home exists yet, and `tmpfiles.d/alo.conf`'s `d` and `z` lines then give it
+its owner, mode and label. **tmpfiles' own `v` line would not have done it**:
+it makes a subvolume only when `/` is one, and here `/` is a composefs overlay,
+so it falls back to a plain directory without a word. Found walking Demo 1 on
+an image of `390d61e8`: a rename the person approved, then `alo-back` saying
+*alo has not kept any place for you to return to*, with `ls -id /var/home/alo`
+reading 134179 rather than a subvolume's 256 and the turn's undo directory
+empty. An existing home is never converted.
 
 ### Taking a read-only snapshot needs no capability; removing one needs `CAP_SYS_ADMIN`
 **Version:** kernel 6.19.14-101.fc42.x86_64, btrfs-progs v6.19.1, on the disk
