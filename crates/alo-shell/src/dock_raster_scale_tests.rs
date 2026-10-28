@@ -46,16 +46,13 @@ fn on_the_dock(how_many: usize) -> Vec<alo_dock::OnTheDock> {
     alo_dock::Holding::nothing().showing(&windows)
 }
 
-/// The bundled faces, as the shell loads them.
+/// The faces the shell draws with, and only those.
+///
+/// **Not `FontSystem::new`**, which also reads the machine's own fonts: the
+/// first hashes here were taken that way and CI, with other fonts installed,
+/// drew different letters from the same code.
 fn fonts() -> cosmic_text::FontSystem {
-    let mut fonts = cosmic_text::FontSystem::new();
-    fonts
-        .db_mut()
-        .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
-    fonts
-        .db_mut()
-        .load_font_data(include_bytes!("../fonts/Inter.ttf").to_vec());
-    fonts
+    crate::WindowControlLabels::new().unwrap().fonts
 }
 
 /// A rectangle twice as far from the corner and twice the size.
@@ -136,9 +133,14 @@ fn hashed(picture: &super::DockPicture) -> u64 {
 /// Every surface, panel, flat shape and letter — the bar, its badges, its open
 /// marks, the keyboard's ring, the composer's words and *More apps* open over
 /// it — on the bottom edge and the left one. The hashes were taken once, by
-/// hand, on 2026-10-28 from this fixture run against the tree this change was
-/// branched from (`df93aa2d`), and this test repeats the comparison on every
-/// build.
+/// hand, on 2026-10-28 from this fixture run against `main` at `3aeca5e8`
+/// without this change, and this test repeats the comparison on every build.
+///
+/// **Retaken once.** The first hashes drew with `FontSystem::new`, which also
+/// reads the machine's own fonts, so CI drew different letters from the same
+/// code. Measured, not guessed: `main` gave the first hashes on this machine
+/// and the change gave them too. The fixture now draws with the shell's own
+/// bundled faces only (`fonts` below), which is what the shell draws with.
 #[test]
 fn at_one_hundred_the_whole_dock_draws_the_bytes_it_drew_before() {
     const BEFORE: [(Edge, u64); 2] = [(Edge::Bottom, BOTTOM_BEFORE), (Edge::Left, LEFT_BEFORE)];
@@ -157,9 +159,9 @@ fn at_one_hundred_the_whole_dock_draws_the_bytes_it_drew_before() {
 }
 
 /// The hash of the bottom Dock before this change. See the test above.
-const BOTTOM_BEFORE: u64 = 0x38ca_01f5_5f4b_ddd8;
+const BOTTOM_BEFORE: u64 = 0x4827_adf7_3434_8602;
 /// The hash of the left Dock before this change. See the test above.
-const LEFT_BEFORE: u64 = 0x646f_376c_aa91_5ec5;
+const LEFT_BEFORE: u64 = 0x6225_a4d4_ebf9_1906;
 
 /// Whether `dense` is `sparse` doubled, allowing one pixel along the bar.
 ///
