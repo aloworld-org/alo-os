@@ -525,3 +525,36 @@ fn a_decline_the_daemon_kept_is_not_read_as_no_answer() {
         "a daemon that said nothing was read as an answer"
     );
 }
+
+/// **A change that ran and cannot be undone is told apart from one that can**
+/// (ADR 0045's third term, 2026-10-28). Read as an ordinary `did`, a surface
+/// would tell the person *done* about a change they cannot take back. The
+/// control is the ordinary answer, which is still read as an ordinary one.
+#[test]
+fn a_change_that_cannot_be_undone_is_not_read_as_one_that_can() {
+    use alo_changing::{Answered, Answering, Done};
+    let folder = a_folder_of_our_own("cannot-be-undone");
+    let renamed = || Done::Renamed { now_at: None };
+
+    let socket = folder.join("not-kept.sock");
+    let daemon = a_daemon_answering_once(
+        &socket,
+        Some(ToAPerson::did_and_cannot_be_undone(renamed())),
+    );
+    let answered = TheDaemonsDoor::at(&socket).approve(7);
+    let asked = daemon.join().unwrap();
+    assert_eq!(
+        answered,
+        Some(Answered::ItCannotBeUndone(Box::new(renamed())))
+    );
+    assert!(
+        FromAPerson::read(asked.trim_end()).unwrap() == FromAPerson::Approve { number: 7 },
+        "the door asked something other than an approval of 7: {asked}"
+    );
+
+    let kept = folder.join("kept.sock");
+    let daemon = a_daemon_answering_once(&kept, Some(ToAPerson::did(renamed())));
+    let answered = TheDaemonsDoor::at(&kept).approve(7);
+    daemon.join().unwrap();
+    assert_eq!(answered, Some(Answered::It(Box::new(renamed()))));
+}

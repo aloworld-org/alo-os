@@ -640,6 +640,7 @@ chosen. A list without the field reads as `false`.
 {"did":{"archived":{"at":"/home/anna/Archive/2026.zip","things":12,"left_out":1,"bytes":40960}}}
 {"did":{"installed":{"application":"org.gnome.TextEditor","sandboxed":true}}}
 {"did":{"reached":{"act":"focus","application":"org.gnome.Geary"}}}
+{"did-and-cannot-be-undone":{"renamed":{"now_at":"/home/anna/Invoices/march-final.pdf"}}}
 {"proposed":{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300}}
 {"answered":{"text":"Three are unpaid.","came_from":{"text":"by Mistral, in the EU","came_from":"translation"},"model":"mistral-small-latest"}}
 {"waiting":{"changes":[{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300}]}}
@@ -653,6 +654,19 @@ and what a change did once the person approved it. **Every answer that was
 bounded says it was bounded** — a listing and a search carry `cut_short`, an
 archive carries `left_out` — because a bounded answer that does not say so reads
 exactly like a complete one.
+
+`did-and-cannot-be-undone` was added **additively on 2026-10-28**. It carries
+exactly what `did` carries, and is sent on the **person's door only**, in place
+of `did`, when a change the person approved ran and **nothing was kept from
+before it** — the snapshot could not be taken, the session has no home, or the
+change came from a paired machine's turn, which takes none.
+[ADR 0045](../decisions/0045-what-undoing-rewinds-to.md)'s third term is that
+such a change still runs *and says it is not undoable*; until this answer it ran
+and said `did`, which reads exactly like a change that can be undone. It is
+**never a refusal**: the change happened. An agent is never sent it — only a
+person approves a change — and the agent's door refuses it as an answer that is
+not an agent's. A client written before it reads it as an answer it has never
+heard of, and must not read it as `did`, for the reason under *Versioning*.
 
 `installed` was added **additively on 2026-10-13**, with the second family of
 verbs this machine can carry out. Until then `did` was `alo_files::Answer`'s six

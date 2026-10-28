@@ -57,6 +57,10 @@ use crate::workspaces::FoundWorkspace;
 pub(crate) enum Told {
     /// What a read found, or what an approved change did.
     Did(Done),
+    /// What an approved change did, when nothing was kept from before it to
+    /// undo it with (ADR 0045's third term: the change still runs, *and says it
+    /// is not undoable*). Added 2026-10-28, additively.
+    DidAndCannotBeUndone(Done),
     /// A change is waiting under this number, with the sentence it waits on.
     Proposed(Standing),
     /// A model answered.

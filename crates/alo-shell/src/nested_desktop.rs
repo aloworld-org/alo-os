@@ -35,7 +35,7 @@ use crate::{
 /// picture, so a terminal a chord had opened was taking keys and never reaching
 /// a frame — while `direct_desktop` drew it from the same helper. (*Drew* was
 /// wrong: it built the picture and never handed it to the painter, which stayed
-/// true until 2026-10-27 — see [`DesktopPictures::layers`].) The effect was
+/// true until 2026-10-27 — see `DesktopPictures::layers` below.) The effect was
 /// that **no gate could ever see alo's own terminal**, because the only backend
 /// a build machine can run is this one, and the four promises the terminal keeps
 /// were checkable on real hardware and nowhere else.

@@ -56,6 +56,15 @@ use crate::workspaces::FoundWorkspace;
 pub enum ToAPerson {
     /// What the change they approved did.
     Did(Done),
+    /// What the change they approved did, **and that it cannot be undone**:
+    /// nothing was kept from before it, so `alo-back` has nothing to return
+    /// to.
+    ///
+    /// ADR 0045's third term is that a machine which could not keep a copy
+    /// still runs the turn, *and says it is not undoable*. Until 2026-10-28 it
+    /// ran and said only [`Self::Did`], which reads exactly like a change that
+    /// can be undone. Added that day, additively.
+    DidAndCannotBeUndone(Done),
     /// Everything they have been asked and have not answered.
     Waiting {
         /// In the order they were proposed, which is the order they are read
@@ -358,6 +367,23 @@ impl ToAPerson {
         Self::Did(done)
     }
 
+    /// What the change they approved did, when nothing was kept from before it
+    /// to undo it with.
+    ///
+    /// Takes the [`Done`] for [`Self::did`]'s reason. Which of the two to send
+    /// is the caller's question — whether a place to return to was kept — and
+    /// this crate cannot ask it.
+    #[must_use]
+    pub fn did_and_cannot_be_undone(done: Done) -> Self {
+        Self::DidAndCannotBeUndone(done)
+    }
+
+    /// Whether this is a change that ran and cannot be undone.
+    #[must_use]
+    pub const fn cannot_be_undone(&self) -> bool {
+        matches!(self, Self::DidAndCannotBeUndone(_))
+    }
+
     /// Everything waiting for them, in the order it was proposed.
     ///
     /// Takes what `alo_capability::Approvals::waiting_at` and
@@ -466,6 +492,7 @@ impl ToAPerson {
     pub fn read(line: &str) -> Result<Self, NotUnderstood> {
         match frame::reply(line)? {
             Told::Did(done) => Ok(Self::Did(done)),
+            Told::DidAndCannotBeUndone(done) => Ok(Self::DidAndCannotBeUndone(done)),
             Told::Waiting { changes } => Ok(Self::Waiting { changes }),
             Told::APlaceToReturnTo { kept, why_not } => {
                 Ok(Self::APlaceToReturnTo { kept, why_not })
@@ -516,11 +543,12 @@ impl ToAPerson {
         frame::spoken(self.clone().into())
     }
 
-    /// What the machine did, when it did something.
+    /// What the machine did, when it did something — whether or not it can be
+    /// undone.
     #[must_use]
     pub fn done(&self) -> Option<&Done> {
         match self {
-            Self::Did(done) => Some(done),
+            Self::Did(done) | Self::DidAndCannotBeUndone(done) => Some(done),
             _ => None,
         }
     }
@@ -557,6 +585,7 @@ impl From<ToAPerson> for Told {
     fn from(told: ToAPerson) -> Self {
         match told {
             ToAPerson::Did(done) => Self::Did(done),
+            ToAPerson::DidAndCannotBeUndone(done) => Self::DidAndCannotBeUndone(done),
             ToAPerson::Waiting { changes } => Self::Waiting { changes },
             ToAPerson::APlaceToReturnTo { kept, why_not } => {
                 Self::APlaceToReturnTo { kept, why_not }
@@ -937,6 +966,14 @@ mod tests {
 )]
 #[path = "a_persons_own_question_tests.rs"]
 mod a_persons_own_question;
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+#[path = "a_change_that_cannot_be_undone_tests.rs"]
+mod a_change_that_cannot_be_undone;
 
 /// **What leaves crosses the person's door whole, and never reaches an agent**
 /// (ADR 0134).

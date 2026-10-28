@@ -3,7 +3,8 @@
 //! ADR 0001 §5: *any change to the machine is proposed with a sentence
 //! describing it and waits for one approval. What a person approves is that
 //! sentence.* This is the other half of that sentence — what came back once
-//! they answered — and it is deliberately only two cases.
+//! they answered: it ran, it ran and cannot be undone, it was refused, or the
+//! person said no.
 //!
 //! # It decides nothing and words nothing
 //!
@@ -33,6 +34,13 @@ use alo_protocol::Done;
 pub enum Answered {
     /// It was carried out, and this is what it did.
     It(Box<Done>),
+    /// It was carried out and this is what it did, **and it cannot be undone**:
+    /// the machine could not keep a copy of the person's files from before it.
+    ///
+    /// A case of its own since 2026-10-28, for `Declined`'s reason: read as
+    /// [`Self::It`], a surface would tell a person *done* about a change they
+    /// would later find they cannot take back (ADR 0045's third term).
+    ItCannotBeUndone(Box<Done>),
     /// It was not, and this is the daemon's own reason, in the language the
     /// person reads.
     Refused {
@@ -50,11 +58,12 @@ pub enum Answered {
 }
 
 impl Answered {
-    /// What the change did, when it was carried out.
+    /// What the change did, when it was carried out — whether or not it can be
+    /// undone.
     #[must_use]
     pub fn did(&self) -> Option<&Done> {
         match self {
-            Self::It(done) => Some(done),
+            Self::It(done) | Self::ItCannotBeUndone(done) => Some(done),
             Self::Refused { .. } | Self::Declined => None,
         }
     }
@@ -63,15 +72,21 @@ impl Answered {
     #[must_use]
     pub fn told(&self) -> Option<&str> {
         match self {
-            Self::It(_) | Self::Declined => None,
+            Self::It(_) | Self::ItCannotBeUndone(_) | Self::Declined => None,
             Self::Refused { told } => Some(told),
         }
     }
 
-    /// Whether the change was carried out.
+    /// Whether the change was carried out, whether or not it can be undone.
     #[must_use]
     pub const fn was_done(&self) -> bool {
-        matches!(self, Self::It(_))
+        matches!(self, Self::It(_) | Self::ItCannotBeUndone(_))
+    }
+
+    /// Whether the change was carried out and cannot be undone.
+    #[must_use]
+    pub const fn cannot_be_undone(&self) -> bool {
+        matches!(self, Self::ItCannotBeUndone(_))
     }
 }
 
@@ -99,6 +114,21 @@ mod tests {
         assert!(!refused().was_done());
         assert_eq!(refused().did(), None);
         assert_eq!(refused().told(), Some("that number is not waiting for you"));
+    }
+
+    /// **A change that cannot be undone was still done**, and is never read as
+    /// one that can be.
+    #[test]
+    fn a_change_that_cannot_be_undone_was_done_and_says_so() {
+        let kept = Answered::It(Box::new(Done::Renamed { now_at: None }));
+        let not_kept = Answered::ItCannotBeUndone(Box::new(Done::Renamed { now_at: None }));
+        assert!(not_kept.was_done());
+        assert_eq!(not_kept.did(), kept.did());
+        assert_eq!(not_kept.told(), None);
+        assert!(not_kept.cannot_be_undone());
+        assert!(!kept.cannot_be_undone());
+        assert!(!refused().cannot_be_undone());
+        assert!(!Answered::Declined.cannot_be_undone());
     }
 
     /// **The refusal is carried unchanged.** A surface shows the daemon's own

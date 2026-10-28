@@ -318,7 +318,9 @@ fn answered_to(
                 // Nothing is answered and nothing can fail the approval: ADR
                 // 0045's third term is that a machine too full to snapshot still
                 // runs the turn, and `crate::the_bracket_this_turn_takes` makes
-                // that structural rather than remembered.
+                // that structural rather than remembered. What the bracket kept
+                // decides only which of two answers the person reads:
+                // `the_change_did`.
                 let said = turning
                     .proposed(waiting)
                     .map(|change| change.proposal.sentence(strings).into_text());
@@ -326,7 +328,10 @@ fn answered_to(
                     bracket.before_a_change(&said);
                 }
                 match turning.approving(waiting, grants, now) {
-                    Ok(answer) => ToAPerson::did(as_a_client_sees_it(&answer, now)),
+                    Ok(answer) => the_change_did(
+                        as_a_client_sees_it(&answer, now),
+                        bracket.taken_at().is_some(),
+                    ),
                     Err(why) => ToAPerson::refused(&why.said(strings)),
                 }
             }
@@ -339,6 +344,27 @@ fn answered_to(
             },
             None => nothing_is_waiting(number, strings),
         },
+    }
+}
+
+/// What a person is told a change they approved did, given whether a place to
+/// return to was kept before it.
+///
+/// ADR 0045's third term: a machine that could not keep one still runs the
+/// change, *and says it is not undoable*. Until 2026-10-28 it said only *done*,
+/// which reads exactly like a change `alo-back` can take back.
+///
+/// **Whether one was kept, not whether something went wrong.** A session with no
+/// home has no reason to give (`TheTurnsBracket::why_not` is [`None`]) and kept
+/// nothing all the same — the contract answers it the way it answers a snapshot
+/// that failed, because what the person needs to know is identical. A bracket
+/// taken by an earlier approval in the same turn covers this change too, which
+/// is why the question is asked of the turn and not of this one call.
+fn the_change_did(done: alo_protocol::Done, kept: bool) -> ToAPerson {
+    if kept {
+        ToAPerson::did(done)
+    } else {
+        ToAPerson::did_and_cannot_be_undone(done)
     }
 }
 
@@ -407,13 +433,24 @@ mod tests {
         grants: &mut Grants,
         strings: &Strings,
     ) -> ToAPerson {
+        said_in_a_turn_bracketed(line, turning, grants, strings, &mut no_bracket())
+    }
+
+    /// The same, in a turn holding this bracket.
+    fn said_in_a_turn_bracketed(
+        line: &str,
+        turning: &mut Turning<'_, '_>,
+        grants: &mut Grants,
+        strings: &Strings,
+        bracket: &mut crate::the_bracket_this_turn_takes::TheTurnsBracket,
+    ) -> ToAPerson {
         let network = TheNetwork::on(the_studio());
         what_a_person_said(
             line,
             &mut Holding::ATurn {
                 turning,
                 questions: &mut nothing_has_been_chosen(),
-                bracket: &mut no_bracket(),
+                bracket,
             },
             &mut WhatIsGranted::of(grants, &NothingIsRemembered),
             &Nearby {
@@ -499,6 +536,81 @@ mod tests {
             assert!(said.done().is_some(), "{said:?}");
             assert!(!invoice.is_file(), "the file did not move on the disk");
         });
+    }
+
+    /// **A change whose bracket could not be taken still runs, and says it
+    /// cannot be undone** (ADR 0045's third term). A temporary folder is not a
+    /// subvolume, so the snapshot is attempted and refused, exactly as on the
+    /// booted machine of 2026-10-28 whose home was not one.
+    #[test]
+    fn a_change_nothing_was_kept_for_runs_and_says_it_cannot_be_undone() {
+        on_a_machine("not-kept", |turning, grants, strings, _, invoice| {
+            let under = tempfile::tempdir().unwrap();
+            let home = tempfile::tempdir().unwrap();
+            let goes = crate::the_bracket_this_turn_takes::WhereBracketsGo::of_a_session(
+                under.path(),
+                1000,
+                Some(home.path().as_os_str()),
+            )
+            .unwrap();
+            let mut bracket = crate::the_bracket_this_turn_takes::TheTurnsBracket::none_yet(
+                Some(goes),
+                SystemTime::UNIX_EPOCH,
+                0,
+                0,
+            );
+            let number = a_change_waiting(turning, grants, strings, invoice);
+
+            let said = said_in_a_turn_bracketed(
+                &a_message(&format!(r#"{{"approve":{{"number":{number}}}}}"#)),
+                turning,
+                grants,
+                strings,
+                &mut bracket,
+            );
+
+            assert!(bracket.why_not().is_some(), "the bracket was taken here");
+            assert!(said.cannot_be_undone(), "{said:?}");
+            assert!(said.done().is_some(), "{said:?}");
+            assert!(!invoice.is_file(), "the change did not run");
+        });
+    }
+
+    /// **A session with no home kept nothing either, and says so** — though it
+    /// has no reason to give, which is why the answer is asked of what was
+    /// kept and not of what went wrong.
+    #[test]
+    fn a_change_in_a_session_with_no_home_says_it_cannot_be_undone() {
+        on_a_machine("no-home", |turning, grants, strings, _, invoice| {
+            let mut bracket = no_bracket();
+            let number = a_change_waiting(turning, grants, strings, invoice);
+
+            let said = said_in_a_turn_bracketed(
+                &a_message(&format!(r#"{{"approve":{{"number":{number}}}}}"#)),
+                turning,
+                grants,
+                strings,
+                &mut bracket,
+            );
+
+            assert!(bracket.why_not().is_none());
+            assert!(said.cannot_be_undone(), "{said:?}");
+            assert!(!invoice.is_file(), "the change did not run");
+        });
+    }
+
+    /// **Where a place was kept, the person is told plain *done*.** A real
+    /// snapshot needs a `btrfs` filesystem and root, which this suite does not
+    /// have, so the choice between the two answers is held here by itself.
+    #[test]
+    fn a_change_a_place_was_kept_for_is_told_plain_done() {
+        let done = || alo_protocol::Done::Renamed { now_at: None };
+        let kept = the_change_did(done(), true);
+        assert_eq!(kept, ToAPerson::did(done()));
+        assert!(!kept.cannot_be_undone());
+
+        let not_kept = the_change_did(done(), false);
+        assert_eq!(not_kept, ToAPerson::did_and_cannot_be_undone(done()));
     }
 
     /// **One approval is one execution.** The second answer finds nothing
