@@ -18,6 +18,15 @@ thiserror = { workspace = true }
 # acceptance for this task, held by the dependency list as well as by the
 # constructors.
 alo-egress = { path = "../alo-egress" }
+# **The second thing it reads, since 2026-10-27, and only through one door**
+# (ADR 0134): what `alo-agentd`'s own indicator shows, told on the person's
+# socket. `crate::watching` is the only constructor of what it is told, and it
+# connects to nothing else. Without it a question sent to a provider left the
+# machine with this indicator dark.
+alo-protocol = { path = "../alo-protocol" }
+# Who is on the other end of that socket, asked of the kernel (`SO_PEERCRED`),
+# and who owns the directory it is in.
+rustix = { workspace = true }
 
 [dev-dependencies]
 # The two crates it takes to make a real departure: whose egress it is, and

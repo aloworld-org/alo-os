@@ -165,6 +165,13 @@ pub enum ToAPerson {
         /// Which model was asked, as it was named when the question was put.
         model: String,
     },
+    /// What this service's indicator shows now, oldest first (ADR 0134): the
+    /// answer to [`FromAPerson::WatchWhatLeaves`](crate::FromAPerson), and every
+    /// message after it on that connection. **The whole list every time.**
+    Leaving {
+        /// One line per thing leaving.
+        lines: Vec<alo_egress::Reported>,
+    },
 }
 
 impl ToAPerson {
@@ -427,6 +434,23 @@ impl ToAPerson {
         }
     }
 
+    /// What an indicator shows, as the desktop is told it.
+    #[must_use]
+    pub fn leaving(showing: &[alo_egress::Shown]) -> Self {
+        Self::Leaving {
+            lines: showing.iter().map(alo_egress::Reported::of).collect(),
+        }
+    }
+
+    /// The lines told, when this is what leaves.
+    #[must_use]
+    pub fn lines_leaving(&self) -> Option<&[alo_egress::Reported]> {
+        match self {
+            Self::Leaving { lines } => Some(lines),
+            _ => None,
+        }
+    }
+
     /// It did not happen, in the words of whoever refused it.
     #[must_use]
     pub fn refused(said: &Said) -> Self {
@@ -477,6 +501,7 @@ impl ToAPerson {
                 came_from,
                 model,
             }),
+            Told::Leaving { lines } => Ok(Self::Leaving { lines }),
             Told::Proposed(_) => Err(NotUnderstood::NotAnAnswerForAPerson),
         }
     }
@@ -567,6 +592,7 @@ impl From<ToAPerson> for Told {
                 came_from,
                 model,
             },
+            ToAPerson::Leaving { lines } => Self::Leaving { lines },
         }
     }
 }

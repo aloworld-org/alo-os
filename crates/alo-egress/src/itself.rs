@@ -87,13 +87,21 @@ impl OnItsOwn {
     /// happening, and calling it cannot change what it is.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
-        strings.say(
-            &self.errand.word().key(),
-            &self
-                .destination
-                .fills("destination", Filling::nothing(), strings),
-        )
+        said_of_an_errand(self.errand, &self.destination, strings)
     }
+}
+
+/// **The one sentence for an errand of alo OS's own**, for this machine's
+/// line and for a [`crate::Reported`] one alike.
+pub(crate) fn said_of_an_errand(
+    errand: Errand,
+    destination: &Destination,
+    strings: &Strings,
+) -> Said {
+    strings.say(
+        &errand.word().key(),
+        &destination.fills("destination", Filling::nothing(), strings),
+    )
 }
 
 #[cfg(test)]

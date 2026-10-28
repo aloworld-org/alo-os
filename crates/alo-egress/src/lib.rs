@@ -123,7 +123,9 @@ pub mod itself;
 pub mod leaving;
 pub mod policy;
 pub mod refusing;
+pub mod reported;
 pub mod showing;
+pub mod telling;
 pub mod underway;
 pub mod words;
 
@@ -138,6 +140,8 @@ pub use itself::OnItsOwn;
 pub use leaving::{Leaving, Why};
 pub use policy::EgressPolicy;
 pub use refusing::{NotPermitted, Refusal};
+pub use reported::Reported;
 pub use showing::Showing;
+pub use telling::Telling;
 pub use underway::Underway;
 pub use words::{Word, WordsError, declare_into, egress_words};

@@ -334,6 +334,16 @@ mod running {
         /// so it can leave it alone when nothing has changed, which is what
         /// stops every frame rewriting the same row.
         indicating: alo_indicator::Indicating,
+        /// **What `alo-agentd`'s indicator shows**, as it last told this
+        /// desktop — or that it has not (ADR 0134). The service opens the
+        /// connection to a provider, so a question sent to one is on *its*
+        /// indicator; until 2026-10-27 nothing carried that here and the
+        /// status area stayed dark while it left. Not told is drawn as
+        /// *cannot tell*, never as nothing.
+        daemon: alo_indicator::FromTheDaemon,
+        /// Where the listening thread hands over what it was told. Drained on
+        /// every frame, and never waited on.
+        told: std::sync::mpsc::Receiver<alo_indicator::FromTheDaemon>,
         /// Shut, because nothing on a machine opens it yet.
         running: RunningWindow,
         /// The same.
@@ -409,7 +419,21 @@ mod running {
             // frame.
             let indicator = alo_egress::Indicator::default();
             let mut indicating = alo_indicator::Indicating::nowhere();
-            indicating.show(Some(&mut egress), &indicator);
+            // **And what the service sends, on its own thread** (ADR 0134):
+            // `alo_indicator::watching` asks the person's own door and hands
+            // each list over the channel. A thread that could not start leaves
+            // the channel empty, which draws as *cannot tell* for the session.
+            let (tell, told) = std::sync::mpsc::channel();
+            let door = alo_changing::this_persons_door();
+            let person = alo_remembering::this_person();
+            if let Err(why) = std::thread::Builder::new()
+                .name("what-leaves".to_owned())
+                .spawn(move || alo_indicator::watching::kept_listening(door, person, &tell))
+            {
+                eprintln!("alo-desktop: nothing can listen for what alo-agentd sends: {why}");
+            }
+            let daemon = alo_indicator::FromTheDaemon::NotYetHeard;
+            indicating.show_both(Some(&mut egress), &indicator, &daemon);
             // Where the canvas layout lives, if this person has a folder to
             // keep one in. Read from the environment rather than assumed: the
             // same two variables `alo-choosing` is given everywhere else.
@@ -491,6 +515,8 @@ mod running {
                 egress,
                 indicator,
                 indicating,
+                daemon,
+                told,
                 running: RunningWindow::closed(),
                 filling: FillingWindow::closed(),
                 status: readings,
@@ -1009,8 +1035,13 @@ mod running {
             // up to `HOW_OFTEN` later. `Indicating::show` leaves the compositor
             // alone when nothing has changed, so the frames where nothing is
             // leaving cost one comparison.
+            // What the service told since the last frame — the newest wins,
+            // because each is the whole list.
+            while let Ok(told) = self.told.try_recv() {
+                self.daemon = told;
+            }
             self.indicating
-                .show(Some(&mut self.egress), &self.indicator);
+                .show_both(Some(&mut self.egress), &self.indicator, &self.daemon);
             if self.read_at.elapsed() < HOW_OFTEN {
                 return;
             }

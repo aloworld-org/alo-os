@@ -247,7 +247,14 @@ pub fn until_stopped(
     bounding: &mut dyn Bounding,
     kept: &mut dyn Shortening,
 ) -> Result<Served, NotStarted> {
-    let mut indicator = Indicator::default();
+    // **The desktops this indicator is told to**, inside the call that changes
+    // it (ADR 0134). Until 2026-10-27 nothing carried this indicator anywhere,
+    // so a question sent to a provider left the machine with nothing on the
+    // screen. A desktop asks `watch-what-leaves` on the person's door and is
+    // given over to this list; with nobody watching, the departure still
+    // happens and the record still writes it down (the owner's default).
+    let watchers = crate::watchers::Watchers::none_yet();
+    let mut indicator = Indicator::default().told_to(Box::new(watchers.clone()));
     // **The verbs this machine can carry out, which is the list an agent is
     // offered.** Seven: `alo-files`' six, and `alo-software`'s one.
     //
@@ -325,14 +332,9 @@ pub fn until_stopped(
         // `main` read back, and every one given on the person's door since.
         naming: network.names(),
     };
-    Ok(
-        Serving::of(knocking, waking, wire, &network, terms).until_stopped(
-            &mut machine,
-            granted,
-            &mut questions,
-            &mut surface,
-        )?,
-    )
+    Ok(Serving::of(knocking, waking, wire, &network, terms)
+        .telling(&watchers)
+        .until_stopped(&mut machine, granted, &mut questions, &mut surface)?)
 }
 
 /// The machine every turn on this daemon happens against.

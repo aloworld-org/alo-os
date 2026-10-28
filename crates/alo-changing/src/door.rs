@@ -161,7 +161,8 @@ impl TheDaemonsDoor {
             | ToAPerson::Workspaces { .. }
             | ToAPerson::WorkspaceOpened(_)
             | ToAPerson::Advertised(_)
-            | ToAPerson::Answered { .. } => None,
+            | ToAPerson::Answered { .. }
+            | ToAPerson::Leaving { .. } => None,
         }
     }
 }

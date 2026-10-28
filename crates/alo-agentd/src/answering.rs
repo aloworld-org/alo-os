@@ -300,7 +300,10 @@ fn answered_to(
         | FromAPerson::TheirOwnQuestion { .. }
         // A place to return to is answered before this, for the same reason
         // the knock is: it is the person's own and not the turn's.
-        | FromAPerson::APlaceToReturnTo => {
+        | FromAPerson::APlaceToReturnTo
+        // Watching what leaves is answered by the serving loop, which gives
+        // the connection over to it (`crate::watchers`).
+        | FromAPerson::WatchWhatLeaves => {
             ToAPerson::refused(&rereading::what_to_say(strings))
         }
         FromAPerson::Approve { number } => match under(turning, number, now) {

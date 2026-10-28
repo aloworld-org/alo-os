@@ -120,11 +120,7 @@ impl Leaving {
     /// The string this crate declares for this line.
     #[must_use]
     pub fn word(&self) -> words::Word {
-        match self.why {
-            Why::Asking => words::IS_ASKING,
-            Why::Fetching => words::IS_FETCHING,
-            Why::Sending => words::IS_SENDING,
-        }
+        word_for(self.why)
     }
 
     /// The line a person reads at the moment it happens.
@@ -151,15 +147,36 @@ impl Leaving {
     /// decided about, and calling it cannot change what was decided.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
-        strings.say(
-            &self.word().key(),
-            &self.destination.fills(
-                "destination",
-                Filling::of("agent", self.agent.as_str().to_owned()),
-                strings,
-            ),
-        )
+        said_of_an_agents(&self.agent, self.why, &self.destination, strings)
     }
+}
+
+/// The word for why an agent's egress is leaving.
+pub(crate) const fn word_for(why: Why) -> words::Word {
+    match why {
+        Why::Asking => words::IS_ASKING,
+        Why::Fetching => words::IS_FETCHING,
+        Why::Sending => words::IS_SENDING,
+    }
+}
+
+/// **The one sentence for an agent's line**, whether the line is this
+/// machine's own [`Leaving`] or a [`crate::Reported`] another process was
+/// told about, so the two cannot drift into two wordings of one departure.
+pub(crate) fn said_of_an_agents(
+    agent: &Grantee,
+    why: Why,
+    destination: &Destination,
+    strings: &Strings,
+) -> Said {
+    strings.say(
+        &word_for(why).key(),
+        &destination.fills(
+            "destination",
+            Filling::of("agent", agent.as_str().to_owned()),
+            strings,
+        ),
+    )
 }
 
 #[cfg(test)]

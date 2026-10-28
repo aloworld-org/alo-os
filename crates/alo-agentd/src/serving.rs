@@ -140,7 +140,7 @@ use std::time::{Duration, SystemTime};
 use alo_context::Context;
 use alo_corridor::Doorway;
 use alo_nearby::{Origin, Seen, Surface};
-use alo_protocol::{NotUnderstood, ToAPerson, ToAnAgent};
+use alo_protocol::{FromAPerson, NotUnderstood, ToAPerson, ToAnAgent};
 use alo_strings::{Filling, Strings};
 use alo_turn::{Machine, Shortened, Turning};
 
@@ -164,7 +164,9 @@ use crate::surface::NobodyToShowItTo;
 use crate::terms::Terms;
 use crate::unix::ready_and;
 use crate::wire::Wire;
-use crate::words::{A_TURN_IS_UNDER_WAY, SOMEBODY_IS_ALREADY_ANSWERING};
+use crate::words::{
+    A_TURN_IS_UNDER_WAY, NOBODY_IS_TOLD_WHAT_LEAVES, SOMEBODY_IS_ALREADY_ANSWERING,
+};
 
 /// What the service did before it stopped.
 ///
@@ -272,6 +274,11 @@ pub struct Serving<'a> {
     network: &'a TheNetwork,
     /// What this machine was told about itself.
     terms: Terms<'a>,
+    /// The desktops told what this service's indicator shows, when this
+    /// service tells anybody (ADR 0134). [`None`] in a service started without
+    /// one, which answers `watch-what-leaves` in words rather than with a list
+    /// that would read as *nothing is leaving*.
+    watchers: Option<&'a crate::watchers::Watchers>,
 }
 
 /// What a round of work found, once everything ready has been dealt with.
@@ -319,7 +326,16 @@ impl<'a> Serving<'a> {
             wire,
             network,
             terms,
+            watchers: None,
         }
+    }
+
+    /// This service, telling these desktops what its indicator shows. They are
+    /// the ones the indicator was built [`told_to`](alo_egress::Indicator::told_to).
+    #[must_use]
+    pub const fn telling(mut self, watchers: &'a crate::watchers::Watchers) -> Self {
+        self.watchers = Some(watchers);
+        self
     }
 
     /// Serve until somebody asks the service to stop.
@@ -642,14 +658,38 @@ impl<'a> Serving<'a> {
                 looking: self.wire,
                 advertising: &advertising,
             };
+            // **A desktop asking to watch what leaves** is answered with the
+            // list as it stands, and its connection is then given over to the
+            // watchers rather than held as the person's door — so Settings can
+            // still knock (ADR 0134).
+            let mut given_over = false;
+            let watchers = self.watchers;
             let answered = held.person.as_mut().map(|line| {
                 one_message(
                     line,
-                    |said| match what_a_person_said(said, holding, granted, &nearby, strings, now) {
-                        Ok(told) => told.written().ok(),
-                        Err(_) => {
-                            nothing_written_down = true;
-                            None
+                    |said| {
+                        if matches!(FromAPerson::read(said), Ok(FromAPerson::WatchWhatLeaves)) {
+                            return match watchers {
+                                Some(watchers) => {
+                                    given_over = true;
+                                    watchers.as_it_stands().written().ok()
+                                }
+                                None => {
+                                    ToAPerson::refused(&strings.say(
+                                        &NOBODY_IS_TOLD_WHAT_LEAVES.key(),
+                                        &Filling::nothing(),
+                                    ))
+                                    .written()
+                                    .ok()
+                                }
+                            };
+                        }
+                        match what_a_person_said(said, holding, granted, &nearby, strings, now) {
+                            Ok(told) => told.written().ok(),
+                            Err(_) => {
+                                nothing_written_down = true;
+                                None
+                            }
                         }
                     },
                     |why| ToAPerson::refused(&why.said(strings)).written().ok(),
@@ -660,6 +700,12 @@ impl<'a> Serving<'a> {
             }
             if answered == Some(Message::Ended) {
                 held.person = None;
+            }
+            if given_over
+                && answered == Some(Message::Answered)
+                && let (Some(line), Some(watchers)) = (held.person.take(), self.watchers)
+            {
+                watchers.watching(line.given_over());
             }
             if answered == Some(Message::Answered) {
                 served.messages = served.messages.saturating_add(1);

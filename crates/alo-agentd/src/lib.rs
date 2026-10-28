@@ -337,6 +337,8 @@ mod two_machines_with_no_ipv4_find_each_other_again;
 pub mod unhosted;
 pub mod unix;
 #[cfg(target_os = "linux")]
+pub mod watchers;
+#[cfg(target_os = "linux")]
 mod what_a_client_is_told_a_verb_did;
 pub mod what_is_advertised;
 #[cfg(target_os = "linux")]
@@ -435,6 +437,8 @@ pub use terms::{NoNameYet, Terms};
 pub use the_road_out::{NotTaken, TheRoadOut};
 #[cfg(target_os = "linux")]
 pub use unhosted::Unhosted;
+#[cfg(target_os = "linux")]
+pub use watchers::Watchers;
 #[cfg(target_os = "linux")]
 pub use what_is_advertised::Advertising;
 #[cfg(target_os = "linux")]
