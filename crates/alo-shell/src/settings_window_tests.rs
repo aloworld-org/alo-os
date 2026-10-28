@@ -884,8 +884,10 @@ fn a_grant_and_a_pairing_are_revoked_the_same_way() {
             .iter()
             // The row that gives alo a folder stays whatever is revoked: it is
             // the way in, not a thing the person has, and it is exactly when
-            // the list is empty that they most need it.
-            .filter(|row| !matches!(row, SettingsRow::GrantAFolder))
+            // the list is empty that they most need it. The row that opens the
+            // record stays for the same reason: what alo did under a grant is
+            // still in the record after the grant is gone.
+            .filter(|row| !matches!(row, SettingsRow::GrantAFolder | SettingsRow::SeeWhatAloDid))
             .all(|row| row.section() != SettingsSection::Granted),
         "a revoked row is still drawn"
     );
