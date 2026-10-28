@@ -743,7 +743,7 @@ fn a_reader_finds_close_on_each_task_window_and_presses_it() {
         );
         assert_eq!(
             reader.actions(at).expect("Close answers what it does"),
-            [close.clone()],
+            std::slice::from_ref(&close),
             "{window}: Close does not say it can be pressed"
         );
         closes.push(at.clone());

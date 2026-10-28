@@ -78,17 +78,33 @@ fn finished(server: &mut Server, which: WhichTask) {
         .alo_says(Turn::from_alo("Your invoices are tidy."));
 }
 
-/// Each window a reader is told is open, with the names under it and what
-/// pressing each of those does.
-fn heard(server: &Server) -> Vec<(String, Vec<(String, Option<Pressed>)>)> {
+/// One window as a reader is told about it: its name, and each control under
+/// it with what pressing that does.
+type AWindowHeard = (String, Vec<(String, Option<Pressed>)>);
+
+/// Each window a reader is told is open, with the controls under it.
+fn heard(server: &Server) -> Vec<AWindowHeard> {
     let strings = words();
     let tree =
         server.read_aloud_with_the_frames_open(&strings, &[Surface::Desktop], &TurnedOn::nothing());
+    // The desktop's list, found by its own name: other surfaces are lists
+    // too, and the first list in the tree is not this one.
+    let named = Surface::Desktop
+        .read_aloud()
+        .into_iter()
+        .find(|control| control.role == alo_access::Role::List)
+        .map(|control| {
+            strings
+                .say(&control.name.key(), &alo_strings::Filling::nothing())
+                .text()
+                .to_owned()
+        })
+        .expect("the desktop is read as a list of the windows open");
     let list = tree
         .nodes()
         .iter()
-        .find(|node| node.role == crate::access_roles::number_of(alo_access::Role::List))
-        .expect("the desktop is read as a list of the windows open");
+        .find(|node| node.name == named)
+        .expect("the tree carries the list of the windows open");
     list.children
         .iter()
         .filter_map(|at| tree.nodes().get(*at))
