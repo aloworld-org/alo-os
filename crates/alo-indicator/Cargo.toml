@@ -29,6 +29,9 @@ alo-protocol = { path = "../alo-protocol" }
 rustix = { workspace = true }
 
 [dev-dependencies]
+# A directory of the test's own for a stand-in service's socket, so the
+# checks `crate::watching` makes on the real one are exercised on a real one.
+tempfile = "3"
 # The two crates it takes to make a real departure: whose egress it is, and
 # where a question would be answered. Dev-only, because this crate never makes
 # one — it draws the ones a machine already permitted.
