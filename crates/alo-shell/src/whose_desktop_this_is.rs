@@ -31,5 +31,9 @@ impl crate::Server {
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected Err is the failure being reported"
+)]
 #[path = "whose_desktop_this_is_tests.rs"]
 mod tests;

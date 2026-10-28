@@ -464,7 +464,7 @@ mod tests {
     /// asked, and nobody is told they do not exist.
     #[test]
     fn accounts_that_will_not_read_are_the_machines_failure_and_not_a_persons() {
-        let mut opening = Opening::at(the_door(), Unreadable, Willing::default(), Giving);
+        let mut opening = Opening::at(the_door(), Unreadable, Willing::default(), Giving, Naming);
 
         let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
 
