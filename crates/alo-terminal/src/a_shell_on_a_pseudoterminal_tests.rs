@@ -560,3 +560,60 @@ fn a_shell_with_no_snippet_says_nothing_about_the_prompt() {
         "a shell that printed three ordinary lines said something about the prompt"
     );
 }
+
+/// The folder a running process is standing in, as the kernel says.
+fn the_folder_it_is_in(process: u32) -> std::path::PathBuf {
+    std::fs::read_link(format!("/proc/{process}/cwd")).expect("the kernel says where it is")
+}
+
+/// **The person's shell starts in their home**, asked of the kernel rather
+/// than of anything this crate keeps.
+///
+/// Found on a booted machine on 2026-10-28: `pwd` printed `/`, so a person
+/// typing `ls Documents` was told there was no such folder. The control is the
+/// test below — a shell that always started in `/` fails this one, and a shell
+/// that always started in the home it was given would fail that one.
+#[test]
+fn the_persons_shell_starts_in_their_home() {
+    let home = tempfile::tempdir().expect("a folder to be a home");
+    let shell = AShellOnAPseudoterminal::the_persons_own(
+        HowBig::of(80, 24, 100).expect("a terminal"),
+        Some(home.path().as_os_str()),
+    )
+    .expect("the person's own shell on a pseudoterminal");
+
+    assert_eq!(
+        shell.where_it_started(),
+        &crate::WhereItStarts::TheirHome(home.path().to_path_buf())
+    );
+    assert_eq!(
+        the_folder_it_is_in(shell.the_shell_itself()),
+        home.path()
+            .canonicalize()
+            .expect("the home is a real folder"),
+        "the shell is not standing in the home it was given"
+    );
+}
+
+/// **A home that does not exist still gets a shell**, at the top of the disk,
+/// and the shell says why rather than leaving the person there without a word.
+#[test]
+fn a_home_that_does_not_exist_starts_the_shell_at_the_top_of_the_disk() {
+    let somewhere = tempfile::tempdir().expect("a folder to be missing from");
+    let missing = somewhere.path().join("nobody-made-this");
+    let shell = AShellOnAPseudoterminal::the_persons_own(
+        HowBig::of(80, 24, 100).expect("a terminal"),
+        Some(missing.as_os_str()),
+    )
+    .expect("a missing home does not stop the shell starting");
+
+    assert_eq!(
+        shell.where_it_started(),
+        &crate::WhereItStarts::NotTheirHome(crate::WhyNotHome::NotAFolder(missing))
+    );
+    assert_eq!(
+        the_folder_it_is_in(shell.the_shell_itself()),
+        std::path::PathBuf::from("/"),
+        "with no home to start in, the shell is not at the top of the disk"
+    );
+}

@@ -172,6 +172,7 @@ fn a_command_on_a_terminal_is_waiting_for_the_keyboard() {
 fn the_command_in_front_is_not_the_shell_running_it() {
     let mut shell = crate::AShellOnAPseudoterminal::the_persons_own(
         crate::HowBig::of(80, 24, 100).expect("a grid"),
+        None,
     )
     .expect("the person's own shell on a pseudoterminal");
     let itself = shell.the_shell_itself();
@@ -215,6 +216,7 @@ fn the_command_in_front_is_not_the_shell_running_it() {
 fn with_nothing_running_the_shell_itself_is_in_front() {
     let shell = crate::AShellOnAPseudoterminal::the_persons_own(
         crate::HowBig::of(80, 24, 100).expect("a grid"),
+        None,
     )
     .expect("the person's own shell on a pseudoterminal");
     let itself = shell.the_shell_itself();

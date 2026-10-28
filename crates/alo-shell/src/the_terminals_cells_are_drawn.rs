@@ -1183,18 +1183,12 @@ pub(crate) fn picture(
     let metrics = the_designs_metrics(scale);
     let cell = how_big_a_cell_is(fonts, metrics)?;
 
-    let (ground, ink) = match scheme {
-        Scheme::Light => (
-            alo_appearance::Token::Cream.colour(),
-            alo_appearance::Token::Navy.colour(),
-        ),
-        Scheme::Dark => (
-            alo_appearance::Token::Charcoal.colour(),
-            alo_appearance::Token::Cream.colour(),
-        ),
-    };
-    let ground = [ground.red(), ground.green(), ground.blue()];
-    let ink = [ink.red(), ink.green(), ink.blue()];
+    // **The panel's colours, not the canvas's.** The light ground was
+    // `Token::Cream` until 2026-10-28, which is `bg/canvas` — the colour of the
+    // desktop behind the window — so the window could not be seen.
+    // `crate::the_terminals_frame` holds what the design names instead.
+    let colours = crate::the_terminals_frame::TheTerminalsColours::of(scheme);
+    let (ground, ink) = (colours.ground, colours.ink);
     // **The note is `text/muted`**, which the design asks for by name and which
     // `alo-appearance` already holds at the design file's own `#596B78`. Read
     // from the role rather than written here, so the one place that decides
@@ -1588,19 +1582,15 @@ pub(crate) fn picture(
         }
     }
 
-    // The window's ground, then the transcript's. Two solids rather than one,
-    // because the identity strip and the note between them are a later change
-    // and will need the window's ground behind them.
-    let mut solids = vec![
-        Solid {
-            area: window,
-            colour: ground,
-        },
-        Solid {
-            area: transcript,
-            colour: ground,
-        },
-    ];
+    // **The window's body first** — its hairline and the panel inside it — then
+    // the transcript's ground on the panel. The transcript is on the panel's
+    // own white in the design's render, so the second solid is the same colour
+    // as the panel and is kept because each run's ground is laid on it.
+    let mut solids = crate::the_terminals_frame::the_body(window, scale, colours);
+    solids.push(Solid {
+        area: transcript,
+        colour: ground,
+    });
     let mut cells: Vec<Inked> = placed;
     // **Each run's own ground goes under the cells**, after the transcript's
     // and before the characters.

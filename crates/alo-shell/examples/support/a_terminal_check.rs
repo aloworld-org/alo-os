@@ -39,10 +39,11 @@
 //!   with the cursor block beside it — [ADR 0113]'s gutter, drawn;
 //! - **`bash · UTF-8`** along the foot — the shell's own name and the encoding,
 //!   which is what step 2 of the boot walk tells a walker to look for;
-//! - **no panel and no border.** The terminal draws on the desktop's own ground,
-//!   so the only pixels that differ from a desktop without it are the ones
-//!   carrying ink. That is why this file measures the *extent* of the difference
-//!   and not its area.
+//! - **no panel and no border** on that day. The terminal drew on the desktop's
+//!   own ground, so the only pixels that differed were ink. Since 2026-10-28 it
+//!   has a white panel and a hairline, and `is_the_windows_own` takes those out
+//!   of every count of ink. This file still measures the *extent* of the
+//!   difference and not its area.
 //!
 //! # And then a person used it
 //!
@@ -133,6 +134,10 @@ fn painted(pixels: &[u8]) -> usize {
 /// the screen, far too little for a terminal window and entirely consistent with
 /// a glyph cache warming up between two draws. A rectangle can be argued with —
 /// a terminal is a region, so its difference has to be one.
+///
+/// **Counted over ink, not over every changed pixel**: since 2026-10-28 the
+/// terminal's white panel differs from the desktop over the whole window, and a
+/// rectangle drawn round the panel would pass with not one character on it.
 fn where_they_differ(
     with: &[u8],
     without: &[u8],
@@ -146,7 +151,7 @@ fn where_they_differ(
     let (with, _) = with.as_chunks::<4>();
     let (without, _) = without.as_chunks::<4>();
     for (at, (a, b)) in with.iter().zip(without).enumerate() {
-        if a != b {
+        if is_ink(a, b) {
             let (x, y) = (at % width, at / width);
             left = left.min(x);
             top = top.min(y);
@@ -202,6 +207,32 @@ fn a_notch(server: &mut Server, back: Back, time: u32) -> Result<bool, Box<dyn s
     Ok(server.pointer_axis(frame)?)
 }
 
+/// Whether a pixel is one of the terminal window's own flat colours: its
+/// panel or the hairline round it.
+///
+/// **Ink is what differs from the bare desktop and is not the window itself.**
+/// Until 2026-10-28 the terminal had no panel, so every pixel that differed was
+/// ink. It has a white panel and a hairline now, which differ from the desktop
+/// over the whole window and would make every count below a constant.
+///
+/// The kept frame stores B, G, R and a zero (`crate::readback`), and this
+/// fixture's desktop is the shipped appearance at 09:41, which is light.
+fn is_the_windows_own(pixel: &[u8; 4]) -> bool {
+    let [blue, green, red, _] = *pixel;
+    [
+        alo_appearance::Role::BgSurface.colour(),
+        alo_appearance::Role::BorderDefault.colour(),
+    ]
+    .iter()
+    .any(|it| [blue, green, red] == [it.blue(), it.green(), it.red()])
+}
+
+/// Whether a pixel of a frame is the terminal's ink: not the bare desktop's, and
+/// not the window's own panel or hairline.
+fn is_ink(here: &[u8; 4], there: &[u8; 4]) -> bool {
+    here != there && !is_the_windows_own(here)
+}
+
 /// How much ink a frame has inside one band of rows.
 ///
 /// **The band is measured, never written down.** It comes from where the answer
@@ -215,7 +246,7 @@ fn ink_in_band(frame: &[u8], bare: &[u8], top: usize, bottom: usize) -> usize {
     (top..=bottom)
         .flat_map(|y| (0..wide).map(move |x| y * wide + x))
         .filter(|at| match (frame.get(*at), bare.get(*at)) {
-            (Some(here), Some(there)) => here != there,
+            (Some(here), Some(there)) => is_ink(here, there),
             _ => false,
         })
         .count()
@@ -235,9 +266,10 @@ fn rows_with_ink(frame: &[u8], bare: &[u8]) -> usize {
     let mut lit = false;
     for y in 0..HOW_BIG.1 as usize {
         let any = (0..wide).any(|x| {
-            frame
-                .get(y * wide + x)
-                .is_some_and(|here| bare.get(y * wide + x).is_some_and(|there| here != there))
+            frame.get(y * wide + x).is_some_and(|here| {
+                bare.get(y * wide + x)
+                    .is_some_and(|there| is_ink(here, there))
+            })
         });
         if any && !lit {
             rows += 1;
@@ -252,7 +284,7 @@ fn rows_with_ink(frame: &[u8], bare: &[u8]) -> usize {
 fn painted_ink(frame: &[u8], bare: &[u8]) -> usize {
     let (frame, _) = frame.as_chunks::<4>();
     let (bare, _) = bare.as_chunks::<4>();
-    frame.iter().zip(bare).filter(|(a, b)| a != b).count()
+    frame.iter().zip(bare).filter(|(a, b)| is_ink(a, b)).count()
 }
 
 /// `echo hello`, as Linux evdev numbers the keys.
@@ -659,8 +691,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     // The first version of this check asked for a region at least a tenth of the
     // screen wide and failed at 106 pixels — and it was the check that was
     // wrong, found by writing the frame out and looking at it. alo's own
-    // terminal draws **on the desktop's own ground**: no panel, no border, no
-    // fill of its own, so the only pixels that differ are the ones carrying ink.
+    // terminal drew **on the desktop's own ground** then: no panel, no border, no
+    // fill of its own. It has a panel since 2026-10-28, which would span the
+    // height by itself, so `is_ink` leaves the panel out and this still measures
+    // only the pixels carrying ink.
     // On a terminal whose shell has not written a prompt yet that is two short
     // runs of text — the gutter word at the top and `bash · UTF-8` at the foot —
     // which is 829 pixels and perfectly correct.

@@ -70,7 +70,7 @@ fn type_it(terminal: &mut TheTerminal, text: &str) {
 #[test]
 fn a_terminal_runs_a_shell_and_answers_what_was_typed() {
     let mut terminal =
-        TheTerminal::opened(A_SENSIBLE_FIRST_GRID).expect("this machine can open a terminal");
+        TheTerminal::opened(A_SENSIBLE_FIRST_GRID, None).expect("this machine can open a terminal");
 
     type_it(&mut terminal, "echo through-the-whole-chain");
     terminal.a_person_typed_a_key(WhatWasTyped::Named(ANamedKey::Enter), Held::default());
@@ -95,7 +95,7 @@ fn a_terminal_runs_a_shell_and_answers_what_was_typed() {
 #[test]
 fn without_enter_the_shell_does_not_act() {
     let mut terminal =
-        TheTerminal::opened(A_SENSIBLE_FIRST_GRID).expect("this machine can open a terminal");
+        TheTerminal::opened(A_SENSIBLE_FIRST_GRID, None).expect("this machine can open a terminal");
 
     type_it(&mut terminal, "echo not-submitted-yet");
 
@@ -120,7 +120,7 @@ fn without_enter_the_shell_does_not_act() {
 #[test]
 fn control_c_interrupts_what_is_running() {
     let mut terminal =
-        TheTerminal::opened(A_SENSIBLE_FIRST_GRID).expect("this machine can open a terminal");
+        TheTerminal::opened(A_SENSIBLE_FIRST_GRID, None).expect("this machine can open a terminal");
 
     type_it(&mut terminal, "sleep 30");
     terminal.a_person_typed_a_key(WhatWasTyped::Named(ANamedKey::Enter), Held::default());
@@ -158,7 +158,7 @@ fn control_c_interrupts_what_is_running() {
 #[test]
 fn a_terminal_whose_shell_has_gone_takes_nothing() {
     let mut terminal =
-        TheTerminal::opened(A_SENSIBLE_FIRST_GRID).expect("this machine can open a terminal");
+        TheTerminal::opened(A_SENSIBLE_FIRST_GRID, None).expect("this machine can open a terminal");
 
     type_it(&mut terminal, "exit");
     terminal.a_person_typed_a_key(WhatWasTyped::Named(ANamedKey::Enter), Held::default());
@@ -188,7 +188,7 @@ fn a_terminal_whose_shell_has_gone_takes_nothing() {
 #[test]
 fn a_key_with_nothing_to_send_is_not_sent() {
     let mut terminal =
-        TheTerminal::opened(A_SENSIBLE_FIRST_GRID).expect("this machine can open a terminal");
+        TheTerminal::opened(A_SENSIBLE_FIRST_GRID, None).expect("this machine can open a terminal");
     assert!(
         !terminal.a_person_typed_a_key(
             WhatWasTyped::Named(ANamedKey::Function(99)),
@@ -207,7 +207,7 @@ fn a_key_with_nothing_to_send_is_not_sent() {
 #[test]
 fn the_shell_is_told_the_starting_grid() {
     let mut terminal =
-        TheTerminal::opened(A_SENSIBLE_FIRST_GRID).expect("this machine can open a terminal");
+        TheTerminal::opened(A_SENSIBLE_FIRST_GRID, None).expect("this machine can open a terminal");
 
     type_it(&mut terminal, "stty size");
     terminal.a_person_typed_a_key(WhatWasTyped::Named(ANamedKey::Enter), Held::default());

@@ -419,6 +419,10 @@ mod the_terminal_a_person_opened;
 /// scale; the window's size is a share of the display, because the design's
 /// 1040x800 is what it was drawn at and not what a window is.
 mod the_terminals_cells_are_drawn;
+/// The terminal window's own body: the panel its transcript sits on and the
+/// hairline round it, in the design's colours, so the terminal reads as a window
+/// rather than as text on the desktop.
+mod the_terminals_frame;
 mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
 mod their_displays;

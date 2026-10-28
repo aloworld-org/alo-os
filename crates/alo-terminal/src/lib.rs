@@ -59,6 +59,8 @@ pub mod what_alo_said;
 pub mod what_is_blocking_it;
 pub mod what_the_kernel_says;
 pub mod what_the_shell_says_about_the_prompt;
+#[cfg(target_os = "linux")]
+mod where_a_shell_starts;
 pub mod where_the_integration_stands;
 pub mod who_is_speaking;
 pub mod why_a_command_is_waiting;
@@ -89,6 +91,8 @@ pub use the_connection_it_is_waiting_on::{
 pub use what_a_command_will_do::{WhatACommandWillDo, WorthSeeing};
 pub use what_alo_said::{AloSLine, AloSRemark, WhatAloSaid};
 pub use what_is_blocking_it::{WhatIsBlockingIt, what_is_blocking};
+#[cfg(target_os = "linux")]
+pub use where_a_shell_starts::{WhereItStarts, WhyNotHome};
 pub use who_is_speaking::{ARegion, WhoIsSpeaking, regions_of};
 pub use why_a_command_is_waiting::{
     TheEvidence, WhatItReadsFrom, WhyItIsWaiting, why_it_is_waiting,
