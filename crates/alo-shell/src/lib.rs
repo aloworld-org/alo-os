@@ -727,7 +727,7 @@ pub use scene_replacement::SceneReplacement;
 pub use scene_scanout::ActiveScene;
 pub use screens::{ScreenPlace, Screens, TheRoom};
 pub use the_markets_words::TheMarketsWords;
-pub use their_formats::{TheDay, TheirFormats};
+pub use their_formats::{TheDay, TheirFormats, WhereTheRegionCameFrom};
 
 // **The types a desktop needs to answer `their_displays`, re-exported so that
 // answering costs it no new crate edge** — `more-than-one-display-plan.md`

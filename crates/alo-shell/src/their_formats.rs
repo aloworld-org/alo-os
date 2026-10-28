@@ -7,14 +7,24 @@
 //! lock screen's clock once a running machine draws one. One answer, so the
 //! clock and the record cannot disagree about what time it was.
 //!
-//! # Where nothing is chosen
+//! # The words and the region
 //!
-//! **The formats follow the language the person reads**, with CLDR's own
-//! default region for it — `de` is written as Germany writes it, `pt` as
-//! Portugal does, `en` as CLDR writes English with no region named. That is
-//! `docs/features.md`'s *regional formats and timezones per language*, read to
-//! its end. Where the person has named no language either, it is the language
-//! the machine is showing them, which is its source, English.
+//! **The words are always the language the person reads now**; where they
+//! have named none, the machine's source language, English.
+//!
+//! **The region is the first of these that answers** — the owner's decision of
+//! 2026-10-28, *the region the machine is in*, and never the United States for
+//! every English reader who is somewhere else:
+//!
+//! 1. the region the person chose in Settings (`formats.toml`);
+//! 2. the region picked on the machine's first-start sheet
+//!    (`alo_formats::set_up_in`);
+//! 3. the country of the time zone the machine keeps, where it keeps one that
+//!    is a place (`alo_formats::where_the_machine_is::the_region_of_the_zone`);
+//! 4. and only then CLDR's own default for the language — `de` as Germany
+//!    writes it, `en` as CLDR writes English with no region named.
+//!
+//! [`TheirFormats::the_region`] says which of the four answered.
 //!
 //! It is never *English as written in Great Britain for everybody*, which is
 //! what the status area's clock was until 2026-10-28: a figure typed into one
@@ -29,7 +39,8 @@
 
 use std::time::SystemTime;
 
-use alo_formats::{Chosen, Regionally, THE_SOURCE_LANGUAGE, Timezone, words};
+use alo_formats::where_the_machine_is::the_region_of_the_zone;
+use alo_formats::{Chosen, RegionCode, Regionally, THE_SOURCE_LANGUAGE, Timezone, words};
 use alo_strings::{Filling, Strings};
 use jiff::Timestamp;
 use jiff::civil::Date;
@@ -46,13 +57,31 @@ pub struct TheirFormats {
     zone: TimeZone,
     /// The zone they named, where the database did not have it.
     zone_not_found: Option<Timezone>,
+    /// The region the machine was set up in, on its first-start sheet.
+    set_up_in: Option<RegionCode>,
+}
+
+/// **Which of the four answered** the question of a person's region, in the
+/// order [`TheirFormats::the_region`] asks them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WhereTheRegionCameFrom {
+    /// The person chose it in Settings.
+    TheyChoseIt,
+    /// It was picked on the machine's first-start sheet.
+    TheMachineWasSetUpThere,
+    /// The machine's time zone is in it.
+    TheTimeZoneIsThere,
+    /// Nothing named one, so the language's own way is used, with no region.
+    NothingNamedOne,
 }
 
 impl PartialEq for TheirFormats {
     /// Two are the same when what was chosen and read is: the zone is worked
     /// out from those and from the machine.
     fn eq(&self, other: &Self) -> bool {
-        self.chosen == other.chosen && self.reading == other.reading
+        self.chosen == other.chosen
+            && self.reading == other.reading
+            && self.set_up_in == other.set_up_in
     }
 }
 
@@ -72,13 +101,22 @@ impl TheirFormats {
             reading: reading.map(str::to_owned),
             zone,
             zone_not_found,
+            set_up_in: None,
         }
+    }
+
+    /// The same person, on a machine set up in `region` on its first-start
+    /// sheet — or on one where nobody answered that, for [`None`].
+    #[must_use]
+    pub fn where_the_machine_was_set_up(mut self, region: Option<RegionCode>) -> Self {
+        self.set_up_in = region;
+        self
     }
 
     /// The same person, after they chose something else.
     #[must_use]
     pub fn with(&self, chosen: Chosen) -> Self {
-        Self::of(chosen, self.reading.as_deref())
+        Self::of(chosen, self.reading.as_deref()).where_the_machine_was_set_up(self.set_up_in.clone())
     }
 
     /// The same person in a zone given rather than looked up — for a test, or
@@ -120,10 +158,32 @@ impl TheirFormats {
     pub fn regionally(&self) -> Regionally {
         let reading =
             Regionally::reading(self.reading()).unwrap_or_else(|_| Regionally::the_source());
-        match self.chosen.region() {
-            Some(region) => reading.clone().in_region(region).unwrap_or(reading),
+        match self.the_region().0 {
+            Some(region) => reading.clone().in_region(&region).unwrap_or(reading),
             None => reading,
         }
+    }
+
+    /// **The region their dates and times are written like, and which of the
+    /// four in this file's header answered.**
+    #[must_use]
+    pub fn the_region(&self) -> (Option<String>, WhereTheRegionCameFrom) {
+        if let Some(chosen) = self.chosen.region() {
+            return (Some(chosen.to_owned()), WhereTheRegionCameFrom::TheyChoseIt);
+        }
+        if let Some(set_up) = &self.set_up_in {
+            return (
+                Some(set_up.code().to_owned()),
+                WhereTheRegionCameFrom::TheMachineWasSetUpThere,
+            );
+        }
+        if let Some(zone) = self.zone.iana_name().and_then(the_region_of_the_zone) {
+            return (
+                Some(zone.code().to_owned()),
+                WhereTheRegionCameFrom::TheTimeZoneIsThere,
+            );
+        }
+        (None, WhereTheRegionCameFrom::NothingNamedOne)
     }
 
     /// The day `at` falls on, where they are.
@@ -214,18 +274,66 @@ mod tests {
         chosen
     }
 
-    /// **Nothing chosen follows the language**, with CLDR's own region for it
-    /// — not one region for everybody.
+    fn in_universal_time(chosen: Chosen, reading: Option<&str>) -> TheirFormats {
+        TheirFormats::of(chosen, reading).in_zone(TimeZone::UTC)
+    }
+
+    fn code(region: &str) -> Option<RegionCode> {
+        RegionCode::named(region).ok()
+    }
+
+    /// **The region is the first of the four that answers**, in the order the
+    /// owner decided on 2026-10-28: what the person chose, where the machine
+    /// was set up, the country of its time zone, and only then the language's
+    /// own default.
     #[test]
-    fn nothing_chosen_follows_the_language_read() {
-        let german = brussels(Chosen::default(), Some("de"));
-        assert_eq!(german.regionally(), Regionally::reading("de").unwrap());
-        let nobody_said = brussels(Chosen::default(), None);
-        assert_eq!(nobody_said.regionally(), Regionally::reading("en").unwrap());
+    fn the_region_is_the_first_of_the_four_that_answers() {
+        // Nothing at all: the language's own way, with no region.
+        let nothing = in_universal_time(Chosen::default(), Some("en"));
+        assert_eq!(
+            nothing.the_region(),
+            (None, WhereTheRegionCameFrom::NothingNamedOne)
+        );
+        assert_eq!(nothing.regionally(), Regionally::reading("en").unwrap());
+        // A zone that is a place: its country.
+        let in_brussels = brussels(Chosen::default(), Some("en"));
+        assert_eq!(
+            in_brussels.the_region(),
+            (
+                Some("BE".to_owned()),
+                WhereTheRegionCameFrom::TheTimeZoneIsThere
+            )
+        );
+        // The first-start sheet, over the zone.
+        let set_up = in_brussels.where_the_machine_was_set_up(code("IE"));
+        assert_eq!(
+            set_up.the_region(),
+            (
+                Some("IE".to_owned()),
+                WhereTheRegionCameFrom::TheMachineWasSetUpThere
+            )
+        );
+        // The person's own choice, over everything.
+        let chosen = set_up.with(in_region("DE"));
+        assert_eq!(
+            chosen.the_region(),
+            (Some("DE".to_owned()), WhereTheRegionCameFrom::TheyChoseIt)
+        );
+    }
+
+    /// **An English reader in Ireland is not written to as an American**: the
+    /// machine set up in Ireland writes Ireland's twenty-four-hour clock even
+    /// though its zone is universal time and English's own default is the
+    /// United States.
+    #[test]
+    fn an_english_reader_where_the_machine_is_set_up_is_not_written_to_as_an_american() {
+        let irish = in_universal_time(Chosen::default(), Some("en"))
+            .where_the_machine_was_set_up(code("IE"));
+        assert_eq!(irish.time_of(half_past_five()).as_deref(), Some("16:38"));
+        let nobody_knows = in_universal_time(Chosen::default(), Some("en"));
         assert_ne!(
-            nobody_said.regionally(),
-            Regionally::reading("en").unwrap().in_region("GB").unwrap(),
-            "the machine still writes Great Britain's way for everybody"
+            nobody_knows.time_of(half_past_five()),
+            irish.time_of(half_past_five())
         );
     }
 

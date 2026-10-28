@@ -48,9 +48,10 @@ pub mod region_code;
 pub mod region_names;
 pub mod regionally;
 pub mod regions;
-pub mod the_machines_language;
+pub mod set_up_in;
 pub mod timezone;
 mod unkept;
+pub mod where_the_machine_is;
 pub mod words;
 
 pub use cannot_reach::{Missing, what_cldr_has_that_this_cannot_reach};

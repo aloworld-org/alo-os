@@ -166,7 +166,7 @@ fn the_language_is_now<K: Knocking>(
     use crate::the_language_a_person_chose::AboutTheLanguage;
     match language.chose(
         screen.the_language_chosen(),
-        std::path::Path::new(alo_formats::the_machines_language::THE_MACHINES_LANGUAGE),
+        std::path::Path::new(alo_formats::set_up_in::THE_MACHINES_SET_UP_IN),
     ) {
         AboutTheLanguage::Unchanged => {}
         AboutTheLanguage::Kept(tag) => eprintln!(

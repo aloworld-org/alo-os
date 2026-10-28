@@ -1,6 +1,6 @@
 //! **How dates and times are written**, as a section of Settings: one row that
-//! gives the decision to the person's language, then every region, named in
-//! that language and in its order.
+//! gives the decision to where the computer is, then every region, named in
+//! the person's language and in its order.
 //!
 //! The owner's decision of 2026-10-28, and `docs/features.md`'s *regional
 //! formats and timezones per language* made into something a person can
@@ -92,7 +92,7 @@ impl FormatsSection {
         match choice {
             None => strings
                 .say(
-                    &alo_formats::words::AS_MY_LANGUAGE_WRITES_THEM.key(),
+                    &alo_formats::words::WHERE_THIS_MACHINE_IS.key(),
                     &Filling::nothing(),
                 )
                 .into_text(),
@@ -169,7 +169,7 @@ mod tests {
             section.is_chosen(None),
             "a fresh machine is on its language"
         );
-        assert_eq!(section.called(None, &words()), "As my language writes them");
+        assert_eq!(section.called(None, &words()), "Where this computer is");
         assert_eq!(section.called(Some("DE"), &words()), "Germany");
     }
 

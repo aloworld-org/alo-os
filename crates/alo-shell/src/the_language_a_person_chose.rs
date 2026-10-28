@@ -5,7 +5,7 @@
 //! reading language, not only their keyboard**. The sheet is answered before
 //! there is a person — the account is made on the next sheet — and by a process
 //! that may not open anybody's home, so it is written to
-//! `alo_formats::the_machines_language::THE_MACHINES_LANGUAGE`, and the
+//! `alo_formats::set_up_in::THE_MACHINES_SET_UP_IN`, and the
 //! person's own desktop gives it to them at sign-in
 //! (`crate::the_language_set_up_in`).
 //!
@@ -50,7 +50,7 @@ impl TheLanguageAPersonChose {
 
     /// Keep this choice when it is new.
     ///
-    /// `at` is `THE_MACHINES_LANGUAGE` on a machine and a path a test writes in
+    /// `at` is `THE_MACHINES_SET_UP_IN` on a machine and a path a test writes in
     /// a test. **Unchoosing writes nothing**: the language last kept stays the
     /// machine's until another is chosen, which is the keyboard's rule too —
     /// and a person who goes on without choosing again goes on in it.
@@ -64,7 +64,7 @@ impl TheLanguageAPersonChose {
         let Ok(language) = Language::written(tag) else {
             return AboutTheLanguage::NotKept(format!("{tag} is not a language tag"));
         };
-        if let Err(why) = alo_formats::the_machines_language::keep(at, &language) {
+        if let Err(why) = alo_formats::set_up_in::keep_the_language(at, &language) {
             return AboutTheLanguage::NotKept(format!("{} — {:?}", at.display(), why.why()));
         }
         self.kept = Some(tag.to_owned());
@@ -82,7 +82,7 @@ mod tests {
 
     fn a_file() -> (tempfile::TempDir, std::path::PathBuf) {
         let folder = tempfile::tempdir().unwrap();
-        let at = folder.path().join("language.toml");
+        let at = folder.path().join("set-up-in.toml");
         (folder, at)
     }
 
@@ -106,7 +106,7 @@ mod tests {
             AboutTheLanguage::Kept("de".to_owned())
         );
         assert_eq!(
-            alo_formats::the_machines_language::read(&at).unwrap(),
+            alo_formats::set_up_in::read(&at).unwrap().language(),
             Some(Language::written("de").unwrap())
         );
         assert_eq!(chose.chose(Some("de"), &at), AboutTheLanguage::Unchanged);
@@ -125,7 +125,7 @@ mod tests {
         // anything inside it.
         let not_a_folder = folder.path().join("a file, not a folder");
         std::fs::write(&not_a_folder, "").unwrap();
-        let nowhere = not_a_folder.join("language.toml");
+        let nowhere = not_a_folder.join("set-up-in.toml");
         let mut chose = TheLanguageAPersonChose::nothing_yet();
         assert!(matches!(
             chose.chose(Some("de"), &nowhere),
