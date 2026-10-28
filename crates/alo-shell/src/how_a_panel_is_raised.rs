@@ -25,8 +25,10 @@
 //! marks go through `crate::display_scale::DisplayScale` in
 //! `crate::dock_raster`, so their corner and shadow ask for
 //! [`HowItIsRaised::at`] with the same scale and the whole panel moves together.
+//! **The alo Bar does too**, since the same day, through
+//! `crate::where_the_bar_opens` and `crate::bar_raster`.
 //!
-//! **The Bar and the task window do not yet.** Their geometry is still laid out
+//! **The task window and the market do not yet.** Their geometry is still laid out
 //! in logical measures used straight as pixels, and drawing their corner at a
 //! dense display's scale would round a panel that is not scaled — an 18 radius
 //! drawn as 36 on a band still 76 tall, which is the fault `crate::dock_raster`
@@ -92,8 +94,8 @@ impl HowItIsRaised {
         Raised { how: self, scale }
     }
 
-    /// This look for a panel whose own geometry is not scaled — the Bar and
-    /// the task window, today. See this file's header.
+    /// This look for a panel whose own geometry is not scaled — the task
+    /// window and the market, today. See this file's header.
     pub(crate) const fn unscaled(self) -> Raised {
         Raised {
             how: self,

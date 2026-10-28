@@ -19,6 +19,16 @@
 //! which is it saying that a row is a thing you act on, drawn at the size of
 //! the thing you type into.
 //!
+//! # A measure passes through the display's scale; a proportion does not
+//!
+//! Every measure here is **logical**, and reaches the display through
+//! `crate::display_scale::DisplayScale` — so on a screen drawn at 200 per cent
+//! the field is 112 pixels tall, the same size to the eye as 56 on an ordinary
+//! one, and the Bar no longer looks half the size of the Dock beside it. A
+//! proportion needs no such step: a share of the display's pixels is already
+//! the same share on a dense one. At 100 every conversion is the identity, so
+//! an ordinary screen lays out exactly as it did before the Bar took a scale.
+//!
 //! # The list runs past the bottom, and that is the design
 //!
 //! Four rows are drawn into a panel 390 tall and the fourth begins at 379, so
@@ -28,16 +38,28 @@
 
 use smithay::utils::{Physical, Rectangle, Size};
 
-/// How tall a thing a person points at is, in this surface's own pixels.
+use crate::display_scale::DisplayScale;
+
+/// How tall a thing a person points at is, in logical pixels.
 ///
 /// The field, and every row. Named rather than repeated because the design
 /// draws them as one box at one size, and two numbers would let them drift.
-pub(crate) const A_TARGET_IS_TALL: i32 = 56;
+pub(crate) const A_TARGET_IS_TALL: u32 = 56;
 
 /// The gap between a row and the next, and between the field and the line
 /// under it. 12 at the reference size, and it is a measure rather than a
 /// proportion for the reason the target is.
-pub(crate) const BETWEEN_THINGS: i32 = 12;
+pub(crate) const BETWEEN_THINGS: u32 = 12;
+
+/// How tall the line under the field is, the one that says where the results
+/// came from. 18 at the reference, and a measure for the reason the target is:
+/// it holds a line of words, and words do not shrink with the screen.
+pub(crate) const THE_ORIGIN_LINE_IS_TALL: u32 = 18;
+
+/// How much shorter the heading above the field is than a target less the gap
+/// under it: the design's heading is 40 at the reference, taken from the target
+/// so that one measure moves them all.
+const THE_HEADING_IS_SHORTER: u32 = 4;
 
 /// How much air there is inside the panel, all the way round.
 ///
@@ -67,6 +89,10 @@ pub struct TheBarsPlaces {
     pub first_row: Rectangle<i32, Physical>,
     /// How far down from one row to the next.
     pub row_to_row: i32,
+    /// The scale every measure above went through, so the raster draws the
+    /// corners, the ring and the words at the scale the rows were laid out at
+    /// rather than asking a second time.
+    pub(crate) scale: DisplayScale,
     /// How many rows are wholly on the panel.
     ///
     /// **Whole ones only.** The design draws a fourth row cut off by the
@@ -76,20 +102,26 @@ pub struct TheBarsPlaces {
     pub rows_that_fit: usize,
 }
 
-/// Work out where the Bar goes on a display this size.
+/// Work out where the Bar goes on a display this size, drawn at `scale`.
 ///
 /// [`None`] for a display too small to hold the panel at all — which is a real
 /// answer rather than a clamp: a Bar squeezed onto a screen it does not fit is
 /// a surface a person cannot use, and the caller can say so instead of drawing
 /// one.
-pub(crate) fn where_the_bar_opens(display: Size<i32, Physical>) -> Option<TheBarsPlaces> {
+pub(crate) fn where_the_bar_opens(
+    display: Size<i32, Physical>,
+    scale: DisplayScale,
+) -> Option<TheBarsPlaces> {
+    let target = scale.px(A_TARGET_IS_TALL);
+    let between = scale.px(BETWEEN_THINGS);
+    let origin_is = scale.px(THE_ORIGIN_LINE_IS_TALL);
     let across = (display.w as f32 * THE_PANEL_IS_WIDE).round() as i32;
     let down = (display.h as f32 * THE_PANEL_IS_TALL).round() as i32;
     let inset = (across as f32 * INSIDE_THE_PANEL).round().max(1.0) as i32;
 
     // The panel has to hold its own air twice over, the field, and at least one
     // whole row — anything less is a surface with nothing on it.
-    let least = inset * 2 + A_TARGET_IS_TALL * 2 + BETWEEN_THINGS * 3;
+    let least = inset * 2 + target * 2 + between * 3;
     if across <= inset * 2 || down < least {
         return None;
     }
@@ -108,27 +140,21 @@ pub(crate) fn where_the_bar_opens(display: Size<i32, Physical>) -> Option<TheBar
     // Down the panel: the heading, the field, the line, then the rows. The
     // heading's own height is the design's 40 at the reference, taken as the
     // target's height less the gap so that one measure moves them all.
-    let heading = A_TARGET_IS_TALL - BETWEEN_THINGS - 4;
-    let field_top = top + inset + heading + BETWEEN_THINGS;
-    let field = Rectangle::new(
-        (left + inset, field_top).into(),
-        (inner, A_TARGET_IS_TALL).into(),
-    );
-    let origin_top = field_top + A_TARGET_IS_TALL + BETWEEN_THINGS;
-    let origin = Rectangle::new((left + inset, origin_top).into(), (inner, 18).into());
-    let rows_top = origin_top + 18 + BETWEEN_THINGS;
-    let first_row = Rectangle::new(
-        (left + inset, rows_top).into(),
-        (inner, A_TARGET_IS_TALL).into(),
-    );
+    let heading = scale.px(A_TARGET_IS_TALL - BETWEEN_THINGS - THE_HEADING_IS_SHORTER);
+    let field_top = top + inset + heading + between;
+    let field = Rectangle::new((left + inset, field_top).into(), (inner, target).into());
+    let origin_top = field_top + target + between;
+    let origin = Rectangle::new((left + inset, origin_top).into(), (inner, origin_is).into());
+    let rows_top = origin_top + origin_is + between;
+    let first_row = Rectangle::new((left + inset, rows_top).into(), (inner, target).into());
 
-    let row_to_row = A_TARGET_IS_TALL + BETWEEN_THINGS;
+    let row_to_row = target + between;
     // **Measured to the panel's own edge and not to the air inside it.** The
     // frame draws its third row ending 23 short of the bottom and its fourth
     // cut off, which is the list saying it scrolls — insetting the bottom as
     // well would count two where the design shows three.
     let room = (top + down) - rows_top;
-    let rows_that_fit = usize::try_from(((room + BETWEEN_THINGS) / row_to_row).max(0)).unwrap_or(0);
+    let rows_that_fit = usize::try_from(((room + between) / row_to_row).max(0)).unwrap_or(0);
 
     Some(TheBarsPlaces {
         panel,
@@ -136,6 +162,7 @@ pub(crate) fn where_the_bar_opens(display: Size<i32, Physical>) -> Option<TheBar
         origin,
         first_row,
         row_to_row,
+        scale,
         rows_that_fit,
     })
 }

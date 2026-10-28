@@ -9,6 +9,12 @@
 use smithay::utils::Size;
 
 use super::{A_TARGET_IS_TALL, where_the_bar_opens};
+use crate::display_scale::DisplayScale;
+
+/// A target's height on a one-to-one display.
+fn tall() -> i32 {
+    DisplayScale::ONE.px(A_TARGET_IS_TALL)
+}
 
 /// The size every number in the design document was read at.
 const THE_REFERENCE: (i32, i32) = (1440, 960);
@@ -20,7 +26,8 @@ const THE_REFERENCE: (i32, i32) = (1440, 960);
 /// layout. Tolerances are a pixel or two because a proportion rounds.
 #[test]
 fn at_the_reference_size_it_is_what_the_frame_draws() {
-    let places = where_the_bar_opens(Size::from(THE_REFERENCE)).expect("the reference fits");
+    let places = where_the_bar_opens(Size::from(THE_REFERENCE), DisplayScale::ONE)
+        .expect("the reference fits");
 
     assert_eq!(
         (places.panel.size.w, places.panel.size.h),
@@ -36,7 +43,7 @@ fn at_the_reference_size_it_is_what_the_frame_draws() {
         places.field.size.w, 632,
         "the field is not the panel less its air on both sides"
     );
-    assert_eq!(places.field.size.h, A_TARGET_IS_TALL);
+    assert_eq!(places.field.size.h, tall());
     assert_eq!(
         (places.first_row.size.w, places.first_row.size.h),
         (places.field.size.w, places.field.size.h),
@@ -49,15 +56,16 @@ fn at_the_reference_size_it_is_what_the_frame_draws() {
 /// draws a fourth row cut off, so three fit wholly and the rest scroll.
 #[test]
 fn only_whole_rows_are_counted_as_fitting() {
-    let places = where_the_bar_opens(Size::from(THE_REFERENCE)).expect("the reference fits");
+    let places = where_the_bar_opens(Size::from(THE_REFERENCE), DisplayScale::ONE)
+        .expect("the reference fits");
     let last = places.first_row.loc.y + places.row_to_row * (places.rows_that_fit as i32 - 1);
     assert!(
-        last + A_TARGET_IS_TALL <= places.panel.loc.y + places.panel.size.h,
+        last + tall() <= places.panel.loc.y + places.panel.size.h,
         "the last row counted as fitting runs past the panel, so a person is shown half a row"
     );
     let one_more = last + places.row_to_row;
     assert!(
-        one_more + A_TARGET_IS_TALL > places.panel.loc.y + places.panel.size.h,
+        one_more + tall() > places.panel.loc.y + places.panel.size.h,
         "another whole row would have fitted and was not counted, so the panel has dead space"
     );
 }
@@ -70,8 +78,10 @@ fn only_whole_rows_are_counted_as_fitting() {
 /// hit.
 #[test]
 fn the_panel_scales_and_the_targets_do_not() {
-    let small = where_the_bar_opens(Size::from((1280, 800))).expect("a small laptop fits");
-    let large = where_the_bar_opens(Size::from((3840, 2160))).expect("a 4K panel fits");
+    let small = where_the_bar_opens(Size::from((1280, 800)), DisplayScale::ONE)
+        .expect("a small laptop fits");
+    let large =
+        where_the_bar_opens(Size::from((3840, 2160)), DisplayScale::ONE).expect("a 4K panel fits");
 
     assert!(
         large.panel.size.w > small.panel.size.w * 2,
@@ -81,7 +91,7 @@ fn the_panel_scales_and_the_targets_do_not() {
     );
     assert_eq!(
         (small.field.size.h, large.field.size.h),
-        (A_TARGET_IS_TALL, A_TARGET_IS_TALL),
+        (tall(), tall()),
         "the field's height changed with the screen, so a target is not a target any more"
     );
     assert!(
@@ -101,13 +111,13 @@ fn the_panel_scales_and_the_targets_do_not() {
 #[test]
 fn a_display_too_small_has_no_bar() {
     assert!(
-        where_the_bar_opens(Size::from((320, 200))).is_none(),
+        where_the_bar_opens(Size::from((320, 200)), DisplayScale::ONE).is_none(),
         "a display far too small was given a panel anyway"
     );
     // **The control**: one step up from the refusal still answers, so the
     // refusal above is about the size and not about the function.
     assert!(
-        where_the_bar_opens(Size::from((1024, 600))).is_some(),
+        where_the_bar_opens(Size::from((1024, 600)), DisplayScale::ONE).is_some(),
         "a small but ordinary display was refused, so the rule refuses more than it should"
     );
 }
