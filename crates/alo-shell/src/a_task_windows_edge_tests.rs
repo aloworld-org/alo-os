@@ -48,6 +48,7 @@ fn a_task_window() -> (tempfile::TempDir, Server, WhichTask) {
         view,
         alo_strings::Direction::LeftToRight,
         &[],
+        100,
     );
     (runtime, server, which)
 }

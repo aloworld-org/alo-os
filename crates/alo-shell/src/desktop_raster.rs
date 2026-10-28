@@ -391,6 +391,9 @@ pub(crate) fn picture(
                 &task.said,
                 task.scroll,
                 fonts,
+                // **This display's scale**, the one the Dock is drawn at, so a
+                // task window on a dense screen is the same size to the eye.
+                crate::display_scale::DisplayScale::of_per_cent(display_scale),
             )
             .ok()
             .map(|picture| crate::task_raster::TaskPicture {

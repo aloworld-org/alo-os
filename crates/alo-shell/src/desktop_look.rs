@@ -348,6 +348,16 @@ impl Measure {
         }
     }
 
+    /// These measures on a display drawn at `display`: the person's text size
+    /// and the display's scale, multiplied, so a person who asked for larger
+    /// text on a dense screen gets both. At a display of one this is `self`
+    /// exactly.
+    pub(crate) fn on(self, display: crate::display_scale::DisplayScale) -> Self {
+        Self {
+            percent: self.percent * i32::from(display.per_cent()) / 100,
+        }
+    }
+
     /// `at_one` pixels at the ordinary size, scaled.
     pub(crate) fn px(self, at_one: i32) -> i32 {
         (at_one * self.percent / 100).max(1)

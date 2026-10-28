@@ -15,7 +15,7 @@ use super::{NoTaskPicture, TaskPicture, furniture};
 use crate::desktop_look::DesktopLook;
 
 /// The ordinary look.
-fn a_look() -> DesktopLook {
+pub(super) fn a_look() -> DesktopLook {
     let mut appearance = Appearance::shipped();
     appearance.set_accent(Accent::Indigo);
     DesktopLook::of(
@@ -28,7 +28,7 @@ fn a_look() -> DesktopLook {
 }
 
 /// The two shared files a fixture names.
-fn two_files() -> Vec<String> {
+pub(super) fn two_files() -> Vec<String> {
     vec!["Launch brief.pdf".to_owned(), "Product notes.md".to_owned()]
 }
 
@@ -37,7 +37,7 @@ fn two_files() -> Vec<String> {
 /// **Example content, and the component description says so twice.** None of
 /// it is simulated state: these are the words a caller would have said, handed
 /// in exactly as `the_docks_words` hands the Dock's.
-fn the_words(files: &[String]) -> crate::task_text::TheWordsInATaskWindow<'_> {
+pub(super) fn the_words(files: &[String]) -> crate::task_text::TheWordsInATaskWindow<'_> {
     crate::task_text::TheWordsInATaskWindow {
         title: "Prepare the launch presentation",
         kind: "alo task \u{b7} Work",
@@ -52,7 +52,7 @@ fn the_words(files: &[String]) -> crate::task_text::TheWordsInATaskWindow<'_> {
 }
 
 /// What was said, as the design's frame draws it.
-fn what_was_said() -> Vec<crate::task_text::WhatWasSaid<'static>> {
+pub(super) fn what_was_said() -> Vec<crate::task_text::WhatWasSaid<'static>> {
     vec![
         crate::task_text::WhatWasSaid {
             whose: alo_tasks::WhoseBlock::ThePersons,
@@ -91,6 +91,7 @@ fn as_drawn() -> TaskPicture {
         &said,
         alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("the size the design was drawn at")
 }
@@ -153,6 +154,7 @@ fn the_middle_of_an_empty_window_is_its_surface() {
         &[],
         alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("the design's size");
 
@@ -256,6 +258,7 @@ fn a_chip_is_drawn_per_shared_file_and_none_without() {
             &said,
             alo_tasks::TheScroll::at_the_newest(),
             &mut fonts,
+            crate::display_scale::DisplayScale::ONE,
         )
         .expect("the design's size");
         let (x, y) = in_the_raster(
@@ -290,6 +293,7 @@ fn a_window_too_small_is_refused_rather_than_drawn_wrong() {
         &said,
         alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect_err("a 200 by 100 window was rasterised");
 
@@ -316,6 +320,7 @@ fn chips_stop_at_the_rows_edge_rather_than_running_off_it() {
         &said,
         alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("the design's size");
 
@@ -375,6 +380,7 @@ fn the_words_are_drawn_and_an_empty_window_draws_none() {
         &[],
         alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("the design's size");
     assert!(
@@ -391,6 +397,7 @@ fn the_words_are_drawn_and_an_empty_window_draws_none() {
         &said,
         alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("the design's size");
 
@@ -441,6 +448,7 @@ fn no_word_is_drawn_outside_the_window() {
         &said,
         alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("the design's size");
 
@@ -498,6 +506,7 @@ fn a_persons_words_are_drawn_further_right_than_alos() {
         &said,
         alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("the design's size");
 
@@ -542,6 +551,7 @@ fn with_a_card(
         &said,
         alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("the size the design was drawn at")
 }
@@ -731,6 +741,7 @@ fn a_long_answer_is_cut_to_the_conversations_view() {
         &said,
         alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("the design's size");
     let (top, bottom) = the_conversations_view(at);
@@ -766,6 +777,7 @@ fn scrolled_back_the_start_of_the_conversation_is_drawn() {
         &said,
         alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("the design's size");
     let (the_most, the_view) = at_the_newest.the_conversation;
@@ -781,6 +793,7 @@ fn scrolled_back_the_start_of_the_conversation_is_drawn() {
         &said,
         scroll,
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("the design's size");
     let (top, _) = the_conversations_view(at);
@@ -824,6 +837,7 @@ fn a_long_title_keeps_to_one_line_and_ends_in_an_ellipsis() {
         &[],
         alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("the design's size");
 

@@ -13,6 +13,10 @@ use alo_tasks::layout::{the_least_height, the_least_width};
 use smithay::utils::{Rectangle, Size};
 
 use super::{AS_LARGE_AS_THE_DESIGN_DRAWS_IT, what_size_it_asks_for, where_one_more_goes};
+use crate::display_scale::DisplayScale;
+
+/// One to one, which every test here was written at.
+const ONE: DisplayScale = DisplayScale::ONE;
 
 /// A display with room to spare.
 fn a_large_view() -> Rectangle<i32, smithay::utils::Logical> {
@@ -22,7 +26,7 @@ fn a_large_view() -> Rectangle<i32, smithay::utils::Logical> {
 /// **On a display with room, it asks for the size the design draws.**
 #[test]
 fn it_asks_for_the_designs_own_size_when_there_is_room() {
-    let asked = what_size_it_asks_for(a_large_view().size).expect("room on a 4K display");
+    let asked = what_size_it_asks_for(a_large_view().size, ONE).expect("room on a 4K display");
 
     assert_eq!(
         asked.w,
@@ -38,7 +42,7 @@ fn it_asks_for_the_designs_own_size_when_there_is_room() {
 #[test]
 fn it_is_cut_to_a_display_smaller_than_the_design() {
     let small = Size::from((800, 600));
-    let asked = what_size_it_asks_for(small).expect("800 by 600 is above the floor");
+    let asked = what_size_it_asks_for(small, ONE).expect("800 by 600 is above the floor");
 
     assert_eq!(asked.w, 800, "it is no wider than the display");
     assert_eq!(asked.h, 600, "it is no taller than the display");
@@ -56,7 +60,7 @@ fn it_never_asks_for_less_than_the_layout_will_draw() {
         i32::try_from(the_least_width()).unwrap_or(0),
         i32::try_from(the_least_height()).unwrap_or(0),
     ));
-    let asked = what_size_it_asks_for(least).expect("exactly the floor is allowed");
+    let asked = what_size_it_asks_for(least, ONE).expect("exactly the floor is allowed");
 
     assert_eq!(asked, least);
     assert!(
@@ -74,13 +78,14 @@ fn it_never_asks_for_less_than_the_layout_will_draw() {
 fn a_display_too_small_is_refused_rather_than_given_a_window_it_cannot_draw() {
     let tiny = Size::from((320, 200));
 
-    assert_eq!(what_size_it_asks_for(tiny), None);
+    assert_eq!(what_size_it_asks_for(tiny, ONE), None);
     assert_eq!(
         where_one_more_goes(
             Rectangle::new((0, 0).into(), tiny),
             &[],
             Direction::LeftToRight,
-            &[]
+            &[],
+            ONE
         ),
         None
     );
@@ -91,12 +96,12 @@ fn a_display_too_small_is_refused_rather_than_given_a_window_it_cannot_draw() {
 fn the_first_window_opens_inside_the_view() {
     let view = a_large_view();
 
-    let first =
-        where_one_more_goes(view, &[], Direction::LeftToRight, &[]).expect("room on a 4K display");
+    let first = where_one_more_goes(view, &[], Direction::LeftToRight, &[], ONE)
+        .expect("room on a 4K display");
 
     assert_eq!(
         first.size,
-        what_size_it_asks_for(view.size).expect("a size"),
+        what_size_it_asks_for(view.size, ONE).expect("a size"),
         "it was not given the size it asked for"
     );
     assert!(
@@ -113,9 +118,10 @@ fn the_first_window_opens_inside_the_view() {
 #[test]
 fn a_second_window_does_not_land_on_the_first() {
     let view = a_large_view();
-    let first = where_one_more_goes(view, &[], Direction::LeftToRight, &[]).expect("the first");
+    let first =
+        where_one_more_goes(view, &[], Direction::LeftToRight, &[], ONE).expect("the first");
     let second =
-        where_one_more_goes(view, &[first], Direction::LeftToRight, &[]).expect("the second");
+        where_one_more_goes(view, &[first], Direction::LeftToRight, &[], ONE).expect("the second");
 
     assert_ne!(
         first.loc, second.loc,
@@ -146,7 +152,7 @@ fn ten_openings_leave_ten_windows_a_person_can_still_grab() {
     let mut placed: Vec<Rectangle<i32, smithay::utils::Logical>> = Vec::new();
 
     for which in 0..10 {
-        let next = where_one_more_goes(view, &placed, Direction::LeftToRight, &[])
+        let next = where_one_more_goes(view, &placed, Direction::LeftToRight, &[], ONE)
             .unwrap_or_else(|| panic!("window {which} was not placed"));
 
         let handle = Rectangle::new(
@@ -179,10 +185,11 @@ fn ten_openings_leave_ten_windows_a_person_can_still_grab() {
 #[test]
 fn a_right_to_left_reader_gets_the_mirrored_side() {
     let view = a_large_view();
-    let first = where_one_more_goes(view, &[], Direction::LeftToRight, &[]).expect("the first");
+    let first =
+        where_one_more_goes(view, &[], Direction::LeftToRight, &[], ONE).expect("the first");
 
-    let ltr = where_one_more_goes(view, &[first], Direction::LeftToRight, &[]).expect("ltr");
-    let rtl = where_one_more_goes(view, &[first], Direction::RightToLeft, &[]).expect("rtl");
+    let ltr = where_one_more_goes(view, &[first], Direction::LeftToRight, &[], ONE).expect("ltr");
+    let rtl = where_one_more_goes(view, &[first], Direction::RightToLeft, &[], ONE).expect("rtl");
 
     assert_ne!(
         ltr.loc.x, rtl.loc.x,
@@ -206,8 +213,8 @@ fn a_window_leaves_room_above_it_for_its_edge() {
         Rectangle::new((0, 0).into(), (1920, 1080).into()),
         a_large_view(),
     ] {
-        let at =
-            where_one_more_goes(view, &[], Direction::LeftToRight, &[]).expect("room for a window");
+        let at = where_one_more_goes(view, &[], Direction::LeftToRight, &[], ONE)
+            .expect("room for a window");
         assert!(
             at.loc.y - crate::window_edge::THE_REGION_IS_TALL >= view.loc.y,
             "on {view:?} the window at {at:?} leaves its edge above the view"
