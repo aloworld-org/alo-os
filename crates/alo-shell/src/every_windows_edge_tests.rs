@@ -42,8 +42,10 @@ fn the_direct_backend_builds_an_edge_for_every_window() {
         "a display is handed an empty edge list explicitly, which is a window \
          with no edge written as though it were wiring"
     );
+    // Through `DesktopPictures::layers` since 2026-10-27, which takes the edges
+    // as its one argument, so the binding each display passes is the wiring.
     assert!(
-        text.contains("edges: &edges") && text.contains("edges: its_edges"),
+        text.contains("pictures.layers(&edges)") && text.contains("its_pictures.layers(its_edges)"),
         "both displays take their edges from the list that was built for them"
     );
 }

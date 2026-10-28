@@ -22,7 +22,6 @@ use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 use crate::desktop_raster::{DesktopPicture, filling_shows, running_shows};
 use crate::egress_status_raster::EgressStatusPicture;
 use crate::nested_egress_status::status_picture;
-use crate::scene_native::NativeLayers;
 use crate::{
     ApprovalFrame, DesktopLook, EgressStatus, EgressStatusFrame, FillingPressed, FillingWindow,
     FrameTarget, InputError, Nested, RecordFrame, RenderError, RunningPressed, RunningWindow,
