@@ -686,9 +686,63 @@ mechanism, and `fonts/GeistMono-Medium.ttf` is the static cut that fixes it.
 correct while being wrong at the design's own weight.** That is why this
 document records the weight beside the size rather than only the size.
 
+## The body's panel and hairline, measured 2026-10-28
+
+**Why this was measured.** The boot walk of 2026-10-28 found the terminal's text
+floating on the desktop with no window round it: the body was painted in
+`Token::Cream`, which is `bg/canvas` — the canvas's own colour.
+
+Asked of the live file for the body node itself, `479:29012` *Terminal only /
+01 · Quiet light*, with `get_variable_defs`, and rendered with
+`get_screenshot`:
+
+| | token | value |
+|---|---|---|
+| panel | `bg/surface` | `#ffffff` |
+| hairline | `border/default` | `#e7ebef` |
+| corners | `radius/lg` | 18 |
+| shadow | `Elevation/Floating` | drop shadow `#07131F24`, offset (0, 16), blur 40, spread −4 |
+
+The render is 1112×872 for a 1040×800 node — 36 on each side, which is the
+shadow's reach — and shows the transcript on the panel's own white with no
+ground of its own, and no rule between the identity strip and the transcript.
+
+**Built:** the panel in `bg/surface`, the hairline in `border/default` at
+`A_BORDER` through the display's scale (never less than one pixel), and the
+transcript on the panel's white — `crates/alo-shell/src/the_terminals_frame.rs`.
+
+**Not built, and a gap rather than a look:** the 18 corners and the shadow.
+Both are partial coverage, and the one rasteriser that draws them,
+`dock_surface::a_panel`, is fixed to the Dock's shadow (0 8 24, 8%) and takes
+no display scale. Until it can draw this panel's shadow at this display's
+scale the body is square and flat.
+
+**Two readings disagree, and the second is not settled.** The gutter section
+above measured a `Terminal / Source region` in `485-28999` with the program's
+text on `bg/cool` and the gutter on `bg/surface`; this node's render draws the
+whole transcript on `bg/surface`. `479:28965` is a rendering reference and
+`485:28999` the contract for the gutter, so whether a program's region carries
+a cool ground of its own is **left for the owner**, and white is drawn because
+it is what both readings agree the gutter and the panel are.
+
+**Also not built, each for a reason:**
+
+- **the external window edge** above the body (1040×44, `479:28999`): it is an
+  interactive surface — drag, minimise, maximise, close — and this terminal is
+  not yet a window on the canvas that any of those could act on. Controls that
+  reach nothing would look live.
+- **the identity strip's contents** — `~/Projects/launch`, `Local · disan` and
+  the *search, new session, settings* menu. Whether the path is the folder the
+  shell is in or a Place, and what `Local` stands for, are not written down
+  anywhere; the 56 rows stay reserved and empty.
+- **the dark body**, which has not been read: the dark pair in `500:29477` is
+  owed. The dark ground and ink are the ones drawn before.
+
 ## Colour
 
-**Not in the snapshot, and not yet taken off the file for the terminal.** What
+**Not in the snapshot, and not yet taken off the file for the terminal.**
+*Partly superseded on 2026-10-28: the body's panel and hairline were taken off
+the file, in the section above.* What
 is known is the palette the rest of the shell draws from —
 `palette.toml` and
 [ADR 0093](../decisions/0093-the-palette-is-twelve-semantic-roles-and-the-design-file-decides-their-values.md)

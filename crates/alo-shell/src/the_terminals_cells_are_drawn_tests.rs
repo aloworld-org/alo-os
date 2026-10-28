@@ -197,13 +197,45 @@ fn ink_in_the_gutter(drawn: &TerminalPicture, ground: [u8; 3]) -> usize {
         .count()
 }
 
-/// The ground a scheme is drawn on.
+/// The ground a scheme is drawn on: the window's panel, which the transcript
+/// shares.
 fn ground_of(scheme: Scheme) -> [u8; 3] {
-    let colour = match scheme {
-        Scheme::Light => alo_appearance::Token::Cream.colour(),
-        Scheme::Dark => alo_appearance::Token::Charcoal.colour(),
-    };
-    [colour.red(), colour.green(), colour.blue()]
+    crate::the_terminals_frame::TheTerminalsColours::of(scheme).ground
+}
+
+/// **The window can be seen against the desktop**: its outermost pixels are a
+/// hairline, and the panel inside is not the canvas's colour.
+///
+/// Found on a booted machine on 2026-10-28, where the terminal's text floated
+/// over the wallpaper with no window round it — the panel had been painted in
+/// the canvas's own colour.
+#[test]
+fn the_terminal_is_a_window_that_can_be_told_from_the_desktop() {
+    let drawn = picture(
+        &mut the_shells_own_fonts(),
+        &a_screen_saying("just plain text"),
+        A_DISPLAY,
+        1.0,
+        Scheme::Light,
+    )
+    .expect("a terminal");
+    let (window, _) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window on this display");
+    let canvas = alo_appearance::Role::BgCanvas.colour();
+    let canvas = [canvas.red(), canvas.green(), canvas.blue()];
+
+    let first = drawn.solids.first().expect("the window is drawn");
+    assert_eq!(
+        first.area, window,
+        "the first thing painted is the whole window"
+    );
+    assert_ne!(
+        first.colour, canvas,
+        "the window's edge is the canvas's colour"
+    );
+    assert!(
+        drawn.solids.iter().all(|solid| solid.colour != canvas),
+        "something in the terminal is painted in the canvas's own colour, which reads as a hole"
+    );
 }
 
 /// **A screen's text is really inked**, in both schemes — the assertion the
