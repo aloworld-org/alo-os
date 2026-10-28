@@ -403,6 +403,7 @@ mod the_panel_reveals;
 pub mod the_pickers_words;
 mod the_pointer_in_pixels;
 pub mod the_providers_words;
+pub mod the_reply_boxs_words;
 mod the_session_holds_its_screens;
 /// The task windows a person opened by asking alo for something.
 pub mod the_tasks_a_person_opened;
@@ -432,6 +433,8 @@ mod what_an_answer_did;
 mod what_an_application_act_asks_for;
 #[cfg(test)]
 mod what_an_application_act_asks_for_tests;
+/// What becomes of a reply sent from a task window's reply box.
+mod what_becomes_of_a_reply;
 pub mod what_the_agent_may_reach;
 mod what_the_dock_has_open;
 /// One keypress, read as what a person typed: the compositor's half of the

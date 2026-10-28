@@ -114,7 +114,7 @@ impl ATask {
         let it_stopped = matches!(self.stopping(), crate::Stopping::Stopped { .. });
         let working = self.activity().doing_now().is_some()
             || self.conversation().is_alos_turn()
-            || self.conversation().is_waiting_for_the_person();
+            || self.is_waiting_for_the_person();
         if working && !it_stopped {
             return TheOneButton::Stop;
         }

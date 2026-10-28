@@ -97,6 +97,8 @@ fn in_english() -> alo_strings::Strings {
     let mut vocabulary = alo_strings::Vocabulary::empty();
     crate::the_cards_words::declare_the_cards_words(&mut vocabulary)
         .expect("the card's words declare");
+    crate::the_reply_boxs_words::declare_the_reply_boxs_words(&mut vocabulary)
+        .expect("the reply box's words declare");
     alo_strings::Strings::of(vocabulary)
 }
 
@@ -694,5 +696,116 @@ fn a_turn_that_stopped_without_answering_says_so_and_is_no_longer_working() {
     assert!(
         !server.the_change_waiting.is_asking(),
         "a turn that stopped left a question standing"
+    );
+}
+
+/// What this task's status line says, by key.
+fn the_status(
+    server: &Server,
+    which: crate::the_tasks_a_person_opened::WhichTask,
+) -> alo_strings::Word {
+    server
+        .tasks()
+        .the(which)
+        .expect("the task is open")
+        .what_is_happening()
+}
+
+/// **A reply in a finished task never claims alo is working.** Found walking a
+/// booted machine on 2026-10-28: a person replied in a window that read
+/// *Complete*, pressed Enter, and it read *alo is working* for ever — and no
+/// request had left the machine. The reply stays where they wrote it, the line
+/// beneath says it did not reach alo, and Escape still lets go of the keyboard.
+#[test]
+fn a_reply_in_a_finished_task_is_said_not_to_have_reached_alo() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task_holding_the_keyboard(&mut server);
+    let daemon = ADaemon::default();
+    server.an_answer_came_back(
+        which,
+        "It is in Invoices.".to_owned(),
+        false,
+        None,
+        Some(&daemon),
+        &in_english(),
+    );
+    assert_eq!(
+        the_status(&server, which),
+        alo_tasks::words::COMPLETE,
+        "the control: the task had finished"
+    );
+
+    press(&mut server, A, &daemon);
+    press(&mut server, ENTER, &daemon);
+
+    assert_ne!(
+        the_status(&server, which),
+        alo_tasks::words::ALO_IS_WORKING,
+        "a reply nothing carried made the window say alo is working"
+    );
+    let said = server
+        .tasks()
+        .the(which)
+        .expect("the task is open")
+        .conversation()
+        .each()
+        .iter()
+        .map(|turn| turn.said().to_owned())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        said.get(said.len().saturating_sub(2)).map(String::as_str),
+        Some("a"),
+        "the person's reply was not kept where they wrote it"
+    );
+    assert!(
+        the_last_thing_said(&server, which).starts_with("alo did not receive this."),
+        "{}",
+        the_last_thing_said(&server, which)
+    );
+    assert_eq!(draft(&server, which), "", "the reply stayed in the box");
+
+    press(&mut server, ESCAPE, &daemon);
+    assert!(
+        !server.a_task_is_taking_the_keys(),
+        "after a reply, Escape on the empty box did not let go of the keyboard"
+    );
+}
+
+/// **A reply beneath a waiting card leaves the task waiting**, and the card
+/// still answerable. Read from the last turn alone, the line beneath the reply
+/// would have made the task read *Complete* with Allow once and Deny on screen.
+#[test]
+fn a_reply_beneath_a_waiting_card_leaves_the_task_waiting() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task_holding_the_keyboard(&mut server);
+    let daemon = holding(7, "Rename march.pdf");
+    server.an_answer_came_back(
+        which,
+        "Shall I?".to_owned(),
+        false,
+        None,
+        Some(&daemon),
+        &in_english(),
+    );
+
+    press(&mut server, A, &daemon);
+    press(&mut server, ENTER, &daemon);
+
+    assert_eq!(
+        the_status(&server, which),
+        alo_tasks::words::WAITING_FOR_YOUR_PERMISSION,
+        "a reply beneath the card stopped the task waiting"
+    );
+    assert!(
+        server.the_change_waiting.is_asking(),
+        "the card was taken down"
+    );
+
+    press(&mut server, TAB, &daemon);
+    press(&mut server, ENTER, &daemon);
+    assert_eq!(
+        *daemon.approved.borrow(),
+        [7],
+        "the card could not be answered"
     );
 }
