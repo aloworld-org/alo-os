@@ -82,7 +82,7 @@ fn at_one_hundred_the_cards_draw_the_bytes_they_drew_before() {
 }
 
 /// The hash of the cards before this change. See the test above.
-const BEFORE: u64 = 0;
+const BEFORE: u64 = 0x2550_6af7_8625_fe28;
 
 /// Whether `two` is within a few pixels of twice `one`.
 ///
