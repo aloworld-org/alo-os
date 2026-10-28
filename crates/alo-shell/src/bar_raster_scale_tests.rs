@@ -109,7 +109,7 @@ fn at_one_hundred_the_bar_draws_the_bytes_it_drew_before() {
 }
 
 /// The hash of the Bar before this change. See the test above.
-const BEFORE: u64 = 0;
+const BEFORE: u64 = 0x69ea_5717_6b5c_d49a;
 
 /// **At 200 every measure is exactly twice itself**, and so is every share of
 /// the display, on the display the design was drawn at and the same display
