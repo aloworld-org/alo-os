@@ -50,7 +50,8 @@ fn every_language_names_germany_in_itself_not_in_english() {
         }
         let name = the_name_of("DE", official.tag);
         assert!(
-            name.as_deref().is_some_and(|it| it != "Germany" && it != "DE"),
+            name.as_deref()
+                .is_some_and(|it| it != "Germany" && it != "DE"),
             "{}: Germany is called {name:?}, which is the fallback rather than the language",
             official.tag
         );

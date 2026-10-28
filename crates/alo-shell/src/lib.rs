@@ -413,6 +413,8 @@ pub mod the_docks_words;
 mod the_edge_takes_the_keyboard;
 mod the_formats_are_told;
 mod the_keyboard_a_person_chose;
+mod the_language_a_person_chose;
+pub mod the_language_set_up_in;
 pub mod the_languages_offered;
 pub mod the_machines_keyboard;
 pub mod the_markets_words;

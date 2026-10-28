@@ -95,9 +95,7 @@ pub fn keep(at: &Path, language: &Language) -> Result<(), FileNotWritten> {
 /// honoured then.
 pub fn read(at: &Path) -> Result<Option<Language>, FileNotRead> {
     let set_up: SetUpIn = alo_kept::read(at)?;
-    Ok(set_up
-        .language
-        .and_then(|tag| Language::written(&tag).ok()))
+    Ok(set_up.language.and_then(|tag| Language::written(&tag).ok()))
 }
 
 #[cfg(test)]
