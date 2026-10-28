@@ -138,7 +138,7 @@ impl TheTasksWords {
                         .conversation()
                         .each()
                         .iter()
-                        .map(|turn| (whose(turn), turn.said().to_owned()))
+                        .map(|turn| (whose(turn), as_drawn(turn)))
                         .collect(),
                     // **The latest proposal, and only while the task is
                     // asking.** Every earlier proposal was answered and draws
@@ -198,6 +198,23 @@ impl TheTasksWords {
                     .collect(),
             })
             .collect()
+    }
+}
+
+/// The words one turn is drawn with.
+///
+/// **alo's replies and questions without their Markdown marks**, and
+/// everything else exactly as it was said: a person's words are theirs, and a
+/// proposal is the sentence they approve. `crate::alos_words_without_markup`
+/// says why the marks are removed rather than rendered.
+fn as_drawn(turn: &alo_tasks::Turn) -> String {
+    match turn.who() {
+        alo_tasks::WhoSaidIt::Alo | alo_tasks::WhoSaidIt::AloAsking => {
+            crate::alos_words_without_markup::without_markup(turn.said())
+        }
+        alo_tasks::WhoSaidIt::ThePerson | alo_tasks::WhoSaidIt::AloProposing => {
+            turn.said().to_owned()
+        }
     }
 }
 

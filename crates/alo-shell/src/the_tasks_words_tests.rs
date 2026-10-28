@@ -322,3 +322,28 @@ fn a_task_not_asking_draws_no_answers_whatever_is_selected() {
         "a task with nothing waiting drew answers"
     );
 }
+
+/// **alo's Markdown marks are taken out; a person's words and a proposal are
+/// drawn exactly as said.** The control is the same `**` in all three.
+#[test]
+fn only_alos_own_words_lose_their_markdown() {
+    let strings = words();
+    let mut task = ATask::asked_for("rename **draft**.txt", InferenceSource::ThisMachine);
+    task.alo_says(Turn::from_alo("1. **Header**: the word"));
+    task.is_asking("Rename **draft**.txt");
+    task.alo_says(Turn::alo_proposing("Rename **draft**.txt"));
+
+    let said = TheTasksWords::said(&[task], &[Some(somewhere())], &strings, None);
+    let drawn = said.as_displayed();
+    let one = drawn.first().expect("one window");
+
+    assert_eq!(
+        one.said[0].words, "rename **draft**.txt",
+        "the person's words were changed"
+    );
+    assert_eq!(one.said[1].words, "1. Header: the word");
+    assert_eq!(
+        one.said[2].words, "Rename **draft**.txt",
+        "the sentence to approve was changed"
+    );
+}

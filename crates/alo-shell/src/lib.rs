@@ -104,6 +104,8 @@ pub mod a_provider_is_added_in_settings;
 mod a_task_window_hands_on_a_chord;
 /// Scrolling a task window's conversation.
 mod a_task_window_scrolls;
+/// alo's words with the Markdown a model writes taken out.
+mod alos_words_without_markup;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 /// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;
