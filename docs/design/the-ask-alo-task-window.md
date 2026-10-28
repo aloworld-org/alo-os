@@ -230,19 +230,22 @@ and how a disabled Stop is drawn. **Both have to be decided rather than
 measured, and this file is where that is recorded.** They are not in the export
 and must not be reported as if they were.
 
-## Closing is promised in words and not drawn
+## Closing: the edge carries Close, and a running task does not close yet
 
-`docs/features.md` promises that closing a running task offers **Stop and
-close**, **Keep running** and **Cancel**. No frame draws that sheet, and the
-frames' `External window edge` above each task window is not drawn on one
-yet.
+`docs/features.md` promises that closing a running task asks. **The owner
+decided on 2026-10-28**: the frames' `External window edge` is drawn on task
+windows with **Close** only — minimise and maximise come with the right-hand
+panel — and closing a running task will offer **Stop and close** and
+**Cancel**, with *Keep running* added when the panel holds tasks.
 
-**What is built, 2026-10-28:** Alt+F4 in a task window whose work is over —
-complete, or confirmed stopped — closes it and gives the keyboard back. On a
-task still working, stopping, or waiting for the person it does nothing at
-all, which is *Cancel*: no stop is asked and a waiting change is neither
-approved nor declined. The two other choices wait on a Stop that reaches the
-agent and on the right-hand panel holding a task.
+**What is built:** the edge, laid out by the same code as a client window's,
+always revealed, Close 44 × 44 at its trailing end, scaled with the display. A
+task window is placed with the edge's 44 above it inside the view, so Close is
+never off the screen. Close and Alt+F4 are one door: a finished or stopped
+task closes and the keyboard goes back to what was behind; a task waiting for
+an approval stays open until the person answers, and closing never answers
+for them; a task still working stays open, because the two choices need a Stop
+that reaches the agent, which is not built.
 
 ## The approval card, 920 × 152
 

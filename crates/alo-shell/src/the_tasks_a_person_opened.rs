@@ -159,6 +159,17 @@ impl TheTasks {
         }
     }
 
+    /// Every window on the screen and the task it is, oldest first — the
+    /// order they are drawn in, so the last is in front.
+    #[must_use]
+    pub fn each_open_window(&self) -> Vec<(WhichTask, Rectangle<i32, Physical>)> {
+        self.placed
+            .iter()
+            .enumerate()
+            .filter_map(|(at, window)| window.on_the_screen().map(|on| (WhichTask(at), on)))
+            .collect()
+    }
+
     /// Whether this task's window is still open — placed or about to be.
     #[must_use]
     pub fn is_open(&self, which: WhichTask) -> bool {

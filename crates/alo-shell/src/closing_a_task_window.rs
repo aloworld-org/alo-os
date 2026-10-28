@@ -9,6 +9,10 @@
 //!   close*, *Keep running*, *Cancel* — and never kills it silently or leaves
 //!   it running with no window and no entry in the panel.
 //!
+//! Two roads reach it, and both end in [`Server::the_person_closes_a_task`]:
+//! Alt+F4 while the task window holds the keyboard, and Close on its edge
+//! (`crate::a_task_windows_edge`).
+//!
 //! # The three choices are not built, so a running task does not close
 //!
 //! Each choice leans on something that does not exist yet: *Stop and close*
