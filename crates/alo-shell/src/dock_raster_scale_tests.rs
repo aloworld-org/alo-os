@@ -157,9 +157,31 @@ fn at_one_hundred_the_whole_dock_draws_the_bytes_it_drew_before() {
 }
 
 /// The hash of the bottom Dock before this change. See the test above.
-const BOTTOM_BEFORE: u64 = 0;
+const BOTTOM_BEFORE: u64 = 0x38ca_01f5_5f4b_ddd8;
 /// The hash of the left Dock before this change. See the test above.
-const LEFT_BEFORE: u64 = 0;
+const LEFT_BEFORE: u64 = 0x646f_376c_aa91_5ec5;
+
+/// Whether `dense` is `sparse` doubled, allowing one pixel along the bar.
+///
+/// **One pixel, along the bar only, and that is centring rather than slack.**
+/// A bar down a side or along the top holds the one-pixel rule before the
+/// commands, so it is an odd length; centred on an even edge at 100 it is half
+/// a pixel off centre and rounds one way, and at 200 it is exactly centred. Its
+/// size and its distance from its own edge are exactly twice; only where it
+/// starts along the edge may differ by that one pixel.
+fn is_doubled_along(
+    edge: Edge,
+    dense: Rectangle<i32, Physical>,
+    sparse: Rectangle<i32, Physical>,
+) -> bool {
+    let twice = doubled(sparse);
+    let (along, across, along_twice, across_twice) = if edge.runs_across() {
+        (dense.loc.x, dense.loc.y, twice.loc.x, twice.loc.y)
+    } else {
+        (dense.loc.y, dense.loc.x, twice.loc.y, twice.loc.x)
+    };
+    dense.size == twice.size && across == across_twice && (along - along_twice).abs() <= 1
+}
 
 /// **At 200 the band and every slot are exactly twice their size at 100**, on
 /// every edge — and the slots themselves are the same logical answer, so the
@@ -169,7 +191,12 @@ fn at_two_hundred_the_band_and_every_slot_are_exactly_twice_their_size() {
     for edge in Edge::EVERY {
         let sparse = placed(edge, SPARSE, DisplayScale::ONE);
         let dense = placed(edge, DENSE, two_times());
-        assert_eq!(dense.band, doubled(sparse.band), "{edge:?}");
+        assert!(
+            is_doubled_along(edge, dense.band, sparse.band),
+            "{edge:?}: {:?} is not {:?} doubled",
+            dense.band,
+            sparse.band
+        );
         assert_eq!(dense.thickness, 2 * sparse.thickness, "{edge:?}");
         assert_eq!(dense.places, sparse.places, "{edge:?}: a different bar");
         assert_eq!(dense.over, sparse.over, "{edge:?}");
@@ -183,7 +210,12 @@ fn at_two_hundred_the_band_and_every_slot_are_exactly_twice_their_size() {
         }
     }
     // The premise: the band is the measured 76 at 100, so 152 is a doubling
-    // and not an accident of the display.
+    // and not an accident of the display. And along the bottom, where the bar
+    // is an even length, its place doubles exactly too.
+    assert_eq!(
+        placed(Edge::Bottom, DENSE, two_times()).band,
+        doubled(placed(Edge::Bottom, SPARSE, DisplayScale::ONE).band)
+    );
     assert_eq!(
         placed(Edge::Bottom, SPARSE, DisplayScale::ONE).thickness,
         76
@@ -193,29 +225,46 @@ fn at_two_hundred_the_band_and_every_slot_are_exactly_twice_their_size() {
 
 /// **What is drawn on the bar doubles too**: the panel with its shadow, and
 /// every flat shape on it — the open marks and the rule before the commands.
+/// Along the bottom exactly; down the left side to within the one pixel of
+/// centring [`is_doubled_along`] explains.
 #[test]
 fn at_two_hundred_the_drawn_bar_is_twice_the_size() {
     let closed = &crate::what_the_dock_has_open::NOTHING;
     for edge in [Edge::Bottom, Edge::Left] {
         let sparse = drawn(edge, SPARSE, DisplayScale::ONE, closed);
         let dense = drawn(edge, DENSE, two_times(), closed);
-        assert_eq!(dense.band, doubled(sparse.band), "{edge:?}");
-        assert_eq!(
-            dense.surface.as_ref().map(|surface| surface.area),
-            sparse.surface.as_ref().map(|surface| doubled(surface.area)),
-            "{edge:?}: the panel and its shadow"
+        assert!(is_doubled_along(edge, dense.band, sparse.band), "{edge:?}");
+        let (Some(one), Some(two)) = (sparse.surface.as_ref(), dense.surface.as_ref()) else {
+            panic!("{edge:?}: a Dock with no surface");
+        };
+        assert!(
+            is_doubled_along(edge, two.area, one.area),
+            "{edge:?}: the panel and its shadow, {:?} against {:?}",
+            two.area,
+            one.area
         );
         assert!(
             !sparse.solids.is_empty(),
             "the premise: there are marks to compare"
         );
-        let twice: Vec<_> = sparse
-            .solids
-            .iter()
-            .map(|solid| doubled(solid.area))
-            .collect();
-        let now: Vec<_> = dense.solids.iter().map(|solid| solid.area).collect();
-        assert_eq!(now, twice, "{edge:?}: the marks");
+        assert_eq!(dense.solids.len(), sparse.solids.len(), "{edge:?}");
+        for (two, one) in dense.solids.iter().zip(&sparse.solids) {
+            assert!(
+                is_doubled_along(edge, two.area, one.area),
+                "{edge:?}: the mark {:?} is not {:?} doubled",
+                two.area,
+                one.area
+            );
+        }
+        if edge == Edge::Bottom {
+            let twice: Vec<_> = sparse
+                .solids
+                .iter()
+                .map(|solid| doubled(solid.area))
+                .collect();
+            let now: Vec<_> = dense.solids.iter().map(|solid| solid.area).collect();
+            assert_eq!(now, twice, "along the bottom every mark doubles exactly");
+        }
         // Every letter is inked, and inside the bar's doubled band.
         assert_eq!(dense.inked.len(), sparse.inked.len(), "{edge:?}");
         for letter in &dense.inked {
