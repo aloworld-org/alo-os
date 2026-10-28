@@ -6,7 +6,7 @@
 //! capability granted narrowly and then used from a second place is a capability
 //! granted widely, with a decision document saying otherwise.
 //!
-//! **The second place is a decision, not a drift.** ADR 0136 gave a person's
+//! **The second place is a decision, not a drift.** ADR 0135 gave a person's
 //! own name a unit of its own with this same one capability, rather than this
 //! crate growing a second job, and this list grew by one line in that change.
 //! A third place needs a third record.
@@ -38,7 +38,7 @@
 use std::path::{Path, PathBuf};
 
 /// The crates that may, each on exactly one line: the folder (ADR 0119) and
-/// the name (ADR 0136).
+/// the name (ADR 0135).
 const THE_PLACES: [&str; 2] = ["alo-giving-a-folder", "alo-giving-a-name"];
 
 /// Whether a line asks the kernel to change a file's **owner**.
@@ -239,7 +239,7 @@ fn only_this_crate_changes_a_files_owner() {
          small and each a decision: `alo-giving-a-folder@.service` (ADR 0119, chosen by \
          measurement — `CAP_CHOWN` is necessary and on its own sufficient, and the two \
          components already running as root are 113,587 and 2,160 lines against its hundred) \
-         and `alo-giving-a-name@.service` (ADR 0136, the same shape). A third place that changes \
+         and `alo-giving-a-name@.service` (ADR 0135, the same shape). A third place that changes \
          an owner is either a third unit that needs the capability — which is a decision and a \
          new record — or code that will fail on a booted machine with `EPERM`, the way \
          `Command::uid()` did on 2026-10-14.",

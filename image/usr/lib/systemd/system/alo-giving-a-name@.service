@@ -1,6 +1,6 @@
 # Gives one person their own name, in a file only they can read.
 #
-# ADR 0136 is the decision. The name a person typed when they made their
+# ADR 0135 is the decision. The name a person typed when they made their
 # account lives in /etc/alo/accounts.toml, which is root's and mode 0600
 # because it holds every password hash; their desktop runs as their own login
 # and must not read it. So at every sign-in this copies that one name, by
@@ -15,7 +15,7 @@
 # hold it, and this is a second small thing rather than that one growing a job.
 [Unit]
 Description=alo OS: give account %i their own name, readable by them alone
-Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md
 After=local-fs.target
 
 [Service]

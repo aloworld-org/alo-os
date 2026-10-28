@@ -25,7 +25,7 @@
 //!
 //! **The name, where the desktop has not been told it.** The person's name is
 //! given to them at every sign-in in a file only they can read
-//! ([ADR 0136](../../../docs/decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)),
+//! ([ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)),
 //! and the desktop is told it once (`crate::whose_desktop_this_is`). An account
 //! made before that, or a machine where it could not be given, has none — and
 //! then the words say `Local` alone rather than the desktop's own login, `alo`,

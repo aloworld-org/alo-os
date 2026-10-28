@@ -18,7 +18,7 @@
 //! the unit ships in.
 //!
 //! [ADR 0121](../../../docs/decisions/0121-the-thing-that-opens-a-session-makes-the-persons-folder.md)
-//! and [ADR 0136](../../../docs/decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
+//! and [ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
 //! are the decisions; [ADR 0119](../../../docs/decisions/0119-the-capability-to-give-a-directory-away-goes-to-the-smallest-thing-that-can-hold-it.md)
 //! is what each unit itself is.
 
@@ -109,7 +109,7 @@ fn each_unit_is_a_template_so_every_person_gets_their_own() {
 /// what this component starts are the only privileged acts a sign-in causes,
 /// and a reviewer of `alo-sessiond` should be able to see the whole of them
 /// from here. ADR 0119 measured `CAP_CHOWN` necessary and sufficient for the
-/// folder, ADR 0136 for the name; this is the line that keeps the files
+/// folder, ADR 0135 for the name; this is the line that keeps the files
 /// agreeing with that.
 #[test]
 fn each_unit_it_starts_holds_one_capability() {

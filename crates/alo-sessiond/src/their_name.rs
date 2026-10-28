@@ -1,7 +1,7 @@
 //! The third thing this crate asks the machine to do, one method wide: give a
 //! person their own name, where their desktop can read it.
 //!
-//! [ADR 0136](../../../docs/decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
+//! [ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
 //! is the decision. The name a person typed when they made their account is in
 //! the account store, which their desktop must not read, and the desktop shows
 //! it — the terminal's strip says `Local · anna`. So at every sign-in a small

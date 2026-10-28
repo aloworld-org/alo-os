@@ -799,7 +799,7 @@ mod running {
             })
         }
 
-        /// The person's own name, as a sign-in last gave it to them (ADR 0136).
+        /// The person's own name, as a sign-in last gave it to them (ADR 0135).
         ///
         /// Read from `/var/lib/alo-names/<their number>`, which
         /// `alo-giving-a-name` writes at every sign-in and only they can read,

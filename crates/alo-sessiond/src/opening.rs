@@ -23,7 +23,7 @@
 //!    the session is what writes into the folder. **The only step whose failure
 //!    is not a refusal** — `crate::their_folder` says why, at length, and
 //!    `CLAUDE.md` law 5 is the reason that decides it.
-//!    The name ([ADR 0136](../../../docs/decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md))
+//!    The name ([ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md))
 //!    is placed the same way for the same reasons: after 3, and before 5
 //!    because the session is what starts the desktop that reads it. Its
 //!    failure refuses nobody either (`crate::their_name`).

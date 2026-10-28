@@ -16,7 +16,7 @@
 //! /var/lib/alo-names/<number>   0600 <number>    the person's, and nobody else's
 //! ```
 //!
-//! [ADR 0136](../../../docs/decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
+//! [ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
 //! is the decision and says why the three other roads were not taken.
 //! `docs/contracts/the-persons-name.md` is the shape, for anything else that
 //! wants to read it.

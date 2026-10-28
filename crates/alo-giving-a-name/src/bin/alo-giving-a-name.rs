@@ -7,7 +7,7 @@
 //! Started by systemd as `alo-giving-a-name@<account number>.service`, which
 //! `alo-sessiond` starts at every sign-in and which is where the one capability
 //! lives — see
-//! [ADR 0136](../../../../docs/decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md).
+//! [ADR 0135](../../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md).
 //! The second and third arguments default to the one place a machine keeps
 //! each, so the unit passes one argument and a test passes three.
 //!

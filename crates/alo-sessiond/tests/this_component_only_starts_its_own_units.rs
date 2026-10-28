@@ -9,7 +9,7 @@
 //! [ADR 0121](../../../docs/decisions/0121-the-thing-that-opens-a-session-makes-the-persons-folder.md)
 //! is where this component was allowed to start a unit at all, and this file is
 //! the bound that decision was granted under: one unit, named by a constant,
-//! instanced by a number, and three read-or-start methods. [ADR 0136](../../../docs/decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
+//! instanced by a number, and three read-or-start methods. [ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
 //! added a second unit under the same bound, and nothing else.
 //!
 //! # Why read the source rather than test the behaviour
@@ -168,7 +168,7 @@ fn this_component_builds_two_unit_names_and_no_more() {
     assert_eq!(
         built,
         2,
-        "{} builds {built} unit names, and ADR 0121 and ADR 0136 allow two",
+        "{} builds {built} unit names, and ADR 0121 and ADR 0135 allow two",
         where_it_is().display()
     );
     assert!(

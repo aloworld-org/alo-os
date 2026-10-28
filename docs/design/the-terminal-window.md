@@ -789,7 +789,7 @@ not say:
   read, so at every sign-in `alo-giving-a-name` copies it into
   `/var/lib/alo-names/<number>`, readable by that person alone, and the desktop
   reads it once
-  ([ADR 0136](../decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md),
+  ([ADR 0135](../decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md),
   `docs/contracts/the-persons-name.md`). **Where there is no file** — an account
   that has not signed in since, or a machine where the helper could not run —
   the words read `Local` alone, never the desktop's own login, `alo`, which is

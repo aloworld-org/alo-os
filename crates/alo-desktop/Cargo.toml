@@ -85,7 +85,7 @@ image = { version = "=0.25.10", default-features = false, features = ["png"] }
 # a desktop never takes a person's number from a variable.
 alo-remembering = { path = "../alo-remembering" }
 # Where a person's own name is given to them at sign-in, and the one reader of
-# it (ADR 0136) — so the terminal's strip says whose desktop this is.
+# it (ADR 0135) — so the terminal's strip says whose desktop this is.
 alo-accounts = { path = "../alo-accounts" }
 # For one path: the socket this person's daemon listens on, which a revocation
 # in Settings knocks at. Named by the crate that owns the door rather than

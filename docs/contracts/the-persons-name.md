@@ -8,7 +8,7 @@ When a person makes their account on the first-start sheet they type a name —
 `0600` because it also holds every account's password hash. Their desktop runs
 as their own login and must never read that file. So at every sign-in the name
 is copied, by number, into a file of its own that **only that person can read**.
-[ADR 0136](../decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
+[ADR 0135](../decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
 is the decision.
 
 **What it is for today:** the strip across the top of alo's own terminal reads

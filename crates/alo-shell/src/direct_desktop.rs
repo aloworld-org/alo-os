@@ -178,7 +178,7 @@ pub trait TheDesktop {
     ///
     /// The shell asks and does not read, for [`Self::the_shortcuts`]'s reason:
     /// the name is a file `alo-giving-a-name` writes at every sign-in
-    /// ([ADR 0136](../../../docs/decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)),
+    /// ([ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)),
     /// and reading a file is the desktop binary's, not this crate's.
     ///
     /// **[`None`] by default, and that is a real answer**: an account made
@@ -2180,7 +2180,7 @@ pub(crate) fn drawn_terminal(
             a_benchmark: terminal.a_benchmark(),
             a_diff: terminal.a_diff(),
             // **The person's own name, as the desktop was told it at sign-in**
-            // (ADR 0136), or none — never this process's login, which is `alo`
+            // (ADR 0135), or none — never this process's login, which is `alo`
             // on every machine.
             the_strip: crate::the_terminals_strip::WhatTheStripSays {
                 the_folder: terminal.the_folder(),

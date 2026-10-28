@@ -230,7 +230,7 @@ pub struct Server {
     /// `Server::its_person_is_called`, and shown in the terminal's strip.
     ///
     /// **[`None`] is no name, never the login's**: the desktop runs as `alo`
-    /// on every machine, which is nobody's name (ADR 0136).
+    /// on every machine, which is nobody's name (ADR 0135).
     pub(crate) whose_desktop: Option<String>,
     /// How this machine asks an application to start, when something has told
     /// it.

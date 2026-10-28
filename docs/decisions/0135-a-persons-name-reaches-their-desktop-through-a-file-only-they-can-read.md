@@ -1,4 +1,4 @@
-# ADR 0136 — A person's name reaches their desktop through a file only they can read
+# ADR 0135 — A person's name reaches their desktop through a file only they can read
 
 **Status:** accepted — the owner chose this road on 2026-10-28 from four put to
 them in plain words. It adds a second holder of `CAP_CHOWN` under

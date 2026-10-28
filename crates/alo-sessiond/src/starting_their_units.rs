@@ -10,7 +10,7 @@
 //! way: [`THE_UNIT`] makes the person their place for what an undo would put
 //! back ([ADR 0121](../../../docs/decisions/0121-the-thing-that-opens-a-session-makes-the-persons-folder.md)),
 //! and [`THE_NAMES_UNIT`] gives them their own name where their desktop can
-//! read it ([ADR 0136](../../../docs/decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)).
+//! read it ([ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)).
 //! This file was `making_a_folder.rs` until the second arrived; what it does —
 //! *start a unit named by a constant and a number, and wait for it* — did not
 //! change, so it was renamed rather than split.

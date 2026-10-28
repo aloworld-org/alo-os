@@ -44,7 +44,7 @@
 //!   against the accounts file, so there is still no shape in which a caller
 //!   names something to be run. *And a second*, [`THE_NAMES_UNIT`], added
 //!   2026-10-28 under
-//!   [ADR 0136](../../../docs/decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
+//!   [ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
 //!   in the same shape: a constant and a checked number. That unit reads the
 //!   person's name from the store itself, so **no name reaches this component
 //!   even now**.

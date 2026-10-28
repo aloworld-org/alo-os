@@ -412,7 +412,7 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-looking-once /usr/lib
 # hundred.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-giving-a-folder /usr/libexec/alo-giving-a-folder
 
-# **A person's own name, given to them at every sign-in** (ADR 0136).
+# **A person's own name, given to them at every sign-in** (ADR 0135).
 #
 # The name a person typed when they made their account is in
 # /etc/alo/accounts.toml, which their desktop must not read. This copies that

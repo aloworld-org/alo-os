@@ -1,7 +1,7 @@
 //! Gives a person their own name, in a file only they can read, at every
 //! sign-in.
 //!
-//! [ADR 0136](../../../docs/decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
+//! [ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
 //! is why this exists. The name a person typed when they made their account is
 //! in the account store, which is root's and mode `0600` because it holds every
 //! password hash; their desktop runs as their own login and must not read it.
