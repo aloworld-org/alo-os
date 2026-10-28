@@ -1,5 +1,5 @@
 //! **What `icu`'s unstable region names answer, held to known answers** —
-//! [ADR 0135](../../../docs/decisions/0135-the-region-names-come-from-icus-unstable-half.md).
+//! [ADR 0136](../../../docs/decisions/0136-the-region-names-come-from-icus-unstable-half.md).
 //!
 //! `alo_formats::region_names` is the only file that uses
 //! `icu::experimental::displaynames`, which CLDR's own implementers have not

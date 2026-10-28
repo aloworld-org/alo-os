@@ -1,4 +1,4 @@
-# ADR 0135 — The region names come from icu's unstable half
+# ADR 0136 — The region names come from icu's unstable half
 
 **Status:** accepted, 2026-10-28, by the owner, who asked for this record.
 

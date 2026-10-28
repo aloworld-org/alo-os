@@ -24,7 +24,7 @@ alo-kept = { path = "../alo-kept" }
 # language (`icu::experimental::displaynames`). CLDR has every country's name
 # in all 24 languages, and a list of names of our own would be wrong first in
 # Maltese and Irish. It is confined to `region_names.rs`, so an upgrade that
-# moves that API breaks one file loudly rather than anything quietly. ADR 0135
+# moves that API breaks one file loudly rather than anything quietly. ADR 0136
 # records the decision and what to check on every upgrade of icu.
 icu = { version = "2", features = ["compiled_data", "unstable"] }
 serde = { workspace = true }
