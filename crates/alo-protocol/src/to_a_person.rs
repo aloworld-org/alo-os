@@ -937,3 +937,66 @@ mod tests {
 )]
 #[path = "a_persons_own_question_tests.rs"]
 mod a_persons_own_question;
+
+/// **What leaves crosses the person's door whole, and never reaches an agent**
+/// (ADR 0134).
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+mod what_leaves {
+    use alo_capability::Grantee;
+    use alo_egress::{Destination, Reported, Why};
+
+    use crate::{FromAPerson, FromAnAgent, NotUnderstood, ToAPerson, ToAnAgent};
+
+    fn asking_openai() -> Reported {
+        Reported::Agent {
+            agent: Grantee::named("@alo"),
+            why: Why::Asking,
+            destination: Destination::at("api.openai.com").unwrap(),
+        }
+    }
+
+    #[test]
+    fn the_list_and_the_request_read_back() {
+        let told = ToAPerson::Leaving {
+            lines: vec![asking_openai()],
+        };
+        let written = told.written().unwrap();
+        assert_eq!(ToAPerson::read(&written).unwrap(), told);
+        assert_eq!(
+            ToAPerson::read(&written).unwrap().lines_leaving(),
+            Some(&[asking_openai()][..])
+        );
+
+        let asked = FromAPerson::WatchWhatLeaves.written().unwrap();
+        assert_eq!(asked, r#"{"format":1,"asks":{"watch-what-leaves":{}}}"#);
+        assert_eq!(
+            FromAPerson::read(&asked).unwrap(),
+            FromAPerson::WatchWhatLeaves
+        );
+        assert_eq!(FromAPerson::WatchWhatLeaves.number(), None);
+    }
+
+    /// **An agent may not watch what leaves, and is never told it.** An agent
+    /// that could would learn when another agent's question reached the
+    /// network; the indicator is the person's.
+    #[test]
+    fn an_agent_may_not_watch_and_is_never_told() {
+        assert_eq!(
+            FromAnAgent::read(r#"{"format":1,"asks":{"watch-what-leaves":{}}}"#),
+            Err(NotUnderstood::NotForAnAgent)
+        );
+        let written = ToAPerson::Leaving {
+            lines: vec![asking_openai()],
+        }
+        .written()
+        .unwrap();
+        assert_eq!(
+            ToAnAgent::read(&written),
+            Err(NotUnderstood::NotAnAnswerForAnAgent)
+        );
+    }
+}

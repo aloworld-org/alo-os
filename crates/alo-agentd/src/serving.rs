@@ -1329,7 +1329,10 @@ mod tests {
             discovery: receptions_discovery,
         };
 
-        let mut indicator = Indicator::default();
+        // **Told to a watchers list, as `crate::starting` builds it**, so a
+        // desktop asking what leaves is served here as on a machine.
+        let watchers = crate::watchers::Watchers::none_yet();
+        let mut indicator = Indicator::default().told_to(Box::new(watchers.clone()));
         let mut bounding = crate::testing::NothingIsBounded;
         let mut machine = Machine::carrying_out_file_verbs(
             &strings,
@@ -1355,12 +1358,14 @@ mod tests {
             // person's door, held beside the pairings.
             naming: network.names(),
         };
-        let served = Serving::of(&knocking, &waking, &wire, &network, terms).until_stopped(
-            &mut machine,
-            &mut WhatIsGranted::of(&mut grants, remembering),
-            &mut questions,
-            &mut shown,
-        );
+        let served = Serving::of(&knocking, &waking, &wire, &network, terms)
+            .telling(&watchers)
+            .until_stopped(
+                &mut machine,
+                &mut WhatIsGranted::of(&mut grants, remembering),
+                &mut questions,
+                &mut shown,
+            );
         client.join().unwrap();
         served.map(|served| (served, invoice))
     }
@@ -1694,6 +1699,35 @@ mod tests {
                     refused.contains("already answering"),
                     "a second shell was served: {refused}"
                 );
+                told.stop.stop();
+            },
+        );
+    }
+
+    /// **A desktop watching what leaves is told the list and leaves the
+    /// person's door free** (ADR 0134): it is given over to the watchers, so
+    /// Settings can still knock while the desktop listens for as long as the
+    /// session lasts.
+    #[test]
+    fn a_desktop_watching_what_leaves_leaves_the_persons_door_free() {
+        while_it_runs(
+            "watching-what-leaves",
+            &[Some(Side::Person), Some(Side::Person)],
+            |told| {
+                let mut desktop = Talking::to(&told.at);
+                let listed = desktop.asking(r#"{"watch-what-leaves":{}}"#);
+                assert!(
+                    listed.contains(r#""leaving":{"lines":[]}"#),
+                    "the desktop was not told the list as it stands: {listed}"
+                );
+
+                let mut settings = Talking::to(&told.at);
+                let answered = settings.asking(r#"{"waiting":{}}"#);
+                assert!(
+                    answered.contains("waiting") && !answered.contains("already answering"),
+                    "a watching desktop held the person's door: {answered}"
+                );
+                drop(desktop);
                 told.stop.stop();
             },
         );
