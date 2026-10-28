@@ -73,7 +73,9 @@ pub use instructions::{
     ONE_EXAMPLE_PER_DOOR, SEVERAL_STEPS,
 };
 pub use shown::{shown_to_a_model, shown_to_a_model_after, shown_to_a_turn};
-pub use the_conversation_on_the_wire::{NotTheConversation, THE_EARLIER_CONVERSATION};
+pub use the_conversation_on_the_wire::{
+    NotTheConversation, THE_EARLIER_CONVERSATION, THE_LONGEST_LINE, THE_MOST_A_QUESTION_IS,
+};
 pub use the_conversation_so_far::{AnEarlierTurn, TheAnswer, TheConversationSoFar};
 pub use the_language_asked_in::the_language_of;
 pub use what_it_may_reach::WhatItMayReach;

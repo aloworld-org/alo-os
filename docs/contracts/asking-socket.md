@@ -33,32 +33,42 @@ still decided by `alo-agentd` against the grants it reads itself.
 
 ### The conversation so far
 
-One JSON object on one line after the marker:
+One JSON object on one line after the marker, holding the turns and nothing
+else:
 
 ```text
-alo-earlier:{"turns":[{"person":"list my invoices"},{"alo":"march.pdf and april.pdf"},{"proposed":"Move march.pdf to Paid","answer":"allowed"}],"left-out":0,"cut":false}
+alo-earlier:{"turns":[{"person":"list my invoices"},{"alo":"march.pdf and april.pdf"},{"proposed":"Move march.pdf to Paid","answer":"allowed"}]}
 ```
 
 | Field | Means |
 |---|---|
-| `turns` | What was said in that task window before the follow-up, oldest first. Each is exactly one of `{"person": …}`, `{"alo": …}`, or `{"proposed": …, "answer": …}` |
+| `turns` | **Everything** said in that task window before the follow-up, oldest first. Each is exactly one of `{"person": …}`, `{"alo": …}`, or `{"proposed": …, "answer": …}` |
 | `answer` | `allowed`, `denied`, or `not-answered` — the last for a change that lapsed or was answered somewhere else |
-| `left-out` | How many of the oldest turns were left out to stay inside the bound |
-| `cut` | Whether the oldest turn kept was cut because it alone was longer than the bound |
 
 It holds what the person saw in the window and nothing else: never what a
 verb read during an earlier turn, unless the person's words or alo's answer
-contained it.
+contained it. **Nothing is left out of it**: alo puts no limit of its own on a
+conversation (ADR 0136); the model's is the only one, and a conversation too
+long for the model is refused and said to be, never shortened.
 
-**Bound.** The words of all the turns together are at most **8000 bytes**
-(`alo_instructing::TheConversationSoFar::THE_MOST_SENT`), and the whole line
-at most six times that and 4096 more, for JSON's escaping. The shell leaves the
-oldest turns out whole to stay inside it and says so in the person's window; the
-agent tells the model how many were left out.
+**The line's bound, and its reason.** A line is at most **1 MiB**
+(`alo_instructing::THE_LONGEST_LINE`), and the agent stops reading at that
+bound rather than after it. The number is not chosen to fit a model: it is the
+daemon's own bound on a request (`alo_protocol::LONGEST`, *Bounds* in
+`docs/contracts/daemon-protocol.md`), and the conversation can only ever reach
+a model inside one such request, so a longer line could never be asked. 1 MiB
+is roughly a quarter of a million tokens, beyond the context of every model
+alo OS can be pointed at today — so in practice the model's limit is met
+first, and is the one a person hears about. The shell checks before sending
+(`TheConversationSoFar::fits_in_a_question`, counted as JSON with room for the
+instructions) and says the conversation is too long to send rather than send
+something the daemon would refuse.
 
-**When.** Only for a follow-up the person sent with Enter in a task window,
-built at that moment. A shell never sends it on a timer, a focus change or a
-keystroke.
+**When.** Only when the person sends a reply in a task window, built at that
+moment. A reply sent while alo is still answering, or while a change waits for
+Allow once or Deny, is held in the window and sent by itself once alo has
+answered and nothing waits — built then, from the conversation as it then
+stands. A shell never sends it on a timer, a focus change or a keystroke.
 
 ## What the agent does with it
 
@@ -72,7 +82,7 @@ keystroke.
   record (`docs/contracts/daemon-protocol.md`).
 - **Refused, in words, and nothing driven:** a third line that does not begin
   with `alo-earlier:`, one that is not the JSON above, a turn or answer of a
-  kind not listed here, and a conversation over the bound. A refusal is written
+  kind not listed here, and a line over the bound. A refusal is written
   to the agent's error output; the shell sees the connection close with nothing
   answered and tells the person the request stopped without finishing.
 

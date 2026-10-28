@@ -60,6 +60,12 @@ pub struct ATask {
     /// What the person answered to each change this task proposed, so a
     /// follow-up can say what became of it (ADR 0136).
     answers: TheAnswersGiven,
+    /// A reply the person sent while alo was still working, or while a change
+    /// waited for their answer: **held, not refused**, and sent with the
+    /// conversation once alo has answered (ADR 0136). Kept out of the
+    /// conversation until it is sent, so what alo is told came before it really
+    /// did come before it.
+    held: Option<String>,
 }
 
 /// What a minimised task shows in the right-hand panel.
@@ -95,6 +101,7 @@ impl ATask {
             draft: String::new(),
             scroll: TheScroll::at_the_newest(),
             answers: TheAnswersGiven::nothing_yet(),
+            held: None,
         }
     }
 
@@ -192,6 +199,31 @@ impl ATask {
     #[must_use]
     pub const fn answers_given(&self) -> &TheAnswersGiven {
         &self.answers
+    }
+
+    /// Hold this reply until it can be sent.
+    ///
+    /// **A second reply joins the first**, on a line of its own, rather than
+    /// queueing behind it: the person wrote two things before alo could
+    /// answer either, and alo is sent both at once, in the order written.
+    pub fn hold(&mut self, said: impl Into<String>) {
+        let said = said.into();
+        self.held = Some(match self.held.take() {
+            Some(before) => format!("{before}\n{said}"),
+            None => said,
+        });
+    }
+
+    /// The reply waiting to be sent, if one is.
+    #[must_use]
+    pub fn held(&self) -> Option<&str> {
+        self.held.as_deref()
+    }
+
+    /// Take the held reply — to send it, or to give it back to the person to
+    /// change or delete.
+    pub fn take_held(&mut self) -> Option<String> {
+        self.held.take()
     }
 
     /// A follow-up, which stays in this window.

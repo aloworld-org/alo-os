@@ -1,60 +1,63 @@
 //! What a task window says about a reply a person sent from its reply box.
 //!
-//! **A reply reaches alo, with the conversation so far**, since ADR 0136 — so
-//! these are the three things the window says when that is not the whole
-//! story: the reply did not go because a change above is still waiting, or
-//! because alo has not answered yet, or it went without the oldest part of a
-//! long conversation. `crate::what_becomes_of_a_reply` decides which.
+//! **A reply reaches alo, with the conversation so far** (ADR 0136). These are
+//! the three things the window says when it does not go at once: it is held
+//! until alo has answered, or until the person has answered a change above, or
+//! it cannot go at all because the conversation has grown too long for one
+//! question to carry. `crate::what_becomes_of_a_reply` decides which.
 
 use alo_strings::{Vocabulary, Word};
 
-/// Said beneath a reply that was not sent because a change is still waiting.
-pub const A_REPLY_WAITS_FOR_THE_CHANGE: Word = Word::saying(
-    "the-reply.waits-for-the-change",
-    "alo did not receive this, because a change above is still waiting for your answer. Allow it \
-     or deny it, then send this again.",
+/// Said under a held reply while alo is still answering.
+pub const HELD_UNTIL_ALO_ANSWERS: Word = Word::saying(
+    "the-reply.held-until-alo-answers",
+    "Waiting to be sent. This goes to alo, with the conversation so far, as soon as alo has \
+     answered. To change or delete it, press Backspace in the empty reply box.",
 )
 .noting(
-    "Said in a task window's conversation directly beneath something the person typed in its \
-     reply box and sent with Enter, while a proposed change above still shows \"Allow once\" and \
-     \"Deny\". Nothing was sent anywhere and nothing on the computer changed; this must never read \
-     as \"queued\" or \"will be sent later\", because it will not. \"Allow\" and \"deny\" refer to \
-     the two buttons on that change; use the same words those buttons use in your language. \
-     \"alo\" is the product's name and stays as it is, in lower case.",
+    "Shown in a task window directly under something the person typed and sent while alo was \
+     still answering their previous message. It has not been sent yet; it is sent by itself, \
+     once alo's answer arrives. \"Backspace\" is the key that deletes the character before the \
+     cursor; use the name a keyboard in your language prints on it. \"alo\" is the product's \
+     name and stays as it is, in lower case.",
 );
 
-/// Said beneath a reply that was not sent because alo has not answered yet.
-pub const A_REPLY_WAITS_FOR_ALO: Word = Word::saying(
-    "the-reply.waits-for-alo",
-    "alo did not receive this, because alo is still working on what you asked before. Send it \
-     again once alo has answered.",
+/// Said under a held reply while a change above waits for the person.
+pub const HELD_UNTIL_YOU_ANSWER: Word = Word::saying(
+    "the-reply.held-until-you-answer",
+    "Waiting to be sent. This goes to alo, with the conversation so far, once you have allowed or \
+     denied the change above. To change or delete it, press Backspace in the empty reply box.",
 )
 .noting(
-    "Said in a task window's conversation directly beneath something the person typed in its \
-     reply box and sent with Enter, while alo is still answering their previous message. Nothing \
-     was sent and nothing on the computer changed; this must never read as \"queued\", because it \
-     is not. \"alo\" is the product's name and stays as it is, in lower case.",
+    "Shown in a task window directly under something the person typed and sent while a proposed \
+     change above still shows \"Allow once\" and \"Deny\". It has not been sent yet; it is sent \
+     by itself once they press one of the two. \"Allowed\" and \"denied\" refer to those two \
+     buttons; use the same words they use in your language. \"Backspace\" is the key that \
+     deletes the character before the cursor. \"alo\" is the product's name and stays as it is, \
+     in lower case.",
 );
 
-/// Said in a task's activity when a long conversation was sent in part.
-pub const PART_OF_THE_CONVERSATION_WAS_NOT_SENT: Word = Word::saying(
-    "the-reply.part-was-not-sent",
-    "The oldest part of this conversation was not sent to alo with your reply, because the \
-     conversation is longer than alo sends at once. alo was told that part is missing.",
+/// Said beneath a reply that could not be sent: the conversation is too long
+/// for one question to carry.
+pub const TOO_LONG_TO_SEND: Word = Word::saying(
+    "the-reply.too-long-to-send",
+    "alo did not receive this, because this conversation is now too long to send to alo in one \
+     go. Start a new one from the Dock to continue.",
 )
 .noting(
-    "Shown in a task window's activity after the person sent a reply. Each reply is sent to alo \
-     together with the conversation before it, so alo knows what the reply refers to; when the \
-     conversation is very long, its beginning is left out, and alo is told so. If the provider \
-     answering is on the internet, the part that was sent left this computer. \"alo\" is the \
-     product's name and stays as it is, in lower case.",
+    "Said in a task window's conversation beneath something the person sent. Each reply is sent \
+     together with the whole conversation before it, and this one has grown past what this \
+     computer can send in one request, so nothing was sent and nothing was left out. \"The Dock\" \
+     is the bar at the bottom of the screen where a person types a request to alo; use the name \
+     the Dock has in your language. \"alo\" is the product's name and stays as it is, in lower \
+     case.",
 );
 
 /// Every string this file declares, in the order a translator meets them.
 pub const THE_REPLY_BOXS_WORDS: [Word; 3] = [
-    A_REPLY_WAITS_FOR_THE_CHANGE,
-    A_REPLY_WAITS_FOR_ALO,
-    PART_OF_THE_CONVERSATION_WAS_NOT_SENT,
+    HELD_UNTIL_ALO_ANSWERS,
+    HELD_UNTIL_YOU_ANSWER,
+    TOO_LONG_TO_SEND,
 ];
 
 /// Why this file's words could not be declared.

@@ -19,18 +19,16 @@
 use alo_instructing::{AnEarlierTurn, TheAnswer, TheConversationSoFar};
 use alo_tasks::{ATask, Answered, WhoSaidIt};
 
-/// **The conversation before the reply the person has just sent**, held to its
-/// bound.
+/// **The conversation in this task window, whole**, as alo is sent it before
+/// the reply the person is sending now.
 ///
-/// The reply itself is the conversation's last turn and is left out: it is the
-/// request, and it travels as one.
-pub(crate) fn the_conversation_before_the_reply(task: &ATask) -> TheConversationSoFar {
-    let turns = task.conversation().each();
-    let before = turns
-        .get(..turns.len().saturating_sub(1))
-        .unwrap_or_default();
+/// Read before the reply joins the conversation, so the reply is not in it: it
+/// is the request, and it travels as one.
+pub(crate) fn the_conversation_so_far(task: &ATask) -> TheConversationSoFar {
     let mut answers: Vec<&(String, Answered)> = task.answers_given().each().iter().collect();
-    let earlier = before
+    let earlier = task
+        .conversation()
+        .each()
         .iter()
         .map(|turn| match turn.who() {
             WhoSaidIt::ThePerson => AnEarlierTurn::ThePersonSaid(turn.said().to_owned()),

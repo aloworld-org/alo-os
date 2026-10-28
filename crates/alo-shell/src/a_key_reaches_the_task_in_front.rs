@@ -130,6 +130,8 @@ impl Server {
                     crate::what_an_answer_did::what_an_answer_did(answered.as_ref(), strings),
                 ));
             }
+            // **A reply held for this answer goes now** (ADR 0136).
+            self.send_what_was_held(which, strings);
             return;
         }
         let the_box_is_empty = self

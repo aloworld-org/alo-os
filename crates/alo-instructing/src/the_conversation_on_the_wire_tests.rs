@@ -49,32 +49,39 @@ fn a_first_request_writes_the_marker_alone_and_reads_as_nothing() {
     );
 }
 
-/// **How much was left out travels**, so the agent can tell the model.
+/// **A long conversation travels whole**: far past the 8000 bytes this once
+/// cut at, it is written and read back unchanged.
 #[test]
-fn what_was_left_out_travels_with_the_conversation() {
-    let long = "y".repeat(5000);
-    let shortened = TheConversationSoFar::of(vec![
-        AnEarlierTurn::ThePersonSaid(long.clone()),
-        AnEarlierTurn::AloAnswered(long),
-    ]);
-    let read = TheConversationSoFar::read(&shortened.written());
-    assert_eq!(read.as_ref().map(TheConversationSoFar::left_out), Ok(1));
-    assert_eq!(read, Ok(shortened));
+fn a_long_conversation_travels_whole() {
+    let long = TheConversationSoFar::of(
+        (0..60)
+            .map(|at| AnEarlierTurn::AloAnswered(format!("{at}{}", "y".repeat(5000))))
+            .collect(),
+    );
+    assert_eq!(TheConversationSoFar::read(&long.written()), Ok(long));
 }
 
-/// **A conversation over the bound is refused**, because no shell sends one:
-/// it is not shown to a model and it is not cut here.
+/// **Whether a conversation fits in a question is counted as it travels**, so
+/// one the daemon would refuse is caught before it is sent — and one well
+/// inside is not.
 #[test]
-fn a_conversation_over_the_bound_is_refused_and_not_read() {
-    let over = "z".repeat(TheConversationSoFar::THE_MOST_SENT + 1);
-    let line = format!(
-        "{THE_EARLIER_CONVERSATION}{}",
-        json!({"turns": [{"alo": over}], "left-out": 0, "cut": false})
-    );
-    assert!(matches!(
-        TheConversationSoFar::read(&line),
-        Err(NotTheConversation::TooLong(_))
-    ));
+fn a_conversation_too_long_for_any_question_is_said_not_to_fit() {
+    let fits = every_kind();
+    assert!(fits.fits_in_a_question("and the April one too"));
+    let too_long = TheConversationSoFar::of(vec![AnEarlierTurn::AloAnswered(
+        "z".repeat(THE_MOST_A_QUESTION_IS),
+    )]);
+    assert!(!too_long.fits_in_a_question("and that one"));
+    // Escaping counts: half a question of quotes is a whole question on the wire.
+    let quoted = TheConversationSoFar::of(vec![AnEarlierTurn::AloAnswered(
+        "\"".repeat(THE_MOST_A_QUESTION_IS / 2),
+    )]);
+    assert!(!quoted.fits_in_a_question("and that one"));
+}
+
+/// **A line longer than any question could be is refused**, and not read.
+#[test]
+fn a_line_longer_than_a_question_is_refused_and_not_read() {
     let far_over = format!("{THE_EARLIER_CONVERSATION}{}", "a".repeat(THE_LONGEST_LINE));
     assert!(matches!(
         TheConversationSoFar::read(&far_over),
@@ -89,10 +96,10 @@ fn a_line_a_shell_would_not_write_is_refused_in_words() {
         "list my invoices",
         "alo-earlier:{not json",
         "alo-earlier:[]",
-        r#"alo-earlier:{"turns":[{"model":"hello"}],"left-out":0,"cut":false}"#,
-        r#"alo-earlier:{"turns":[{"proposed":"Move it","answer":"maybe"}],"left-out":0,"cut":false}"#,
-        r#"alo-earlier:{"turns":[{"person":"a","alo":"b"}],"left-out":0,"cut":false}"#,
-        r#"alo-earlier:{"turns":[],"cut":false}"#,
+        r#"alo-earlier:{"turns":[{"model":"hello"}]}"#,
+        r#"alo-earlier:{"turns":[{"proposed":"Move it","answer":"maybe"}]}"#,
+        r#"alo-earlier:{"turns":[{"person":"a","alo":"b"}]}"#,
+        r#"alo-earlier:{"turns":[],"left-out":3}"#,
     ] {
         let refused = TheConversationSoFar::read(line);
         assert!(refused.is_err(), "{line} was read as {refused:?}");

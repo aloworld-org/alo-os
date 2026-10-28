@@ -120,7 +120,11 @@ fn the_earlier_conversation(
         return Ok(TheConversationSoFar::nothing());
     }
     let mut line = String::new();
-    let read = input.read_line(&mut line);
+    // **Read no further than a question could carry**, plus its newline: the
+    // bound is checked while reading, not after a privileged process has
+    // already held whatever was sent.
+    let most = u64::try_from(alo_instructing::THE_LONGEST_LINE + 2).unwrap_or(u64::MAX);
+    let read = std::io::Read::take(&mut *input, most).read_line(&mut line);
     // Back to waiting as long as it takes; `crate::holding_the_turn` sets its
     // own bound when it needs one.
     let _ = set_socket_timeout(socket, Timeout::Recv, None);

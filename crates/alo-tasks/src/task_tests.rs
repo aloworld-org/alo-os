@@ -256,6 +256,23 @@ fn denying_answers_the_question_and_keeps_nothing() {
     assert_eq!(task.permissions().asking(), None);
 }
 
+/// **A held reply stays out of the conversation**, a second one joins it, and
+/// taking it leaves nothing held.
+#[test]
+fn a_held_reply_is_kept_apart_until_it_is_taken() {
+    let mut task = a_task();
+    let before = task.conversation().each().len();
+    task.hold("and the April one");
+    task.hold("and May");
+    assert_eq!(task.held(), Some("and the April one\nand May"));
+    assert_eq!(task.conversation().each().len(), before);
+    assert_eq!(
+        task.take_held().as_deref(),
+        Some("and the April one\nand May")
+    );
+    assert_eq!(task.held(), None);
+}
+
 /// **The task remembers which sentence was answered and how**, so a follow-up
 /// can say what became of each change — and a press on nothing is not kept.
 #[test]

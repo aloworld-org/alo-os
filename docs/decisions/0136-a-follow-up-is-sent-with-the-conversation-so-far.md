@@ -1,6 +1,8 @@
 # ADR 0136 — A follow-up is sent with the conversation so far
 
-**Status:** **accepted, 2026-10-28, by the owner**, who decided that a
+**Status:** **accepted, 2026-10-28, by the owner**, and amended by the owner
+the same day (whole conversations, held replies, follow-ups graded apart). The
+owner decided that a
 follow-up typed in a task window is sent to alo together with the
 conversation so far, and accepted both costs named below.
 
@@ -42,33 +44,44 @@ it. That is true by construction: the shell builds the conversation from the
 turns it draws, and it never holds a turn's steps or its activity as
 conversation. A test holds the activity out.
 
-### Its size, and what happens over it
+### Its size: whole, and the model's limit is the only one
 
-**8000 bytes of what was said** (`TheConversationSoFar::THE_MOST_SENT`) —
-room for a request, a listing and a few answers, and small enough that a
-model with a short context still fits the instructions and the verbs ahead of
-it. Over the bound, the **oldest** turns are left out **whole**; a turn is
-never cut in the middle while a whole one would fit, because a cut sentence
-can say something different from the whole one. A single newest turn longer
-than the bound on its own is the one exception: it is cut, and the cut is
-written where it happened.
+*Amended by the owner the same day.* The first version of this decision cut a
+conversation at 8000 bytes, oldest parts first, and said so. The owner set
+that aside: **alo shortens nothing of its own accord.** The only limit is what
+the chosen model can read.
 
-Either way it is said, twice: the model is told how many earlier parts were
-left out, and the person's task window says in its activity that *the oldest
-part of this conversation was not sent to alo with your reply*. Nothing is
-shortened silently.
+- **A conversation is sent whole**, every turn of it.
+- **When it is too long for the model**, the person is told in plain words in
+  the window — *this conversation is now longer than the model can read; start
+  a new one from the Dock to continue* — and nothing is sent in part. That
+  sentence is worded where the model's refusal is heard (`alo-asking`), and
+  never by dropping the beginning and carrying on.
+- **One bound remains, and it is not alo's opinion of a conversation**: the
+  daemon refuses any question over 1 MiB (`docs/contracts/daemon-protocol.md`,
+  *Bounds*), so the asking socket refuses a line longer than that, and the
+  shell checks before sending and says *this conversation is now too long to
+  send to alo in one go* rather than letting the daemon refuse it in words
+  about envelopes. 1 MiB is roughly a quarter of a million tokens, beyond the
+  context of any model alo OS can be pointed at today; the contract records
+  the reason.
 
-### When it is sent
+### When it is sent, and a reply alo cannot take yet
 
-**Only at the moment the person presses Enter on a follow-up.** The shell reads
-the task's conversation then and at no other moment, hands it to the agent
-with the new words, and keeps nothing. That is *context is offered, never
-watched*: it is the person's own act that offers it, for that turn only.
+**Only when a reply is sent.** The shell reads the task's conversation then
+and at no other moment, hands it to the agent with the new words, and keeps
+nothing. That is *context is offered, never watched*: it is the person's own
+act that offers it, for that turn only.
 
-A reply is **not** sent, and the window says why beneath it, while a change
-above is still waiting for an answer (the agent that proposed it holds the
-only turn the daemon serves) or while alo has not answered the previous
-message yet.
+**A reply alo cannot take yet is held, not refused** (*amended by the owner
+the same day*). While alo is still answering, or while a change above waits
+for Allow once or Deny, the reply shows under the conversation marked
+*waiting to be sent*. It goes by itself, with the conversation as it then
+stands, once alo's answer has arrived and nothing waits for the person — so a
+change keeps it held until they answer. Before then they can take it back:
+Backspace in the empty reply box puts it back in the box to change or delete.
+It cannot go sooner because the daemon serves one turn at a time and the turn
+before it is still open. A second reply sent while one is held joins it.
 
 ### Where it travels, and that it is seen
 
@@ -81,7 +94,7 @@ the connection opens (ADR 0134) and writes the record. There is no second
 road. `alo-agentd`'s `nothing_leaves_before_the_desktop_is_told` test holds a
 follow-up's question to the same guarantee as a first request's.
 
-## The grades, and why none is set aside
+## The grades: none is set aside, and a follow-up is measured on its own
 
 ADR 0133 grades every model against the SHA-256 of the instructions text a
 turn shows. **That text does not change.** The conversation is placed in the
@@ -89,10 +102,13 @@ request half of what a model reads — where the language clause and a turn's
 steps already sit — and the digest is of the instructions alone, so every
 grade still names the text a turn shows.
 
-What that costs is stated rather than hidden, as it was for the language
-clause: **a grade earned on a first request is not proof about a follow-up.**
-The real-model check below measures follow-ups on one provider model; no
-local model has been measured on one.
+A grade earned on a first request is not proof about a follow-up, so **the
+owner chose to measure follow-ups separately for each model** (*amended the
+same day*): a follow-up result is recorded per model and per instructions
+digest, apart from the first-request grade, and a model nobody has run a
+follow-up on is recorded as *not yet measured* rather than given one. The
+measurement and where it is kept are `alo-models`' and `alo-driving`'s; this
+decision only says that it exists and is kept apart.
 
 ## Compatibility
 
@@ -102,8 +118,8 @@ input again; a later line is ignored, and it answers the follow-up as a first
 request. Anywhere before the request it would have been read *as* the request.
 A current agent waits half a second at most for the line, so a shell from
 before — which sends none — still works. A line after the request that is not
-a conversation a shell would write, or one over the bound, is refused in words
-and nothing is driven.
+a conversation a shell would write, or one longer than a question can be, is
+refused in words and nothing is driven.
 
 ## The costs the owner accepted
 
@@ -111,11 +127,6 @@ and nothing is driven.
    documented in `docs/contracts/asking-socket.md`.
 2. **The earlier conversation is sent again with each follow-up.** With a
    provider, that means the conversation leaves the machine once per follow-up,
-   not once. The egress indicator shows each departure and the record keeps
+   not once — and with no limit of alo's own, a long conversation leaves whole
+   each time. The egress indicator shows each departure and the record keeps
    each one.
-
-## What this does not decide
-
-Whether a reply typed **while** alo is still working should be queued or
-redirect the work at the next safe step (the design's interaction contract
-asks for one of the two). Today it is not sent, and the window says so.

@@ -139,6 +139,7 @@ impl TheTasksWords {
                         .each()
                         .iter()
                         .map(|turn| (whose(turn), as_drawn(turn)))
+                        .chain(held(task, strings))
                         .collect(),
                     // **The latest proposal, and only while the task is
                     // asking.** Every earlier proposal was answered and draws
@@ -199,6 +200,31 @@ impl TheTasksWords {
             })
             .collect()
     }
+}
+
+/// **A reply waiting to be sent**, drawn under the conversation: the person's
+/// words, and beneath them a card saying it has not gone yet, when it will,
+/// and how to take it back (ADR 0136). Nothing when nothing is held.
+///
+/// Two blocks the window already draws, rather than a new kind: the words are
+/// the person's, and the note is the machine's account of them — the card an
+/// activity is drawn in.
+fn held(task: &ATask, strings: &Strings) -> Vec<(alo_tasks::WhoseBlock, String)> {
+    let Some(held) = task.held() else {
+        return Vec::new();
+    };
+    let note = if task.permissions().asking().is_some() {
+        crate::the_reply_boxs_words::HELD_UNTIL_YOU_ANSWER
+    } else {
+        crate::the_reply_boxs_words::HELD_UNTIL_ALO_ANSWERS
+    };
+    vec![
+        (alo_tasks::WhoseBlock::ThePersons, held.to_owned()),
+        (
+            alo_tasks::WhoseBlock::AnAccount,
+            strings.say(&note.key(), &Filling::nothing()).into_text(),
+        ),
+    ]
 }
 
 /// The words one turn is drawn with.

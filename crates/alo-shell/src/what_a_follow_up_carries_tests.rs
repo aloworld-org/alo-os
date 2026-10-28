@@ -4,11 +4,11 @@ use alo_instructing::{AnEarlierTurn, TheAnswer};
 use alo_models::InferenceSource;
 use alo_tasks::{ATask, Act, Turn};
 
-use super::the_conversation_before_the_reply;
+use super::the_conversation_so_far;
 
-/// A task that listed, proposed two changes, and was answered once each way —
-/// and then the person replied.
-fn a_task_with_a_reply() -> ATask {
+/// A task that listed, proposed three changes, and was answered once each way
+/// — the third never answered.
+fn a_task_that_proposed() -> ATask {
     let mut task = ATask::asked_for("list my invoices", InferenceSource::ThisMachine);
     task.and_then(Act::done(
         "listed /home/anna/Invoices: march.pdf, april.pdf",
@@ -21,15 +21,13 @@ fn a_task_with_a_reply() -> ATask {
     task.alo_says(Turn::alo_proposing("Delete april.pdf"));
     let _ = task.deny();
     task.alo_says(Turn::alo_proposing("Rename notes.txt"));
-    task.the_person_says("and the April one too");
     task
 }
 
-/// **Exactly the earlier turns, in order, with what became of each change** —
-/// and not the reply, which travels as the request.
+/// **Exactly the earlier turns, in order, with what became of each change.**
 #[test]
 fn a_follow_up_carries_exactly_the_earlier_turns() {
-    let earlier = the_conversation_before_the_reply(&a_task_with_a_reply());
+    let earlier = the_conversation_so_far(&a_task_that_proposed());
     assert_eq!(
         earlier.turns(),
         [
@@ -49,37 +47,41 @@ fn a_follow_up_carries_exactly_the_earlier_turns() {
             },
         ]
     );
-    assert!(!earlier.is_shortened());
 }
 
 /// **What a verb read is not carried**: the activity's details are the
 /// machine's account, not the conversation, and never travel with a follow-up.
 #[test]
 fn what_the_activity_holds_is_never_carried() {
-    let earlier = the_conversation_before_the_reply(&a_task_with_a_reply());
-    let told = earlier.told();
-    assert!(!told.contains("listed /home/anna/Invoices"), "{told}");
+    let earlier = the_conversation_so_far(&a_task_that_proposed());
+    assert!(!earlier.told().contains("listed /home/anna/Invoices"));
     assert!(!earlier.written().contains("listed /home/anna/Invoices"));
 }
 
-/// **A task with only its request has nothing before it** — which is what a
-/// first request carries.
+/// **A held reply is not part of what came before**: it is the request when
+/// it is sent, not something alo is told it already heard.
 #[test]
-fn a_task_with_only_its_request_has_nothing_before_it() {
-    let task = ATask::asked_for("list my invoices", InferenceSource::ThisMachine);
-    assert!(the_conversation_before_the_reply(&task).is_empty());
+fn a_held_reply_is_not_carried_as_earlier() {
+    let mut task = a_task_that_proposed();
+    task.hold("and the April one too");
+    assert!(
+        !the_conversation_so_far(&task)
+            .told()
+            .contains("the April one")
+    );
 }
 
-/// **A long conversation says it was shortened**, so the window can tell the
-/// person and the agent can tell the model.
+/// **A long conversation is carried whole** — nothing is left out of it
+/// (ADR 0136).
 #[test]
-fn a_conversation_over_the_bound_says_so() {
+fn a_long_conversation_is_carried_whole() {
     let mut task = ATask::asked_for("list everything", InferenceSource::ThisMachine);
-    for _ in 0..5 {
+    for _ in 0..20 {
         task.alo_says(Turn::from_alo("x".repeat(3000)));
         task.the_person_says("go on");
     }
-    let earlier = the_conversation_before_the_reply(&task);
-    assert!(earlier.is_shortened());
-    assert!(earlier.left_out() > 0);
+    assert_eq!(
+        the_conversation_so_far(&task).turns().len(),
+        task.conversation().each().len()
+    );
 }

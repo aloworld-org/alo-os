@@ -5,7 +5,7 @@
 //! adds one line after the request:
 //!
 //! ```text
-//! alo-earlier:{"turns":[{"person":"list my invoices"},{"alo":"march.pdf, april.pdf"}],"left-out":0,"cut":false}
+//! alo-earlier:{"turns":[{"person":"list my invoices"},{"alo":"march.pdf, april.pdf"}]}
 //! ```
 //!
 //! and a first request sends the marker with nothing after it, so an agent
@@ -18,14 +18,25 @@
 //! is what keeps the writer and the reader from agreeing only by accident.
 //! This crate opens nothing; it turns a value into a string and back.
 //!
+//! # The one bound, and where it comes from
+//!
+//! **Not a limit on the conversation** — the owner decided alo shortens none
+//! (ADR 0136). It is a limit on what a privileged reader will take off a
+//! socket, and it is set from the only place a conversation can go: inside a
+//! question to `alo-agentd`, which refuses any request over
+//! [`THE_MOST_A_QUESTION_IS`] bytes (`docs/contracts/daemon-protocol.md`,
+//! *Bounds*). That is about a quarter of a million tokens, more than the
+//! context of any model alo OS can be pointed at today. A conversation that
+//! could never be asked is not worth reading, and
+//! [`TheConversationSoFar::fits_in_a_question`] lets the shell tell the person
+//! so before it sends anything.
+//!
 //! # What a reader refuses
 //!
 //! Anything a current shell would not have written: a line that is not JSON, a
 //! turn of a kind this does not know, an answer that is not one of the three,
-//! and **a conversation over the bound** — the shell holds it to
-//! [`TheConversationSoFar::THE_MOST_SENT`] before sending, so one longer did
-//! not come from a shell and is not shown to a model. Each refusal is a
-//! sentence; nothing is guessed.
+//! and a line longer than [`THE_LONGEST_LINE`]. Each refusal is a sentence;
+//! nothing is guessed.
 
 use serde_json::{Map, Value, json};
 
@@ -34,11 +45,24 @@ use crate::the_conversation_so_far::{AnEarlierTurn, TheAnswer, TheConversationSo
 /// The marker the line begins with.
 pub const THE_EARLIER_CONVERSATION: &str = "alo-earlier:";
 
-/// The most a line may be, in bytes, before it is read at all.
+/// **The most a question to `alo-agentd` may be**, in bytes: its own bound on a
+/// request, `alo_protocol::LONGEST`, spelt here for the reason the
+/// socket's path is spelt in two places — this crate depends on the verbs and
+/// a digest and nothing else. A test in `alo-agent` holds the two equal.
+pub const THE_MOST_A_QUESTION_IS: usize = 1024 * 1024;
+
+/// What a question needs besides the conversation and the request: the
+/// instructions, every verb, the folders and the envelope around them.
 ///
-/// The bound on what was said, six times over for JSON writing a control
-/// character as six bytes, and a little for the names around it.
-pub const THE_LONGEST_LINE: usize = TheConversationSoFar::THE_MOST_SENT * 6 + 4096;
+/// Generous on purpose — it is measured against a whole question of a few
+/// tens of kilobytes — because a conversation the shell let through and the
+/// daemon then refused would be refused in the daemon's words about envelopes
+/// rather than in a sentence about the conversation.
+pub const ROOM_FOR_THE_REST_OF_A_QUESTION: usize = 128 * 1024;
+
+/// The most a line may be, in bytes, before it is read at all — a question's
+/// bound, since the conversation can only travel inside one.
+pub const THE_LONGEST_LINE: usize = THE_MOST_A_QUESTION_IS;
 
 /// Why a line could not be read as the conversation so far.
 ///
@@ -48,7 +72,7 @@ pub const THE_LONGEST_LINE: usize = TheConversationSoFar::THE_MOST_SENT * 6 + 40
 pub enum NotTheConversation {
     /// The line does not begin with [`THE_EARLIER_CONVERSATION`].
     NotMarked,
-    /// Longer than any shell sends.
+    /// Longer than any question could carry.
     TooLong(usize),
     /// Not the JSON a shell writes.
     NotReadable(String),
@@ -65,8 +89,8 @@ impl std::fmt::Display for NotTheConversation {
             }
             Self::TooLong(bytes) => write!(
                 f,
-                "the earlier conversation is {bytes} bytes long, which is more than a shell \
-                 sends, so it was not read"
+                "the earlier conversation is {bytes} bytes long, which is more than a question \
+                 to this machine may carry, so it was not read"
             ),
             Self::NotReadable(why) => {
                 write!(f, "the earlier conversation could not be read: {why}")
@@ -78,6 +102,20 @@ impl std::fmt::Display for NotTheConversation {
 impl std::error::Error for NotTheConversation {}
 
 impl TheConversationSoFar {
+    /// **Whether this conversation and `request` fit in one question** to
+    /// `alo-agentd`, counted as they will travel: written as JSON, with room
+    /// for the instructions and the verbs.
+    ///
+    /// The shell asks before it sends, so a conversation too long for this
+    /// machine to ask about is said to be too long rather than refused later
+    /// in words about envelopes.
+    #[must_use]
+    pub fn fits_in_a_question(&self, request: &str) -> bool {
+        let travels = |text: &str| Value::from(text).to_string().len();
+        travels(&self.told()) + travels(request) + ROOM_FOR_THE_REST_OF_A_QUESTION
+            <= THE_MOST_A_QUESTION_IS
+    }
+
     /// **The line a shell writes**, without its newline.
     #[must_use]
     pub fn written(&self) -> String {
@@ -100,12 +138,7 @@ impl TheConversationSoFar {
                 }),
             })
             .collect();
-        let line = json!({
-            "turns": turns,
-            "left-out": self.left_out(),
-            "cut": self.was_cut(),
-        });
-        format!("{THE_EARLIER_CONVERSATION}{line}")
+        format!("{THE_EARLIER_CONVERSATION}{}", json!({ "turns": turns }))
     }
 
     /// **The line read back**, with or without its newline.
@@ -127,16 +160,8 @@ impl TheConversationSoFar {
         let value: Value = serde_json::from_str(payload).map_err(|why| not(&why.to_string()))?;
         let whole = value
             .as_object()
-            .ok_or_else(|| not("it is not an object"))?;
-        let left_out = whole
-            .get("left-out")
-            .and_then(Value::as_u64)
-            .and_then(|count| usize::try_from(count).ok())
-            .ok_or_else(|| not("it does not say how much was left out"))?;
-        let cut = whole
-            .get("cut")
-            .and_then(Value::as_bool)
-            .ok_or_else(|| not("it does not say whether a turn was cut"))?;
+            .filter(|whole| whole.len() == 1)
+            .ok_or_else(|| not("it is not an object holding the turns alone"))?;
         let mut turns = Vec::new();
         for turn in whole
             .get("turns")
@@ -149,11 +174,7 @@ impl TheConversationSoFar {
                     .ok_or_else(|| not("a turn is not one a shell writes"))?,
             );
         }
-        let said: usize = turns.iter().map(|turn| turn.said().len()).sum();
-        if said > Self::THE_MOST_SENT {
-            return Err(NotTheConversation::TooLong(said));
-        }
-        Ok(Self::from_parts(turns, left_out, cut))
+        Ok(Self::of(turns))
     }
 }
 

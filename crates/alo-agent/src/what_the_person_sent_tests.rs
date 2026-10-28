@@ -85,15 +85,34 @@ fn a_line_after_the_request_that_is_not_a_conversation_is_refused() {
     }
 }
 
-/// **A conversation over the bound is refused**, because no shell sends one.
+/// **A line longer than any question could carry is refused**, and reading
+/// stops at the bound rather than holding whatever was sent.
 #[test]
-fn a_conversation_over_the_bound_is_refused_in_words() {
-    let over = "z".repeat(TheConversationSoFar::THE_MOST_SENT + 1);
-    let (read, _shell) = sent_on_a_socket(&format!(
-        "and that one\nalo-earlier:{{\"turns\":[{{\"alo\":\"{over}\"}}],\"left-out\":0,\"cut\":false}}\n"
-    ));
-    let refused = read.unwrap_err();
-    assert!(refused.contains("more than a shell sends"), "{refused}");
+fn a_conversation_longer_than_a_question_is_refused_in_words() {
+    let (mut shell, agent) = UnixStream::pair().unwrap();
+    let writing = std::thread::spawn(move || {
+        let over = "z".repeat(alo_instructing::THE_LONGEST_LINE);
+        let _ = shell.write_all(
+            format!("and that one\nalo-earlier:{{\"turns\":[{{\"alo\":\"{over}\"}}]}}\n")
+                .as_bytes(),
+        );
+        shell
+    });
+    let mut input = BufReader::new(&agent);
+    let refused = read_what_the_person_sent(&mut input, Some(agent.as_fd())).unwrap_err();
+    assert!(refused.contains("more than a question"), "{refused}");
+    drop(agent);
+    drop(writing.join());
+}
+
+/// **The agent's bound is the daemon's**: a conversation is read only if a
+/// question could carry it, and the two numbers are spelt in two crates.
+#[test]
+fn the_bound_on_the_line_is_the_daemons_bound_on_a_question() {
+    assert_eq!(
+        alo_instructing::THE_MOST_A_QUESTION_IS,
+        alo_protocol::LONGEST
+    );
 }
 
 /// **A pipe is read as before**: two lines at most, and no third waited for.

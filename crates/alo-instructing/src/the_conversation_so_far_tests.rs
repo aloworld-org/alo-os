@@ -1,4 +1,4 @@
-//! What the conversation so far keeps, leaves out, and tells a model.
+//! What the conversation so far keeps, and tells a model.
 
 use super::*;
 
@@ -19,18 +19,31 @@ fn three_turns() -> Vec<AnEarlierTurn> {
 fn a_first_request_has_no_earlier_conversation_and_adds_no_text() {
     let nothing = TheConversationSoFar::nothing();
     assert!(nothing.is_empty());
-    assert!(!nothing.is_shortened());
     assert_eq!(nothing.told(), "");
     assert_eq!(TheConversationSoFar::of(Vec::new()), nothing);
 }
 
 /// **Exactly the earlier turns, in order, and nothing else.**
 #[test]
-fn a_conversation_under_the_bound_is_kept_whole_and_in_order() {
+fn a_conversation_is_kept_whole_and_in_order() {
     let kept = TheConversationSoFar::of(three_turns());
     assert_eq!(kept.turns(), three_turns().as_slice());
-    assert_eq!(kept.left_out(), 0);
-    assert!(!kept.is_shortened());
+}
+
+/// **A long conversation is kept whole**: alo drops nothing of its own
+/// accord, because a follow-up whose earlier parts vanished means something
+/// else without anybody seeing it (ADR 0136).
+#[test]
+fn a_long_conversation_is_never_shortened() {
+    let turns: Vec<AnEarlierTurn> = (0..40)
+        .map(|at| AnEarlierTurn::AloAnswered(format!("{at}{}", "x".repeat(3000))))
+        .collect();
+    let kept = TheConversationSoFar::of(turns.clone());
+    assert_eq!(kept.turns(), turns.as_slice());
+    let told = kept.told();
+    for turn in &turns {
+        assert!(told.contains(turn.said()));
+    }
 }
 
 /// **What a model is told is marked as earlier, and says what became of a
@@ -65,43 +78,4 @@ fn a_model_is_told_the_earlier_conversation_marked_and_with_each_answer() {
         told.ends_with("The earlier conversation ends here."),
         "{told}"
     );
-}
-
-/// **Over the bound, the oldest turns are left out whole and the model is told
-/// how many.** Never a turn cut in the middle while a whole one would fit.
-#[test]
-fn a_conversation_over_the_bound_leaves_the_oldest_out_and_says_so() {
-    let long = "x".repeat(3000);
-    let turns: Vec<AnEarlierTurn> = (0..5)
-        .map(|at| AnEarlierTurn::AloAnswered(format!("{at}{long}")))
-        .collect();
-    let kept = TheConversationSoFar::of(turns.clone());
-    assert_eq!(kept.left_out(), 3, "8000 bytes holds two of 3001");
-    assert_eq!(kept.turns(), turns.get(3..).unwrap_or_default());
-    assert!(!kept.was_cut());
-    assert!(kept.is_shortened());
-    let said: usize = kept.turns().iter().map(|turn| turn.said().len()).sum();
-    assert!(said <= TheConversationSoFar::THE_MOST_SENT);
-    assert!(
-        kept.told()
-            .contains("(3 earlier part(s) of this conversation were left out because it is long.)")
-    );
-}
-
-/// **One turn longer than the whole bound is cut where it says so**, on a
-/// character boundary — a cut through an accent would be a panic.
-#[test]
-fn a_turn_longer_than_the_bound_is_cut_and_says_where() {
-    let long = "é".repeat(TheConversationSoFar::THE_MOST_SENT);
-    let kept = TheConversationSoFar::of(vec![
-        AnEarlierTurn::ThePersonSaid("first".to_owned()),
-        AnEarlierTurn::AloAnswered(long),
-    ]);
-    assert!(kept.was_cut());
-    assert_eq!(kept.left_out(), 1);
-    let [AnEarlierTurn::AloAnswered(said)] = kept.turns() else {
-        panic!("the newest turn was not the one kept: {:?}", kept.turns());
-    };
-    assert!(said.ends_with(WHERE_IT_WAS_CUT));
-    assert!(said.len() <= TheConversationSoFar::THE_MOST_SENT);
 }
