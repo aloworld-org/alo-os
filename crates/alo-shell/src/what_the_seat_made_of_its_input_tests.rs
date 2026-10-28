@@ -833,6 +833,7 @@ fn the_real_raster_recorded_the_way_the_draw_records_it_opens_the_market() -> Re
         None,
         &alo_dock::artwork::NOTHING,
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("a fresh machine's Dock lays out on the display it draws on");
 

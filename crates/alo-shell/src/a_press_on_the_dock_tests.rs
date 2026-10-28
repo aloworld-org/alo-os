@@ -910,6 +910,7 @@ fn a_press_where_each_letter_is_drawn_reaches_that_letters_entry() {
         None,
         &alo_dock::artwork::NOTHING,
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("a Dock of two entries lays out on a 1280 x 800 display");
 

@@ -990,6 +990,8 @@ pub(crate) fn picture(
         layout,
         band,
         thickness: _,
+        // The same value as the `scale` this was handed.
+        scale: _,
         ref places,
         ref over,
     } = standing;
